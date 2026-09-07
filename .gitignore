@@ -32,3 +32,4 @@ state/
 
 # ===== reports 保留但忽略临时产物 =====
 reports/_tmp/
+_tmp_smoke/
