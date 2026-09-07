@@ -1,0 +1,190 @@
+flowchart TB
+    %% ======================================================================
+    %% 阶段一：数据采集（双底座并行）
+    %% ======================================================================
+    subgraph Phase1[阶段一：数据采集]
+        direction TB
+        
+        subgraph External[外部监管采集]
+            E1[regulatory-crawler-trigger<br>定时爬虫触发] --> E2[四大来源爬取]
+            E2 --> E3[存入 external_regulatory_base/files/]
+            
+            E4[supp<br>补充四源 + 本地文件] --> E5[格式识别<br>PDF/Word/图片/HTML]
+            E5 --> E6[存入 external_regulatory_base/files/]
+            
+            E3 & E6 --> E7[external_regulatory_base/ 统一存放]
+        end
+        
+        subgraph Internal[内部制度采集]
+            I1[internal_scanner<br>扫描/OCR触发] --> I2[读取存量制度文件<br>PDF/Word/图片]
+            I2 --> I3[PaddleOCR<br>文本识别与结构化解析]
+            I3 --> I4[存入 internal_policy_base/processed/]
+        end
+    end
+
+    %% ======================================================================
+    %% 阶段二：数据清洗
+    %% ======================================================================
+    subgraph Phase2[阶段二：数据清洗]
+        E7 & I4 --> C1[格式清洗<br>UTF-8统一编码 / 去BOM / 去首尾空白 / 修正换行符]
+        C1 --> C2[内容清洗<br>MD5去重 / 去除OCR杂音乱码 / 轻量纠错]
+        C2 --> C3[结构清洗<br>字段对齐 / 统一Schema / 无效字段删除]
+        C3 --> C4[(cleaned_data_pool<br>干净数据临时池)]
+    end
+
+    %% ======================================================================
+    %% 阶段三：时效性检查 + 演进关系构建
+    %% ======================================================================
+    subgraph Phase3[阶段三：时效性检查与演进关系]
+        C4 --> T1{文件类型?}
+        
+        T1 -->|外部监管文件| T2[时效检查<br>版本比对 / 废止公告核验 / 生效期比对]
+        T2 --> T3{检查结果}
+        T3 -->|现行有效| T4[标记 status = ACTIVE]
+        T3 -->|已废止/部分废止| T5[标记 status = EXPIRED<br>记录废止原因 + superseded_by]
+        T3 -->|即将过期≤30天| T5b[标记 status = EXPIRING]
+        
+        T1 -->|内部制度文件| T6[时效检查<br>版本号比对 / 生效日期 / 状态核验]
+        T6 --> T7{检查结果}
+        T7 -->|现行有效| T8[标记 status = ACTIVE]
+        T7 -->|已废止/部分废止| T9[标记 status = DEPRECATED<br>记录废止原因 + superseded_by]
+        T7 -->|即将过期≤30天| T9b[标记 status = EXPIRING]
+        
+        T4 & T5 & T5b & T8 & T9 & T9b --> T10[构建演进关系<br>识别 version_chain_id / supersedes / 版本链排序]
+    end
+
+    %% ======================================================================
+    %% 阶段四：索引注册（全量注册，含废止）
+    %% ======================================================================
+    subgraph Phase4[阶段四：索引注册]
+        T10 -->|注册| R1[external_regulatory_index.json<br>含 status + source_type + version_chain_id]
+        T10 -->|注册| R2[internal_policy_index.json<br>含 status + version_chain_id + supersedes]
+        
+        R1 & R2 --> R3[(unified_knowledge_index/<br>共享索引目录)]
+        
+        T5 & T9 -->|物理归档| ARC[archive/ 目录<br>废止文件保留完整副本]
+        T4 & T8 -->|保留| ACT[files/ 目录<br>现行文件]
+        T5b & T9b -->|保留| ACT
+    end
+
+    %% ======================================================================
+    %% 阶段五：分类与关联（统一中枢）
+    %% ======================================================================
+    subgraph Phase5[阶段五：分类与关联]
+        Cx1[regulatory-classifier 启动<br>定时 / 监听触发] --> Cx2[读取 external_regulatory_index]
+        Cx1 --> Cx3[读取 internal_policy_index]
+        
+        Cx2 & Cx3 --> Cx4[统一打标 T1-T8<br>主题分类]
+        Cx4 --> Cx5[关联分析<br>内外规映射 / 冲突预检 / 效力交叉验证]
+        Cx5 --> Cx6[时效交叉核验<br>多源印证废止公告]
+        Cx6 --> Cx7[生成 merged_view.json<br>三源合并 + 统一标签 + 关联关系 + 时效状态 + 演进链]
+        Cx7 -->|回写| R3
+    end
+
+    %% ======================================================================
+    %% 阶段六：上层应用层
+    %% ======================================================================
+    subgraph Phase6[阶段六：上层应用层]
+        
+        subgraph App1[制度起草与修订 internal-policy-drafter]
+            D1[起草需求触发] --> D2[查询 merged_view.json]
+            D2 --> D3{查询视图选择}
+            D3 -->|默认| D3a[view_active<br>仅 ACTIVE + EXPIRING]
+            D3 -->|演进参考| D3b[view_full_historical<br>按 version_chain_id 全量回溯]
+            
+            D3a --> D4[冲突/重复检测<br>基于现行有效制度]
+            D3b --> D5[演进分析<br>理解历史修订逻辑]
+            
+            D4 & D5 --> D6{检测结果}
+            D6 -->|有冲突| D7[生成冲突报告 → 人工修正]
+            D6 -->|无冲突| D8[生成制度草稿]
+            D7 -->|修正后| D8
+            D8 --> D9[审批流程]
+            D9 -->|通过| D10[发布新制度]
+            
+            D10 -->|写入| R2[更新 internal_policy_index<br>新增 ACTIVE 记录]
+            D10 -->|写入| R2_OLD[旧版本标记 DEPRECATED<br>更新 superseded_by]
+            D10 -->|归档| I4
+        end
+        
+        subgraph App2[合规监控与闭环 compliance-closure]
+            CM1[合规检查触发] --> CM2[查询 merged_view.json<br>view_active + 时间切片]
+            CM2 --> CM3{检查类型}
+            CM3 -->|日常监控| CM3a[对照 ACTIVE 监管红线]
+            CM3 -->|历史审计| CM3b[时间切片查询<br>行为发生时的有效制度]
+            
+            CM3a & CM3b --> CM4[读取 internal_policy_base<br>对应版本制度全文]
+            CM4 --> CM5{检查结果}
+            CM5 -->|不合规| CM6[生成整改工单]
+            CM5 -->|合规| CM7[生成合规报告]
+            CM6 --> CM8[追踪整改进度]
+            CM8 -->|整改完成| CM9[更新制度或流程]
+            CM9 -->|归档| I4
+            CM9 -->|触发| R2[制度更新 → 版本演进]
+        end
+        
+        subgraph App3[查询与报告 query-report]
+            Q1[用户查询请求] --> Q2[查询 merged_view.json]
+            Q2 --> Q3{查询类型}
+            Q3 -->|现行法规查询| Q4[view_active 检索]
+            Q3 -->|制度演进追溯| Q5[view_full_historical<br>按 version_chain_id 回溯]
+            Q3 -->|废止依据查询| Q6[精确查找 EXPIRED/DEPRECATED<br>含废止原因]
+            Q4 & Q5 & Q6 --> Q7[生成报告 / 展示]
+        end
+    end
+
+    %% ======================================================================
+    %% 阶段七：监控与告警（自动化闭环引擎）
+    %% ======================================================================
+    subgraph Phase7[阶段七：监控与告警]
+        M1[monitor_daemon<br>后台守护进程] --> M2{监听/定时任务}
+        
+        M2 -->|文件变化监听| M3[外部新文件入库 → 触发增量清洗+时效检查]
+        M2 -->|文件变化监听| M4[内部新制度发布 → 触发合规检查]
+        M2 -->|每日定时| M5[定时时效巡检<br>检查即将过期/已过期文件]
+        
+        M3 --> M6[触发 regulatory-classifier<br>增量重分类 + 时效重检 + 演进链更新]
+        M4 --> M7[触发 compliance-closure<br>评估新制度合规性]
+        M5 --> M8[自动更新时效状态<br>ACTIVE → EXPIRING → EXPIRED]
+        
+        M6 --> M9[更新 merged_view.json]
+        M7 --> M9
+        M8 --> M9
+        
+        M9 --> M10{告警条件}
+        M10 -->|外部废止公告| M11[推送法规废止告警]
+        M10 -->|内部制度即将过期| M12[推送制度过期预警]
+        M10 -->|合规检查不通过| M13[推送整改工单通知]
+        M10 -->|版本链断裂| M14[推送演进链异常告警]
+        
+        M11 & M12 & M13 & M14 --> M15[告警通道<br>钉钉 / 企业微信 / 邮件]
+    end
+
+    %% ======================================================================
+    %% 跨阶段连接线
+    %% ======================================================================
+    R3 -.->|读取| Cx2 & Cx3
+    R3 -.->|读取| D2 & CM2 & Q2
+    ARC -.->|废止文件指针| R1 & R2
+    
+    D10 -.->|触发| M4
+    E1 -.->|触发| M3
+
+    %% ======================================================================
+    %% 样式
+    %% ======================================================================
+    classDef collect fill:#e3f2fd,stroke:#1565c0;
+    classDef clean fill:#fff8e1,stroke:#f9a825;
+    classDef valid fill:#e0f7fa,stroke:#00838f;
+    classDef index fill:#fff3e0,stroke:#e65100;
+    classDef classify fill:#f3e5f5,stroke:#6a1b9a;
+    classDef app fill:#e8f5e9,stroke:#2e7d32;
+    classDef monitor fill:#fce4ec,stroke:#c62828;
+    
+    class E1,E2,E3,E4,E5,E6,E7,I1,I2,I3,I4 collect;
+    class C1,C2,C3,C4 clean;
+    class T1,T2,T3,T4,T5,T5b,T6,T7,T8,T9,T9b,T10 valid;
+    class R1,R2,R3,ARC,ACT index;
+    class Cx1,Cx2,Cx3,Cx4,Cx5,Cx6,Cx7 classify;
+    class D1,D2,D3,D3a,D3b,D4,D5,D6,D7,D8,D9,D10,CM1,CM2,CM3,CM3a,CM3b,CM4,CM5,CM6,CM7,CM8,CM9,Q1,Q2,Q3,Q4,Q5,Q6,Q7 app;
+    class M1,M2,M3,M4,M5,M6,M7,M8,M9,M10,M11,M12,M13,M14,M15 monitor;

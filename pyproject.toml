@@ -1,0 +1,64 @@
+# -*- coding: utf-8 -*-
+# regulatory_compliance_orchestrator — 四子项目统一工程配置（P0 骨架，2026-09-08）
+# 演进纪律：本工程为唯一演进点；原四仓（regulatory_scrapers/classifier/drafter/base）只读冻结。
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "regulatory-compliance-orchestrator"
+version = "0.1.0"
+description = "监管合规编排器：五源采集/清洗 + RFN分类 + 内部制度扫描 + 制度起草（统一编排）"
+requires-python = ">=3.13"
+dependencies = [
+    "requests>=2.25.0",
+    "beautifulsoup4>=4.10.0",
+    "cryptography>=3.0",
+    "PyYAML>=6.0",
+]
+
+[project.optional-dependencies]
+mcp = ["mcp>=2.0.0"]
+dev = ["pytest>=7.0.0", "coverage>=7.0.0", "ruff>=0.6", "mypy>=1.10"]
+ocr = ["paddleocr", "pdfplumber", "pypdf", "PyMuPDF"]
+
+[project.scripts]
+orchestrator = "cli:main"
+
+[tool.setuptools]
+packages = [
+    "std_lib",
+    "std_lib.scraper_std",
+    "std_lib.scraper_std.common",
+    "std_lib.common_lib",
+    "config",
+    "interfaces",
+    "gates",
+]
+py-modules = ["cli", "paths"]
+
+[tool.setuptools.exclude-package-data]
+"*" = ["data/**", "cache/**", "logs/**", "venv/**"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+extend-exclude = ["data", "cache", "logs", "backups", "venv", "reports/_tmp"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B"]
+ignore = ["E501", "UP009", "UP031", "E402"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.mypy]
+python_version = "3.13"
+ignore_missing_imports = true
+exclude = ["data/", "cache/", "logs/", "backups/"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+pythonpath = ["."]

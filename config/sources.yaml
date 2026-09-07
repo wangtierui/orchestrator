@@ -1,0 +1,40 @@
+# config/sources.yaml — 源目录唯一事实源（R15 落地）
+# 所有代码（SOURCE_SET 派生/collectors 选择/clean --project/schema）启动时从本文件构建。
+# 新增源：在此登记 + 提供 collector 模块 + 跑 orchestrator source add --checklist。
+schema_version: "1.0"
+external_sources:
+  - id: gov
+    enabled: true
+    collector: collectors.gov_collector
+    clean_project: gov
+    note: 国务院及地方政府规章/法规库；xzfgk 正文可用
+    disabled_reasons: []
+  - id: gov.flk
+    enabled: false
+    note: 国家法律法规库 flk；正文存站内 OBS 外部不可达（源限制），保持停抓
+    disabled_reasons: ["OBS 不可达", "正文文档版无法抓取"]
+  - id: mof
+    enabled: true
+    collector: collectors.mof_collector
+    clean_project: mof
+    note: 财政部 fgk.mof.gov.cn
+  - id: nfra
+    enabled: true
+    collector: collectors.nfra_collector
+    clean_project: nfra
+    weekly_orchestrator: collectors.nfra_weekly   # Q4：保留 weekly_refresh 内部确定性编排
+    note: 国家金融监督管理总局
+  - id: pbc
+    enabled: true
+    collector: collectors.pbc_collector
+    clean_project: pbc
+    note: 中国人民银行
+  - id: supp
+    enabled: true
+    collector: collectors.supp_ingest
+    clean_project: supp
+    note: 补充法规库（多源归集；已入核验范围 N4）
+internal_source:
+  id: internal_policy_base
+  index_dir: data/index
+  ocr_profile: default

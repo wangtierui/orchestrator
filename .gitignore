@@ -1,0 +1,34 @@
+# ===== Python =====
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+build/
+dist/
+
+# ===== 数据（不入库；用复制快照 + data_migration_manifest 追踪）=====
+data/
+cache/
+logs/
+*.csv.bak_*
+*.jsonl.bak_*
+
+# ===== OCR / 大文件 =====
+*.pdf
+*.doc
+*.docx
+tessdata/
+
+# ===== 运行状态 =====
+state/
+*.lock
+*.pid
+
+# ===== IDE =====
+.idea/
+.vscode/
+*.swp
+
+# ===== reports 保留但忽略临时产物 =====
+reports/_tmp/

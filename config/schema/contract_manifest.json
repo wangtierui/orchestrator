@@ -1,0 +1,42 @@
+{
+  "schema_version": "1.0",
+  "generated_at": null,
+  "owner": "regulatory_compliance_orchestrator",
+  "note": "程序可读契约清单（R24）：实际列头/键集唯一事实由各接口模块持有；本清单仅登记版本与定位，防文本漂移。",
+  "contracts": {
+    "cleaned_csv_columns": {
+      "file": "std_lib/scraper_std/unified_schema.py",
+      "symbol": "CSV_COLUMNS",
+      "count": 39,
+      "consumer": ["clean_index", "interfaces.clean_index_api", "gates.gate_contract"]
+    },
+    "registry_csv_fields": {
+      "file": "modules/regulatory_classifier/rfn/registry.py",
+      "symbol": "CSV_FIELDS",
+      "count": 8,
+      "consumer": ["gates.gate_rfn_sync", "recall_audit.run_retrieval_after_checks.gate_schema"]
+    },
+    "registry_theme_fields": {
+      "file": "modules/regulatory_classifier/rfn/registry.py",
+      "symbol": "THEME_FIELDS",
+      "count": 3,
+      "consumer": ["gates.gate_rfn_sync"]
+    },
+    "detail_table_fields": {
+      "file": "modules/regulatory_classifier/scripts/build_detail_tables.py",
+      "symbol": "FIELDS",
+      "count": 10,
+      "consumer": ["gates.gate_contract"]
+    },
+    "theme_map": {
+      "file": "modules/regulatory_classifier/rfn/__init__.py",
+      "symbol": "THEME_MAP",
+      "count": 11,
+      "note": "T0上位法锚点 + T1-T10；扩展主题唯一入口（R16）"
+    },
+    "base_json_keys": {
+      "file": "modules/regulatory_classifier/theme_analysis/node2_rebuild/",
+      "note": "base7/final10/matched6+/citerefs7+；Gate4 定义核心键（run_retrieval_after_checks.gate_schema）"
+    }
+  }
+}

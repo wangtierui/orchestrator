@@ -1,0 +1,48 @@
+project/
+├── data_bases/                                    # 数据层（纯数据，无业务逻辑）
+│   │
+│   ├── external_regulatory_base/                  # 外部监管底座（四源爬虫 + supp上传 统一存放）
+│   │   ├── files/                                 # 现行有效文件
+│   │   │   ├── 2026-001_xxx.pdf
+│   │   │   └── ...
+│   │   ├── archive/                               # 已废止/过期文件（完整保留）
+│   │   │   ├── 2020-001_xxx.pdf
+│   │   │   └── ...
+│   │   └── metadata/                              # 文件级元数据（可选）
+│   │
+│   ├── internal_policy_base/                      # 内部制度底座
+│   │   ├── processed/                             # 结构化JSON（含全文）
+│   │   │   ├── 销售管理制度_v1.0.json
+│   │   │   └── ...
+│   │   ├── archive/                               # 已废止制度（JSON + 原始件）
+│   │   └── originals/                             # 原始文件（PDF/Word，备查）
+│   │
+│   └── unified_knowledge_index/                   # 统一索引目录（共享枢纽）
+│       ├── external_regulatory_index.json         # 外部索引（爬虫+upload 统一写入）
+│       ├── internal_policy_index.json             # 内部索引（扫描+起草 写入）
+│       ├── merged_view.json                       # 合并视图（分类器维护）
+│       ├── version_chains.json                    # 版本链索引（演进关系）
+│       └── audit_log.json                         # 操作审计日志
+│
+├── modules/                                        # 功能模块（含逻辑代码）
+│   ├── regulatory-crawler-trigger/                # 爬虫模块 → 写 external_regulatory_index
+│   ├── supp-upload-handler/                       # supp本地上传处理 → 写 external_regulatory_index
+│   ├── internal-scanner/                          # 内部扫描OCR → 写 internal_policy_index
+│   ├── data-cleaner/                              # 数据清洗（被各采集模块调用）
+│   ├── regulatory-classifier/                     # 分类器 → 读三源，写 merged_view
+│   ├── internal-policy-drafter/                   # 制度起草 → 读 merged_view，写 internal_policy_index
+│   ├── compliance-closure/                        # 合规监控 → 读 merged_view
+│   ├── query-report/                              # 查询报告 → 读 merged_view
+│   └── monitor-daemon/                            # 监控告警 → 监听变化 + 定时任务
+│
+├── tools/                                          # 工具脚本（共享）
+│   ├── ocr/                                       # OCR引擎封装
+│   └── common/                                    # 通用工具（日期、ID生成等）
+│
+└── config/                                         # 配置文件
+    ├── classifier_rules.yaml                      # 分类规则
+    ├── alert_channels.yaml                       # 告警通道配置
+    └── schema/                                    # JSON Schema定义
+        ├── external_index_schema.json
+        ├── internal_index_schema.json
+        └── merged_view_schema.json

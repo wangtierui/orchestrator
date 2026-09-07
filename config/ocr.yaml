@@ -1,0 +1,17 @@
+# config/ocr.yaml — OCR/文档解析引擎配置（R17 落地：消除 Tesseract/PaddleOCR 硬编码路径）
+# 占位符：${REG_ORCH_ROOT} / ${OCR_TESSERACT_BIN} / ${OCR_PADDLE_ROOT} 由 config.loader 以
+# paths.ROOT 与同名环境变量展开（os.path.expandvars 风格，无 shell 默认值语法）。
+# 解析职责属 orchestrator 内部 loader，业务代码不得直接读本文件。
+ocr:
+  engine: auto                 # paddleocr | tesseract | auto（auto=降级链）
+  auto_fallback: true          # paddleocr 不可用 → tesseract
+  paddleocr_root: "${OCR_PADDLE_ROOT:-${REG_ORCH_ROOT}/external/PaddleOCR-3.7.0}"
+  tesseract_bin: "${OCR_TESSERACT_BIN:-${REG_ORCH_ROOT}/external/tesseract/tesseract.exe}"
+  tessdata_dir: "${REG_ORCH_ROOT}/tessdata"
+  pdf_text_layer_first: true   # PDF 有文本层先用 pdfplumber；扫描件才走 OCR
+  render_dpi: 300
+
+document_parse:
+  docx_text: std_lib.scraper_std.common.docx_utils
+  ole2_doc: std_lib.scraper_std.crawler_common   # 旧 .doc 路由
+  structure_extractor: std_lib.scraper_std.document_structure   # 章-条-款-项（R21，P6 落地）
