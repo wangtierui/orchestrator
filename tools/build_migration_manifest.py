@@ -61,7 +61,7 @@ def _latest_cleaned(scrapers_root: str) -> list[dict]:
         cur = by_src.setdefault(src, {})
         if date > cur.get("date", ""):
             cur.update(date=date, **{ext: os.path.join(cleaned_dir, name)})
-    for src, hit in sorted(by_src.items()):
+    for _src, hit in sorted(by_src.items()):
         for ext in ("csv", "jsonl"):
             p = hit.get(ext)
             if p and os.path.exists(p):
@@ -129,7 +129,7 @@ def _docs_md(root: str, prefix: str) -> list[dict]:
     docs_dir = os.path.join(root, "docs")
     if not os.path.isdir(docs_dir):
         return out
-    for dirpath, dirnames, filenames in os.walk(docs_dir):
+    for dirpath, _dirnames, filenames in os.walk(docs_dir):
         for fn in filenames:
             if fn.endswith(".md"):
                 full = os.path.join(dirpath, fn)

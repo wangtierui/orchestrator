@@ -46,4 +46,4 @@ def lint_hardcoded(root: str = ROOT) -> list[tuple[str, int, str]]:
 def run():
     findings = lint_hardcoded()
     return (not findings), {"count": len(findings),
-                            "examples": [f"{f}:{l}: {t}" for f, l, t in findings[:10]]}
+                            "examples": [f"{f}:{line_no}: {text}" for f, line_no, text in findings[:10]]}

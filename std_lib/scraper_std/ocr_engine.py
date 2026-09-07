@@ -54,7 +54,7 @@ import logging
 import os
 import re
 from dataclasses import dataclass, field
-from typing import Any, List, Optional, Sequence
+from typing import Any
 
 LOG = logging.getLogger("scraper_std.ocr_engine")
 
@@ -74,7 +74,7 @@ ENGINE_PADDLE = "paddle"
 ENGINE_TESSERACT = "tesseract"
 ENGINE_TEXT_LAYER = "text_layer"
 ENGINE_NONE = "none"
-OCR_ENGINE_PRIORITY: List[str] = [ENGINE_PADDLE, ENGINE_TESSERACT]
+OCR_ENGINE_PRIORITY: list[str] = [ENGINE_PADDLE, ENGINE_TESSERACT]
 
 # 相邻中文间误插空格清理（OCR 常见噪声，Paddle/Tesseract 均可能引入）
 _CJK_SPACE = re.compile(r"(?<=[\u4e00-\u9fff])\s+(?=[\u4e00-\u9fff])")
@@ -105,10 +105,10 @@ class OCRConfig:
     min_cjk_for_text: int = 10
     # 后处理（ocr_correction）
     enable_correction: bool = True
-    correction_confusion_map: Optional[dict] = None
-    correction_dict_path: Optional[str] = None
-    correction_high_freq: Optional[dict] = None
-    correction_uncertain_dir: Optional[str] = None
+    correction_confusion_map: dict | None = None
+    correction_dict_path: str | None = None
+    correction_high_freq: dict | None = None
+    correction_uncertain_dir: str | None = None
     # 是否允许 PaddleOCR 在初始化/首次推理时联网下载模型（设为 False 可禁用首调用下载）
     allow_model_download: bool = True
     # 是否禁用 oneDNN/MKLDNN。PaddlePaddle 3.3.x 在 CPU 上默认启用 oneDNN 时，PIR 执行器
@@ -135,8 +135,8 @@ class OCRResult:
     engine: str
     success: bool
     mode: str = "ocr"
-    error: Optional[str] = None
-    attempts: List[Any] = field(default_factory=list)
+    error: str | None = None
+    attempts: list[Any] = field(default_factory=list)
 
     @property
     def failed(self) -> bool:
@@ -156,8 +156,8 @@ class PDFExtractResult:
     engine: str
     success: bool
     page_count: int = 0
-    ocr_results: List[OCRResult] = field(default_factory=list)
-    error: Optional[str] = None
+    ocr_results: list[OCRResult] = field(default_factory=list)
+    error: str | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -184,7 +184,7 @@ class PaddleOCREngine(BaseOCREngine):
         self._allow_download = allow_download
         self._disable_mkldnn = disable_mkldnn
         self._instance = None
-        self._import_error: Optional[str] = None
+        self._import_error: str | None = None
 
     def available(self) -> bool:
         if self._import_error:
@@ -226,7 +226,7 @@ class PaddleOCREngine(BaseOCREngine):
     def _to_text(result: Any) -> str:
         """将 PaddleOCR predict 结果（list[dict]）折叠为纯文本。"""
         items = result if isinstance(result, list) else [result]
-        lines: List[str] = []
+        lines: list[str] = []
         for item in items:
             if not isinstance(item, dict):
                 continue
@@ -268,7 +268,7 @@ class TesseractEngine(BaseOCREngine):
         self._tessdata = tessdata
         self._langs = langs
         self._config = config
-        self._import_error: Optional[str] = None
+        self._import_error: str | None = None
 
     def available(self) -> bool:
         if not os.path.exists(self._cmd):
@@ -288,7 +288,7 @@ class TesseractEngine(BaseOCREngine):
     @staticmethod
     def _preprocess(pil_img):
         """灰度 + 自动对比度 + 中值滤波（提升扫描件识别率）。"""
-        from PIL import Image, ImageFilter, ImageOps
+        from PIL import ImageFilter, ImageOps
         gray = ImageOps.grayscale(pil_img).convert("L")
         gray = ImageOps.autocontrast(gray)
         gray = gray.filter(ImageFilter.MedianFilter(3))
@@ -296,8 +296,8 @@ class TesseractEngine(BaseOCREngine):
 
     @staticmethod
     def _normalize_to_pil(img: Any):
-        from PIL import Image
         import numpy as np
+        from PIL import Image
         if isinstance(img, Image.Image):
             return img
         if isinstance(img, np.ndarray):
@@ -326,9 +326,9 @@ class TesseractEngine(BaseOCREngine):
 class UnifiedOCR:
     """统一 OCR 门面：按优先级串联引擎，提供图片 / PDF 识别与降级。"""
 
-    def __init__(self, config: Optional[OCRConfig] = None):
+    def __init__(self, config: OCRConfig | None = None):
         self.config = config or OCRConfig()
-        self._engines: List[BaseOCREngine] = [
+        self._engines: list[BaseOCREngine] = [
             PaddleOCREngine(
                 self.config.paddle_init,
                 allow_download=self.config.allow_model_download,
@@ -352,7 +352,6 @@ class UnifiedOCR:
 
     def warmup(self) -> OCRResult:
         """预加载默认（最高优先级）引擎；用 1x1 空白图触发模型下载/加载。"""
-        from PIL import Image
         import numpy as np
         blank = np.zeros((8, 8, 3), dtype=np.uint8)
         return self.recognize_image(blank)
@@ -360,8 +359,8 @@ class UnifiedOCR:
     # -- 图片 OCR -----------------------------------------------------------
     def recognize_image(self, img: Any) -> OCRResult:
         """对单张图片按优先级做 OCR，返回 OCRResult（含降级记录）。"""
-        attempts: List[Any] = []
-        last_err: Optional[str] = None
+        attempts: list[Any] = []
+        last_err: str | None = None
         for engine in self._engines:
             if not engine.available():
                 attempts.append((engine.name, False, "engine_unavailable"))
@@ -420,7 +419,7 @@ class UnifiedOCR:
 
     # -- PDF 提取 -----------------------------------------------------------
     def extract_pdf(self, path: str, *, force_ocr: bool = False,
-                    dpi: Optional[int] = None) -> PDFExtractResult:
+                    dpi: int | None = None) -> PDFExtractResult:
         """PDF 文本提取：文本层优先 → 扫描页走 OCR 引擎链。
 
         返回 PDFExtractResult；source="text_layer" 表示直接采用文本层（未走 OCR），
@@ -454,13 +453,13 @@ class UnifiedOCR:
                 page_count=0, error=f"PyMuPDF unavailable: {e}",
             )
         doc = fitz.open(path)
-        page_texts: List[str] = []
-        ocr_results: List[OCRResult] = []
+        page_texts: list[str] = []
+        ocr_results: list[OCRResult] = []
         try:
             for page in doc:
                 pix = page.get_pixmap(dpi=render_dpi)
-                from PIL import Image
                 import numpy as np
+                from PIL import Image
                 pil = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
                 arr = np.asarray(pil)
                 res = self.recognize_image(arr)
@@ -513,10 +512,10 @@ class UnifiedOCR:
 # ---------------------------------------------------------------------------
 # 便捷单例
 # ---------------------------------------------------------------------------
-_default_ocr: Optional[UnifiedOCR] = None
+_default_ocr: UnifiedOCR | None = None
 
 
-def get_ocr(config: Optional[OCRConfig] = None) -> UnifiedOCR:
+def get_ocr(config: OCRConfig | None = None) -> UnifiedOCR:
     """获取（惰性创建）进程内共享的 UnifiedOCR 单例，复用 PaddleOCR 实例。"""
     global _default_ocr
     if _default_ocr is None or config is not None:
@@ -524,12 +523,12 @@ def get_ocr(config: Optional[OCRConfig] = None) -> UnifiedOCR:
     return _default_ocr
 
 
-def recognize_image(img: Any, config: Optional[OCRConfig] = None) -> OCRResult:
+def recognize_image(img: Any, config: OCRConfig | None = None) -> OCRResult:
     """模块级便捷函数：对单张图片做 OCR。"""
     return get_ocr(config).recognize_image(img)
 
 
-def extract_pdf(path: str, config: Optional[OCRConfig] = None, *,
+def extract_pdf(path: str, config: OCRConfig | None = None, *,
                 force_ocr: bool = False) -> PDFExtractResult:
     """模块级便捷函数：PDF 文本提取（文本层优先 + OCR 引擎链降级）。"""
     return get_ocr(config).extract_pdf(path, force_ocr=force_ocr)

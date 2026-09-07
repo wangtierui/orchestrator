@@ -35,8 +35,7 @@ from .metrics import MetricsCollector
 from .ocr_correction import JiebaDict, correct_ocr_text, load_confusion_map
 from .schema_validation import NullThresholdMonitor, validate_record
 from .sentence_split import acceptance_check, repair_text
-from .unified_schema import (CORE_NULL_FIELDS, CSV_COLUMNS, MAPPERS,
-                             UNIFIED_SCHEMA)
+from .unified_schema import CORE_NULL_FIELDS, CSV_COLUMNS, MAPPERS, UNIFIED_SCHEMA
 
 LOG = logging.getLogger("scraper_std.pipeline")
 

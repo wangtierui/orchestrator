@@ -18,8 +18,8 @@ import os
 import signal
 import threading
 import time
-from typing import Any
 from collections.abc import Callable
+from typing import Any
 
 LOG = logging.getLogger("scraper_std.checkpoint")
 

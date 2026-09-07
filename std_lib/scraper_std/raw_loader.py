@@ -19,7 +19,8 @@ from __future__ import annotations
 
 import json
 import os
-from typing import Any, Iterator
+from collections.abc import Iterator
+from typing import Any
 
 # 五源 raw 文件相对路径（相对 regulatory_scrapers/）
 RAW_FILES: dict[str, str] = {

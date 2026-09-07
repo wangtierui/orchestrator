@@ -208,7 +208,6 @@ def http_request(method, url, headers=None, session=None, allowed_statuses=None,
     kwargs.setdefault("verify", VERIFY_SSL)
 
     limiter = _get_limiter()
-    requester = session if session is not None else requests
 
     last_err = None
     for attempt in range(1, MAX_RETRIES + 1):

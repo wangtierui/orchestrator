@@ -55,7 +55,7 @@ def standard_filename(
     pub_date: str,
     ext: str,
     file_type: str = "附件",
-    seq: Optional[int] = None,
+    seq: int | None = None,
     url: str = "",
     max_len: int = _DEFAULT_MAX_LEN,
 ) -> str:

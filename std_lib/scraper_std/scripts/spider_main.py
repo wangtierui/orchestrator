@@ -11,6 +11,11 @@ spider_main —— 爬虫启动入口核心（单一事实源，对应四源 scr
     def main(argv=None):
         return run_spider_main(_PROJECT_ROOT, argv)
 本模块不依赖自身文件位置，project_root 由调用方显式传入，保证四源行为一致。
+
+Schedule 元数据（2026-08-27 固化，显式声明供编排侧参考）：
+    schedule_type=cron_weekly, cron="0 1 * * 2"（每周二 01:00, Asia/Shanghai）,
+    pid_lock=True（PID 锁防陈旧）, policy=incremental_diff（绝不 WAF 全量重抓）,
+    pipeline=run_clean_pipeline, timeliness=timeliness_review
 """
 from __future__ import annotations
 
@@ -26,21 +31,6 @@ def run_spider_main(project_root: str, argv: list = None) -> int:
     argv: 透传给被委托模块 main/run 的参数列表；None 表示无参调用。
     """
     _PROJECT_ROOT = project_root
-
-    # ============ Schedule 元数据（调度约定显式声明，2026-08-27 固化） ============
-    SCHEDULE = {
-        "project": os.path.basename(_PROJECT_ROOT).replace("_regulations_scraper", ""),
-        "schedule_type": "cron_weekly",
-        "cron": "0 1 * * 2",            # 每周二 01:00（周调度约定）
-        "timezone": "Asia/Shanghai",
-        "enabled": True,
-        "pid_lock": True,               # 使用 PID-based lock 防陈旧锁
-        "policy": "incremental_diff",   # 增量 diff 更新；拒绝触发 WAF 的全量列表重抓
-        "pipeline": "run_clean_pipeline",       # 统一清洗管道
-        "timeliness": "timeliness_review",      # 效力检查统一入口
-        "note": "定时抓取源（gov 官网法规库）",
-    }
-    # ==============================================================================
 
     def _locate_scraper_module() -> str:
         """在项目根查找主爬虫模块（scraper.py 或 *_scraper.py）。"""

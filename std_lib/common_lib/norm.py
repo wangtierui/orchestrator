@@ -14,17 +14,21 @@ from __future__ import annotations
 import re
 
 _NULL_TOKENS = {"", "n/a", "na", "无", "-", "none", "null", "未注明", "不详"}
+# ASCII null 占位大小写不敏感判定（N/A、Null、NONE 等）
+_ASCII_NULL_LOWER = {"n/a", "na", "none", "null", "n.a."}
 _DOC_CLEAN = re.compile(r"[〔\[\]（）()〕\s]")
 _TITLE_SUFFIX = re.compile(r"[（(](已废止|已失效|试行|修订)[）)]\s*$")
 _TITLE_PUNCT = re.compile(r'[\s（）()、《》"\'，。：:；;,.!！?？、_/-]')
 
 
 def norm_docno(docno) -> str:
-    """文号归一：去除括号/空白 → 返回纯串（去掉尾部'号'）。"""
+    """文号归一：去除括号/空白 → 返回纯串（去掉尾部'号'）。空/N/A 类占位返回空串。"""
     if not docno:
         return ""
     s = str(docno).strip()
     if s in _NULL_TOKENS:
+        return ""
+    if s.lower() in _ASCII_NULL_LOWER:
         return ""
     s = _DOC_CLEAN.sub("", s)
     return s.rstrip("号")

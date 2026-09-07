@@ -24,9 +24,9 @@ import shutil
 import subprocess
 import threading
 import time
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any
-from collections.abc import Callable
 
 # ---------------------------------------------------------------- 状态常量
 VALID, AMENDED, REPEALED, EXPIRED, PENDING, UNCERTAIN = (

@@ -67,5 +67,5 @@ def run():
             continue
     passed = not findings
     detail = {"count": len(findings),
-              "examples": [f"{f}:{l}: {t}" for f, l, t in findings[:10]]}
+              "examples": [f"{f}:{line_no}: {text}" for f, line_no, text in findings[:10]]}
     return passed, detail

@@ -77,7 +77,7 @@ def is_header_row(row: list[str], prev_header: list[str] | None = None) -> bool:
         if filled / max(1, len(cells)) >= 0.5:
             return True
     if prev_header is not None and row and prev_header:
-        same = sum(1 for a, b in zip(cells, prev_header) if a == b)
+        same = sum(1 for a, b in zip(cells, prev_header, strict=False) if a == b)
         if same / max(1, min(len(cells), len(prev_header))) >= 0.7:
             return True
     return False

@@ -25,7 +25,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 
 LOG = logging.getLogger("crawler_common")
 
@@ -70,9 +70,9 @@ def robust_get(
     retries: int = 4,
     min_delay: float = 0.8,
     max_delay: float = 1.6,
-    referer: Optional[str] = None,
-    extra_headers: Optional[Dict[str, str]] = None,
-) -> Tuple[Optional[int], Any]:
+    referer: str | None = None,
+    extra_headers: dict[str, str] | None = None,
+) -> tuple[int | None, Any]:
     """
     带反爬策略的 GET 请求，返回 (status, content)。
 
@@ -134,7 +134,7 @@ def robust_get(
     return None, last_err
 
 
-def _backoff_wait(attempt: int, retry_after: Optional[str]) -> float:
+def _backoff_wait(attempt: int, retry_after: str | None) -> float:
     """退避时长：优先 Retry-After（秒），否则 2**attempt 上限 16s，加随机抖动。"""
     if retry_after and retry_after.isdigit():
         return float(int(retry_after))
@@ -258,7 +258,7 @@ def extract_document_text(
     *,
     enable_ocr: bool = False,
     ocr_timeout: int = 60,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     抽取文档内部文本，返回结构化结果：
       {
@@ -272,7 +272,7 @@ def extract_document_text(
     """
     kind = sniff_kind(data, name)
     sha = sha256_of(data)
-    rec: Dict[str, Any] = {
+    rec: dict[str, Any] = {
         "text": "",
         "kind": kind,
         "extracted": False,
@@ -306,13 +306,13 @@ def extract_document_text(
     return rec
 
 
-def _merge(rec: Dict[str, Any], sub: Dict[str, Any]) -> Dict[str, Any]:
+def _merge(rec: dict[str, Any], sub: dict[str, Any]) -> dict[str, Any]:
     rec.update(sub)
     rec["garble_ratio"] = garble_ratio(sub.get("text", ""))
     return rec
 
 
-def _extract_pdf(data: bytes, enable_ocr: bool, ocr_timeout: int) -> Dict[str, Any]:
+def _extract_pdf(data: bytes, enable_ocr: bool, ocr_timeout: int) -> dict[str, Any]:
     text = ""
     # 优先 pypdf（轻量）
     try:
@@ -372,7 +372,7 @@ def _pdf_lib_available() -> bool:
         return False
 
 
-def _extract_docx(data: bytes) -> Dict[str, Any]:
+def _extract_docx(data: bytes) -> dict[str, Any]:
     # 优先 python-docx
     try:
         import docx
@@ -385,7 +385,6 @@ def _extract_docx(data: bytes) -> Dict[str, Any]:
     # 零依赖回退：zipfile + word/document.xml
     try:
         import zipfile
-        from xml.etree import ElementTree as ET
         with zipfile.ZipFile(__import__("io").BytesIO(data)) as z:
             xml = z.read("word/document.xml").decode("utf-8", "replace")
         texts = re.findall(r"<w:t[^>]*>(.*?)</w:t>", xml, re.S)
@@ -408,7 +407,7 @@ def _docx_lib_available() -> bool:
         return False
 
 
-def _extract_xlsx(data: bytes) -> Dict[str, Any]:
+def _extract_xlsx(data: bytes) -> dict[str, Any]:
     try:
         import openpyxl
         wb = openpyxl.load_workbook(__import__("io").BytesIO(data), data_only=True, read_only=True)
@@ -449,7 +448,7 @@ def _xlsx_lib_available() -> bool:
         return False
 
 
-def _extract_doc_via_wps(data: bytes, timeout: float = 45.0) -> Optional[str]:
+def _extract_doc_via_wps(data: bytes, timeout: float = 45.0) -> str | None:
     """
     WPS COM 提取旧版 .doc 文本（LibreOffice 缺失/未接线时的替代路径，
     2026-08-20 实测验证：KWPS.Application 提取中文正文有效）。
@@ -555,7 +554,7 @@ def _extract_doc_via_wps(data: bytes, timeout: float = 45.0) -> Optional[str]:
                 pass
 
 
-def _extract_ole2(data: bytes) -> Dict[str, Any]:
+def _extract_ole2(data: bytes) -> dict[str, Any]:
     """旧版 .xls / .doc（OLE2 复合文档）。优先 xlrd（xls）；doc 走 WPS COM 优先，兜底 olefile。
     注：Excel 判定仅用精确的 b"Workbook" 魔数——b"Book" 过宽，.doc 二进制流常误命中。"""
     # 先判断是否 Excel（仅精确魔数）
@@ -643,7 +642,7 @@ def _run_ocr(data: bytes, timeout: int) -> str:
         res = get_ocr().extract_pdf(tmp, force_ocr=True)
         return res.text or ""
     except Exception as e:
-        raise RuntimeError(f"OCR 执行失败: {e}")
+        raise RuntimeError(f"OCR 执行失败: {e}") from e
     finally:
         try:
             os.remove(tmp)
@@ -703,7 +702,7 @@ def build_attachment_record(
     extracted: bool = False,
     extract_status: str = "unsupported",
     needs_ocr: bool = False,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     构造与 nfra 质量基线一致的标准化附件记录，便于四项目审计追溯统一。
     """

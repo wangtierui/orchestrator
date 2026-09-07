@@ -105,7 +105,8 @@ import re
 import tempfile
 import time
 import urllib.parse
-from typing import Any, Callable, Optional
+from collections.abc import Callable
+from typing import Any
 
 __all__ = [
     "OfflineMiss",
@@ -167,7 +168,7 @@ class ResponseCache:
         root: str,
         *,
         offline: bool = False,
-        ttl: Optional[int] = None,
+        ttl: int | None = None,
     ) -> None:
         self.root = root
         self.offline = offline
@@ -185,7 +186,7 @@ class ResponseCache:
         return os.path.exists(self.path(endpoint, params))
 
     # —— 读写 ——
-    def get(self, endpoint: str, params: dict) -> Optional[dict]:
+    def get(self, endpoint: str, params: dict) -> dict | None:
         p = self.path(endpoint, params)
         if not os.path.exists(p):
             if self.offline:
@@ -198,7 +199,7 @@ class ResponseCache:
             except OSError:
                 return None
         try:
-            with open(p, "r", encoding="utf-8") as fh:
+            with open(p, encoding="utf-8") as fh:
                 return json.load(fh)
         except Exception:
             # 缓存损坏 → 视为未命中（由调用方重新请求）
@@ -220,7 +221,7 @@ class ResponseCache:
         params: dict,
         fetcher: Callable[[dict], Any],
         *,
-        offline: Optional[bool] = None,
+        offline: bool | None = None,
     ) -> Any:
         """高层便捷：命中即返回；否则调用 fetcher(params) 并 put 后返回。
 
@@ -230,7 +231,7 @@ class ResponseCache:
         p = self.path(endpoint, params)
         if os.path.exists(p):
             try:
-                with open(p, "r", encoding="utf-8") as fh:
+                with open(p, encoding="utf-8") as fh:
                     return json.load(fh)
             except Exception:
                 pass  # 损坏则重新获取
@@ -259,7 +260,7 @@ class TextResponseCache:
         root: str,
         *,
         offline: bool = False,
-        ttl: Optional[int] = None,
+        ttl: int | None = None,
     ) -> None:
         self.root = root
         self.offline = offline
@@ -277,7 +278,7 @@ class TextResponseCache:
         return os.path.exists(self.path(endpoint, params))
 
     # —— 读写 ——
-    def get(self, endpoint: str, params: dict) -> Optional[str]:
+    def get(self, endpoint: str, params: dict) -> str | None:
         p = self.path(endpoint, params)
         if not os.path.exists(p):
             if self.offline:
@@ -290,7 +291,7 @@ class TextResponseCache:
             except OSError:
                 return None
         try:
-            with open(p, "r", encoding="utf-8") as fh:
+            with open(p, encoding="utf-8") as fh:
                 return fh.read()
         except Exception:
             # 缓存损坏 → 视为未命中（由调用方重新请求）
@@ -324,7 +325,7 @@ class TextResponseCache:
         params: dict,
         fetcher: Callable[[dict], str],
         *,
-        offline: Optional[bool] = None,
+        offline: bool | None = None,
     ) -> str:
         """高层便捷：命中即返回文本；否则调用 fetcher(params) 并 put 后返回。
 
@@ -334,7 +335,7 @@ class TextResponseCache:
         p = self.path(endpoint, params)
         if os.path.exists(p):
             try:
-                with open(p, "r", encoding="utf-8") as fh:
+                with open(p, encoding="utf-8") as fh:
                     return fh.read()
             except Exception:
                 pass  # 损坏则重新获取
@@ -429,7 +430,7 @@ class SourceCache:
         self.blobs = BlobCache(os.path.join(root, source, "attachments"))
 
 
-def get_source_cache(source: str, root: Optional[str] = None) -> SourceCache:
+def get_source_cache(source: str, root: str | None = None) -> SourceCache:
     """工厂：按 source 标识获取统一缓存（默认根 ``regulatory_scrapers/cache``）。
 
     source 取值：``gov`` / ``mof`` / ``nfra`` / ``pbc`` / ``supp``（小写）。

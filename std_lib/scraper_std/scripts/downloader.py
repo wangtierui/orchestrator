@@ -15,10 +15,10 @@ from __future__ import annotations
 
 from ..attachments import (  # noqa: F401
     download_and_extract,
-    pick_body_doc,
     is_attachment_url,
+    pick_body_doc,
 )
-from ..crawler_common import sniff_kind, safe_filename, sha256_of  # noqa: F401
+from ..crawler_common import safe_filename, sha256_of, sniff_kind  # noqa: F401
 from ..http import AdaptiveHttpClient  # noqa: F401
 
 

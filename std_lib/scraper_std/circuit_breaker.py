@@ -129,7 +129,7 @@ if __name__ == "__main__":  # 离线自检
     f = Fuse(detector=AnchorDetector(["#never-exists"]), max_miss=3,
              snapshot_dir=tempfile.mkdtemp())
     try:
-        for i in range(3):
+        for _ in range(3):
             f.check("<html></html>")
         raise AssertionError("should have tripped")
     except RuntimeError as e:

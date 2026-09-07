@@ -20,8 +20,8 @@ import logging
 import os
 import re
 import sys
-from typing import Any
 from collections.abc import Callable
+from typing import Any
 
 # R5（2026-09-08）：受控枚举唯一事实源上收为 config/enums.py，本模块 re-export。
 # 确保仓库根在 sys.path（config 为顶级包）：脚本直接运行本模块时自动插入。
@@ -37,8 +37,8 @@ from config.enums import (  # noqa: E402,F401
 )
 
 from .doc_number import (
-    extract_from_title,
     extract_from_body,
+    extract_from_title,
     in_abolish_context,
     looks_like_doc_number,
     normalize_doc_number,

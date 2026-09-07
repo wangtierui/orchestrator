@@ -72,6 +72,21 @@ from .text_utils import (
     sanitize_filename,
 )
 
+__all__ = [
+    "CacheManager", "get_cache",
+    "chinese_to_int", "int_to_chinese",
+    "add_common_cli_args", "add_no_cache_arg", "add_output_arg", "add_rate_limit_arg",
+    "DEFAULT_USER_AGENT", "MAX_BACKOFF", "MAX_RETRIES", "RETRYABLE_STATUS_CODES", "VERIFY_SSL",
+    "extract_article_number", "extract_paragraphs_from_docx", "is_article_line",
+    "match_article_query", "split_into_articles",
+    "read_jsonl", "render_markdown_report", "unique_path", "write_csv", "write_json",
+    "write_jsonl", "write_text",
+    "setup_logger",
+    "RateLimitConfig", "RateLimitMode", "SmartRateLimiter", "http_request", "init_limiter",
+    "clean_text", "create_crawler_headers", "decode_filename_from_url", "ensure_dir",
+    "extract_year", "format_request_exception", "redact_url", "sanitize_filename",
+]
+
 # ---------------------------------------------------------------------------
 # Backward-compatible aliases (old private names still work)
 # ---------------------------------------------------------------------------

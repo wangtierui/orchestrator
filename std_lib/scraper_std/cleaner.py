@@ -236,16 +236,16 @@ def is_table_block(text: str) -> bool:
     """
     if not text:
         return False
-    lines = [l.strip() for l in text.split("\n") if l.strip()]
+    lines = [ln.strip() for ln in text.split("\n") if ln.strip()]
     if not lines:
         return False
-    if any(any(kw in l for kw in _TABLE_HEADER_KW) for l in lines[:5]):
+    if any(any(kw in ln for kw in _TABLE_HEADER_KW) for ln in lines[:5]):
         return True
     if text.count("|") >= 2 * len(lines) and len(lines) >= 2:
         return True
-    digit_rows = sum(1 for l in lines if re.search(r"\d", l))
+    digit_rows = sum(1 for ln in lines if re.search(r"\d", ln))
     if digit_rows / len(lines) >= 0.6 and len(lines) >= 3:
-        lens = [len(l) for l in lines]
+        lens = [len(ln) for ln in lines]
         spread = (max(lens) - min(lens)) / max(1, sum(lens) / len(lens))
         if spread < 0.35:
             return True

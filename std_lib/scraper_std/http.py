@@ -301,7 +301,8 @@ class AdaptiveHttpClient:
                         continue
                     if status in _NO_RETRY_STATUS or status >= 400:
                         return False, f"HTTP {status}", 0
-                    import hashlib, os
+                    import hashlib
+                    import os
                     sha = hashlib.sha256()
                     size = 0
                     tmp = dest_path + ".part"
