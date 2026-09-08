@@ -150,6 +150,47 @@ def with_pid_lock(lock_path, max_age_sec=3 * 3600):
     return PidFileLock(lock_path, max_age_sec=max_age_sec)
 
 
+class WinFileLock:
+    """msvcrt 阻塞式文件锁（Windows，兼容 rfn/registry 原 _lock 语义）。
+
+    P4 收口：registry 的 msvcrt.locking 直用改为本类，使 gate_no_duplicate_libs
+    不再检到业务仓直用 msvcrt。与原实现一致为「阻塞直到获取」：
+      lock = WinFileLock(lock_file); lock.acquire(); try:... finally: lock.release()
+    """
+
+    def __init__(self, lock_path: str):
+        self.lock_path = lock_path
+        self._fh = None
+
+    def acquire(self):
+        import msvcrt
+        os.makedirs(os.path.dirname(os.path.abspath(self.lock_path)), exist_ok=True)
+        self._fh = open(self.lock_path, "a+")
+        msvcrt.locking(self._fh.fileno(), msvcrt.LK_LOCK, 1)
+        return self._fh
+
+    def release(self):
+        import msvcrt
+        if self._fh is None:
+            return
+        try:
+            self._fh.seek(0)
+            msvcrt.locking(self._fh.fileno(), msvcrt.LK_UNLCK, 1)
+        finally:
+            try:
+                self._fh.close()
+            finally:
+                self._fh = None
+
+    def __enter__(self):
+        self.acquire()
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        self.release()
+        return False
+
+
 def atomic_write_csv_dict(path, rows, fieldnames, encoding="utf-8-sig"):
     """原子写 DictWriter CSV（UTF-8 BOM）。registry/consolidate 收口专用（P2 扩展，旧仓无）。"""
     import csv

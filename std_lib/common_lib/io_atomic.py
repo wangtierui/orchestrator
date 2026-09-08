@@ -20,7 +20,7 @@ from std_lib.common_lib.fs_lock import (  # noqa: F401
 )
 
 __all__ = ["atomic_write_text", "atomic_write_json", "atomic_write_csv_dict",
-           "sha256_file", "sha256_bytes", "audit_append"]
+           "sha256_file", "sha256_bytes", "fingerprint", "audit_append"]
 
 
 def sha256_file(path: str, chunk: int = 1 << 20) -> str:
@@ -32,6 +32,17 @@ def sha256_file(path: str, chunk: int = 1 << 20) -> str:
                 break
             h.update(b)
     return h.hexdigest()
+
+
+def fingerprint(content=None, path=None) -> str:
+    """文件指纹：正文内容或文件路径的 sha256（收口 rfn/registry.fingerprint，语义一致）。
+
+    path 优先（读文件）；否则对 content 字符串 utf-8 编码取指纹。空输入返回空串。
+    """
+    if path:
+        return sha256_file(path)
+    data = (content or "").encode("utf-8")
+    return sha256_bytes(data)
 
 
 def sha256_bytes(data: bytes) -> str:
