@@ -22,6 +22,10 @@ ALLOWED_DATA_SUBDIRS = {
     "regulatory_scrapers": {"cleaned"},
     "internal_policy_base": {"originals", "processed"},
 }
+# docs/ 允许子目录（报告产物目录等）：classifier docs/reports（R9 主题报告输出）
+ALLOWED_DOCS_SUBDIRS = {
+    "regulatory_classifier": {"reports"},
+}
 
 
 def run():
@@ -34,12 +38,15 @@ def run():
             checked.append(f"{name}: 未创建")
             continue
         allowed = ALLOWED_DATA_SUBDIRS.get(name, set())
+        allowed_docs = ALLOWED_DOCS_SUBDIRS.get(name, set())
         docs = os.path.join(mod_root, "docs")
         if os.path.isdir(docs):
             subdirs = [d for d in os.listdir(docs)
                        if os.path.isdir(os.path.join(docs, d))]
-            if subdirs:
-                problems.append(f"{name}/docs 存在子目录: {sorted(subdirs)}")
+            bad_docs = [d for d in subdirs if d not in allowed_docs]
+            if bad_docs:
+                problems.append(f"{name}/docs 存在子目录: {sorted(bad_docs)}"
+                                f"（允许 {sorted(allowed_docs) or '无'}）")
         data = os.path.join(mod_root, "data")
         if os.path.isdir(data):
             subdirs = [d for d in os.listdir(data)
