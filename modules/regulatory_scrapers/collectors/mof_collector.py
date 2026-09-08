@@ -70,10 +70,11 @@ import urllib.parse
 import urllib.request
 from datetime import UTC, datetime
 
-# 共享加固工具层（UA 池、文档文本抽取、魔数纠正命名等）
+# 共享加固工具层（UA 池、文档文本抽取、魔数纠正命名、表格结构化）
 try:
     from std_lib.scraper_std.crawler_common import USER_AGENTS as CC_USER_AGENTS
     from std_lib.scraper_std.crawler_common import extract_document_text
+    from std_lib.scraper_std.table_recovery import structured_table_fields
 except ImportError:  # pragma: no cover
     CC_USER_AGENTS = [
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -83,6 +84,8 @@ except ImportError:  # pragma: no cover
         return {"text": "", "kind": "unknown", "extracted": False,
                 "extract_status": "library_missing", "sha256": "",
                 "needs_ocr": False, "garble_ratio": 0.0, "size_bytes": len(data)}
+    def structured_table_fields(data, name="", *, kind=None):
+        return {}
 
 # --------------------------------------------------------------------------- #
 # 配置
@@ -454,6 +457,11 @@ def download_attachment(att, law_id, outdir, rate, timeout=60, max_retries=6):
                 att["sha256"] = ext.get("sha256", "")
                 att["needs_ocr"] = ext.get("needs_ocr", False)
                 att["garble_ratio"] = ext.get("garble_ratio", 0.0)
+                try:
+                    # 表格结构化（2026-09-08 仿 supp 打通）：xlsx/docx/doc 附件表 → att 表键
+                    att.update(structured_table_fields(data, fname))
+                except Exception:
+                    pass  # 表格结构化失败不影响文本/落盘
             except Exception as e:
                 logger.warning("附件文本抽取异常 %s：%s", att.get("file_url"), e)
                 att["extracted"] = False
@@ -543,6 +551,16 @@ def build_entry(rec, detail, category_id, category_name, fetch_detail_enabled, a
         "fetch_time": datetime.now(UTC).isoformat(),
         "attachments": attachments or [],
         "attachment_count": len(attachments or []),
+        "attachment_content": "\n\n".join(
+            a.get("text") for a in (attachments or []) if a.get("text")
+        ),
+        "table_structured": [t for a in (attachments or [])
+                             for t in (a.get("table_structured") or [])] or [],
+        "table_raw_text": "\n\n".join(
+            a.get("table_raw_text") for a in (attachments or []) if a.get("table_raw_text")
+        ),
+        "table_recovery_method": "structured" if any(
+            a.get("table_structured") for a in (attachments or [])) else "",
         "attachment_names": "; ".join(
             (a.get("file_name") or "") for a in (attachments or [])
         ),

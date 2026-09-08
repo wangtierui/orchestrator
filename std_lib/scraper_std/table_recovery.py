@@ -233,6 +233,29 @@ def extract_tables_from_doc(
     }
 
 
+def structured_table_fields(data: bytes, name: str = "", *, kind: str | None = None) -> dict[str, Any]:
+    """附件表格抽取 → raw 记录表格键（2026-09-08 四源仿 supp 统一接入样板）。
+
+    内部调用 ``extract_tables_from_doc``；仅当解析出结构化表格（recovery_method=="structured"
+    且 table_count>0）时返回可回填 raw 的键：
+      {"table_structured": [[…]], "table_raw_text": str, "table_recovery_method": "structured"}
+    无结构化表格或异常 → 返回 {}（采集侧仅在非空时回填，保持无表格记录零表键一致；
+    与 map_gov/mof/nfra/pbc 的透传收口配套：raw 有键 → cleaned 39 列表格列带出）。
+    """
+    try:
+        r = extract_tables_from_doc(data, name, kind=kind)
+    except Exception as e:  # noqa: BLE001  表格抽取失败不阻断附件文本/正文
+        LOG.warning("structured_table_fields %s: %s", name, e)
+        return {}
+    if r.get("recovery_method") != "structured" or not r.get("tables"):
+        return {}
+    return {
+        "table_structured": r["tables"],
+        "table_raw_text": r.get("table_raw_text", ""),
+        "table_recovery_method": r.get("recovery_method", "structured"),
+    }
+
+
 def _tables_to_raw_text(tables: list[list[list[str]]], sep: str = "|") -> str:
     """结构化表格 → 可读文本（| 分隔，数据字典注明分隔符）。"""
     chunks = []

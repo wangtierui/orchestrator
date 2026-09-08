@@ -62,6 +62,7 @@ import urllib.request
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 from std_lib.scraper_std.cache_store import source_cache_root  # noqa: E402
+from std_lib.scraper_std.table_recovery import structured_table_fields  # noqa: E402
 
 CACHE = source_cache_root("nfra")  # 单一物理缓存根（modules/regulatory_scrapers/cache/nfra）
 ATT_DIR = os.path.join(CACHE, "attachments")
@@ -550,9 +551,10 @@ def process_attachment(doc_id, att, att_root, args, cooldown_state, ex=None):
             entry["char_count"] = len(text)
             entry["text_file"] = rel_txt
             entry["ocr_status"] = "skipped_done"
-            # 从既有 manifest 条目恢复关键统计字段（page_count/sha256/quality/source_saved）
+            # 从既有 manifest 条目恢复关键统计字段（page_count/sha256/quality/source_saved + 表格键）
             if ex:
-                for k in ("page_count", "sha256", "quality", "source_saved"):
+                for k in ("page_count", "sha256", "quality", "source_saved",
+                          "table_structured", "table_raw_text", "table_recovery_method"):
                     if k in ex:
                         entry[k] = ex[k]
             return entry, True
@@ -615,6 +617,11 @@ def process_attachment(doc_id, att, att_root, args, cooldown_state, ex=None):
             "text_file": rel_txt,
             "source_saved": True,
         })
+        # 表格结构化（2026-09-08 仿 supp 打通）：xlsx/docx 附件表 → manifest entry 表键
+        try:
+            entry.update(structured_table_fields(data, name))
+        except Exception:
+            pass  # 表格抽取失败不影响文本/落盘/续跑
         cooldown_state["consecutive"] = 0
         return entry, True
     except Exception as e:

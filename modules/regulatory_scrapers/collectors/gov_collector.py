@@ -613,6 +613,14 @@ class XzfgkScraper:
             d["attachments"] = atts
             d["attachment_text"] = att_text
             d["attachment_count"] = len(atts)
+            # 表格结构化聚合到条目顶层（附件 rec 表字段 → 顶层表键，map_gov 透传 cleaned）
+            _tbls = [t for a in atts for t in (a.get("table_structured") or [])]
+            if _tbls:
+                d["table_structured"] = _tbls
+                d["table_recovery_method"] = "structured"
+                _raws = [a.get("table_raw_text") for a in atts if a.get("table_raw_text")]
+                if _raws:
+                    d["table_raw_text"] = "\n\n".join(_raws)
         except Exception as e:
             LOG.warning("附件抓取异常 %s：%s", url, e)
             d.setdefault("attachments", [])

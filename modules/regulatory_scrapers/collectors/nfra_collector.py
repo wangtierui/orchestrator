@@ -394,6 +394,10 @@ def load_attachments(doc_id):
             except Exception:
                 text = ""
         item["text"] = text
+        # 表格结构化透传（2026-09-08 仿 supp 打通）：manifest entry 表键 → 附件 item
+        for k in ("table_structured", "table_raw_text", "table_recovery_method"):
+            if k in e:
+                item[k] = e[k]
         out.append(item)
     return out
 
@@ -537,7 +541,16 @@ def scrape(args):
                 errors.append({"doc_id": did, "title": base["title"], "error": str(e)})
                 print("      [ERR] docId=%s 详情失败: %s" % (did, e), flush=True)
         if rec:
-            rec["attachments"] = load_attachments(did)
+            _atts = load_attachments(did)
+            rec["attachments"] = _atts
+            # 附件表格结构化聚合到条目顶层（map_nfra 透传 cleaned 39 列表格列）
+            _tbls = [t for a in _atts for t in (a.get("table_structured") or [])]
+            if _tbls:
+                rec["table_structured"] = _tbls
+                rec["table_recovery_method"] = "structured"
+                _raws = [a.get("table_raw_text") for a in _atts if a.get("table_raw_text")]
+                if _raws:
+                    rec["table_raw_text"] = "\n\n".join(_raws)
             records.append(rec)
         print("      进度 %d/%d  docId=%s  %s" % (idx, len(ordered_ids), did,
               rec["title"][:30] if rec else "?"), flush=True)

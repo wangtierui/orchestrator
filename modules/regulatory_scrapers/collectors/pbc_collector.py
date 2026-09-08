@@ -62,8 +62,12 @@ from datetime import datetime
 # 二进制附件（binary=True）已落盘 ATTACHMENTS_DIR，不经文本缓存。
 try:
     from std_lib.scraper_std.cache_store import OfflineMiss, bind_source_cache
+    from std_lib.scraper_std.table_recovery import structured_table_fields
 except ImportError:  # pragma: no cover
     from std_lib.scraper_std.cache_store import OfflineMiss, bind_source_cache
+
+    def structured_table_fields(data, name="", *, kind=None):  # pragma: no cover
+        return {}
 
 _RESP_TEXT = None  # TextResponseCache 实例；None 表示未启用缓存
 _OfflineMiss = OfflineMiss  # 兼容别名
@@ -687,6 +691,9 @@ def scrape_category(cat, fetcher, args, done_urls, existing_map=None):
                                 if conv and os.path.exists(conv):
                                     with open(conv, "rb") as cf:
                                         parsed = extract_docx_text(cf.read())
+                        # 表格结构化（2026-09-08 仿 supp 打通）：xlsx/docx 附件表 → rec 表键
+                        if ft in ("docx", "xls", "xlsx"):
+                            rec.update(structured_table_fields(bdata, fname))
                     except Exception as e:
                         rec["error"] = ("附件正文解析异常：%s: %s；已保存原始文件供下载"
                                         % (type(e).__name__, e))

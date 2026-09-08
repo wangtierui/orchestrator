@@ -47,6 +47,7 @@ from std_lib.scraper_std.crawler_common import (
     safe_filename,
     sniff_kind,
 )
+from std_lib.scraper_std.table_recovery import structured_table_fields  # noqa: E402
 
 LOG = logging.getLogger("gov_attachments")
 
@@ -143,6 +144,9 @@ def fetch_gov_attachments(detail_html, entry_id, entry_title, out_dir, base_url,
             needs_ocr=ext_rec.get("needs_ocr", False))
         rec["link_text"] = text
         rec["attachment_kind"] = ext_rec.get("kind", kind)
+        # 表格结构化（2026-09-08 仿 supp 打通）：xlsx/docx/doc 附件解析结构化表 →
+        # 回填 raw 附件记录表键（map_gov 已透传至 cleaned 39 列表格列）
+        rec.update(structured_table_fields(data, fname, kind=kind))
         records.append(rec)
         if rec["extracted"] and rec.get("text"):
             texts.append(rec["text"])
