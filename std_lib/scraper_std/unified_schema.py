@@ -460,6 +460,35 @@ def assert_enum_bindings() -> None:
         "body_source enum_values 与 BODY_SOURCE 不一致"
 
 
+_SUPP_SCAN_DECL_MARKS = ("无文本层", "扫描件", "未做文本化", "OCR")
+_SUPP_ATTACH_MERGE_NOTE = "【附件全文并入正文：主文件扫描件无文本层/无可读正文，内容见附件（表格/doc）】"
+
+
+def _supp_body_with_attachments(rec: dict[str, Any]) -> str:
+    """supp 正文 = 附件文本并入版（附件消费打通 2026-09-08）。
+
+    背景：EAST（金非银检函〔2025〕82号）等 supp 记录主文件为扫描件，body_text 仅为
+    "无文本层" 占位声明（≈300 字符），修订/数据项正文全部在 xlsx 附件表格中——下游
+    clause_index / match_theme_docs / recall / drafter 一律以 body_text 为正文消费，
+    附件文本被整链旁路（实证 supp clause 该行 article_count=0）。
+
+    本 helper：仅当正文为扫描占位声明（或缺失）而 attachment_content 有实质内容时，
+    将附件全文并入 body_text（attachment_content/table_structured 列原样保留），使上游
+    以 body_text 一次获得"可检索/可关联"能力；正文完整行不触发避免重复。39 列契约不变。
+    """
+    body = empty_str(rec.get("body_text"))
+    att = empty_str(rec.get("attachment_content"))
+    if not att or len(att) < 200:
+        return body
+    head = body[:400]
+    if body and not any(k in head for k in _SUPP_SCAN_DECL_MARKS):
+        return body  # 正文完整（非扫描占位）→ 不并入
+    flat = " ".join(att.split())  # 附件文本已无结构化换行需求：并入前压平为单段
+    if body:
+        return " ".join(f"{body} {_SUPP_ATTACH_MERGE_NOTE} {flat}".split())
+    return f"{_SUPP_ATTACH_MERGE_NOTE} {flat}"
+
+
 def map_supp(rec: dict[str, Any], clean_version: str, captured_at: str = "") -> dict[str, Any]:
     """补充法规记录 → 统一 Schema（与 map_gov/map_nfra 同形）。
 
@@ -471,7 +500,7 @@ def map_supp(rec: dict[str, Any], clean_version: str, captured_at: str = "") -> 
     src_raw = empty_str(rec.get("source")) or "gov.cn补充"
     src_channel = SUPP_SOURCE_CHANNEL.get(src_raw, "gov_website")  # source 归并五源标识（v3）
     m = _mk_meta(rec, source_url, "supp", clean_version, captured_at)
-    body = empty_str(rec.get("body_text"))
+    body = _supp_body_with_attachments(rec)
     body_src = canonical_body_source(rec.get("body_source"))
     m["doc_source"] = body_src
     if rec.get("_retrieval_channel"):

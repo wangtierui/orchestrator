@@ -33,7 +33,6 @@ def _head(p: str) -> list[str]:
 def run():
     problems, warns = [], []
     scanned: list[list[str]] = []
-    targets = []
 
     def _scan(path: str, label: str):
         if not os.path.exists(path):

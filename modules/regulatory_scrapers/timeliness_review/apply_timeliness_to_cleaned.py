@@ -39,8 +39,13 @@ import sys
 # 正文等字段可能远超默认 131072 上限，放宽以允许大字段读写
 csv.field_size_limit(sys.maxsize)
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))   # regulatory_scrapers/
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))   # modules/regulatory_scrapers/
 sys.path.insert(0, os.path.join(ROOT, "std_lib"))
+# R4 适配：std_lib 上收 orchestrator 根（scrapers/std_lib 旧仓路径已失效）
+_ORCH_ROOT = os.path.dirname(os.path.dirname(ROOT))
+if _ORCH_ROOT not in sys.path:
+    sys.path.insert(0, _ORCH_ROOT)
+sys.path.insert(0, os.path.join(_ORCH_ROOT, "std_lib"))
 
 from scraper_std.doc_number import normalize_doc_number  # noqa: E402
 

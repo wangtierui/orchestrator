@@ -62,7 +62,7 @@ from std_lib.scraper_std.unified_schema import (
 def map_supp(rec: dict[str, Any], clean_version: str, captured_at: str = "") -> dict[str, Any]:
     """补充法规记录 → 统一 Schema：supp 字段一致化(I3-I7) → 委托 unified_schema.map_supp。
 
-    映射体（纯字段映射）已迁入共享库 unified_schema.py（纳入统一 schema），
+    映射体（纯字段映射）已迁入共享库 unified_schema.py（纳入统一 schema，含附件正文并入），
     本函数仅做 supp 特有的一致化预处理 + 委托，避免映射逻辑双份漂移。
     """
     rec = normalize_raw(rec)
