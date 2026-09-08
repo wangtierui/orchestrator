@@ -74,13 +74,43 @@ def load_sources(refresh: bool = False) -> dict[str, dict]:
     return out
 
 
-def active_source_ids() -> list[str]:
-    """仅返回 enabled=true 且不含 '.'（排除子源）的五源标识（与 config.enums.SOURCE_SET 一致）。"""
-    srcs = load_sources()
+def active_source_ids(refresh: bool = False) -> list[str]:
+    """外部启用源标识（enabled=true 且不含 '.' 的子源、非 internal）——由 sources.yaml 派生，
+    与 config.enums.SOURCE_SET 交叉一致由 gate_sources_config 校验（R15：无集合字面量）。"""
+    srcs = load_sources(refresh)
     return sorted(
         sid for sid, cfg in srcs.items()
-        if cfg.get("enabled") and "." not in sid and sid in {"gov", "mof", "nfra", "pbc", "supp"}
+        if cfg.get("enabled") and "." not in sid and sid != "internal"
     )
+
+
+# --------------------------------------------------------------------------- #
+# collector 路由（R15 补全）：sources.yaml「collector」字段消费
+# --------------------------------------------------------------------------- #
+def collector_module(source_id: str, refresh: bool = False) -> str:
+    """源 collector 模块名（collectors.gov_collector → gov_collector；无点原样返回）。"""
+    cfg = load_sources(refresh).get(source_id) or {}
+    v = (cfg.get("collector") or "").strip()
+    return v.rsplit(".", 1)[-1] if "." in v else v
+
+
+def collector_path(source_id: str, refresh: bool = False) -> str:
+    """解析源 collector 脚本绝对路径；collectors 目录缺失对应模块返回空串（供新增源 checklist 判空）。"""
+    mod = collector_module(source_id, refresh)
+    if not mod:
+        return ""
+    p = os.path.join(paths.ROOT, "modules", "regulatory_scrapers", "collectors", mod + ".py")
+    return p if os.path.exists(p) else ""
+
+
+def collector_source_map(refresh: bool = False) -> dict[str, str]:
+    """{source_id: collector 脚本绝对路径}——仅 enabled 外部源，供编排/调用路由（R15/R11）。"""
+    out = {}
+    for sid in active_source_ids(refresh):
+        p = collector_path(sid, refresh)
+        if p:
+            out[sid] = p
+    return out
 
 
 # --------------------------------------------------------------------------- #

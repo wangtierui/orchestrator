@@ -44,6 +44,20 @@ RAW_MASTER_NAMES: dict[str, str] = {
 LEGAL_PROJECTS = set(RAW_MASTER_NAMES)
 
 
+def _yaml_projects() -> list[str]:
+    """clean --project 可选项由 sources.yaml enabled 源派生（R15 clean_project 字段路由）；
+    yaml 不可用（PyYAML 未装）时回退 RAW_MASTER_NAMES 键。"""
+    try:
+        sys.path.insert(0, _REPO)
+        from config.loader import active_source_ids  # noqa: PLC0415
+        ids = active_source_ids()
+        if ids:
+            return sorted(ids)
+    except Exception:  # noqa: BLE001
+        pass
+    return sorted(LEGAL_PROJECTS)
+
+
 def _repo_data_raw() -> str:
     """默认 raw 根：本模块 modules/regulatory_scrapers 对应 data/raw（活跃数据复制后）。"""
     # P3 阶段活跃数据尚未复制到 modules 仓内 data/；后续由 manifest 复制。此函数保持声明式。
@@ -74,8 +88,8 @@ def _on_alarm_default(over, rates):
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="五源统一清洗管道入口")
-    ap.add_argument("--project", required=True, choices=sorted(LEGAL_PROJECTS),
-                    help="源标识（gov/mof/nfra/pbc/supp）")
+    ap.add_argument("--project", required=True, choices=_yaml_projects(),
+                    help="源标识（sources.yaml enabled 源派生，R15）")
     ap.add_argument("--raw", default="", help="原始数据 JSON 路径（默认自动探测）")
     ap.add_argument("--out-dir", default="", help="输出目录（默认 modules 仓 data/cleaned 或 repo data/cleaned）")
     ap.add_argument("--clean-version", default="v1.0.0")

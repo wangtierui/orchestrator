@@ -32,18 +32,55 @@ def _cmd_gates(argv):
     return 0 if ok else 1
 
 
-def _cmd_source_list(argv):
-    try:
-        from config.loader import load_sources
-    except Exception as e:
-        print(f"[source] config.loader 不可用（PyYAML 未装？）: {e}")
-        return 2
-    srcs = load_sources(refresh=True)
-    for sid, cfg in srcs.items():
-        enabled = "ON " if cfg.get("enabled", True) else "OFF"
-        note = cfg.get("note", "")
-        print(f"  [{enabled}] {sid:12s} {note}")
-    return 0
+def _cmd_source(argv):
+    """source list | source add --id <new_id>（R15：yaml 唯一事实源 + collector 路由消费）。"""
+    if not argv:
+        print("用法: orchestrator source {list|add}")
+        return 1
+    action = argv[0]
+    if action == "list":
+        try:
+            from config.loader import (  # noqa: PLC0415
+                active_source_ids,
+                collector_module,
+                collector_path,
+                load_sources,
+            )
+        except Exception as e:  # pragma: no cover
+            print(f"[source] config.loader 不可用（PyYAML 未装？）: {e}")
+            return 2
+        srcs = load_sources(refresh=True)
+        from config.enums import SOURCE_SET  # noqa: PLC0415
+        for sid, cfg in srcs.items():
+            enabled = cfg.get("enabled", True)
+            flag = "ON " if enabled else "OFF"
+            line = f"  [{flag}] {sid:12s} {cfg.get('note', '')}"
+            if enabled and "." not in sid and sid != "internal":
+                mod = collector_module(sid)
+                ok = "✓" if collector_path(sid) else "✗缺模块"
+                line += f"  | collector={mod} {ok}"
+            print(line)
+        print(f"  [..] enums.SOURCE_SET={sorted(SOURCE_SET)} | yaml active={active_source_ids()}")
+        return 0
+    if action == "add":
+        import argparse  # noqa: PLC0415
+        ap = argparse.ArgumentParser(description="source add checklist（R15 新增源步骤）")
+        ap.add_argument("--id", required=True, help="新源标识（如 flk）")
+        a = ap.parse_args(argv[1:])
+        print(f"[source add] 登记新源 {a.id!r} 的清单（sources.yaml 唯一事实源）：")
+        print("  1. sources.yaml external_sources 追加条目：")
+        print(f"       - id: {a.id}")
+        print("         enabled: false          # 先停用登记，待 collector/清洗验证后置 true")
+        print("         collector: collectors.<{id}_collector|{id}_ingest>   # 与 collectors/ 拍平命名对齐")
+        print(f"         clean_project: {a.id}")
+        print("         note: …")
+        print("         disabled_reasons: [待采集实现验证]")
+        print("  2. config/enums.py SOURCE_SET 加值（受控变更；assert_enum_bindings 断言条数随动）")
+        print("  3. 提供 collectors 模块并跑：python -m py_compile + nfra_validate_cache 式只读冒烟")
+        print("  4. python cli.py gates（gate_sources_config 校验 collector 模块/clean_project/enums 一致）")
+        return 0
+    print(f"未知 source 子命令: {action}（可用: list, add）")
+    return 1
 
 
 def _cmd_ping(argv):
@@ -131,7 +168,7 @@ def _cmd_classify(argv):
 
 COMMANDS = {
     "gates": _cmd_gates,
-    "source": _cmd_source_list,
+    "source": _cmd_source,
     "internal": _cmd_internal,
     "classify": _cmd_classify,
     "ping": _cmd_ping,
@@ -146,8 +183,8 @@ def build_parser() -> argparse.ArgumentParser:
     sub = p.add_subparsers(dest="command", metavar="<command>")
     sub.add_parser("gates", help="运行交付门禁（ALL_GATES）")
     sub.add_parser("ping", help="骨架自检")
-    p_source = sub.add_parser("source", help="源目录（config/sources.yaml）")
-    p_source.add_argument("action", choices=["list"], help="list 列出源")
+    p_source = sub.add_parser("source", help="源目录（config/sources.yaml 唯一事实源，R15）")
+    p_source.add_argument("action", choices=["list", "add"], help="list 列出源与 collector 路由 | add 新增源 checklist")
     p_int = sub.add_parser("internal", help="内部制度摄取/对齐/引用视图（P6/P7）")
     p_int.add_argument("sub", choices=["index", "align", "merged"],
                        help="index 摄取 | align 主题对齐 | merged 制度×RFN 引用视图")

@@ -26,6 +26,7 @@ ALL_GATES: list[dict] = [
     {"module": "gates.gate_rfn_drift", "desc": "RFN↔clean 漂移未处置阻断", "require_impl": True},
     {"module": "gates.gate_timeliness_ssot", "desc": "时效单源传播一致性", "require_impl": True},
     {"module": "gates.gate_citations", "desc": "制度引用门禁（drafter --strict）", "require_impl": True},
+    {"module": "gates.gate_sources_config", "desc": "源目录配置一致性（R15）", "require_impl": True},
 ]
 
 
