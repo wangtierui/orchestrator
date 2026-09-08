@@ -29,6 +29,9 @@ state/
 .retrieval_checkpoint.json
 **/.workbuddy/
 
+# ===== recall 产物（代码/产物分离：run_retrieval_after_checks.py 每次确定性重建 output/）=====
+modules/regulatory_classifier/recall_audit/output/
+
 # ===== 敏感凭证（绝不入库）=====
 *.pkulaw_token
 *_token*
