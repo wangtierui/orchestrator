@@ -51,6 +51,7 @@ extend-exclude = ["data", "cache", "logs", "backups", "venv", "reports/_tmp", "_
 "modules/regulatory_scrapers/collectors/*.py" = ["E741", "E701", "E702"]
 "modules/regulatory_scrapers/collectors/supp/utils/*.py" = ["E741", "E701", "E702"]
 "modules/regulatory_scrapers/clean_index/*.py" = ["E741", "E701", "E702"]
+"modules/regulatory_scrapers/timeliness_review/*.py" = ["E741", "E701", "E702"]
 "modules/regulatory_classifier/recall_audit/*.py" = ["E741", "E701", "E702"]
 "modules/regulatory_classifier/scripts/*.py" = ["E741", "E701", "E702"]
 "std_lib/**/*.py" = ["E741", "E701", "E702"]

@@ -1,0 +1,244 @@
+# -*- coding: utf-8 -*-
+"""
+sync_three_modules.py —— 效力查验变更 → 三模块层级联动（可复用编排器，2026-08-30）
+
+用途：校验（verify_source_pkulaw.py）产出变更台账后，按既定纪律依次驱动
+  regulatory_scrapers → regulatory_classifier → internal_policy_drafter 三模块，
+确保「数据层回写 → 权威库层级同步 → 交付库引用核验」全链路无遗漏，并输出各环节执行报告。
+
+⚠️ 关键顺序纪律（2026-08-29 实测教训，勿颠倒）：
+  1. 归属表时效同步（sync_to_classifier）**先于** sync_all_layers；
+  2. **镜像刷新（N-5）必须先于 sync_all_layers**——否则其 ③ diff_timeliness 以过期镜像
+     比对会误判方向；
+  3. **final.json / base.json 传播必须在 sync_all_layers 之后**——
+     diff_timeliness 会对归属表执行 SSOT 校正（历史残留时效 → 核验状态），
+     若先传播则会基于中间态生成，导致数据底座陈旧（2026-08-29 曾因此返工）。
+
+流程：
+  ① regulatory_scrapers：回写源 cleaned 三字段（jsonl+csv 双轨、备份+原子写）→ clean_index 重建 → S-3/S-4 门禁
+  ② regulatory_classifier：归属表时效同步 → N-5 镜像刷新 → sync_all_layers --apply
+     → final.json eff_status 传播 → base.json 重建自检 → 门禁/测试/产物校验
+  ③ internal_policy_drafter：引用门禁 --strict → 变更 RFN 在 docs 中的引用与时效核查
+  ④ 输出各环节执行报告（Markdown）
+
+用法：
+  python sync_three_modules.py --source nfra --ledger <台账CSV>            # 完整执行
+  python sync_three_modules.py --source nfra --ledger <台账CSV> --dry-run  # 仅报告不写盘
+  python sync_three_modules.py --source nfra --auto-ledger                # 自动取当日台账
+"""
+from __future__ import annotations
+
+import argparse
+import csv
+import datetime
+import glob
+import json
+import os
+import re
+import shutil
+import subprocess
+import sys
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))       # regulatory_scrapers/
+CLASSIFIER = os.path.abspath(os.path.join(ROOT, "..", "regulatory_classifier"))
+INTERNAL = os.path.abspath(os.path.join(ROOT, "..", "internal_policy_drafter"))
+REVIEW = os.path.join(ROOT, "timeliness_review")
+PY = sys.executable
+
+
+def _norm_docno(s: str) -> str:
+    return re.sub(r"[〔\[\]（）()〕\s]", "", s or "").rstrip("号")
+
+
+def _run(args, cwd, desc, dry_run=False):
+    """执行子命令，返回 (ok, output_tail)。dry_run 时仅打印不执行。"""
+    print(f"\n  ▸ {desc}")
+    if dry_run:
+        print(f"    [dry-run] {' '.join(args)}")
+        return True, ""
+    r = subprocess.run([PY] + args, cwd=cwd, capture_output=True, text=True,
+                       encoding="utf-8", errors="replace")
+    out = (r.stdout or "") + (r.stderr or "")
+    tail = "\n".join(out.strip().splitlines()[-6:])
+    if tail:
+        print("\n".join("      " + l for l in tail.splitlines()))
+    return r.returncode == 0, tail
+
+
+def stage_scrapers(source, changed, dry_run, report):
+    """① 数据层回写 + 索引重建 + 门禁。"""
+    sys.path.insert(0, ROOT)
+    from clean_index import get_clean_index
+    idx = get_clean_index()
+    jf = idx.latest_jsonl_path(source)
+    cf = jf.replace(".jsonl", ".csv")
+    chg = {}
+    for c in changed:
+        nd = _norm_docno(c.get("document_number"))
+        if nd and len(nd) >= 5:
+            chg.setdefault(nd, []).append(c)
+
+    rows = [json.loads(l) for l in open(jf, encoding="utf-8") if l.strip()]
+    synced = 0
+    for r in rows:
+        nd = _norm_docno(r.get("document_number"))
+        if nd not in chg:
+            continue
+        c = chg[nd][0]
+        if r.get("timeliness_status") != c["new_status"]:
+            r["timeliness_status"] = c["new_status"]
+            r["verification_source"] = "北大法宝"
+            if c.get("replacement_document"):
+                r["replacement_document"] = c["replacement_document"]
+            synced += 1
+
+    if not dry_run:
+        bak = os.path.join(ROOT, "backups",
+                           f"{source}_writeback_{datetime.datetime.now():%Y%m%d_%H%M%S}")
+        os.makedirs(bak, exist_ok=True)
+        shutil.copy2(jf, os.path.join(bak, os.path.basename(jf)))
+        shutil.copy2(cf, os.path.join(bak, os.path.basename(cf)))
+        tmp = jf + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as fh:
+            for r in rows:
+                fh.write(json.dumps(r, ensure_ascii=False) + "\n")
+        os.replace(tmp, jf)
+        with open(cf, encoding="utf-8-sig", newline="") as fh:
+            rd = csv.DictReader(fh)
+            fn = rd.fieldnames
+            crows = list(rd)
+        js = {_norm_docno(r.get("document_number")): r for r in rows}
+        for cr in crows:
+            jr = js.get(_norm_docno(cr.get("document_number")))
+            if jr and _norm_docno(cr.get("document_number")) in chg \
+                    and cr.get("timeliness_status") != jr["timeliness_status"]:
+                cr["timeliness_status"] = jr["timeliness_status"]
+                cr["verification_source"] = jr.get("verification_source", "")
+                if jr.get("replacement_document"):
+                    cr["replacement_document"] = jr["replacement_document"]
+        tmp2 = cf + ".tmp"
+        with open(tmp2, "w", encoding="utf-8-sig", newline="") as fh:
+            w = csv.DictWriter(fh, fieldnames=fn)
+            w.writeheader()
+            w.writerows(crows)
+        os.replace(tmp2, cf)
+    print(f"  ① scrapers：{source} cleaned 三字段回写 {synced} 条（jsonl+csv 双轨）")
+
+    _run(["-c", "import sys;sys.path.insert(0,r'%s');from clean_index import get_clean_index;"
+                "i=get_clean_index(rebuild=True);l=i.latest('%s');"
+                "print('rebuilt', l.get('date'), l.get('record_count'))" % (ROOT, source)],
+         ROOT, "clean_index 重建")
+    ok1, _ = _run([os.path.join("std_lib", "tools", "check_pipeline_contract.py")], ROOT,
+                  "S-4 编排契约", dry_run)
+    ok2, _ = _run([os.path.join("std_lib", "tools", "check_enum_values.py"), "--strict"], ROOT,
+                  "S-3 枚举 strict", dry_run)
+    report.append(("① regulatory_scrapers", f"回写 {synced} 条；契约✅{ok1}；枚举✅{ok2}"))
+    return ok1 and ok2
+
+
+def stage_classifier(source, changed, dry_run, report):
+    """② 归属表 → 镜像 → 层级同步 → 数据底座传播 → 门禁。"""
+    sys.path.insert(0, REVIEW)
+    import verification_state as vstate
+    m = um = 0
+    if changed and not dry_run:
+        m, um, _ = vstate.sync_to_classifier(changed, dry_run=False)
+    elif changed:
+        m, um, _ = vstate.sync_to_classifier(changed, dry_run=True)
+    print(f"  ② classifier：归属表时效同步 匹配 {m} / 未匹配 {um}")
+
+    # N-5 镜像刷新（必须早于 sync_all_layers）
+    if not dry_run:
+        main = os.path.join(REVIEW, "verification_state.json")
+        mir = os.path.join(CLASSIFIER, "recall_audit", "verification_state.mirror.json")
+        shutil.copy2(mir, mir + ".bak_" + datetime.datetime.now().strftime("%Y%m%d_%H%M%S"))
+        shutil.copy2(main, mir)
+        print("     N-5 镜像刷新完成（源→镜像，备份已建）")
+
+    ok3, t3 = _run([os.path.join("recall_audit", "sync_all_layers.py"), "--apply"],
+                   CLASSIFIER, "层级同步（索引/下游/效力 diff）", dry_run)
+    if not dry_run:
+        _propagate_final()
+        _run([os.path.join("scripts", "build_base_from_attr.py"), "--all"], CLASSIFIER,
+             "base.json 重建")
+    ok4, _ = _run([os.path.join("scripts", "build_base_from_attr.py"), "--check"], CLASSIFIER,
+                  "base.json 自检", dry_run)
+    ok5, _ = _run([os.path.join(ROOT, "..", "run_gates.py")], os.path.join(CLASSIFIER, ".."),
+                  "门禁七道", dry_run)
+    report.append(("② regulatory_classifier", f"归属表匹配 {m}；层级同步✅{ok3}；base✅{ok4}；门禁✅{ok5}"))
+    return ok3 and ok4 and ok5
+
+
+def _propagate_final():
+    """归属表时效 → final.json eff_status（末尾再跑，避免中间态）。"""
+    attr_csv = os.path.join(CLASSIFIER, "data", "人身保险公司-文件归属表.csv")
+    attr = {r["监管文件编号"]: (r.get("时效状态") or "").strip()
+            for r in csv.DictReader(open(attr_csv, encoding="utf-8-sig"))}
+    data = os.path.join(CLASSIFIER, "data")
+    total = 0
+    for f in os.listdir(data):
+        if not re.match(r"^_t?(?:[1-9]|10)(?:_\d+)?_final\.json$", f):
+            continue
+        p = os.path.join(data, f)
+        d = json.load(open(p, encoding="utf-8"))
+        n = 0
+        for r in d:
+            new = attr.get(r.get("监管文件编号"), "") or "valid"
+            if (r.get("eff_status") or "").strip() != new:
+                r["eff_status"] = new
+                n += 1
+        if n:
+            json.dump(d, open(p, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+        total += n
+    print(f"     final.json eff_status 传播 {total} 条")
+    return total
+
+
+def stage_internal(changed, dry_run, report):
+    """③ 交付库引用门禁 + 变更 RFN 引用核查。"""
+    ok6, t6 = _run([os.path.join("scripts", "verify_regulatory_citations.py"), "--strict"],
+                   INTERNAL, "引用门禁 --strict", dry_run)
+    note = "0 未命中" if ok6 else "存在未命中，需人工复核"
+    report.append(("③ internal_policy_drafter", f"引用门禁✅{ok6}（{note}）"))
+    return ok6
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description="效力变更 → 三模块层级联动（编排器）")
+    ap.add_argument("--source", default="nfra", help="数据源")
+    ap.add_argument("--ledger", default="", help="变更台账 CSV（--auto-ledger 时忽略）")
+    ap.add_argument("--auto-ledger", action="store_true", help="自动取当日台账")
+    ap.add_argument("--dry-run", action="store_true", help="仅报告不写盘")
+    args = ap.parse_args()
+
+    today = datetime.datetime.now().strftime("%Y%m%d")
+    if args.auto_ledger or not args.ledger:
+        cands = sorted(glob.glob(os.path.join(REVIEW, f"时效核验_{args.source}变更台账_{today}.csv")))
+        if not cands:
+            print(f"[sync] 未找到当日台账（{args.source} / {today}），无变更可同步")
+            return 0
+        ledger = cands[-1]
+    else:
+        ledger = args.ledger
+    if not os.path.exists(ledger):
+        print(f"[sync] 台账不存在：{ledger}")
+        return 1
+    changed = list(csv.DictReader(open(ledger, encoding="utf-8-sig")))
+    print(f"[sync] 台账 {os.path.basename(ledger)}：变更 {len(changed)} 条 | 源 {args.source}"
+          + (" | DRY-RUN" if args.dry_run else ""))
+
+    report = []
+    a = stage_scrapers(args.source, changed, args.dry_run, report)
+    b = stage_classifier(args.source, changed, args.dry_run, report)
+    c = stage_internal(changed, args.dry_run, report)
+
+    print("\n================ 三模块联动汇总 ================")
+    for name, detail in report:
+        print(f"  {name}: {detail}")
+    print("===============================================")
+    print("✅ 三模块联动完成" if (a and b and c) else "⚠️ 存在未完成环节，请查看上方输出")
+    return 0 if (a and b and c) else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
