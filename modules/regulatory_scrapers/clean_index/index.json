@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "generated_at": "2026-09-08T22:14:09+0800",
+  "generated_at": "2026-09-08T22:20:56+0800",
   "generator": "regulatory_scrapers/clean_index/build_clean_index.py",
   "description": "五源 clean 产物结构化索引（单一事实源），供 regulatory_classifier 直接加载，无需额外转换。",
   "scraper_root": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers",
@@ -407,20 +407,20 @@
           "files": {
             "csv": {
               "path": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/supp_cleaned_20260908.csv",
-              "size_bytes": 1620719,
-              "sha256": "bbc3e7ebe0fe7f365f0b4e6b3d0a5b27e89a605f3ff74e175fdb4f1724850e98",
-              "record_count": 57,
-              "modified_at": "2026-09-08T22:13:53+0800"
+              "size_bytes": 5352264,
+              "sha256": "f4a0bd01e09bd67e34d84bbafa10dd7f42a7facd4eb0e3cc7d2df259359c309e",
+              "record_count": 58,
+              "modified_at": "2026-09-08T22:17:54+0800"
             },
             "jsonl": {
               "path": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/supp_cleaned_20260908.jsonl",
-              "size_bytes": 1684996,
-              "sha256": "a4c416b0df9a8078045cc29d6981d003674f73eb1ac5067e0c6f14d595190c3c",
-              "record_count": 57,
-              "modified_at": "2026-09-08T22:13:53+0800"
+              "size_bytes": 5322773,
+              "sha256": "93ce032c4a65306c0fe779f5cfa9bdcf9c342b9f54ba09edbfbc4b3bcb5c59a2",
+              "record_count": 58,
+              "modified_at": "2026-09-08T22:17:53+0800"
             }
           },
-          "record_count": 57,
+          "record_count": 58,
           "record_source_values": [
             "supp"
           ],
@@ -455,9 +455,9 @@
         "date": "20260908",
         "csv": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/supp_cleaned_20260908.csv",
         "jsonl": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/supp_cleaned_20260908.jsonl",
-        "record_count": 57
+        "record_count": 58
       },
-      "total_record_count": 57
+      "total_record_count": 58
     }
   },
   "summary": {
@@ -465,6 +465,6 @@
     "snapshot_count": 10,
     "csv_count": 10,
     "jsonl_count": 10,
-    "total_record_count": 4042
+    "total_record_count": 4043
   }
 }
