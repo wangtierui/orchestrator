@@ -208,6 +208,11 @@ def build_theme_rows(theme, attr_rows, cleaned, existing, cluster_map):
             if st not in BODY_ENUM:
                 row["正文状态"] = body_status(get_body(cleaned.get((src, "D:" + _norm_docno(a.get("发文字号"))))))
             row["监管文件编号"], row["主题"] = rfn, target_theme
+            # R12（2026-09-08）：叙述列（标题/发文字号/文件来源）按归属表权威快照投影刷新，
+            # 防归属表改标题/文号后明细表保留旧叙述（"只补缺不刷"陈旧）；人工列（立法依据/条款引用/备注）保留。
+            row["标题"] = a.get("文件名称", "")
+            row["发文字号"] = a.get("发文字号", "")
+            row["文件来源"] = src
             row["generated_by"], row["generated_at"] = gb, g_at
             out.append(row)
             continue
