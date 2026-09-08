@@ -137,7 +137,10 @@ def build_clause_index(rebuild: bool = False) -> dict:
                     "chapter_count": stru["chapter_count"],
                     "article_count": stru["article_count"],
                     "chapters": stru["chapters"],
-                    "articles": stru["articles"],
+                    "articles": [
+                        {**a, "number": re.sub(r"\s+", "", a.get("number", "") or "")}  # 条号形态归一（去内部空格）
+                        for a in stru["articles"]
+                    ],
                 }
                 fout.write(json.dumps(row, ensure_ascii=False) + "\n")
                 n += 1
@@ -148,6 +151,38 @@ def build_clause_index(rebuild: bool = False) -> dict:
     out["_state"] = _STATE_PATH
     out["_dir"] = CLAUSE_DIR
     return out
+
+
+def validate_schema() -> dict:
+    """产物契约自检（字段统一性 + 条号形态；契约常量 interfaces.contract.CLAUSE_*）。"""
+    from interfaces import contract  # noqa: PLC0415
+    problems = []
+    stat = {"files": 0, "articles": 0, "chapters": 0}
+    line_f = set(contract.CLAUSE_LINE_FIELDS)
+    art_f = set(contract.CLAUSE_ARTICLE_FIELDS)
+    ch_f = set(contract.CLAUSE_CHAPTER_FIELDS)
+    for s in _SOURCES:
+        for cl in iter_file_clauses(s):
+            stat["files"] += 1
+            if set(cl.keys()) != line_f:
+                problems.append(f"{s} 行键集漂移: {sorted(set(cl.keys()) ^ line_f)[:4]}")
+            if not isinstance(cl.get("chapter_count"), int) or not isinstance(cl.get("article_count"), int):
+                problems.append(f"{s} count 非 int")
+            if cl.get("article_count") != len(cl.get("articles") or []):
+                problems.append(f"{s} article_count!=len(articles)")
+            for a in cl.get("articles") or []:
+                stat["articles"] += 1
+                if set(a.keys()) != art_f:
+                    problems.append(f"{s} article 键漂移")
+                if not isinstance(a.get("no"), int):
+                    problems.append(f"{s} article.no 非 int")
+                if not re.fullmatch(r"第[0-9〇一二三四五六七八九十百千两]+条", a.get("number", "") or ""):
+                    problems.append(f"{s} 条号形态异常: {a.get('number', '')!r}")
+            for c in cl.get("chapters") or []:
+                stat["chapters"] += 1
+                if set(c.keys()) != ch_f:
+                    problems.append(f"{s} chapter 键漂移")
+    return {**stat, "consistent": not problems, "problems": problems[:20]}
 
 
 def find_clauses(docno: str = "", title: str = "", src: str = ""):

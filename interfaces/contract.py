@@ -73,3 +73,15 @@ FINAL_KEYS = BASE_KEYS | {"cluster", "source_origin", "src_mark"}
 MATCHED_KEYS = {"监管文件编号", "body", "body_len", "docno", "lib", "title"}
 CITEREFS_KEYS = {"监管文件编号", "art_refs", "basis", "body_len", "lib",
                  "name_refs_top", "title"}
+
+# ============ clause_index 条文产物契约（②，2026-09-08） ============
+# 产物：modules/regulatory_scrapers/data/clauses/{src}_clauses_{date}.jsonl（每行一份文件条款）
+# 键集为程序消费硬契约：三层（文件行 / articles / chapters）须逐字节一致，新增维度须同步本契约与
+# build/validate。枚举评估：本产物无真"受控枚举"字段——数值(no/count/article_index)+标识(dedup_key/source_url)
+# +半结构(document_number)+自由文本(title/number/body)；半结构形态（第X条/文号）由抽取归一+校验约束，不入受控枚举表。
+CLAUSE_LINE_FIELDS: tuple[str, ...] = (
+    "dedup_key", "source_url", "document_number", "title",
+    "chapter_count", "article_count", "chapters", "articles",
+)
+CLAUSE_ARTICLE_FIELDS: tuple[str, ...] = ("no", "number", "body")
+CLAUSE_CHAPTER_FIELDS: tuple[str, ...] = ("no", "title", "article_index")
