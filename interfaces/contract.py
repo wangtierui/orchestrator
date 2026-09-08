@@ -63,6 +63,57 @@ SOURCE_ALIAS_EQUIV: dict[str, tuple[str, ...]] = {
     "pbc": ("pbc", "scraper_pbc"),
     "supp": ("supp", "supplementary", "scraper_supp"),
 }
+# --------------------------------------------------------------------------- #
+# 中文列名受控注册表（G-字段治理 2026-09-08：CSV 系以中文列名为正式编码 → 逐层登记英文规范名；
+# gate_field_aliases 强检"权威数据表新增中文列必须在此登记"，防无规范别名漂移。）
+# scope ∈ attr/theme/detail/bridge/index/fingerprint/recall
+# --------------------------------------------------------------------------- #
+CN_FIELD_REGISTRY: dict[str, dict] = {
+    # 文件归属表 attr（8）
+    "监管文件编号": {"en": "rfn", "scope": "attr", "note": "RFN-<16hex> 实体唯一标识"},
+    "文件名称": {"en": "title", "scope": "attr", "note": ""},
+    "发文字号": {"en": "doc_no", "scope": "attr", "note": ""},
+    "发布日期": {"en": "publish_date", "scope": "attr", "note": "YYYY-MM-DD"},
+    "文件来源": {"en": "file_src", "scope": "attr", "note": "∈ SOURCE_SET"},
+    "时效状态": {"en": "timeliness_status", "scope": "attr", "note": "7 值受控"},
+    "判定日期": {"en": "verified_date", "scope": "attr", "note": "人工判定/核验日期"},
+    "编号备注": {"en": "note", "scope": "attr", "note": ""},
+    # 主题归属表 theme（3）
+    "主题": {"en": "theme", "scope": "theme", "note": "T0..T10 完整名"},
+    "判定依据": {"en": "basis", "scope": "theme", "note": ""},
+    # 明细表 detail（10 中文 + 2 英文 generated_*）
+    "标题": {"en": "title", "scope": "detail", "note": "明细叙述列（按归属表权威投影 R12）"},
+    "正文状态": {"en": "body_status", "scope": "detail", "note": "完整/摘要/核心要点/无正文"},
+    "立法依据": {"en": "basis", "scope": "detail", "note": "抽取（人工列保留）"},
+    "条款引用": {"en": "article_refs", "scope": "detail", "note": "抽取（人工列保留）"},
+    "备注": {"en": "note", "scope": "detail", "note": "人工列"},
+    "子主题": {"en": "cluster", "scope": "detail", "note": "final.cluster 别名"},
+    # 桥表 bridge（8 中文 + 3 英文）
+    "登记时标题": {"en": "title_at_register", "scope": "bridge", "note": ""},
+    "登记时文号": {"en": "doc_no_at_register", "scope": "bridge", "note": ""},
+    "最近确认日期": {"en": "last_confirmed_date", "scope": "bridge", "note": ""},
+    "最近状态": {"en": "bridge_state", "scope": "bridge", "note": "ok/drift_c1/drift_c2 —— 桥同步状态，非时效状态（同名不同语义）"},
+    # rfn 索引 index（6，派生自归属表）
+    # 指纹 fingerprint（6，含历史"唯一键"列）
+    "唯一键": {"en": "unique_key", "scope": "fingerprint", "note": "DOC:/MD5: 去重键（dedup_key 语义不同=内容 sha256）"},
+    "文件指纹": {"en": "fingerprint", "scope": "fingerprint", "note": "MD5 摘要"},
+    "登记时间": {"en": "registered_at", "scope": "fingerprint", "note": ""},
+    # recall 产物关键列
+    "文件名": {"en": "file_name", "scope": "recall", "note": ""},
+    "匹配源": {"en": "matched_source", "scope": "recall", "note": ""},
+    "决策": {"en": "decision", "scope": "recall", "note": ""},
+    "置信度": {"en": "confidence", "scope": "recall", "note": ""},
+    "命中摘录": {"en": "hit_snippet", "scope": "recall", "note": ""},
+    "可用正文长度": {"en": "body_chars", "scope": "recall", "note": ""},
+    "全文状态": {"en": "fulltext_status", "scope": "recall", "note": ""},
+    "建议新增词": {"en": "suggested_keyword", "scope": "recall", "note": ""},
+    "类别": {"en": "category", "scope": "recall", "note": ""},
+    "依据与说明": {"en": "rationale", "scope": "recall", "note": ""},
+    "序号": {"en": "seq", "scope": "recall", "note": ""},
+    "命中关键词": {"en": "hit_keyword", "scope": "recall", "note": ""},
+    "判定理由": {"en": "reason", "scope": "recall", "note": ""},
+    "建议主题归类": {"en": "suggested_theme", "scope": "recall", "note": ""},
+}
 # 字段语义等价（不同层同义不同名）
 FIELD_SEMANTIC_EQUIV: dict[str, tuple[str, ...]] = {
     "document_number": ("document_number", "doc_no", "document_no", "发文字号"),

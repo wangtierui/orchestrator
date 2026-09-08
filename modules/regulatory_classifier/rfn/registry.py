@@ -241,9 +241,9 @@ def register_doc(theme, title, docno=None, pub_date="", source="", fingerprint="
         trows.append({"监管文件编号": rfn, "主题": theme_full, "判定依据": "registry自动登记"})
         _save_theme_rows(trows)
 
-        # 指纹登记（防重复摄入）
+        # 指纹登记（防重复摄入；唯一键=去重键 uk，对齐 FP_FIELDS 6 列）
         frows = _load_fp()
-        frows.append({"监管文件编号": rfn, "文件名称": title,
+        frows.append({"唯一键": uk, "监管文件编号": rfn, "文件名称": title,
                       "发文字号": docno or "", "文件指纹": fingerprint or "",
                       "登记时间": _now()})
         _save_fp(frows)
@@ -298,8 +298,9 @@ def re_theme(rfn: str, new_theme: str, reason: str = "人工改判"):
         _unlock(fh)
 
 
-# 文件指纹表 5 列（唯一定义，_save_fp 单处引用）
-FP_FIELDS = ["监管文件编号", "文件名称", "发文字号", "文件指纹", "登记时间"]
+# 文件指纹表 6 列（唯一定义，_save_fp 单处引用；2026-09-08 对齐实际表头含历史「唯一键」列，
+# 修 FP_FIELDS(5) 与 文件指纹.csv(6) 契约漂移——register_doc append 同时补唯一键）
+FP_FIELDS = ["唯一键", "监管文件编号", "文件名称", "发文字号", "文件指纹", "登记时间"]
 
 
 def _load_fp():
