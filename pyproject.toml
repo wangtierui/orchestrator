@@ -43,7 +43,14 @@ py-modules = ["cli", "paths"]
 [tool.ruff]
 line-length = 100
 target-version = "py313"
-extend-exclude = ["data", "cache", "logs", "backups", "venv", "reports/_tmp"]
+extend-exclude = ["data", "cache", "logs", "backups", "venv", "reports/_tmp", "_tmp_smoke"]
+
+# 迁移既有代码豁免：collectors 自旧仓复制，保留其紧凑风格（单行/短变量名），
+# 与旧仓 ruff 配置同口径；语义修复（F821 等）已在迁移时完成，风格项逐步清理。
+[tool.ruff.lint.per-file-ignores]
+"modules/regulatory_scrapers/collectors/*.py" = ["E741", "E701", "E702"]
+"modules/regulatory_scrapers/collectors/supp/utils/*.py" = ["E741", "E701", "E702"]
+"std_lib/**/*.py" = ["E741", "E701", "E702"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B"]

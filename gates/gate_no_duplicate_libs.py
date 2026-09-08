@@ -26,9 +26,11 @@ EXCLUDE_DIRS = {"backups", "data", "cache", "logs", "venv", ".git", "__pycache__
 EXCLUDE_FILES = {"gate_no_duplicate_libs.py"}
 # 共享库为事实源，允许其定义规范符号（只允许一次）
 SHARED_PREFIXES = (os.path.join("std_lib", "common_lib"), os.path.join("std_lib", "scraper_std"))
-# 必须单点实现于共享库的符号（在各文件出现 def <sym> 即计数）
+# 必须单点实现于共享库的符号（在各文件出现 def <sym> 即计数）。
+# 注：不带下划线的公共原子写/指纹名须唯一；"_atomic_write" 等采集器本地私有实现不纳入
+# （属模块内自包含封装，非跨仓规范符号；共享库公共名为 atomic_write_text 等）。
 SINGLE_IMPL_SYMBOLS = ("norm_docno", "norm_title", "atomic_write_text", "atomic_write_json",
-                       "atomic_write_csv_dict", "sha256_file", "fingerprint", "_atomic_write")
+                       "atomic_write_csv_dict", "sha256_file", "fingerprint")
 # 盘符 sys.path 插入
 PAT_SYSPATH_DRIVE = re.compile(r"sys\.path\.(?:insert|append)\(\s*[0-9]*\s*,\s*[\"'][A-Za-z]:")
 # msvcrt 自锁（应统一走 common_lib.fs_lock）

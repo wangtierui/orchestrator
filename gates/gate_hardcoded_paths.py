@@ -30,8 +30,12 @@ PAT_WINPATH_NOTE = re.compile(r"[A-Za-z]:\\")
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # repo root
 EXCLUDE_DIRS = {"backups", "data", "cache", "logs", "venv", ".git", "__pycache__", "reports"}
-# 定义/注释含"盘符"字样者跳过：本文件、paths.py（ROOT 定义）；tools 显式 --root 默认值豁免在下方处理
-EXCLUDE_FILES = {"paths.py", "gate_hardcoded_paths.py"}
+# 定义/注释含"盘符"字样者跳过：本文件、paths.py（ROOT 定义）；tools 显式 --root 默认值豁免在下方处理。
+# 一次性迁移工具豁免（仅引用旧仓只读源，非运行时业务代码，运行时仅开发期手工执行）：
+#   - migrate_collectors_p3b.py：定义旧仓父目录作复制源；
+#   - build_migration_manifest.py：--root 默认指向旧仓父目录（可被参数覆盖）。
+EXCLUDE_FILES = {"paths.py", "gate_hardcoded_paths.py",
+                 "migrate_collectors_p3b.py", "build_migration_manifest.py"}
 
 # tools/* 默认参数中的演示路径白名单（如 build_migration_manifest --root default）
 ALLOW_SUBSTR = ("--root", "--out", "default=")
