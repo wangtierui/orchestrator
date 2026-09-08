@@ -166,11 +166,33 @@ def _cmd_classify(argv):
     return 1 if res.get("error") else 0
 
 
+def _cmd_timeliness(argv):
+    """timeliness verify [--source gov|mof|pbc|nfra|all] [--dry-run] [--probe N]
+    [--workers N] [--retry-failed] [--token-file F]
+    效力缺失核验（R13 三态 exit：0=success / 2=partial 可续跑 / 3=unavailable 降级不误标）。"""
+    import os  # noqa: PLC0415
+    import subprocess  # noqa: PLC0415
+    if not argv:
+        print("用法: orchestrator timeliness verify [--source ...] [--dry-run] ...")
+        return 1
+    if argv[0] != "verify":
+        print(f"未知 timeliness 子命令: {argv[0]}（可用: verify）")
+        return 1
+    script = os.path.join(paths.ROOT, "modules", "regulatory_scrapers",
+                          "timeliness_review", "verify_missing.py")
+    if not os.path.exists(script):
+        print(f"[timeliness] 脚本缺失: {script}")
+        return 3
+    r = subprocess.run([sys.executable, "-X", "utf8", script] + argv[1:])
+    return r.returncode
+
+
 COMMANDS = {
     "gates": _cmd_gates,
     "source": _cmd_source,
     "internal": _cmd_internal,
     "classify": _cmd_classify,
+    "timeliness": _cmd_timeliness,
     "ping": _cmd_ping,
 }
 
@@ -189,6 +211,9 @@ def build_parser() -> argparse.ArgumentParser:
     p_int.add_argument("sub", choices=["index", "align", "merged"],
                        help="index 摄取 | align 主题对齐 | merged 制度×RFN 引用视图")
     sub.add_parser("classify", help="主题底座强序重建（R8，--theme/--all/--steps/--dry-run）")
+    p_tl = sub.add_parser("timeliness", help="时效核验（R13 三态：success/partial/unavailable）")
+    p_tl.add_argument("action", choices=["verify"],
+                      help="verify 效力缺失核验（透传 --source/--dry-run/--probe/--workers/--token-file）")
     return p
 
 

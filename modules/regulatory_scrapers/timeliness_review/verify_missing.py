@@ -30,16 +30,21 @@ from __future__ import annotations
 import argparse
 import csv
 import datetime
+import json
 import os
 import sys
 
 # 正文等字段可能远超默认 131072 上限（gov cleaned 实测），放宽以允许大字段读取
 csv.field_size_limit(sys.maxsize)
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))      # regulatory_scrapers/
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))      # modules/regulatory_scrapers/
 sys.path.insert(0, ROOT)
-sys.path.insert(0, os.path.join(ROOT, "std_lib"))
 sys.path.insert(0, os.path.join(ROOT, "timeliness_review"))
+# R4 适配：std_lib 上收 orchestrator 根（共享库单副本，scrapers/std_lib 旧仓路径已失效）
+_ORCH_ROOT = os.path.dirname(os.path.dirname(ROOT))
+if _ORCH_ROOT not in sys.path:
+    sys.path.insert(0, _ORCH_ROOT)
+sys.path.insert(0, os.path.join(_ORCH_ROOT, "std_lib"))
 
 import verification_state as vstate  # noqa: E402
 from clean_index import get_clean_index  # noqa: E402
@@ -47,6 +52,9 @@ from scraper_std import pkulaw_cli as pk  # noqa: E402
 
 OUT_DIR = os.path.join(ROOT, "timeliness_review")
 ALL_SOURCES = ["gov", "mof", "pbc", "nfra"]     # nfra 置后（一般已核验完）
+
+# R13 三态（2026-09-08）：success 全部核验完成 / partial 部分完成可续跑 / unavailable 外部不可用降级
+S_SUCCESS, S_PARTIAL, S_UNAVAILABLE = "success", "partial", "unavailable"
 
 
 def collect_missing(source: str):
@@ -69,24 +77,45 @@ def collect_missing(source: str):
     return rows, missing
 
 
-def run_source(source: str, args) -> int:
+def _summary_record(source, status, **kw):
+    rec = {"source": source, "status": status,
+           "ts": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+    rec.update(kw)
+    return rec
+
+
+def run_source(source: str, args) -> dict:
+    """核验单源（R13）：返回三态摘要 dict——success/partial/unavailable。
+
+    降级纪律（不误标）：外部不可用（CLI/Token 缺失）或查询失败项**不写任何判定**
+    （cleaned 效力留空即待核验位，等同 needs_review 语义），不将"未核验"误标为 valid。
+    """
     state = vstate.load_state()
-    rows, missing = collect_missing(source)
+    try:
+        rows, missing = collect_missing(source)
+    except FileNotFoundError as e:
+        print(f"[verify_missing:{source}] 跳过: {e}")
+        return _summary_record(source, S_UNAVAILABLE, reason=str(e), missing=0, degraded=0)
     print(f"[verify_missing:{source}] cleaned {len(rows)} 条 | 效力缺失（空）{len(missing)} 条")
     if not missing:
         print(f"[verify_missing:{source}] 无效力缺失记录，跳过")
-        return 0
+        return _summary_record(source, S_SUCCESS, missing=0, queried=0, ok=0,
+                               nomatch=0, fail=0, degraded=0, changed=0)
     if args.dry_run:
         for c in missing:
             print(f"  待查: {c['document_number'] or '(无文号)':<24} | {c['title'][:40]}")
         print(f"[verify_missing:{source}] dry-run：未发起任何北大法宝查询")
-        return 0
+        return _summary_record(source, S_SUCCESS, missing=len(missing), queried=0, ok=0,
+                               nomatch=0, fail=0, degraded=0, changed=0, dry_run=True)
 
     cli = pk.find_cli()
     token = pk.load_token(args.token_file) or pk.load_token(os.path.join(OUT_DIR, ".pkulaw_token"))
     if not token:
         print("[verify_missing] 未找到 Token：请提供 --token-file 或 timeliness_review/.pkulaw_token")
-        return 1
+        # 外部不可用：不写判定，候选留空待下次核验（R13 降级不误标）
+        return _summary_record(source, S_UNAVAILABLE, reason="no_token",
+                               missing=len(missing), queried=0, ok=0, nomatch=0, fail=0,
+                               degraded=len(missing), changed=0)
 
     checkpoint = os.path.join(OUT_DIR, f"pkulaw_{source}_missing_checkpoint.jsonl")
     plan, cand2item = pk.build_query_plan(missing)
@@ -143,11 +172,27 @@ def run_source(source: str, args) -> int:
         w.writerows(changed)
     print(f"[verify_missing:{source}] 判定统计: {stats} | 本批变更 {len(changed)} 条 | 台账(追加) {ledger_out}")
     print(f"[verify_missing:{source}] 状态已写入 verification_state.json")
-    return 0
+    # R13 三态：fail>0 或部分候选未完成 → partial（可断点续跑）；否则 success
+    queried = sum(stats.values())
+    failed = stats["fail"] + stats["nomatch"]
+    status = S_SUCCESS if failed == 0 else S_PARTIAL
+    return _summary_record(source, status, missing=len(missing), queried=queried,
+                           ok=stats["valid"] + stats["amended"] + stats["repealed"] + stats["expired"],
+                           nomatch=stats["nomatch"], fail=stats["fail"],
+                           degraded=failed, changed=len(changed), detail=stats)
+
+
+def _overall(sources_sum: list[dict]) -> str:
+    """聚合三态：unavailable 任一→unavailable；其余 partial 任一→partial；否则 success。"""
+    if any(s.get("status") == S_UNAVAILABLE for s in sources_sum):
+        return S_UNAVAILABLE
+    if any(s.get("status") == S_PARTIAL for s in sources_sum):
+        return S_PARTIAL
+    return S_SUCCESS
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description="四源效力缺失记录定向核验（聚焦驱动）")
+    ap = argparse.ArgumentParser(description="四源效力缺失记录定向核验（聚焦驱动；R13 三态摘要）")
     ap.add_argument("--source", default="nfra", help="源: nfra/mof/pbc/gov 或 all")
     ap.add_argument("--dry-run", action="store_true", help="仅列出候选，不查询")
     ap.add_argument("--probe", type=int, default=0, help="只查前 N 条（冒烟，各源分别生效）")
@@ -157,13 +202,39 @@ def main() -> int:
     args = ap.parse_args()
 
     sources = ALL_SOURCES if args.source == "all" else [args.source]
-    rc = 0
+    summaries = []
     for s in sources:
         try:
-            rc = run_source(s, args) or rc
-        except FileNotFoundError as e:
-            print(f"[verify_missing:{s}] 跳过: {e}")
-    return rc
+            summaries.append(run_source(s, args))
+        except Exception as e:  # noqa: BLE001  外部异常 → 降级 unavailable（R13 不误标）
+            print(f"[verify_missing:{s}] 异常降级: {e}")
+            summaries.append(_summary_record(s, S_UNAVAILABLE, reason="exception:" + str(e)[:120],
+                                             missing=0, queried=0, ok=0, nomatch=0, fail=0,
+                                             degraded=0, changed=0))
+    overall = _overall(summaries)
+    # R13：执行摘要落盘 timeliness_review/verify_summary_{date}.json（供告警通道消费）
+    today = datetime.datetime.now().strftime("%Y%m%d")
+    sum_out = os.path.join(OUT_DIR, f"verify_summary_{today}.json")
+    payload = {"overall": overall, "run_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+               "sources": summaries}
+    existing = []
+    if os.path.exists(sum_out):
+        try:
+            existing = json.load(open(sum_out, encoding="utf-8"))
+            if isinstance(existing, dict):
+                existing = [existing]
+        except Exception:  # noqa: BLE001
+            existing = []
+    with open(sum_out, "w", encoding="utf-8") as fh:
+        json.dump({"overall": overall,
+                   "history": (existing[-5:] + [payload]) if isinstance(existing, list) else [payload]},
+                  fh, ensure_ascii=False, indent=1)
+    print(f"\n[verify_missing] R13 执行摘要 → {sum_out}")
+    for s in summaries:
+        print(f"  {s['source']:5s} {s['status']:12s} missing={s.get('missing', 0):>4} "
+              f"ok={s.get('ok', 0):>4} degraded={s.get('degraded', 0):>4} changed={s.get('changed', 0):>3}")
+    print(f"  overall: {overall}")
+    return {"success": 0, S_PARTIAL: 2, S_UNAVAILABLE: 3}[overall]
 
 
 if __name__ == "__main__":
