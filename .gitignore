@@ -24,6 +24,8 @@ tessdata/
 state/
 *.lock
 *.pid
+.retrieval_checkpoint.json
+**/.workbuddy/
 
 # ===== IDE =====
 .idea/
