@@ -31,6 +31,8 @@ _ARTICLE_RE = re.compile(r"^第\s*([0-9]+|[%s]+)\s*条" % _CN)
 _CHAPTER_RE = re.compile(r"^第\s*([0-9]+|[%s]+)\s*章" % _CN)
 # 附件/附则起标记（视为正文尾）
 _TAIL_RE = re.compile(r"^(附\s*则|附件|附表|附\s*录|附录|关于.*的通知$|关于印发.*的通知$)")
+# 章/条标题尾部目录点线 + 页码（如「第1章 基本管理....1」「第一条 ….3」）净化
+_TRAIL_DOTS_RE = re.compile(r"[.。·•…\s]*\d*\s*$")
 _HEADER_DROP = re.compile(r"^(目录|目\s*录|卷首语|扉页|编写说明)")
 
 
@@ -68,6 +70,27 @@ def is_chapter_line(line: str) -> bool:
     return bool(_CHAPTER_RE.match(line.strip()))
 
 
+def _drop_toc_chapters(chapters: list[dict]) -> list[dict]:
+    """剔除目录页残留章标题（2026-09-08 增补）。
+
+    带目录文档中，目录区先罗列全部章标题（无任何条文跟随），随后正文再出现各章。
+    特征：章号重复出现——保留每组重复章中的**最晚**者（正文在文档后部，且其
+    article_index 指向真实条文区间），其前同名目录章删除。无重复章号的文档不受影响。
+    """
+    if not chapters:
+        return chapters
+    seen_no = {}
+    for i, ch in enumerate(chapters):
+        seen_no.setdefault(ch.get("no"), []).append(i)
+    dup_no = {no for no, idxs in seen_no.items() if len(idxs) > 1}
+    if not dup_no:
+        return chapters
+    # 保留全部非重复章 + 每重复组的最晚者
+    drop = {i for no, idxs in seen_no.items()
+            if no in dup_no for i in idxs[:-1]}
+    return [ch for i, ch in enumerate(chapters) if i not in drop]
+
+
 def extract_structure(text: str) -> dict:
     """主入口：解析规范化正文 → 章/条结构。text 为空返回空结构。"""
     if not text or not text.strip():
@@ -98,8 +121,11 @@ def extract_structure(text: str) -> dict:
         if cm:
             _flush_article()
             ch_no = _to_int(cm.group(1))
+            ch_title = ln[cm.end():].strip()
+            # 净化为「章名」，剥离章首页版式点线与页码（如「基本管理....1」→「基本管理」）
+            ch_title = re.sub(r"[.。·•…\s]{2,}\d*\s*$", "", ch_title).strip()
             chapters.append({"no": ch_no or len(chapters) + 1,
-                             "title": ln[cm.end():].strip(),
+                             "title": ch_title,
                              "article_index": len(articles)})
             continue
         am = _ARTICLE_RE.match(ln)
@@ -112,9 +138,57 @@ def extract_structure(text: str) -> dict:
             current_article["_buf"].append(ln)
         # 章标题后的章总述/条文间过渡文本（非章非条且无 open article）——忽略（结构噪声）
     _flush_article()
+    chapters = _drop_toc_chapters(chapters)
     return {"chapters": chapters, "articles": articles,
             "chapter_count": len(chapters), "article_count": len(articles),
             "method": "regex", "tail_marker": tail_marker[:20]}
+
+
+_ARTICLE_HEAD_RE = re.compile(r"^第\s*(?:[0-9]+|[一二三四五六七八九十百千万零〇两]+)\s*条[、．.\s]?")
+
+
+def _article_body(body: str) -> str:
+    """条文 body 剥离行首「第X条」前缀（body 以起条文行开头时），保留其余正文。"""
+    s = (body or "").strip()
+    m = _ARTICLE_HEAD_RE.match(s)
+    return s[m.end():].strip() if m else s
+
+
+def render_markdown(stru: dict, title: str = "") -> str:
+    """条文结构 → Markdown 视图（供 drafter 条款对照/人工审阅/LLM 检视）。
+
+    JSON 为规范源（结构化可程序消费），MD 为渲染视图——二者由同一 extract_structure 派生，
+    不另造解析歧义。条文按章分组输出：
+      # <title>
+      ## 第一章 总则
+      **第一条** 条文正文…
+    """
+    lines = []
+    if title:
+        lines.append(f"# {title}")
+        lines.append("")
+    chapters = stru.get("chapters") or []
+    articles = stru.get("articles") or []
+    if not chapters:
+        for a in articles:
+            lines.append(f"**{a['number']}** {_article_body(a.get('body', ''))}")
+            lines.append("")
+        return "\n".join(lines).strip()
+    # 章边界：chapter.article_index 为该章首条在 articles 的索引
+    bounds = [c.get("article_index", 0) for c in chapters]
+    for i, ch in enumerate(chapters):
+        start = bounds[i] if i < len(bounds) else len(articles)
+        end = bounds[i + 1] if i + 1 < len(bounds) else len(articles)
+        ch_title = ch.get("title") or ""
+        ch_no = ch.get("no", i + 1)
+        lines.append(f"## 第{ch_no}章 {ch_title}".rstrip())
+        lines.append("")
+        for a in articles[start:end]:
+            lines.append(f"**{a.get('number', '')}** {_article_body(a.get('body', ''))}")
+            lines.append("")
+    # 兜底：无任何章（前面已 return）或最后一个章未覆盖到尾部时的章外条文
+    # （正常时最后章 end=len(articles) 已覆盖，无需重复追加）
+    return "\n".join(lines).strip()
 
 
 if __name__ == "__main__":  # 离线自检
@@ -127,4 +201,6 @@ if __name__ == "__main__":  # 离线自检
     assert r["chapter_count"] == 2 and r["article_count"] == 3, r
     assert r["chapters"][1]["title"] == "分则"
     assert r["articles"][0]["number"] == "第一条"
-    print("[document_structure] 自检通过：%d 章 / %d 条" % (r["chapter_count"], r["article_count"]))
+    md = render_markdown(r, title="测试规定")
+    assert "## 第一章 总则" in md and "**第一条** 为了规范" in md, md
+    print("[document_structure] 自检通过：%d 章 / %d 条 + MD 渲染" % (r["chapter_count"], r["article_count"]))

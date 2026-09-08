@@ -118,7 +118,10 @@ def backfill_clauses() -> dict:
     if not os.path.isdir(proc_dir):
         return {"error": "no processed dir"}
     sys.path.insert(0, os.path.join(_ORCH_ROOT, "std_lib"))
-    from std_lib.scraper_std.document_structure import extract_structure  # noqa: PLC0415
+    from std_lib.scraper_std.document_structure import (  # noqa: PLC0415
+        extract_structure,
+        render_markdown,
+    )
     n = 0
     for fn in sorted(os.listdir(proc_dir)):
         if not fn.endswith("_fulltext.json"):
@@ -130,6 +133,16 @@ def backfill_clauses() -> dict:
         _json.dump({"ipn": ipn, "chapters": stru["chapters"], "articles": stru["articles"]},
                    open(os.path.join(proc_dir, ipn + "_clauses.json"), "w", encoding="utf-8"),
                    ensure_ascii=False, indent=2)
+        # MD 渲染视图（JSON 为规范源；MD 供 drafter 条款对照/人工审阅）
+        title = ""
+        main_p0 = os.path.join(proc_dir, ipn + ".json")
+        if os.path.exists(main_p0):
+            try:
+                title = _json.load(open(main_p0, encoding="utf-8")).get("title", "")
+            except Exception:
+                pass
+        md = render_markdown(stru, title=title)
+        open(os.path.join(proc_dir, ipn + "_clauses.md"), "w", encoding="utf-8").write(md)
         main_p = os.path.join(proc_dir, ipn + ".json")
         if os.path.exists(main_p):
             try:

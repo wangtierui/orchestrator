@@ -35,7 +35,10 @@ from internal_policy_base.extract import copy_original, extract_file  # noqa: E4
 from internal_policy_base.scan import scan_directory  # noqa: E402
 
 # R21：条文结构解析（章-条），供 merged_view/drafter 条款对照
-from std_lib.scraper_std.document_structure import extract_structure  # noqa: E402
+from std_lib.scraper_std.document_structure import (  # noqa: E402
+    extract_structure,
+    render_markdown,
+)
 
 _DATA = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
 _ORIGINALS = os.path.join(_DATA, "originals")
@@ -130,6 +133,9 @@ def ingest(source_root: str, *, enable_ocr: bool = False, dry_run: bool = False)
         json.dump({"ipn": f["ipn"], "chapters": stru["chapters"], "articles": stru["articles"]},
                   open(os.path.join(_PROCESSED, f["ipn"] + "_clauses.json"), "w", encoding="utf-8"),
                   ensure_ascii=False, indent=2)
+        # MD 渲染视图（JSON 规范源 → MD 供 drafter 条款对照/人工审阅，格式决策 2026-09-08）
+        open(os.path.join(_PROCESSED, f["ipn"] + "_clauses.md"), "w", encoding="utf-8").write(
+            render_markdown(stru, title=f["title"]))
         state[key] = {"ipn": f["ipn"], "sha256": key, "ingested_at": now}
 
     if not dry_run:
