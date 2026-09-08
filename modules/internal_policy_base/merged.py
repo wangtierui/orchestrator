@@ -113,8 +113,39 @@ def extract_rfns(text: str) -> list[dict]:
     return out
 
 
+def _sha_file(p: str) -> str:
+    import hashlib  # noqa: PLC0415
+    h = hashlib.sha256()
+    try:
+        with open(p, "rb") as fh:
+            for chunk in iter(lambda: fh.read(1 << 20), b""):
+                h.update(chunk)
+        return h.hexdigest()[:16]
+    except OSError:
+        return ""
+
+
+def _processed_signature() -> str:
+    """processed 目录内容指纹（名称+大小+mtime），快速近似全文 sha（R5 断点语义）。"""
+    import hashlib  # noqa: PLC0415
+    h = hashlib.sha256()
+    if os.path.isdir(_PROCESSED):
+        for fn in sorted(os.listdir(_PROCESSED)):
+            p = os.path.join(_PROCESSED, fn)
+            try:
+                st = os.stat(p)
+                h.update(f"{fn}|{st.st_size}|{int(st.st_mtime)};".encode())
+            except OSError:
+                pass
+    return h.hexdigest()[:16]
+
+
 def build_merged_view() -> dict:
-    """生成 merged_view.json（幂等覆盖）。返回 summary。"""
+    """生成 merged_view.json（幂等覆盖）。返回 summary。
+
+    R5 断点（2026-09-08）：view.inputs 记录输入指纹（归属表/主题归属表 sha + 内部索引 sha
+    + processed 目录签名），供审计/门禁判断"上游单源变化后本视图是否陈旧需重建"。
+    """
     records = _load_records()
     merged = []
     n_with_rfn = 0
@@ -133,10 +164,18 @@ def build_merged_view() -> dict:
             "associated_rfns": refs,
             "rfn_count": len(refs),
         })
+    cl_data = os.path.join(_MODULES, "regulatory_classifier", "data")
+    inputs = {
+        "attr_sha": _sha_file(os.path.join(cl_data, "人身保险公司-文件归属表.csv")),
+        "theme_sha": _sha_file(os.path.join(cl_data, "人身保险公司-主题归属表.csv")),
+        "index_sha": _sha_file(_INDEX_PATH),
+        "processed_signature": _processed_signature(),
+    }
     view = {
         "schema_version": MERGED_VIEW_SCHEMA_VERSION,
         "generated_at": __import__("datetime").datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
         "source": "internal_policy_index.json + rfn(归属表)",
+        "inputs": inputs,
         "records": merged,
         "count": len(merged),
         "stat": {

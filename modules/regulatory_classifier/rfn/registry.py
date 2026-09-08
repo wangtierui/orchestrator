@@ -263,6 +263,41 @@ def register_doc(theme, title, docno=None, pub_date="", source="", fingerprint="
         _unlock(fh)
 
 
+def re_theme(rfn: str, new_theme: str, reason: str = "人工改判"):
+    """R7 治理入口（2026-09-08）：修改既有 RFN 的主题归属（主题归属表行）并联动重建。
+
+    补审计缺口「registry 仅 append、无改既有 RFN 主题路径」——主题改判后 base/final/明细
+    归组迁移由调用方随后触发 classify 底座链重建（本函数写 sync_status 标记 pending）。
+
+    返回 dict：{rfn, from_theme, to_theme, updated}。
+    """
+    if new_theme not in THEME_MAP:
+        raise ValueError("new_theme 必须是主题码 T0..T10，收到 %r" % new_theme)
+    fh = _lock()
+    try:
+        trows = _load_theme_rows()
+        hit = None
+        for t in trows:
+            if t.get("监管文件编号") == rfn:
+                hit = t
+                break
+        if hit is None:
+            raise LookupError(f"RFN {rfn} 不在主题归属表（无此记录）")
+        old_full = hit.get("主题", "")
+        hit["主题"] = THEME_MAP[new_theme]
+        hit["判定依据"] = f"{reason}（re_theme {_now()}）"
+        _save_theme_rows(trows)
+        try:
+            rebuild_index()
+        except OSError as _e:
+            print(f"[re_theme] WARN 索引重建失败（主题已改）: {_e}")
+        _sync_status_write(rfn, "数据底座", "pending",
+                           note=f"主题改判 {old_full}→{THEME_MAP[new_theme]}，需 classify 底座链重建")
+        return {"rfn": rfn, "from_theme": old_full, "to_theme": THEME_MAP[new_theme], "updated": True}
+    finally:
+        _unlock(fh)
+
+
 # 文件指纹表 5 列（唯一定义，_save_fp 单处引用）
 FP_FIELDS = ["监管文件编号", "文件名称", "发文字号", "文件指纹", "登记时间"]
 
