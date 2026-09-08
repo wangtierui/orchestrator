@@ -29,6 +29,15 @@ state/
 .retrieval_checkpoint.json
 **/.workbuddy/
 
+# ===== 敏感凭证（绝不入库）=====
+*.pkulaw_token
+*_token*
+
+# ===== timeliness 核验运行产物（摘要/台账/断点；verification_state.json 历史已 track 保留）=====
+modules/regulatory_scrapers/timeliness_review/verify_summary_*.json
+modules/regulatory_scrapers/timeliness_review/时效核验_*变更台账_*.csv
+modules/regulatory_scrapers/timeliness_review/pkulaw_*_checkpoint.jsonl
+
 # ===== IDE =====
 .idea/
 .vscode/
