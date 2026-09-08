@@ -16,52 +16,38 @@ category_classifier.py —— 效力位阶（category）判定（纯函数）
 """
 from __future__ import annotations
 
+import os
 import re
+import sys
 from typing import Any
 
-# --------------------------------------------------------------------------- #
-# 13 级位阶常量（位阶序：数值型，司法解释用 2.5）
-# --------------------------------------------------------------------------- #
-CONSTITUTION = "constitution"                  # 宪法 1
-LAW = "law"                                    # 法律 2
-JUDICIAL_INTERPRETATION = "judicial_interpretation"  # 司法解释 2.5
-ADMIN_REGULATION = "admin_regulation"          # 行政法规 3
-LOCAL_REGULATION = "local_regulation"          # 地方性法规 4
-AUTONOMOUS_REGULATION = "autonomous_regulation"  # 自治条例 5
-DEPT_RULE = "dept_rule"                        # 部门规章 6
-LOCAL_GOVERNMENT_RULE = "local_government_rule"  # 地方政府规章 7
-STATE_COUNCIL_NORMATIVE = "state_council_normative"  # 国务院规范性文件 8
-DEPT_NORMATIVE = "dept_normative"              # 部门规范性文件 9
-LOCAL_GOVERNMENT_NORMATIVE = "local_government_normative"  # 地方政府规范性文件 10
-INDUSTRY_RULE = "industry_rule"                # 行业规定 11
-OTHER = "other"                                # 其他 12
-
-AUTHORITY_RANK: dict[str, float] = {
-    CONSTITUTION: 1, LAW: 2, JUDICIAL_INTERPRETATION: 2.5, ADMIN_REGULATION: 3,
-    LOCAL_REGULATION: 4, AUTONOMOUS_REGULATION: 5, DEPT_RULE: 6,
-    LOCAL_GOVERNMENT_RULE: 7, STATE_COUNCIL_NORMATIVE: 8, DEPT_NORMATIVE: 9,
-    LOCAL_GOVERNMENT_NORMATIVE: 10, INDUSTRY_RULE: 11, OTHER: 12,
-}
-
-CATEGORY_SET: frozenset[str] = frozenset(AUTHORITY_RANK)
-
-# --------------------------------------------------------------------------- #
-# raw category 存量映射（用户确认 3=A + 更正 3：法律解释=司法解释）
-# --------------------------------------------------------------------------- #
-CATEGORY_MAP: dict[str, str] = {
-    "法律": LAW, "国家法律": LAW, "法律法规": LAW, "宪法": CONSTITUTION,
-    "修正案": LAW, "法律解释": JUDICIAL_INTERPRETATION,  # 更正 3
-    "司法解释": JUDICIAL_INTERPRETATION,
-    "行政法规": ADMIN_REGULATION,
-    "部门规章": DEPT_RULE, "财政法律法规（财政部规章）": DEPT_RULE,
-    "政策规章规范性文件": DEPT_NORMATIVE, "规范性文件": DEPT_NORMATIVE,
-    "财政部规范性文件": DEPT_NORMATIVE, "部门规范性文件": DEPT_NORMATIVE,
-    "地方法规": LOCAL_REGULATION, "监察法规": LOCAL_REGULATION,
-    "行业自律文本": INDUSTRY_RULE,
-}
-
-# 括号修饰变体（内部便函/内部文件/内部备案）→ dept_normative + 修饰迁 _raw_fields.公开属性
-CATEGORY_MODIFIER_HINTS = ("内部便函", "内部文件", "内部备案")
+# G2 上收（2026-09-08）：category 13 级位阶/存量映射/修饰提示迁 config.enums 单一事实源，
+# 本模块 re-export 保持旧符号可用（R5 同款）。原本地定义已删，禁止回迁副本。
+_ORCH_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+if _ORCH_ROOT not in sys.path:
+    sys.path.insert(0, _ORCH_ROOT)
+_STD_LIB_ROOT = os.path.join(_ORCH_ROOT, "std_lib")
+if _STD_LIB_ROOT not in sys.path:
+    sys.path.insert(0, _STD_LIB_ROOT)
+from config.enums import (  # noqa: E402,F401
+    ADMIN_REGULATION,
+    AUTHORITY_RANK,
+    AUTONOMOUS_REGULATION,
+    CATEGORY_MAP,
+    CATEGORY_MODIFIER_HINTS,
+    CATEGORY_SET,
+    CONSTITUTION,
+    DEPT_NORMATIVE,
+    DEPT_RULE,
+    INDUSTRY_RULE,
+    JUDICIAL_INTERPRETATION,
+    LAW,
+    LOCAL_GOVERNMENT_NORMATIVE,
+    LOCAL_GOVERNMENT_RULE,
+    LOCAL_REGULATION,
+    OTHER,
+    STATE_COUNCIL_NORMATIVE,
+)
 
 
 def analyze_agency(agency: str) -> dict[str, bool]:
