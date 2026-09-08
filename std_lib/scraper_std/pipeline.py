@@ -317,7 +317,10 @@ def run_pipeline(
     # 5) Schema 校验 + 空值阈值监测（第九节）
     #    expected_null_fields：已知源限制字段（如 gov flk 正文 OBS 不可达），
     #    豁免熔断告警但完整计入指标报告（透明可审计）。
-    allowed_missing = set(cleaning_cfg.get("expected_null_fields") or [])
+    #    源级已知豁免（2026-09-08 演练发现）：pbc 官网发布无公文索引号（结构性）、正文依赖实时
+    #    网页 enrich；gov xzfgk 行政法规库多数国务院法规无公文索引号（结构性）。指标仍透明计入。
+    _SRC_ALLOWED = {"pbc": {"index_no", "body_text"}, "gov": {"index_no"}}
+    allowed_missing = set(cleaning_cfg.get("expected_null_fields") or []) | _SRC_ALLOWED.get(project, set())
     hard_fields = [f for f in CORE_NULL_FIELDS if f not in allowed_missing]
     monitor = NullThresholdMonitor(CORE_NULL_FIELDS, alarm_fields=hard_fields,
                                    on_alarm=on_alarm)

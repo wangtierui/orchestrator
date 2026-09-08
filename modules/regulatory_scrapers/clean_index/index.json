@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "generated_at": "2026-09-08T21:08:02+0800",
+  "generated_at": "2026-09-08T22:14:09+0800",
   "generator": "regulatory_scrapers/clean_index/build_clean_index.py",
   "description": "五源 clean 产物结构化索引（单一事实源），供 regulatory_classifier 直接加载，无需额外转换。",
   "scraper_root": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers",
@@ -45,13 +45,42 @@
           "category_values": [
             "行政法规"
           ]
+        },
+        "20260908": {
+          "date": "20260908",
+          "files": {
+            "csv": {
+              "path": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/gov_cleaned_20260908.csv",
+              "size_bytes": 37886933,
+              "sha256": "490664d0c4313c806eb4d0daaa49cda550a185e4493cf2f7bd47c96ee3df2a23",
+              "record_count": 605,
+              "modified_at": "2026-09-08T22:13:52+0800"
+            },
+            "jsonl": {
+              "path": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/gov_cleaned_20260908.jsonl",
+              "size_bytes": 59264544,
+              "sha256": "47f73a05641e9a2e63d49eb45a63efe4466c584e1d69f7678fee125a206b6a37",
+              "record_count": 605,
+              "modified_at": "2026-09-08T22:13:50+0800"
+            }
+          },
+          "record_count": 605,
+          "record_source_values": [
+            "gov"
+          ],
+          "companion_docs": [],
+          "timeliness_status_values": null,
+          "doc_type_values": null,
+          "category_values": [
+            "行政法规"
+          ]
         }
       },
-      "latest_date": "20260907",
+      "latest_date": "20260908",
       "latest": {
-        "date": "20260907",
-        "csv": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/gov_cleaned_20260907.csv",
-        "jsonl": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/gov_cleaned_20260907.jsonl",
+        "date": "20260908",
+        "csv": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/gov_cleaned_20260908.csv",
+        "jsonl": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/gov_cleaned_20260908.jsonl",
         "record_count": 605
       },
       "total_record_count": 605
@@ -96,13 +125,43 @@
             "财政法律法规（财政部规章）",
             "财政部规范性文件"
           ]
+        },
+        "20260908": {
+          "date": "20260908",
+          "files": {
+            "csv": {
+              "path": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/mof_cleaned_20260908.csv",
+              "size_bytes": 9780277,
+              "sha256": "e250d83ed881a6fa3c8965bb61eba258793a0c5e4b08011eb6499e833f2e7247",
+              "record_count": 870,
+              "modified_at": "2026-09-08T22:11:12+0800"
+            },
+            "jsonl": {
+              "path": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/mof_cleaned_20260908.jsonl",
+              "size_bytes": 10339493,
+              "sha256": "c173867db7357f8c4dc2036373ecd61b71b527661c56f1acc07c87d7ac34b87c",
+              "record_count": 870,
+              "modified_at": "2026-09-08T22:11:12+0800"
+            }
+          },
+          "record_count": 870,
+          "record_source_values": [
+            "mof"
+          ],
+          "companion_docs": [],
+          "timeliness_status_values": null,
+          "doc_type_values": null,
+          "category_values": [
+            "财政法律法规（财政部规章）",
+            "财政部规范性文件"
+          ]
         }
       },
-      "latest_date": "20260907",
+      "latest_date": "20260908",
       "latest": {
-        "date": "20260907",
-        "csv": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/mof_cleaned_20260907.csv",
-        "jsonl": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/mof_cleaned_20260907.jsonl",
+        "date": "20260908",
+        "csv": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/mof_cleaned_20260908.csv",
+        "jsonl": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/mof_cleaned_20260908.jsonl",
         "record_count": 870
       },
       "total_record_count": 870
@@ -151,13 +210,44 @@
             "政策规章规范性文件",
             "法律法规"
           ]
+        },
+        "20260908": {
+          "date": "20260908",
+          "files": {
+            "csv": {
+              "path": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/nfra_cleaned_20260908.csv",
+              "size_bytes": 41331548,
+              "sha256": "15685e3eac8a44128bc9fd9af00eb067ab4ec2ebe2d0144980ebdf04050f8b69",
+              "record_count": 1939,
+              "modified_at": "2026-09-08T22:13:12+0800"
+            },
+            "jsonl": {
+              "path": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/nfra_cleaned_20260908.jsonl",
+              "size_bytes": 42812379,
+              "sha256": "864b41e74f595f8ce8d79c6af7327574990d1e8a167b8cd87ba989e4c871b214",
+              "record_count": 1939,
+              "modified_at": "2026-09-08T22:13:11+0800"
+            }
+          },
+          "record_count": 1939,
+          "record_source_values": [
+            "nfra"
+          ],
+          "companion_docs": [],
+          "timeliness_status_values": null,
+          "doc_type_values": null,
+          "category_values": [
+            "政策法规(本级)",
+            "政策规章规范性文件",
+            "法律法规"
+          ]
         }
       },
-      "latest_date": "20260907",
+      "latest_date": "20260908",
       "latest": {
-        "date": "20260907",
-        "csv": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/nfra_cleaned_20260907.csv",
-        "jsonl": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/nfra_cleaned_20260907.jsonl",
+        "date": "20260908",
+        "csv": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/nfra_cleaned_20260908.csv",
+        "jsonl": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/nfra_cleaned_20260908.jsonl",
         "record_count": 1939
       },
       "total_record_count": 1939
@@ -207,13 +297,45 @@
             "规范性文件",
             "部门规章"
           ]
+        },
+        "20260908": {
+          "date": "20260908",
+          "files": {
+            "csv": {
+              "path": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/pbc_cleaned_20260908.csv",
+              "size_bytes": 3840670,
+              "sha256": "94873e930f028ad2d146f3ec62787f50ee4954d559de59cc97576a234225fe64",
+              "record_count": 571,
+              "modified_at": "2026-09-08T22:12:59+0800"
+            },
+            "jsonl": {
+              "path": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/pbc_cleaned_20260908.jsonl",
+              "size_bytes": 4231582,
+              "sha256": "70a1b65c635171c3da55267ee07f32001cf31faa18d8c0bc0f01565e6888756a",
+              "record_count": 571,
+              "modified_at": "2026-09-08T22:12:59+0800"
+            }
+          },
+          "record_count": 571,
+          "record_source_values": [
+            "pbc"
+          ],
+          "companion_docs": [],
+          "timeliness_status_values": null,
+          "doc_type_values": null,
+          "category_values": [
+            "国家法律",
+            "行政法规",
+            "规范性文件",
+            "部门规章"
+          ]
         }
       },
-      "latest_date": "20260907",
+      "latest_date": "20260908",
       "latest": {
-        "date": "20260907",
-        "csv": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/pbc_cleaned_20260907.csv",
-        "jsonl": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/pbc_cleaned_20260907.jsonl",
+        "date": "20260908",
+        "csv": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/pbc_cleaned_20260908.csv",
+        "jsonl": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/pbc_cleaned_20260908.jsonl",
         "record_count": 571
       },
       "total_record_count": 571
@@ -285,20 +407,20 @@
           "files": {
             "csv": {
               "path": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/supp_cleaned_20260908.csv",
-              "size_bytes": 5352264,
-              "sha256": "f4a0bd01e09bd67e34d84bbafa10dd7f42a7facd4eb0e3cc7d2df259359c309e",
-              "record_count": 58,
-              "modified_at": "2026-09-08T21:07:24+0800"
+              "size_bytes": 1620719,
+              "sha256": "bbc3e7ebe0fe7f365f0b4e6b3d0a5b27e89a605f3ff74e175fdb4f1724850e98",
+              "record_count": 57,
+              "modified_at": "2026-09-08T22:13:53+0800"
             },
             "jsonl": {
               "path": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/supp_cleaned_20260908.jsonl",
-              "size_bytes": 5322773,
-              "sha256": "93ce032c4a65306c0fe779f5cfa9bdcf9c342b9f54ba09edbfbc4b3bcb5c59a2",
-              "record_count": 58,
-              "modified_at": "2026-09-08T21:07:24+0800"
+              "size_bytes": 1684996,
+              "sha256": "a4c416b0df9a8078045cc29d6981d003674f73eb1ac5067e0c6f14d595190c3c",
+              "record_count": 57,
+              "modified_at": "2026-09-08T22:13:53+0800"
             }
           },
-          "record_count": 58,
+          "record_count": 57,
           "record_source_values": [
             "supp"
           ],
@@ -333,16 +455,16 @@
         "date": "20260908",
         "csv": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/supp_cleaned_20260908.csv",
         "jsonl": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/supp_cleaned_20260908.jsonl",
-        "record_count": 58
+        "record_count": 57
       },
-      "total_record_count": 58
+      "total_record_count": 57
     }
   },
   "summary": {
     "source_count": 5,
-    "snapshot_count": 6,
-    "csv_count": 6,
-    "jsonl_count": 6,
-    "total_record_count": 4043
+    "snapshot_count": 10,
+    "csv_count": 10,
+    "jsonl_count": 10,
+    "total_record_count": 4042
   }
 }
