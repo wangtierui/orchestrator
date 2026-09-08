@@ -19,7 +19,7 @@ import paths
 #   - scraper:             cleaned（五源统一 cleaned 数据根）
 #   - internal_policy_base: originals/processed（原始件副本 + 结构化正文，P6 数据随仓）
 ALLOWED_DATA_SUBDIRS = {
-    "regulatory_scrapers": {"cleaned", "clauses", "history"},  # history：清洗运行历史备份（时间戳归档）
+    "regulatory_scrapers": {"cleaned", "clauses", "history", "raw"},  # raw：supp 收录主库（活跃数据）
     "internal_policy_base": {"originals", "processed"},
     "internal_policy_drafter": {"draft_clause"},      # 条款级对照素材（P8 端到端编排输出，R21 驱动）
 }
