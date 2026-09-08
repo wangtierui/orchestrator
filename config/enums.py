@@ -71,6 +71,17 @@ INTERNAL_FILE_TYPE: frozenset[str] = frozenset({
 # 内部制度编号前缀（D-03：与 RFN 空间分离）
 IPN_PREFIX = "IPN-"
 
+# 内部制度源文件扩展名（scan 支持集；2026-09-08 收口，避免散落扩展名字面量）
+INTERNAL_EXT: frozenset[str] = frozenset({
+    "pdf", "doc", "docx", "xlsx", "xls", "xlsm",
+})
+# 主题对齐方式（internal align_one.method；R18 只增不删）
+ALIGN_METHOD: frozenset[str] = frozenset({"title", "body", "unaligned"})
+# 桥/merged 引用匹配方式（matched_by）
+REF_MATCH_METHOD: frozenset[str] = frozenset({"docno_sig", "title"})
+# RFN↔clean 桥 relation 值（R7；self=锚定同实体, refresh=C1已核对, supersede=C2待人工）
+BRIDGE_RELATION: frozenset[str] = frozenset({"self", "refresh", "supersede"})
+
 # ==================== 自检 ====================
 def assert_enum_bindings() -> None:
     """枚举常量自检（供 gate_enum_values 调用）。"""
@@ -79,6 +90,10 @@ def assert_enum_bindings() -> None:
     assert len(SOURCE_SET) == 5, SOURCE_SET
     assert len(INTERNAL_STATUS) == 5, INTERNAL_STATUS
     assert len(INTERNAL_FILE_TYPE) >= 1
+    assert len(INTERNAL_EXT) == 6, INTERNAL_EXT
+    assert len(ALIGN_METHOD) == 3, ALIGN_METHOD
+    assert len(REF_MATCH_METHOD) == 2, REF_MATCH_METHOD
+    assert len(BRIDGE_RELATION) == 3, BRIDGE_RELATION
 
 
 if __name__ == "__main__":  # 离线自检
