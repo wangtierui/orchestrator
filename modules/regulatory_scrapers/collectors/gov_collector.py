@@ -734,7 +734,9 @@ def main(argv=None) -> int:
                         help="仅对前 N 条抓取详情正文（0=全部；调试用采样）")
     parser.add_argument("--resume", action="store_true",
                         help="增量续抓：基于 out_dir 最新同源输出跳过已抓条目，"
-                             "避免重复并支持中断后恢复")
+                             "避免重复并支持中断后恢复（默认即增量，见 --full）")
+    parser.add_argument("--full", action="store_true",
+                        help="全量重抓：忽略旧主库、重抓全部列表条目详情（默认增量：跳过已抓条目并合并历史主库）")
     parser.add_argument("--delay-min", type=float, default=1.5,
                         help="请求最小延时（秒）")
     parser.add_argument("--delay-max", type=float, default=3.5,
@@ -752,6 +754,8 @@ def main(argv=None) -> int:
     parser.add_argument("--log-file", default="",
                         help="日志文件路径（默认输出到控制台与 out-dir/scraper.log）")
     args = parser.parse_args(argv)
+    # 增量默认（2026-09-08 周调度增量改造）：resume = 非 --full。显式 --full 才全量重抓。
+    args.resume = not args.full
 
     # 通用缓存（五源统一抽象层）：启用缓存目录 + 离线开关
     set_cache_dir(args.cache_dir)
