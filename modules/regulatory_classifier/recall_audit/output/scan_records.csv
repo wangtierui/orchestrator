@@ -1,4 +1,4 @@
-﻿source,dedup_key,document_number,title,issue_organ,decision,confidence,a_kws,b_kws,c_kws,x_kws,snippet,avail_text_len,has_full_body,in_808,matched_rfn
+﻿source,dedup_key,document_number,title,issue_organ,decision,confidence,a_kws,b_kws,c_kws,x_kws,snippet,avail_text_len,has_full_body,in_attr,matched_rfn
 gov,65fe9876821229767472cdbe8c1ca4d3a77e6bdb837a30fa2d30a5ab0c3b7cda,中华人民共和国国务院令第262号,住房公积金管理条例,中华人民共和国国务院,EXCLUDE,中,,,分支机构,商业银行|银行业,[body]…房公积金的存、贷利率由国务院决定。 第七条 国务院住房城乡建设主管部门会同国务院财政部门、中国人民银行、国务院银行业监督管理机构拟定住房公积金政策，并监督执行。 省、自治区人民政府住房城乡建设主管部门会同同级财政部门以及中国人…,24198,True,False,
 gov,eb165caa95e69ff259f2f857295fc814a32705e0204811006160faa3549a5013,中华人民共和国国务院令第300号,集成电路布图设计保护条例,中华人民共和国国务院,EXCLUDE,—,,,,,,26840,True,False,
 gov,bb29802cae81f5f06f0120eaf58c326ea946aa37e68232d36696920449fd2d27,中华人民共和国国务院令第841号,国务院关于出境入境管理的规定,中华人民共和国国务院,EXCLUDE,—,,,,,,14077,True,False,

@@ -16,7 +16,7 @@ _ORCH_ROOT = os.path.dirname(os.path.dirname(_MOD_CLASS))
 for _p in (_MOD_CLASS, _SCRAPERS_MOD, _ORCH_ROOT):
     if _p not in sys.path:
         sys.path.insert(0, _p)
-OUTDIR = _THIS
+OUTDIR = os.path.join(_THIS, "output")   # 代码/产物分离（2026-09-08）
 CLASS = os.path.join(_MOD_CLASS, "data")
 ATTR = os.path.join(CLASS, "人身保险公司-文件归属表.csv")
 # 2026-08-31 重构：归属表仅 8 列，已删除「主题」「同文件主编号」列；
@@ -98,8 +98,8 @@ def dedup(rows):
         seen[k]=1; out.append(r)
     return out
 
-inc_all=[r for r in scan if r["decision"]=="INCLUDE" and r["in_808"]=="False"]
-bnd_all=[r for r in scan if r["decision"]=="BOUNDARY" and r["in_808"]=="False"]
+inc_all=[r for r in scan if r["decision"]=="INCLUDE" and r["in_attr"]=="False"]
+bnd_all=[r for r in scan if r["decision"]=="BOUNDARY" and r["in_attr"]=="False"]
 inc=dedup(inc_all); bnd=dedup(bnd_all)
 print("疑似漏提(INCLUDE非808)去重后:",len(inc),"| 边界(BOUNDARY非808)去重后:",len(bnd))
 
@@ -123,14 +123,14 @@ with open(os.path.join(OUTDIR,"边界案例清单.csv"),"w",encoding="utf-8-sig"
                     r["snippet"],reason,"低",sug])
 
 # ---------- 808 全文提取记录(要求1) ----------
-# 以 RFN 归集 scan 中 in_808 记录, 取正文最丰富者
+# 以 RFN 归集 scan 中 in_attr 记录, 取正文最丰富者
 rfn_scan=collections.defaultdict(list)
 for r in scan:
-    if r["in_808"]=="True" and r["matched_rfn"]:
+    if r["in_attr"]=="True" and r["matched_rfn"]:
         for rf in r["matched_rfn"].split(";"):
             if rf: rfn_scan[rf].append(r)
 
-eight08=[]
+ft_rows=[]
 for rfn in sorted(attr.keys()):
     a=attr[rfn]
     recs=rfn_scan.get(rfn,[])
@@ -145,20 +145,20 @@ for rfn in sorted(attr.keys()):
         body_ok=False; a_kws=b_kws=c_kws=x_kws=""; decision="—"; conf="—"; snip=""
         src=""; docno=a["发文字号"]; avail="0"
     status = "已提取-可全文" if body_ok else ("已提取-缺正文" if rec else "未在五源cleaned收录")
-    eight08.append({"rfn":rfn,"theme":a["主题"],"name":a["文件名称"],"docno":a["发文字号"],
+    ft_rows.append({"rfn":rfn,"theme":a["主题"],"name":a["文件名称"],"docno":a["发文字号"],
                     "src":src,"decision":decision,"conf":conf,"a":a_kws,"b":b_kws,
                     "c":c_kws,"x":x_kws,"snip":snip,"avail":avail,"status":status})
-with open(os.path.join(OUTDIR,"808全文提取记录.csv"),"w",encoding="utf-8-sig",newline="") as f:
+with open(os.path.join(OUTDIR,"归属表全文提取记录.csv"),"w",encoding="utf-8-sig",newline="") as f:
     w=csv.writer(f)
     w.writerow(["监管文件编号","主题","文件名","发文字号","匹配源","决策","置信度",
                 "A强信号关键词","B销售代理关键词","C泛化关键词","X排除关键词","命中摘录","可用正文长度","全文状态"])
-    for e in eight08:
+    for e in ft_rows:
         w.writerow([e["rfn"],e["theme"],e["name"],e["docno"],e["src"],e["decision"],e["conf"],
                     e["a"],e["b"],e["c"],e["x"],e["snip"],e["avail"],e["status"]])
 
 # 归属表条目中无法访问全文(缺正文或未收录；产出文件名沿用历史命名 808…)
-no_body=[e for e in eight08 if e["status"]!="已提取-可全文"]
-with open(os.path.join(OUTDIR,"808无法访问全文清单.csv"),"w",encoding="utf-8-sig",newline="") as f:
+no_body=[e for e in ft_rows if e["status"]!="已提取-可全文"]
+with open(os.path.join(OUTDIR,"归属表无全文清单.csv"),"w",encoding="utf-8-sig",newline="") as f:
     w=csv.writer(f)
     w.writerow(["监管文件编号","主题","文件名","发文字号","状态","说明"])
     for e in no_body:
@@ -191,10 +191,10 @@ stats={
  "src_total":dict(src_total),
  "inc":len(inc),"inc_src":dict(inc_src),"inc_conf":dict(inc_conf),
  "bnd":len(bnd),"bnd_src":dict(bnd_src),
- "e808_total":len(attr),"e808_found":len([e for e in eight08 if e["status"]!="未在五源cleaned收录"]),
- "e808_nobody":len(no_body),"gov_nobody":gov_nobody,
+ "attr_total":len(attr),"attr_found":len([e for e in ft_rows if e["status"]!="未在五源cleaned收录"]),
+ "attr_nobody":len(no_body),"gov_nobody":gov_nobody,
  "src_snapshot":SRC_SNAPSHOT,
- "e808_missed":len(attr)-len([e for e in eight08 if e["status"]!="未在五源cleaned收录"]),
+ "attr_missed":len(attr)-len([e for e in ft_rows if e["status"]!="未在五源cleaned收录"]),
 }
 print("统计:",json.dumps(stats,ensure_ascii=False))
 
@@ -215,5 +215,5 @@ with open(os.path.join(OUTDIR,"关键词库扩充建议.csv"),"w",encoding="utf-
 # ---------- 保存 stats 供报告 ----------
 with open(os.path.join(OUTDIR,"_stats.json"),"w",encoding="utf-8") as f:
     json.dump({"stats":stats,"inc":inc,"bnd":bnd,"no_body":no_body,"expansion":expansion,
-               "e808_status":[e["status"] for e in eight08]},f,ensure_ascii=False)
+               "attr_status":[e["status"] for e in ft_rows]},f,ensure_ascii=False)
 print("交付物已生成。")

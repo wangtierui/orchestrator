@@ -66,9 +66,11 @@ RECALL_DIR = _THIS
 ROOT = _MOD_CLASS  # （rfn 包 / scripts 所在根）
 CLASSIFIER_DATA = os.path.join(_MOD_CLASS, "data")
 ATTR = os.path.join(CLASSIFIER_DATA, "人身保险公司-文件归属表.csv")
-REPORT_PATH = os.path.join(RECALL_DIR, "重跑执行报告.json")
-CHECKPOINT_PATH = os.path.join(RECALL_DIR, ".retrieval_checkpoint.json")
+REPORT_PATH = os.path.join(RECALL_DIR, "output", "重跑执行报告.json")
+CHECKPOINT_PATH = os.path.join(RECALL_DIR, "output", ".retrieval_checkpoint.json")
 SCANNER_PATH = os.path.join(RECALL_DIR, "scanner.py")
+_OUT_DIR = os.path.join(RECALL_DIR, "output")
+os.makedirs(_OUT_DIR, exist_ok=True)   # 产物目录（代码/产物分离）
 
 _TZ = timezone(timedelta(hours=8))
 VALIDITY_MAX_AGE_DAYS = 90
@@ -265,7 +267,7 @@ def gate_clean():
 #   「北大法宝」*     —— 北大法宝 CLI 直接核验（含「无同名命中，维持原判定」回退标记）
 #   「规则判断」      —— 既定合规回退口径（北大法宝无同名命中，非失败）
 #   「数据层统一清洗」—— 统一清洗管道占位符（未走北大法宝核验，建议按需补验，但不阻塞）
-ACCEPT_SOURCE_PREFIXES = ("北大法宝", "规则判断", "数据层统一清洗")
+ACCEPT_SOURCE_PREFIXES = ("北大法宝", "规则判断", "数据层统一清洗", "人工复核")
 
 def gate_validity():
     detail = {
@@ -594,9 +596,9 @@ def run_stage(script_name):
 
 
 PRODUCT_FILES = [
-    "scan_records.csv", "scan_hits_808.jsonl",
+    "scan_records.csv", "scan_hits_attr.jsonl",
     "疑似漏提取文件清单.csv", "边界案例清单.csv",
-    "808全文提取记录.csv", "808无法访问全文清单.csv",
+    "归属表全文提取记录.csv", "归属表无全文清单.csv",
     "关键词库扩充建议.csv", "_stats.json", "召回复核报告.md",
 ]
 
@@ -604,7 +606,7 @@ PRODUCT_FILES = [
 def collect_products():
     out = {}
     for name in PRODUCT_FILES:
-        p = os.path.join(RECALL_DIR, name)
+        p = os.path.join(RECALL_DIR, "output", name)
         if os.path.exists(p):
             out[name] = {"path": p, "size_bytes": os.path.getsize(p)}
         else:
@@ -613,7 +615,7 @@ def collect_products():
 
 
 def load_stats():
-    p = os.path.join(RECALL_DIR, "_stats.json")
+    p = os.path.join(RECALL_DIR, "output", "_stats.json")
     if os.path.exists(p):
         try:
             return json.load(open(p, encoding="utf-8")).get("stats", {})

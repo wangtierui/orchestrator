@@ -9968,11 +9968,11 @@
     "prev_status": null
   },
   "doc:保监会令20013": {
-    "status": "valid",
+    "status": "repealed",
     "replacement_document": "",
-    "verification_source": "北大法宝（无同名命中，维持原判定）",
+    "verification_source": "人工复核（保险公估机构监管规定 已被《保险公估人监管规定》保监发〔2018〕92号替代废止）",
     "last_checked_at": "2026-09-07 12:41:15",
-    "changed_at": "2026-09-07 12:41:15",
+    "changed_at": "2026-09-08 00:00:00",
     "prev_status": null
   },
   "doc:保监会令200415": {

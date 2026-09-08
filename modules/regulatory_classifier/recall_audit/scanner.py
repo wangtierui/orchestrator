@@ -3,11 +3,11 @@
 人身险公司范围 召回复核 —— 核心扫描器 (正则合并版, 高效)
 对五源 cleaned 全量（条数经 clean_index 动态派生，勿在文档中写死）做宽口径关键词召回
 + 分层判定(INCLUDE/BOUNDARY/EXCLUDE) + 置信度(高/中/低)
-并与「已提取集合 E」（= 归属表，现行 1076 份）比对, 标记 in_808.
-输出: scan_records.csv (全量逐条) + scan_hits_808.jsonl (E 命中明细, 供"全文提取"要求)
+并与「已提取集合 E」（= 归属表，现行 1076 份）比对, 标记 in_attr.
+输出: scan_records.csv (全量逐条) + scan_hits_attr.jsonl (E 命中明细, 供"全文提取"要求)
 
-命名说明：字段名 in_808 与产物 scan_hits_808.jsonl / 808全文提取记录.csv 沿用历史 '808' 命名，
-**非当前条数**；编排器 run_retrieval_after_checks.py 按这些精确文件名校验产物，故不得重命名。
+命名说明（2026-09-08 语义消歧）：字段 in_attr / scan_hits_attr.jsonl / 归属表全文提取记录.csv /
+归属表无全文清单.csv —— 历史 '808' 编号（指归属表全集 E）已按语义改写为 attr；编排器按这些精确文件名校验产物。
 
 数据源纪律（强制）：五源 cleaned 最新快照一律经 clean_index.get_clean_index().latest_csv_path(src)
 动态派生，**严禁硬编码快照日期**；索引过期时 scanner 会**自动重建 clean_index**（与编排器 Gate1 一致），
@@ -38,7 +38,7 @@ from clean_index import get_clean_index, scan_sources
 
 CLASS = os.path.join(_MOD_CLASS, "data")
 ATTR = os.path.join(CLASS, "人身保险公司-文件归属表.csv")
-OUTDIR = _THIS
+OUTDIR = os.path.join(_THIS, "output")   # 代码/产物分离（2026-09-08）：产物统一落 recall_audit/output/
 os.makedirs(OUTDIR, exist_ok=True)
 
 # 从 clean_index 读取五源最新快照 csv（彻底消除硬编码日期）
@@ -234,7 +234,7 @@ with open(ATTR, encoding="utf-8-sig", newline="") as f:
         if nd: docno_index[nd].append(row["监管文件编号"])
         if nt: title_index[nt].append(row["监管文件编号"])
 
-def match_808(docno,title):
+def match_attr(docno,title):
     rfns=[]
     if docno and docno in docno_index: rfns+=docno_index[docno]
     if title and title in title_index: rfns+=title_index[title]
@@ -242,9 +242,9 @@ def match_808(docno,title):
 
 # ---------------- 扫描 ----------------
 out_csv=os.path.join(OUTDIR,"scan_records.csv")
-out_json=os.path.join(OUTDIR,"scan_hits_808.jsonl")
+out_json=os.path.join(OUTDIR,"scan_hits_attr.jsonl")
 cols=["source","dedup_key","document_number","title","issue_organ","decision","confidence",
-      "a_kws","b_kws","c_kws","x_kws","snippet","avail_text_len","has_full_body","in_808","matched_rfn"]
+      "a_kws","b_kws","c_kws","x_kws","snippet","avail_text_len","has_full_body","in_attr","matched_rfn"]
 total=0; decision_cnt=collections.Counter(); conf_cnt=collections.Counter()
 src_cnt=collections.Counter(); miss_cnt=collections.Counter()
 
@@ -261,15 +261,15 @@ with open(out_csv,"w",encoding="utf-8-sig",newline="") as fo, \
                 avail=len(title)+len(meta)+len(body)
                 has_full=avail>=200
                 docno=_norm_docno(row.get("document_number","")); ntitle=_norm_title(title)
-                rfns=match_808(docno,ntitle); in_808=bool(rfns)
+                rfns=match_attr(docno,ntitle); in_attr=bool(rfns)
                 decision,conf,a_kws,b_kws,c_kws,x_kws,snip,a_hits,b_hits=classify(title,meta,body)
                 decision_cnt[decision]+=1; conf_cnt[conf]+=1; src_cnt[src]+=1
-                if decision in ("INCLUDE","BOUNDARY") and not in_808: miss_cnt[src]+=1
+                if decision in ("INCLUDE","BOUNDARY") and not in_attr: miss_cnt[src]+=1
                 w.writerow([src,row.get("dedup_key",""),row.get("document_number",""),title,
                             row.get("issue_organ",""),decision,conf,
                             "|".join(a_kws),"|".join(b_kws),"|".join(c_kws),"|".join(x_kws),
-                            snip,avail,has_full,in_808,";".join(rfns)])
-                if in_808 and (a_kws or b_kws or c_kws or x_kws):
+                            snip,avail,has_full,in_attr,";".join(rfns)])
+                if in_attr and (a_kws or b_kws or c_kws or x_kws):
                     rec={"rfn":rfns,"source":src,"document_number":row.get("document_number",""),
                          "title":title,"issue_organ":row.get("issue_organ",""),
                          "decision":decision,"confidence":conf,

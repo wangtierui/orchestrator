@@ -29,7 +29,7 @@ _THIS = os.path.dirname(os.path.abspath(__file__))                 # modules/reg
 _MOD_CLASS = os.path.dirname(_THIS)                                 # modules/regulatory_classifier
 _SCRAPERS_MOD = os.path.join(os.path.dirname(_MOD_CLASS), "regulatory_scrapers")
 SCRAPERS_STATE = os.path.join(_SCRAPERS_MOD, "timeliness_review", "verification_state.json")
-MIRROR_PATH = os.path.join(_THIS, "verification_state.mirror.json")
+MIRROR_PATH = os.path.join(_THIS, "output", "verification_state.mirror.json")
 
 
 def _src_mtime():

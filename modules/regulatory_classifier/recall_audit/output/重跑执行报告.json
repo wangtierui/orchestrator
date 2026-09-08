@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "generated_at": "2026-09-08T10:37:22+0800",
+  "generated_at": "2026-09-08T15:29:23+0800",
   "trigger": "clean_index + verification_state + 链路契约 + schema 预检 四门禁（gate-based，非 cron 轮询语义）",
   "action": "rerun_success",
   "gates": {
@@ -11,7 +11,7 @@
         "validate": {
           "missing": [],
           "hash_mismatch": [],
-          "ok_count": 5
+          "ok_count": 10
         },
         "index_stale": false,
         "stale_sources": [],
@@ -62,9 +62,10 @@
         "fresh": 2896,
         "stale": 0,
         "categories": {
-          "北大法宝": 2799,
+          "北大法宝": 2798,
           "规则判断": 63,
-          "数据层统一清洗": 34
+          "数据层统一清洗": 34,
+          "人工复核": 1
         },
         "stale_examples": [],
         "warnings": [
@@ -111,20 +112,20 @@
     }
   },
   "change_detected": true,
-  "previous_signature": "{\"clean\": {\"gov\": {\"date\": \"20260907\", \"records\": 605}, \"mof\": {\"date\": \"20260907\", \"records\": 870}, \"nfra\": {\"date\": \"20260907\", \"records\": 1939}, \"pbc\": {\"date\": \"20260907\", \"records\": 571}, \"supp\": {\"date\": \"20260907\", \"records\": 57}}, \"validity\": {\"entries_total\": 1636, \"fresh\": 1636, \"state_mtime\": 1788624689.520459}}",
-  "current_signature": "{\"clean\": {\"gov\": {\"date\": \"20260907\", \"records\": 605}, \"mof\": {\"date\": \"20260907\", \"records\": 870}, \"nfra\": {\"date\": \"20260907\", \"records\": 1939}, \"pbc\": {\"date\": \"20260907\", \"records\": 571}, \"supp\": {\"date\": \"20260907\", \"records\": 57}}, \"validity\": {\"entries_total\": 2896, \"fresh\": 2896, \"state_mtime\": 1788791840.7797432}}",
+  "previous_signature": null,
+  "current_signature": "{\"clean\": {\"gov\": {\"date\": \"20260907\", \"records\": 605}, \"mof\": {\"date\": \"20260907\", \"records\": 870}, \"nfra\": {\"date\": \"20260907\", \"records\": 1939}, \"pbc\": {\"date\": \"20260907\", \"records\": 571}, \"supp\": {\"date\": \"20260907\", \"records\": 57}}, \"validity\": {\"entries_total\": 2896, \"fresh\": 2896, \"state_mtime\": 1788842743.2184525}}",
   "stages": [
     {
       "name": "scanner.py",
       "status": "success",
       "returncode": 0,
-      "tail": "ɨ�����. �ܼ�¼: 4042\n���߷ֲ�: {'EXCLUDE': 2936, 'BOUNDARY': 795, 'INCLUDE': 311}\n���ŷֲ�: {'��': 1404, '��': 1717, '��': 795, '��': 126}\n��Դ: {'gov': 605, 'mof': 870, 'nfra': 1939, 'pbc': 571, 'supp': 57}\n����©��(��808��INCLUDE/BOUNDARY)��Դ: {'gov': 65, 'mof': 67, 'nfra': 169, 'pbc': 29, 'supp': 4}\n���: D:\\WorkBuddy\\regulatory_compliance_orchestrator\\modules\\regulatory_classifier\\recall_audit\\scan_records.csv D:\\WorkBuddy\\regulatory_compliance_orchestrator\\modules\\regulatory_classifier\\recall_audit\\scan_hits_808.jsonl\n\n--- stderr ---\n"
+      "tail": "ɨ�����. �ܼ�¼: 4042\n���߷ֲ�: {'EXCLUDE': 2936, 'BOUNDARY': 795, 'INCLUDE': 311}\n���ŷֲ�: {'��': 1404, '��': 1717, '��': 795, '��': 126}\n��Դ: {'gov': 605, 'mof': 870, 'nfra': 1939, 'pbc': 571, 'supp': 57}\n����©��(��808��INCLUDE/BOUNDARY)��Դ: {'gov': 65, 'mof': 67, 'nfra': 169, 'pbc': 29, 'supp': 4}\n���: D:\\WorkBuddy\\regulatory_compliance_orchestrator\\modules\\regulatory_classifier\\recall_audit\\output\\scan_records.csv D:\\WorkBuddy\\regulatory_compliance_orchestrator\\modules\\regulatory_classifier\\recall_audit\\output\\scan_hits_attr.jsonl\n\n--- stderr ---\n"
     },
     {
       "name": "build_outputs.py",
       "status": "success",
       "returncode": 0,
-      "tail": "����©��(INCLUDE��808)ȥ�غ�: 7 | �߽�(BOUNDARY��808)ȥ�غ�: 323\nͳ��: {\"total\": 4042, \"dec\": {\"EXCLUDE\": 2936, \"BOUNDARY\": 795, \"INCLUDE\": 311}, \"conf\": {\"��\": 1404, \"��\": 1717, \"��\": 795, \"��\": 126}, \"src_total\": {\"gov\": 605, \"mof\": 870, \"nfra\": 1939, \"pbc\": 571, \"supp\": 57}, \"inc\": 7, \"inc_src\": {\"nfra\": 7}, \"inc_conf\": {\"��\": 7}, \"bnd\": 323, \"bnd_src\": {\"gov\": 65, \"mof\": 67, \"nfra\": 159, \"pbc\": 28, \"supp\": 4}, \"e808_total\": 1059, \"e808_found\": 1013, \"e808_nobody\": 53, \"gov_nobody\": 0, \"src_snapshot\": {\"gov\": \"20260907\", \"mof\": \"20260907\", \"nfra\": \"20260907\", \"pbc\": \"20260907\", \"supp\": \"20260907\"}, \"e808_missed\": 46}\n�����������ɡ�\n\n--- stderr ---\n"
+      "tail": "����©��(INCLUDE��808)ȥ�غ�: 7 | �߽�(BOUNDARY��808)ȥ�غ�: 323\nͳ��: {\"total\": 4042, \"dec\": {\"EXCLUDE\": 2936, \"BOUNDARY\": 795, \"INCLUDE\": 311}, \"conf\": {\"��\": 1404, \"��\": 1717, \"��\": 795, \"��\": 126}, \"src_total\": {\"gov\": 605, \"mof\": 870, \"nfra\": 1939, \"pbc\": 571, \"supp\": 57}, \"inc\": 7, \"inc_src\": {\"nfra\": 7}, \"inc_conf\": {\"��\": 7}, \"bnd\": 323, \"bnd_src\": {\"gov\": 65, \"mof\": 67, \"nfra\": 159, \"pbc\": 28, \"supp\": 4}, \"attr_total\": 1059, \"attr_found\": 1013, \"attr_nobody\": 53, \"gov_nobody\": 0, \"src_snapshot\": {\"gov\": \"20260907\", \"mof\": \"20260907\", \"nfra\": \"20260907\", \"pbc\": \"20260907\", \"supp\": \"20260907\"}, \"attr_missed\": 46}\n�����������ɡ�\n\n--- stderr ---\n"
     },
     {
       "name": "report.py",
@@ -135,39 +136,39 @@
   ],
   "products": {
     "scan_records.csv": {
-      "path": "D:\\WorkBuddy\\regulatory_compliance_orchestrator\\modules\\regulatory_classifier\\recall_audit\\scan_records.csv",
-      "size_bytes": 1748220
+      "path": "D:\\WorkBuddy\\regulatory_compliance_orchestrator\\modules\\regulatory_classifier\\recall_audit\\output\\scan_records.csv",
+      "size_bytes": 1748221
     },
-    "scan_hits_808.jsonl": {
-      "path": "D:\\WorkBuddy\\regulatory_compliance_orchestrator\\modules\\regulatory_classifier\\recall_audit\\scan_hits_808.jsonl",
+    "scan_hits_attr.jsonl": {
+      "path": "D:\\WorkBuddy\\regulatory_compliance_orchestrator\\modules\\regulatory_classifier\\recall_audit\\output\\scan_hits_attr.jsonl",
       "size_bytes": 1500583
     },
     "疑似漏提取文件清单.csv": {
-      "path": "D:\\WorkBuddy\\regulatory_compliance_orchestrator\\modules\\regulatory_classifier\\recall_audit\\疑似漏提取文件清单.csv",
+      "path": "D:\\WorkBuddy\\regulatory_compliance_orchestrator\\modules\\regulatory_classifier\\recall_audit\\output\\疑似漏提取文件清单.csv",
       "size_bytes": 5059
     },
     "边界案例清单.csv": {
-      "path": "D:\\WorkBuddy\\regulatory_compliance_orchestrator\\modules\\regulatory_classifier\\recall_audit\\边界案例清单.csv",
+      "path": "D:\\WorkBuddy\\regulatory_compliance_orchestrator\\modules\\regulatory_classifier\\recall_audit\\output\\边界案例清单.csv",
       "size_bytes": 214589
     },
-    "808全文提取记录.csv": {
-      "path": "D:\\WorkBuddy\\regulatory_compliance_orchestrator\\modules\\regulatory_classifier\\recall_audit\\808全文提取记录.csv",
+    "归属表全文提取记录.csv": {
+      "path": "D:\\WorkBuddy\\regulatory_compliance_orchestrator\\modules\\regulatory_classifier\\recall_audit\\output\\归属表全文提取记录.csv",
       "size_bytes": 554546
     },
-    "808无法访问全文清单.csv": {
-      "path": "D:\\WorkBuddy\\regulatory_compliance_orchestrator\\modules\\regulatory_classifier\\recall_audit\\808无法访问全文清单.csv",
+    "归属表无全文清单.csv": {
+      "path": "D:\\WorkBuddy\\regulatory_compliance_orchestrator\\modules\\regulatory_classifier\\recall_audit\\output\\归属表无全文清单.csv",
       "size_bytes": 13342
     },
     "关键词库扩充建议.csv": {
-      "path": "D:\\WorkBuddy\\regulatory_compliance_orchestrator\\modules\\regulatory_classifier\\recall_audit\\关键词库扩充建议.csv",
+      "path": "D:\\WorkBuddy\\regulatory_compliance_orchestrator\\modules\\regulatory_classifier\\recall_audit\\output\\关键词库扩充建议.csv",
       "size_bytes": 2058
     },
     "_stats.json": {
-      "path": "D:\\WorkBuddy\\regulatory_compliance_orchestrator\\modules\\regulatory_classifier\\recall_audit\\_stats.json",
-      "size_bytes": 322425
+      "path": "D:\\WorkBuddy\\regulatory_compliance_orchestrator\\modules\\regulatory_classifier\\recall_audit\\output\\_stats.json",
+      "size_bytes": 322755
     },
     "召回复核报告.md": {
-      "path": "D:\\WorkBuddy\\regulatory_compliance_orchestrator\\modules\\regulatory_classifier\\recall_audit\\召回复核报告.md",
+      "path": "D:\\WorkBuddy\\regulatory_compliance_orchestrator\\modules\\regulatory_classifier\\recall_audit\\output\\召回复核报告.md",
       "size_bytes": 16632
     }
   },
@@ -206,9 +207,9 @@
       "pbc": 28,
       "supp": 4
     },
-    "e808_total": 1059,
-    "e808_found": 1013,
-    "e808_nobody": 53,
+    "attr_total": 1059,
+    "attr_found": 1013,
+    "attr_nobody": 53,
     "gov_nobody": 0,
     "src_snapshot": {
       "gov": "20260907",
@@ -217,7 +218,7 @@
       "pbc": "20260907",
       "supp": "20260907"
     },
-    "e808_missed": 46
+    "attr_missed": 46
   },
   "skip_reason": null,
   "warnings": [],
