@@ -8,9 +8,10 @@ rfn.bridge — RFN↔clean 溯源桥（唯一读写实现；契约 SSOT = interf
   - 写者 = reconcile_clean_drift 后处理（source_url 主锚 upsert）；本模块提供唯一读写函数，
     禁止其他代码直接改桥表文件。
 
-桥表 9 列（与 contract 对齐）：
+桥表 11 列（与 contract 对齐；R10 provenance：后两列 generated_by/generated_at）：
   监管文件编号, 文件来源, source_url, dedup_key,
-  登记时标题, 登记时文号, 最近确认日期, 最近状态, relation
+  登记时标题, 登记时文号, 最近确认日期, 最近状态, relation,
+  generated_by, generated_at
 
 relation 取值：
   - "self"   锚定同一 clean 记录（source_url 或 dedup_key 命中归属表对应 RFN）
@@ -24,6 +25,7 @@ relation 取值：
 """
 import csv
 import os
+import time
 
 _PKG_DIR = os.path.dirname(os.path.abspath(__file__))   # modules/regulatory_classifier/rfn/
 BRIDGE_PATH = os.environ.get("RFN_BRIDGE_CSV") or os.path.join(
@@ -31,7 +33,8 @@ BRIDGE_PATH = os.environ.get("RFN_BRIDGE_CSV") or os.path.join(
 
 # 列契约：与 interfaces/contract.RFN_CLEAN_BRIDGE_FIELDS 保持一致（R24 程序可读契约）。
 BRIDGE_FIELDS = ["监管文件编号", "文件来源", "source_url", "dedup_key",
-                 "登记时标题", "登记时文号", "最近确认日期", "最近状态", "relation"]
+                 "登记时标题", "登记时文号", "最近确认日期", "最近状态", "relation",
+                 "generated_by", "generated_at"]
 
 
 def load_bridge(path=None) -> list[dict]:
@@ -59,15 +62,20 @@ def _save(rows, path=None):
             w.writerows(rows)
 
 
-def upsert(row: dict, path=None):
+def upsert(row: dict, path=None, provenance_by: str = "reconcile_clean_drift"):
     """按「监管文件编号」幂等 upsert（R7 写者入口，供 reconcile 后处理调用）。
 
-    row 需含 BRIDGE_FIELDS 全部列；缺失列补空。
+    row 需含 BRIDGE_FIELDS 业务列；缺失列补空。R10 provenance：行未显式带
+    generated_by/at 时补写者（默认 reconcile_clean_drift）与本次写入时间。
     """
     rows = load_bridge(path)
     idx = {r["监管文件编号"]: i for i, r in enumerate(rows)}
     i = idx.get(row.get("监管文件编号", ""))
     merged = {k: row.get(k, "") for k in BRIDGE_FIELDS}
+    if not merged.get("generated_by"):
+        merged["generated_by"] = provenance_by
+    if not merged.get("generated_at"):
+        merged["generated_at"] = time.strftime("%Y-%m-%d %H:%M:%S")
     if i is None:
         rows.append(merged)
     else:

@@ -38,10 +38,18 @@ REGISTRY_CSV_FIELDS: list[str] = [
 # 主题归属表 3 列
 THEME_FIELDS: list[str] = ["监管文件编号", "主题", "判定依据"]
 
-# RFN↔clean 溯源桥 9 列（Q1=A；写者=reconcile 后处理 R7）
+# 明细表列（R10 provenance 2026-09-08 加 generated_by/at；写者 build_detail_tables.FIELDS re-export 此契约）
+DETAIL_TABLE_FIELDS: list[str] = [
+    "监管文件编号", "主题", "标题", "发文字号", "文件来源",
+    "正文状态", "立法依据", "条款引用", "备注", "子主题",
+    "generated_by", "generated_at",
+]
+
+# RFN↔clean 溯源桥 11 列（Q1=A；写者=reconcile 后处理 R7；R10 provenance 加 generated_by/at）
 RFN_CLEAN_BRIDGE_FIELDS: list[str] = [
     "监管文件编号", "文件来源", "source_url", "dedup_key",
     "登记时标题", "登记时文号", "最近确认日期", "最近状态", "relation",
+    "generated_by", "generated_at",
 ]
 
 # --------------------------------------------------------------------------- #

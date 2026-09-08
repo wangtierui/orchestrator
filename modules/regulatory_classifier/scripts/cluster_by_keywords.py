@@ -62,6 +62,9 @@ def main():
     # 聚类
     recs = json.load(open(args.input, encoding="utf-8"))
     print(f"输入清单: {len(recs)} 条 | 主题 {args.theme} | 关键词轮次: {len(passes)}")
+    # R10 provenance：final 派生批次（base 的 generated_* 保留显性溯源；final 追加 finalized_*）
+    import time as _t  # noqa: PLC0415
+    _FIN = _t.strftime("%Y-%m-%d %H:%M:%S")
     for r in recs:
         cl = classify(r["title"], passes)
         if str(r["seq"]) in u_fix:
@@ -71,6 +74,8 @@ def main():
         # 标记」，纯归属表投影（base）生成的 final 无该信息 → 补空串保持 schema 恒真（scan 补充路径另填）。
         r.setdefault("source_origin", "")
         r.setdefault("src_mark", "")
+        r["finalized_by"] = "cluster_by_keywords"
+        r["finalized_at"] = _FIN
 
     json.dump(recs, open(args.output, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
 

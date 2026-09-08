@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-gates/gate_contract — 数据契约门禁（实装：归属表 8 列 / 主题表 3 列 / 明细 11 份×10 列 / 底座 40 键集）
+gates/gate_contract — 数据契约门禁（实装：归属表 8 列 / 主题表 3 列 / 明细契约列 / 底座 40 键集）
 
 数据契约唯一事实 = interfaces/contract.py（程序可读契约）。gate 读 modules 数据与契约比对，
 超集判定（允许下游加字段，缺必报）。纯读校验，不写回。
@@ -67,18 +67,19 @@ def run():
     if not ok:
         problems.append(f"主题归属表列头 {head} ≠ 契约 {contract.THEME_FIELDS}")
 
-    # 3) 明细表（R16：主题码全覆盖，THEME_MAP 遍历派生）× 10 列
+    # 3) 明细表（R16：主题码全覆盖，THEME_MAP 遍历派生）× DETAIL_TABLE_FIELDS 契约列
     dets = sorted(f for f in os.listdir(_DATA) if _DET_RE.match(f))
     det_codes = {_DET_RE.match(f).group(1) for f in dets}
     missing_codes = set(THEME_MAP) - det_codes
     checked["detail_tables"] = {"count": len(dets), "expected": _EXPECT_DETS,
-                                "covered_themes": sorted(det_codes)}
+                                "covered_themes": sorted(det_codes),
+                                "cols": len(contract.DETAIL_TABLE_FIELDS)}
     if missing_codes:
         problems.append(f"明细表主题覆盖缺 {sorted(missing_codes)}（THEME_MAP 驱动）: {dets}")
     for f in dets:
         head = _header(os.path.join(_DATA, f))
-        if len(head) != 10:
-            problems.append(f"明细表 {f} 列数 {len(head)} ≠ 10: {head}")
+        if head != contract.DETAIL_TABLE_FIELDS:
+            problems.append(f"明细表 {f} 列头 ≠ 契约({len(contract.DETAIL_TABLE_FIELDS)}列): {head}")
 
     # 4) 数据底座（R16：期望文件名集 = THEME_MAP{T1..T10}×4 派生）：结构类型 + 核心键超集
     bfiles = sorted(f for f in os.listdir(_DATA) if _BASE_RE.match(f))

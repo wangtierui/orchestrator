@@ -27,6 +27,7 @@ ALL_GATES: list[dict] = [
     {"module": "gates.gate_timeliness_ssot", "desc": "时效单源传播一致性", "require_impl": True},
     {"module": "gates.gate_citations", "desc": "制度引用门禁（drafter --strict）", "require_impl": True},
     {"module": "gates.gate_sources_config", "desc": "源目录配置一致性（R15）", "require_impl": True},
+    {"module": "gates.gate_provenance", "desc": "数据血缘 provenance 覆盖（R10）", "require_impl": True},
 ]
 
 

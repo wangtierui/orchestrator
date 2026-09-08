@@ -68,8 +68,11 @@ BODY_FULL, BODY_SUMMARY, BODY_CORE, BODY_NONE = "完整", "摘要", "核心要�
 BODY_ENUM = {BODY_FULL, BODY_SUMMARY, BODY_CORE, BODY_NONE}
 
 # 2026-08-31 schema 变更：删除「来源标记」「来源类型」两列（0 消费端 + 与 文件来源/正文状态 冗余）
-FIELDS = ["监管文件编号", "主题", "标题", "发文字号", "文件来源",
-          "正文状态", "立法依据", "条款引用", "备注", "子主题"]
+# R10 provenance（2026-09-08）：明细展示态追加 generated_by/generated_at 血缘列。
+# 列契约唯一事实源 = interfaces/contract.DETAIL_TABLE_FIELDS（gate_contract 同读，防字面漂移）
+from interfaces.contract import DETAIL_TABLE_FIELDS  # noqa: E402
+
+FIELDS: list[str] = DETAIL_TABLE_FIELDS
 
 # 放宽版条款正则（提升条/款/项级召回）：允许《X》与「第N条」之间最多 12 字间隔，
 # 覆盖「《X》第N条」「《X》的规定第N条」「《X》中第N条第M款」等；不含裸「第N条」以防自条款噪声。
@@ -191,6 +194,8 @@ def build_theme_rows(theme, attr_rows, cleaned, existing, cluster_map):
     既有行按全局 RFN 查表保留（子主题/立法依据/条款引用不变），仅缺失行自动补齐。"""
     out = []
     target_theme = THEME_MAP[theme]
+    # R10：血缘列本批次写者/时间（全行同批）
+    gb, g_at = "build_detail_tables", datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     for a in attr_rows:
         if (a.get("主题") or "").strip() != target_theme:
             continue
@@ -203,6 +208,7 @@ def build_theme_rows(theme, attr_rows, cleaned, existing, cluster_map):
             if st not in BODY_ENUM:
                 row["正文状态"] = body_status(get_body(cleaned.get((src, "D:" + _norm_docno(a.get("发文字号"))))))
             row["监管文件编号"], row["主题"] = rfn, target_theme
+            row["generated_by"], row["generated_at"] = gb, g_at
             out.append(row)
             continue
         c = cleaned.get((src, "D:" + _norm_docno(a.get("发文字号")))) \
@@ -215,6 +221,7 @@ def build_theme_rows(theme, attr_rows, cleaned, existing, cluster_map):
             "立法依据": "；".join(basis), "条款引用": art_str,
             "备注": "2026-08-31 build_detail_tables 补齐|条款/依据自动抽取(需复核)",
             "子主题": cluster_map.get(rfn, ""),
+            "generated_by": gb, "generated_at": g_at,
         })
     return out
 

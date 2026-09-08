@@ -31,6 +31,7 @@ import json
 import os
 import re
 import sys
+import time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))   # regulatory_classifier/
 if ROOT not in sys.path:
@@ -42,6 +43,22 @@ DEFAULT_OUT = os.path.join(ROOT, "data")
 THEMES = [f"T{i}" for i in range(1, 11)]
 # 2026-09-08 适配：归属表 8 列（已删「主题」列）+ RFN 为 RFN-hex；主题唯一来源=主题归属表
 _THEME_HEAD_RE = re.compile(r"^(T10|T[1-9])(?=\D|$)")
+# R10 provenance（2026-09-08）：每条底座记录标注写者/时间/源快照（归属表 mtime），供二期 traceability。
+_GEN_BY = "build_base_from_attr"
+_PROV_KEYS = ("generated_by", "generated_at", "source_snapshot")
+
+
+def _attr_snapshot(path) -> str:
+    """源快照 = 权威归属表文件 mtime（YYYY-MM-DD HH:MM:SS，本地时区）。"""
+    try:
+        return time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(os.path.getmtime(path)))
+    except OSError:
+        return ""
+
+
+def strip_prov(rec: dict) -> dict:
+    """去除 provenance 键（供 --check 与数据投影比较用：血缘字段不参与内容一致性判定）。"""
+    return {k: v for k, v in rec.items() if k not in _PROV_KEYS}
 
 
 def load_attr(path=ATTR_CSV):
@@ -78,8 +95,13 @@ def load_attr(path=ATTR_CSV):
                 "监管文件编号": rfn,
             })
     for t in groups:
+        gen_at = time.strftime("%Y-%m-%d %H:%M:%S")
+        snap = _attr_snapshot(path)
         for i, r in enumerate(groups[t], start=1):
             r["seq"] = i
+            r["generated_by"] = _GEN_BY
+            r["generated_at"] = gen_at
+            r["source_snapshot"] = snap
     return groups
 
 
@@ -126,7 +148,10 @@ def main():
                 diffs.append({"theme": t, "issue": "文件不存在", "want": n, "have": 0})
                 continue
             have = json.load(open(path, encoding="utf-8"))
-            if have != groups[t]:
+            # R10：provenance 键不参与一致性（重跑刷新时间/快照属预期）；比较须两侧同构（磁盘旧数据缺键时按无键比）
+            want = [strip_prov(r) for r in groups[t]]
+            hv = [strip_prov(r) for r in have] if have and isinstance(have[0], dict) and "generated_by" in have[0] else have
+            if hv != want:
                 diffs.append({"theme": t, "issue": "内容与归属表投影不一致",
                               "want": len(groups[t]), "have": len(have)})
         if diffs:
