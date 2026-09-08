@@ -34,6 +34,9 @@ for _p in (_ORCH_ROOT, _MODULES):
 from internal_policy_base.extract import copy_original, extract_file  # noqa: E402
 from internal_policy_base.scan import scan_directory  # noqa: E402
 
+# R21：条文结构解析（章-条），供 merged_view/drafter 条款对照
+from std_lib.scraper_std.document_structure import extract_structure  # noqa: E402
+
 _DATA = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
 _ORIGINALS = os.path.join(_DATA, "originals")
 _PROCESSED = os.path.join(_DATA, "processed")
@@ -45,6 +48,7 @@ PROCESSED_FIELDS = [
     "ipn", "file_name", "relative_path", "extension", "docno", "title",
     "size_bytes", "sha256", "file_type", "status", "extract_status",
     "text_chars", "needs_ocr", "original_path", "extracted_at",
+    "chapter_count", "article_count",   # R21 条文结构（clauses json 存明细）
 ]
 
 
@@ -110,13 +114,21 @@ def ingest(source_root: str, *, enable_ocr: bool = False, dry_run: bool = False)
             "text_chars": len(text), "needs_ocr": bool(res.get("needs_ocr")),
             "original_path": os.path.relpath(orig, _DATA), "extracted_at": now,
         }
+        # R21：条文结构解析 → <ipn>_clauses.json（章/条明细；正文为空或非条文型得空结构）
+        stru = extract_structure(text)
+        rec["chapter_count"] = stru["chapter_count"]
+        rec["article_count"] = stru["article_count"]
         os.makedirs(_PROCESSED, exist_ok=True)
-        tmp = os.path.join(_PROCESSED, f["ipn"] + ".json.tmp")
-        json.dump(rec, open(tmp, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
-        os.replace(tmp, os.path.join(_PROCESSED, f["ipn"] + ".json"))
+        json.dump(rec, open(os.path.join(_PROCESSED, f["ipn"] + ".json.tmp"), "w", encoding="utf-8"),
+                  ensure_ascii=False, indent=2)
+        os.replace(os.path.join(_PROCESSED, f["ipn"] + ".json.tmp"),
+                   os.path.join(_PROCESSED, f["ipn"] + ".json"))
         # 正文单独存（避免 processed 内嵌大 text 混入 schema；_fulltext.json 便于下游）
         json.dump({"ipn": f["ipn"], "text": text},
                   open(os.path.join(_PROCESSED, f["ipn"] + "_fulltext.json"), "w", encoding="utf-8"),
+                  ensure_ascii=False, indent=2)
+        json.dump({"ipn": f["ipn"], "chapters": stru["chapters"], "articles": stru["articles"]},
+                  open(os.path.join(_PROCESSED, f["ipn"] + "_clauses.json"), "w", encoding="utf-8"),
                   ensure_ascii=False, indent=2)
         state[key] = {"ipn": f["ipn"], "sha256": key, "ingested_at": now}
 

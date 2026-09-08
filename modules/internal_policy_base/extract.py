@@ -107,6 +107,56 @@ def copy_original(src: str, dst_dir: str, rel_path: str) -> str:
     return dst
 
 
+def backfill_clauses() -> dict:
+    """对存量 processed fulltext 回补条文结构（R21，无需重摄）：写 <ipn>_clauses.json，
+    回刷主 json 与 index 的 chapter_count/article_count。返回统计。"""
+    import json as _json
+
+    data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
+    proc_dir = os.path.join(data_dir, "processed")
+    idx_path = os.path.join(data_dir, "internal_policy_index.json")
+    if not os.path.isdir(proc_dir):
+        return {"error": "no processed dir"}
+    sys.path.insert(0, os.path.join(_ORCH_ROOT, "std_lib"))
+    from std_lib.scraper_std.document_structure import extract_structure  # noqa: PLC0415
+    n = 0
+    for fn in sorted(os.listdir(proc_dir)):
+        if not fn.endswith("_fulltext.json"):
+            continue
+        ipn = fn[: -len("_fulltext.json")]
+        ft = os.path.join(proc_dir, fn)
+        obj = _json.load(open(ft, encoding="utf-8"))
+        stru = extract_structure(obj.get("text", ""))
+        _json.dump({"ipn": ipn, "chapters": stru["chapters"], "articles": stru["articles"]},
+                   open(os.path.join(proc_dir, ipn + "_clauses.json"), "w", encoding="utf-8"),
+                   ensure_ascii=False, indent=2)
+        main_p = os.path.join(proc_dir, ipn + ".json")
+        if os.path.exists(main_p):
+            try:
+                m = _json.load(open(main_p, encoding="utf-8"))
+                m["chapter_count"] = stru["chapter_count"]
+                m["article_count"] = stru["article_count"]
+                _json.dump(m, open(main_p, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
+            except Exception:
+                pass
+        n += 1
+    if os.path.exists(idx_path):
+        try:
+            idx = _json.load(open(idx_path, encoding="utf-8"))
+            for rec in idx.get("records", []):
+                cp = os.path.join(proc_dir, rec.get("ipn", "") + "_clauses.json")
+                if os.path.exists(cp):
+                    c = _json.load(open(cp, encoding="utf-8"))
+                    rec["chapter_count"] = len(c.get("chapters", []))
+                    rec["article_count"] = len(c.get("articles", []))
+            _json.dump(idx, open(idx_path + ".tmp", "w", encoding="utf-8"),
+                       ensure_ascii=False, indent=2)
+            os.replace(idx_path + ".tmp", idx_path)
+        except Exception:
+            pass
+    return {"backfilled": n}
+
+
 def renormalize_processed() -> dict:
     """对 data/processed/*_fulltext.json 全量重跑 normalize_text（清洗规则升级后回刷）。
 
