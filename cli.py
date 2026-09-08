@@ -115,7 +115,15 @@ def _cmd_internal(argv):
         s = build_merged_view()
         print(json.dumps(s, ensure_ascii=False, indent=2))
         return 0
-    print(f"未知 internal 子命令: {sub}（可用: index, align, merged）")
+    if sub == "backfill":
+        # R10/B4（2026-09-08）：backfill_clauses 收敛 CLI（原仅 python -c 手工调用）
+        import json
+
+        from internal_policy_base.extract import backfill_clauses
+        s = backfill_clauses()
+        print(json.dumps(s, ensure_ascii=False, indent=2))
+        return 0
+    print(f"未知 internal 子命令: {sub}（可用: index, align, merged, backfill）")
     return 1
 
 
@@ -223,8 +231,8 @@ def build_parser() -> argparse.ArgumentParser:
     p_source = sub.add_parser("source", help="源目录（config/sources.yaml 唯一事实源，R15）")
     p_source.add_argument("action", choices=["list", "add"], help="list 列出源与 collector 路由 | add 新增源 checklist")
     p_int = sub.add_parser("internal", help="内部制度摄取/对齐/引用视图（P6/P7）")
-    p_int.add_argument("sub", choices=["index", "align", "merged"],
-                       help="index 摄取 | align 主题对齐 | merged 制度×RFN 引用视图")
+    p_int.add_argument("sub", choices=["index", "align", "merged", "backfill"],
+                       help="index 摄取 | align 主题对齐 | merged 制度×RFN 引用视图 | backfill 条文回补(R10)")
     sub.add_parser("classify", help="主题底座强序重建（R8，--theme/--all/--steps/--dry-run）")
     p_tl = sub.add_parser("timeliness", help="时效核验（R13 三态：success/partial/unavailable）")
     p_tl.add_argument("action", choices=["verify"],

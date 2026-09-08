@@ -155,16 +155,22 @@ def stage_classifier(source, changed, dry_run, report):
         shutil.copy2(main, mir)
         print("     N-5 镜像刷新完成（源→镜像，备份已建）")
 
-    ok3, t3 = _run([os.path.join("recall_audit", "sync_all_layers.py"), "--apply"],
-                   CLASSIFIER, "层级同步（索引/下游/效力 diff）", dry_run)
+    # R1 修复（2026-09-08）：原引 sync_all_layers.py / run_gates.py（仓内不存在，哑引用必败）
+    # → 改指现仓等价入口：层级同步 = rfn 索引/指纹由归属表重建；门禁 = orchestrator cli.py gates。
+    orch = os.path.abspath(os.path.join(CLASSIFIER, "..", ".."))
+    _layers_cmd = ("import sys;"
+                   f"sys.path.insert(0, r'{orch}');sys.path.insert(0, r'{CLASSIFIER}');"
+                   "from rfn.registry import rebuild_index;"
+                   "r=rebuild_index();print('rfn 索引/指纹已由归属表重建')")
+    ok3, t3 = _run(["-c", _layers_cmd], CLASSIFIER,
+                   "层级同步（rfn 索引/指纹重建，R1）", dry_run)
     if not dry_run:
         _propagate_final()
         _run([os.path.join("scripts", "build_base_from_attr.py"), "--all"], CLASSIFIER,
              "base.json 重建")
     ok4, _ = _run([os.path.join("scripts", "build_base_from_attr.py"), "--check"], CLASSIFIER,
                   "base.json 自检", dry_run)
-    ok5, _ = _run([os.path.join(ROOT, "..", "run_gates.py")], os.path.join(CLASSIFIER, ".."),
-                  "门禁七道", dry_run)
+    ok5, _ = _run(["cli.py", "gates"], orch, "交付门禁（cli.py gates，R1）", dry_run)
     report.append(("② regulatory_classifier", f"归属表匹配 {m}；层级同步✅{ok3}；base✅{ok4}；门禁✅{ok5}"))
     return ok3 and ok4 and ok5
 
