@@ -340,16 +340,27 @@ def reconcile(source=None, apply_c1=False, dry_run=False, force_clean_title=Fals
         "applied_c1": bool(apply_c1 and not dry_run),
     }
     _save_json(_STATE_PATH, summary)
-    if not dry_run and (c1_list or c2_list or legacy_list or absent_list):
-        out = os.path.join(paths.REPORTS_DIR, f"drift_清单_{today}.csv")
-        os.makedirs(paths.REPORTS_DIR, exist_ok=True)
-        all_rows = c1_list + c2_list + legacy_list + absent_list
-        cols = sorted({k for r in all_rows for k in r})
-        with open(out, "w", encoding="utf-8-sig", newline="") as fh:
+    all_rows = c1_list + c2_list + legacy_list + absent_list
+    cols = sorted({k for r in all_rows for k in r})
+    if not dry_run:
+        # drift 唯一基准 ledger（批次2/2026-09-08）：data/rfn_drift_ledger.csv 恒为最近一次
+        # reconcile 的全量漂移明细（无漂移亦刷新表头），供审计/门禁读唯一态；reports 按日清单为报告留痕。
+        data_dir = os.path.dirname(_ATTR)
+        led = os.path.join(data_dir, "rfn_drift_ledger.csv")
+        os.makedirs(data_dir, exist_ok=True)
+        with open(led, "w", encoding="utf-8-sig", newline="") as fh:
             w = csv.DictWriter(fh, fieldnames=cols, extrasaction="ignore")
             w.writeheader()
             w.writerows(all_rows)
-        summary["drift_csv"] = out
+        summary["drift_ledger"] = led
+        if all_rows:
+            out = os.path.join(paths.REPORTS_DIR, f"drift_清单_{today}.csv")
+            os.makedirs(paths.REPORTS_DIR, exist_ok=True)
+            with open(out, "w", encoding="utf-8-sig", newline="") as fh:
+                w = csv.DictWriter(fh, fieldnames=cols, extrasaction="ignore")
+                w.writeheader()
+                w.writerows(all_rows)
+            summary["drift_csv"] = out
     return summary
 
 
