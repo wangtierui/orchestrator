@@ -21,6 +21,7 @@ import paths
 ALLOWED_DATA_SUBDIRS = {
     "regulatory_scrapers": {"cleaned", "clauses"},   # clauses：clean 后条文固定节点产物（②）
     "internal_policy_base": {"originals", "processed"},
+    "internal_policy_drafter": {"draft_clause"},      # 条款级对照素材（P8 端到端编排输出，R21 驱动）
 }
 # docs/ 允许子目录（报告产物目录等）：classifier docs/reports（R9 主题报告输出）
 ALLOWED_DOCS_SUBDIRS = {

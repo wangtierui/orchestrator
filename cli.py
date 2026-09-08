@@ -187,12 +187,27 @@ def _cmd_timeliness(argv):
     return r.returncode
 
 
+def _cmd_draft(argv):
+    """draft [--ipn IPN-xxx] —— 条款级对照素材端到端编排（P8 收口）。
+    输入 merged_view + internal processed（R21 clauses）；输出 drafter/data/draft_clause/。
+    供六件套之「条款对照表/立法依据」起草打底；退出码 0=成功 1=数据缺（merged 未生成）。"""
+    import os  # noqa: PLC0415
+    import subprocess  # noqa: PLC0415
+    script = os.path.join(paths.ROOT, "modules", "internal_policy_drafter",
+                          "scripts", "build_draft_clause_view.py")
+    if not os.path.exists(script):
+        print(f"[draft] 脚本缺失: {script}")
+        return 1
+    return subprocess.run([sys.executable, "-X", "utf8", script] + argv).returncode
+
+
 COMMANDS = {
     "gates": _cmd_gates,
     "source": _cmd_source,
     "internal": _cmd_internal,
     "classify": _cmd_classify,
     "timeliness": _cmd_timeliness,
+    "draft": _cmd_draft,
     "ping": _cmd_ping,
 }
 
@@ -214,6 +229,8 @@ def build_parser() -> argparse.ArgumentParser:
     p_tl = sub.add_parser("timeliness", help="时效核验（R13 三态：success/partial/unavailable）")
     p_tl.add_argument("action", choices=["verify"],
                       help="verify 效力缺失核验（透传 --source/--dry-run/--probe/--workers/--token-file）")
+    p_draft = sub.add_parser("draft", help="条款级对照素材端到端编排（P8：merged_view × R21 clauses）")
+    p_draft.add_argument("--ipn", default="", help="单制度 IPN-xxx（默认全部）")
     return p
 
 

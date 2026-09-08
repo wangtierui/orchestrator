@@ -37,13 +37,13 @@ DOCS = os.path.join(ROOT, "docs")
 ALIGN = os.path.join(DOCS, "监管文件编号与分类对齐表.md")
 
 # P7（2026-09-08）：同仓引导（R4 无盘符）——orchestrator 根（paths）+ classifier 模块根（rfn）
+# get_index 延迟到 Verifier() 内加载（顶层 import 在部分调用上下文 rfn 解析异常；函数级延迟与 gates 同款）
 _MODULES = os.path.dirname(os.path.dirname(ROOT))            # modules/
 _ORCH_ROOT = os.path.dirname(_MODULES)
 _CLASSIFIER_ROOT = os.path.join(_MODULES, "regulatory_classifier")
 for _p in (_ORCH_ROOT, _CLASSIFIER_ROOT):
     if _p not in sys.path:
         sys.path.insert(0, _p)
-from rfn import get_index  # noqa: E402
 
 R_PAT = re.compile(r"\bR-(\d{2})\b")
 # 发文字号核心：〔20xx〕N号 / [20xx]N号 / （20xx）N号 / 令20xx年第N号 / 国务院令第N号
@@ -94,6 +94,7 @@ TIMELINESS_SET = frozenset({"valid", "amended", "repealed", "partially_repealed"
 
 class Verifier:
     def __init__(self):
+        from rfn import get_index  # noqa: PLC0415  延迟加载（见 P7 引导注）
         self.idx = get_index()
         self.align = load_align_map()
 
