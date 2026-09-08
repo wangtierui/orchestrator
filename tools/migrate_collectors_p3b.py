@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
 """
+!! 已退役（2026-09-08 A 项拍平后）——collectors 已物理拍平为单层 + 源前缀命名，
+本工具的旧仓复制源清单（COPY_PLAN 旧 collectors/<src>/ 布局）已不适用；后续演进以
+tools/flatten_collectors.py（含 RENAME 映射与幂等 fix_texts）为唯一布局工具，勿再运行本脚本。
+
 tools/migrate_collectors_p3b.py — 五源"源特有抓取器"复制聚合 + import 适配（P3b，2026-09-08）
 
 原则：

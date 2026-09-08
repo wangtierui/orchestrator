@@ -13,8 +13,6 @@ import json
 import os
 import sys
 
-import pytest
-
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 for p in (ROOT,
           os.path.join(ROOT, "modules"),
