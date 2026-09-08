@@ -44,7 +44,9 @@ import sys
 import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-CACHE = os.path.join(HERE, "cache", "nfra")  # 五源统一缓存根
+from std_lib.scraper_std.cache_store import source_cache_root  # noqa: E402
+
+CACHE = source_cache_root("nfra")  # 单一物理缓存根（modules/regulatory_scrapers/cache/nfra）
 LOCK = os.path.join(HERE, "weekly_refresh.lock")
 BACKUP_ROOT = os.path.join(CACHE, "_list_backup")
 PY = sys.executable
@@ -212,8 +214,7 @@ def run_fill(timeout=None):
 
 def run_rebuild():
     return subprocess.run(
-        [PY, "nfra_collector.py", "--cache-dir",
-         os.path.join(HERE, "cache", "nfra"), "--offline",
+        [PY, "nfra_collector.py", "--offline",
          "--delay-min", "0", "--delay-max", "0", "--out-dir",
          os.path.join(os.path.dirname(HERE), "data", "raw")],
         cwd=HERE, check=False, stdout=sys.stdout, stderr=sys.stderr,

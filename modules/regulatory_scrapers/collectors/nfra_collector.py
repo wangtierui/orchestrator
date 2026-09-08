@@ -111,20 +111,30 @@ _SSL_CTX = ssl.create_default_context()
 # 缓存目录（由 --cache-dir 设置）。命中缓存则跳过网络，便于断网/续跑/复现。
 # 2026-09-05 重构：核心缓存逻辑下沉至通用模块 std_lib/scraper_std/cache_store，
 # 五源统一复用，缓存产物统一落盘 regulatory_scrapers/cache/<source>/。
-from std_lib.scraper_std.cache_store import OfflineMiss, ResponseCache  # noqa: E402
+from std_lib.scraper_std.cache_store import OfflineMiss, bind_source_cache, source_cache_root
 
 _RESP = None  # ResponseCache 实例；None 表示未启用缓存
 # 兼容别名（旧代码/脚本引用 m._OfflineMiss）
 _OfflineMiss = OfflineMiss
 
-def set_cache_dir(path):
-    """设置请求缓存根目录（启用/禁用缓存）。path=None 表示禁用缓存。"""
+
+def _init_cache(path=None, offline=False):
+    """统一缓存根绑定（缺省 cache_store.source_cache_root("nfra")，单物理根）；path 显式可覆盖。"""
     global _RESP
-    _RESP = ResponseCache(path) if path else None
+    _RESP = bind_source_cache("nfra", "json", root=path)
+    if offline and _RESP is not None:
+        _RESP.set_offline(True)
+
+
+def set_cache_dir(path):
+    """兼容旧调用（同目录脚本）：仅设根，沿用当前离线态。"""
+    _init_cache(path)
+
 
 def set_offline(flag):
     if _RESP is not None:
         _RESP.set_offline(flag)
+
 
 def _cache_path(url, params):
     """根据接口与参数生成确定性缓存文件名（委托通用模块，命名算法保持不变）。"""
@@ -346,8 +356,8 @@ def get_detail(opener, doc_id, delay_min, delay_max):
 def build_detail_url(doc_id, item_id):
     return "%s/cn/view/pages/ItemDetail.html?docId=%s&itemId=%s" % (BASE, doc_id, item_id)
 
-# 附件缓存根目录（与 nfra_fetch_attachments.py 默认落盘位置一致：<脚本目录>/cache/attachments）
-_ATT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cache", "attachments")
+# 附件缓存根目录（与 nfra_fetch_attachments.py 默认落盘一致：modules/regulatory_scrapers/cache/nfra/attachments）
+_ATT_DIR = os.path.join(source_cache_root("nfra"), "attachments")
 
 def load_attachments(doc_id):
     """读取 nfra_fetch_attachments.py 落盘的附件清单与抽取文本（纯标准库，离线安全）。
@@ -388,8 +398,7 @@ def load_attachments(doc_id):
     return out
 
 def scrape(args):
-    set_cache_dir(args.cache_dir)
-    set_offline(args.offline)
+    _init_cache(args.cache_dir or None, args.offline)
     opener = make_opener()
     out_dir = args.out_dir
     os.makedirs(out_dir, exist_ok=True)
@@ -602,8 +611,7 @@ def scrape(args):
         f.write("| attachment_count / attachment_total_pages / attachment_total_chars / attachment_text | 附件聚合指标与正文拼接，存于 CSV |\n")
 
         # 附件数据质量章节（对齐 DAMA / ISO 8000）
-        qr_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                               "cache", "attachments", "_quality_report.json")
+        qr_path = os.path.join(_ATT_DIR, "_quality_report.json")
         if os.path.exists(qr_path):
             try:
                 qr = json.load(open(qr_path, encoding="utf-8"))
@@ -690,11 +698,9 @@ def main():
                     help="仅抓取前 N 篇（0=全部，用于快速验证）")
     ap.add_argument("--no-detail", action="store_true",
                     help="仅抓取列表、跳过详情页（用于快速验证列表遍历）")
-    ap.add_argument("--cache-dir",
-                    default=os.path.join(os.path.dirname(os.path.dirname(
-                        os.path.abspath(__file__))), "cache", "nfra"),
-                    help="请求缓存目录：抓取时落盘、断网时读盘（支持断点续跑/离线复现）。"
-                         "默认 regulatory_scrapers/cache/nfra（五源统一缓存根）")
+    ap.add_argument("--cache-dir", default="",
+                    help="请求缓存目录（显式覆盖）：缺省由 cache_store.source_cache_root(nfra) 统一解析"
+                         "→ modules/regulatory_scrapers/cache/nfra（单物理根）")
     ap.add_argument("--offline", action="store_true",
                     help="纯离线模式：仅读取 --cache-dir 缓存，缓存缺失即跳过（不联网）")
     args = ap.parse_args()

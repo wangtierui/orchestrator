@@ -150,6 +150,75 @@ def default_cache_root() -> str:
     return os.path.join(repo_root, "cache")
 
 
+# --------------------------------------------------------------------------- #
+# 五源统一缓存工厂（2026-09-08）：单一物理缓存根 + 源级单例绑定
+#
+# 缓存根唯一约定 = ``<repo>/modules/regulatory_scrapers/cache/<source>/``
+# （各 collector 不再自行 dirname 推导 cache 路径，消除 nfra 双根等分叉）。
+# 若 modules/regulatory_scrapers 不存在（共享库独立使用场景）回退 ``<repo>/cache``。
+# 支持 env ``SCRAPER_CACHE_ROOT`` / configure_cache_root() 整体覆盖。
+# --------------------------------------------------------------------------- #
+_CACHE_OVERRIDE = ""
+_BOUND: dict[tuple[str, str, str], object] = {}
+_KIND_CLASSES = {}
+
+
+def configure_cache_root(root: str) -> None:
+    """设置统一缓存基根（空串恢复默认解析）；影响其后 source_cache_root/绑定。"""
+    global _CACHE_OVERRIDE
+    _CACHE_OVERRIDE = (root or "").strip()
+
+
+def scraper_cache_base() -> str:
+    """统一缓存基根：优先 ``<repo>/modules/regulatory_scrapers/cache``（本仓布局）。"""
+    here = os.path.dirname(os.path.abspath(__file__))       # std_lib/scraper_std/
+    repo_root = os.path.dirname(os.path.dirname(here))
+    modules_cand = os.path.join(repo_root, "modules", "regulatory_scrapers", "cache")
+    if os.path.isdir(os.path.dirname(modules_cand)):        # modules/regulatory_scrapers 存在
+        return modules_cand
+    return os.path.join(repo_root, "cache")
+
+
+def source_cache_root(source: str, *, root: str | None = None) -> str:
+    """某源的缓存根 = 基根/<source>（source 小写化）。root 显式时以 root/<source> 为准。"""
+    base = (root or _CACHE_OVERRIDE or os.environ.get("SCRAPER_CACHE_ROOT") or "").strip()
+    if not base:
+        base = scraper_cache_base()
+    return os.path.join(base, str(source or "").lower())
+
+
+def bind_source_cache(source: str, kind: str = "json", *, root: str | None = None,
+                      offline: bool = False):
+    """源级请求/附件缓存**单例绑定**：返回（首次创建并记忆的）缓存实例。
+
+    kind：
+      "json" → ResponseCache（JSON 响应）
+      "text" → TextResponseCache（HTML/文本响应）
+      "blob" → BlobCache（二进制附件）
+    root：缺省自动 = source_cache_root(source)（统一根 <base>/<source>；kind=blob 追加
+          /attachments 子目录，与 SourceCache.blobs 结构一致）；显式给定时**直接作为
+          该源缓存目录**（兼容 CLI --cache-dir 语义）。
+    同 (source, kind, root) 复用同一实例。collector 一次调用即可消除自写薄包装。
+    """
+    global _KIND_CLASSES
+    if not _KIND_CLASSES:
+        _KIND_CLASSES.update({"json": ResponseCache, "text": TextResponseCache, "blob": BlobCache})
+    if kind not in _KIND_CLASSES:
+        raise ValueError(f"未知缓存类型: {kind!r}（可用 json/text/blob）")
+    if root:
+        r = root
+    elif kind == "blob":
+        r = os.path.join(source_cache_root(source), "attachments")
+    else:
+        r = source_cache_root(source)
+    key = (source, kind, os.path.abspath(r))
+    if key not in _BOUND:
+        _BOUND[key] = _KIND_CLASSES[kind](r)
+    if offline:
+        _BOUND[key].set_offline(True)
+    return _BOUND[key]
+
+
 def _endpoint_key(endpoint: str) -> str:
     """从完整 URL 或裸端点名提取用作文件名前缀的端点标识。"""
     if "://" in endpoint or "/" in endpoint:

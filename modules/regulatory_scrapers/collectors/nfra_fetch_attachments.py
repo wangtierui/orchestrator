@@ -61,7 +61,9 @@ import urllib.parse
 import urllib.request
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-CACHE = os.path.join(HERE, "cache", "nfra")  # 五源统一缓存根
+from std_lib.scraper_std.cache_store import source_cache_root  # noqa: E402
+
+CACHE = source_cache_root("nfra")  # 单一物理缓存根（modules/regulatory_scrapers/cache/nfra）
 ATT_DIR = os.path.join(CACHE, "attachments")
 DETAIL_GLOB = os.path.join(CACHE, "SelectByDocId__docId_*.json")
 QUALITY_REPORT = os.path.join(ATT_DIR, "_quality_report.json")

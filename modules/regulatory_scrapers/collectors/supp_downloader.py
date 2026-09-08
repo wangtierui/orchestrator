@@ -54,23 +54,26 @@ from std_lib.scraper_std.http import AdaptiveHttpClient  # noqa: E402
 
 # 二进制附件缓存委托通用 BlobCache（与四源统一抽象层；落盘于 cache/supp/attachments/）
 try:
-    from std_lib.scraper_std.cache_store import BlobCache
-except ImportError:
-    from std_lib.scraper_std.cache_store import BlobCache
+    from std_lib.scraper_std.cache_store import bind_source_cache
+except ImportError:  # pragma: no cover
+    from std_lib.scraper_std.cache_store import bind_source_cache
 
 _BLOB = None       # BlobCache 实例；None 表示禁用缓存
 _OFFLINE = False   # 离线模式开关（仅影响 download_file 缺失时的返回值）
 
 def set_cache_dir(path):
-    """设置二进制附件缓存根目录（启用/禁用缓存）。
+    """设置二进制附件缓存根目录（统一根绑定，启用/禁用缓存）。
 
     ``path`` 与本仓库其他源一致，取**源根目录** ``cache/<source>``
-    （如 ``cache/supp``）；内部自动路由到 ``<path>/attachments/``，
-    与 ``get_source_cache("<source>").blobs`` 命名空间严格对齐。
-    ``path=None`` 表示禁用缓存。
+    （如 ``cache/supp``）；内部经 bind_source_cache 自动路由到
+    ``modules/regulatory_scrapers/cache/supp/attachments/``（单一物理缓存根，
+    SourceCache 命名空间一致）。``path=None`` 表示禁用缓存。
     """
     global _BLOB
-    _BLOB = BlobCache(os.path.join(path, "attachments")) if path else None
+    if not path:
+        _BLOB = None
+        return
+    _BLOB = bind_source_cache("supp", "blob", root=os.path.join(path, "attachments"))
 
 def set_offline(flag):
     """设置离线模式开关。True 时 download_file 优先复用缓存、缺失返回 (False, ...)。"""

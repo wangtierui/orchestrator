@@ -13,7 +13,9 @@ import glob
 import json
 import os
 
-CACHE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cache", "nfra")  # 五源统一缓存根
+from std_lib.scraper_std.cache_store import source_cache_root  # noqa: E402
+
+CACHE = source_cache_root("nfra")  # 单一物理缓存根（modules/regulatory_scrapers/cache/nfra）
 
 # 1) 列表总量校验（928 + 927）
 files = sorted(glob.glob(os.path.join(CACHE, "SelectDocByItemIdAndChild*.json")))

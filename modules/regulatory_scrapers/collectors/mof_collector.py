@@ -91,17 +91,26 @@ except ImportError:  # pragma: no cover
 # mof 接口均返回 JSON → 委托 ResponseCache；命中读盘跳过网络、离线缺失抛 OfflineMiss、
 # 仅成功响应（code==200）落盘，不缓存错误/拦截页。
 try:
-    from std_lib.scraper_std.cache_store import OfflineMiss, ResponseCache
+    from std_lib.scraper_std.cache_store import OfflineMiss, bind_source_cache
 except ImportError:  # pragma: no cover
-    from std_lib.scraper_std.cache_store import OfflineMiss, ResponseCache
+    from std_lib.scraper_std.cache_store import OfflineMiss, bind_source_cache
 
 _RESP = None  # ResponseCache 实例；None 表示未启用缓存
 _OfflineMiss = OfflineMiss  # 兼容别名
 
-def set_cache_dir(path):
-    """设置请求缓存根目录（启用/禁用缓存）。path=None 表示禁用缓存。"""
+
+def _init_cache(path=None, offline=False):
+    """统一缓存根绑定（缺省 cache_store.source_cache_root("mof")，单物理根）；path 显式可覆盖。"""
     global _RESP
-    _RESP = ResponseCache(path) if path else None
+    _RESP = bind_source_cache("mof", "json", root=path)
+    if offline and _RESP is not None:
+        _RESP.set_offline(True)
+
+
+def set_cache_dir(path):
+    """兼容旧调用（同目录脚本）：仅设根，沿用当前离线态。"""
+    _init_cache(path)
+
 
 def set_offline(flag):
     if _RESP is not None:
@@ -767,17 +776,15 @@ def main():
                     help="强制重新抓取并下载全部条目的附件（用于补抓历史条目附件，默认仅新增/变更条目抓附件）")
     ap.add_argument("--max-items", type=int, default=None, help="每类别最多抓取条目数（验证用）")
     ap.add_argument("--timeout", type=int, default=30, help="单请求超时(秒)")
-    ap.add_argument("--cache-dir",
-                    default=os.path.join(REPO_ROOT, "cache", "mof"),
-                    help="请求缓存目录：抓取时落盘、断网时读盘（支持断点续跑/离线复现）。"
-                         "默认 regulatory_scrapers/cache/mof（五源统一缓存根）")
+    ap.add_argument("--cache-dir", default="",
+                    help="请求缓存目录（显式覆盖）：缺省由 cache_store.source_cache_root(mof) 统一解析"
+                         "→ modules/regulatory_scrapers/cache/mof（单物理根）")
     ap.add_argument("--offline", action="store_true",
                     help="纯离线模式：仅读取 --cache-dir 缓存，缓存缺失即跳过（不联网）")
     args = ap.parse_args()
 
-    # 通用缓存（五源统一抽象层）：启用缓存目录 + 离线开关
-    set_cache_dir(args.cache_dir)
-    set_offline(args.offline)
+    # 通用缓存（五源统一抽象层）：统一根绑定 + 离线开关
+    _init_cache(args.cache_dir or None, args.offline)
 
     # 名称映射
     if args.names and len(args.names) == len(args.categories):

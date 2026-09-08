@@ -61,17 +61,26 @@ from datetime import datetime
 # 命中读盘跳过网络、离线缺失抛 OfflineMiss、仅成功响应（status==200）落盘；
 # 二进制附件（binary=True）已落盘 ATTACHMENTS_DIR，不经文本缓存。
 try:
-    from std_lib.scraper_std.cache_store import OfflineMiss, TextResponseCache
+    from std_lib.scraper_std.cache_store import OfflineMiss, bind_source_cache
 except ImportError:  # pragma: no cover
-    from std_lib.scraper_std.cache_store import OfflineMiss, TextResponseCache
+    from std_lib.scraper_std.cache_store import OfflineMiss, bind_source_cache
 
 _RESP_TEXT = None  # TextResponseCache 实例；None 表示未启用缓存
 _OfflineMiss = OfflineMiss  # 兼容别名
 
-def set_cache_dir(path):
-    """设置请求缓存根目录（启用/禁用缓存）。path=None 表示禁用缓存。"""
+
+def _init_cache(path=None, offline=False):
+    """统一缓存根绑定（缺省 cache_store.source_cache_root("pbc")，单物理根）；path 显式可覆盖。"""
     global _RESP_TEXT
-    _RESP_TEXT = TextResponseCache(path) if path else None
+    _RESP_TEXT = bind_source_cache("pbc", "text", root=path)
+    if offline and _RESP_TEXT is not None:
+        _RESP_TEXT.set_offline(True)
+
+
+def set_cache_dir(path):
+    """兼容旧调用（同目录脚本）：仅设根，沿用当前离线态。"""
+    _init_cache(path)
+
 
 def set_offline(flag):
     if _RESP_TEXT is not None:
@@ -761,17 +770,15 @@ def main():
     ap.add_argument("--delay", type=float, default=1.0, help="平均请求间隔（秒）")
     ap.add_argument("--out", default=os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "raw"), help="输出目录（默认统一 data/raw/：regulatory_scrapers/data/raw）")
     ap.add_argument("--no-attachments", action="store_true", help="不下载附件正文，仅记录链接")
-    ap.add_argument("--cache-dir",
-                    default=os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "cache", "pbc"),
-                    help="请求缓存目录：抓取时落盘、断网时读盘（支持断点续跑/离线复现）。"
-                         "默认 regulatory_scrapers/cache/pbc（五源统一缓存根）")
+    ap.add_argument("--cache-dir", default="",
+                    help="请求缓存目录（显式覆盖）：缺省由 cache_store.source_cache_root(pbc) 统一解析"
+                         "→ modules/regulatory_scrapers/cache/pbc（单物理根）")
     ap.add_argument("--offline", action="store_true",
                     help="纯离线模式：仅读取 --cache-dir 缓存，缓存缺失即跳过（不联网）")
     args = ap.parse_args()
 
-    # 通用缓存（五源统一抽象层）：启用缓存目录 + 离线开关
-    set_cache_dir(args.cache_dir)
-    set_offline(args.offline)
+    # 通用缓存（五源统一抽象层）：统一根绑定 + 离线开关
+    _init_cache(args.cache_dir or None, args.offline)
 
     # —— 调度可靠性：跨进程单实例锁防并发重复（统一 fs_lock 公共库，N-8）——
     _lock = fs_lock.ProcessLock(os.path.join(args.out, "scrape.lock"))

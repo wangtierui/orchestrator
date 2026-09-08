@@ -24,7 +24,9 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import nfra_collector as m
 
-CACHE = os.path.join(HERE, "cache", "nfra")  # 五源统一缓存根
+from std_lib.scraper_std.cache_store import source_cache_root  # noqa: E402
+
+CACHE = source_cache_root("nfra")  # 单一物理缓存根（modules/regulatory_scrapers/cache/nfra）
 m.set_cache_dir(CACHE)
 
 CHILD_URL = m.API + "/DocInfo/SelectItemAndDocByItemPId"
