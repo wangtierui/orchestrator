@@ -15,8 +15,13 @@ import os
 
 import paths
 
-# 允许的 data 子目录（唯一例外：scraper 统一 cleaned 数据根）
-ALLOWED_DATA_SUBDIRS = {"cleaned"}
+# 各模块 data/ 允许子目录白名单（其余一律拍平）：
+#   - scraper:             cleaned（五源统一 cleaned 数据根）
+#   - internal_policy_base: originals/processed（原始件副本 + 结构化正文，P6 数据随仓）
+ALLOWED_DATA_SUBDIRS = {
+    "regulatory_scrapers": {"cleaned"},
+    "internal_policy_base": {"originals", "processed"},
+}
 
 
 def run():
@@ -28,6 +33,7 @@ def run():
         if not os.path.isdir(mod_root):
             checked.append(f"{name}: 未创建")
             continue
+        allowed = ALLOWED_DATA_SUBDIRS.get(name, set())
         docs = os.path.join(mod_root, "docs")
         if os.path.isdir(docs):
             subdirs = [d for d in os.listdir(docs)
@@ -38,8 +44,8 @@ def run():
         if os.path.isdir(data):
             subdirs = [d for d in os.listdir(data)
                        if os.path.isdir(os.path.join(data, d))]
-            bad = [d for d in subdirs if d not in ALLOWED_DATA_SUBDIRS]
+            bad = [d for d in subdirs if d not in allowed]
             if bad:
                 problems.append(f"{name}/data 存在子目录: {sorted(bad)}"
-                                f"（允许 {sorted(ALLOWED_DATA_SUBDIRS)}）")
+                                f"（允许 {sorted(allowed) or '无'}）")
     return (not problems), {"problems": problems, "checked": checked}

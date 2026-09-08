@@ -52,9 +52,53 @@ def _cmd_ping(argv):
     return 0
 
 
+def _cmd_internal(argv):
+    """internal index|align [--source-dir ...] — 内部制度摄取/对齐（P6）。"""
+    import os
+    import sys
+    sys.path.insert(0, os.path.join(paths.ROOT, "modules"))
+    if not argv:
+        print("用法: orchestrator internal {index|align} [--source-dir DIR] [--dry-run]")
+        return 1
+    sub = argv[0]
+    if sub == "index":
+        # 透传剩余参数（--source-dir/--enable-ocr/--dry-run）
+        return _index_main_internal(argv[1:])
+    if sub == "align":
+        import json
+
+        from internal_policy_base.align import align_all
+        s = align_all()
+        print(json.dumps(s, ensure_ascii=False, indent=2))
+        return 0
+    print(f"未知 internal 子命令: {sub}（可用: index, align）")
+    return 1
+
+
+def _index_main_internal(argv):
+    """复刻 indexer.main 的 argparse（cli 内联透传）。"""
+    import argparse
+    ap = argparse.ArgumentParser(description="internal index")
+    ap.add_argument("--source-dir", default="", help="制度源目录")
+    ap.add_argument("--enable-ocr", action="store_true")
+    ap.add_argument("--dry-run", action="store_true")
+    args = ap.parse_args(argv)
+    src = args.source_dir or __import__("os").environ.get("INTERNAL_POLICY_ROOT", "")
+    if not src:
+        print("需提供 --source-dir 或设置 INTERNAL_POLICY_ROOT 环境变量")
+        return 1
+    import json
+
+    from internal_policy_base.indexer import ingest
+    s = ingest(src, enable_ocr=args.enable_ocr, dry_run=args.dry_run)
+    print(json.dumps(s, ensure_ascii=False, indent=2))
+    return 0
+
+
 COMMANDS = {
     "gates": _cmd_gates,
     "source": _cmd_source_list,
+    "internal": _cmd_internal,
     "ping": _cmd_ping,
 }
 
@@ -69,6 +113,8 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser("ping", help="骨架自检")
     p_source = sub.add_parser("source", help="源目录（config/sources.yaml）")
     p_source.add_argument("action", choices=["list"], help="list 列出源")
+    p_int = sub.add_parser("internal", help="内部制度摄取/对齐（P6）")
+    p_int.add_argument("sub", choices=["index", "align"], help="index 摄取 | align 主题对齐")
     return p
 
 
