@@ -27,6 +27,9 @@ for _p in (_ORCH_ROOT, os.path.join(_ORCH_ROOT, "std_lib")):
         sys.path.insert(0, _p)
 
 from std_lib.scraper_std.crawler_common import extract_document_text  # noqa: E402
+from std_lib.scraper_std.text_reflow import (
+    reflow_chinese,  # noqa: E402  共享行重排（⑪，供五源 future 复用）
+)
 
 _CTRL_RE = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f\u200b\u200e\u200f\ufeff]")
 _MULTI_BLANK_RE = re.compile(r"[ \t\u3000]{2,}")
@@ -65,7 +68,8 @@ def normalize_text(text: str) -> str:
     """正文规范化：
     1) 去控制符/隔离空白；
     2) 块级剥离页眉页脚（多行「标题+编号+页码」/ 纯页码块）——2026-09-08 遗留修复；
-    3) 行级 trim + 垃圾行启发式；空行收敛。
+    3) 行级 trim + 垃圾行启发式；空行收敛；
+    4) 中文行长硬换行合并（reflow，⑪）——消除正文句中被 \\n 截断（共享 std_lib.text_reflow）。
     """
     t = _CTRL_RE.sub("", text or "")
     t = t.replace("\r\n", "\n").replace("\r", "\n")
@@ -77,6 +81,7 @@ def normalize_text(text: str) -> str:
              and not _DOC_ID_LINE_RE.match(ln)]
     t = "\n".join(_drop_junk_lines(lines))
     t = _MULTI_NL_RE.sub("\n\n", t).strip()
+    t = reflow_chinese(t)   # ⑪ 句内硬换行合并（段内无 \n）
     return t
 
 
@@ -105,6 +110,29 @@ def copy_original(src: str, dst_dir: str, rel_path: str) -> str:
     os.makedirs(os.path.dirname(dst), exist_ok=True)
     shutil.copy2(src, dst)
     return dst
+
+
+def backfill_reflow() -> dict:
+    """对存量 processed fulltext 重做正文规范化（含 ⑪ reflow 句内硬换行合并），无需重摄/重 OCR。
+    重写 <ipn>_fulltext.json 的 text；随后调用方应重跑 backfill_clauses 刷新 clauses.json/.md。"""
+    import json as _json
+    data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
+    proc_dir = os.path.join(data_dir, "processed")
+    if not os.path.isdir(proc_dir):
+        return {"error": "no processed dir"}
+    n = 0
+    for fn in sorted(os.listdir(proc_dir)):
+        if not fn.endswith("_fulltext.json"):
+            continue
+        p = os.path.join(proc_dir, fn)
+        obj = _json.load(open(p, encoding="utf-8"))
+        old = obj.get("text", "")
+        new = normalize_text(old)
+        if new != old:
+            obj["text"] = new
+            _json.dump(obj, open(p, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
+            n += 1
+    return {"reflowed": n}
 
 
 def backfill_clauses() -> dict:
