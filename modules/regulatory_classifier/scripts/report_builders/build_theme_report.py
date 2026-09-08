@@ -46,6 +46,46 @@ def _load_rows(path):
         return list(csv.DictReader(fh))
 
 
+# ② 条款共享维度：五源 clause_index（clean 固定节点产物）→ {归一化文号: 条款数}
+# 供主题报告/全景报告统计"条款化文件数/条款总数"（clause 产物缺失则静默为无，不阻断报告）。
+_clause_map: dict[str, int] | None = None
+
+
+def _load_clause_map() -> dict[str, int]:
+    from std_lib.common_lib.norm import norm_docno  # noqa: PLC0415
+    scrapers_mod = os.path.join(os.path.dirname(_MOD_CLASS), "regulatory_scrapers")
+    if scrapers_mod not in sys.path:
+        sys.path.insert(0, scrapers_mod)
+    import clause_index as _ci  # noqa: PLC0415
+    m: dict[str, int] = {}
+    for src in ("gov", "mof", "nfra", "pbc", "supp"):
+        try:
+            for cl in _ci.iter_file_clauses(src):
+                if cl.get("article_count", 0) <= 0:
+                    continue
+                dno = cl.get("document_number", "") or ""
+                nd = norm_docno(dno)
+                if nd and len(nd) >= 5:
+                    m.setdefault(nd, 0)
+                    m[nd] += cl["article_count"]
+                sig = _docno_sig(dno)
+                if sig:
+                    m.setdefault(sig, 0)
+                    m[sig] += cl["article_count"]
+        except Exception:
+            continue
+    return m
+
+
+# 文号尾签名「〔年〕序」：容忍发文机关前缀差异（归属表简写 vs clean 全称）
+_DOCNO_SIG_RE = re.compile(r"[〔\[](\d{4})[〕\]][^0-9]{0,6}(\d{1,4})\s*号?")
+
+
+def _docno_sig(docno: str) -> str:
+    mm = _DOCNO_SIG_RE.search(docno or "")
+    return f"{mm.group(1)}-{mm.group(2)}" if mm else ""
+
+
 def _theme_report(theme: str) -> tuple[str, str]:
     """生成单主题报告 → (文件名, markdown)。"""
     tname = THEME_MAP.get(theme, theme)
@@ -71,9 +111,12 @@ def _theme_report(theme: str) -> tuple[str, str]:
     lines.append("")
     # 时效统计
     from collections import Counter  # noqa: PLC0415
+
+    from std_lib.common_lib.norm import norm_docno  # noqa: PLC0415
     st_cnt: Counter = Counter()
     src_cnt: Counter = Counter()
     rows = []
+    clause_files = clause_arts = 0
     for rec in final:
         rfn = rec.get("监管文件编号", "")
         ar = attr.get(rfn, {})
@@ -83,6 +126,12 @@ def _theme_report(theme: str) -> tuple[str, str]:
         src_cnt[src] += 1
         rows.append((rfn, rec.get("title") or ar.get("文件名称") or "",
                      rec.get("doc_no") or ar.get("发文字号") or "", eff, src))
+        if _clause_map is not None:   # 条款共享维度（②）：doc_no 归一经 clause_index
+            dno = rec.get("doc_no") or ""
+            n = _clause_map.get(norm_docno(dno), 0) or _clause_map.get(_docno_sig(dno), 0)
+            if n > 0:
+                clause_files += 1
+                clause_arts += n
     lines.append("## 统计")
     lines.append("")
     lines.append("| 指标 | 值 |")
@@ -90,6 +139,8 @@ def _theme_report(theme: str) -> tuple[str, str]:
     lines.append(f"| 文件数 | {len(rows)} |")
     lines.append(f"| 时效分布 | {'；'.join(f'{k}={v}' for k, v in st_cnt.most_common())} |")
     lines.append(f"| 来源分布 | {'；'.join(f'{k}={v}' for k, v in src_cnt.most_common())} |")
+    if _clause_map is not None:
+        lines.append(f"| 条款化文件/条款总数（clause_index ②） | {clause_files} / {clause_arts} |")
     lines.append("")
     lines.append("## 文件清单")
     lines.append("")
@@ -101,7 +152,13 @@ def _theme_report(theme: str) -> tuple[str, str]:
 
 
 def build_all(themes: list[str] | None = None) -> dict:
+    global _clause_map
     os.makedirs(_DOCS_REPORTS, exist_ok=True)
+    try:
+        _clause_map = _load_clause_map()
+        print(f"[clause] 条款维度就绪: {len(_clause_map)} 个文号含条款")
+    except Exception:  # noqa: BLE001  clause 产物缺失不阻断报告
+        _clause_map = {}
     themes = themes or sorted(THEME_MAP)
     out = {}
     for th in themes:

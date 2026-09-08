@@ -19,7 +19,7 @@ import paths
 #   - scraper:             cleaned（五源统一 cleaned 数据根）
 #   - internal_policy_base: originals/processed（原始件副本 + 结构化正文，P6 数据随仓）
 ALLOWED_DATA_SUBDIRS = {
-    "regulatory_scrapers": {"cleaned"},
+    "regulatory_scrapers": {"cleaned", "clauses"},   # clauses：clean 后条文固定节点产物（②）
     "internal_policy_base": {"originals", "processed"},
 }
 # docs/ 允许子目录（报告产物目录等）：classifier docs/reports（R9 主题报告输出）

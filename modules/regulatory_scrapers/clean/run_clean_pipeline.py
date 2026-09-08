@@ -83,6 +83,8 @@ def main(argv=None) -> int:
     ap.add_argument("--on-alarm", default="log", choices=("log", "raise"))
     ap.add_argument("--sanitize-jsonl", action="store_true",
                     help="JSONL 字段换行一并归一（默认保留原始 \\n）")
+    ap.add_argument("--no-clauses", action="store_true",
+                    help="跳过 clean→条文 固定节点（默认清洗成功后自动增量构建 clause_index，②）")
     args = ap.parse_args(argv)
 
     project = args.project
@@ -117,6 +119,18 @@ def main(argv=None) -> int:
     if not summary.get("allow_delivery"):
         print(f"[{project}] WARN 空值率超阈值，按规范不生成交付文件（已告警）。")
         return 2
+
+    # ② 固定节点：clean 成功后自动增量构建条文产物（clause_index，跨全源最新快照；
+    # 仅对 clean 快照新于既有产物的源抽取，幂等）。
+    if not args.no_clauses:
+        try:
+            from modules.regulatory_scrapers.clause_index import build_clause_index  # noqa: PLC0415
+            res = build_clause_index()
+            print("[clauses] 条文固定节点: "
+                  + "; ".join(f"{k}={v.get('built', v.get('error', 'skip'))}"
+                              for k, v in res.items() if not k.startswith("_")))
+        except Exception as e:  # noqa: BLE001  不阻断 clean 交付（clause 可后续手工/调度补建）
+            print(f"[clauses] WARN 条文节点跳过（不影响 clean 交付）: {e!r}")
     return 0
 
 
