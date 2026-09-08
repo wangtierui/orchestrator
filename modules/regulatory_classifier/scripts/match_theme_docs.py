@@ -186,31 +186,36 @@ def main():
         print("❌ 无可用库索引，退出")
         sys.exit(1)
 
-    # 既有 matched（--merge 时）
+    # 既有 matched（--merge 时；键兼容 seq 旧期与 RFN 现期）
     old_matched = {}
     if args.merge and os.path.exists(args.output):
         old_matched = json.load(open(args.output, encoding="utf-8"))
 
-    # 匹配
+    # 匹配（R9 修复 2026-09-08：顶层键=RFN，clause_graph 依赖 RFN 键回填 docno/eff/file_src；
+    # rec 补 监管文件编号/seq 双溯源；旧 seq 键仅 merge 保留时兼容）
     matched = {}
     miss = []
     for r in recs:
         seq = r["seq"]
+        rfn = (r.get("监管文件编号") or "").strip()
+        key = rfn or str(seq)
         best = match_one(seq, r["title"], r.get("doc_no", ""), lib_index)
         if best:
             lib, rec = best
-            matched[seq] = {
+            matched[key] = {
                 "lib": lib,
                 "title": rec.get("title", ""),
                 "docno": rec.get("document_number", ""),
                 "body_len": len(rec.get("body_text", "") or ""),
                 "body": rec.get("body_text", "") or "",
                 "url": rec.get("source_url", ""),
+                "监管文件编号": rfn,
+                "seq": seq,
             }
-        elif args.merge and str(seq) in old_matched:
-            matched[seq] = old_matched[str(seq)]  # 保留旧记录
+        elif args.merge and (key in old_matched or str(seq) in old_matched):
+            matched[key] = old_matched.get(key) or old_matched[str(seq)]  # 保留旧记录
         else:
-            miss.append(seq)
+            miss.append(key)
 
     # 条款分析
     citerefs = {}
