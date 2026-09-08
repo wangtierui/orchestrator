@@ -123,6 +123,45 @@ FIELD_SEMANTIC_EQUIV: dict[str, tuple[str, ...]] = {
 }
 
 # --------------------------------------------------------------------------- #
+# 字段别名消费端归一 API（字段治理 2026-09-08）
+# 消费端跨层读值统一走 read_field(row, en)：自动尝试 FIELD_SEMANTIC_EQUIV 别名组 + 中文受控列
+# （CN_FIELD_REGISTRY 中 en 命中的中文列名），避免各层硬编码"取 文件名称 还是 title"。
+# --------------------------------------------------------------------------- #
+def en_aliases(en: str) -> tuple[str, ...]:
+    """英文规范名 → 全部可解析别名（FIELD_SEMANTIC_EQUIV 组 + 中文受控列中该 en 的中文名）。"""
+    base = list(FIELD_SEMANTIC_EQUIV.get(en, (en,)))
+    for cn, meta in CN_FIELD_REGISTRY.items():
+        if meta.get("en") == en and cn not in base:
+            base.append(cn)
+    return tuple(dict.fromkeys(base))
+
+
+def read_field(row: dict, en: str, default: str = "") -> str:
+    """消费端按英文规范名读取行值；行键可为 英文别名/规范名/中文列名。返回 str 值。"""
+    if row is None:
+        return default
+    for a in en_aliases(en):
+        if a in row and row[a] is not None:
+            v = row[a]
+            return v if isinstance(v, str) else str(v)
+    return default
+
+
+def assert_alias_integrity() -> None:
+    """别名体系自检：FIELD_SEMANTIC_EQUIV 每组含自身；CN_FIELD_REGISTRY 中文名不与
+    FIELD_SEMANTIC_EQUIV 别名重复错配（同名不同 en 时报）。"""
+    for en, group in FIELD_SEMANTIC_EQUIV.items():
+        assert group and group[0] == en, (en, group)
+    en_of_cn = {}
+    for cn, meta in CN_FIELD_REGISTRY.items():
+        en = meta.get("en") or ""
+        assert en, f"CN_FIELD_REGISTRY 缺 en: {cn}"
+        if cn in en_of_cn and en_of_cn[cn] != en:
+            raise AssertionError(f"中文列 {cn} 映射冲突: {en_of_cn[cn]} vs {en}")
+        en_of_cn[cn] = en
+
+
+# --------------------------------------------------------------------------- #
 # 底座 JSON 键集（Gate4 核心键，source: recall_audit/run_retrieval_after_checks.py:455-464）
 # 超集判定：允许未来加字段，缺字段必报。
 # --------------------------------------------------------------------------- #
