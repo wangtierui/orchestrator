@@ -71,7 +71,14 @@ def _cmd_internal(argv):
         s = align_all()
         print(json.dumps(s, ensure_ascii=False, indent=2))
         return 0
-    print(f"未知 internal 子命令: {sub}（可用: index, align）")
+    if sub == "merged":
+        import json
+
+        from internal_policy_base.merged import build_merged_view
+        s = build_merged_view()
+        print(json.dumps(s, ensure_ascii=False, indent=2))
+        return 0
+    print(f"未知 internal 子命令: {sub}（可用: index, align, merged）")
     return 1
 
 
@@ -113,8 +120,9 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser("ping", help="骨架自检")
     p_source = sub.add_parser("source", help="源目录（config/sources.yaml）")
     p_source.add_argument("action", choices=["list"], help="list 列出源")
-    p_int = sub.add_parser("internal", help="内部制度摄取/对齐（P6）")
-    p_int.add_argument("sub", choices=["index", "align"], help="index 摄取 | align 主题对齐")
+    p_int = sub.add_parser("internal", help="内部制度摄取/对齐/引用视图（P6/P7）")
+    p_int.add_argument("sub", choices=["index", "align", "merged"],
+                       help="index 摄取 | align 主题对齐 | merged 制度×RFN 引用视图")
     return p
 
 
