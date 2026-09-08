@@ -36,6 +36,9 @@ _DATA = os.path.join(_CLASS, "data")
 _ATTR = os.path.join(_DATA, "人身保险公司-文件归属表.csv")
 _STATE = os.path.join(_DATA, "classify_state.json")
 _KEYWORDS = os.path.join(_SCRIPTS, "config", "cluster_keywords.json")
+# R6（2026-09-08）：clean_index/index.json 作为 clean 快照内容签名——正文同日内容变化时
+# index 每源 sha 会变，match/detail/upper 断点据此级联重跑，消除"正文变但条数同"的静默过时。
+_CLEAN_INDEX = os.path.join(os.path.dirname(_CLASS), "regulatory_scrapers", "clean_index", "index.json")
 _PY = sys.executable
 _BODY_THEMES = [c for c in THEME_MAP if c != "T0"]       # 有底座的 T1–T10
 
@@ -76,10 +79,10 @@ def plan_theme(theme: str):
         {"step": "cluster", "inputs": (base, _KEYWORDS),
          "desc": "final 子主题聚类",
          "args": ["--input", base, "--output", final, "--theme", theme]},
-        {"step": "match", "inputs": (final,),
+        {"step": "match", "inputs": (final, _CLEAN_INDEX),   # R6：含 clean 快照签名
          "desc": "matched/citerefs 条款引用匹配",
          "args": ["--input", final, "--output", matched, "--citerefs", citerefs]},
-        {"step": "detail", "inputs": (_ATTR, final),
+        {"step": "detail", "inputs": (_ATTR, final, _CLEAN_INDEX),  # R6
          "desc": "明细表",
          "args": ["--theme", theme, "--apply"]},
         {"step": "clause_graph", "inputs": (matched, citerefs),
@@ -153,7 +156,7 @@ def run(theme: str = "", themes: list[str] | None = None, only_steps: set[str] |
             detail_files = sorted(
                 f for f in os.listdir(_DATA)
                 if f.endswith("逐份条款引用与上位法依据明细表.csv"))
-            cur = _sha(_ATTR, *[os.path.join(_DATA, f) for f in detail_files])
+            cur = _sha(_ATTR, _CLEAN_INDEX, *[os.path.join(_DATA, f) for f in detail_files])  # R6 clean 签名
             up_prev = state.get("upper", {}).get("input_sha")
             if up_prev == cur:
                 skipped += 1

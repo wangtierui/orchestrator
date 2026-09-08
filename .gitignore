@@ -33,11 +33,16 @@ state/
 *.pkulaw_token
 *_token*
 
-# ===== timeliness 核验运行产物（状态数据/摘要/台账/断点 均不入库；数据以本地文件 + gate 校验为准）=====
+# ===== timeliness 核验运行产物（状态数据/摘要/台账/断点/全量清单 均不入库；数据以本地文件 + gate 校验为准）=====
 modules/regulatory_scrapers/timeliness_review/verification_state.json
 modules/regulatory_scrapers/timeliness_review/verify_summary_*.json
 modules/regulatory_scrapers/timeliness_review/时效核验_*变更台账_*.csv
+modules/regulatory_scrapers/timeliness_review/时效性标注结果清单_*.jsonl
+modules/regulatory_scrapers/timeliness_review/时效性标注结果清单_*.csv
+modules/regulatory_scrapers/timeliness_review/*_冲突台账_*.csv
+modules/regulatory_scrapers/timeliness_review/*_合并报告_*.md
 modules/regulatory_scrapers/timeliness_review/pkulaw_*_checkpoint.jsonl
+modules/regulatory_scrapers/timeliness_review/*_consolidate_manifest.json
 
 # ===== IDE =====
 .idea/
