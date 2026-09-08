@@ -216,7 +216,13 @@ def write_out(out):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--no-write", action="store_true", help="仅校验，不写盘")
+    ap.add_argument("--confirm", action="store_true",
+                    help="确认为历史一次性重排意图（R11 guard 2026-09-08：防误触覆盖现行 40 JSON）")
     args = ap.parse_args()
+    if not args.no_write and not args.confirm:
+        print("拒绝执行：本脚本为 2026-08-31 一次性历史工具（勿重跑，现行 40 JSON 已按新归属表重建）。")
+        print("确要重排请显式加 --confirm；建议仅用 --no-write 校验。")
+        return 1
 
     attr_rows = load_attr()
     old = load_old()

@@ -73,10 +73,18 @@ def _norm_docno(s: str) -> str:
 
 
 def pick_latest_ledger() -> str:
-    """取最新一份时效性标注结果清单（按文件名日期降序）。"""
+    """取最新一份时效性标注结果清单（按文件名日期降序）。
+
+    B2 修复（2026-09-08）：清单缺失时给出修复指引而非裸 FileNotFound——
+    全量清单由 consolidate_timeliness 输出（时效性标注结果清单_全量_<date>.jsonl，
+    其种子基线 时效性标注结果清单_20260824.jsonl 在旧仓 timeliness_review，需复制到 REVIEW 后先跑 consolidate）。
+    """
     cands = sorted(glob.glob(os.path.join(REVIEW, "时效性标注结果清单_*.jsonl")))
     if not cands:
-        raise FileNotFoundError("未找到 时效性标注结果清单_*.jsonl")
+        raise FileNotFoundError(
+            "未找到 时效性标注结果清单_*.jsonl（REVIEW=%s）。修复：先复制旧仓基线"
+            " 时效性标注结果清单_20260824.jsonl 至 REVIEW，再运行 consolidate_timeliness.py 产出全量清单。"
+            % REVIEW)
     return cands[-1]
 
 
