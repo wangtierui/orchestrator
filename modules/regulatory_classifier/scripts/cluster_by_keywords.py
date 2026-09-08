@@ -65,10 +65,14 @@ def main():
     # R10 provenance：final 派生批次（base 的 generated_* 保留显性溯源；final 追加 finalized_*）
     import time as _t  # noqa: PLC0415
     _FIN = _t.strftime("%Y-%m-%d %H:%M:%S")
+    # u_fix 键形态自适应（A 项 2026-09-08）：T1-T8 用 seq 键；T9/T10 历史 final 无 seq（旧链产物），
+    # 其 config 以 RFN 为冻结键（build_base 链与 scan 链共有键），保证重跑分类零漂移。
+    _fix_by_rfn = any(k.startswith("RFN-") for k in u_fix)
     for r in recs:
         cl = classify(r["title"], passes)
-        if str(r["seq"]) in u_fix:
-            cl = u_fix[str(r["seq"])]
+        _fix_k = r.get("监管文件编号", "") if _fix_by_rfn else str(r["seq"])
+        if _fix_k in u_fix:
+            cl = u_fix[_fix_k]
         r["cluster"] = cl
         # 契约字段（2026-09-08 R8 对齐 FINAL_KEYS）：source_origin/src_mark 语义=「scan 补充来源
         # 标记」，纯归属表投影（base）生成的 final 无该信息 → 补空串保持 schema 恒真（scan 补充路径另填）。

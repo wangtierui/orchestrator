@@ -51,7 +51,9 @@ from clean_index import get_clean_index  # noqa: E402
 from scraper_std import pkulaw_cli as pk  # noqa: E402
 
 OUT_DIR = os.path.join(ROOT, "timeliness_review")
-ALL_SOURCES = ["gov", "mof", "pbc", "nfra"]     # nfra 置后（一般已核验完）
+# P2（2026-09-08）：supp 纳入效力缺失核验范围（原四源）。supp cleaned 清洗后空时效
+# 记录进北大法宝核验；无同名命中自动登记 pending 占位（不污染），行业文本记录可安心跳过。
+ALL_SOURCES = ["gov", "mof", "pbc", "nfra", "supp"]     # supp 置末（补充库，通常空时效待核少）
 
 # R13 三态（2026-09-08）：success 全部核验完成 / partial 部分完成可续跑 / unavailable 外部不可用降级
 S_SUCCESS, S_PARTIAL, S_UNAVAILABLE = "success", "partial", "unavailable"

@@ -505,7 +505,9 @@ def map_supp(rec: dict[str, Any], clean_version: str, captured_at: str = "") -> 
         "column_name": empty_str(rec.get("column_name")),
         "theme_name": empty_str(rec.get("theme_name")),
         "status": empty_str(rec.get("status")),
-        "timeliness_status": empty_str(rec.get("timeliness_status")) or "valid",
+        # P2 修复（2026-09-08）：supp 未核验不再默认 valid——显式值才保留，否则保空（空=未核验待补位，
+        # 等同 needs_review，绝不臆造"现行有效"）。存量快照下次 supp 清洗自然按本逻辑替换。
+        "timeliness_status": empty_str(rec.get("timeliness_status")),
         "replacement_document": empty_str(rec.get("replacement_document")),
         "verification_source": empty_str(rec.get("verification_source")),
         "keyword": empty_str(rec.get("keyword")),

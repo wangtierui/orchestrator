@@ -149,6 +149,7 @@ def parse_ledgers() -> list[dict]:
         "时效核验_gov变更台账_*.csv",
         "时效核验_mof变更台账_*.csv",
         "时效核验_pbc变更台账_*.csv",
+        "时效核验_supp变更台账_*.csv",   # P2：supp 效力缺失核验台账纳入重放范围
         "时效核验打标台账_*.csv",
     ]
     files = []
