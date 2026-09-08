@@ -24,7 +24,7 @@ ALL_GATES: list[dict] = [
     {"module": "gates.gate_hardcoded_snapshots", "desc": "硬编码 cleaned 快照日期（N-3）", "require_impl": True},
     {"module": "gates.gate_rfn_sync", "desc": "RFN 跨文件一致性", "require_impl": True},
     {"module": "gates.gate_rfn_drift", "desc": "RFN↔clean 漂移未处置阻断", "require_impl": True},
-    {"module": "gates.gate_timeliness_ssot", "desc": "时效单源传播一致性", "require_impl": False},
+    {"module": "gates.gate_timeliness_ssot", "desc": "时效单源传播一致性", "require_impl": True},
     {"module": "gates.gate_citations", "desc": "制度引用门禁（drafter --strict）", "require_impl": True},
 ]
 
