@@ -39,6 +39,7 @@ import sys
 from collections import Counter
 from datetime import datetime
 
+csv.field_size_limit(10 ** 9)  # cleaned body_text 超默认字段上限
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))   # modules/regulatory_classifier/
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
@@ -49,8 +50,9 @@ SCRAPERS_ROOT = os.environ.get("REG_SCRAPERS_ROOT",
                                os.path.join(os.path.dirname(ROOT), "regulatory_scrapers"))
 if SCRAPERS_ROOT not in sys.path:
     sys.path.insert(0, SCRAPERS_ROOT)
-if os.path.dirname(SCRAPERS_ROOT) not in sys.path:   # orchestrator 根（供 std_lib）
-    sys.path.insert(0, os.path.dirname(SCRAPERS_ROOT))
+_ORCH_ROOT = os.path.dirname(os.path.dirname(SCRAPERS_ROOT))  # orchestrator 根（供 std_lib）
+if _ORCH_ROOT not in sys.path:
+    sys.path.insert(0, _ORCH_ROOT)
 
 from clean_index import get_clean_index  # noqa: E402
 

@@ -102,10 +102,38 @@ def _index_main_internal(argv):
     return 0
 
 
+def _cmd_classify(argv):
+    """classify --theme T3|--all [--steps base,cluster,detail,...] [--dry-run]
+    主题底座强序重建（R8：base→cluster→match→detail→upper→clause_graph，hash 断点幂等）。"""
+    import os
+    import sys
+    sys.path.insert(0, os.path.join(paths.ROOT, "modules", "regulatory_classifier", "scripts"))
+    sys.path.insert(0, os.path.join(paths.ROOT, "modules", "regulatory_classifier"))
+    import argparse  # noqa: PLC0415
+
+    from modules.regulatory_classifier.scripts import classify as _cl  # noqa: PLC0415
+    ap = argparse.ArgumentParser(description="主题底座强序重建（R8）")
+    ap.add_argument("--theme", default="", help="单主题 T0..T10（默认 T1–T10）")
+    ap.add_argument("--all", action="store_true", help="全部主题（含 T0 明细）")
+    ap.add_argument("--steps", default="", help="子步白名单 base,cluster,match,detail,clause_graph,upper")
+    ap.add_argument("--dry-run", action="store_true", help="仅列计划")
+    a = ap.parse_args(argv)
+    themes = None
+    if a.all:
+        themes = sorted(_cl.THEME_MAP, key=lambda x: (len(x), x))
+    elif a.theme:
+        themes = [a.theme]
+    steps = set(s.strip() for s in a.steps.split(",") if s.strip()) or None
+    res = _cl.run(themes=themes, only_steps=steps, dry_run=a.dry_run)
+    print(__import__("json").dumps(res, ensure_ascii=False, indent=2))
+    return 1 if res.get("error") else 0
+
+
 COMMANDS = {
     "gates": _cmd_gates,
     "source": _cmd_source_list,
     "internal": _cmd_internal,
+    "classify": _cmd_classify,
     "ping": _cmd_ping,
 }
 
@@ -123,6 +151,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_int = sub.add_parser("internal", help="内部制度摄取/对齐/引用视图（P6/P7）")
     p_int.add_argument("sub", choices=["index", "align", "merged"],
                        help="index 摄取 | align 主题对齐 | merged 制度×RFN 引用视图")
+    sub.add_parser("classify", help="主题底座强序重建（R8，--theme/--all/--steps/--dry-run）")
     return p
 
 

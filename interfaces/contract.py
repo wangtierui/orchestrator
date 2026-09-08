@@ -70,8 +70,9 @@ FIELD_SEMANTIC_EQUIV: dict[str, tuple[str, ...]] = {
 BASE_KEYS = {"监管文件编号", "doc_no", "eff_status", "file_src", "real_year",
              "title", "year_reported"}
 FINAL_KEYS = BASE_KEYS | {"cluster", "source_origin", "src_mark"}
-MATCHED_KEYS = {"监管文件编号", "body", "body_len", "docno", "lib", "title"}
-CITEREFS_KEYS = {"监管文件编号", "art_refs", "basis", "body_len", "lib",
+# matched/citerefs 顶层为 dict{监管文件编号: 记录}（RFN 即外层 key，行内不再重复该键）
+MATCHED_KEYS = {"body", "body_len", "docno", "lib", "title"}
+CITEREFS_KEYS = {"art_refs", "basis", "body_len", "lib",
                  "name_refs_top", "title"}
 
 # ============ clause_index 条文产物契约（②，2026-09-08） ============

@@ -37,31 +37,34 @@ if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 
 ATTR_CSV = os.path.join(ROOT, "data", "人身保险公司-文件归属表.csv")
+THEME_CSV = os.path.join(ROOT, "data", "人身保险公司-主题归属表.csv")
 DEFAULT_OUT = os.path.join(ROOT, "data")
-RFN_RE = re.compile(r"^RFN-(T(?:10|[1-9]))-(\d{3})$")
-THEME_CODE_RE = re.compile(r"^T(?:10|[1-9])")
 THEMES = [f"T{i}" for i in range(1, 11)]
+# 2026-09-08 适配：归属表 8 列（已删「主题」列）+ RFN 为 RFN-hex；主题唯一来源=主题归属表
+_THEME_HEAD_RE = re.compile(r"^(T10|T[1-9])(?=\D|$)")
 
 
 def load_attr(path=ATTR_CSV):
-    """读取权威归属表，按『主题』列归组为 {T1: [row, ...], ... T10}。
+    """读取权威归属表 + 主题归属表（RFN→主题码），归组 {T1..T10}。
 
-    归组键为归属表『主题』列（权威十主题），而非 RFN 前缀——RFN 前缀与
-    主题列有意解耦（主题迁移不重编号）。主题内按 (RFN 前缀号, 3 位序号)
-    规范排序后连续编号 seq=1..N，与已重建 CSV 明细表、四份 JSON 重排口径一致。
+    归组键来自主题归属表「主题」列（权威十主题；T0 上位法锚点不入底座，与 THEMES=T1..T10 一致）。
+    主题内保持归属表行序（RFN 稳定），连续编号 seq=1..N（幂等：同输入必同输出）。
     """
     groups = {t: [] for t in THEMES}
+    theme_of = {}
+    with open(THEME_CSV, encoding="utf-8-sig", newline="") as fh:
+        for tr in csv.DictReader(fh):
+            tv = (tr.get("主题") or "").strip()
+            m = _THEME_HEAD_RE.match(tv)
+            code = m.group(1) if m else ""
+            if code in groups:
+                theme_of[(tr.get("监管文件编号") or "").strip()] = code
     with open(path, encoding="utf-8-sig", newline="") as fh:
         for row in csv.DictReader(fh):
             rfn = (row.get("监管文件编号") or "").strip()
-            m = RFN_RE.match(rfn)
-            if not m:
+            code = theme_of.get(rfn, "")
+            if not code:
                 continue
-            theme_col = (row.get("主题") or "").strip()
-            tm = THEME_CODE_RE.match(theme_col)
-            if not tm:
-                continue
-            code = tm.group(0)
             pub = (row.get("发布日期") or "").strip()
             year = pub[:4] if len(pub) >= 4 and pub[:4].isdigit() else ""
             groups[code].append({
@@ -73,15 +76,10 @@ def load_attr(path=ATTR_CSV):
                 "eff_status": (row.get("时效状态") or "").strip() or "valid",
                 "real_year": int(year) if year.isdigit() else None,
                 "监管文件编号": rfn,
-                "_prefix": m.group(1),
-                "_rfnum": int(m.group(2)),
             })
     for t in groups:
-        groups[t].sort(key=lambda r: (int(r["_prefix"][1:]), r["_rfnum"]))
         for i, r in enumerate(groups[t], start=1):
             r["seq"] = i
-            del r["_prefix"]
-            del r["_rfnum"]
     return groups
 
 

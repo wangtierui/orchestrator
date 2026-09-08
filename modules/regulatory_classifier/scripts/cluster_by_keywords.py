@@ -67,6 +67,10 @@ def main():
         if str(r["seq"]) in u_fix:
             cl = u_fix[str(r["seq"])]
         r["cluster"] = cl
+        # 契约字段（2026-09-08 R8 对齐 FINAL_KEYS）：source_origin/src_mark 语义=「scan 补充来源
+        # 标记」，纯归属表投影（base）生成的 final 无该信息 → 补空串保持 schema 恒真（scan 补充路径另填）。
+        r.setdefault("source_origin", "")
+        r.setdefault("src_mark", "")
 
     json.dump(recs, open(args.output, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
 

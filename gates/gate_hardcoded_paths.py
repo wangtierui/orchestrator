@@ -46,6 +46,18 @@ def _is_allowed_line(line: str) -> bool:
     return any(a in line for a in ALLOW_SUBSTR)
 
 
+def _is_repo_relative_syspath(line: str) -> bool:
+    """同仓相对 sys.path 引导（paths.ROOT / os.path.join(同仓) 且无盘符）——R4 语义合法，
+    仅拦截跨仓盘符绝对引用（旧仓 sys.path）。"""
+    if not PAT_DRIVE.search(line):
+        if "paths.ROOT" in line or "os.path.join" in line and "sys.path" in line:
+            return True
+        # 相对插入：sys.path.insert(0, "modules/...") / os.path.join(同仓, "modules", ...)
+        if "sys.path" in line and "os.path.dirname(os.path.abspath(__file__))" in line:
+            return True
+    return False
+
+
 def _walk_py():
     for dirpath, dirnames, filenames in os.walk(ROOT):
         dirnames[:] = [d for d in dirnames if d not in EXCLUDE_DIRS]
@@ -63,7 +75,7 @@ def run():
         try:
             with open(fp, encoding="utf-8", errors="replace") as fh:
                 for lineno, line in enumerate(fh, 1):
-                    if _is_allowed_line(line):
+                    if _is_allowed_line(line) or _is_repo_relative_syspath(line):
                         continue
                     if PAT_DRIVE.search(line) or PAT_SYSPATH_LEGACY.search(line) or PAT_TESS.search(line):
                         findings.append((os.path.relpath(fp, ROOT), lineno, line.strip()[:90]))
