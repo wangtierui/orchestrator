@@ -32,6 +32,21 @@ _CTRL_RE = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f\u200b\u200e\u200f\ufeff]
 _MULTI_BLANK_RE = re.compile(r"[ \t\u3000]{2,}")
 _MULTI_NL_RE = re.compile(r"\n{3,}")
 
+# 页眉/页脚块（多行，跨页重复）：
+#   [标题行]\n编号 LHQ-D-2011-0008\n页码 第 N 页 共 M 页\n第N页共M页
+_PAGE_HEADER_BLOCK_RE = re.compile(
+    r"(?:[^\n]{1,40}\n)?"                                # 可选标题行（制度名）
+    r"编号\s+[0-9A-Za-z\-]{3,}\n"                        # 编号行（LHQ-D-2011-0008 型，无冒号）
+    r"页码\s*第\s*\d+\s*页\s*共\s*\d+\s*页\n"            # 页码行
+    r"第\s*\d+\s*页\s*共\s*\d+\s*页\n?"
+)
+# 无编号的纯页码块（兜底）
+_PAGE_NUM_BLOCK_RE = re.compile(r"\n(?:页码\s*)?第\s*\d+\s*页\s*共\s*\d+\s*页\n?")
+# 孤立页码行（仅数字+页/共 等）
+_PAGE_LINE_RE = re.compile(r"^\s*(?:第\s*\d+\s*页\s*共\s*\d+\s*页|页码[\s:：]*(?:第)?\s*\d+\s*页\s*共\s*\d+\s*页|\d+\s*/\s*\d+)\s*$")
+# 独立制度编号行（页眉残留，无冒号，如 编号 LHQ-D-2011-0008）——正文编号字段均带冒号（文件编号：xxx）不受影响
+_DOC_ID_LINE_RE = re.compile(r"^\s*编号\s+[0-9A-Za-z\-]{3,}\s*$")
+
 
 def extract_file(path: str, name: str = "", *, enable_ocr: bool = False,
                  ocr_timeout: int = 120) -> dict:
@@ -47,11 +62,19 @@ def extract_file(path: str, name: str = "", *, enable_ocr: bool = False,
 
 
 def normalize_text(text: str) -> str:
-    """正文规范化：去控制符/孤立空白/多重空行，行级 trim（保留换行段落）。"""
+    """正文规范化：
+    1) 去控制符/隔离空白；
+    2) 块级剥离页眉页脚（多行「标题+编号+页码」/ 纯页码块）——2026-09-08 遗留修复；
+    3) 行级 trim + 垃圾行启发式；空行收敛。
+    """
     t = _CTRL_RE.sub("", text or "")
     t = t.replace("\r\n", "\n").replace("\r", "\n")
+    # 块级页眉/页脚剥离（先于行级，防行级拆散块）
+    t = _PAGE_HEADER_BLOCK_RE.sub("\n", t)
+    t = _PAGE_NUM_BLOCK_RE.sub("\n", t)
     lines = [_MULTI_BLANK_RE.sub(" ", ln).strip() for ln in t.split("\n")]
-    # 丢弃疑似页眉页脚/水印：很短且不构成句子（无句末标点且 < 12 字符）的重复行
+    lines = [ln for ln in lines if ln and not _PAGE_LINE_RE.match(ln)
+             and not _DOC_ID_LINE_RE.match(ln)]
     t = "\n".join(_drop_junk_lines(lines))
     t = _MULTI_NL_RE.sub("\n\n", t).strip()
     return t
@@ -82,3 +105,49 @@ def copy_original(src: str, dst_dir: str, rel_path: str) -> str:
     os.makedirs(os.path.dirname(dst), exist_ok=True)
     shutil.copy2(src, dst)
     return dst
+
+
+def renormalize_processed() -> dict:
+    """对 data/processed/*_fulltext.json 全量重跑 normalize_text（清洗规则升级后回刷）。
+
+    幂等：仅在清洗后文本变化时回写；同时回刷 index 的 text_chars。返回统计。
+    """
+    import json as _json
+
+    data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
+    proc_dir = os.path.join(data_dir, "processed")
+    idx_path = os.path.join(data_dir, "internal_policy_index.json")
+    changed = unchanged = 0
+    if os.path.isdir(proc_dir):
+        for fn in sorted(os.listdir(proc_dir)):
+            if not fn.endswith("_fulltext.json"):
+                continue
+            p = os.path.join(proc_dir, fn)
+            try:
+                obj = _json.load(open(p, encoding="utf-8"))
+            except Exception:
+                continue
+            new_t = normalize_text(obj.get("text", ""))
+            if new_t != obj.get("text", ""):
+                _json.dump({"ipn": obj.get("ipn", ""), "text": new_t},
+                           open(p + ".tmp", "w", encoding="utf-8"), ensure_ascii=False, indent=2)
+                os.replace(p + ".tmp", p)
+                changed += 1
+            else:
+                unchanged += 1
+    # 回刷主索引 text_chars
+    if os.path.exists(idx_path) and changed:
+        try:
+            idx = _json.load(open(idx_path, encoding="utf-8"))
+            for rec in idx.get("records", []):
+                ipn = rec.get("ipn", "")
+                p = os.path.join(proc_dir, ipn + "_fulltext.json")
+                if os.path.exists(p):
+                    obj = _json.load(open(p, encoding="utf-8"))
+                    rec["text_chars"] = len(obj.get("text", ""))
+            _json.dump(idx, open(idx_path + ".tmp", "w", encoding="utf-8"),
+                       ensure_ascii=False, indent=2)
+            os.replace(idx_path + ".tmp", idx_path)
+        except Exception:
+            pass
+    return {"changed": changed, "unchanged": unchanged, "processed_dir": proc_dir}

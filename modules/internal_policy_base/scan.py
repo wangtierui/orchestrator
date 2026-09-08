@@ -54,10 +54,19 @@ def parse_filename(name: str) -> dict:
     return {"docno": docno, "title": title}
 
 
-def ipn_of(docno: str, title: str) -> str:
-    """内部制度编号派生（D-03，独立 RFN 空间）：md5(文号|标题) 前 16 位。
-    文号优先键；无文号用标题。与 rfn 同构但前缀分离（IPN-）。"""
-    key = (docno or "").strip() or title.strip()
+def ipn_of(docno: str, title: str, extension: str = "") -> str:
+    """内部制度编号派生（D-03，独立 RFN 空间）：md5(文号|标题|介质) 前 16 位。
+
+    键 = 文号 + '|' + 标题 + (可选 '|' + 扩展名)（2026-09-08 修复）：
+      - 同一 OA 文号常整批发文（如「阳光人寿发〔2025〕293号」下发 17 份档案表单），
+        若只用文号会全部冲突；
+      - 同一制度常见双介质（同名 pdf + xlsx 并存），扩展名参与消歧；
+    无文号文件回退标题。与 rfn.unique_key 同构但前缀分离（IPN-）。
+    """
+    docno = (docno or "").strip()
+    title = (title or "").strip()
+    ext = (extension or "").strip().lower().lstrip(".")
+    key = f"{docno}|{title}|{ext}" if docno else f"{title}|{ext}"
     return "IPN-" + hashlib.md5(key.encode("utf-8")).hexdigest()[:16]
 
 
@@ -77,7 +86,7 @@ def scan_directory(root: str, *, supported: set[str] | None = None) -> list[dict
             sha = hashlib.sha256(open(p, "rb").read()).hexdigest()
             parsed = parse_filename(fn)
             out.append({
-                "ipn": ipn_of(parsed["docno"], parsed["title"]),
+                "ipn": ipn_of(parsed["docno"], parsed["title"], extension=ext.lstrip(".")),
                 "file_name": fn,
                 "relative_path": os.path.relpath(p, root),
                 "extension": ext.lstrip("."),

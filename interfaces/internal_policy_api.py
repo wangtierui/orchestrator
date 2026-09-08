@@ -33,7 +33,8 @@ class InternalPolicyAPI:
     def register(self, title, version, file_type, status="draft", source_path=""):
         from internal_policy_base.scan import ipn_of, parse_filename  # noqa: PLC0415
         parsed = parse_filename(os.path.basename(source_path)) if source_path else {"docno": "", "title": title}
-        ipn = ipn_of(parsed.get("docno", ""), parsed.get("title") or title)
+        ext = os.path.splitext(source_path)[1].lstrip(".") if source_path else ""
+        ipn = ipn_of(parsed.get("docno", ""), parsed.get("title") or title, extension=ext)
         return {"ipn": ipn, "status": status, "note": "以 indexer.ingest 为准（本接口幂等返回编号）"}
 
     def query(self, ipn=None, title=None):
