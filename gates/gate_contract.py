@@ -15,11 +15,22 @@ import re
 import paths
 from interfaces import contract
 
+_CLASS_MOD = os.path.join(paths.MODULES_DIR, "regulatory_classifier")
+if _CLASS_MOD not in __import__("sys").path:
+    __import__("sys").path.insert(0, _CLASS_MOD)
 _DATA = os.path.join(paths.MODULES_DIR, "regulatory_classifier", "data")
+# R16（二期）：主题集合唯一事实源 = rfn.THEME_MAP，期望数量/命名由遍历派生，禁字面 40/11。
+from rfn import THEME_MAP  # noqa: E402
+
+_DET_RE = re.compile(r"^(T\d+)_\d+逐份条款引用与上位法依据明细表\.csv$")
+# 底座命名：{T1..T10}×{base,final,matched,citerefs}（T0 不生成底座）
+_EXPECT_BASE_FILES = sorted(
+    f"_t{int(c[1:])}_{suf}.json"
+    for c in THEME_MAP if c != "T0"
+    for suf in ("base", "final", "matched", "citerefs"))
 _BASE_RE = re.compile(r"^_t\d+_(base|final|matched|citerefs)\.json$")
-_DET_RE = re.compile(r"^T\d+_\d+逐份条款引用与上位法依据明细表\.csv$")
-_EXPECT_BASE = 40  # T1–T10 × base/final/matched/citerefs（T0 不生成底座）
-_EXPECT_DETS = 11  # T0–T10
+_EXPECT_DETS = len(THEME_MAP)   # 每主题 ≥1 明细（T0–T10 主题码全覆盖）
+_EXPECT_BASE = len(_EXPECT_BASE_FILES)
 
 
 def _header(path):
@@ -56,21 +67,28 @@ def run():
     if not ok:
         problems.append(f"主题归属表列头 {head} ≠ 契约 {contract.THEME_FIELDS}")
 
-    # 3) 明细表 11 份 × 10 列（列头 == build_detail_tables.FIELDS；此处以文件实际 10 列并比对契约列数）
+    # 3) 明细表（R16：主题码全覆盖，THEME_MAP 遍历派生）× 10 列
     dets = sorted(f for f in os.listdir(_DATA) if _DET_RE.match(f))
-    checked["detail_tables"] = {"count": len(dets), "expected": _EXPECT_DETS}
-    if len(dets) != _EXPECT_DETS:
-        problems.append(f"明细表数量 {len(dets)} ≠ {_EXPECT_DETS}: {dets}")
+    det_codes = {_DET_RE.match(f).group(1) for f in dets}
+    missing_codes = set(THEME_MAP) - det_codes
+    checked["detail_tables"] = {"count": len(dets), "expected": _EXPECT_DETS,
+                                "covered_themes": sorted(det_codes)}
+    if missing_codes:
+        problems.append(f"明细表主题覆盖缺 {sorted(missing_codes)}（THEME_MAP 驱动）: {dets}")
     for f in dets:
         head = _header(os.path.join(_DATA, f))
         if len(head) != 10:
             problems.append(f"明细表 {f} 列数 {len(head)} ≠ 10: {head}")
 
-    # 4) 数据底座 40 个：结构类型 + 核心键超集
+    # 4) 数据底座（R16：期望文件名集 = THEME_MAP{T1..T10}×4 派生）：结构类型 + 核心键超集
     bfiles = sorted(f for f in os.listdir(_DATA) if _BASE_RE.match(f))
+    extra = sorted(set(bfiles) - set(_EXPECT_BASE_FILES))
+    miss = sorted(set(_EXPECT_BASE_FILES) - set(bfiles))
     checked["base_files"] = {"count": len(bfiles), "expected": _EXPECT_BASE}
-    if len(bfiles) != _EXPECT_BASE:
-        problems.append(f"数据底座数量 {len(bfiles)} ≠ {_EXPECT_BASE}")
+    if miss:
+        problems.append(f"数据底座缺 {len(miss)} 个（THEME_MAP 派生期望）: {miss[:5]}")
+    if extra:
+        problems.append(f"数据底座多余 {len(extra)} 个: {extra[:5]}")
     expect = {"base": contract.BASE_KEYS, "final": contract.FINAL_KEYS,
               "matched": contract.MATCHED_KEYS, "citerefs": contract.CITEREFS_KEYS}
     shape = {"base": "list", "final": "list", "matched": "dict", "citerefs": "dict"}

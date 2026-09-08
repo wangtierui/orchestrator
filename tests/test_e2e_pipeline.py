@@ -89,6 +89,16 @@ def test_internal_clauses_md_generated():
     assert len(mds) >= 30, f"条文 MD 视图不足: {len(mds)}（先跑 backfill_clauses）"
 
 
+# ---------------- 层2b：clause_index 条文产物（② 固定节点） ----------------
+def test_clause_index_schema():
+    from clause_index import latest_clause_path, validate_schema  # noqa: PLC0415
+    for s in ("gov", "mof", "nfra", "pbc", "supp"):
+        assert latest_clause_path(s), f"{s} clause 产物缺失（先跑 clean 管道固定节点）"
+    r = validate_schema()
+    assert r["consistent"], r["problems"][:5]
+    assert r["files"] >= 1000 and r["articles"] >= 10000
+
+
 # ---------------- 层4：reconcile 桥表 / 漂移状态 ----------------
 def test_reconcile_bridge_and_state():
     import csv as _csv

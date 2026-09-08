@@ -60,6 +60,9 @@ PY=C:\Users\wangtierui-lhl\.workbuddy\binaries\python\versions\3.13.12\python.ex
 | 内部制度正文 | `.../processed/<ipn>_fulltext.json` | {ipn, text} |
 | merged_view | `.../data/merged_view.json` | schema_version 1.0（D-06 冻结）；records: ipn/title/docno/primary_theme/associated_rfns[] |
 | 时效状态缓存 | `modules/regulatory_scrapers/timeliness_review/verification_state.json` | {唯一键: {status/...}}（效力单源，N6/R3） |
+| 条文产物（②固定节点） | `modules/regulatory_scrapers/data/clauses/{src}_clauses_{date}.jsonl` | 每行=一份文件条款；契约 `contract.CLAUSE_LINE/ARTICLE/CHAPTER_FIELDS`（clean 后自动构建，`validate_schema` 自检） |
+| recall 交付物 | `modules/regulatory_classifier/recall_audit/output/` | scan_records/scan_hits_attr/归属表全文提取记录/无全文清单/各清单/召回复核报告/重跑执行报告/_stats/verification_state.mirror（代码/产物分离，每次运行重建） |
+| 漂移核验状态 | `.../data/rfn_drift_state.json` + `rfn_clean_bridge.csv` | reconcile 运行态（快照日期/统计） |
 
 ### 枚举唯一源（config/enums.py，v3+internal）
 - `TIMELINESS_STATUS` 7 值：valid/amended/repealed/partially_repealed/expired/pending/uncertain
@@ -67,6 +70,7 @@ PY=C:\Users\wangtierui-lhl\.workbuddy\binaries\python\versions\3.13.12\python.ex
 - `INTERNAL_STATUS` 5 值：draft/active/expiring/deprecated/archived
 - `INTERNAL_FILE_TYPE`：policy/process/guideline/manual/other
 - 编号体系：外部 `RFN-<16hex>`（rfn 派生），内部 `IPN-<16hex>`（D-03 独立空间）
+- G1/G2 收口（2026-09-08）：`FILE_TYPES` 60 文种（list 保序）`LEGAL/REGULATORY_TYPES` `DOC_TYPE_ALIAS` `DOC_TYPE_GROUP`；category 13 级 `AUTHORITY_RANK` `CATEGORY_SET/MAP/MODIFIER_HINTS`（doc_type_cleaner/category_classifier re-export）
 
 ## 4. 门禁（gates/）
 hardcoded_paths / enum_values / flat_layout / no_duplicate_libs / contract /
