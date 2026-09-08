@@ -11,6 +11,8 @@ dist/
 data/
 cache/
 logs/
+# 生成器运行备份（build_detail_tables 等写 classifier/backups/detail_tables_* 等）
+**/backups/
 *.csv.bak_*
 *.jsonl.bak_*
 
