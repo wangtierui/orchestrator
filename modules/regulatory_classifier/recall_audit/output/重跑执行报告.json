@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "generated_at": "2026-09-08T15:29:23+0800",
+  "generated_at": "2026-09-08T22:06:03+0800",
   "trigger": "clean_index + verification_state + 链路契约 + schema 预检 四门禁（gate-based，非 cron 轮询语义）",
   "action": "rerun_success",
   "gates": {
@@ -11,7 +11,7 @@
         "validate": {
           "missing": [],
           "hash_mismatch": [],
-          "ok_count": 10
+          "ok_count": 12
         },
         "index_stale": false,
         "stale_sources": [],
@@ -43,10 +43,10 @@
             "live_record_count": 571
           },
           "supp": {
-            "index_latest_date": "20260907",
-            "index_record_count": 57,
-            "live_latest_date": "20260907",
-            "live_record_count": 57
+            "index_latest_date": "20260908",
+            "index_record_count": 58,
+            "live_latest_date": "20260908",
+            "live_record_count": 58
           }
         },
         "scanner_uses_clean_index": true,
@@ -112,32 +112,32 @@
     }
   },
   "change_detected": true,
-  "previous_signature": null,
-  "current_signature": "{\"clean\": {\"gov\": {\"date\": \"20260907\", \"records\": 605}, \"mof\": {\"date\": \"20260907\", \"records\": 870}, \"nfra\": {\"date\": \"20260907\", \"records\": 1939}, \"pbc\": {\"date\": \"20260907\", \"records\": 571}, \"supp\": {\"date\": \"20260907\", \"records\": 57}}, \"validity\": {\"entries_total\": 2896, \"fresh\": 2896, \"state_mtime\": 1788842743.2184525}}",
+  "previous_signature": "{\"clean\": {\"gov\": {\"date\": \"20260907\", \"records\": 605}, \"mof\": {\"date\": \"20260907\", \"records\": 870}, \"nfra\": {\"date\": \"20260907\", \"records\": 1939}, \"pbc\": {\"date\": \"20260907\", \"records\": 571}, \"supp\": {\"date\": \"20260907\", \"records\": 57}}, \"validity\": {\"entries_total\": 2896, \"fresh\": 2896, \"state_mtime\": 1788842743.2184525}}",
+  "current_signature": "{\"clean\": {\"gov\": {\"date\": \"20260907\", \"records\": 605}, \"mof\": {\"date\": \"20260907\", \"records\": 870}, \"nfra\": {\"date\": \"20260907\", \"records\": 1939}, \"pbc\": {\"date\": \"20260907\", \"records\": 571}, \"supp\": {\"date\": \"20260908\", \"records\": 58}}, \"validity\": {\"entries_total\": 2896, \"fresh\": 2896, \"state_mtime\": 1788866143.1409075}}",
   "stages": [
     {
       "name": "scanner.py",
       "status": "success",
       "returncode": 0,
-      "tail": "ɨ�����. �ܼ�¼: 4042\n���߷ֲ�: {'EXCLUDE': 2936, 'BOUNDARY': 795, 'INCLUDE': 311}\n���ŷֲ�: {'��': 1404, '��': 1717, '��': 795, '��': 126}\n��Դ: {'gov': 605, 'mof': 870, 'nfra': 1939, 'pbc': 571, 'supp': 57}\n����©��(��808��INCLUDE/BOUNDARY)��Դ: {'gov': 65, 'mof': 67, 'nfra': 169, 'pbc': 29, 'supp': 4}\n���: D:\\WorkBuddy\\regulatory_compliance_orchestrator\\modules\\regulatory_classifier\\recall_audit\\output\\scan_records.csv D:\\WorkBuddy\\regulatory_compliance_orchestrator\\modules\\regulatory_classifier\\recall_audit\\output\\scan_hits_attr.jsonl\n\n--- stderr ---\n"
+      "tail": "ɨ�����. �ܼ�¼: 4043\n���߷ֲ�: {'EXCLUDE': 2936, 'BOUNDARY': 795, 'INCLUDE': 312}\n���ŷֲ�: {'��': 1404, '��': 1717, '��': 795, '��': 127}\n��Դ: {'gov': 605, 'mof': 870, 'nfra': 1939, 'pbc': 571, 'supp': 58}\n����©��(��808��INCLUDE/BOUNDARY)��Դ: {'gov': 65, 'mof': 67, 'nfra': 169, 'pbc': 29, 'supp': 5}\n���: D:\\WorkBuddy\\regulatory_compliance_orchestrator\\modules\\regulatory_classifier\\recall_audit\\output\\scan_records.csv D:\\WorkBuddy\\regulatory_compliance_orchestrator\\modules\\regulatory_classifier\\recall_audit\\output\\scan_hits_attr.jsonl\n\n--- stderr ---\n"
     },
     {
       "name": "build_outputs.py",
       "status": "success",
       "returncode": 0,
-      "tail": "����©��(INCLUDE��808)ȥ�غ�: 7 | �߽�(BOUNDARY��808)ȥ�غ�: 323\nͳ��: {\"total\": 4042, \"dec\": {\"EXCLUDE\": 2936, \"BOUNDARY\": 795, \"INCLUDE\": 311}, \"conf\": {\"��\": 1404, \"��\": 1717, \"��\": 795, \"��\": 126}, \"src_total\": {\"gov\": 605, \"mof\": 870, \"nfra\": 1939, \"pbc\": 571, \"supp\": 57}, \"inc\": 7, \"inc_src\": {\"nfra\": 7}, \"inc_conf\": {\"��\": 7}, \"bnd\": 323, \"bnd_src\": {\"gov\": 65, \"mof\": 67, \"nfra\": 159, \"pbc\": 28, \"supp\": 4}, \"attr_total\": 1059, \"attr_found\": 1013, \"attr_nobody\": 53, \"gov_nobody\": 0, \"src_snapshot\": {\"gov\": \"20260907\", \"mof\": \"20260907\", \"nfra\": \"20260907\", \"pbc\": \"20260907\", \"supp\": \"20260907\"}, \"attr_missed\": 46}\n�����������ɡ�\n\n--- stderr ---\n"
+      "tail": "����©��(INCLUDE��808)ȥ�غ�: 8 | �߽�(BOUNDARY��808)ȥ�غ�: 323\nͳ��: {\"total\": 4043, \"dec\": {\"EXCLUDE\": 2936, \"BOUNDARY\": 795, \"INCLUDE\": 312}, \"conf\": {\"��\": 1404, \"��\": 1717, \"��\": 795, \"��\": 127}, \"src_total\": {\"gov\": 605, \"mof\": 870, \"nfra\": 1939, \"pbc\": 571, \"supp\": 58}, \"inc\": 8, \"inc_src\": {\"nfra\": 7, \"supp\": 1}, \"inc_conf\": {\"��\": 7, \"��\": 1}, \"bnd\": 323, \"bnd_src\": {\"gov\": 65, \"mof\": 67, \"nfra\": 159, \"pbc\": 28, \"supp\": 4}, \"attr_total\": 1059, \"attr_found\": 1013, \"attr_nobody\": 53, \"gov_nobody\": 0, \"src_snapshot\": {\"gov\": \"20260907\", \"mof\": \"20260907\", \"nfra\": \"20260907\", \"pbc\": \"20260907\", \"supp\": \"20260908\"}, \"attr_missed\": 46}\n�����������ɡ�\n\n--- stderr ---\n"
     },
     {
       "name": "report.py",
       "status": "success",
       "returncode": 0,
-      "tail": "���������ɣ�����: 170\n������ 0 ������ 5 ����� 2\n\n--- stderr ---\n"
+      "tail": "���������ɣ�����: 171\n������ 1 ������ 5 ����� 2\n\n--- stderr ---\n"
     }
   ],
   "products": {
     "scan_records.csv": {
       "path": "D:\\WorkBuddy\\regulatory_compliance_orchestrator\\modules\\regulatory_classifier\\recall_audit\\output\\scan_records.csv",
-      "size_bytes": 1748221
+      "size_bytes": 1749339
     },
     "scan_hits_attr.jsonl": {
       "path": "D:\\WorkBuddy\\regulatory_compliance_orchestrator\\modules\\regulatory_classifier\\recall_audit\\output\\scan_hits_attr.jsonl",
@@ -145,7 +145,7 @@
     },
     "疑似漏提取文件清单.csv": {
       "path": "D:\\WorkBuddy\\regulatory_compliance_orchestrator\\modules\\regulatory_classifier\\recall_audit\\output\\疑似漏提取文件清单.csv",
-      "size_bytes": 5059
+      "size_bytes": 6209
     },
     "边界案例清单.csv": {
       "path": "D:\\WorkBuddy\\regulatory_compliance_orchestrator\\modules\\regulatory_classifier\\recall_audit\\output\\边界案例清单.csv",
@@ -165,39 +165,41 @@
     },
     "_stats.json": {
       "path": "D:\\WorkBuddy\\regulatory_compliance_orchestrator\\modules\\regulatory_classifier\\recall_audit\\output\\_stats.json",
-      "size_bytes": 322755
+      "size_bytes": 324143
     },
     "召回复核报告.md": {
       "path": "D:\\WorkBuddy\\regulatory_compliance_orchestrator\\modules\\regulatory_classifier\\recall_audit\\output\\召回复核报告.md",
-      "size_bytes": 16632
+      "size_bytes": 17081
     }
   },
   "stats": {
-    "total": 4042,
+    "total": 4043,
     "dec": {
       "EXCLUDE": 2936,
       "BOUNDARY": 795,
-      "INCLUDE": 311
+      "INCLUDE": 312
     },
     "conf": {
       "中": 1404,
       "—": 1717,
       "低": 795,
-      "高": 126
+      "高": 127
     },
     "src_total": {
       "gov": 605,
       "mof": 870,
       "nfra": 1939,
       "pbc": 571,
-      "supp": 57
+      "supp": 58
     },
-    "inc": 7,
+    "inc": 8,
     "inc_src": {
-      "nfra": 7
+      "nfra": 7,
+      "supp": 1
     },
     "inc_conf": {
-      "中": 7
+      "中": 7,
+      "高": 1
     },
     "bnd": 323,
     "bnd_src": {
@@ -216,7 +218,7 @@
       "mof": "20260907",
       "nfra": "20260907",
       "pbc": "20260907",
-      "supp": "20260907"
+      "supp": "20260908"
     },
     "attr_missed": 46
   },

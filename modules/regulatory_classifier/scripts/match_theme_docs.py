@@ -231,6 +231,8 @@ def main():
             "basis": extract_basis(body),
             "art_refs": art_refs,
             "name_refs_top": name_refs,
+            "监管文件编号": m.get("监管文件编号", ""),   # R9 补：recall Gate4 CITEREFS_KEYS 期望键
+            "seq": m.get("seq", ""),
         }
 
     # 保存
