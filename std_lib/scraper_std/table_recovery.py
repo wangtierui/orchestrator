@@ -233,6 +233,21 @@ def extract_tables_from_doc(
     }
 
 
+# .doc/.wps/.rtf/.ceb 等旧格式：先按原格式解析，无结构化表格时经 doc_convert 转 docx 再取表
+_DOCX_CONVERT_EXT = (".doc", ".wps", ".rtf", ".ceb")
+
+
+def _structured_from(doc_result: dict[str, Any]) -> dict[str, Any]:
+    """extract_tables_from_doc 结果 → raw 表键（仅 structured 且有表时返回）。"""
+    if doc_result.get("recovery_method") != "structured" or not doc_result.get("tables"):
+        return {}
+    return {
+        "table_structured": doc_result["tables"],
+        "table_raw_text": doc_result.get("table_raw_text", ""),
+        "table_recovery_method": doc_result.get("recovery_method", "structured"),
+    }
+
+
 def structured_table_fields(data: bytes, name: str = "", *, kind: str | None = None) -> dict[str, Any]:
     """附件表格抽取 → raw 记录表格键（2026-09-08 四源仿 supp 统一接入样板）。
 
@@ -241,19 +256,34 @@ def structured_table_fields(data: bytes, name: str = "", *, kind: str | None = N
       {"table_structured": [[…]], "table_raw_text": str, "table_recovery_method": "structured"}
     无结构化表格或异常 → 返回 {}（采集侧仅在非空时回填，保持无表格记录零表键一致；
     与 map_gov/mof/nfra/pbc 的透传收口配套：raw 有键 → cleaned 39 列表格列带出）。
+
+    .doc/.wps/.rtf/.ceb 旧格式（OLE2 Word 无内置结构化表解析）：先按原格式试取，
+    未产出结构化表时经 doc_convert（headless LibreOffice doc→docx）转 docx 后按
+    docx 再取表 —— 环境缺失/转换失败自动维持原降级（raw_only/空），不阻断调用方。
     """
     try:
-        r = extract_tables_from_doc(data, name, kind=kind)
+        first = extract_tables_from_doc(data, name, kind=kind)
     except Exception as e:  # noqa: BLE001  表格抽取失败不阻断附件文本/正文
         LOG.warning("structured_table_fields %s: %s", name, e)
         return {}
-    if r.get("recovery_method") != "structured" or not r.get("tables"):
+    out = _structured_from(first)
+    if out:
+        return out
+    low = (name or "").lower()
+    if not low.endswith(_DOCX_CONVERT_EXT):
         return {}
-    return {
-        "table_structured": r["tables"],
-        "table_raw_text": r.get("table_raw_text", ""),
-        "table_recovery_method": r.get("recovery_method", "structured"),
-    }
+    try:
+        from std_lib.scraper_std.doc_convert import doc_bytes_to_docx  # noqa: PLC0415
+        conv = doc_bytes_to_docx(data, low)
+    except Exception:  # noqa: BLE001
+        conv = None
+    if not conv:
+        return {}
+    try:
+        second = extract_tables_from_doc(conv, low + ".docx", kind="docx")
+    except Exception:  # noqa: BLE001
+        return {}
+    return _structured_from(second)
 
 
 def _tables_to_raw_text(tables: list[list[list[str]]], sep: str = "|") -> str:

@@ -187,6 +187,39 @@ def source_cache_root(source: str, *, root: str | None = None) -> str:
     return os.path.join(base, str(source or "").lower())
 
 
+# --------------------------------------------------------------------------- #
+# 五源统一文档产物根（2026-09-08）：正文原文/附件统一落盘
+#   <repo>/modules/regulatory_scrapers/data/docs/<scraper_slug>[/sub]
+# 取代各 collector 自行 dirname 推导（gov_fetch_attachments/mof/pbc/supp 原各自复制推导、
+# nfra 附件曾驻 cache、pbc 补抓脚本曾落 collectors/data/docs —— 全部分叉收敛于此）。
+# --------------------------------------------------------------------------- #
+_DOC_SLUGS: dict[str, str] = {
+    "gov": "gov_regulations_scraper",
+    "mof": "mof_regulations_scraper",
+    "nfra": "nfra_regulations_scraper",
+    "pbc": "pbc_regulations_scraper",
+    "supp": "supplementary_regulations_scraper",
+}
+
+
+def scraper_docs_base() -> str:
+    """统一文档产物基根：``<repo>/modules/regulatory_scrapers/data/docs``。"""
+    here = os.path.dirname(os.path.abspath(__file__))       # std_lib/scraper_std/
+    repo_root = os.path.dirname(os.path.dirname(here))
+    return os.path.join(repo_root, "modules", "regulatory_scrapers", "data", "docs")
+
+
+def docs_root(source: str, sub: str | None = None) -> str:
+    """某源文档产物根 = 基根/<scraper_slug>[/sub]。
+
+    source 取值 gov/mof/nfra/pbc/supp（小写）；sub 常为 attachments/downloaded_docs。
+    未知源回退 base/<source>。collector 一律以此定义 ATTACHMENTS_DIR/DOCS_DIR。
+    """
+    slug = _DOC_SLUGS.get((source or "").lower(), str(source or "").lower())
+    base = os.path.join(scraper_docs_base(), slug)
+    return os.path.join(base, sub) if sub else base
+
+
 def bind_source_cache(source: str, kind: str = "json", *, root: str | None = None,
                       offline: bool = False):
     """源级请求/附件缓存**单例绑定**：返回（首次创建并记忆的）缓存实例。

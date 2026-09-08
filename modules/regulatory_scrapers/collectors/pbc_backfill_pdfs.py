@@ -43,9 +43,11 @@ import urllib.request
 from datetime import datetime
 
 # ---------- 配置 ----------
-ROOT = os.path.dirname(os.path.abspath(__file__))
-# 产物目录统一（Plan B 阶段 2b）：附件统一落盘 data/docs/pbc_regulations_scraper/attachments/
-ATTACHMENTS_DIR = os.path.join(ROOT, "data", "docs", "pbc_regulations_scraper", "attachments")
+# 2026-09-08 docs_root 统一根：修正原 BASE=collectors 落点（曾指 collectors/data/… 分叉）
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # modules/regulatory_scrapers
+from std_lib.scraper_std.cache_store import docs_root  # noqa: E402
+
+ATTACHMENTS_DIR = docs_root("pbc", "attachments")
 DEFAULT_JSON = os.path.join(ROOT, "data", "raw", "pbc_laws.json")
 TARGET_CATEGORY = "规范性文件"
 USER_AGENTS = [

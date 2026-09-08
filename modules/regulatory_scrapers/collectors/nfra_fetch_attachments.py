@@ -61,11 +61,11 @@ import urllib.parse
 import urllib.request
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-from std_lib.scraper_std.cache_store import source_cache_root  # noqa: E402
+from std_lib.scraper_std.cache_store import docs_root, source_cache_root  # noqa: E402
 from std_lib.scraper_std.table_recovery import structured_table_fields  # noqa: E402
 
-CACHE = source_cache_root("nfra")  # 单一物理缓存根（modules/regulatory_scrapers/cache/nfra）
-ATT_DIR = os.path.join(CACHE, "attachments")
+CACHE = source_cache_root("nfra")  # 列表/详情请求缓存根（modules/regulatory_scrapers/cache/nfra）
+ATT_DIR = docs_root("nfra", "attachments")  # 附件产物根（统一 data/docs）
 DETAIL_GLOB = os.path.join(CACHE, "SelectByDocId__docId_*.json")
 QUALITY_REPORT = os.path.join(ATT_DIR, "_quality_report.json")
 

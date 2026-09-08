@@ -72,7 +72,9 @@ REPO_ROOT = SCRAPERS_ROOT  # 数据根 = modules/regulatory_scrapers（拍平后
 # _sources 源文本随迁统一 data/raw/_sources；content_ref / OCR 缓存引用在统一后相对 REPO_ROOT 解析一致）
 SRC_DIR = os.path.join(REPO_ROOT, "data", "raw", "_sources")
 RAW_OUT = os.path.join(REPO_ROOT, "data", "raw", "supplementary_regulations.json")
-DOCS_DIR = os.path.join(REPO_ROOT, "data", "docs", "supplementary_regulations_scraper")
+from std_lib.scraper_std.cache_store import docs_root  # noqa: E402
+
+DOCS_DIR = docs_root("supp")
 STATE_DIR = os.path.join(REPO_ROOT, "data", "state")
 
 # 用户提供的本地 PDF 源文件（仅读取，不移动）。

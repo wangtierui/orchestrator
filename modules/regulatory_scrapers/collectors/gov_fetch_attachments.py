@@ -34,10 +34,13 @@ _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
-# 产物目录统一（Plan B 阶段 2b + 5b 收敛）：附件统一落盘 data/docs/gov_regulations_scraper/attachments/
+# 产物目录统一（Plan B 阶段 2b + 5b 收敛 + 2026-09-08 docs_root 统一根）：
+# 附件统一落盘 docs_root("gov","attachments")
 SRC_DIR = os.path.dirname(os.path.abspath(__file__))
 REPO_ROOT = os.path.dirname(SRC_DIR)  # regulatory_scrapers（统一数据根）
-ATTACHMENTS_DIR = os.path.join(REPO_ROOT, "data", "docs", "gov_regulations_scraper", "attachments")
+from std_lib.scraper_std.cache_store import docs_root  # noqa: E402
+
+ATTACHMENTS_DIR = docs_root("gov", "attachments")
 
 from std_lib.scraper_std.crawler_common import (
     build_attachment_record,

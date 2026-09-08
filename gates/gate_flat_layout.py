@@ -16,10 +16,11 @@ import os
 import paths
 
 # 各模块 data/ 允许子目录白名单（其余一律拍平）：
-#   - scraper:             cleaned（五源统一 cleaned 数据根）
+#   - scraper:             cleaned（五源统一 cleaned 数据根）/ docs（文档产物统一根 2026-09-08）
 #   - internal_policy_base: originals/processed（原始件副本 + 结构化正文，P6 数据随仓）
 ALLOWED_DATA_SUBDIRS = {
-    "regulatory_scrapers": {"cleaned", "clauses", "history", "raw"},  # raw：supp 收录主库（活跃数据）
+    # docs：五源正文原文/附件统一根（docs_root(source) → data/docs/<scraper_slug>/）
+    "regulatory_scrapers": {"cleaned", "clauses", "history", "raw", "docs"},
     "internal_policy_base": {"originals", "processed"},
     "internal_policy_drafter": {"draft_clause"},      # 条款级对照素材（P8 端到端编排输出，R21 驱动）
 }

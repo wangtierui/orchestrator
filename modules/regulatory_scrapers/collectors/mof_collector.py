@@ -122,11 +122,12 @@ def set_offline(flag):
 HOST = "http://fgk.mof.gov.cn"
 BASE = "/dev"  # 接口基础路径：/dev/lawFile/list 等
 
-# 产物目录统一（Plan B 阶段 2b + 5b 收敛）：文件系统根与附件根（避免与 API BASE 冲突）
+# 产物目录统一（Plan B 阶段 2b + 5b 收敛 + 2026-09-08 docs_root 统一根）
 SRC_DIR = os.path.dirname(os.path.abspath(__file__))
 REPO_ROOT = os.path.dirname(SRC_DIR)  # regulatory_scrapers（统一数据根）
-# 5b（2026-09-04）：附件写入点收敛至统一 data/docs/（此前指向 per-source data/docs 会与实物分裂）
-ATTACHMENTS_DIR = os.path.join(REPO_ROOT, "data", "docs", "mof_regulations_scraper", "attachments")
+from std_lib.scraper_std.cache_store import docs_root  # noqa: E402
+
+ATTACHMENTS_DIR = docs_root("mof", "attachments")
 
 # 两个目标 URL 对应的类别（lfgccId -> 展示名称）
 DEFAULT_CATEGORIES = {

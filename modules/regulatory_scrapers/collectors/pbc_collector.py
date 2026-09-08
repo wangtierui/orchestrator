@@ -47,8 +47,6 @@ import json
 import os
 import random
 import re
-import shutil
-import subprocess
 import sys
 import time
 import urllib.error
@@ -106,11 +104,12 @@ def _cache_ep(url: str) -> str:
 # ----------------------------------------------------------------------------------
 BASE = "https://www.pbc.gov.cn"
 
-# 产物目录统一（Plan B 阶段 2b）：文件系统根与附件根（避免与网站 BASE 冲突）
+# 产物目录统一（Plan B 阶段 2b + 2026-09-08 docs_root 统一根）
 SRC_DIR = os.path.dirname(os.path.abspath(__file__))
 REPO_ROOT = os.path.dirname(SRC_DIR)  # regulatory_scrapers（统一数据根）
-# 5b（2026-09-04）：附件写入点收敛至统一 data/docs/（与 data/docs/pbc_regulations_scraper/attachments 实物对齐）
-ATTACHMENTS_DIR = os.path.join(REPO_ROOT, "data", "docs", "pbc_regulations_scraper", "attachments")
+from std_lib.scraper_std.cache_store import docs_root  # noqa: E402
+
+ATTACHMENTS_DIR = docs_root("pbc", "attachments")
 CATEGORIES = [
     {"name": "国家法律", "index_url": BASE + "/tiaofasi/144941/144951/index.html"},
     {"name": "行政法规", "index_url": BASE + "/tiaofasi/144941/144953/index.html"},
@@ -188,37 +187,23 @@ def detect_magic(bdata):
         return "ole"          # .doc / 旧 .xls 为 OLE 复合文档
     return None
 
-def detect_libreoffice():
-    """探测 LibreOffice(headless) 可执行文件，找不到返回 None。"""
-    for c in ("soffice", "libreoffice"):
-        p = shutil.which(c)
-        if p:
-            return p
-    for base in (
-        "/c/Program Files/LibreOffice/program/soffice.exe",
-        "/c/Program Files (x86)/LibreOffice/program/soffice.exe",
-    ):
-        if os.path.exists(base):
-            return base
-    return None
+from std_lib.scraper_std.doc_convert import (  # noqa: E402 五源共享 doc→docx（2026-09-08）
+    find_libreoffice,
+)
 
-LO_PATH = detect_libreoffice()
+LO_PATH = find_libreoffice()
 LO_AVAILABLE = LO_PATH is not None
 
+
+def detect_libreoffice():
+    """兼容别名：委托共享 find_libreoffice（五源统一探测）。"""
+    return find_libreoffice()
+
+
 def convert_with_libreoffice(doc_path):
-    """用 LibreOffice 将 .doc/.wps/.rtf/.ceb 转 docx（headless）。不可用时返回 None。"""
-    if not LO_PATH:
-        return None
-    out_dir = os.path.dirname(doc_path)
-    try:
-        subprocess.run(
-            [LO_PATH, "--headless", "--convert-to", "docx", "--outdir", out_dir, doc_path],
-            timeout=120, capture_output=True, check=False,
-        )
-        conv = os.path.splitext(doc_path)[0] + ".docx"
-        return conv if os.path.exists(conv) else None
-    except Exception:
-        return None
+    """兼容别名：委托共享 doc_to_docx（.doc/.wps/.rtf/.ceb → .docx，headless）。不可用返回 None。"""
+    from std_lib.scraper_std.doc_convert import doc_to_docx  # noqa: PLC0415
+    return doc_to_docx(doc_path)
 
 def extract_pdf_text(data):
     """用统一 OCR 模块抽取 PDF 文本（文本层优先，扫描件走 OCR 引擎链）。
@@ -691,8 +676,9 @@ def scrape_category(cat, fetcher, args, done_urls, existing_map=None):
                                 if conv and os.path.exists(conv):
                                     with open(conv, "rb") as cf:
                                         parsed = extract_docx_text(cf.read())
-                        # 表格结构化（2026-09-08 仿 supp 打通）：xlsx/docx 附件表 → rec 表键
-                        if ft in ("docx", "xls", "xlsx"):
+                        # 表格结构化（2026-09-08 仿 supp 打通）：xlsx/docx 附件表 → rec 表键；
+                        # .doc/wps/rtf/ceb 由 helper 内 doc→docx（共享 doc_convert）后取表
+                        if ft in ("docx", "xls", "xlsx", "doc", "wps", "rtf", "ceb"):
                             rec.update(structured_table_fields(bdata, fname))
                     except Exception as e:
                         rec["error"] = ("附件正文解析异常：%s: %s；已保存原始文件供下载"

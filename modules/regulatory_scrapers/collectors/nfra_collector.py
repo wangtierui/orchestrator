@@ -111,7 +111,7 @@ _SSL_CTX = ssl.create_default_context()
 # 缓存目录（由 --cache-dir 设置）。命中缓存则跳过网络，便于断网/续跑/复现。
 # 2026-09-05 重构：核心缓存逻辑下沉至通用模块 std_lib/scraper_std/cache_store，
 # 五源统一复用，缓存产物统一落盘 regulatory_scrapers/cache/<source>/。
-from std_lib.scraper_std.cache_store import OfflineMiss, bind_source_cache, source_cache_root
+from std_lib.scraper_std.cache_store import OfflineMiss, bind_source_cache, docs_root
 
 _RESP = None  # ResponseCache 实例；None 表示未启用缓存
 # 兼容别名（旧代码/脚本引用 m._OfflineMiss）
@@ -356,8 +356,8 @@ def get_detail(opener, doc_id, delay_min, delay_max):
 def build_detail_url(doc_id, item_id):
     return "%s/cn/view/pages/ItemDetail.html?docId=%s&itemId=%s" % (BASE, doc_id, item_id)
 
-# 附件缓存根目录（与 nfra_fetch_attachments.py 默认落盘一致：modules/regulatory_scrapers/cache/nfra/attachments）
-_ATT_DIR = os.path.join(source_cache_root("nfra"), "attachments")
+# 附件产物根（统一 data/docs，2026-09-08 docs_root；与 nfra_fetch_attachments.py 一致）
+_ATT_DIR = docs_root("nfra", "attachments")
 
 def load_attachments(doc_id):
     """读取 nfra_fetch_attachments.py 落盘的附件清单与抽取文本（纯标准库，离线安全）。
@@ -400,6 +400,46 @@ def load_attachments(doc_id):
                 item[k] = e[k]
         out.append(item)
     return out
+
+_DOC_DL_HEADERS = {
+    "User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                   "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"),
+}
+
+
+def download_original_doc(rec: dict, doc_id: int, scr_root: str) -> str:
+    """正文原文下载（2026-09-08 覆盖补齐）：doc_file_url/pdf_file_url → data/docs 统一根。
+
+    仅当 URL 末段为 .doc/.docx/.pdf 时下载（官网 Word/PDF 原文）；已存在同 id 副本跳过；
+    失败/降级返回 ""（rec["downloaded_doc_path"] 留空，不阻断主流程，尊重 WAF 纪律）。
+    由 --download-originals 门控启用；默认 False（避免每周任务无谓大流量）。
+    """
+    url = (rec.get("doc_file_url") or "").strip() or (rec.get("pdf_file_url") or "").strip()
+    if not url:
+        return ""
+    ext = os.path.splitext(url.split("?")[0])[1].lower()
+    if ext not in (".doc", ".docx", ".pdf"):
+        return ""
+    dest_dir = docs_root("nfra", "downloaded_docs")
+    os.makedirs(dest_dir, exist_ok=True)
+    dest = os.path.join(dest_dir, f"{doc_id}{ext}")
+    if os.path.exists(dest) and os.path.getsize(dest) > 0:
+        return os.path.relpath(dest, scr_root).replace("\\", "/")
+    req = urllib.request.Request(url, headers=_DOC_DL_HEADERS)
+    try:
+        with urllib.request.urlopen(req, timeout=40) as r:
+            data = r.read()
+    except Exception:  # noqa: BLE001  单条原文下载失败不阻断
+        return ""
+    if not data:
+        return ""
+    try:
+        with open(dest, "wb") as fh:
+            fh.write(data)
+    except OSError:
+        return ""
+    return os.path.relpath(dest, scr_root).replace("\\", "/")
+
 
 def scrape(args):
     _init_cache(args.cache_dir or None, args.offline)
@@ -541,6 +581,10 @@ def scrape(args):
                 errors.append({"doc_id": did, "title": base["title"], "error": str(e)})
                 print("      [ERR] docId=%s 详情失败: %s" % (did, e), flush=True)
         if rec:
+            # 正文原文下载（--download-originals 门控；默认不启用防无谓大流量/WAF 冲击）
+            if getattr(args, "download_originals", False):
+                _scr = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                rec["downloaded_doc_path"] = download_original_doc(rec, did, _scr)
             _atts = load_attachments(did)
             rec["attachments"] = _atts
             # 附件表格结构化聚合到条目顶层（map_nfra 透传 cleaned 39 列表格列）
@@ -711,6 +755,9 @@ def main():
                     help="仅抓取前 N 篇（0=全部，用于快速验证）")
     ap.add_argument("--no-detail", action="store_true",
                     help="仅抓取列表、跳过详情页（用于快速验证列表遍历）")
+    ap.add_argument("--download-originals", action="store_true",
+                    help="下载正文原文（doc_file_url/pdf_file_url → data/docs/nfra…/downloaded_docs；"
+                         "默认关闭，防周任务无谓大流量）")
     ap.add_argument("--cache-dir", default="",
                     help="请求缓存目录（显式覆盖）：缺省由 cache_store.source_cache_root(nfra) 统一解析"
                          "→ modules/regulatory_scrapers/cache/nfra（单物理根）")
