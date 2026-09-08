@@ -1,0 +1,266 @@
+{
+  "schema_version": "1.0.0",
+  "generated_at": "2026-09-08T10:20:05+0800",
+  "generator": "regulatory_scrapers/clean_index/build_clean_index.py",
+  "description": "五源 clean 产物结构化索引（单一事实源），供 regulatory_classifier 直接加载，无需额外转换。",
+  "scraper_root": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers",
+  "sources": {
+    "gov": {
+      "source_id": "gov",
+      "source_name": "国务院及地方政府规章/法规库（gov.cn 体系）",
+      "scraper_subdir": "gov_regulations_scraper",
+      "cleaned_dir": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned",
+      "cleaned_dirs": [
+        "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned"
+      ],
+      "snapshots": {
+        "20260907": {
+          "date": "20260907",
+          "files": {
+            "csv": {
+              "path": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/gov_cleaned_20260907.csv",
+              "size_bytes": 37978657,
+              "sha256": "7d5a63932c1b0602f36110b43413d4887fc07d42501383288aa2cd5551f93728",
+              "record_count": 605,
+              "modified_at": "2026-09-07T22:34:57+0800"
+            }
+          },
+          "record_count": 605,
+          "record_source_values": [
+            "gov"
+          ],
+          "companion_docs": [],
+          "timeliness_status_values": [
+            "amended",
+            "valid"
+          ],
+          "doc_type_values": null,
+          "category_values": [
+            "行政法规"
+          ]
+        }
+      },
+      "latest_date": "20260907",
+      "latest": {
+        "date": "20260907",
+        "csv": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/gov_cleaned_20260907.csv",
+        "jsonl": null,
+        "record_count": 605
+      },
+      "total_record_count": 605
+    },
+    "mof": {
+      "source_id": "mof",
+      "source_name": "财政部（MoF）",
+      "scraper_subdir": "mof_regulations_scraper",
+      "cleaned_dir": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned",
+      "cleaned_dirs": [
+        "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned"
+      ],
+      "snapshots": {
+        "20260907": {
+          "date": "20260907",
+          "files": {
+            "csv": {
+              "path": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/mof_cleaned_20260907.csv",
+              "size_bytes": 9790985,
+              "sha256": "53b9b9ab25994ce4a249581c7ec65d9819e71a6b6bd178e96d927bbf2e98f30c",
+              "record_count": 870,
+              "modified_at": "2026-09-07T22:34:55+0800"
+            }
+          },
+          "record_count": 870,
+          "record_source_values": [
+            "mof"
+          ],
+          "companion_docs": [],
+          "timeliness_status_values": [
+            "valid"
+          ],
+          "doc_type_values": null,
+          "category_values": [
+            "财政法律法规（财政部规章）",
+            "财政部规范性文件"
+          ]
+        }
+      },
+      "latest_date": "20260907",
+      "latest": {
+        "date": "20260907",
+        "csv": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/mof_cleaned_20260907.csv",
+        "jsonl": null,
+        "record_count": 870
+      },
+      "total_record_count": 870
+    },
+    "nfra": {
+      "source_id": "nfra",
+      "source_name": "国家金融监督管理总局（原银保监会）",
+      "scraper_subdir": "nfra_regulations_scraper",
+      "cleaned_dir": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned",
+      "cleaned_dirs": [
+        "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned"
+      ],
+      "snapshots": {
+        "20260907": {
+          "date": "20260907",
+          "files": {
+            "csv": {
+              "path": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/nfra_cleaned_20260907.csv",
+              "size_bytes": 41532852,
+              "sha256": "0f9165a686b6003e5bafe893fdfb71901b78458cb348009186a6c9ca8c677cc5",
+              "record_count": 1939,
+              "modified_at": "2026-09-07T22:34:55+0800"
+            }
+          },
+          "record_count": 1939,
+          "record_source_values": [
+            "nfra"
+          ],
+          "companion_docs": [],
+          "timeliness_status_values": [
+            "amended",
+            "expired",
+            "repealed",
+            "valid"
+          ],
+          "doc_type_values": null,
+          "category_values": [
+            "政策法规(本级)",
+            "政策规章规范性文件",
+            "法律法规"
+          ]
+        }
+      },
+      "latest_date": "20260907",
+      "latest": {
+        "date": "20260907",
+        "csv": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/nfra_cleaned_20260907.csv",
+        "jsonl": null,
+        "record_count": 1939
+      },
+      "total_record_count": 1939
+    },
+    "pbc": {
+      "source_id": "pbc",
+      "source_name": "中国人民银行（PBoC）",
+      "scraper_subdir": "pbc_regulations_scraper",
+      "cleaned_dir": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned",
+      "cleaned_dirs": [
+        "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned"
+      ],
+      "snapshots": {
+        "20260907": {
+          "date": "20260907",
+          "files": {
+            "csv": {
+              "path": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/pbc_cleaned_20260907.csv",
+              "size_bytes": 3855733,
+              "sha256": "f98f090107a5096d52939e8648f13e17997f5acf6ca2cd3a4cb2dd3d6d5cd769",
+              "record_count": 571,
+              "modified_at": "2026-09-07T22:34:56+0800"
+            }
+          },
+          "record_count": 571,
+          "record_source_values": [
+            "pbc"
+          ],
+          "companion_docs": [],
+          "timeliness_status_values": [
+            "amended",
+            "expired",
+            "repealed",
+            "valid"
+          ],
+          "doc_type_values": null,
+          "category_values": [
+            "国家法律",
+            "行政法规",
+            "规范性文件",
+            "部门规章"
+          ]
+        }
+      },
+      "latest_date": "20260907",
+      "latest": {
+        "date": "20260907",
+        "csv": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/pbc_cleaned_20260907.csv",
+        "jsonl": null,
+        "record_count": 571
+      },
+      "total_record_count": 571
+    },
+    "supp": {
+      "source_id": "supp",
+      "source_name": "补充法规库（多源归集）",
+      "scraper_subdir": "supplementary_regulations_scraper",
+      "cleaned_dir": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned",
+      "cleaned_dirs": [
+        "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned"
+      ],
+      "snapshots": {
+        "20260907": {
+          "date": "20260907",
+          "files": {
+            "csv": {
+              "path": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/supp_cleaned_20260907.csv",
+              "size_bytes": 1627874,
+              "sha256": "ec14ccb2d7966a32cd764223cee990eff28802d067f85cfa6b7c4090b82d700f",
+              "record_count": 57,
+              "modified_at": "2026-09-07T20:12:06+0800"
+            }
+          },
+          "record_count": 57,
+          "record_source_values": [
+            "supp"
+          ],
+          "companion_docs": [],
+          "timeliness_status_values": [
+            "repealed",
+            "valid"
+          ],
+          "doc_type_values": [
+            "便函",
+            "公告",
+            "办法",
+            "国务院文件",
+            "复函",
+            "意见",
+            "指引",
+            "法律",
+            "行业示范文本",
+            "规定",
+            "规范性文件",
+            "通知"
+          ],
+          "category_values": [
+            "上位法",
+            "制定依据",
+            "行业自律文本",
+            "行政许可批复",
+            "规范性文件",
+            "部门规范性文件",
+            "部门规范性文件（内部便函）",
+            "部门规范性文件（内部备案）",
+            "部门规范性文件（内部文件，不对外公开）"
+          ]
+        }
+      },
+      "latest_date": "20260907",
+      "latest": {
+        "date": "20260907",
+        "csv": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/supp_cleaned_20260907.csv",
+        "jsonl": null,
+        "record_count": 57
+      },
+      "total_record_count": 57
+    }
+  },
+  "summary": {
+    "source_count": 5,
+    "snapshot_count": 5,
+    "csv_count": 5,
+    "jsonl_count": 0,
+    "total_record_count": 4042
+  }
+}

@@ -1,0 +1,185 @@
+{
+  "schema_version": "1.0.0",
+  "generated_at": "2026-09-08T06:00:41+0800",
+  "trigger": "clean_index + verification_state + 链路契约 + schema 预检 四门禁（gate-based，非 cron 轮询语义）",
+  "action": "skipped_gate_fail",
+  "gates": {
+    "clean": {
+      "passed": false,
+      "detail": {
+        "index_loaded": true,
+        "validate": {
+          "missing": [
+            {
+              "source_id": "gov",
+              "ext": "csv",
+              "path": "data/cleaned/gov_cleaned_20260904.csv"
+            },
+            {
+              "source_id": "gov",
+              "ext": "jsonl",
+              "path": "data/cleaned/gov_cleaned_20260904.jsonl"
+            },
+            {
+              "source_id": "gov",
+              "ext": "csv",
+              "path": "data/cleaned/gov_cleaned_20260905.csv"
+            },
+            {
+              "source_id": "gov",
+              "ext": "jsonl",
+              "path": "data/cleaned/gov_cleaned_20260905.jsonl"
+            },
+            {
+              "source_id": "gov",
+              "ext": "csv",
+              "path": "data/cleaned/gov_cleaned_20260907.csv"
+            },
+            {
+              "source_id": "gov",
+              "ext": "jsonl",
+              "path": "data/cleaned/gov_cleaned_20260907.jsonl"
+            },
+            {
+              "source_id": "mof",
+              "ext": "csv",
+              "path": "data/cleaned/mof_cleaned_20260904.csv"
+            },
+            {
+              "source_id": "mof",
+              "ext": "jsonl",
+              "path": "data/cleaned/mof_cleaned_20260904.jsonl"
+            },
+            {
+              "source_id": "mof",
+              "ext": "csv",
+              "path": "data/cleaned/mof_cleaned_20260905.csv"
+            },
+            {
+              "source_id": "mof",
+              "ext": "jsonl",
+              "path": "data/cleaned/mof_cleaned_20260905.jsonl"
+            },
+            {
+              "source_id": "mof",
+              "ext": "csv",
+              "path": "data/cleaned/mof_cleaned_20260907.csv"
+            },
+            {
+              "source_id": "mof",
+              "ext": "jsonl",
+              "path": "data/cleaned/mof_cleaned_20260907.jsonl"
+            },
+            {
+              "source_id": "nfra",
+              "ext": "csv",
+              "path": "data/cleaned/nfra_cleaned_20260904.csv"
+            },
+            {
+              "source_id": "nfra",
+              "ext": "jsonl",
+              "path": "data/cleaned/nfra_cleaned_20260904.jsonl"
+            },
+            {
+              "source_id": "nfra",
+              "ext": "csv",
+              "path": "data/cleaned/nfra_cleaned_20260905.csv"
+            },
+            {
+              "source_id": "nfra",
+              "ext": "jsonl",
+              "path": "data/cleaned/nfra_cleaned_20260905.jsonl"
+            },
+            {
+              "source_id": "nfra",
+              "ext": "csv",
+              "path": "data/cleaned/nfra_cleaned_20260907.csv"
+            },
+            {
+              "source_id": "nfra",
+              "ext": "jsonl",
+              "path": "data/cleaned/nfra_cleaned_20260907.jsonl"
+            },
+            {
+              "source_id": "pbc",
+              "ext": "csv",
+              "path": "data/cleaned/pbc_cleaned_20260904.csv"
+            },
+            {
+              "source_id": "pbc",
+              "ext": "jsonl",
+              "path": "data/cleaned/pbc_cleaned_20260904.jsonl"
+            },
+            {
+              "source_id": "pbc",
+              "ext": "csv",
+              "path": "data/cleaned/pbc_cleaned_20260905.csv"
+            },
+            {
+              "source_id": "pbc",
+              "ext": "jsonl",
+              "path": "data/cleaned/pbc_cleaned_20260905.jsonl"
+            },
+            {
+              "source_id": "pbc",
+              "ext": "csv",
+              "path": "data/cleaned/pbc_cleaned_20260907.csv"
+            },
+            {
+              "source_id": "pbc",
+              "ext": "jsonl",
+              "path": "data/cleaned/pbc_cleaned_20260907.jsonl"
+            },
+            {
+              "source_id": "supp",
+              "ext": "csv",
+              "path": "data/cleaned/supp_cleaned_20260904.csv"
+            },
+            {
+              "source_id": "supp",
+              "ext": "jsonl",
+              "path": "data/cleaned/supp_cleaned_20260904.jsonl"
+            },
+            {
+              "source_id": "supp",
+              "ext": "csv",
+              "path": "data/cleaned/supp_cleaned_20260905.csv"
+            },
+            {
+              "source_id": "supp",
+              "ext": "jsonl",
+              "path": "data/cleaned/supp_cleaned_20260905.jsonl"
+            },
+            {
+              "source_id": "supp",
+              "ext": "csv",
+              "path": "data/cleaned/supp_cleaned_20260907.csv"
+            },
+            {
+              "source_id": "supp",
+              "ext": "jsonl",
+              "path": "data/cleaned/supp_cleaned_20260907.jsonl"
+            }
+          ],
+          "hash_mismatch": [],
+          "ok_count": 0
+        },
+        "index_stale": false,
+        "stale_sources": [],
+        "scanner_aligned": true,
+        "scanner_mismatch": [],
+        "per_source": {}
+      }
+    }
+  },
+  "change_detected": null,
+  "previous_signature": null,
+  "current_signature": null,
+  "stages": [],
+  "products": {},
+  "stats": {},
+  "skip_reason": "gate_clean_fail",
+  "warnings": [],
+  "summary": "清洗门禁未通过：索引文件缺失。未执行重跑。",
+  "clean_index_rebuilt": false
+}
