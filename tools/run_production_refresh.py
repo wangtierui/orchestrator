@@ -38,10 +38,16 @@ SOURCES = ["gov", "mof", "nfra", "pbc", "supp"]
 # 各源采集命令（全量语义）。supp 无网站增量 → 由 clean 刷新即可。
 COLLECT_CMD = {
     "gov": [PY, os.path.join(COLLECTORS, "gov_collector.py"), "--full"],
+    # mof 附件主机 10.1.60.36:8888 曾实测 100% HTTP 502：默认全量会空转数十小时，
+    # 可用环境 MOF_COLLECT_ARGS="--no-attachments" 追加逃生参数（仍会抓详情正文）。
     "mof": [PY, os.path.join(COLLECTORS, "mof_collector.py")],
+    # nfra 全量：原文（doc/pdf）已默认下载（2026-09-09 五源统一完整文档内容）。
     "nfra": [PY, os.path.join(COLLECTORS, "nfra_collector.py")],
     "pbc": [PY, os.path.join(COLLECTORS, "pbc_collector.py")],
 }
+# 各源 collector 输出目录参数名不一致（历史遗留），必须按源传参（2026-09-09 接线修复）。
+# gov/nfra: --out-dir | mof: --outdir | pbc: --out
+OUT_FLAG = {"gov": "--out-dir", "mof": "--outdir", "nfra": "--out-dir", "pbc": "--out"}
 RAW_JSON = {
     "gov": "gov_laws.json", "mof": "mof_laws.json",
     "nfra": "nfra_regulations.json", "pbc": "pbc_laws.json",
@@ -115,7 +121,11 @@ def main() -> int:
             if not cmd:
                 print(f"[collect] {src} 无网络采集（本地摄取/清洗刷新）→ 跳过")
                 continue
-            report.append(_run(f"collect:{src}", cmd + ["--out-dir", RAW_DIR], timeout=7200))
+            if src == "mof":
+                cmd = cmd + (os.environ.get("MOF_COLLECT_ARGS", "").split() or [])
+            argv = cmd + [OUT_FLAG.get(src, "--out-dir"), RAW_DIR]
+            print(f"[collect] {src} argv={argv}", flush=True)
+            report.append(_run(f"collect:{src}", argv, timeout=7200))
             if args.stop_on_error and report[-1]["rc"]:
                 break
     report.append(_run("stage:raw_snapshot", [PY, "-c", "pass"]))

@@ -20,7 +20,9 @@ import paths
 #   - internal_policy_base: originals/processed（原始件副本 + 结构化正文，P6 数据随仓）
 ALLOWED_DATA_SUBDIRS = {
     # docs：五源正文原文/附件统一根（docs_root(source) → data/docs/<scraper_slug>/）
-    "regulatory_scrapers": {"cleaned", "clauses", "history", "raw", "docs"},
+    # reports/state：collector 运行产物（mof_laws_report.html 等报告、status.json/运行时锁，
+    #   2026-09-09 mof 全量轮实证创建，写入位置=dirname(outdir) 下的 reports/state）
+    "regulatory_scrapers": {"cleaned", "clauses", "history", "raw", "docs", "reports", "state"},
     "internal_policy_base": {"originals", "processed"},
     "internal_policy_drafter": {"draft_clause"},      # 条款级对照素材（P8 端到端编排输出，R21 驱动）
 }

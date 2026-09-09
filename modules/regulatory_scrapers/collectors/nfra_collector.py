@@ -416,7 +416,7 @@ def download_original_doc(rec: dict, doc_id: int, scr_root: str) -> str:
 
     仅当 URL 末段为 .doc/.docx/.pdf 时下载（官网 Word/PDF 原文）；已存在同 id 副本跳过；
     失败/降级返回 ""（rec["downloaded_doc_path"] 留空，不阻断主流程，尊重 WAF 纪律）。
-    由 --download-originals 门控启用；默认 False（避免每周任务无谓大流量）。
+    默认启用（2026-09-09 五源统一完整文档内容）；--no-originals 可整体跳过。
     """
     url = (rec.get("doc_file_url") or "").strip() or (rec.get("pdf_file_url") or "").strip()
     if not url:
@@ -767,15 +767,20 @@ def main():
                     help="仅抓取前 N 篇（0=全部，用于快速验证）")
     ap.add_argument("--no-detail", action="store_true",
                     help="仅抓取列表、跳过详情页（用于快速验证列表遍历）")
+    ap.add_argument("--no-originals", action="store_true",
+                    help="跳过正文原文下载（原文下载现默认开启，2026-09-09 五源统一要求完整文档内容："
+                         "doc_file_url/pdf_file_url → data/docs/nfra…/downloaded_docs）")
     ap.add_argument("--download-originals", action="store_true",
-                    help="下载正文原文（doc_file_url/pdf_file_url → data/docs/nfra…/downloaded_docs；"
-                         "默认关闭，防周任务无谓大流量）")
+                    help="[兼容保留] 旧旗标（原文下载已默认开启，本参数为 no-op）")
     ap.add_argument("--cache-dir", default="",
                     help="请求缓存目录（显式覆盖）：缺省由 cache_store.source_cache_root(nfra) 统一解析"
                          "→ modules/regulatory_scrapers/cache/nfra（单物理根）")
     ap.add_argument("--offline", action="store_true",
                     help="纯离线模式：仅读取 --cache-dir 缓存，缓存缺失即跳过（不联网）")
     args = ap.parse_args()
+    # 原文下载默认开启（2026-09-09 五源统一完整文档内容）；--no-originals 显式关闭；
+    # 旧 --download-originals 保留为 no-op 兼容（dest 同 download_originals）。
+    args.download_originals = not getattr(args, "no_originals", False)
     try:
         scrape(args)
     except Exception as e:  # 顶层兜底，避免现场丢失

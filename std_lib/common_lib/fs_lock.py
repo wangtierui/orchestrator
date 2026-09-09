@@ -57,8 +57,28 @@ class BusyError(RuntimeError):
 
 
 def _pid_alive(pid):
+    """跨平台存活探测（Windows 兼容 2026-09-09）。
+
+    Windows 上 os.kill(pid, 0) 实为 TerminateProcess 语义，实测对部分 PID
+    抛 OSError WinError 87（参数错误）→ 误判存活进程为死 → 锁被抢占/重入失效。
+    改为 OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION) 探测：
+      - 返回句柄        → 进程存在 → True
+      - error 5 (拒绝)  → 进程存在但无查询权 → True（保守，防误抢占）
+      - error 87 (无效参数)/句柄空且非5 → 进程不存在 → False
+    """
     if not pid or pid <= 0:
         return False
+    if os.name == "nt":
+        import ctypes
+        kernel32 = ctypes.windll.kernel32
+        PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
+        handle = kernel32.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, pid)
+        if handle:
+            kernel32.CloseHandle(handle)
+            return True
+        # GetLastError：5=拒绝访问（进程存在）→ True；87=参数错误（不存在）→ False
+        err = ctypes.get_last_error() if hasattr(ctypes, "get_last_error") else 0
+        return err == 5
     try:
         os.kill(pid, 0)
     except OSError:
