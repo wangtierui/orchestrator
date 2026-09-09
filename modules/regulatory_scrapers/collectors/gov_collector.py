@@ -647,7 +647,8 @@ CSV_COLUMNS = [
 ]
 
 def write_outputs(records: list[dict[str, Any]], cfg: ScrapeConfig,
-                  source_label: str | None = None) -> dict[str, str]:
+                  source_label: str | None = None,
+                  write_csv: bool = False) -> dict[str, str]:
     os.makedirs(cfg.out_dir, exist_ok=True)
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     json_path = os.path.join(cfg.out_dir, "gov_laws.json")
@@ -666,17 +667,19 @@ def write_outputs(records: list[dict[str, Any]], cfg: ScrapeConfig,
         json.dump(_payload, f, ensure_ascii=False, indent=2)
     os.replace(_tmp, json_path)
 
-    # CSV：表格视图（含摘要，不含全文，便于 Excel 打开）
-    _tmpc = csv_path + ".tmp"
-    with open(_tmpc, "w", encoding="utf-8-sig", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=CSV_COLUMNS, extrasaction="ignore")
-        writer.writeheader()
-        for r in records:
-            writer.writerow({k: r.get(k, "") for k in CSV_COLUMNS})
-    os.replace(_tmpc, csv_path)
+    # CSV：仅 --csv 显式开启时输出表格视图（默认仅 JSON 主库，2026-09-09 规范）
+    if write_csv:
+        _tmpc = csv_path + ".tmp"
+        with open(_tmpc, "w", encoding="utf-8-sig", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=CSV_COLUMNS, extrasaction="ignore")
+            writer.writeheader()
+            for r in records:
+                writer.writerow({k: r.get(k, "") for k in CSV_COLUMNS})
+        os.replace(_tmpc, csv_path)
 
-    LOG.info("输出完成：\n  JSON: %s\n  CSV : %s", json_path, csv_path)
-    return {"json": json_path, "csv": csv_path}
+    LOG.info("输出完成：\n  JSON: %s%s", json_path,
+             ("\n  CSV : %s" % csv_path) if write_csv else "")
+    return {"json": json_path, "csv": csv_path if write_csv else ""}
 
 # --------------------------------------------------------------------------- #
 # 主流程
@@ -775,6 +778,8 @@ def main(argv=None) -> int:
                              "→ modules/regulatory_scrapers/cache/gov（单物理根）")
     parser.add_argument("--offline", action="store_true",
                         help="纯离线模式：仅读取 --cache-dir 缓存，缓存缺失即跳过（不联网）")
+    parser.add_argument("--csv", action="store_true",
+                        help="额外输出 CSV 表格视图（默认仅写 JSON 主库，2026-09-09 规范）")
     parser.add_argument("--log-file", default="",
                         help="日志文件路径（默认输出到控制台与 out-dir/scraper.log）")
     args = parser.parse_args(argv)
@@ -821,7 +826,7 @@ def main(argv=None) -> int:
         # 增量续抓：本次 records 仅含新发现条目 → 与现主库合并后覆盖写，防丢历史
         records = merge_with_master(records, cfg.out_dir)
 
-    paths = write_outputs(records, cfg, source_label=cfg.source)
+    paths = write_outputs(records, cfg, source_label=cfg.source, write_csv=args.csv)
     LOG.info("成功抓取 %d 条。文件：%s", len(records), paths)
     return 0
 

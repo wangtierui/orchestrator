@@ -719,21 +719,22 @@ def scrape_category(cat, fetcher, args, done_urls, existing_map=None):
             print(f"  [.] 《{name}》进度 {i}/{len(uniq)} 成功={sum(1 for r in records if r['fetch_status']=='ok')}")
     return records
 
-def save_outputs(records, out_dir):
+def save_outputs(records, out_dir, write_csv=False):
     os.makedirs(out_dir, exist_ok=True)
     json_path = os.path.join(out_dir, "pbc_laws.json")
     csv_path = os.path.join(out_dir, "pbc_laws.csv")
     with open(json_path, "w", encoding="utf-8") as f:
         json.dump(records, f, ensure_ascii=False, indent=2)
-    fields = ["category", "title", "detail_url", "link_type", "file_type", "local_path",
-              "publish_date", "document_number", "issuing_authority",
-              "effective_date", "content", "summary", "fetch_status", "error"]
-    with open(csv_path, "w", encoding="utf-8-sig", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=fields)
-        w.writeheader()
-        for r in records:
-            w.writerow(r)
-    return json_path, csv_path
+    if write_csv:                                 # 默认仅 JSON 主库（2026-09-09 规范）
+        fields = ["category", "title", "detail_url", "link_type", "file_type", "local_path",
+                  "publish_date", "document_number", "issuing_authority",
+                  "effective_date", "content", "summary", "fetch_status", "error"]
+        with open(csv_path, "w", encoding="utf-8-sig", newline="") as f:
+            w = csv.DictWriter(f, fieldnames=fields)
+            w.writeheader()
+            for r in records:
+                w.writerow(r)
+    return json_path, (csv_path if write_csv else "")
 
 def build_report(records):
     by_cat = {}
@@ -775,6 +776,8 @@ def main():
     ap.add_argument("--delay", type=float, default=1.0, help="平均请求间隔（秒）")
     ap.add_argument("--out", default=os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "raw"), help="输出目录（默认统一 data/raw/：regulatory_scrapers/data/raw）")
     ap.add_argument("--no-attachments", action="store_true", help="不下载附件正文，仅记录链接")
+    ap.add_argument("--csv", action="store_true",
+                    help="额外输出 CSV（默认仅写 JSON 主库，2026-09-09 规范）")
     ap.add_argument("--cache-dir", default="",
                     help="请求缓存目录（显式覆盖）：缺省由 cache_store.source_cache_root(pbc) 统一解析"
                          "→ modules/regulatory_scrapers/cache/pbc（单物理根）")
@@ -824,13 +827,13 @@ def main():
         recs = scrape_category(cat, fetcher, args, done_urls, existing_map)
         all_records.extend(recs)
         # 逐栏目增量落盘：即使进程被中断，已完成栏目数据不丢失，下次运行可断点续跑
-        save_outputs(all_records, args.out)
+        save_outputs(all_records, args.out, write_csv=args.csv)
         print(f"  [✓] 《{cat['name']}》已落盘，累计 {len(all_records)} 条")
 
     if args.max_items:
         all_records = all_records[:args.max_items]
 
-    json_path, csv_path = save_outputs(all_records, args.out)
+    json_path, csv_path = save_outputs(all_records, args.out, write_csv=args.csv)
     report = build_report(all_records)
     report_path = os.path.join(os.path.dirname(args.out), "reports", "report.md")
     with open(report_path, "w", encoding="utf-8") as f:

@@ -627,25 +627,27 @@ def scrape(args):
             "errors": errors,
         }, f, ensure_ascii=False, indent=2)
 
-    csv_path = os.path.join(out_dir, "nfra_regulations.csv")
-    fields = ["doc_id", "title", "category", "publish_date", "build_date", "document_no",
-              "effective_date", "index_no", "issuing_authority", "category_type",
-              "summary", "detail_url", "doc_file_url", "pdf_file_url",
-              "attachment_count", "attachment_total_pages", "attachment_total_chars",
-              "attachment_text"]
-    with open(csv_path, "w", encoding="utf-8-sig", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=fields, extrasaction="ignore")
-        w.writeheader()
-        for r in records:
-            row = dict(r)
-            row["summary"] = (row.get("summary") or "").replace("\n", " ")
-            atts = r.get("attachments") or []
-            row["attachment_count"] = len(atts)
-            row["attachment_total_pages"] = sum((a.get("page_count") or 0) for a in atts)
-            row["attachment_total_chars"] = sum((a.get("char_count") or 0) for a in atts)
-            row["attachment_text"] = " ".join(
-                (a.get("text") or "").replace("\n", " ") for a in atts)
-            w.writerow(row)
+    csv_path = ""  # 默认仅 JSON 主库（2026-09-09 规范）；--csv 时输出 CSV
+    if getattr(args, "csv", False):
+        csv_path = os.path.join(out_dir, "nfra_regulations.csv")
+        fields = ["doc_id", "title", "category", "publish_date", "build_date", "document_no",
+                  "effective_date", "index_no", "issuing_authority", "category_type",
+                  "summary", "detail_url", "doc_file_url", "pdf_file_url",
+                  "attachment_count", "attachment_total_pages", "attachment_total_chars",
+                  "attachment_text"]
+        with open(csv_path, "w", encoding="utf-8-sig", newline="") as f:
+            w = csv.DictWriter(f, fieldnames=fields, extrasaction="ignore")
+            w.writeheader()
+            for r in records:
+                row = dict(r)
+                row["summary"] = (row.get("summary") or "").replace("\n", " ")
+                atts = r.get("attachments") or []
+                row["attachment_count"] = len(atts)
+                row["attachment_total_pages"] = sum((a.get("page_count") or 0) for a in atts)
+                row["attachment_total_chars"] = sum((a.get("char_count") or 0) for a in atts)
+                row["attachment_text"] = " ".join(
+                    (a.get("text") or "").replace("\n", " ") for a in atts)
+                w.writerow(row)
 
     # 汇总报告
     report_path = os.path.join(out_dir, "README.md")
@@ -751,7 +753,8 @@ def scrape(args):
 
     print("\n完成！输出文件：")
     print("  JSON : %s" % json_path)
-    print("  CSV  : %s" % csv_path)
+    if csv_path:
+        print("  CSV  : %s" % csv_path)
     print("  报告 : %s" % report_path)
     print("成功 %d 篇，失败 %d 篇" % (len(records), len(errors)))
     return json_path, csv_path, report_path
@@ -772,6 +775,8 @@ def main():
                          "doc_file_url/pdf_file_url → data/docs/nfra…/downloaded_docs）")
     ap.add_argument("--download-originals", action="store_true",
                     help="[兼容保留] 旧旗标（原文下载已默认开启，本参数为 no-op）")
+    ap.add_argument("--csv", action="store_true",
+                    help="额外输出 CSV 表格（默认仅写 JSON 主库，2026-09-09 规范）")
     ap.add_argument("--cache-dir", default="",
                     help="请求缓存目录（显式覆盖）：缺省由 cache_store.source_cache_root(nfra) 统一解析"
                          "→ modules/regulatory_scrapers/cache/nfra（单物理根）")

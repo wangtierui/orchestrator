@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "generated_at": "2026-09-09T19:12:52+0800",
+  "generated_at": "2026-09-09T19:46:16+0800",
   "generator": "regulatory_scrapers/clean_index/build_clean_index.py",
   "description": "五源 clean 产物结构化索引（单一事实源），供 regulatory_classifier 直接加载，无需额外转换。",
   "scraper_root": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers",
@@ -14,70 +14,6 @@
         "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned"
       ],
       "snapshots": {
-        "20260907": {
-          "date": "20260907",
-          "files": {
-            "csv": {
-              "path": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/gov_cleaned_20260907.csv",
-              "size_bytes": 37978657,
-              "sha256": null,
-              "record_count": 605,
-              "modified_at": "2026-09-07T22:34:57+0800"
-            },
-            "jsonl": {
-              "path": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/gov_cleaned_20260907.jsonl",
-              "size_bytes": 59285063,
-              "sha256": null,
-              "record_count": 605,
-              "modified_at": "2026-09-07T22:34:57+0800"
-            }
-          },
-          "record_count": 605,
-          "record_source_values": [
-            "gov"
-          ],
-          "companion_docs": [],
-          "timeliness_status_values": [
-            "amended",
-            "valid"
-          ],
-          "doc_type_values": null,
-          "category_values": [
-            "行政法规"
-          ]
-        },
-        "20260908": {
-          "date": "20260908",
-          "files": {
-            "csv": {
-              "path": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/gov_cleaned_20260908.csv",
-              "size_bytes": 37903627,
-              "sha256": null,
-              "record_count": 605,
-              "modified_at": "2026-09-09T19:03:05+0800"
-            },
-            "jsonl": {
-              "path": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/gov_cleaned_20260908.jsonl",
-              "size_bytes": 59281238,
-              "sha256": null,
-              "record_count": 605,
-              "modified_at": "2026-09-09T19:03:05+0800"
-            }
-          },
-          "record_count": 605,
-          "record_source_values": [
-            "gov"
-          ],
-          "companion_docs": [],
-          "timeliness_status_values": [
-            "amended",
-            "valid"
-          ],
-          "doc_type_values": null,
-          "category_values": [
-            "行政法规"
-          ]
-        },
         "20260909": {
           "date": "20260909",
           "files": {
@@ -129,70 +65,6 @@
         "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned"
       ],
       "snapshots": {
-        "20260907": {
-          "date": "20260907",
-          "files": {
-            "csv": {
-              "path": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/mof_cleaned_20260907.csv",
-              "size_bytes": 9790985,
-              "sha256": null,
-              "record_count": 870,
-              "modified_at": "2026-09-07T22:34:55+0800"
-            },
-            "jsonl": {
-              "path": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/mof_cleaned_20260907.jsonl",
-              "size_bytes": 10348534,
-              "sha256": null,
-              "record_count": 870,
-              "modified_at": "2026-09-07T22:34:55+0800"
-            }
-          },
-          "record_count": 870,
-          "record_source_values": [
-            "mof"
-          ],
-          "companion_docs": [],
-          "timeliness_status_values": [
-            "valid"
-          ],
-          "doc_type_values": null,
-          "category_values": [
-            "财政法律法规（财政部规章）",
-            "财政部规范性文件"
-          ]
-        },
-        "20260908": {
-          "date": "20260908",
-          "files": {
-            "csv": {
-              "path": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/mof_cleaned_20260908.csv",
-              "size_bytes": 9783048,
-              "sha256": null,
-              "record_count": 870,
-              "modified_at": "2026-09-09T19:03:07+0800"
-            },
-            "jsonl": {
-              "path": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/mof_cleaned_20260908.jsonl",
-              "size_bytes": 10342264,
-              "sha256": null,
-              "record_count": 870,
-              "modified_at": "2026-09-09T19:03:06+0800"
-            }
-          },
-          "record_count": 870,
-          "record_source_values": [
-            "mof"
-          ],
-          "companion_docs": [],
-          "timeliness_status_values": [
-            "valid"
-          ],
-          "doc_type_values": null,
-          "category_values": [
-            "财政法律法规（财政部规章）",
-            "财政部规范性文件"
-          ]
-        },
         "20260909": {
           "date": "20260909",
           "files": {
@@ -244,79 +116,6 @@
         "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned"
       ],
       "snapshots": {
-        "20260907": {
-          "date": "20260907",
-          "files": {
-            "csv": {
-              "path": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/nfra_cleaned_20260907.csv",
-              "size_bytes": 41532852,
-              "sha256": null,
-              "record_count": 1939,
-              "modified_at": "2026-09-07T22:34:55+0800"
-            },
-            "jsonl": {
-              "path": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/nfra_cleaned_20260907.jsonl",
-              "size_bytes": 42850098,
-              "sha256": null,
-              "record_count": 1939,
-              "modified_at": "2026-09-07T22:34:54+0800"
-            }
-          },
-          "record_count": 1939,
-          "record_source_values": [
-            "nfra"
-          ],
-          "companion_docs": [],
-          "timeliness_status_values": [
-            "amended",
-            "expired",
-            "repealed",
-            "valid"
-          ],
-          "doc_type_values": null,
-          "category_values": [
-            "政策法规(本级)",
-            "政策规章规范性文件",
-            "法律法规"
-          ]
-        },
-        "20260908": {
-          "date": "20260908",
-          "files": {
-            "csv": {
-              "path": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/nfra_cleaned_20260908.csv",
-              "size_bytes": 41368649,
-              "sha256": null,
-              "record_count": 1939,
-              "modified_at": "2026-09-09T19:03:09+0800"
-            },
-            "jsonl": {
-              "path": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/nfra_cleaned_20260908.jsonl",
-              "size_bytes": 42849480,
-              "sha256": null,
-              "record_count": 1939,
-              "modified_at": "2026-09-09T19:03:08+0800"
-            }
-          },
-          "record_count": 1939,
-          "record_source_values": [
-            "nfra"
-          ],
-          "companion_docs": [],
-          "timeliness_status_values": [
-            "amended",
-            "expired",
-            "pending",
-            "repealed",
-            "valid"
-          ],
-          "doc_type_values": null,
-          "category_values": [
-            "政策法规(本级)",
-            "政策规章规范性文件",
-            "法律法规"
-          ]
-        },
         "20260909": {
           "date": "20260909",
           "files": {
@@ -373,80 +172,6 @@
         "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned"
       ],
       "snapshots": {
-        "20260907": {
-          "date": "20260907",
-          "files": {
-            "csv": {
-              "path": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/pbc_cleaned_20260907.csv",
-              "size_bytes": 3855733,
-              "sha256": null,
-              "record_count": 571,
-              "modified_at": "2026-09-07T22:34:56+0800"
-            },
-            "jsonl": {
-              "path": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/pbc_cleaned_20260907.jsonl",
-              "size_bytes": 4245341,
-              "sha256": null,
-              "record_count": 571,
-              "modified_at": "2026-09-07T22:34:55+0800"
-            }
-          },
-          "record_count": 571,
-          "record_source_values": [
-            "pbc"
-          ],
-          "companion_docs": [],
-          "timeliness_status_values": [
-            "amended",
-            "expired",
-            "repealed",
-            "valid"
-          ],
-          "doc_type_values": null,
-          "category_values": [
-            "国家法律",
-            "行政法规",
-            "规范性文件",
-            "部门规章"
-          ]
-        },
-        "20260908": {
-          "date": "20260908",
-          "files": {
-            "csv": {
-              "path": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/pbc_cleaned_20260908.csv",
-              "size_bytes": 3850786,
-              "sha256": null,
-              "record_count": 571,
-              "modified_at": "2026-09-09T19:03:12+0800"
-            },
-            "jsonl": {
-              "path": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/pbc_cleaned_20260908.jsonl",
-              "size_bytes": 4241698,
-              "sha256": null,
-              "record_count": 571,
-              "modified_at": "2026-09-09T19:03:12+0800"
-            }
-          },
-          "record_count": 571,
-          "record_source_values": [
-            "pbc"
-          ],
-          "companion_docs": [],
-          "timeliness_status_values": [
-            "amended",
-            "expired",
-            "repealed",
-            "valid"
-          ],
-          "doc_type_values": null,
-          "category_values": [
-            "国家法律",
-            "行政法规",
-            "规范性文件",
-            "部门规章"
-          ]
-        },
         "20260909": {
           "date": "20260909",
           "files": {
@@ -503,107 +228,6 @@
         "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned"
       ],
       "snapshots": {
-        "20260907": {
-          "date": "20260907",
-          "files": {
-            "csv": {
-              "path": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/supp_cleaned_20260907.csv",
-              "size_bytes": 1627874,
-              "sha256": null,
-              "record_count": 57,
-              "modified_at": "2026-09-07T20:12:06+0800"
-            },
-            "jsonl": {
-              "path": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/supp_cleaned_20260907.jsonl",
-              "size_bytes": 1669191,
-              "sha256": null,
-              "record_count": 57,
-              "modified_at": "2026-09-07T20:12:06+0800"
-            }
-          },
-          "record_count": 57,
-          "record_source_values": [
-            "supp"
-          ],
-          "companion_docs": [],
-          "timeliness_status_values": [
-            "repealed",
-            "valid"
-          ],
-          "doc_type_values": [
-            "便函",
-            "公告",
-            "办法",
-            "国务院文件",
-            "复函",
-            "意见",
-            "指引",
-            "法律",
-            "行业示范文本",
-            "规定",
-            "规范性文件",
-            "通知"
-          ],
-          "category_values": [
-            "上位法",
-            "制定依据",
-            "行业自律文本",
-            "行政许可批复",
-            "规范性文件",
-            "部门规范性文件",
-            "部门规范性文件（内部便函）",
-            "部门规范性文件（内部备案）",
-            "部门规范性文件（内部文件，不对外公开）"
-          ]
-        },
-        "20260908": {
-          "date": "20260908",
-          "files": {
-            "csv": {
-              "path": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/supp_cleaned_20260908.csv",
-              "size_bytes": 8151738,
-              "sha256": null,
-              "record_count": 58,
-              "modified_at": "2026-09-09T19:10:06+0800"
-            },
-            "jsonl": {
-              "path": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/supp_cleaned_20260908.jsonl",
-              "size_bytes": 8122900,
-              "sha256": null,
-              "record_count": 58,
-              "modified_at": "2026-09-09T19:10:06+0800"
-            }
-          },
-          "record_count": 58,
-          "record_source_values": [
-            "supp"
-          ],
-          "companion_docs": [],
-          "timeliness_status_values": [
-            "amended",
-            "repealed",
-            "valid"
-          ],
-          "doc_type_values": [
-            "便函",
-            "国务院文件",
-            "复函",
-            "法律",
-            "行业示范文本",
-            "通知"
-          ],
-          "category_values": [
-            "上位法",
-            "制定依据",
-            "行业自律文本",
-            "行政许可批复",
-            "规范性文件",
-            "部门规范性文件",
-            "部门规范性文件（内部便函）",
-            "部门规范性文件（内部备案）",
-            "部门规范性文件（内部文件，不对外公开）"
-          ]
-        },
         "20260909": {
           "date": "20260909",
           "files": {
@@ -665,9 +289,9 @@
   },
   "summary": {
     "source_count": 5,
-    "snapshot_count": 15,
-    "csv_count": 15,
-    "jsonl_count": 15,
+    "snapshot_count": 5,
+    "csv_count": 5,
+    "jsonl_count": 5,
     "total_record_count": 4043
   }
 }

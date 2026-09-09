@@ -23,6 +23,7 @@ import datetime as _dt
 import json
 import logging
 import os
+import re
 import shutil
 import time
 from collections import Counter
@@ -204,36 +205,51 @@ def write_cleaned(
     return {"csv": csv_path, "jsonl": jsonl_path}
 
 
-def rotate_history(history_dir: str, project: str, cleaned_paths: dict[str, str],
-                   keep: int = 3) -> list[str]:
-    """历史版本管理（第十一节）：每次新清洗前将上一版移入 data/history/，
-    仅保留最近 keep 个版本。返回保留的历史文件列表。"""
+def rotate_history(cleaned_dir: str, history_dir: str, project: str,
+                   current_date: str, keep: int = 3) -> int:
+    """clean 单版化 + history 归档（2026-09-09 任务三改造）。
+
+    语义：
+      - cleaned 目录（cleaned_dir）仅保留 {project}_cleaned_{current_date} 最新一版；
+        其它日期的 {project}_cleaned_*.{csv,jsonl} 一律**移入** history 目录；
+      - history 每源仅保留最近 keep 个「日期版本」（csv/jsonl 同一日期计一组），超出删除。
+    返回本次移入 history 的文件数。
+    说明：原「每次 run 复制当前版到 history(带 HHMMSS)」语义废弃——同日多 run 不再产生
+    冗余副本；版本演进为每日一版，history 保留最近三版（当前版始终在 cleaned）。
+    """
     os.makedirs(history_dir, exist_ok=True)
-    ts = _dt.datetime.now().strftime("%Y%m%d_%H%M%S")
-    archived: list[str] = []
-    for kind in ("csv", "jsonl"):
-        src = cleaned_paths.get(kind)
-        if not src or not os.path.exists(src):
-            continue
-        ext = "csv" if kind == "csv" else "jsonl"
-        dst = os.path.join(history_dir, f"{project}_cleaned_{ts}.{ext}")
-        try:
-            shutil.copy2(src, dst)
-            archived.append(dst)
-        except OSError as e:
-            LOG.warning("历史归档失败：%s", e)
-    # 清理旧版本（仅保留最近 keep 个）
-    for ext in ("csv", "jsonl"):
-        files = sorted(
-            f for f in os.listdir(history_dir)
-            if f.startswith(f"{project}_cleaned_") and f.endswith(f".{ext}")
-        )
-        for old in files[:-keep]:
+    current_date = str(current_date or "")
+    pat = re.compile(rf"^{re.escape(project)}_cleaned_(\d{{8}})\.(csv|jsonl)$")
+    moved = 0
+    if cleaned_dir and os.path.isdir(cleaned_dir):
+        for fn in list(os.listdir(cleaned_dir)):
+            m = pat.match(fn)
+            if not m or m.group(1) == current_date:
+                continue
             try:
-                os.remove(os.path.join(history_dir, old))
-            except OSError:
-                pass
-    return archived
+                # 同日期历史版本若已存在则覆盖（keep 裁剪在下方统一执行）
+                shutil.move(os.path.join(cleaned_dir, fn),
+                            os.path.join(history_dir, fn))
+                moved += 1
+            except OSError as e:
+                LOG.warning("历史归档失败：%s", e)
+    # 清理 history：该源仅保留最近 keep 个日期版本（csv/jsonl 成对按日期计）
+    dates: set[str] = set()
+    if os.path.isdir(history_dir):
+        for fn in os.listdir(history_dir):
+            m = pat.match(fn)
+            if m:
+                dates.add(m.group(1))
+    drop = sorted(dates)[:-keep] if len(dates) > keep else []
+    if drop:
+        for fn in list(os.listdir(history_dir)):
+            m = pat.match(fn)
+            if m and m.group(1) in drop:
+                try:
+                    os.remove(os.path.join(history_dir, fn))
+                except OSError:
+                    pass
+    return moved
 
 
 def run_pipeline(
@@ -394,8 +410,12 @@ def run_pipeline(
     #     无需调用方再传参。
     history_dir = history_dir or os.path.join(
         os.path.dirname(os.path.abspath(out_dir)), "history")
-    rotate_history(history_dir, project, outputs,
-                   keep=cfg.get("output", {}).get("keep_history_versions", 3))
+    # 9) 单版化：cleaned 仅留本次当前日期；旧日期移入 history 且仅保留 keep 个日期版本
+    _archived = rotate_history(
+        out_dir, history_dir, project, _dt.date.today().strftime("%Y%m%d"),
+        keep=cfg.get("output", {}).get("keep_history_versions", 3))
+    if _archived:
+        LOG.debug("[%s] 历史归档 %d 个旧版文件", project, _archived)
 
     # 10) 断句验收 + 指标落盘
     issues = sum(len(acceptance_check(r.get("body_text") or "")) for r in cleaned_final)

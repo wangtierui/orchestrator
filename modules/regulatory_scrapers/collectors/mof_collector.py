@@ -815,6 +815,8 @@ def main():
                          "→ modules/regulatory_scrapers/cache/mof（单物理根）")
     ap.add_argument("--offline", action="store_true",
                     help="纯离线模式：仅读取 --cache-dir 缓存，缓存缺失即跳过（不联网）")
+    ap.add_argument("--csv", action="store_true",
+                    help="额外输出 CSV 主库表格（默认仅写 JSON，2026-09-09 规范）")
     args = ap.parse_args()
 
     # 通用缓存（五源统一抽象层）：统一根绑定 + 离线开关
@@ -942,7 +944,8 @@ def main():
         csv_path = os.path.join(args.outdir, "mof_laws.csv")
         html_path = os.path.join(os.path.dirname(args.outdir), "reports", "mof_laws_report.html")
         save_json(new_store, json_path)
-        save_csv(new_store, csv_path)
+        if getattr(args, "csv", False):            # 默认仅 JSON 主库（2026-09-09 规范）
+            save_csv(new_store, csv_path)
         save_html_report(new_store, html_path)
 
         status.update({
