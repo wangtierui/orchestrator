@@ -17,6 +17,7 @@ internal_policy_base.indexer — 内部制度摄取索引（P6 indexer）
 """
 from __future__ import annotations
 
+import glob
 import json
 import os
 import re
@@ -40,6 +41,9 @@ from std_lib.scraper_std.document_structure import (  # noqa: E402
     render_markdown,
 )
 
+# 富内容(图形/公式)轨：流程图/SmartArt/公式 OMML 抽取与图片落盘（2026-09-09）
+from std_lib.scraper_std.rich_object import rich_object_fields  # noqa: E402
+
 _DATA = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
 _ORIGINALS = os.path.join(_DATA, "originals")
 _PROCESSED = os.path.join(_DATA, "processed")
@@ -52,7 +56,25 @@ PROCESSED_FIELDS = [
     "size_bytes", "sha256", "file_type", "status", "extract_status",
     "text_chars", "needs_ocr", "original_path", "extracted_at",
     "chapter_count", "article_count",   # R21 条文结构（clauses json 存明细）
+    "rich_count",                        # 富内容(图形/公式)对象数（_rich.json 存明细）
 ]
+
+
+def _write_rich(ipn: str, data: bytes, fname: str) -> int:
+    """富内容抽取 → <ipn>_rich.json + processed/<ipn>_images/。返回对象数（0 无富内容）。"""
+    try:
+        fields = rich_object_fields(
+            data, fname,
+            image_dir=os.path.join(_PROCESSED, ipn + "_images"), rec_key=ipn)
+    except Exception:  # noqa: BLE001  富内容失败不阻断摄取
+        return 0
+    if not fields:
+        return 0
+    json.dump({"ipn": ipn, "rich_structured": fields["rich_structured"],
+               "rich_text": fields["rich_text"], "rich_count": fields["rich_count"]},
+              open(os.path.join(_PROCESSED, ipn + "_rich.json"), "w", encoding="utf-8"),
+              ensure_ascii=False, indent=2)
+    return int(fields["rich_count"])
 
 
 def _load_state() -> dict:
@@ -121,6 +143,13 @@ def ingest(source_root: str, *, enable_ocr: bool = False, dry_run: bool = False)
         stru = extract_structure(text)
         rec["chapter_count"] = stru["chapter_count"]
         rec["article_count"] = stru["article_count"]
+        # 富内容轨（2026-09-09）：docx/doc/xlsx 内图形/公式 → <ipn>_rich.json + processed/<ipn>_images/
+        try:
+            with open(orig, "rb") as _fh:
+                _raw = _fh.read()
+            rec["rich_count"] = _write_rich(f["ipn"], _raw, f["file_name"])
+        except Exception:  # noqa: BLE001  富内容失败不阻断摄取
+            rec["rich_count"] = 0
         os.makedirs(_PROCESSED, exist_ok=True)
         json.dump(rec, open(os.path.join(_PROCESSED, f["ipn"] + ".json.tmp"), "w", encoding="utf-8"),
                   ensure_ascii=False, indent=2)
@@ -175,6 +204,63 @@ def _load_processed(ipn: str) -> dict | None:
         return json.load(open(p, encoding="utf-8"))
     except Exception:
         return None
+
+
+def _rebuild_index() -> int:
+    """按 state 重建主索引（backfill 后同步 rich_count 字段）。返回 indexed 数。"""
+    state = _load_state()
+    records = []
+    for key, rec in sorted(state.items()):
+        if key == "meta":
+            continue
+        r = _load_processed(rec.get("ipn", ""))
+        if r:
+            records.append({k: r.get(k, "") for k in PROCESSED_FIELDS})
+    index = {
+        "schema_version": "1.0",
+        "generated_at": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
+        "source_root": "",
+        "records": records,
+        "count": len(records),
+    }
+    os.makedirs(_DATA, exist_ok=True)
+    json.dump(index, open(_INDEX_PATH + ".tmp", "w", encoding="utf-8"), ensure_ascii=False, indent=2)
+    os.replace(_INDEX_PATH + ".tmp", _INDEX_PATH)
+    return len(records)
+
+
+def backfill_rich() -> dict:
+    """存量 107 富内容回补：对已 processed 且缺 <ipn>_rich.json 的制度，
+    从 data/originals（original_path）读原始件抽取富内容（图/公式），
+    写 <ipn>_rich.json + images，并刷新 processed rec.rich_count 与主索引。"""
+    done = skipped = found_rich = 0
+    for p in sorted(glob.glob(os.path.join(_PROCESSED, "*.json"))):
+        base = os.path.splitext(os.path.basename(p))[0]
+        if base.endswith(("_fulltext", "_clauses", "_rich")):
+            continue
+        if os.path.exists(os.path.join(_PROCESSED, base + "_rich.json")):
+            skipped += 1
+            continue
+        try:
+            rec = json.load(open(p, encoding="utf-8"))
+        except Exception:  # noqa: BLE001
+            continue
+        if not isinstance(rec, dict) or not rec.get("ipn"):
+            continue
+        src = os.path.join(_DATA, rec.get("original_path", ""))
+        if not os.path.exists(src):
+            continue
+        with open(src, "rb") as fh:
+            data = fh.read()
+        cnt = _write_rich(rec["ipn"], data, rec.get("file_name") or "")
+        rec["rich_count"] = cnt
+        json.dump(rec, open(p, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
+        done += 1
+        if cnt:
+            found_rich += 1
+    indexed = _rebuild_index()
+    return {"backfilled": done, "already": skipped, "with_rich": found_rich,
+            "indexed": indexed}
 
 
 def main():
