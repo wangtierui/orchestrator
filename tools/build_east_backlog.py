@@ -29,6 +29,23 @@ if _ROOT not in sys.path:
 MAX_XLSX_ROWS = 4000        # 单 sheet 行上限（防超大表爆内存）
 MAX_CONTENT_CHARS = 800_000  # attachment_content 合并上限
 
+from std_lib.scraper_std.cache_store import docs_root  # noqa: E402
+
+
+def _save_er_diagram(src: str, fname: str) -> str:
+    """E-R 图（jpg）落盘统一富内容根：docs_root("supp")/diagrams/EAST-20250410/<fname>。
+    返回相对 docs_root("supp") 的 image_path（与 rich_object_fields 同语义）。"""
+    import shutil  # noqa: PLC0415
+    try:
+        dest_dir = os.path.join(docs_root("supp"), "diagrams", "EAST-20250410")
+        os.makedirs(dest_dir, exist_ok=True)
+        dest = os.path.join(dest_dir, fname)
+        shutil.copy2(src, dest)
+        return os.path.relpath(dest, docs_root("supp")).replace("\\", "/")
+    except Exception as e:  # noqa: BLE001
+        print(f"[east] E-R 图落盘失败 {fname}: {e}")
+        return ""
+
 
 def _load_extract_doc():
     """按需加载 supp_extract_doc_text.extract（Word97 OLE UTF16 过滤提取），避免导入其主流程。"""
@@ -159,6 +176,7 @@ def build(dir_path: str) -> dict:
     attachments = []
     content_parts = []
     table_structs = []
+    er_images = []
     doc_ext = _load_extract_doc() if any(f.lower().endswith(".doc") and not f.lower().endswith(".docx") for f in files) else None
 
     for fn in files:
@@ -188,7 +206,14 @@ def build(dir_path: str) -> dict:
                 if txt:
                     content_parts.append(f"### 附件 {fn}\n{txt}")
             elif kind == "image":
-                rec.update({"status": "registered", "note": "图像附件(E-R图)，非文本不抽取"})
+                er_path = _save_er_diagram(fp, fn)
+                rec.update({"status": "image_registered",
+                            "note": "E-R图：已落盘 supp rich diagrams（图像轨）"
+                                    if er_path else "E-R图登记（落盘失败）"})
+                if er_path:
+                    er_images.append({"index": len(er_images) + 1, "kind": "image",
+                                      "caption": f"E-R图({fn})", "text": "",
+                                      "image_path": er_path})
             elif kind == "et":
                 rec.update({"status": "registered", "note": "WPS .et 原生格式，无开放解析器，按附件登记"})
             else:
@@ -224,9 +249,13 @@ def build(dir_path: str) -> dict:
         "attachment_content": joined,
         "table_structured": table_structs,
         "table_recovery_method": "openpyxl 全 sheet 结构化抽取（原始文件路径见 attachments）",
+        # 富内容轨（2026-09-09）：E-R 图落盘 supp diagrams（pipeline 透传 cleaned JSONL）
+        "rich_structured": er_images,
+        "rich_count": len(er_images),
+        "rich_text": "\n".join(f"E-R图({e.get('caption', '')})" for e in er_images),
         "_retrieval_channel": "本地文件收录（EAST 报送口径修订）",
         "_raw_fields": {"east_dir": dir_path, "collected_at": __import__("datetime").date.today().isoformat(),
-                        "source_note": "附件6(.et) 与 E-R 图为登记型，不参与文本轨"},
+                        "source_note": "附件6(.et) 为登记型；E-R 图已落盘 rich 图像轨（supp diagrams）"},
     }
 
 

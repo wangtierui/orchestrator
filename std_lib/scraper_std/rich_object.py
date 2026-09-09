@@ -95,6 +95,24 @@ def _text_of(el: ET.Element) -> str:
     return "".join(parts).strip()
 
 
+def _drawing_lines(el: ET.Element) -> list[str]:
+    """DrawingML 图形内按「段落 a:p」聚合文本行（每形状/文本框一段）→ 节点粒度底稿。"""
+    lines: list[str] = []
+    for p in _iter_descendants(el, "p"):
+        seg: list[str] = []
+        for t in _iter_descendants(p, "t"):
+            if t.text:
+                seg.append(t.text)
+        s = "".join(seg).strip()
+        if s:
+            lines.append(s)
+    if not lines:
+        txt = _text_of(el)
+        if txt:
+            lines.append(txt)
+    return lines
+
+
 def _iter_descendants(root: ET.Element, localname: str):
     for el in root.iter():
         if _local(el.tag) == localname:
@@ -110,6 +128,8 @@ def extract_rich_objects(data: bytes, name: str = "", *,
     """
     low = (name or "").lower()
     converted = False
+    if low.endswith(".pdf"):
+        return _extract_pdf_rich(data, max_chars)
     if low.endswith(CONVERT_EXT):
         try:
             from std_lib.scraper_std.doc_convert import doc_bytes_to_docx  # noqa: PLC0415
@@ -153,9 +173,10 @@ def _extract_docx_rich(data: bytes, max_chars: int):
             objects.append({"index": len(objects) + 1, "kind": "formula",
                             "text": txt[:max_chars], "converted": False})
 
-    # 2) DrawingML 图形/图片
+    # 2) DrawingML 图形/图片（文本按段落聚合 → 节点粒度拓扑底稿）
     for d in _iter_descendants(root, "drawing"):
-        sub = _text_of(d)  # 聚合 a:txBody / w:txbxContent 内 w:t/a:t 文本
+        paras = _drawing_lines(d)
+        sub = "\n".join(paras)
         blips = list(_iter_descendants(d, "blip"))
         media: list[bytes] = []
         img_names: list[str] = []
@@ -177,6 +198,8 @@ def _extract_docx_rich(data: bytes, max_chars: int):
                                    "kind": "diagram" if sub else "image",
                                    "text": sub[:max_chars] if sub else "",
                                    "converted": False}
+            if sub:
+                obj["shape_count"] = len(paras)   # 节点数（近似拓扑粒度，行=节点文本）
             objects.append(obj)
             for i, raw in enumerate(media):
                 images[f"d{len(objects)}_img{i + 1}_{img_names[i] if img_names else 'media' + str(i)}"] = raw
@@ -225,6 +248,67 @@ def _extract_xlsx_rich(data: bytes, converted: bool):
                 pass
     return {"objects": objects, "images": images, "text": _join_text(objects),
             "count": len(objects), "converted": converted}
+
+
+_MIN_REGION = 60        # 区域渲染最小宽高（像素阈值：过滤装饰线/小徽标）
+_MAX_PDF_REGIONS = 20   # 单 pdf 最大 region 数（防示意图页泛滥）
+
+
+def _extract_pdf_rich(data: bytes, max_chars: int) -> dict[str, Any]:
+    """PDF 示意图区域 OCR（2026-09-09 M3）：检测页内图像区 → clip 渲染 → OCR 文本。
+
+    每个区域产出 kind=image 对象（text=OCR 文本或空）+ 渲染 png 字节（供统一落盘）；
+    依赖 PyMuPDF(fitz)；OCR 引擎不可用时图仍归档（text 空、诚实标注无结构还原）。
+    装饰小区域（宽高 < _MIN_REGION）跳过。返回与 extract_rich_objects 同构。
+    """
+    objects: list[dict[str, Any]] = []
+    images: dict[str, bytes] = {}
+    try:
+        import fitz  # noqa: PLC0415 PyMuPDF
+        doc = fitz.open(stream=data, filetype="pdf")
+    except Exception as e:  # noqa: BLE001
+        _log(f"pdf open: {e}")
+        return {"objects": [], "images": {}, "text": "", "count": 0, "converted": False}
+    for pno, page in enumerate(doc, start=1):
+        if len(objects) >= _MAX_PDF_REGIONS:
+            break
+        try:
+            infos = page.get_image_info(xrefs=True)
+        except Exception:  # noqa: BLE001
+            continue
+        for ii, info in enumerate(infos, start=1):
+            if len(objects) >= _MAX_PDF_REGIONS:
+                break
+            bbox = info.get("bbox")
+            if not bbox:
+                continue
+            try:
+                rect = fitz.Rect(bbox)
+            except Exception:  # noqa: BLE001
+                continue
+            if rect.is_empty or rect.width < _MIN_REGION or rect.height < _MIN_REGION:
+                continue
+            clip = page.rect & rect
+            if clip.is_empty:
+                continue
+            try:
+                pix = page.get_pixmap(matrix=fitz.Matrix(2, 2), clip=clip)
+                png = pix.tobytes("png")
+            except Exception:  # noqa: BLE001
+                continue
+            ocr = ""
+            try:
+                from std_lib.scraper_std.ocr_engine import get_ocr  # noqa: PLC0415
+                res = get_ocr().recognize_image(png)
+                ocr = (getattr(res, "text", "") or "").strip()
+            except Exception:  # noqa: BLE001  OCR 不可用 → 图仍归档
+                pass
+            objects.append({"index": len(objects) + 1, "kind": "image",
+                            "text": ocr[:max_chars] if ocr else "",
+                            "shape_count": 0, "converted": False})
+            images[f"p{pno}_fig{ii}.png"] = png
+    return {"objects": objects, "images": images, "text": _join_text(objects),
+            "count": len(objects), "converted": False}
 
 
 def _join_text(objects: list[dict[str, Any]]) -> str:
