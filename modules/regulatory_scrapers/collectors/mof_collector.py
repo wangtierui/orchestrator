@@ -74,6 +74,7 @@ from datetime import UTC, datetime
 try:
     from std_lib.scraper_std.crawler_common import USER_AGENTS as CC_USER_AGENTS
     from std_lib.scraper_std.crawler_common import extract_document_text
+    from std_lib.scraper_std.rich_object import rich_object_fields
     from std_lib.scraper_std.table_recovery import structured_table_fields
 except ImportError:  # pragma: no cover
     CC_USER_AGENTS = [
@@ -85,6 +86,8 @@ except ImportError:  # pragma: no cover
                 "extract_status": "library_missing", "sha256": "",
                 "needs_ocr": False, "garble_ratio": 0.0, "size_bytes": len(data)}
     def structured_table_fields(data, name="", *, kind=None):
+        return {}
+    def rich_object_fields(data, name="", *, image_dir=None, rec_key=""):
         return {}
 
 # --------------------------------------------------------------------------- #
@@ -463,6 +466,13 @@ def download_attachment(att, law_id, outdir, rate, timeout=60, max_retries=6):
                     att.update(structured_table_fields(data, fname))
                 except Exception:
                     pass  # 表格结构化失败不影响文本/落盘
+                try:
+                    # 富内容轨（2026-09-09 rich_object）：docx/xlsx 图形/公式/图片
+                    att.update(rich_object_fields(data, fname,
+                                                  image_dir=docs_root("mof", "diagrams"),
+                                                  rec_key=str(law_id)))
+                except Exception:
+                    pass  # 富内容失败不影响文本/落盘
             except Exception as e:
                 logger.warning("附件文本抽取异常 %s：%s", att.get("file_url"), e)
                 att["extracted"] = False
@@ -562,6 +572,11 @@ def build_entry(rec, detail, category_id, category_name, fetch_detail_enabled, a
         ),
         "table_recovery_method": "structured" if any(
             a.get("table_structured") for a in (attachments or [])) else "",
+        "rich_structured": [o for a in (attachments or [])
+                            for o in (a.get("rich_structured") or [])] or [],
+        "rich_text": "\n".join(
+            a.get("rich_text") for a in (attachments or []) if a.get("rich_text")),
+        "rich_count": sum((a.get("rich_count") or 0) for a in (attachments or [])),
         "attachment_names": "; ".join(
             (a.get("file_name") or "") for a in (attachments or [])
         ),

@@ -50,6 +50,7 @@ from std_lib.scraper_std.crawler_common import (
     safe_filename,
     sniff_kind,
 )
+from std_lib.scraper_std.rich_object import rich_object_fields  # noqa: E402
 from std_lib.scraper_std.table_recovery import structured_table_fields  # noqa: E402
 
 LOG = logging.getLogger("gov_attachments")
@@ -150,6 +151,18 @@ def fetch_gov_attachments(detail_html, entry_id, entry_title, out_dir, base_url,
         # 表格结构化（2026-09-08 仿 supp 打通）：xlsx/docx/doc 附件解析结构化表 →
         # 回填 raw 附件记录表键（map_gov 已透传至 cleaned 39 列表格列）
         rec.update(structured_table_fields(data, fname, kind=kind))
+        # 富内容轨（2026-09-09 rich_object）：docx/xlsx 内 SmartArt/文本框/公式/图片
+        try:
+            _rk = re.sub(r"[^\w一-鿿-]+", "_", str(entry_id))[:80] or "gov"
+            _rich = rich_object_fields(data, fname,
+                                       image_dir=docs_root("gov", "diagrams"),
+                                       rec_key=_rk + "_att")
+            if _rich:
+                rec["rich_structured"] = _rich["rich_structured"]
+                rec["rich_text"] = _rich["rich_text"]
+                rec["rich_count"] = _rich["rich_count"]
+        except Exception:  # noqa: BLE001
+            pass
         records.append(rec)
         if rec["extracted"] and rec.get("text"):
             texts.append(rec["text"])

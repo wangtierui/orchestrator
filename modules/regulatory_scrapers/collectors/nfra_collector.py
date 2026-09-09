@@ -398,6 +398,10 @@ def load_attachments(doc_id):
         for k in ("table_structured", "table_raw_text", "table_recovery_method"):
             if k in e:
                 item[k] = e[k]
+        # 富内容轨透传（2026-09-09 rich_object）
+        for k in ("rich_structured", "rich_text", "rich_count"):
+            if k in e:
+                item[k] = e[k]
         out.append(item)
     return out
 
@@ -595,6 +599,14 @@ def scrape(args):
                 _raws = [a.get("table_raw_text") for a in _atts if a.get("table_raw_text")]
                 if _raws:
                     rec["table_raw_text"] = "\n\n".join(_raws)
+            # 富内容聚合到条目顶层（rich_object 轨）
+            _richo = [o for a in _atts for o in (a.get("rich_structured") or [])]
+            if _richo:
+                rec["rich_structured"] = _richo
+                rec["rich_count"] = len(_richo)
+                _rtext = [a.get("rich_text") for a in _atts if a.get("rich_text")]
+                if _rtext:
+                    rec["rich_text"] = "\n".join(_rtext)
             records.append(rec)
         print("      进度 %d/%d  docId=%s  %s" % (idx, len(ordered_ids), did,
               rec["title"][:30] if rec else "?"), flush=True)

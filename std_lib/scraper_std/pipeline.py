@@ -275,6 +275,18 @@ def run_pipeline(
     if not mapper:
         raise ValueError(f"未知项目：{project}（可用：{list(MAPPERS)}）")
     mapped = [mapper(r, clean_version, captured_at) for r in raw]
+    # 富内容轨透传（2026-09-09 rich_object）：采集侧在 raw 顶层写 rich_*（图形/公式对象），
+    # 经统一映射后按行透传保留到 cleaned JSONL（CSV 39 列不含该行内对象轨）。
+    _RICH_KEYS = ("rich_structured", "rich_text", "rich_count")
+    for _r, _m in zip(raw, mapped, strict=False):
+        for _k in _RICH_KEYS:
+            if _k in _r and isinstance(_r[_k], (list, str, int)):
+                _m[_k] = _r[_k]
+        # rich_text 同时并入 attachment_content（CSV 检索轨，供 recall/主题以文本命中图形文字）
+        _rt = _r.get("rich_text")
+        if _rt:
+            _base = _m.get("attachment_content") or ""
+            _m["attachment_content"] = ((_base + "\n") if _base else "") + "[富内容] " + _rt
     metrics.inc("success", len(mapped))
 
     # 2.5) 日期标准化（7.1）+ 主文档标准重命名文件名（7.4）

@@ -184,3 +184,7 @@ CLAUSE_LINE_FIELDS: tuple[str, ...] = (
 )
 CLAUSE_ARTICLE_FIELDS: tuple[str, ...] = ("no", "number", "body")
 CLAUSE_CHAPTER_FIELDS: tuple[str, ...] = ("no", "title", "article_index")
+
+# 富内容对象轨（2026-09-09 rich_object；raw/cleaned JSONL 行内轨，不入 CSV 39 列）：
+#   写者 = 采集/摄取侧 rich_object_fields（docx/doc/xlsx 图形/公式/图片），pipeline 逐行透传。
+RICH_OBJECT_KEYS: tuple[str, ...] = ("rich_structured", "rich_text", "rich_count")

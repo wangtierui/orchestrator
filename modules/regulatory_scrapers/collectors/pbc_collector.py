@@ -60,11 +60,15 @@ from datetime import datetime
 # 二进制附件（binary=True）已落盘 ATTACHMENTS_DIR，不经文本缓存。
 try:
     from std_lib.scraper_std.cache_store import OfflineMiss, bind_source_cache
+    from std_lib.scraper_std.rich_object import rich_object_fields
     from std_lib.scraper_std.table_recovery import structured_table_fields
 except ImportError:  # pragma: no cover
     from std_lib.scraper_std.cache_store import OfflineMiss, bind_source_cache
 
     def structured_table_fields(data, name="", *, kind=None):  # pragma: no cover
+        return {}
+
+    def rich_object_fields(data, name="", *, image_dir=None, rec_key=""):  # pragma: no cover
         return {}
 
 _RESP_TEXT = None  # TextResponseCache 实例；None 表示未启用缓存
@@ -680,6 +684,14 @@ def scrape_category(cat, fetcher, args, done_urls, existing_map=None):
                         # .doc/wps/rtf/ceb 由 helper 内 doc→docx（共享 doc_convert）后取表
                         if ft in ("docx", "xls", "xlsx", "doc", "wps", "rtf", "ceb"):
                             rec.update(structured_table_fields(bdata, fname))
+                        # 富内容轨（2026-09-09 rich_object）：docx/xlsx 图形/公式/图片
+                        try:
+                            rec.update(rich_object_fields(
+                                bdata, fname,
+                                image_dir=docs_root("pbc", "diagrams"),
+                                rec_key=f"{name}_{ft}"))
+                        except Exception:  # noqa: BLE001
+                            pass
                     except Exception as e:
                         rec["error"] = ("附件正文解析异常：%s: %s；已保存原始文件供下载"
                                         % (type(e).__name__, e))

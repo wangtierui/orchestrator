@@ -621,6 +621,14 @@ class XzfgkScraper:
                 _raws = [a.get("table_raw_text") for a in atts if a.get("table_raw_text")]
                 if _raws:
                     d["table_raw_text"] = "\n\n".join(_raws)
+            # 富内容聚合到条目顶层（rich_object 轨，pipeline 透传 cleaned JSONL）
+            _richo = [o for a in atts for o in (a.get("rich_structured") or [])]
+            if _richo:
+                d["rich_structured"] = _richo
+                d["rich_count"] = len(_richo)
+                _rtext = [a.get("rich_text") for a in atts if a.get("rich_text")]
+                if _rtext:
+                    d["rich_text"] = "\n".join(_rtext)
         except Exception as e:
             LOG.warning("附件抓取异常 %s：%s", url, e)
             d.setdefault("attachments", [])

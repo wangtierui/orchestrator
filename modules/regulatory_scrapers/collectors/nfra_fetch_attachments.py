@@ -62,6 +62,7 @@ import urllib.request
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 from std_lib.scraper_std.cache_store import docs_root, source_cache_root  # noqa: E402
+from std_lib.scraper_std.rich_object import rich_object_fields  # noqa: E402
 from std_lib.scraper_std.table_recovery import structured_table_fields  # noqa: E402
 
 CACHE = source_cache_root("nfra")  # 列表/详情请求缓存根（modules/regulatory_scrapers/cache/nfra）
@@ -622,6 +623,14 @@ def process_attachment(doc_id, att, att_root, args, cooldown_state, ex=None):
             entry.update(structured_table_fields(data, name))
         except Exception:
             pass  # 表格抽取失败不影响文本/落盘/续跑
+        # 富内容轨（2026-09-09 rich_object）：docx/xlsx 图形/公式/图片
+        try:
+            entry.update(rich_object_fields(
+                data, name,
+                image_dir=docs_root("nfra", "diagrams"),
+                rec_key=str(entry.get("doc_id", ""))))
+        except Exception:
+            pass  # 富内容失败不影响文本/落盘/续跑
         cooldown_state["consecutive"] = 0
         return entry, True
     except Exception as e:
