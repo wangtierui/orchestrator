@@ -75,7 +75,7 @@ def extract_pdf(path: str) -> str:
             import pymupdf  # noqa: PLC0415
         except ImportError:  # noqa: PLC0415
             try:
-                import fitz as pymupdf  # noqa: PLC0415
+                import pymupdf  # noqa: PLC0415
             except ImportError:
                 pymupdf = None
         if pymupdf is not None:

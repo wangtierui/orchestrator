@@ -118,7 +118,7 @@ def extract_pdf_text(path: str) -> tuple[str, str]:
 # 内联 Tesseract 回退（仅当统一模块不可用时启用）
 # ---------------------------------------------------------------------------
 def _tesseract_fallback(path: str, *, dpi: int = 220) -> str:
-    import fitz
+    import pymupdf as fitz
     import pytesseract
     from PIL import Image, ImageFilter, ImageOps
 

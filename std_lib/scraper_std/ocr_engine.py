@@ -446,7 +446,7 @@ class UnifiedOCR:
 
         # 2) 扫描件 → 逐页 OCR（引擎链 + 降级）
         try:
-            import fitz
+            import pymupdf as fitz
         except Exception as e:
             return PDFExtractResult(
                 text="", source="ocr", engine=ENGINE_NONE, success=False,
@@ -486,7 +486,7 @@ class UnifiedOCR:
     @staticmethod
     def _page_count(path: str) -> int:
         try:
-            import fitz
+            import pymupdf as fitz
             with fitz.open(path) as d:
                 return d.page_count
         except Exception:

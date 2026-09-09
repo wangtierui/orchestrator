@@ -202,7 +202,7 @@ def parse_pdf_text(data):
     if not _ocr_ok:
         return "", "empty", "OCR 引擎(PaddleOCR/Tesseract)均不可用"
     try:
-        import fitz  # PyMuPDF
+        import pymupdf as fitz  # PyMuPDF（现代导入名）
     except Exception as e:
         return "", "empty", f"PDF 渲染库不可用: {e}"
     try:

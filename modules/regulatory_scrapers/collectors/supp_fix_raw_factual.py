@@ -37,7 +37,7 @@ for _p in (UTILS, PROJECT_ROOT):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-import fitz  # noqa: E402
+import pymupdf as fitz  # noqa: E402
 
 from std_lib.scraper_std.naming import standard_filename  # noqa: E402
 

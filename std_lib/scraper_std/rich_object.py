@@ -264,7 +264,7 @@ def _extract_pdf_rich(data: bytes, max_chars: int) -> dict[str, Any]:
     objects: list[dict[str, Any]] = []
     images: dict[str, bytes] = {}
     try:
-        import fitz  # noqa: PLC0415 PyMuPDF
+        import pymupdf as fitz  # noqa: PLC0415 PyMuPDF（现代导入名，弃用 fitz 别名）
         doc = fitz.open(stream=data, filetype="pdf")
     except Exception as e:  # noqa: BLE001
         _log(f"pdf open: {e}")
