@@ -28,6 +28,13 @@ import re
 import sys
 
 csv.field_size_limit(sys.maxsize)
+# stdout UTF-8：Windows 默认 gbk 编码无法输出 ✓/✗（U+2713/2717）会抛
+# UnicodeEncodeError 使 rc=1（2026-09-09 生产刷新 consolidate 实证，清单已写盘仅汇报崩）。
+try:
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+except (AttributeError, OSError):  # 非 TTY/旧 Python 容错
+    pass
 
 REVIEW = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(REVIEW)

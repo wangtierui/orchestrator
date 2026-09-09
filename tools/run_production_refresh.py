@@ -62,8 +62,10 @@ def _run(step: str, argv, cwd=ROOT, timeout: int | None = None) -> dict:
                                          for a in argv), "rc": -1, "elapsed_s": 0, "tail": ""}
     print(f"\n[step:{step}] {' '.join(rec['cmd'])}", flush=True)
     try:
+        env = dict(os.environ)
+        env["PYTHONIOENCODING"] = "utf-8"  # 子脚本 ✓/✗ 输出避免 Windows gbk 崩溃
         r = subprocess.run(argv, cwd=cwd, capture_output=True, text=True,
-                           encoding="utf-8", errors="replace", timeout=timeout)
+                           encoding="utf-8", errors="replace", timeout=timeout, env=env)
         rec["rc"] = r.returncode
         rec["tail"] = "\n".join((r.stdout or "").strip().splitlines()[-3:])
         rec["stderr_tail"] = "\n".join((r.stderr or "").strip().splitlines()[-2:])

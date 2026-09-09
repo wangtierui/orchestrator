@@ -134,6 +134,26 @@ def main(argv=None) -> int:
         print(f"[{project}] WARN 空值率超阈值，按规范不生成交付文件（已告警）。")
         return 2
 
+    # ① clean_index 推进（2026-09-09 修复）：快照落盘后重建五源 clean 索引 index.json。
+    #    此前仅写 cleaned 文件不推进索引 → 下游 apply_timeliness/classifier/recall 经
+    #    clean_index.latest_* 仍消费旧快照（生产刷新实证：0909 文件生成后索引仍指 0908，
+    #    时效回写错写旧快照、clause/recall 全空转）。hash_files=False 仅为加快重建
+    #    （索引含 size/记录数；sha 校验由 recall 清洗门禁以磁盘实际文件复核）。
+    try:
+        from modules.regulatory_scrapers.clean_index import (  # noqa: PLC0415
+            SCRAPER_ROOT as _ci_root,
+        )
+        from modules.regulatory_scrapers.clean_index import (
+            _write_index as _ci_write,
+        )
+        from modules.regulatory_scrapers.clean_index import (
+            build_index_dict as _ci_build,
+        )
+        _ci_write(_ci_build(_ci_root, hash_files=False))
+        print("[clean_index] 已重建（latest 指向最新快照）")
+    except Exception as _e:  # noqa: BLE001  不阻断 clean 交付（索引可后续 build_clean_index.py 补）
+        print(f"[clean_index] WARN 索引推进失败（不影响 clean 交付）: {_e!r}")
+
     # ② 固定节点：clean 成功后自动增量构建条文产物（clause_index，跨全源最新快照；
     # 仅对 clean 快照新于既有产物的源抽取，幂等）。
     if not args.no_clauses:
