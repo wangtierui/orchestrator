@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "generated_at": "2026-09-09T19:46:16+0800",
+  "generated_at": "2026-09-10T17:41:45+0800",
   "generator": "regulatory_scrapers/clean_index/build_clean_index.py",
   "description": "五源 clean 产物结构化索引（单一事实源），供 regulatory_classifier 直接加载，无需额外转换。",
   "scraper_root": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers",
@@ -116,22 +116,22 @@
         "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned"
       ],
       "snapshots": {
-        "20260909": {
-          "date": "20260909",
+        "20260910": {
+          "date": "20260910",
           "files": {
             "csv": {
-              "path": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/nfra_cleaned_20260909.csv",
-              "size_bytes": 41368649,
+              "path": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/nfra_cleaned_20260910.csv",
+              "size_bytes": 53944170,
               "sha256": null,
               "record_count": 1939,
-              "modified_at": "2026-09-09T19:11:16+0800"
+              "modified_at": "2026-09-10T17:41:42+0800"
             },
             "jsonl": {
-              "path": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/nfra_cleaned_20260909.jsonl",
-              "size_bytes": 42849480,
+              "path": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/nfra_cleaned_20260910.jsonl",
+              "size_bytes": 352135059,
               "sha256": null,
               "record_count": 1939,
-              "modified_at": "2026-09-09T19:11:16+0800"
+              "modified_at": "2026-09-10T17:41:40+0800"
             }
           },
           "record_count": 1939,
@@ -139,13 +139,7 @@
             "nfra"
           ],
           "companion_docs": [],
-          "timeliness_status_values": [
-            "amended",
-            "expired",
-            "pending",
-            "repealed",
-            "valid"
-          ],
+          "timeliness_status_values": null,
           "doc_type_values": null,
           "category_values": [
             "政策法规(本级)",
@@ -154,11 +148,11 @@
           ]
         }
       },
-      "latest_date": "20260909",
+      "latest_date": "20260910",
       "latest": {
-        "date": "20260909",
-        "csv": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/nfra_cleaned_20260909.csv",
-        "jsonl": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/nfra_cleaned_20260909.jsonl",
+        "date": "20260910",
+        "csv": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/nfra_cleaned_20260910.csv",
+        "jsonl": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/nfra_cleaned_20260910.jsonl",
         "record_count": 1939
       },
       "total_record_count": 1939
