@@ -557,8 +557,11 @@ def _extract_doc_via_wps(data: bytes, timeout: float = 45.0) -> str | None:
 def _extract_ole2(data: bytes) -> dict[str, Any]:
     """旧版 .xls / .doc（OLE2 复合文档）。优先 xlrd（xls）；doc 走 WPS COM 优先，兜底 olefile。
     注：Excel 判定仅用精确的 b"Workbook" 魔数——b"Book" 过宽，.doc 二进制流常误命中。"""
-    # 先判断是否 Excel（仅精确魔数）
-    if b"Workbook" in data[:200_000]:
+    # 先判断是否 Excel：兼容 BIFF8("Workbook") 与 BIFF5 及更早("Book"，CFB 目录流 UTF-16LE)
+    # 旧实现仅 b"Workbook" 会漏检 BIFF5 xls → 落到 doc 分支 utf-16-le 全流扫描产生乱码（2026-09-10）。
+    if (b"Workbook" in data[:200_000]
+            or b"\x00B\x00o\x00o\x00k" in data[:4096]
+            or b"Book" in data[:512]):
         try:
             import xlrd
             bk = xlrd.open_workbook(__import__("io").BytesIO(data))

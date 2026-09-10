@@ -387,12 +387,25 @@ def load_attachments(doc_id):
         }
         text = ""
         if e.get("extracted") and e.get("text_file"):
-            p = os.path.join(os.path.dirname(os.path.abspath(__file__)), e["text_file"])
-            try:
-                with open(p, encoding="utf-8") as fh:
-                    text = fh.read()
-            except Exception:
-                text = ""
+            tf = e["text_file"]
+            # 文本文件定位回退（2026-09-10 修复）：旧 manifest 的 text_file 为
+            # 「cache/attachments/<id>/<name>.txt」旧仓相对路径，真实抽取 txt 在
+            # _ATT_DIR/<doc_id>/<basename>（data/docs/nfra.../attachments/），按候选顺序读取。
+            did = str(e.get("doc_id") or doc_id)
+            cands = [
+                os.path.join(_ATT_DIR, did, os.path.basename(tf)),
+                os.path.join(_ATT_DIR, os.path.basename(tf)),
+                os.path.join(os.path.dirname(os.path.abspath(__file__)), tf),
+            ]
+            for p in cands:
+                if not os.path.exists(p):
+                    continue
+                try:
+                    with open(p, encoding="utf-8") as fh:
+                        text = fh.read()
+                    break
+                except Exception:
+                    text = ""
         item["text"] = text
         # 表格结构化透传（2026-09-08 仿 supp 打通）：manifest entry 表键 → 附件 item
         for k in ("table_structured", "table_raw_text", "table_recovery_method"):

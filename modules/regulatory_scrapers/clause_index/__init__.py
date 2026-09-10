@@ -18,6 +18,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import shutil
 import sys
 
 csv = __import__("csv")
@@ -34,11 +35,43 @@ for _p in (_SCRAPERS, _ORCH_ROOT, os.path.join(_ORCH_ROOT, "std_lib")):
 from clean_index import get_clean_index  # noqa: E402   clean 快照单一事实源
 
 from std_lib.common_lib.norm import norm_docno  # noqa: E402
-from std_lib.scraper_std.document_structure import extract_structure  # noqa: E402 共享条文抽取
+from std_lib.scraper_std.document_structure import (  # noqa: E402 共享条文抽取/渲染
+    extract_structure,
+    render_markdown,
+)
 
 CLAUSE_DIR = os.path.join(_SCRAPERS, "data", "clauses")
+_CLAUSE_HISTORY_DIR = os.path.join(CLAUSE_DIR, "history")   # clauses 历史版本归档（单版化，2026-09-10）
 _STATE_PATH = os.path.join(CLAUSE_DIR, "clause_index_state.json")
 _SOURCES = ("gov", "mof", "nfra", "pbc", "supp")
+
+
+def _rotate_clause_history(current_dates: dict[str, str], keep: int = 3) -> None:
+    """clauses 单版化（2026-09-10）：CLAUSE_DIR 仅保留当前日期产物，旧日期 jsonl/md 移入
+    data/clauses/history/ 并仅保留最近 keep 个日期版本。"""
+    os.makedirs(_CLAUSE_HISTORY_DIR, exist_ok=True)
+    for src in _SOURCES:
+        cur = current_dates.get(src, "")
+        pat = re.compile(rf"^{src}_clauses_(\d{{8}})\.(jsonl|md)$")
+        for fn in list(os.listdir(CLAUSE_DIR)):
+            m = pat.match(fn)
+            if not m or m.group(1) == cur:
+                continue
+            try:
+                shutil.move(os.path.join(CLAUSE_DIR, fn),
+                            os.path.join(_CLAUSE_HISTORY_DIR, fn))
+            except OSError:
+                pass
+        dates = sorted({pat.match(fn).group(1) for fn in os.listdir(_CLAUSE_HISTORY_DIR)
+                        if pat.match(fn)})
+        drop = dates[:-keep] if len(dates) > keep else []
+        for fn in list(os.listdir(_CLAUSE_HISTORY_DIR)):
+            m = pat.match(fn)
+            if m and m.group(1) in drop:
+                try:
+                    os.remove(os.path.join(_CLAUSE_HISTORY_DIR, fn))
+                except OSError:
+                    pass
 
 
 def _load_state():
@@ -104,6 +137,7 @@ def build_clause_index(rebuild: bool = False) -> dict:
     ci = get_clean_index()
     state = {} if rebuild else _load_state()
     out = {}
+    cur_dates: dict[str, str] = {}
     for src in _SOURCES:
         cp = ci.latest_jsonl_path(src)
         if not cp or not os.path.exists(cp):
@@ -114,11 +148,16 @@ def build_clause_index(rebuild: bool = False) -> dict:
         date = m.group(1) if m else "unknown"
         if not rebuild and (state.get(src) or {}).get("date") == date:
             out[src] = {"date": date, "built": False, "files": (state.get(src) or {}).get("files", 0)}
+            cur_dates[src] = date
             continue
         dest = os.path.join(CLAUSE_DIR, f"{src}_clauses_{date}.jsonl")
+        mddest = os.path.join(CLAUSE_DIR, f"{src}_clauses_{date}.md")
         tmp = dest + ".tmp"
+        mdtmp = mddest + ".tmp"
         n = 0
-        with open(cp, encoding="utf-8") as fin, open(tmp, "w", encoding="utf-8") as fout:
+        with open(cp, encoding="utf-8") as fin, \
+                open(tmp, "w", encoding="utf-8") as fout, \
+                open(mdtmp, "w", encoding="utf-8") as fout_md:
             for ln in fin:
                 if not ln.strip():
                     continue
@@ -143,11 +182,17 @@ def build_clause_index(rebuild: bool = False) -> dict:
                     ],
                 }
                 fout.write(json.dumps(row, ensure_ascii=False) + "\n")
+                # clauses.md 渲染视图（与 internal_policy_base 共享 render_markdown，双产物）
+                fout_md.write(render_markdown(stru, title=rec.get("title", "")))
+                fout_md.write("\n\n---\n\n")
                 n += 1
         os.replace(tmp, dest)
-        state[src] = {"date": date, "files": n, "clause_path": dest}
+        os.replace(mdtmp, mddest)
+        state[src] = {"date": date, "files": n, "clause_path": dest, "md_path": mddest}
+        cur_dates[src] = date
         out[src] = {"date": date, "built": True, "files": n}
     _save_state(state)
+    _rotate_clause_history(cur_dates)   # 单版化：旧日期 jsonl/md → history（保留近三版）
     out["_state"] = _STATE_PATH
     out["_dir"] = CLAUSE_DIR
     return out

@@ -185,8 +185,20 @@ def extract_docx(data):
     return "\n".join(para_texts)
 
 def extract_xlsx(data):
-    """从 .xlsx（OOXML，ZIP 包）抽取单元格文本（含共享字符串）。"""
+    """从 .xlsx（OOXML，ZIP 包）抽取单元格文本：**行式制表符**（保留行列结构，2026-09-10
+    修复「每单元格一行」扁平化丢结构问题），供 text 可读；结构化二维另由 structured_table_fields 回填。"""
     import io
+    try:
+        import openpyxl
+        wb = openpyxl.load_workbook(io.BytesIO(data), data_only=True, read_only=True)
+        rows = []
+        for ws in wb.worksheets:
+            for r in ws.iter_rows(values_only=True):
+                rows.append("\t".join("" if c is None else str(c) for c in r))
+        return "\n".join(rows)
+    except Exception:
+        pass
+    # 回退：共享字符串拼接（无 openpyxl 时）
     import xml.etree.ElementTree as ET
     import zipfile
     with zipfile.ZipFile(io.BytesIO(data)) as z:
