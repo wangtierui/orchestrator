@@ -294,6 +294,22 @@ def _header_score(row):
     return 0.5 * text_ratio + 0.5 * (hit / n)
 
 
+_ANNOT_RE = re.compile(r"^[\d.．]*\s*(其中|注[:：]?|说明[:：]|备注[:：])")
+
+
+def _is_header_annotation_row(row):
+    """表头注释行：位于数据区首部、维度区（前 3 列）全空、所有非空值均带注释前缀
+    （"其中:交强险"/"1.3.4其中：责任保险"等多级列注释，1178105 实证）。"""
+    vals = [v for v in row if not _is_blank(v)]
+    if not vals:
+        return False
+    if not all(isinstance(v, str) for v in vals):
+        return False
+    if any(not _is_blank(v) for v in row[:3]):
+        return False
+    return all(_ANNOT_RE.match(str(v).strip()) for v in vals)
+
+
 def detect_header(matrix, merged):
     n_rows = len(matrix)
     n_cols = len(matrix[0]) if matrix else 0
@@ -322,6 +338,13 @@ def detect_header(matrix, merged):
             last = r
         else:
             break
+    # 表头注释行并入（数据区首部 ≤2 行，如"其中:交强险"等子列注释）→ 列名更可读，
+    # 且不再作为数据行产生稀疏 null。
+    r, ext = last + 1, 0
+    while r < n_rows and ext < 2 and _is_header_annotation_row(matrix[r]):
+        last = r
+        r += 1
+        ext += 1
     return Region(first, last + 1, 0, n_cols)
 
 
@@ -379,7 +402,7 @@ def build_columns(matrix, merged, header):
             v = h[r][c]
             if _is_blank(v):
                 continue
-            s = str(v).strip()
+            s = re.sub(r"\s+", " ", str(v).strip())   # 列名空白折叠（\n 换行 → 空格）
             if not path or path[-1] != s:
                 path.append(s)
         if not path:
@@ -497,9 +520,20 @@ DIM_MIN_FILL_RATIO = 0.5
 DIM_MAX_AVG_LEN = 30
 DIM_SCAN_LIMIT = 12
 
+# 指标列保留阈值（2026-09-10）：列在保留行上的非空数 ≥ clamp(3%×行数, 3, 20) 才输出。
+# 治理 Excel 格式残留"幽灵列"（f24b3723 实证：16384 列中 16376 列仅 1-2 个杂值，
+# 产生 140 万 null）；同时不误伤真实稀疏列（3379 行表阈值 20，>=20 值保留）。
+METRIC_COL_MIN_FILL = 3
+METRIC_COL_MIN_FILL_RATIO = 0.03
+METRIC_COL_MIN_FILL_CAP = 20
+
+
+_IDENT_COL_RE = re.compile(r"序号|编号|代码")
+
 
 def detect_dimension_columns(rows, columns):
-    """维度列：前缀连续满足（fill 高 / 数值率低 / 短文本）。'序号' 列容忍数值继续扫描。"""
+    """维度列：前缀连续满足（fill 高 / 数值率低 / 短文本）。
+    行标识列（序号/编号/代码）容忍数值继续扫描（工程增强，f24b 公司编号实证）。"""
     if not rows or not columns:
         return []
     n = len(rows)
@@ -517,8 +551,8 @@ def detect_dimension_columns(rows, columns):
         if ok:
             dim_cols.append(col.key)
             continue
-        if "序号" in (col.name or ""):
-            dim_cols.append(col.key)   # 序数容忍：行标识维度（工程增强）
+        if _IDENT_COL_RE.search(col.name or ""):
+            dim_cols.append(col.key)   # 行标识维度（序号/编号/代码）
             continue
         break
     return dim_cols
@@ -652,33 +686,81 @@ def process_block(sheet_index, block_index, matrix, merged):
 
 
 def _build_stat_unit(block, sheet_name, sheet_index):
-    rows = block.rows
     columns = block.columns
+    rows = block.rows
     dim_cols = detect_dimension_columns(rows, columns)
-    dim_rows = extract_dimension_rows(rows, dim_cols)
+    metric_all = [c.key for c in columns if c.key not in dim_cols]
+
+    def _has_metric(r):
+        return any(not _is_blank(r.get(k)) for k in metric_all)
+
+    # ① 行级：指标有值行 ≥ 阈值（max(2, 1%)）才视为「有数据表」→ 裁剪名录行；
+    #    否则视为空填报模板 → 保留维度名录行、不输出 metric_rows（meta.no_metric_data=True），
+    #    消除海量 null（1178105 实证：3379 行名录 + 21 列全空 → null 71k → 0）。
+    metric_value_rows = [r for r in rows if _has_metric(r)] if metric_all else []
+    any_metric = len(metric_value_rows) >= max(2, int(0.01 * len(rows)))
+    if any_metric:
+        rows = metric_value_rows
+    # ② 列级：剔除稀疏/空指标列（幽灵列），阈值 clamp(3%×行数, 3, 20)。
+    kept_metric_cols, dropped_count, dropped_sample = [], 0, []
+    if any_metric:
+        min_fill = min(max(METRIC_COL_MIN_FILL,
+                           int(METRIC_COL_MIN_FILL_RATIO * len(rows) + 0.999)),
+                       METRIC_COL_MIN_FILL_CAP)
+        for c in columns:
+            if c.key not in metric_all:
+                continue
+            fill = sum(1 for r in rows if not _is_blank(r.get(c.key)))
+            if fill >= min_fill:
+                kept_metric_cols.append(c)
+            else:
+                dropped_count += 1
+                if len(dropped_sample) < 20:
+                    dropped_sample.append(c.name)
+
     # 维度哈希用「末级列名 + 维度行值」：不同表块的列 key 因多级表头 path 前缀（各表标题）
     # 不同，但维度语义（序号/行政区域代码/地区…）与行值相同时应合并为同一 table_set。
     dim_names = [c.name for c in columns if c.key in dim_cols]
+    dim_rows = extract_dimension_rows(rows, dim_cols)
     dim_hash = hash_dimension(dim_names, dim_rows) if dim_rows else ""
-    metric_cols = [c.key for c in columns if c.key not in dim_cols]
+
+    # 输出列投影：维度列 + 保留指标列；空模板（无数据）保留 fill≥2 的列（原始阅读）。
+    if any_metric:
+        kept_keys = dim_cols + [c.key for c in kept_metric_cols]
+    else:
+        kept_keys = [c.key for c in columns
+                     if c.key in dim_cols
+                     or sum(1 for r in rows if not _is_blank(r.get(c.key))) >= 2]
+    projection = [{k: r.get(k) for k in kept_keys} for r in rows]
+
+    meta = dict(block.meta)
+    meta["row_count"] = len(rows)
+    if not any_metric:
+        meta["no_metric_data"] = True
+        meta["declared_metric_columns"] = [c.name for c in columns if c.key in metric_all]
+    elif dropped_count:
+        meta["dropped_metric_columns"] = {"count": dropped_count, "sample": dropped_sample}
     return {
         "sheet_name": sheet_name, "sheet_index": sheet_index,
         "table_id": block.table_id, "type": "统计表",
         "row_count": len(rows),
-        "columns": [c.key for c in columns],           # 全列（无维度回退用）
-        "rows": rows,                                   # 完整对象行（无维度回退用）
+        "columns": kept_keys,                          # 输出列（无维度回退用）
+        "rows": projection,                            # 输出行（无维度回退用）
         "dimension_columns": dim_cols,
         "dimension_names": dim_names,
         "dimension_rows": dim_rows,
         "dimension_hash": dim_hash,
-        "metric_columns": metric_cols,
-        "metric_rows": extract_metric_rows(rows, metric_cols),
-        "meta": block.meta,
+        "metric_columns": [c.key for c in kept_metric_cols],
+        "metric_names": [c.name for c in kept_metric_cols],
+        "metric_rows": extract_metric_rows(rows, [c.key for c in kept_metric_cols])
+        if kept_metric_cols else [],
+        "meta": meta,
     }
 
 
 def _build_doc_unit(block, sheet_name, sheet_index):
-    meta = block.meta
+    meta = dict(block.meta)
+    raw_rows_meta = meta.pop("raw_rows", None)   # meta 不留大数组副本（去冗余 null）
     unit = {
         "sheet_name": sheet_name, "sheet_index": sheet_index,
         "table_id": block.table_id, "type": "说明表",
@@ -690,13 +772,15 @@ def _build_doc_unit(block, sheet_name, sheet_index):
         "items": block.rows,
         "meta": meta,
     }
-    if meta.get("raw_rows"):
-        unit["raw_rows"] = meta["raw_rows"]
+    # raw_rows 仅当列名缺失（col_N 兜底）时保留原貌；列名明确时 items 已含全信息。
+    col_keys = [c.key for c in block.columns]
+    if raw_rows_meta and any(k.startswith("col_") for k in col_keys):
+        unit["raw_rows"] = raw_rows_meta
     return unit
 
 
 def _stat_sheet(unit, *, with_dim_rows=True, full_rows=False):
-    """统计表独立单元（单 variant 退回 / 无维度回退）。"""
+    """统计表独立单元（单 variant 退回 / 无维度回退）。空指标/空数组键省略。"""
     out = {
         "sheet_name": unit["sheet_name"], "sheet_index": unit["sheet_index"],
         "table_id": unit["table_id"], "type": unit["type"],
@@ -704,12 +788,14 @@ def _stat_sheet(unit, *, with_dim_rows=True, full_rows=False):
     }
     if full_rows:
         out["columns"] = unit["columns"]
-        out["rows"] = unit["rows"]
+        out["rows"] = unit["rows"]                 # 行已含指标值，不再单列 metric_rows
     if with_dim_rows:
         out["dimension_columns"] = unit["dimension_columns"]
         out["dimension_rows"] = unit["dimension_rows"]
-    out["metric_columns"] = unit["metric_columns"]
-    out["metric_rows"] = unit["metric_rows"]      # 数据完整性加固（v2 原版无）
+    if unit["metric_columns"] and not full_rows:
+        out["metric_columns"] = unit["metric_columns"]
+        out["metric_names"] = unit.get("metric_names")
+        out["metric_rows"] = unit["metric_rows"]   # 数据完整性加固（v2 原版无）
     return out
 
 
@@ -747,13 +833,16 @@ def aggregate_units(units):
                 "row_count": u["row_count"],
                 "variants": [],
             }
-        table_sets_map[h]["variants"].append({
+        var = {
             "sheet_name": u["sheet_name"], "sheet_index": u["sheet_index"],
             "table_id": u["table_id"], "type": u["type"], "row_count": u["row_count"],
-            "metric_columns": u["metric_columns"],
-            "metric_rows": u["metric_rows"],
             "meta": u["meta"],
-        })
+        }
+        if u["metric_columns"]:
+            var["metric_columns"] = u["metric_columns"]
+            var["metric_names"] = u.get("metric_names")
+            var["metric_rows"] = u["metric_rows"]
+        table_sets_map[h]["variants"].append(var)
     final_sets = []
     for h, ts in table_sets_map.items():
         if len(ts["variants"]) >= 2:
@@ -761,13 +850,17 @@ def aggregate_units(units):
         else:
             v = ts["variants"][0]
             rs = row_sets[h]
-            standalone.append({
+            sheet = {
                 "sheet_name": v["sheet_name"], "sheet_index": v["sheet_index"],
                 "table_id": v["table_id"], "type": v["type"], "row_count": v["row_count"],
                 "dimension_columns": rs["columns"], "dimension_rows": rs["rows"],
-                "metric_columns": v["metric_columns"], "metric_rows": v["metric_rows"],
                 "meta": v["meta"],
-            })
+            }
+            if v.get("metric_columns"):
+                sheet["metric_columns"] = v["metric_columns"]
+                sheet["metric_names"] = v.get("metric_names")
+                sheet["metric_rows"] = v.get("metric_rows")
+            standalone.append(sheet)
     return {"row_sets": row_sets, "table_sets": final_sets, "sheets": standalone}
 
 
