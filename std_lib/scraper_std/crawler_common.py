@@ -312,6 +312,40 @@ def _merge(rec: dict[str, Any], sub: dict[str, Any]) -> dict[str, Any]:
     return rec
 
 
+_PAGENO_RE = re.compile(r"^\s*[—\-–一]\s*\d+\s*[—\-–]?\s*$|^\s*第\s*\d+\s*页(共\d+页)?\s*$|^\s*\d{1,3}\s*$")
+
+
+def clean_pdf_text(text: str, min_repeat: int = 3) -> str:
+    """PDF 文本页眉/页脚清理（2026-09-10）：
+    按 \f 分页统计行频——跨页重复出现(>=min_repeat 次)的短行（<=40 字，多为红头/页眉/页脚）
+    删除；页码行（— 1 — / 第N页 / 纯数字行）删除。正文长行不受影响。"""
+    if not text:
+        return text
+    pages = text.split("\f")
+    if len(pages) <= 1:
+        pages = [text]
+    freq: dict[str, int] = {}
+    parsed = []
+    for pg in pages:
+        lines = [ln.strip() for ln in pg.splitlines()]
+        body = [ln for ln in lines if ln]
+        parsed.append(body)
+        for ln in body[:3] + body[-3:]:          # 页眉/页脚只可能出现在页首尾
+            if len(ln) <= 40:
+                freq[ln] = freq.get(ln, 0) + 1
+    out = []
+    for body in parsed:
+        keep = []
+        for ln in body:
+            if _PAGENO_RE.match(ln):
+                continue
+            if freq.get(ln, 0) >= min_repeat and len(ln) <= 40:
+                continue
+            keep.append(ln)
+        out.append("\n".join(keep))
+    return "\f".join(out).strip()
+
+
 def _extract_pdf(data: bytes, enable_ocr: bool, ocr_timeout: int) -> dict[str, Any]:
     text = ""
     # 优先 pypdf（轻量）
@@ -324,7 +358,7 @@ def _extract_pdf(data: bytes, enable_ocr: bool, ocr_timeout: int) -> dict[str, A
             except Exception:
                 pass
         if text.strip():
-            return {"text": text.strip(), "extracted": True, "extract_status": "ok",
+            return {"text": clean_pdf_text(text), "extracted": True, "extract_status": "ok",
                     "needs_ocr": False}
     except ImportError:
         pass
@@ -338,7 +372,7 @@ def _extract_pdf(data: bytes, enable_ocr: bool, ocr_timeout: int) -> dict[str, A
                 except Exception:
                     pass
         if text.strip():
-            return {"text": text.strip(), "extracted": True, "extract_status": "ok",
+            return {"text": clean_pdf_text(text), "extracted": True, "extract_status": "ok",
                     "needs_ocr": False}
     except ImportError:
         pass

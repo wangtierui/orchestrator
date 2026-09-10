@@ -326,8 +326,28 @@ def _tables_from_docx(data: bytes) -> tuple[list[list[list[str]]], list[str]]:
     return tables, []
 
 
+def _compact_table(rows: list[list[str]]) -> list[list[str]]:
+    """表格紧凑化（2026-09-10 冗余治理）：去全空行、裁首尾全空列（中间列保留对齐）。"""
+    kept = [r for r in rows if any(str(c).strip() for c in r)]
+    if not kept:
+        return []
+    width = max(len(r) for r in kept)
+    kept = [r + [""] * (width - len(r)) for r in kept]
+    # 裁首尾全空列
+    def _col_empty(idx: int) -> bool:
+        return all(not str(r[idx]).strip() for r in kept)
+    lo, hi = 0, width - 1
+    while lo <= hi and _col_empty(lo):
+        lo += 1
+    while hi >= lo and _col_empty(hi):
+        hi -= 1
+    if lo > hi:
+        return []
+    return [r[lo:hi + 1] for r in kept]
+
+
 def _tables_from_xlsx(data: bytes) -> tuple[list[list[list[str]]], list[str]]:
-    """Excel 表格：openpyxl 读取所有 Sheet，二维数组输出。"""
+    """Excel 表格：openpyxl 读取所有 Sheet，二维数组输出（逐 sheet 紧凑化）。"""
     import openpyxl
     wb = openpyxl.load_workbook(io.BytesIO(data), data_only=True, read_only=True)
     tables: list[list[list[str]]] = []
@@ -336,21 +356,21 @@ def _tables_from_xlsx(data: bytes) -> tuple[list[list[list[str]]], list[str]]:
         for r in ws.iter_rows(values_only=True):
             rows.append(["" if c is None else str(c) for c in r])
         if rows and any(any(str(c).strip() for c in r) for r in rows):
-            tables.append(rows)
+            tables.append(_compact_table(rows))
     wb.close()
-    return tables, []
+    return [t for t in tables if t], []
 
 
 def _tables_from_ole2(data: bytes) -> tuple[list[list[list[str]]], list[str]]:
-    """旧版 .xls：xlrd 读取所有 Sheet（OLE2）。"""
+    """旧版 .xls：xlrd 读取所有 Sheet（OLE2，逐 sheet 紧凑化）。"""
     import xlrd
     bk = xlrd.open_workbook(file_contents=data)
     tables: list[list[list[str]]] = []
     for sh in bk.sheets():
         rows = [[str(c.value) for c in sh.row(r)] for r in range(sh.nrows)]
         if rows and any(any(str(c).strip() for c in r) for r in rows):
-            tables.append(rows)
-    return tables, []
+            tables.append(_compact_table(rows))
+    return [t for t in tables if t], []
 
 
 if __name__ == "__main__":  # 离线自检（纯函数）

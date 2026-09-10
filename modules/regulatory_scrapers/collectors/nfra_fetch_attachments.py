@@ -148,7 +148,10 @@ def sha256_of(data):
     return hashlib.sha256(data).hexdigest()
 
 def extract_pdf_text(data):
-    """用 pypdf 抽取文本。返回 (text, page_count, per_page_lens, needs_ocr_flag)。"""
+    """用 pypdf 抽取文本。返回 (text, page_count, per_page_lens, needs_ocr_flag)。
+
+    2026-09-10：抽全文后经 clean_pdf_text 页眉/页脚/页码清理（红头文件每页重复
+    「XX局文件/文号/—N—」行删除），修复 text 页眉页脚噪声与断句错乱观感。"""
     import io
 
     import pypdf
@@ -162,6 +165,8 @@ def extract_pdf_text(data):
             t = ""
         page_texts.append(t)
     full = "\n".join(page_texts)
+    from std_lib.scraper_std.crawler_common import clean_pdf_text
+    full = clean_pdf_text(full)
     # 低文本密度判定：平均每页字符过少 → 疑似扫描件（阈值按页数线性）
     needs_ocr = (page_count > 0) and (len(full.strip()) < max(50, 30 * page_count))
     return full, page_count, [len(t) for t in page_texts], needs_ocr
