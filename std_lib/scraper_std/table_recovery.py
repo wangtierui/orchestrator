@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import io
 import logging
+import os
 import re
 from typing import Any
 
@@ -251,17 +252,36 @@ def _structured_from(doc_result: dict[str, Any]) -> dict[str, Any]:
 def structured_table_fields(data: bytes, name: str = "", *, kind: str | None = None) -> dict[str, Any]:
     """附件表格抽取 → raw 记录表格键（2026-09-08 四源仿 supp 统一接入样板）。
 
-    内部调用 ``extract_tables_from_doc``；仅当解析出结构化表格（recovery_method=="structured"
-    且 table_count>0）时返回可回填 raw 的键：
-      {"table_structured": [[…]], "table_raw_text": str, "table_recovery_method": "structured"}
-    无结构化表格或异常 → 返回 {}（采集侧仅在非空时回填，保持无表格记录零表键一致；
-    与 map_gov/mof/nfra/pbc 的透传收口配套：raw 有键 → cleaned 39 列表格列带出）。
+    2026-09-10 升级：**xls/xlsx 优先走 excel_structure 分类化结构**（参照通用
+    Excel→JSON 转换器：前置/底部行剥离 → 表块切分 → 表头检测/多级表头展开 →
+    表单大类分类（统计表/说明表）→ detector（validation_rule/hierarchy_catalog/
+    stat_template/matrix）→ rows[{col_key:value}]），返回：
+      {"table_structured": [ {kind:"excel_classified", schema:"excel_classified_v1",
+                              form_category, sheets:[...]} ],
+       "table_recovery_method": "excel_classified_v1"}
+    （table_structured 保持 list 形态——每附件一个 workbook 对象，聚合遍历兼容；
+     text 与 table_raw_text 冗余消除：分类化成功时**不再返回 table_raw_text**，
+     text 仍由调用方经 extract_document_text 单独生成，作为检索主载体。）
 
-    .doc/.wps/.rtf/.ceb 旧格式（OLE2 Word 无内置结构化表解析）：先按原格式试取，
-    未产出结构化表时经 doc_convert（headless LibreOffice doc→docx）转 docx 后按
-    docx 再取表 —— 环境缺失/转换失败自动维持原降级（raw_only/空），不阻断调用方。
+    非 Excel 格式维持原 extract_tables_from_doc 矩阵轨：
+      {"table_structured": [[…]], "table_raw_text": str, "table_recovery_method": "structured"}
+    无结构化表格或异常 → 返回 {}。.doc/.wps/.rtf/.ceb 旧格式经 doc_convert
+    （LibreOffice doc→docx）转 docx 再取表，环境缺失自动降级不阻断。
     """
+    low = (name or "").lower()
+    if low.endswith((".xlsx", ".xls")):
+        try:
+            from std_lib.scraper_std.excel_structure import process_workbook_bytes
+            wb_struct = process_workbook_bytes(data, os.path.basename(low))
+            has = any(t.get("rows") or t.get("doc_content")
+                      for s in wb_struct.get("sheets", []) for t in s.get("tables", []))
+            if has:
+                return {"table_structured": [wb_struct],
+                        "table_recovery_method": "excel_classified_v1"}
+        except Exception as e:  # noqa: BLE001  分类化失败降级矩阵轨
+            LOG.warning("excel_structure %s: %s", name, e)
     try:
+        first = extract_tables_from_doc(data, name, kind=kind)
         first = extract_tables_from_doc(data, name, kind=kind)
     except Exception as e:  # noqa: BLE001  表格抽取失败不阻断附件文本/正文
         LOG.warning("structured_table_fields %s: %s", name, e)
