@@ -39,8 +39,12 @@ def _xlsx_bytes() -> bytes:
 
 def test_structured_table_fields_xlsx():
     res = structured_table_fields(_xlsx_bytes(), "样本.xlsx")
-    assert res.get("table_recovery_method") == "excel_classified_v1"
+    assert res.get("table_recovery_method") == "excel_classified_v2"
     assert res.get("table_structured"), "应解析出结构化表"
+    wb = res["table_structured"][0]
+    assert wb.get("schema") == "excel_classified_v2"
+    for key in ("sheet_overview", "row_sets", "table_sets", "sheets", "form_summary"):
+        assert key in wb, f"v2 结构应含 {key}"
     assert "报送口径" in json.dumps(res.get("table_structured"), ensure_ascii=False)
     # 非表格字节（纯文本）不应产出键
     assert structured_table_fields(b"hello world", "a.txt") == {}

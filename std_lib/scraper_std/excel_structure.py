@@ -1,36 +1,52 @@
 # -*- coding: utf-8 -*-
-"""excel_structure.py —— Excel(.xlsx/.xls) → 分类化结构 JSON（共享层，2026-09-10）。
+"""excel_structure.py —— Excel(.xlsx/.xls) → 分类化结构 JSON（共享层，2026-09-10 v2）。
 
-移植自用户提供的通用 Excel→JSON 转换器参照实现（excel_to_json.py，Desktop），
-适配为 **bytes 输入**（附件字节直接解析，不落盘），供 table_recovery/structured_table_fields
-产出「分类后合理结构」的 table_structured：
+移植自用户参照实现（excel_to_json_v2.py，Desktop）并适配 **bytes 输入**，产出
+table_structured 的「分类后合理结构」（schema=excel_classified_v2）：
 
-  table_structured = [                       # list：每附件一个 workbook 对象（保持聚合遍历兼容）
+  table_structured = [                       # list：每附件一个 workbook 对象
     {
-      "kind": "excel_classified", "schema": "excel_classified_v1",
-      "source_file": ..., "form_category": "统计表|说明表|混合表|未知",
-      "sheets": [ {"sheet_name","sheet_index","form_category","form_confidence",
-                   "dimensions":{"rows","cols"},
-                   "tables":[{"table_id","form_category","table_type","confidence",
-                              "region","header_region","data_region",
-                              "columns":[{key,name,path,col_index}],
-                              "rows":[{col_key:value}],
-                              "merged_regions","doc_content","meta"}]} ]
+      "kind": "excel_classified", "schema": "excel_classified_v2",
+      "source_file": ..., "form_summary": {"统计表": n, "说明表": n, ...},
+      "sheet_overview": [{sheet_name, sheet_index, type, row_count}],
+      # —— 方案 C：相同维度行集去重，多表共享（row_sets 单份存储维度行）——
+      "row_sets": {"dims_<hash>": {dimension_ref, columns, row_count, rows}},
+      "table_sets": [{table_set_id:"ts_<hash>", dimension_ref, dimension_columns,
+                      row_count, variants:[{sheet_name, sheet_index, table_id, type,
+                                           row_count, metric_columns, metric_rows, meta}]}],
+      # —— 方案 A：不同维度统计表 / 说明表 独立输出 ——
+      "sheets": [
+        # 说明表（subtype 细分）
+        {table_id, type:"说明表", subtype:"narrative|key_value|indicator_doc",
+         title, key_column, columns, item_count, items, raw_rows?, meta},
+        # 统计表（单 variant 退回 / 无维度回退，均带完整数据行）
+        {table_id, type:"统计表", row_count, dimension_columns, dimension_rows,
+         metric_columns, metric_rows, meta}
+      ]
     }
   ]
 
-分类核心（与参照一致）：前置/底部行识别 → 表块切分 → 表头区域检测（评分+合并行）→
-多级表头展开（path→key）→ 表单大类 classify_block（统计表/说明表）→ 说明表走 doc_table
-（保留原文不进 detector），统计表走 detector（validation_rule/hierarchy_catalog/stat_template/
-matrix）+ parser（角色映射/层级目录）。
+相对 v2 参照的两处**数据完整性加固**（v2 原版仅输出维度行+指标列名，指标值不落 JSON）：
+  1) table_sets.variants[].metric_rows：与 row_sets 行一一对齐的指标值二维数组（去重
+     存储维度、指标值不丢）；
+  2) 无维度（维度列识别失败）统计表回退输出完整 columns+rows，避免整表数据丢失。
+
+分类核心：前置/底部行剥离 → 表块切分（空行+合并相邻）→ 表单大类 classify_block
+（统计表 / 说明表，长文本/列数/关键词判定）→
+  · 统计表：表头区域检测（评分+合并行）→ 多级表头展开（path→key）→ 数据行提取 →
+    维度列（fill 高/数值率低/短文本，序数容忍）→ 维度行集哈希 → table_sets 聚合；
+  · 说明表：subtype 识别（narrative 逐段 / key_value 键值 / indicator_doc 指标表）→
+    items / paragraphs 结构化 + raw_rows 留存。
 """
 from __future__ import annotations
 
 import datetime
+import hashlib
 import io
+import json
 import os
 import re
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
 
 try:
     import openpyxl
@@ -42,7 +58,8 @@ try:
 except ImportError:  # pragma: no cover
     xlrd = None
 
-SCHEMA_VERSION = "excel_classified_v1"
+SCHEMA_VERSION = "excel_classified_v2"
+
 
 # ===========================================================================
 # 数据结构
@@ -70,26 +87,21 @@ class Column:
     key: str
     name: str
     path: list
-    data_type: str = "string"
     col_index: int = -1
 
 
 @dataclass
 class TableBlock:
     table_id: str
-    region: Region
     matrix: list
     merged: list
     header_region: Region | None = None
     data_region: Region | None = None
     columns: list = field(default_factory=list)
     rows: list = field(default_factory=list)
-    table_type: str = "unknown"
-    confidence: float = 0.0
-    meta: dict = field(default_factory=dict)
     form_category: str = "unknown"
-    form_confidence: float = 0.0
-    doc_content: list = field(default_factory=list)
+    doc_subtype: str | None = None
+    meta: dict = field(default_factory=dict)
 
 
 # ===========================================================================
@@ -105,6 +117,8 @@ def _cell_to_value(v):
         return s if s != "" else None
     if isinstance(v, (datetime.datetime, datetime.date, datetime.time)):
         return v.isoformat(sep=" ") if isinstance(v, datetime.datetime) else v.isoformat()
+    if isinstance(v, float) and v.is_integer():
+        return int(v)  # v2 语义：整数值浮点归一为 int（JSON 干净 + 维度哈希稳定）
     return v
 
 
@@ -136,15 +150,8 @@ def _read_xls_bytes(data: bytes):
 
 
 # ===========================================================================
-# 前置行 / 底部行识别
+# 基础工具
 # ===========================================================================
-
-TITLE_PATTERNS = [r"^附录[一二三四五六七八九十\d]", r"统计表\s*$", r"填制说明\s*$",
-                  r"采集表\s*$", r"目录\s*$", r"说明\s*$"]
-PREAMBLE_PATTERNS = [r"^\d{4}\s*年.*月.*日", r"^20[×xX]+\s*年", r"^填报机构", r"^填报单位",
-                     r"^填报日期", r"^单位[:：]", r"^金额单位", r"^制表单位", r"^报告期"]
-FOOTER_PATTERNS = [r"^制表[:：]", r"^审核[:：]", r"^说明[:：]", r"^注[:：]", r"^填表人",
-                   r"^负责人[:：]"]
 
 
 def _is_blank(v):
@@ -155,7 +162,32 @@ def _row_is_empty(row):
     return all(_is_blank(v) for v in row)
 
 
-def _is_preamble_row(row, *, allow_title=True):
+def _row_fill(row):
+    return sum(1 for v in row if not _is_blank(v))
+
+
+def _text_len(v):
+    return len(str(v).strip()) if v is not None else 0
+
+
+def _is_number(v):
+    return isinstance(v, (int, float)) and not isinstance(v, bool)
+
+
+def _norm_matrix(matrix):
+    n_cols = max((len(r) for r in matrix), default=0)
+    return [list(r) + [None] * (n_cols - len(r)) for r in matrix]
+
+
+TITLE_PATTERNS = [r"^附录[一二三四五六七八九十\d]", r"统计表\s*$", r"填制说明\s*$",
+                  r"采集表\s*$", r"目录\s*$", r"说明\s*$"]
+PREAMBLE_PATTERNS = [r"^\d{4}\s*年.*月.*日", r"^20[×xX]+\s*年", r"^填报机构", r"^填报单位",
+                     r"^填报日期", r"^单位[:：]", r"^金额单位", r"^制表单位", r"^报告期"]
+FOOTER_PATTERNS = [r"^制表[:：]", r"^审核[:：]", r"^说明[:：]", r"^注[:：]", r"^填表人",
+                   r"^负责人[:：]"]
+
+
+def _is_preamble_row(row):
     if _row_is_empty(row):
         return False
     filled = [(i, v) for i, v in enumerate(row) if not _is_blank(v)]
@@ -163,16 +195,13 @@ def _is_preamble_row(row, *, allow_title=True):
         return False
     text = " ".join(str(v).strip() for _, v in filled)
     text_norm = re.sub(r"\s+", "", text)
-    if allow_title and len(filled) == 1:
+    if len(filled) == 1:
         if any(re.search(p, text_norm) for p in TITLE_PATTERNS):
             return True
         if len(text_norm) >= 8 and not any(
                 w in text_norm for w in ("名称", "日期", "金额", "类型", "代码", "编号")):
             return True
-    for p in PREAMBLE_PATTERNS:
-        if re.search(p, text_norm):
-            return True
-    for p in FOOTER_PATTERNS:
+    for p in PREAMBLE_PATTERNS + FOOTER_PATTERNS:
         if re.search(p, text_norm):
             return True
     return False
@@ -186,11 +215,11 @@ def _find_header_start(matrix):
 
 
 # ===========================================================================
-# 表格切分 / 表头识别 / 列构建
+# 表块切分
 # ===========================================================================
 
 
-def _trim_block(matrix, r0, r1, c0, c1):
+def _trim(matrix, r0, r1, c0, c1):
     while r0 < r1 and _row_is_empty(matrix[r0][c0:c1]):
         r0 += 1
     while r1 > r0 and _row_is_empty(matrix[r1 - 1][c0:c1]):
@@ -206,101 +235,97 @@ def _trim_block(matrix, r0, r1, c0, c1):
     return [row[c0:c1] for row in matrix[r0:r1]], r0, c0
 
 
-def split_tables(matrix, merged):
+def split_blocks(matrix, merged):
+    """按空行切分 block（合并间距≤1 的相邻块），返回 (sub, (r0,r1,c0,c1), local_merged)。"""
     if not matrix:
         return []
-    n_rows = len(matrix)
-    n_cols = max((len(r) for r in matrix), default=0)
-    norm = [list(r) + [None] * (n_cols - len(r)) for r in matrix]
-    blocks, in_block, start = [], False, 0
+    norm = _norm_matrix(matrix)
+    n_rows = len(norm)
+    n_cols = len(norm[0])
+    spans, inside, start = [], False, 0
     for r in range(n_rows):
         empty = _row_is_empty(norm[r])
-        if not empty and not in_block:
-            start, in_block = r, True
-        elif empty and in_block:
-            blocks.append((start, r))
-            in_block = False
-    if in_block:
-        blocks.append((start, n_rows))
-    merged_blocks = []
-    for b in blocks:
-        if merged_blocks and b[0] - merged_blocks[-1][1] <= 1:
-            merged_blocks[-1][1] = b[1]
+        if not empty and not inside:
+            start, inside = r, True
+        elif empty and inside:
+            spans.append([start, r])
+            inside = False
+    if inside:
+        spans.append([start, n_rows])
+    merged_spans = []
+    for s in spans:
+        if merged_spans and s[0] - merged_spans[-1][1] <= 1:
+            merged_spans[-1][1] = s[1]
         else:
-            merged_blocks.append([b[0], b[1]])
+            merged_spans.append(s)
     out = []
-    for (r0, r1) in merged_blocks:
-        sub, nr0, nc0 = _trim_block(norm, r0, r1, 0, n_cols)
+    for r0, r1 in merged_spans:
+        sub, nr0, nc0 = _trim(norm, r0, r1, 0, n_cols)
         if not sub:
             continue
         nr1, nc1 = nr0 + len(sub), nc0 + len(sub[0])
-        if len(sub) <= 2 and _is_preamble_row(sub[0]):
-            continue
         local_merged = [MergedRegion(max(m.r1, nr0) - nr0, max(m.c1, nc0) - nc0,
                                      min(m.r2, nr1 - 1) - nr0, min(m.c2, nc1 - 1) - nc0)
                         for m in merged
                         if not (m.r2 < nr0 or m.r1 >= nr1 or m.c2 < nc0 or m.c1 >= nc1)]
-        out.append((sub, Region(nr0, nr1, nc0, nc1), local_merged))
+        out.append((sub, (nr0, nr1, nc0, nc1), local_merged))
     return out
 
+
+# ===========================================================================
+# 表头识别 + 多级列构建
+# ===========================================================================
 
 HEADER_HINT_WORDS = {
     "序号", "代码", "编号", "名称", "地区", "区域", "项目", "指标", "主题域", "表名",
     "数据项", "字段", "值", "单位", "合计", "总计", "类型", "状态", "日期", "时间",
-    "备注", "规则", "说明", "事件", "金额", "损失", "机构", "目录",
+    "备注", "规则", "说明", "金额", "机构", "目录",
 }
 
 
-def _row_header_score(row):
-    cells = [c for c in row if not _is_blank(c)]
+def _header_score(row):
+    cells = [v for v in row if not _is_blank(v)]
     if not cells:
         return 0.0
     n = len(cells)
-    hint = sum(1 for c in cells if isinstance(c, str)
-               and any(h in c for h in HEADER_HINT_WORDS))
-    text_ratio = sum(1 for c in cells if isinstance(c, str)) / n
-    return 0.5 * text_ratio + 0.5 * (hint / n)
+    hit = sum(1 for v in cells if isinstance(v, str)
+              and any(w in v for w in HEADER_HINT_WORDS))
+    text_ratio = sum(1 for v in cells if isinstance(v, str)) / n
+    return 0.5 * text_ratio + 0.5 * (hit / n)
 
 
-def detect_header_region(matrix, merged):
-    if not matrix:
-        return None
+def detect_header(matrix, merged):
     n_rows = len(matrix)
     n_cols = len(matrix[0]) if matrix else 0
-    if n_cols == 0:
-        return None
+    if n_rows == 0 or n_cols == 0:
+        return Region(0, 0, 0, 0)
     start = _find_header_start(matrix)
     if start >= n_rows:
-        return None
-    max_scan = min(n_rows, start + 8)
-    scores = [_row_header_score(matrix[r]) for r in range(start, max_scan)]
+        return Region(0, 1, 0, n_cols)
+    max_scan = min(n_rows, start + 6)
+    scores = [_header_score(matrix[r]) for r in range(start, max_scan)]
     merged_rows = set()
     for m in merged:
         if m.r2 > m.r1:
             for r in range(max(m.r1, start), min(m.r2 + 1, max_scan)):
                 merged_rows.add(r)
     first = None
-    for r in range(start, max_scan):
-        if scores[r - start] >= 0.4 or r in merged_rows:
+    for i, r in enumerate(range(start, max_scan)):
+        if scores[i] >= 0.4 or r in merged_rows:
             first = r
             break
     if first is None:
-        for r in range(start, max_scan):
-            if not _row_is_empty(matrix[r]):
-                first = r
-                break
-    if first is None:
-        return None
+        first = start
     last = first
-    for r in range(first + 1, max_scan):
-        if scores[r - start] >= 0.25 or r in merged_rows:
+    for i, r in enumerate(range(first + 1, max_scan), start=1):
+        if scores[i] >= 0.25 or r in merged_rows:
             last = r
         else:
             break
     return Region(first, last + 1, 0, n_cols)
 
 
-def _fill_merged_for_header(matrix, merged, header):
+def _fill_merged_header(matrix, merged, header):
     h = [list(matrix[r][header.col_start:header.col_end])
          for r in range(header.row_start, header.row_end)]
     for m in merged:
@@ -312,6 +337,8 @@ def _fill_merged_for_header(matrix, merged, header):
         if top_r >= len(matrix) or top_c >= len(matrix[top_r]):
             continue
         val = matrix[top_r][top_c]
+        if _is_blank(val):
+            continue
         for r in range(max(m.r1, header.row_start), min(m.r2, header.row_end - 1) + 1):
             for c in range(max(m.c1, header.col_start), min(m.c2, header.col_end - 1) + 1):
                 if _is_blank(h[r - header.row_start][c - header.col_start]):
@@ -343,8 +370,7 @@ def _make_key(path, idx):
 
 
 def build_columns(matrix, merged, header):
-    h = [_forward_fill_row(row)
-         for row in _fill_merged_for_header(matrix, merged, header)]
+    h = [_forward_fill_row(row) for row in _fill_merged_header(matrix, merged, header)]
     n_cols = header.col_end - header.col_start
     columns = []
     for c in range(n_cols):
@@ -359,7 +385,7 @@ def build_columns(matrix, merged, header):
         if not path:
             path = [f"col_{c + 1}"]
         columns.append(Column(key=_make_key(path, c), name=path[-1], path=path, col_index=c))
-    seen: dict = {}
+    seen = {}
     for col in columns:
         if col.key in seen:
             seen[col.key] += 1
@@ -369,18 +395,21 @@ def build_columns(matrix, merged, header):
     return columns
 
 
-def _fill_merged_in_data(matrix, merged, data_region):
-    if data_region is None:
-        return [list(r) for r in matrix]
+# ===========================================================================
+# 数据行提取
+# ===========================================================================
+
+
+def _fill_merged_in_data(matrix, merged, data):
     m2 = [list(r) for r in matrix]
-    for mc in merged:
-        r1 = max(mc.r1, data_region.row_start)
-        r2 = min(mc.r2, data_region.row_end - 1)
-        c1 = max(mc.c1, data_region.col_start)
-        c2 = min(mc.c2, data_region.col_end - 1)
+    for m in merged:
+        r1, r2 = max(m.r1, data.row_start), min(m.r2, data.row_end - 1)
+        c1, c2 = max(m.c1, data.col_start), min(m.c2, data.col_end - 1)
         if r2 < r1 or c2 < c1:
             continue
-        val = m2[mc.r1][mc.c1] if mc.r1 < len(m2) and mc.c1 < len(m2[mc.r1]) else None
+        if m.r1 >= len(m2) or m.c1 >= len(m2[m.r1]):
+            continue
+        val = m2[m.r1][m.c1]
         if _is_blank(val):
             continue
         for r in range(r1, r2 + 1):
@@ -392,502 +421,354 @@ def _fill_merged_in_data(matrix, merged, data_region):
     return m2
 
 
-# ===========================================================================
-# detector（类型识别）
-# ===========================================================================
-
-
-@dataclass
-class StructuralFeatures:
-    n_rows: int
-    n_cols: int
-    header_rows: int
-    has_merged_header: bool
-    merged_ratio: float
-    numeric_col_ratio: float
-    first_col_is_sequence: bool
-    second_col_is_code: bool
-    has_summary_rows: bool
-    is_wide: bool
-    is_tall: bool
-    text_col_ratio: float
-
-
-@dataclass
-class DetectorConfig:
-    type_name: str
-    priority: float = 1.0
-    header_keywords: list = field(default_factory=list)
-    optional_header_keywords: list = field(default_factory=list)
-    min_columns: int = 0
-    max_columns: int = 0
-    min_rows: int = 0
-    max_rows: int = 0
-    header_rows_range: tuple | None = None
-    require_merged_header: bool | None = None
-    min_numeric_col_ratio: float | None = None
-    max_numeric_col_ratio: float | None = None
-    require_first_col_sequence: bool | None = None
-    require_second_col_code: bool | None = None
-    require_summary_rows: bool | None = None
-    require_wide: bool | None = None
-    require_tall: bool | None = None
-    row_key_pattern: str | None = None
-    keyword_weight: float = 0.6
-    structural_weight: float = 0.4
-
-
-_SEQ_RE = re.compile(r"^\d+$")
-_CODE_RE = re.compile(r"^[A-Za-z0-9\-_\.]{3,24}$")
-_SUMMARY_WORDS = ("合计", "总计", "小计", "汇总", "Total", "total")
-
-
-def extract_features(block):
-    matrix = block.matrix
-    n_rows = len(matrix)
-    n_cols = len(matrix[0]) if matrix else 0
-    header = block.header_region or Region(0, 1, 0, n_cols)
-    data = block.data_region or Region(header.row_end, n_rows, 0, n_cols)
-    header_rows = header.row_end - header.row_start
-    has_merged_header = any(m.r2 > m.r1 and m.r1 < header.row_end and m.r2 >= header.row_start
-                            for m in block.merged)
-    header_cells = max(1, header_rows * n_cols)
-    merged_cells = 0
-    for m in block.merged:
-        r1, r2 = max(m.r1, header.row_start), min(m.r2, header.row_end - 1)
-        c1, c2 = max(m.c1, header.col_start), min(m.c2, header.col_end - 1)
-        if r2 >= r1 and c2 >= c1:
-            merged_cells += (r2 - r1 + 1) * (c2 - c1 + 1)
-    merged_ratio = merged_cells / header_cells
-    numeric_cols = text_cols = total_data_cols = 0
-    for c in range(data.col_start, data.col_end):
-        vals = [matrix[r][c] for r in range(data.row_start, data.row_end)
-                if r < len(matrix) and c < len(matrix[r]) and not _is_blank(matrix[r][c])]
-        if not vals:
-            continue
-        total_data_cols += 1
-        if sum(1 for v in vals if isinstance(v, (int, float))) / len(vals) >= 0.6:
-            numeric_cols += 1
-        if sum(1 for v in vals if isinstance(v, str)) / len(vals) >= 0.6:
-            text_cols += 1
-    numeric_col_ratio = numeric_cols / total_data_cols if total_data_cols else 0.0
-    text_col_ratio = text_cols / total_data_cols if total_data_cols else 0.0
-    first_col_vals = []
-    for r in range(data.row_start, data.row_end):
-        if r < len(matrix) and data.col_start < len(matrix[r]):
-            v = matrix[r][data.col_start]
-            if isinstance(v, (int, float)):
-                first_col_vals.append(int(v))
-            elif isinstance(v, str) and _SEQ_RE.match(v.strip()):
-                first_col_vals.append(int(v.strip()))
-    first_col_is_sequence = (len(first_col_vals) >= 3 and
-                             all(b >= a for a, b in
-                                 zip(first_col_vals, first_col_vals[1:], strict=False)))
-    second_col_is_code = False
-    if data.col_end - data.col_start >= 2:
-        vals = [matrix[r][data.col_start + 1] for r in range(data.row_start, data.row_end)
-                if r < len(matrix) and data.col_start + 1 < len(matrix[r])
-                and isinstance(matrix[r][data.col_start + 1], str)
-                and matrix[r][data.col_start + 1].strip()]
-        if vals:
-            second_col_is_code = sum(1 for v in vals if _CODE_RE.match(v)) / len(vals) >= 0.5
-    has_summary_rows = any(isinstance(v, str) and any(w in v for w in _SUMMARY_WORDS)
-                           for r in range(data.row_start, min(data.row_end, len(matrix)))
-                           for v in matrix[r])
-    is_wide = n_cols >= 2 * max(1, n_rows)
-    is_tall = n_rows >= 2 * max(1, n_cols)
-    return StructuralFeatures(n_rows, n_cols, header_rows, has_merged_header, merged_ratio,
-                              numeric_col_ratio, first_col_is_sequence, second_col_is_code,
-                              has_summary_rows, is_wide, is_tall, text_col_ratio)
-
-
-def _norm(s):
-    return re.sub(r"\s+", "", str(s)) if s is not None else ""
-
-
-def _table_header_text(columns):
-    return "|".join(_norm(p) for c in columns for p in c.path)
-
-
-def _keyword_score(block, cfg):
-    req = [_norm(k) for k in cfg.header_keywords]
-    opt = [_norm(k) for k in cfg.optional_header_keywords]
-    if not req and not opt:
-        return None
-    header_text = _table_header_text(block.columns)
-    req_hit = sum(1 for k in req if k and k in header_text)
-    opt_hit = sum(1 for k in opt if k and k in header_text)
-    if req and req_hit == 0:
-        return -1.0
-    return 0.7 * (req_hit / len(req) if req else 0.0) + 0.3 * (opt_hit / len(opt) if opt else 0.0)
-
-
-def _structural_score(f, cfg):
-    checks = []
-    if cfg.min_columns:
-        checks.append(1.0 if f.n_cols >= cfg.min_columns else 0.0)
-    if cfg.max_columns:
-        checks.append(1.0 if f.n_cols <= cfg.max_columns else 0.0)
-    if cfg.min_rows:
-        checks.append(1.0 if f.n_rows >= cfg.min_rows else 0.0)
-    if cfg.max_rows:
-        checks.append(1.0 if f.n_rows <= cfg.max_rows else 0.0)
-    if cfg.header_rows_range:
-        lo, hi = cfg.header_rows_range
-        checks.append(1.0 if lo <= f.header_rows <= hi else 0.0)
-    for attr, want in (("require_merged_header", f.has_merged_header),
-                       ("require_first_col_sequence", f.first_col_is_sequence),
-                       ("require_second_col_code", f.second_col_is_code),
-                       ("require_summary_rows", f.has_summary_rows),
-                       ("require_wide", f.is_wide), ("require_tall", f.is_tall)):
-        v = getattr(cfg, attr)
-        if v is not None:
-            checks.append(1.0 if want == v else 0.0)
-    if cfg.min_numeric_col_ratio is not None:
-        checks.append(1.0 if f.numeric_col_ratio >= cfg.min_numeric_col_ratio else 0.0)
-    if cfg.max_numeric_col_ratio is not None:
-        checks.append(1.0 if f.numeric_col_ratio <= cfg.max_numeric_col_ratio else 0.0)
-    if not checks:
-        return None
-    return sum(checks) / len(checks)
-
-
-def match_detector(block, f, cfg):
-    if not block.columns:
-        return 0.0
-    kw = _keyword_score(block, cfg)
-    st = _structural_score(f, cfg)
-    if kw is not None and kw < 0:
-        return 0.0
-    if kw is None and st is None:
-        return 0.0
-    if kw is None:
-        return st or 0.0
-    if st is None:
-        return kw
-    return (cfg.keyword_weight * kw + cfg.structural_weight * st) / (
-        cfg.keyword_weight + cfg.structural_weight)
-
-
-def detect_table_type(block, detectors):
-    f = extract_features(block)
-    scored = [(cfg.type_name, match_detector(block, f, cfg) * cfg.priority, cfg)
-              for cfg in detectors]
-    if not scored:
-        return "unknown", 0.0
-    scored.sort(key=lambda x: x[1], reverse=True)
-    top_type, top_score, _ = scored[0]
-    if top_score < 0.35:
-        return "unknown", top_score
-    return top_type, top_score
-
-
-DEFAULT_DETECTORS = [
-    DetectorConfig(type_name="validation_rule", priority=100,
-                   header_keywords=["序号", "主题域", "表名", "数据项名称", "数据项代码"],
-                   optional_header_keywords=["校验规则", "检核规则"],
-                   min_columns=4, max_columns=10, require_tall=True,
-                   require_merged_header=False, max_numeric_col_ratio=0.2,
-                   row_key_pattern=r"^[A-Z]\d{4,6}$",
-                   keyword_weight=0.5, structural_weight=0.5),
-    DetectorConfig(type_name="hierarchy_catalog", priority=95,
-                   header_keywords=["1级目录"],
-                   optional_header_keywords=["2级目录", "3级目录", "编号", "定义", "事件类型"],
-                   min_columns=3, require_tall=True, require_merged_header=False,
-                   keyword_weight=0.8, structural_weight=0.2),
-    DetectorConfig(type_name="stat_template", priority=90,
-                   header_keywords=["行政区域代码", "地区"],
-                   optional_header_keywords=[
-                       "是否设立分支机构", "是否设立虚拟机构", "原保险保费收入", "赔付支出",
-                       "退保金", "期末有效保险金额", "本年累计新增保险金额", "期末从业人员"],
-                   min_columns=6, require_merged_header=True, header_rows_range=(1, 5),
-                   min_numeric_col_ratio=0.2, keyword_weight=0.3, structural_weight=0.7),
-    DetectorConfig(type_name="stat_template", priority=60, min_columns=8,
-                   require_merged_header=True, min_numeric_col_ratio=0.3,
-                   keyword_weight=0.0, structural_weight=1.0),
-]
-
-PARSERS: dict = {}
-
-
-def register(table_type):
-    def deco(fn):
-        PARSERS[table_type] = fn
-        return fn
-    return deco
-
-
-def _filter_data_rows(matrix, region):
-    keep = []
-    for r in range(region.row_start, region.row_end):
-        if r >= len(matrix):
-            break
-        row = matrix[r]
-        if _row_is_empty(row) or _is_preamble_row(row, allow_title=False):
-            continue
-        keep.append(r)
-    return keep
-
-
-def _matrix_to_rows(block):
-    if not block.data_region:
-        return []
-    filled = _fill_merged_in_data(block.matrix, block.merged, block.data_region)
+def extract_rows(matrix, merged, data, columns, filter_preamble=True):
+    filled = _fill_merged_in_data(matrix, merged, data)
     rows = []
-    for r in _filter_data_rows(filled, block.data_region):
-        row = filled[r]
-        item = {}
-        for col in block.columns:
-            idx = block.data_region.col_start + col.col_index
-            item[col.key] = row[idx] if idx < len(row) else None
-        rows.append(item)
+    for r in range(data.row_start, data.row_end):
+        if r >= len(filled):
+            break
+        src = filled[r]
+        if filter_preamble and _is_preamble_row(src):
+            continue
+        row, has_value = {}, False
+        for col in columns:
+            idx = data.col_start + col.col_index
+            v = src[idx] if idx < len(src) else None
+            row[col.key] = v
+            if not _is_blank(v):
+                has_value = True
+        if has_value:
+            rows.append(row)
     return rows
 
 
-@register("matrix")
-def parse_matrix(block):
-    block.rows = _matrix_to_rows(block)
-    return block
-
-
-@register("validation_rule")
-def parse_validation_rule(block):
-    block.rows = _matrix_to_rows(block)
-    role_map = {}
-    for col in block.columns:
-        text = _norm("".join(col.path))
-        if "序号" in text and "rule_id" not in role_map.values():
-            role_map[col.key] = "rule_id"
-        elif "主题域" in text:
-            role_map[col.key] = "domain"
-        elif "表名" in text:
-            role_map[col.key] = "table_name"
-        elif "数据项名称" in text:
-            role_map[col.key] = "field_name"
-        elif "数据项代码" in text:
-            role_map[col.key] = "field_code"
-        elif "校验规则" in text or "检核规则" in text:
-            role_map[col.key] = "rule_text"
-    rules = []
-    for row in block.rows:
-        rule = {}
-        for k, v in row.items():
-            rule[role_map.get(k, k)] = v if role_map.get(k) else v
-        if rule.get("rule_id"):
-            m = re.match(r"^([A-Z])", str(rule["rule_id"]))
-            if m:
-                rule["rule_type"] = m.group(1)
-        rules.append(rule)
-    block.rows = rules
-    block.meta["role_map"] = role_map
-    return block
-
-
-@register("stat_template")
-def parse_stat_template(block):
-    block.rows = _matrix_to_rows(block)
-    return block
-
-
-@register("hierarchy_catalog")
-def parse_hierarchy_catalog(block):
-    block.rows = _matrix_to_rows(block)
-    level_cols = []
-    for col in block.columns:
-        text = _norm("".join(col.path))
-        m = re.search(r"(\d+)级目录", text)
-        if m:
-            level_cols.append({"level": int(m.group(1)), "key": col.key})
-    level_cols.sort(key=lambda x: x["level"])
-    if level_cols:
-        block.meta["levels"] = level_cols
-    return block
-
-
-def compute_regions(block):
-    header = detect_header_region(block.matrix, block.merged)
-    if header is None:
-        header = Region(0, 1, 0, len(block.matrix[0]) if block.matrix else 0)
-    block.header_region = header
-    block.data_region = Region(header.row_end, len(block.matrix),
-                               header.col_start, header.col_end)
-    block.columns = build_columns(block.matrix, block.merged, header)
-
-
 # ===========================================================================
-# 表单大类分类：统计表 vs 说明表
+# 统计表 / 说明表 分类（长文本 / 列数 / 关键词）
 # ===========================================================================
 
-_QUASI_BLANK_TOKENS = {"0", "-", "—", "–", "/", "\\", "n/a", "na", "null", "none",
-                       "无", "不适用", "未记录", "空", "不填", "待填", "／"}
-DOC_HINT_WORDS = {"说明", "描述", "释义", "定义", "备注", "解释", "填报", "要求", "规范",
-                  "示例", "内容", "格式"}
-STAT_HEADER_WORDS = {"序号", "数据项序号", "数据项标识", "主题域", "主题域编号", "表名",
-                     "表中文名", "表编号", "数据项名称", "数据项代码", "数据元编码",
-                     "是否主键", "是否可空", "升级类型", "数据元分类", "数据元名称",
-                     "取值范围", "数据格式", "数据表说明", "行政区域代码", "地区",
-                     "保费收入", "赔付支出", "退保金", "保单数", "机构数", "人数", "金额"}
-
-
-def _is_quasi_blank(v):
-    if _is_blank(v):
-        return True
-    if isinstance(v, (int, float)) and not isinstance(v, bool):
-        return float(v) == 0.0
-    return _norm(v).lower() in _QUASI_BLANK_TOKENS
-
-
-def _text_len(v):
-    return len(str(v).strip()) if v is not None else 0
-
-
-def _is_number(v):
-    return isinstance(v, (int, float)) and not isinstance(v, bool)
-
-
-def _fill_merged_for_classify(matrix, merged):
-    if not merged:
-        return [list(r) for r in matrix]
-    m2 = [list(r) for r in matrix]
-    for mc in merged:
-        if mc.r1 >= len(m2) or mc.c1 >= len(m2[mc.r1]):
-            continue
-        val = m2[mc.r1][mc.c1]
-        if _is_blank(val):
-            continue
-        for r in range(mc.r1, min(mc.r2, len(m2) - 1) + 1):
-            for c in range(mc.c1, min(mc.c2, len(m2[r]) - 1) + 1):
-                if _is_blank(m2[r][c]):
-                    m2[r][c] = val
-    return m2
-
-
-def _column_stats(matrix):
-    n_rows = len(matrix)
-    if n_rows == 0:
-        return []
-    n_cols = max(len(r) for r in matrix)
-    stats = []
-    for c in range(n_cols):
-        vals = [r[c] if c < len(r) else None for r in matrix]
-        valid = [v for v in vals if not _is_quasi_blank(v)]
-        n_valid = len(valid)
-        fill_ratio = n_valid / n_rows
-        if n_valid:
-            avg_len = sum(_text_len(v) for v in valid) / n_valid
-            long_ratio = sum(1 for v in valid if _text_len(v) >= 30) / n_valid
-            num_ratio = sum(1 for v in valid if _is_number(v)) / n_valid
-        else:
-            avg_len = long_ratio = num_ratio = 0.0
-        stats.append({"fill_ratio": fill_ratio, "avg_len": avg_len,
-                      "long_ratio": long_ratio, "num_ratio": num_ratio})
-    return stats
-
-
-def _find_header_rows(matrix, merged, max_scan=8):
-    n_rows = len(matrix)
-    if n_rows == 0:
-        return 0, 0
-    start = _find_header_start(matrix)
-    if start >= n_rows:
-        return 0, 0
-    end = start
-    for r in range(start, min(start + 3, n_rows)):
-        row = matrix[r]
-        valid = [v for v in row if not _is_quasi_blank(v)]
-        if not valid:
-            break
-        n_cols = len(row)
-        if (len(valid) / n_cols if n_cols else 0) >= 0.5:
-            end = r + 1
-        else:
-            break
-    return start, max(end, start + 1)
+DOC_HINT_WORDS = {"说明", "描述", "释义", "定义", "备注", "解释",
+                  "填报", "要求", "规范", "示例", "内容", "格式"}
 
 
 def classify_block(matrix, merged):
-    """单表块表单大类判定。返回 (form_category, confidence, meta)：统计表|说明表|未知。"""
-    meta = {}
+    """返回 (form_category, meta)：统计表 | 说明表 | 未知。"""
     if not matrix:
-        return "未知", 0.0, meta
+        return "未知", {}
     n_rows = len(matrix)
     n_cols = max((len(r) for r in matrix), default=0)
     if n_rows == 0 or n_cols == 0:
-        return "未知", 0.0, meta
-    meta["n_rows"], meta["n_cols"] = n_rows, n_cols
-    filled = _fill_merged_for_classify(matrix, merged)
-    header_start, header_end = _find_header_rows(filled, merged)
-    meta["header_start"], meta["header_end"] = header_start, header_end
-    data_rows = filled[header_end:]
-    meta["data_rows"] = len(data_rows)
-    col_stats = _column_stats(filled)
-    data_col_stats = _column_stats(data_rows) if data_rows else col_stats
-    desc_cols = [i for i, s in enumerate(col_stats)
-                 if s["avg_len"] >= 30 and s["long_ratio"] >= 0.6]
-    meta["desc_cols"] = desc_cols
-    if data_rows:
-        data_cells = [v for r in data_rows for v in r]
-        data_blank_ratio = (sum(1 for v in data_cells if _is_quasi_blank(v)) / len(data_cells)
-                            if data_cells else 1.0)
-    else:
-        data_blank_ratio = 1.0
-    meta["data_blank_ratio"] = round(data_blank_ratio, 4)
-    dim_cols = [i for i, s in enumerate(data_col_stats)
-                if s["fill_ratio"] >= 0.5 and s["avg_len"] < 20]
-    empty_cols = [i for i, s in enumerate(data_col_stats) if s["fill_ratio"] <= 0.15]
-    meta["dim_cols"], meta["empty_cols"] = dim_cols, empty_cols
-    left_right_pattern = bool(dim_cols and len(empty_cols) >= 2 and max(dim_cols) < min(empty_cols))
-    meta["left_right_pattern"] = left_right_pattern
-    right_blank_ratio = 0.0
-    if n_cols >= 4 and data_col_stats:
-        right_half = data_col_stats[n_cols // 2:]
-        right_blank_ratio = (sum(1 for s in right_half if s["fill_ratio"] <= 0.15)
-                             / len(right_half)) if right_half else 0.0
-    meta["right_blank_ratio"] = round(right_blank_ratio, 4)
-    all_valid = [v for r in filled for v in r if not _is_quasi_blank(v)]
-    overall_long = (sum(1 for v in all_valid if _text_len(v) >= 30) / len(all_valid)
-                    if all_valid else 0.0)
-    meta["overall_long"] = round(overall_long, 4)
-    header_text = "".join(str(v) for r in filled[header_start:header_end]
-                          for v in r if not _is_quasi_blank(v))
+        return "未知", {}
+    max_avg, max_long_ratio = 0.0, 0.0
+    for c in range(n_cols):
+        vals = [r[c] for r in matrix if c < len(r) and not _is_blank(r[c])]
+        if not vals:
+            continue
+        avg = sum(_text_len(v) for v in vals) / len(vals)
+        lr = sum(1 for v in vals if _text_len(v) >= 30) / len(vals)
+        max_avg = max(max_avg, avg)
+        max_long_ratio = max(max_long_ratio, lr)
+    overall = [v for r in matrix for v in r if not _is_blank(v)]
+    long_ratio = (sum(1 for v in overall if _text_len(v) >= 30) / len(overall)
+                  if overall else 0)
+    header_text = "".join(str(v) for v in matrix[0] if not _is_blank(v))
     doc_hit = sum(1 for w in DOC_HINT_WORDS if w in header_text)
-    stat_hit = sum(1 for w in STAT_HEADER_WORDS if w in header_text)
-    meta["doc_hit"], meta["stat_hit"] = doc_hit, stat_hit
-
-    if n_cols <= 2 and overall_long >= 0.3:
-        return "说明表", 0.9, meta
-    if desc_cols:
-        return "说明表", 0.9, meta
-    if left_right_pattern:
-        return "统计表", 0.9, meta
-    if right_blank_ratio >= 0.6:
-        return "统计表", 0.85, meta
-    if data_blank_ratio >= 0.8 and n_cols >= 5:
-        return "统计表", 0.85, meta
-    if doc_hit >= 1 and data_blank_ratio < 0.5:
-        return "说明表", 0.8, meta
-    if overall_long >= 0.25:
-        return "说明表", 0.8, meta
-    if n_cols <= 3 and not empty_cols:
-        return "说明表", 0.75, meta
-    if stat_hit >= 3 and dim_cols:
-        return "统计表", 0.7, meta
-    return "未知", 0.3, meta
+    meta = {"n_rows": n_rows, "n_cols": n_cols, "max_avg_len": round(max_avg, 1),
+            "max_long_ratio": round(max_long_ratio, 3),
+            "overall_long_ratio": round(long_ratio, 3), "doc_hit": doc_hit}
+    if max_long_ratio >= 0.6:
+        return "说明表", meta
+    if n_cols <= 2 and long_ratio >= 0.3:
+        return "说明表", meta
+    if doc_hit >= 1 and long_ratio >= 0.2:
+        return "说明表", meta
+    if long_ratio >= 0.25:
+        return "说明表", meta
+    if n_cols <= 3:
+        return "说明表", meta
+    return "统计表", meta
 
 
-def classify_sheet(block_results):
-    if not block_results:
-        return "未知", 0.0
-    categories = [c for c, _ in block_results]
-    confidences = [cf for _, cf in block_results]
-    n_stat, n_doc = categories.count("统计表"), categories.count("说明表")
-    if n_stat > 0 and n_doc == 0:
-        return "统计表", sum(confidences) / len(confidences)
-    if n_doc > 0 and n_stat == 0:
-        return "说明表", sum(confidences) / len(confidences)
-    if n_stat > 0 and n_doc > 0:
-        return "混合表", sum(confidences) / len(confidences)
-    return "未知", 0.0
+# ===========================================================================
+# 维度列 / 维度行（方案 C 核心）
+# ===========================================================================
+
+DIM_MAX_NUM_RATIO = 0.15
+DIM_MIN_FILL_RATIO = 0.5
+DIM_MAX_AVG_LEN = 30
+DIM_SCAN_LIMIT = 12
+
+
+def detect_dimension_columns(rows, columns):
+    """维度列：前缀连续满足（fill 高 / 数值率低 / 短文本）。'序号' 列容忍数值继续扫描。"""
+    if not rows or not columns:
+        return []
+    n = len(rows)
+    dim_cols = []
+    for col in columns[:DIM_SCAN_LIMIT]:
+        vals = [r.get(col.key) for r in rows]
+        valid = [v for v in vals if not _is_blank(v)]
+        if not valid:
+            break
+        fill = len(valid) / n
+        num_ratio = sum(1 for v in valid if _is_number(v)) / len(valid)
+        avg_len = sum(_text_len(v) for v in valid) / len(valid)
+        ok = (fill >= DIM_MIN_FILL_RATIO and num_ratio <= DIM_MAX_NUM_RATIO
+              and avg_len <= DIM_MAX_AVG_LEN)
+        if ok:
+            dim_cols.append(col.key)
+            continue
+        if "序号" in (col.name or ""):
+            dim_cols.append(col.key)   # 序数容忍：行标识维度（工程增强）
+            continue
+        break
+    return dim_cols
+
+
+def extract_dimension_rows(rows, dim_cols):
+    """维度行：与 rows **同索引一一对齐**（不过滤，保证与 metric_rows 行对齐）。"""
+    return [[r.get(k) for k in dim_cols] for r in rows]
+
+
+def extract_metric_rows(rows, metric_cols):
+    return [[r.get(k) for k in metric_cols] for r in rows]
+
+
+def hash_dimension(columns, rows):
+    payload = {"columns": list(columns), "rows": rows}
+    text = json.dumps(payload, ensure_ascii=False, sort_keys=False, default=str)
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()[:16]
+
+
+# ===========================================================================
+# 说明表 subtype 处理（narrative / key_value / indicator_doc）
+# ===========================================================================
+
+DOC_KEY_WORDS = ("项目名称", "数据格式", "字段", "名称", "项目", "指标")
+
+
+def _detect_doc_subtype(matrix):
+    n_cols = max((len(r) for r in matrix), default=0)
+    if n_cols <= 1:
+        return "narrative", {}
+    if n_cols == 2:
+        return "key_value", {"key_column_index": 0, "value_column_index": 1}
+    filled = [r for r in matrix if not _row_is_empty(r)]
+    header_row = filled[0] if filled else []
+    key_idx = 0
+    for i, v in enumerate(header_row[:3]):
+        if isinstance(v, str) and any(w in v for w in DOC_KEY_WORDS):
+            key_idx = i
+            break
+    return "indicator_doc", {"key_column_index": key_idx}
+
+
+def _extract_doc_title(matrix):
+    for row in matrix:
+        vals = [v for v in row if not _is_blank(v)]
+        if vals and _text_len(vals[0]) >= 8:
+            return str(vals[0]).strip()
+    return None
+
+
+def process_doc_block(block):
+    matrix = block.matrix
+    subtype, sub_meta = _detect_doc_subtype(matrix)
+    title = _extract_doc_title(matrix)
+    filled = [r for r in matrix if not _row_is_empty(r)]
+    block.doc_subtype = subtype
+    block.meta["doc_subtype"] = subtype
+    block.meta["title"] = title
+
+    if subtype == "narrative":
+        paragraphs = []
+        for r in filled:
+            for v in r:
+                if not _is_blank(v):
+                    paragraphs.append(str(v).strip())
+                    break
+        block.columns = [Column(key="paragraph", name="paragraph",
+                                path=["paragraph"], col_index=0)]
+        block.rows = [{"paragraph": p} for p in paragraphs]
+        block.meta["paragraph_count"] = len(paragraphs)
+        return
+
+    key_idx = sub_meta.get("key_column_index", 0)
+    n_cols = max((len(r) for r in filled), default=0)
+    header_row = filled[0] if filled else []
+    columns = []
+    for c in range(n_cols):
+        v = header_row[c] if c < len(header_row) else None
+        columns.append(str(v).strip() if not _is_blank(v) else f"col_{c + 1}")
+    data_rows = filled[1:] if len(filled) > 1 else []
+    if data_rows and all(_is_blank(r[key_idx]) for r in data_rows[:3] if key_idx < len(r)):
+        columns = [f"col_{c + 1}" for c in range(n_cols)]
+        data_rows = filled
+    items, raw_rows = [], []
+    for r in data_rows:
+        item = {}
+        row_vals = [r[c] if c < len(r) else None for c in range(n_cols)]
+        for c, val in enumerate(row_vals):
+            item[columns[c]] = val
+        if any(not _is_blank(v) for v in item.values()):
+            items.append(item)
+            raw_rows.append(row_vals)
+    block.columns = [Column(key=columns[c], name=columns[c], path=[columns[c]], col_index=c)
+                     for c in range(n_cols)]
+    block.rows = items
+    block.meta["key_column"] = columns[key_idx] if key_idx < len(columns) else None
+    block.meta["item_count"] = len(items)
+    block.meta["raw_rows"] = raw_rows
+    # key 去重（同名列）
+    seen = {}
+    for col in block.columns:
+        if col.key in seen:
+            seen[col.key] += 1
+            col.key = f"{col.key}__{seen[col.key]}"
+        else:
+            seen[col.key] = 0
+
+
+# ===========================================================================
+# Block 处理 / 单元构建 / 聚合
+# ===========================================================================
+
+
+def process_block(sheet_index, block_index, matrix, merged):
+    block = TableBlock(table_id=f"{sheet_index}-{block_index}", matrix=matrix, merged=merged)
+    form_cat, meta = classify_block(matrix, merged)
+    block.form_category = form_cat
+    block.meta.update(meta)
+    if form_cat == "说明表":
+        process_doc_block(block)
+        return block
+    header = detect_header(matrix, merged)
+    block.header_region = header
+    n_rows = len(matrix)
+    n_cols = max((len(r) for r in matrix), default=0)
+    block.data_region = Region(header.row_end, n_rows, 0, n_cols)
+    block.columns = build_columns(matrix, merged, header)
+    block.rows = extract_rows(matrix, merged, block.data_region, block.columns)
+    return block
+
+
+def _build_stat_unit(block, sheet_name, sheet_index):
+    rows = block.rows
+    columns = block.columns
+    dim_cols = detect_dimension_columns(rows, columns)
+    dim_rows = extract_dimension_rows(rows, dim_cols)
+    # 维度哈希用「末级列名 + 维度行值」：不同表块的列 key 因多级表头 path 前缀（各表标题）
+    # 不同，但维度语义（序号/行政区域代码/地区…）与行值相同时应合并为同一 table_set。
+    dim_names = [c.name for c in columns if c.key in dim_cols]
+    dim_hash = hash_dimension(dim_names, dim_rows) if dim_rows else ""
+    metric_cols = [c.key for c in columns if c.key not in dim_cols]
+    return {
+        "sheet_name": sheet_name, "sheet_index": sheet_index,
+        "table_id": block.table_id, "type": "统计表",
+        "row_count": len(rows),
+        "columns": [c.key for c in columns],           # 全列（无维度回退用）
+        "rows": rows,                                   # 完整对象行（无维度回退用）
+        "dimension_columns": dim_cols,
+        "dimension_names": dim_names,
+        "dimension_rows": dim_rows,
+        "dimension_hash": dim_hash,
+        "metric_columns": metric_cols,
+        "metric_rows": extract_metric_rows(rows, metric_cols),
+        "meta": block.meta,
+    }
+
+
+def _build_doc_unit(block, sheet_name, sheet_index):
+    meta = block.meta
+    unit = {
+        "sheet_name": sheet_name, "sheet_index": sheet_index,
+        "table_id": block.table_id, "type": "说明表",
+        "subtype": block.doc_subtype or "narrative",
+        "title": meta.get("title"),
+        "key_column": meta.get("key_column"),
+        "columns": [c.key for c in block.columns],
+        "item_count": meta.get("item_count", len(block.rows)),
+        "items": block.rows,
+        "meta": meta,
+    }
+    if meta.get("raw_rows"):
+        unit["raw_rows"] = meta["raw_rows"]
+    return unit
+
+
+def _stat_sheet(unit, *, with_dim_rows=True, full_rows=False):
+    """统计表独立单元（单 variant 退回 / 无维度回退）。"""
+    out = {
+        "sheet_name": unit["sheet_name"], "sheet_index": unit["sheet_index"],
+        "table_id": unit["table_id"], "type": unit["type"],
+        "row_count": unit["row_count"], "meta": unit["meta"],
+    }
+    if full_rows:
+        out["columns"] = unit["columns"]
+        out["rows"] = unit["rows"]
+    if with_dim_rows:
+        out["dimension_columns"] = unit["dimension_columns"]
+        out["dimension_rows"] = unit["dimension_rows"]
+    out["metric_columns"] = unit["metric_columns"]
+    out["metric_rows"] = unit["metric_rows"]      # 数据完整性加固（v2 原版无）
+    return out
+
+
+def aggregate_units(units):
+    row_sets, table_sets_map, standalone = {}, {}, []
+    for u in units:
+        if u["type"] == "说明表":
+            sheet = {
+                "sheet_name": u["sheet_name"], "sheet_index": u["sheet_index"],
+                "table_id": u["table_id"], "type": "说明表", "subtype": u["subtype"],
+                "title": u["title"], "key_column": u.get("key_column"),
+                "columns": u["columns"], "item_count": u["item_count"],
+                "items": u["items"], "meta": u["meta"],
+            }
+            if u.get("raw_rows"):
+                sheet["raw_rows"] = u["raw_rows"]
+            standalone.append(sheet)
+            continue
+        if not u["dimension_rows"]:
+            standalone.append(_stat_sheet(u, with_dim_rows=False, full_rows=True))
+            continue
+        h = u["dimension_hash"]
+        if h not in row_sets:
+            row_sets[h] = {
+                "dimension_ref": f"dims_{h}",
+                "columns": u.get("dimension_names") or u["dimension_columns"],
+                "row_count": len(u["dimension_rows"]),
+                "rows": u["dimension_rows"],
+            }
+        if h not in table_sets_map:
+            table_sets_map[h] = {
+                "table_set_id": f"ts_{h}",
+                "dimension_ref": f"dims_{h}",
+                "dimension_columns": u["dimension_columns"],
+                "row_count": u["row_count"],
+                "variants": [],
+            }
+        table_sets_map[h]["variants"].append({
+            "sheet_name": u["sheet_name"], "sheet_index": u["sheet_index"],
+            "table_id": u["table_id"], "type": u["type"], "row_count": u["row_count"],
+            "metric_columns": u["metric_columns"],
+            "metric_rows": u["metric_rows"],
+            "meta": u["meta"],
+        })
+    final_sets = []
+    for h, ts in table_sets_map.items():
+        if len(ts["variants"]) >= 2:
+            final_sets.append(ts)
+        else:
+            v = ts["variants"][0]
+            rs = row_sets[h]
+            standalone.append({
+                "sheet_name": v["sheet_name"], "sheet_index": v["sheet_index"],
+                "table_id": v["table_id"], "type": v["type"], "row_count": v["row_count"],
+                "dimension_columns": rs["columns"], "dimension_rows": rs["rows"],
+                "metric_columns": v["metric_columns"], "metric_rows": v["metric_rows"],
+                "meta": v["meta"],
+            })
+    return {"row_sets": row_sets, "table_sets": final_sets, "sheets": standalone}
 
 
 # ===========================================================================
@@ -895,84 +776,41 @@ def classify_sheet(block_results):
 # ===========================================================================
 
 
-def _table_to_dict(t: TableBlock) -> dict:
-    out = {
-        "table_id": t.table_id,
-        "form_category": t.form_category,
-        "form_confidence": t.form_confidence,
-        "table_type": t.table_type,
-        "confidence": t.confidence,
-        "region": asdict(t.region),
-        "header_region": asdict(t.header_region) if t.header_region else None,
-        "data_region": asdict(t.data_region) if t.data_region else None,
-        "columns": [asdict(c) for c in t.columns],
-        "rows": t.rows,
-        "merged_regions": [asdict(m) for m in t.merged],
-    }
-    if t.meta:
-        out["meta"] = t.meta
-    if t.doc_content:
-        out["doc_content"] = t.doc_content
-    return out
-
-
-def _sheet_to_dict(s_name, s_index, s_form, s_conf, dims, merged, tables) -> dict:
-    return {
-        "sheet_name": s_name, "sheet_index": s_index,
-        "form_category": s_form, "form_confidence": round(s_conf, 3),
-        "dimensions": dims,
-        "merged_regions": [asdict(m) for m in merged],
-        "tables": tables,
-    }
-
-
-def process_workbook_bytes(data: bytes, source_file: str = "",
-                           detectors: list | None = None) -> dict:
-    """Excel bytes → 分类化结构（excel_classified_v1）。xls 需 xlrd、xlsx 需 openpyxl。"""
-    detectors = detectors or DEFAULT_DETECTORS
+def process_workbook_bytes(data: bytes, source_file: str = "") -> dict:
+    """Excel bytes → 分类化结构（excel_classified_v2）。xls 需 xlrd、xlsx 需 openpyxl。"""
     suffix = os.path.splitext(source_file or "")[1].lower()
-    if suffix == ".xls":
-        raw_sheets = _read_xls_bytes(data)
-    else:
-        raw_sheets = _read_xlsx_bytes(data)
+    raw_sheets = _read_xls_bytes(data) if suffix == ".xls" else _read_xlsx_bytes(data)
 
-    sheets_out = []
-    block_cats_all = []
-    for idx, (name, matrix, merged) in enumerate(raw_sheets, start=1):
-        dims = {"rows": len(matrix), "cols": max((len(r) for r in matrix), default=0)}
-        tables_out, block_cats = [], []
-        if matrix:
-            for ti, (sub, region, local_merged) in enumerate(
-                    split_tables(matrix, merged), start=1):
-                blk = TableBlock(table_id=f"{idx}-{ti}", region=region, matrix=sub,
-                                 merged=local_merged)
-                cat, cat_conf, cat_meta = classify_block(sub, local_merged)
-                blk.form_category = cat
-                blk.form_confidence = round(cat_conf, 3)
-                blk.meta["form_classify"] = cat_meta
-                block_cats.append((cat, cat_conf))
-                if cat == "说明表":
-                    blk.table_type = "doc_table"
-                    blk.confidence = round(cat_conf, 3)
-                    blk.doc_content = [row for row in sub if not _row_is_empty(row)]
-                    tables_out.append(_table_to_dict(blk))
-                    continue
-                compute_regions(blk)
-                ttype, conf = detect_table_type(blk, detectors)
-                blk.table_type = ttype
-                blk.confidence = round(conf, 3)
-                blk = PARSERS.get(ttype, parse_matrix)(blk)
-                tables_out.append(_table_to_dict(blk))
-        sheet_cat, sheet_conf = classify_sheet(block_cats)
-        block_cats_all.extend(block_cats)
-        sheets_out.append(_sheet_to_dict(name, idx, sheet_cat, sheet_conf, dims,
-                                         merged, tables_out))
-    form_cat, form_conf = classify_sheet(block_cats_all)
+    all_units, sheet_overview, form_summary = [], [], {}
+    for sheet_index, (sheet_name, matrix, merged) in enumerate(raw_sheets, start=1):
+        if not matrix:
+            sheet_overview.append({"sheet_name": sheet_name, "sheet_index": sheet_index,
+                                   "type": "空表", "row_count": 0})
+            continue
+        blocks = split_blocks(matrix, merged)
+        sheet_type, total_rows = "未知", 0
+        for bi, (sub, _span, local_merged) in enumerate(blocks, start=1):
+            blk = process_block(sheet_index, bi, sub, local_merged)
+            unit = (_build_doc_unit(blk, sheet_name, sheet_index)
+                    if blk.form_category == "说明表"
+                    else _build_stat_unit(blk, sheet_name, sheet_index))
+            all_units.append(unit)
+            total_rows += unit.get("row_count", 0)
+            if sheet_type == "未知":
+                sheet_type = blk.form_category
+            form_summary[blk.form_category] = form_summary.get(blk.form_category, 0) + 1
+        sheet_overview.append({"sheet_name": sheet_name, "sheet_index": sheet_index,
+                               "type": sheet_type, "row_count": total_rows})
+
+    agg = aggregate_units(all_units)
     return {
         "kind": "excel_classified",
         "schema": SCHEMA_VERSION,
+        "schema_version": "1.0",
         "source_file": source_file,
-        "form_category": form_cat,
-        "form_confidence": round(form_conf, 3),
-        "sheets": sheets_out,
+        "form_summary": form_summary,
+        "sheet_overview": sheet_overview,
+        "row_sets": agg["row_sets"],
+        "table_sets": agg["table_sets"],
+        "sheets": agg["sheets"],
     }

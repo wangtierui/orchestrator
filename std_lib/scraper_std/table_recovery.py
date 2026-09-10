@@ -273,11 +273,11 @@ def structured_table_fields(data: bytes, name: str = "", *, kind: str | None = N
         try:
             from std_lib.scraper_std.excel_structure import process_workbook_bytes
             wb_struct = process_workbook_bytes(data, os.path.basename(low))
-            has = any(t.get("rows") or t.get("doc_content")
-                      for s in wb_struct.get("sheets", []) for t in s.get("tables", []))
+            has = bool(wb_struct.get("sheets") or wb_struct.get("row_sets")
+                       or wb_struct.get("table_sets"))
             if has:
                 return {"table_structured": [wb_struct],
-                        "table_recovery_method": "excel_classified_v1"}
+                        "table_recovery_method": "excel_classified_v2"}
         except Exception as e:  # noqa: BLE001  分类化失败降级矩阵轨
             LOG.warning("excel_structure %s: %s", name, e)
     try:
