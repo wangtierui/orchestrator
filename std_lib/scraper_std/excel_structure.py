@@ -179,10 +179,11 @@ def _norm_matrix(matrix):
     return [list(r) + [None] * (n_cols - len(r)) for r in matrix]
 
 
-TITLE_PATTERNS = [r"^附录[一二三四五六七八九十\d]", r"统计表\s*$", r"填制说明\s*$",
-                  r"采集表\s*$", r"目录\s*$", r"说明\s*$"]
+TITLE_PATTERNS = [r"^附录[一二三四五六七八九十\d]", r"^附件", r"^附表", r"统计表\s*$",
+                  r"填制说明\s*$", r"采集表\s*$", r"目录\s*$", r"说明\s*$"]
 PREAMBLE_PATTERNS = [r"^\d{4}\s*年.*月.*日", r"^20[×xX]+\s*年", r"^填报机构", r"^填报单位",
-                     r"^填报日期", r"^单位[:：]", r"^金额单位", r"^制表单位", r"^报告期"]
+                     r"^填报日期", r"^单位[:：]", r"^金额单位", r"^制表单位", r"^报告期",
+                     r"^公司名称", r"^机构名称", r"^被审计单位"]
 FOOTER_PATTERNS = [r"^制表[:：]", r"^审核[:：]", r"^说明[:：]", r"^注[:：]", r"^填表人",
                    r"^负责人[:：]"]
 
@@ -198,7 +199,8 @@ def _is_preamble_row(row):
     if len(filled) == 1:
         if any(re.search(p, text_norm) for p in TITLE_PATTERNS):
             return True
-        if len(text_norm) >= 8 and not any(
+        # 单值长文本标题行（"附件11-1"/表名长标题等）：≥6 字且无字段关键词 → 前导行。
+        if len(text_norm) >= 6 and not any(
                 w in text_norm for w in ("名称", "日期", "金额", "类型", "代码", "编号")):
             return True
     for p in PREAMBLE_PATTERNS + FOOTER_PATTERNS:
@@ -310,6 +312,26 @@ def _is_header_annotation_row(row):
     return all(_ANNOT_RE.match(str(v).strip()) for v in vals)
 
 
+def _is_single_title_row(row):
+    """单值长文本行（如分组标题 '一、常规指标'）→ 不作表头延续行（1187908 实证列名污染）。"""
+    vals = [v for v in row if not _is_blank(v)]
+    return len(vals) <= 1 and bool(vals) and _text_len(vals[0]) >= 6
+
+
+_NUMCODE_RE = re.compile(r"^\d+([-－./]\d+)*$")
+
+
+def _looks_like_data_row(row):
+    """数据样行：非空值 ≥2 且（首非空值呈编号模式如 '1-1'/'1.1'，或数字值 ≥2 个）。
+    用于表头行延续判定：防止把无合并、纯文本的数据行误并入表头（eff95012 s1 实证吃 3 行数据）。"""
+    vals = [v for v in row if not _is_blank(v)]
+    if len(vals) < 2:
+        return False
+    if _NUMCODE_RE.match(str(vals[0]).strip()):
+        return True
+    return sum(1 for v in vals if _is_number(v)) >= 2
+
+
 def detect_header(matrix, merged):
     n_rows = len(matrix)
     n_cols = len(matrix[0]) if matrix else 0
@@ -327,14 +349,29 @@ def detect_header(matrix, merged):
                 merged_rows.add(r)
     first = None
     for i, r in enumerate(range(start, max_scan)):
-        if scores[i] >= 0.4 or r in merged_rows:
+        if r in merged_rows:
+            first = r
+            break
+        if scores[i] >= 0.4:
+            # 单值标题样行（如 '附件11-1'/'压力测试明细表…'）不作表头起始（eff95012 实证：
+            # 标题占 first 会把真表头区留在数据区 → 维度/指标错位）。
+            vals = [v for v in matrix[r] if not _is_blank(v)]
+            if len(vals) <= 1 and _text_len(vals[0]) >= 6 and not any(
+                    w in str(vals[0]) for w in HEADER_HINT_WORDS):
+                continue
             first = r
             break
     if first is None:
         first = start
     last = first
     for i, r in enumerate(range(first + 1, max_scan), start=1):
-        if scores[i] >= 0.25 or r in merged_rows:
+        if i > 3:   # 多级表头至多 4 行（含列号辅助行）
+            break
+        if r in merged_rows and not _is_single_title_row(matrix[r]):
+            last = r
+            continue
+        if scores[i] >= 0.25 and not _looks_like_data_row(matrix[r]) \
+                and not _is_single_title_row(matrix[r]):
             last = r
         else:
             break
@@ -394,6 +431,9 @@ def _make_key(path, idx):
 
 def build_columns(matrix, merged, header):
     h = [_forward_fill_row(row) for row in _fill_merged_header(matrix, merged, header)]
+    # 列号辅助行（多级表头下的 '1 2 3 4…' 序号行，eff95012 实证）不参与列名 path：
+    # 其纯数字段会把列名污染成 '…__1'；真实年份（4 位数）不受影响（_is_index_number_row 需全行数字）。
+    h = [row for row in h if not _is_index_number_row(row)]
     n_cols = header.col_end - header.col_start
     columns = []
     for c in range(n_cols):
@@ -403,6 +443,8 @@ def build_columns(matrix, merged, header):
             if _is_blank(v):
                 continue
             s = re.sub(r"\s+", " ", str(v).strip())   # 列名空白折叠（\n 换行 → 空格）
+            if re.fullmatch(r"[0-9]{1,3}", s):
+                continue   # 列序号注释段（'1'/'2'…）不进列名（真年份 4 位不受影响）
             if not path or path[-1] != s:
                 path.append(s)
         if not path:
@@ -423,7 +465,13 @@ def build_columns(matrix, merged, header):
 # ===========================================================================
 
 
-def _fill_merged_in_data(matrix, merged, data):
+def _fill_merged_in_data(matrix, merged, data, horizontal=False):
+    """数据区合并单元格填充（2026-09-10 修正语义）：
+    - **纵向**（同列跨行）：默认填充 → 维度值/层级延续（"地区"跨行等）；
+    - **横向**（同行跨列）：默认**不扩散**（值仅保留在合并区起始列）→ 跨列合并值本属
+      首列，扩散会造成冗余重复值并污染指标列（"其中：xx"行/汇总行等实证）；
+      表头区多级列名需扩散，由 _fill_merged_header 单独处理（horizontal=True 可显式打开）。
+    """
     m2 = [list(r) for r in matrix]
     for m in merged:
         r1, r2 = max(m.r1, data.row_start), min(m.r2, data.row_end - 1)
@@ -435,23 +483,41 @@ def _fill_merged_in_data(matrix, merged, data):
         val = m2[m.r1][m.c1]
         if _is_blank(val):
             continue
+        target_cols = range(c1, c2 + 1) if (horizontal or c1 == c2) else [c1]
         for r in range(r1, r2 + 1):
             if r >= len(m2):
                 continue
-            for c in range(c1, c2 + 1):
+            for c in target_cols:
                 if c < len(m2[r]) and _is_blank(m2[r][c]):
                     m2[r][c] = val
     return m2
 
 
+def _is_index_number_row(row):
+    """列号辅助行：非空值 ≥3 且全为整数数字（如多级表头下的 '1 2 3 4 …' 列序号行，
+    eff95012 实证）→ 属表头残留，不应作为数据行。"""
+    vals = [v for v in row if not _is_blank(v)]
+    if len(vals) < 3:
+        return False
+    for v in vals:
+        if isinstance(v, bool) or not isinstance(v, (int, float)):
+            return False
+        if not float(v).is_integer() or abs(v) > 100000:
+            return False
+    return True
+
+
 def extract_rows(matrix, merged, data, columns, filter_preamble=True):
     filled = _fill_merged_in_data(matrix, merged, data)
     rows = []
+    head_limit = min(data.row_start + 2, data.row_end)   # 仅对数据区首 2 行做列号行剔除
     for r in range(data.row_start, data.row_end):
         if r >= len(filled):
             break
         src = filled[r]
         if filter_preamble and _is_preamble_row(src):
+            continue
+        if filter_preamble and r < head_limit and _is_index_number_row(src):
             continue
         row, has_value = {}, False
         for col in columns:
@@ -528,7 +594,7 @@ METRIC_COL_MIN_FILL_RATIO = 0.03
 METRIC_COL_MIN_FILL_CAP = 20
 
 
-_IDENT_COL_RE = re.compile(r"序号|编号|代码")
+_IDENT_COL_RE = re.compile(r"序号|编号|代码|行次|行号")
 
 
 def detect_dimension_columns(rows, columns):
@@ -606,7 +672,8 @@ def _extract_doc_title(matrix):
 
 def process_doc_block(block):
     matrix = block.matrix
-    subtype, sub_meta = _detect_doc_subtype(matrix)
+    merged = block.merged
+    subtype, _ = _detect_doc_subtype(matrix)
     title = _extract_doc_title(matrix)
     filled = [r for r in matrix if not _row_is_empty(r)]
     block.doc_subtype = subtype
@@ -626,40 +693,31 @@ def process_doc_block(block):
         block.meta["paragraph_count"] = len(paragraphs)
         return
 
-    key_idx = sub_meta.get("key_column_index", 0)
-    n_cols = max((len(r) for r in filled), default=0)
-    header_row = filled[0] if filled else []
-    columns = []
-    for c in range(n_cols):
-        v = header_row[c] if c < len(header_row) else None
-        columns.append(str(v).strip() if not _is_blank(v) else f"col_{c + 1}")
-    data_rows = filled[1:] if len(filled) > 1 else []
-    if data_rows and all(_is_blank(r[key_idx]) for r in data_rows[:3] if key_idx < len(r)):
-        columns = [f"col_{c + 1}" for c in range(n_cols)]
-        data_rows = filled
-    items, raw_rows = [], []
-    for r in data_rows:
-        item = {}
-        row_vals = [r[c] if c < len(r) else None for c in range(n_cols)]
-        for c, val in enumerate(row_vals):
-            item[columns[c]] = val
-        if any(not _is_blank(v) for v in item.values()):
-            items.append(item)
-            raw_rows.append(row_vals)
-    block.columns = [Column(key=columns[c], name=columns[c], path=[columns[c]], col_index=c)
-                     for c in range(n_cols)]
+    # ---- key_value / indicator_doc：多级表头 + 合并单元格处理（2026-09-10 重构）----
+    # ① 全矩阵纵向合并填充（键列跨行延续；横向不扩散）；
+    # ② 表头检测（跳标题/前导行；表头区纵横填充）→ 多级列名 path→key；
+    # ③ 数据行提取（跳过空行/前导行/列号行）；④ 全空列裁剪。
+    n_cols = max((len(r) for r in matrix), default=0)
+    m2 = _fill_merged_in_data(matrix, merged, Region(0, len(matrix), 0, n_cols))
+    header = detect_header(m2, merged)
+    block.header_region = header
+    columns = build_columns(m2, merged, header)
+    data = Region(header.row_end, len(m2), 0, n_cols)
+    rows = extract_rows(m2, merged, data, columns)
+    keep = [c for c in columns if any(not _is_blank(r.get(c.key)) for r in rows)] or columns
+    items = [{c.key: r.get(c.key) for c in keep} for r in rows]
+    raw_rows = ([[r.get(c.key) for c in keep] for r in rows]
+                if any((c.key or "").startswith("col_") for c in keep) else None)
+    block.columns = keep
     block.rows = items
-    block.meta["key_column"] = columns[key_idx] if key_idx < len(columns) else None
+    key_col = next((c for c in keep
+                    if any(w in (c.name or "") for w in DOC_KEY_WORDS)),
+                   keep[0] if keep else None)
+    block.meta["key_column"] = key_col.key if key_col else None
     block.meta["item_count"] = len(items)
-    block.meta["raw_rows"] = raw_rows
-    # key 去重（同名列）
-    seen = {}
-    for col in block.columns:
-        if col.key in seen:
-            seen[col.key] += 1
-            col.key = f"{col.key}__{seen[col.key]}"
-        else:
-            seen[col.key] = 0
+    block.meta["dropped_empty_columns"] = [c.name for c in columns if c not in keep]
+    if raw_rows is not None:
+        block.meta["raw_rows"] = raw_rows
 
 
 # ===========================================================================
@@ -701,22 +759,28 @@ def _build_stat_unit(block, sheet_name, sheet_index):
     any_metric = len(metric_value_rows) >= max(2, int(0.01 * len(rows)))
     if any_metric:
         rows = metric_value_rows
-    # ② 列级：剔除稀疏/空指标列（幽灵列），阈值 clamp(3%×行数, 3, 20)。
+    # ② 列级：剔除稀疏/空指标列（幽灵列只在**超宽表**出现；小表数据完整性优先不裁）。
+    #    大表阈值 clamp(3%×行数, 3, 20)；裁剪后若为空则回退保留有值列（防全丢）。
     kept_metric_cols, dropped_count, dropped_sample = [], 0, []
     if any_metric:
-        min_fill = min(max(METRIC_COL_MIN_FILL,
-                           int(METRIC_COL_MIN_FILL_RATIO * len(rows) + 0.999)),
-                       METRIC_COL_MIN_FILL_CAP)
-        for c in columns:
-            if c.key not in metric_all:
-                continue
-            fill = sum(1 for r in rows if not _is_blank(r.get(c.key)))
-            if fill >= min_fill:
-                kept_metric_cols.append(c)
-            else:
-                dropped_count += 1
-                if len(dropped_sample) < 20:
-                    dropped_sample.append(c.name)
+        _fills = {c.key: sum(1 for r in rows if not _is_blank(r.get(c.key)))
+                  for c in columns if c.key in metric_all}
+        if len(columns) < 32:
+            kept_metric_cols = [c for c in columns
+                                if c.key in metric_all and _fills[c.key] >= 1]
+        else:
+            min_fill = min(max(METRIC_COL_MIN_FILL,
+                               int(METRIC_COL_MIN_FILL_RATIO * len(rows) + 0.999)),
+                           METRIC_COL_MIN_FILL_CAP)
+            kept_metric_cols = [c for c in columns
+                                if c.key in metric_all and _fills[c.key] >= min_fill]
+            if not kept_metric_cols:   # 回退：防"阈值高于所有列"时整表数据丢失
+                kept_metric_cols = [c for c in columns
+                                    if c.key in metric_all and _fills[c.key] >= 1]
+        dropped = [c for c in columns if c.key in metric_all
+                   and c.key not in {k.key for k in kept_metric_cols}]
+        dropped_count = len(dropped)
+        dropped_sample = [c.name for c in dropped[:20]]
 
     # 维度哈希用「末级列名 + 维度行值」：不同表块的列 key 因多级表头 path 前缀（各表标题）
     # 不同，但维度语义（序号/行政区域代码/地区…）与行值相同时应合并为同一 table_set。
@@ -814,7 +878,9 @@ def aggregate_units(units):
                 sheet["raw_rows"] = u["raw_rows"]
             standalone.append(sheet)
             continue
-        if not u["dimension_rows"]:
+        # 维度列为空 → 无有效维度（防 dimension_rows 为"空列表行"数组时误建 table_set，
+        # eff95012 实证：dimension_columns=[] 却因 rows=[[],[]…] 非空建了 dim=[] 的 table_set）
+        if not (u["dimension_columns"] and u["dimension_rows"]):
             standalone.append(_stat_sheet(u, with_dim_rows=False, full_rows=True))
             continue
         h = u["dimension_hash"]
