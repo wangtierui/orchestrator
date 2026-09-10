@@ -421,21 +421,68 @@ def fetch_attachments(law_id, rate, file_types=("0", "90"), timeout=20):
             logger.warning("附件清单获取失败 id=%s fileType=%s：%s", law_id, ft, e)
     return items
 
+# 附件主机 502 熔断（2026-09-10 增量策略）：附件主机 10.1.60.36:8888 曾实测 100% HTTP 502
+# 会让全量任务空转数十小时。连续 502 达阈值即熔断，本次运行剩余附件一律跳过（不阻塞主数据）。
+_ATT_502_STREAK = 0
+_ATT_CIRCUIT_OPEN = False
+_MAX_ATT_502_STREAK = 8
+
+
+def _finalize_attachment(att, data, fname, law_id, dest):
+    """附件字节 → 落盘 + 文本/表格/富内容抽取，回填 att（下载与本地复用共用）。"""
+    with open(dest, "wb") as f:
+        f.write(data)
+    att["local_path"] = os.path.relpath(dest, REPO_ROOT).replace("\\", "/")
+    att["size_bytes"] = len(data)
+    try:
+        ext = extract_document_text(data, fname)
+        att["text"] = ext.get("text", "")
+        att["extracted"] = ext.get("extracted", False)
+        att["extract_status"] = ext.get("extract_status", "unsupported")
+        att["attachment_kind"] = ext.get("kind", "unknown")
+        att["sha256"] = ext.get("sha256", "")
+        att["needs_ocr"] = ext.get("needs_ocr", False)
+        att["garble_ratio"] = ext.get("garble_ratio", 0.0)
+        try:
+            att.update(structured_table_fields(data, fname))
+        except Exception:
+            pass
+        try:
+            att.update(rich_object_fields(data, fname,
+                                          image_dir=docs_root("mof", "diagrams"),
+                                          rec_key=str(law_id)))
+        except Exception:
+            pass
+    except Exception as e:
+        logger.warning("附件文本抽取异常 %s：%s", att.get("file_url"), e)
+        att["extracted"] = False
+        att["extract_status"] = "extract_error"
+    return att
+
+
 def download_attachment(att, law_id, outdir, rate, timeout=60, max_retries=6):
     """下载单个附件到 data/docs/mof_regulations_scraper/attachments/<law_id>/，返回带本地相对路径与大小的元数据；失败返回 None。
 
-    针对附件服务器限流优化（vB）：
-      - 默认重试 6 次（原 3 次），给限流更多恢复窗口；
-      - 429/503/502/500 走指数退避（上限 60s）并触发全站降温 penalize；
-      - 其它网络异常（超时/连接重置/解析失败）走指数退避（上限 30s）；
-      - 404 等不可恢复错误直接放弃，不浪费重试；
-      - 每次重试前重新 rate.wait()，避免连续冲击附件服务器。
+    增量策略（2026-09-10，附件主机 502 环境）：
+      - **幂等复用**：本地已存在非空副本 → 直接本地重抽（不再请求，规避重复下载/502 空转）；
+      - **502 熔断**：502/503 仅重试 2 次即跳过，连续 8 次 502 熔断，本次运行后续附件全部跳过；
+      - 429/500 保留指数退避重试；404 等不可恢复直接放弃。
     """
+    global _ATT_502_STREAK, _ATT_CIRCUIT_OPEN
+    if _ATT_CIRCUIT_OPEN:
+        return None
     attach_dir = os.path.join(ATTACHMENTS_DIR, str(law_id))
     os.makedirs(attach_dir, exist_ok=True)
     fname = safe_filename(att.get("file_name"), att.get("extension"),
                           f"{law_id}_{att.get('file_type')}")
     dest = os.path.join(attach_dir, fname)
+    # 幂等复用：本地已有非空副本 → 不再下载，仅本地重抽（增量续跑核心）
+    if os.path.exists(dest) and os.path.getsize(dest) > 0:
+        try:
+            with open(dest, "rb") as f:
+                return _finalize_attachment(att, f.read(), fname, law_id, dest)
+        except OSError:
+            pass
     last_err = None
     for attempt in range(1, max_retries + 1):
         if rate is not None:
@@ -446,41 +493,27 @@ def download_attachment(att, law_id, outdir, rate, timeout=60, max_retries=6):
             req.add_header("User-Agent", random.choice(CC_USER_AGENTS))
             with urllib.request.urlopen(req, timeout=timeout) as r:
                 data = r.read()
-            with open(dest, "wb") as f:
-                f.write(data)
-            att["local_path"] = os.path.relpath(dest, REPO_ROOT).replace("\\", "/")
-            att["size_bytes"] = len(data)
-            # —— 附件文本抽取（修复：此前仅落盘二进制，未抽内部文本）——
-            # 透明标记：依赖缺失/扫描件/损坏均返回结构化状态，源文件已留存不丢弃。
-            try:
-                ext = extract_document_text(data, fname)
-                att["text"] = ext.get("text", "")
-                att["extracted"] = ext.get("extracted", False)
-                att["extract_status"] = ext.get("extract_status", "unsupported")
-                att["attachment_kind"] = ext.get("kind", "unknown")
-                att["sha256"] = ext.get("sha256", "")
-                att["needs_ocr"] = ext.get("needs_ocr", False)
-                att["garble_ratio"] = ext.get("garble_ratio", 0.0)
-                try:
-                    # 表格结构化（2026-09-08 仿 supp 打通）：xlsx/docx/doc 附件表 → att 表键
-                    att.update(structured_table_fields(data, fname))
-                except Exception:
-                    pass  # 表格结构化失败不影响文本/落盘
-                try:
-                    # 富内容轨（2026-09-09 rich_object）：docx/xlsx 图形/公式/图片
-                    att.update(rich_object_fields(data, fname,
-                                                  image_dir=docs_root("mof", "diagrams"),
-                                                  rec_key=str(law_id)))
-                except Exception:
-                    pass  # 富内容失败不影响文本/落盘
-            except Exception as e:
-                logger.warning("附件文本抽取异常 %s：%s", att.get("file_url"), e)
-                att["extracted"] = False
-                att["extract_status"] = "extract_error"
-            return att
+            return _finalize_attachment(att, data, fname, law_id, dest)
         except urllib.error.HTTPError as e:
             last_err = e
-            if e.code in (429, 503, 502, 500):
+            if e.code in (502, 503):
+                # 附件主机限流/不可用：仅重试 2 次，连续达阈值熔断（防数十小时空转）
+                _ATT_502_STREAK += 1
+                if _ATT_502_STREAK >= _MAX_ATT_502_STREAK:
+                    _ATT_CIRCUIT_OPEN = True
+                    logger.error("附件主机连续 %d 次 502/503，熔断：本次运行剩余附件跳过。",
+                                 _ATT_502_STREAK)
+                    return None
+                if attempt >= 2:
+                    logger.warning("附件下载 HTTP %s @ %s：跳过（熔断计数 %d）",
+                                   e.code, att.get("file_url"), _ATT_502_STREAK)
+                    return None
+                backoff = min(2 ** attempt * 2.0, 20) + random.uniform(0, 1)
+                if rate is not None:
+                    rate.penalize(backoff)
+                time.sleep(backoff)
+                continue
+            if e.code in (429, 500):
                 backoff = min(2 ** attempt * 2.0, 60) + random.uniform(0, 1)
                 if rate is not None:
                     rate.penalize(backoff)
@@ -511,7 +544,10 @@ def collect_attachments(law_id, rate, timeout=60):
     """抓取并下载某条法规的全部附件，返回带本地路径的元数据列表。
 
     timeout 透传至 download_attachment，便于调用方在慢速/限流场景下收紧超时。
+    附件主机熔断（连续 502）后不再尝试下载。
     """
+    if _ATT_CIRCUIT_OPEN:
+        return []
     meta = fetch_attachments(law_id, rate, timeout=timeout)
     if not meta:
         return []
