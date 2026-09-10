@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """excel_structure.py —— Excel(.xlsx/.xls) → 分类化结构 JSON（共享层，2026-09-10）。
 
-移植自参照实现 D:/Desktop/excel_to_json.py（用户提供的通用 Excel→JSON 转换器），
+移植自用户提供的通用 Excel→JSON 转换器参照实现（excel_to_json.py，Desktop），
 适配为 **bytes 输入**（附件字节直接解析，不落盘），供 table_recovery/structured_table_fields
 产出「分类后合理结构」的 table_structured：
 
