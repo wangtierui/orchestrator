@@ -316,7 +316,11 @@ def map_nfra(rec: dict[str, Any], clean_version: str, captured_at: str = "") -> 
         "verification_source": "",
         "keyword": "",
         "attachments": rec.get("attachments") or [],
-        "attachment_content": empty_str(rec.get("attachment_content")),
+        # 附件正文聚合（2026-09-10）：nfra 附件 text 原先写死空 → 附件内容（含公式等）
+        # 无法进 cleaned 检索。现从 attachments[].text 聚合（与 mof 同模式），raw 已有
+        # attachment_content 时优先保留。
+        "attachment_content": empty_str(rec.get("attachment_content")) or "\n\n".join(
+            a.get("text") for a in (rec.get("attachments") or []) if a.get("text")),
         "attachment_count": int(len(rec.get("attachments") or [])),
         "table_structured": rec.get("table_structured") or [],
         "table_raw_text": empty_str(rec.get("table_raw_text")),
