@@ -282,7 +282,6 @@ def structured_table_fields(data: bytes, name: str = "", *, kind: str | None = N
             LOG.warning("excel_structure %s: %s", name, e)
     try:
         first = extract_tables_from_doc(data, name, kind=kind)
-        first = extract_tables_from_doc(data, name, kind=kind)
     except Exception as e:  # noqa: BLE001  表格抽取失败不阻断附件文本/正文
         LOG.warning("structured_table_fields %s: %s", name, e)
         return {}
