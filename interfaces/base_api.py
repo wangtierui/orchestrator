@@ -149,3 +149,27 @@ def search_internal(text: str, limit: int = 20, kind: str = "policies") -> list[
 def get_policy(ipn: str) -> dict | None:
     rows = query_internal(ipn=ipn, limit=1)
     return rows[0] if rows else None
+
+
+def version_chain(docno: str, limit: int = 50) -> list[dict]:
+    """同文号（归一）多版本链（按发布日期升序）——F-K08 版本链视图的最小可用实现。
+
+    view_active 语义 = `query_external(timeliness_status="valid")`（现行视图）；
+    本函数提供"同文号演进链"（历史版本 → 现行）显性化。
+    """
+    from std_lib.common_lib.norm import norm_docno  # noqa: PLC0415
+    nd = norm_docno(docno)
+    if not nd:
+        return []
+    with _conn("external") as c:
+        rows = [dict(r) for r in c.execute(
+            "SELECT record_id,rfn,title,document_number,publish_date,effective_date,"
+            "timeliness_status,source,body_len FROM records")]
+    out = [r for r in rows if norm_docno(r.get("document_number") or "") == nd]
+    out.sort(key=lambda r: r.get("publish_date") or "")
+    return out[:limit]
+
+
+def view_active(limit: int = 200) -> list[dict]:
+    """现行有效视图（timeliness_status=valid 的发布记录，轻量列）。"""
+    return query_external(timeliness_status="valid", limit=limit)

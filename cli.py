@@ -346,6 +346,8 @@ def _cmd_base(argv):
     pq.add_argument("--theme", default="")
     pq.add_argument("--source", default="")
     pq.add_argument("--timeliness", default="")
+    pq.add_argument("--chain", default="", help="同文号版本链（F-K08）")
+    pq.add_argument("--view", default="", choices=["", "active"], help="视图：active=现行有效")
     pq.add_argument("--internal", action="store_true", help="查内部底座（默认外部）")
     pq.add_argument("--limit", type=int, default=50)
     pq.add_argument("--json", action="store_true")
@@ -381,7 +383,13 @@ def _cmd_base(argv):
         search_internal,
     )
     if args.action == "query":
-        if args.internal:
+        if args.chain:
+            from base_api import version_chain  # noqa: PLC0415
+            rows = version_chain(args.chain, limit=args.limit)
+        elif args.view == "active":
+            from base_api import view_active  # noqa: PLC0415
+            rows = view_active(limit=args.limit)
+        elif args.internal:
             rows = query_internal(theme=args.theme, limit=args.limit)
         else:
             rows = query_external(rfn=args.rfn, document_number=args.docno, theme=args.theme,
