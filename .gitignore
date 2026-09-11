@@ -55,3 +55,6 @@ modules/regulatory_scrapers/timeliness_review/*_consolidate_manifest.json
 # ===== reports 保留但忽略临时产物 =====
 reports/_tmp/
 _tmp_smoke/
+
+# ===== 发布件（Base Contract v1：JSONL/SQLite 为派生数据，`orchestrator base publish` 可重建；不入库）=====
+**/published/

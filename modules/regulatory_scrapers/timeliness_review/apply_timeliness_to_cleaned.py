@@ -173,12 +173,18 @@ def writeback_source(source: str, fields_for, *, dry_run: bool = False,
                 recs.append(json.loads(line))
 
     stat = {"source": source, "total": len(recs), "skipped": 0,
-            "written": 0, "unchanged": 0}
+            "written": 0, "unchanged": 0, "status_derived": 0}
     for r in recs:
         fields = fields_for(r)
         if not fields:
+            # H-07 全量派生：status 恒等于 timeliness_status（未核验时同为空——不再是假判据；
+            # 覆盖"未命中回写"记录，保证派生不变量全量成立）。
+            _ns = r.get("timeliness_status") or ""
+            if (r.get("status") or "") != _ns:
+                r["status"] = _ns
+                stat["status_derived"] += 1
             stat["skipped"] += 1
-            continue                       # 无核验结果 / 状态歧义 → 保持原值（空）
+            continue                       # 无核验结果 / 状态歧义 → 三字段保持原值（空）
         before = tuple(r.get(k, "") for k in TARGET_FIELDS) + (r.get("status", ""),)
         for k in TARGET_FIELDS:
             r[k] = fields.get(k, "") or ""
@@ -318,7 +324,11 @@ def main() -> int:
     # 否则 classify/validate/签名与"同日改写"脱节（M-10 四重隐身组合项之一）。
     if not args.dry_run:
         total_written = sum((st.get("written") or 0) for st in stats if "reason" not in st)
-        if total_written > 0:
+        # F-C05 补：status 派生（status_derived）同样改变 cleaned 内容 → 必须触发索引重建
+        # （P3B 实测：第二轮全量派生 written=0 但 status 列已变，原条件漏 rebuild → recall
+        #  clean gate 索引哈希失配）。
+        total_derived = sum((st.get("status_derived") or 0) for st in stats if "reason" not in st)
+        if total_written > 0 or total_derived > 0:
             try:
                 if ROOT not in sys.path:
                     sys.path.insert(0, ROOT)

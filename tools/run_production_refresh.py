@@ -191,7 +191,12 @@ def main() -> int:
     report.append(_run("recall", [PY, os.path.join(CLASSIFIER, "recall_audit",
                                                    "run_retrieval_after_checks.py")], timeout=3600))
 
-    # ---- 阶段 5：gates ----
+    # ---- 阶段 5.5：base publish（双底座发布件 + SQLite/FTS5；Base Contract v1，F-K03）----
+    # 发布层在 gates 前刷新：门禁校验的是底座产物，应用模块消费的是发布件（同一批快照）。
+    report.append(_run("base:publish", [PY, os.path.join(ROOT, "cli.py"), "base", "publish"],
+                       timeout=1800))
+
+    # ---- 阶段 6：gates ----
     report.append(_run("gates", [PY, os.path.join(ROOT, "cli.py"), "gates"], timeout=1800))
 
     summary = {
