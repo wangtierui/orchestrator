@@ -322,14 +322,18 @@ _NUMCODE_RE = re.compile(r"^\d+([-－./]\d+)*$")
 
 
 def _looks_like_data_row(row):
-    """数据样行：非空值 ≥2 且（首非空值呈编号模式如 '1-1'/'1.1'，或数字值 ≥2 个）。
-    用于表头行延续判定：防止把无合并、纯文本的数据行误并入表头（eff95012 s1 实证吃 3 行数据）。"""
+    """数据样行：非空值 ≥2 且满足其一：①首非空值呈编号模式（'1-1'/'1.1'/'0001'）；
+    ②数字值 ≥2 个；③任一非首值为 ≥3 位纯数字串（编码类：'001'/'001001'——EAST 数据结构/
+    数据元说明表实证，此类行为数据行，防止 header 延续把数据值并入列名 path）。
+    用于表头行延续判定（eff95012 s1 实证吃 3 行数据）。"""
     vals = [v for v in row if not _is_blank(v)]
     if len(vals) < 2:
         return False
     if _NUMCODE_RE.match(str(vals[0]).strip()):
         return True
-    return sum(1 for v in vals if _is_number(v)) >= 2
+    if sum(1 for v in vals if _is_number(v)) >= 2:
+        return True
+    return any(re.fullmatch(r"\d{3,}", str(v).strip()) for v in vals[1:])
 
 
 def detect_header(matrix, merged):
@@ -344,7 +348,9 @@ def detect_header(matrix, merged):
     scores = [_header_score(matrix[r]) for r in range(start, max_scan)]
     merged_rows = set()
     for m in merged:
-        if m.r2 > m.r1:
+        # 仅「表头级跨行合并」（跨度 ≤3 行）作为表头证据；大跨度合并是数据区分组列
+        # （EAST 实证：「数据元分类」c0 跨 74 行会把 header 拉满上限 → 列名被数据值污染）。
+        if m.r2 > m.r1 and (m.r2 - m.r1) <= 3:
             for r in range(max(m.r1, start), min(m.r2 + 1, max_scan)):
                 merged_rows.add(r)
     first = None
@@ -367,7 +373,8 @@ def detect_header(matrix, merged):
     for i, r in enumerate(range(first + 1, max_scan), start=1):
         if i > 3:   # 多级表头至多 4 行（含列号辅助行）
             break
-        if r in merged_rows and not _is_single_title_row(matrix[r]):
+        if r in merged_rows and not _is_single_title_row(matrix[r]) \
+                and not _looks_like_data_row(matrix[r]):
             last = r
             continue
         if scores[i] >= 0.25 and not _looks_like_data_row(matrix[r]) \

@@ -119,8 +119,10 @@ def main(argv=None):
     # 调用统一清洗管道（modules/regulatory_scrapers/clean/run_clean_pipeline.py）
     py = sys.executable
     pipe = os.path.join(SCRAPERS_ROOT, "clean", "run_clean_pipeline.py")
-    print(f"[batch] 运行清洗管道: {pipe}")
-    rc = subprocess.run([py, pipe], cwd=SCRAPERS_ROOT).returncode
+    print(f"[batch] 运行清洗管道: {pipe} --project supp")
+    # 修复（2026-09-12）：--project 为 run_clean_pipeline 必填参数，原先漏传导致每次 rc=2
+    # （supp 新 raw 永不落 cleaned；见审查报告 B-01/F-S06）。
+    rc = subprocess.run([py, pipe, "--project", "supp"], cwd=SCRAPERS_ROOT).returncode
     print(f"[batch] 管道返回码: {rc}")
     return rc
 
