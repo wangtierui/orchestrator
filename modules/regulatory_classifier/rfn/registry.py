@@ -101,6 +101,7 @@ def _strict_docno(docno):
     return norm_docno(d) if DOC_RE.match(d) else ""
 
 
+# norm-specialization: RFN 事实源内部（去标点+lower 自有语义），防索引漂移
 def _norm_title(t):
     # 私有标题归一（保留 registry 原语义——注意与 common_lib.norm.norm_title 的差异：
     # 本函数会去除书名号/全部标点并转小写，用于唯一键标题指纹；勿改，防既有 RFN 漂移）

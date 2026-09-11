@@ -26,8 +26,6 @@ import csv
 import datetime
 import json
 import os
-import re
-import shutil
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))      # regulatory_scrapers/
@@ -62,8 +60,7 @@ def _latest_supp_jsonl():
     return cand[-1] if cand else None
 
 
-def _norm_docno(s):
-    return re.sub(r"[〔\[\]（）()〕\s]", "", s or "").rstrip("号")
+from std_lib.common_lib.norm import norm_docno as _norm_docno  # A-10：SSOT 收敛（标准层）
 
 
 def _resolve_replacement(rep, rows):
@@ -228,38 +225,31 @@ def main():
     else:
         print("[verify] 本次无效力变更（0 条），归属表时效状态不变")
 
-    # 三库一致：同步五源 cleaned 三字段（按归一化文号匹配，备份后回写）
-    fsrc = load_five_source_rows()
-    synced = 0
+    # 三库一致：同步五源 cleaned 三字段（C-12：经统一回写单点 writeback_source 逐源回写，
+    # 原本地实现无原子/无 CSV 轨/备份口径不同——三份分叉已收敛）
+    sys.path.insert(0, OUT_DIR)
+    import apply_timeliness_to_cleaned as apply_mod  # noqa: PLC0415  统一回写单点（C-12）
+    updates = {}
     for ch in changed:
         nd = _norm_docno(ch["document_number"])
         if len(nd) < 5:
             continue
-        for _src, srows in fsrc.items():
-            hit = [r for r in srows if _norm_docno(r.get("document_number", "")) == nd]
-            for r in hit:
-                r["timeliness_status"] = ch["new_status"]
-                r["verification_source"] = "北大法宝"
-                if ch.get("replacement_document"):
-                    r["replacement_document"] = ch["replacement_document"]
-                synced += 1
-    for src, srows in fsrc.items():
-        rel = FILES[src]
-        if not rel:
+        updates[nd] = {
+            "timeliness_status": ch["new_status"],
+            "replacement_document": ch.get("replacement_document") or "",
+            "verification_source": "北大法宝",
+        }
+
+    def fields_for(r):
+        return updates.get(_norm_docno(r.get("document_number", "")))
+
+    synced = 0
+    for src_id in ("gov", "mof", "nfra", "pbc", "supp"):
+        st = apply_mod.writeback_source(src_id, fields_for, dry_run=False, backup_tag="classifier_pkulaw")
+        if "reason" in st:
             continue
-        if src == "supplementary":
-            rel = _latest_supp_jsonl()
-            if not rel:
-                continue
-            rel = os.path.relpath(rel, ROOT)
-        jp = os.path.join(ROOT, rel)
-        if not os.path.exists(jp):
-            continue
-        shutil.copy2(jp, os.path.join(ROOT, BACKUP_SUBDIR, os.path.basename(jp)))
-        with open(jp, "w", encoding="utf-8") as fh:
-            for r in srows:
-                fh.write(json.dumps(r, ensure_ascii=False) + "\n")
-    print(f"[verify] 五源 cleaned 三字段同步 {synced} 处（备份于 {BACKUP_SUBDIR}）")
+        synced += st.get("written", 0)
+    print(f"[verify] 五源 cleaned 三字段同步 {synced} 处（统一单点，jsonl+csv 双轨）")
 
     # 台账：追加模式（跨批/跨天续跑不覆盖历史变更）
     ledger_new = not os.path.exists(ledger_out)

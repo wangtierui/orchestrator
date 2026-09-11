@@ -70,6 +70,7 @@ def _date(s: str) -> str:
     return (s or "")[:10]
 
 
+# norm-specialization: 修复型文号（normalize_doc_number 残渣剥离 + 标准层归一，双段组合）
 def _norm_docno(s: str) -> str:
     v = (s or "").strip()
     if not v or v.upper() in ("N/A", "NA", "NULL"):
@@ -143,11 +144,17 @@ def build_index(rows, source: str):
     return by_no, by_title_date, by_title_unique, conflicts
 
 
-def apply_source(source: str, by_no, by_title_date, by_title_unique,
-                 dry_run: bool, no_backup: bool):
-    """对单源最新 cleaned 回写三字段（jsonl + csv 双轨）。"""
+def writeback_source(source: str, fields_for, *, dry_run: bool = False,
+                     no_backup: bool = False, backup_tag: str = "apply") -> dict:
+    """统一回写单点（C-12 收敛，2026-09-12）：按 fields_for(rec)->dict|None 回写单源
+    cleaned 三字段——jsonl+csv 双轨、原子写、备份、status 派生（H-07）。
+
+    —— 全仓 cleaned 时效回写**唯一实现**：apply_timeliness（ledger 三级匹配）、
+    sync_three_modules（核验变更增量）、classifier_pkulaw_verify（核验变更）一律调用本函数，
+    禁止各自实现（原三份分叉：字段集/双轨性/原子性/备份各不同——审查 C-12/C-10）。
+    """
     sys.path.insert(0, ROOT)
-    from clean_index import get_clean_index
+    from clean_index import get_clean_index  # noqa: PLC0415
     idx = get_clean_index()
     jf = idx.latest_jsonl_path(source)
     if not jf:
@@ -165,33 +172,20 @@ def apply_source(source: str, by_no, by_title_date, by_title_unique,
             if line:
                 recs.append(json.loads(line))
 
-    stat = {"source": source, "total": len(recs), "hit_docno": 0,
-            "hit_title_date": 0, "hit_title": 0, "skipped": 0,
+    stat = {"source": source, "total": len(recs), "skipped": 0,
             "written": 0, "unchanged": 0}
     for r in recs:
-        hit = None
-        k_no = _norm_docno(r.get("document_number"))
-        if k_no and k_no in by_no:
-            hit = by_no[k_no]
-            stat["hit_docno"] += 1
-        else:
-            k_ti = _norm(r.get("title"))
-            if k_ti and (k_ti, _date(r.get("publish_date"))) in by_title_date:
-                hit = by_title_date[(k_ti, _date(r.get("publish_date")))]
-                stat["hit_title_date"] += 1
-            elif k_ti and k_ti in by_title_unique:
-                hit = by_title_unique[k_ti]
-                stat["hit_title"] += 1
-        if not hit:
+        fields = fields_for(r)
+        if not fields:
             stat["skipped"] += 1
             continue                       # 无核验结果 / 状态歧义 → 保持原值（空）
-        before = tuple(r.get(k, "") for k in TARGET_FIELDS)
+        before = tuple(r.get(k, "") for k in TARGET_FIELDS) + (r.get("status", ""),)
         for k in TARGET_FIELDS:
-            r[k] = hit.get(k, "") or ""
+            r[k] = fields.get(k, "") or ""
         # H-07（2026-09-12）：status 由 timeliness_status 派生（英文）——源特异假判据
         # （gov 死分支/mof "4"/pbc "ok"/supp 中文）废弃后的统一口径落地。
         r["status"] = r.get("timeliness_status") or ""
-        if tuple(r.get(k, "") for k in TARGET_FIELDS) != before:
+        if (tuple(r.get(k, "") for k in TARGET_FIELDS) + (r.get("status", ""),)) != before:
             stat["written"] += 1
         else:
             stat["unchanged"] += 1
@@ -204,7 +198,7 @@ def apply_source(source: str, by_no, by_title_date, by_title_unique,
     if not no_backup:
         bdir = os.path.join(
             BACKUP_ROOT,
-            "cleaned_before_timeliness_%s" % datetime.datetime.now().strftime("%Y%m%d_%H%M%S"))
+            "cleaned_before_%s_%s" % (backup_tag, datetime.datetime.now().strftime("%Y%m%d_%H%M%S")))
         os.makedirs(bdir, exist_ok=True)
         for p in (jf, cf):
             if os.path.exists(p):
@@ -241,6 +235,31 @@ def apply_source(source: str, by_no, by_title_date, by_title_unique,
                 for row in rows:
                     w.writerow(row)
             os.replace(tmp, cf)
+    return stat
+
+
+def apply_source(source: str, by_no, by_title_date, by_title_unique,
+                 dry_run: bool, no_backup: bool):
+    """ledger 全量三级匹配 → 统一回写（C-12：匹配逻辑留本层，写盘经 writeback_source）。"""
+    hits = {"hit_docno": 0, "hit_title_date": 0, "hit_title": 0}
+
+    def fields_for(r):
+        k_no = _norm_docno(r.get("document_number"))
+        if k_no and k_no in by_no:
+            hits["hit_docno"] += 1
+            return by_no[k_no]
+        k_ti = _norm(r.get("title"))
+        if k_ti and (k_ti, _date(r.get("publish_date"))) in by_title_date:
+            hits["hit_title_date"] += 1
+            return by_title_date[(k_ti, _date(r.get("publish_date")))]
+        if k_ti and k_ti in by_title_unique:
+            hits["hit_title"] += 1
+            return by_title_unique[k_ti]
+        return None
+
+    stat = writeback_source(source, fields_for, dry_run=dry_run,
+                            no_backup=no_backup, backup_tag="timeliness")
+    stat.update(hits)
     return stat
 
 

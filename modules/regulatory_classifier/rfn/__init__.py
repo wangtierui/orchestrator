@@ -48,6 +48,7 @@ THEME_MAP = {
 RFN_PAT = re.compile(r"^RFN-[0-9a-f]{16}$")
 
 
+# norm-specialization: 归属表精确匹配用（保标点/不 lower），防既有 RFN 索引漂移（原 P4 备注）
 def _norm_title(t):
     """标题归一化（与归属表匹配用）：去括号尾注/书名号/空白。
 

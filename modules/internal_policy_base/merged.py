@@ -66,13 +66,8 @@ def _load_text(ipn: str) -> str:
     return ""
 
 
-def _norm_docno(s: str) -> str:
-    return re.sub(r"[〔\[\]（）()〕\s]", "", s or "").rstrip("号")
-
-
-def _norm_title(t: str) -> str:
-    t = re.sub(r"[（(](已废止|已失效|试行|修订)[）)]\s*$", "", (t or "").strip())
-    return re.sub(r'[《》"“”\s]', "", t)
+from std_lib.common_lib.norm import norm_docno as _norm_docno  # A-10：SSOT 收敛（标准层）
+from std_lib.common_lib.norm import norm_title_strict as _norm_title  # A-10：SSOT 收敛（保守层）
 
 
 def extract_rfns(text: str) -> list[dict]:

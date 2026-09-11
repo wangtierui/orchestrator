@@ -70,8 +70,7 @@ ORGAN_PREFIXES = (
 )
 
 
-def _norm_docno(s):
-    return re.sub(r"[〔\[\]（）()〕\s]", "", s or "").rstrip("号")
+from std_lib.common_lib.norm import norm_docno as _norm_docno  # A-10：SSOT 收敛（标准层）
 
 
 def _digits(s):

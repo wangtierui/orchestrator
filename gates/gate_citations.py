@@ -19,7 +19,6 @@ from __future__ import annotations
 
 import json
 import os
-import re
 import sys
 
 import paths
@@ -29,10 +28,6 @@ _MERGED = os.path.join(paths.MODULES_DIR, "internal_policy_base", "data", "merge
 for _p in (_MOD_CLASS, paths.ROOT):
     if _p not in sys.path:
         sys.path.insert(0, _p)
-
-
-def _norm_docno(s: str) -> str:
-    return re.sub(r"[〔\[\]（）()〕\s]", "", s or "").rstrip("号")
 
 
 def run():

@@ -70,6 +70,7 @@ def _ci():
 
 
 # ---------- 私有归一（语义独立：去全角括号/空白/尾注，供保守比对） ----------
+# norm-specialization: 宽容预处理（去 第/年/号 字）——drift 比对专用
 def _norm_docno(d):
     # 2026-09-09 reconcile 漂移治理：书写差异同化后比较骨架「代字+年份+序号」——
     # 「〔2013〕2号」≡「2013年第2号」≡「2013年2号」（去〔〕[]()/空白/第/年/号）。
@@ -78,10 +79,7 @@ def _norm_docno(d):
     return re.sub(r"[第年号]", "", re.sub(r"[〔\[\]（）()〕\s]", "", d or ""))
 
 
-def _norm_title(t):
-    t = re.sub(r"[（(](已废止|已失效|试行|修订)[）)]\s*$", "", (t or "").strip())
-    return re.sub(r'[《》"“”\s]', "", t)
-
+from std_lib.common_lib.norm import norm_title_strict as _norm_title  # A-10：SSOT 收敛（保守层）
 
 # 发文机关称谓同义集（官网标题常带机关前缀，归属表多为精炼名；判核心标题时先剥离前缀）
 _ORG_WORDS = ("国家金融监督管理总局", "中国银行保险监督管理委员会", "中国保险监督管理委员会",

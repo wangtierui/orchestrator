@@ -39,7 +39,6 @@ import glob
 import json
 import os
 import re
-import shutil
 import subprocess
 import sys
 
@@ -50,8 +49,7 @@ REVIEW = os.path.join(ROOT, "timeliness_review")
 PY = sys.executable
 
 
-def _norm_docno(s: str) -> str:
-    return re.sub(r"[〔\[\]（）()〕\s]", "", s or "").rstrip("号")
+from std_lib.common_lib.norm import norm_docno as _norm_docno  # A-10：SSOT 收敛（标准层）
 
 
 def _run(args, cwd, desc, dry_run=False):
@@ -70,63 +68,33 @@ def _run(args, cwd, desc, dry_run=False):
 
 
 def stage_scrapers(source, changed, dry_run, report):
-    """① 数据层回写 + 索引重建 + 门禁。"""
+    """① 数据层回写 + 索引重建 + 门禁（C-12：回写一律经统一单点 writeback_source）。"""
     sys.path.insert(0, ROOT)
-    from clean_index import get_clean_index
-    idx = get_clean_index()
-    jf = idx.latest_jsonl_path(source)
-    cf = jf.replace(".jsonl", ".csv")
-    chg = {}
+    sys.path.insert(0, REVIEW)
+    import apply_timeliness_to_cleaned as apply_mod  # noqa: PLC0415  统一回写单点（C-12）
+    updates = {}
     for c in changed:
         nd = _norm_docno(c.get("document_number"))
         if nd and len(nd) >= 5:
-            chg.setdefault(nd, []).append(c)
+            updates.setdefault(nd, {
+                "timeliness_status": c.get("new_status") or "",
+                "replacement_document": c.get("replacement_document") or "",
+                "verification_source": "北大法宝",
+            })
 
-    rows = [json.loads(l) for l in open(jf, encoding="utf-8") if l.strip()]
-    synced = 0
-    for r in rows:
-        nd = _norm_docno(r.get("document_number"))
-        if nd not in chg:
-            continue
-        c = chg[nd][0]
-        if r.get("timeliness_status") != c["new_status"]:
-            r["timeliness_status"] = c["new_status"]
-            r["verification_source"] = "北大法宝"
-            if c.get("replacement_document"):
-                r["replacement_document"] = c["replacement_document"]
-            synced += 1
+    def fields_for(r):
+        return updates.get(_norm_docno(r.get("document_number")))
 
-    if not dry_run:
-        bak = os.path.join(ROOT, "backups",
-                           f"{source}_writeback_{datetime.datetime.now():%Y%m%d_%H%M%S}")
-        os.makedirs(bak, exist_ok=True)
-        shutil.copy2(jf, os.path.join(bak, os.path.basename(jf)))
-        shutil.copy2(cf, os.path.join(bak, os.path.basename(cf)))
-        tmp = jf + ".tmp"
-        with open(tmp, "w", encoding="utf-8") as fh:
-            for r in rows:
-                fh.write(json.dumps(r, ensure_ascii=False) + "\n")
-        os.replace(tmp, jf)
-        with open(cf, encoding="utf-8-sig", newline="") as fh:
-            rd = csv.DictReader(fh)
-            fn = rd.fieldnames
-            crows = list(rd)
-        js = {_norm_docno(r.get("document_number")): r for r in rows}
-        for cr in crows:
-            jr = js.get(_norm_docno(cr.get("document_number")))
-            if jr and _norm_docno(cr.get("document_number")) in chg \
-                    and cr.get("timeliness_status") != jr["timeliness_status"]:
-                cr["timeliness_status"] = jr["timeliness_status"]
-                cr["verification_source"] = jr.get("verification_source", "")
-                if jr.get("replacement_document"):
-                    cr["replacement_document"] = jr["replacement_document"]
-        tmp2 = cf + ".tmp"
-        with open(tmp2, "w", encoding="utf-8-sig", newline="") as fh:
-            w = csv.DictWriter(fh, fieldnames=fn)
-            w.writeheader()
-            w.writerows(crows)
-        os.replace(tmp2, cf)
-    print(f"  ① scrapers：{source} cleaned 三字段回写 {synced} 条（jsonl+csv 双轨）")
+    st = apply_mod.writeback_source(source, fields_for, dry_run=dry_run, backup_tag="sync")
+    if "reason" in st:
+        print(f"  ① scrapers：{source} {st['reason']}")
+        report.append(("① regulatory_scrapers", st["reason"]))
+        return False
+    synced = st.get("written", 0)
+    if dry_run:
+        print(f"  ① scrapers：{source} 回写预演 {synced} 条（dry-run 未写盘）")
+    else:
+        print(f"  ① scrapers：{source} cleaned 三字段回写 {synced} 条（jsonl+csv 双轨·统一单点）")
 
     _run(["-c", "import sys;sys.path.insert(0,r'%s');from clean_index import get_clean_index;"
                 "i=get_clean_index(rebuild=True);l=i.latest('%s');"

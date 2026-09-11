@@ -45,8 +45,7 @@ except Exception:  # 独立运行兜底（不破坏既有调用）
                   "expired", "pending", "uncertain"}
 
 
-def _norm_docno(d):
-    return re.sub(r"[〔\[\]（）()〕\s]", "", d or "").rstrip("号")
+from std_lib.common_lib.norm import norm_docno as _norm_docno  # A-10：SSOT 收敛（标准层）
 
 
 def state_key(docno=None, title=""):

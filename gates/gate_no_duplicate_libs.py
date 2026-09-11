@@ -36,10 +36,10 @@ PAT_SYSPATH_DRIVE = re.compile(r"sys\.path\.(?:insert|append)\(\s*[0-9]*\s*,\s*[
 # msvcrt 自锁（应统一走 common_lib.fs_lock）
 PAT_MSVCRT = re.compile(r"\bmsvcrt\.locking")
 # A-10（2026-09-12）：私有副本扫描（_norm_docno/_norm_title）——原符号表仅查公开名 →
-# 私有副本长期逃检。本批先"可见化"（清单进 detail，供"副本清零"收敛批次消费）；
-# 清零需逐处核对语义（rfn/registry 与 common_lib.norm 存在标点/lower 差异），
-# 故暂不直接 FAIL 卡全链（A-10 目标为逃检可见 + 防增量）。
+# 私有副本长期逃检。P3A 清零后：标准层副本一律 import std_lib/common_lib/norm（SSOT 分层）；
+# 有意特化须加 `# norm-specialization: <理由>` 豁免标记——**未标注副本 = FAIL**（防增量）。
 PAT_PRIVATE_NORM = re.compile(r"^def\s+(_norm_docno|_norm_title)\s*\(", re.M)
+MARK_TOKEN = "# norm-specialization"
 
 
 def _walk_py():
@@ -64,7 +64,8 @@ def _is_shared(rel: str) -> bool:
 def run():
     problems = []
     impl_hits: dict[str, list[str]] = {s: [] for s in SINGLE_IMPL_SYMBOLS}
-    private_hits: dict[str, list[str]] = {}
+    private_unmarked: dict[str, list[str]] = {}
+    private_exempt: dict[str, list[str]] = {}
     for fp in _walk_py():
         rel = _rel(fp)
         try:
@@ -78,10 +79,14 @@ def run():
                 if not _is_shared(rel):
                     impl_hits[sym].append(f"{rel}:{text[:m.start()].count(chr(10))+1}")
         if not _is_shared(rel):
-            # A-10：私有副本（_norm_docno/_norm_title）——报告化（清零为收敛批次）
+            # A-10 清零（2026-09-12）：私有副本须显式豁免标记；未标注 = 违规 FAIL（防增量）
             for m in PAT_PRIVATE_NORM.finditer(text):
-                private_hits.setdefault(m.group(1), []).append(
-                    f"{rel}:{text[:m.start()].count(chr(10))+1}")
+                loc = f"{rel}:{text[:m.start()].count(chr(10))+1}"
+                ctx = text[max(0, m.start() - 200):m.start()]
+                if MARK_TOKEN in ctx:
+                    private_exempt.setdefault(m.group(1), []).append(loc)
+                else:
+                    private_unmarked.setdefault(m.group(1), []).append(loc)
             if PAT_SYSPATH_DRIVE.search(text):
                 problems.append(f"{rel}: 含盘符 sys.path 插入（应经 paths/interfaces）")
             if PAT_MSVCRT.search(text):
@@ -89,11 +94,15 @@ def run():
     for sym, locs in impl_hits.items():
         if locs:
             problems.append(f"符号 {sym} 在非共享库重复定义: {locs[:5]}")
+    for sym, locs in private_unmarked.items():
+        if locs:
+            problems.append(
+                f"私有归一 {sym} 存在未豁免副本（应 import std_lib/common_lib/norm 或加 "
+                f"`# norm-specialization: <理由>` 豁免标记）: {locs[:8]}")
     return (not problems), {
         "problems": problems, "checked_symbols": SINGLE_IMPL_SYMBOLS,
-        "private_norm_duplicates": {k: v[:12] for k, v in sorted(private_hits.items())},
-        "private_norm_duplicate_files": len({loc.split(":")[0] for v in private_hits.values() for loc in v}),
-        "note": "私有副本（_norm_docno/_norm_title）当前仅报告不阻断（A-10）："
-                "清零为'收敛批次'（需逐处核对语义，SSOT=std_lib/common_lib/norm.py，"
-                "另见 rfn._norm_title 标点/lower 差异）。",
+        "private_norm_exempt": {k: v[:12] for k, v in sorted(private_exempt.items())},
+        "private_norm_unmarked": {k: v[:12] for k, v in sorted(private_unmarked.items())},
+        "note": "SSOT 分层=std_lib/common_lib/norm（norm_docno / norm_title / norm_title_strict）；"
+                "豁免副本须带 `# norm-specialization` 标记（清单见 private_norm_exempt）。",
     }

@@ -28,11 +28,13 @@ SCAN = os.path.join(OUTDIR, "scan_records.csv")
 from rfn import THEME_MAP  # noqa: E402
 
 
+# norm-specialization: 报告内部复合键（与 scanner 同族）
 def _norm_docno(s):
     if not s: return ""
     s=s.strip().replace("〔","[").replace("〕","]").replace("【","[").replace("】","]")
     s=s.replace(" ","").replace("　","").replace("\u3000","").lower()
     return s
+# norm-specialization: 报告内部复合键（与 scanner 同族）
 def _norm_title(s):
     if not s: return ""
     s=s.strip().replace("\u3000","")

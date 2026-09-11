@@ -81,6 +81,7 @@ def date10(s: str) -> str:
     return (s or "")[:10]
 
 
+# norm-specialization: 仅去空白 + N/A 置空（清单合并专用，原注释已声明有意不同）
 def _norm_docno(s: str) -> str:
     # P4：本脚本私有归一（仅去空白 + N/A 占位置空），语义与 common_lib.norm 不同，故下划线命名。
     v = (s or "").strip()

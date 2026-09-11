@@ -84,12 +84,8 @@ ART_RE = re.compile(
 LAW_RE = re.compile(r"《([^《》]{2,40}(?:法|条例|规定|决定|解释|细则))》")
 
 
-def _norm_docno(d):
-    return re.sub(r"[〔\[\]（）()〕\s]", "", d or "").rstrip("号")
-
-
-def _norm_title(t):
-    return re.sub(r'[《》"“”\s]', "", t or "")
+from std_lib.common_lib.norm import norm_docno as _norm_docno  # A-10：SSOT 收敛（标准层）
+from std_lib.common_lib.norm import norm_title_strict as _norm_title  # A-10：SSOT 收敛（保守层）
 
 
 def load_attr():

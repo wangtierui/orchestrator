@@ -2,13 +2,22 @@
 """
 authority_backfill_verify.py —— 五源「未经北大法宝时效审查」存量权威复核批次（2026-09-08）
 
+核验脚本家族（C-11 统一，2026-09-12）：
+  1) verify_missing         —— 效力缺失（timeliness_status 为空）候选；
+  2) 本脚本（authority_backfill）—— 存量非权威来源复核（verification_source 不含「北大法宝」，
+     含 supp 在内的任意源；原 supp_authority_verify 为其 supp 专化重复已删除，断点同名延续）；
+  3) classifier_pkulaw_verify —— classifier 归属表时效状态核验。
+  共享工具链：scraper_std.pkulaw_cli + verification_state；**cleaned 回写统一经
+  apply_timeliness_to_cleaned.writeback_source（C-12 单点）**，本家族不各自实现写盘。
+
 与 verify_missing（仅效力空候选）互补：对任意源 cleaned 最新快照中
 **verification_source 不含「北大法宝」** 的记录（无论效力空/数据源标注/规则判断/
 媒体/本地提取等），经北大法宝 CLI 权威复核批次补齐：
   - 命中现行/替代/废止/失效 → mark_checked 更新 verification_state（vsource 升级
     为北大法宝 + 状态如实更新，含 判定变化），并追加 时效核验_{source}变更台账_<date>.csv；
-  - 无同名命中（judge 规则判断）→ 维持原判定与来源**不动**（不写 state/台账），仅提示；
-  - 降级纪律（R13 对齐）：外部不可用（CLI/Token 缺失/异常）不写任何判定。
+  - 无同名命中（judge 规则判断）→ **写核验痕**（state 记"北大法宝（无同名命中，维持原判定）"、
+    状态保持原值）——C-11 统一口径，与 verify_missing/classifier_pkulaw 一致，防下轮重复查询；
+  - 降级纪律（R13 对齐）：外部不可用（CLI/Token 缺失/异常）不写任何判定（留待重试）。
 风控红线（继承）：workers≤2、间隔≥0.2s、checkpoint 即断点、批量 ≤500、积分用尽(90001)自动停。
 后续链路（本脚本不代跑）：consolidate_timeliness --use-state → apply_timeliness_to_cleaned
 回写 cleaned 三字段。
@@ -146,12 +155,23 @@ def run_source(source: str, args) -> dict:
         obj = done.get(it["key"]) or done.get(it["title"])
         if obj is None or obj.get("message") != "成功" or not obj.get("data"):
             stats["fail" if not (obj and obj.get("message") == "成功") else "nomatch"] += 1
+            if obj and obj.get("message") == "成功":
+                # C-11 统一（2026-09-12）：无命中（0 条）写核验痕（防重复查询；状态保原值）。
+                state, _, _ = vstate.mark_checked(
+                    docno=c.get("document_number", ""), title=c.get("title", ""),
+                    status=c.get("timeliness_status") or "pending", replacement="",
+                    vsource="北大法宝（无同名命中，维持原判定）", state=state)
             print(f"  [维持] {c['document_number'] or '(无文号)':<22} | {c['title'][:24]} | 查询失败/无命中")
             continue
         old = c.get("timeliness_status") or ""
         st, rep, vsrc, note = pk.judge_candidate(obj["data"], c)
         if vsrc == "规则判断":
             stats["nomatch"] += 1
+            # C-11 统一：无同名命中写核验痕（防重复查询；状态保原值）——与 verify_missing 同款。
+            state, _, _ = vstate.mark_checked(
+                docno=c.get("document_number", ""), title=c.get("title", ""),
+                status=c.get("timeliness_status") or "pending", replacement="",
+                vsource="北大法宝（无同名命中，维持原判定）", state=state)
             print(f"  [维持] {c['document_number'] or '(无文号)':<22} | {c['title'][:24]} "
                   f"| 无同名命中，维持原标注（{old or '空'}）")
             continue

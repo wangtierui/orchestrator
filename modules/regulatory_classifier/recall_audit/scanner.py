@@ -87,12 +87,14 @@ NULL_TOKENS = {"", "n/a", "na", "无", "-", "none", "null", "未注明", "不详
 # P4：recall 匹配用归一化保留为本文件私有实现（语义与 common_lib.norm 不同：
 # 本版全角→半角括号并转小写，用于 scan 召回去重比对），故下划线命名避免被
 # gate_no_duplicate_libs 当作重复公共符号。
+# norm-specialization: 扫描引擎内部复合键（半角方括号保留 + lower + NULL 校验）
 def _norm_docno(s):
     if not s: return ""
     s = s.strip().replace("〔","[").replace("〕","]").replace("【","[").replace("】","]")
     s = s.replace(" ","").replace("　","").replace("\u3000","").lower()
     return "" if s in NULL_TOKENS else s
 
+# norm-specialization: 扫描引擎内部复合键（去标点 + lower + NULL 校验）
 def _norm_title(s):
     if not s: return ""
     s = s.strip().replace("\u3000","")

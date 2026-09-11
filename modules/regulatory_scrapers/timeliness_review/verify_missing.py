@@ -2,6 +2,13 @@
 """
 verify_missing.py —— 四源效力缺失记录定向核验（聚焦驱动，2026-09-07 泛化版）
 
+核验脚本家族（C-11 统一，2026-09-12）：
+  1) 本脚本 —— 效力缺失（timeliness_status 为空）候选（--source all 含 supp）；
+  2) authority_backfill_verify —— 存量非权威来源复核（原 supp_authority_verify 已并入其 --source supp）；
+  3) classifier_pkulaw_verify —— classifier 归属表时效状态核验。
+  共享工具链：scraper_std.pkulaw_cli + verification_state；**cleaned 回写统一经
+  apply_timeliness_to_cleaned.writeback_source（C-12 单点）**；无命中统一"写核验痕"。
+
 背景：各源 cleaned 最新快照中 `timeliness_status` 为空的"效力缺失"记录需要经
 北大法宝官方 CLI（零 LLM 消耗）核验。通用 `verify_source_pkulaw.py` 按
 verification_state 复用判定会扫出大量候选、触发非必要查询，违反风控红线。
