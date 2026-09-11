@@ -110,6 +110,11 @@ def run():
         # state 陈旧（核验超 90 日，未及重验）也不阻断——归属表可能已人工更新，待下次 verify 刷新。
         if rec_st in ("pending", "uncertain") or not _is_fresh_rec(rec):
             continue
+        # "无同名命中（维持原标注）"/"规则判断" = 核验未形成法宝权威结论（仅记录原值），
+        # 不作为 SSOT 断言依据（否则 1439 条非结论记录会与人工归属表产生假漂移；2026-09-11 修复）。
+        vsrc = rec.get("verification_source", "") or ""
+        if ("无同名命中" in vsrc) or ("规则判断" in vsrc):
+            continue
         if st and rec_st != st:
             problems.append(f"SSOT→归属表漂移 {rfn}: state={rec_st} vs 归属表={st}")
 
