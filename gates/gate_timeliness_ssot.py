@@ -75,8 +75,9 @@ def run():
     problems = []
     warn = []
     if not os.path.exists(_STATE_JSON):
-        return True, {"note": "verification_state.json 未生成（时效核验尚未运行）；SSOT 断言待数据就绪",
-                      "state": None}
+        # F-S09：输入缺失不得空跑放行（原 return True 使"全部门禁通过"含未实检门禁）。
+        return False, {"error": "verification_state.json 未生成（时效核验尚未运行）；"
+                                "SSOT 一致性未实检，不得视为通过", "state": None}
     state = json.load(open(_STATE_JSON, encoding="utf-8"))
     # 快速索引：docno 归一 → rec（含状态 + 核验时间）
     st_docno = {}
@@ -139,8 +140,11 @@ def run():
                 continue
             a_st = (ar.get("时效状态") or "").strip()
             layer2_checked += 1
-            if a_st and eff and a_st != eff:
-                problems.append(f"归属表→底座漂移 {rfn} in {fn}: 归属表={a_st} vs base={eff}")
+            # 空值语义：未核验（空）必须两侧一致——一边空一边非空即漂移（M-01/D-01：
+            # 原实现双向非空才比，导致"归属表空 → 底座默认 valid"链路静默无感）。
+            if a_st != eff and (a_st or eff):
+                problems.append(
+                    f"归属表→底座漂移 {rfn} in {fn}: 归属表={a_st or '(空)'} vs base={eff or '(空)'}")
 
     # 层3：归属表→cleaned（尽力，经 bridge）
     bridge_ok = 0

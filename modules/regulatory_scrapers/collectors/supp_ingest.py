@@ -246,7 +246,7 @@ def register_supplements(records: list) -> dict:
     返回 {"registered", "reused", "created", "skipped"} 计数。
     """
     reg = _load_register_doc()
-    stat = {"registered": 0, "reused": 0, "created": 0, "skipped": 0}
+    stat = {"registered": 0, "reused": 0, "created": 0, "skipped": 0, "failed": 0}
     for r in records:
         theme = r.get("rfn_theme") or ""
         if not theme or reg is None:
@@ -255,12 +255,15 @@ def register_supplements(records: list) -> dict:
         body = str(r.get("body_text") or "")
         fp = r.get("_doc_md5_sha256") or hashlib.sha256(body.encode("utf-8")).hexdigest()
         try:
+            # F-S04 修复（2026-09-12）：原传 organ= 而 register_doc 签名无该参数 →
+            # TypeError 被吞仅 WARN（supp 新文件永不进 RFN 体系）。organ 仅存 raw 记录
+            # 字段（registry 注：归属表无该列，发布机构不再入登记键）。
             res = reg(theme=theme, title=r["title"], docno=r.get("document_number") or "",
-                      organ=r.get("issue_organ") or "", pub_date=r.get("publish_date") or "",
+                      pub_date=r.get("publish_date") or "",
                       source="supp", source_mark="补充", fingerprint=fp)
         except Exception as _e:
-            print(f"[ingest] WARN 登记失败 {r.get('document_number','')} {r['title'][:20]}: {_e}")
-            stat["skipped"] += 1
+            print(f"[ingest] ERROR 登记失败 {r.get('document_number','')} {r['title'][:20]}: {_e}")
+            stat["failed"] += 1
             continue
         stat["registered"] += 1
         stat[res["action"]] += 1

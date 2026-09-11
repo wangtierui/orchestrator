@@ -6,6 +6,7 @@ run_production_refresh.py —— 生产五源全量数据刷新编排器（2026-
   0 抓取   [可选 --scrape/--collect] gov(--full 全量)/mof/pbc/nfra(全量离线重建)/supp(本地无网络→跳过)
   1 clean   run_clean_pipeline --project 每源（尾部自动增量 clause_index 条文节点）
   2 时效回写 consolidate_timeliness --use-state → apply_timeliness_to_cleaned 五源
+  2.5 classify cli.py classify --all（主题底座/明细强序重建，断点幂等；A-02 接线）
   3 reconcile_clean_drift（RFN↔clean 漂移核验，写 drift state/ledger）
   4 recall   run_retrieval_after_checks.py（clean/validity/contract/schema 四门禁）
   5 gates    cli.py gates（13 道交付门禁）
@@ -22,6 +23,7 @@ import argparse
 import datetime
 import json
 import os
+import shlex
 import subprocess
 import sys
 import time
@@ -109,6 +111,8 @@ def main() -> int:
     ap = argparse.ArgumentParser(description="生产五源全量刷新（抓取→clean→时效→reconcile→recall→gates）")
     ap.add_argument("--no-scrape", action="store_true", help="跳过网络抓取（仅清洗+全链）")
     ap.add_argument("--collect", default="all", help="抓取源: gov/mof/nfra/pbc/supp 逗号分隔或 all")
+    ap.add_argument("--supp-batch", default="",
+                    help="supp 批量摄取 backlog JSON（可选；F-O05：本地补全文件显式入链）")
     ap.add_argument("--stop-on-error", action="store_true", help="任一步 rc!=0 即中止（默认继续并汇总）")
     args = ap.parse_args()
 
@@ -124,13 +128,25 @@ def main() -> int:
                 print(f"[collect] {src} 无网络采集（本地摄取/清洗刷新）→ 跳过")
                 continue
             if src == "mof":
-                cmd = cmd + (os.environ.get("MOF_COLLECT_ARGS", "").split() or [])
+                # A-14（2026-09-12）：改 shlex.split（原 .split() 遇引号/中文逗号即拆错）。
+                cmd = cmd + shlex.split(os.environ.get("MOF_COLLECT_ARGS", ""))
             argv = cmd + [OUT_FLAG.get(src, "--out-dir"), RAW_DIR]
             print(f"[collect] {src} argv={argv}", flush=True)
             report.append(_run(f"collect:{src}", argv, timeout=7200))
             if args.stop_on_error and report[-1]["rc"]:
                 break
-    report.append(_run("stage:raw_snapshot", [PY, "-c", "pass"]))
+    # A-12（2026-09-12）：删除假步骤（原 python -c pass 产生 rc=0 的"快照"行，汇总含假成功）；
+    # raw 摘要已由汇总 raw 字段（_raw_size）输出。
+    # F-O05（2026-09-12）：supp 本地摄取入编排（可选）——此前 supp 链完全在编排外，
+    # supp 新文件永不过链。默认跳过（防重写 raw）；需要时经 --supp-batch 显式触发，
+    # 或以 collectors/supp_ingest_local_dir.py 收录本地目录。
+    if args.supp_batch:
+        report.append(_run("supp:ingest_batch",
+                           [PY, os.path.join(COLLECTORS, "supp_ingest_batch.py"),
+                            "--backlog", args.supp_batch], timeout=1800))
+    else:
+        print("[collect] supp：未触发本地摄取（经 --supp-batch <backlog.json> 或 "
+              "collectors/supp_ingest_local_dir.py）", flush=True)
 
     # ---- 阶段 1：clean（尾部自动 clause）----
     for src in SOURCES:
@@ -160,6 +176,12 @@ def main() -> int:
              "--source", src, "--ledger", led] if led else
             [PY, os.path.join(REVIEW, "apply_timeliness_to_cleaned.py"), "--source", src],
             timeout=600))
+
+    # ---- 阶段 2.5：classify（主题底座/明细/upper 强序重建）----
+    # A-02/F-O01/F-C07（2026-09-12）：生产刷新历史上不接 classify → 归属表/clean 更新后
+    # 底座/明细静默过时仍报"完成"。断点幂等（输入未变自动跳过），成本可控。
+    report.append(_run("classify:all",
+                       [PY, os.path.join(ROOT, "cli.py"), "classify", "--all"], timeout=5400))
 
     # ---- 阶段 3：reconcile ----
     report.append(_run("reconcile", [PY, os.path.join(CLASSIFIER, "scripts",

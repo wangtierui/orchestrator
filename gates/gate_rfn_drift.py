@@ -44,7 +44,9 @@ def _current_clean_dates():
 
 def run():
     if not os.path.exists(_STATE):
-        return True, {"note": "尚未运行 reconcile_clean_drift（首次基线）；运行后启用快照推进阻断",
+        # A-07（2026-09-12）：输入缺失不得空跑放行（"首次基线"=未实检，先运行 reconcile）。
+        return False, {"error": "尚未建立漂移基线（先运行 modules/regulatory_classifier/scripts/"
+                                "reconcile_clean_drift.py [--apply]）；快照推进阻断未实检，不得视为通过",
                       "state": None}
     state = json.load(open(_STATE, encoding="utf-8"))
     cur = _current_clean_dates()

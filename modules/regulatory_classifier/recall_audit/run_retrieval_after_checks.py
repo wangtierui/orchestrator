@@ -74,6 +74,9 @@ os.makedirs(_OUT_DIR, exist_ok=True)   # 产物目录（代码/产物分离）
 
 _TZ = timezone(timedelta(hours=8))
 VALIDITY_MAX_AGE_DAYS = 90
+# 核验覆盖率门禁阈值（F-C06）：state 条目 / 五源 cleaned 最新快照全量记录。
+# 当前基线约 0.74（2975/4043）；低于阈值即 FAIL（覆盖率跌破需显式修复而非静默）。
+COVERAGE_MIN_RATIO = 0.70
 
 # —— 依赖装配（实测先于推断：依赖既存 clean_index / verification_state / lint 门禁） ——
 sys.path.insert(0, _ORCH_ROOT)  # 根级 lint_hardcoded_snapshots / config / std_lib
@@ -95,7 +98,9 @@ except Exception as e:  # pragma: no cover
     VERIFICATION_OK = False
     _import_err_ver = repr(e)
 try:
-    from lint_hardcoded_snapshots import lint_hardcoded  # noqa: E402  (N-3 门禁复用)
+    # F-S02 接线修复：旧顶层模块 lint_hardcoded_snapshots 已迁移为 gates 包内实现
+    # （gates.gate_hardcoded_snapshots.lint_hardcoded），原导入路径恒 ModuleNotFoundError。
+    from gates.gate_hardcoded_snapshots import lint_hardcoded  # noqa: E402  (N-3 门禁复用)
 except Exception as e:  # pragma: no cover
     LINT_OK = False
     _import_err_lint = repr(e)
@@ -118,6 +123,18 @@ def _tail(text: str, n: int = 1500) -> str:
 # --------------------------------------------------------------------------- #
 # Gate 1 · 清洗成功
 # --------------------------------------------------------------------------- #
+def _latest_file_sha(idx, src_id):
+    """取该源最新快照的 jsonl（优先）/csv 的 sha256（F-D05③：同日改写检测用；无则 None）。"""
+    l = idx.latest(src_id) or {}
+    sn = idx.snapshot(src_id, l.get("date") or "") or {}
+    files = sn.get("files") or {}
+    for ext in ("jsonl", "csv"):
+        sha = (files.get(ext) or {}).get("sha256")
+        if sha:
+            return sha
+    return None
+
+
 def gate_clean():
     """返回 (passed, detail)。detail 含逐源 latest、校验、索引陈旧、scanner 对齐。"""
     detail = {
@@ -146,6 +163,7 @@ def gate_clean():
         "missing": vf.get("missing", []),
         "hash_mismatch": vf.get("hash_mismatch", []),
         "ok_count": len(vf.get("ok", [])),
+        "degraded_no_sha": len(vf.get("degraded_no_sha") or []),   # F-D05②：无 sha 降级比对条数
     }
     if vf.get("missing") or vf.get("hash_mismatch"):
         return False, detail
@@ -165,6 +183,7 @@ def gate_clean():
             "index_record_count": (il or {}).get("record_count"),
             "live_latest_date": (ll or {}).get("date"),
             "live_record_count": (ll or {}).get("record_count"),
+            "index_sha": _latest_file_sha(idx, src_id),   # F-D05③：内容指纹（同日改写可感）
         }
         detail["per_source"][src_id] = rec
         if (rec["index_latest_date"] != rec["live_latest_date"]
@@ -252,7 +271,12 @@ def gate_clean():
                  "count": len(lint_findings),
                  "examples": [f"{fp}:{ln}: {tok}" for fp, ln, tok in lint_findings[:10]]})
     else:
+        # F-S02：N-3 lint 模块导入失败 → 硬编码快照检查无法执行，不得静默视为通过。
         detail["lint_import_error"] = _import_err_lint
+        detail["scanner_aligned"] = False
+        detail["scanner_mismatch"].append(
+            {"issue": "N-3 lint 模块（lint_hardcoded_snapshots）导入失败，硬编码快照检查无法执行",
+             "error": _import_err_lint})
 
     if not detail["scanner_aligned"]:
         return False, detail
@@ -329,6 +353,30 @@ def gate_validity():
     if rule:
         detail["warnings"].append(
             f"{rule} 条为「规则判断」回退（北大法宝无同名命中），属既定合规回退口径，非失败。")
+    # 核验覆盖率（F-C06）：已核验 state 条目 vs 五源 cleaned 最新快照全量记录（4043 实测）。
+    # 未覆盖记录在 state 中无核验结论，不得视为"已完成时效判定"；覆盖率跌破阈值即 FAIL。
+    if CLEAN_INDEX_OK:
+        try:
+            _idx = get_clean_index()
+            total = 0
+            for _sid in _idx.source_ids():
+                _rec = _idx.latest(_sid) or {}
+                total += int(_rec.get("record_count") or 0)
+            cov = {"state_records": len(state), "source_records": total,
+                   "uncovered": max(total - len(state), 0)}
+            cov["ratio"] = (round(len(state) / total, 4) if total else None)
+            detail["coverage"] = cov
+            if total and len(state) < total:
+                detail["warnings"].append(
+                    f"核验覆盖率 {len(state)}/{total}（未覆盖 {total - len(state)} 条，占 "
+                    f"{round((total - len(state)) / total * 100, 1)}%）——未覆盖记录无核验结论，"
+                    "不得视为已完成时效判定（可运行 verify_missing.py 补验）。")
+            if total and cov["ratio"] is not None and cov["ratio"] < COVERAGE_MIN_RATIO:
+                detail["warnings"].append(
+                    f"核验覆盖率 {cov['ratio']} 低于门禁阈值 {COVERAGE_MIN_RATIO}。")
+                return False, detail
+        except Exception as e:  # noqa: BLE001
+            detail["coverage_error"] = repr(e)
     if stale > 0 or fresh == 0:
         return False, detail
     return True, detail
@@ -340,7 +388,10 @@ def gate_validity():
 def compute_signature(clean_detail, validity_detail):
     clean_part = {}
     for src, rec in clean_detail.get("per_source", {}).items():
-        clean_part[src] = {"date":  rec.get("index_latest_date"), "records": rec.get("index_record_count")}
+        # F-D05③：签名纳入内容 sha（同日改写 → 签名变化 → 触发重跑，而非幂等跳过）。
+        clean_part[src] = {"date": rec.get("index_latest_date"),
+                           "records": rec.get("index_record_count"),
+                           "sha": rec.get("index_sha")}
     sig = {
         "clean": clean_part,
         "validity": {
@@ -565,6 +616,43 @@ def gate_schema(data_dir=None):
     _chk("base_jsons", (len(base_files) == 40 and not bad_base),
          "；".join(bad_base) if bad_base else "40 个数据底座结构/键集全部符合权威定义")
 
+    # 5) matched/citerefs 对 base 覆盖率（F-D04）：缺口可见化（>5% 判异常拦截；
+    #    缺口 ≤5% 记录 warning——缺口多为五库未收录文件，见 match_theme_docs *_miss.json 清单）。
+    base_keys, matched_keys, citerefs_keys = set(), set(), set()
+    for f in os.listdir(base):
+        fp = os.path.join(base, f)
+        if re.match(r"^_t\d+_base\.json$", f):
+            try:
+                for x in json.load(open(fp, encoding="utf-8")):
+                    k = x.get("监管文件编号", "")
+                    if k:
+                        base_keys.add(k)
+            except Exception:  # noqa: BLE001
+                pass
+        elif re.match(r"^_t\d+_(matched|citerefs)\.json$", f):
+            try:
+                ks = set(json.load(open(fp, encoding="utf-8")).keys())
+            except Exception:  # noqa: BLE001
+                ks = set()
+            (matched_keys if "matched" in f else citerefs_keys).update(ks)
+    gap = sorted(base_keys - matched_keys)
+    cov = {
+        "base": len(base_keys), "matched": len(matched_keys & base_keys),
+        "citerefs": len(citerefs_keys & base_keys),
+        "missing": len(gap), "ratio": round(len(gap) / max(len(base_keys), 1), 4),
+    }
+    detail["matched_coverage"] = cov
+    if cov["ratio"] > 0.05:
+        detail["problems"].append(
+            f"matched_coverage: base {cov['base']} vs matched {cov['matched']}（缺 {cov['missing']} 条，"
+            f"{cov['ratio']:.2%} > 5%）——覆盖缺口异常，见 *_matched_miss.json 清单")
+    elif gap:
+        detail.setdefault("warnings", []).append(
+            f"matched 覆盖率缺口 {cov['missing']}/{cov['base']}（{cov['ratio']:.2%}）——"
+            "多为五库未收录文件（清单见 *_matched_miss.json，数据归集后重跑 match 可消）")
+    detail["checked"]["matched_coverage"] = {
+        "ok": cov["ratio"] <= 0.05, "msg": f"{cov['matched']}/{cov['base']}（缺 {cov['missing']}）"}
+
     return (not detail["problems"]), detail
 
 
@@ -781,4 +869,11 @@ if __name__ == "__main__":
     print("  changed    :", rep.get("change_detected"))
     print("  summary    :", rep.get("summary"))
     print("  报告路径   :", REPORT_PATH)
+    # F-S01：rc 语义修正——原实现恒 exit 0，四门禁 FAIL 也不可感知。
+    # 现：任一门禁 FAIL 或重跑阶段 error → exit 1；否则 exit 0。
+    _gates = rep.get("gates") or {}
+    _gates_ok = all(bool(g.get("passed")) for g in _gates.values())
+    _rc = 0 if (_gates_ok and rep.get("action") != "error") else 1
+    print("  exit code  :", _rc)
     print("=" * 64)
+    sys.exit(_rc)

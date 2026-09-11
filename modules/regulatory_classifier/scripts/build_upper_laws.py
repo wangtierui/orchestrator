@@ -152,7 +152,11 @@ def compute_citations(anchors):
     for path in latest_detail_csvs():
         with open(path, encoding="utf-8-sig", newline="") as f:
             for r in csv.DictReader(f):
-                m = re.search(r"T(\d+)", r.get("监管文件编号") or "")
+                # F-D02：明细「监管文件编号」为 RFN-16hex（原正则 r"T(\d+)" 恒不命中 →
+                # 全部 cited_by_themes 统计断链，实测 9/9 空）。主题码改从「主题」列反解
+                # （形如 "T1销售行为与消费者保护"）。
+                _tid = (r.get("监管文件编号") or "") + " " + (r.get("主题") or "")
+                m = re.search(r"T(\d+)", _tid)
                 th = m.group(1) if m else None
                 if not th:
                     continue

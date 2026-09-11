@@ -231,7 +231,7 @@ def register_doc(theme, title, docno=None, pub_date="", source="", fingerprint="
         rows.append({
             "监管文件编号": rfn, "文件名称": title,
             "发文字号": docno or "", "发布日期": pub_date or "",
-            "文件来源": src, "时效状态": "", "判定日期": "",
+            "文件来源": src, "时效状态": "pending", "判定日期": "",   # M-01/D-01：登记即 pending（未核验显式标注），禁止空值致下游默认 valid
             "编号备注": "registry自动登记 %s" % os.path.basename(__file__),
         })
         _save_rows(rows)

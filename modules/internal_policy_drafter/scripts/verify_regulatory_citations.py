@@ -38,8 +38,11 @@ ALIGN = os.path.join(DOCS, "监管文件编号与分类对齐表.md")
 
 # P7（2026-09-08）：同仓引导（R4 无盘符）——orchestrator 根（paths）+ classifier 模块根（rfn）
 # get_index 延迟到 Verifier() 内加载（顶层 import 在部分调用上下文 rfn 解析异常；函数级延迟与 gates 同款）
-_MODULES = os.path.dirname(os.path.dirname(ROOT))            # modules/
-_ORCH_ROOT = os.path.dirname(_MODULES)
+# 修正（2026-09-12，F-S07 连带）：ROOT=modules/internal_policy_drafter，上一行原写
+# dirname(dirname(ROOT)) 实得仓库根而非 modules/ → _CLASSIFIER_ROOT 指向不存在的路径、
+# `import rfn` 恒 ModuleNotFoundError（脚本自迁入后从未成功运行）。
+_MODULES = os.path.dirname(ROOT)                             # modules/
+_ORCH_ROOT = os.path.dirname(_MODULES)                       # orchestrator 根
 _CLASSIFIER_ROOT = os.path.join(_MODULES, "regulatory_classifier")
 for _p in (_ORCH_ROOT, _CLASSIFIER_ROOT):
     if _p not in sys.path:
@@ -76,8 +79,12 @@ def _digits(s):
 
 
 def load_align_map():
-    """解析 对齐表 → {R号: {rfn, name, docno, timeliness}}。"""
+    """解析 对齐表 → {R号: {rfn, name, docno, timeliness}}。
+    F-S07：文件缺失返回空 dict（原实现直接 open 抛 FileNotFoundError → 门禁/脚本崩溃）；
+    空结果由调用方判定为「未实检」并给出清晰指引。"""
     out = {}
+    if not os.path.exists(ALIGN):
+        return out
     for ln in open(ALIGN, encoding="utf-8"):
         m = re.match(r"^\|\s*R-(\d{2})\s*\|\s*(RFN-[0-9a-f]{16})\s*\|\s*([^|]+?)\s*\|\s*([^|]*?)\s*\|\s*([^|]*?)\s*\|\s*([^|]*?)\s*\|", ln)
         if m:
@@ -233,6 +240,11 @@ def main():
     args = ap.parse_args()
 
     ver = Verifier()
+    if not ver.align:
+        # F-S07/F-S09：输入缺失不得崩溃、也不得空跑放行——明确报未实检（strict 拦截）。
+        print(f"[verify] FAIL 对齐表缺失或为空: {ALIGN}；R/文号引用核验未实检"
+              + ("（strict 门禁拦截）" if args.strict else "（非严格模式仅报告）"))
+        return 1 if args.strict else 0
     if len(ver.align) != 43:
         print(f"[verify] WARN 对齐表解析 R 行数={len(ver.align)}（预期 43，R-01~R-43 主册规模，2026-09-03 扩展），请检查对齐表格式")
     a_issues, a_warns = ver.check_align()

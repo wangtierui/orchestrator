@@ -206,16 +206,46 @@ def _load_processed(ipn: str) -> dict | None:
         return None
 
 
+_THEME_CARRY_FIELDS = ("primary_theme", "secondary_themes", "align_method")
+
+
+def _prev_theme_fields() -> dict:
+    """读现主索引中的主题列（align 回写产物）→ {ipn: {field: value}}（F-D01 防冲）。"""
+    out = {}
+    if not os.path.exists(_INDEX_PATH):
+        return out
+    try:
+        idx = json.load(open(_INDEX_PATH, encoding="utf-8"))
+    except Exception:
+        return out
+    for r in (idx.get("records") or []):
+        ipn = r.get("ipn", "")
+        if not ipn:
+            continue
+        carry = {k: r.get(k) for k in _THEME_CARRY_FIELDS if r.get(k) not in (None, "")}
+        if carry:
+            out[ipn] = carry
+    return out
+
+
 def _rebuild_index() -> int:
-    """按 state 重建主索引（backfill 后同步 rich_count 字段）。返回 indexed 数。"""
+    """按 state 重建主索引（backfill 后同步 rich_count 字段）。返回 indexed 数。
+
+    F-D01：保留既有主索引中的主题列（primary_theme/secondary_themes/align_method，
+    align 回写产物）——原白名单重建仅收 PROCESSED_FIELDS，会静默冲掉主题列
+    （实测 internal_policy_index.json primary_theme 非空 0/107）。
+    """
     state = _load_state()
+    carry = _prev_theme_fields()
     records = []
     for key, rec in sorted(state.items()):
         if key == "meta":
             continue
         r = _load_processed(rec.get("ipn", ""))
         if r:
-            records.append({k: r.get(k, "") for k in PROCESSED_FIELDS})
+            item = {k: r.get(k, "") for k in PROCESSED_FIELDS}
+            item.update(carry.get(rec.get("ipn", ""), {}))
+            records.append(item)
     index = {
         "schema_version": "1.0",
         "generated_at": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),

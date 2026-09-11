@@ -67,7 +67,7 @@ def load_attr():
                 "title": (r.get("文件名称") or "").strip(),
                 "doc_no": (r.get("发文字号") or "").strip(),
                 "file_src": (r.get("文件来源") or "").strip(),
-                "eff_status": (r.get("时效状态") or "").strip() or "valid",
+                "eff_status": (r.get("时效状态") or "").strip(),   # M-01/D-01：空保空（同 build_base_from_attr，禁 valid 兜底）
                 "year_reported": year,
                 "real_year": int(year) if year.isdigit() else None,
                 "prefix": m.group(1),

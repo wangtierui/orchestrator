@@ -188,6 +188,12 @@ def main():
                 c["verification_note"] = "北大法宝查询失败: " + str(obj.get("message"))[:120]
             else:
                 c["verification_note"] = "北大法宝 get_law_list 无命中(0条)"
+                # C-11 语义统一（2026-09-12）：无命中（0 条）与 verify_missing 同款——
+                # 写核验痕（防下轮重复查询/状态透明）；"查询失败"分支仍不写（留待重试续跑）。
+                state, _, _ = vstate.mark_checked(
+                    docno=c.get("document_number", ""), title=c.get("title", ""),
+                    status=c.get("timeliness_status") or "pending", replacement="",
+                    vsource="北大法宝（无同名命中，维持原判定）", state=state)
             continue
         old = rows[locs[i]].get("时效状态", "").strip()
         st, rep, vsrc, note = pk.judge_candidate(obj["data"], c)

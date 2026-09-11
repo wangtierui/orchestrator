@@ -341,6 +341,13 @@ def run_pipeline(
                 meta["ocr_uncertain"] = True
                 metrics.inc("ocr_uncertain")
             metrics.inc("ocr_corrected", result["corrected"] + result["dict_fixed"])
+            # F-S05 修复（2026-09-12）：校正结果写回正文——原批量段仅计数不写回，
+            # 唯一写回函数 _ocr_correct_record 零调用 → 全源 cleaned 正文未应用 OCR 校正
+            # （_metadata.ocr_corrected 永不产出）。对齐 _ocr_correct_record 行为。
+            if result["corrected"] or result["dict_fixed"]:
+                rec["body_text"] = result["text"]
+                meta["ocr_corrected"] = result["corrected"]
+                meta["ocr_dict_fixed"] = result["dict_fixed"]
 
     # 5) Schema 校验 + 空值阈值监测（第九节）
     #    expected_null_fields：已知源限制字段（如 gov flk 正文 OBS 不可达），

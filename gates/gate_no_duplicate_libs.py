@@ -35,6 +35,11 @@ SINGLE_IMPL_SYMBOLS = ("norm_docno", "norm_title", "atomic_write_text", "atomic_
 PAT_SYSPATH_DRIVE = re.compile(r"sys\.path\.(?:insert|append)\(\s*[0-9]*\s*,\s*[\"'][A-Za-z]:")
 # msvcrt 自锁（应统一走 common_lib.fs_lock）
 PAT_MSVCRT = re.compile(r"\bmsvcrt\.locking")
+# A-10（2026-09-12）：私有副本扫描（_norm_docno/_norm_title）——原符号表仅查公开名 →
+# 私有副本长期逃检。本批先"可见化"（清单进 detail，供"副本清零"收敛批次消费）；
+# 清零需逐处核对语义（rfn/registry 与 common_lib.norm 存在标点/lower 差异），
+# 故暂不直接 FAIL 卡全链（A-10 目标为逃检可见 + 防增量）。
+PAT_PRIVATE_NORM = re.compile(r"^def\s+(_norm_docno|_norm_title)\s*\(", re.M)
 
 
 def _walk_py():
@@ -59,6 +64,7 @@ def _is_shared(rel: str) -> bool:
 def run():
     problems = []
     impl_hits: dict[str, list[str]] = {s: [] for s in SINGLE_IMPL_SYMBOLS}
+    private_hits: dict[str, list[str]] = {}
     for fp in _walk_py():
         rel = _rel(fp)
         try:
@@ -72,6 +78,10 @@ def run():
                 if not _is_shared(rel):
                     impl_hits[sym].append(f"{rel}:{text[:m.start()].count(chr(10))+1}")
         if not _is_shared(rel):
+            # A-10：私有副本（_norm_docno/_norm_title）——报告化（清零为收敛批次）
+            for m in PAT_PRIVATE_NORM.finditer(text):
+                private_hits.setdefault(m.group(1), []).append(
+                    f"{rel}:{text[:m.start()].count(chr(10))+1}")
             if PAT_SYSPATH_DRIVE.search(text):
                 problems.append(f"{rel}: 含盘符 sys.path 插入（应经 paths/interfaces）")
             if PAT_MSVCRT.search(text):
@@ -79,4 +89,11 @@ def run():
     for sym, locs in impl_hits.items():
         if locs:
             problems.append(f"符号 {sym} 在非共享库重复定义: {locs[:5]}")
-    return (not problems), {"problems": problems, "checked_symbols": SINGLE_IMPL_SYMBOLS}
+    return (not problems), {
+        "problems": problems, "checked_symbols": SINGLE_IMPL_SYMBOLS,
+        "private_norm_duplicates": {k: v[:12] for k, v in sorted(private_hits.items())},
+        "private_norm_duplicate_files": len({loc.split(":")[0] for v in private_hits.values() for loc in v}),
+        "note": "私有副本（_norm_docno/_norm_title）当前仅报告不阻断（A-10）："
+                "清零为'收敛批次'（需逐处核对语义，SSOT=std_lib/common_lib/norm.py，"
+                "另见 rfn._norm_title 标点/lower 差异）。",
+    }

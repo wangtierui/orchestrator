@@ -37,8 +37,9 @@ def _norm_docno(s: str) -> str:
 
 def run():
     if not os.path.exists(_MERGED):
-        return True, {"note": "merged_view 未生成（先运行 `orchestrator internal merged`）；制度引用门禁待数据就绪后启用",
-                      "merged": None}
+        # F-S09：输入缺失不得空跑放行（原 return True 使"全部门禁通过"含未实检门禁）。
+        return False, {"error": "merged_view 未生成（先运行 `orchestrator internal merged`）；"
+                                "制度引用门禁未实检，不得视为通过", "merged": None}
     view = json.load(open(_MERGED, encoding="utf-8"))
     try:
         from rfn import get_index  # noqa: PLC0415

@@ -2,6 +2,10 @@
 """
 sync_three_modules.py —— 效力查验变更 → 三模块层级联动（可复用编排器，2026-08-30）
 
+定位（A-08，2026-09-12）：**辅助编排/子步**——生产唯一编排为 tools/run_production_refresh.py；
+本脚本承载"核验变更 → 三模块传播"的专项链（被 refresh 编排或人工按需调用），
+不与其竞争主链职责（避免双编排重叠：clean_index 重建/回写/gates 均以 refresh 为准）。
+
 用途：校验（verify_source_pkulaw.py）产出变更台账后，按既定纪律依次驱动
   regulatory_scrapers → regulatory_classifier → internal_policy_drafter 三模块，
 确保「数据层回写 → 权威库层级同步 → 交付库引用核验」全链路无遗漏，并输出各环节执行报告。
@@ -128,11 +132,13 @@ def stage_scrapers(source, changed, dry_run, report):
                 "i=get_clean_index(rebuild=True);l=i.latest('%s');"
                 "print('rebuilt', l.get('date'), l.get('record_count'))" % (ROOT, source)],
          ROOT, "clean_index 重建")
-    ok1, _ = _run([os.path.join("std_lib", "tools", "check_pipeline_contract.py")], ROOT,
-                  "S-4 编排契约", dry_run)
-    ok2, _ = _run([os.path.join("std_lib", "tools", "check_enum_values.py"), "--strict"], ROOT,
-                  "S-3 枚举 strict", dry_run)
-    report.append(("① regulatory_scrapers", f"回写 {synced} 条；契约✅{ok1}；枚举✅{ok2}"))
+    # A-09 修复（2026-09-12）：原引 std_lib/tools/check_pipeline_contract.py 与
+    # check_enum_values.py（仓内不存在 → 恒 False，门禁形同虚设）。改跑统一门禁入口
+    # （gates 已含等价检查：gate_contract=编排契约 / gate_enum_values=枚举一致性）。
+    _orch = os.path.abspath(os.path.join(ROOT, "..", ".."))
+    ok1, _ = _run([os.path.join(_orch, "cli.py"), "gates"], ROOT, "交付门禁（gates 全量）", dry_run)
+    ok2 = ok1
+    report.append(("① regulatory_scrapers", f"回写 {synced} 条；gates✅{ok1}"))
     return ok1 and ok2
 
 
@@ -148,12 +154,20 @@ def stage_classifier(source, changed, dry_run, report):
     print(f"  ② classifier：归属表时效同步 匹配 {m} / 未匹配 {um}")
 
     # N-5 镜像刷新（必须早于 sync_all_layers）
+    # A-09/F-C09 修复（2026-09-12）：原手工 shutil.copy2 目标路径指向不存在文件
+    # （镜像实际在 recall_audit/output/verification_state.mirror.json，常量 MIRROR_PATH）
+    # → 恒 FileNotFoundError（镜像实际滞后 13 天）。统一走 verification_state_mirror.refresh()
+    # （按源 mtime 自动刷新，与 Gate2 读同一常量路径；镜像为生成物无需 .bak）。
     if not dry_run:
-        main = os.path.join(REVIEW, "verification_state.json")
-        mir = os.path.join(CLASSIFIER, "recall_audit", "verification_state.mirror.json")
-        shutil.copy2(mir, mir + ".bak_" + datetime.datetime.now().strftime("%Y%m%d_%H%M%S"))
-        shutil.copy2(main, mir)
-        print("     N-5 镜像刷新完成（源→镜像，备份已建）")
+        try:
+            _ra = os.path.join(CLASSIFIER, "recall_audit")
+            if _ra not in sys.path:
+                sys.path.insert(0, _ra)
+            from verification_state_mirror import refresh as _mirror_refresh  # noqa: PLC0415
+            _mp = _mirror_refresh()
+            print(f"     N-5 镜像刷新完成（{_mp}）")
+        except Exception as _e:  # noqa: BLE001
+            print(f"     N-5 镜像刷新失败: {_e!r}")
 
     # R1 修复（2026-09-08）：原引 sync_all_layers.py / run_gates.py（仓内不存在，哑引用必败）
     # → 改指现仓等价入口：层级同步 = rfn 索引/指纹由归属表重建；门禁 = orchestrator cli.py gates。

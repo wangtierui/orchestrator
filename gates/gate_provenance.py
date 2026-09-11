@@ -63,7 +63,9 @@ def _check_csv(problems, pattern, what, warn_if_empty=True):
 def run():
     problems, warns = [], []
     if not os.path.isdir(_DATA):
-        return True, {"note": "classifier data 未就绪", "problems": problems}
+        # F-S09：输入缺失不得空跑放行（原 return True 使"全部门禁通过"含未实检门禁）。
+        return False, {"error": f"classifier data 未就绪（{_DATA}）；provenance 门禁未实检，不得视为通过",
+                       "problems": problems}
     _check_records(problems, warns)
     _check_csv(problems, "T*_*.csv", "明细表")
     _check_csv(problems, "rfn_clean_bridge.csv", "桥表")

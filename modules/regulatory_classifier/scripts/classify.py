@@ -36,8 +36,13 @@ _DATA = os.path.join(_CLASS, "data")
 _ATTR = os.path.join(_DATA, "人身保险公司-文件归属表.csv")
 _STATE = os.path.join(_DATA, "classify_state.json")
 _KEYWORDS = os.path.join(_SCRIPTS, "config", "cluster_keywords.json")
+# F-C04（2026-09-12）：主题归属表入断点——re_theme 改判后 base/detail 必须重跑（原 inputs
+# 缺该表 → 主题改判永不迁移，M-06/审查 D-02）。
+_THEME_CSV = os.path.join(_DATA, "人身保险公司-主题归属表.csv")
 # R6（2026-09-08）：clean_index/index.json 作为 clean 快照内容签名——正文同日内容变化时
 # index 每源 sha 会变，match/detail/upper 断点据此级联重跑，消除"正文变但条数同"的静默过时。
+# F-D05④（2026-09-12）：index.json 现已带每源文件内容 sha256（clean 管道 hash_files=True +
+# apply 尾部重建）——同日改写即使 size 相同也会改变 index.json 内容 → 断点级联刷新。
 _CLEAN_INDEX = os.path.join(os.path.dirname(_CLASS), "regulatory_scrapers", "clean_index", "index.json")
 _PY = sys.executable
 _BODY_THEMES = [c for c in THEME_MAP if c != "T0"]       # 有底座的 T1–T10
@@ -73,7 +78,7 @@ def plan_theme(theme: str):
     matched = os.path.join(_DATA, f"_t{n}_matched.json")
     citerefs = os.path.join(_DATA, f"_t{n}_citerefs.json")
     return [
-        {"step": "base", "inputs": (_ATTR,),
+        {"step": "base", "inputs": (_ATTR, _THEME_CSV),
          "desc": "base 底座（归属表派生）",
          "args": ["--theme", theme]},
         {"step": "cluster", "inputs": (base, _KEYWORDS),
@@ -82,7 +87,7 @@ def plan_theme(theme: str):
         {"step": "match", "inputs": (final, _CLEAN_INDEX),   # R6：含 clean 快照签名
          "desc": "matched/citerefs 条款引用匹配",
          "args": ["--input", final, "--output", matched, "--citerefs", citerefs]},
-        {"step": "detail", "inputs": (_ATTR, final, _CLEAN_INDEX),  # R6
+        {"step": "detail", "inputs": (_ATTR, _THEME_CSV, final, _CLEAN_INDEX),  # R6 + F-C04
          "desc": "明细表",
          "args": ["--theme", theme, "--apply"]},
         {"step": "clause_graph", "inputs": (matched, citerefs),

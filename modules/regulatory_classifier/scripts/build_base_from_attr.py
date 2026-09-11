@@ -90,7 +90,7 @@ def load_attr(path=ATTR_CSV):
                 "title": (row.get("文件名称") or "").strip(),
                 "doc_no": (row.get("发文字号") or "").strip(),
                 "file_src": (row.get("文件来源") or "").strip(),
-                "eff_status": (row.get("时效状态") or "").strip() or "valid",
+                "eff_status": (row.get("时效状态") or "").strip(),   # M-01/D-01：空保空（禁止 valid 兜底——未核验不得记为"现行有效"）
                 "real_year": int(year) if year.isdigit() else None,
                 "监管文件编号": rfn,
             })

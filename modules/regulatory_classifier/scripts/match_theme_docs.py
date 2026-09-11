@@ -211,6 +211,7 @@ def main():
                 "url": rec.get("source_url", ""),
                 "监管文件编号": rfn,
                 "seq": seq,
+                "cluster": r.get("cluster", ""),   # F-D03：clause_graph 经 citerefs 取 cluster（防取明细旧值）
             }
         elif args.merge and (key in old_matched or str(seq) in old_matched):
             matched[key] = old_matched.get(key) or old_matched[str(seq)]  # 保留旧记录
@@ -233,6 +234,7 @@ def main():
             "name_refs_top": name_refs,
             "监管文件编号": m.get("监管文件编号", ""),   # R9 补：recall Gate4 CITEREFS_KEYS 期望键
             "seq": m.get("seq", ""),
+            "cluster": m.get("cluster", ""),   # F-D03：cluster 随 final 统一来源（clause_graph 消费）
         }
 
     # 保存
@@ -245,6 +247,11 @@ def main():
     full = sum(1 for v in matched.values() if v.get("body_len", 0) >= 100)
     print(f"\n✅ 匹配: {len(matched)}/{len(recs)} | 按库: {dict(lib_stat)} | 有正文(≥100字): {full}")
     print(f"✅ 条款分析: {len(citerefs)} 条")
+    # F-D04：未命中清单落盘（覆盖缺口可见可追；Gate4 matched_coverage 依据；库覆盖补齐后
+    # 重跑本步即可消退）。
+    miss_path = os.path.splitext(args.output)[0] + "_miss.json"
+    json.dump(miss, open(miss_path, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+    print(f"⚠️ 未命中清单: {miss_path}（{len(miss)} 条）")
     if miss:
         print(f"⚠️ 未命中 {len(miss)} 条: {miss[:20]}")
     print(f"✅ 输出: {args.output}\n        {args.citerefs}")

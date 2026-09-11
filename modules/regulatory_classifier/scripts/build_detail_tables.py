@@ -213,6 +213,9 @@ def build_theme_rows(theme, attr_rows, cleaned, existing, cluster_map):
             row["标题"] = a.get("文件名称", "")
             row["发文字号"] = a.get("发文字号", "")
             row["文件来源"] = src
+            # F-D03：子主题按 final（cluster_map）刷新——原 old 分支仅刷新叙述列，子主题
+            # 停留旧值（实测 T1 明细 S5消保/信息 vs final S3 分裂）。
+            row["子主题"] = cluster_map.get(rfn, row.get("子主题", ""))
             row["generated_by"], row["generated_at"] = gb, g_at
             out.append(row)
             continue

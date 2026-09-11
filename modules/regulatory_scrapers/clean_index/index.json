@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "generated_at": "2026-09-12T02:30:32+0800",
+  "generated_at": "2026-09-12T02:55:14+0800",
   "generator": "regulatory_scrapers/clean_index/build_clean_index.py",
   "description": "五源 clean 产物结构化索引（单一事实源），供 regulatory_classifier 直接加载，无需额外转换。",
   "scraper_root": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers",
@@ -20,14 +20,14 @@
             "csv": {
               "path": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/gov_cleaned_20260909.csv",
               "size_bytes": 35835880,
-              "sha256": null,
+              "sha256": "cf74f877d0a465e0d6776c77df134d57396dc8e018da21aa5f01ea8b77a65794",
               "record_count": 605,
               "modified_at": "2026-09-11T23:52:52+0800"
             },
             "jsonl": {
               "path": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/gov_cleaned_20260909.jsonl",
               "size_bytes": 55403173,
-              "sha256": null,
+              "sha256": "74c35af24b58e872b4e5efbe2aaa33b2d63fea35d2474e8483fa12fadad820d3",
               "record_count": 605,
               "modified_at": "2026-09-11T23:52:52+0800"
             }
@@ -71,14 +71,14 @@
             "csv": {
               "path": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/mof_cleaned_20260909.csv",
               "size_bytes": 9801338,
-              "sha256": null,
+              "sha256": "bab2234eebe6e0d41b95f88bfb21762166300f9263df8c8470e2fdd567e91406",
               "record_count": 870,
               "modified_at": "2026-09-11T23:52:51+0800"
             },
             "jsonl": {
               "path": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/mof_cleaned_20260909.jsonl",
               "size_bytes": 10360582,
-              "sha256": null,
+              "sha256": "d47998d65eade4353ac2d0d03b266eea827cbb96311e6c3853815f337df1ba8b",
               "record_count": 870,
               "modified_at": "2026-09-11T23:52:50+0800"
             }
@@ -124,14 +124,14 @@
             "csv": {
               "path": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/nfra_cleaned_20260910.csv",
               "size_bytes": 53981045,
-              "sha256": null,
+              "sha256": "04d0066c722b634005407075aa6c6e57fa71f7603ef1b326cb7b0fe4a4fe03d1",
               "record_count": 1939,
               "modified_at": "2026-09-11T23:52:50+0800"
             },
             "jsonl": {
               "path": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/nfra_cleaned_20260910.jsonl",
               "size_bytes": 352171934,
-              "sha256": null,
+              "sha256": "1a9d6a1d90c59a0bdccb5164b83fa584fd77c6b7cf7c8601237950a02970d1e0",
               "record_count": 1939,
               "modified_at": "2026-09-11T23:52:49+0800"
             }
@@ -180,14 +180,14 @@
             "csv": {
               "path": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/pbc_cleaned_20260909.csv",
               "size_bytes": 3850792,
-              "sha256": null,
+              "sha256": "e6659f6dcb45c992407a9cb9372f1e85bd9a1d1332e9c892e23618c4af3b426f",
               "record_count": 571,
               "modified_at": "2026-09-11T23:52:51+0800"
             },
             "jsonl": {
               "path": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/pbc_cleaned_20260909.jsonl",
               "size_bytes": 4241704,
-              "sha256": null,
+              "sha256": "d328ea58f739e14bee51042061ffe4027fe51a841d235100492a8282d250c38c",
               "record_count": 571,
               "modified_at": "2026-09-11T23:52:51+0800"
             }
@@ -236,14 +236,14 @@
             "csv": {
               "path": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/supp_cleaned_20260912.csv",
               "size_bytes": 10606057,
-              "sha256": null,
+              "sha256": "1643891673691479ad2b098893a9b794a87b09dc0c0a91e69c3d6ca9dbd8692a",
               "record_count": 58,
               "modified_at": "2026-09-12T02:30:29+0800"
             },
             "jsonl": {
               "path": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/supp_cleaned_20260912.jsonl",
               "size_bytes": 10569064,
-              "sha256": null,
+              "sha256": "ca26c04f0c72f63778dc67f9219e7c6584035849af2313dce042e333f90730ac",
               "record_count": 58,
               "modified_at": "2026-09-12T02:30:28+0800"
             }

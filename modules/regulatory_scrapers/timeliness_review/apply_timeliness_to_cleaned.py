@@ -188,6 +188,9 @@ def apply_source(source: str, by_no, by_title_date, by_title_unique,
         before = tuple(r.get(k, "") for k in TARGET_FIELDS)
         for k in TARGET_FIELDS:
             r[k] = hit.get(k, "") or ""
+        # H-07（2026-09-12）：status 由 timeliness_status 派生（英文）——源特异假判据
+        # （gov 死分支/mof "4"/pbc "ok"/supp 中文）废弃后的统一口径落地。
+        r["status"] = r.get("timeliness_status") or ""
         if tuple(r.get(k, "") for k in TARGET_FIELDS) != before:
             stat["written"] += 1
         else:
@@ -228,6 +231,9 @@ def apply_source(source: str, by_no, by_title_date, by_title_unique,
                 for k in TARGET_FIELDS:
                     if k in fields:
                         rows[i][k] = r.get(k, "")
+                # H-07：status 派生同步（CSV 轨，与 jsonl 一致）
+                if "status" in fields:
+                    rows[i]["status"] = r.get("status", "")
             tmp = cf + ".tmp"
             with open(tmp, "w", encoding="utf-8-sig", newline="") as f:
                 w = csv.DictWriter(f, fieldnames=fields, extrasaction="ignore")
@@ -289,6 +295,19 @@ def main() -> int:
             print("       ⚠️ %s" % st["csv_warn"])
     print("=" * 68)
     print("模式: %s" % ("DRY-RUN（未写盘）" if args.dry_run else "已回写"))
+    # F-C05：回写后重建 clean_index——同日期内容已变，必须刷新索引（含内容 sha），
+    # 否则 classify/validate/签名与"同日改写"脱节（M-10 四重隐身组合项之一）。
+    if not args.dry_run:
+        total_written = sum((st.get("written") or 0) for st in stats if "reason" not in st)
+        if total_written > 0:
+            try:
+                if ROOT not in sys.path:
+                    sys.path.insert(0, ROOT)
+                from clean_index import get_clean_index  # noqa: PLC0415
+                get_clean_index(rebuild=True)
+                print("[apply] clean_index 已重建（index.json 刷新，纳入最新内容）")
+            except Exception as e:  # noqa: BLE001
+                print(f"[apply] WARN clean_index 重建失败: {e!r}")
     return 0
 
 

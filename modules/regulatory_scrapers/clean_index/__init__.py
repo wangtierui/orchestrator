@@ -347,19 +347,31 @@ class CleanIndex:
 
     # ---- 完整性 ----
     def validate_files(self) -> dict:
-        """校验索引引用的文件是否仍存在且 sha256 一致。"""
-        missing, mismatch, ok = [], [], []
+        """校验索引引用的文件是否仍存在且 sha256 一致。
+
+        F-D05②：sha 缺失（历史降级索引）不得静默视为通过——降级 size 比对，
+        并记入 degraded_no_sha（可见而不阻断；重建带 sha 后自动消除）。
+        """
+        missing, mismatch, ok, degraded = [], [], [], []
         for src_id, _, sn in self.iter_snapshots():
             for ext, f in sn.get("files", {}).items():
                 p = f["path"]
                 if not os.path.exists(p):
                     missing.append({"source_id": src_id, "ext": ext, "path": p})
                     continue
-                if f.get("sha256") and _sha256_file(p) != f["sha256"]:
-                    mismatch.append({"source_id": src_id, "ext": ext, "path": p})
+                if f.get("sha256"):
+                    if _sha256_file(p) != f["sha256"]:
+                        mismatch.append({"source_id": src_id, "ext": ext, "path": p})
+                    else:
+                        ok.append({"source_id": src_id, "ext": ext, "path": p})
                 else:
-                    ok.append({"source_id": src_id, "ext": ext, "path": p})
-        return {"missing": missing, "hash_mismatch": mismatch, "ok": ok}
+                    if f.get("size_bytes") is not None and os.path.getsize(p) != f["size_bytes"]:
+                        mismatch.append({"source_id": src_id, "ext": ext, "path": p,
+                                         "reason": "size 失配（无 sha，降级比对）"})
+                    else:
+                        degraded.append({"source_id": src_id, "ext": ext, "path": p})
+        return {"missing": missing, "hash_mismatch": mismatch, "ok": ok,
+                "degraded_no_sha": degraded}
 
     def is_fresh(self) -> bool:
         """磁盘当前文件签名是否与持久化一致（存在 + size 一致）。"""

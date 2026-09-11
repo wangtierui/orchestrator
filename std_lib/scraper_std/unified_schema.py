@@ -170,8 +170,9 @@ def map_gov(rec: dict[str, Any], clean_version: str, captured_at: str = "") -> d
     src = canonical_source(raw_source) or "gov"
     m = _mk_meta(rec, source_url, src, clean_version, captured_at)
     body = empty_str(rec.get("full_text") or rec.get("summary"))
+    # H-07（2026-09-12）：删死字段（gov 抓取产物不含 sxx_label/flxz，恒 None 的死引用）
     _raw = {k: rec.get(k) for k in (
-        "bbbs", "sxx_label", "flxz", "pub_date_original") if rec.get(k) is not None}
+        "bbbs", "pub_date_original") if rec.get(k) is not None}
     if raw_source and raw_source != src:
         _raw["子源"] = raw_source
     return {
@@ -193,7 +194,9 @@ def map_gov(rec: dict[str, Any], clean_version: str, captured_at: str = "") -> d
         "mime_type": "text/plain",
         "column_name": "",
         "theme_name": "",
-        "status": empty_str(rec.get("sxx_label") or rec.get("flxz") or ""),
+        # H-07（2026-09-12）：删 gov 死分支（sxx_label/flxz 字段不存在，恒空）；
+        # status 统一留空，有效性判据一律 timeliness_status（回写阶段派生，重刷 cleaned 生效）。
+        "status": "",
         "timeliness_status": "",
         "replacement_document": "",
         "verification_source": "",
@@ -246,7 +249,9 @@ def map_mof(rec: dict[str, Any], clean_version: str, captured_at: str = "") -> d
         "mime_type": "text/plain",
         "column_name": "",
         "theme_name": "",
-        "status": empty_str(rec.get("status")),
+        # H-07（2026-09-12）：不再写源特异 status（mof "4"/supp 中文等不可作有效性判据）；
+        # 有效性一律 timeliness_status（回写阶段派生，重刷 cleaned 生效）。
+        "status": "",
         "timeliness_status": "",
         "replacement_document": "",
         "verification_source": "",
@@ -359,7 +364,9 @@ def map_pbc(rec: dict[str, Any], clean_version: str, captured_at: str = "") -> d
         "mime_type": "text/plain",
         "column_name": "",
         "theme_name": "",
-        "status": empty_str(rec.get("fetch_status")),
+        # H-07（2026-09-12）：不再写 pbc fetch_status（"ok" 为抓取态而非有效性判据）；
+        # 有效性一律 timeliness_status（回写阶段派生，重刷 cleaned 生效）。
+        "status": "",
         "timeliness_status": "",
         "replacement_document": "",
         "verification_source": "",
@@ -537,7 +544,9 @@ def map_supp(rec: dict[str, Any], clean_version: str, captured_at: str = "") -> 
         "mime_type": mime_type,
         "column_name": empty_str(rec.get("column_name")),
         "theme_name": empty_str(rec.get("theme_name")),
-        "status": empty_str(rec.get("status")),
+        # H-07（2026-09-12）：不再写源特异 status（mof "4"/supp 中文等不可作有效性判据）；
+        # 有效性一律 timeliness_status（回写阶段派生，重刷 cleaned 生效）。
+        "status": "",
         # P2 修复（2026-09-08）：supp 未核验不再默认 valid——显式值才保留，否则保空（空=未核验待补位，
         # 等同 needs_review，绝不臆造"现行有效"）。存量快照下次 supp 清洗自然按本逻辑替换。
         "timeliness_status": empty_str(rec.get("timeliness_status")),

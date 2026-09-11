@@ -68,11 +68,18 @@ def main():
     # u_fix 键形态自适应（A 项 2026-09-08）：T1-T8 用 seq 键；T9/T10 历史 final 无 seq（旧链产物），
     # 其 config 以 RFN 为冻结键（build_base 链与 scan 链共有键），保证重跑分类零漂移。
     _fix_by_rfn = any(k.startswith("RFN-") for k in u_fix)
+    # F-D03：u_fix 短别名（如 "S3"）归一为 passes 完整组名（"S3银邮渠道"），防 final 双值域
+    # （实测同源双值：关键词产出长值 vs u_fix 修正短值）。
+    group_names = [g for kw_map in passes for g in kw_map]
     for r in recs:
         cl = classify(r["title"], passes)
         _fix_k = r.get("监管文件编号", "") if _fix_by_rfn else str(r["seq"])
         if _fix_k in u_fix:
             cl = u_fix[_fix_k]
+        if cl and cl not in group_names:
+            cand = [g for g in group_names if g.startswith(cl)]
+            if cand:
+                cl = min(cand, key=len)
         r["cluster"] = cl
         # 契约字段（2026-09-08 R8 对齐 FINAL_KEYS）：source_origin/src_mark 语义=「scan 补充来源
         # 标记」，纯归属表投影（base）生成的 final 无该信息 → 补空串保持 schema 恒真（scan 补充路径另填）。

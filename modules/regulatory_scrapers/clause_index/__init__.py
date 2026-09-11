@@ -130,9 +130,23 @@ def iter_file_clauses(src: str, path: str = ""):
                 continue
 
 
+def _file_sha256(p: str) -> str:
+    """文件内容指纹（F-C02：同日改写检测用）。"""
+    import hashlib
+    h = hashlib.sha256()
+    with open(p, "rb") as fh:
+        for chunk in iter(lambda: fh.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
 def build_clause_index(rebuild: bool = False) -> dict:
-    """clean → 条文 固定节点（②）。增量：仅对 clean 快照日期新于 clause 产物的源抽取。
-    rebuild=True 强制全量重建。返回 {src: {date, built, files}}。"""
+    """clean → 条文 固定节点（②）。增量：仅对 clean 快照**日期或内容**新于 clause 产物的源抽取。
+    rebuild=True 强制全量重建。返回 {src: {date, built, files}}。
+
+    F-C02：原增量仅比日期——同日 cleaned 内容更新（apply 回写/收编）不触发重建，
+    条款静默陈旧（M-09）。现同日也比 input_sha（文件内容指纹），任一不同即重建。
+    """
     os.makedirs(CLAUSE_DIR, exist_ok=True)
     ci = get_clean_index()
     state = {} if rebuild else _load_state()
@@ -146,8 +160,10 @@ def build_clause_index(rebuild: bool = False) -> dict:
         # 快照日期 = 文件名末 8 位
         m = re.search(r"_cleaned_(\d{8})\.jsonl$", cp)
         date = m.group(1) if m else "unknown"
-        if not rebuild and (state.get(src) or {}).get("date") == date:
-            out[src] = {"date": date, "built": False, "files": (state.get(src) or {}).get("files", 0)}
+        rec_st = state.get(src) or {}
+        if (not rebuild and rec_st.get("date") == date
+                and rec_st.get("input_sha") == _file_sha256(cp)):
+            out[src] = {"date": date, "built": False, "files": rec_st.get("files", 0)}
             cur_dates[src] = date
             continue
         dest = os.path.join(CLAUSE_DIR, f"{src}_clauses_{date}.jsonl")
@@ -188,7 +204,8 @@ def build_clause_index(rebuild: bool = False) -> dict:
                 n += 1
         os.replace(tmp, dest)
         os.replace(mdtmp, mddest)
-        state[src] = {"date": date, "files": n, "clause_path": dest, "md_path": mddest}
+        state[src] = {"date": date, "files": n, "clause_path": dest, "md_path": mddest,
+                      "input_sha": _file_sha256(cp)}   # F-C02：内容指纹（同日改写检测）
         cur_dates[src] = date
         out[src] = {"date": date, "built": True, "files": n}
     _save_state(state)
