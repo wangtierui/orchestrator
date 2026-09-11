@@ -134,6 +134,8 @@ def main(argv=None) -> int:
         print(f"[{project}] WARN 空值率超阈值，按规范不生成交付文件（已告警）。")
         return 2
 
+    tail_failures: list[str] = []   # F-S08：尾部固定节点失败登记（决定 rc）
+
     # ① clean_index 推进（2026-09-09 修复）：快照落盘后重建五源 clean 索引 index.json。
     #    此前仅写 cleaned 文件不推进索引 → 下游 apply_timeliness/classifier/recall 经
     #    clean_index.latest_* 仍消费旧快照（生产刷新实证：0909 文件生成后索引仍指 0908，
@@ -152,8 +154,9 @@ def main(argv=None) -> int:
         )
         _ci_write(_ci_build(_ci_root, hash_files=True))
         print("[clean_index] 已重建（latest 指向最新快照）")
-    except Exception as _e:  # noqa: BLE001  不阻断 clean 交付（索引可后续 build_clean_index.py 补）
-        print(f"[clean_index] WARN 索引推进失败（不影响 clean 交付）: {_e!r}")
+    except Exception as _e:  # noqa: BLE001  F-S08：失败不再伪装成功（记录并 rc≠0）
+        print(f"[clean_index] ERROR 索引推进失败（clean 交付应视为未完成）: {_e!r}")
+        tail_failures.append("clean_index")
 
     # ② 固定节点：clean 成功后自动增量构建条文产物（clause_index，跨全源最新快照；
     # 仅对 clean 快照新于既有产物的源抽取，幂等）。
@@ -164,8 +167,14 @@ def main(argv=None) -> int:
             print("[clauses] 条文固定节点: "
                   + "; ".join(f"{k}={v.get('built', v.get('error', 'skip'))}"
                               for k, v in res.items() if not k.startswith("_")))
-        except Exception as e:  # noqa: BLE001  不阻断 clean 交付（clause 可后续手工/调度补建）
-            print(f"[clauses] WARN 条文节点跳过（不影响 clean 交付）: {e!r}")
+        except Exception as e:  # noqa: BLE001  F-S08：失败不再伪装成功（记录并 rc≠0）
+            print(f"[clauses] ERROR 条文节点失败（clean 交付应视为未完成）: {e!r}")
+            tail_failures.append("clauses")
+    # F-S08（2026-09-12）：尾部固定节点（clean_index 推进 / clause 构建）是交付链的前置，
+    # 失败必须显式 rc≠0（原仅 WARN + rc=0 → 索引/clause 缺而下游误判"成功"）。
+    if tail_failures:
+        print(f"[clean] FAIL 尾部固定节点失败: {tail_failures}——请修复后重跑本源 clean")
+        return 3
     return 0
 
 

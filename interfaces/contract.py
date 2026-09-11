@@ -10,21 +10,16 @@ CSV_COLUMNS 等改为 re-export（R5）避免双定义。
 """
 from __future__ import annotations
 
-# --------------------------------------------------------------------------- #
-# cleaned CSV 39 列（source: std_lib/scraper_std/unified_schema.py CSV_COLUMNS，2026-09 实测）
-# --------------------------------------------------------------------------- #
-CLEANED_CSV_COLUMNS: list[str] = [
-    "index_no", "title", "doc_type", "category", "publish_date", "effective_date",
-    "issue_organ", "document_number", "source_url", "source", "body_text",
-    "body_text_webpage", "body_text_doc", "summary", "data_format", "mime_type",
-    "column_name", "theme_name", "status", "timeliness_status",
-    "replacement_document", "verification_source", "keyword", "attachment_count",
-    "attachment_content", "attachment_content_path", "attachment_content_md5",
-    "table_structured", "table_raw_text", "table_recovery_method",
-    "downloaded_doc_path", "downloaded_doc_url", "body_source", "dedup_key",
-    "raw_uncut_text", "split_sentences", "renamed_filename",
-    "_metadata", "_raw_fields",
-]
+import os
+import sys
+
+# F-D11 单源化（2026-09-12）：cleaned CSV 列契约唯一事实源 = scraper_std.unified_schema.CSV_COLUMNS
+# （原复制字面量改为 re-export；interfaces → std_lib 为合法依赖方向，std_lib 不反向依赖本层）。
+_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_STD_LIB = os.path.join(_ROOT, "std_lib")
+if _STD_LIB not in sys.path:
+    sys.path.insert(0, _STD_LIB)
+
 
 # --------------------------------------------------------------------------- #
 # 监管文件归属表 8 列（source: modules/regulatory_classifier/rfn/registry.py CSV_FIELDS）
@@ -168,9 +163,10 @@ def assert_alias_integrity() -> None:
 BASE_KEYS = {"监管文件编号", "doc_no", "eff_status", "file_src", "real_year",
              "title", "year_reported"}
 FINAL_KEYS = BASE_KEYS | {"cluster", "source_origin", "src_mark"}
-# matched/citerefs 顶层为 dict{监管文件编号: 记录}（RFN 即外层 key，行内不再重复该键）
-MATCHED_KEYS = {"body", "body_len", "docno", "lib", "title"}
-CITEREFS_KEYS = {"art_refs", "basis", "body_len", "lib",
+# matched/citerefs 顶层为 dict{监管文件编号: 记录}；行内**含**「监管文件编号」键（R9 生效后
+# 实测一致，F-D11：原注释"行内不再重复"与数据不符，已按实测补入必选键集）。
+MATCHED_KEYS = {"监管文件编号", "body", "body_len", "docno", "lib", "title"}
+CITEREFS_KEYS = {"监管文件编号", "art_refs", "basis", "body_len", "lib",
                  "name_refs_top", "title"}
 
 # ============ clause_index 条文产物契约（②，2026-09-08） ============

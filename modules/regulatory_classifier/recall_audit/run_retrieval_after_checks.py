@@ -507,12 +507,12 @@ except Exception as _e:  # pragma: no cover
 # 注意：matched/citerefs 的 value 键集存在多形态——补齐路径（align_artifacts 对归属表驱动
 # 记录生成）写「核心键」，扫描路径（scanner 命中五源）额外写富字段 how/url/source_origin。
 # 故必选键定义为**核心键**（两种路径均保证），富字段为条件字段不纳入必选，避免误报。
-_BASE_KEYS = {"监管文件编号", "doc_no", "eff_status", "file_src", "real_year",
-              "title", "year_reported"}
-_FINAL_KEYS = _BASE_KEYS | {"cluster", "source_origin", "src_mark"}
-_MATCHED_KEYS = {"监管文件编号", "body", "body_len", "docno", "lib", "title"}
-_CITEREFS_KEYS = {"监管文件编号", "art_refs", "basis", "body_len", "lib",
-                  "name_refs_top", "title"}
+# F-D11 单源化（2026-09-12）：键集唯一事实源 = interfaces/contract.py（原字面量副本改 re-export）
+from interfaces.contract import BASE_KEYS as _BASE_KEYS  # noqa: E402
+from interfaces.contract import CITEREFS_KEYS as _CITEREFS_KEYS  # noqa: E402
+from interfaces.contract import FINAL_KEYS as _FINAL_KEYS  # noqa: E402
+from interfaces.contract import MATCHED_KEYS as _MATCHED_KEYS  # noqa: E402
+
 # 富字段（扫描路径条件字段，不纳入必选）：matched: how/url/source_origin；
 # citerefs: source_origin/art_refs_str/name_refs_top 之外见上。注：2026-09-01 实测
 # T7 matched 33 条为补齐路径生成、缺 how/url/source_origin（见 Gate4 开发注记），

@@ -80,10 +80,10 @@ def _sync_path():
 LOCK_FILE = os.path.join(_PKG_DIR, ".registry.lock")            # 防并发锁
 
 # 文件归属表 8 列（2026-08-31 重构：无主题/同文件主编号，新增判定日期）
-CSV_FIELDS = ["监管文件编号", "文件名称", "发文字号", "发布日期",
-              "文件来源", "时效状态", "判定日期", "编号备注"]
-# 主题归属表 3 列
-THEME_FIELDS = ["监管文件编号", "主题", "判定依据"]
+# F-D11 单源化（2026-09-12）：归属表/主题表列契约唯一事实源 = interfaces/contract.py
+# （原本地字面量副本改为 re-export；gate_contract 同读 contract，防字面漂移）。
+from interfaces.contract import REGISTRY_CSV_FIELDS as CSV_FIELDS  # noqa: E402
+from interfaces.contract import THEME_FIELDS  # noqa: E402
 
 # 层级同步顺序（规范要求）
 SYNC_LAYERS = ["数据底座", "文件归属表", "横向整合分析报告", "纵向深化分析报告", "全景分析报告"]

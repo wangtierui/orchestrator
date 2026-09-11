@@ -128,9 +128,15 @@ class RFNIndex:
         return set(self._by_rfn.keys())
 
     def ranges(self):
+        """各主题 RFN 编号范围 → {主题: (first_rfn, last_rfn, n)}。
+
+        F-O10（2026-09-12）：与 rfn_lookup.py `for theme, (first, last, n) in ...` 三元解包对齐
+        （原实现返回 (n, theme) 二元组 → `--list-ranges` 恒 ValueError）。
+        """
         rng = {}
         for theme, recs in self._group_by_theme().items():
-            rng[theme] = (len(recs), theme)
+            rfns = sorted(r.get("监管文件编号", "") for r in recs if r.get("监管文件编号"))
+            rng[theme] = (rfns[0], rfns[-1], len(recs)) if rfns else ("", "", len(recs))
         return rng
 
     def _group_by_theme(self):

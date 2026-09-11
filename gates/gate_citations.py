@@ -36,6 +36,28 @@ def run():
         return False, {"error": "merged_view 未生成（先运行 `orchestrator internal merged`）；"
                                 "制度引用门禁未实检，不得视为通过", "merged": None}
     view = json.load(open(_MERGED, encoding="utf-8"))
+    # F-C08（2026-09-12）：merged_view 陈旧校验——inputs 指纹（归属表/主题表/内部索引/processed
+    # 目录签名）重算比对；上游变化后视图未重建即 FAIL（原实现 inputs 零校验，陈旧视图不可感）。
+    try:
+        _ipb = os.path.join(paths.MODULES_DIR, "internal_policy_base")
+        if _ipb not in sys.path:
+            sys.path.insert(0, _ipb)
+        import merged as _merged  # noqa: PLC0415
+        _cld = os.path.join(paths.MODULES_DIR, "regulatory_classifier", "data")
+        cur = {
+            "attr_sha": _merged._sha_file(os.path.join(_cld, "人身保险公司-文件归属表.csv")),
+            "theme_sha": _merged._sha_file(os.path.join(_cld, "人身保险公司-主题归属表.csv")),
+            "index_sha": _merged._sha_file(_merged._INDEX_PATH),
+            "processed_signature": _merged._processed_signature(),
+        }
+        stale_keys = [k for k, v in cur.items() if (view.get("inputs") or {}).get(k) != v]
+        if stale_keys:
+            return False, {"error": f"merged_view 陈旧（inputs 变化: {stale_keys}）；"
+                                    "先运行 `orchestrator internal merged` 重建视图",
+                           "merged": view.get("count"), "inputs_now": cur}
+    except Exception as e:  # noqa: BLE001  校验不可用时显式记录（不静默）
+        return False, {"error": f"merged_view 陈旧校验不可执行: {e!r}（不得视为通过）",
+                       "merged": view.get("count")}
     try:
         from rfn import get_index  # noqa: PLC0415
         idx = get_index()

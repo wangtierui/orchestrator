@@ -16,6 +16,7 @@ import json
 import os
 import re
 import sys
+from datetime import datetime
 
 _THIS = os.path.dirname(os.path.abspath(__file__))          # .../report_builders
 _SCRIPTS = os.path.dirname(_THIS)                             # .../scripts
@@ -85,7 +86,8 @@ def build() -> dict:
     # ---- 全景 ----
     L = ["# 人身保险公司-全景分析报告", "",
          "> 数据基准：`人身保险公司-文件归属表.csv`（%d 条）+ `人身保险公司-主题归属表.csv` 合并；"
-         "生成 date=2026-09-08（现行口径，可复现于 report_builders/build_overview_report.py）" % total, "",
+         "生成 date=%s（现行口径，可复现于 report_builders/build_overview_report.py）"
+         % (total, datetime.now().strftime("%Y-%m-%d")), "",
          "## 一、总量与主题分布", "",
          "| 主题码 | 主题名 | 归属表条数 | 底座 final 数 |", "|---|---|---:|---:|"]
     for c in sorted(THEME_MAP, key=lambda x: (len(x), x)):
