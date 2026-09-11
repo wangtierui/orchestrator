@@ -1,0 +1,25 @@
+{
+ "schema_version": "1.0",
+ "generated_at": "2026-09-12 04:02:09",
+ "policy": "语料本体 data/corpus/（不入库）；清单 reports/corpus/（入库，唯一可审计入口）",
+ "domains": [
+  {
+   "domain": "dept_policies",
+   "source_dir": "D:/Desktop/1.总公司各部门制度",
+   "file_count": 1019,
+   "total_bytes": 332138728,
+   "ingested_at": "2026-09-12 04:01:39",
+   "manifest": "reports/corpus/dept_policies.manifest.json"
+  },
+  {
+   "domain": "east2_m20",
+   "source_dir": "D:/0数据治理/00.EAST2.0#M20",
+   "file_count": 1990,
+   "total_bytes": 1894864826,
+   "ingested_at": "2026-09-12 04:02:08",
+   "manifest": "reports/corpus/east2_m20.manifest.json"
+  }
+ ],
+ "total_files": 3009,
+ "total_bytes": 2227003554
+}

@@ -22,7 +22,9 @@ ALLOWED_DATA_SUBDIRS = {
     # docs：五源正文原文/附件统一根（docs_root(source) → data/docs/<scraper_slug>/）
     # reports/state：collector 运行产物（mof_laws_report.html 等报告、status.json/运行时锁，
     #   2026-09-09 mof 全量轮实证创建，写入位置=dirname(outdir) 下的 reports/state）
-    "regulatory_scrapers": {"cleaned", "clauses", "history", "raw", "docs", "reports", "state"},
+    # corpus：外部语料归集根（F-L05：EAST2.0/部门制度等按域归集，保留原始目录树；
+    #   清单 reports/corpus/*.manifest.json 入库，语料本体不入库）
+    "regulatory_scrapers": {"cleaned", "clauses", "history", "raw", "docs", "reports", "state", "corpus"},
     "internal_policy_base": {"originals", "processed"},
     "internal_policy_drafter": {"draft_clause"},      # 条款级对照素材（P8 端到端编排输出，R21 驱动）
 }
