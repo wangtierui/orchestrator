@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "generated_at": "2026-09-11T23:53:02+0800",
+  "generated_at": "2026-09-12T02:30:32+0800",
   "generator": "regulatory_scrapers/clean_index/build_clean_index.py",
   "description": "五源 clean 产物结构化索引（单一事实源），供 regulatory_classifier 直接加载，无需额外转换。",
   "scraper_root": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers",
@@ -230,22 +230,22 @@
         "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned"
       ],
       "snapshots": {
-        "20260909": {
-          "date": "20260909",
+        "20260912": {
+          "date": "20260912",
           "files": {
             "csv": {
-              "path": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/supp_cleaned_20260909.csv",
-              "size_bytes": 8151738,
+              "path": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/supp_cleaned_20260912.csv",
+              "size_bytes": 10606057,
               "sha256": null,
               "record_count": 58,
-              "modified_at": "2026-09-11T23:52:52+0800"
+              "modified_at": "2026-09-12T02:30:29+0800"
             },
             "jsonl": {
-              "path": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/supp_cleaned_20260909.jsonl",
-              "size_bytes": 8122900,
+              "path": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/supp_cleaned_20260912.jsonl",
+              "size_bytes": 10569064,
               "sha256": null,
               "record_count": 58,
-              "modified_at": "2026-09-11T23:52:52+0800"
+              "modified_at": "2026-09-12T02:30:28+0800"
             }
           },
           "record_count": 58,
@@ -254,7 +254,6 @@
           ],
           "companion_docs": [],
           "timeliness_status_values": [
-            "amended",
             "repealed",
             "valid"
           ],
@@ -279,11 +278,11 @@
           ]
         }
       },
-      "latest_date": "20260909",
+      "latest_date": "20260912",
       "latest": {
-        "date": "20260909",
-        "csv": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/supp_cleaned_20260909.csv",
-        "jsonl": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/supp_cleaned_20260909.jsonl",
+        "date": "20260912",
+        "csv": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/supp_cleaned_20260912.csv",
+        "jsonl": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/supp_cleaned_20260912.jsonl",
         "record_count": 58
       },
       "total_record_count": 58
