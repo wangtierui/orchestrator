@@ -33,6 +33,7 @@ for _p in (_ROOT, _MODULES, os.path.join(_ROOT, "std_lib"),
 
 from base_publish import SCHEMA_VERSION  # noqa: E402
 
+from interfaces.contract import attachment_view  # noqa: E402  (F-D07 附件字段契约归一)
 from std_lib.common_lib.norm import norm_docno  # noqa: E402
 
 PUBLISH_DIR = os.path.join(_MODULES, "regulatory_scrapers", "published")
@@ -213,6 +214,7 @@ def build() -> dict:
     n_clause = _write_jsonl(os.path.join(PUBLISH_DIR, "external_clauses.jsonl"), _clauses())
 
     def _attachments():
+        # F-D07：附件对象经契约归一（interfaces/contract.attachment_view，五源 5 套字段收敛）
         for rec in _iter_cleaned_records():
             dk = (rec.get("dedup_key") or "").strip()
             rid = dk or (rec.get("source_url") or "").strip()
@@ -220,16 +222,40 @@ def build() -> dict:
             for i, a in enumerate(rec.get("attachments") or []):
                 if not isinstance(a, dict):
                     continue
+                v = attachment_view(a)
                 yield {
                     "record_id": rid, "rfn": rfn, "seq": i + 1,
-                    "file_name": (a.get("file_name") or a.get("name")
-                                  or a.get("attachment_name") or "").strip(),
-                    "kind": (a.get("kind") or a.get("mime") or "").strip(),
-                    "local_path": (a.get("local_path") or a.get("content_ref") or "").strip(),
-                    "sha256": (a.get("sha256") or "").strip(),
+                    "file_name": str(v.get("file_name") or "").strip(),
+                    "kind": str(v.get("kind") or "").strip(),
+                    "local_path": str(v.get("local_path") or "").strip(),
+                    "sha256": str(v.get("sha256") or "").strip(),
+                    "bytes": v.get("bytes") or "",
+                    "text_len": v.get("text_len") or "",
+                    "url": str(v.get("url") or "").strip(),
                 }
 
     n_att = _write_jsonl(os.path.join(PUBLISH_DIR, "external_attachments.jsonl"), _attachments())
+
+    def _relations():
+        # F-L04（2026-09-12）：条款级/书名号引用关系（clause_graph 10 主题 edges 汇聚）——
+        # 关系图/影响面分析的发布数据面（原 clause_graph 产物无统一消费入口）。
+        import glob as _glob  # noqa: PLC0415
+        for p in sorted(_glob.glob(os.path.join(CLASSIFIER_DATA, "_t*_clause_graph.json"))):
+            try:
+                d = json.load(open(p, encoding="utf-8"))
+            except ValueError:
+                continue
+            theme = d.get("theme", "")
+            for e in d.get("edges") or []:
+                yield {
+                    "theme": theme,
+                    "src_rfn": e.get("src_rfn", ""), "src_title": e.get("src_title", ""),
+                    "dst_rfn": e.get("dst_rfn", ""), "dst_title": e.get("dst_title", ""),
+                    "dst_theme": e.get("dst_theme", ""),
+                    "kind": e.get("kind", ""), "count": int(e.get("count") or 1),
+                }
+
+    n_rel = _write_jsonl(os.path.join(PUBLISH_DIR, "external_relations.jsonl"), _relations())
 
     # snapshot_date：五源 latest date 最大值
     from clean_index import get_clean_index  # noqa: PLC0415
@@ -242,10 +268,12 @@ def build() -> dict:
         "generated_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "files": {},
     }
-    for name in ("external_records.jsonl", "external_clauses.jsonl", "external_attachments.jsonl"):
+    for name in ("external_records.jsonl", "external_clauses.jsonl", "external_attachments.jsonl",
+                 "external_relations.jsonl"):
         p = os.path.join(PUBLISH_DIR, name)
         manifest["files"][name] = {"sha256": _sha256_file(p), "count": sum(1 for _ in open(p, encoding="utf-8"))}
-    manifest["counts"] = {"records": n_rec, "clauses": n_clause, "attachments": n_att}
+    manifest["counts"] = {"records": n_rec, "clauses": n_clause, "attachments": n_att,
+                          "relations": n_rel}
     mp = os.path.join(PUBLISH_DIR, "publish_manifest.json")
     tmp = mp + ".tmp"
     with open(tmp, "w", encoding="utf-8") as fh:

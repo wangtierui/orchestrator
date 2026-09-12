@@ -109,12 +109,18 @@ CN_FIELD_REGISTRY: dict[str, dict] = {
     "判定理由": {"en": "reason", "scope": "recall", "note": ""},
     "建议主题归类": {"en": "suggested_theme", "scope": "recall", "note": ""},
 }
-# 字段语义等价（不同层同义不同名）
+# 字段语义等价（不同层/不同源同义不同名）
 FIELD_SEMANTIC_EQUIV: dict[str, tuple[str, ...]] = {
     "document_number": ("document_number", "doc_no", "document_no", "发文字号"),
-    "title": ("title", "文件名称"),
+    "title": ("title", "文件名称", "doc_title"),
     "source": ("source", "文件来源", "file_src"),
     "timeliness_status": ("timeliness_status", "时效状态", "eff_status", "status"),
+    # F-D06 契约化（2026-09-12）：raw 五源历史名收口——H-05 正文 5 名 / H-06 日期 3 格式。
+    # 写侧保留原始字段（历史数据不重写），**读侧一律经 read_field 归一**（消费纪律）。
+    "body_text": ("body_text", "full_text", "content_text", "content"),
+    "publish_date": ("publish_date", "pub_date", "publishdate", "publish_date_original"),
+    "effective_date": ("effective_date", "eff_date", "effective_date_original"),
+    "source_url": ("source_url", "detail_url", "url"),
 }
 
 # --------------------------------------------------------------------------- #
@@ -184,3 +190,40 @@ CLAUSE_CHAPTER_FIELDS: tuple[str, ...] = ("no", "title", "article_index")
 # 富内容对象轨（2026-09-09 rich_object；raw/cleaned JSONL 行内轨，不入 CSV 39 列）：
 #   写者 = 采集/摄取侧 rich_object_fields（docx/doc/xlsx 图形/公式/图片），pipeline 逐行透传。
 RICH_OBJECT_KEYS: tuple[str, ...] = ("rich_structured", "rich_text", "rich_count")
+
+# ============ 附件对象字段契约（F-D07，2026-09-12） ============
+# 背景：五源 attachments 字段长期 5 套并存（attachment_name/name/file_name；url/file_url；
+# char_count/text_length/size_bytes；ocr_status/fetch_status/extract_status）。
+# 契约（读取侧归一，写侧保留原始字段防历史重写；发布件 external_attachments 即规范形态）：
+ATTACHMENT_FIELDS: tuple[str, ...] = ("file_name", "kind", "local_path", "sha256",
+                                      "bytes", "text_len", "url")
+ATTACHMENT_ALIASES: dict[str, tuple[str, ...]] = {
+    "file_name": ("file_name", "name", "attachment_name"),
+    "kind": ("kind", "mime", "file_type"),
+    "local_path": ("local_path", "content_ref", "path"),
+    "sha256": ("sha256",),
+    "bytes": ("bytes", "size_bytes", "content_length"),
+    "text_len": ("text_len", "char_count", "text_length"),
+    "url": ("url", "file_url", "download_url"),
+}
+
+
+def attachment_view(att: dict) -> dict:
+    """附件对象 → 规范字段视图（F-D07 读取侧归一；缺失字段为 ""）。消费端一律经此读附件。"""
+    out = {}
+    for en, aliases in ATTACHMENT_ALIASES.items():
+        v = ""
+        for a in aliases:
+            if isinstance(att, dict) and att.get(a) not in (None, ""):
+                v = att[a]
+                break
+        out[en] = v
+    return out
+
+
+# ============ 数据双轨权威声明（F-D09，2026-09-12） ============
+# 权威轨：cleaned **JSONL**（字段全集：含 _metadata/_raw_fields/富内容轨/表格结构化/附件对象）。
+# 检索投影：cleaned **CSV**（39 列子集，仅检索/人工浏览用；非程序消费事实源）。
+# 规则：① 程序消费一律读 JSONL（经发布件/clean_index）；② 人工在 CSV 的改动不得反向覆盖
+# JSONL（历史教训：CSV 行对齐回写的兼容轨已收敛到 writeback_source 单点）；③ 两轨差异以
+# JSONL 为准，validate_files 的 sha 校验以 JSONL 为主键（CSV 为辅）。

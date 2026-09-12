@@ -401,6 +401,7 @@ def _cmd_base(argv):
     pq.add_argument("--timeliness", default="")
     pq.add_argument("--chain", default="", help="同文号版本链（F-K08）")
     pq.add_argument("--view", default="", choices=["", "active"], help="视图：active=现行有效")
+    pq.add_argument("--order", default="", choices=["", "date"], help="排序：date=按发布日期升序（时间线 F-L06）")
     pq.add_argument("--internal", action="store_true", help="查内部底座（默认外部）")
     pq.add_argument("--limit", type=int, default=50)
     pq.add_argument("--json", action="store_true")
@@ -448,6 +449,9 @@ def _cmd_base(argv):
             rows = query_external(rfn=args.rfn, document_number=args.docno, theme=args.theme,
                                   source=args.source, timeliness_status=args.timeliness,
                                   limit=args.limit)
+        if args.order == "date":
+            # F-L06：时间线视图（按发布日期升序；空日期沉底）
+            rows = sorted(rows, key=lambda r: (r.get("publish_date") or "9999"))
     else:
         if args.internal:
             rows = search_internal(args.text, limit=args.limit, kind=args.kind if args.kind != "records" else "policies")

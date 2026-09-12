@@ -68,6 +68,9 @@ def _export_external(out_dir: str, max_chars: int, limit: int, manifest: dict, d
                 "verification_source": r.get("verification_source", ""),
                 "source": r.get("source", ""), "url": r.get("url", ""),
                 "theme": r.get("theme", ""), "record_id": r.get("record_id", ""),
+                # F-L08：截断声明（导出正文被 max-chars 截断时显式标注，防下游误当全文）
+                "body_len_full": len(r.get("body_text") or ""),
+                "body_truncated": len(r.get("body_text") or "") > max_chars,
             }),
             f"# {r.get('title', '')}",
             f"> 文号：{r.get('document_number') or '（无）'}｜发布：{r.get('publish_date') or '—'}"
