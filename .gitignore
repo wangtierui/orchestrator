@@ -28,6 +28,11 @@ external/
 state/
 *.lock
 *.pid
+
+# ===== 测试/覆盖率产物（2026-09-12 审查） =====
+.coverage
+.coverage.*
+htmlcov/
 .retrieval_checkpoint.json
 **/.workbuddy/
 
