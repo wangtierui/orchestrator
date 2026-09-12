@@ -117,6 +117,36 @@ class OCRConfig:
     # 以保证 CPU 推理可用；若后续升级到已修复的 paddlepaddle 版本，可设为 False 恢复加速。
     disable_mkldnn: bool = True
 
+    @classmethod
+    def from_config(cls) -> "OCRConfig":
+        """从 config/ocr.yaml（经 config.loader，唯一读取口）构造配置（2026-09-12 接通）。
+
+        原实现：`OCRConfig()` 仅取环境变量默认值（_TESSERACT_DEFAULT 等），与
+        config/ocr.yaml 脱节 → R17 声称的"yaml 化"实际未接通（tesseract_bin 永不生效）。
+        取值优先级（保持 R17 语义）：环境变量 > ocr.yaml > 内置默认。
+        """
+        kwargs: dict = {}
+        try:
+            import sys as _sys  # noqa: PLC0415
+            _root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            if _root not in _sys.path:
+                _sys.path.insert(0, _root)
+            from config.loader import load_ocr  # noqa: PLC0415
+            ocr = (load_ocr() or {}).get("ocr") or {}
+            if ocr.get("tesseract_bin"):
+                kwargs["tesseract_cmd"] = str(ocr["tesseract_bin"])
+            if ocr.get("tessdata_dir"):
+                kwargs["tessdata_prefix"] = str(ocr["tessdata_dir"])
+            if ocr.get("render_dpi"):
+                kwargs["dpi"] = int(ocr["render_dpi"])
+        except Exception:  # noqa: BLE001  配置不可用（独立调用/离线场景）→ 内置默认
+            pass
+        if os.environ.get("OCR_TESSERACT_BIN"):
+            kwargs["tesseract_cmd"] = os.environ["OCR_TESSERACT_BIN"]
+        if os.environ.get("OCR_TESSDATA_DIR"):
+            kwargs["tessdata_prefix"] = os.environ["OCR_TESSDATA_DIR"]
+        return cls(**kwargs)
+
 
 # ---------------------------------------------------------------------------
 # 结果类型
@@ -327,7 +357,7 @@ class UnifiedOCR:
     """统一 OCR 门面：按优先级串联引擎，提供图片 / PDF 识别与降级。"""
 
     def __init__(self, config: OCRConfig | None = None):
-        self.config = config or OCRConfig()
+        self.config = config or OCRConfig.from_config()
         self._engines: list[BaseOCREngine] = [
             PaddleOCREngine(
                 self.config.paddle_init,

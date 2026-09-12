@@ -154,6 +154,22 @@ def _cmd_internal(argv):
     if sub == "index":
         # 透传剩余参数（--source-dir/--enable-ocr/--dry-run）
         return _index_main_internal(argv[1:])
+    if sub == "reocr":
+        # OCR 存量回填（2026-09-12）：对 text_chars==0 的扫描件重提取（质量闸门把关）
+        import argparse as _ap  # noqa: PLC0415
+        ap = _ap.ArgumentParser(prog="orchestrator internal reocr")
+        ap.add_argument("--limit", type=int, default=0, help="最多处理 N 个（0=全部）")
+        ap.add_argument("--min-cjk", type=int, default=20, dest="min_cjk",
+                        help="质量闸门：识别文本最少汉字数（默认 20）")
+        a = ap.parse_args(argv[1:])
+        from internal_policy_base.extract import reocr_backfill  # noqa: PLC0415
+        st = reocr_backfill(limit=(a.limit or None), min_cjk=a.min_cjk)
+        import json as _json  # noqa: PLC0415
+        print(_json.dumps({k: v for k, v in st.items() if k != "details"},
+                          ensure_ascii=False, indent=2))
+        for d in st.get("details", []):
+            print("  ", _json.dumps(d, ensure_ascii=False))
+        return 0
     if sub == "align":
         import json
 

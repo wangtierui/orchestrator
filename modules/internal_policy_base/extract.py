@@ -242,3 +242,108 @@ def renormalize_processed() -> dict:
         except Exception:
             pass
     return {"changed": changed, "unchanged": unchanged, "processed_dir": proc_dir}
+
+
+def reocr_backfill(limit: int | None = None, min_cjk: int = 20) -> dict:
+    """存量扫描件 OCR 回填（2026-09-12，OCR 引擎就绪后落地）。
+
+    - 目标：processed 主记录中 `text_chars==0`（扫描件/提取失败）且原文件存在者；
+    - 提取：`extract_file(enable_ocr=True)`（文本层优先 → OCR 引擎链降级）；
+    - **质量闸门**：新文本须 ≥ min_cjk 个汉字才回写，否则 `extract_status="ocr_low_quality"`
+      且保持 `needs_ocr=True`（防 OCR 乱码污染底座）；
+    - 回写：主记录（text_chars/needs_ocr/extract_status/章条数）+ `_fulltext.json` +
+      `_clauses.json/_clauses.md` + 主索引字段回刷；
+    - 断点：逐文件落盘；重复运行仅再处理未达标者。返回统计（含明细）。
+    """
+    import glob as _glob  # noqa: PLC0415
+    import json as _json  # noqa: PLC0415
+
+    from std_lib.scraper_std.document_structure import (  # noqa: PLC0415
+        extract_structure,
+        render_markdown,
+    )
+
+    data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
+    proc_dir = os.path.join(data_dir, "processed")
+    idx_path = os.path.join(data_dir, "internal_policy_index.json")
+    stats: dict = {"total": 0, "recovered": 0, "low_quality": 0, "failed": 0,
+                   "chars": 0, "details": []}
+    mains = sorted(p for p in _glob.glob(os.path.join(proc_dir, "*.json"))
+                   if not p.endswith(("_fulltext.json", "_clauses.json", "_rich.json")))
+    targets = []
+    for p in mains:
+        try:
+            rec = _json.load(open(p, encoding="utf-8"))
+        except Exception:  # noqa: BLE001
+            continue
+        if (rec.get("text_chars") or 0) > 0:
+            continue
+        orig = os.path.join(data_dir, str(rec.get("original_path", "")))
+        if not os.path.exists(orig):
+            continue
+        targets.append((p, rec, orig))
+    stats["total"] = len(targets)
+    if limit:
+        targets = targets[: int(limit)]
+    recovered_ipns = []
+    for p, rec, orig in targets:
+        ipn = rec.get("ipn", "")
+        try:
+            res = extract_file(orig, name=rec.get("file_name", ""),
+                               enable_ocr=True, ocr_timeout=600)
+        except Exception as e:  # noqa: BLE001
+            stats["failed"] += 1
+            stats["details"].append({"ipn": ipn, "status": "error", "error": repr(e)[:140]})
+            continue
+        txt = res.get("text") or ""
+        cjk = sum(1 for ch in txt if "\u4e00" <= ch <= "\u9fff")
+        if cjk < min_cjk:
+            rec["needs_ocr"] = True
+            rec["extract_status"] = "ocr_low_quality"
+            _json.dump(rec, open(p + ".tmp", "w", encoding="utf-8"),
+                       ensure_ascii=False, indent=2)
+            os.replace(p + ".tmp", p)
+            stats["low_quality"] += 1
+            stats["details"].append({"ipn": ipn, "status": "low_quality",
+                                     "file": rec.get("file_name", "")[:40], "cjk": cjk})
+            continue
+        stru = extract_structure(txt)
+        rec.update({"text_chars": len(txt), "needs_ocr": False,
+                    "extract_status": res.get("extract_status", "ocr") or "ocr",
+                    "chapter_count": stru.get("chapter_count", 0),
+                    "article_count": stru.get("article_count", 0)})
+        _json.dump(rec, open(p + ".tmp", "w", encoding="utf-8"),
+                   ensure_ascii=False, indent=2)
+        os.replace(p + ".tmp", p)
+        _json.dump({"ipn": ipn, "text": txt},
+                   open(os.path.join(proc_dir, ipn + "_fulltext.json"), "w", encoding="utf-8"),
+                   ensure_ascii=False, indent=2)
+        _json.dump({"ipn": ipn, "chapters": stru.get("chapters", []),
+                    "articles": stru.get("articles", [])},
+                   open(os.path.join(proc_dir, ipn + "_clauses.json"), "w", encoding="utf-8"),
+                   ensure_ascii=False, indent=2)
+        open(os.path.join(proc_dir, ipn + "_clauses.md"), "w", encoding="utf-8").write(
+            render_markdown(stru, title=rec.get("title", "")))
+        recovered_ipns.append(ipn)
+        stats["recovered"] += 1
+        stats["chars"] += len(txt)
+        stats["details"].append({"ipn": ipn, "status": "recovered", "cjk": cjk,
+                                 "file": rec.get("file_name", "")[:40]})
+    # 主索引字段回刷（text_chars/needs_ocr/章条数）
+    if recovered_ipns:
+        try:
+            idx = _json.load(open(idx_path, encoding="utf-8"))
+            by_ipn = set(recovered_ipns)
+            for r in idx.get("records", []):
+                if r.get("ipn") in by_ipn:
+                    pr = _json.load(open(os.path.join(proc_dir, r["ipn"] + ".json"),
+                                         encoding="utf-8"))
+                    for k in ("text_chars", "needs_ocr", "extract_status",
+                              "chapter_count", "article_count"):
+                        r[k] = pr.get(k, r.get(k))
+            _json.dump(idx, open(idx_path + ".tmp", "w", encoding="utf-8"),
+                       ensure_ascii=False, indent=2)
+            os.replace(idx_path + ".tmp", idx_path)
+        except Exception:  # noqa: BLE001  索引回刷失败不阻断（下次 internal index 会重算）
+            pass
+    return stats

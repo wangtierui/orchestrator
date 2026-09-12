@@ -21,6 +21,8 @@ logs/
 *.doc
 *.docx
 tessdata/
+# OCR 本地部署（external/ 含 tesseract junction → 系统安装目录；2026-09-12）
+external/
 
 # ===== 运行状态 =====
 state/

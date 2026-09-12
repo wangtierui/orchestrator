@@ -20,9 +20,12 @@ except Exception:  # pragma: no cover
 import paths  # noqa: E402  (根 paths 唯一入口，R4)
 
 # --------------------------------------------------------------------------- #
-# 占位符展开：${NAME} 与 ${NAME:-default}（shell 风格默认值，简单实现）
+# 占位符展开：${NAME} 与 ${NAME:-default}（shell 风格默认值）
+# 2026-09-12 修复：default 支持**一层嵌套**（如 ${OCR_TESSERACT_BIN:-${REG_ORCH_ROOT}/external/...}）
+# ——原正则 [^}]* 遇嵌套提前截断，展开残留 "${REG_ORCH_ROOT/external/tesseract/..."；
+# 现 default 允许含 ${...}，并以迭代展开消化嵌套层级。
 # --------------------------------------------------------------------------- #
-_PLACEHOLDER = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)(?::-([^}]*))?\}")
+_PLACEHOLDER = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)(?::-((?:[^{}]|\{[^{}]*\})*))?\}")
 
 
 def _expand(value: str) -> str:
@@ -34,7 +37,13 @@ def _expand(value: str) -> str:
         if name == "REG_ORCH_ROOT":
             return paths.ROOT
         return default if default is not None else ""
-    return _PLACEHOLDER.sub(_rep, value)
+    out = value
+    for _ in range(5):  # 迭代展开（嵌套 ${A:-${B}}：内层随下一轮次消化）
+        prev = out
+        out = _PLACEHOLDER.sub(_rep, out)
+        if out == prev:
+            break
+    return out
 
 
 def _expand_deep(obj: Any) -> Any:
