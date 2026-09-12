@@ -1,0 +1,183 @@
+{
+  "generated_by": "gen_analysis_deliveries",
+  "generated_at": "2026-09-12 22:21:03",
+  "count": 15,
+  "items": [
+    {
+      "item": "2.1.1.1",
+      "title": "子主题层级结构总览",
+      "file": "2.1.1.1_子主题层级结构总览.md",
+      "lines": 109,
+      "chars": 5443,
+      "sha256_16": "eac42091d3894e1b",
+      "sources": [
+        "modules/regulatory_classifier/data/_t1_final.json"
+      ]
+    },
+    {
+      "item": "2.1.1.2",
+      "title": "监管演变阶段与逻辑迁移",
+      "file": "2.1.1.2_监管演变阶段与逻辑迁移.md",
+      "lines": 235,
+      "chars": 5402,
+      "sha256_16": "f8929f99bf76556d",
+      "sources": [
+        "modules/regulatory_classifier/data/_t1_final.json"
+      ]
+    },
+    {
+      "item": "2.1.1.3",
+      "title": "内部关联关系图",
+      "file": "2.1.1.3_内部关联关系图.md",
+      "lines": 750,
+      "chars": 51516,
+      "sha256_16": "6ceb00819acc87f8",
+      "sources": [
+        "modules/regulatory_classifier/data/_t1_clause_graph.json"
+      ]
+    },
+    {
+      "item": "2.1.1.4",
+      "title": "核心文件引用-细化链条表",
+      "file": "2.1.1.4_核心文件引用细化链条表.md",
+      "lines": 1077,
+      "chars": 102750,
+      "sha256_16": "ea6a985be8a27de8",
+      "sources": [
+        "modules/regulatory_classifier/data/T0_9逐份条款引用与上位法依据明细表.csv",
+        "modules/regulatory_classifier/data/T10_140逐份条款引用与上位法依据明细表.csv",
+        "modules/regulatory_classifier/data/T1_195逐份条款引用与上位法依据明细表.csv",
+        "modules/regulatory_classifier/data/T2_149逐份条款引用与上位法依据明细表.csv",
+        "modules/regulatory_classifier/data/T3_75逐份条款引用与上位法依据明细表.csv",
+        "modules/regulatory_classifier/data/T4_105逐份条款引用与上位法依据明细表.csv",
+        "modules/regulatory_classifier/data/T5_139逐份条款引用与上位法依据明细表.csv",
+        "modules/regulatory_classifier/data/T6_60逐份条款引用与上位法依据明细表.csv",
+        "modules/regulatory_classifier/data/T7_35逐份条款引用与上位法依据明细表.csv",
+        "modules/regulatory_classifier/data/T8_75逐份条款引用与上位法依据明细表.csv",
+        "modules/regulatory_classifier/data/T9_78逐份条款引用与上位法依据明细表.csv"
+      ]
+    },
+    {
+      "item": "2.1.1.5",
+      "title": "监管体系完整性评估",
+      "file": "2.1.1.5_监管体系完整性评估.md",
+      "lines": 217,
+      "chars": 13156,
+      "sha256_16": "edb02aa26c4e20e4",
+      "sources": [
+        "modules/regulatory_classifier/data/_t1_final.json",
+        "modules/regulatory_classifier/data/_t1_clause_graph.json"
+      ]
+    },
+    {
+      "item": "2.1.2.1",
+      "title": "核心监管主题总览",
+      "file": "2.1.2.1_核心监管主题总览.md",
+      "lines": 27,
+      "chars": 1383,
+      "sha256_16": "e1abe9eb8b0db3a5",
+      "sources": [
+        "modules/regulatory_classifier/data/_t1_final.json"
+      ]
+    },
+    {
+      "item": "2.1.2.2",
+      "title": "主题间关联关系图",
+      "file": "2.1.2.2_主题间关联关系图.md",
+      "lines": 885,
+      "chars": 63574,
+      "sha256_16": "a7b7ae005123d221",
+      "sources": [
+        "modules/regulatory_classifier/data/_t1_clause_graph.json"
+      ]
+    },
+    {
+      "item": "2.1.2.3",
+      "title": "各主题监管演进阐述",
+      "file": "2.1.2.3_各主题监管演进阐述.md",
+      "lines": 300,
+      "chars": 12657,
+      "sha256_16": "3aaed18b3d6af015",
+      "sources": [
+        "modules/regulatory_classifier/data/_t1_final.json"
+      ]
+    },
+    {
+      "item": "2.1.3.1",
+      "title": "执行摘要",
+      "file": "2.1.3.1_执行摘要.md",
+      "lines": 37,
+      "chars": 685,
+      "sha256_16": "eed7a617c48783ab",
+      "sources": [
+        "modules/regulatory_classifier/data/_t1_final.json"
+      ]
+    },
+    {
+      "item": "2.1.3.2",
+      "title": "主题交叉影响全景图",
+      "file": "2.1.3.2_主题交叉影响全景图.md",
+      "lines": 64,
+      "chars": 1607,
+      "sha256_16": "3609aed1b8a41fdf",
+      "sources": [
+        "modules/regulatory_classifier/data/_t1_clause_graph.json"
+      ]
+    },
+    {
+      "item": "2.1.3.3",
+      "title": "监管空白与薄弱环节识别",
+      "file": "2.1.3.3_监管空白与薄弱环节识别.md",
+      "lines": 56,
+      "chars": 1935,
+      "sha256_16": "f9c58847b97444c9",
+      "sources": [
+        "modules/regulatory_classifier/data/_t1_final.json"
+      ]
+    },
+    {
+      "item": "2.1.3.4",
+      "title": "上位法覆盖对照表",
+      "file": "2.1.3.4_上位法覆盖对照表.md",
+      "lines": 26,
+      "chars": 993,
+      "sha256_16": "327995c7d0e10ca1",
+      "sources": [
+        "modules/regulatory_classifier/data/_upper_laws.json"
+      ]
+    },
+    {
+      "item": "2.1.3.5",
+      "title": "行业外监管接口矩阵",
+      "file": "2.1.3.5_行业外监管接口矩阵.md",
+      "lines": 27,
+      "chars": 1030,
+      "sha256_16": "6d591da666d63a08",
+      "sources": [
+        "modules/regulatory_classifier/data/_t1_final.json"
+      ]
+    },
+    {
+      "item": "2.1.3.6",
+      "title": "监管趋势预判与前瞻性建议",
+      "file": "2.1.3.6_监管趋势预判与前瞻性建议.md",
+      "lines": 37,
+      "chars": 1079,
+      "sha256_16": "d64c4e660ecd6141",
+      "sources": [
+        "modules/regulatory_classifier/data/_t1_final.json"
+      ]
+    },
+    {
+      "item": "2.1.3.7",
+      "title": "后续行动计划建议",
+      "file": "2.1.3.7_后续行动计划建议.md",
+      "lines": 58,
+      "chars": 2590,
+      "sha256_16": "9f5382ff93d768ad",
+      "sources": [
+        "modules/regulatory_classifier/data/_t1_final.json"
+      ]
+    }
+  ]
+}
