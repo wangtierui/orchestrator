@@ -172,6 +172,20 @@ def _cmd_internal(argv):
         for d in st.get("details", []):
             print("  ", _json.dumps(d, ensure_ascii=False))
         return 0
+    if sub == "refine-identity":
+        # 存量制度身份纠正（2026-09-12）：文号/标题以正文为准（内容权威）
+        import argparse as _ap  # noqa: PLC0415
+        ap = _ap.ArgumentParser(prog="orchestrator internal refine-identity")
+        ap.add_argument("--limit", type=int, default=0, help="最多处理 N 个（0=全部）")
+        a = ap.parse_args(argv[1:])
+        from internal_policy_base.indexer import refine_identity_backfill  # noqa: PLC0415
+        st = refine_identity_backfill(limit=(a.limit or None))
+        import json as _json  # noqa: PLC0415
+        print(_json.dumps({k: v for k, v in st.items() if k != "details"},
+                          ensure_ascii=False, indent=2))
+        for d in st.get("details", [])[:15]:
+            print("  ", _json.dumps(d, ensure_ascii=False))
+        return 0
     if sub == "align":
         import json
 

@@ -33,7 +33,12 @@ for _p in (_ORCH_ROOT, _MODULES):
         sys.path.insert(0, _p)
 
 from internal_policy_base.extract import copy_original, extract_file  # noqa: E402
-from internal_policy_base.scan import scan_directory  # noqa: E402
+from internal_policy_base.scan import (  # noqa: E402
+    clean_title_noise,
+    ipn_of,
+    parse_content_identity,
+    scan_directory,  # noqa: E402
+)
 
 # R21：条文结构解析（章-条），供 merged_view/drafter 条款对照
 from std_lib.scraper_std.document_structure import (  # noqa: E402
@@ -140,6 +145,15 @@ def ingest(source_root: str, *, enable_ocr: bool = False, dry_run: bool = False)
         orig = copy_original(f["source_path"], _ORIGINALS, f["relative_path"])
         res = extract_file(f["source_path"], name=f["file_name"], enable_ocr=enable_ocr)
         text = res.get("text") or ""
+        # 内容权威（2026-09-12，用户指令）：文号/标题以**正文**为准；文件名仅解构回退
+        # （title 提取失败时对文件名 title 做噪声清洗：-清洁版V3/_盖章/（含水印） 等）。
+        ident = parse_content_identity(text)
+        _nd = ident["docno"] or f["docno"]
+        _nt = (ident["title"] or clean_title_noise(f["title"]) or f["title"]
+               or os.path.splitext(f["file_name"])[0])   # 末位兜底：文件名干
+        if _nd != f["docno"] or _nt != f["title"]:
+            f["docno"], f["title"] = _nd, _nt
+            f["ipn"] = ipn_of(_nd, _nt, extension=f["extension"])   # IPN 随身份重算
         rec = {
             "ipn": f["ipn"], "file_name": f["file_name"],
             "relative_path": f["relative_path"], "extension": f["extension"],
@@ -282,6 +296,92 @@ def _rebuild_index() -> int:
     json.dump(index, open(_INDEX_PATH + ".tmp", "w", encoding="utf-8"), ensure_ascii=False, indent=2)
     os.replace(_INDEX_PATH + ".tmp", _INDEX_PATH)
     return len(records)
+
+
+def refine_identity_backfill(limit: int | None = None) -> dict:
+    """存量制度身份纠正（2026-09-12，内容权威）：文号/标题以正文为准。
+
+    - 逐份 processed 主记录：读 `_fulltext.json` → `parse_content_identity` →
+      覆盖 docno/title（title 提取失败时用 `clean_title_noise` 清洗原 title）；
+    - IPN 重算（ipn_of）；与原不同且不冲突时重命名 5 类 processed 文件
+      （主 json/_fulltext/_clauses.json/_clauses.md/_rich.json + `_images` 目录）
+      并同步 `_ingest_state`（sha→ipn）；
+    - 幂等断点：重复运行无变化即全 skip；返回统计（含 conflicts 明细）。
+    """
+    import glob as _glob  # noqa: PLC0415
+
+    proc_dir = _PROCESSED
+    state = _load_state()
+    state_dirty = False
+    stats: dict = {"total": 0, "changed": 0, "renamed": 0, "conflict": 0,
+                   "unchanged": 0, "details": []}
+    mains = sorted(p for p in _glob.glob(os.path.join(proc_dir, "*.json"))
+                   if not p.endswith(("_fulltext.json", "_clauses.json", "_rich.json")))
+    if limit:
+        mains = mains[: int(limit)]
+    for p in mains:
+        try:
+            rec = json.load(open(p, encoding="utf-8"))
+        except Exception:  # noqa: BLE001
+            continue
+        stats["total"] += 1
+        ipn_old = rec.get("ipn", "")
+        fpath = os.path.join(proc_dir, ipn_old + "_fulltext.json")
+        text = ""
+        if os.path.exists(fpath):
+            try:
+                text = json.load(open(fpath, encoding="utf-8")).get("text") or ""
+            except Exception:  # noqa: BLE001
+                text = ""
+        ident = parse_content_identity(text)
+        nd = ident["docno"] or rec.get("docno", "")
+        nt = (ident["title"] or clean_title_noise(rec.get("title", "")) or rec.get("title", "")
+              or os.path.splitext(rec.get("file_name", ""))[0])   # 末位兜底：文件名干
+        if nd == rec.get("docno") and nt == rec.get("title"):
+            stats["unchanged"] += 1
+            continue
+        ipn_new = ipn_of(nd, nt, extension=rec.get("extension", ""))
+        if ipn_new != ipn_old and os.path.exists(os.path.join(proc_dir, ipn_new + ".json")):
+            # 冲突（同 title 多版本，目标 IPN 已被占）：仍更新 docno/title（内容权威），
+            # IPN 保持稳定（标识符优先，不动文件族）——2026-09-12
+            rec.update({"docno": nd, "title": nt})
+            tmp = p + ".tmp"
+            with open(tmp, "w", encoding="utf-8") as fh:
+                json.dump(rec, fh, ensure_ascii=False, indent=2)
+            os.replace(tmp, p)
+            stats["conflict"] += 1
+            stats["details"].append({"ipn": ipn_old, "status": "conflict",
+                                     "file": rec.get("file_name", "")[:40], "target": ipn_new,
+                                     "title": nt[:40]})
+            continue
+        rec.update({"docno": nd, "title": nt, "ipn": ipn_new})
+        if ipn_new != ipn_old:
+            for suf in (".json", "_fulltext.json", "_clauses.json", "_clauses.md", "_rich.json"):
+                src_f = os.path.join(proc_dir, ipn_old + suf)
+                if os.path.exists(src_f):
+                    os.replace(src_f, os.path.join(proc_dir, ipn_new + suf))
+            dsrc = os.path.join(proc_dir, ipn_old + "_images")
+            if os.path.isdir(dsrc):
+                ddst = os.path.join(proc_dir, ipn_new + "_images")
+                if not os.path.exists(ddst):
+                    os.replace(dsrc, ddst)
+            stats["renamed"] += 1
+        # 写回**新路径**（2026-09-12 修复：原按扫描旧路径写回会重建旧名、与新名撕裂）
+        out_p = os.path.join(proc_dir, ipn_new + ".json")
+        tmp = out_p + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as fh:
+            json.dump(rec, fh, ensure_ascii=False, indent=2)
+        os.replace(tmp, out_p)
+        if ipn_new != ipn_old and rec.get("sha256") in state:
+            state[rec["sha256"]]["ipn"] = ipn_new
+            state_dirty = True
+        stats["changed"] += 1
+        stats["details"].append({"ipn_old": ipn_old, "ipn_new": ipn_new,
+                                 "docno": nd, "title": nt[:40],
+                                 "file": rec.get("file_name", "")[:36]})
+    if state_dirty:
+        _save_state(state)
+    return stats
 
 
 def backfill_rich() -> dict:

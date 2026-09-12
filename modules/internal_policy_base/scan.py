@@ -46,9 +46,15 @@ def parse_filename(name: str) -> dict:
     m = _DOCNO_RE.search(name)
     docno = m.group("docno").strip() if m else ""
     if docno:
-        # 文号后通常是 _ 分隔标题
-        after = name[m.end():].lstrip("_")
-        title = _EXT_RE.sub("", after).strip() if after else _EXT_RE.sub("", base)
+        # 文号后通常是 _ 分隔标题；兼容"标题（文号）"尾括号形态：
+        # 文号后无实质内容（仅"）"等）→ 取文号前段（2026-09-12 实证 4 例）
+        after = name[m.end():].lstrip("_").strip("）)（( ")
+        after = _EXT_RE.sub("", after).strip()
+        if len(after) >= 2:
+            title = after
+        else:
+            before = name[:m.start()].strip("_（( ")
+            title = _EXT_RE.sub("", before).strip() if before else _EXT_RE.sub("", base)
     else:
         title = _EXT_RE.sub("", base).lstrip("_").lstrip("-").strip()
     return {"docno": docno, "title": title}
@@ -68,6 +74,119 @@ def ipn_of(docno: str, title: str, extension: str = "") -> str:
     ext = (extension or "").strip().lower().lstrip(".")
     key = f"{docno}|{title}|{ext}" if docno else f"{title}|{ext}"
     return "IPN-" + hashlib.md5(key.encode("utf-8")).hexdigest()[:16]
+
+
+# ============ 正文身份识别（内容权威，2026-09-12） ============
+# 背景：部门制度文件名词干噪声多（"23."/"编号1."/"…_盖章"/"-清洁版V3"），文号与标题
+# 须以**正文**为准；提取失败回退文件名解构（parse_filename，见模块头）。
+_CONTENT_DOCNO_RE = re.compile(
+    r"([\u4e00-\u9fa5]{2,20}(?:〔|【|（|\()\s*\d{4}\s*(?:〕|】|）|\))\s*第?\s*\d{1,4}\s*号)")
+# 说明：「文件编号：XXX」（体系文件编号，如 SLOC-0203-05）**非发文号**，不作 docno 提取
+# （2026-09-12 实测：会顶替真实文号；宁缺毋滥——识别不到则回退文件名解构）。
+# 文件名遗留噪声（正文权威提取失败时的 fallback 清洗）：
+_TITLE_NOISE_RE = re.compile(
+    r"[-_—\s]*((清洁版|盖章版|含水印|无水印|扫描件|复印件|定稿版|终版|最终版)\s*V?\d*|盖章|扫描版)\s*$")
+_BOOK_TITLE_RE = re.compile(r"《([^》]{4,90})》")
+_GW_TITLE_RE = re.compile(r"^(关于.{2,70}?(?:的通知|的函|的决定|的通报|的公告|的批复|的意见))")
+_TITLE_HEAD_CUT = re.compile(r"(一、|第一条|第1条|第一章|第[一二三四五六七八九十]+章|目的|总则)")
+# 标题须以制度类关键词**结尾**（可带版本括注）；前缀命中为误（如页眉词"标准化管理体系文件"）
+_TITLE_KW_END_RE = re.compile(
+    r"(办法|规定|通知|细则|指引|规范|制度|方案|预案|手册|规程|准则|标准|流程|说明|通告|公告|条例|政策)"
+    r"([（(][^）)]{1,20}[）)]|版)?$")
+# 标题候选黑名单（页眉/体系词等）
+_TITLE_DENY_RE = re.compile(r"^(标准化管理体系文件|管理文件|红头文件|文件)")
+
+
+def _trim_self_repeat(s: str) -> str:
+    """消解"公司名+标题+公司名 发布/编制…"自重复（如"XX公司内部控制指引XX公司 发布"）：
+    找首段（8-30 字）的复现位置，截到复现起点（保留 [公司名+标题]）。"""
+    n = len(s)
+    for L in range(min(30, n // 2), 7, -1):
+        pos = s.find(s[:L], L)
+        if pos > 0:
+            return s[:pos]
+    return s
+
+
+def _norm_cmp(s: str) -> str:
+    """比较用归一：去空白与常见标点/括号（标题重叠校验用）。"""
+    return re.sub(r"[\s\-_—、：:（）()〔〕【】《》]", "", (s or ""))
+
+
+def _overlaps(a: str, b: str, min_lcs: int = 8) -> bool:
+    """a/b 归一后互相包含，或最长公共子串 ≥ min_lcs（正文候选与文件名 title 交叉校验，
+    防"正文引用他文"被误当标题——如首部引《中华人民共和国保险法》，2026-09-12 实证）。"""
+    a2, b2 = _norm_cmp(a), _norm_cmp(b)
+    if not a2 or not b2:
+        return False
+    if a2 in b2 or b2 in a2:
+        return True
+    best = 0
+    for i in range(len(a2)):
+        for L in range(best + 1, len(a2) - i + 1):
+            if a2[i:i + L] in b2:
+                best = L
+            else:
+                break
+    return best >= min_lcs
+
+
+def parse_content_identity(text: str, *, head_chars: int = 1500,
+                           fallback_title: str = "") -> dict:
+    """从正文首部识别 (文号, 标题)——内容权威（保守：识别不了返回空串，调用方回退文件名解构）。
+
+    规则：
+      ① 文号：[机关代字〔年〕号] 首个命中（4 位年括号统一归一为〔〕、去内部空格）。
+      ② 标题：a) 文号后随的公文式标题（"关于…的通知/函/决定…"）优先；
+             b) 否则首部标题段（截到"一、/第一条/第N章/目的/总则"前，6-80 字、
+                以制度类关键词结尾、过黑名单）；
+      校验：候选标题须与 `fallback_title`（文件名 title）有实质重叠（防引用他文误提）。
+      （说明：原"首个书名号"规则已删除——正文首部引用《他法》极常见，误提风险高。）
+    """
+    t = (text or "").strip()
+    if not t:
+        return {"docno": "", "title": ""}
+    head = t[:head_chars]
+    docno = ""
+    m = _CONTENT_DOCNO_RE.search(head)
+    seg = head
+    if m:
+        docno = re.sub(r"\s+", "", m.group(1))
+        docno = re.sub(r"[（(]\s*(\d{4})\s*[)）]", r"〔\1〕", docno)   # （2019）→〔2019〕归一
+        seg = head[m.end():]
+    title = ""
+    # a) 公文式标题（校验重叠）
+    gm = _GW_TITLE_RE.match(seg.lstrip(" ：:，,、"))
+    if gm:
+        t1 = gm.group(1).strip()
+        if not fallback_title or _overlaps(t1, fallback_title):
+            title = t1
+    # b) 首部标题段（清编号前缀 + 重叠校验 + 关键词结尾 + 黑名单）
+    if not title:
+        cut = _TITLE_HEAD_CUT.search(seg)
+        cand = (seg[:cut.start()] if cut else seg[:120])
+        cand = re.sub(r"\s+", "", cand).strip(" 　：:—-、")
+        cand = re.sub(r"^[0-9]{1,3}[、.．：:]\s*", "", cand)   # 清"4."/"23、"等编号前缀
+        cand = re.split(r"(编制|审核|批准|发布|编写|版本号|生效日期|文件编号)", cand)[0].strip(" 　：:—-、")
+        cand = _trim_self_repeat(cand)
+        if (6 <= len(cand) <= 80 and _TITLE_KW_END_RE.search(cand)
+                and not _TITLE_DENY_RE.match(cand)
+                and "。" not in cand and cand[:1] not in ("）", ")", "。")   # 句读残留即拒
+                and (not fallback_title or _overlaps(cand, fallback_title))):
+            title = cand
+    return {"docno": docno, "title": title}
+
+
+def clean_title_noise(title: str) -> str:
+    """清洗文件名遗留噪声——正文提取失败时的 fallback 用：
+    ① 前缀编号（"23."/"4："/"(1)"）；② 尾部版本/盖章括注（-清洁版V3/_盖章/（含水印））；
+    ③ 去外层书名号（《…》→ …）。"""
+    s = (title or "").strip()
+    s = re.sub(r"^[0-9]{1,3}\s*[、.．：:]\s*", "", s)
+    s = re.sub(r"^[（(][0-9]{1,3}[）)]\s*", "", s)
+    s = re.sub(r"^[A-Za-z]{1,3}[0-9]{2,4}\s*", "", s)   # 档案编号前缀（如 L042）
+    s = _TITLE_NOISE_RE.sub("", s).strip(" -_—")
+    return s.strip("《》").strip()
 
 
 def scan_directory(root: str, *, supported: set[str] | None = None) -> list[dict]:
