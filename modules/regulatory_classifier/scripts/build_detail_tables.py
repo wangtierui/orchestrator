@@ -201,8 +201,13 @@ def build_theme_rows(theme, attr_rows, cleaned, existing, cluster_map):
         if old is not None:
             row = dict(old)
             st = (row.get("正文状态") or "").strip()
+            _c = cleaned.get((src, "D:" + _norm_docno(a.get("发文字号")))) \
+                or cleaned.get((src, "T:" + _norm_title(a.get("文件名称"))))
             if st not in BODY_ENUM:
-                row["正文状态"] = body_status(get_body(cleaned.get((src, "D:" + _norm_docno(a.get("发文字号"))))))
+                row["正文状态"] = body_status(get_body(_c))
+            # F-L03（2026-09-12）：法宝核验标记联入——时效状态/核验来源按 clean 权威字段投影刷新
+            row["时效状态"] = (_c or {}).get("timeliness_status", "") or row.get("时效状态", "")
+            row["核验来源"] = (_c or {}).get("verification_source", "") or row.get("核验来源", "")
             row["监管文件编号"], row["主题"] = rfn, target_theme
             # R12（2026-09-08）：叙述列（标题/发文字号/文件来源）按归属表权威快照投影刷新，
             # 防归属表改标题/文号后明细表保留旧叙述（"只补缺不刷"陈旧）；人工列（立法依据/条款引用/备注）保留。
@@ -222,6 +227,9 @@ def build_theme_rows(theme, attr_rows, cleaned, existing, cluster_map):
         out.append({
             "监管文件编号": rfn, "主题": target_theme, "标题": a.get("文件名称", ""),
             "发文字号": a.get("发文字号", ""), "文件来源": src, "正文状态": body_status(body),
+            # F-L03（2026-09-12）：法宝核验标记联入（clean 权威字段）
+            "时效状态": (c or {}).get("timeliness_status", ""),
+            "核验来源": (c or {}).get("verification_source", ""),
             "立法依据": "；".join(basis), "条款引用": art_str,
             "备注": "2026-08-31 build_detail_tables 补齐|条款/依据自动抽取(需复核)",
             "子主题": cluster_map.get(rfn, ""),

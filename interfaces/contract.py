@@ -34,9 +34,12 @@ REGISTRY_CSV_FIELDS: list[str] = [
 THEME_FIELDS: list[str] = ["监管文件编号", "主题", "判定依据"]
 
 # 明细表列（R10 provenance 2026-09-08 加 generated_by/at；写者 build_detail_tables.FIELDS re-export 此契约）
+# F-L03（2026-09-12）：增"时效状态/核验来源"两列——法宝核验标记联入分析层（规划 2.1.1.4
+# "核心文件引用-细化链条表（含法宝核验标记）"数据面落地；来源 clean 记录 timeliness_status/
+# verification_source 字段）。
 DETAIL_TABLE_FIELDS: list[str] = [
     "监管文件编号", "主题", "标题", "发文字号", "文件来源",
-    "正文状态", "立法依据", "条款引用", "备注", "子主题",
+    "正文状态", "时效状态", "核验来源", "立法依据", "条款引用", "备注", "子主题",
     "generated_by", "generated_at",
 ]
 
@@ -79,6 +82,7 @@ CN_FIELD_REGISTRY: dict[str, dict] = {
     # 明细表 detail（10 中文 + 2 英文 generated_*）
     "标题": {"en": "title", "scope": "detail", "note": "明细叙述列（按归属表权威投影 R12）"},
     "正文状态": {"en": "body_status", "scope": "detail", "note": "完整/摘要/核心要点/无正文"},
+    "核验来源": {"en": "verification_source", "scope": "detail", "note": "F-L03：法宝核验标记（北大法宝/规则判断）"},
     "立法依据": {"en": "basis", "scope": "detail", "note": "抽取（人工列保留）"},
     "条款引用": {"en": "article_refs", "scope": "detail", "note": "抽取（人工列保留）"},
     "备注": {"en": "note", "scope": "detail", "note": "人工列"},
