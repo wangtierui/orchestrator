@@ -1,0 +1,10 @@
+{
+ "known_latest": "0.6.11",
+ "published_at": "2026-08-25T07:08:04Z",
+ "windows_assets": [
+  "LLM-Wiki-0.6.11-windows-x64-portable.zip",
+  "LLM.Wiki_0.6.11_x64-setup.exe",
+  "LLM.Wiki_0.6.11_x64_en-US.msi"
+ ],
+ "checked_at": "2026-09-12 21:01:01"
+}
