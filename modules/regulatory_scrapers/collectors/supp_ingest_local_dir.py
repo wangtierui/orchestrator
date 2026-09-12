@@ -221,7 +221,8 @@ def main(argv=None):
     if args.run_clean:
         pipe = os.path.join(SCRAPERS_ROOT, "clean", "run_clean_pipeline.py")
         print("[收录] 运行清洗管道:", pipe, "--project supp")
-        rc = subprocess.run([sys.executable, pipe, "--project", "supp"], cwd=SCRAPERS_ROOT).returncode
+        rc = subprocess.run([sys.executable, pipe, "--project", "supp"], cwd=SCRAPERS_ROOT,
+                            timeout=1800).returncode   # 审查 P2-5（2026-09-12）
         print("[收录] 管道返回码:", rc)
         return rc
     return 0

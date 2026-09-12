@@ -59,7 +59,7 @@ def _run(args, cwd, desc, dry_run=False):
         print(f"    [dry-run] {' '.join(args)}")
         return True, ""
     r = subprocess.run([PY] + args, cwd=cwd, capture_output=True, text=True,
-                       encoding="utf-8", errors="replace")
+                       encoding="utf-8", errors="replace", timeout=1200)   # 审查 P2-5
     out = (r.stdout or "") + (r.stderr or "")
     tail = "\n".join(out.strip().splitlines()[-6:])
     if tail:

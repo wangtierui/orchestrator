@@ -218,6 +218,7 @@ def run_rebuild():
          "--delay-min", "0", "--delay-max", "0", "--out-dir",
          os.path.join(os.path.dirname(HERE), "data", "raw")],
         cwd=HERE, check=False, stdout=sys.stdout, stderr=sys.stderr,
+        timeout=7200,   # 审查 P2-5（2026-09-12）：离线重建防挂起
     )
 
 def run_attachments(timeout=None):

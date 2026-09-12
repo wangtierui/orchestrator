@@ -15,12 +15,26 @@ dependencies = [
     "beautifulsoup4>=4.10.0",
     "cryptography>=3.0",
     "PyYAML>=6.0",
+    # 解析/结构化链（2026-09-12 审查补登记 D1：清洗/条款抽取/制度摄取实际依赖）
+    "lxml>=4.9",
+    "numpy>=1.24",
+    "pytesseract>=0.3.10",
+    "openpyxl>=3.1",
+    "xlrd>=2.0",
+    "python-docx>=1.0",
 ]
 
 [project.optional-dependencies]
 mcp = ["mcp>=2.0.0"]
 dev = ["pytest>=7.0.0", "coverage>=7.0.0", "ruff>=0.6", "mypy>=1.10"]
-ocr = ["paddleocr", "pdfplumber", "pypdf", "PyMuPDF"]
+# OCR extra（2026-09-12 审查补版本区间 D3：Paddle 生态变动快，锁主版本）
+ocr = [
+    "paddleocr>=3.0,<4",
+    "paddlex[ocr]>=3.0,<4",
+    "pdfplumber>=0.11",
+    "pypdf>=4.0",
+    "PyMuPDF>=1.24",
+]
 
 [project.scripts]
 orchestrator = "cli:main"

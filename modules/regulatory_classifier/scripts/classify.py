@@ -51,7 +51,7 @@ _BODY_THEMES = [c for c in THEME_MAP if c != "T0"]       # 有底座的 T1–T10
 def _run(script: str, args: list[str], cwd: str = _SCRIPTS) -> int:
     print(f"    ↳ {os.path.basename(script)} {' '.join(args)}")
     env = dict(os.environ, PYTHONUTF8="1", PYTHONIOENCODING="utf-8")
-    p = subprocess.run([_PY, script, *args], cwd=cwd, env=env)
+    p = subprocess.run([_PY, script, *args], cwd=cwd, env=env, timeout=3600)
     return p.returncode
 
 

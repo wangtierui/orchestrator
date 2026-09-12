@@ -324,7 +324,7 @@ def _cmd_timeliness(argv):
     if not os.path.exists(script):
         print(f"[timeliness] 脚本缺失: {script}")
         return 3
-    r = subprocess.run([sys.executable, "-X", "utf8", script] + argv[1:])
+    r = subprocess.run([sys.executable, "-X", "utf8", script] + argv[1:], timeout=7200)
     return r.returncode
 
 
@@ -339,7 +339,7 @@ def _cmd_draft(argv):
     if not os.path.exists(script):
         print(f"[draft] 脚本缺失: {script}")
         return 1
-    return subprocess.run([sys.executable, "-X", "utf8", script] + argv).returncode
+    return subprocess.run([sys.executable, "-X", "utf8", script] + argv, timeout=3600).returncode
 
 
 def _cmd_rfn(argv):

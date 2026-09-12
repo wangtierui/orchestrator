@@ -68,7 +68,7 @@ def main():
         rc = subprocess.run(
             [PY, "pbc_backfill_pdfs.py", "--limit", str(this_batch),
              "--delay", "0.3", "--save-every", str(this_batch)],
-            cwd=ROOT,
+            cwd=ROOT, timeout=1800,   # 审查 P2-5（2026-09-12）：单批超时防挂起
         ).returncode
         if rc != 0:
             log(f"  本批返回码 {rc}（可能异常），下批将重试未处理项。")

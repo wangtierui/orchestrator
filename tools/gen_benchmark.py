@@ -15,6 +15,7 @@ import glob
 import json
 import os
 import re
+import subprocess
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -102,6 +103,18 @@ def gather() -> dict:
         snaps[sid] = m.group(1) if m else "?"
     out["clean_snapshots"] = snaps
     out["clean_total_records"] = (idx.get("summary") or {}).get("total_record_count", "?")
+    # 覆盖率基线（审查 P2-7，2026-09-12）：有 .coverage 数据则取 TOTAL%（"只升不降"回归闸）
+    try:
+        if os.path.exists(os.path.join(ROOT, ".coverage")):
+            r = subprocess.run([sys.executable, "-m", "coverage", "report", "--format=total"],
+                               cwd=ROOT, capture_output=True, text=True,
+                               encoding="utf-8", errors="replace", timeout=120)
+            out["coverage_total"] = ((r.stdout or "").strip().splitlines() or ["?"])[-1].strip() \
+                if r.returncode == 0 else "?"
+        else:
+            out["coverage_total"] = "（未采集；python -m coverage run -m pytest tests -q）"
+    except Exception:  # noqa: BLE001
+        out["coverage_total"] = "?"
     return out
 
 
@@ -137,6 +150,8 @@ def render(g: dict) -> str:
     L.append("## 2 自动化验收测试（pytest）\n")
     L.append(f"用例文件 {len(g['test_files'])}：`" + "`、`".join(g["test_files"]) + "`")
     L.append("运行：`python -m pytest tests -q`\n")
+    L.append(f"**覆盖率基线（只升不降）**：TOTAL {g.get('coverage_total', '?')}%"
+             "（采自 `.coverage`；刷新：`python -m coverage run -m pytest tests -q`）\n")
 
     c = g["classifier"]
     L.append("## 3 数据基线\n")
@@ -175,7 +190,7 @@ def render(g: dict) -> str:
     L.append("## 4 运行入口速查\n")
     L.append("| 命令 | 职责 |")
     L.append("|---|---|")
-    L.append("| `python cli.py gates` | 12 道交付门禁 |")
+    L.append(f"| `python cli.py gates` | {len(g['gates'])} 道交付门禁（以 ALL_GATES 为准） |")
     L.append("| `python cli.py classify --all --steps base,cluster,match,detail,upper,clause_graph` | 底座强序重建（R8 幂等断点） |")
     L.append("| `python cli.py source list / add --id` | 源目录路由（R15） |")
     L.append("| `python cli.py internal index/align/merged` | 内部制度链路 |")
