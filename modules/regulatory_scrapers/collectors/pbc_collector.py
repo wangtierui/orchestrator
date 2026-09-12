@@ -42,7 +42,6 @@ del _GUIDE_ROOT, _os, _sys
 import argparse
 import csv
 import hashlib
-import html
 import json
 import os
 import random
@@ -73,6 +72,23 @@ except ImportError:  # pragma: no cover
 
 _RESP_TEXT = None  # TextResponseCache 实例；None 表示未启用缓存
 _OfflineMiss = OfflineMiss  # 兼容别名
+
+
+# ---- 拆分（2026-09-13，P3）：下列符号迁 pbc_parse，re-export 保持外部调用兼容 ----
+from pbc_parse import (  # noqa: F401  拆分 re-export（显式；规避 F405）
+    clean_text,
+    convert_with_libreoffice,
+    detect_libreoffice,
+    detect_magic,
+    extract_docx_text,
+    extract_pdf_text,
+    extract_xls_text,
+    is_attachment,
+    normalize_digits,
+    safe_filename,
+    safe_url,
+    strip_tags,
+)
 
 
 def _init_cache(path=None, offline=False):
@@ -164,32 +180,7 @@ ATTACH_EXT = (".doc", ".docx", ".pdf", ".xls", ".xlsx", ".wps", ".ceb", ".rtf")
 # ----------------------------------------------------------------------------------
 # 附件解析：多格式路由 + LibreOffice 自动探测 + 优雅降级
 # ----------------------------------------------------------------------------------
-def safe_filename(title, ext, url):
-    """生成本地安全文件名：hash 前缀防重名 + 可读标题 + 小写扩展名。
 
-    （共享库对齐审计 阶段 1）核心逻辑（去非法字符 / 限长 / URL 哈希前缀）委托
-    ``crawler_common.safe_filename``，本函数仅补扩展名；**保留 pbc 原有**限长 60**，
-    签名与返回结构不变。与 ``backfill_pdfs.safe_filename`` 同口径，二者现共用共享库实现。
-    """
-    repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    if repo_root not in sys.path:
-        sys.path.insert(0, repo_root)
-    from std_lib.scraper_std.crawler_common import safe_filename as _cc_safe_filename
-    base = _cc_safe_filename(title, url, 60)
-    ext = (ext or "bin").lower()
-    return f"{base}.{ext}"
-
-def detect_magic(bdata):
-    """按文件头 magic bytes 判断实际格式，处理扩展名与内容不符的'格式不匹配'异常。"""
-    if not bdata:
-        return None
-    if bdata[:4] == b"%PDF":
-        return "pdf"
-    if bdata[:4] in (b"PK\x03\x04", b"PK\x05\x06", b"PK\x07\x08"):
-        return "zip"          # docx / xlsx 均为 zip 容器
-    if bdata[:8] == b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1":
-        return "ole"          # .doc / 旧 .xls 为 OLE 复合文档
-    return None
 
 from std_lib.scraper_std.doc_convert import (  # noqa: E402 五源共享 doc→docx（2026-09-08）
     find_libreoffice,
@@ -199,58 +190,10 @@ LO_PATH = find_libreoffice()
 LO_AVAILABLE = LO_PATH is not None
 
 
-def detect_libreoffice():
-    """兼容别名：委托共享 find_libreoffice（五源统一探测）。"""
-    return find_libreoffice()
 
 
-def convert_with_libreoffice(doc_path):
-    """兼容别名：委托共享 doc_to_docx（.doc/.wps/.rtf/.ceb → .docx，headless）。不可用返回 None。"""
-    from std_lib.scraper_std.doc_convert import doc_to_docx  # noqa: PLC0415
-    return doc_to_docx(doc_path)
 
-def extract_pdf_text(data):
-    """用统一 OCR 模块抽取 PDF 文本（文本层优先，扫描件走 OCR 引擎链）。
 
-    修复：原实现仅用 pdfplumber 抽文本层、无 OCR 兜底；现经 std_lib/scraper_std/
-    ocr_engine，文本层充分即直接采用（避免对正常文本做 OCR），否则自动走 PaddleOCR
-    3.7.0（默认）+ Tesseract v5 降级，并规避 Paddle#77340 oneDNN/PIR 崩溃
-    （disable_mkldnn 默认开启）。返回抽取文本（str）或 None（无文本层且 OCR 失败）。
-    """
-    import tempfile
-    repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    if repo_root not in sys.path:
-        sys.path.insert(0, repo_root)
-    from std_lib.scraper_std.ocr_engine import get_ocr
-    fd, tmp = tempfile.mkstemp(suffix=".pdf", prefix="pbc_main_ocr_")
-    try:
-        with os.fdopen(fd, "wb") as f:
-            f.write(data)
-        res = get_ocr().extract_pdf(tmp, force_ocr=False)
-    finally:
-        try:
-            os.remove(tmp)
-        except OSError:
-            pass
-    if res.success and res.text.strip():
-        return res.text
-    return None
-
-def extract_xls_text(data):
-    try:
-        import io
-
-        from openpyxl import load_workbook
-        wb = load_workbook(io.BytesIO(data), data_only=True, read_only=True)
-        out = []
-        for ws in wb.worksheets:
-            for row in ws.iter_rows(values_only=True):
-                cells = [str(c) for c in row if c is not None]
-                if cells:
-                    out.append(" | ".join(cells))
-        return "\n".join(out).strip()
-    except Exception:
-        return None
 
 # ----------------------------------------------------------------------------------
 # 网络请求层：带重试退避、UA 轮换、超时、频率控制
@@ -341,37 +284,10 @@ class Fetcher:
 # ----------------------------------------------------------------------------------
 # 文本工具
 # ----------------------------------------------------------------------------------
-def strip_tags(s):
-    if not s:
-        return ""
-    s = RE_TAG.sub("", s)
-    s = html.unescape(s)
-    return RE_WS.sub(" ", s).strip()
 
-def clean_text(s):
-    return RE_WS.sub(" ", html.unescape(s or "")).strip()
 
-def normalize_digits(s):
-    """将全角数字 ０-９ 归一为半角 0-9，统一日期口径。"""
-    if not s:
-        return s
-    trans = str.maketrans("０１２３４５６７８９", "0123456789")
-    return s.translate(trans)
 
-def is_attachment(url):
-    low = url.lower().split("?")[0]
-    return any(low.endswith(ext) for ext in ATTACH_EXT)
 
-def safe_url(url):
-    """
-    对非 ASCII 字符（如中文文件名）的 URL 路径/查询做百分号编码，
-    避免 urllib 抛出 'unknown url type' / 'ascii codec' 错误。
-    仅编码 path 与 query，保留 scheme/netloc 及 '/'、'=&' 等分隔符。
-    """
-    parts = urllib.parse.urlsplit(url)
-    path = urllib.parse.quote(parts.path, safe="/")
-    query = urllib.parse.quote(parts.query, safe="=&")
-    return urllib.parse.urlunsplit((parts.scheme, parts.netloc, path, query, parts.fragment))
 
 # ----------------------------------------------------------------------------------
 # 列表页解析
@@ -532,18 +448,6 @@ def extract_effective(body_text):
         return normalize_digits(clean_text(m.group(1))).replace(" ", "")
     return None
 
-def extract_docx_text(data):
-    """尝试用 python-docx 提取 .docx 文本；不可用则返回 None。"""
-    try:
-        from docx import Document
-    except Exception:
-        return None
-    import io
-    try:
-        doc = Document(io.BytesIO(data))
-        return "\n".join(p.text for p in doc.paragraphs if p.text).strip()
-    except Exception:
-        return None
 
 # ----------------------------------------------------------------------------------
 # 主流程

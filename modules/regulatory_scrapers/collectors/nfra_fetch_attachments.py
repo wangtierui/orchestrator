@@ -47,14 +47,10 @@ if _GUIDE_ROOT not in _sys.path:
 del _GUIDE_ROOT, _os, _sys
 import argparse
 import glob
-import hashlib
 import json
 import os
 import random
-import re
 import ssl
-import struct
-import sys
 import time
 import urllib.error
 import urllib.parse
@@ -82,6 +78,29 @@ DEFAULT_HEADERS = {
     "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
     "Referer": BASE + "/cn/view/pages/ItemDetail.html",
 }
+
+# ---- 拆分（2026-09-13，P3）：文档抽取链迁 nfra_attachments_extract，以下 re-export 保持外部调用兼容 ----
+from nfra_attachments_extract import (  # noqa: F401  拆分 re-export（显式；规避 F405）
+    _flush_run,
+    _handle_ole2,
+    _is_ole2_word,
+    _recover_cjk_stream,
+    _temp_pdf,
+    _walk_pieces,
+    attachment_kind,
+    dispatch_extract,
+    extract_any,
+    extract_doc_ole,
+    extract_docx,
+    extract_pdf_text,
+    extract_xls_ole,
+    extract_xlsx,
+    is_pdf,
+    ocr_pdf,
+    sha256_of,
+    sniff_kind,
+)
+
 
 def http_get_bytes(url, timeout=30, max_retries=4):
     """带超时与退避重试的二进制 GET；非 200 抛异常由调用方冷却处理。"""
@@ -116,224 +135,20 @@ def build_attachment_url(att):
         return BASE + "/" + name
     return ""
 
-def is_pdf(att):
-    name = (att.get("attachmentName") or "").lower()
-    title = (att.get("title") or "").lower()
-    return name.endswith(".pdf") or title.endswith(".pdf") or (att.get("extName") or "").lower() == "pdf"
 
-def ocr_pdf(path):
-    """OCR 兜底（受控）。委托统一 OCR 模块：PaddleOCR 3.7.0 默认 + Tesseract v5 降级。
 
-    修复：原实现直接调用 PaddleOCR 2.x API（PaddleOCR(use_angle_cls=True,
-    show_log=False) + ocr(img, cls=True)），在 3.x 下因 show_log 参数与 ocr()
-    签名变更而崩溃。现统一经 std_lib/scraper_std/ocr_engine，规避 Paddle#77340
-    oneDNN/PIR 崩溃（disable_mkldnn 默认开启）。
 
-    任何引擎均不可用 / 全部失败 → 抛 RuntimeError，由调用方标记 engine_unavailable
-    而非中断流程（保持与原 paddleocr 直调一致的契约）。
-    """
-    # 挂载共享库 std_lib（nfra 项目此前未引入 std_lib 路径）
-    repo_root = os.path.join(HERE, "..")
-    if repo_root not in sys.path:
-        sys.path.insert(0, repo_root)
-    from std_lib.scraper_std.ocr_engine import get_ocr
-    res = get_ocr().extract_pdf(path, force_ocr=True)
-    if not res.success:
-        raise RuntimeError(
-            f"OCR 失败（engine={res.engine}）：{res.error or 'no engine available'}"
-        )
-    return res.text or ""
-
-def sha256_of(data):
-    return hashlib.sha256(data).hexdigest()
-
-def extract_pdf_text(data):
-    """用 pypdf 抽取文本。返回 (text, page_count, per_page_lens, needs_ocr_flag)。
-
-    2026-09-10：抽全文后经 clean_pdf_text 页眉/页脚/页码清理（红头文件每页重复
-    「XX局文件/文号/—N—」行删除），修复 text 页眉页脚噪声与断句错乱观感。"""
-    import io
-
-    import pypdf
-    reader = pypdf.PdfReader(io.BytesIO(data))
-    page_count = len(reader.pages)
-    page_texts = []
-    for p in reader.pages:
-        try:
-            t = p.extract_text() or ""
-        except Exception:
-            t = ""
-        page_texts.append(t)
-    full = "\n".join(page_texts)
-    from std_lib.scraper_std.crawler_common import clean_pdf_text
-    full = clean_pdf_text(full)
-    # 低文本密度判定：平均每页字符过少 → 疑似扫描件（阈值按页数线性）
-    needs_ocr = (page_count > 0) and (len(full.strip()) < max(50, 30 * page_count))
-    return full, page_count, [len(t) for t in page_texts], needs_ocr
 
 # ----------------- Office 文档抽取（零依赖：zipfile + xml）-----------------
 _W_NS = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
 _X_NS = "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}"
 
-def extract_docx(data):
-    """从 .docx（OOXML，ZIP 包）抽取纯文本，按段落换行。"""
-    import io
-    import xml.etree.ElementTree as ET
-    import zipfile
-    with zipfile.ZipFile(io.BytesIO(data)) as z:
-        xml = z.read("word/document.xml")
-    root = ET.fromstring(xml)
-    para_texts = []
-    for p in root.iter(_W_NS + "p"):
-        runs = [(t.text or "") for t in p.iter(_W_NS + "t")]
-        para_texts.append("".join(runs))
-    return "\n".join(para_texts)
 
-def extract_xlsx(data):
-    """从 .xlsx（OOXML，ZIP 包）抽取单元格文本：**行式制表符**（保留行列结构，2026-09-10
-    修复「每单元格一行」扁平化丢结构问题），供 text 可读；结构化二维另由 structured_table_fields 回填。"""
-    import io
-    try:
-        import openpyxl
-        wb = openpyxl.load_workbook(io.BytesIO(data), data_only=True, read_only=True)
-        rows = []
-        for ws in wb.worksheets:
-            for r in ws.iter_rows(values_only=True):
-                rows.append("\t".join("" if c is None else str(c) for c in r))
-        return "\n".join(rows)
-    except Exception:
-        pass
-    # 回退：共享字符串拼接（无 openpyxl 时）
-    import xml.etree.ElementTree as ET
-    import zipfile
-    with zipfile.ZipFile(io.BytesIO(data)) as z:
-        names = z.namelist()
-        shared = []
-        if "xl/sharedStrings.xml" in names:
-            sx = ET.fromstring(z.read("xl/sharedStrings.xml"))
-            for si in sx.iter(_X_NS + "si"):
-                shared.append("".join((t.text or "") for t in si.iter(_X_NS + "t")))
-        cells = []
-        for nm in names:
-            if re.match(r"xl/worksheets/sheet\d+\.xml$", nm):
-                sh = ET.fromstring(z.read(nm))
-                for c in sh.iter(_X_NS + "c"):
-                    v = c.find(_X_NS + "v")
-                    if v is not None and v.text is not None:
-                        if c.get("t") == "s":
-                            idx = int(v.text)
-                            cells.append(shared[idx] if idx < len(shared) else "")
-                        else:
-                            cells.append(v.text)
-    return "\n".join(cells)
 
-def attachment_kind(att):
-    """按文件名/URL 后缀判定附件类型，决定抽取策略。"""
-    name = (att.get("attachmentName") or "").lower()
-    if name.endswith(".pdf"):
-        return "pdf"
-    if name.endswith(".docx"):
-        return "docx"
-    if name.endswith(".xlsx") or name.endswith(".xlsm"):
-        return "xlsx"
-    if name.endswith(".doc"):
-        return "doc_binary"          # 旧版二进制 .doc，纯标准库无法可靠抽取
-    url = (att.get("urlOtherName") or att.get("attachmentUrl") or "").lower()
-    if url.endswith(".pdf"):
-        return "pdf"
-    if url.endswith(".docx"):
-        return "docx"
-    if url.endswith(".xlsx"):
-        return "xlsx"
-    if url.endswith(".doc"):
-        return "doc_binary"
-    return "unsupported"
 
-def dispatch_extract(kind, data):
-    """按类型抽取，返回 (text, page_count, page_lens, needs_ocr)。"""
-    if kind == "pdf":
-        return extract_pdf_text(data)
-    if kind == "docx":
-        t = extract_docx(data)
-        return t, None, [len(t)], False
-    if kind == "xlsx":
-        t = extract_xlsx(data)
-        return t, None, [len(t)], False
-    raise RuntimeError("unsupported kind %s" % kind)
 
-def sniff_kind(data, name):
-    """下载后按魔数纠正类型（应对扩展名误标，如 .docx 实为 OLE2）。"""
-    if data[:4] == b"%PDF":
-        return "pdf"
-    if data[:4] in (b"PK\x03\x04", b"PK\x05\x06", b"PK\x07\x08"):
-        return "xlsx" if (name.lower().endswith(".xlsx") or name.lower().endswith(".xlsm")) else "docx"
-    if data[:4] == b"\xd0\xcf\x11\xe0":   # OLE2 复合文档（旧版 .doc/.xls，或扩展名误标）
-        return "ole2"
-    return "unknown"
 
-def extract_xls_ole(data):
-    """用 xlrd 抽取旧版 .xls（OLE2）单元格文本。"""
-    import xlrd
-    wb = xlrd.open_workbook(file_contents=data)
-    rows = []
-    for sh in wb.sheets():
-        for r in range(sh.nrows):
-            vals = [str(sh.cell_value(r, c)) for c in range(sh.ncols)
-                    if str(sh.cell_value(r, c)).strip() != ""]
-            if vals:
-                rows.append("\t".join(vals))
-    return "\n".join(rows)
 
-def _walk_pieces(wd, tbl):
-    """走查 CLX→Pcdt→PlcPcd，返回解码后的文本（解析失败返回 ''）。
-
-    修正点：按 MS-DOC 规范定位 Pcdt——clx 条目 data 首字节低比特 fPcdt=1 即 piece
-    table，其 data = lcb(4) + PlcPcd，并以 (len(PlcPcd)-4) % 12 == 0 校验件数；
-    避免旧逻辑「盲目跳条目」导致的偏移错位（旧逻辑对部分 fComplex=1 文档采到 0 字节）。
-    """
-    if tbl is None:
-        return ""
-    fcClx = struct.unpack("<I", wd[0x1A2:0x1A6])[0]
-    lcbClx = struct.unpack("<I", wd[0x1A6:0x1AA])[0]
-    if fcClx + lcbClx > len(tbl):
-        return ""
-    clx = tbl[fcClx: fcClx + lcbClx]
-    pos = 0
-    plc = None
-    while pos + 1 <= len(clx):
-        cb = clx[pos]
-        if cb == 0:
-            break
-        data = clx[pos + 1: pos + 1 + cb]
-        # fPcdt：clx 条目 data 首字节低比特置位时为 piece table
-        if data and (data[0] & 0x01):
-            lcb = struct.unpack("<I", data[0:4])[0]
-            if 4 <= lcb and (lcb - 4) % 12 == 0 and 4 + lcb <= len(data):
-                plc = data[4: 4 + lcb]
-                break
-        pos += 1 + cb
-    if plc is None:
-        return ""
-    n = (len(plc) - 4) // 12
-    if n <= 0:
-        return ""
-    buf = []
-    for i in range(n):
-        if (i + 2) * 4 > len(plc):
-            break
-        cpStart = struct.unpack("<I", plc[i * 4:(i + 1) * 4])[0]
-        cpEnd = struct.unpack("<I", plc[(i + 1) * 4:(i + 2) * 4])[0]
-        pcd_off = 4 * (n + 1) + i * 8
-        if pcd_off + 8 > len(plc):
-            break
-        cpc = struct.unpack("<I", plc[pcd_off + 4:pcd_off + 8])[0]
-        fc = cpc & 0x3FFFFFFF
-        comp = (cpc & 0x40000000) != 0
-        if comp:
-            buf.append(wd[fc: fc + (cpEnd - cpStart)].decode("cp1252", errors="ignore"))
-        else:
-            buf.append(wd[fc: fc + (cpEnd - cpStart) * 2].decode("utf-16-le", errors="ignore"))
-    return "".join(buf)
 
 # 高频常用中文字白名单：用于「全流扫描回收」的精度闸门，过滤二进制误解码乱码
 # （mojibake 多由罕见生僻字构成，几乎不含下列常用字）。覆盖监管/金融/表格常用词。
@@ -349,183 +164,11 @@ _COMMON_CN = set(
     "构会监委作金融银业发令年号版本式样页张份件项类目节点线面块格栏行列组合"
 )
 
-def _recover_cjk_stream(wd):
-    """最终兜底：当 piece 表 / fcMin 连续解码均产出过短（正文未落在 fcMin，散落于
-    WordDocument 流其他位置，多见于表格型 .doc），扫描全流 utf-16-le 回收中文片段。
 
-    精度闸门（抑制二进制误解码乱码）：
-      - 长度 >=4 的中文/混合片段：要求含 >=1 白名单常用字（真实中文长串必含常用字）；
-      - 长度 2-3 的短片段：仅保留含数字的纯 ASCII（表格数值），丢弃短中文/英文噪声；
-      - 纯 ASCII 且含数字者（如 133.33%、90%）始终保留。
-    返回以换行连接的文本片段。
-    """
-    u = wd.decode("utf-16-le", errors="ignore")
-    out = []
-    cur = ""
-    for ch in u:
-        o = ord(ch)
-        if (0x4E00 <= o <= 0x9FFF) or (0x3000 <= o <= 0x303F) or (0xFF00 <= o <= 0xFFEF) \
-           or (ch.isascii() and (ch.isalnum() or ch in "，。、：；（）%—.,:;()/-+")):
-            cur += ch
-        else:
-            if cur:
-                _flush_run(cur, out)
-                cur = ""
-    if cur:
-        _flush_run(cur, out)
-    return "\n".join(out)
 
-def _flush_run(run, out):
-    if len(run) >= 4:
-        # 长片段：真实中文词/句几乎必含常用字；纯生僻字乱码长串（无白名单字）丢弃
-        if any(c in _COMMON_CN for c in run) or (run.isascii() and any(c.isdigit() for c in run)):
-            out.append(run)
-        return
-    # 短片段（2-3 字）：仅保留含数字的纯 ASCII（表格数值），其余多为乱码/噪声
-    if run.isascii() and any(c.isdigit() for c in run):
-        out.append(run)
 
-def extract_doc_ole(data):
-    """纯 Python 解析旧版 .doc（OLE2 Word 二进制），无需 LibreOffice/antiword/catdoc。
 
-    返回 (text, ok, reason)：
-      - 成功且文本足够（>30 可打印字符）→ ok=True
-      - 失败/文本过短（疑似加密/外语/非 Word）→ ok=False，reason 指明原因
-    实现要点：读 FIB（WordDocument 流头部 0x0A 标志位）判定 simple/complex 存储；
-      simple：连续 utf-16-le 解码 wd[fcMin : fcMin+ccpText*2]；
-      complex：走件表(PlcPcd)抽取；**当件表解析异常或产出过短，回退到 wd[fcMin:] 的
-              连续 utf-16-le 解码**（实测多数 fComplex=1 文档文本实为单件、连续存放于
-              fcMin，件表定位失败时可借此完整回收，避免采到 0 字节导致 too_short）。
-    """
-    import olefile
-    try:
-        ole = olefile.OleFileIO(data)
-    except Exception:
-        return "", False, "ole_open"
-    try:
-        # 关键坑：ole.listdir() 返回的是「列表的列表」(每条是 ['WordDocument'])，
-        # 必须取末元素才是流名，否则 "WordDocument" in names 永远为 False。
-        names = [s[-1] if isinstance(s, (list, tuple)) else s for s in ole.listdir()]
-        if "WordDocument" not in names:
-            return "", False, "no_WordDocument_stream"
-        wd = ole.openstream("WordDocument").read()
-    except Exception:
-        return "", False, "stream"
-    if len(wd) < 0x200:
-        return "", False, "wd_too_small"
-    flags = struct.unpack("<H", wd[0x0A:0x0C])[0]
-    fComplex = (flags >> 2) & 1
-    fWhichTbl = (flags >> 9) & 1
-    fcMin = struct.unpack("<I", wd[0x18:0x1C])[0]
-    ccpText = struct.unpack("<I", wd[0x4C:0x50])[0]
-    tbl_name = "1Table" if fWhichTbl else "0Table"
-    tbl = None
-    try:
-        if tbl_name in names:
-            tbl = ole.openstream(tbl_name).read()
-    except Exception:
-        tbl = None
 
-    def _clean(t):
-        t = t.replace("\r", "\n").replace("\x07", "\n").replace("\x0b", "\n")
-        return "".join(ch if (ch.isprintable() or ch in "\n\t") else " " for ch in t)
-
-    # 连续解码兜底（simple 与 complex 通用）
-    simple_text = ""
-    if fcMin + ccpText * 2 <= len(wd) and ccpText > 0:
-        try:
-            simple_text = wd[fcMin: fcMin + ccpText * 2].decode("utf-16-le", errors="ignore")
-        except Exception:
-            simple_text = ""
-
-    # 件表抽取（仅 complex）
-    complex_text = _walk_pieces(wd, tbl) if fComplex else ""
-
-    # 选择：优先件表（若足够），否则连续解码兜底
-    c_clean = _clean(complex_text)
-    s_clean = _clean(simple_text)
-    if len(c_clean.strip()) >= 30:
-        text = c_clean
-    elif len(s_clean.strip()) >= 30:
-        text = s_clean
-    else:
-        text = c_clean if len(c_clean) >= len(s_clean) else s_clean
-    # 最终兜底：标准路径（piece 表 / fcMin 连续）产出过短，说明正文未落在 fcMin，
-    # 可能在 WordDocument 流其他位置以 utf-16-le 散落（多见于表格型 .doc）。
-    # 扫描全流回收中文片段（常见中文字白名单过滤，抑制二进制误解码乱码）。
-    if len(text.strip()) < 30:
-        rec = _recover_cjk_stream(wd)
-        if len(rec.strip()) >= 30:
-            text = rec
-    ok = len(text.strip()) > 30
-    return text, ok, "ok" if ok else ("too_short_%d" % len(text.strip()))
-
-def _is_ole2_word(src_path):
-    """判定本地 OLE2 源文件是否为 Word（含 WordDocument 流），用于抽取后细分类型。"""
-    try:
-        import olefile
-        with olefile.OleFileIO(src_path) as ole:
-            names = [s[-1] if isinstance(s, (list, tuple)) else s for s in ole.listdir()]
-        return "WordDocument" in names
-    except Exception:
-        return False
-
-def _handle_ole2(data):
-    """OLE2 复合文档：先尝试 Word(olefile 纯Python直抽) → 再试 Excel(xlrd)。
-
-    仅当两者均失败时，才标记 `unsupported_binary_doc` 并源已留存（待外部转换）。
-    注意：之前纯标准库无法抽 .doc，自 olefile 引入后约 57% 旧版 Word 可直抽。
-    """
-    # Word（旧版 .doc）：olefile 解析 OLE2 二进制，零外部依赖
-    try:
-        t, ok, _reason = extract_doc_ole(data)
-        if ok:
-            return t, None, len(t), False, True, None
-    except Exception:
-        pass
-    # Excel（旧版 .xls）：xlrd 抽取单元格
-    try:
-        t = extract_xls_ole(data)
-        if t.strip():
-            return t, None, len(t), False, True, None
-    except Exception:
-        pass
-    return "", None, 0, False, False, "unsupported_binary_doc(.doc需外部转换)"
-
-def extract_any(data, name):
-    """统一抽取入口：返回 (text, page_count, char_count, needs_ocr, ok, err_reason)。
-
-    - PDF / 真 docx / 真 xlsx：标准抽取。
-    - OLE2：先试 xlrd(Excel)，否则 Word 二进制（标记不可抽取）。
-    - 其他（rar 等）：标记不支持。
-    扩展名误标由魔数纠正，避免 BadZipFile。
-    """
-    kind = sniff_kind(data, name)
-    if kind == "pdf":
-        try:
-            t, pc, pl, nor = extract_pdf_text(data)
-            return t, pc, len(t), nor, True, None
-        except Exception as e:
-            return "", None, 0, False, False, "pdf_error:%s" % type(e).__name__
-    if kind == "docx":
-        try:
-            t = extract_docx(data)
-            return t, None, len(t), False, True, None
-        except Exception as e:
-            if "BadZip" in type(e).__name__:
-                return _handle_ole2(data)   # 实为 OLE2（扩展名误标）
-            return "", None, 0, False, False, "docx_error:%s" % type(e).__name__
-    if kind == "xlsx":
-        try:
-            t = extract_xlsx(data)
-            return t, None, len(t), False, True, None
-        except Exception as e:
-            if "BadZip" in type(e).__name__:
-                return _handle_ole2(data)
-            return "", None, 0, False, False, "xlsx_error:%s" % type(e).__name__
-    if kind == "ole2":
-        return _handle_ole2(data)
-    return "", None, 0, False, False, "unsupported_archive"
 
 def quality_flags(page_lens, text, needs_ocr):
     """基于逐页长度与文本特征生成质量标志。"""
@@ -659,12 +302,6 @@ def process_attachment(doc_id, att, att_root, args, cooldown_state, ex=None):
         })
         return entry, False
 
-def _temp_pdf(data):
-    import tempfile
-    fd, p = tempfile.mkstemp(suffix=".pdf")
-    with os.fdopen(fd, "wb") as fh:
-        fh.write(data)
-    return p
 
 def process_doc(doc_id, data, args):
     """处理单篇文档的全部附件，写 manifest。返回 (manifest, summary)。"""

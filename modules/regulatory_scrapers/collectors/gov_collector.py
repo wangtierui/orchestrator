@@ -42,7 +42,6 @@ if _GUIDE_ROOT not in _sys.path:
     _sys.path.insert(0, _GUIDE_ROOT)
 del _GUIDE_ROOT, _os, _sys
 import argparse
-import csv
 import hashlib
 import json
 import logging
@@ -52,8 +51,6 @@ import re
 import sys
 import time
 import urllib.parse
-from dataclasses import dataclass
-from datetime import datetime
 from typing import Any
 
 try:
@@ -116,6 +113,24 @@ _RESP_TEXT = None  # TextResponseCache 实例；None 表示未启用缓存
 _OfflineMiss = OfflineMiss  # 兼容别名
 
 
+# ---- 拆分（2026-09-13，P3）：下列符号迁 gov_parse，re-export 保持外部调用兼容 ----
+from gov_parse import (  # noqa: F401  拆分 re-export（显式；规避 F405）
+    ScrapeConfig,
+    _is_https_scheme_upgrade,
+    _longest_text_block,
+    build_config,
+    clean_text,
+    decode_html,
+    extract_date,
+    extract_doc_number,
+    extract_issue_organ,
+    load_resume,
+    make_summary,
+    merge_with_master,
+    write_outputs,
+)
+
+
 def _init_cache(path=None, offline=False):
     """统一缓存根绑定（缺省 cache_store.source_cache_root("gov")，单物理根）；path 显式可覆盖。"""
     global _RESP_TEXT
@@ -173,22 +188,6 @@ CONTENT_SELECTORS = [
 
 TITLE_SELECTORS = ["h1", ".article-title", "#title", ".title", "h2"]
 
-@dataclass
-class ScrapeConfig:
-    source: str
-    base_url: str
-    category: str
-    out_dir: str = "data/raw"
-    max_pages: int = 0          # 0 = 不限制
-    max_items: int = 0          # 0 = 不限制（仅列表条目数）
-    fetch_details: bool = True
-    details_limit: int = 0      # 仅对前 N 条抓取详情正文（0=全部，需配合 fetch_details）
-    resume: bool = False        # 增量续抓：基于 out_dir 最新同源输出跳过已抓条目
-    delay_min: float = 1.5      # 列表/详情请求间最小延时（秒）
-    delay_max: float = 3.5      # 最大延时（秒）
-    timeout: int = 30
-    retries: int = 4
-    summary_len: int = 200
 
 # --------------------------------------------------------------------------- #
 # 健壮的 HTTP 客户端
@@ -298,48 +297,8 @@ class RobustSession:
 # 工具函数
 # --------------------------------------------------------------------------- #
 
-def clean_text(s: Any) -> str:
-    if s is None:
-        return ""
-    if not isinstance(s, str):
-        s = str(s)
-    s = re.sub(r"\s+", " ", s).strip()
-    return s
 
-def decode_html(content: bytes) -> str:
-    """
-    鲁棒解码中文网页字节：先尝试 UTF-8，再尝试 GB18030/GBK。
-    以「汉字占比最高、替换符最少」为准，避免把 GBK 页面误当 UTF-8 解码成乱码。
-    """
-    if not content:
-        return ""
-    cands: list[str] = []
-    try:
-        cands.append(content.decode("utf-8"))
-    except UnicodeDecodeError:
-        pass
-    for enc in ("gb18030", "gbk"):
-        try:
-            cands.append(content.decode(enc))
-        except UnicodeDecodeError:
-            pass
-    if not cands:
-        return content.decode("utf-8", errors="replace")
 
-    def _score(s: str) -> int:
-        cjk = sum(1 for ch in s if "一" <= ch <= "鿿")
-        return cjk - s.count("�") * 10
-
-    return max(cands, key=_score)
-
-def extract_date(text: str) -> str:
-    """从文本中抽取第一个 YYYY年MM月DD日 / YYYY-MM-DD 日期。"""
-    if not isinstance(text, str) or not text:
-        return ""
-    m = re.search(r"\d{4}[-年]\d{1,2}[-月]\d{1,2}日?", text)
-    if not m:
-        m = re.search(r"\d{4}[-/]\d{1,2}[-/]\d{1,2}", text)
-    return m.group(0) if m else ""
 
 # 发文机关关键词（用于从『X令第N号』中定位机关名）
 _ORGAN_KW = r"(?:国务院|部|委员会|局|人民政府|政府|厅|署|中央军委)"
@@ -347,112 +306,15 @@ _ORGAN_KW = r"(?:国务院|部|委员会|局|人民政府|政府|厅|署|中央�
 # 详情页需剔除的噪声元素（下载条 / 历史沿革 / 按钮等）
 _NOISE_CLASS_HINTS = ["download", "fold", "historical", "tip", "btn", "share", "qr", "vconsole"]
 
-def extract_doc_number(text: str) -> str:
-    """抽取发文字号，如『国务院令第300号』→ 国务院令第300号。
 
-    2026-09-05：优先委托五源统一模块 ``std_lib.scraper_std.doc_number``
-    （15+ 优先级正则 + 半角〔〕规范化 + 标题内嵌文号）；模块缺失或未命中时
-    回退原本地正则，保证抓取行为不劣化。
-    """
-    if not text:
-        return ""
-    if _unified_doc_number is not None:
-        dn = _unified_doc_number(text)
-        if dn:
-            return dn
-    m = re.search(r"([\u4e00-\u9fa5]{2,14}?" + _ORGAN_KW + r"令第\s*\d+\s*号)", text)
-    if not m:
-        m = re.search(r"[\u4e00-\u9fa5（(][\u4e00-\u9fa5\d（）()]+?〔\d{4}〕\d+\s*号", text)
-    if not m:
-        return ""
-    # 第二条正则（〔YYYY〕N号 格式）无捕获组，统一用 group(0) 避免 IndexError
-    s = re.sub(r"^[年月日（）()\s]+", "", m.group(0))  # 去掉前缀多余的日期字
-    return clean_text(s)
 
-def extract_issue_organ(text: str) -> str:
-    """从发文字号上下文抽取发文机关，如『中华人民共和国国务院令第300号』。"""
-    if not text:
-        return ""
-    m = re.search(r"([\u4e00-\u9fa5]{2,14}?" + _ORGAN_KW + r")令第", text)
-    if not m:
-        return ""
-    s = re.sub(r"^[年月日（）()\s]+", "", m.group(1))
-    return clean_text(s)
 
-def make_summary(full_text: str, length: int) -> str:
-    s = clean_text(full_text)
-    # 跳过开头的『（…公布…修订）』前言括号，直接取正文摘要
-    if s.startswith("（") or s.startswith("("):
-        end = s.find("）")
-        if end == -1:
-            end = s.find(")")
-        if end != -1:
-            s = s[end + 1:].strip()
-    return s[:length]
-
-def _longest_text_block(soup: Any) -> Any | None:
-    """通用正文兜底：当 CONTENT_SELECTORS 均未命中时，返回页面中纯文本最长、
-    且非导航（链接文本占比不过高）的内容块。用于覆盖各市政府子站异构结构。
-
-    第四轮增强：
-    - 候选标签扩展到 table/td/main（覆盖正文塞在表格里的政府详情页）；
-    - 链接占比阈值放宽到 0.5（避免误杀正文含脚注/相关链接的页面，如 jinan）；
-    - 若无任何块达标，兜底取 <body>（剔除 script/style/噪声），覆盖正文容器
-      既非 div 也非 table 的情形（如 jinan 的 swiper 结构，正文确在 HTML 中
-      但因被整体当作导航而误杀）。仅当 body 文本足够长才采用，极薄/拦截页
-      仍保持为空，符合预期。
-    """
-    best, best_len = None, 200  # 阈值：过滤极短块
-    for tag in soup.find_all(["div", "article", "section", "table", "main"]):
-        links = tag.find_all("a")
-        text = tag.get_text(" ", strip=True)
-        if len(text) <= best_len:
-            continue
-        # 链接文本占比 >50% 视为导航/侧栏，跳过
-        if links and len(text):
-            link_chars = sum(len(a.get_text(strip=True)) for a in links)
-            if link_chars / len(text) > 0.5:
-                continue
-        best, best_len = tag, len(text)
-    if best is None:
-        body = soup.body
-        if body is not None:
-            for el in body.select("script, style"):
-                el.decompose()
-            for hint in _NOISE_CLASS_HINTS:
-                for el in body.select(f'[class*="{hint}"]'):
-                    el.decompose()
-            bt = body.get_text(" ", strip=True)
-            if len(bt) > best_len:
-                return body
-    return best
 
 # http 站点正文页仅返回「JS 协议升级」脚本（window.location.href="https:"+...），
 # requests 不执行 JS → 拿不到正文。检测到该模式后改用 https 重抓。
 _SCHEME_UPGRADE_RE = re.compile(r'targetProtocol\s*=\s*["\']https:', re.I)
 
-def _is_https_scheme_upgrade(html: str) -> bool:
-    return bool(_SCHEME_UPGRADE_RE.search(html or ""))
 
-def load_resume(out_dir: str, source: str):
-    """读取 out_dir 下最新的同源输出 JSON，返回 (已抓条目key集合, 已有正文的detail_url集合)。
-    用于 --resume 增量续抓：跳过已存在的列表条目，且对已含 full_text 的条目不再抓详情。"""
-    files = [os.path.join(out_dir, "gov_laws.json")] if os.path.exists(
-        os.path.join(out_dir, "gov_laws.json")) else []
-    seen, detailed = set(), set()
-    if not files:
-        return seen, detailed
-    try:
-        data = json.load(open(files[-1], encoding="utf-8"))
-        for r in data.get("records", []):
-            seen.add((r.get("title", ""), r.get("detail_url", "")))
-            if r.get("full_text"):
-                detailed.add(r.get("detail_url", ""))
-        LOG.info("【resume】已从 %s 加载 %d 条已抓条目（其中 %d 条已有正文）",
-                 os.path.basename(files[-1]), len(seen), len(detailed))
-    except Exception as e:
-        LOG.warning("【resume】读取历史输出失败，将全新抓取：%s", e)
-    return seen, detailed
 
 # --------------------------------------------------------------------------- #
 # 数据源 1：行政法规库（xzfgk，服务端渲染，requests 可抓）
@@ -646,40 +508,6 @@ CSV_COLUMNS = [
     "issue_organ", "document_number", "detail_url", "summary", "source",
 ]
 
-def write_outputs(records: list[dict[str, Any]], cfg: ScrapeConfig,
-                  source_label: str | None = None,
-                  write_csv: bool = False) -> dict[str, str]:
-    os.makedirs(cfg.out_dir, exist_ok=True)
-    stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    json_path = os.path.join(cfg.out_dir, "gov_laws.json")
-    csv_path = os.path.join(cfg.out_dir, "gov_laws.csv")
-
-    # JSON：保留全文与原始字段
-    _payload = {
-        "source": cfg.source,
-        "category": cfg.category,
-        "captured_at": stamp,
-        "count": len(records),
-        "records": records,
-    }
-    _tmp = json_path + ".tmp"
-    with open(_tmp, "w", encoding="utf-8") as f:
-        json.dump(_payload, f, ensure_ascii=False, indent=2)
-    os.replace(_tmp, json_path)
-
-    # CSV：仅 --csv 显式开启时输出表格视图（默认仅 JSON 主库，2026-09-09 规范）
-    if write_csv:
-        _tmpc = csv_path + ".tmp"
-        with open(_tmpc, "w", encoding="utf-8-sig", newline="") as f:
-            writer = csv.DictWriter(f, fieldnames=CSV_COLUMNS, extrasaction="ignore")
-            writer.writeheader()
-            for r in records:
-                writer.writerow({k: r.get(k, "") for k in CSV_COLUMNS})
-        os.replace(_tmpc, csv_path)
-
-    LOG.info("输出完成：\n  JSON: %s%s", json_path,
-             ("\n  CSV : %s" % csv_path) if write_csv else "")
-    return {"json": json_path, "csv": csv_path if write_csv else ""}
 
 # --------------------------------------------------------------------------- #
 # 主流程
@@ -691,24 +519,6 @@ SOURCES = {
     "xzfgk": ("https://www.gov.cn/zhengce/xzfgk/", "行政法规"),
 }
 
-def build_config(args) -> ScrapeConfig:
-    base, category = SOURCES[args.source]
-    return ScrapeConfig(
-        source=args.source,
-        base_url=base,
-        category=category,
-        out_dir=args.out_dir,
-        max_pages=args.max_pages,
-        max_items=args.max_items,
-        fetch_details=not args.no_details,
-        details_limit=args.details_limit,
-        resume=args.resume,
-        delay_min=args.delay_min,
-        delay_max=args.delay_max,
-        timeout=args.timeout,
-        retries=args.retries,
-        summary_len=args.summary_len,
-    )
 
 # —— 运行锁统一实现（N-8）：判定逻辑收敛到 regulatory_scrapers/fs_lock.py，四源共用 ——
 import atexit  # noqa: E402
@@ -718,31 +528,6 @@ if _SCRAPERS_ROOT not in sys.path:
     sys.path.insert(0, _SCRAPERS_ROOT)
 from std_lib.common_lib import fs_lock
 
-
-def merge_with_master(new_records: list[dict[str, Any]], out_dir: str) -> list[dict[str, Any]]:
-    """增量续抓合并：现主库旧记录 ∪ 本次新条目（detail_url 去重，新优先）。
-
-    2026-09-05：定长覆盖更新 + ``--resume`` 使本次仅产出新增条目，
-    若直接覆盖写会丢失历史条目；合并后覆盖保证主库 = 历史全量 + 本周新增/更新。
-    """
-    master_path = os.path.join(out_dir, "gov_laws.json")
-    if not os.path.exists(master_path):
-        return new_records
-    try:
-        with open(master_path, encoding="utf-8") as fh:
-            data = json.load(fh)
-        old = data.get("records") or []
-    except Exception as e:
-        LOG.warning("【merge】读取现主库失败，仅写本次抓取结果：%s", e)
-        return new_records
-    merged: dict[str, dict[str, Any]] = {}
-    for r in old:
-        merged[str(r.get("detail_url") or r.get("title"))] = r
-    for r in new_records:
-        merged[str(r.get("detail_url") or r.get("title"))] = r
-    LOG.info("【merge】现主库 %d 条 + 本次 %d 条 → 合并 %d 条",
-             len(old), len(new_records), len(merged))
-    return list(merged.values())
 
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(
