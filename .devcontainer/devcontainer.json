@@ -1,0 +1,44 @@
+{
+  "name": "regulatory-compliance-orchestrator",
+  "image": "mcr.microsoft.com/devcontainers/python:3.13-bookworm",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "22"
+    }
+  },
+  "postCreateCommand": "pip install -e '.[dev]' && python tools/ci_check.py --fast",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "charliermarsh.ruff",
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "bierner.markdown-mermaid"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
+        "python.testing.pytestEnabled": true,
+        "python.testing.pytestArgs": ["tests"],
+        "editor.formatOnSave": false,
+        "[python]": {
+          "editor.defaultFormatter": "charliermarsh.ruff"
+        }
+      }
+    }
+  },
+  "remoteEnv": {
+    "PYTHONUTF8": "1"
+  },
+  "containerEnv": {
+    "PYTHONIOENCODING": "utf-8"
+  },
+  "hostRequirements": {
+    "cpus": 2,
+    "memory": "4gb",
+    "storage": "32gb"
+  },
+  "mounts": [
+    "source=${localWorkspaceFolder}/modules,target=${containerWorkspaceFolder}/modules,type=bind"
+  ],
+  "postStartCommand": "echo '提示：数据（data/、published/）与 OCR 引擎不入容器——按 reports/数据恢复演练_20260912.md 场景 C 恢复；OCR 相关命令（internal reocr）需在宿主环境执行。'"
+}

@@ -49,9 +49,19 @@ class TestDispatch:
 
 class TestClassifyEscapeHatch:
     def test_no_analysis_flag_exists(self):
-        """--no-analysis 为 classify 自动刷新交付库的逃生阀（F-L01 收口），防回归丢失。"""
+        """--no-analysis 为 classify 自动刷新交付库的逃生阀（F-L01 收口），防回归丢失。
+
+        2026-09-13（审查 P3）：命令实现迁至 commands/ 包（cli.py 薄壳化），
+        逃生阀断言改读 commands.classify.run 源码。
+        注意：不得把 commands/ 自身插入 sys.path（gates/base 等模块名会与顶层包
+        同名遮蔽，2026-09-13 实证 ImportError）。
+        """
         import inspect
 
-        src = inspect.getsource(cli._cmd_classify)
+        from commands import classify as _cl  # noqa: PLC0415
+
+        src = inspect.getsource(_cl.run)
         assert "--no-analysis" in src
         assert "gen_analysis_deliveries" in src
+        # 薄壳保持注册（cli 仍暴露 analysis/classify）
+        assert "classify" in cli.COMMANDS

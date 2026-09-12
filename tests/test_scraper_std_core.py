@@ -15,7 +15,14 @@ for p in (ROOT, os.path.join(ROOT, "std_lib")):
     if p not in sys.path:
         sys.path.insert(0, p)
 
-from scraper_std import cleaner, doc_number, encoding, naming, sentence_split, text_reflow  # noqa: E402
+from scraper_std import (  # noqa: E402
+    cleaner,
+    doc_number,
+    encoding,
+    naming,
+    sentence_split,
+    text_reflow,
+)
 
 
 class TestDocNumber:
@@ -100,7 +107,7 @@ class TestNaming:
 
 class TestEncoding:
     def test_detect_utf8(self):
-        enc = encoding.detect_encoding("中文内容".encode("utf-8"))
+        enc = encoding.detect_encoding("中文内容".encode())
         assert enc
 
     def test_detect_gbk(self):
@@ -109,7 +116,7 @@ class TestEncoding:
 
     def test_decode_bytes(self):
         # 返回 (text, encoding, confidence) 三元组
-        r = encoding.decode_bytes("中文".encode("utf-8"))
+        r = encoding.decode_bytes("中文".encode())
         assert isinstance(r, tuple) and r[0] == "中文"
 
     def test_ensure_utf8_bom(self):
