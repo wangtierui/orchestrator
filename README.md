@@ -227,7 +227,7 @@ flowchart LR
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | `orchestrator-五源周采集与漂移核验` | Cron 每周二 01:00 | 五源采集（含 **nfra-weekly 增量链**）→清洗→快照重建→retrieval 编排→reconcile 桥/漂移→**变更监听基线（source diff --record）**→`cli.py gates` | `tools/run_production_refresh.py` + `cli.py gates`（prompt 编排） | 常规流程（定时批） | 门禁 FAIL 输出清单留人工，不静默通过 |
 | `orchestrator-每日检索门禁核验` | Cron 每日 06:00 | retrieval 四门禁编排（签名幂等，变化则重跑）→ `cli.py gates` 全绿确认 | `recall_audit/run_retrieval_after_checks.py` + `cli.py gates` | 常规流程（定时） | 任一 FAIL 输出失败门禁与原因清单，不改数据 |
-| （可选）分析交付库刷新 | 数据重建后手动/编排追加 | `cli.py analysis gen` → `docs/reports/` 15 项刷新（幂等） | `tools/gen_analysis_deliveries.py` | 常规流程（交付库） | 生成失败不覆盖旧库（先 dry） |
+| （自动）分析交付库刷新 | **数据重建后自动**（`cli.py classify` 成功尾部触发；编排阶段 6.8 显式再跑） | `cli.py analysis gen` → `docs/reports/` 15 项刷新（幂等，~2s） | `tools/gen_analysis_deliveries.py` | 常规流程（交付库） | 生成失败不阻断 classify（可手动 `analysis gen` 补跑；`--no-analysis` 跳过） |
 
 > 真实核验（北大法宝）运行需环境：`PKULAW_NODE_EXE`/`PKULAW_PKG_DIR`（托管 Node + `@pkulaw/mcp-cli`）与 token 文件 `.pkulaw_token`（git 忽略）。
 > **变更监听**：`cli.py source diff [--record]`——对比 `data/watch_baseline.jsonl` 基线与当前各源快照（日期/记录数/内容 sha），编排阶段 6.5 自动 `--record`（F-O02）。

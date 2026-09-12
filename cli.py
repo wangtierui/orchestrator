@@ -247,6 +247,8 @@ def _cmd_classify(argv):
     ap.add_argument("--all", action="store_true", help="全部主题（含 T0 明细）")
     ap.add_argument("--steps", default="", help="子步白名单 base,cluster,match,detail,clause_graph,upper")
     ap.add_argument("--dry-run", action="store_true", help="仅列计划")
+    ap.add_argument("--no-analysis", action="store_true",
+                    help="跳过重建后自动刷新分析交付库（F-L01；默认自动刷新）")
     a = ap.parse_args(argv)
     themes = None
     if a.all:
@@ -256,7 +258,19 @@ def _cmd_classify(argv):
     steps = set(s.strip() for s in a.steps.split(",") if s.strip()) or None
     res = _cl.run(themes=themes, only_steps=steps, dry_run=a.dry_run)
     print(__import__("json").dumps(res, ensure_ascii=False, indent=2))
-    return 1 if res.get("error") else 0
+    if res.get("error"):
+        return 1
+    # F-L01（2026-09-12）：数据重建后自动刷新分析交付库（docs/reports/ 15 项）。
+    # 失败不阻断 classify（交付库可经 `cli.py analysis gen` 手动补跑）。
+    if not a.dry_run and not a.no_analysis:
+        try:
+            sys.path.insert(0, os.path.join(paths.ROOT, "tools"))
+            from gen_analysis_deliveries import main as _gen  # noqa: PLC0415
+            _rc = _gen([])
+            print(f"[classify] 分析交付库已自动刷新（rc={_rc}；--no-analysis 可跳过）")
+        except Exception as _e:  # noqa: BLE001
+            print(f"[classify] ⚠ 分析交付库自动刷新失败（不阻断；可手动 analysis gen）：{_e!r}")
+    return 0
 
 
 def _cmd_timeliness(argv):

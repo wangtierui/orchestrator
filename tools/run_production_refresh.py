@@ -216,6 +216,12 @@ def main() -> int:
     # ---- 阶段 6：gates ----
     report.append(_run("gates", [PY, os.path.join(ROOT, "cli.py"), "gates"], timeout=1800))
 
+    # ---- 阶段 6.8：分析交付库刷新（F-L01）----
+    # 数据重建后刷新规划 §2.1 五级分析 15 项交付（docs/reports/）；classify 阶段已
+    # 自动触发一次，此处显式再跑确保 merged/publish 后数据面一致（幂等，~2s）。
+    report.append(_run("analysis:gen",
+                       [PY, os.path.join(ROOT, "cli.py"), "analysis", "gen"], timeout=600))
+
     # ---- 阶段 6.5：变更监听基线记录（F-O02）----
     # 每次编排运行把各源"日期/记录数/内容 sha"追加到 data/watch_baseline.jsonl；
     # `cli.py source diff` 以此对比"上次运行 → 本次"（同日改写/条数变化可见）。
