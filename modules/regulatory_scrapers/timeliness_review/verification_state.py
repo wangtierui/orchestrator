@@ -80,14 +80,15 @@ def read_meta():
 
 def save_state(state):
     os.makedirs(TASK_DIR, exist_ok=True)
-    # F-D14（H-01）：版本锚点（写盘注入；load 剥离——消费方零改动）
+    # F-D14（H-01）：版本锚点（**副本**写入——不污染调用方对象，防"保存后继续遍历"踩 _meta；
+    # load 侧剥离，消费方零改动）
     import time as _t  # noqa: PLC0415
-    state.pop("_meta", None)
-    state["_meta"] = {"schema_version": "1.0", "written_by": "verification_state",
-                      "written_at": _t.strftime("%Y-%m-%d %H:%M:%S")}
+    payload = {k: v for k, v in state.items() if k != "_meta"}
+    payload["_meta"] = {"schema_version": "1.0", "written_by": "verification_state",
+                        "written_at": _t.strftime("%Y-%m-%d %H:%M:%S")}
     tmp = STATE_FILE + ".tmp"
     with open(tmp, "w", encoding="utf-8") as fh:
-        json.dump(state, fh, ensure_ascii=False, indent=2)
+        json.dump(payload, fh, ensure_ascii=False, indent=2)
     try:
         os.replace(tmp, STATE_FILE)
     except OSError:

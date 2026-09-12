@@ -344,10 +344,11 @@ def reconcile(source=None, apply_c1=False, dry_run=False, force_clean_title=Fals
     # F-D14（H-01）：状态文件版本锚点（gate_rfn_drift 定向读键，不受影响）
     summary["_meta"] = {"schema_version": "1.0", "written_by": "reconcile_clean_drift",
                         "written_at": summary.get("checked_at", "")}
-    # F-D14（H-01）：状态文件版本锚点（gate_rfn_drift 定向读键，不受影响）
-    summary["_meta"] = {"schema_version": "1.0", "written_by": "reconcile_clean_drift",
-                        "written_at": summary.get("checked_at", "")}
-    _save_json(_STATE_PATH, summary)
+    # F-D14（H-01）：状态文件版本锚点——副本写入（gate_rfn_drift 定向读键，不受影响）
+    _save_json(_STATE_PATH, {**summary,
+                             "_meta": {"schema_version": "1.0",
+                                       "written_by": "reconcile_clean_drift",
+                                       "written_at": summary.get("checked_at", "")}})
     all_rows = c1_list + c2_list + legacy_list + absent_list
     cols = sorted({k for r in all_rows for k in r})
     if not dry_run:

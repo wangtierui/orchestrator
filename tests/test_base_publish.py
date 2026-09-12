@@ -30,7 +30,8 @@ def test_base_contract_v1():
         assert len(meta["sha256"]) == 64, f"{name} sha256 缺失"
         assert meta["count"] == m["counts"][
             {"external_records.jsonl": "records", "external_clauses.jsonl": "clauses",
-             "external_attachments.jsonl": "attachments"}[name]]
+             "external_attachments.jsonl": "attachments",
+             "external_relations.jsonl": "relations"}[name]]
 
     mi = bi_mod.build()
     assert mi["counts"]["policies"] > 50, "内部制度数异常"

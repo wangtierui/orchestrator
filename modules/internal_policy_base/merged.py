@@ -142,14 +142,14 @@ def build_merged_view() -> dict:
     + processed 目录签名），供审计/门禁判断"上游单源变化后本视图是否陈旧需重建"。
     """
     records = _load_records()
-    merged = []
-    n_with_rfn = 0
+    # 同 IPN 多 sha（同名同文号同介质的不同内容版本）→ 同制度多份：保留 extracted_at 最新一条
+    # （2026-09-12 修复：原直接 append 使 merged_view/policies 出现重复 IPN，发布件 UNIQUE 冲突）
+    merged_map: dict = {}
+    ext_map: dict = {}
     for rec in records:
         text = _load_text(rec["ipn"])
         refs = extract_rfns(text)
-        if refs:
-            n_with_rfn += 1
-        merged.append({
+        item = {
             "ipn": rec["ipn"], "title": rec.get("title", ""),
             "docno": rec.get("docno", ""), "extension": rec.get("extension", ""),
             "file_type": rec.get("file_type", ""),
@@ -158,7 +158,13 @@ def build_merged_view() -> dict:
             "status": rec.get("status", "active"),
             "associated_rfns": refs,
             "rfn_count": len(refs),
-        })
+        }
+        ipn = rec["ipn"]
+        if ipn not in merged_map or (rec.get("extracted_at") or "") >= ext_map.get(ipn, ""):
+            merged_map[ipn] = item
+            ext_map[ipn] = rec.get("extracted_at") or ""
+    merged = list(merged_map.values())
+    n_with_rfn = sum(1 for m in merged if m.get("associated_rfns"))
     cl_data = os.path.join(_MODULES, "regulatory_classifier", "data")
     inputs = {
         "attr_sha": _sha_file(os.path.join(cl_data, "人身保险公司-文件归属表.csv")),
@@ -175,6 +181,7 @@ def build_merged_view() -> dict:
         "count": len(merged),
         "stat": {
             "total": len(merged),
+            "deduped_duplicates": len(records) - len(merged),   # 同 IPN 多内容版本去重数（透明）
             "with_rfn_refs": n_with_rfn,
             "aligned_ratio": round(n_with_rfn / len(merged), 3) if merged else 0,
         },

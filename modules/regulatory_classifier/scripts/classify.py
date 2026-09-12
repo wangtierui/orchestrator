@@ -177,12 +177,13 @@ def run(theme: str = "", themes: list[str] | None = None, only_steps: set[str] |
                 ran += 1
                 state["upper"] = {"input_sha": cur, "ran_at": __import__("time").strftime("%Y-%m-%d %H:%M:%S")}
     if not dry_run:
-        # F-D14（H-01）：状态文件版本锚点（结构变更时可检测/迁移）
-        state["_meta"] = {"schema_version": "1.0", "written_by": "classify",
-                          "written_at": __import__("time").strftime("%Y-%m-%d %H:%M:%S")}
+        # F-D14（H-01）：状态文件版本锚点——**副本**写入（不污染调用方对象；load 侧剥离）
+        _payload = dict(state)
+        _payload["_meta"] = {"schema_version": "1.0", "written_by": "classify",
+                             "written_at": __import__("time").strftime("%Y-%m-%d %H:%M:%S")}
         tmp = _STATE + ".tmp"
         with open(tmp, "w", encoding="utf-8") as fh:
-            json.dump(state, fh, ensure_ascii=False, indent=2)
+            json.dump(_payload, fh, ensure_ascii=False, indent=2)
         os.replace(tmp, _STATE)
     return {"planned": planned, "ran": ran, "skipped": skipped,
             "ran_details": ran_details, "dry_run": dry_run}

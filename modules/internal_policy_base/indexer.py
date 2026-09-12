@@ -92,12 +92,15 @@ def _load_state() -> dict:
 
 def _save_state(state: dict) -> None:
     # F-D14（H-01）：状态文件版本锚点（读侧剥离；_ingest_state 键空间为 sha256，_meta 独立键位）
+    # 修复（2026-09-12）：版本键经**副本**写入——原就地注入会污染调用方对象，
+    # 后续"主索引汇总"遍历 state 时 _meta 条目触发 KeyError: 'ipn'（本日摄取实证）。
     import time as _t  # noqa: PLC0415
-    state["_meta"] = {"schema_version": "1.0", "written_by": "internal_policy_base.indexer",
-                      "written_at": _t.strftime("%Y-%m-%d %H:%M:%S")}
+    payload = dict(state)
+    payload["_meta"] = {"schema_version": "1.0", "written_by": "internal_policy_base.indexer",
+                        "written_at": _t.strftime("%Y-%m-%d %H:%M:%S")}
     os.makedirs(_DATA, exist_ok=True)
     tmp = _STATE_PATH + ".tmp"
-    json.dump(state, open(tmp, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
+    json.dump(payload, open(tmp, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
     os.replace(tmp, _STATE_PATH)
 
 
@@ -180,16 +183,30 @@ def ingest(source_root: str, *, enable_ocr: bool = False, dry_run: bool = False)
 
     # 主索引汇总
     records = []
+    seen_ipn: dict = {}
+    ext_map: dict = {}
+    n_state = 0
     for key, rec in sorted(state.items()):
-        if key == "meta":
+        # 防御（2026-09-12）：版本/元数据键不参与记录汇总（_ 前缀或旧 meta 约定）
+        if str(key).startswith("_") or key == "meta":
             continue
-        r = _load_processed(rec["ipn"])
-        if r:
-            records.append({k: r.get(k, "") for k in PROCESSED_FIELDS})
+        n_state += 1
+        r = _load_processed(rec.get("ipn", ""))
+        if not r:
+            continue
+        # 同 IPN 多 sha（同名同文号同介质的不同内容版本）→ 主索引保留 extracted_at 最新一条
+        # （2026-09-12：与 merged/policies 同口径；重复数透明登记于 stat）
+        ipn = r.get("ipn", "")
+        if ipn not in seen_ipn or (r.get("extracted_at") or "") >= ext_map.get(ipn, ""):
+            seen_ipn[ipn] = {k: r.get(k, "") for k in PROCESSED_FIELDS}
+            ext_map[ipn] = r.get("extracted_at") or ""
+    records = list(seen_ipn.values())
     index = {
         "schema_version": "1.0",
         "generated_at": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
         "source_root": source_root,
+        "stat": {"state_entries": n_state,
+                 "deduped_duplicates": n_state - len(records)},
         "records": records,
         "count": len(records),
     }

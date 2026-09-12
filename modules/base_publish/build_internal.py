@@ -69,8 +69,12 @@ def build() -> dict:
     merged_recs = merged.get("records") or []
 
     def _policies():
+        seen = set()   # 防御（merged 已去重；此处再保证发布件 ipn 唯一，防 UNIQUE 冲突）
         for r in merged_recs:
             ipn = r.get("ipn", "")
+            if not ipn or ipn in seen:
+                continue
+            seen.add(ipn)
             ix = by_ipn_idx.get(ipn, {})
             al = by_ipn_align.get(ipn, {})
             rfns = [x.get("rfn", "") for x in (r.get("associated_rfns") or []) if x.get("rfn")]

@@ -131,7 +131,7 @@ def build_internal() -> dict:
     n_pol = 0
     for p in _iter_jsonl(pol_p):
         conn.execute(
-            "INSERT INTO policies(ipn,title,docno,eff_status,primary_theme,secondary_themes,"
+            "INSERT OR REPLACE INTO policies(ipn,title,docno,eff_status,primary_theme,secondary_themes,"
             "associated_rfns,file_type,extension,sha256,article_count) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
             (p.get("ipn", ""), p.get("title", ""), p.get("docno", ""), p.get("eff_status", ""),
              p.get("primary_theme", ""), json.dumps(p.get("secondary_themes") or [], ensure_ascii=False),

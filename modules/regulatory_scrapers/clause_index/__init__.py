@@ -89,13 +89,14 @@ def _load_state():
 
 def _save_state(state):
     os.makedirs(CLAUSE_DIR, exist_ok=True)
-    # F-D14（H-01）：状态文件版本锚点
+    # F-D14（H-01）：版本锚点——**副本**写入（不污染调用方对象；load 侧剥离）
     import time as _t  # noqa: PLC0415
-    state["_meta"] = {"schema_version": "1.0", "written_by": "clause_index",
-                      "written_at": _t.strftime("%Y-%m-%d %H:%M:%S")}
+    payload = dict(state)
+    payload["_meta"] = {"schema_version": "1.0", "written_by": "clause_index",
+                        "written_at": _t.strftime("%Y-%m-%d %H:%M:%S")}
     tmp = _STATE_PATH + ".tmp"
     with open(tmp, "w", encoding="utf-8") as fh:
-        json.dump(state, fh, ensure_ascii=False, indent=2)
+        json.dump(payload, fh, ensure_ascii=False, indent=2)
     os.replace(tmp, _STATE_PATH)
 
 

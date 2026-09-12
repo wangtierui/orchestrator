@@ -65,13 +65,14 @@ def test_rfn_sync_consistency():
 
 
 # ---------------- 层3：internal 107 制度 ----------------
-def test_internal_policy_107():
+def test_internal_policy_index():
     p = os.path.join(IBP, "data", "internal_policy_index.json")
     assert os.path.exists(p), "internal_policy_index.json 缺失（先跑 internal index）"
     idx = json.load(open(p, encoding="utf-8"))
-    assert idx["count"] == 107, f"内部制度数 {idx['count']} != 107"
+    # 动态基线（2026-09-12 部门制度摄取扩至 957+；不硬编码具体条数）
+    assert idx["count"] >= 100, f"内部制度数异常: {idx['count']}"
     ipns = [r["ipn"] for r in idx["records"]]
-    assert len(set(ipns)) == 107, "IPN 非唯一（派生冲突）"
+    assert len(set(ipns)) == len(ipns), "主索引 IPN 非唯一（去重口径失效）"
 
 
 def test_internal_align_merged_present():
@@ -79,7 +80,9 @@ def test_internal_align_merged_present():
         p = os.path.join(IBP, "data", fn)
         assert os.path.exists(p), f"{fn} 缺失（先跑 internal align/merged）"
     merged = json.load(open(os.path.join(IBP, "data", "merged_view.json"), encoding="utf-8"))
-    assert merged["count"] == 107
+    assert merged["count"] >= 100
+    ipns = [r["ipn"] for r in merged["records"]]
+    assert len(set(ipns)) == len(ipns), "merged_view IPN 非唯一"
     assert merged["stat"]["with_rfn_refs"] > 0, "merged_view 无 RFN 引用关联"
 
 
