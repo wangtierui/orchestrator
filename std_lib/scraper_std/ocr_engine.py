@@ -118,7 +118,7 @@ class OCRConfig:
     disable_mkldnn: bool = True
 
     @classmethod
-    def from_config(cls) -> "OCRConfig":
+    def from_config(cls) -> OCRConfig:
         """从 config/ocr.yaml（经 config.loader，唯一读取口）构造配置（2026-09-12 接通）。
 
         原实现：`OCRConfig()` 仅取环境变量默认值（_TESSERACT_DEFAULT 等），与
