@@ -294,12 +294,22 @@ def reocr_backfill(limit: int | None = None, min_cjk: int = 20, force: bool = Fa
         if not os.path.exists(orig):
             continue
         if force:
-            if rec.get("extension") != "pdf" or not _is_scan_pdf(orig):
+            if rec.get("extension") != "pdf":
                 continue
-            # 幂等跳过：①已用 PaddleOCR 提质；②强制重跑已尝试过（含边缘件——文本层有
-            # 少量中文致 OCR 分支不触发、引擎标记为空，若仅看 ① 会无限重跑，2026-09-12 实证）。
-            if rec.get("ocr_engine") == "paddle" or rec.get("reocr_force_done"):
+            # 目标（2026-09-12 增强）：扫描件（fitz 首页<30 字）**或** 文本层提取残量（<100 字——
+            # 含"fitz 读出水印≥30 字但 pypdf/pdfplumber 提取为空"的判据盲区）；
+            # 幂等：已 Paddle 提质跳过；强制尝试过且本次引擎同为 paddle 跳过（含 Paddle 后
+            # 仍低质者——一轮收敛）；非 Paddle 的旧尝试且文本已充分（≥100）跳过。
+            low_text = (rec.get("text_chars") or 0) < 100
+            if not (low_text or _is_scan_pdf(orig)):
                 continue
+            if rec.get("ocr_engine") == "paddle":
+                continue
+            if rec.get("reocr_force_done"):
+                if (rec.get("ocr_force_engine") or "") == "paddle":
+                    continue
+                if not low_text:
+                    continue
         elif (rec.get("text_chars") or 0) > 0:
             continue
         targets.append((p, rec, orig))
@@ -323,6 +333,7 @@ def reocr_backfill(limit: int | None = None, min_cjk: int = 20, force: bool = Fa
             rec["extract_status"] = "ocr_low_quality"
             if force:
                 rec["reocr_force_done"] = True   # 已强制尝试（防无限重跑）
+                rec["ocr_force_engine"] = res.get("ocr_engine", "") or ""   # 本次尝试引擎（幂等依据）
             _json.dump(rec, open(p + ".tmp", "w", encoding="utf-8"),
                        ensure_ascii=False, indent=2)
             os.replace(p + ".tmp", p)
@@ -338,6 +349,7 @@ def reocr_backfill(limit: int | None = None, min_cjk: int = 20, force: bool = Fa
                     "article_count": stru.get("article_count", 0)})
         if force:
             rec["reocr_force_done"] = True   # 已强制尝试（防无限重跑）
+            rec["ocr_force_engine"] = res.get("ocr_engine", "") or ""   # 本次尝试引擎（幂等依据）
         _json.dump(rec, open(p + ".tmp", "w", encoding="utf-8"),
                    ensure_ascii=False, indent=2)
         os.replace(p + ".tmp", p)

@@ -51,13 +51,16 @@ def _frontmatter(meta: dict) -> str:
     return "\n".join(lines)
 
 
-def _export_external(out_dir: str, max_chars: int, limit: int, manifest: dict, dry: bool) -> tuple[int, int]:
+def _export_external(out_dir: str, max_chars: int, limit: int, manifest: dict, dry: bool,
+                     present: set | None = None) -> tuple[int, int]:
     from base_api import query_external
     rows = query_external(limit=limit, with_body=True)
     added = changed = 0
     for r in rows:
         key = r.get("rfn") or r.get("record_id", "")
         fname = f"{_slug(key, 40)}__{_slug(r.get('title', ''))}.md"
+        if present is not None:
+            present.add(fname)   # 记录"当前应存在"文件集（--prune 依据）
         body = (r.get("body_text") or "")[:max_chars]
         content = "\n\n".join([
             _frontmatter({
@@ -95,13 +98,16 @@ def _export_external(out_dir: str, max_chars: int, limit: int, manifest: dict, d
     return added, changed
 
 
-def _export_internal(out_dir: str, max_chars: int, limit: int, manifest: dict, dry: bool) -> tuple[int, int]:
+def _export_internal(out_dir: str, max_chars: int, limit: int, manifest: dict, dry: bool,
+                     present: set | None = None) -> tuple[int, int]:
     from base_api import query_internal, search_internal
     rows = query_internal(limit=limit)
     added = changed = 0
     for p in rows:
         ipn = p.get("ipn", "")
         fname = f"{_slug(ipn, 40)}__{_slug(p.get('title', ''))}.md"
+        if present is not None:
+            present.add(fname)   # 记录"当前应存在"文件集（--prune 依据）
         cl = search_internal(p.get("title", "")[:30] or "制度", limit=200, kind="clauses")
         arts = [c for c in cl if c.get("ipn") == ipn]
         body = "\n\n".join(f"{c.get('article_no', '')} {c.get('article_body', '')}"
@@ -142,6 +148,8 @@ def main() -> int:
     ap.add_argument("--scope", default="external", choices=["external", "internal", "all"])
     ap.add_argument("--max-chars", type=int, default=20000, help="单文件正文截断（控 token）")
     ap.add_argument("--limit", type=int, default=100000)
+    ap.add_argument("--prune", action="store_true",
+                    help="清理过时文件（manifest 中属本 scope 但不在当前发布件的 md——如 IPN 重命名后旧名）")
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
 
@@ -154,22 +162,41 @@ def main() -> int:
         except ValueError:
             manifest = {}
 
+    present: set = set()
     added = changed = 0
     if args.scope in ("external", "all"):
-        a, c = _export_external(args.out, args.max_chars, args.limit, manifest, args.dry_run)
+        a, c = _export_external(args.out, args.max_chars, args.limit, manifest, args.dry_run,
+                                present)
         added += a
         changed += c
     if args.scope in ("internal", "all"):
-        a, c = _export_internal(args.out, args.max_chars, args.limit, manifest, args.dry_run)
+        a, c = _export_internal(args.out, args.max_chars, args.limit, manifest, args.dry_run,
+                                present)
         added += a
         changed += c
+
+    pruned = 0
+    if args.prune:
+        def _in_scope(fname: str) -> bool:
+            is_int = fname.startswith("IPN-")
+            return (args.scope == "all") or (is_int if args.scope == "internal"
+                                             else not is_int)
+        for fname in list(manifest.keys()):
+            if not _in_scope(fname) or fname in present:
+                continue
+            p = os.path.join(args.out, fname)
+            if not args.dry_run and os.path.exists(p):
+                os.remove(p)
+            if not args.dry_run:
+                del manifest[fname]
+            pruned += 1
 
     if not args.dry_run:
         tmp = mpath + ".tmp"
         with open(tmp, "w", encoding="utf-8") as fh:
             json.dump(manifest, fh, ensure_ascii=False, indent=1)
         os.replace(tmp, mpath)
-    print(f"[wiki-sync] 新增 {added} / 更新 {changed} / 累计 {len(manifest)}"
+    print(f"[wiki-sync] 新增 {added} / 更新 {changed} / 清理 {pruned} / 累计 {len(manifest)}"
           + ("［dry-run］" if args.dry_run else f" → {args.out}"))
     return 0
 
