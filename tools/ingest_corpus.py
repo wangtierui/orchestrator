@@ -38,17 +38,60 @@ def _sha256(p: str) -> str:
     return h.hexdigest()
 
 
-def _iter_files(src: str, excludes: list[str]):
+def _iter_files(src: str, excludes: list[str], exclude_tops: list[str] | None = None):
+    """遍历源目录。
+
+    excludes：**相对路径片段**匹配（历史语义，慎用——片段会误伤深层同名子目录，
+      如"需求文档"会命中 `00.关于修订…/2.0需求文档/`，2026-09-12 实证）；
+    exclude_tops：**顶层目录名精确**匹配（预期用法：源根一级目录整棵排除）。
+    """
+    tops = {t for t in (exclude_tops or []) if t}
     for dirpath, dirnames, filenames in os.walk(src):
         rel_dir = os.path.relpath(dirpath, src)
+        if rel_dir == "." and tops:
+            dirnames[:] = [d for d in dirnames if d not in tops]   # 顶层剪枝（整棵跳过）
         dirnames[:] = [d for d in dirnames
                        if not any(e and e in os.path.join(rel_dir, d) for e in excludes)]
         for fn in filenames:
             full = os.path.join(dirpath, fn)
             rel = os.path.relpath(full, src)
+            if tops and rel.split(os.sep)[0] in tops:
+                continue
             if any(e and e in rel for e in excludes):
                 continue
             yield full, rel
+
+
+def _update_index(domain: str, manifest: dict) -> None:
+    """同步 reports/corpus/_index.json 的域条目与总计（2026-09-12 落地；原 _index 无生成器）。"""
+    idx_path = os.path.join(MANIFEST_DIR, "_index.json")
+    idx: dict = {"schema_version": "1.0",
+                 "policy": "语料本体 data/corpus/（不入库）；清单 reports/corpus/（入库，唯一可审计入口）",
+                 "domains": []}
+    if os.path.exists(idx_path):
+        try:
+            idx = json.load(open(idx_path, encoding="utf-8"))
+        except (OSError, ValueError):
+            pass
+    domains = [d for d in (idx.get("domains") or []) if d.get("domain") != domain]
+    domains.append({
+        "domain": domain,
+        "source_dir": manifest.get("source_dir", ""),
+        "file_count": manifest.get("file_count", 0),
+        "total_bytes": manifest.get("total_bytes", 0),
+        "ingested_at": manifest.get("ingested_at", ""),
+        "excludes": manifest.get("excludes", []),
+        "exclude_tops": manifest.get("exclude_tops", []),
+        "manifest": f"reports/corpus/{domain}.manifest.json",
+    })
+    idx["domains"] = sorted(domains, key=lambda d: d.get("domain", ""))
+    idx["total_files"] = sum(int(d.get("file_count") or 0) for d in idx["domains"])
+    idx["total_bytes"] = sum(int(d.get("total_bytes") or 0) for d in idx["domains"])
+    idx["generated_at"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    tmp = idx_path + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as fh:
+        json.dump(idx, fh, ensure_ascii=False, indent=1)
+    os.replace(tmp, idx_path)
 
 
 def main() -> int:
@@ -56,7 +99,9 @@ def main() -> int:
     ap.add_argument("--src", required=True, help="源目录")
     ap.add_argument("--domain", required=True, help="域标识（目标子目录名）")
     ap.add_argument("--exclude", action="append", default=[],
-                    help="排除的相对路径片段（可多次；如已归集子目录）")
+                    help="排除的相对路径片段（可多次；慎用——片段会误伤深层同名子目录）")
+    ap.add_argument("--exclude-top", action="append", default=[], dest="exclude_tops",
+                    help="排除的**顶层目录名**（精确；源根一级整棵排除；可多次）")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--no-hash", action="store_true", help="跳过 sha256（大目录快速模式，manifest 记 size）")
     args = ap.parse_args()
@@ -69,7 +114,7 @@ def main() -> int:
     os.makedirs(dst_root, exist_ok=True)
 
     files, copied, skipped, nbytes = [], 0, 0, 0
-    for full, rel in _iter_files(src, args.exclude):
+    for full, rel in _iter_files(src, args.exclude, args.exclude_tops):
         st = os.stat(full)
         nbytes += st.st_size
         sha = "" if args.no_hash else _sha256(full)
@@ -90,6 +135,7 @@ def main() -> int:
         "domain": args.domain,
         "source_dir": src.replace("\\", "/"),
         "excludes": args.exclude,
+        "exclude_tops": args.exclude_tops,
         "ingested_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "file_count": len(files),
         "total_bytes": nbytes,
@@ -105,6 +151,7 @@ def main() -> int:
             with open(tmp, "w", encoding="utf-8") as fh:
                 json.dump(manifest, fh, ensure_ascii=False, indent=1)
             os.replace(tmp, mp)
+        _update_index(args.domain, manifest)   # 2026-09-12：_index.json 同步（原无生成器）
     print(f"[ingest] {args.domain}: {len(files)} 文件 / {nbytes / 1048576:.1f} MB"
           f"（复制 {copied} / 已存在 {skipped}）" + ("［dry-run］" if args.dry_run else f" → {dst_root}"))
     return 0

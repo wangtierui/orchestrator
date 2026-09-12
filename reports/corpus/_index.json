@@ -1,6 +1,6 @@
 {
  "schema_version": "1.0",
- "generated_at": "2026-09-12 04:02:09",
+ "generated_at": "2026-09-12 14:47:42",
  "policy": "语料本体 data/corpus/（不入库）；清单 reports/corpus/（入库，唯一可审计入口）",
  "domains": [
   {
@@ -14,12 +14,21 @@
   {
    "domain": "east2_m20",
    "source_dir": "D:/0数据治理/00.EAST2.0#M20",
-   "file_count": 1990,
-   "total_bytes": 1894864826,
-   "ingested_at": "2026-09-12 04:02:08",
+   "file_count": 313,
+   "total_bytes": 214098678,
+   "ingested_at": "2026-09-12 14:47:42",
+   "excludes": [],
+   "exclude_tops": [
+    "00.报送文档",
+    "核查手册",
+    "立项申请",
+    "需求文档",
+    "邮件宣导",
+    "相关法规"
+   ],
    "manifest": "reports/corpus/east2_m20.manifest.json"
   }
  ],
- "total_files": 3009,
- "total_bytes": 2227003554
+ "total_files": 1332,
+ "total_bytes": 546237406
 }
