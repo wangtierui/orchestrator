@@ -184,8 +184,11 @@ CITEREFS_KEYS = {"监管文件编号", "art_refs", "basis", "body_len", "lib",
 # 键集为程序消费硬契约：三层（文件行 / articles / chapters）须逐字节一致，新增维度须同步本契约与
 # build/validate。枚举评估：本产物无真"受控枚举"字段——数值(no/count/article_index)+标识(dedup_key/source_url)
 # +半结构(document_number)+自由文本(title/number/body)；半结构形态（第X条/文号）由抽取归一+校验约束，不入受控枚举表。
+# F-D10（2026-09-13 SSOT 专项）：条款级维度补全——行内联 rfn（rfn_clean_bridge 投影）+
+# 时效/日期（cleaned 记录直取）；消费端按条款行即可做 RFN/时效筛选，无需二次 join。
 CLAUSE_LINE_FIELDS: tuple[str, ...] = (
     "dedup_key", "source_url", "document_number", "title",
+    "rfn", "timeliness_status", "publish_date", "effective_date",
     "chapter_count", "article_count", "chapters", "articles",
 )
 CLAUSE_ARTICLE_FIELDS: tuple[str, ...] = ("no", "number", "body")
@@ -202,8 +205,8 @@ RICH_OBJECT_KEYS: tuple[str, ...] = ("rich_structured", "rich_text", "rich_count
 ATTACHMENT_FIELDS: tuple[str, ...] = ("file_name", "kind", "local_path", "sha256",
                                       "bytes", "text_len", "url")
 ATTACHMENT_ALIASES: dict[str, tuple[str, ...]] = {
-    "file_name": ("file_name", "name", "attachment_name"),
-    "kind": ("kind", "mime", "file_type"),
+    "file_name": ("file_name", "name", "attachment_name", "title"),
+    "kind": ("kind", "mime", "file_type", "attachment_kind"),
     "local_path": ("local_path", "content_ref", "path"),
     "sha256": ("sha256",),
     "bytes": ("bytes", "size_bytes", "content_length"),
@@ -223,6 +226,32 @@ def attachment_view(att: dict) -> dict:
                 break
         out[en] = v
     return out
+
+
+def record_attachment_views(rec: dict) -> list:
+    """记录级附件归一（F-D07，2026-09-13 SSOT 专项）：统一「记录 → 附件视图列表」消费面。
+
+    - 嵌套模型（gov/mof/nfra/supp 及发布件）：读取 rec["attachments"] 逐项 attachment_view；
+    - 扁平模型（pbc：附件为独立记录 link_type=="attachment"）：单元素视图
+      （file_name←title、kind←file_type、local_path←local_path、url←detail_url、text_len←len(content)）；
+    - 其他：[]（无附件）。
+
+    消费端一律经此读附件——替代"按源分支"（F-D07 影响面：附件消费按源分支 → 单入口）。
+    """
+    atts = rec.get("attachments") if isinstance(rec, dict) else None
+    if isinstance(atts, list) and atts:
+        return [attachment_view(a) for a in atts if isinstance(a, dict)]
+    if isinstance(rec, dict) and (rec.get("link_type") or "") == "attachment":
+        content = rec.get("content")
+        text_len = len(content) if isinstance(content, str) else 0
+        return [attachment_view({
+            "file_name": rec.get("title", ""),
+            "kind": rec.get("file_type", ""),
+            "local_path": rec.get("local_path") or "",
+            "url": rec.get("detail_url") or "",
+            "text_len": text_len,
+        })]
+    return []
 
 
 # ============ 数据双轨权威声明（F-D09，2026-09-12） ============

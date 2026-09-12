@@ -14,7 +14,20 @@ std_lib.common_lib.norm — 归一化唯一实现（专项三；A-10 分层收�
   - rfn.registry._norm_title（RFN 事实源内部，防索引漂移）；
   - reconcile_clean_drift._norm_docno（"第/年/号"字宽容预处理）；
   - apply/consolidate 的修复型文号（normalize_doc_number 残渣剥离 + 本层归一）；
-  - scraper_std.pkulaw_cli._norm_title（法宝库标题比较专用）。
+  - scraper_std.pkulaw_cli._norm_title（法宝库标题比较专用）；
+  - scraper_std.pkulaw_cli.norm_docno（F-D06 2026-09-13 登记：法宝库文号比较专用形态——
+    全角→半角 + 〔〕→[] 后去空白，与该库返回值对齐比较用，不产出本层标准文号）；
+  - recall_audit.scanner / build_outputs._norm_docno（F-D06 2026-09-13 登记：空占位判定型——
+    仅判空/NULL 占位，非全量归一；用于行键比对，保持原语义防 recall 结果漂移）。
+
+**日期归一分层**（F-D06，2026-09-13；与文号同级收敛约定）：
+  - 解析/清洗层唯一实现：`scraper_std.cleaner.normalize_date`
+    （strptime 多格式 → YYYY-MM-DD[ HH:MM:SS]，无法解析原样保留——保守策略）；
+  - 抽取型特化（豁免）：`scraper_std.crawler_common.normalize_date`
+    （从长文本正则抽取 → YYYY-MM-DD 或 ""，用于列表页/详情页混排文本）；
+  - 摄取预处理（豁免）：`collectors.supp_ingest_batch._norm_date`（前缀截取 + 年月日抽取）；
+  - 比较键（豁免）：`scraper_std.pkulaw_cli._norm_date`（→ (y, m, d) tuple，仅供排序/比对）。
+  收敛基线测试：tests/test_ssot_convergence.py（跨实现兼容断言，防再分叉）。
 """
 from __future__ import annotations
 

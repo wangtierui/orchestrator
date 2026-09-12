@@ -9,8 +9,10 @@ modules.regulatory_scrapers.clause_index — 五源 clean 条文抽取固定节�
 对称 clean_index：build（增量，仅当 clean 快照新于产物）→ data/clauses/{src}_clauses_{date}.jsonl
 （每行=一份文件的条款结构）+ clause_index_state.json（快照日期登记）。
 
-产物行 schema：
-  {dedup_key, source_url, document_number, title, chapter_count, article_count,
+产物行 schema（F-D10 补 4 维）：
+  {dedup_key, source_url, document_number, title,
+   rfn, timeliness_status, publish_date, effective_date,
+   chapter_count, article_count,
    chapters:[{no,title}], articles:[{no,number,body}]}
 """
 from __future__ import annotations
@@ -44,6 +46,30 @@ CLAUSE_DIR = os.path.join(_SCRAPERS, "data", "clauses")
 _CLAUSE_HISTORY_DIR = os.path.join(CLAUSE_DIR, "history")   # clauses 历史版本归档（单版化，2026-09-10）
 _STATE_PATH = os.path.join(CLAUSE_DIR, "clause_index_state.json")
 _SOURCES = ("gov", "mof", "nfra", "pbc", "supp")
+
+# F-D10（2026-09-13 SSOT 专项）：RFN 桥表（classifier 唯一登记源）——条款行内联 rfn 投影。
+_RFN_BRIDGE = os.path.join(_ORCH_ROOT, "modules", "regulatory_classifier", "data",
+                           "rfn_clean_bridge.csv")
+
+
+def _load_rfn_bridge() -> tuple:
+    """rfn_clean_bridge.csv → ({dedup_key: rfn}, {source_url: rfn})；缺表返回空映射（降级不阻断）。"""
+    by_dk: dict = {}
+    by_url: dict = {}
+    if not os.path.exists(_RFN_BRIDGE):
+        return by_dk, by_url
+    with open(_RFN_BRIDGE, encoding="utf-8-sig") as fh:
+        for row in csv.DictReader(fh):
+            rfn = (row.get("监管文件编号") or "").strip()
+            if not rfn:
+                continue
+            dk = (row.get("dedup_key") or "").strip()
+            url = (row.get("source_url") or "").strip()
+            if dk:
+                by_dk.setdefault(dk, rfn)
+            if url:
+                by_url.setdefault(url, rfn)
+    return by_dk, by_url
 
 
 def _rotate_clause_history(current_dates: dict[str, str], keep: int = 3) -> None:
@@ -161,6 +187,7 @@ def build_clause_index(rebuild: bool = False) -> dict:
     state = {} if rebuild else _load_state()
     out = {}
     cur_dates: dict[str, str] = {}
+    rfn_by_dk, rfn_by_url = _load_rfn_bridge()   # F-D10：条款行 rfn 投影（桥表批量预载）
     for src in _SOURCES:
         cp = ci.latest_jsonl_path(src)
         if not cp or not os.path.exists(cp):
@@ -198,6 +225,12 @@ def build_clause_index(rebuild: bool = False) -> dict:
                     "source_url": rec.get("source_url", ""),
                     "document_number": rec.get("document_number", ""),
                     "title": rec.get("title", ""),
+                    # F-D10（2026-09-13 SSOT 专项）：条款级维度——rfn 桥表投影 + 时效/日期直取
+                    "rfn": (rfn_by_dk.get(rec.get("dedup_key", ""))
+                            or rfn_by_url.get(rec.get("source_url", ""), "")),
+                    "timeliness_status": rec.get("timeliness_status", ""),
+                    "publish_date": rec.get("publish_date", ""),
+                    "effective_date": rec.get("effective_date", ""),
                     "chapter_count": stru["chapter_count"],
                     "article_count": stru["article_count"],
                     "chapters": stru["chapters"],
