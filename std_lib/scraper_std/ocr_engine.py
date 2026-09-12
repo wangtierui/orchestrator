@@ -53,6 +53,7 @@ from __future__ import annotations
 import logging
 import os
 import re
+import sys
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -92,10 +93,20 @@ class OCRConfig:
         lang="ch",
         ocr_version="PP-OCRv6",
         use_textline_orientation=True,
+        # 2026-09-12 速度优化：制度扫描件均为正立文档——关闭整页方向分类（doc_ori）与
+        # 去畸变（UVDoc）子管线；检测输入长边限 1280（200DPI 渲染下实测 23s/页，
+        # 由 144s 降 6 倍且识别质量不变——"PP-OCRv6 mobile"档不存在，勿指定）。
+        use_doc_orientation_classify=False,
+        use_doc_unwarping=False,
+        text_det_limit_side_len=1280,
+        text_det_limit_type="max",
     ))
     # Tesseract 配置
     tesseract_cmd: str = _TESSERACT_DEFAULT
     tessdata_prefix: str = _TESSDATA_DEFAULT
+    # PaddleOCR 源码根（2026-09-12：R17 布局预期 `external/PaddleOCR-3.7.0`；存在时注入
+    # sys.path 供 `import paddleocr` 从源码加载——后端 paddlepaddle/paddlex 由 pip 提供）
+    paddleocr_root: str = ""
     tesseract_langs: str = "chi_sim+eng"
     tesseract_config: str = "--psm 6 -c preserve_interword_spaces=0"
     # PDF 渲染
@@ -137,6 +148,8 @@ class OCRConfig:
                 kwargs["tesseract_cmd"] = str(ocr["tesseract_bin"])
             if ocr.get("tessdata_dir"):
                 kwargs["tessdata_prefix"] = str(ocr["tessdata_dir"])
+            if ocr.get("paddleocr_root"):
+                kwargs["paddleocr_root"] = str(ocr["paddleocr_root"])
             if ocr.get("render_dpi"):
                 kwargs["dpi"] = int(ocr["render_dpi"])
         except Exception:  # noqa: BLE001  配置不可用（独立调用/离线场景）→ 内置默认
@@ -358,6 +371,12 @@ class UnifiedOCR:
 
     def __init__(self, config: OCRConfig | None = None):
         self.config = config or OCRConfig.from_config()
+        # PaddleOCR 源码布局接入（2026-09-12）：R17 预期布局 external/PaddleOCR-3.7.0
+        # 注入 sys.path（绕过 editable 安装；paddlepaddle/paddlex 等依赖由 pip 提供）。
+        _root = (self.config.paddleocr_root or "").strip()
+        if _root and os.path.isdir(os.path.join(_root, "paddleocr")):
+            if _root not in sys.path:
+                sys.path.insert(0, _root)
         self._engines: list[BaseOCREngine] = [
             PaddleOCREngine(
                 self.config.paddle_init,

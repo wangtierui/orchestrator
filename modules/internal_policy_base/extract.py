@@ -244,10 +244,24 @@ def renormalize_processed() -> dict:
     return {"changed": changed, "unchanged": unchanged, "processed_dir": proc_dir}
 
 
-def reocr_backfill(limit: int | None = None, min_cjk: int = 20) -> dict:
-    """存量扫描件 OCR 回填（2026-09-12，OCR 引擎就绪后落地）。
+def _is_scan_pdf(path: str) -> bool:
+    """扫描件判定：首页文本层 < 30 字（fitz 快检；--force 重跑清单用）。"""
+    try:
+        import pymupdf  # noqa: PLC0415
+        with pymupdf.open(path) as d:
+            if d.page_count == 0:
+                return False
+            return len((d[0].get_text() or "").strip()) < 30
+    except Exception:  # noqa: BLE001
+        return False
 
-    - 目标：processed 主记录中 `text_chars==0`（扫描件/提取失败）且原文件存在者；
+
+def reocr_backfill(limit: int | None = None, min_cjk: int = 20, force: bool = False) -> dict:
+    """存量扫描件 OCR 回填/重跑（2026-09-12）。
+
+    - 目标（默认）：processed 主记录中 `text_chars==0`（扫描件/提取失败）且原文件存在者；
+    - 目标（`force=True`）：**疑似扫描件 PDF**（fitz 首页文本层 <30 字）**全量重跑**——
+      用于 OCR 引擎升级后提质重建（如 tesseract 回填 → PaddleOCR 重建）；
     - 提取：`extract_file(enable_ocr=True)`（文本层优先 → OCR 引擎链降级）；
     - **质量闸门**：新文本须 ≥ min_cjk 个汉字才回写，否则 `extract_status="ocr_low_quality"`
       且保持 `needs_ocr=True`（防 OCR 乱码污染底座）；
@@ -267,7 +281,7 @@ def reocr_backfill(limit: int | None = None, min_cjk: int = 20) -> dict:
     proc_dir = os.path.join(data_dir, "processed")
     idx_path = os.path.join(data_dir, "internal_policy_index.json")
     stats: dict = {"total": 0, "recovered": 0, "low_quality": 0, "failed": 0,
-                   "chars": 0, "details": []}
+                   "chars": 0, "force": bool(force), "details": []}
     mains = sorted(p for p in _glob.glob(os.path.join(proc_dir, "*.json"))
                    if not p.endswith(("_fulltext.json", "_clauses.json", "_rich.json")))
     targets = []
@@ -276,10 +290,17 @@ def reocr_backfill(limit: int | None = None, min_cjk: int = 20) -> dict:
             rec = _json.load(open(p, encoding="utf-8"))
         except Exception:  # noqa: BLE001
             continue
-        if (rec.get("text_chars") or 0) > 0:
-            continue
         orig = os.path.join(data_dir, str(rec.get("original_path", "")))
         if not os.path.exists(orig):
+            continue
+        if force:
+            if rec.get("extension") != "pdf" or not _is_scan_pdf(orig):
+                continue
+            # 幂等跳过：①已用 PaddleOCR 提质；②强制重跑已尝试过（含边缘件——文本层有
+            # 少量中文致 OCR 分支不触发、引擎标记为空，若仅看 ① 会无限重跑，2026-09-12 实证）。
+            if rec.get("ocr_engine") == "paddle" or rec.get("reocr_force_done"):
+                continue
+        elif (rec.get("text_chars") or 0) > 0:
             continue
         targets.append((p, rec, orig))
     stats["total"] = len(targets)
@@ -300,6 +321,8 @@ def reocr_backfill(limit: int | None = None, min_cjk: int = 20) -> dict:
         if cjk < min_cjk:
             rec["needs_ocr"] = True
             rec["extract_status"] = "ocr_low_quality"
+            if force:
+                rec["reocr_force_done"] = True   # 已强制尝试（防无限重跑）
             _json.dump(rec, open(p + ".tmp", "w", encoding="utf-8"),
                        ensure_ascii=False, indent=2)
             os.replace(p + ".tmp", p)
@@ -310,8 +333,11 @@ def reocr_backfill(limit: int | None = None, min_cjk: int = 20) -> dict:
         stru = extract_structure(txt)
         rec.update({"text_chars": len(txt), "needs_ocr": False,
                     "extract_status": res.get("extract_status", "ocr") or "ocr",
+                    "ocr_engine": res.get("ocr_engine", "") or rec.get("ocr_engine", ""),
                     "chapter_count": stru.get("chapter_count", 0),
                     "article_count": stru.get("article_count", 0)})
+        if force:
+            rec["reocr_force_done"] = True   # 已强制尝试（防无限重跑）
         _json.dump(rec, open(p + ".tmp", "w", encoding="utf-8"),
                    ensure_ascii=False, indent=2)
         os.replace(p + ".tmp", p)

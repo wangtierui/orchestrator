@@ -383,10 +383,12 @@ def _extract_pdf(data: bytes, enable_ocr: bool, ocr_timeout: int) -> dict[str, A
     # 库存在但文本层为空 → 疑似扫描件
     if enable_ocr and _ocr_available():
         try:
-            ocr_text = _run_ocr(data, ocr_timeout)
+            ocr_text, ocr_engine = _run_ocr_detail(data, ocr_timeout)
             if ocr_text.strip():
+                # 2026-09-12：透出实际生效引擎（reocr --force 提质重跑跳过标记用）
                 return {"text": ocr_text.strip(), "extracted": True,
-                        "extract_status": "ok", "needs_ocr": True}
+                        "extract_status": "ok", "needs_ocr": True,
+                        "ocr_engine": ocr_engine}
         except Exception as e:
             LOG.warning("PDF OCR 失败：%s", e)
     return {"text": "", "extracted": False, "extract_status": "needs_ocr",
@@ -678,6 +680,29 @@ def _run_ocr(data: bytes, timeout: int) -> str:
             f.write(data)
         res = get_ocr().extract_pdf(tmp, force_ocr=True)
         return res.text or ""
+    except Exception as e:
+        raise RuntimeError(f"OCR 执行失败: {e}") from e
+    finally:
+        try:
+            os.remove(tmp)
+        except OSError:
+            pass
+
+
+def _run_ocr_detail(data: bytes, timeout: int) -> tuple[str, str]:
+    """同 `_run_ocr` 但返回 (文本, 实际引擎名)；2026-09-12 新增（引擎可观测）。"""
+    try:
+        from .ocr_engine import get_ocr
+    except ImportError:  # 兼容独立模块导入（scraper_std 目录在 sys.path）
+        from ocr_engine import get_ocr
+    import os
+    import tempfile
+    fd, tmp = tempfile.mkstemp(suffix=".pdf", prefix="ocr_run_")
+    try:
+        with os.fdopen(fd, "wb") as f:
+            f.write(data)
+        res = get_ocr().extract_pdf(tmp, force_ocr=True)
+        return (res.text or ""), (getattr(res, "engine", "") or "")
     except Exception as e:
         raise RuntimeError(f"OCR 执行失败: {e}") from e
     finally:

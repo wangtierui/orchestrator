@@ -161,9 +161,11 @@ def _cmd_internal(argv):
         ap.add_argument("--limit", type=int, default=0, help="最多处理 N 个（0=全部）")
         ap.add_argument("--min-cjk", type=int, default=20, dest="min_cjk",
                         help="质量闸门：识别文本最少汉字数（默认 20）")
+        ap.add_argument("--force", action="store_true",
+                        help="扫描件全量重跑（引擎升级提质重建；fitz 首页<30字判定）")
         a = ap.parse_args(argv[1:])
         from internal_policy_base.extract import reocr_backfill  # noqa: PLC0415
-        st = reocr_backfill(limit=(a.limit or None), min_cjk=a.min_cjk)
+        st = reocr_backfill(limit=(a.limit or None), min_cjk=a.min_cjk, force=a.force)
         import json as _json  # noqa: PLC0415
         print(_json.dumps({k: v for k, v in st.items() if k != "details"},
                           ensure_ascii=False, indent=2))
