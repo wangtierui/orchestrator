@@ -31,8 +31,10 @@
 
 ```
 regulatory_compliance_orchestrator/
-├── cli.py                    # 【常规流程·入口】统一命令入口（gates/source/internal/classify/
-│                             #   timeliness/draft/rfn/base/analysis/ping）
+├── cli.py                    # 【常规流程·入口】薄壳（2026-09-13 审查 P3：611→87 行）——
+│                             #   COMMANDS 注册 + build_parser + main 分发仅此三件事
+├── commands/                 # 【常规流程·命令实现】10 命令实现包（gates/source/internal/classify/
+│                             #   timeliness/draft/rfn/base/analysis/ping，各含 run(argv)）
 ├── paths.py                  # 【常规流程】路径唯一解析（ROOT/MODULES_DIR/SOURCES_YAML…，禁盘符字面量）
 ├── config/                   # 【常规流程】配置层
 │   ├── enums.py              #   受控枚举唯一源（SOURCE_SET/TIMELINESS_STATUS/doc_type/category…，含自检）
