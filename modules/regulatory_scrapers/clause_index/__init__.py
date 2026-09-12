@@ -78,13 +78,21 @@ def _load_state():
     if not os.path.exists(_STATE_PATH):
         return {}
     try:
-        return json.load(open(_STATE_PATH, encoding="utf-8"))
+        d = json.load(open(_STATE_PATH, encoding="utf-8"))
+        # F-D14：读侧剥离版本键（写侧注入 _meta；消费逻辑零感知）
+        if isinstance(d, dict):
+            d.pop("_meta", None)
+        return d
     except Exception:
         return {}
 
 
 def _save_state(state):
     os.makedirs(CLAUSE_DIR, exist_ok=True)
+    # F-D14（H-01）：状态文件版本锚点
+    import time as _t  # noqa: PLC0415
+    state["_meta"] = {"schema_version": "1.0", "written_by": "clause_index",
+                      "written_at": _t.strftime("%Y-%m-%d %H:%M:%S")}
     tmp = _STATE_PATH + ".tmp"
     with open(tmp, "w", encoding="utf-8") as fh:
         json.dump(state, fh, ensure_ascii=False, indent=2)

@@ -80,13 +80,21 @@ def _write_rich(ipn: str, data: bytes, fname: str) -> int:
 def _load_state() -> dict:
     if os.path.exists(_STATE_PATH):
         try:
-            return json.load(open(_STATE_PATH, encoding="utf-8"))
+            d = json.load(open(_STATE_PATH, encoding="utf-8"))
+            # F-D14：读侧剥离版本键（写侧注入 _meta；遍历/查询零感知）
+            if isinstance(d, dict):
+                d.pop("_meta", None)
+            return d
         except Exception:
             return {}
     return {}
 
 
 def _save_state(state: dict) -> None:
+    # F-D14（H-01）：状态文件版本锚点（读侧剥离；_ingest_state 键空间为 sha256，_meta 独立键位）
+    import time as _t  # noqa: PLC0415
+    state["_meta"] = {"schema_version": "1.0", "written_by": "internal_policy_base.indexer",
+                      "written_at": _t.strftime("%Y-%m-%d %H:%M:%S")}
     os.makedirs(_DATA, exist_ok=True)
     tmp = _STATE_PATH + ".tmp"
     json.dump(state, open(tmp, "w", encoding="utf-8"), ensure_ascii=False, indent=2)

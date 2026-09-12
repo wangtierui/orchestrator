@@ -61,6 +61,10 @@ def load_mirror():
         return {}
     try:
         with open(target, encoding="utf-8") as fh:
-            return json.load(fh)
+            d = json.load(fh)
+        # F-D14：镜像同源剥离版本键（与 verification_state.load_state 同款）
+        if isinstance(d, dict):
+            d.pop("_meta", None)
+        return d
     except (OSError, ValueError):
         return {}

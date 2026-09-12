@@ -341,6 +341,12 @@ def reconcile(source=None, apply_c1=False, dry_run=False, force_clean_title=Fals
         "legacy_mismatch": len(legacy_list),
         "applied_c1": bool(apply_c1 and not dry_run),
     }
+    # F-D14（H-01）：状态文件版本锚点（gate_rfn_drift 定向读键，不受影响）
+    summary["_meta"] = {"schema_version": "1.0", "written_by": "reconcile_clean_drift",
+                        "written_at": summary.get("checked_at", "")}
+    # F-D14（H-01）：状态文件版本锚点（gate_rfn_drift 定向读键，不受影响）
+    summary["_meta"] = {"schema_version": "1.0", "written_by": "reconcile_clean_drift",
+                        "written_at": summary.get("checked_at", "")}
     _save_json(_STATE_PATH, summary)
     all_rows = c1_list + c2_list + legacy_list + absent_list
     cols = sorted({k for r in all_rows for k in r})

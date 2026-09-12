@@ -61,11 +61,30 @@ def load_state():
     if not os.path.exists(STATE_FILE):
         return {}
     with open(STATE_FILE, encoding="utf-8") as fh:
-        return json.load(fh)
+        d = json.load(fh)
+    # F-D14：读侧剥离版本键（写侧注入 _meta；doc:* 记录消费逻辑零感知）
+    if isinstance(d, dict):
+        d.pop("_meta", None)
+    return d
+
+
+def read_meta():
+    """F-D14：读原始状态文件的版本锚点（结构变更检测/迁移用；正常消费无需调用）。"""
+    if not os.path.exists(STATE_FILE):
+        return {}
+    try:
+        return (json.load(open(STATE_FILE, encoding="utf-8")) or {}).get("_meta") or {}
+    except (OSError, ValueError):
+        return {}
 
 
 def save_state(state):
     os.makedirs(TASK_DIR, exist_ok=True)
+    # F-D14（H-01）：版本锚点（写盘注入；load 剥离——消费方零改动）
+    import time as _t  # noqa: PLC0415
+    state.pop("_meta", None)
+    state["_meta"] = {"schema_version": "1.0", "written_by": "verification_state",
+                      "written_at": _t.strftime("%Y-%m-%d %H:%M:%S")}
     tmp = STATE_FILE + ".tmp"
     with open(tmp, "w", encoding="utf-8") as fh:
         json.dump(state, fh, ensure_ascii=False, indent=2)

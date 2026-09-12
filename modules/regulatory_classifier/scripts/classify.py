@@ -113,6 +113,9 @@ def run(theme: str = "", themes: list[str] | None = None, only_steps: set[str] |
     if os.path.exists(_STATE):
         try:
             state = json.load(open(_STATE, encoding="utf-8"))
+            # F-D14：读侧剥离版本键（写侧注入 _meta；消费逻辑零感知）
+            if isinstance(state, dict):
+                state.pop("_meta", None)
         except Exception:
             state = {}
     state.setdefault("themes", {})
@@ -174,6 +177,9 @@ def run(theme: str = "", themes: list[str] | None = None, only_steps: set[str] |
                 ran += 1
                 state["upper"] = {"input_sha": cur, "ran_at": __import__("time").strftime("%Y-%m-%d %H:%M:%S")}
     if not dry_run:
+        # F-D14（H-01）：状态文件版本锚点（结构变更时可检测/迁移）
+        state["_meta"] = {"schema_version": "1.0", "written_by": "classify",
+                          "written_at": __import__("time").strftime("%Y-%m-%d %H:%M:%S")}
         tmp = _STATE + ".tmp"
         with open(tmp, "w", encoding="utf-8") as fh:
             json.dump(state, fh, ensure_ascii=False, indent=2)
