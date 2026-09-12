@@ -33,11 +33,64 @@ def _cmd_gates(argv):
 
 
 def _cmd_source(argv):
-    """source list | source add --id <new_id>（R15：yaml 唯一事实源 + collector 路由消费）。"""
+    """source list | add | diff（R15：yaml 唯一事实源；diff=快照变更监听 F-O02）。"""
     if not argv:
-        print("用法: orchestrator source {list|add}")
+        print("用法: orchestrator source {list|add|diff}")
         return 1
     action = argv[0]
+    if action == "diff":
+        # F-O02（2026-09-12）：快照变更监听——对比"监听基线"（data/watch_baseline.jsonl，
+        # 编排每次运行经 --record 追加）与当前 clean_index 快照的记录数/内容 sha 差异。
+        # 磁盘不保留历史快照（clean 覆盖式），故基线由本命令留痕（同日改写可见）。
+        import datetime as _dt  # noqa: PLC0415
+        import json as _json  # noqa: PLC0415
+        import os as _os  # noqa: PLC0415
+        sys.path.insert(0, _os.path.join(paths.ROOT, "modules", "regulatory_scrapers"))
+        from clean_index import get_clean_index  # noqa: PLC0415
+        idx = get_clean_index()
+        base_p = _os.path.join(paths.MODULES_DIR, "regulatory_scrapers", "data",
+                               "watch_baseline.jsonl")
+        last: dict = {}
+        if _os.path.exists(base_p):
+            with open(base_p, encoding="utf-8") as fh:
+                for line in fh:
+                    if not line.strip():
+                        continue
+                    try:
+                        rec = _json.loads(line)
+                    except ValueError:
+                        continue
+                    last[rec.get("source", "")] = rec
+        now = _dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        rows, changed = [], 0
+        print("[source:diff] 变更监听（基线 → 当前）")
+        for sid in sorted(idx.source_ids()):
+            lt = idx.latest(sid) or {}
+            sn = idx.snapshot(sid, lt.get("date") or "") or {}
+            f = (sn.get("files") or {}).get("jsonl") or {}
+            cur = {"source": sid, "date": lt.get("date"), "records": f.get("record_count"),
+                   "sha": (f.get("sha256") or "")[:16], "at": now}
+            rows.append(cur)
+            p = last.get(sid)
+            if not p:
+                changed += 1
+                print(f"  {sid:5s} | （无基线）→ {cur['date']} | records {cur['records']}"
+                      f" | sha {cur['sha']}")
+                continue
+            delta = (cur["records"] or 0) - (p.get("records") or 0)
+            sha_upd = cur["sha"] != (p.get("sha") or "")
+            if sha_upd or delta:
+                changed += 1
+            print(f"  {sid:5s} | {p.get('date')} → {cur['date']} | records {p.get('records')}"
+                  f" → {cur['records']}（Δ{delta:+d}）| sha {p.get('sha')} → {cur['sha']}"
+                  f" | {'★变化' if (sha_upd or delta) else '无变化'}")
+        print(f"[source:diff] 共 {len(rows)} 源；有变更 {changed} 源")
+        if "--record" in argv:
+            with open(base_p, "a", encoding="utf-8") as fh:
+                for cur in rows:
+                    fh.write(_json.dumps(cur, ensure_ascii=False) + "\n")
+            print(f"[source:diff] 已记录基线（{base_p}）")
+        return 0
     if action == "list":
         try:
             from config.loader import (  # noqa: PLC0415

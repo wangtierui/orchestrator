@@ -16,6 +16,8 @@ run_production_refresh.py —— 生产五源全量数据刷新编排器（2026-
   python tools/run_production_refresh.py --no-scrape      # 仅重清洗+全链（raw 已抓取后）
   python tools/run_production_refresh.py --collect all    # 含全量抓取（长时；建议后台/分段）
   python tools/run_production_refresh.py --collect gov,mof
+  python tools/run_production_refresh.py --collect nfra-weekly   # nfra 周度增量链（F-O04：
+      # 等价周二 01:00 调度链——单实例锁/顶部窗口刷新/详情续跑/离线重建，替代全量）
 """
 from __future__ import annotations
 
@@ -122,6 +124,12 @@ def main() -> int:
     if not args.no_scrape:
         want = [s for s in SOURCES if s in (args.collect == "all" and SOURCES
                                             or args.collect.replace("，", ",").split(","))]
+        # F-O04（2026-09-12）：nfra 周度增量链（nfra_weekly.py，原零消费）——周刷链已含
+        # 列表顶部窗口刷新 + 详情续跑 + 离线重建，替代全量 collector，避免重复抓取。
+        if "nfra-weekly" in args.collect.replace("，", ",").split(","):
+            report.append(_run("collect:nfra_weekly",
+                               [PY, os.path.join(COLLECTORS, "nfra_weekly.py")], timeout=7200))
+            want = [s for s in want if s != "nfra"]
         for src in want:
             cmd = COLLECT_CMD.get(src)
             if not cmd:
@@ -207,6 +215,13 @@ def main() -> int:
 
     # ---- 阶段 6：gates ----
     report.append(_run("gates", [PY, os.path.join(ROOT, "cli.py"), "gates"], timeout=1800))
+
+    # ---- 阶段 6.5：变更监听基线记录（F-O02）----
+    # 每次编排运行把各源"日期/记录数/内容 sha"追加到 data/watch_baseline.jsonl；
+    # `cli.py source diff` 以此对比"上次运行 → 本次"（同日改写/条数变化可见）。
+    report.append(_run("watch:baseline",
+                       [PY, os.path.join(ROOT, "cli.py"), "source", "diff", "--record"],
+                       timeout=300))
 
     summary = {
         "run_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),

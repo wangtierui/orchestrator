@@ -105,42 +105,69 @@ def analyze_body(body):
 
 
 def build_lib_index(lib_config, libs):
-    """构建五库标题归一化索引 {lib: {norm_title: [records]}}。"""
-    index = {}
+    """构建五库标题归一化索引并返回 (index, lib_paths)。
+
+    F-O08（2026-09-12）内存优化：原实现把整行记录（含 body_text 全文，五库合计
+    数百 MB）全部驻留内存。现索引条目只存**轻量字段 + 行偏移**（title/docno/
+    body_len/offset），命中后经 `_read_at` 定点读取正文 → 常驻内存降至 MB 级，
+    IO 仅命中行（每主题命中数百行，代价可忽略）。
+    """
+    index, lib_paths = {}, {}
     for lib in libs:
         path = lib_config.get(lib)
         if not path or not os.path.exists(path):
             print(f"  ⚠️ 库 {lib} 路径不存在，跳过: {path}")
             continue
         idx = {}
-        with open(path, encoding="utf-8") as f:
-            for line in f:
-                try:
-                    rec = json.loads(line)
-                except Exception:
-                    continue
-                nt = norm_title(rec.get("title", "") or "")
-                if nt:
-                    idx.setdefault(nt, []).append(rec)
+        with open(path, "rb") as f:
+            offset = 0
+            for raw in f:
+                step = len(raw)
+                if raw.strip():
+                    try:
+                        rec = json.loads(raw)
+                    except Exception:
+                        rec = None
+                    if rec is not None:
+                        nt = norm_title(rec.get("title", "") or "")
+                        if nt:
+                            idx.setdefault(nt, []).append({
+                                "offset": offset,
+                                "body_len": len(rec.get("body_text", "") or ""),
+                                "docno": rec.get("document_number", "") or "",
+                                "title": rec.get("title", "") or "",
+                            })
+                offset += step
         index[lib] = idx
-        print(f"  📚 {lib} 索引: {len(idx)} 条")
-    return index
+        lib_paths[lib] = path
+        print(f"  📚 {lib} 索引: {len(idx)} 条（轻量偏移索引，F-O08）")
+    return index, lib_paths
+
+
+def _read_at(path, offset):
+    """按行偏移定点读取 JSONL 记录（F-O08：命中后按需读取，避免全量正文驻留）。"""
+    try:
+        with open(path, "rb") as fh:
+            fh.seek(offset)
+            return json.loads(fh.readline())
+    except (OSError, ValueError):
+        return None
 
 
 def match_one(seq, title, doc_no, lib_index, min_doc_len=5):
-    """三级判据匹配单条，返回 (lib, record) 或 None。"""
+    """三级判据匹配单条，返回 (lib, light_item) 或 None（F-O08：item 为轻量索引项）。"""
     nt, tdoc = norm_title(title), norm_doc(doc_no)
     best = None
     for lib, idx in lib_index.items():
         cand = None
         # 判据①：标题归一化精确
         if nt in idx:
-            cand = (lib, max(idx[nt], key=lambda x: len(x.get("body_text", "") or "")))
+            cand = (lib, max(idx[nt], key=lambda x: x["body_len"]))
         # 判据②：发文字号归一化相等
         if not cand and tdoc and len(tdoc) >= min_doc_len:
             for _k, cands in idx.items():
                 for b in cands:
-                    if norm_doc(b.get("document_number", "")) == tdoc:
+                    if norm_doc(b.get("docno", "")) == tdoc:
                         cand = (lib, b)
                         break
                 if cand:
@@ -149,12 +176,12 @@ def match_one(seq, title, doc_no, lib_index, min_doc_len=5):
         if not cand:
             for k, cands in idx.items():
                 if nt and len(nt) >= 6 and len(k) >= 6 and (nt in k or k in nt):
-                    b = max(cands, key=lambda x: len(x.get("body_text", "") or ""))
-                    rdoc = norm_doc(b.get("document_number", ""))
+                    b = max(cands, key=lambda x: x["body_len"])
+                    rdoc = norm_doc(b.get("docno", ""))
                     if not tdoc or len(tdoc) < min_doc_len or (rdoc and (tdoc in rdoc or rdoc in tdoc)):
                         cand = (lib, b)
                         break
-        if cand and (best is None or len(cand[1].get("body_text", "") or "") > len(best[1].get("body_text", "") or "")):
+        if cand and (best is None or cand[1]["body_len"] > best[1]["body_len"]):
             best = cand
     return best
 
@@ -181,7 +208,7 @@ def main():
     libs = [lib.strip() for lib in args.libs.split(",") if lib.strip()]
 
     # 构建索引
-    lib_index = build_lib_index(lib_config, libs)
+    lib_index, lib_paths = build_lib_index(lib_config, libs)
     if not lib_index:
         print("❌ 无可用库索引，退出")
         sys.exit(1)
@@ -201,10 +228,12 @@ def main():
         key = rfn or str(seq)
         best = match_one(seq, r["title"], r.get("doc_no", ""), lib_index)
         if best:
-            lib, rec = best
+            lib, item = best
+            # F-O08：命中后按偏移定点读取完整记录（正文仅命中行驻留）
+            rec = _read_at(lib_paths[lib], item["offset"]) or {}
             matched[key] = {
                 "lib": lib,
-                "title": rec.get("title", ""),
+                "title": rec.get("title", "") or item.get("title", ""),
                 "docno": rec.get("document_number", ""),
                 "body_len": len(rec.get("body_text", "") or ""),
                 "body": rec.get("body_text", "") or "",
