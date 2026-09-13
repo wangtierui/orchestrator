@@ -254,6 +254,157 @@ def extract_docnos(text: str, config: RelationConfig | None = None) -> list[str]
 
 
 # ===========================================================================
+# 二·B、共享口径（R-F01 收敛点）
+# ---------------------------------------------------------------------------
+# 背景：以下"公文语体口径"此前在 **3 处旧实现**中各写一份字面量，口径靠人眼保持一致：
+#   ① `regulatory_classifier/scripts/build_clause_graph.py`（P1-P5 条款级引用图）
+#   ② `regulatory_classifier/scripts/build_detail_tables.py`（明细表「立法依据/条款引用」列）
+#   ③ `internal_policy_drafter/scripts/verify_regulatory_citations.py`（引用核验门禁）
+# 现统一由本模块导出，三处改为 import —— 口径单点演进（改一处即全链生效），
+# **且保持各自原有语义**（本层只做"去重"，不改变既有匹配行为）。
+# ===========================================================================
+# 条款序号字符集（clause_graph.NUM / detail_tables 字面量同源；**不含"两"**，
+# 与既有产物严格一致——本模块内部另有 `CN_NUM` 含"两"，属更宽口径，勿混）
+CN_NUM_CHARS = "零一二三四五六七八九十百千"
+ARTICLE_NUM = rf"[0-9{CN_NUM_CHARS}]+"
+# 条款链：第N条[第M款][第K项]（无捕获组版 / 带捕获组版）
+ARTICLE_CHAIN = rf"第{ARTICLE_NUM}条(?:第{ARTICLE_NUM}款)?(?:第{ARTICLE_NUM}项)?"
+ARTICLE_CHAIN_CAPTURE = rf"第({ARTICLE_NUM})条(?:第({ARTICLE_NUM})款)?(?:第({ARTICLE_NUM})项)?"
+# 书名号标题跨度（4 处旧实现均为 2..40）
+QUOTE_TITLE_MIN, QUOTE_TITLE_MAX = 2, 40
+# 依据触发词**核心 4 词**：条款级/明细级抽取的稳定口径。
+# `RelationConfig.basis_triggers` 默认值 = 本元组 + 扩展词（遵照/基于/循/参照）。
+BASIS_TRIGGER_CORE: tuple[str, ...] = ("根据", "依据", "依照", "按照")
+# 自指词（P2 自指条款：本办法第N条）
+SELF_REF_WORDS: tuple[str, ...] = ("本办法", "本规定", "本通知", "本指引", "本细则",
+                                   "本条例", "本规则")
+# 立法类名称结尾（明细表「立法依据」列筛选）
+LAW_SUFFIX_ALT = "法|条例|规定|决定|解释|细则"
+# 文号**核心形态**（不含机关代字约束）：`〔20xx〕N号 / [20xx]N号 / （20xx）N号 /
+# 令20xx年第N号 / 国务院令第N号` —— verify 门禁的 DOCNO_CORE_PAT 与此同源；
+# 本模块 `RelationConfig.docno_patterns` 是**带机关代字的扩展形态**（用于正文文号定位）。
+DOCNO_CORE_PATTERN = (
+    r"[〔\[(（]\s*(\d{4})\s*[〕\])）]\s*(\d+)\s*号?"
+    r"|令\s*(\d{4})\s*年第\s*(\d+)\s*号"
+    r"|国务院令第(\d+)号"
+)
+# 监管发文机关词表（原 verify.ORGAN_PREFIXES 迁入）：括号式文号前存在这些词才判定为
+# "监管文件文号"进入引用门禁；无机关词的裸文号（如〔2023〕687号）视为内部 OA 文号。
+# 新增监管机关时在此扩展（按最长优先匹配）。
+ORGAN_WORDS: tuple[str, ...] = (
+    "国家金融监督管理总局办公厅", "中国银行保险监督管理委员会办公厅", "中国保险监督管理委员会办公厅",
+    "国家金融监督管理总局", "中国银行保险监督管理委员会", "中国保险监督管理委员会", "银保监会办公厅",
+    "中国人民银行等八部门公告", "最高人民法院", "国务院办公厅", "人民银行", "银保监会", "保监会",
+    "银监发", "银监办发", "银监通", "银监办通", "银监复", "银监函",
+    "保监发", "保监厅发", "保监产险", "保监财会", "保监稽查", "保监消保", "保监厅函", "保监复", "保监函",
+    "银保监发", "银保监办发", "金办发", "金办便函", "金规", "银发", "国发", "国办发", "财金", "发改",
+    "银监会令", "保监会令", "银保监会令", "国务院令", "证监会", "外汇局", "网信办", "知识产权局",
+    "工信部", "市场监管总局", "中保协", "八部门公告",
+)
+
+
+def quote_title_span(min_len: int = QUOTE_TITLE_MIN, max_len: int = QUOTE_TITLE_MAX) -> str:
+    """书名号标题**跨度**（无捕获组），如 `《[^《》]{2,40}》`。"""
+    return rf"《[^《》]{{{min_len},{max_len}}}》"
+
+
+def quote_title_capture(min_len: int = QUOTE_TITLE_MIN,
+                        max_len: int = QUOTE_TITLE_MAX) -> str:
+    """书名号标题**捕获**形态，如 `《([^《》]{2,40})》`（第 1 组 = 标题）。"""
+    return rf"《([^《》]{{{min_len},{max_len}}})》"
+
+
+def quote_title_re(min_len: int = QUOTE_TITLE_MIN,
+                   max_len: int = QUOTE_TITLE_MAX) -> re.Pattern:
+    """编译版书名号标题（`TITLE_PAT` 等旧实现同源）。"""
+    return re.compile(quote_title_capture(min_len, max_len))
+
+
+def basis_trigger_alt(triggers: tuple[str, ...] = BASIS_TRIGGER_CORE) -> str:
+    """依据触发词的正则**择一分支**（`根据|依据|依照|按照`）。"""
+    return "|".join(map(re.escape, triggers))
+
+
+def docno_core_re() -> re.Pattern:
+    """文号核心形态编译版（verify 门禁 `DOCNO_CORE_PAT` 同源）。"""
+    return re.compile(DOCNO_CORE_PATTERN)
+
+
+# ===========================================================================
+# 二·C、目标分类（R-F01 语义分层，2026-09-14）
+# ---------------------------------------------------------------------------
+# 动机（实测口径修正）：初版把"未解析"一律算作解析失败，但实测 1018 条未解析里
+# **大量不是文件引用**——`国务院` 182×、`国务院银行业监督管理机构` 23×、`本级人民政府`、
+# `其总公司` 等**机关名**（程序性依据的目标本就是机关），以及 `条例`/`办法` 这类**泛指词**
+# （`《条例》` 原文即泛指，属抽取噪声）。把它们计入"文件解析率"会**低估**真实覆盖度。
+# 故对每条关系的目标做性质分类，只在 `external`（语料外文件）上计算"未定位"。
+# ===========================================================================
+TARGET_ENTITY = "entity"      # 强实体：解析到 RFN / IPN（可 join 底座）
+TARGET_CORPUS = "corpus"      # 弱引用：命中 cleaned 全集（dedup_key），RFN 未登记
+TARGET_ORGAN = "organ"        # 机关名（程序性依据目标，**非文件**）
+TARGET_GENERIC = "generic"    # 纯类型泛指词（`《条例》`/`《办法》`），抽取噪声
+TARGET_EXTERNAL = "external"  # 语料外文件（法律/行政法规/司法解释等，客观未采集）
+
+TARGET_CLASSES: tuple[str, ...] = (TARGET_ENTITY, TARGET_CORPUS, TARGET_ORGAN,
+                                   TARGET_GENERIC, TARGET_EXTERNAL)
+
+# 机关名后缀（判定"目标是否为机关而非文件"；须同时不命中制度类关键词，见 _is_organ_target）
+_ORGAN_TAIL_RE = re.compile(
+    r"(?:国务院|人民政府|政府|委员会|管理委员会|银行业监督管理机构|保险监督管理机构|监督管理机构"
+    r"|监管机构|总公司|分公司|公司|银行|总行|法院|检察院|院|署|部|厅|局|中心|协会|联合会"
+    r"|交易所|办公室|事业部)$")
+# 制度类关键词（判定目标是否"文件"而非"机关"：命中即不判为机关）
+_DOC_KW_RE = re.compile(
+    r"办法|规定|通知|条例|细则|指引|制度|方案|规程|准则|标准|意见|决定|公告|通告|规则|规范"
+    r"|批复|解释|协议|清单|手册|备忘录|要点|规划|计划|报告|文书|凭证|承诺书|确认书")
+# 纯类型泛指词（书名号内**只有**类型词 → 不是具体文件）
+GENERIC_ONLY: frozenset[str] = frozenset({
+    "条例", "办法", "规定", "细则", "通知", "决定", "意见", "指引", "制度", "方案",
+    "规程", "准则", "标准", "法", "公告", "通告", "规则", "规范", "批复", "函", "命令",
+})
+
+
+def is_generic_target(name: str) -> bool:
+    """是否纯类型泛指词（`《条例》`/`《办法》`）——抽取侧据此**过滤**（噪声，不可定位）。"""
+    n = re.sub(r"\s+", "", (name or "").strip("《》〈〉"))
+    return n in GENERIC_ONLY
+
+
+def is_organ_target(name: str) -> bool:
+    """是否机关名（程序性依据的目标是机关；**不是**文件引用）。"""
+    n = re.sub(r"\s+", "", (name or "").strip("《》〈〉"))
+    if len(n) < 2 or len(n) > 24:
+        return False
+    if _ORGAN_TAIL_RE.search(n) and not _DOC_KW_RE.search(n):
+        return True
+    return False
+
+
+def classify_target(*, dst_ref: str = "", dst_key: str = "", name: str = "",
+                    basis_type: str = "") -> str:
+    """关系目标的性质分类（见 TARGET_CLASSES）。
+
+    判定顺序：强实体 → 弱引用 → 程序性依据（目标即机关）→ 机关名 → 泛指词 → 语料外文件。
+    """
+    if dst_ref:
+        return TARGET_ENTITY
+    if dst_key:
+        return TARGET_CORPUS
+    if basis_type == BASIS_TYPE_PROCEDURAL and is_organ_target(name):
+        return TARGET_ORGAN
+    if is_organ_target(name):
+        return TARGET_ORGAN
+    if is_generic_target(name):
+        return TARGET_GENERIC
+    return TARGET_EXTERNAL
+
+
+# 编译版常量（供三处旧实现直接 import，避免各自 compile 字面量）
+SELF_REF_RE = re.compile(rf"(?:{'|'.join(map(re.escape, SELF_REF_WORDS))})[^。；\n]{{0,6}}?第({ARTICLE_NUM})条")
+BARE_ARTICLE_RE = re.compile(rf"(?<![0-9{CN_NUM_CHARS}])第({ARTICLE_NUM})条")
+
+
+# ===========================================================================
 # 三、数据结构层
 # ===========================================================================
 @dataclass
@@ -298,6 +449,8 @@ class ExtractionResult:
     basis: list[BasisRelation] = field(default_factory=list)
     repeal: list[RepealRelation] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
+    # 被过滤的"纯类型泛指词"目标数（`《条例》`/`《办法》`，2026-09-14 净化，见 is_generic_target）
+    filtered_generic: int = 0
 
     def to_dict(self) -> dict:
         return {
@@ -306,6 +459,7 @@ class ExtractionResult:
             "basis": [b.to_dict() for b in self.basis],
             "repeal": [r.to_dict() for r in self.repeal],
             "warnings": list(self.warnings),
+            "filtered_generic": self.filtered_generic,
         }
 
 
@@ -317,7 +471,19 @@ class RelationExtractor:
 
     def __init__(self, config: RelationConfig | None = None):
         self.cfg = config or default_config()
+        self._filtered_generic = 0
         self._compile()
+
+    def _skip_generic(self, name: str) -> bool:
+        """纯类型泛指词目标（`《条例》`/`《办法》`）→ 过滤并计数（2026-09-14 净化）。
+
+        这类书名号在原文中就是**泛指**（如"依据有关条例"），不指向任何具体文件；
+        保留会污染"未定位文件"统计（实测 15 条）。
+        """
+        if is_generic_target(name):
+            self._filtered_generic += 1
+            return True
+        return False
 
     def _compile(self) -> None:
         cfg = self.cfg
@@ -393,10 +559,12 @@ class RelationExtractor:
     # ---- 主入口 ----
     def extract(self, text: str) -> ExtractionResult:
         t = preprocess(text)
+        self._filtered_generic = 0
         res = ExtractionResult()
         res.basis = self._extract_basis(t)
         res.repeal, warns = self._extract_repeal(t)
         res.warnings.extend(warns)
+        res.filtered_generic = self._filtered_generic
         if self.attachment_hint.search(t):
             res.warnings.append("检测到\"见附件\"提示，废止/依据清单可能位于附件中")
         return res
@@ -410,6 +578,8 @@ class RelationExtractor:
             if self._excluded(text, m.start()):
                 continue
             for name in self._quotes(m.group("refs")):
+                if self._skip_generic(name):
+                    continue
                 key = (normalize_doc_name(name), "basis")
                 if key in seen:
                     continue
@@ -423,6 +593,8 @@ class RelationExtractor:
             if self._excluded(text, m.start()):
                 continue
             name = m.group("name").strip()
+            if self._skip_generic(name):
+                continue
             art = "第" + m.group("article") + "条"
             key = (normalize_doc_name(name), "basis")
             if key in seen:
@@ -463,8 +635,10 @@ class RelationExtractor:
         def _add(name: str, action_cn: str, *, number: str = "", scope: str = REPEAL_ACTION_REPEAL,
                  article: str = "", snippet: str, offset: int) -> None:
             action = dict(self._ract_pairs).get(action_cn, REPEAL_ACTION_REPEAL)
+            if not name.strip() or self._skip_generic(name):
+                return
             key = (normalize_doc_name(name), action)
-            if key in seen or not name.strip():
+            if key in seen:
                 return
             seen.add(key)
             out.append(RepealRelation(

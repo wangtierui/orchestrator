@@ -74,18 +74,25 @@ from interfaces.contract import DETAIL_TABLE_FIELDS  # noqa: E402
 
 FIELDS: list[str] = DETAIL_TABLE_FIELDS
 
-# 放宽版条款正则（提升条/款/项级召回）：允许《X》与「第N条」之间最多 12 字间隔，
-# 覆盖「《X》第N条」「《X》的规定第N条」「《X》中第N条第M款」等；不含裸「第N条」以防自条款噪声。
-ART_RE = re.compile(
-    r"《([^《》]{2,40})》[^。；\n]{0,12}?第([0-9零一二三四五六七八九十百千]+)条"
-    r"(?:第([0-9零一二三四五六七八九十百千]+)款)?"
-    r"(?:第([0-9零一二三四五六七八九十百千]+)项)?"
-)
-LAW_RE = re.compile(r"《([^《》]{2,40}(?:法|条例|规定|决定|解释|细则))》")
-
-
 from std_lib.common_lib.norm import norm_docno as _norm_docno  # A-10：SSOT 收敛（标准层）
 from std_lib.common_lib.norm import norm_title_strict as _norm_title  # A-10：SSOT 收敛（保守层）
+
+# R-F01 收敛（2026-09-14）：条款链 / 书名号跨度 / 立法词表上收 std_lib.common_lib.relations
+# （原为本文件字面量，与 build_clause_graph.P1/ART_IN、verify.TITLE_PAT 三份重复，口径靠人眼对齐）。
+# 语义**不变**：跨度 2..40、条款链 `第N条[第M款][第K项]`、立法结尾词表同原值。
+from std_lib.common_lib.relations import (
+    ARTICLE_CHAIN_CAPTURE,
+    LAW_SUFFIX_ALT,
+    QUOTE_TITLE_MAX,
+    QUOTE_TITLE_MIN,
+    quote_title_capture,
+)
+
+# 放宽版条款正则（提升条/款/项级召回）：允许《X》与「第N条」之间最多 12 字间隔，
+# 覆盖「《X》第N条」「《X》的规定第N条」「《X》中第N条第M款」等；不含裸「第N条」以防自条款噪声。
+ART_RE = re.compile(quote_title_capture() + r"[^。；\n]{0,12}?" + ARTICLE_CHAIN_CAPTURE)
+LAW_RE = re.compile(
+    rf"《([^《》]{{{QUOTE_TITLE_MIN},{QUOTE_TITLE_MAX}}}(?:{LAW_SUFFIX_ALT}))》")
 
 
 def load_attr():

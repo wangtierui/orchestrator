@@ -59,7 +59,12 @@ from std_lib.common_lib.norm import norm_docno, norm_title_strict  # noqa: E402
 from std_lib.common_lib.relations import (  # noqa: E402
     EXTRACTOR_VERSION,
     SCHEMA_VERSION,
+    TARGET_CLASSES,
+    TARGET_CORPUS,
+    TARGET_ENTITY,
+    TARGET_EXTERNAL,
     RelationPipeline,
+    classify_target,
     docno_signature,
 )
 
@@ -304,8 +309,8 @@ def _relation_id(src_kind: str, src_ref: str, relation: str,
 
 
 def build_rows(doc: dict, pipeline: RelationPipeline, reg_ix: dict, int_ix: dict,
-               *, generated_at: str) -> tuple[list[dict], list[str]]:
-    """单篇文档 → 关系行列表（含跨域解析）。"""
+               *, generated_at: str) -> tuple[list[dict], list[str], int]:
+    """单篇文档 → `(关系行列表, 警告, 被过滤的泛指词目标数)`（含跨域解析）。"""
     text = doc["text"]
     res = pipeline.extractor.extract(text)
     src_kind = doc["doc_kind"]
@@ -336,7 +341,12 @@ def build_rows(doc: dict, pipeline: RelationPipeline, reg_ix: dict, int_ix: dict
             "src_kind": src_kind, "src_ref": src_ref, "src_key": src_key,
             "src_name": doc["name"],
             "src_docno": doc["docno"], "src_source": doc["source"],
-            "dst_kind": dst_kind, "dst_ref": dst_ref, "dst_key": dst_key, "dst_name": name,
+            "dst_kind": dst_kind, "dst_ref": dst_ref, "dst_key": dst_key,
+            # 目标性质分类（2026-09-14）：区分"真·文件引用未定位"与"机关名/泛指词"
+            "dst_class": classify_target(
+                dst_ref=dst_ref, dst_key=dst_key, name=name,
+                basis_type=getattr(item, "basis_type", "") if relation == "basis" else ""),
+            "dst_name": name,
             "dst_docno": docno, "dst_normalized_name": item.normalized_name,
             "relation": relation,
             "basis_type": getattr(item, "basis_type", "") if relation == "basis" else "",
@@ -352,7 +362,7 @@ def build_rows(doc: dict, pipeline: RelationPipeline, reg_ix: dict, int_ix: dict
             "generated_by": GENERATED_BY,
             "generated_at": generated_at,
         })
-    return rows, list(res.warnings)
+    return rows, list(res.warnings), int(res.filtered_generic or 0)
 
 
 # ===========================================================================
@@ -372,23 +382,27 @@ def run(*, sources: list[str] | None = None, limit: int = 0, dry_run: bool = Fal
     rows: list[dict] = []
     warnings: list[str] = []
     docs_stat = {"regulatory": {}, "internal": 0}
+    filtered_generic = 0
 
     for doc in iter_regulatory_docs(cfg_sources, limit=limit):
         docs_stat["regulatory"][doc["source"]] = docs_stat["regulatory"].get(doc["source"], 0) + 1
         if with_attachments and doc.get("extra_text"):
             doc["text"] = doc["text"] + "\n" + doc["extra_text"]
-        r, w = build_rows(doc, pipeline, reg_ix, int_ix, generated_at=generated_at)
+        r, w, fg = build_rows(doc, pipeline, reg_ix, int_ix, generated_at=generated_at)
         rows.extend(r)
         warnings.extend(w)
+        filtered_generic += fg
 
     if with_internal:
         for doc in iter_internal_docs(limit=limit) or []:
             docs_stat["internal"] += 1
-            r, w = build_rows(doc, pipeline, reg_ix, int_ix, generated_at=generated_at)
+            r, w, fg = build_rows(doc, pipeline, reg_ix, int_ix, generated_at=generated_at)
             rows.extend(r)
             warnings.extend(w)
+            filtered_generic += fg
 
-    stat = _build_stat(rows, docs_stat, warnings, generated_at)
+    stat = _build_stat(rows, docs_stat, warnings, generated_at,
+                       filtered_generic=filtered_generic)
     if dry_run:
         print("[relations] dry-run：不落盘。")
         print(json.dumps({k: stat[k] for k in ("documents", "relations", "resolution")},
@@ -404,7 +418,7 @@ def run(*, sources: list[str] | None = None, limit: int = 0, dry_run: bool = Fal
 
 
 def _build_stat(rows: list[dict], docs_stat: dict, warnings: list[str],
-                generated_at: str) -> dict:
+                generated_at: str, *, filtered_generic: int = 0) -> dict:
     def _cnt(pred) -> int:
         return sum(1 for r in rows if pred(r))
 
@@ -419,6 +433,15 @@ def _build_stat(rows: list[dict], docs_stat: dict, warnings: list[str],
     unresolved = [r for r in rows if r["matched_by"] == "unresolved"]
     n_ref = _cnt(lambda r: bool(r["dst_ref"]))          # 强关联：解析到 RFN/IPN
     n_any = _cnt(lambda r: r["matched_by"] != "unresolved")   # 含弱关联（cleaned dedup_key）
+
+    # ---- 目标性质分层（2026-09-14 口径修正）------------------------------------
+    # 只有 `external` 是"真·文件引用未定位"；`organ`（机关名）与 `generic`（泛指词）
+    # 不是文件引用，混入分母会把真实覆盖度**系统性低估**。
+    by_class = {c: _cnt(lambda r, c=c: r.get("dst_class") == c) for c in TARGET_CLASSES}
+    file_denom = by_class[TARGET_ENTITY] + by_class[TARGET_CORPUS] + by_class[TARGET_EXTERNAL]
+    file_resolved = round(by_class[TARGET_ENTITY] / file_denom, 4) if file_denom else 0.0
+    file_located = (round((by_class[TARGET_ENTITY] + by_class[TARGET_CORPUS]) / file_denom, 4)
+                    if file_denom else 0.0)
     return {
         "schema_version": SCHEMA_VERSION,
         "extractor_version": EXTRACTOR_VERSION,
@@ -430,10 +453,17 @@ def _build_stat(rows: list[dict], docs_stat: dict, warnings: list[str],
         # 两级解析率（口径显式命名，避免"解析率"歧义）
         "resolved_to_entity_ratio": round(n_ref / len(rows), 4) if rows else 0.0,
         "located_in_corpus_ratio": round(n_any / len(rows), 4) if rows else 0.0,
+        # ---- 目标性质分层与**文件级**覆盖率（分母排除 organ/generic，2026-09-14）----
+        "target_class": by_class,
+        "file_level_denominator": file_denom,
+        "file_resolved_ratio": file_resolved,
+        "file_located_ratio": file_located,
+        "filtered_generic_total": filtered_generic,
         "warnings_total": len(warnings),
         "warnings_sample": sorted(set(warnings))[:10],
         "unresolved_sample": [
             {"src_ref": r["src_ref"] or r["src_key"][:12], "relation": r["relation"],
+             "dst_class": r.get("dst_class", ""),
              "dst_name": r["dst_name"][:60], "dst_docno": r["dst_docno"][:40]}
             for r in unresolved[:20]
         ],
@@ -491,14 +521,27 @@ def write_report(rows: list[dict], stat: dict) -> str:
         f"| 关系总数 | {stat['relations']['total']} |",
         f"| 依据关系 / 废止关系 | {stat['relations']['by_kind'].get('basis', 0)} / "
         f"{stat['relations']['by_kind'].get('repeal', 0)} |",
-        f"| **解析到强实体**（RFN/IPN，可 join 底座） | {stat['resolved_to_entity_ratio']:.1%} |",
-        f"| **在语料中定位**（含 cleaned 弱引用） | {stat['located_in_corpus_ratio']:.1%} |",
+        f"| **文件级强解析率**（RFN/IPN，可 join 底座） | {stat['file_resolved_ratio']:.1%} |",
+        f"| **文件级定位率**（含 cleaned 弱引用） | {stat['file_located_ratio']:.1%} |",
         f"| 监管文件（可抽取） | {sum(stat['documents']['regulatory'].values())} 份 |",
         f"| 内部制度（可抽取） | {stat['documents']['internal']} 份 |",
         "",
-        "> 两级头口径：**强实体** = 目标解析到 `RFN`（监管）/`IPN`（内部），可直接 join 归属表与底座；",
-        "> **语料定位** = 额外计入「已采集但未登记 RFN」者（以 cleaned `dedup_key` 弱引用）。",
-        "> 未定位者保留原文（多为《民法典》等未入库法律法规）——**不臆造**，供人工/法规库补全。",
+        "> **口径（2026-09-14 修正）**：目标按**性质**分层（`dst_class`），只有 `external` 是"
+        "「真·文件引用未定位」；`organ`（机关名）与 `generic`（泛指词）**不是文件引用**，"
+        "不计入分母。",
+        "",
+        "| `dst_class` | 含义 | 条数 |",
+        "| :--- | :--- | ---: |",
+        f"| `entity` | 强实体：解析到 RFN / IPN | {stat['target_class'].get('entity', 0)} |",
+        f"| `corpus` | 弱引用：已采集（cleaned 命中）但未登记 RFN | {stat['target_class'].get('corpus', 0)} |",
+        f"| `organ` | 机关名（程序性依据目标，非文件） | {stat['target_class'].get('organ', 0)} |",
+        f"| `generic` | 纯类型泛指词（已过滤，抽取侧不产出） | {stat['target_class'].get('generic', 0)} |",
+        f"| `external` | **语料外文件**（法律法规等，客观未采集） | {stat['target_class'].get('external', 0)} |",
+        "",
+        f"> 文件级分母（entity+corpus+external）= **{stat['file_level_denominator']}** 条；"
+        f"另有过滤的泛指词目标 {stat['filtered_generic_total']} 条（抽取侧净化，不产出关系）。",
+        "> `corpus` 类即 **RFN 补登候选**：处置入口 `python tools/rfn_backlog.py`"
+        "（清单 + `--apply` 批量登记；登记后本表重跑即升级为 `entity`）。",
         "",
         "## 二、三类关系（用户要求明确列明）",
         "",

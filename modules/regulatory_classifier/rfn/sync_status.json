@@ -2439,28 +2439,28 @@
     "layers": {
       "文件归属表": {
         "status": "ok",
-        "note": "效力diff同步: 空→pending (source=北大法宝（无同名命中，维持原判定）)",
-        "updated_at": "2026-08-31 20:54:08"
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:06:10"
       },
       "数据底座": {
-        "status": "ok",
-        "note": "已在五源 cleaned 核验存在",
-        "updated_at": "2026-08-29 04:29:57"
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:10"
       },
       "横向整合分析报告": {
-        "status": "ok",
-        "note": "2026-08-29 基准已对齐: 归属表1076条, 25数据底座+8明细表全量对齐, 报告废弃引用已清除并追加基准更新附录; 叙述性分析待人工复核",
-        "updated_at": "2026-08-29 12:42:42"
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:10"
       },
       "纵向深化分析报告": {
-        "status": "ok",
-        "note": "2026-08-29 基准已对齐: 归属表1076条, 25数据底座+8明细表全量对齐, 报告废弃引用已清除并追加基准更新附录; 叙述性分析待人工复核",
-        "updated_at": "2026-08-29 12:42:42"
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:10"
       },
       "全景分析报告": {
-        "status": "ok",
-        "note": "2026-08-29 基准已对齐: 归属表1076条, 25数据底座+8明细表全量对齐, 报告废弃引用已清除并追加基准更新附录; 叙述性分析待人工复核",
-        "updated_at": "2026-08-29 12:42:42"
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:10"
       }
     }
   },
@@ -13771,6 +13771,2826 @@
         "status": "pending",
         "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
         "updated_at": "2026-09-12 02:51:33"
+      }
+    }
+  },
+  "RFN-82251997f280d83c": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:05:51"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:52"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:52"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:52"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:52"
+      }
+    }
+  },
+  "RFN-72312730c784eb56": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:05:52"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:52"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:52"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:52"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:52"
+      }
+    }
+  },
+  "RFN-e9f1162bf73a38cc": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:05:52"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:52"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:52"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:52"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:52"
+      }
+    }
+  },
+  "RFN-4e43ba546bed7c4f": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:05:52"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:52"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:52"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:53"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:53"
+      }
+    }
+  },
+  "RFN-a10b14fb1274ab5c": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:05:53"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:53"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:53"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:53"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:53"
+      }
+    }
+  },
+  "RFN-6f6b4085db7d1aa1": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:05:53"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:53"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:53"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:53"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:53"
+      }
+    }
+  },
+  "RFN-ac2c55794ff60a00": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:05:53"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:53"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:54"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:54"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:54"
+      }
+    }
+  },
+  "RFN-581756b51ca15165": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:05:54"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:54"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:54"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:54"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:54"
+      }
+    }
+  },
+  "RFN-cb4390d910cb8d44": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:05:54"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:54"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:54"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:54"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:54"
+      }
+    }
+  },
+  "RFN-d944a4bd8059c1c1": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:05:54"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:54"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:55"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:55"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:55"
+      }
+    }
+  },
+  "RFN-9bec886b0df36a8a": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:05:55"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:55"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:55"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:55"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:55"
+      }
+    }
+  },
+  "RFN-3abe86ce5593b4de": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:05:55"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:55"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:55"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:55"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:55"
+      }
+    }
+  },
+  "RFN-9056e083becf571d": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:05:56"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:56"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:56"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:56"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:56"
+      }
+    }
+  },
+  "RFN-71536fa371fcf36c": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:05:56"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:56"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:56"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:56"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:56"
+      }
+    }
+  },
+  "RFN-b39f5fe9b6de1962": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:05:56"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:56"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:56"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:56"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:56"
+      }
+    }
+  },
+  "RFN-72840c842ff8aac1": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:05:56"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:56"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:56"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:57"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:57"
+      }
+    }
+  },
+  "RFN-88da655f5ebab7c0": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:05:57"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:57"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:57"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:57"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:57"
+      }
+    }
+  },
+  "RFN-6b25156dbd2c3da0": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:05:57"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:57"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:57"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:57"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:57"
+      }
+    }
+  },
+  "RFN-a6c42737479a5a96": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:05:57"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:57"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:57"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:58"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:58"
+      }
+    }
+  },
+  "RFN-827842054a26f359": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:05:58"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:58"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:58"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:58"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:58"
+      }
+    }
+  },
+  "RFN-f8764c29e80025f8": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:05:58"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:58"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:58"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:58"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:58"
+      }
+    }
+  },
+  "RFN-921fc571ddff0f03": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:05:58"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:58"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:58"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:58"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:58"
+      }
+    }
+  },
+  "RFN-7b0ac632eb789db5": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:05:58"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:58"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:58"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:58"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:58"
+      }
+    }
+  },
+  "RFN-f126988846b404b4": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:05:59"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:59"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:59"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:59"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:59"
+      }
+    }
+  },
+  "RFN-c2f2fff6837aac12": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:05:59"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:59"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:59"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:59"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:59"
+      }
+    }
+  },
+  "RFN-48eeaf3a72a64625": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:05:59"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:59"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:59"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:59"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:59"
+      }
+    }
+  },
+  "RFN-c65a14f24172852f": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:05:59"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:59"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:59"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:05:59"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:00"
+      }
+    }
+  },
+  "RFN-b6473b58fb3e2cb8": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:06:00"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:00"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:00"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:00"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:00"
+      }
+    }
+  },
+  "RFN-ed4dea3a08e9a9b9": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:06:00"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:00"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:00"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:00"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:00"
+      }
+    }
+  },
+  "RFN-a317846c6819649c": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:06:00"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:00"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:00"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:00"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:00"
+      }
+    }
+  },
+  "RFN-5afa030ee0994a66": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:06:00"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:00"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:00"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:00"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:00"
+      }
+    }
+  },
+  "RFN-73608418b792eae1": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:06:01"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:01"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:01"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:01"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:01"
+      }
+    }
+  },
+  "RFN-a9c8fdbc0cde3d9e": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:06:01"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:01"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:01"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:01"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:01"
+      }
+    }
+  },
+  "RFN-fa9ea6077b501068": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:06:01"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:01"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:01"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:01"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:01"
+      }
+    }
+  },
+  "RFN-916435cbcc319bf6": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:06:01"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:01"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:01"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:01"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:01"
+      }
+    }
+  },
+  "RFN-cc525c8f2819273a": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:06:01"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:01"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:01"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:02"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:02"
+      }
+    }
+  },
+  "RFN-1dadf526c5464c19": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:06:02"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:02"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:02"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:02"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:02"
+      }
+    }
+  },
+  "RFN-8128b63bab4834b7": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:06:02"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:02"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:02"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:02"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:02"
+      }
+    }
+  },
+  "RFN-fbcbc8064cd7b89d": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:06:02"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:02"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:02"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:02"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:02"
+      }
+    }
+  },
+  "RFN-a267c2332c73f9ad": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:06:02"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:02"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:02"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:02"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:03"
+      }
+    }
+  },
+  "RFN-7420c8be8a593dd6": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:06:03"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:03"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:03"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:03"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:03"
+      }
+    }
+  },
+  "RFN-e86645e176a5232b": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:06:03"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:03"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:03"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:03"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:03"
+      }
+    }
+  },
+  "RFN-edb96331b8e54d47": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:06:03"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:03"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:03"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:03"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:03"
+      }
+    }
+  },
+  "RFN-ddbb2042c27bcb22": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:06:03"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:03"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:03"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:03"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:03"
+      }
+    }
+  },
+  "RFN-c7133958869e5e42": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:06:04"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:04"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:04"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:04"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:04"
+      }
+    }
+  },
+  "RFN-a3481512042529e3": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:06:04"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:04"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:04"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:04"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:04"
+      }
+    }
+  },
+  "RFN-1d0afe9cfe75c0a7": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:06:04"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:04"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:04"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:04"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:04"
+      }
+    }
+  },
+  "RFN-034f3b1111b23486": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:06:04"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:04"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:04"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:04"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:04"
+      }
+    }
+  },
+  "RFN-74e679c299379d2e": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:06:04"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:05"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:05"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:05"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:05"
+      }
+    }
+  },
+  "RFN-6b2aa40ea1f937ee": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:06:05"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:05"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:05"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:05"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:05"
+      }
+    }
+  },
+  "RFN-4c907b5d2cacbbc0": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:06:05"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:05"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:05"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:05"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:05"
+      }
+    }
+  },
+  "RFN-5aa7b18027e0a6a3": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:06:05"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:05"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:05"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:05"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:05"
+      }
+    }
+  },
+  "RFN-d847dba1bc55c911": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:06:05"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:05"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:05"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:06"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:06"
+      }
+    }
+  },
+  "RFN-42eaaa11103dade5": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:06:06"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:06"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:06"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:06"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:06"
+      }
+    }
+  },
+  "RFN-6908ef0625531745": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:06:06"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:06"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:06"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:06"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:06"
+      }
+    }
+  },
+  "RFN-333c18ae90903f0b": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:06:06"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:06"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:06"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:06"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:06"
+      }
+    }
+  },
+  "RFN-6d5e31c82180551d": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:06:06"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:06"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:06"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:06"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:06"
+      }
+    }
+  },
+  "RFN-91083d1b11799b64": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:06:07"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:07"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:07"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:07"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:07"
+      }
+    }
+  },
+  "RFN-a15dd462fba3a47a": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:06:07"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:07"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:07"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:07"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:07"
+      }
+    }
+  },
+  "RFN-2f932de19b92321a": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:06:07"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:07"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:07"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:07"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:07"
+      }
+    }
+  },
+  "RFN-0d4ce6e63ac45b52": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:06:07"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:07"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:07"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:07"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:07"
+      }
+    }
+  },
+  "RFN-51848299fdb5ff48": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:06:08"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:08"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:08"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:08"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:08"
+      }
+    }
+  },
+  "RFN-381ca2dcbdb8eb9f": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:06:08"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:08"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:08"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:08"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:08"
+      }
+    }
+  },
+  "RFN-4525be77de268497": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:06:08"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:08"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:08"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:08"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:08"
+      }
+    }
+  },
+  "RFN-5b63feaf9bf1476a": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:06:08"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:08"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:08"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:08"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:08"
+      }
+    }
+  },
+  "RFN-934102f9d393b8b7": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:06:08"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:08"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:09"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:09"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:09"
+      }
+    }
+  },
+  "RFN-97bef1e8220050e4": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:06:09"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:09"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:09"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:09"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:09"
+      }
+    }
+  },
+  "RFN-524da45df0c84cb8": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:06:09"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:09"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:09"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:09"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:09"
+      }
+    }
+  },
+  "RFN-338f20bb55d982f8": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:06:09"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:09"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:09"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:09"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:09"
+      }
+    }
+  },
+  "RFN-4f520c138eedf245": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:06:09"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:09"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:09"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:09"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:10"
+      }
+    }
+  },
+  "RFN-f257c62165978e91": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:06:10"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:10"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:10"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:10"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:10"
+      }
+    }
+  },
+  "RFN-551d1cf0f5316f9d": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:06:10"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:10"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:10"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:10"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:10"
+      }
+    }
+  },
+  "RFN-3efb5d9c278b65e9": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:06:10"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:10"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:10"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:10"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:10"
+      }
+    }
+  },
+  "RFN-59a51a2ba1a98671": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:06:11"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:11"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:11"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:11"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:11"
+      }
+    }
+  },
+  "RFN-4d489650c58aebd8": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:06:11"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:11"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:11"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:11"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:11"
+      }
+    }
+  },
+  "RFN-667fdb1bacaec927": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:06:11"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:11"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:11"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:11"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:11"
+      }
+    }
+  },
+  "RFN-d34aa9b60cce49cb": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:06:11"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:11"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:11"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:11"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:11"
+      }
+    }
+  },
+  "RFN-dccaf0a8ccbd92c2": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:06:12"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:12"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:12"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:12"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:12"
+      }
+    }
+  },
+  "RFN-78507d71ca03104e": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:06:12"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:12"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:12"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:12"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:12"
+      }
+    }
+  },
+  "RFN-4d38faba4a5a897a": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:06:12"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:12"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:12"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:12"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:12"
+      }
+    }
+  },
+  "RFN-eba02286a687d94d": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:06:12"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:12"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:12"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:12"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:12"
+      }
+    }
+  },
+  "RFN-d9f3081812e4f19f": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:06:12"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:12"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:13"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:13"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:13"
+      }
+    }
+  },
+  "RFN-23dfe5f7a283a28b": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:06:13"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:13"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:13"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:13"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:13"
+      }
+    }
+  },
+  "RFN-56a3c7025c641149": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:06:13"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:13"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:13"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:13"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:13"
+      }
+    }
+  },
+  "RFN-25c1cfbced453455": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:06:13"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:13"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:13"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:13"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:13"
+      }
+    }
+  },
+  "RFN-074065c0c13b2ff2": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:06:13"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:13"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:13"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:14"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:14"
+      }
+    }
+  },
+  "RFN-2fcac088602ff4e9": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:06:14"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:14"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:14"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:14"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:14"
+      }
+    }
+  },
+  "RFN-7c19ca251b4e0abb": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:06:14"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:14"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:14"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:14"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:14"
+      }
+    }
+  },
+  "RFN-c075cc13b6717b80": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:06:14"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:14"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:14"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:14"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:14"
+      }
+    }
+  },
+  "RFN-3368e2f11f0cac75": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:06:14"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:14"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:14"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:14"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:15"
+      }
+    }
+  },
+  "RFN-e39dd2e342e01cc9": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:06:15"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:15"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:15"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:15"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:15"
+      }
+    }
+  },
+  "RFN-f984c5930adc692e": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:06:15"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:15"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:15"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:15"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:15"
+      }
+    }
+  },
+  "RFN-af47a1e24bcfbe64": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:06:15"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:15"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:15"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:15"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:15"
+      }
+    }
+  },
+  "RFN-857596654bcab42c": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-09-14 01:06:15"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:15"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:15"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:15"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-09-14 01:06:15"
       }
     }
   }

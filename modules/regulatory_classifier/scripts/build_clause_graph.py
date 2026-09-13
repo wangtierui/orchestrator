@@ -25,27 +25,44 @@ import csv
 import json
 import os
 import re
+import sys
 from collections import Counter, defaultdict
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 BASE_DIR = os.path.dirname(SCRIPT_DIR)
 DATA_DIR = os.path.join(BASE_DIR, "data")
+# R-F01 收敛（2026-09-14）：同仓引导（独立运行时定位 std_lib）+ 共享口径 import。
+# 下列 P1–P5 原为本文件字面量，与 build_detail_tables.ART_RE、verify_regulatory_citations.TITLE_PAT
+# 三份重复（口径靠人眼对齐）；现统一取自 std_lib.common_lib.relations，**语义不变**。
+_ORCH_ROOT = os.path.dirname(os.path.dirname(BASE_DIR))
+if _ORCH_ROOT not in sys.path:
+    sys.path.insert(0, _ORCH_ROOT)
+from std_lib.common_lib.relations import (  # noqa: E402
+    ARTICLE_CHAIN,
+    ARTICLE_CHAIN_CAPTURE,
+    ARTICLE_NUM,
+    BARE_ARTICLE_RE,
+    SELF_REF_RE,
+    SELF_REF_WORDS,
+    basis_trigger_alt,
+    quote_title_capture,
+)
 
-NUM = r"[0-9零一二三四五六七八九十百千]+"
+NUM = ARTICLE_NUM
 
 # P1 条款链：《X》[间隔≤12字] 第N条[款][项] (、|和|及|与|或者 连接的多条并列一并捕获)
 P1 = re.compile(
-    rf"《([^《》]{{2,40}})》[^。；\n]{{0,12}}?((?:第{NUM}条(?:第{NUM}款)?(?:第{NUM}项)?)"
-    rf"(?:[、,和及与或者]{{1,4}}第{NUM}条(?:第{NUM}款)?(?:第{NUM}项)?)*)")
-ART_IN = re.compile(rf"第({NUM})条(?:第({NUM})款)?(?:第({NUM})项)?")
-PARA_ONLY = re.compile(rf"第({NUM})款")
-ITEM_ONLY = re.compile(rf"第({NUM})项")
-P2 = re.compile(rf"(?:本办法|本规定|本通知|本指引|本细则|本条例|本规则)[^。；\n]{{0,6}}?第({NUM})条")
-P3 = re.compile(rf"(?<![0-9零一二三四五六七八九十百千])第({NUM})条")
-P4 = re.compile(r"(?:根据|依据|依照|按照)\s*《([^《》]{2,40})》")
-P5 = re.compile(r"《([^《》]{2,40})》")
+    quote_title_capture() + rf"[^。；\n]{{0,12}}?((?:{ARTICLE_CHAIN})"
+    rf"(?:[、,和及与或者]{{1,4}}{ARTICLE_CHAIN})*)")
+ART_IN = re.compile(ARTICLE_CHAIN_CAPTURE)
+PARA_ONLY = re.compile(rf"第({ARTICLE_NUM})款")
+ITEM_ONLY = re.compile(rf"第({ARTICLE_NUM})项")
+P2 = SELF_REF_RE
+P3 = BARE_ARTICLE_RE
+P4 = re.compile(rf"(?:{basis_trigger_alt()})\s*{quote_title_capture()}")
+P5 = re.compile(quote_title_capture())
 
-SELF_WORDS = ("本办法", "本规定", "本通知", "本指引", "本细则", "本条例", "本规则")
+SELF_WORDS = SELF_REF_WORDS   # 共享口径（原为本文件字面量）
 
 
 def norm(t: str) -> str:

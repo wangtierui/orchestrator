@@ -148,6 +148,7 @@ RELATION_FIELDS: tuple[str, ...] = (
     "dst_kind",             # ∈ RELATION_DOC_KIND
     "dst_ref",              # RFN / IPN（强实体；未解析时为空 —— 禁止臆造）
     "dst_key",              # 弱键：cleaned dedup_key
+    "dst_class",            # ∈ RELATION_TARGET_CLASS：目标性质（entity/corpus/organ/generic/external）
     "dst_name", "dst_docno", "dst_normalized_name",
     "relation",             # ∈ RELATION_KIND（basis / repeal）
     "basis_type",           # ∈ BASIS_TYPE ∪ {""}（repeal 行为空）

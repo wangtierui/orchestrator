@@ -1,5 +1,60 @@
 # Changelog
 
+## [Unreleased] 2026-09-14 — R-F01 第二批：三处旧实现收敛 + 未解析率提升（补登 RFN）
+
+### 一、§6 三处旧实现收敛（**行为等价**，三重证据固定）
+
+- **`build_clause_graph.py`**（P1-P5 条款级引用图）：`NUM / ART_IN / P1..P5 / SELF_WORDS` 改引
+  `std_lib.common_lib.relations`；**10 个产物字节级一致**。
+- **`build_detail_tables.py`**（明细表「立法依据/条款引用」列）：`ART_RE / LAW_RE` 由共享
+  「书名号跨度 + 条款链 + 立法词表」构造；**11 张明细表语义级一致**（仅 `generated_at` 变）。
+- **`verify_regulatory_citations.py`**（引用核验口径）：`DOCNO_CORE_PAT / TITLE_PAT / ORGAN_PREFIXES`
+  迁入 `relations`（`DOCNO_CORE_PATTERN` / `quote_title_re()` / `ORGAN_WORDS`）；`--strict` 结果不变
+  （R 62 / 文号 35 全命中，EXIT=0）。
+- **共享口径层**（`relations` 二·B）：`CN_NUM_CHARS`/`ARTICLE_NUM`/`ARTICLE_CHAIN(_CAPTURE)`/
+  `QUOTE_TITLE_MIN,MAX` + `quote_title_capture|span|re()`/`BASIS_TRIGGER_CORE` + `basis_trigger_alt()`/
+  `SELF_REF_WORDS` + `SELF_REF_RE`/`BARE_ARTICLE_RE`/`LAW_SUFFIX_ALT`/`DOCNO_CORE_PATTERN` + `docno_core_re()`/
+  `ORGAN_WORDS`。
+- 等价性证据：①模式串逐字符比对原字面量；②同文本 `findall` 一致；③产物重跑比对。
+  新增 `tests/test_relations.py::TestConvergence`（3 例）**禁止三处再各自定义口径**。
+
+### 二、口径修正：目标性质分层（`dst_class`），真实覆盖度不再被低估
+
+- 实测 1018 条"未解析"中**大量不是文件引用**：`国务院` 182×、`国务院银行业监督管理机构` 23×、
+  `本级人民政府`/`其总公司` 等**机关名**（程序性依据目标本就是机关），以及 `条例`/`办法` 等
+  **纯类型泛指词**（`《条例》` 原文即泛指）。
+- 新增 `RELATION_TARGET_CLASS`（`entity`/`corpus`/`organ`/`generic`/`external`）与
+  `relations.classify_target()/is_organ_target()/is_generic_target()`；关系产物增 `dst_class` 字段
+  （契约 `RELATION_FIELDS` 26 → 27；`gate_relations` 校验枚举闭包）。
+- **抽取侧净化**：`《条例》`/`《办法》` 等泛指词**不再产出关系**（实测过滤 46 条），
+  `ExtractionResult.filtered_generic` 透出计数。
+- 结果：文件级分母 2152 → **1754**；**文件级强解析率 25.7% → 59.5%**（补登后）、
+  **文件级定位率 52.7% → 64.7%**；`organ` 376 条单列。
+
+### 三、提升路径①：RFN 补登（`dst_key` 线索 → 强关联）
+
+- **新增 `tools/rfn_backlog.py`**：从 `dst_class=corpus`（**已采集但未登记 RFN**）聚合补登候选，
+  输出 `relations/rfn_backlog.csv` + `docs/reports/RFN补登候选清单.md`；`--apply` 经
+  **`rfn.register_doc` 唯一写口**批量登记（幂等 + 自动备份 + 登记后 `rebuild_index`）。
+- **主题建议三种依据**（禁臆造）：`law_to_t0`（法律/行政法规 → **T0 上位法锚点**，体系语义；
+  此类**不**用投票——实测《商业银行法》会被引用者投成 T1）/ `votes`（引用者主题唯一最高票）/
+  `uncertain`（须人工裁决）。
+- **处置结果**：候选 170 → **登记 95**（失败 0）→ 归属表 1060 → **1155**；重跑 `relations gen`
+  后 `entity` 552 → **1044**、`corpus` 582 → **90**、**`file_resolved_ratio` 31.5% → 59.5%**；
+  候选清单收敛到 **75**（余 73 待人工裁决）。
+- **⚠️ 踩坑与修复**：`register_doc` 按设计把新行时效置 `pending`，而补登文件**可能已在时效 SSOT 中**
+  → `gate_timeliness_ssot` FAIL。首次调用官方 `sync_to_classifier` 修复，但其标题匹配是
+  **子串包含**，在 3000+ 记录规模下**误改 1000+ 行既有状态**；改用**与门禁同口径的键匹配**
+  （`state_key(发文字号, 文件名称)` 精确查 SSOT）后仅需改 6 行收敛。已封装为
+  `rfn_backlog.sync_timeliness()`（`--sync-timeliness`，`--apply` 后自动执行）。
+- **附带收益**：`merged_view.associated_rfns` 的 `with_rfn_refs` **321 → 336**；底座链
+  （`classify --all`）与 15 项分析交付库自动重算。
+
+### 四、验证
+
+- `gates` **16/16 PASS**（含 `gate_timeliness_ssot` / `gate_citations` / `gate_relations` / `gate_rfn_sync`）；
+  pytest **288 → 297**（+9：收敛 3 + 目标分层 4 + 补登 2）；ruff 0。
+
 ## [Unreleased] 2026-09-14 — 依据/废止关系统一抽取（R-F01，报告《依据与废止关系统一抽取》）
 
 参照《政府文件依据关系与废止关系通用抽取器》编写**同一套**抽取能力，同时适用于监管文件与内部制度，

@@ -17,7 +17,11 @@ import sys
 import pytest
 
 _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-for _p in (_ROOT, os.path.join(_ROOT, "std_lib"), os.path.join(_ROOT, "modules")):
+for _p in (_ROOT, os.path.join(_ROOT, "std_lib"), os.path.join(_ROOT, "modules"),
+           os.path.join(_ROOT, "modules", "regulatory_classifier"),
+           os.path.join(_ROOT, "modules", "regulatory_classifier", "scripts"),
+           os.path.join(_ROOT, "modules", "internal_policy_drafter", "scripts"),
+           os.path.join(_ROOT, "tools")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
@@ -229,3 +233,139 @@ class TestRelationsProducts:
         from gates import gate_relations
         ok, detail = gate_relations.run()
         assert ok, detail.get("problems") or detail
+
+
+# ===========================================================================
+# 五、R-F01 收敛：三处旧实现**不得再各自定义口径**（防再分叉）
+# ===========================================================================
+class TestConvergence:
+    """回归：`clause_graph` / `detail_tables` / `verify_citations` 的抽取口径必须与
+    `std_lib.common_lib.relations` **同源**（2026-09-14 收敛；此前三处各写一份字面量，
+    口径靠人眼对齐，任一处改动会静默造成全链不一致）。
+    """
+
+    def test_detail_tables_uses_shared_patterns(self):
+        import build_detail_tables as dt
+
+        from std_lib.common_lib.relations import (
+            ARTICLE_CHAIN_CAPTURE,
+            LAW_SUFFIX_ALT,
+            QUOTE_TITLE_MAX,
+            QUOTE_TITLE_MIN,
+            quote_title_capture,
+        )
+        assert dt.ART_RE.pattern == (quote_title_capture() + r"[^。；\n]{0,12}?"
+                                     + ARTICLE_CHAIN_CAPTURE)
+        assert dt.LAW_RE.pattern == (
+            rf"《([^《》]{{{QUOTE_TITLE_MIN},{QUOTE_TITLE_MAX}}}(?:{LAW_SUFFIX_ALT}))》")
+
+    def test_clause_graph_uses_shared_patterns(self):
+        import build_clause_graph as cg
+
+        from std_lib.common_lib.relations import (
+            ARTICLE_CHAIN_CAPTURE,
+            ARTICLE_NUM,
+            BARE_ARTICLE_RE,
+            SELF_REF_RE,
+            basis_trigger_alt,
+            quote_title_capture,
+        )
+        assert cg.NUM == ARTICLE_NUM
+        assert cg.ART_IN.pattern == ARTICLE_CHAIN_CAPTURE
+        assert cg.P2.pattern == SELF_REF_RE.pattern
+        assert cg.P3.pattern == BARE_ARTICLE_RE.pattern
+        assert cg.P4.pattern == rf"(?:{basis_trigger_alt()})\s*{quote_title_capture()}"
+        assert cg.P5.pattern == quote_title_capture()
+
+    def test_verify_citations_uses_shared_patterns(self):
+        import verify_regulatory_citations as vrf
+
+        from std_lib.common_lib.relations import (
+            DOCNO_CORE_PATTERN,
+            ORGAN_WORDS,
+            quote_title_capture,
+        )
+        assert vrf.DOCNO_CORE_PAT.pattern == DOCNO_CORE_PATTERN
+        assert vrf.TITLE_PAT.pattern == quote_title_capture()
+        assert tuple(vrf.ORGAN_PREFIXES) == tuple(ORGAN_WORDS)
+
+
+# ===========================================================================
+# 六、目标分层与 RFN 补登（2026-09-14 口径修正 + 提升路径①）
+# ===========================================================================
+class TestTargetClass:
+    def test_classify_target_layers(self):
+        from std_lib.common_lib.relations import classify_target
+
+        assert classify_target(dst_ref="RFN-x") == "entity"
+        assert classify_target(dst_key="abc123") == "corpus"
+        # 机关名（程序性依据目标）→ organ，不算"文件未定位"
+        assert classify_target(name="国务院") == "organ"
+        assert classify_target(name="国务院银行业监督管理机构") == "organ"
+        assert classify_target(name="本级人民政府") == "organ"
+        assert classify_target(name="其总公司") == "organ"
+        # 纯类型泛指词 → generic
+        assert classify_target(name="条例") == "generic"
+        assert classify_target(name="办法") == "generic"
+        # 语料外文件（法律/法规/其他机关文件）→ external
+        assert classify_target(name="中华人民共和国银行业监督管理法") == "external"
+        assert classify_target(name="中华人民共和国民法典") == "external"
+        assert classify_target(name="中央对地方专项转移支付管理办法") == "external"
+
+    def test_generic_targets_filtered_at_extraction(self):
+        """`《条例》`/`《办法》` 属泛指（抽取噪声）→ 不产出关系，并计数（2026-09-14 净化）。"""
+        from std_lib.common_lib.relations import RelationPipeline
+
+        ex = RelationPipeline().extractor
+        res = ex.extract("根据《条例》和《办法》制定本办法。《条例》同时废止。")
+        assert not res.basis, res.basis
+        assert not res.repeal, res.repeal
+        assert res.filtered_generic >= 3, res.filtered_generic
+
+    def test_organ_not_counted_as_unsolved_file(self):
+        """程序性依据目标为机关 → `organ`，不计入文件级分母（口径修正的可验证断言）。"""
+        from std_lib.common_lib.relations import RelationPipeline, classify_target
+
+        res = RelationPipeline().extractor.extract("本办法经国务院同意后施行。")
+        assert len(res.basis) == 1
+        b = res.basis[0]
+        assert classify_target(dst_ref="", dst_key="", name=b.target_name,
+                              basis_type=b.basis_type) == "organ"
+
+
+@pytest.mark.data
+class TestRfnBacklog:
+    """RFN 补登（提升路径①）：清单产物 + 主题建议规则。"""
+
+    def test_backlog_products_exist_with_decision_column(self):
+        import csv
+        import os
+
+        p = os.path.join(_ROOT, "modules", "regulatory_classifier", "data",
+                         "relations", "rfn_backlog.csv")
+        assert os.path.exists(p), "补登清单缺失：先运行 `python tools/rfn_backlog.py`"
+        with open(p, encoding="utf-8-sig", newline="") as fh:
+            rows = list(csv.DictReader(fh))
+        assert rows, "补登清单为空"
+        assert {"dedup_key", "title", "suggested_theme", "decision", "cited_count"} <= set(rows[0])
+        # decision 受控（主题建议的**依据**必须可解释，禁止无据建议）
+        assert {r["decision"] for r in rows} <= {"votes", "law_to_t0", "uncertain"}
+
+    def test_law_shape_maps_to_t0_anchor(self):
+        """法律/行政法规 → T0 上位法锚点（体系语义；此类**不**用引用者投票）。"""
+        import rfn_backlog as rb
+
+        assert rb._law_shape("中华人民共和国银行业监督管理法")
+        assert rb._law_shape("中华人民共和国商业银行法")
+        assert rb._law_shape("中华人民共和国预算法实施条例")
+        assert not rb._law_shape("中央对地方专项转移支付管理办法")
+
+    def test_theme_map_from_rfn_index_is_single_source(self):
+        """主题映射须经 rfn 索引（`rows()` 已合并主题列），不自行拼 CSV 路径。"""
+        import rfn_backlog as rb
+
+        tm = rb.load_theme_map()
+        assert tm, "主题映射为空（rfn 索引或主题表缺失）"
+        assert any(k.startswith("RFN-") for k in tm)
+        assert set(v for v in tm.values() if v) <= set(
+            v for v in __import__("rfn").THEME_MAP.values())

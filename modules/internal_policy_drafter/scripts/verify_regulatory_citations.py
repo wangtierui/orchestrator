@@ -49,25 +49,17 @@ for _p in (_ORCH_ROOT, _CLASSIFIER_ROOT):
         sys.path.insert(0, _p)
 
 R_PAT = re.compile(r"\bR-(\d{2})\b")
+# R-F01 收敛（2026-09-14）：文号核心形态 / 书名号标题 / 监管机关词表上收
+# std_lib.common_lib.relations（原为本文件字面量，与 clause_graph、detail_tables 三份重复）。
+from std_lib.common_lib.relations import ORGAN_WORDS, docno_core_re, quote_title_re  # noqa: E402
+
 # 发文字号核心：〔20xx〕N号 / [20xx]N号 / （20xx）N号 / 令20xx年第N号 / 国务院令第N号
-DOCNO_CORE_PAT = re.compile(
-    r"[〔\[(（]\s*(\d{4})\s*[〕\])）]\s*(\d+)\s*号?"
-    r"|令\s*(\d{4})\s*年第\s*(\d+)\s*号"
-    r"|国务院令第(\d+)号")
-TITLE_PAT = re.compile(r"《([^《》]{2,40})》")
+DOCNO_CORE_PAT = docno_core_re()
+TITLE_PAT = quote_title_re()
 # 监管发文机关词表：括号式文号前存在这些词才判定为"监管文件文号"进入门禁；
 # 无机关词前缀的裸文号（如〔2023〕687号）为内部制度 OA 文号，仅 INFO 不门禁。
-# 新增监管机关时在此扩展（按最长优先匹配）。
-ORGAN_PREFIXES = (
-    "国家金融监督管理总局办公厅", "中国银行保险监督管理委员会办公厅", "中国保险监督管理委员会办公厅",
-    "国家金融监督管理总局", "中国银行保险监督管理委员会", "中国保险监督管理委员会", "银保监会办公厅",
-    "中国人民银行等八部门公告", "最高人民法院", "国务院办公厅", "人民银行", "银保监会", "保监会",
-    "银监发", "银监办发", "银监通", "银监办通", "银监复", "银监函",
-    "保监发", "保监厅发", "保监产险", "保监财会", "保监稽查", "保监消保", "保监厅函", "保监复", "保监函",
-    "银保监发", "银保监办发", "金办发", "金办便函", "金规", "银发", "国发", "国办发", "财金", "发改",
-    "银监会令", "保监会令", "银保监会令", "国务院令", "证监会", "外汇局", "网信办", "知识产权局",
-    "工信部", "市场监管总局", "中保协", "八部门公告",
-)
+# 新增监管机关时在 relations.ORGAN_WORDS 扩展（按最长优先匹配）。
+ORGAN_PREFIXES = ORGAN_WORDS
 
 
 from std_lib.common_lib.norm import norm_docno as _norm_docno  # A-10：SSOT 收敛（标准层）

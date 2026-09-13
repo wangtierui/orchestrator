@@ -113,6 +113,17 @@ REPEAL_SCOPE_ATTACHMENT = "attachment"      # 附件载明（清单在附件，�
 REPEAL_SCOPE: frozenset[str] = frozenset({
     REPEAL_SCOPE_WHOLE, REPEAL_SCOPE_PARTIAL, REPEAL_SCOPE_ATTACHMENT,
 })
+# 关系**目标类别**（R-F01 语义分层，2026-09-14）：把"未解析"按性质拆开——
+# 只有 `external` 才是"真·文件引用未定位"；`organ`（机关名，程序性依据目标）与
+# `generic`（`《条例》`式泛指词）**不应计入文件解析率**（实测二者合计约 280 条，
+# 若混入会把真实覆盖度低估约 13 个百分点）。
+RELATION_TARGET_CLASS: frozenset[str] = frozenset({
+    "entity",    # 强实体：解析到 RFN / IPN
+    "corpus",    # 弱引用：命中 cleaned 全集（dedup_key），RFN 未登记
+    "organ",     # 机关名（程序性依据目标，非文件）
+    "generic",   # 纯类型泛指词（抽取噪声）
+    "external",  # 语料外文件（法律/行政法规等，客观未采集）
+})
 # 关系目标实体解析方式（**扩展** REF_MATCH_METHOD：关系抽取需处理"精确/包含/未解析"）
 RELATION_MATCH_METHOD: frozenset[str] = frozenset({
     "docno_sig",       # 文号签名（四位年+序号）匹配 —— 与 merged.associated_rfns 同义
@@ -217,6 +228,7 @@ def assert_enum_bindings() -> None:
     assert len(RELATION_KIND) == 2 and len(RELATION_DOC_KIND) == 2
     assert len(BASIS_TYPE) == 2 and len(REPEAL_ACTION) == 5 and len(REPEAL_SCOPE) == 3
     assert len(RELATION_MATCH_METHOD) == 5, RELATION_MATCH_METHOD
+    assert len(RELATION_TARGET_CLASS) == 5, RELATION_TARGET_CLASS
     assert REF_MATCH_METHOD.issubset(RELATION_MATCH_METHOD), "REF_MATCH_METHOD 须为关系匹配方式的子集"
     assert {BASIS_TYPE_SUBSTANTIVE, BASIS_TYPE_PROCEDURAL} == BASIS_TYPE
     assert {REPEAL_SCOPE_WHOLE, REPEAL_SCOPE_PARTIAL, REPEAL_SCOPE_ATTACHMENT} == REPEAL_SCOPE

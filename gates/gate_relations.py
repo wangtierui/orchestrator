@@ -35,6 +35,7 @@ from config.enums import (
     RELATION_DOC_KIND,
     RELATION_KIND,
     RELATION_MATCH_METHOD,
+    RELATION_TARGET_CLASS,
     REPEAL_ACTION,
     REPEAL_SCOPE,
 )
@@ -94,6 +95,8 @@ def run():
             ("action", r.get("action", ""), REPEAL_ACTION, True),
             ("scope", r.get("scope", ""), REPEAL_SCOPE, True),
             ("matched_by", r.get("matched_by", ""), RELATION_MATCH_METHOD, False),
+            # 目标性质分类（2026-09-14）：不得缺失/越界——下游据它算"文件级解析率"
+            ("dst_class", r.get("dst_class", ""), RELATION_TARGET_CLASS, False),
         )
         for name, val, allowed, empty_ok in checks:
             if not _enum_ok(val, allowed, empty_ok=empty_ok):
