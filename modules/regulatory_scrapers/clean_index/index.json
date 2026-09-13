@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "generated_at": "2026-09-12T03:40:14+0800",
+  "generated_at": "2026-09-13T16:22:54+0800",
   "generator": "regulatory_scrapers/clean_index/build_clean_index.py",
   "description": "五源 clean 产物结构化索引（单一事实源），供 regulatory_classifier 直接加载，无需额外转换。",
   "scraper_root": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers",
@@ -19,17 +19,17 @@
           "files": {
             "csv": {
               "path": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/gov_cleaned_20260912.csv",
-              "size_bytes": 35840860,
-              "sha256": "26d4efc0ef27ca0917567d871ce258513c4c13bc4d4fb2f57e9600d0e4c84c96",
+              "size_bytes": 35840938,
+              "sha256": "61e0f0739ee6dc53b8d7f8d9ef0000b5f98eca609ac99ac9d74f3774140435f0",
               "record_count": 605,
-              "modified_at": "2026-09-12T03:38:18+0800"
+              "modified_at": "2026-09-13T16:22:47+0800"
             },
             "jsonl": {
               "path": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/gov_cleaned_20260912.jsonl",
-              "size_bytes": 55314474,
-              "sha256": "14e3d8a0aff10a488357b5e1260061048e7ab8f2fc810c137e3b471eb854fd9e",
+              "size_bytes": 55314552,
+              "sha256": "bbff8a683cbda9c38c9907bfbebc1c2bf0ce8e488f978044a521d535dd8564c9",
               "record_count": 605,
-              "modified_at": "2026-09-12T03:38:18+0800"
+              "modified_at": "2026-09-13T16:22:46+0800"
             }
           },
           "record_count": 605,
@@ -70,17 +70,17 @@
           "files": {
             "csv": {
               "path": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/mof_cleaned_20260912.csv",
-              "size_bytes": 62627237,
-              "sha256": "6d9690b73d42a2f5e3ba59510de4286b93b76d29b040b9273cf14071e9b9507f",
+              "size_bytes": 62627325,
+              "sha256": "e268107ebbc0dcffc5ca532378e0bae18cddcb3ac5e1b70b7ec7c493561885c4",
               "record_count": 870,
-              "modified_at": "2026-09-12T03:38:16+0800"
+              "modified_at": "2026-09-13T16:22:45+0800"
             },
             "jsonl": {
               "path": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/mof_cleaned_20260912.jsonl",
-              "size_bytes": 122908151,
-              "sha256": "a83bb59ac80e7b835e0b607adc584a68cb0839ef6f1ec861298f1f9805adfd05",
+              "size_bytes": 122908239,
+              "sha256": "b68dd49c2fc30739ccecbf18161b0df65ad5a79236b0af293e8b96568c8a57ae",
               "record_count": 870,
-              "modified_at": "2026-09-12T03:38:13+0800"
+              "modified_at": "2026-09-13T16:22:42+0800"
             }
           },
           "record_count": 870,
@@ -123,17 +123,17 @@
           "files": {
             "csv": {
               "path": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/nfra_cleaned_20260912.csv",
-              "size_bytes": 54014811,
-              "sha256": "aee960c6de3a166bd81fa53272aae927dbe2282b1c332c968e275b19ef360839",
+              "size_bytes": 54014997,
+              "sha256": "56dfac04fa4cd50ebd34e1fba8beaffd256a9e0600938f1e0e0df554ddaf11ee",
               "record_count": 1939,
-              "modified_at": "2026-09-12T03:38:11+0800"
+              "modified_at": "2026-09-13T16:22:39+0800"
             },
             "jsonl": {
               "path": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/nfra_cleaned_20260912.jsonl",
-              "size_bytes": 149171874,
-              "sha256": "a93e14a82f6c2881071d73b5318e87f0f7eece01def971f48077f85b07cde3a7",
+              "size_bytes": 149172060,
+              "sha256": "15d93752fdbc8b39b7e26c662dd57680adc7b1396ee40df32960a9221f2a7cf5",
               "record_count": 1939,
-              "modified_at": "2026-09-12T03:38:10+0800"
+              "modified_at": "2026-09-13T16:22:37+0800"
             }
           },
           "record_count": 1939,
@@ -179,17 +179,17 @@
           "files": {
             "csv": {
               "path": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/pbc_cleaned_20260912.csv",
-              "size_bytes": 5050927,
-              "sha256": "e877658e485a19a67d195f9bbbce98f7506f4d065da6dc31709241f332eb0bb5",
+              "size_bytes": 5050915,
+              "sha256": "2d26aeaea25c158309ec2a6f5978697bc468877756b04e3c46d5a9a8e620fe73",
               "record_count": 571,
-              "modified_at": "2026-09-12T03:38:17+0800"
+              "modified_at": "2026-09-13T16:22:45+0800"
             },
             "jsonl": {
               "path": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/pbc_cleaned_20260912.jsonl",
-              "size_bytes": 5468352,
-              "sha256": "a01e4e7a3e5adcd24a05b6f53c72aedc6587667bf43cdf54add86a65c43ba3e3",
+              "size_bytes": 5468340,
+              "sha256": "57313319cf169700b393db42b2db2a2f6adec176977d1330b1ea043e97f77a6d",
               "record_count": 571,
-              "modified_at": "2026-09-12T03:38:16+0800"
+              "modified_at": "2026-09-13T16:22:45+0800"
             }
           },
           "record_count": 571,
@@ -238,14 +238,14 @@
               "size_bytes": 10606654,
               "sha256": "1b1e4b63bf1601ef713c4af1a54603a50ced5b8269177a5da15406d06f2a5ade",
               "record_count": 58,
-              "modified_at": "2026-09-12T03:38:19+0800"
+              "modified_at": "2026-09-13T16:22:48+0800"
             },
             "jsonl": {
               "path": "D:/WorkBuddy/regulatory_compliance_orchestrator/modules/regulatory_scrapers/data/cleaned/supp_cleaned_20260912.jsonl",
               "size_bytes": 10569603,
               "sha256": "8e00220bdda2b692a2e24fb11a82d73989d574327df38594bf4d4d2fe2be86ba",
               "record_count": 58,
-              "modified_at": "2026-09-12T03:38:18+0800"
+              "modified_at": "2026-09-13T16:22:47+0800"
             }
           },
           "record_count": 58,

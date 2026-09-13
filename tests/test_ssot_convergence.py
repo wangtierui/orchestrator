@@ -89,3 +89,50 @@ class TestDateLayeringAndNorm:
         from common_lib.norm import norm_docno  # noqa: PLC0415
         assert norm_docno("银保监办发〔2019〕19号") == "银保监办发201919"
         assert norm_docno("N/A") == ""
+
+
+class TestCrossSourceNoAbsorb:
+    """时效链跨源吸附防护（2026-09-13 续跑治理）：delta.source 明确且 ≠ 命中条目 source
+    → 视为未匹配走新增（多源条目并存），不再把本源核验结论吸附到他源条目。"""
+
+    def _load(self):
+        import sys as _s  # noqa: PLC0415
+        p = os.path.join(ROOT, "modules", "regulatory_scrapers", "timeliness_review")
+        if p not in _s.path:
+            _s.path.insert(0, p)
+        import consolidate_timeliness as ct  # noqa: PLC0415
+        return ct
+
+    def _delta(self, source):
+        return {"ledger_name": "t_20260913.csv", "ledger_date": "20260913", "kind": "change",
+                "source": source, "title": "防范和处置非法集资条例",
+                "document_number": "中华人民共和国国务院令第737号",
+                "publish_date": "2021-01-26", "new_status": "valid",
+                "new_source": "北大法宝", "replacement_document": "", "note": ""}
+
+    def _acc_with_nfra_valid(self, ct):
+        acc = ct.Accumulator()
+        acc.add({"source": "nfra", "title": "防范和处置非法集资条例",
+                 "document_number": "N/A", "publish_date": "2021-02-11",
+                 "timeliness_status": "valid", "verification_source": "北大法宝",
+                 "change_trace": [], "_quality": 3})
+        return acc
+
+    def test_cross_source_delta_added_not_absorbed(self):
+        ct = self._load()
+        acc = self._acc_with_nfra_valid(ct)
+        stats = {"added": 0, "confirmed": 0, "applied": 0, "skipped_downgrade": 0}
+        ct.apply_delta(acc, self._delta("gov"), stats, [])
+        assert stats["added"] == 1
+        govs = [r for r in acc.records if r.get("source") == "gov"]
+        assert len(govs) == 1 and govs[0]["document_number"] == "中华人民共和国国务院令第737号"
+        nf = [r for r in acc.records if r.get("source") == "nfra"]
+        assert len(nf) == 1 and nf[0]["document_number"] == "N/A", "nfra 条目不应被吸附污染"
+
+    def test_same_source_still_confirms(self):
+        ct = self._load()
+        acc = self._acc_with_nfra_valid(ct)
+        stats = {"added": 0, "confirmed": 0, "applied": 0, "skipped_downgrade": 0}
+        ct.apply_delta(acc, self._delta("nfra"), stats, [])
+        assert stats["added"] == 0, "同源单义标题应正常命中"
+        assert stats["confirmed"] == 1

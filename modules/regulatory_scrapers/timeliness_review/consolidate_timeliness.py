@@ -258,6 +258,12 @@ def build_seed(baseline_path: str) -> Accumulator:
 
 def apply_delta(acc: Accumulator, d: dict, stats: dict, conflicts: list):
     match = acc.find(d["source"], d["title"], d["document_number"], d["publish_date"])
+    # 跨源吸附防护（2026-09-13，续跑治理）：find 的「唯一标题」兜底不校验 source——同一法规
+    # 在他源条目被单义命中时，本源核验结论会被吸附（apply 侧按源过滤后本源 cleaned 无法回写，
+    # 空转循环）。delta.source 明确且 ≠ 命中条目 source → 视为未匹配，走新增（多源条目并存，
+    # 与种子中 nfra/pbc 双条目结构一致）。实证：gov→nfra 2 例、nfra→pbc 5 例。
+    if match is not None and d["source"] and match.get("source") != d["source"]:
+        match = None
     delta_rank = src_rank(d["new_source"])
 
     if match is None:
