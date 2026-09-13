@@ -346,33 +346,61 @@ def clean_pdf_text(text: str, min_repeat: int = 3) -> str:
     return "\f".join(out).strip()
 
 
+# 文本层"有效"判据（2026-09-13）：有效**汉字**数下限。
+# 不用"总字符数"——页眉/页脚/水印（EOA 打印链接、页码、日期）会虚增总字符数，
+# 使正文为整页图片的扫描件被误判为"有文字层"而跳过 OCR。
+_TEXT_LAYER_MIN_CJK = 30
+
+
+def cjk_count(s: str) -> int:
+    """有效汉字数（文本层有效性 / 抽取质量判据，见 `_TEXT_LAYER_MIN_CJK`）。
+
+    公开名（供 `internal_policy_base.extract` 的扫描件/OCR 目标判定复用，避免两份实现）。
+    """
+    return len(re.findall(r"[\u4e00-\u9fa5]", s or ""))
+
+
 def _extract_pdf(data: bytes, enable_ocr: bool, ocr_timeout: int) -> dict[str, Any]:
-    text = ""
+    """PDF 抽取：文本层（pypdf → pdfplumber）→ 不足则 OCR。
+
+    2026-09-13 修正（用户报告案例）：文本层"有效"判据由 `text.strip()` 改为
+    **有效汉字数 ≥ `_TEXT_LAYER_MIN_CJK`**。原判据只看"有无文本"，会被**页眉/页脚噪声**
+    虚增——实测某红头文件（阳光人寿发〔2020〕199号）文字层 461 字**全为**
+    `2020/11/26 eoa.sinosig.com/...` 打印页眉，正文实为整页图片，却因此被判为"有文字层"
+    而**跳过 OCR** → 文号与标题全部漏识别（索引里 title 为空、extract_status=ok 的假成功）。
+    """
+    best = ""
     # 优先 pypdf（轻量）
     try:
         from pypdf import PdfReader
         reader = PdfReader(__import__("io").BytesIO(data))
+        text = ""
         for page in reader.pages:
             try:
                 text += (page.extract_text() or "") + "\n"
             except Exception:
                 pass
-        if text.strip():
-            return {"text": clean_pdf_text(text), "extracted": True, "extract_status": "ok",
+        best = clean_pdf_text(text)
+        if cjk_count(best) >= _TEXT_LAYER_MIN_CJK:
+            return {"text": best, "extracted": True, "extract_status": "ok",
                     "needs_ocr": False}
     except ImportError:
         pass
-    # 回退 pdfplumber
+    # 回退 pdfplumber（取有效汉字更多者）
     try:
         import pdfplumber
+        text = ""
         with pdfplumber.open(__import__("io").BytesIO(data)) as pdf:
             for page in pdf.pages:
                 try:
                     text += (page.extract_text() or "") + "\n"
                 except Exception:
                     pass
-        if text.strip():
-            return {"text": clean_pdf_text(text), "extracted": True, "extract_status": "ok",
+        cand = clean_pdf_text(text)
+        if cjk_count(cand) > cjk_count(best):
+            best = cand
+        if cjk_count(best) >= _TEXT_LAYER_MIN_CJK:
+            return {"text": best, "extracted": True, "extract_status": "ok",
                     "needs_ocr": False}
     except ImportError:
         pass
@@ -380,7 +408,7 @@ def _extract_pdf(data: bytes, enable_ocr: bool, ocr_timeout: int) -> dict[str, A
     if not _pdf_lib_available():
         return {"text": "", "extracted": False, "extract_status": "library_missing",
                 "needs_ocr": False}
-    # 库存在但文本层为空 → 疑似扫描件
+    # 库存在但文本层有效汉字不足（空 / 仅页眉页脚）→ 疑似扫描件 → OCR
     if enable_ocr and _ocr_available():
         try:
             ocr_text, ocr_engine = _run_ocr_detail(data, ocr_timeout)
@@ -391,6 +419,10 @@ def _extract_pdf(data: bytes, enable_ocr: bool, ocr_timeout: int) -> dict[str, A
                         "ocr_engine": ocr_engine}
         except Exception as e:
             LOG.warning("PDF OCR 失败：%s", e)
+    if best.strip():
+        # 文本层残量不足（多为页眉水印），保留但显式标记 needs_ocr（不再伪装 ok）
+        return {"text": best, "extracted": True, "extract_status": "ok",
+                "needs_ocr": True}
     return {"text": "", "extracted": False, "extract_status": "needs_ocr",
             "needs_ocr": True}
 

@@ -58,25 +58,40 @@ BACKUP_ROOT = os.path.join(IPB, "backups")
 
 DOC_EXTS = {".pdf", ".doc", ".docx"}
 _ILLEGAL = re.compile(r'[\\/:*?"<>|\r\n\t]')
+
+# 单一事实源：文号归一与内部文号校验统一取自 internal_policy_base.scan
+# （用户规则 2026-09-13：文号只在标题处、须以"阳光人寿/阳光保险"开头）
+from internal_policy_base.scan import (  # noqa: E402
+    is_internal_docno as _is_internal_docno,
+)
+from internal_policy_base.scan import (
+    normalize_docno as _normalize_docno,
+)
+
 # "关于下发X的通知" 类包裹词（用于与清单名称做包含匹配）
 _WRAP_HEAD = re.compile(r"^(?:关于)?(?:印发|下发|修订下发|发布|征求|征求对)?《?")
 _WRAP_TAIL = re.compile(r"》?(?:的通知|的函|的批复|的公告|的通知（.*?)）?$")
 
-# 发文文号**形态**校验（2026-09-13 QC）：只接受「机关代字〔年〕序号 号」。
-# 拦掉的真实反例：`NEWYXYWFASQ 202503310001`（公文流转号）、`SXLQB201912130013`（OA 制度编号）
-# —— 二者都不是发文文号，若作为文件名前缀会产出错误命名。
-_DOCNO_SHAPE = re.compile(
-    r"^[\u4e00-\u9fa5A-Za-z]{2,20}(?:〔|\[|\(|【|\uff3b)\s*\d{4}\s*(?:〕|\]|\)|】|\uff3d)"
-    r"\s*第?\s*\d{1,4}\s*号$")
-
 # 文件名噪声：编号/附件前缀、盖章/水印/定稿/清洁版等后缀、尾随序号
-# （2026-09-13 扩面：实测前缀形态多样——`10：` `3，` `18运营-` `6人管-` 等，
-#   原规则只覆盖 `数字[-.、]` 与 `附件N`，故需循环多次剥离 + 覆盖中文标点与"编号+部门简称-"。）
+# （2026-09-13 扩面：实测前缀形态多样——`10：` `3，` `18运营-` `6人管-` `编号4.` `红头文件-`
+#   `同步废止` 等，原规则只覆盖 `数字[-.、]` 与 `附件N`，故循环多次剥离并覆盖中文标点。）
 _PREFIX_NOISE = re.compile(
     r"^\s*(?:附件\s*[0-9一二三四五六七八九十]+\s*[：:.\s、,，]*"
+    r"|编号\s*[0-9]{1,3}\s*[.、,，:：]?\s*"
+    r"|红头文件\s*[-—_:：]?\s*"
+    r"|同步废止\s*"
+    r"|\d{4}[/\-.]\d{1,2}[/\-.]\d{1,2}\s*\d{0,2}[:：]?\d{0,2}\s*"
+    r"(?:查看|浏览|打印|下载)?\s*[-—_:：]?\s*"
+    r"|[\d\s/.\-:：]{4,24}(?:查看|浏览|打印|下载)\s*[-—_:：]?\s*"
+    r"|(?<![\d])\d{1,2}(?=[\u4e00-\u9fa5]{6,})(?!\d)"
     r"|\d+\s*[\u4e00-\u9fa5]{0,4}\s*[-—.、,，:：]\s*"
     r"|\d+\s*[.、,，:：]\s*"
     r"|第\s*\d+\s*[条章]\s*)")
+# 红头机关名 / 主送机关（名称清洗用，与 scan.clean_title_noise 同源规则）
+_REDHEAD_NAME = re.compile(
+    r"^[\u4e00-\u9fa5]{4,30}?(?:股份有限公司|有限公司|集团|公司|事业部|分公司)文件(?=[\u4e00-\u9fa5])")
+_MAIN_TO = re.compile(
+    r"(?:各分公司|总公司各部门|各事业部|各中心|各部门|各处室|各单位|各机构)[，,：:].*$", re.S)
 
 # 名称中**内嵌**的发文文号（文号应只出现在文件名前缀，主体内重复需剔除）
 _INLINE_DOCNO = re.compile(
@@ -145,18 +160,35 @@ def fix_variant(s: str) -> str:
 
 
 def is_valid_docno(s: str) -> bool:
-    """发文文号形态校验（见 _DOCNO_SHAPE）。流转号/档案号一律判否。"""
-    return bool(_DOCNO_SHAPE.match((s or "").strip()))
+    """内部制度文号校验（单一事实源 = `scan.is_internal_docno`）：
+
+    归一后形态须为 `机关代字〔年〕序号号`，**且**发文机关前缀属白名单（阳光人寿/阳光保险）。
+    据此拦掉三类实测反例：公文流转号 `NEWYXYWFASQ 202503310001`、OA 档案号 `SXLQB201912130013`、
+    以及监管机关文号 `保监发〔2013〕40号`／`银保监发〔2021〕14号`（非公司内部文号）。
+    """
+    return _is_internal_docno(s)
 
 
 def tidy_title(s: str) -> str:
-    """标题紧凑化：修异体字 → 剔除内嵌文号 → 去多余空格（内容抽取常见污染）。"""
+    """标题紧凑化：修异体字 → 剥红头机关名 → 清前缀噪声 → 剔除内嵌文号
+    → 去主送机关后缀 → 去多余空格（内容标题与文件名标题**同一套清洗**）。
+
+    内容标题同样需清前缀（实测内容标题会带 `附件1：`：`附件1：共建合作签约申请表`，
+    与文件名侧的 `附件N` 处理保持一致）。
+    """
     t = fix_variant(s or "")
+    t = _REDHEAD_NAME.sub("", t)
     t = _INLINE_DOCNO.sub("", t)
+    for _ in range(3):
+        t2 = _PREFIX_NOISE.sub("", t).strip(" -_—、,，:：")
+        if t2 == t:
+            break
+        t = t2
     t = _SPACE_BEFORE_UNIT.sub("", t)
     t = _SPACE_IN_CJK.sub("", t)
     t = _SPACE_BEFORE_DIGIT.sub("", t)
     t = re.sub(r"[ \t]{2,}", " ", t)
+    t = _MAIN_TO.sub("", t)
     return t.strip(" -_—、,，:：")
 
 
@@ -187,6 +219,40 @@ def derive_title_from_name(file_base: str) -> str:
     return s.strip("《》").strip()
 
 
+# 文件名词干 = 内容标题 + 纯"版本/变体标记"（如 `（B类）`/`2020年版（A类）`/`（试行）`）
+_VARIANT_TAIL = re.compile(
+    r"^(?:(?:[（(][^）)]{1,12}[）)])|(?:\d{4}\s*年?版)|(?:[A-Za-z]类)|(?:版)"
+    r"|[\s\-_—、,，:：])+$")
+
+
+def keep_variant_suffix(title: str, stem: str) -> str:
+    """内容标题 + 文件名变体后缀 → 并回（如 `个人寿险…管理办法` + `（B类）`）。
+
+    严格内容优先的**唯一例外**：文件名词干携带"版本/变体标记"，且其主体部分与内容标题
+    相互包含时并回后缀。两种形态都覆盖：
+      · `个人寿险…管理办法` + `2020年版（A类）`（词干 = 标题 + 后缀）；
+      · `保险代理业务合作协议（分分2024版）` + `阳光人寿保险股份有限公司保险代理业务合作协议`
+        （词干 = 标题主体 + 后缀，标题带公司全称前缀）。
+    价值：保住 `（A类）/（B类）/（分分2024版）/（2025版）` 区分，避免同类不同版塌成同名
+    （实测 A/B/C 三类与 2024/2025 两版都会退化为 `_2`，丢失语义）。
+    """
+    if not title or not stem:
+        return title
+    rest = ""
+    if stem.startswith(title):
+        rest = stem[len(title):].strip()
+    else:
+        m = re.match(r"^(.*?)((?:[（(][^）)]{1,12}[）)])|(?:\s*\d{4}\s*年?版)|(?:[A-Za-z]类))+$",
+                     stem)
+        if m and norm_name(m.group(1)) and norm_name(m.group(1)) in norm_name(title):
+            rest = m.group(2)
+    if not rest or len(rest) > 24 or not _VARIANT_TAIL.match(rest):
+        return title
+    return title + rest
+
+
+# 文号归一统一走 `internal_policy_base.scan.normalize_docno`（本工具不再私有副本，
+# 遵守 gate_no_duplicate_libs 的 SSOT 纪律：私有归一须 import SSOT 或加 norm-specialization 标记）。
 # ---------------------------------------------------------------- 制度清单
 def load_registry(path: str = REGISTRY_XLSX) -> list[dict]:
     """读 制度清单.xlsx（起草部门/制度名称/发文文号/当前是否有效）。缺失返回空表。"""
@@ -245,7 +311,7 @@ def match_registry(title: str, rows: list[dict], *, threshold: float = 0.85) -> 
         if score < threshold:
             score = max(score, difflib.SequenceMatcher(None, inner or nt, rn).ratio())
         if score > bscore:
-            best, bscore, bdept = r["docno"], score, r["dept"]
+            best, bscore, bdept = _normalize_docno(r["docno"]), score, r["dept"]
     if bscore < threshold:
         return "", "", bscore
     return best, bdept, bscore
@@ -278,9 +344,19 @@ def _walk_docs(root: str) -> list[str]:
 
 def build_plan(*, root: str = ORIGINALS, registry: list[dict] | None = None,
                use_processed_text: bool = True, extract_missing: bool = True,
-               limit: int = 0) -> dict:
-    """只读规划：为每个制度正文类文件确定规范名与归集目标。"""
-    from internal_policy_base.scan import clean_title_noise, parse_content_identity, parse_filename
+               limit: int = 0, inherit_attachments: bool = True) -> dict:
+    """只读规划：为每个制度正文类文件确定规范名与归集目标。
+
+    文号三级来源（用户规则 2026-09-13）：① 文档标题区域（内容权威）→ ② 制度清单.xlsx
+    名称匹配兜底 → ③ **附件继承**（问题 6：作为正文附件存在的文档，内容出现在正文结尾处，
+    与正文文号相同）。名称始终"内容优先 → 文件名解构回退"，不回退清单。
+    """
+    from internal_policy_base.scan import (
+        clean_title_noise,
+        inherit_docno_by_containment,
+        parse_content_identity,
+        parse_filename,
+    )
 
     registry = registry if registry is not None else load_registry()
     index = json.load(open(INDEX_PATH, encoding="utf-8")) if os.path.exists(INDEX_PATH) else {}
@@ -337,11 +413,17 @@ def build_plan(*, root: str = ORIGINALS, registry: list[dict] | None = None,
 
         ident = parse_content_identity(text, fallback_title=parsed_title) if text else \
             {"docno": "", "title": ""}
-        title = tidy_title(ident.get("title") or "") or parsed_title
-        title_src = "content" if ident.get("title") else "filename"
+        if ident.get("title"):
+            # 内容标题 + 文件名变体后缀并回（`（B类）`/`2020年版（A类）`）→ 保住版类区分
+            title = tidy_title(keep_variant_suffix(tidy_title(ident["title"]), parsed_title))
+            title_src = "content"
+        else:
+            title = parsed_title
+            title_src = "filename"
 
-        # 文号：内容优先 → 清单兜底；**两类都必须过形态校验**（拦流转号/档案号）
-        docno = (ident.get("docno") or "").strip()
+        # 文号：标题区域（内容）优先 → 清单兜底（附件继承在循环后统一处理）；
+        # 两类都必须过 `is_internal_docno`（形态 + 阳光前缀白名单）
+        docno = _normalize_docno(ident.get("docno") or "")
         if docno and not is_valid_docno(docno):
             stats["docno_rejected_content"] += 1
             docno = ""
@@ -356,19 +438,29 @@ def build_plan(*, root: str = ORIGINALS, registry: list[dict] | None = None,
         if not docno:
             docno_src = "none"
 
-        target_name = safe_filename(f"{docno}_{title}{ext}" if docno else f"_{title}{ext}")
         items.append({"src": p, "src_rel": os.path.relpath(p, root),
-                      "target_name": target_name, "ipn": (rec or {}).get("ipn", ""),
+                      "ipn": (rec or {}).get("ipn", ""), "ext": ext,
                       "docno": docno, "title": title, "dept": dept,
                       "docno_src": docno_src, "title_src": title_src,
-                      "text_src": text_src,
-                      "already": os.path.normcase(os.path.basename(p)) ==
-                      os.path.normcase(target_name) and os.path.dirname(p) == root})
-        stats[f"docno_{docno_src.split('(')[0]}"] += 1
-        stats[f"title_{title_src}"] += 1
-        stats[f"text_{text_src}"] += 1
+                      "text_src": text_src, "text": text})
+
+    # 问题 6：附件型文档继承正文文号（内容包含关系，见 scan.inherit_docno_by_containment）
+    if inherit_attachments:
+        for i, d in inherit_docno_by_containment(items).items():
+            items[i]["docno"] = d
+            items[i]["docno_src"] = "inherit"
+
+    for it in items:
+        it["target_name"] = safe_filename(
+            f"{it['docno']}_{it['title']}{it['ext']}" if it["docno"]
+            else f"_{it['title']}{it['ext']}")
+        it["already"] = (os.path.normcase(os.path.basename(it["src"])) ==
+                         os.path.normcase(it["target_name"]) and os.path.dirname(it["src"]) == root)
+        stats[f"docno_{it['docno_src'].split('(')[0]}"] += 1
+        stats[f"title_{it['title_src']}"] += 1
+        stats[f"text_{it['text_src']}"] += 1
         stats["total"] += 1
-        stats["已规范且在根层" if items[-1]["already"] else "需处置"] += 1
+        stats["已规范且在根层" if it["already"] else "需处置"] += 1
     return {"items": items, "stats": dict(stats), "root": root}
 
 
@@ -423,13 +515,50 @@ def apply_plan(plan: dict, *, backup: bool = True, update_index: bool = True) ->
                       json.load(open(INDEX_PATH, encoding="utf-8")).get("records", [])}
     touched_proc = set()
     manifest = []
+
+    def _writeback_identity(it: dict, rec: dict, *, new_rel: str = "") -> None:
+        """身份回写（2026-09-13）：文件名已是权威身份，索引须同步纠正，否则下游
+        （merged 引用匹配 / draft 引用 / 分析交付）仍按旧文号走。
+
+        - `ipn` 是**稳定代理键**（processed 文件名 / merged / citations 均引用它），
+          **不随身份重算**——否则 17 组同名对会撞键，且全链路引用整体漂移。
+        - 路径字段仅在文件真被移动/改名时写。
+        """
+        if new_rel:
+            rec["relative_path"] = new_rel
+            rec["original_path"] = "originals/" + new_rel
+            rec["file_name"] = os.path.basename(new_rel)
+        rec["name_normalized_at"] = now
+        old_docno, old_title = rec.get("docno", ""), rec.get("title", "")
+        changed = it["docno"] != old_docno or it["title"] != old_title
+        if changed:
+            acts["identity_fixed"] += 1
+            rec["identity_prev"] = f"{old_docno}|{old_title}"[:160]
+        rec["docno"] = it["docno"]
+        rec["title"] = it["title"]
+        rec["identity_source"] = f"docno={it['docno_src']};title={it['title_src']}"
+        if it["dept"]:
+            rec["drafting_dept"] = it["dept"]
+        touched_proc.add(rec["ipn"])
+        return changed
+
     for it in plan["items"]:
+        rec = rec_by_ipn.get(it["ipn"]) if it["ipn"] else None
         if it["already"] or not it.get("dst"):
+            # 已规范命名：仅做**身份回写**（路径未变），使索引与文件名一致
             acts["skip_already"] += 1
+            if rec is not None and _writeback_identity(it, rec):
+                manifest.append({"src_rel": it["src_rel"], "dst_rel": it["src_rel"],
+                                 "ipn": it["ipn"], "docno": it["docno"], "title": it["title"],
+                                 "dept": it["dept"], "docno_src": it["docno_src"],
+                                 "title_src": it["title_src"], "text_src": it["text_src"],
+                                 "identity_only": True})
             continue
         src, dst = it["src"], it["dst"]
         if _norm(src) == _norm(dst):
             acts["skip_same"] += 1
+            if rec is not None:
+                _writeback_identity(it, rec)
             continue
         try:
             os.makedirs(os.path.dirname(dst), exist_ok=True)
@@ -441,16 +570,8 @@ def apply_plan(plan: dict, *, backup: bool = True, update_index: bool = True) ->
                              "error": repr(e)[:120]})
             continue
         new_rel = os.path.relpath(dst, ORIGINALS).replace(os.sep, "/")
-        # 同步索引
-        rec = rec_by_ipn.get(it["ipn"]) if it["ipn"] else None
         if rec is not None:
-            rec["relative_path"] = new_rel
-            rec["original_path"] = "originals/" + new_rel
-            rec["file_name"] = os.path.basename(dst)
-            rec["name_normalized_at"] = now
-            if it["dept"]:
-                rec["drafting_dept"] = it["dept"]
-            touched_proc.add(rec["ipn"])
+            _writeback_identity(it, rec, new_rel=new_rel)
         manifest.append({"src_rel": it["src_rel"], "dst_rel": new_rel, "ipn": it["ipn"],
                          "docno": it["docno"], "title": it["title"], "dept": it["dept"],
                          "docno_src": it["docno_src"], "title_src": it["title_src"],
@@ -480,6 +601,10 @@ def apply_plan(plan: dict, *, backup: bool = True, update_index: bool = True) ->
             obj["relative_path"] = rec["relative_path"]
             obj["original_path"] = rec["original_path"]
             obj["file_name"] = rec["file_name"]
+            # 身份同步（2026-09-13）：`docno/title` 属 PROCESSED_FIELDS 白名单，索引重建
+            # 会从 processed 取值 → 若不同步，本次纠正会在下次重建时被**静默回退**。
+            obj["docno"] = rec["docno"]
+            obj["title"] = rec["title"]
             tmp = p + ".tmp"
             with open(tmp, "w", encoding="utf-8") as fh:
                 json.dump(obj, fh, ensure_ascii=False, indent=2)

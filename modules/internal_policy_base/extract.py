@@ -26,7 +26,10 @@ for _p in (_ORCH_ROOT, os.path.join(_ORCH_ROOT, "std_lib")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from std_lib.scraper_std.crawler_common import extract_document_text  # noqa: E402
+from std_lib.scraper_std.crawler_common import (  # noqa: E402
+    cjk_count,  # 有效汉字数（OCR/扫描件判定共用，见 _is_scan_pdf / reocr_backfill）
+    extract_document_text,
+)
 from std_lib.scraper_std.text_reflow import (
     reflow_chinese,  # noqa: E402  共享行重排（⑪，供五源 future 复用）
 )
@@ -273,14 +276,23 @@ def renormalize_processed() -> dict:
     return {"changed": changed, "unchanged": unchanged, "processed_dir": proc_dir}
 
 
-def _is_scan_pdf(path: str) -> bool:
-    """扫描件判定：首页文本层 < 30 字（fitz 快检；--force 重跑清单用）。"""
+def _is_scan_pdf(path: str, *, min_cjk: int = 30, pages: int = 5) -> bool:
+    """扫描件判定：**前 pages 页**文本层有效汉字 < min_cjk（fitz 快检；--force 重跑清单用）。
+
+    2026-09-13 修正（用户报告案例）：原判据是"**首页**总字符数 < 30"，两处失真——
+      ① 页眉/页脚噪声虚增：某红头文件首页文本层 461 字全为 `2020/11/26 eoa.sinosig.com/...`
+         打印页眉，正文实为整页图片，却被判为"非扫描件"而**不被 reocr --force 选中**；
+      ② 只看首页致**误报**：封面页/图片页汉字少，正文其实有正常文字层（实测按首页判会命中
+         77 份，其中含 12,482 汉字的正常文档）。
+    改判据：取前 `pages` 页**有效汉字**计数，`< min_cjk` 才视为扫描件。
+    """
     try:
         import pymupdf  # noqa: PLC0415
         with pymupdf.open(path) as d:
             if d.page_count == 0:
                 return False
-            return len((d[0].get_text() or "").strip()) < 30
+            txt = "".join((d[i].get_text() or "") for i in range(min(pages, d.page_count)))
+            return cjk_count(txt) < min_cjk
     except Exception:  # noqa: BLE001
         return False
 
@@ -290,8 +302,8 @@ def reocr_backfill(limit: int | None = None, min_cjk: int = 20, force: bool = Fa
     """存量扫描件 OCR 回填/重跑（2026-09-12）。
 
     - 目标（默认）：processed 主记录中 `text_chars==0`（扫描件/提取失败）且原文件存在者；
-    - 目标（`force=True`）：**疑似扫描件 PDF**（fitz 首页文本层 <30 字）**全量重跑**——
-      用于 OCR 引擎升级后提质重建（如 tesseract 回填 → PaddleOCR 重建）；
+    - 目标（`force=True`）：PDF 中**现有正文有效汉字 < 100** 者（含"文字层只有页眉水印"的
+      判据盲区，见下方判据说明），用于 OCR 引擎升级后提质重建（如 tesseract → PaddleOCR）；
     - 提取：`extract_file(enable_ocr=True)`（文本层优先 → OCR 引擎链降级）；
     - **质量闸门**：新文本须 ≥ min_cjk 个汉字才回写，否则 `extract_status="ocr_low_quality"`
       且保持 `needs_ocr=True`（防 OCR 乱码污染底座）；
@@ -340,12 +352,22 @@ def reocr_backfill(limit: int | None = None, min_cjk: int = 20, force: bool = Fa
         if force:
             if rec.get("extension") != "pdf":
                 continue
-            # 目标（2026-09-12 增强）：扫描件（fitz 首页<30 字）**或** 文本层提取残量（<100 字——
-            # 含"fitz 读出水印≥30 字但 pypdf/pdfplumber 提取为空"的判据盲区）；
-            # 幂等：已 Paddle 提质跳过；强制尝试过且本次引擎同为 paddle 跳过（含 Paddle 后
-            # 仍低质者——一轮收敛）；非 Paddle 的旧尝试且文本已充分（≥100）跳过。
-            low_text = (rec.get("text_chars") or 0) < 100
-            if not (low_text or _is_scan_pdf(orig)):
+            # 目标（2026-09-12 增强；2026-09-13 判据修正）：文本层**有效汉字**不足 100 者。
+            # 判据修正原因（用户报告案例）：原用 `text_chars < 100`，会被**页眉/页脚噪声**
+            # 虚增——实测某红头文件 text_chars=461 但**汉字 0**（461 字全为
+            # `2020/11/26 eoa.sinosig.com/...` 打印页眉），正文实为整页图片，因而不入选、
+            # 永不被 OCR，导致文号/标题漏识别。改判"有效汉字"后即可命中；
+            # 无 fulltext 时退回 fitz 扫描件快检（`_is_scan_pdf`）。
+            _fp = os.path.join(proc_dir, (rec.get("ipn") or "") + "_fulltext.json")
+            if os.path.exists(_fp):
+                try:
+                    _cjk_now = cjk_count(_json.load(open(_fp, encoding="utf-8")).get("text") or "")
+                    low_text = _cjk_now < 100
+                except Exception:  # noqa: BLE001
+                    low_text = _is_scan_pdf(orig)
+            else:
+                low_text = _is_scan_pdf(orig)
+            if not low_text:
                 continue
             if rec.get("ocr_engine") == "paddle":
                 continue

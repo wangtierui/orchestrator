@@ -303,8 +303,10 @@ class TestNamingRules:
         from tools.normalize_internal_naming import is_valid_docno
 
         assert is_valid_docno("阳光人寿发〔2025〕154号")
-        assert is_valid_docno("金办发〔2024〕25号")
-        assert is_valid_docno("银保监发〔2019〕29号")
+        # 2026-09-13 用户规则：内部文号须以"阳光人寿/阳光保险"开头 → 监管机关文号一律判否
+        assert not is_valid_docno("金办发〔2024〕25号"), "非公司内部文号（缺阳光前缀）"
+        assert not is_valid_docno("银保监发〔2019〕29号"), "监管机关文号不得当内部制度文号"
+        assert not is_valid_docno("保监发〔2013〕40号"), "正文引用他文（实测反例）"
         assert not is_valid_docno("NEWYXYWFASQ 202503310001"), "公文流转号不得当文号"
         assert not is_valid_docno("SXLQB201912130013"), "OA 档案编号不得当文号"
         assert not is_valid_docno("")
@@ -365,3 +367,97 @@ class TestNamingRules:
         assert not is_non_policy_ledger("费用管控规则.xlsx"), "非台账表格不误伤"
         assert DOC_EXTS == {".pdf", ".doc", ".docx"}
         assert ".xlsx" in LEDGER_EXTS and ".pdf" not in LEDGER_EXTS
+
+
+class TestDocnoTitleAreaRules:
+    """用户规则（2026-09-13，逐条对应报告 §12 的 6 个核查问题）：
+
+    ① 名称不得并入红头机关名；② 文号**只在文档标题处**出现（正文引用/废止声明不算）；
+    ③ 公司内部文号须以 `阳光人寿`/`阳光保险` 开头；④ 名称以**文档内容标题**为准；
+    ⑤ 文字层只有页眉（无汉字）者须判为扫描件触发 OCR；⑥ 附件型文档继承正文文号。
+    """
+
+    # ① 红头机关名剥离
+    def test_redhead_and_notice_prefix_stripped_from_docno(self):
+        from internal_policy_base.scan import normalize_docno
+
+        assert normalize_docno("阳光人寿保险股份有限公司文件阳光人寿发（2020）404号") == \
+            "阳光人寿发〔2020〕404号", "红头机关名（…公司文件）须剥离"
+        assert normalize_docno("特此通知阳光保险发【2022】90号") == "阳光保险发〔2022〕90号"
+        assert normalize_docno("阳光人寿发[2018]442号") == "阳光人寿发〔2018〕442号", "括号须归一为〔〕"
+
+    # ③ 前缀白名单
+    def test_internal_docno_prefix_whitelist(self):
+        from internal_policy_base.scan import is_internal_docno
+
+        assert is_internal_docno("阳光人寿办发〔2021〕64号")
+        assert is_internal_docno("阳光保险发〔2022〕90号")
+        for bad in ("保监发〔2013〕40号", "银保监发〔2021〕14号", "金办发〔2024〕122号",
+                    "中国人民银行令〔2016〕第3号", "法释〔2002〕30号"):
+            assert not is_internal_docno(bad), bad
+
+    # ② 文号只在标题区域
+    def test_docno_extracted_only_from_title_area(self):
+        from internal_policy_base.scan import extract_docno_title_area
+
+        # 正文引用他文（括号包裹）→ 不是本文文号
+        t1 = ("阳光人寿融客事业部录音管理办法第一章总则第一条为了规范和加强录音管理，"
+              "根据《人身保险电话销售业务管理办法》（保监发〔2013〕40号）规定，特制定本办法。")
+        assert extract_docno_title_area(t1)[0] == ""
+        # 文末"同步废止…"声明 → 超标题区域，不提取
+        t2 = "阳光人寿银保CSP渠道线上培训平台学习管理办法" + "正文内容" * 80 + \
+            "本管理办法于2022年5月起正式实施，同步废止阳光人寿发【2021】673号文件。"
+        assert extract_docno_title_area(t2)[0] == ""
+        # 标题区正常 → 提取并归一
+        t3 = "阳光人寿发〔2025〕155号关于下发《X》的通知各分公司，总公司各部门："
+        assert extract_docno_title_area(t3)[0] == "阳光人寿发〔2025〕155号"
+
+    # ④ 名称以内容标题为准（含"标题与正文连写"与"主送机关连写"）
+    def test_content_title_wins_and_stops_before_body(self):
+        from internal_policy_base.scan import parse_content_identity
+
+        assert parse_content_identity(
+            "经代渠道销售服务人员执业证管理工作指引各分公司：为强化公司从业人员管理…")["title"] == \
+            "经代渠道销售服务人员执业证管理工作指引"
+        assert parse_content_identity(
+            "阳光人寿银保 CSP 渠道线上培训平台学习管理办法为有效推动银保 CSP 渠道健康、持续发展")["title"] == \
+            "阳光人寿银保CSP渠道线上培训平台学习管理办法"
+        assert parse_content_identity(
+            "员工周转房入住协议我同意阳光人寿保险股份有限公司《周转房管理办法》相关规定")["title"] == \
+            "员工周转房入住协议"
+        # 标题候选含句读 → 判为正文混入 → 拒（调用方回退文件名解构）
+        assert parse_content_identity("公司政策、制度出台依据说明表序号名称说明")["title"] == ""
+        # 版本括注须保留
+        assert parse_content_identity("三级机构银保分级与前线人员管理办法（2022年修订版）制定本办法")["title"] == \
+            "三级机构银保分级与前线人员管理办法（2022年修订版）"
+
+    # ⑥ 附件继承正文文号
+    def test_attachment_inherits_docno_by_content_containment(self):
+        from internal_policy_base.scan import inherit_docno_by_containment
+
+        attach = ("附件1：共建合作签约申请表拟合作项目名称：合作方名称合作类型证照材料清单"
+                  "是否合规备注合作方1、保险代理资格证（含专业、兼业）")
+        body = ("阳光人寿发〔2021〕209号_关于下发《融客共建业务签约及红黄蓝评价管理办法》的通知"
+                "各分公司：为规范共建业务…" + attach)
+        items = [{"text": body, "docno": "阳光人寿发〔2021〕209号"},
+                 {"text": attach, "docno": ""}]
+        assert inherit_docno_by_containment(items) == {1: "阳光人寿发〔2021〕209号"}
+        # 无包含关系 → 不继承（宁缺毋滥）
+        assert inherit_docno_by_containment(
+            [{"text": "阳光人寿发〔2021〕209号_某办法" * 6, "docno": "阳光人寿发〔2021〕209号"},
+             {"text": "完全无关的另一份表格内容" * 4, "docno": ""}]) == {}
+
+    # ⑤ OCR 判据：文本层有效性按**汉字数**，不按总字符数
+    def test_text_layer_judge_counts_cjk_not_chars(self):
+        from std_lib.scraper_std.crawler_common import _TEXT_LAYER_MIN_CJK, cjk_count
+
+        # 实测反例：某红头文件文字层 461 字全为打印页眉（汉字 0）→ 须判为需 OCR
+        header = "2020/11/26 eoa.sinosig.com/sys/attachment/sys_att_main.do?method=view 2/4"
+        assert len(header) > 30 and cjk_count(header) == 0
+        assert cjk_count(header) < _TEXT_LAYER_MIN_CJK, "页眉噪声不得虚增文本层有效性"
+        assert cjk_count("阳光人寿发〔2020〕199号") == 6
+
+    def test_scan_judge_ignores_missing_file(self):
+        from internal_policy_base.extract import _is_scan_pdf
+
+        assert _is_scan_pdf("__not_exist__.pdf") is False

@@ -1,6 +1,6 @@
 # BENCHMARK —— 交付基准登记（回归对照基线）
 
-> 自动生成：tools/gen_benchmark.py @ 2026-09-13 19:33:03 | python 3.13.14
+> 自动生成：tools/gen_benchmark.py @ 2026-09-13 22:55:33 | python 3.13.14
 > 用途：数据重建/重构后重跑 `python tools/gen_benchmark.py` 刷新；数值漂移即回归信号。
 
 ## 1 门禁（gates/ALL_GATES）
@@ -31,7 +31,7 @@
 用例文件 23：`test_analysis_deliveries.py`、`test_base_publish.py`、`test_clean_index_portability.py`、`test_cli_facade.py`、`test_common_lib.py`、`test_contract_api.py`、`test_crawler_extract.py`、`test_drafter_pure.py`、`test_e2e_pipeline.py`、`test_excel_crawler_pipeline.py`、`test_internal_original_paths.py`、`test_internal_policy_base.py`、`test_ipb_deep.py`、`test_ipb_extract_file.py`、`test_misc_pure.py`、`test_rich_object.py`、`test_scraper_std_core.py`、`test_scraper_std_extra.py`、`test_scraper_std_tables.py`、`test_scrapers_pure.py`、`test_ssot_convergence.py`、`test_std_lib_more.py`、`test_table_structured.py`
 运行：`python -m pytest tests -q`
 
-**覆盖率基线（只升不降）**：TOTAL 23%（采自 `.coverage`；刷新：`python -m coverage run -m pytest tests -q`）
+**覆盖率基线（只升不降）**：TOTAL 22%（采自 `.coverage`；刷新：`python -m coverage run -m pytest tests -q`）
 
 ## 3 数据基线
 
@@ -64,9 +64,9 @@
 | 产物 | 数值 |
 |---|---|
 | originals 原始制度 | 879 |
-| processed 处理文件（fulltext/main/json/md） | 4580 |
-| 条文结构 _clauses.json | 1056 |
-| 条文视图 _clauses.md | 1056 |
+| processed 处理文件（fulltext/main/json/md） | 3839 |
+| 条文结构 _clauses.json | 877 |
+| 条文视图 _clauses.md | 877 |
 | merged_view 记录 | 878 |
 
 ## 4 运行入口速查
