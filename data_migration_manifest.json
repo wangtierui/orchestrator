@@ -1,6 +1,6 @@
 {
   "schema_version": "1.1",
-  "generated_at": "2026-09-13T16:55:53+0800",
+  "generated_at": "2026-09-13T19:33:13+0800",
   "path_semantics": "全部 path 为相对仓库根的 POSIX 路径（schema 1.1 起；1.0 为绝对路径，异机不可用）",
   "source_roots": {
     "scrapers": "modules/regulatory_scrapers",
@@ -19,14 +19,14 @@
     {
       "src": "base/data/internal_policy_index.json",
       "path": "modules/internal_policy_base/data/internal_policy_index.json",
-      "size_bytes": 1060943,
-      "sha256": "ce72944f78e02956ac0539e1abf33c2c0198e0f2943578066b4993a4750fc31a"
+      "size_bytes": 1047152,
+      "sha256": "8d3f3728869ecc871c0e7c43fda3950f38cda97b2a5eb08c37a474dcf67b3a08"
     },
     {
       "src": "base/data/merged_view.json",
       "path": "modules/internal_policy_base/data/merged_view.json",
-      "size_bytes": 555250,
-      "sha256": "787fc623d7ccf621c916516f95d5fca0c662194823aead1215f579dbf156eef8"
+      "size_bytes": 526912,
+      "sha256": "bab2df8618979011966ae4561a4837ea050f2c18e989948fdd5cefd206580a63"
     },
     {
       "src": "classifier/data/T0_9逐份条款引用与上位法依据明细表.csv",

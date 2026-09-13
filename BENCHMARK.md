@@ -1,6 +1,6 @@
 # BENCHMARK —— 交付基准登记（回归对照基线）
 
-> 自动生成：tools/gen_benchmark.py @ 2026-09-13 18:23:21 | python 3.13.14
+> 自动生成：tools/gen_benchmark.py @ 2026-09-13 19:33:03 | python 3.13.14
 > 用途：数据重建/重构后重跑 `python tools/gen_benchmark.py` 刷新；数值漂移即回归信号。
 
 ## 1 门禁（gates/ALL_GATES）
@@ -63,11 +63,11 @@
 
 | 产物 | 数值 |
 |---|---|
-| originals 原始制度 | 108 |
-| processed 处理文件（fulltext/main/json/md） | 4481 |
-| 条文结构 _clauses.json | 1032 |
-| 条文视图 _clauses.md | 1032 |
-| merged_view 记录 | 957 |
+| originals 原始制度 | 879 |
+| processed 处理文件（fulltext/main/json/md） | 4580 |
+| 条文结构 _clauses.json | 1056 |
+| 条文视图 _clauses.md | 1056 |
+| merged_view 记录 | 878 |
 
 ## 4 运行入口速查
 

@@ -73,16 +73,19 @@ class TestGateOriginalResolvable:
         assert ok, detail["problems"]
         assert detail["resolvable"] == 1
 
-    def test_non_policy_sheet_within_baseline_passes(self, gate_env):
+    def test_non_policy_sheet_within_explicit_baseline_passes(self, gate_env, monkeypatch):
+        """显式登记基线时容忍（只减不增）——保留分档能力的回归。"""
         g, idx, _orig = gate_env
+        monkeypatch.setattr(g, "KNOWN_NON_POLICY_BASELINE", 1)
         _write_index(str(idx), [_rec("IPN-s", "制度清单.xls", "1.部门/制度清单.xls")])
         ok, detail = g.run()
         assert ok, detail["problems"]
-        assert detail["non_policy_sheets"] == 1  # 1 <= 登记基线
+        assert detail["non_policy_sheets"] == 1
 
-    def test_non_policy_sheet_over_baseline_fails(self, gate_env, monkeypatch):
+    def test_non_policy_sheet_fails_under_zero_baseline(self, gate_env):
+        """2026-09-13 治理后基线收紧至 0：索引内不应再有任何非正文件（台账已隔离到 data/ledgers）。"""
         g, idx, _orig = gate_env
-        monkeypatch.setattr(g, "KNOWN_NON_POLICY_BASELINE", 0)
+        assert g.KNOWN_NON_POLICY_BASELINE == 0, "治理后基线应为 0"
         _write_index(str(idx), [_rec("IPN-s", "制度清单.xls", "1.部门/制度清单.xls")])
         ok, detail = g.run()
         assert not ok
@@ -181,3 +184,184 @@ class TestIngestPathKey:
         assert ix._follow_path(ix._path_key("已不存在/某办法.pdf"),
                                {"ipn": "IPN-z", "relative_path": "新/某办法.pdf"},
                                "2026-09-13 00:00:00") is False, "旧件缺失须回退复制链路"
+
+
+class TestCopyOriginalHardlinkFirst:
+    """P2：`copy_original` 硬链接优先（省冗余），且绝不写穿共享 inode。"""
+
+    def test_same_volume_uses_hardlink(self, tmp_path):
+        from internal_policy_base.extract import copy_original
+
+        src = tmp_path / "src" / "办法.pdf"
+        src.parent.mkdir(parents=True)
+        src.write_bytes(b"%PDF-1.4 hardlink")
+        dst_dir = tmp_path / "dst"
+
+        out = copy_original(str(src), str(dst_dir), "部门/办法.pdf")
+        assert os.path.exists(out)
+        assert os.path.samefile(str(src), out), "同卷应建立硬链接（共享数据、不重复占用）"
+        assert os.stat(out).st_nlink == 2
+
+    def test_existing_hardlink_is_unlinked_before_rewrite(self, tmp_path):
+        """目标已是硬链接时，重写必须断链——否则会写穿共享 inode（污染 corpus 侧）。"""
+        from internal_policy_base.extract import copy_original
+
+        shared = tmp_path / "corpus" / "办法.pdf"
+        shared.parent.mkdir(parents=True)
+        shared.write_bytes(b"ORIGINAL-CORPUS")
+        dst_dir = tmp_path / "originals" / "部门"
+        dst_dir.mkdir(parents=True)
+        dst = dst_dir / "办法.pdf"
+        os.link(str(shared), str(dst))            # 目标先成为共享 inode
+
+        new_src = tmp_path / "new" / "办法.pdf"
+        new_src.parent.mkdir(parents=True)
+        new_src.write_bytes(b"NEW-CONTENT")
+        copy_original(str(new_src), str(dst_dir.parent), "部门/办法.pdf")
+
+        assert dst.read_bytes() == b"NEW-CONTENT"
+        assert shared.read_bytes() == b"ORIGINAL-CORPUS", "corpus 侧内容不得被牵连修改"
+
+
+class TestLedgerFilter:
+    """P2：台账/清单类 xls/xlsx 不再纳入制度索引。"""
+
+    def test_ledger_detection(self):
+        from internal_policy_base.scan import is_non_policy_ledger
+
+        assert is_non_policy_ledger("附件1：2025年制度检视自查情况表-财务部.xls")
+        assert is_non_policy_ledger("风控管理制度清单20220914.xlsx")
+        assert not is_non_policy_ledger("某管理办法.pdf")
+        assert not is_non_policy_ledger("费用管控规则.xlsx"), "非台账类表格不误伤"
+
+    def test_scan_excludes_ledgers_by_default(self, tmp_path):
+        from internal_policy_base.scan import scan_directory
+
+        (tmp_path / "部门").mkdir()
+        (tmp_path / "部门" / "某办法.pdf").write_bytes(b"%PDF-1.4")
+        (tmp_path / "部门" / "制度清单.xls").write_bytes(b"\xd0\xcf\x11\xe0")
+        (tmp_path / "部门" / "费用管控规则.xlsx").write_bytes(b"PK\x03\x04")
+
+        names = [f["file_name"] for f in scan_directory(str(tmp_path))]
+        assert "某办法.pdf" in names
+        assert "费用管控规则.xlsx" in names
+        assert "制度清单.xls" not in names, "台账类应被过滤"
+
+        old = [f["file_name"] for f in scan_directory(str(tmp_path), exclude_ledgers=False)]
+        assert "制度清单.xls" in old, "开关可恢复旧行为"
+
+
+class TestDedupeOriginalStorage:
+    """P1/P2 工具：内部去冗余 / 跨层硬链接 / 非正文标记 的分类与执行。"""
+
+    def _env(self, tmp_path, monkeypatch):
+        from tools import dedupe_original_storage as dd
+
+        orig = tmp_path / "originals"
+        corpus = tmp_path / "corpus"
+        (orig / "部门").mkdir(parents=True)
+        (corpus / "部门").mkdir(parents=True)
+        payload = b"%PDF-1.4 same-content"
+        (orig / "部门" / "办法.pdf").write_bytes(payload)
+        (orig / "部门" / "办法-副本.pdf").write_bytes(payload)   # 同内容、无索引引用
+        (corpus / "部门" / "办法.pdf").write_bytes(payload)
+        idx = tmp_path / "index.json"
+        idx.write_text(json.dumps({"records": [
+            {"ipn": "IPN-a", "file_name": "办法.pdf", "relative_path": "部门/办法.pdf"},
+            {"ipn": "IPN-b", "file_name": "制度清单.xls", "relative_path": "部门/制度清单.xls"},
+        ]}, ensure_ascii=False), encoding="utf-8")
+        monkeypatch.setattr(dd, "INDEX_PATH", str(idx))
+        monkeypatch.setattr(dd, "ORIGINALS", str(orig))
+        monkeypatch.setattr(dd, "CORPUS", str(corpus))
+        return dd, orig, corpus
+
+    def test_plan_classifies_move_link_mark(self, tmp_path, monkeypatch):
+        dd, _orig, _corpus = self._env(tmp_path, monkeypatch)
+        plan = dd.build_plan()
+
+        assert [os.path.basename(p) for p in plan["move"]] == ["办法-副本.pdf"], \
+            "应只移出「同内容且无引用」的副本"
+        assert len(plan["links"]) == 1, "被引用的保留件应可跨层硬链接"
+        assert [r["ipn"] for r in plan["marks"]] == ["IPN-b"], "失效台账应被标记"
+
+    def test_apply_hardlink_shares_inode(self, tmp_path, monkeypatch):
+        dd, orig, corpus = self._env(tmp_path, monkeypatch)
+        plan = dd.build_plan()
+        res = dd.apply_plan(plan, dedupe=False, hardlink=True, mark=False, backup=False)
+
+        assert res["actions"]["linked"] == 1
+        assert os.path.samefile(str(orig / "部门" / "办法.pdf"),
+                                str(corpus / "部门" / "办法.pdf"))
+        assert (corpus / "部门" / "办法.pdf").read_bytes() == b"%PDF-1.4 same-content"
+
+
+class TestNamingRules:
+    """用户规则（2026-09-13）回归：命名 `文号_名称` / `_名称`；文号"内容优先 → 清单兜底"；
+    名称不回退清单。本类把批量改名中修正过的四类解析缺陷固化为不变式（详见报告 §11.2）。"""
+
+    def test_docno_shape_rejects_circulation_and_archive_numbers(self):
+        from tools.normalize_internal_naming import is_valid_docno
+
+        assert is_valid_docno("阳光人寿发〔2025〕154号")
+        assert is_valid_docno("金办发〔2024〕25号")
+        assert is_valid_docno("银保监发〔2019〕29号")
+        assert not is_valid_docno("NEWYXYWFASQ 202503310001"), "公文流转号不得当文号"
+        assert not is_valid_docno("SXLQB201912130013"), "OA 档案编号不得当文号"
+        assert not is_valid_docno("")
+
+    def test_title_derivation_strips_prefix_and_tail_noise(self):
+        from tools.normalize_internal_naming import derive_title_from_name, tidy_title
+
+        cases = {
+            "2-关于下发《X》的通知_盖章.pdf": "关于下发《X》的通知",
+            "5-阳光人寿个人寿险营销员基本管理办法2020年版（A类）-含水印.pdf":
+                "阳光人寿个人寿险营销员基本管理办法2020年版（A类）",
+            "_10：-团险代理出单销售实施细则（2022年版）.pdf":
+                "团险代理出单销售实施细则（2022年版）",
+            "6-附件一 个人寿险营销员行销基本管理办法（C类）.pdf":
+                "个人寿险营销员行销基本管理办法（C类）",
+        }
+        for src, want in cases.items():
+            assert tidy_title(derive_title_from_name(src)) == want, src
+
+    def test_inline_docno_variant_chars_and_spaces_cleaned(self):
+        from tools.normalize_internal_naming import tidy_title
+
+        assert tidy_title("阳光人寿发（2022）502号阳光人寿银行保险销售人员管理办法") == \
+            "阳光人寿银行保险销售人员管理办法", "名称内嵌文号须剔除（文号只在前缀）"
+        assert tidy_title("阳光⼈寿个险营销平台中⼼城市保险营销员管理办法") == \
+            "阳光人寿个险营销平台中心城市保险营销员管理办法", "康熙部首异体字须归一"
+        assert tidy_title("某细则（2025 版）") == "某细则（2025版）", "数字与「版」间空格须去"
+
+    def test_registry_only_supplies_docno_and_name_never_falls_back(self):
+        from tools.normalize_internal_naming import match_registry
+
+        rows = [{"dept": "办公室", "name": "阳光人寿绿色办公实施方案",
+                 "docno": "阳光人寿办发〔2024〕55号", "valid": "是"},
+                {"dept": "CSP业务部", "name": "银保CSP渠道业务人员考勤管理办法(2021版）",
+                 "docno": "阳光人寿发〔2021〕424号", "valid": "是"}]
+        docno, dept, score = match_registry("阳光人寿绿色办公实施方案", rows)
+        assert docno == "阳光人寿办发〔2024〕55号" and dept == "办公室" and score >= 0.85
+        # 通知式标题经"剥包裹"后仍能命中
+        docno2, _d2, _s2 = match_registry("关于下发《银保CSP渠道业务人员考勤管理办法(2021版）》的通知", rows)
+        assert docno2 == "阳光人寿发〔2021〕424号"
+        # 无匹配 → 不回退名称（调用方据 docno 为空产出 `_名称`）
+        assert match_registry("完全无关的制度名称", rows)[0] == ""
+
+    def test_safe_filename_replaces_windows_illegal_chars(self):
+        from tools.normalize_internal_naming import safe_filename
+
+        out = safe_filename('阳光人寿发〔2025〕1号_关于下发《A/B:C*D?E"F<G>H|I》的通知.pdf')
+        assert not any(ch in out for ch in '\\/:*?"<>|')
+        assert out.endswith(".pdf")
+
+    def test_nonpolicy_extension_partition(self):
+        from internal_policy_base.scan import is_non_policy_ledger
+
+        from tools.split_internal_nonpolicy import DOC_EXTS, LEDGER_EXTS
+
+        assert is_non_policy_ledger("附件1：2025年制度检视自查情况表-财务部.xls")
+        assert is_non_policy_ledger("风控管理制度清单20220914.xlsx")
+        assert not is_non_policy_ledger("费用管控规则.xlsx"), "非台账表格不误伤"
+        assert DOC_EXTS == {".pdf", ".doc", ".docx"}
+        assert ".xlsx" in LEDGER_EXTS and ".pdf" not in LEDGER_EXTS

@@ -213,9 +213,49 @@ def _sha_match(a: str, b: str) -> bool:
         return False
 
 
-def ingest(source_root: str, *, enable_ocr: bool = False, dry_run: bool = False) -> dict:
-    """主流程。dry_run 只报告将摄取项。返回 summary。"""
+def unindexed_originals() -> list[str]:
+    """原件库中**未被索引引用**的制度正文类文件（补摄取清单，2026-09-13）。
+
+    用途：`internal index --source-dir <originals> --only-unindexed` —— 把后期补入 / 经
+    `tools/normalize_internal_naming.py` 规范化归集进来的制度正文件纳入索引，而**不全库重扫**：
+    全库重扫会因"文件名解构 IPN"与"内容权威 IPN"的口径差异把既有记录判为 changed，
+    从而产生重复记录（实测风险）。
+    """
+    ref = set()
+    if os.path.exists(_INDEX_PATH):
+        try:
+            idx = json.load(open(_INDEX_PATH, encoding="utf-8"))
+        except (OSError, ValueError):
+            idx = {}
+        for r in (idx.get("records") or []):
+            rel = (r.get("relative_path") or "").replace("/", os.sep)
+            if rel:
+                ref.add(os.path.normcase(os.path.abspath(os.path.join(_ORIGINALS, rel))))
+    out = []
+    for dp, _dn, fn in os.walk(_ORIGINALS):
+        for f in sorted(fn):
+            if f.startswith(("~$", ".")):
+                continue
+            if os.path.splitext(f)[1].lower() not in (".pdf", ".doc", ".docx"):
+                continue
+            p = os.path.join(dp, f)
+            if os.path.normcase(os.path.abspath(p)) not in ref:
+                out.append(p)
+    return sorted(out)
+
+
+def ingest(source_root: str, *, enable_ocr: bool = False, dry_run: bool = False,
+           only_paths: list[str] | None = None) -> dict:
+    """主流程。dry_run 只报告将摄取项。返回 summary。
+
+    only_paths（2026-09-13）：定向补摄取——仅处理给定文件（配合 `unindexed_originals()`），
+    避免全库重扫产生重复记录。
+    """
     files = scan_directory(source_root)
+    if only_paths:
+        want = {os.path.normcase(os.path.abspath(p)) for p in only_paths}
+        files = [f for f in files
+                 if os.path.normcase(os.path.abspath(f["source_path"])) in want]
     state = _load_state()
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     new_items, changed_items, skipped, relocated = [], [], [], []
@@ -298,10 +338,11 @@ def ingest(source_root: str, *, enable_ocr: bool = False, dry_run: bool = False)
     if not dry_run:
         _save_state(state)
 
-    # 主索引汇总
+    # 主索引汇总（_AUX_CARRY_FIELDS：命名/对账/非正文标记列跨重建防冲）
     records = []
     seen_ipn: dict = {}
     ext_map: dict = {}
+    aux_carry = _prev_carry_fields(_AUX_CARRY_FIELDS)
     n_state = 0
     for key, rec in sorted(state.items()):
         # 防御（2026-09-12）：版本/元数据键不参与记录汇总（_ 前缀或旧 meta 约定）
@@ -316,6 +357,7 @@ def ingest(source_root: str, *, enable_ocr: bool = False, dry_run: bool = False)
         ipn = r.get("ipn", "")
         if ipn not in seen_ipn or (r.get("extracted_at") or "") >= ext_map.get(ipn, ""):
             seen_ipn[ipn] = {k: r.get(k, "") for k in PROCESSED_FIELDS}
+            seen_ipn[ipn].update(aux_carry.get(ipn, {}))   # 防冲（2026-09-13）
             ext_map[ipn] = r.get("extracted_at") or ""
     records = list(seen_ipn.values())
     index = {
@@ -350,24 +392,36 @@ def _load_processed(ipn: str) -> dict | None:
 
 _THEME_CARRY_FIELDS = ("primary_theme", "secondary_themes", "align_method")
 
+# 辅助字段防冲（2026-09-13）：命名规范化 / 路径对账 / 非正文标记写入的字段**不在**
+# PROCESSED_FIELDS 白名单内，索引重建（ingest 汇总 / _rebuild_index）会静默冲掉
+# （曾致 drafting_dept 部门信息与 path_relocated_* 审计痕迹丢失）。与 F-D01 主题列同法防冲。
+_AUX_CARRY_FIELDS = ("drafting_dept", "path_relocated_from", "path_relocated_at",
+                     "path_relocated_ambiguous", "name_normalized_at",
+                     "policy_kind", "excluded_reason")
 
-def _prev_theme_fields() -> dict:
-    """读现主索引中的主题列（align 回写产物）→ {ipn: {field: value}}（F-D01 防冲）。"""
+
+def _prev_carry_fields(fields) -> dict:
+    """读现主索引中指定列 → {ipn: {field: value}}（索引重建防冲，通用实现）。"""
     out = {}
     if not os.path.exists(_INDEX_PATH):
         return out
     try:
         idx = json.load(open(_INDEX_PATH, encoding="utf-8"))
-    except Exception:
+    except Exception:  # noqa: BLE001
         return out
     for r in (idx.get("records") or []):
         ipn = r.get("ipn", "")
         if not ipn:
             continue
-        carry = {k: r.get(k) for k in _THEME_CARRY_FIELDS if r.get(k) not in (None, "")}
+        carry = {k: r.get(k) for k in fields if r.get(k) not in (None, "")}
         if carry:
             out[ipn] = carry
     return out
+
+
+def _prev_theme_fields() -> dict:
+    """读现主索引中的主题列（align 回写产物）→ {ipn: {field: value}}（F-D01 防冲）。"""
+    return _prev_carry_fields(_THEME_CARRY_FIELDS)
 
 
 def _rebuild_index() -> int:
@@ -379,6 +433,7 @@ def _rebuild_index() -> int:
     """
     state = _load_state()
     carry = _prev_theme_fields()
+    aux = _prev_carry_fields(_AUX_CARRY_FIELDS)
     records = []
     for key, rec in sorted(state.items()):
         if key == "meta":
@@ -387,6 +442,7 @@ def _rebuild_index() -> int:
         if r:
             item = {k: r.get(k, "") for k in PROCESSED_FIELDS}
             item.update(carry.get(rec.get("ipn", ""), {}))
+            item.update(aux.get(rec.get("ipn", ""), {}))
             records.append(item)
     index = {
         "schema_version": "1.0",
@@ -532,12 +588,18 @@ def main():
                     help="制度源目录（默认 INTERNAL_POLICY_ROOT env）")
     ap.add_argument("--enable-ocr", action="store_true", help="扫描件 PDF 启用 OCR")
     ap.add_argument("--dry-run", action="store_true", help="演练：仅报告将摄取项")
+    ap.add_argument("--only-unindexed", action="store_true", dest="only_unindexed",
+                    help="定向补摄取：仅处理原件库中未被索引引用的制度正文（2026-09-13）")
     args = ap.parse_args()
     if not args.source_dir:
         print("需提供 --source-dir 或设置 INTERNAL_POLICY_ROOT 环境变量")
         return 1
     import json as _j
-    s = ingest(args.source_dir, enable_ocr=args.enable_ocr, dry_run=args.dry_run)
+    only = unindexed_originals() if args.only_unindexed else None
+    if only is not None:
+        print(f"[index] --only-unindexed：原件库中未被索引引用 {len(only)} 个")
+    s = ingest(args.source_dir, enable_ocr=args.enable_ocr, dry_run=args.dry_run,
+               only_paths=only)
     print(_j.dumps(s, ensure_ascii=False, indent=2))
     return 0
 

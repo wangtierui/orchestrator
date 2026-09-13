@@ -36,6 +36,21 @@ _DOCNO_RE = re.compile(
 _EXT_RE = re.compile(r"\.(pdf|doc|docx|xlsx|xls|xlsm|csv|txt|wps|rtf)$", re.I)
 _SUPPORTED = {".pdf", ".doc", ".docx", ".xlsx", ".xls", ".xlsm"}
 
+# 非制度正文（检视台账/清单）过滤（2026-09-13 · P2）：
+# 本语料制度正文载体为 pdf/doc/docx；xls/xlsx 均为附表/台账（实测索引 102 条 xls/xlsx 无一为正文）。
+# 台账类（名称含下列关键词者）不再纳入制度索引——原实现会把「制度检视自查情况表」「制度清单」
+# 等台账当作制度摄入（实测 24 条最终成为"内容已不在原件库"的失效记录，见
+# reports/内部制度原件双份存储与索引漂移分析_20260913.md §4.6）。
+# 关闭开关：scan_directory(..., exclude_ledgers=False)
+_LEDGER_EXTS = {".xls", ".xlsx"}
+_LEDGER_HINTS = ("制度清单", "自查情况表", "台账", "统计表", "收集表", "制度检视", "清单")
+
+
+def is_non_policy_ledger(file_name: str) -> bool:
+    """台账/清单类（非制度正文）判定：xls/xlsx 且名称命中台账关键词。"""
+    stem, ext = os.path.splitext(file_name or "")
+    return ext.lower() in _LEDGER_EXTS and any(k in stem for k in _LEDGER_HINTS)
+
 
 def parse_filename(name: str) -> dict:
     """文件名 → {docno, title}（解构锚点，非正文权威）。
@@ -189,8 +204,14 @@ def clean_title_noise(title: str) -> str:
     return s.strip("《》").strip()
 
 
-def scan_directory(root: str, *, supported: set[str] | None = None) -> list[dict]:
-    """递归扫描目录下受支持文件 → 元数据清单（按文件名排序，确定性）。"""
+def scan_directory(root: str, *, supported: set[str] | None = None,
+                   exclude_ledgers: bool = True) -> list[dict]:
+    """递归扫描目录下受支持文件 → 元数据清单（按文件名排序，确定性）。
+
+    exclude_ledgers（默认 True，2026-09-13 · P2）：跳过台账/清单类 xls/xlsx
+    （制度检视自查表、制度清单等），它们不是制度正文，纳入后会成为"内容已不在原件库"的
+    失效索引记录。置 False 可恢复旧行为（把表格全部纳入）。
+    """
     supported = supported or _SUPPORTED
     out = []
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -200,6 +221,8 @@ def scan_directory(root: str, *, supported: set[str] | None = None) -> list[dict
         for fn in sorted(files):
             ext = os.path.splitext(fn)[1].lower()
             if ext not in supported:
+                continue
+            if exclude_ledgers and is_non_policy_ledger(fn):
                 continue
             p = os.path.join(dirpath, fn)
             sha = hashlib.sha256(open(p, "rb").read()).hexdigest()

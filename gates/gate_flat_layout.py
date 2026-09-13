@@ -25,7 +25,9 @@ ALLOWED_DATA_SUBDIRS = {
     # corpus：外部语料归集根（F-L05：EAST2.0/部门制度等按域归集，保留原始目录树；
     #   清单 reports/corpus/*.manifest.json 入库，语料本体不入库）
     "regulatory_scrapers": {"cleaned", "clauses", "history", "raw", "docs", "reports", "state", "corpus"},
-    "internal_policy_base": {"originals", "processed"},
+    # ledgers/misc：非制度正文的隔离区（2026-09-13）——台账/清单类与图片/压缩/数据库等
+    # 从 originals 分离出来，使 originals 回归"单一扁平原件层"（命名规范 文号_名称）。
+    "internal_policy_base": {"originals", "processed", "ledgers", "misc"},
     "internal_policy_drafter": {"draft_clause"},      # 条款级对照素材（P8 端到端编排输出，R21 驱动）
 }
 # docs/ 允许子目录（报告产物目录等）：classifier docs/reports（R9 主题报告输出）

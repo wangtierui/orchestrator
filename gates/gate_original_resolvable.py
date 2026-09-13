@@ -33,11 +33,13 @@ _IPB = os.path.join(paths.MODULES_DIR, "internal_policy_base")
 _INDEX = os.path.join(_IPB, "data", "internal_policy_index.json")
 _ORIGINALS = os.path.join(_IPB, "data", "originals")
 
-# 非制度正文（表格类）失效台账的**登记基线**（2026-09-13 首次登记 = 24）。
-# 依据：本语料制度正文载体为 pdf/doc/docx；全部 xls/xlsx 均为附表/台账/清单
-#     （实测索引 102 条 xls/xlsx 无一为制度正文）。
-# 收敛路径：P2（摄取侧按扩展名过滤 + 台账显式排除）落地后，本基线应下调直至 0。
-KNOWN_NON_POLICY_BASELINE = 24
+# 非制度正文（表格类）失效台账的**登记基线**。
+#  · 2026-09-13 首次登记 = 24；同日治理后**收紧至 0**——台账/清单类已从原件库隔离到
+#    `data/ledgers/`（`tools/split_internal_nonpolicy.py`），其失效索引记录一并剔除，
+#    索引内只剩制度正文（pdf/doc/docx），故不允许任何不可解析记录。
+#  · 保留本常量与分档逻辑：若将来再次引入非正文件，可显式登记基线（只减不增），
+#    而**不是**放宽"制度正文 100% 可解析"这一硬约束。
+KNOWN_NON_POLICY_BASELINE = 0
 NON_POLICY_EXTS = {".xls", ".xlsx"}
 
 

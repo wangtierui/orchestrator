@@ -106,6 +106,8 @@ def _index_main_internal(argv):
     ap.add_argument("--source-dir", default="", help="制度源目录")
     ap.add_argument("--enable-ocr", action="store_true")
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--only-unindexed", action="store_true", dest="only_unindexed",
+                    help="定向补摄取：仅处理原件库中未被索引引用的制度正文")
     args = ap.parse_args(argv)
     src = args.source_dir or __import__("os").environ.get("INTERNAL_POLICY_ROOT", "")
     if not src:
@@ -113,7 +115,10 @@ def _index_main_internal(argv):
         return 1
     import json
 
-    from internal_policy_base.indexer import ingest
-    s = ingest(src, enable_ocr=args.enable_ocr, dry_run=args.dry_run)
+    from internal_policy_base.indexer import ingest, unindexed_originals
+    only = unindexed_originals() if args.only_unindexed else None
+    if only is not None:
+        print(f"[index] --only-unindexed：原件库中未被索引引用 {len(only)} 个")
+    s = ingest(src, enable_ocr=args.enable_ocr, dry_run=args.dry_run, only_paths=only)
     print(json.dumps(s, ensure_ascii=False, indent=2))
     return 0

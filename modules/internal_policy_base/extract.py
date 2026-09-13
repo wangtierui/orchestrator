@@ -105,9 +105,38 @@ def _drop_junk_lines(lines: list[str]) -> list[str]:
 
 
 def copy_original(src: str, dst_dir: str, rel_path: str) -> str:
-    """原始件复制入仓（D-05 数据随仓），返回落盘绝对路径。同名冲突保留（按 rel 目录）。"""
+    """原始件复制入仓（D-05 数据随仓），返回落盘绝对路径。同名冲突保留（按 rel 目录）。
+
+    2026-09-13（P2 · 存储冗余治理）：**硬链接优先**。
+    同一批部门语料在 `corpus/<domain>/`（归集审计层）与 `data/originals/`（摄取运行层）各存一份，
+    实测两者内容重合 967 个文件（约 291 MB）。源与目标同卷同文件系统时改用 `os.link`
+    （硬链接）→ 两条路径都可用但**共享同一份数据**，不再重复占用；跨卷/不支持时自动回退复制，
+    语义（调用方拿到的落盘路径）完全不变。
+
+    安全约定：目标已存在且为硬链接（`st_nlink > 1`）时**先移除目录项再写**，
+    绝不就地覆写——否则会通过链接污染共享 inode（即 corpus 侧文件）。
+    """
     dst = os.path.join(dst_dir, rel_path)
     os.makedirs(os.path.dirname(dst), exist_ok=True)
+    # 源即目标（就地补摄取：`internal index --source-dir <originals>`）→ 无需复制
+    # 2026-09-13：原实现会走 shutil.copy2 同路径覆写 → 抛 SameFileError。
+    if os.path.exists(dst):
+        try:
+            if os.path.samefile(src, dst):
+                return dst
+        except OSError:
+            pass
+        try:
+            if os.stat(dst).st_nlink > 1:
+                os.remove(dst)          # 断开硬链接，避免写穿共享 inode
+        except OSError:
+            pass
+    else:
+        try:
+            os.link(src, dst)           # 同卷优先硬链接（省空间）
+            return dst
+        except OSError:
+            pass                        # 跨卷/FS 不支持/权限 → 回退复制
     shutil.copy2(src, dst)
     return dst
 
