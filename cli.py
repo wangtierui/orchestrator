@@ -21,6 +21,7 @@ from commands import draft as _m_draft
 from commands import gates as _m_gates
 from commands import internal as _m_internal
 from commands import ping as _m_ping
+from commands import relations as _m_relations
 from commands import rfn as _m_rfn
 from commands import source as _m_source
 from commands import timeliness as _m_timeliness
@@ -35,6 +36,7 @@ COMMANDS = {
     "rfn": _m_rfn.run,
     "base": _m_base.run,
     "analysis": _m_analysis.run,
+    "relations": _m_relations.run,
     "ping": _m_ping.run,
 }
 
@@ -61,6 +63,7 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser("rfn", help="RFN 登记/查询（registry 唯一写口，F-C01；register/lookup）")
     sub.add_parser("base", help="双底座发布件构建与统一查询（Base Contract v1；publish/query/search）")
     sub.add_parser("analysis", help="规划 2.1 五级分析交付库（F-L01；gen/status）")
+    sub.add_parser("relations", help="依据/废止关系（R-F01；gen/status/show）——三类关系唯一事实源")
     return p
 
 

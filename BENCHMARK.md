@@ -1,11 +1,11 @@
 # BENCHMARK —— 交付基准登记（回归对照基线）
 
-> 自动生成：tools/gen_benchmark.py @ 2026-09-13 23:32:08 | python 3.13.14
+> 自动生成：tools/gen_benchmark.py @ 2026-09-14 00:37:16 | python 3.13.14
 > 用途：数据重建/重构后重跑 `python tools/gen_benchmark.py` 刷新；数值漂移即回归信号。
 
 ## 1 门禁（gates/ALL_GATES）
 
-实装 15 道（gates/gate_*.py）：
+实装 16 道（gates/gate_*.py）：
 ```
   gate_citations.py
   gate_contract.py
@@ -17,6 +17,7 @@
   gate_no_duplicate_libs.py
   gate_original_resolvable.py
   gate_provenance.py
+  gate_relations.py
   gate_rfn_drift.py
   gate_rfn_sync.py
   gate_secret_scan.py
@@ -28,7 +29,7 @@
 
 ## 2 自动化验收测试（pytest）
 
-用例文件 23：`test_analysis_deliveries.py`、`test_base_publish.py`、`test_clean_index_portability.py`、`test_cli_facade.py`、`test_common_lib.py`、`test_contract_api.py`、`test_crawler_extract.py`、`test_drafter_pure.py`、`test_e2e_pipeline.py`、`test_excel_crawler_pipeline.py`、`test_internal_original_paths.py`、`test_internal_policy_base.py`、`test_ipb_deep.py`、`test_ipb_extract_file.py`、`test_misc_pure.py`、`test_rich_object.py`、`test_scraper_std_core.py`、`test_scraper_std_extra.py`、`test_scraper_std_tables.py`、`test_scrapers_pure.py`、`test_ssot_convergence.py`、`test_std_lib_more.py`、`test_table_structured.py`
+用例文件 24：`test_analysis_deliveries.py`、`test_base_publish.py`、`test_clean_index_portability.py`、`test_cli_facade.py`、`test_common_lib.py`、`test_contract_api.py`、`test_crawler_extract.py`、`test_drafter_pure.py`、`test_e2e_pipeline.py`、`test_excel_crawler_pipeline.py`、`test_internal_original_paths.py`、`test_internal_policy_base.py`、`test_ipb_deep.py`、`test_ipb_extract_file.py`、`test_misc_pure.py`、`test_relations.py`、`test_rich_object.py`、`test_scraper_std_core.py`、`test_scraper_std_extra.py`、`test_scraper_std_tables.py`、`test_scrapers_pure.py`、`test_ssot_convergence.py`、`test_std_lib_more.py`、`test_table_structured.py`
 运行：`python -m pytest tests -q`
 
 **覆盖率基线（只升不降）**：TOTAL 22%（采自 `.coverage`；刷新：`python -m coverage run -m pytest tests -q`）
@@ -73,7 +74,7 @@
 
 | 命令 | 职责 |
 |---|---|
-| `python cli.py gates` | 15 道交付门禁（以 ALL_GATES 为准） |
+| `python cli.py gates` | 16 道交付门禁（以 ALL_GATES 为准） |
 | `python cli.py classify --all --steps base,cluster,match,detail,upper,clause_graph` | 底座强序重建（R8 幂等断点） |
 | `python cli.py source list / add --id` | 源目录路由（R15） |
 | `python cli.py internal index/align/merged` | 内部制度链路 |

@@ -1,5 +1,47 @@
 # Changelog
 
+## [Unreleased] 2026-09-14 — 依据/废止关系统一抽取（R-F01，报告《依据与废止关系统一抽取》）
+
+参照《政府文件依据关系与废止关系通用抽取器》编写**同一套**抽取能力，同时适用于监管文件与内部制度，
+输出**三类关系**并接入三个消费方。
+
+- **新增 `std_lib/common_lib/relations.py`（抽取唯一实现）**：七层结构（`RelationConfig` 词表外置 /
+  工具 / 三个 dataclass / `RelationExtractor` 六类主模式 + 三类辅助 / `AliasResolver` / `RelationPipeline`
+  / 自检），只依赖 `std_lib` 与 `config.enums`（不依赖业务模块）。相对参照实现的适配：
+  归一收口 `norm_title_strict`/`norm_docno`、受控值改小写英文、文号形态增法规库式与半角方括号、
+  **新增否定/未生效排除**（拟废止/征求意见/草案）、关系带 `offset` 溯源。
+- **新增 `tools/extract_relations.py`（编排：实体解析 + 三类产物）**：读 cleaned JSONL `body_text`
+  （监管权威轨）与 `processed/*_fulltext.json`（内部）→ 抽取 → 解析到 `RFN`/`IPN` → 落盘。
+  产物：`relations_index.jsonl`（**唯一事实源**，一张表三类关系）、`cross_basis.jsonl`（派生视图，
+  类别 3 纯依据边）、`relations_stat.json`（两级解析率 + 未解析样例）；`--report` 生成
+  `docs/reports/监管与制度依据废止关系图谱.md`。**全量耗时 ~32s**。
+- **三类关系实测**（用户要求明确列明）：① 监管依据/废止 **2007** ② 内部依据/废止 **19**
+  ③ 内部→监管依据 **126**（纯依据边 **79**）；合计 **2152**（依据 1730 / 废止 422），
+  来源 4006 份监管 + 877 份内部制度。
+- **两级解析口径**（数据可信度核心）：`dst_ref` 强实体（RFN/IPN）**25.7%** / 含 `dst_key` 弱引用
+  （cleaned dedup_key）**52.7%**；未定位者**保留原文 + `unresolved` + confidence 0（禁止臆造）**。
+  **跨域匹配强制 `strict`**——实测 `中华人民共和国发票管理办法`（法规）会被 `title_contains`
+  误配到内部制度 `…发票管理办法`。
+- **程序性依据收紧**（实测反例驱动）：参照实现 `经[…]?同意/批准` 最短匹配产出
+  `批准或者未按照`/`依法`/`部门负责人` 等噪声；现要求**法定机关后缀**结尾且不含连接虚词。
+- **契约/枚举/门禁/API/CLI**：`interfaces.contract.RELATION_FIELDS`（26 字段，`CROSS_BASIS_FIELDS` 同构）；
+  `config.enums` 新增 `RELATION_KIND`/`RELATION_DOC_KIND`/`BASIS_TYPE`/`REPEAL_ACTION`/`REPEAL_SCOPE`/
+  `RELATION_MATCH_METHOD`（`assert_enum_bindings` 同步断言）；
+  **新增 `gates/gate_relations.py`（ALL_GATES 第 16 道）**：键集⊇契约 + 枚举闭包 + 强引用 0 不可解析 +
+  溯源非空 + 统计一致；`gate_flat_layout` 白名单加 `regulatory_classifier: {relations}`；
+  新增 `interfaces/relations_api.py`（`load`/`load_cross_basis`/`by_src`/`by_dst`/`stat`）与
+  `commands/relations.py`（`gen|status|show`，注册进 `cli.py COMMANDS`）。
+- **消费方接入**：①`internal_policy_base/merged.py` 的引用抽取原语**收敛到 relations**
+  （删本地 `_DOCNO_REF`/`_TITLE_REF`，改调 `iter_docno_signatures`/`iter_quote_titles`；**行为等价**：
+  `with_rfn_refs` 321 / `aligned_ratio` 0.366 前后一致）；②`drafter/build_draft_clause_view.py`
+  新增「§2 依据与废止关系」段（本制度作为源/目标，含反向"谁废止了本制度"）；
+  ③classifier 侧新增关系图谱报告（`--report`）。
+- **新增 `tests/test_relations.py`（26 例）**：抽取器语义（相邻书名号/位阶词连写/条款级/列表头条目/
+  部分废止/否定排除/解释权排除/程序性机关后缀/附件告警/offset）+ 共享原语 + 契约与枚举一致性 +
+  产物/门禁/API/两级解析口径与"未解析不臆造"。全量用例 **262 → 288**。
+- **验证**：`gates` **16/16 PASS**、pytest **288 全绿**（`-m "not data"` 275）、ruff 0；
+  `relations gen` 幂等（同输入同输出）。
+
 ## [Unreleased] 2026-09-13 — 第二批解析修正 3 例（含抽取链根因，报告 §13）
 
 - **抽取链：pymupdf 提到首位（`crawler_common._extract_pdf`）**。根因：pypdf 对部分嵌入字体

@@ -29,6 +29,9 @@ ALLOWED_DATA_SUBDIRS = {
     # 从 originals 分离出来，使 originals 回归"单一扁平原件层"（命名规范 文号_名称）。
     "internal_policy_base": {"originals", "processed", "ledgers", "misc"},
     "internal_policy_drafter": {"draft_clause"},      # 条款级对照素材（P8 端到端编排输出，R21 驱动）
+    # relations：依据/废止关系产物根（R-F01，2026-09-14）——事实源 relations_index.jsonl
+    #   + 派生视图 cross_basis.jsonl + 统计 relations_stat.json
+    "regulatory_classifier": {"relations"},
 }
 # docs/ 允许子目录（报告产物目录等）：classifier docs/reports（R9 主题报告输出）
 ALLOWED_DOCS_SUBDIRS = {

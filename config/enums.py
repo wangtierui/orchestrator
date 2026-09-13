@@ -82,6 +82,46 @@ REF_MATCH_METHOD: frozenset[str] = frozenset({"docno_sig", "title"})
 # RFN↔clean 桥 relation 值（R7；self=锚定同实体, refresh=C1已核对, supersede=C2待人工）
 BRIDGE_RELATION: frozenset[str] = frozenset({"self", "refresh", "supersede"})
 
+# ==================== 依据/废止关系（R-F01 关系统一抽取，2026-09-14） ====================
+# 唯一抽取实现 = std_lib/common_lib/relations.py（跨监管文件与内部制度两类文本）；
+# 产物三类视图由 tools/extract_relations.py 生成（详见报告《依据与废止关系统一抽取》）。
+# 纪律：值统一小写英文（本层 SSOT），中文语义经本表映射/注释承载。
+RELATION_KIND: frozenset[str] = frozenset({
+    "basis",    # 依据关系（本文以《X》为制定/起草依据）
+    "repeal",   # 废止关系（本文废止/宣布失效《X》）
+})
+# 关系两端主体类别（决定实体键空间：regulatory→RFN，internal→IPN）
+RELATION_DOC_KIND: frozenset[str] = frozenset({"regulatory", "internal"})
+# 依据类型（参照《…通用抽取器》的"实体法律依据/程序批准依据"二分）
+BASIS_TYPE_SUBSTANTIVE = "substantive"     # 实体法律依据（依据/根据《X》制定）
+BASIS_TYPE_PROCEDURAL = "procedural"       # 程序批准依据（经 X 同意/批准）
+BASIS_TYPE: frozenset[str] = frozenset({BASIS_TYPE_SUBSTANTIVE, BASIS_TYPE_PROCEDURAL})
+# 废止动作（长词优先在 relations.RelationConfig 中保证）
+REPEAL_ACTION_REPEAL = "repeal"                    # 废止/同时废止/予以废止/宣布废止
+REPEAL_ACTION_INVALIDATE = "invalidate"            # 宣布失效/失效
+REPEAL_ACTION_CEASE = "cease"                      # 停止执行
+REPEAL_ACTION_INAPPLICABLE = "inapplicable"        # 不再适用
+REPEAL_ACTION_CANCEL = "cancel"                    # 予以取消/取消
+REPEAL_ACTION: frozenset[str] = frozenset({
+    REPEAL_ACTION_REPEAL, REPEAL_ACTION_INVALIDATE, REPEAL_ACTION_CEASE,
+    REPEAL_ACTION_INAPPLICABLE, REPEAL_ACTION_CANCEL,
+})
+# 废止范围
+REPEAL_SCOPE_WHOLE = "whole"                # 整体
+REPEAL_SCOPE_PARTIAL = "partial"            # 部分（指定条款）
+REPEAL_SCOPE_ATTACHMENT = "attachment"      # 附件载明（清单在附件，需人工复核）
+REPEAL_SCOPE: frozenset[str] = frozenset({
+    REPEAL_SCOPE_WHOLE, REPEAL_SCOPE_PARTIAL, REPEAL_SCOPE_ATTACHMENT,
+})
+# 关系目标实体解析方式（**扩展** REF_MATCH_METHOD：关系抽取需处理"精确/包含/未解析"）
+RELATION_MATCH_METHOD: frozenset[str] = frozenset({
+    "docno_sig",       # 文号签名（四位年+序号）匹配 —— 与 merged.associated_rfns 同义
+    "docno_exact",     # 文号归一后精确匹配（无法规年四年式者）
+    "title",           # 标题归一后精确匹配（norm_title_strict）
+    "title_contains",  # 标题包含匹配（短名 ⊆ 长名，长度阈值 ≥4）
+    "unresolved",      # 未解析到实体（**保留原文，禁止臆造**）
+})
+
 # ==================== doc_type 文种（G1，上收自 scraper_std/doc_type_cleaner，2026-09-08） ====================
 # 注意：FILE_TYPES 为 list，顺序承载「按匹配优先级」语义，禁止改序/去重时改变相对优先级。
 FILE_TYPES: list[str] = [
@@ -173,6 +213,13 @@ def assert_enum_bindings() -> None:
     assert len(ALIGN_METHOD) == 3, ALIGN_METHOD
     assert len(REF_MATCH_METHOD) == 2, REF_MATCH_METHOD
     assert len(BRIDGE_RELATION) == 3, BRIDGE_RELATION
+    # 关系抽取（R-F01）：三类关系共用一套受控值；闭包 + 交叉一致性
+    assert len(RELATION_KIND) == 2 and len(RELATION_DOC_KIND) == 2
+    assert len(BASIS_TYPE) == 2 and len(REPEAL_ACTION) == 5 and len(REPEAL_SCOPE) == 3
+    assert len(RELATION_MATCH_METHOD) == 5, RELATION_MATCH_METHOD
+    assert REF_MATCH_METHOD.issubset(RELATION_MATCH_METHOD), "REF_MATCH_METHOD 须为关系匹配方式的子集"
+    assert {BASIS_TYPE_SUBSTANTIVE, BASIS_TYPE_PROCEDURAL} == BASIS_TYPE
+    assert {REPEAL_SCOPE_WHOLE, REPEAL_SCOPE_PARTIAL, REPEAL_SCOPE_ATTACHMENT} == REPEAL_SCOPE
     # G1 doc_type：FILE_TYPES 须含全部法定文种/法规类型值且与别名归一闭包一致
     assert len(FILE_TYPES) == 60, len(FILE_TYPES)
     assert LEGAL_DOC_TYPES.issubset(FILE_TYPES), LEGAL_DOC_TYPES - set(FILE_TYPES)

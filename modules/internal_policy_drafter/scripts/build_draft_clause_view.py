@@ -88,7 +88,64 @@ def _link_assoc(body: str, assoc: list[dict]) -> list[str]:
     return lines
 
 
-def build_one(ipn: str, meta: dict, clauses: dict, view_rec: dict, idx) -> tuple[dict, str]:
+def _load_relation_maps() -> tuple[dict, dict]:
+    """一次加载关系事实源（R-F01）并按 IPN 分桶（避免逐制度重复读 MB 级 jsonl）。
+
+    读取统一经 `interfaces.relations_api`（唯一读取入口）；事实源缺失时返回空桶
+    （素材仍可生成，只是关系段标注为"未抽取"——不静默失败）。
+    """
+    try:
+        if _ORCH_ROOT not in sys.path:
+            sys.path.insert(0, _ORCH_ROOT)
+        from interfaces.relations_api import load  # noqa: PLC0415
+        rows = load("all")
+    except Exception:  # noqa: BLE001
+        return {}, {}
+    src: dict[str, list[dict]] = {}
+    dst: dict[str, list[dict]] = {}
+    for r in rows:
+        if r.get("src_kind") == "internal" and r.get("src_ref"):
+            src.setdefault(r["src_ref"], []).append(r)
+        if r.get("dst_ref"):
+            dst.setdefault(r["dst_ref"], []).append(r)
+    return src, dst
+
+
+def _relations_section(rel_src: list[dict], rel_dst: list[dict]) -> list[str]:
+    """依据/废止关系段（R-F01 关系统一抽取 BM 的消费面）。
+
+    - `rel_src`：本制度**作为源**的关系 —— 它依据/废止了谁（含跨域：内部制度 → 监管文件）；
+    - `rel_dst`：本制度**作为目标**的关系 —— 谁依据/废止了本制度（识别"已被 X 废止"风险）。
+    未解析目标**显式标注**，不臆造 RFN（与 verify_regulatory_citations 同纪律）。
+    """
+    out = ["## 2 依据与废止关系（关系统一抽取 R-F01）", ""]
+    if rel_src:
+        out += ["**本制度作为源**（依据/废止了他文）", "",
+                "| 关系 | 目标 | 目标文号 | 目标实体 | 匹配 | 依据条款 | 出处 |",
+                "|---|---|---|---|---|---|---|"]
+        for r in rel_src[:40]:
+            tgt = r.get("dst_ref") or r.get("dst_key", "")[:12] or "**未解析**"
+            out.append(f"| {r.get('relation')} | {r.get('dst_name', '')[:40]} "
+                       f"| {r.get('dst_docno', '')[:22]} | {tgt} | {r.get('matched_by')} "
+                       f"| {r.get('article', '')} | {r.get('source_snippet', '')[:38]}… |")
+        out.append("")
+    else:
+        out += ["（未抽取到本制度作为源的依据/废止关系）", ""]
+    if rel_dst:
+        out += ["**本制度作为目标**（被他文依据/废止——修订起草时须核对）", "",
+                "| 关系 | 源制度 | 源实体 | 动作/范围 | 出处 |", "|---|---|---|---|---|"]
+        for r in rel_dst[:20]:
+            out.append(f"| {r.get('relation')} | {r.get('src_name', '')[:40]} "
+                       f"| {r.get('src_ref') or r.get('src_key', '')[:12]} "
+                       f"| {r.get('action') or r.get('basis_type') or '—'}"
+                       f"/{r.get('scope') or '—'} | {r.get('source_snippet', '')[:34]}… |")
+        out.append("")
+    return out
+
+
+def build_one(ipn: str, meta: dict, clauses: dict, view_rec: dict, idx,
+              rel_src: list[dict] | None = None, rel_dst: list[dict] | None = None
+              ) -> tuple[dict, str]:
     """生成单制度素材 md，返回 (统计, md 文本)。"""
     title = meta.get("title") or view_rec.get("title") or ipn
     assoc = view_rec.get("associated_rfns", []) if view_rec else []
@@ -114,7 +171,8 @@ def build_one(ipn: str, meta: dict, clauses: dict, view_rec: dict, idx) -> tuple
 
     arts = clauses.get("articles") or []
     linked_total = warn = 0
-    lines.append(f"## 2 逐条条款对照（条文 {len(arts)} 条）")
+    lines += _relations_section(rel_src or [], rel_dst or [])
+    lines.append(f"## 3 逐条条款对照（条文 {len(arts)} 条）")
     lines.append("")
     for a in arts:
         num = a.get("number", "")
@@ -148,6 +206,7 @@ def main() -> int:
     os.makedirs(OUT, exist_ok=True)
     view = json.load(open(MERGED, encoding="utf-8"))
     idx = get_index()
+    rel_src_map, rel_dst_map = _load_relation_maps()
     recs = {r.get("ipn"): r for r in view.get("records", [])}
     targets = [a.ipn] if a.ipn else sorted(recs)
     total = {"done": 0, "articles": 0, "links": 0, "warns": 0, "no_clause": []}
@@ -163,7 +222,8 @@ def main() -> int:
             total["no_clause"].append(ipn)
             continue
         clauses = json.load(open(cl_p, encoding="utf-8"))
-        st, text = build_one(ipn, meta, clauses, rec, idx)
+        st, text = build_one(ipn, meta, clauses, rec, idx,
+                             rel_src_map.get(ipn, []), rel_dst_map.get(ipn, []))
         out_p = os.path.join(OUT, f"{ipn}_条款对照素材.md")
         with open(out_p, "w", encoding="utf-8", newline="\n") as fh:
             fh.write(text)

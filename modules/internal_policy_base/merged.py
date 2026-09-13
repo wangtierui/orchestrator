@@ -36,9 +36,10 @@ _INDEX_PATH = os.path.join(_DATA, "internal_policy_index.json")
 _MERGED_PATH = os.path.join(_DATA, "merged_view.json")
 MERGED_VIEW_SCHEMA_VERSION = "1.0"   # D-06 冻结；二期 app 读取前不改字段语义
 
-# 文号引用（外部监管特征：〔YY〕N号 形态，需机关字? 不强制——结合标题命中确认）
-_DOCNO_REF = re.compile(r"[〔\[(（]\s*(\d{4})\s*[〕\])）]\s*(\d{1,4})\s*号")
-_TITLE_REF = re.compile(r"《([^《》\n]{4,40})》")
+# 正文引用抽取原语已上收 `std_lib.common_lib.relations`（R-F01，2026-09-14）：
+#   - 文号签名：`iter_docno_signatures`（原 `_DOCNO_REF`，语义=裸括号式年+序号）
+#   - 书名号标题：`iter_quote_titles`（原 `_TITLE_REF`，长度 4-40）
+# 本模块不再保留本地正则实现（唯一事实源纪律）。
 
 _idxfac = None
 
@@ -69,17 +70,22 @@ def _load_text(ipn: str) -> str:
 from std_lib.common_lib.norm import norm_docno as _norm_docno  # A-10：SSOT 收敛（标准层）
 from std_lib.common_lib.norm import norm_title_strict as _norm_title  # A-10：SSOT 收敛（保守层）
 
+# R-F01（2026-09-14）：正文引用抽取原语上收 `std_lib.common_lib.relations`（唯一实现）——
+# 原 `_DOCNO_REF` / `_TITLE_REF` 两条本地正则已删除，改调共享函数（语义保持：
+# 签名长度 ≥6、书名号标题长度 4-40；参数即该语义的显式表达）。
+from std_lib.common_lib.relations import iter_docno_signatures as _iter_docno_sigs
+from std_lib.common_lib.relations import iter_quote_titles as _iter_quote_titles
+
+_TITLE_REF_MIN, _TITLE_REF_MAX = 4, 40   # 与收敛前 `《([^《》\n]{4,40})》` 等价
+
 
 def extract_rfns(text: str) -> list[dict]:
     """从正文抽取监管引用 → 匹配 RFN。返回 [{"rfn","title","docno","matched_by"}] 去重。"""
     idx = _idx()
     rows = idx.rows()
     out, seen = [], set()
-    # a. 文号引用：〔YYYY〕N号 签名（年+号）匹配归属表文号尾部
-    for y, n in _DOCNO_REF.findall(text or ""):
-        sig = "%s%s" % (y, n)
-        if len(sig) < 6:
-            continue
+    # a. 文号引用：文号签名（年+号）匹配归属表文号数字尾（原语 = relations.iter_docno_signatures）
+    for sig in _iter_docno_sigs(text or ""):
         for r in rows:
             ds = re.sub(r"\D", "", _norm_docno(r.get("发文字号", "")))
             if ds.endswith(sig) and len(ds) >= len(sig):
@@ -90,7 +96,7 @@ def extract_rfns(text: str) -> list[dict]:
                                 "docno": r.get("发文字号", ""), "matched_by": "docno_sig"})
                 break
     # b. 标题引用：《标题》在归属表存在才算（排除内部制度自引）
-    for t in _TITLE_REF.findall(text or ""):
+    for t in _iter_quote_titles(text or "", min_len=_TITLE_REF_MIN, max_len=_TITLE_REF_MAX):
         nt = _norm_title(t)
         if len(nt) < 6:
             continue

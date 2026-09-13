@@ -132,6 +132,38 @@ FIELD_SEMANTIC_EQUIV: dict[str, tuple[str, ...]] = {
 # 消费端跨层读值统一走 read_field(row, en)：自动尝试 FIELD_SEMANTIC_EQUIV 别名组 + 中文受控列
 # （CN_FIELD_REGISTRY 中 en 命中的中文列名），避免各层硬编码"取 文件名称 还是 title"。
 # --------------------------------------------------------------------------- #
+# ============ 依据/废止关系统一表契约（R-F01，2026-09-14） ============
+# 唯一事实源：modules/regulatory_classifier/data/relations/relations_index.jsonl
+# 生成器：tools/extract_relations.py（文本抽取唯一实现 = std_lib/common_lib/relations.py）
+# 三类关系同表承载：① src_kind=regulatory（监管文件的依据/废止）
+#                    ② src_kind=internal ∧ dst_kind=internal（内部制度的依据/废止）
+#                    ③ src_kind=internal ∧ dst_kind=regulatory ∧ relation=basis（内部→监管依据）
+# 键集为程序消费硬契约：新增维度须同步本契约 + config/enums 受控值 + gate_relations。
+RELATION_FIELDS: tuple[str, ...] = (
+    "relation_id",          # REL-<16hex>：稳定去重键
+    "src_kind",             # ∈ RELATION_DOC_KIND
+    "src_ref",              # RFN / IPN（强实体；未登记时为空）
+    "src_key",              # 弱键：cleaned dedup_key（监管源未登记 RFN 时）
+    "src_name", "src_docno", "src_source",
+    "dst_kind",             # ∈ RELATION_DOC_KIND
+    "dst_ref",              # RFN / IPN（强实体；未解析时为空 —— 禁止臆造）
+    "dst_key",              # 弱键：cleaned dedup_key
+    "dst_name", "dst_docno", "dst_normalized_name",
+    "relation",             # ∈ RELATION_KIND（basis / repeal）
+    "basis_type",           # ∈ BASIS_TYPE ∪ {""}（repeal 行为空）
+    "article", "is_explicit",
+    "action",               # ∈ REPEAL_ACTION ∪ {""}（basis 行为空）
+    "scope",                # ∈ REPEAL_SCOPE ∪ {""}
+    "reason",
+    "matched_by",           # ∈ RELATION_MATCH_METHOD
+    "confidence",           # 按 matched_by 的置信度（0-1）
+    "source_offset", "source_snippet",     # 溯源：正文偏移 + 出处片段
+    "generated_by", "generated_at",
+)
+# 派生视图（类别 3 的纯依据边；非事实源，由 SSOT 过滤而来）
+CROSS_BASIS_FIELDS: tuple[str, ...] = RELATION_FIELDS
+
+
 def en_aliases(en: str) -> tuple[str, ...]:
     """英文规范名 → 全部可解析别名（FIELD_SEMANTIC_EQUIV 组 + 中文受控列中该 en 的中文名）。"""
     base = list(FIELD_SEMANTIC_EQUIV.get(en, (en,)))
