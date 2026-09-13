@@ -1,0 +1,34 @@
+# .gitattributes — 跨平台检出与文本处理约定（2026-09-13 · 克隆可移植性修复 CP-G03/G04）
+#
+# 目的：消除"不同机器 core.autocrlf 设置不同 → 提交进索引的字节不同（CRLF vs LF）"这一
+# 跨平台不确定性。`text=auto` 由 Git 在**入库时**统一归一为 LF，与本地 autocrlf 无关，
+# 因此 Windows / Linux / macOS 克隆得到的 blob 字节一致 —— 对本仓尤为关键（存在字节级
+# 哈希比对：clean_index sha256、发布件 sha、analysis 的 _manifest.json）。
+#
+# 刻意**不**强制 `eol=lf`：本仓当前工作区为混合换行（实测 246 文件 CRLF / 94 文件 LF，
+# 索引侧统一 LF）。强制 eol=lf 会在下次检出时把 246 个文件改写为 LF，形成与本任务无关的
+# 大范围工作区变更。若团队希望统一为 LF，可另起专项：本文件追加 `* text=auto eol=lf`
+# 后执行 `git add --renormalize .` 并在干净工作区复核。
+* text=auto
+
+# Windows 批处理必须保留 CRLF（LF 会导致 cmd 解析异常）
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# 二进制：禁止文本转换与行级差异
+*.pdf   binary
+*.doc   binary
+*.docx  binary
+*.xls   binary
+*.xlsx  binary
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.zip   binary
+*.7z    binary
+*.exe   binary
+*.msi   binary
+*.whl   binary
+*.vsix  binary
+*.traineddata binary

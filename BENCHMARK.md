@@ -1,6 +1,6 @@
 # BENCHMARK —— 交付基准登记（回归对照基线）
 
-> 自动生成：tools/gen_benchmark.py @ 2026-09-13 01:17:19 | python 3.13.14
+> 自动生成：tools/gen_benchmark.py @ 2026-09-13 17:26:46 | python 3.13.14
 > 用途：数据重建/重构后重跑 `python tools/gen_benchmark.py` 刷新；数值漂移即回归信号。
 
 ## 1 门禁（gates/ALL_GATES）
@@ -27,10 +27,10 @@
 
 ## 2 自动化验收测试（pytest）
 
-用例文件 20：`test_analysis_deliveries.py`、`test_base_publish.py`、`test_cli_facade.py`、`test_common_lib.py`、`test_contract_api.py`、`test_crawler_extract.py`、`test_drafter_pure.py`、`test_e2e_pipeline.py`、`test_excel_crawler_pipeline.py`、`test_internal_policy_base.py`、`test_ipb_deep.py`、`test_ipb_extract_file.py`、`test_misc_pure.py`、`test_rich_object.py`、`test_scraper_std_core.py`、`test_scraper_std_extra.py`、`test_scraper_std_tables.py`、`test_scrapers_pure.py`、`test_std_lib_more.py`、`test_table_structured.py`
+用例文件 22：`test_analysis_deliveries.py`、`test_base_publish.py`、`test_clean_index_portability.py`、`test_cli_facade.py`、`test_common_lib.py`、`test_contract_api.py`、`test_crawler_extract.py`、`test_drafter_pure.py`、`test_e2e_pipeline.py`、`test_excel_crawler_pipeline.py`、`test_internal_policy_base.py`、`test_ipb_deep.py`、`test_ipb_extract_file.py`、`test_misc_pure.py`、`test_rich_object.py`、`test_scraper_std_core.py`、`test_scraper_std_extra.py`、`test_scraper_std_tables.py`、`test_scrapers_pure.py`、`test_ssot_convergence.py`、`test_std_lib_more.py`、`test_table_structured.py`
 运行：`python -m pytest tests -q`
 
-**覆盖率基线（只升不降）**：TOTAL 24%（采自 `.coverage`；刷新：`python -m coverage run -m pytest tests -q`）
+**覆盖率基线（只升不降）**：TOTAL 23%（采自 `.coverage`；刷新：`python -m coverage run -m pytest tests -q`）
 
 ## 3 数据基线
 
@@ -55,7 +55,7 @@
 | final 底座合计（含 cluster/finalized 血缘） | 1051 |
 | 明细表份数 / 行数合计 | 11 / 1060 |
 | RFN↔clean 溯源桥行数 | 828 |
-| 时效核验 verification_state 记录 | 2976 |
+| 时效核验 verification_state 记录 | 3157 |
 | 各主题 final 记录数 | T1=195、T2=149、T3=75、T4=105、T5=139、T6=60、T7=35、T8=75、T9=78、T10=140 |
 
 ### 3.3 internal 制度库

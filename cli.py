@@ -10,8 +10,10 @@
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 
+import paths
 from commands import analysis as _m_analysis
 from commands import base as _m_base
 from commands import classify as _m_classify
@@ -62,6 +64,23 @@ def build_parser() -> argparse.ArgumentParser:
     return p
 
 
+def _fail_not_source_tree(cmd: str) -> int:
+    """非源码树安装（业务实现不在 modules/）→ 显式失败并给出可执行指引。
+
+    背景（2026-09-13 克隆可移植性检视 · CP-A02/A03）：本仓 `modules/` 不随 wheel 分发，
+    运行时依赖 `paths.ROOT` 定位源码树（commands 以 sys.path 注入业务模块）。
+    此前该情形会抛出 `ModuleNotFoundError: No module named 'rfn'` /
+    `FileNotFoundError: config/sources.yaml` 等晦涩错误，掩盖"安装方式不对"这一真实原因。
+    返回码 4 = 环境不满足（区别于 0 成功 / 1 用法错误 / gates 的 1 门禁失败）。
+    """
+    print(f"错误：未找到业务代码目录 modules/（paths.ROOT={paths.ROOT}），命令 `{cmd}` 无法执行。")
+    print("本仓为**源码树编排工程**，支持的运行方式：")
+    print('  1) 可编辑安装（推荐）：pip install -e ".[dev]"，随后执行 orchestrator <cmd>')
+    print("  2) 免安装：在仓库根目录直接执行 python cli.py <cmd>")
+    print("  3) 容器：按 .devcontainer 启动（数据与 OCR 引擎仍需在宿主准备）")
+    return 4
+
+
 def main(argv=None) -> int:
     # Windows 控制台默认 GBK：强制 stdout UTF-8 防 UnicodeEncodeError（含 ↔ 等符号）
     try:
@@ -79,6 +98,9 @@ def main(argv=None) -> int:
     if handler is None:
         print(f"未知命令: {cmd}（可用: {sorted(COMMANDS)}）")
         return 1
+    # 源码树校验（2026-09-13）：ping 为骨架自检，允许在缺 modules/ 时继续（用于诊断）。
+    if cmd != "ping" and not os.path.isdir(paths.MODULES_DIR):
+        return _fail_not_source_tree(cmd)
     return handler(argv[1:])
 
 

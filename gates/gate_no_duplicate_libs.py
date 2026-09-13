@@ -21,7 +21,10 @@ import os
 import re
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-EXCLUDE_DIRS = {"backups", "data", "cache", "logs", "venv", ".git", "__pycache__", "reports"}
+# 构建产物目录亦排除（2026-09-13）：pip wheel / pip install . 会把整棵树复制到 build/lib，
+# 若被扫描会报"符号重复定义"误报（实测）——这些目录 .gitignore 已忽略，非源码。
+EXCLUDE_DIRS = {"backups", "data", "cache", "logs", "venv", ".venv", ".git", "__pycache__",
+                "reports", "build", "dist", ".pytest_cache"}
 # 本文件自身含 msvcrt.locking 字面量（检测正则定义，非使用）
 EXCLUDE_FILES = {"gate_no_duplicate_libs.py"}
 # 共享库为事实源，允许其定义规范符号（只允许一次）
@@ -44,7 +47,8 @@ MARK_TOKEN = "# norm-specialization"
 
 def _walk_py():
     for dirpath, dirnames, filenames in os.walk(ROOT):
-        dirnames[:] = [d for d in dirnames if d not in EXCLUDE_DIRS]
+        dirnames[:] = [d for d in dirnames
+                       if d not in EXCLUDE_DIRS and not d.endswith(".egg-info")]
         for fn in filenames:
             if not fn.endswith(".py"):
                 continue

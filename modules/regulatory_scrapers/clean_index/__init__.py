@@ -14,6 +14,13 @@ clean_index — 五源 clean 产物结构化索引（单一事实源）
     index.json（UTF-8，可直接被程序读取），由 build_clean_index.py 生成。
     get_clean_index() 优先加载 index.json（零扫描、稳定）；缺失时回退扫描并写入。
 
+可移植性纪律（2026-09-13）：
+    index.json 是**派生数据、不入 git**（见 .gitignore），因为其内容内嵌绝对路径
+    （scraper_root + 各快照 path）。若入库，异机克隆后会直接复用他机路径，产生两类
+    故障：①同机克隆读到**原机数据**（伪造成功）；②异机拿到必然不存在（或意外命中
+    同名目录）的死路径。故加载时必须做**归属校验 + 存活性校验**（_index_is_usable），
+    任一不过即视为陈旧索引并自动重建（自愈），绝不静默沿用。
+
 稳定接口（下游直接调用，无需转换）：
     from clean_index import get_clean_index
     idx = get_clean_index()
@@ -31,6 +38,7 @@ from __future__ import annotations
 import csv
 import hashlib
 import json
+import logging
 import os
 import re
 from datetime import datetime, timedelta, timezone
@@ -56,6 +64,8 @@ INDEX_PATH = os.path.join(_PKG_DIR, "index.json")
 SCRAPER_ROOT = os.path.dirname(_PKG_DIR)
 
 _TZ = timezone(timedelta(hours=8))  # Asia/Shanghai，与项目时间基准一致
+
+LOG = logging.getLogger("clean_index")
 
 
 # --------------------------------------------------------------------------- #
@@ -400,16 +410,66 @@ class CleanIndex:
 _cache: dict[str, CleanIndex] = {}
 
 
+def _index_is_usable(idx: CleanIndex) -> tuple[bool, str]:
+    """持久化索引可用性判据（2026-09-13 可移植性修复）；不通过即视为陈旧，由调用方自愈重建。
+
+    两道校验（刻意轻量：全量哈希/尺寸比对是 validate_files() 的职责，代价高）：
+      1) **归属校验** —— 索引 `scraper_root` 必须等于当前仓库的 SCRAPER_ROOT。
+         拦截"索引内嵌绝对路径被别处（克隆副本/其他机器）复用"：此前 index.json 入库，
+         同机克隆会直接读到**原仓数据**，把"无数据"伪造成 success。
+      2) **存活性校验** —— 登记的 latest csv/jsonl 至少一个在磁盘存在。
+         拦截"索引在、数据不在"，避免下游拿到必然 FileNotFoundError 的死路径。
+    另：空壳索引（无任何源条目）判为不可用——数据未就绪时应走扫描，而非沿用空壳。
+    """
+    if os.path.normcase(_as_posix(idx.scraper_root or "")) != \
+            os.path.normcase(_as_posix(SCRAPER_ROOT)):
+        return False, (f"scraper_root 归属不符（索引={idx.scraper_root!r} "
+                       f"当前={_as_posix(SCRAPER_ROOT)!r}）")
+    if not idx.sources:
+        return False, "索引无任何源条目（空壳）"
+    alive = 0
+    for sid in idx.source_ids():
+        for p in (idx.latest_csv_path(sid), idx.latest_jsonl_path(sid)):
+            if p and os.path.exists(p):
+                alive += 1
+    if alive == 0:
+        return False, "索引登记的 latest 快照全部不在磁盘（数据未就绪，或索引来自其他机器）"
+    return True, ""
+
+
 def get_clean_index(*, rebuild: bool = False, scraper_root: str = SCRAPER_ROOT) -> CleanIndex:
-    """加载索引单例。index.json 存在且非重建 → 直接读取（零扫描）；
-    缺失或 rebuild=True → 扫描并持久化。"""
+    """加载索引单例（2026-09-13 起带**归属/存活性校验 + 自愈重建**）。
+
+    加载顺序：
+      1) 显式指定其他 scraper_root → 直接扫描（不读持久化，保持原语义）；
+      2) 内存单例命中且未要求重建 → 直接返回；
+      3) index.json 存在 → 仅当 _index_is_usable() 通过才采用；
+         不通过（归属不符/数据不在/空壳/解析失败）→ 记 warning 并重建；
+      4) 其余（文件缺失 / rebuild=True）→ 扫描并持久化。
+
+    自愈的代价是索引不可用时退化为一次目录扫描；收益是**不再把"数据缺失"伪装成
+    "数据正常"**（原实现只要 index.json 存在就沿用，失效路径会被静默传递给下游）。
+    """
     global _cache
-    if not rebuild and os.path.exists(INDEX_PATH) and scraper_root == SCRAPER_ROOT:
-        if "idx" in _cache:
-            return _cache["idx"]
-        with open(INDEX_PATH, encoding="utf-8") as f:
-            _cache["idx"] = CleanIndex(json.load(f))
+    if scraper_root != SCRAPER_ROOT:
+        data = build_index_dict(scraper_root)
+        _write_index(data)
+        _cache["idx"] = CleanIndex(data)
         return _cache["idx"]
+    if "idx" in _cache and not rebuild:
+        return _cache["idx"]
+    if not rebuild and os.path.exists(INDEX_PATH):
+        try:
+            with open(INDEX_PATH, encoding="utf-8") as f:
+                idx = CleanIndex(json.load(f))
+        except Exception as e:  # noqa: BLE001  索引损坏 → 重建（不阻断链路）
+            LOG.warning("clean_index: index.json 解析失败，将重建：%r", e)
+        else:
+            ok, why = _index_is_usable(idx)
+            if ok:
+                _cache["idx"] = idx
+                return idx
+            LOG.warning("clean_index: 索引不可用（%s），将重建并覆盖", why)
     data = build_index_dict(scraper_root)
     _write_index(data)
     _cache["idx"] = CleanIndex(data)

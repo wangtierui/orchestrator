@@ -2,14 +2,31 @@
 """commands.internal — orchestrator 命令：internal（自 cli.py 迁移，2026-09-13 审查 P3）。"""
 from __future__ import annotations
 
+import os
 import sys
 
 import paths
 
+# 数据前置（2026-09-13 · CP-E04）：制度底座相对仓库根的路径。
+# 缺数据时给出可执行指引，替代原先的裸 traceback——克隆副本上 `internal merged`
+# 曾直接抛 FileNotFoundError 栈（对比 `draft` 有友好提示，错误面不一致）。
+_IPB_INDEX = os.path.join("modules", "internal_policy_base", "data", "internal_policy_index.json")
+_INGEST_HINT = "先运行 `python cli.py internal index --source-dir <制度目录>` 摄取制度"
+
+
+def _require_ipb_index(sub: str) -> bool:
+    """校验制度底座是否就绪；缺失则打印可执行指引并返回 False。"""
+    p = os.path.join(paths.ROOT, _IPB_INDEX)
+    if os.path.exists(p):
+        return True
+    print(f"[internal {sub}] 缺少制度底座文件：{p}")
+    print(f"[internal {sub}] {_INGEST_HINT}"
+          "（数据不入 git，异机需先按 data_migration_manifest.json 恢复或重建）。")
+    return False
+
 
 def run(argv):
     """internal index|align [--source-dir ...] — 内部制度摄取/对齐（P6）。"""
-    import os
     sys.path.insert(0, os.path.join(paths.ROOT, "modules"))
     if not argv:
         print("用法: orchestrator internal {index|align} [--source-dir DIR] [--dry-run]")
@@ -51,6 +68,8 @@ def run(argv):
             print("  ", _json.dumps(d, ensure_ascii=False))
         return 0
     if sub == "align":
+        if not _require_ipb_index(sub):
+            return 1
         import json
 
         from internal_policy_base.align import align_all
@@ -58,6 +77,8 @@ def run(argv):
         print(json.dumps(s, ensure_ascii=False, indent=2))
         return 0
     if sub == "merged":
+        if not _require_ipb_index(sub):
+            return 1
         import json
 
         from internal_policy_base.merged import build_merged_view
@@ -66,6 +87,8 @@ def run(argv):
         return 0
     if sub == "backfill":
         # R10/B4（2026-09-08）：backfill_clauses 收敛 CLI（原仅 python -c 手工调用）
+        if not _require_ipb_index(sub):
+            return 1
         import json
 
         from internal_policy_base.extract import backfill_clauses

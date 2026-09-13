@@ -15,6 +15,10 @@ logs/
 **/backups/
 *.csv.bak_*
 *.jsonl.bak_*
+# clean_index 派生索引（2026-09-13 可移植性修复）：内容内嵌绝对路径（scraper_root +
+# 各快照 path），一旦入库会被异机克隆复用 → 指向他机数据（"假成功"）。
+# 属派生数据：缺失时 get_clean_index() 自动扫描重建（零扫描失效，可接受）。
+modules/regulatory_scrapers/clean_index/index.json
 
 # ===== OCR / 大文件 =====
 *.pdf
@@ -41,6 +45,9 @@ modules/regulatory_classifier/recall_audit/output/
 
 # ===== 敏感凭证（绝不入库）=====
 *.pkulaw_token
+# 通配刻意保持宽口径（2026-09-13 可移植性检视已评估）：`*_token*` 会连带忽略形如
+# `token_utils.py` 的正常源码，但"误忽略源码"可由开发者立即发现，"漏提交 token"不可逆。
+# 故不收紧；如需收紧请同时确认 gate_secret_scan 能覆盖新的命名形态。
 *_token*
 
 # ===== timeliness 核验运行产物（状态数据/摘要/台账/断点/全量清单 均不入库；数据以本地文件 + gate 校验为准）=====
@@ -58,6 +65,9 @@ modules/regulatory_scrapers/timeliness_review/*_consolidate_manifest.json
 .idea/
 .vscode/
 *.swp
+# 工作区/agent 本地状态（2026-09-13：原入库的记忆文件含本机绝对路径与过时门禁数量，
+# 会随仓库分发给克隆方造成误导；与 .vscode/ 同类，属本地状态不入库）
+.codebuddy/
 
 # ===== reports 保留但忽略临时产物 =====
 reports/_tmp/

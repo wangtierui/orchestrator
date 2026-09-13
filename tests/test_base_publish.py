@@ -11,11 +11,17 @@ from __future__ import annotations
 import os
 import sys
 
+import pytest
+
 _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 for _p in (_ROOT, os.path.join(_ROOT, "modules"), os.path.join(_ROOT, "std_lib"),
            os.path.join(_ROOT, "interfaces")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
+
+# 用例分层（2026-09-13 · CP-E03）：构建与查询均以本机发布件/底座为输入 → 数据依赖；
+# 无数据环境用 `pytest tests -m "not data"` 排除。
+pytestmark = pytest.mark.data
 
 
 def test_base_contract_v1():

@@ -13,7 +13,6 @@ requires-python = ">=3.13"
 dependencies = [
     "requests>=2.25.0",
     "beautifulsoup4>=4.10.0",
-    "cryptography>=3.0",
     "PyYAML>=6.0",
     # 解析/结构化链（2026-09-12 审查补登记 D1：清洗/条款抽取/制度摄取实际依赖）
     "lxml>=4.9",
@@ -22,35 +21,53 @@ dependencies = [
     "openpyxl>=3.1",
     "xlrd>=2.0",
     "python-docx>=1.0",
+    # 2026-09-13 依赖归属修正：pypdf/pdfplumber 是 PDF **文本层**解析组件（不是 OCR），
+    # 原先只声明在 [ocr] extra —— 按 README 只装 .[dev] 时，crawler_common._extract_pdf()
+    # 两库皆缺会**静默**返回 extract_status="library_missing"，使 `internal index` 对 PDF
+    # 产出空正文（不报错、不被门禁拦截）。详见 reports/克隆可移植性检视报告_20260913.md · CP-A01。
+    "pypdf>=4.0",
+    "pdfplumber>=0.11",
+    # 编码探测（std_lib/scraper_std/encoding.py 惰性导入；缺失会静默降级为 gb18030→utf-8）
+    "chardet>=5.0",
+    # 说明（2026-09-13）：原 `cryptography>=3.0` 已移除——全仓零引用（死声明，扩大安装面）。
 ]
 
 [project.optional-dependencies]
-mcp = ["mcp>=2.0.0"]
 dev = ["pytest>=7.0.0", "coverage>=7.0.0", "ruff>=0.6", "mypy>=1.10"]
 # OCR extra（2026-09-12 审查补版本区间 D3：Paddle 生态变动快，锁主版本）
+# 2026-09-13：pypdf/pdfplumber 上移 base（非 OCR 组件）；PyMuPDF 下界修正见下。
 ocr = [
     "paddleocr>=3.0,<4",
     "paddlex[ocr]>=3.0,<4",
-    "pdfplumber>=0.11",
-    "pypdf>=4.0",
-    "PyMuPDF>=1.24",
+    # 代码统一使用 `import pymupdf`（该导入名自 PyMuPDF 1.24.3 起提供，旧版仅 `fitz`）
+    # ——原声明 >=1.24 允许 1.24.0~1.24.2，落到区间下界即 ImportError，故下界提至 1.24.3。
+    "PyMuPDF>=1.24.3,<2",
 ]
+# 说明（2026-09-13）：原 `mcp = ["mcp>=2.0.0"]` 已移除——全仓零 `import mcp`（死 extra）。
+# 北大法宝时效核验的真实依赖在 **Node 侧**：`@pkulaw/mcp-cli` + 托管 Node
+# （经 env PKULAW_NODE_EXE / PKULAW_PKG_DIR 注入，见 README §6.7），与 Python extra 无关。
 
 [project.scripts]
 orchestrator = "cli:main"
 
 [tool.setuptools]
-packages = [
-    "std_lib",
-    "std_lib.scraper_std",
-    "std_lib.scraper_std.common",
-    "std_lib.common_lib",
-    "config",
-    "interfaces",
-    "gates",
-    "commands",
-]
 py-modules = ["cli", "paths"]
+include-package-data = true
+
+# 包发现（2026-09-13）：由手写清单改为 find，避免新增包（如 commands 拆分产物）漏登记。
+# **刻意不含 modules/**：该目录内含无 __init__.py 的子目录（scripts、timeliness_review）
+# 与大量不入库数据，且运行时契约是"源码树内 sys.path 注入"（commands/*.py 用 paths.ROOT 拼装），
+# 而非"安装为可导入包"。故 wheel 不承载 modules/ —— 非源码树安装由 cli.py 启动校验显式拒绝并
+# 给出可执行指引（替代原先晦涩的 ModuleNotFoundError，见 CP-A02）。
+[tool.setuptools.packages.find]
+include = ["std_lib*", "config*", "interfaces*", "gates*", "commands*"]
+exclude = ["modules*", "tests*", "tools*", "reports*", "docs*"]
+
+# 配置文件随包分发（2026-09-13 修复）：原 wheel 内 config/ 仅 3 个 .py，
+# sources.yaml / ocr.yaml / schema/*.json 全缺 → 任何非可编辑安装下 config.loader
+# 直接 FileNotFoundError（CP-A03）。
+[tool.setuptools.package-data]
+config = ["*.yaml", "schema/*.json", "schema/*.yaml"]
 
 [tool.setuptools.exclude-package-data]
 "*" = ["data/**", "cache/**", "logs/**", "venv/**"]
@@ -88,3 +105,9 @@ exclude = ["data/", "cache/", "logs/", "backups/"]
 testpaths = ["tests"]
 addopts = "-q"
 pythonpath = ["."]
+# 用例分层（2026-09-13 可移植性修复 · CP-E03）：数据依赖用例须显式标记，
+# 使无数据环境（刚克隆 / 无备份的 CI）可执行 `pytest tests -m "not data"` 做代码级回归，
+# 而不必面对"11 个失败其实是数据缺失"的误判。
+markers = [
+    "data: 依赖本机现行数据产物（cleaned 快照/归属表/底座/merged_view/发布件）的验收用例；无数据环境用 -m \"not data\" 排除",
+]

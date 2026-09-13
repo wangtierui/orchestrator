@@ -1,571 +1,494 @@
 {
-  "schema_version": "1.0",
-  "generated_at": null,
+  "schema_version": "1.1",
+  "generated_at": "2026-09-13T16:55:53+0800",
+  "path_semantics": "全部 path 为相对仓库根的 POSIX 路径（schema 1.1 起；1.0 为绝对路径，异机不可用）",
   "source_roots": {
-    "scrapers": "D:/WorkBuddy\\regulatory_scrapers",
-    "classifier": "D:/WorkBuddy\\regulatory_classifier",
-    "drafter": "D:/WorkBuddy\\internal_policy_drafter",
-    "base": "D:/WorkBuddy\\internal_policy_base"
+    "scrapers": "modules/regulatory_scrapers",
+    "classifier": "modules/regulatory_classifier",
+    "drafter": "modules/internal_policy_drafter",
+    "base": "modules/internal_policy_base"
   },
-  "note": "现行活跃数据复制清单（P0）。P1-P4 按条目复制到新仓对应位置并校验 sha256。",
+  "note": "现行活跃数据清单：用于异机恢复与完整性核对（sha256）。数据不入 git，按本清单从备份复制或按 README §6 重建；校验后比对 sha256。",
   "items": [
     {
-      "src": "classifier/data/T0_9逐份条款引用与上位法依据明细表.csv",
-      "path": "D:/WorkBuddy\\regulatory_classifier\\data\\T0_9逐份条款引用与上位法依据明细表.csv",
-      "size_bytes": 1664,
-      "sha256": "da7f3efde5160744bf82295e2992900656e0de9809e86d3e1b473fc27fe7cec9"
+      "src": "base/data/align_result.json",
+      "path": "modules/internal_policy_base/data/align_result.json",
+      "size_bytes": 1164376,
+      "sha256": "e4fb31ff0fea23e7fc5dd9b08d3d5e7213d63132b233af76aefa3e477f06692e"
     },
     {
-      "src": "classifier/data/T10_139逐份条款引用与上位法依据明细表.csv",
-      "path": "D:/WorkBuddy\\regulatory_classifier\\data\\T10_139逐份条款引用与上位法依据明细表.csv",
-      "size_bytes": 48862,
-      "sha256": "0d8d916683347415cfecf0e8bea21d4f4ac3757f87bfb12a19513d8734b49d6a"
+      "src": "base/data/internal_policy_index.json",
+      "path": "modules/internal_policy_base/data/internal_policy_index.json",
+      "size_bytes": 1060943,
+      "sha256": "ce72944f78e02956ac0539e1abf33c2c0198e0f2943578066b4993a4750fc31a"
+    },
+    {
+      "src": "base/data/merged_view.json",
+      "path": "modules/internal_policy_base/data/merged_view.json",
+      "size_bytes": 555250,
+      "sha256": "787fc623d7ccf621c916516f95d5fca0c662194823aead1215f579dbf156eef8"
+    },
+    {
+      "src": "classifier/data/T0_9逐份条款引用与上位法依据明细表.csv",
+      "path": "modules/regulatory_classifier/data/T0_9逐份条款引用与上位法依据明细表.csv",
+      "size_bytes": 2215,
+      "sha256": "9d41e630fb56a09ee41bc53ad0139128332a5f235827cb767d0d561261f430d2"
+    },
+    {
+      "src": "classifier/data/T10_140逐份条款引用与上位法依据明细表.csv",
+      "path": "modules/regulatory_classifier/data/T10_140逐份条款引用与上位法依据明细表.csv",
+      "size_bytes": 61042,
+      "sha256": "74250008317796c3ec7ddd0bc44ff5e65840d899770a01d8d4cb444eb8af3190"
     },
     {
       "src": "classifier/data/T1_195逐份条款引用与上位法依据明细表.csv",
-      "path": "D:/WorkBuddy\\regulatory_classifier\\data\\T1_195逐份条款引用与上位法依据明细表.csv",
-      "size_bytes": 65286,
-      "sha256": "08da978646e3b106762220af782ecdf75c6d9200b93a789c6a68eff28fc40149"
+      "path": "modules/regulatory_classifier/data/T1_195逐份条款引用与上位法依据明细表.csv",
+      "size_bytes": 77140,
+      "sha256": "e733d17060af144e9647e773cee1382a985aa9d832d979a4dcba46a9a06c3330"
     },
     {
       "src": "classifier/data/T2_149逐份条款引用与上位法依据明细表.csv",
-      "path": "D:/WorkBuddy\\regulatory_classifier\\data\\T2_149逐份条款引用与上位法依据明细表.csv",
-      "size_bytes": 48483,
-      "sha256": "7f5331af838b8101a89cde78312f130f046bd5657d7abb8351aa52c090853d77"
+      "path": "modules/regulatory_classifier/data/T2_149逐份条款引用与上位法依据明细表.csv",
+      "size_bytes": 57214,
+      "sha256": "1e7e97ed31df3dfcf352f3db12a9ea9f422e44e9b120d2b368b8383705fe0498"
     },
     {
       "src": "classifier/data/T3_75逐份条款引用与上位法依据明细表.csv",
-      "path": "D:/WorkBuddy\\regulatory_classifier\\data\\T3_75逐份条款引用与上位法依据明细表.csv",
-      "size_bytes": 32007,
-      "sha256": "86ec85f3e57e3dc1746c8a0456a85fa46a0eb9853b5474e82764f96a416bd3a4"
+      "path": "modules/regulatory_classifier/data/T3_75逐份条款引用与上位法依据明细表.csv",
+      "size_bytes": 36676,
+      "sha256": "a4f0460b27de70955508fcfc5af03945510e60fd203dc30b07888315310fc1b6"
     },
     {
       "src": "classifier/data/T4_105逐份条款引用与上位法依据明细表.csv",
-      "path": "D:/WorkBuddy\\regulatory_classifier\\data\\T4_105逐份条款引用与上位法依据明细表.csv",
-      "size_bytes": 38165,
-      "sha256": "7ac50a7ea2f25ab88d1339b105c62e76a93eb8d9d042cf6f287bb702c0ccd449"
+      "path": "modules/regulatory_classifier/data/T4_105逐份条款引用与上位法依据明细表.csv",
+      "size_bytes": 44528,
+      "sha256": "23dc2b672e262f02c34b180ef889d1d78f683ba5dd624a64d83e68db994ad429"
     },
     {
       "src": "classifier/data/T5_139逐份条款引用与上位法依据明细表.csv",
-      "path": "D:/WorkBuddy\\regulatory_classifier\\data\\T5_139逐份条款引用与上位法依据明细表.csv",
-      "size_bytes": 50833,
-      "sha256": "0b935c1c39a049270055b4c5b078d9e2a06268ac6db400a9ae517ddadde110d8"
+      "path": "modules/regulatory_classifier/data/T5_139逐份条款引用与上位法依据明细表.csv",
+      "size_bytes": 59580,
+      "sha256": "483ee6002155fb46d705711302d26cf1be6727ceff946b3951ab0341a8a33fad"
     },
     {
       "src": "classifier/data/T6_60逐份条款引用与上位法依据明细表.csv",
-      "path": "D:/WorkBuddy\\regulatory_classifier\\data\\T6_60逐份条款引用与上位法依据明细表.csv",
-      "size_bytes": 21074,
-      "sha256": "596a916903032e6fbec3720cfda7098a27b341bfcdefadcab92e12a867b8e2f4"
+      "path": "modules/regulatory_classifier/data/T6_60逐份条款引用与上位法依据明细表.csv",
+      "size_bytes": 24673,
+      "sha256": "fa91edbf7296482ff4648bffe7a0f9a2435f46306b32fa9a8cea1ab4123bf6d6"
     },
     {
       "src": "classifier/data/T7_35逐份条款引用与上位法依据明细表.csv",
-      "path": "D:/WorkBuddy\\regulatory_classifier\\data\\T7_35逐份条款引用与上位法依据明细表.csv",
-      "size_bytes": 11656,
-      "sha256": "efba6b536f7f2e236b69bf86c2c7c8eea24a6aa76ecc11b0caf60b5c91676fae"
+      "path": "modules/regulatory_classifier/data/T7_35逐份条款引用与上位法依据明细表.csv",
+      "size_bytes": 13789,
+      "sha256": "78d01f7be4a0b411d244902b6dd32139ef4eb37bf2a550dbe71c08d9ec8c7434"
     },
     {
       "src": "classifier/data/T8_75逐份条款引用与上位法依据明细表.csv",
-      "path": "D:/WorkBuddy\\regulatory_classifier\\data\\T8_75逐份条款引用与上位法依据明细表.csv",
-      "size_bytes": 26365,
-      "sha256": "48fd840343aaa2591c513aea15a5a0527d1cb8350fac38c859871b94d0b9d33a"
+      "path": "modules/regulatory_classifier/data/T8_75逐份条款引用与上位法依据明细表.csv",
+      "size_bytes": 30879,
+      "sha256": "14844aa2678251ecff61436d1ff68ff2d2a01cfe0d3087f00211db7748499ba9"
     },
     {
       "src": "classifier/data/T9_78逐份条款引用与上位法依据明细表.csv",
-      "path": "D:/WorkBuddy\\regulatory_classifier\\data\\T9_78逐份条款引用与上位法依据明细表.csv",
-      "size_bytes": 26147,
-      "sha256": "322c5b7a774cc5abd9dbd20443f4de918c319f67014c5fb24255c8da977911f4"
+      "path": "modules/regulatory_classifier/data/T9_78逐份条款引用与上位法依据明细表.csv",
+      "size_bytes": 31121,
+      "sha256": "e7278be48d1d2101d86c24c64f00c9cc11c247d7874bacf7ca3fe43afd3181ef"
     },
     {
       "src": "classifier/data/_t10_base.json",
-      "path": "D:/WorkBuddy\\regulatory_classifier\\data\\_t10_base.json",
-      "size_bytes": 41607,
-      "sha256": "3a942860b7457373c0b8b71d1ea3d38bf697c3d8485f969ab926118a00e66f1d"
+      "path": "modules/regulatory_classifier/data/_t10_base.json",
+      "size_bytes": 62353,
+      "sha256": "abe4f5f5e554540b11f5f6f2788530b8b80d80aa3cdd88be4ecf8fca86a3f2d0"
     },
     {
       "src": "classifier/data/_t10_citerefs.json",
-      "path": "D:/WorkBuddy\\regulatory_classifier\\data\\_t10_citerefs.json",
-      "size_bytes": 72247,
-      "sha256": "01ee635e506ce77b79bfa18001019c7a6003b85b5f5d6bb044dac0dccff2f58b"
+      "path": "modules/regulatory_classifier/data/_t10_citerefs.json",
+      "size_bytes": 89358,
+      "sha256": "cea57b00b64b73de6fe747b63585aa15e1cd17b8eae81d5659bb3064aec14223"
     },
     {
       "src": "classifier/data/_t10_final.json",
-      "path": "D:/WorkBuddy\\regulatory_classifier\\data\\_t10_final.json",
-      "size_bytes": 57342,
-      "sha256": "9ad3e6e3aeaf61cd4f46b40b773621620dc553c54c03e45bd1ed684673d448a4"
+      "path": "modules/regulatory_classifier/data/_t10_final.json",
+      "size_bytes": 84900,
+      "sha256": "4f09fede98401c62beef26a4bbb073f9fa7185d302008c5515177faeb06e591b"
     },
     {
       "src": "classifier/data/_t10_matched.json",
-      "path": "D:/WorkBuddy\\regulatory_classifier\\data\\_t10_matched.json",
-      "size_bytes": 1188530,
-      "sha256": "5cd58e75a561fea737f11e8e27d1a0a1f0c76431d554370ea29c59011dda1753"
+      "path": "modules/regulatory_classifier/data/_t10_matched.json",
+      "size_bytes": 2579387,
+      "sha256": "fa69dec462ebd9c4130a7577f0351d2aa61a89b4762c8464a8e5345b10505261"
     },
     {
       "src": "classifier/data/_t1_base.json",
-      "path": "D:/WorkBuddy\\regulatory_classifier\\data\\_t1_base.json",
-      "size_bytes": 56731,
-      "sha256": "fd7d6545f438ac8490578b111ad2c9c3756176119eed87b4020c93ed620e4b96"
+      "path": "modules/regulatory_classifier/data/_t1_base.json",
+      "size_bytes": 85287,
+      "sha256": "10431ef94bfabc70abd20677f7c686f2d6870a30c979ed2e6ab3432eb77007c5"
     },
     {
       "src": "classifier/data/_t1_citerefs.json",
-      "path": "D:/WorkBuddy\\regulatory_classifier\\data\\_t1_citerefs.json",
-      "size_bytes": 91405,
-      "sha256": "217a9c87ddb260852f8a9f7d564eb139bb98be19d3fdfdd5d115567f9856626c"
+      "path": "modules/regulatory_classifier/data/_t1_citerefs.json",
+      "size_bytes": 112929,
+      "sha256": "bcffb758254b2ca7d4b9289fab322fe1602dff846f6aaaf300d2a9389bdc2c3f"
     },
     {
       "src": "classifier/data/_t1_final.json",
-      "path": "D:/WorkBuddy\\regulatory_classifier\\data\\_t1_final.json",
-      "size_bytes": 78361,
-      "sha256": "4cb1499cf2c9f2d3d09066264b8e42484c87b2634a506685d35fe1a3b663e6b8"
+      "path": "modules/regulatory_classifier/data/_t1_final.json",
+      "size_bytes": 116228,
+      "sha256": "0c116d1bdd3da8605eb84fbbf52cc81f4031a5e37d44cde36e2ed42e2b909845"
     },
     {
       "src": "classifier/data/_t1_matched.json",
-      "path": "D:/WorkBuddy\\regulatory_classifier\\data\\_t1_matched.json",
-      "size_bytes": 1809482,
-      "sha256": "951abf51d11aff84312e48584e72f47e0323093300ff3e2078f762b6d180fff9"
+      "path": "modules/regulatory_classifier/data/_t1_matched.json",
+      "size_bytes": 1805801,
+      "sha256": "34335db0725d879fb5ae8fdc370483a61c66c3a9023cd298ee6a5206c3cc5628"
     },
     {
       "src": "classifier/data/_t2_base.json",
-      "path": "D:/WorkBuddy\\regulatory_classifier\\data\\_t2_base.json",
-      "size_bytes": 43526,
-      "sha256": "d55fe2d5705215b959a280e5b12de0e39c514778e79a83ff4d469ed8d54da4c3"
+      "path": "modules/regulatory_classifier/data/_t2_base.json",
+      "size_bytes": 65117,
+      "sha256": "25ccf1b5380509bea0131f242e6dc2e03b3e859f144ad82d67e02da87398b85f"
     },
     {
       "src": "classifier/data/_t2_citerefs.json",
-      "path": "D:/WorkBuddy\\regulatory_classifier\\data\\_t2_citerefs.json",
-      "size_bytes": 71361,
-      "sha256": "1cfd50532bee88843e369fbf99e7bb98ba778813270c68fa158d0aeb2587f73f"
+      "path": "modules/regulatory_classifier/data/_t2_citerefs.json",
+      "size_bytes": 84622,
+      "sha256": "7959e0d9b4165f6ff18c027cd3fb0aaf272b47f447c620086ab9c1eb272bc0cd"
     },
     {
       "src": "classifier/data/_t2_final.json",
-      "path": "D:/WorkBuddy\\regulatory_classifier\\data\\_t2_final.json",
-      "size_bytes": 60355,
-      "sha256": "37a8ce2cdeaa80e5d3fcfe785fa844ace7682433d2e35f87a35db6d88817641e"
+      "path": "modules/regulatory_classifier/data/_t2_final.json",
+      "size_bytes": 89282,
+      "sha256": "0d1317cd7953ff335d78e6c0f35c10890ba3cfc4776741ce7a79a91b7da4aa3a"
     },
     {
       "src": "classifier/data/_t2_matched.json",
-      "path": "D:/WorkBuddy\\regulatory_classifier\\data\\_t2_matched.json",
-      "size_bytes": 1048315,
-      "sha256": "346feab530bb195b70842340e1515f926c7d81807e0e04380728845e852a6fa8"
+      "path": "modules/regulatory_classifier/data/_t2_matched.json",
+      "size_bytes": 1046857,
+      "sha256": "7f845d061bcc82ff1aed63a0773869c3d145717b63d5fa2f680e8090e3edd24c"
     },
     {
       "src": "classifier/data/_t3_base.json",
-      "path": "D:/WorkBuddy\\regulatory_classifier\\data\\_t3_base.json",
-      "size_bytes": 23478,
-      "sha256": "02c650ca53bff4f676e628b9098dd410d1315239eb874887e95b9a9883eacf9d"
+      "path": "modules/regulatory_classifier/data/_t3_base.json",
+      "size_bytes": 34290,
+      "sha256": "75a0f967f7263742500156f3120cf79d1a640f30502b7d79c939b3c0d36a4709"
     },
     {
       "src": "classifier/data/_t3_citerefs.json",
-      "path": "D:/WorkBuddy\\regulatory_classifier\\data\\_t3_citerefs.json",
-      "size_bytes": 44946,
-      "sha256": "e36751770406c22f7991cfd48e249ed263dfae00a069964723a899861db40ec4"
+      "path": "modules/regulatory_classifier/data/_t3_citerefs.json",
+      "size_bytes": 53668,
+      "sha256": "389477e5e4010d8cc3c3abd6cc9546b8309f9a5aa846a879e636417abff0bdae"
     },
     {
       "src": "classifier/data/_t3_final.json",
-      "path": "D:/WorkBuddy\\regulatory_classifier\\data\\_t3_final.json",
-      "size_bytes": 31538,
-      "sha256": "726db32016793633dd7db94c3743e0ffb0e49f069dd480d2a4a43eb2478d1dde"
+      "path": "modules/regulatory_classifier/data/_t3_final.json",
+      "size_bytes": 46364,
+      "sha256": "731a36bf09ec704f69d8a3d8002286136045ea8da8104290c9f47e86d9c7e94d"
     },
     {
       "src": "classifier/data/_t3_matched.json",
-      "path": "D:/WorkBuddy\\regulatory_classifier\\data\\_t3_matched.json",
-      "size_bytes": 367828,
-      "sha256": "03cf12243ca644bfa3e4023982201521729fa925417eb917267fbdcedfb58bab"
+      "path": "modules/regulatory_classifier/data/_t3_matched.json",
+      "size_bytes": 375195,
+      "sha256": "929c4d40ee4c24bec995f145458cbfda4f1b2aa18000b247a85e2ff717bfbaf8"
     },
     {
       "src": "classifier/data/_t4_base.json",
-      "path": "D:/WorkBuddy\\regulatory_classifier\\data\\_t4_base.json",
-      "size_bytes": 31110,
-      "sha256": "b8b71aa0607f9c6487c473c3cd6fbe9f75778e0eb1c77ab9c2238820bf9977ca"
+      "path": "modules/regulatory_classifier/data/_t4_base.json",
+      "size_bytes": 46280,
+      "sha256": "6b2e92aed8d63d6ca1150054084056d58181d56ca5a60c10efaeade989dd0d5f"
     },
     {
       "src": "classifier/data/_t4_citerefs.json",
-      "path": "D:/WorkBuddy\\regulatory_classifier\\data\\_t4_citerefs.json",
-      "size_bytes": 60208,
-      "sha256": "6dc1e5939a6a641b8200858408badc38e2b027566be130dd38e8a7e75ad89aeb"
+      "path": "modules/regulatory_classifier/data/_t4_citerefs.json",
+      "size_bytes": 71329,
+      "sha256": "ee5037257619fdd9b3defb57d171118fc98862b8ebef2c7c7e7f0acf75e509f4"
     },
     {
       "src": "classifier/data/_t4_final.json",
-      "path": "D:/WorkBuddy\\regulatory_classifier\\data\\_t4_final.json",
-      "size_bytes": 42420,
-      "sha256": "5e7de238e6fe3147af657e90f5a3b5625f40cf94d0df8ecc2abfc0c2dddf0305"
+      "path": "modules/regulatory_classifier/data/_t4_final.json",
+      "size_bytes": 62967,
+      "sha256": "ca8affe0687eb86f3dcf16c448a7b4a9cbc361d31077ae2dcc1d3afd4c00a02f"
     },
     {
       "src": "classifier/data/_t4_matched.json",
-      "path": "D:/WorkBuddy\\regulatory_classifier\\data\\_t4_matched.json",
-      "size_bytes": 1468140,
-      "sha256": "fa3bb25e6c88e5f5159c4320023d43fcc0e037a2d06ff3d8637d10e4c8876d66"
+      "path": "modules/regulatory_classifier/data/_t4_matched.json",
+      "size_bytes": 1406381,
+      "sha256": "14d6cec9c1a9ddf228e15712083b69d781fe3cdbb53438d7f83fb06ce1a340f4"
     },
     {
       "src": "classifier/data/_t5_base.json",
-      "path": "D:/WorkBuddy\\regulatory_classifier\\data\\_t5_base.json",
-      "size_bytes": 41452,
-      "sha256": "a33b58c5074431c31039b55af74ba7b65f65a72c6c4fd09327828fff8df0e5e9"
+      "path": "modules/regulatory_classifier/data/_t5_base.json",
+      "size_bytes": 61584,
+      "sha256": "6f2a7e21579090e810075b7ad7f9f386c0500ee6e20dd837e8d185d984d50889"
     },
     {
       "src": "classifier/data/_t5_citerefs.json",
-      "path": "D:/WorkBuddy\\regulatory_classifier\\data\\_t5_citerefs.json",
-      "size_bytes": 71733,
-      "sha256": "12aea6718b59dc86751c2dae29191c3cc0503b7bad1ab789a22bae6740c43841"
+      "path": "modules/regulatory_classifier/data/_t5_citerefs.json",
+      "size_bytes": 83683,
+      "sha256": "e710e3618929dc0e038f49e2c7faea5373015aeea9fb7b6148028602c24d6bc0"
     },
     {
       "src": "classifier/data/_t5_final.json",
-      "path": "D:/WorkBuddy\\regulatory_classifier\\data\\_t5_final.json",
-      "size_bytes": 56643,
-      "sha256": "ef3565ff23e6fe8c49b4b97e8049b22a226fc8bd067a8db10398de196bd8d25b"
+      "path": "modules/regulatory_classifier/data/_t5_final.json",
+      "size_bytes": 84209,
+      "sha256": "5231808ef71c391a27c23f6f0e49ace3bd6499306bdc498b623f75282ef5775f"
     },
     {
       "src": "classifier/data/_t5_matched.json",
-      "path": "D:/WorkBuddy\\regulatory_classifier\\data\\_t5_matched.json",
-      "size_bytes": 1308191,
-      "sha256": "8ad4a910711b8228efb38226ad171b49bc0edc024ff44cc591d9ed143eec1922"
+      "path": "modules/regulatory_classifier/data/_t5_matched.json",
+      "size_bytes": 1153969,
+      "sha256": "ed628e4ea0cd08e4bc3aa967234da692895fb66f14cc3c0bd9565c5de303860c"
     },
     {
       "src": "classifier/data/_t6_base.json",
-      "path": "D:/WorkBuddy\\regulatory_classifier\\data\\_t6_base.json",
-      "size_bytes": 18373,
-      "sha256": "caaebd1938628f66022405a35516d7f4ad44048957bb51808216654195143b9e"
+      "path": "modules/regulatory_classifier/data/_t6_base.json",
+      "size_bytes": 27048,
+      "sha256": "7adfe74e6324628b90a7344354676d338efd6de5f1ecffff0746daa65ab64bfb"
     },
     {
       "src": "classifier/data/_t6_citerefs.json",
-      "path": "D:/WorkBuddy\\regulatory_classifier\\data\\_t6_citerefs.json",
-      "size_bytes": 32011,
-      "sha256": "ebc29fce274f216c24f2e1d6ace6e048603e4e6a368ec84d5c7d6af652340c4f"
+      "path": "modules/regulatory_classifier/data/_t6_citerefs.json",
+      "size_bytes": 37644,
+      "sha256": "aa9f104eda11dc2806b7de2ebc660cb476e5ff724918d801c83f67f3ea2bf1e5"
     },
     {
       "src": "classifier/data/_t6_final.json",
-      "path": "D:/WorkBuddy\\regulatory_classifier\\data\\_t6_final.json",
-      "size_bytes": 24791,
-      "sha256": "197a47b25bc5802d91777ac6a95e7a996f339a815dc9338a5ff1399eddc8fbf1"
+      "path": "modules/regulatory_classifier/data/_t6_final.json",
+      "size_bytes": 36627,
+      "sha256": "e31f02eb3e4c9b4c6d6ed0c8a5aa9c401ce3532ba271de4eca5f537df31ab536"
     },
     {
       "src": "classifier/data/_t6_matched.json",
-      "path": "D:/WorkBuddy\\regulatory_classifier\\data\\_t6_matched.json",
-      "size_bytes": 632268,
-      "sha256": "edcd27be51371767cc51becdf50befe75220b8da14b642e7488283e8aecd55ce"
+      "path": "modules/regulatory_classifier/data/_t6_matched.json",
+      "size_bytes": 609502,
+      "sha256": "0b0c402c7623efe5cc65a2e76d8f21467c5c95a09209b0bdd34173f5fe9a73d1"
     },
     {
       "src": "classifier/data/_t7_base.json",
-      "path": "D:/WorkBuddy\\regulatory_classifier\\data\\_t7_base.json",
-      "size_bytes": 11008,
-      "sha256": "971aa9ceb96bf82cbee5b3c3128547be2f36e19724826beac04766de021ad69e"
+      "path": "modules/regulatory_classifier/data/_t7_base.json",
+      "size_bytes": 16089,
+      "sha256": "60563156c5b399624a4d3844716d48a5e8659f86016f03ed6ecbd13432a8373c"
     },
     {
       "src": "classifier/data/_t7_citerefs.json",
-      "path": "D:/WorkBuddy\\regulatory_classifier\\data\\_t7_citerefs.json",
-      "size_bytes": 16792,
-      "sha256": "2111b9dcca52f1637ef3c55fe69ecccc7f33601c85f8bc9d09c683d642fb54a9"
+      "path": "modules/regulatory_classifier/data/_t7_citerefs.json",
+      "size_bytes": 14160,
+      "sha256": "d964c3adcd2027cbbe655312bed33182cc69c038948bdc17920c6d3edcc2a185"
     },
     {
       "src": "classifier/data/_t7_final.json",
-      "path": "D:/WorkBuddy\\regulatory_classifier\\data\\_t7_final.json",
-      "size_bytes": 14563,
-      "sha256": "3cf58a7c7293ca1b99c548b8c02caa518ef7a0905fd1526e21d31dbaf8de20a3"
+      "path": "modules/regulatory_classifier/data/_t7_final.json",
+      "size_bytes": 21545,
+      "sha256": "d7a4760ce684c3b4ddee40e6e6d666e71bcdeaf075c56005f57ed5f6e6797e06"
     },
     {
       "src": "classifier/data/_t7_matched.json",
-      "path": "D:/WorkBuddy\\regulatory_classifier\\data\\_t7_matched.json",
-      "size_bytes": 296513,
-      "sha256": "0660014568f276833d5876a7fb37a3292d32694a7b269c0933a9edc6e393b079"
+      "path": "modules/regulatory_classifier/data/_t7_matched.json",
+      "size_bytes": 276969,
+      "sha256": "d7fdab9ae860b2abf5416c35e05422a699360e2d5167e8963acd443f19fb91b3"
     },
     {
       "src": "classifier/data/_t8_base.json",
-      "path": "D:/WorkBuddy\\regulatory_classifier\\data\\_t8_base.json",
-      "size_bytes": 21746,
-      "sha256": "02a693d541b4e95b513ee361d3a958135b89e39ae8cfba9182c954220054dba7"
+      "path": "modules/regulatory_classifier/data/_t8_base.json",
+      "size_bytes": 32629,
+      "sha256": "5a6f51ff042644679b13a9774c2778bf0657f49cf1c70567d306dea73ac94ac5"
     },
     {
       "src": "classifier/data/_t8_citerefs.json",
-      "path": "D:/WorkBuddy\\regulatory_classifier\\data\\_t8_citerefs.json",
-      "size_bytes": 39039,
-      "sha256": "c15f6de221817589b817ffadcc29ee39c5bec7dc788bb540b4fe894f6c8dc3ba"
+      "path": "modules/regulatory_classifier/data/_t8_citerefs.json",
+      "size_bytes": 49145,
+      "sha256": "13eb917b9ef498448f2975e3444ae9c99c1789746f6d180910ec83da62efeac5"
     },
     {
       "src": "classifier/data/_t8_final.json",
-      "path": "D:/WorkBuddy\\regulatory_classifier\\data\\_t8_final.json",
-      "size_bytes": 29993,
-      "sha256": "2876a3a5bfdedb2e862a81a2b6fb6198410cf17895ab7efa5c155d852c55bb1c"
+      "path": "modules/regulatory_classifier/data/_t8_final.json",
+      "size_bytes": 44458,
+      "sha256": "d6fececbcc68ac8f8e7ad5499bba562a84eb801f23bde1ebaf73becd80be414b"
     },
     {
       "src": "classifier/data/_t8_matched.json",
-      "path": "D:/WorkBuddy\\regulatory_classifier\\data\\_t8_matched.json",
-      "size_bytes": 788474,
-      "sha256": "87fd6c42a39d9dd610778747ee80174dbd93ea32d59cd049535799b5fad57594"
+      "path": "modules/regulatory_classifier/data/_t8_matched.json",
+      "size_bytes": 766756,
+      "sha256": "206bb770d6d6c5e427eb28fdbb6e5d661e04eef2a4ebfaec5d3fd09e6b23a6a5"
     },
     {
       "src": "classifier/data/_t9_base.json",
-      "path": "D:/WorkBuddy\\regulatory_classifier\\data\\_t9_base.json",
-      "size_bytes": 22708,
-      "sha256": "12f54692b995bc776f8f75cbd03e0a4e990b0b7b01599831d26d0865ab2b105d"
+      "path": "modules/regulatory_classifier/data/_t9_base.json",
+      "size_bytes": 34116,
+      "sha256": "02449113a6f1657c5e8c9f58bea8b7414bec93679af10180e34946c8c5c158cc"
     },
     {
       "src": "classifier/data/_t9_citerefs.json",
-      "path": "D:/WorkBuddy\\regulatory_classifier\\data\\_t9_citerefs.json",
-      "size_bytes": 38382,
-      "sha256": "1b1966e437182fa22d9b8a67fee53538fa3de562fffe6683ebfb9e8d0d17677a"
+      "path": "modules/regulatory_classifier/data/_t9_citerefs.json",
+      "size_bytes": 45702,
+      "sha256": "abb2af3528155b32901f6e9aad5e62e411bcc8fa699b4c380176eb4b36f78012"
     },
     {
       "src": "classifier/data/_t9_final.json",
-      "path": "D:/WorkBuddy\\regulatory_classifier\\data\\_t9_final.json",
-      "size_bytes": 31537,
-      "sha256": "7c7beff12b3cb4a49d4e9533082f9baaa8849dad99a7dabd7f20598b8832d816"
+      "path": "modules/regulatory_classifier/data/_t9_final.json",
+      "size_bytes": 46649,
+      "sha256": "8956e9d0d4e41404c6e78fb2911b1d96ed8c11c8c253a9880351eedf61ac5c6c"
     },
     {
       "src": "classifier/data/_t9_matched.json",
-      "path": "D:/WorkBuddy\\regulatory_classifier\\data\\_t9_matched.json",
-      "size_bytes": 949696,
-      "sha256": "7232254e20e76dc49c401a9306554ecd76dfde0d9dfe9f0cc6834d96f8857e24"
+      "path": "modules/regulatory_classifier/data/_t9_matched.json",
+      "size_bytes": 759697,
+      "sha256": "9d133624075d97173ffd6e89511df6659caa6a9690666ec0023f949af51413bd"
     },
     {
       "src": "classifier/data/_upper_laws.json",
-      "path": "D:/WorkBuddy\\regulatory_classifier\\data\\_upper_laws.json",
-      "size_bytes": 253607,
-      "sha256": "75a452a622e6a1aa63eb8398ea5199a7a07e2b71aaf91701dd34fbdb88f23ae3"
+      "path": "modules/regulatory_classifier/data/_upper_laws.json",
+      "size_bytes": 251830,
+      "sha256": "b3ea700dce95b8a4eb2aad1d223259e03a039b2e930d7708740ad9424f55e3b9"
     },
     {
       "src": "classifier/data/人身保险公司-主题归属表.csv",
-      "path": "D:/WorkBuddy\\regulatory_classifier\\data\\人身保险公司-主题归属表.csv",
-      "size_bytes": 138670,
-      "sha256": "012692a7ab1c62b27c7edefe48d7e3aaaef6f9173f0d5539a8b3180ab9d89fd4"
+      "path": "modules/regulatory_classifier/data/人身保险公司-主题归属表.csv",
+      "size_bytes": 138744,
+      "sha256": "384f73870a305bcc40f215455cdfef942bb48d83d87851a9e045ba95ce24d657"
     },
     {
       "src": "classifier/data/人身保险公司-文件归属表.csv",
-      "path": "D:/WorkBuddy\\regulatory_classifier\\data\\人身保险公司-文件归属表.csv",
-      "size_bytes": 201944,
-      "sha256": "f0bf8ea5cc56ede786135a6553bb5ed88b0653e742e4ae74bd847861991dc951"
-    },
-    {
-      "src": "classifier/recall_audit/verification_state.mirror.json",
-      "path": "D:/WorkBuddy\\regulatory_classifier\\recall_audit\\verification_state.mirror.json",
-      "size_bytes": 463611,
-      "sha256": "cb796c82c62bb1485790c87b5b4f64d1a57a2e75dda64db38a0cd865d16fc502"
+      "path": "modules/regulatory_classifier/data/人身保险公司-文件归属表.csv",
+      "size_bytes": 202274,
+      "sha256": "1e9a9db57f4d6b201033e0dcb81399155cef4bb27bc2f4994e27517833e6f948"
     },
     {
       "src": "classifier/rfn/sync_status.json",
-      "path": "D:/WorkBuddy\\regulatory_classifier\\rfn\\sync_status.json",
-      "size_bytes": 676292,
-      "sha256": "157f074b542123057bb1ed91536914cae06bd96aa30b7c59870c9e2159547ad3"
+      "path": "modules/regulatory_classifier/rfn/sync_status.json",
+      "size_bytes": 677439,
+      "sha256": "518bb6956d27bbc3cd2e2c49a81d59d9cce1be028f6a7105ebf99258cf1593db"
     },
     {
       "src": "classifier/rfn/文件指纹.csv",
-      "path": "D:/WorkBuddy\\regulatory_classifier\\rfn\\文件指纹.csv",
-      "size_bytes": 48668,
-      "sha256": "e3e366eeb698c29bb902771022f40c4d5f39d67bcc59f493eed16eb318c474ec"
+      "path": "modules/regulatory_classifier/rfn/文件指纹.csv",
+      "size_bytes": 49059,
+      "sha256": "2fdb7adfe6c4af8e02b2137664a26af9b134270a97ddeb1793d269aec97b783e"
     },
     {
       "src": "classifier/rfn/监管文件编号索引.csv",
-      "path": "D:/WorkBuddy\\regulatory_classifier\\rfn\\监管文件编号索引.csv",
-      "size_bytes": 191200,
-      "sha256": "497e698765a59d4caae2aeb6812e4927645493ff9d4cc65433c425e1afaa0538"
+      "path": "modules/regulatory_classifier/rfn/监管文件编号索引.csv",
+      "size_bytes": 191522,
+      "sha256": "79b6e175f9392e35d373e36c9fdb7a266ca82d70610e62e46e9336fe7dc3d599"
     },
     {
-      "src": "drafter/docs/2026-09-03_销售行为管理办法_条款对照与执行落地备忘.md",
-      "path": "D:/WorkBuddy\\internal_policy_drafter\\docs\\2026-09-03_销售行为管理办法_条款对照与执行落地备忘.md",
-      "size_bytes": 16995,
-      "sha256": "051145d0ad4b07177313ca3f332bcffd677c8a7607405d3726621bc6e986a175"
-    },
-    {
-      "src": "drafter/docs/2026-09-03_销售行为管理办法_检视报告与修订说明.md",
-      "path": "D:/WorkBuddy\\internal_policy_drafter\\docs\\2026-09-03_销售行为管理办法_检视报告与修订说明.md",
-      "size_bytes": 27070,
-      "sha256": "befc950e60cd92d4c4c991cf09bf5adb69b2d9ef1d7def46563015144cdf3662"
-    },
-    {
-      "src": "drafter/docs/2026-09-03_销售行为管理办法_监管覆盖复核与条号索引.md",
-      "path": "D:/WorkBuddy\\internal_policy_drafter\\docs\\2026-09-03_销售行为管理办法_监管覆盖复核与条号索引.md",
-      "size_bytes": 11409,
-      "sha256": "362581788b975de79888bc1467ddfd7e00e817e05e074d11349a4cba8710950e"
-    },
-    {
-      "src": "drafter/docs/保险销售行为管理办法_六件套_2026-09-03/00_六件套说明与索引.md",
-      "path": "D:/WorkBuddy\\internal_policy_drafter\\docs\\保险销售行为管理办法_六件套_2026-09-03\\00_六件套说明与索引.md",
+      "src": "drafter/docs/2026-09-03_销售行为管理办法六件套_00_说明与索引.md",
+      "path": "modules/internal_policy_drafter/docs/2026-09-03_销售行为管理办法六件套_00_说明与索引.md",
       "size_bytes": 2878,
       "sha256": "57e82651cf9b1ecf115bd53f473d43ff863f78720fb07447fd23ab22ef4aa45b"
     },
     {
-      "src": "drafter/docs/保险销售行为管理办法_六件套_2026-09-03/01_制度正文_阳光人寿保险销售行为管理办法_2026定稿版V2.md",
-      "path": "D:/WorkBuddy\\internal_policy_drafter\\docs\\保险销售行为管理办法_六件套_2026-09-03\\01_制度正文_阳光人寿保险销售行为管理办法_2026定稿版V2.md",
+      "src": "drafter/docs/2026-09-03_销售行为管理办法六件套_01_制度正文_2026定稿版V2.md",
+      "path": "modules/internal_policy_drafter/docs/2026-09-03_销售行为管理办法六件套_01_制度正文_2026定稿版V2.md",
       "size_bytes": 63558,
       "sha256": "fc28d665cdfa58c6f6faff6d1d2b78640aa0651d0e46f17936586e465c5a180d"
     },
     {
-      "src": "drafter/docs/保险销售行为管理办法_六件套_2026-09-03/02_条款修改对照表.md",
-      "path": "D:/WorkBuddy\\internal_policy_drafter\\docs\\保险销售行为管理办法_六件套_2026-09-03\\02_条款修改对照表.md",
+      "src": "drafter/docs/2026-09-03_销售行为管理办法六件套_02_条款修改对照表.md",
+      "path": "modules/internal_policy_drafter/docs/2026-09-03_销售行为管理办法六件套_02_条款修改对照表.md",
       "size_bytes": 6760,
       "sha256": "15bcc687d8ad2c4010e2952e5cc7ee656c33abcc247c5c9a945b6da28db5edf3"
     },
     {
-      "src": "drafter/docs/保险销售行为管理办法_六件套_2026-09-03/03_核心流程简图.md",
-      "path": "D:/WorkBuddy\\internal_policy_drafter\\docs\\保险销售行为管理办法_六件套_2026-09-03\\03_核心流程简图.md",
+      "src": "drafter/docs/2026-09-03_销售行为管理办法六件套_03_核心流程简图.md",
+      "path": "modules/internal_policy_drafter/docs/2026-09-03_销售行为管理办法六件套_03_核心流程简图.md",
       "size_bytes": 5825,
       "sha256": "616a7aa8c64b6d53c9bc5f49f9b0e9985d381d25fff83ef6afafccea5feb332a"
     },
     {
-      "src": "drafter/docs/保险销售行为管理办法_六件套_2026-09-03/04_执行落地备忘录.md",
-      "path": "D:/WorkBuddy\\internal_policy_drafter\\docs\\保险销售行为管理办法_六件套_2026-09-03\\04_执行落地备忘录.md",
+      "src": "drafter/docs/2026-09-03_销售行为管理办法六件套_04_执行落地备忘录.md",
+      "path": "modules/internal_policy_drafter/docs/2026-09-03_销售行为管理办法六件套_04_执行落地备忘录.md",
       "size_bytes": 7331,
       "sha256": "e32d78ff7953871122a8e5e9c4448f2725defa08b3f0d80e4f04384b0b994354"
     },
     {
-      "src": "drafter/docs/保险销售行为管理办法_六件套_2026-09-03/05_双向映射表.md",
-      "path": "D:/WorkBuddy\\internal_policy_drafter\\docs\\保险销售行为管理办法_六件套_2026-09-03\\05_双向映射表.md",
+      "src": "drafter/docs/2026-09-03_销售行为管理办法六件套_05_双向映射表.md",
+      "path": "modules/internal_policy_drafter/docs/2026-09-03_销售行为管理办法六件套_05_双向映射表.md",
       "size_bytes": 15763,
       "sha256": "1910a23dcd7f0010e08c1344d46ab8aa5ed02458d44c86c7b9b5f291fb8b8def"
     },
     {
-      "src": "drafter/docs/保险销售行为管理办法_六件套_2026-09-03/06_监管要求覆盖完整性校验报告.md",
-      "path": "D:/WorkBuddy\\internal_policy_drafter\\docs\\保险销售行为管理办法_六件套_2026-09-03\\06_监管要求覆盖完整性校验报告.md",
+      "src": "drafter/docs/2026-09-03_销售行为管理办法六件套_06_监管要求覆盖完整性校验报告.md",
+      "path": "modules/internal_policy_drafter/docs/2026-09-03_销售行为管理办法六件套_06_监管要求覆盖完整性校验报告.md",
       "size_bytes": 5606,
       "sha256": "908ef9a079a974f51bcf3f793016bfbdf7a3c0a4c8db000f64003df76cecdcc0"
     },
     {
-      "src": "drafter/docs/保险销售行为管理办法关联监管文件完整清单与对应关系.md",
-      "path": "D:/WorkBuddy\\internal_policy_drafter\\docs\\保险销售行为管理办法关联监管文件完整清单与对应关系.md",
-      "size_bytes": 39803,
-      "sha256": "a6a545ad51f303810ebad065bfef3e9649e848050b47dd3462d1aac739cc821b"
-    },
-    {
-      "src": "drafter/docs/修订销售行为管理办法关联制度任务成果物_全面检视与完善意见.md",
-      "path": "D:/WorkBuddy\\internal_policy_drafter\\docs\\修订销售行为管理办法关联制度任务成果物_全面检视与完善意见.md",
-      "size_bytes": 23423,
-      "sha256": "544007f11f00014ef9c43b9b24a1b37b6212f298d31584aaf28cd69de3f74af9"
-    },
-    {
-      "src": "drafter/docs/关联制度比对与补齐修订清单.md",
-      "path": "D:/WorkBuddy\\internal_policy_drafter\\docs\\关联制度比对与补齐修订清单.md",
-      "size_bytes": 20571,
-      "sha256": "05863b029ab4940ad0a3c10e5be626a4755795659e935b2ff2ef091188aa0bb5"
-    },
-    {
-      "src": "drafter/docs/条款修改对照表_流程简图_执行落地备忘录.md",
-      "path": "D:/WorkBuddy\\internal_policy_drafter\\docs\\条款修改对照表_流程简图_执行落地备忘录.md",
-      "size_bytes": 49602,
-      "sha256": "87a1ac2007208b5358b284dd12942e6c37d420818486c16628c6842190b618ae"
-    },
-    {
-      "src": "drafter/docs/监管数据来源与效力核验操作规范.md",
-      "path": "D:/WorkBuddy\\internal_policy_drafter\\docs\\监管数据来源与效力核验操作规范.md",
-      "size_bytes": 5568,
-      "sha256": "85b94f49cc255777c686b07c81306778d652bcab82a0865696c88b4f5685fa82"
-    },
-    {
       "src": "drafter/docs/监管文件编号与分类对齐表.md",
-      "path": "D:/WorkBuddy\\internal_policy_drafter\\docs\\监管文件编号与分类对齐表.md",
-      "size_bytes": 11959,
-      "sha256": "5a72fe7fc8ef15d5aeb5df87e7842115614920839a3eca94eb350cfdefc5b0ef"
+      "path": "modules/internal_policy_drafter/docs/监管文件编号与分类对齐表.md",
+      "size_bytes": 11961,
+      "sha256": "7ff75be82ad163bfd4fc02d2eff517cee250e2287ff743b08dc9fd3b43a186ff"
     },
     {
-      "src": "drafter/docs/监管要求全景清单与双向映射表_最终版.md",
-      "path": "D:/WorkBuddy\\internal_policy_drafter\\docs\\监管要求全景清单与双向映射表_最终版.md",
-      "size_bytes": 745651,
-      "sha256": "52baa1a2619699e4f1475d836b789d9a30728e3e127ac71bedf77b66a78354a5"
+      "src": "scrapers/data/cleaned/gov_cleaned_20260912.csv",
+      "path": "modules/regulatory_scrapers/data/cleaned/gov_cleaned_20260912.csv",
+      "size_bytes": 35840938,
+      "sha256": "61e0f0739ee6dc53b8d7f8d9ef0000b5f98eca609ac99ac9d74f3774140435f0"
     },
     {
-      "src": "drafter/docs/规范遵从检视报告_补录流程复盘.md",
-      "path": "D:/WorkBuddy\\internal_policy_drafter\\docs\\规范遵从检视报告_补录流程复盘.md",
-      "size_bytes": 8215,
-      "sha256": "6f6e5d1d13292b1714d34d04a2da0b8ca5256ecc5863aa6675eb1c2c789117a7"
+      "src": "scrapers/data/cleaned/mof_cleaned_20260912.csv",
+      "path": "modules/regulatory_scrapers/data/cleaned/mof_cleaned_20260912.csv",
+      "size_bytes": 62627325,
+      "sha256": "e268107ebbc0dcffc5ca532378e0bae18cddcb3ac5e1b70b7ec7c493561885c4"
     },
     {
-      "src": "drafter/docs/踩坑点与经验教训总结.md",
-      "path": "D:/WorkBuddy\\internal_policy_drafter\\docs\\踩坑点与经验教训总结.md",
-      "size_bytes": 11170,
-      "sha256": "6fa7c93d8269fb842028f6e037221c978a87c0622d63f4b26fa1cd9ae2eb6b5d"
+      "src": "scrapers/data/cleaned/nfra_cleaned_20260912.csv",
+      "path": "modules/regulatory_scrapers/data/cleaned/nfra_cleaned_20260912.csv",
+      "size_bytes": 54014997,
+      "sha256": "56dfac04fa4cd50ebd34e1fba8beaffd256a9e0600938f1e0e0df554ddaf11ee"
     },
     {
-      "src": "drafter/docs/阳光人寿保险销售行为管理办法_2026修订版.md",
-      "path": "D:/WorkBuddy\\internal_policy_drafter\\docs\\阳光人寿保险销售行为管理办法_2026修订版.md",
-      "size_bytes": 42511,
-      "sha256": "a4ef02d4edc8e9c91cda9f59ec3401f4ff42fc2e8dc0122d90acebdd754de076"
+      "src": "scrapers/data/cleaned/pbc_cleaned_20260912.csv",
+      "path": "modules/regulatory_scrapers/data/cleaned/pbc_cleaned_20260912.csv",
+      "size_bytes": 5050915,
+      "sha256": "2d26aeaea25c158309ec2a6f5978697bc468877756b04e3c46d5a9a8e620fe73"
     },
     {
-      "src": "drafter/docs/阳光人寿保险销售行为管理办法_2026定稿版.md",
-      "path": "D:/WorkBuddy\\internal_policy_drafter\\docs\\阳光人寿保险销售行为管理办法_2026定稿版.md",
-      "size_bytes": 63558,
-      "sha256": "fc28d665cdfa58c6f6faff6d1d2b78640aa0651d0e46f17936586e465c5a180d"
-    },
-    {
-      "src": "drafter/docs/阳光人寿保险销售行为管理办法_六件套_监管依据清单与覆盖范围说明.md",
-      "path": "D:/WorkBuddy\\internal_policy_drafter\\docs\\阳光人寿保险销售行为管理办法_六件套_监管依据清单与覆盖范围说明.md",
-      "size_bytes": 15921,
-      "sha256": "bcd14a94ec591f52965095d595b9065ad62ae04350ace58448bb2e5a69873c21"
-    },
-    {
-      "src": "drafter/docs/阳光人寿保险销售行为管理办法_条款修改对照表_v2.md",
-      "path": "D:/WorkBuddy\\internal_policy_drafter\\docs\\阳光人寿保险销售行为管理办法_条款修改对照表_v2.md",
-      "size_bytes": 18376,
-      "sha256": "c52ef22f6e51392fd463fa3f1cbc7231ac1c40095a6c98d45e26d742dde45bf5"
-    },
-    {
-      "src": "scrapers/data/cleaned/gov_cleaned_20260907.csv",
-      "path": "D:/WorkBuddy\\regulatory_scrapers\\data\\cleaned\\gov_cleaned_20260907.csv",
-      "size_bytes": 37978657,
-      "sha256": "7d5a63932c1b0602f36110b43413d4887fc07d42501383288aa2cd5551f93728"
-    },
-    {
-      "src": "scrapers/data/cleaned/mof_cleaned_20260907.csv",
-      "path": "D:/WorkBuddy\\regulatory_scrapers\\data\\cleaned\\mof_cleaned_20260907.csv",
-      "size_bytes": 9790985,
-      "sha256": "53b9b9ab25994ce4a249581c7ec65d9819e71a6b6bd178e96d927bbf2e98f30c"
-    },
-    {
-      "src": "scrapers/data/cleaned/nfra_cleaned_20260907.csv",
-      "path": "D:/WorkBuddy\\regulatory_scrapers\\data\\cleaned\\nfra_cleaned_20260907.csv",
-      "size_bytes": 41532852,
-      "sha256": "0f9165a686b6003e5bafe893fdfb71901b78458cb348009186a6c9ca8c677cc5"
-    },
-    {
-      "src": "scrapers/data/cleaned/pbc_cleaned_20260907.csv",
-      "path": "D:/WorkBuddy\\regulatory_scrapers\\data\\cleaned\\pbc_cleaned_20260907.csv",
-      "size_bytes": 3855733,
-      "sha256": "f98f090107a5096d52939e8648f13e17997f5acf6ca2cd3a4cb2dd3d6d5cd769"
-    },
-    {
-      "src": "scrapers/data/cleaned/supp_cleaned_20260907.csv",
-      "path": "D:/WorkBuddy\\regulatory_scrapers\\data\\cleaned\\supp_cleaned_20260907.csv",
-      "size_bytes": 1627874,
-      "sha256": "ec14ccb2d7966a32cd764223cee990eff28802d067f85cfa6b7c4090b82d700f"
+      "src": "scrapers/data/cleaned/supp_cleaned_20260912.csv",
+      "path": "modules/regulatory_scrapers/data/cleaned/supp_cleaned_20260912.csv",
+      "size_bytes": 10606654,
+      "sha256": "1b1e4b63bf1601ef713c4af1a54603a50ced5b8269177a5da15406d06f2a5ade"
     },
     {
       "src": "scrapers/data/raw/gov_laws.json",
-      "path": "D:/WorkBuddy\\regulatory_scrapers\\data\\raw\\gov_laws.json",
-      "size_bytes": 50285647,
-      "sha256": "65a25c3ca24a57b1ff10d477dd23f759c211610ef59a5fc3457266782ff2dc74"
+      "path": "modules/regulatory_scrapers/data/raw/gov_laws.json",
+      "size_bytes": 46781357,
+      "sha256": "06bd74b417125f4af2d41cceafd138f9776cda0ec924e65a47c7ce62ea32720f"
     },
     {
       "src": "scrapers/data/raw/mof_laws.json",
-      "path": "D:/WorkBuddy\\regulatory_scrapers\\data\\raw\\mof_laws.json",
-      "size_bytes": 5282031,
-      "sha256": "af5fd9bbadf46baac169aa10959856be4556cf176c2147ec5fc6b1baf27d95cd"
+      "path": "modules/regulatory_scrapers/data/raw/mof_laws.json",
+      "size_bytes": 121065642,
+      "sha256": "ab109487a6744c576dc3f58f066313c99cf624a38f66fc1f911c4777edf0c2f6"
     },
     {
       "src": "scrapers/data/raw/nfra_regulations.json",
-      "path": "D:/WorkBuddy\\regulatory_scrapers\\data\\raw\\nfra_regulations.json",
-      "size_bytes": 21608591,
-      "sha256": "41e21d9b6a5bce9b22fdf119261cad4e397dab4b19942783523c8d82423b1c75"
+      "path": "modules/regulatory_scrapers/data/raw/nfra_regulations.json",
+      "size_bytes": 123044656,
+      "sha256": "ad74d19e880001a10d53e909b4cbda2f5dc3a2e03810cb870272e424f5d2766a"
     },
     {
       "src": "scrapers/data/raw/pbc_laws.json",
-      "path": "D:/WorkBuddy\\regulatory_scrapers\\data\\raw\\pbc_laws.json",
-      "size_bytes": 1967749,
-      "sha256": "ae70d4e33687f2f97bb0930022cf490fe4a730d29e65b769eba80b059733b541"
+      "path": "modules/regulatory_scrapers/data/raw/pbc_laws.json",
+      "size_bytes": 2578654,
+      "sha256": "9845ed153514704e63f7257b160e4cc01ba1475693ea0cfe08dd5be5d7f04051"
     },
     {
       "src": "scrapers/data/raw/supplementary_regulations.json",
-      "path": "D:/WorkBuddy\\regulatory_scrapers\\data\\raw\\supplementary_regulations.json",
-      "size_bytes": 943912,
-      "sha256": "515ef0a2c378ac8c65d9d1938b839d51c69f77c77b985c2a94eb091675a9f75b"
+      "path": "modules/regulatory_scrapers/data/raw/supplementary_regulations.json",
+      "size_bytes": 9971472,
+      "sha256": "083a7b888672872123e964df8b59dfa02353e1b373c042a7102bcbfd0cb6ba68"
     },
     {
       "src": "scrapers/timeliness_review/verification_state.json",
-      "path": "D:/WorkBuddy\\regulatory_scrapers\\timeliness_review\\verification_state.json",
-      "size_bytes": 836384,
-      "sha256": "257a1a7820be654f7304807fe3540700d06561597cbba4e02f1494c7564f4bcc"
+      "path": "modules/regulatory_scrapers/timeliness_review/verification_state.json",
+      "size_bytes": 902320,
+      "sha256": "e4b3551ad609cc67059d7c0d78b281141576c0a658ce47f2e5ab4aec92e37e3b"
     },
     {
-      "src": "scrapers/timeliness_review/时效性标注结果清单_全量_20260907.csv",
-      "path": "D:/WorkBuddy\\regulatory_scrapers\\timeliness_review\\时效性标注结果清单_全量_20260907.csv",
-      "size_bytes": 1497196,
-      "sha256": "f739d485d7c2cb7dd83cfab2d3545f36203e4117c37f5bfa92320f2df94ff61b"
+      "src": "scrapers/timeliness_review/时效性标注结果清单_全量_20260913.csv",
+      "path": "modules/regulatory_scrapers/timeliness_review/时效性标注结果清单_全量_20260913.csv",
+      "size_bytes": 1373440,
+      "sha256": "0b01ed3b53bb0e9f95629b7adc7014bc6c8f268fb38aa0967d71554f38a5a0c2"
     }
   ]
 }

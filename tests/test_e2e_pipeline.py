@@ -13,6 +13,14 @@ import json
 import os
 import sys
 
+import pytest
+
+# 用例分层（2026-09-13 · CP-E03）：本文件按设计断言"新仓**现行产物**"（cleaned 五源快照、
+# 归属表、40 底座/明细、merged_view、发布件），**必须**本机数据就绪。
+# 无数据环境（刚克隆、无备份 CI）请执行 `pytest tests -m "not data"` 排除本文件，
+# 否则会看到"失败"实则"数据缺失"的误判（详见 reports/克隆可移植性检视报告_20260913.md）。
+pytestmark = pytest.mark.data
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 for p in (ROOT,
           os.path.join(ROOT, "modules"),

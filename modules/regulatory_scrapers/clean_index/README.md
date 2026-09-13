@@ -22,13 +22,13 @@
   "generated_at": "2026-08-29T14:30:00+0800",     // 索引生成时间戳（Asia/Shanghai）
   "generator": "regulatory_scrapers/clean_index/build_clean_index.py",
   "description": "...",
-  "scraper_root": "D:/WorkBuddy/regulatory_scrapers",
+  "scraper_root": "<repo>/modules/regulatory_scrapers",
   "sources": {
     "<source_id>": {                               // source_id ∈ SOURCE_SET
       "source_id": "gov",
       "source_name": "国务院及地方政府规章/法规库（gov.cn 体系）",
       "scraper_subdir": "gov_regulations_scraper",
-      "cleaned_dir": "D:/WorkBuddy/regulatory_scrapers/gov_regulations_scraper/data/cleaned",
+      "cleaned_dir": "<repo>/modules/regulatory_scrapers/data/cleaned",
       "snapshots": {
         "<YYYYMMDD>": {                            // 同源可有多份历史快照（如 pbc/supp）
           "date": "20260820",
@@ -57,13 +57,22 @@
 }
 ```
 
-**字段命名约定（便于下游直接消费）**：`source_id` 与 `unified_schema.SOURCE_SET` 严格对齐；路径一律绝对路径 + 正斜杠（与项目约定一致）；`record_count` 来自 CSV 精确计数（`csv.reader`，剔除空行），可作为分类任务记录总量基准。
+**字段命名约定（便于下游直接消费）**：`source_id` 与 `unified_schema.SOURCE_SET` 严格对齐；路径为**绝对路径 + 正斜杠**（运行期寻址用）；`record_count` 来自 CSV 精确计数（`csv.reader`，剔除空行），可作为分类任务记录总量基准。
+
+> **⚠️ index.json 不入 git（2026-09-13 可移植性修复）**
+> 该文件内嵌绝对路径（`scraper_root` + 各快照 `path`），属**派生数据**，已在 `.gitignore` 中排除。
+> 若入库，克隆副本会直接复用他机路径：同机会读到**原仓数据**（把"无数据"伪造成 success），
+> 异机则拿到必然不存在（或意外命中同名目录）的死路径。
+> 加载侧已加**归属 + 存活性校验**（`_index_is_usable`）：索引 `scraper_root` 不等于当前仓库、
+> 或登记的 latest 快照全部不在磁盘时，判定为陈旧并**自动重建**（记 warning，不静默沿用）。
+> 故 `index.json` 缺失是正常状态（首次调用或克隆后自动生成），无需人工补建。
 
 ## 四、稳定调用接口（regulatory_classifier 直接加载，无需转换）
 
 ```python
-import sys, os
-sys.path.insert(0, "D:/WorkBuddy/regulatory_scrapers")   # 跨项目导入
+import os, sys
+import paths   # 仓库根路径唯一入口（R4；禁止盘符字面量）
+sys.path.insert(0, os.path.join(paths.ROOT, "modules", "regulatory_scrapers"))
 from clean_index import get_clean_index
 
 idx = get_clean_index()                  # 单例；优先读 index.json（零扫描），缺失则自动扫描并写入

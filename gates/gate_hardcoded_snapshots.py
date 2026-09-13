@@ -18,15 +18,18 @@ import re
 
 PAT = re.compile(r"[A-Za-z]+_cleaned_\d{8}\.(?:csv|jsonl)", re.IGNORECASE)
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-EXCLUDE_DIRS = {"backups", "data", "cache", "logs", "reports", "venv", ".git",
-                "__pycache__", "clean_index"}
+# 构建产物目录亦排除（2026-09-13）：pip wheel / pip install . 会整树复制到 build/lib，
+# 其中的旧快照文件名会造成误报（这些目录 .gitignore 已忽略，非源码）。
+EXCLUDE_DIRS = {"backups", "data", "cache", "logs", "reports", "venv", ".venv", ".git",
+                "__pycache__", "clean_index", "build", "dist", ".pytest_cache"}
 EXCLUDE_FILES = {"gate_hardcoded_snapshots.py", "clean_index.py"}
 
 
 def lint_hardcoded(root: str = ROOT) -> list[tuple[str, int, str]]:
     findings = []
     for dirpath, dirnames, filenames in os.walk(root):
-        dirnames[:] = [d for d in dirnames if d not in EXCLUDE_DIRS]
+        dirnames[:] = [d for d in dirnames
+                       if d not in EXCLUDE_DIRS and not d.endswith(".egg-info")]
         for fn in filenames:
             if not fn.endswith(".py"):
                 continue
