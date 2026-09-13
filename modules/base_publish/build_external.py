@@ -3,15 +3,15 @@
 
 产出（modules/regulatory_scrapers/published/）：
   external_records.jsonl      主键 record_id(=dedup_key) + rfn；核心字段见 §5 最小集
-  external_clauses.jsonl      主键 record_id+article_no；条款级（含 rfn/生效态 join）
+  external_clauses.jsonl      主键 record_id+article_no；条款级（rfn/时效/日期透传自 clause 行，缺值回退）
   external_attachments.jsonl  主键 record_id+序号；附件元数据（跨源字段归一）
   publish_manifest.json       snapshot_date / 各件 sha256 / 计数 / schema_version
 
-来源：
+来源（2026-09-13 rfn 透传收敛后）：
   - clean_index 五源 latest JSONL（权威轨，含正文与附件）
-  - clause_index 五源 latest clauses JSONL（条款）
-  - rfn_clean_bridge.csv（dedup_key/source_url → RFN 唯一 join）
-  - 归属表/主题归属表（rfn → 时效状态、主题）
+  - clause_index 五源 latest clauses JSONL（条款 + 内联 rfn/时效/日期——F-D10 投影，base 直接透传）
+  - rfn_clean_bridge.csv（dedup_key/source_url → RFN；clause 行缺值时的回退，经 _rfn_of 单入口）
+  - 归属表/主题归属表（norm_docno → rfn 回退、rfn → 主题）
 """
 from __future__ import annotations
 
@@ -82,9 +82,13 @@ def _load_bridge() -> tuple[dict, dict]:
     return by_dedup, by_url
 
 
-def _load_attr_maps() -> tuple[dict, dict, dict]:
-    """归属表/主题归属表 → ({norm_docno: rfn}, {rfn: timeliness}, {rfn: theme})。"""
-    by_docno, tl, theme = {}, {}, {}
+def _load_attr_maps() -> tuple[dict, dict]:
+    """归属表/主题归属表 → ({norm_docno: rfn}, {rfn: theme})。
+
+    注（2026-09-13 rfn 透传收敛）：归属表"时效状态"列与 cleaned 同源（核验回写链），
+    发布件时效以 cleaned 快照为准（与 snapshot_date 对齐）；原 tl 映射未被消费（死代码）已移除。
+    """
+    by_docno, theme = {}, {}
     if os.path.exists(ATTR_CSV):
         with open(ATTR_CSV, encoding="utf-8-sig", newline="") as fh:
             for row in csv.DictReader(fh):
@@ -94,14 +98,13 @@ def _load_attr_maps() -> tuple[dict, dict, dict]:
                 nd = norm_docno(row.get("发文字号") or "")
                 if nd:
                     by_docno.setdefault(nd, rfn)
-                tl[rfn] = (row.get("时效状态") or "").strip()
     if os.path.exists(THEME_CSV):
         with open(THEME_CSV, encoding="utf-8-sig", newline="") as fh:
             for row in csv.DictReader(fh):
                 rfn = (row.get("监管文件编号") or "").strip()
                 if rfn:
                     theme.setdefault(rfn, (row.get("主题") or "").strip())
-    return by_docno, tl, theme
+    return by_docno, theme
 
 
 def _iter_cleaned_records():
@@ -144,7 +147,15 @@ def _iter_clause_records():
 def build() -> dict:
     os.makedirs(PUBLISH_DIR, exist_ok=True)
     by_dedup, by_url = _load_bridge()
-    by_docno, tl_map, theme_map = _load_attr_maps()
+    by_docno, theme_map = _load_attr_maps()
+
+    def _rfn_of(dk: str, url: str, docno: str = "") -> str:
+        """RFN 解析单入口（2026-09-13 rfn 透传收敛）：桥表 dedup_key → source_url → 发文字号（norm_docno）。
+
+        records/clauses/attachments 三视图共用（原三处内联 fallback 重复收敛为单点）。
+        """
+        return (by_dedup.get(dk) or by_url.get(url)
+                or by_docno.get(norm_docno(docno)) or "")
 
     meta = {}            # record_id → {publish_date, timeliness_status, rfn}
     n_att = 0
@@ -156,8 +167,7 @@ def build() -> dict:
             rid = dk or (rec.get("source_url") or "").strip()
             if not rid:
                 continue
-            rfn = (by_dedup.get(dk) or by_url.get((rec.get("source_url") or "").strip())
-                   or by_docno.get(norm_docno(rec.get("document_number") or "")) or "")
+            rfn = _rfn_of(dk, (rec.get("source_url") or "").strip(), rec.get("document_number") or "")
             atts = rec.get("attachments") or []
             if isinstance(atts, list):
                 for a in atts:
@@ -196,7 +206,12 @@ def build() -> dict:
         for _sid, cl in _iter_clause_records():
             dk = (cl.get("dedup_key") or "").strip()
             m = meta.get(dk) or {}
-            rfn = m.get("rfn") or by_dedup.get(dk, "")
+            # F-D10 透传收敛（2026-09-13）：优先 clause 行内联维度（clause_index 已投影 SSOT——
+            # rfn=桥表投影 / 时效、日期=cleaned 直取），行缺值时回退 records 视图 → 桥表；
+            # base 侧不再重复 join/投影（原 m→bridge 二次查表已收敛）。
+            rfn = (cl.get("rfn") or "").strip() or m.get("rfn") or by_dedup.get(dk, "")
+            pub = (cl.get("publish_date") or "").strip() or m.get("publish_date", "")
+            tl = (cl.get("timeliness_status") or "").strip() or m.get("timeliness_status", "")
             for a in (cl.get("articles") or []):
                 num = (a.get("number") or "").strip()
                 if not num:
@@ -207,8 +222,8 @@ def build() -> dict:
                     "title": (cl.get("title") or "").strip(),
                     "article_no": num,
                     "article_body": (a.get("body") or "").strip(),
-                    "publish_date": m.get("publish_date", ""),
-                    "timeliness_status": m.get("timeliness_status", ""),
+                    "publish_date": pub,
+                    "timeliness_status": tl,
                 }
 
     n_clause = _write_jsonl(os.path.join(PUBLISH_DIR, "external_clauses.jsonl"), _clauses())
@@ -218,7 +233,7 @@ def build() -> dict:
         for rec in _iter_cleaned_records():
             dk = (rec.get("dedup_key") or "").strip()
             rid = dk or (rec.get("source_url") or "").strip()
-            rfn = (by_dedup.get(dk) or by_url.get((rec.get("source_url") or "").strip()) or "")
+            rfn = _rfn_of(dk, (rec.get("source_url") or "").strip(), rec.get("document_number") or "")
             for i, a in enumerate(rec.get("attachments") or []):
                 if not isinstance(a, dict):
                     continue
