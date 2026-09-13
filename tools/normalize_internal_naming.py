@@ -97,8 +97,10 @@ _MAIN_TO = re.compile(
 _INLINE_DOCNO = re.compile(
     r"[\u4e00-\u9fa5]{2,20}\s*(?:〔|\(|（)\s*\d{4}\s*(?:〕|\)|）)\s*第?\s*\d{1,4}\s*号\s*")
 
-# 标题内多余空白（内容抽取产物，如「（2025 版）」）——规范名须紧凑
-_SPACE_BEFORE_UNIT = re.compile(r"(?<=\d)\s+(?=[年版月日号条章节项份类])")
+# 标题内多余空白（内容抽取产物，如「（2025 版）」「（2017 修订版）」）——规范名须紧凑。
+# 2026-09-13 扩面：数字后的空格后接**任意汉字**即清（原仅限 版/年/条 等度量词，
+# 漏掉了「2017 修订版」→ 产出「（2017 修订版）」不合规范命名）。
+_SPACE_BEFORE_UNIT = re.compile(r"(?<=\d)\s+(?=[\u4e00-\u9fa5])")
 _SPACE_IN_CJK = re.compile(r"(?<=[\u4e00-\u9fa5])\s+(?=[\u4e00-\u9fa5])")
 _SPACE_BEFORE_DIGIT = re.compile(r"(?<=[\u4e00-\u9fa5])\s+(?=\d)")
 _TAIL_NOISE = re.compile(
@@ -247,6 +249,10 @@ def keep_variant_suffix(title: str, stem: str) -> str:
         if m and norm_name(m.group(1)) and norm_name(m.group(1)) in norm_name(title):
             rest = m.group(2)
     if not rest or len(rest) > 24 or not _VARIANT_TAIL.match(rest):
+        return title
+    # 防重复追加：词干常因历史命名已含同一变体后缀（`…的通知（2017修订版）`），
+    # 若 title 归一后已含该变体 → 不再追加（实测会产生 "…（2017修订版）…（2017修订版）"）。
+    if norm_name(rest) in norm_name(title):
         return title
     return title + rest
 

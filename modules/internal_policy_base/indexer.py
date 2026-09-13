@@ -289,7 +289,9 @@ def ingest(source_root: str, *, enable_ocr: bool = False, dry_run: bool = False,
         text = res.get("text") or ""
         # 内容权威（2026-09-12，用户指令）：文号/标题以**正文**为准；文件名仅解构回退
         # （title 提取失败时对文件名 title 做噪声清洗：-清洁版V3/_盖章/（含水印） 等）。
-        ident = parse_content_identity(text)
+        # fallback_title = 文件名词干：候选标题择优以它为参照（防"标题跑进正文/中途截断"，
+        # 见 scan._pick_title_candidate）。2026-09-13 起显式传入。
+        ident = parse_content_identity(text, fallback_title=f["title"])
         _nd = ident["docno"] or f["docno"]
         _nt = (ident["title"] or clean_title_noise(f["title"]) or f["title"]
                or os.path.splitext(f["file_name"])[0])   # 末位兜底：文件名干
@@ -492,7 +494,8 @@ def refine_identity_backfill(limit: int | None = None) -> dict:
                 text = json.load(open(fpath, encoding="utf-8")).get("text") or ""
             except Exception:  # noqa: BLE001
                 text = ""
-        ident = parse_content_identity(text)
+        # fallback_title = 现 title（≈文件名词干）：候选标题择优参照（2026-09-13）。
+        ident = parse_content_identity(text, fallback_title=rec.get("title", ""))
         nd = ident["docno"] or rec.get("docno", "")
         nt = (ident["title"] or clean_title_noise(rec.get("title", "")) or rec.get("title", "")
               or os.path.splitext(rec.get("file_name", ""))[0])   # 末位兜底：文件名干

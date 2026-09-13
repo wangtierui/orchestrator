@@ -461,3 +461,95 @@ class TestDocnoTitleAreaRules:
         from internal_policy_base.extract import _is_scan_pdf
 
         assert _is_scan_pdf("__not_exist__.pdf") is False
+
+    # —— 第二批用户报告（2026-09-13）——————————————————————————————————
+    def test_halfwidth_bracket_docno_and_redundant_prefix(self):
+        """`[2017]` 半角方括号须可提取；"红头＋再次白名单前缀"须归一为单文号。"""
+        from internal_policy_base.scan import extract_docno_title_area, normalize_docno
+
+        assert normalize_docno("阳光人寿发[2017]2357号") == "阳光人寿发〔2017〕2357号"
+        assert normalize_docno("阳光人寿发[2014]42号") == "阳光人寿发〔2014〕42号"
+        # 实测反例：`普通阳光人寿保险股份有限公司阳光人寿发[2014]42号关于下发《…》的通知`
+        assert normalize_docno("普通阳光人寿保险股份有限公司阳光人寿发[2014]42号") == \
+            "阳光人寿发〔2014〕42号"
+        t = ("阳光人寿发[2017]2357号关于印发《阳光人寿保险股份有限公司公文处理办法"
+             "（2017修订版）》的通知各分公司、总公司各部门：")
+        assert extract_docno_title_area(t)[0] == "阳光人寿发〔2017〕2357号"
+        t2 = "普通阳光人寿保险股份有限公司阳光人寿发[2014]42号关于下发《X办法》的通知各分公司："
+        assert extract_docno_title_area(t2)[0] == "阳光人寿发〔2014〕42号"
+
+    def test_weak_keyword_does_not_truncate_title(self):
+        """`书/表/单` 为弱关键词：后随较长文本时不得当作标题结尾（否则标题被截半）。"""
+        from internal_policy_base.scan import parse_content_identity
+
+        assert parse_content_identity(
+            "管理类劳动合同书领用及用印管理办法第一条为提高劳动合同书领用及用印时效")["title"] == \
+            "管理类劳动合同书领用及用印管理办法"
+        # 弱词在末尾（其后极短）仍应作为结尾（短于 lo=6 的标题由文件名兜底，不在本判据内）
+        assert parse_content_identity("员工月度出勤考勤表")["title"] == "员工月度出勤考勤表"
+
+    def test_title_candidate_prefers_filename_stem(self):
+        """候选择优以**文件名词干**为参照（管线始终提供）：同时防"标题跑进正文"与"中途截断"。"""
+        from internal_policy_base.scan import parse_content_identity
+
+        # 中途截断：`制度`/`说明`/`表` 三处都可结尾，须选与词干一致的最长者
+        r = parse_content_identity("公司政策制度出台依据说明表序号名称说明",
+                                   fallback_title="公司政策制度出台依据说明表")
+        assert r["title"] == "公司政策制度出台依据说明表"
+        # 标题跑进正文：`协议` 之后的正文不得并进标题
+        r2 = parse_content_identity(
+            "员工周转房入住协议我同意阳光人寿保险股份有限公司《周转房管理办法》相关规定",
+            fallback_title="员工周转房入住协议")
+        assert r2["title"] == "员工周转房入住协议"
+        # 无 fallback 时退回"最短可行候选"（保守：标题天然在开头结束）
+        assert parse_content_identity("公司政策制度出台依据说明表序号名称说明")["title"] == "公司政策制度"
+
+    def test_version_space_cleaned_and_variant_not_duplicated(self):
+        from tools.normalize_internal_naming import keep_variant_suffix, tidy_title
+
+        assert tidy_title("关于印发《X办法（2017 修订版）》的通知") == \
+            "关于印发《X办法（2017修订版）》的通知", "数字与版本词间的空格须清"
+        title = "关于印发《阳光人寿保险股份有限公司公文处理办法（2017修订版）》的通知"
+        assert keep_variant_suffix(title, title + "（2017修订版）") == title, \
+            "变体已在标题内 → 不得重复追加"
+        assert keep_variant_suffix("个人寿险营销员行销基本管理办法",
+                                   "个人寿险营销员行销基本管理办法（B类）") == \
+            "个人寿险营销员行销基本管理办法（B类）", "未含变体 → 应追加保住版类区分"
+
+
+class TestExtractionQuality:
+    """抽取链质量判据（2026-09-13）：文本层有效按**有效汉字数** + **缺字信号**（空引号对）。"""
+
+    def test_text_layer_ok_requires_cjk_and_no_gap(self):
+        from std_lib.scraper_std.crawler_common import has_extraction_gap, text_layer_ok
+
+        assert text_layer_ok("阳光人寿发〔2020〕199号关于印发《X办法》的通知" * 3)
+        assert not text_layer_ok("2020/11/26 eoa.sinosig.com/sys/attachment 2/4"), "无汉字不算有效文本层"
+        assert has_extraction_gap("点击相应的影像类别序号前的“”可查看")
+        assert not has_extraction_gap("点击相应的影像类别序号前的“＋”可查看")
+
+    def test_extraction_chain_prefers_pymupdf(self):
+        """抽取链顺序：pymupdf 须在 pypdf 之前。
+
+        理由（实测反例）：pypdf 对部分嵌入字体**逐 token 分行**输出
+        （`…股份有限\\n公司\\n2\\n022\\n年\\n“\\n楼兰\\n”`），下游 `_drop_junk_lines`
+        的水印启发式随即删掉"2 汉字短行"（`楼兰`/`公司`）→ 正文缺字（留下空引号对）。
+        pymupdf 按行输出完整文本，无此缺陷。
+        """
+        import inspect
+
+        from std_lib.scraper_std import crawler_common
+
+        src = inspect.getsource(crawler_common._extract_pdf)
+        assert src.index("pymupdf") < src.index("pypdf"), "pymupdf 须先于 pypdf 尝试"
+
+    def test_reocr_is_idempotent_by_default_and_has_retry(self):
+        """`reocr` 默认幂等（提质尝试过即跳过）；`retry=True` 才忽略该标记（引擎升级场景）。"""
+        import inspect
+
+        from internal_policy_base import extract as ex
+
+        sig = inspect.signature(ex.reocr_backfill)
+        assert "retry" in sig.parameters and sig.parameters["retry"].default is False
+        src = inspect.getsource(ex.reocr_backfill)
+        assert "reocr_force_done" in src and "and not retry" in src

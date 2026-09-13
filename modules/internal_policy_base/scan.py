@@ -95,7 +95,11 @@ def ipn_of(docno: str, title: str, extension: str = "") -> str:
 # 背景：部门制度文件名词干噪声多（"23."/"编号1."/"…_盖章"/"-清洁版V3"），文号与标题
 # 须以**正文**为准；提取失败回退文件名解构（parse_filename，见模块头）。
 _CONTENT_DOCNO_RE = re.compile(
-    r"([\u4e00-\u9fa5]{2,20}(?:〔|【|（|\()\s*\d{4}\s*(?:〕|】|）|\))\s*第?\s*\d{1,4}\s*号)")
+    r"([\u4e00-\u9fa5]{2,20}(?:〔|【|（|\(|\[)\s*\d{4}\s*(?:〕|】|）|\)|\])\s*第?\s*\d{1,4}\s*号)")
+# 说明：括号形态须含**半角方括号** `[2017]`——实测反例（2026-09-13 用户报告）：
+#   `阳光人寿发[2017]2357号关于印发《…公文处理办法（2017修订版）》的通知`
+#   `普通阳光人寿保险股份有限公司阳光人寿发[2014]42号关于下发《…》的通知`
+#   二者文号均用半角方括号，旧正则不含 `[]` → 文号完全提取不到（名称还残留内嵌文号）。
 # 说明：「文件编号：XXX」（体系文件编号，如 SLOC-0203-05）**非发文号**，不作 docno 提取
 
 # ---- 文号提取纪律（用户规则 2026-09-13）----------------------------------------
@@ -112,9 +116,17 @@ _REDHEAD_RE = re.compile(
     r"(?=[\u4e00-\u9fa5]{2,14}(?:〔|【|\[|\(|（)\s*\d{4})")
 # 归一后的严格文号形态：机关代字〔四位年〕序号号
 _DOCNO_FULL_RE = re.compile(r"^[\u4e00-\u9fa5]{2,20}〔\d{4}〕\d{1,4}号$")
-# 红头机关名（名称清洗用）："阳光人寿保险股份有限公司文件" 之类前缀（其后还有标题文字）
+# 红头机关名（名称清洗用）：`…(股份)有限公司[文件]` 且其后紧跟**文号**（防误伤正常标题）。
+# 2026-09-13 扩面：允许前置修饰词（实测 `普通阳光人寿保险股份有限公司阳光人寿发[2014]42号…`）
+# 且 `文件` 可缺省（旧规则强制 `文件` + `(?=汉字)`，导致该红头剥不掉、文号进不了标题区）。
 _REDHEAD_NAME_RE = re.compile(
-    r"^[\u4e00-\u9fa5]{4,30}?(?:股份有限公司|有限公司|集团|公司|事业部|分公司)文件(?=[\u4e00-\u9fa5])")
+    r"^[\u4e00-\u9fa5]{0,10}?(?:股份有限公司|有限公司|集团|事业部|分公司)(?:文件)?"
+    r"(?=[\u4e00-\u9fa5]{2,14}(?:〔|【|\[|\(|（)\s*\d{4})")
+# 文号锚点（归一用）：以白名单前缀起、到 `…号` 止的**最后一个**锚点即真实文号起点。
+# 用于剥"白名单前缀 + 红头 + 再次白名单前缀"的重复（`…股份有限公司阳光人寿发[2014]42号`）。
+_DOCNO_START_RE = re.compile(
+    r"(?:阳光人寿|阳光保险)[\u4e00-\u9fa5]{0,12}"
+    r"(?:〔|【|\[|\(|（)\s*\d{4}\s*(?:〕|】|\]|\)|）)\s*第?\s*\d{1,4}\s*号")
 # 主送机关后缀（正文标题与主送机关常连写无换行："…工作指引各分公司："）
 _MAIN_TO_RE = re.compile(
     r"(?:各分公司|总公司各部门|各事业部|各中心|各部门|各处室|各单位|各机构)[，,：:].*$", re.S)
@@ -129,6 +141,11 @@ def normalize_docno(raw: str) -> str:
     """
     t = re.sub(r"\s+", "", raw or "")
     t = _REDHEAD_RE.sub("", t)
+    # 白名单锚点对齐（2026-09-13）：取**最后一个**"前缀＋括号年＋号"锚点为起点，剥掉
+    # "前缀＋机关全称＋再次前缀"的重复（实测 `普通阳光人寿保险股份有限公司阳光人寿发[2014]42号`）。
+    anchors = list(_DOCNO_START_RE.finditer(t))
+    if anchors:
+        t = t[anchors[-1].start():]
     idx = [p for p in (t.find("阳光人寿"), t.find("阳光保险")) if p >= 0]
     if idx and min(idx) > 0:
         t = t[min(idx):]
@@ -190,6 +207,10 @@ _TITLE_KW = (r"管理办法|实施细则|工作指引|作业指导书|操作规�
              r"|暂行办法|暂行规定|试行办法|决定|办法|规定|通知|细则|指引|规范|制度|方案|预案"
              r"|手册|规程|准则|标准|流程|说明|通告|公告|条例|政策|协议|意向书|承诺书|确认书"
              r"|说明书|申请表|登记表|清单|问卷|要点|措施|规划|计划|指南|表|单|书")
+# 弱关键词（单字，极易误判为标题结尾）：`劳动合同书领用及用印管理办法` 的 `书`、
+# `公司政策制度出台依据说明表` 的 `表`。弱词须**后继很短**才算结尾，否则继续向后找。
+_TITLE_KW_WEAK = ("表", "单", "书")
+_WEAK_TAIL_TOL = 8   # 弱关键词后允许的剩余长度（超过即判"标题未完"）
 _TITLE_KW_END_RE = re.compile(rf"({_TITLE_KW})(?:[（(][^）)]{{1,20}}[）)]|版)?$")
 # 紧跟关键词的括注是否属标题：① 版本/变体类（`（2025版）/（试行）/（2020修订）`）；
 # ② 短括注且无冒号（`（B类）/（暂定）`）。**带冒号的长括注判为正文**——
@@ -205,6 +226,50 @@ _TITLE_DENY_RE = re.compile(r"^(标准化管理体系文件|管理文件|红头�
 _TITLE_KW_ANY = re.compile(_TITLE_KW)
 # 句读标点（标题含之即判为正文混入；含半角 :,; ——OCR/打印页眉常带 `17:05`）
 _TITLE_PUNCT_RE = re.compile(r"[。，、；：！？,;:]")
+
+
+def _title_end_candidates(cand: str, *, lo: int = 6, hi: int = 80) -> list[int]:
+    """列出 `cand` 中所有"可行的标题结尾下标"（升序）。
+
+    可行性 = 制度类关键词结尾（含可吸收的版本括注）∧ 长度落在 [lo, hi] ∧ 其后不是 `的××`
+    接续 ∧ （若是弱关键词 `表/单/书`）其后残余很短。
+    """
+    ends: list[int] = []
+    for m in _TITLE_KW_ANY.finditer(cand):
+        end = m.end()
+        mv = _TITLE_VER_PAREN.match(cand[end:]) or re.match(r"版", cand[end:])
+        if mv:
+            end += mv.end()
+        if not (lo <= end <= hi):
+            continue
+        if _TITLE_TAIL_EXT.match(cand[end:]):
+            continue
+        if m.group(0) in _TITLE_KW_WEAK and len(cand) - end > _WEAK_TAIL_TOL:
+            continue
+        ends.append(end)
+    return ends
+
+
+def _pick_title_candidate(picks: list[str], fallback: str) -> str:
+    """在多个候选标题中择优。
+
+    择优信号 = **候选是否为文件名词干（fallback）的子串**：文件名是本语料的强先验，而
+    "以文件名开头的那一段"正是正文标题该有的边界。判据刻意用**包含关系**而非字符相似度——
+    实测相似度（difflib）**偏向长串**，会把页眉/目录噪声串进标题（如
+    `首页 事项管理 …关于《…管理办法》`、`阳光人寿融客事业部培训制度阳光人寿保险股份…`）。
+    规则：
+      · 存在"⊂ 词干"的候选 → 取**最长**者（最贴近词干前缀的边界）；
+      · 否则退回**最短候选**（标题天然在开头结束）。
+    该规则同时覆盖两类相反错误：`员工周转房入住协议我同意…《周转房管理办法》`（防跑进正文）
+    与 `公司政策制度出台依据说明表`（防中途截断）。
+    """
+    if not picks:
+        return ""
+    if not fallback:
+        return picks[0]
+    nf = re.sub(r"\s+", "", fallback)
+    subs = [p for p in picks if (np := re.sub(r"\s+", "", p)) and np in nf]
+    return max(subs, key=len) if subs else picks[0]
 
 
 def _earliest_kw_end(cand: str, *, lo: int = 6, hi: int = 80) -> int:
@@ -230,6 +295,10 @@ def _earliest_kw_end(cand: str, *, lo: int = 6, hi: int = 80) -> int:
             continue
         if _TITLE_TAIL_EXT.match(cand[end:]):
             continue                      # "的通知/的函" → 标题未完，继续
+        # 弱关键词（表/单/书）须后继很短才算结尾——`管理类劳动合同书领用及用印管理办法》的通知`
+        # 若在 `书` 处截断会丢掉半截标题（实测用户报告第 3 例）。
+        if m.group(0) in _TITLE_KW_WEAK and len(cand) - end > _WEAK_TAIL_TOL:
+            continue
         return end
     return -1
 
@@ -310,10 +379,10 @@ def parse_content_identity(text: str, *, head_chars: int = 1500,
         cand = re.split(r"(编制|审核|批准|发布|编写|版本号|生效日期|文件编号)", cand)[0].strip(" 　：:—-、")
         cand = _MAIN_TO_RE.sub("", cand).strip(" 　：:—-、")   # 剥主送机关（"…工作指引各分公司："）
         cand = _trim_self_repeat(cand)
-        # 标题与正文连写 → 取**最早**的关键词结尾处截断（见 _earliest_kw_end 说明）
-        e = _earliest_kw_end(cand)
-        if e > 0:
-            cand = cand[:e]
+        # 候选择优（2026-09-13）：列出全部可行结尾，取与**文件名词干**最相似者
+        # （兼顾"标题跑进正文"与"中途截断"两类相反错误，见 _pick_title_candidate）。
+        _ends = _title_end_candidates(cand)
+        cand = _pick_title_candidate([cand[:e] for e in _ends], fallback_title) or cand
         if (6 <= len(cand) <= 80 and _TITLE_KW_END_RE.search(cand)
                 and not _TITLE_DENY_RE.match(cand)
                 and not _TITLE_PUNCT_RE.search(cand)   # 含句读即拒（正文混入，2026-09-13 由"仅查。"扩面）

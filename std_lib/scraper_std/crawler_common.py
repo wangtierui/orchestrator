@@ -360,17 +360,56 @@ def cjk_count(s: str) -> int:
     return len(re.findall(r"[\u4e00-\u9fa5]", s or ""))
 
 
-def _extract_pdf(data: bytes, enable_ocr: bool, ocr_timeout: int) -> dict[str, Any]:
-    """PDF 抽取：文本层（pypdf → pdfplumber）→ 不足则 OCR。
+# 空引号对：引号内字符**丢失**的信号（`“”` / `""`）。实测成因：pypdf 对部分嵌入字体
+# 逐 token 分行输出，下游把"2 汉字短行"（`楼兰`/`公司`）当水印删除 → 引号内内容为空。
+_EMPTY_QUOTE_RE = re.compile(r'[“"][”"]')
 
-    2026-09-13 修正（用户报告案例）：文本层"有效"判据由 `text.strip()` 改为
-    **有效汉字数 ≥ `_TEXT_LAYER_MIN_CJK`**。原判据只看"有无文本"，会被**页眉/页脚噪声**
-    虚增——实测某红头文件（阳光人寿发〔2020〕199号）文字层 461 字**全为**
-    `2020/11/26 eoa.sinosig.com/...` 打印页眉，正文实为整页图片，却因此被判为"有文字层"
-    而**跳过 OCR** → 文号与标题全部漏识别（索引里 title 为空、extract_status=ok 的假成功）。
+
+def text_layer_ok(t: str, *, min_cjk: int = _TEXT_LAYER_MIN_CJK) -> bool:
+    """文本层质量判据（抽取链内部使用）：**有效汉字足够 且 无缺字信号**。"""
+    return cjk_count(t) >= min_cjk and not _EMPTY_QUOTE_RE.search(t)
+
+
+def has_extraction_gap(t: str) -> bool:
+    """缺字信号：存在空引号对（引号内字符丢失）。
+
+    ⚠️ 判定对象必须是**库级抽取输出**（`clean_pdf_text` 后）。经 `extract.normalize_text`
+    清洗后，"无 Unicode 映射的符号字形"（控制字符）会被删除并**同样**留下 `“”`——
+    那是**原文特征**而非抽取缺陷（实测 `点击相应的影像类别序号前的“＋”`）。
+    故该信号用于抽取链择优（`text_layer_ok`）与 reocr 的"**首次**提质尝试"触发，
+    不作为永久重跑依据（否则 reocr 永不幂等）。
     """
-    best = ""
-    # 优先 pypdf（轻量）
+    return bool(_EMPTY_QUOTE_RE.search(t))
+
+
+def _extract_pdf(data: bytes, enable_ocr: bool, ocr_timeout: int) -> dict[str, Any]:
+    """PDF 抽取：文本层（**pymupdf → pypdf → pdfplumber**，取首个"质量合格"者）→ 不足则 OCR。
+
+    2026-09-13 修正（用户报告两批案例）：
+      ① 文本层"有效"判据由 `text.strip()` 改为 **有效汉字数 ≥ `_TEXT_LAYER_MIN_CJK`**——
+         原判据只看"有无文本"，会被页眉/页脚噪声虚增（实测某红头文件文字层 461 字全为
+         `eoa.sinosig.com` 打印页眉，正文实为整页图片，却被判"有文字层"而跳过 OCR）；
+      ② **pymupdf 提到首位**：pypdf 对部分嵌入字体会**逐 token 分行**输出
+         （`关于下发\n《\n阳光人寿保险股份有限\n公司\n2\n022\n年\n“\n楼兰\n”\n…`），
+         下游 `normalize_text._drop_junk_lines` 的水印启发式随即把"2 汉字短行"（`楼兰`/`公司`）
+         当水印删除 → 正文**缺字**（实测留下空引号对 `“”`，共 11 份受影响）。
+         pymupdf 按行输出完整文本，无此缺陷。
+      ③ 质量判据 `text_layer_ok()`：有效汉字足够 **且** 无空引号对（缺字信号）。
+    """
+    cands: list[str] = []
+    # ① pymupdf（首选：按行输出，不会把短词拆成独立行）
+    try:
+        import pymupdf
+        with pymupdf.open(stream=data, filetype="pdf") as doc:
+            t = clean_pdf_text("".join(p.get_text() for p in doc))
+        if t.strip():
+            if text_layer_ok(t):
+                return {"text": t, "extracted": True, "extract_status": "ok",
+                        "needs_ocr": False}
+            cands.append(t)
+    except Exception:  # noqa: BLE001  缺库/解析失败 → 下一库
+        pass
+    # ② pypdf（轻量）
     try:
         from pypdf import PdfReader
         reader = PdfReader(__import__("io").BytesIO(data))
@@ -380,13 +419,15 @@ def _extract_pdf(data: bytes, enable_ocr: bool, ocr_timeout: int) -> dict[str, A
                 text += (page.extract_text() or "") + "\n"
             except Exception:
                 pass
-        best = clean_pdf_text(text)
-        if cjk_count(best) >= _TEXT_LAYER_MIN_CJK:
-            return {"text": best, "extracted": True, "extract_status": "ok",
-                    "needs_ocr": False}
+        t = clean_pdf_text(text)
+        if t.strip():
+            if text_layer_ok(t):
+                return {"text": t, "extracted": True, "extract_status": "ok",
+                        "needs_ocr": False}
+            cands.append(t)
     except ImportError:
         pass
-    # 回退 pdfplumber（取有效汉字更多者）
+    # ③ 回退 pdfplumber
     try:
         import pdfplumber
         text = ""
@@ -396,15 +437,16 @@ def _extract_pdf(data: bytes, enable_ocr: bool, ocr_timeout: int) -> dict[str, A
                     text += (page.extract_text() or "") + "\n"
                 except Exception:
                     pass
-        cand = clean_pdf_text(text)
-        if cjk_count(cand) > cjk_count(best):
-            best = cand
-        if cjk_count(best) >= _TEXT_LAYER_MIN_CJK:
-            return {"text": best, "extracted": True, "extract_status": "ok",
-                    "needs_ocr": False}
+        t = clean_pdf_text(text)
+        if t.strip():
+            if text_layer_ok(t):
+                return {"text": t, "extracted": True, "extract_status": "ok",
+                        "needs_ocr": False}
+            cands.append(t)
     except ImportError:
         pass
-    # 两库皆缺
+    # ③′ 取"有效汉字最多"的候选；三库皆缺 → library_missing
+    best = max(cands, key=cjk_count) if cands else ""
     if not _pdf_lib_available():
         return {"text": "", "extracted": False, "extract_status": "library_missing",
                 "needs_ocr": False}
@@ -428,6 +470,11 @@ def _extract_pdf(data: bytes, enable_ocr: bool, ocr_timeout: int) -> dict[str, A
 
 
 def _pdf_lib_available() -> bool:
+    try:
+        import pymupdf  # noqa: F401
+        return True
+    except ImportError:
+        pass
     try:
         import pypdf  # noqa: F401
         return True

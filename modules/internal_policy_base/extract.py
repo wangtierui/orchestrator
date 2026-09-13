@@ -27,8 +27,9 @@ for _p in (_ORCH_ROOT, os.path.join(_ORCH_ROOT, "std_lib")):
         sys.path.insert(0, _p)
 
 from std_lib.scraper_std.crawler_common import (  # noqa: E402
-    cjk_count,  # 有效汉字数（OCR/扫描件判定共用，见 _is_scan_pdf / reocr_backfill）
+    cjk_count,  # 有效汉字数（扫描件判定共用，见 _is_scan_pdf）
     extract_document_text,
+    has_extraction_gap,  # 缺字信号（空引号对）——reocr 首次提质触发用
 )
 from std_lib.scraper_std.text_reflow import (
     reflow_chinese,  # noqa: E402  共享行重排（⑪，供五源 future 复用）
@@ -298,7 +299,7 @@ def _is_scan_pdf(path: str, *, min_cjk: int = 30, pages: int = 5) -> bool:
 
 
 def reocr_backfill(limit: int | None = None, min_cjk: int = 20, force: bool = False,
-                   data_dir: str | None = None) -> dict:
+                   data_dir: str | None = None, retry: bool = False) -> dict:
     """存量扫描件 OCR 回填/重跑（2026-09-12）。
 
     - 目标（默认）：processed 主记录中 `text_chars==0`（扫描件/提取失败）且原文件存在者；
@@ -309,7 +310,9 @@ def reocr_backfill(limit: int | None = None, min_cjk: int = 20, force: bool = Fa
       且保持 `needs_ocr=True`（防 OCR 乱码污染底座）；
     - 回写：主记录（text_chars/needs_ocr/extract_status/章条数）+ `_fulltext.json` +
       `_clauses.json/_clauses.md` + 主索引字段回刷；
-    - 断点：逐文件落盘；重复运行仅再处理未达标者。返回统计（含明细）。
+    - **幂等**（2026-09-13）：提质尝试过（`reocr_force_done`）即不再重跑——一轮收敛；
+      确需在引擎升级后重跑时用 `retry=True`（CLI `--retry`）。
+    - 断点：逐文件落盘；返回统计（含明细）。
     """
     import glob as _glob  # noqa: PLC0415
     import json as _json  # noqa: PLC0415
@@ -361,8 +364,14 @@ def reocr_backfill(limit: int | None = None, min_cjk: int = 20, force: bool = Fa
             _fp = os.path.join(proc_dir, (rec.get("ipn") or "") + "_fulltext.json")
             if os.path.exists(_fp):
                 try:
-                    _cjk_now = cjk_count(_json.load(open(_fp, encoding="utf-8")).get("text") or "")
-                    low_text = _cjk_now < 100
+                    _txt = _json.load(open(_fp, encoding="utf-8")).get("text") or ""
+                    # 判据（2026-09-13 增补"缺字"维度）：有效汉字 <100，**或**含空引号对
+                    # 且**从未做过**提质尝试。缺字维度必要性：pypdf 逐 token 分行致 2 字短词
+                    # 被水印启发式删除时汉字总数仍多，`<100` 抓不到（实测 11 份）。
+                    # "仅首次"必要性：无 Unicode 映射的符号字形被 normalize_text 删除后
+                    # **同样**留 `“”`，属原文特征——若不设门槛则 reocr 永不幂等。
+                    low_text = cjk_count(_txt) < 100 or (
+                        has_extraction_gap(_txt) and not rec.get("reocr_force_done"))
                 except Exception:  # noqa: BLE001
                     low_text = _is_scan_pdf(orig)
             else:
@@ -371,11 +380,11 @@ def reocr_backfill(limit: int | None = None, min_cjk: int = 20, force: bool = Fa
                 continue
             if rec.get("ocr_engine") == "paddle":
                 continue
-            if rec.get("reocr_force_done"):
-                if (rec.get("ocr_force_engine") or "") == "paddle":
-                    continue
-                if not low_text:
-                    continue
+            # 幂等（2026-09-13 重构）：**提质尝试过即不再重跑**（原逻辑在"试过但引擎不可用/
+            # 文本仍不足"时会每轮重跑，实测某件 cjk=60 每轮被重抽 → reocr 永不收敛）。
+            # 引擎升级后确需重跑时，用显式 `--retry`（见 reocr_backfill(..., retry=True)）。
+            if rec.get("reocr_force_done") and not retry:
+                continue
         elif (rec.get("text_chars") or 0) > 0:
             continue
         targets.append((p, rec, orig))
