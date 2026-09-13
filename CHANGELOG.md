@@ -1,5 +1,26 @@
 # Changelog
 
+## [Unreleased] 2026-09-13 — 内部制度原件路径治理 P0（`reports/内部制度原件双份存储与索引漂移分析_20260913.md`）
+
+- **修复（P0-A）ingest 幂等键加 `path_key` 维度**（`internal_policy_base/indexer.py`）：
+  原幂等键仅内容 `sha256` + `prev.ipn == f.ipn`，同内容**换路径**（源目录重组/改名）被判
+  "已摄入"而静默 skip → 索引 `relative_path` 停留在旧布局。现：内容 + 落位路径**双维**判定；
+  路径变化走**「路径跟随」= 移动既有原件**（`_follow_path`，而非再复制一份），
+  并同步 `processed` 路径字段与 `state.path_key`；`state` schema 升至 2.0（键空间不变，向后兼容）。
+- **修复（P0-B）`internal reocr` 不再静默跳过缺原件**（`internal_policy_base/extract.py`）：
+  原件不可解析者计入 `stats["missing_original"]` + `missing_details` 并**打印告警与处置入口**
+  （原 `continue` 无计数无告警，实测覆盖率曾仅 443/957=46%）。新增可注入 `data_dir` 便于单测。
+- **新增（P0-C）门禁 `gate_original_resolvable`**（ALL_GATES 14→15 道）：
+  逐条校验 `internal_policy_index.json` 的 `relative_path` 在 `originals/` 可解析——
+  制度正文类（pdf/doc/docx）**100%**；非正文表格类（xls/xlsx）失效台账须 ≤ **登记基线 24**
+  （只减不增）；索引缺失 → FAIL（对齐 A-07，不静默放行）。
+- **新增工具 `tools/reconcile_original_paths.py`**：按**内容 sha256** 对账重定位索引路径
+  （`--apply` 前自动备份 index/state/受影响 processed；每条写 `path_relocated_from` 可回滚）。
+  首次执行：**重定位 490 条**，可解析率 443/957 → **933/957**（余 24 条为失效表格台账）。
+- **数据修复**：`internal_policy_index.json` + 490 个 `processed/*.json` 路径字段修正；
+  `_ingest_state.json` 迁移至 v2（966 条含 `path_key`）；`internal merged` 重建（输入签名变化触发）。
+- **测试**：新增 `tests/test_internal_original_paths.py`（10 例，覆盖三项 P0）；用例 224 → **236**。
+
 ## [Unreleased] 2026-09-13 — 克隆可移植性修复（`reports/克隆可移植性检视报告_20260913.md`）
 
 ### 修复（阻断级）

@@ -30,6 +30,7 @@ ALL_GATES: list[dict] = [
     {"module": "gates.gate_provenance", "desc": "数据血缘 provenance 覆盖（R10）", "require_impl": True},
     {"module": "gates.gate_field_aliases", "desc": "中文列名受控注册（字段治理）", "require_impl": True},
     {"module": "gates.gate_secret_scan", "desc": "密钥/敏感值硬编码扫描（审查 P1-4）", "require_impl": True},
+    {"module": "gates.gate_original_resolvable", "desc": "内部制度索引↔原件库可解析性", "require_impl": True},
 ]
 
 

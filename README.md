@@ -14,9 +14,9 @@
 - **核心目标**：构建单入口的监管合规编排器——五源采集清洗 → RFN（监管文件编号）唯一实体分类 → 内部制度对齐 → 起草条款对照素材 → **规划 §2.1 五级分析交付库**，全部经**程序可读契约**与**交付门禁**收敛为可审计、可重建、可回归的单一数据管道。
 - **技术栈全景**：
   - **后端核心**：Python 3.13+（脚本编排式，无常驻服务）；标准库 + PyYAML / requests / beautifulsoup4
-  - **数据契约与门禁**：`interfaces/contract.py`（程序可读契约，R24）/ `config/enums.py`（受控枚举）/ `gates/`（ALL_GATES 14 道交付门禁，R23）
+  - **数据契约与门禁**：`interfaces/contract.py`（程序可读契约，R24）/ `config/enums.py`（受控枚举）/ `gates/`（ALL_GATES 15 道交付门禁，R23）
   - **OCR（按需部署；引擎/语言包不入 git，见 §6.6）**：PaddleOCR 3.7.0（主引擎，源码目录经 `OCR_PADDLE_ROOT` 或 `external/PaddleOCR-3.7.0` 软链接入）+ Tesseract 5.4（备引擎，二进制经 `OCR_TESSERACT_BIN`，语言包置仓内 `tessdata/`）；pytesseract / numpy
-  - **测试与静态检查**：pytest（tests/ **224 用例** = 211 代码级 + **13 数据依赖（`@data`）**）/ ruff（dev 依赖）
+  - **测试与静态检查**：pytest（tests/ **236 用例** = 223 代码级 + **13 数据依赖（`@data`）**）/ ruff（dev 依赖）
   - **知识库联动**：Obsidian vault（`<Obsidian vault>\监管法规库`，`tools/sync_wiki_sources.py` 同步）/ llm_wiki v0.6.11（已装，契约见 `reports/llm_wiki接入适配契约_20260912.md`）
   - **可选外部组件**：pdfplumber / python-docx（解析，**已列 base 依赖**）；`@pkulaw/mcp-cli` + 托管 Node（北大法宝时效核验 CLI；**Node 侧依赖，非 Python extra**，零 LLM 消耗）
   - **依赖管理**：Pyproject.toml（PEP 621，`[project.optional-dependencies]` 分 **dev/ocr**；PDF 文本层解析与编码探测属 base 依赖）
@@ -52,8 +52,8 @@ regulatory_compliance_orchestrator/
 │   └── internal_policy_drafter/  # 【常规流程·起草域】条款级对照素材 + 引用核验门禁
 ├── std_lib/                  # 【共享库单副本】scraper_std（doc_type/category/unified_schema/ocr_engine…）
 │   └── common_lib/           #   fs_lock / io_atomic / logger（原子写与审计）
-├── gates/                    # 【常规流程·门禁】ALL_GATES 14 道交付门禁（gates/__init__.py 为准，R23）
-├── tests/                    # 【常规流程·验收】pytest：224 用例（13 项 @data 依赖本机产物）
+├── gates/                    # 【常规流程·门禁】ALL_GATES 15 道交付门禁（gates/__init__.py 为准，R23）
+├── tests/                    # 【常规流程·验收】pytest：236 用例（13 项 @data 依赖本机产物）
 ├── tools/                    # 【特殊工具/编排】见 §2.2（编排、迁移、基准、知识库同步、交付库生成…）
 ├── docs/reports/             # 【特殊辅助·交付库】规划 2.1 五级分析 15 项交付（analysis gen 生成 + _manifest）
 ├── reports/                  # 【特殊辅助】蓝图/检视/专项报告/README 规范（权威交付文档）
@@ -94,8 +94,8 @@ regulatory_compliance_orchestrator/
 | `modules/internal_policy_drafter/` | 目录 | **常规流程（起草域）** | 起草条款对照素材（build_draft_clause_view）与引用核验（verify_regulatory_citations） | 读 merged_view + clauses |
 | `.../scripts/build_draft_clause_view.py` | 文件 | **常规流程** | 条款级端到端对照素材（P8：merged_view × clauses → 每制度 md，自动链接 RFN/⚠待核文号；F-L02 实测 956/957 覆盖） | `cli.py draft` |
 | `.../scripts/verify_regulatory_citations.py` | 文件 | **特殊工具脚本（起草门禁）** | 对齐表 R-01~R-43 + 文档监管引用核验（`--strict` 门禁；旧仓 docs 权威件链路） | 起草/修订制度后人工执行 |
-| `gates/` | 目录 | **常规流程（质量门禁）** | **14 道**门禁实现（gate_*.py）；数量/实装以 `ALL_GATES` 为准（R23） | `python cli.py gates`；提交/交付前必过 |
-| `tests/` | 目录 | **常规流程（验收）** | pytest：**224 用例**（211 代码级 + 13 `@data` 数据依赖；含 common_lib / 流水线断言 / 发布件契约 / 可移植性回归等） | `python -m pytest tests -q`（无数据环境加 `-m "not data"`） |
+| `gates/` | 目录 | **常规流程（质量门禁）** | **15 道**门禁实现（gate_*.py）；数量/实装以 `ALL_GATES` 为准（R23） | `python cli.py gates`；提交/交付前必过 |
+| `tests/` | 目录 | **常规流程（验收）** | pytest：**236 用例**（223 代码级 + 13 `@data` 数据依赖；含 common_lib / 流水线断言 / 发布件契约 / 可移植性回归等） | `python -m pytest tests -q`（无数据环境加 `-m "not data"`） |
 | `tools/run_production_refresh.py` | 文件 | **常规流程（编排）** | 生产刷新编排：采集→清洗→全链→gates→**变更监听基线（F-O02）**；`--collect nfra-weekly` 周增量链（F-O04） | 定时/人工触发（运行手册见 §7） |
 | `tools/ingest_corpus.py` | 文件 | **特殊工具脚本（语料归集）** | 本地语料归集进 IPB（`--exclude-top` 目录排除、`_update_index` 索引维护；EAST 报送文档等按指示排除） | 归集制度/法规目录时执行 |
 | `tools/gen_analysis_deliveries.py` | 文件 | **常规流程（交付库生成）** | **规划 §2.1 五级分析 15 项交付生成**（全数据驱动 + `_manifest.json` sha 登记 + `--dry`） | `cli.py analysis gen`；数据重建后刷新 |
@@ -189,7 +189,7 @@ flowchart LR
     INT[内部制度 originals] -->|scan+extract OCR<br/>Paddle/Tesseract| PC[(processed<br/>fulltext/clauses.json/md)]
     PC -->|align + merged 957| MV[(merged_view)]
     MV -->|build_draft_clause_view| DK[(draft_clause 条款对照素材)]
-    MV -->|gate_citations| G8{14道交付门禁 gates}
+    MV -->|gate_citations| G8{15道交付门禁 gates}
     ST --> G8
     DT -->|gen_analysis_deliveries| AN[(docs/reports<br/>五级分析交付15项)]
     AT & DT & MV --> AN
@@ -217,7 +217,7 @@ flowchart LR
 | **Publish 发布** | cleaned + merged | `published/external_*.jsonl`（records/clauses/attachments/relations）+ internal 发布件 + FTS | 发布件构建（附件 7 字段契约/关系边 1508 汇聚） | `cli.py base publish` | 常规流程 |
 | **Analysis 交付库** | final × 明细 × 图 × upper_laws | `docs/reports/`（**15 项 + _manifest**） | 规划 §2.1 五级分析结构产出（全数据驱动） | `cli.py analysis gen` | **常规流程（F-L01）** |
 | **Knowledge 同步** | 发布件 | `<Obsidian vault>\监管法规库`（Obsidian） | frontmatter 溯源 + 截断声明（F-L08）+ `--prune` 旧名清理 | `tools/sync_wiki_sources.py` | 特殊工具（知识库） |
-| **Validate 门禁** | 全仓数据/代码 | gates 报告 | **14 道** ALL_GATES（契约/枚举/拍平/血缘/漂移/时效 SSOT/字段别名…） | `cli.py gates` | 常规流程（阻断） |
+| **Validate 门禁** | 全仓数据/代码 | gates 报告 | **15 道** ALL_GATES（契约/枚举/拍平/血缘/漂移/时效 SSOT/字段别名/原件可解析…） | `cli.py gates` | 常规流程（阻断） |
 
 ---
 
@@ -239,8 +239,8 @@ flowchart LR
 
 - **代码门禁**：
   - `ruff check .` 零 Error（手动执行；`[dev]` extra）。
-  - 自动化验收 `pytest tests -q`（**224 用例** = 211 代码级 + 13 `@data` 数据依赖；无数据环境用 `pytest tests -m "not data"` 跑代码级回归）。
-- **数据门禁（写入/交付拦截，ALL_GATES 14 道）**：
+  - 自动化验收 `pytest tests -q`（**236 用例** = 223 代码级 + 13 `@data` 数据依赖；无数据环境用 `pytest tests -m "not data"` 跑代码级回归）。
+- **数据门禁（写入/交付拦截，ALL_GATES 15 道）**：
   - 数据契约：归属表/明细/底座/桥 列头与键集须匹配 `interfaces/contract.py`（gate_contract 逐列比对，超集允许、缺必报）。
   - **中文列名受控注册**：CSV 中文列须在 `CN_FIELD_REGISTRY` 登记（gate_field_aliases；明细加列须同步，F-L03 实证）。
   - 受控枚举：所有枚举取值 ∈ `config/enums.py`（gate_enum_values）。
@@ -251,6 +251,7 @@ flowchart LR
   - 目录拍平：modules data/docs 禁止未经白名单的子目录（gate_flat_layout）。
   - 硬编码零容忍：盘符字面量（gate_hardcoded_paths）与 cleaned 快照日期 N-3 外推（gate_hardcoded_snapshots）扫描。
   - 重复工具/重名再定义扫描（gate_no_duplicate_libs；SSOT 分层 + `# norm-specialization` 豁免标记）。
+  - **内部制度原件可解析**：`internal_policy_index.json` 的 `relative_path` 逐条须在 `originals/` 可解析（gate_original_resolvable）——制度正文类 100%；非正文表格类失效台账不超**登记基线 24**（只减不增）。漂移处置：`python tools/reconcile_original_paths.py [--apply]`（详见 `reports/内部制度原件双份存储与索引漂移分析_20260913.md`）。
 - **发布门禁**：
   - 交付前 `python cli.py gates` **全绿（PASS）** 方可；ALL_GATES 数量/实装以 `gates/__init__.py` 为准（R23，禁止文本写死）。
   - 快照/归属表/时效数据变更纪律：先 reconcile → 再重建底座链（classify）→ gates → 刷新 `BENCHMARK.md` 与 **analysis 交付库**；禁手动直接改归属表核心字段（应经 reconcile C1/核验路径，C2 一律人工）。
@@ -271,7 +272,7 @@ flowchart LR
 | 安装方式 | `pip install -e ".[dev]"`（**必须可编辑**），或直接在仓库根运行 `python cli.py` | 非源码树安装（`pip install .`）不含 `modules/`；`cli.py` 启动校验会以 **rc=4** 显式拒绝并给出指引（不再抛晦涩的 `ModuleNotFoundError`） |
 | PDF/编码依赖 | 已列 **base** 依赖（`pypdf` / `pdfplumber` / `chardet`） | 缺则 `internal index` 对 PDF **静默**产出空正文（`extract_status=library_missing`，不报错） |
 | OCR（可选） | `pip install -e ".[ocr]"`；或设 `OCR_PADDLE_ROOT` / `OCR_TESSERACT_BIN` / `OCR_TESSDATA_DIR` 指向本地引擎 | 扫描件走 OCR 降级（不影响有文本层的 PDF） |
-| 数据 | 活跃数据在 `modules/*/data`，**不入 git**：按 `data_migration_manifest.json`（**相对路径 + sha256**）从备份恢复，或按 §6.5 重新采集/重建 | `cli.py gates` 会有 **6 道数据门禁 FAIL**（契约 / RFN 一致性 / RFN 漂移 / 时效单源 / 引用 / 血缘）——**属预期，非代码缺陷** |
+| 数据 | 活跃数据在 `modules/*/data`，**不入 git**：按 `data_migration_manifest.json`（**相对路径 + sha256**）从备份恢复，或按 §6.5 重新采集/重建 | `cli.py gates` 会有 **7 道数据门禁 FAIL**（契约 / RFN 一致性 / RFN 漂移 / 时效单源 / 引用 / 血缘 / 原件可解析）——**属预期，非代码缺陷** |
 | 时效核验（可选） | env `PKULAW_NODE_EXE` + `PKULAW_PKG_DIR`（Node ≥22 + `npm install @pkulaw/mcp-cli`）+ token 文件 `modules/regulatory_scrapers/timeliness_review/.pkulaw_token` | R13 三态降级为 `unavailable`（不误标，但零核验） |
 | 采集外网前提 | gov/mof/nfra/pbc 官网可达；**mof 附件主机为内网地址**，外网需 `MOF_COLLECT_ARGS="--no-attachments"` | mof 全量采集长时间空转 |
 | 非 Windows | 旧 `.doc` 抽取依赖 WPS COM（Windows 专属）；非 Windows 需装 LibreOffice 并以 `LO_BIN` 指向其可执行文件 | `.doc`（仓内主力格式之一）大面积抽取降级 |
@@ -279,7 +280,7 @@ flowchart LR
 **无数据环境的验收口径**（代码级回归，可直接用于新克隆）：
 
 ```bash
-%PY% -m pytest tests -m "not data" -q     # 211 用例：不依赖本机数据产物
+%PY% -m pytest tests -m "not data" -q     # 223 用例：不依赖本机数据产物
 %PY% cli.py source list                   # 源目录唯一事实源（sources.yaml）自检
 %PY% cli.py ping                          # 骨架自检
 ```
@@ -296,7 +297,7 @@ flowchart LR
    PY=<你的 Python 3.13 解释器路径>       # 例：托管 Python 3.13.12 的 python.exe
    %PY% -m pip install -e ".[dev]"        # OCR/扫描件场景追加 [ocr]；PDF 文本层解析已在 base 依赖
    ```
-3. **数据就绪**：活跃数据在 `modules/*/data`（`data/` 同样被忽略），**不入 git**——按 `data_migration_manifest.json`（schema 1.1：**相对仓库根**路径 + size + sha256）从备份复制并校验，或按第 5 步重新采集/重建（内部制度：`%PY% cli.py internal index --source-dir <制度目录>`）。**注意**：无数据时 `cli.py gates` 会有 6 道数据门禁 FAIL，属预期而非代码缺陷（见 §6.0）。
+3. **数据就绪**：活跃数据在 `modules/*/data`（`data/` 同样被忽略），**不入 git**——按 `data_migration_manifest.json`（schema 1.1：**相对仓库根**路径 + size + sha256）从备份复制并校验，或按第 5 步重新采集/重建（内部制度：`%PY% cli.py internal index --source-dir <制度目录>`）。**注意**：无数据时 `cli.py gates` 会有 7 道数据门禁 FAIL，属预期而非代码缺陷（见 §6.0）。
 4. **骨架自检**：
    ```bash
    %PY% cli.py ping                      # 骨架自检
@@ -343,9 +344,9 @@ flowchart LR
    ```
 10. **交付验证**：
     ```bash
-    %PY% cli.py gates                    # 14 道全绿（需数据就绪；缺数据时 6 道数据门禁 FAIL 属预期）
-    %PY% python -m pytest tests -q       # 224 用例（211 代码级 + 13 @data）
-    %PY% python -m pytest tests -m "not data" -q   # 无数据环境：211 用例
+    %PY% cli.py gates                    # 15 道全绿（需数据就绪；缺数据时 7 道数据门禁 FAIL 属预期）
+    %PY% python -m pytest tests -q       # 236 用例（223 代码级 + 13 @data）
+    %PY% python -m pytest tests -m "not data" -q   # 无数据环境：223 用例
     %PY% python tools\gen_benchmark.py   # 刷新交付基准（数据重建后执行）
     ```
     > 门禁示意输出：`PASS: 全部门禁通过`；任一 FAIL 会给出问题明细，修复后重跑，不静默放行。
@@ -387,4 +388,4 @@ flowchart LR
 2. **文件级颗粒度**：本文档 2.2 按"核心入口 + 模块通识"分级列示，全量文件清单见 `reports/物理目录结构.txt`，避免 README 臃肿。
 3. **依赖关系链**：2.2 表格"依赖/被调用方"列给出调用层级（如 base 生成器被 classify 子步调用、merged_view 被 gate_citations/draft 消费），助新人理解依赖方向。
 4. **Mermaid 渲染**：§3.1/§4.1 图表在 GitHub/GitLab 原生渲染；本地可用 VS Code Markdown Preview Mermaid 支持查看。
-5. **保持同步**：本节内容随 R/F 系列重构持续演进，新增模块/命令/门禁后请同步更新 2.2 与 §5（门禁数量一律以 `gates/__init__.py ALL_GATES` 为准）；**数字类事实（制度数/用例数/门禁数/交付项数）更新时以实测输出为准**（本版：gates 14 / pytest 224 / 制度 957 / 交付 15）。
+5. **保持同步**：本节内容随 R/F 系列重构持续演进，新增模块/命令/门禁后请同步更新 2.2 与 §5（门禁数量一律以 `gates/__init__.py ALL_GATES` 为准）；**数字类事实（制度数/用例数/门禁数/交付项数）更新时以实测输出为准**（本版：gates 15 / pytest 236 / 制度 957 / 交付 15）。

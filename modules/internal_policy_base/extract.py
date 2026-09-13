@@ -256,7 +256,8 @@ def _is_scan_pdf(path: str) -> bool:
         return False
 
 
-def reocr_backfill(limit: int | None = None, min_cjk: int = 20, force: bool = False) -> dict:
+def reocr_backfill(limit: int | None = None, min_cjk: int = 20, force: bool = False,
+                   data_dir: str | None = None) -> dict:
     """存量扫描件 OCR 回填/重跑（2026-09-12）。
 
     - 目标（默认）：processed 主记录中 `text_chars==0`（扫描件/提取失败）且原文件存在者；
@@ -277,11 +278,13 @@ def reocr_backfill(limit: int | None = None, min_cjk: int = 20, force: bool = Fa
         render_markdown,
     )
 
-    data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
+    # data_dir 可注入（2026-09-13）：便于单测隔离（默认仍为本模块 data/，行为不变）
+    data_dir = data_dir or os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
     proc_dir = os.path.join(data_dir, "processed")
     idx_path = os.path.join(data_dir, "internal_policy_index.json")
     stats: dict = {"total": 0, "recovered": 0, "low_quality": 0, "failed": 0,
-                   "chars": 0, "force": bool(force), "details": []}
+                   "missing_original": 0, "chars": 0, "force": bool(force),
+                   "details": [], "missing_details": []}
     mains = sorted(p for p in _glob.glob(os.path.join(proc_dir, "*.json"))
                    if not p.endswith(("_fulltext.json", "_clauses.json", "_rich.json")))
     targets = []
@@ -292,6 +295,18 @@ def reocr_backfill(limit: int | None = None, min_cjk: int = 20, force: bool = Fa
             continue
         orig = os.path.join(data_dir, str(rec.get("original_path", "")))
         if not os.path.exists(orig):
+            # 2026-09-13 修复（CP-E04 同类：静默降级）：原件不可解析**必须计数并告警**。
+            # 原实现静默 continue，使 `internal reocr` 实际只覆盖可解析子集却显示"正常完成"
+            # （实测曾仅达 443/957=46%）。此处登记明细，由调用方/用户据以运行
+            # `python tools/reconcile_original_paths.py` 对账。
+            stats["missing_original"] += 1
+            if len(stats["missing_details"]) < 50:
+                stats["missing_details"].append({
+                    "ipn": rec.get("ipn", ""),
+                    "status": "missing_original",
+                    "file": (rec.get("file_name") or "")[:60],
+                    "original_path": str(rec.get("original_path", ""))[:120],
+                })
             continue
         if force:
             if rec.get("extension") != "pdf":
@@ -384,4 +399,13 @@ def reocr_backfill(limit: int | None = None, min_cjk: int = 20, force: bool = Fa
             os.replace(idx_path + ".tmp", idx_path)
         except Exception:  # noqa: BLE001  索引回刷失败不阻断（下次 internal index 会重算）
             pass
+    if stats["missing_original"]:
+        # 显式告警（不静默）：覆盖率缺口必须可见，并给出可执行的处置入口
+        print(f"[reocr] 警告：{stats['missing_original']} 条记录的原件不可解析"
+              f"（original_path 指向不存在的位置），已跳过。")
+        print("[reocr] 处置：运行 `python tools/reconcile_original_paths.py` 对账重定位后重跑。")
+        for d in stats["missing_details"][:10]:
+            print(f"    [缺失] {d['ipn']} | {d['file']}")
+        if stats["missing_original"] > 10:
+            print(f"    … 其余 {stats['missing_original'] - 10} 条见 stats['missing_details']")
     return stats

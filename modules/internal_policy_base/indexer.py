@@ -21,6 +21,7 @@ import glob
 import json
 import os
 import re
+import shutil
 import sys
 from datetime import datetime
 
@@ -123,19 +124,120 @@ def classify_file_type(title: str, extension: str) -> str:
     return "other"
 
 
+def _path_key(rel_path: str) -> str:
+    """仓内落位路径归一（幂等键第二维）：POSIX 化 + 大小写归一（Windows 不敏感）。
+
+    2026-09-13 修复（索引路径漂移根因，见
+    reports/内部制度原件双份存储与索引漂移分析_20260913.md · §4.3）：
+    原幂等键仅为内容 sha256，同内容**换路径**（源目录被重组/改名）会被判"已摄入"而
+    静默 skip，索引 `relative_path` 停留在旧布局 → 索引与原件库失配、`reocr` 无法回读。
+    """
+    return os.path.normcase((rel_path or "").replace("\\", "/"))
+
+
+def _update_processed_path(ipn: str, rel_posix: str, old: str, now: str) -> None:
+    """同步 processed 主记录与 fulltext 的落位路径字段（路径跟随，不触碰内容）。
+
+    仅更新**存在该字段**的文件（主记录含 relative_path/original_path；fulltext 仅含 text）。
+    """
+    for suf in (".json", "_fulltext.json"):
+        p = os.path.join(_PROCESSED, ipn + suf)
+        if not os.path.exists(p):
+            continue
+        try:
+            obj = json.load(open(p, encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if not isinstance(obj, dict):
+            continue
+        if "relative_path" not in obj and "original_path" not in obj:
+            continue
+        if "relative_path" in obj:
+            obj["relative_path"] = rel_posix
+        if "original_path" in obj:
+            obj["original_path"] = "originals/" + rel_posix
+        obj["path_relocated_from"] = old
+        obj["path_relocated_at"] = now
+        tmp = p + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as fh:
+            json.dump(obj, fh, ensure_ascii=False, indent=2)
+        os.replace(tmp, p)
+
+
+def _follow_path(prev_path_key: str, f: dict, now: str) -> bool:
+    """「路径跟随」：同内容同身份、仅仓内落位路径变化时，把既有原件**移动**到新路径。
+
+    不做复制——避免原件库随源目录重组而叠加多代副本（原缺陷之二）。
+    返回 True=已跟随（调用方跳过复制）；False=不可跟随（旧件缺失/跨卷等），由调用方回退复制。
+    """
+    old_rel = prev_path_key.replace("/", os.sep)
+    src = os.path.join(_ORIGINALS, old_rel)
+    if not os.path.exists(src):
+        return False
+    new_posix = (f.get("relative_path") or "").replace("\\", "/")
+    dst = os.path.join(_ORIGINALS, new_posix.replace("/", os.sep))
+    if os.path.normcase(os.path.abspath(src)) == os.path.normcase(os.path.abspath(dst)):
+        return True
+    try:
+        os.makedirs(os.path.dirname(dst), exist_ok=True)
+        if os.path.exists(dst):
+            # 目标已存在：确认同内容后清理旧件（否则保留旧件、交由人工判定）
+            if _sha_match(src, dst):
+                os.remove(src)
+            else:
+                return False
+        else:
+            shutil.move(src, dst)
+    except OSError:
+        return False
+    _update_processed_path(f["ipn"], new_posix, old_rel.replace(os.sep, "/"), now)
+    return True
+
+
+def _sha_match(a: str, b: str) -> bool:
+    """轻量同内容判定：先比大小再比 sha256（避免无谓全文件读取）。"""
+    try:
+        if os.path.getsize(a) != os.path.getsize(b):
+            return False
+        import hashlib as _hl  # noqa: PLC0415
+
+        def _h(p: str) -> str:
+            hh = _hl.sha256()
+            with open(p, "rb") as fh:
+                for c in iter(lambda: fh.read(1 << 20), b""):
+                    hh.update(c)
+            return hh.hexdigest()
+
+        return _h(a) == _h(b)
+    except OSError:
+        return False
+
+
 def ingest(source_root: str, *, enable_ocr: bool = False, dry_run: bool = False) -> dict:
     """主流程。dry_run 只报告将摄取项。返回 summary。"""
     files = scan_directory(source_root)
     state = _load_state()
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    new_items, changed_items, skipped = [], [], []
+    new_items, changed_items, skipped, relocated = [], [], [], []
     for f in files:
         key = f["sha256"]
+        path_key = _path_key(f.get("relative_path", ""))
         prev = state.get(key)
         if prev and prev.get("ipn") == f["ipn"]:
-            skipped.append(f["file_name"])
-            continue
-        if prev:
+            prev_pk = prev.get("path_key")
+            # 幂等键（2026-09-13 修复）：内容 sha256 **且** 落位路径一致才跳过。
+            # prev_pk 缺失（未迁移的旧 state）→ 保守回退原行为（视为已摄入）。
+            if not prev_pk or prev_pk == path_key:
+                skipped.append(f["file_name"])
+                continue
+            if not dry_run and _follow_path(prev_pk, f, now):
+                state[key]["path_key"] = path_key
+                state[key]["relocated_at"] = now
+                relocated.append(f["file_name"])
+                continue
+            # 旧件不在盘/跟随失败 → 回退常规摄入（下方复制链路）
+            changed_items.append(f["file_name"])
+        elif prev:
             changed_items.append(f["file_name"])
         else:
             new_items.append(f["file_name"])
@@ -190,7 +292,8 @@ def ingest(source_root: str, *, enable_ocr: bool = False, dry_run: bool = False)
         # MD 渲染视图（JSON 规范源 → MD 供 drafter 条款对照/人工审阅，格式决策 2026-09-08）
         open(os.path.join(_PROCESSED, f["ipn"] + "_clauses.md"), "w", encoding="utf-8").write(
             render_markdown(stru, title=f["title"]))
-        state[key] = {"ipn": f["ipn"], "sha256": key, "ingested_at": now}
+        state[key] = {"ipn": f["ipn"], "sha256": key,
+                      "path_key": path_key, "ingested_at": now}
 
     if not dry_run:
         _save_state(state)
@@ -230,8 +333,8 @@ def ingest(source_root: str, *, enable_ocr: bool = False, dry_run: bool = False)
 
     return {
         "scanned": len(files), "new": len(new_items), "changed": len(changed_items),
-        "skipped": len(skipped), "indexed": len(records), "dry_run": dry_run,
-        "index_path": _INDEX_PATH,
+        "skipped": len(skipped), "relocated": len(relocated), "indexed": len(records),
+        "dry_run": dry_run, "index_path": _INDEX_PATH,
     }
 
 
