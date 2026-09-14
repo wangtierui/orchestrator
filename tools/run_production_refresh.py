@@ -3,13 +3,21 @@
 run_production_refresh.py —— 生产五源全量数据刷新编排器（2026-09-09）
 
 阶段（严格顺序，任一阶段非零 rc 记录且按策略继续/中止）：
-  0 抓取   [可选 --scrape/--collect] gov(--full 全量)/mof/pbc/nfra(全量离线重建)/supp(本地无网络→跳过)
-  1 clean   run_clean_pipeline --project 每源（尾部自动增量 clause_index 条文节点）
-  2 时效回写 consolidate_timeliness --use-state → apply_timeliness_to_cleaned 五源
-  2.5 classify cli.py classify --all（主题底座/明细强序重建，断点幂等；A-02 接线）
-  3 reconcile_clean_drift（RFN↔clean 漂移核验，写 drift state/ledger）
-  4 recall   run_retrieval_after_checks.py（clean/validity/contract/schema 四门禁）
-  5 gates    cli.py gates（13 道交付门禁）
+ 0   抓取   [可选 --scrape/--collect] gov(--full 全量)/mof/pbc/nfra(全量离线重建)/supp(本地无网络→跳过)
+ 1   clean   run_clean_pipeline --project 每源（尾部自动增量 clause_index 条文节点）
+ 2   时效回写 consolidate_timeliness --use-state → apply_timeliness_to_cleaned 五源
+ 2.5 classify cli.py classify --all（主题底座/明细强序重建，断点幂等；A-02 接线）
+ 2.6 relations cli.py relations gen（依据/废止关系全量重抽取，R-F01；2026-09-14 接入）
+     —— 必须在阶段 1/2 写 cleaned 之后、下游消费者（3/4.2/4.5/6.8）之前；否则
+     merged 引用原语、drafter 关系素材与交付库 2.1.2.4/2.1.2.5 会**静默反映旧数据**
+ 3   reconcile clean_drift（RFN↔clean 漂移核验，写 drift state/ledger）
+ 4   recall   run_retrieval_after_checks.py（clean/validity/contract/schema 四门禁）
+ 4.2 internal merged（内部制度 × RFN 引用视图；F-O07 编排唯一化）
+ 4.5 reports 全量/单主题报告生成（F-O06）
+ 5.5 base publish（双底座发布件 + SQLite/FTS5；Base Contract v1，F-K03）
+ 6   gates    cli.py gates（**16 道**交付门禁）
+ 6.8 analysis gen（规划 §2.1 交付库 17 项刷新，F-L01；含关系类 2 项）
+ 6.5 watch baseline（变更监听基线记录，F-O02）
 输出：控制台分步执行表 + reports/_tmp/ 或 stdout JSON 汇总（每步 rc/耗时/数据量）。
 
 用法：
@@ -190,6 +198,17 @@ def main() -> int:
     # 底座/明细静默过时仍报"完成"。断点幂等（输入未变自动跳过），成本可控。
     report.append(_run("classify:all",
                        [PY, os.path.join(ROOT, "cli.py"), "classify", "--all"], timeout=5400))
+
+    # ---- 阶段 2.6：relations（依据/废止关系全量重抽取，R-F01）----
+    # 动因（2026-09-14）：本链历史上**不接** `relations gen` → cleaned/归属表/内部正文更新后
+    # `relations_index.jsonl` 静默过时，而**依赖它的消费面会被连带污染**：merged 引用原语、
+    # drafter「§2 依据与废止关系」素材、以及交付库 2.1.2.4 关系图谱 / 2.1.2.5 补登清单
+    # （后两者由阶段 6.8 `analysis gen` 从关系产物重建 → 若不重抽取，报告"刷新"了却反映旧数据）。
+    # 位置纪律：必须在**阶段 1/2 写 cleaned 之后**（本阶段 2.6 即满足），且在下游消费者
+    # （阶段 3 reconcile / 4.2 internal merged / 4.5 reports / 6.8 analysis）之前。
+    # 不加 `--report`：报告统一由阶段 6.8 analysis gen 产出（**单一写入方**，避免重复写同一文件）。
+    report.append(_run("relations:gen",
+                       [PY, os.path.join(ROOT, "cli.py"), "relations", "gen"], timeout=1800))
 
     # ---- 阶段 3：reconcile ----
     report.append(_run("reconcile", [PY, os.path.join(CLASSIFIER, "scripts",

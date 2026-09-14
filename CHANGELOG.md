@@ -1,5 +1,37 @@
 # Changelog
 
+## [Unreleased] 2026-09-14 — 交付库 sha 口径统一（文件字节）+ 关系类报告随库刷新（链 2.6 + 门禁判据 8）
+
+### 一、交付库 `sha256_16` 口径统一为**文件字节**哈希
+
+- `tools/gen_analysis_deliveries.py::_write`：`hashlib.sha256(content.encode())`（**正文串 LF 归一**）
+  → `_sha16(落盘文件)`（**磁盘字节**）。原口径在 Windows 下与文件字节**不符**（`open(...,"w")` 把 `\n` 写成 `\r\n`），
+  不能作一致性判据；现平台无关、可直接比对。dry 模式不落盘 → 置空（行为不变）。
+- 实测：重新生成后 **17/17 项 manifest sha 与磁盘字节完全对齐**；新增数据级用例 `test_manifest_sha_matches_disk_bytes` 守住。
+
+### 二、关系类报告「随库刷新」（此前只有纳管、缺刷新链与陈旧检测）
+
+- **新增刷新链阶段 2.6 `relations:gen`**（`tools/run_production_refresh.py`）：位于阶段 1/2 写 cleaned **之后**、
+  下游消费者（3 reconcile / 4.2 internal merged / 4.5 reports / 6.8 analysis）**之前**。
+  动因：本链历史上不接关系重抽取 → `relations_index.jsonl` 静默过时，而消费面
+  （merged 引用原语 / drafter 关系素材 / 交付库 2.1.2.4·2.1.2.5 报告）会**反映旧数据**。
+  不加 `--report`：报告统一由阶段 6.8 `analysis gen` 产出（**单一写入方**）。编排 docstring 阶段表同步补全（含 16 道门禁）。
+- **`gate_relations` 新增判据 8「产物新鲜度」**：关系产物**不得早于其数据面输入**
+  （五源 cleaned 最新 JSONL / `internal_policy_index.json` / `processed/*_fulltext.json` / 归属表 CSV），否则 FAIL 并提示
+  `cli.py relations gen`。范围纪律：只纳入**阶段 0~2 或链条外操作**推进的输入 —— 阶段 3~6 产物不写这些文件，**不会自造 FAIL**。
+  已知取舍（偏严）：归属表仅"时效状态"列变化也会触发，代价一次 ~32s 重抽取。
+- **实测生效**：接入后本机即检出 **6 项陈旧输入**（归属表 + 五源 cleaned）→ 重抽取后 gates 恢复 16/16 PASS。
+
+### 三、验证与文档
+
+- 重抽取实测：关系 **2130 条**（依据 1708 / 废止 422）；`dst_class` entity 1044 / corpus 90 / organ 376 / external 620；
+  **文件级强解析率 59.5% / 定位率 64.6%**（分母 1754；nfra 1939→1934、pbc 571→539 系"无正文记录被跳过"的既有语义）。
+- 交付库 2.1.2.4/2.1.2.5 已随新产物重建（图谱生成时间 → 20:14:51、定位率 64.6%），`analysis status` 17 项全在位。
+- 新增用例 **+11**（字节哈希登记/dry 置空/17 项 sha 对齐/单源渲染/缺失跳过 + 门禁新鲜度 4 项）；
+  `gates` **16/16 PASS**、pytest 全通过、ruff 0。
+- 文档：README（编排阶段表/门禁清单/交付库 sha 口径/关系段「随库刷新」/解析率 64.7%→64.6%）、
+  `commands/analysis.py`、`run_production_refresh.py` docstring。
+
 ## [Unreleased] 2026-09-14 — F-L01 追加：关系类报告纳入 analysis 交付库（15 → 17 项）
 
 ### 一、纳管（报告 `reports/依据与废止关系统一抽取_20260914.md` §10.4）

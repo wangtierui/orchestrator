@@ -169,6 +169,41 @@ class TestContractAndEnums:
 # ===========================================================================
 # 四、数据级：产物 / 门禁 / API（需本机数据）
 # ===========================================================================
+class TestGateFreshness:
+    """判据 8（2026-09-14）：关系产物**不得早于**其数据面输入。
+
+    动因：消费面（merged 引用原语 / drafter 关系素材 / 交付库 2.1.2.4·2.1.2.5 报告）会随
+    关系产物**静默反映旧数据**；此前门禁只查结构一致性，陈旧产物可全额通过。
+    """
+
+    @staticmethod
+    def _gate():
+        sys.path.insert(0, _ROOT)
+        from gates import gate_relations
+        return gate_relations
+
+    def test_stale_detected_when_input_newer(self, monkeypatch):
+        g = self._gate()
+        monkeypatch.setattr(g, "_data_inputs", lambda: [(1000.0, "新输入.jsonl")])
+        assert g._stale_inputs(900.0) == ["新输入.jsonl"]
+
+    def test_fresh_when_product_newer(self, monkeypatch):
+        g = self._gate()
+        monkeypatch.setattr(g, "_data_inputs", lambda: [(1000.0, "输入.jsonl")])
+        assert g._stale_inputs(1100.0) == []
+
+    def test_tolerance_absorbs_write_skew(self, monkeypatch):
+        g = self._gate()
+        monkeypatch.setattr(g, "_data_inputs", lambda: [(1000.0, "输入.jsonl")])
+        assert g._stale_inputs(999.0) == []          # 1s 差 < 容忍 2s
+        assert g._stale_inputs(997.0) == ["输入.jsonl"]   # 3s 差 > 容忍
+
+    def test_no_inputs_never_stale(self, monkeypatch):
+        g = self._gate()
+        monkeypatch.setattr(g, "_data_inputs", lambda: [])
+        assert g._stale_inputs(0.0) == []
+
+
 @pytest.mark.data
 class TestRelationsProducts:
     def test_products_exist_and_index_has_rows(self):

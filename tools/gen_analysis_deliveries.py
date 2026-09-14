@@ -187,10 +187,11 @@ def _write(outdir: str, name: str, content: str, manifest: list, item: str,
     manifest.append({
         "item": item, "title": title, "file": name,
         "lines": content.count("\n") + 1, "chars": len(content),
-        # 口径说明（2026-09-14 注明）：登记的是**正文串（LF 归一）**的 sha，非磁盘字节 sha
-        # —— Windows 下 `open(...,"w")` 会把 \n 写成 \r\n，二者不同。当前**无消费方**
-        # （`analysis status` 只做在位校验），故保留既有口径不改（改动会变更全部 17 项 sha）。
-        "sha256_16": (hashlib.sha256(content.encode("utf-8")).hexdigest()[:16] if not dry else ""),
+        # 口径（2026-09-14 统一）：登记**磁盘字节** sha256 前 16 位（`_sha16(落盘文件)`）。
+        # 原为「正文串（LF 归一）」哈希 —— Windows 下 `open(...,"w")` 会把 \n 写成 \r\n，
+        # 与文件字节不符，不能作一致性判据；现改为读回文件字节，平台无关、可直接比对。
+        # dry 模式不落盘 → 置空（与原行为一致）。
+        "sha256_16": (_sha16(p) if not dry else ""),
         "sources": [os.path.relpath(s, ROOT).replace("\\", "/") for s in sources if s],
     })
 

@@ -17,7 +17,12 @@ classifier 报告、base 关联（merged）、drafter 起草素材共同消费�
 4. **强引用可解析**：`dst_ref` 非空时——`RFN-*` 须在归属表索引、`IPN-*` 须在内部主索引；
 5. **溯源字段非空**：`source_snippet` / `generated_by` / `generated_at`（关系须可回溯到正文出处）；
 6. **源侧可识别**：`src_ref` 或 `src_key` 至少一个非空；
-7. **统计一致性**：`relations_stat.json` 的 `total` 与 `by_kind` 计数须与实际行数一致。
+7. **统计一致性**：`relations_stat.json` 的 `total` 与 `by_kind` 计数须与实际行数一致；
+8. **产物新鲜度（2026-09-14 追加）**：关系产物**不得早于其数据面输入**
+   （五源 cleaned 最新 JSONL / `internal_policy_index.json` / `processed/*_fulltext.json` / 归属表 CSV）。
+   **动因**：消费面（merged 引用原语、drafter 关系素材、交付库 2.1.2.4·2.1.2.5 关系报告）
+   会随关系产物**静默反映旧数据**；此前只查结构一致性 → 陈旧产物可全额通过、无人察觉。
+   **处置**：`python cli.py relations gen`（生产刷新链**阶段 2.6 已自动接入**，正常运营无需手工）。
 
 处置入口
 --------
@@ -61,6 +66,50 @@ def _enum_ok(v: str, allowed, *, empty_ok: bool) -> bool:
     if v == "" and empty_ok:
         return True
     return v in allowed
+
+
+# ---------------------------------------------------------------- 新鲜度（判据 8）
+# 范围纪律（2026-09-14）：只纳入**由阶段 0~2 或链条外操作**推进的**数据面输入** ——
+#   ① 五源 cleaned 最新 JSONL（scrape/clean/时效回写）② `internal_policy_index.json`
+#   ③ `processed/*_fulltext.json`（internal index / reocr）④ 归属表 CSV（rfn 登记 / 时效同步）。
+# 链条阶段 3~6 的产物（drift / recall / merged_view / reports / published / 交付库）**不写这些文件**，
+# 故本断言不会因"自己刚跑完后续阶段"而自造 FAIL。
+# 已知取舍：归属表仅"时效状态"列变化也会触发（该列参与实体索引 extra），属**偏严**；
+# 代价为一次 `relations gen`（~32s，已入刷新链阶段 2.6），换取"登记后未重抽取"这一真实缺口不被静默放过。
+_INPUT_TOLERANCE_S = 2.0        # 容忍秒级写盘先后差（防毫秒抖动误报）
+
+
+def _data_inputs() -> list[tuple[float, str]]:
+    """关系抽取的数据面输入 → [(mtime, 标签)]（不存在的输入自动跳过）。"""
+    import glob  # noqa: PLC0415
+
+    scrapers = os.path.join(paths.MODULES_DIR, "regulatory_scrapers")
+    ipb = os.path.join(paths.MODULES_DIR, "internal_policy_base", "data")
+    cls_data = os.path.join(paths.MODULES_DIR, "regulatory_classifier", "data")
+
+    paths_and_labels: list[tuple[str, str]] = []
+    for p in glob.glob(os.path.join(scrapers, "data", "cleaned", "*_cleaned_*.jsonl")):
+        paths_and_labels.append((p, os.path.basename(p)))
+    paths_and_labels.append((os.path.join(ipb, "internal_policy_index.json"),
+                             "internal_policy_index.json"))
+    for p in glob.glob(os.path.join(ipb, "processed", "*_fulltext.json")):
+        paths_and_labels.append((p, "processed/" + os.path.basename(p)))
+    paths_and_labels.append((os.path.join(cls_data, "人身保险公司-文件归属表.csv"),
+                             "人身保险公司-文件归属表.csv"))
+
+    out: list[tuple[float, str]] = []
+    for p, label in paths_and_labels:
+        try:
+            out.append((os.path.getmtime(p), label))
+        except OSError:
+            continue
+    return out
+
+
+def _stale_inputs(prod_mtime: float) -> list[str]:
+    """比产物更新的输入标签（按 mtime 降序）。"""
+    stale = [(t, lbl) for t, lbl in _data_inputs() if t > prod_mtime + _INPUT_TOLERANCE_S]
+    return [lbl for _t, lbl in sorted(stale, key=lambda kv: -kv[0])]
 
 
 def run():
@@ -157,6 +206,15 @@ def run():
         problems.append(f"统计不一致：stat.total={stat_total} vs 实际 {len(rows)}，"
                         f"by_kind {stat_kind} vs {by_kind_actual}")
 
+    # 判据 8：产物新鲜度（防"数据更新后未重抽取"的静默陈旧，2026-09-14）
+    # 动因：消费面（merged 引用原语 / drafter 关系素材 / 交付库 2.1.2.4·2.1.2.5 关系报告）
+    # 会随关系产物**静默反映旧数据**；此前本门禁只查结构一致性，陈旧产物可全额通过。
+    stale = _stale_inputs(os.path.getmtime(_INDEX))
+    if stale:
+        problems.append(f"关系产物陈旧：{len(stale)} 项数据面输入比产物更新"
+                        f"（如 {stale[:3]}）—— 先运行 `python cli.py relations gen`"
+                        f"（生产刷新链阶段 2.6 已自动接入）")
+
     detail = {
         "rows": len(rows),
         "contract_fields": len(RELATION_FIELDS),
@@ -168,6 +226,9 @@ def run():
         "resolved_to_entity_ratio": stat.get("resolved_to_entity_ratio"),
         "located_in_corpus_ratio": stat.get("located_in_corpus_ratio"),
         "problems": problems,
-        "note": "判据=事实源存在 + 键集⊇契约 + 受控枚举闭包 + 强引用可解析 + 溯源非空 + 统计一致",
+        "data_inputs": len(_data_inputs()),
+        "stale_inputs": stale,
+        "note": "判据=事实源存在 + 键集⊇契约 + 受控枚举闭包 + 强引用可解析 + 溯源非空 + 统计一致"
+                " + 产物新鲜度",
     }
     return (not problems), detail

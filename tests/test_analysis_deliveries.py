@@ -105,6 +105,20 @@ class TestRelationDeliveries:
         }
         return rows, stat
 
+    def test_write_registers_disk_byte_sha(self, tmp_path):
+        """`_write` 登记的必须是**磁盘字节** sha（2026-09-14 口径统一，原为正文串 LF 哈希）。"""
+        manifest: list = []
+        g._write(str(tmp_path), "x.md", "# 标题\n正文\n", manifest, "9.9.9", "样例", [], False)
+        p = os.path.join(str(tmp_path), "x.md")
+        assert manifest[0]["sha256_16"] == g._sha16(p)
+        assert manifest[0]["sha256_16"] != ""
+
+    def test_write_dry_leaves_sha_empty(self, tmp_path):
+        manifest: list = []
+        g._write(str(tmp_path), "x.md", "内容", manifest, "9.9.9", "样例", [], True)
+        assert manifest[0]["sha256_16"] == ""                       # dry 不落盘 → 置空
+        assert not os.path.exists(os.path.join(str(tmp_path), "x.md"))
+
     def test_load_relations_missing_returns_none(self, tmp_path, monkeypatch):
         monkeypatch.setattr(g, "REL_INDEX", str(tmp_path / "missing.jsonl"))
         monkeypatch.setattr(g, "REL_STAT", str(tmp_path / "missing.json"))
@@ -160,6 +174,17 @@ class TestRelationDeliveriesWithData:
         m = json.load(open(mpath, encoding="utf-8"))
         assert m["count"] == len(m["items"]) == 17
         assert {"2.1.2.4", "2.1.2.5"} <= {it["item"] for it in m["items"]}
+
+    def test_manifest_sha_matches_disk_bytes(self):
+        """17 项 manifest 的 `sha256_16` 必须等于**磁盘字节**哈希（口语径统一后可作判据）。"""
+        mpath = os.path.join(ROOT, "docs", "reports", "_manifest.json")
+        if not os.path.exists(mpath):
+            pytest.skip("交付库未生成")
+        m = json.load(open(mpath, encoding="utf-8"))
+        outdir = os.path.join(ROOT, "docs", "reports")
+        bad = [it["item"] for it in m["items"]
+               if g._sha16(os.path.join(outdir, it["file"])) != it["sha256_16"]]
+        assert bad == [], f"sha 与磁盘字节不一致：{bad}"
 
     def test_graph_report_matches_single_source_render(self):
         """交付库中的关系图谱 == 单源渲染器输出（逐字节；行尾归一）。"""
