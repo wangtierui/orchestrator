@@ -217,7 +217,7 @@ def main() -> int:
     report.append(_run("gates", [PY, os.path.join(ROOT, "cli.py"), "gates"], timeout=1800))
 
     # ---- 阶段 6.8：分析交付库刷新（F-L01）----
-    # 数据重建后刷新规划 §2.1 五级分析 15 项交付（docs/reports/）；classify 阶段已
+    # 数据重建后刷新规划 §2.1 五级分析 17 项交付（docs/reports/）；classify 阶段已
     # 自动触发一次，此处显式再跑确保 merged/publish 后数据面一致（幂等，~2s）。
     report.append(_run("analysis:gen",
                        [PY, os.path.join(ROOT, "cli.py"), "analysis", "gen"], timeout=600))

@@ -1,9 +1,13 @@
 # -*- coding: utf-8 -*-
-"""F-L01：规划 2.1 五级分析体系交付库生成器（2026-09-12）。
+"""F-L01：规划 2.1 五级分析体系交付库生成器（2026-09-12；关系类纳管 2026-09-14）。
 
 背景：规划 §2.1 定义"主题分类 → 纵向深化 → 横向整合 → 召回复核 → 全景分析"五级分析
-交付库（2.1.1.x / 2.1.2.x / 2.1.3.x 共 15 项），此前 0 项按结构产出（交付库不存在）。
-本工具把 classifier/published 的既有产物**按结构**生成 15 份 MD 交付物到 docs/reports/。
+交付库（2.1.1.x / 2.1.2.x / 2.1.3.x），此前 0 项按结构产出（交付库不存在）。
+本工具把 classifier/published 的既有产物**按结构**生成 MD 交付物到 docs/reports/。
+
+交付项 **17 项** = 2.1.1（5）+ 2.1.2（5）= 2.1.2.1~3 原有 + **2.1.2.4/2.1.2.5 关系类追加**
+（2026-09-14 纳管）+ 2.1.3（7）。关系类 2 项**复用各自工具的单源渲染器**、从已落盘关系产物
+重建（零重抽取），并在关系事实源缺失时**跳过并告警**（不写占位、不登记）。详见 §2.1.2 追加段。
 
 用法：
   python tools/gen_analysis_deliveries.py                 # 全量生成到 docs/reports/
@@ -183,6 +187,9 @@ def _write(outdir: str, name: str, content: str, manifest: list, item: str,
     manifest.append({
         "item": item, "title": title, "file": name,
         "lines": content.count("\n") + 1, "chars": len(content),
+        # 口径说明（2026-09-14 注明）：登记的是**正文串（LF 归一）**的 sha，非磁盘字节 sha
+        # —— Windows 下 `open(...,"w")` 会把 \n 写成 \r\n，二者不同。当前**无消费方**
+        # （`analysis status` 只做在位校验），故保留既有口径不改（改动会变更全部 17 项 sha）。
         "sha256_16": (hashlib.sha256(content.encode("utf-8")).hexdigest()[:16] if not dry else ""),
         "sources": [os.path.relpath(s, ROOT).replace("\\", "/") for s in sources if s],
     })
@@ -490,6 +497,78 @@ def d_212_3(names, finals, dry, manifest, outdir) -> None:
 
 
 # --------------------------------------------------------------------------- #
+# 2.1.2 追加（F-L01 纳管，2026-09-14）：关系类报告纳入交付库
+# --------------------------------------------------------------------------- #
+# 背景：`docs/reports/监管与制度依据废止关系图谱.md` 与 `RFN补登候选清单.md` 由**各自工具**产出
+# （`tools/extract_relations.py --report` / `tools/rfn_backlog.py`），此前**游离于交付库之外**
+# ——不随 `analysis gen` 刷新、不在 `_manifest.json` 口径内、异机交付不完整。
+#
+# 纳管方式（**追加式，零重构**）：
+#   1. **复用单源渲染**：调用两工具的纯渲染函数（`render_report` / `render_md`），
+#      不复制其渲染逻辑（禁止分叉）；两工具的 CLI 路径亦已改走同一函数（行为等价，逐字节验证）；
+#   2. **零重抽取**：从**已落盘产物**重建（`relations_index.jsonl` + `relations_stat.json`），
+#      不做关系抽取（避免把 ~32s 抽取成本引入交付库刷新）；
+#   3. **沿用既有文件名**：不改两工具的 `REPORT_PATH` / `OUT_MD`，避免"同一报告两个名字"、
+#      或另一写入方写回旧名导致分叉；
+#   4. **数据源缺失即跳过并告警**：不写占位、不登记——避免用占位内容覆盖既有好报告。
+REL_DIR = os.path.join(CDATA, "relations")
+REL_INDEX = os.path.join(REL_DIR, "relations_index.jsonl")
+REL_STAT = os.path.join(REL_DIR, "relations_stat.json")
+
+
+def _load_relations():
+    """读关系产物 → (rows, stat)；任一缺失/不可解析返回 (None, None)。"""
+    if not (os.path.exists(REL_INDEX) and os.path.exists(REL_STAT)):
+        return None, None
+    rows = []
+    try:
+        with open(REL_INDEX, encoding="utf-8") as fh:
+            for line in fh:
+                line = line.strip()
+                if line:
+                    rows.append(json.loads(line))
+    except (OSError, ValueError):
+        return None, None
+    stat = _load_json(REL_STAT, default=None)
+    if not isinstance(stat, dict) or not stat.get("files"):
+        return None, None
+    return rows, stat
+
+
+def _relation_tool(module_name: str):
+    """导入 tools/ 下的单源渲染器模块（与命令行共用唯一实现）。"""
+    tdir = os.path.join(ROOT, "tools")
+    if tdir not in sys.path:
+        sys.path.insert(0, tdir)
+    return __import__(module_name)
+
+
+def d_212_4(rows, stat, dry, manifest, outdir) -> None:
+    """2.1.2.4 监管与制度依据·废止关系图谱（单源渲染 = extract_relations.render_report）"""
+    if rows is None:
+        print("  [跳过] 2.1.2.4 关系图谱：关系事实源缺失（先跑 `cli.py relations gen`），不写占位不登记")
+        return
+    er = _relation_tool("extract_relations")
+    _write(outdir, "监管与制度依据废止关系图谱.md", er.render_report(rows, stat), manifest,
+           "2.1.2.4", "监管与制度依据废止关系图谱", [REL_INDEX, REL_STAT], dry)
+
+
+def d_212_5(dry, manifest, outdir) -> None:
+    """2.1.2.5 RFN 补登候选清单（单源渲染 = rfn_backlog.render_md，时间戳与交付库同源）"""
+    if not os.path.exists(REL_INDEX):
+        print("  [跳过] 2.1.2.5 补登候选清单：关系事实源缺失（先跑 `cli.py relations gen`）")
+        return
+    rb = _relation_tool("rfn_backlog")
+    try:
+        bl = rb.build_backlog()
+    except (OSError, ValueError, KeyError) as e:  # 数据不可解析 → 跳过，不写占位
+        print(f"  [跳过] 2.1.2.5 补登候选清单：{e!r}")
+        return
+    _write(outdir, "RFN补登候选清单.md", rb.render_md(bl, generated_at=NOW), manifest,
+           "2.1.2.5", "RFN 补登候选清单", [REL_INDEX], dry)
+
+
+# --------------------------------------------------------------------------- #
 # 2.1.3 全景分析
 # --------------------------------------------------------------------------- #
 def _global_stats(names, finals, details, graphs) -> dict:
@@ -777,7 +856,7 @@ def main(argv=None) -> int:
     print(f"[deliveries] 主题 {len(finals)} | 图 {len(graphs)} | 明细 {len(details)} | 上位法 {len(upper)}")
 
     manifest: list = []
-    # 2.1.1（5）→ 2.1.2（3）→ 2.1.3（7）
+    # 2.1.1（5）→ 2.1.2（5，含 2026-09-14 追加的关系类 2 项）→ 2.1.3（7）
     d_211_1(names, finals, details, args.dry, manifest, args.out)
     d_211_2(names, finals, args.dry, manifest, args.out)
     d_211_3(names, graphs, args.dry, manifest, args.out)
@@ -786,6 +865,9 @@ def main(argv=None) -> int:
     d_212_1(names, finals, args.dry, manifest, args.out)
     d_212_2(names, graphs, args.dry, manifest, args.out)
     d_212_3(names, finals, args.dry, manifest, args.out)
+    _rel_rows, _rel_stat = _load_relations()          # F-L01 纳管：2.1.2.4 / 2.1.2.5（单源渲染）
+    d_212_4(_rel_rows, _rel_stat, args.dry, manifest, args.out)
+    d_212_5(args.dry, manifest, args.out)
     d_213_1(names, finals, details, graphs, args.dry, manifest, args.out)
     d_213_2(names, graphs, args.dry, manifest, args.out)
     d_213_3(names, finals, details, graphs, args.dry, manifest, args.out)

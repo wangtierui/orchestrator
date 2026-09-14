@@ -34,7 +34,7 @@ def run(argv):
     print(__import__("json").dumps(res, ensure_ascii=False, indent=2))
     if res.get("error"):
         return 1
-    # F-L01（2026-09-12）：数据重建后自动刷新分析交付库（docs/reports/ 15 项）。
+    # F-L01（2026-09-12）：数据重建后自动刷新分析交付库（docs/reports/ 17 项，含 2026-09-14 纳管的关系类 2 项）。
     # 失败不阻断 classify（交付库可经 `cli.py analysis gen` 手动补跑）。
     if not a.dry_run and not a.no_analysis:
         try:

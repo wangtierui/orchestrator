@@ -505,8 +505,13 @@ def _write_jsonl(path: str, rows: list[dict]) -> None:
     os.replace(tmp, path)
 
 
-def write_report(rows: list[dict], stat: dict) -> str:
-    """生成人类可读关系图谱摘要（classifier 报告族的一份）。"""
+def render_report(rows: list[dict], stat: dict) -> str:
+    """渲染关系图谱正文（**纯函数，不落盘**）。
+
+    F-L01 纳管（2026-09-14）：本工具 `--report`（`write_report`）与 analysis 交付库
+    （`tools/gen_analysis_deliveries.py` 2.1.2.4）**共用本实现——单一渲染源，禁止分叉**。
+    交付库侧从已落盘产物（`relations_index.jsonl` + `relations_stat.json`）重建，**零重抽取**。
+    """
     lines = [
         "# 监管与制度依据·废止关系图谱",
         "",
@@ -580,9 +585,15 @@ def write_report(rows: list[dict], stat: dict) -> str:
     for k, v in sorted(by_src.items(), key=lambda kv: -kv[1]):
         lines.append(f"| {k} | {v} |")
     lines.append("")
+    return "\n".join(lines)
+
+
+def write_report(rows: list[dict], stat: dict) -> str:
+    """生成人类可读关系图谱摘要（classifier 报告族的一份；渲染见 `render_report`）。"""
+    content = render_report(rows, stat)
     os.makedirs(os.path.dirname(REPORT_PATH), exist_ok=True)
     with open(REPORT_PATH, "w", encoding="utf-8") as fh:
-        fh.write("\n".join(lines))
+        fh.write(content)
     return REPORT_PATH
 
 

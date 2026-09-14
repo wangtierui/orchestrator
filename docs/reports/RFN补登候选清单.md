@@ -1,6 +1,6 @@
 # RFN 补登候选清单（关系线索驱动）
 
-> 由 `tools/rfn_backlog.py` 生成于 2026-09-14 01:12:39。
+> 由 `tools/rfn_backlog.py` 生成于 2026-09-14 19:40:44。
 > **来源**：`relations_index.jsonl` 中 `dst_class=corpus` 的关系——即「已被制度/监管文件引用、且已采集（cleaned 命中）、但未登记 RFN」的文件。
 > 登记后重跑 `cli.py relations gen`，这些关系即升级为 `entity`（强关联）。
 

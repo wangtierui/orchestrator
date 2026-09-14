@@ -188,21 +188,20 @@ def build_backlog() -> dict:
     return {"items": items, "theme_of": theme_of, "relations_scanned": len(rows)}
 
 
-def write_outputs(bl: dict) -> dict:
-    items = bl["items"]
-    os.makedirs(REL_DIR, exist_ok=True)
-    with open(OUT_CSV + ".tmp", "w", encoding="utf-8", newline="") as fh:
-        w = csv.DictWriter(fh, fieldnames=CSV_FIELDS)
-        w.writeheader()
-        w.writerows(items)
-    os.replace(OUT_CSV + ".tmp", OUT_CSV)
+def render_md(bl: dict, *, generated_at: str = "") -> str:
+    """渲染补登候选清单正文（**纯函数，不落盘**）。
 
+    F-L01 纳管（2026-09-14）：本工具 CLI（`write_outputs`）与 analysis 交付库
+    （`tools/gen_analysis_deliveries.py` 2.1.2.5）**共用本实现——单一渲染源，禁止分叉**。
+    `generated_at` 缺省取当前时间；交付库侧传入其统一时间戳（与其余 15 项 frontmatter 同源）。
+    """
+    items = bl["items"]
     sure = [i for i in items if i["suggested_theme"] != "uncertain"]
     lines = [
         "# RFN 补登候选清单（关系线索驱动）",
         "",
         f"> 由 `tools/rfn_backlog.py` 生成于 "
-        f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}。",
+        f"{generated_at or datetime.now().strftime('%Y-%m-%d %H:%M:%S')}。",
         "> **来源**：`relations_index.jsonl` 中 `dst_class=corpus` 的关系——即"
         "「已被制度/监管文件引用、且已采集（cleaned 命中）、但未登记 RFN」的文件。",
         "> 登记后重跑 `cli.py relations gen`，这些关系即升级为 `entity`（强关联）。",
@@ -254,9 +253,22 @@ def write_outputs(bl: dict) -> dict:
         "> 故补登不会伪造「现行有效」状态。",
         "",
     ]
+    return "\n".join(lines)
+
+
+def write_outputs(bl: dict) -> dict:
+    items = bl["items"]
+    sure = [i for i in items if i["suggested_theme"] != "uncertain"]
+    os.makedirs(REL_DIR, exist_ok=True)
+    with open(OUT_CSV + ".tmp", "w", encoding="utf-8", newline="") as fh:
+        w = csv.DictWriter(fh, fieldnames=CSV_FIELDS)
+        w.writeheader()
+        w.writerows(items)
+    os.replace(OUT_CSV + ".tmp", OUT_CSV)
+
     os.makedirs(os.path.dirname(OUT_MD), exist_ok=True)
     with open(OUT_MD, "w", encoding="utf-8") as fh:
-        fh.write("\n".join(lines))
+        fh.write(render_md(bl))
     return {"csv": OUT_CSV, "md": OUT_MD, "items": len(items), "sure": len(sure)}
 
 

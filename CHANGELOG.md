@@ -1,5 +1,34 @@
 # Changelog
 
+## [Unreleased] 2026-09-14 — F-L01 追加：关系类报告纳入 analysis 交付库（15 → 17 项）
+
+### 一、纳管（报告 `reports/依据与废止关系统一抽取_20260914.md` §10.4）
+
+- **交付库 15 → 17 项**：`docs/reports/监管与制度依据废止关系图谱.md` 与 `RFN补登候选清单.md`
+  此前**游离于交付库之外**（不随 `analysis gen` 刷新、不在 `_manifest` 口径内）→ 现登记为
+  **2.1.2.4 / 2.1.2.5**（归入 2.1.2 横向整合，原 3 项 → 5 项，**未新开层级**）。
+- **4 条纳管纪律**：①**复用单源渲染，禁止分叉**（抽 `extract_relations.render_report()` /
+  `rfn_backlog.render_md()` 纯函数，其 CLI 改薄写盘，生成器直接调用 —— 一份渲染、三处消费）
+  ②**零重抽取**（从 `relations_index.jsonl` + `relations_stat.json` 重建，`analysis gen` 全量 ~4s）
+  ③**沿用既有文件名**（不改两工具 `REPORT_PATH`/`OUT_MD`，避免同名双写分叉）
+  ④**事实源缺失即跳过并告警**（不写占位、不登记，防覆盖既有好报告）。
+- **追加式**：既有 15 份的内联实现**零改动**（原判断"改动风险高"针对重构；实际为"新增"）。
+
+### 二、验证
+
+- **渲染重构行为等价**：用已落盘产物重建 vs 既有报告 → **逐字节一致**（图谱 2720 字符 / 清单 75 候选）；
+  `write_report` / `write_outputs` 已改薄写盘（内容 = 纯函数输出）。
+- **生成后内容完整性**：图谱 sha16 **完全不变**（`a1bdf41dc5394f69`）；清单**仅生成时间戳 1 行**变化。
+- **交付库**：`analysis status` → **17 项 / 全部交付物在位**；**幂等**（连跑 2 次图谱 sha 稳定、count 稳定）。
+- **回归**：`gates` **16/16 PASS**、pytest **305 passed**（+8 用例）、ruff 0；失败安全用例已验证。
+- **文档同步**：README ×6、`commands/analysis.py`、`commands/classify.py`、`run_production_refresh.py` 口径 15 → 17。
+
+### 三、遗留观察（未处置，非遗漏）
+
+- `_manifest.json` 的 `sha256_16` 是**正文串（LF 归一）**哈希，非磁盘字节哈希（Windows 落盘为 CRLF）；
+  当前**无消费方**（`analysis status` 仅在位校验）且一致适用于 17 项 → 保留既有口径并在 `_write` 注明语义；
+  若未来用作一致性判据，需统一切换为文件字节哈希（会使 17 项 sha 全部变更）。
+
 ## [Unreleased] 2026-09-14 — 五源时效核验续跑（timeliness_review 家族三脚本）+ 2 处缺陷修复
 
 ### 一、续跑执行（报告 `reports/五源时效核验续跑报告_20260914.md`）
