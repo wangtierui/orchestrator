@@ -127,9 +127,11 @@ def run_source(source: str, args) -> dict:
         return _summary_record(source, S_SUCCESS, pending=len(cands), queried=0, ok=0,
                                changed=0, nomatch=0, fail=0, degraded=0, dry_run=True)
 
-    cli = pk.find_cli()
-    token = pk.load_token(args.token_file) or pk.load_token(os.path.join(OUT_DIR, ".pkulaw_token"))
-    if not token:
+    # judge-only（R13 降级）**不依赖 CLI/Token**：外部不可用时仍应能零配额补齐已查结果
+    cli = None if args.judge_only else pk.find_cli()
+    token = "" if args.judge_only else (
+        pk.load_token(args.token_file) or pk.load_token(os.path.join(OUT_DIR, ".pkulaw_token")))
+    if not args.judge_only and not token:
         print("[authority] 未找到 Token：请提供 --token-file 或 timeliness_review/.pkulaw_token")
         return _summary_record(source, S_UNAVAILABLE, reason="no_token", pending=len(cands),
                                queried=0, ok=0, changed=0, nomatch=0, fail=0, degraded=len(cands))
@@ -139,9 +141,18 @@ def run_source(source: str, args) -> dict:
     if args.probe:
         plan = plan[:args.probe]
     executed = {p.get("key", p.get("title")) for p in plan}
-    print(f"[authority:{source}] 查询计划 {len(plan)} 项（CLI 就绪，workers={args.workers}）")
-    done = pk.execute_queries(plan, cli, token, checkpoint, workers=args.workers,
-                              retry_failed=args.retry_failed, pause=0.2, log=print)
+    if args.judge_only:
+        # R13 降级态（2026-09-14）：外部不可用（配额/令牌被拒）时**零查询补齐**。
+        # 动因：历史多次运行"查询成功但判定环节未执行到"（被网关限流中断）→ 断点里积压
+        # 已成功结果却从未落判（实测 mof 39 / nfra 5 条）。本开关只读断点落判，不发起查询。
+        done = pk.load_checkpoint(checkpoint)
+        n_ok = sum(1 for v in done.values() if v.get("message") == "成功")
+        print(f"[authority:{source}] judge-only：跳过查询，按断点落判"
+              f"（断点 {len(done)} 项，其中成功 {n_ok}）")
+    else:
+        print(f"[authority:{source}] 查询计划 {len(plan)} 项（CLI 就绪，workers={args.workers}）")
+        done = pk.execute_queries(plan, cli, token, checkpoint, workers=args.workers,
+                                  retry_failed=args.retry_failed, pause=0.2, log=print)
 
     today = datetime.datetime.now().strftime("%Y%m%d")
     ledger_out = os.path.join(OUT_DIR, f"时效核验_{source}变更台账_{today}.csv")
@@ -210,6 +221,8 @@ def main() -> int:
     ap.add_argument("--probe", type=int, default=0, help="每源只核前 N 条（冒烟）")
     ap.add_argument("--workers", type=int, default=2, help="并发数（风控 ≤2）")
     ap.add_argument("--retry-failed", action="store_true", help="重试 checkpoint 失败查询")
+    ap.add_argument("--judge-only", action="store_true", dest="judge_only",
+                    help="R13 降级：不发起任何查询，仅按 checkpoint 已有成功结果落判（零配额补齐）")
     ap.add_argument("--token-file", default="", help="北大法宝 token 文件")
     args = ap.parse_args()
 

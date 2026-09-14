@@ -1,5 +1,38 @@
 # Changelog
 
+## [Unreleased] 2026-09-14 — 五源时效核验续跑（timeliness_review 家族三脚本）+ 2 处缺陷修复
+
+### 一、续跑执行（报告 `reports/五源时效核验续跑报告_20260914.md`）
+
+- **`verify_missing`（主体）**：mof `--retry-failed` **296 条新增 + 29 条失败重试** → 断点 401→**724 条**，
+  判定 valid 103 / amended 6 / repealed 14；gov 15 / pbc 2 复核（零新查询，均 `nomatch`，0 变更）。
+- **`classifier_pkulaw_verify`（修复后首次运行）**：归属表 150 待查验 → 实查 78 成功（其后触发网关限流）
+  → 判定 6 条 + **归属表同步 3 条** + cleaned 4 处。
+- **`authority_backfill --judge-only`（零配额补齐）**：断点 1235 条已成功结果 → **181 条权威落判**
+  （nfra 167 / gov 12 / mof 2）+ **434 条核验痕**（防重复查询）。
+- **落地链**：`consolidate --use-state`（3707 条）→ `apply_timeliness_to_cleaned` 五源（mof 146 + nfra 5）
+  → 归属表键精确同步 18 行 → `classify --all` → `internal merged` → `gates 16/16 PASS`。
+- **本轮真实时效状态变更 136 条**：mof 123（空→valid 103 / →repealed 14 / →amended 6）、
+  nfra 10（**valid→repealed**）、归属表 3；`verification_state` 3262 → **3428** 条。
+
+### 二、缺陷修复
+
+- **`timeliness_review/verification_state.py` 缺同仓路径引导（阻塞级）**：`sys.path.insert(0, ROOT/"std_lib")`
+  是**已失效旧路径**（`std_lib` 已上收仓根）→ ①`scraper_std` 导入必失败并被 `except` **静默降级**为硬编码
+  状态集 ②`std_lib.common_lib.norm` 硬失败。后果：`classifier_pkulaw_verify.py` 自迁移后
+  **完全无法运行**（`ModuleNotFoundError`）。修复：该文件**自带同仓引导**（不依赖调用方），
+  并恢复 `STATUS_SET` 为真实枚举（含 `partially_repealed`）。
+- **`authority_backfill_verify.py` 新增 `--judge-only`**：R13 降级态下不发起查询、不依赖 CLI/Token，
+  仅按断点已有成功结果落判（幂等、不臆造、零配额）。
+
+### 三、外部阻塞与剩余
+
+- 2026-09-14 ~19:12 起北大法宝 CLI 持续 `认证失败`（阻断前已成功 400+ 次；令牌 2026-09-08 签发），
+  属**外部鉴权/配额限制**，本仓无法自解；R13 降级纪律下三脚本**均未误写判定**。
+- 剩余**真待续跑 2150 条**（`classifier_pkulaw_verify` 72 + `authority_backfill` 2078）；
+  `verify_missing` 余 564 条属**已核验但法宝无同名命中**（设计内，非 backlog）。
+- 验证：`gates 16/16`、pytest **297**、ruff 0。
+
 ## [Unreleased] 2026-09-14 — R-F01 第二批：三处旧实现收敛 + 未解析率提升（补登 RFN）
 
 ### 一、§6 三处旧实现收敛（**行为等价**，三重证据固定）

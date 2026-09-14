@@ -58,7 +58,7 @@ modules/regulatory_scrapers/timeliness_review/时效性标注结果清单_*.json
 modules/regulatory_scrapers/timeliness_review/时效性标注结果清单_*.csv
 modules/regulatory_scrapers/timeliness_review/*_冲突台账_*.csv
 modules/regulatory_scrapers/timeliness_review/*_合并报告_*.md
-modules/regulatory_scrapers/timeliness_review/pkulaw_*_checkpoint.jsonl
+modules/regulatory_scrapers/timeliness_review/*_checkpoint.jsonl
 modules/regulatory_scrapers/timeliness_review/*_consolidate_manifest.json
 
 # ===== IDE =====

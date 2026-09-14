@@ -232,6 +232,10 @@ flowchart LR
 | （自动）分析交付库刷新 | **数据重建后自动**（`cli.py classify` 成功尾部触发；编排阶段 6.8 显式再跑） | `cli.py analysis gen` → `docs/reports/` 15 项刷新（幂等，~2s） | `tools/gen_analysis_deliveries.py` | 常规流程（交付库） | 生成失败不阻断 classify（可手动 `analysis gen` 补跑；`--no-analysis` 跳过） |
 
 > 真实核验（北大法宝）运行需环境：`PKULAW_NODE_EXE`/`PKULAW_PKG_DIR`（托管 Node + `@pkulaw/mcp-cli`）与 token 文件 `.pkulaw_token`（git 忽略）。
+> **⚠️ `PKULAW_PKG_DIR` 必须指向包本体目录**（即 `.../node_modules/@pkulaw/mcp-cli`，含 `package.json` 的 `bin` 字段），
+> **不是** npm 安装根 —— 指向安装根时 `find_cli()` 读不到 `bin` 映射、`shutil.which` 亦无果，报"未找到 pkulaw-mcp CLI"（易误判为未安装）。
+> **降级态（配额耗尽/令牌被拒，CLI 报 `认证失败`）**：三脚本**均不写判定**（R13 不误标），断点保留可直接续跑；
+> 此时 `authority_backfill_verify --judge-only` 可**零配额**把断点中"已成功查询但未落判"的结果补齐。
 > **变更监听**：`cli.py source diff [--record]`——对比 `data/watch_baseline.jsonl` 基线与当前各源快照（日期/记录数/内容 sha），编排阶段 6.5 自动 `--record`（F-O02）。
 > **编排与定时全景**：见 `reports/运行手册_编排与定时_20260912.md`（调度清单/命令基准/rc 告警语义表；新增任务须登记）。
 
@@ -273,7 +277,7 @@ flowchart LR
 | PDF/编码依赖 | 已列 **base** 依赖（`pypdf` / `pdfplumber` / `chardet`） | 缺则 `internal index` 对 PDF **静默**产出空正文（`extract_status=library_missing`，不报错） |
 | OCR（可选） | `pip install -e ".[ocr]"`；或设 `OCR_PADDLE_ROOT` / `OCR_TESSERACT_BIN` / `OCR_TESSDATA_DIR` 指向本地引擎 | 扫描件走 OCR 降级（不影响有文本层的 PDF） |
 | 数据 | 活跃数据在 `modules/*/data`，**不入 git**：按 `data_migration_manifest.json`（**相对路径 + sha256**）从备份恢复，或按 §6.5 重新采集/重建 | `cli.py gates` 会有 **7 道数据门禁 FAIL**（契约 / RFN 一致性 / RFN 漂移 / 时效单源 / 引用 / 血缘 / 原件可解析）——**属预期，非代码缺陷** |
-| 时效核验（可选） | env `PKULAW_NODE_EXE` + `PKULAW_PKG_DIR`（Node ≥22 + `npm install @pkulaw/mcp-cli`）+ token 文件 `modules/regulatory_scrapers/timeliness_review/.pkulaw_token` | R13 三态降级为 `unavailable`（不误标，但零核验） |
+| 时效核验（可选） | env `PKULAW_NODE_EXE` + `PKULAW_PKG_DIR`（**指向 `node_modules/@pkulaw/mcp-cli` 包本体**，非安装根）+ token 文件 `modules/regulatory_scrapers/timeliness_review/.pkulaw_token` | R13 三态降级为 `unavailable`（不误标，但零核验）；`--judge-only` 可零配额补齐已查结果 |
 | 采集外网前提 | gov/mof/nfra/pbc 官网可达；**mof 附件主机为内网地址**，外网需 `MOF_COLLECT_ARGS="--no-attachments"` | mof 全量采集长时间空转 |
 | 非 Windows | 旧 `.doc` 抽取依赖 WPS COM（Windows 专属）；非 Windows 需装 LibreOffice 并以 `LO_BIN` 指向其可执行文件 | `.doc`（仓内主力格式之一）大面积抽取降级 |
 

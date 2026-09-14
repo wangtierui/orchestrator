@@ -35,8 +35,18 @@ DEFAULT_MAX_AGE_DAYS = 90
 # regulatory_classifier 归属表（权威交付库）
 CLASSIFIER_CSV = os.path.join(ROOT, "..", "regulatory_classifier", "data", "人身保险公司-文件归属表.csv")
 
+# R4 适配修复（2026-09-14）：原 `sys.path.insert(0, ROOT/"std_lib")` 是**已失效旧路径**
+# （std_lib 早前上收 orchestrator 根）→ ①`scraper_std` 导入必失败并被 except 静默降级为硬编码
+# 状态集 ②`std_lib.common_lib.norm` 导入**硬失败**，仅当调用方自己注入了仓根才侥幸不报错。
+# 实测后果：`classifier_pkulaw_verify.py` 只注入 `ROOT` 与失效的 `ROOT/std_lib` →
+# `ModuleNotFoundError: No module named 'std_lib'`，**该脚本自迁移后完全无法运行**。
+# 本文件被多脚本 import，故在此**自带同仓引导**（不依赖调用方），保证独立可用。
+_ORCH_ROOT = os.path.dirname(os.path.dirname(ROOT))                  # orchestrator 根
+for _p in (_ORCH_ROOT, os.path.join(_ORCH_ROOT, "std_lib")):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
+
 # 效力状态合法值（与 unified_schema 共享常量对齐，规范 v3：7 值含 partially_repealed）
-sys.path.insert(0, os.path.join(ROOT, "std_lib"))
 try:
     from scraper_std.unified_schema import TIMELINESS_STATUS  # noqa: E402
     STATUS_SET = frozenset(TIMELINESS_STATUS)
