@@ -41,6 +41,10 @@ SOURCE_SET: frozenset[str] = frozenset({"nfra", "pbc", "mof", "gov", "supp"})
 # 子源/域名 → 五源标识归并表（v3 3.5）
 SOURCE_ALIASES: dict[str, str] = {
     "xzfgk": "gov", "flk": "gov", "gov.cn": "gov", "gov.cn补充": "gov",
+    # 2026-09-15：gov 源第 2 子源「国务院政策文件库·国务院部门文件」
+    # （www.gov.cn/zhengce/zhengceku/bmwj），采集器 collectors/gov_zhengceku.py；
+    # 归并为 gov，子源名进 _raw_fields.子源。
+    "zhengceku": "gov", "bmwj": "gov",
     "fgk.mof.gov.cn": "mof", "mof.gov.cn": "mof", "mof": "mof",
     "nfra": "nfra", "pbc": "pbc", "supp": "supp",
 }

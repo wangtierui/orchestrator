@@ -95,12 +95,24 @@ def _name_from(url: str, text: str) -> str:
 def _strip_ext(name: str) -> str:
     return _EXT_RE.sub("", name)
 
+# 旧二进制格式（OLE2 系）：表格/富内容轨对其须先经 doc_convert（LibreOffice doc→docx）
+# 才能解析，实测每次附件**两次启动 soffice 合计约 6.5 秒**，且多数 .doc 附件并无结构化
+# 表格（产出为空）。批量采集时该开销占比极高 → 默认不对旧格式做 table/rich。
+LEGACY_KINDS = frozenset({"ole2", "doc", "xls", "wps", "rtf", "ceb", "bin", "unknown"})
+
+
 def fetch_gov_attachments(detail_html, entry_id, entry_title, out_dir, base_url,
-                          *, enable_ocr: bool = False, timeout: int = 60):
+                          *, enable_ocr: bool = False, timeout: int = 60,
+                          enrich_legacy: bool = False):
     """扫描详情页附件链接，下载 + 抽取，返回 (records, attachment_text)。
 
     records 每项为标准化的附件记录（与 nfra 质量基线一致），可直接并入结构化输出。
+
+    enrich_legacy：是否对**旧二进制格式**（.doc/.xls 等 OLE2）也执行表格结构化与
+    富内容抽取。默认 False —— 该轨需先经 LibreOffice 转换，实测每个旧格式附件额外
+    耗时约 6.5 秒且绝大多数产出为空；docx/xlsx 不受此参数影响，始终走完整 enrichment。
     """
+    legacy_skipped = 0
     links = scan_attachment_links(detail_html, base_url)
     records = []
     if not links:
@@ -148,24 +160,30 @@ def fetch_gov_attachments(detail_html, entry_id, entry_title, out_dir, base_url,
             needs_ocr=ext_rec.get("needs_ocr", False))
         rec["link_text"] = text
         rec["attachment_kind"] = ext_rec.get("kind", kind)
-        # 表格结构化（2026-09-08 仿 supp 打通）：xlsx/docx/doc 附件解析结构化表 →
-        # 回填 raw 附件记录表键（map_gov 已透传至 cleaned 39 列表格列）
-        rec.update(structured_table_fields(data, fname, kind=kind))
-        # 富内容轨（2026-09-09 rich_object）：docx/xlsx 内 SmartArt/文本框/公式/图片
-        try:
-            _rk = re.sub(r"[^\w一-鿿-]+", "_", str(entry_id))[:80] or "gov"
-            _rich = rich_object_fields(data, fname,
-                                       image_dir=docs_root("gov", "diagrams"),
-                                       rec_key=_rk + "_att")
-            if _rich:
-                rec["rich_structured"] = _rich["rich_structured"]
-                rec["rich_text"] = _rich["rich_text"]
-                rec["rich_count"] = _rich["rich_count"]
-        except Exception:  # noqa: BLE001
-            pass
+        # 表格结构化（2026-09-08 仿 supp 打通）+ 富内容轨（2026-09-09 rich_object）
+        # ⚠️ 旧二进制格式需先 doc_convert（LibreOffice），实测每附件两次合计约 6.5 秒
+        # 且绝大多数产出为空 → 默认跳过（enrich_legacy=True 可恢复完整能力）。
+        _kind = ext_rec.get("kind", kind)
+        if enrich_legacy or _kind not in LEGACY_KINDS:
+            rec.update(structured_table_fields(data, fname, kind=kind))
+            try:
+                _rk = re.sub(r"[^\w一-鿿-]+", "_", str(entry_id))[:80] or "gov"
+                _rich = rich_object_fields(data, fname,
+                                           image_dir=docs_root("gov", "diagrams"),
+                                           rec_key=_rk + "_att")
+                if _rich:
+                    rec["rich_structured"] = _rich["rich_structured"]
+                    rec["rich_text"] = _rich["rich_text"]
+                    rec["rich_count"] = _rich["rich_count"]
+            except Exception:  # noqa: BLE001
+                pass
+        else:
+            legacy_skipped += 1
         records.append(rec)
         if rec["extracted"] and rec.get("text"):
             texts.append(rec["text"])
+    if legacy_skipped:
+        LOG.info("跳过旧格式附件的表格/富内容轨 %d 个（enrich_legacy=False）", legacy_skipped)
     return records, "\n\n".join(texts)
 
 if __name__ == "__main__":

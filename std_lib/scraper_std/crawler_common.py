@@ -563,6 +563,54 @@ def _xlsx_lib_available() -> bool:
         return False
 
 
+_WPS_AVAILABLE: bool | None = None      # 模块级缓存：WPS 是否安装（None=未探测）
+
+
+def wps_available() -> bool:
+    """探测本机是否安装 WPS（ProgID 注册表探测，O(1)，不启动任何进程）。
+
+    ⚠️ 性能关键（2026-09-15 实测）：`_extract_doc_via_wps` 直接
+    `Dispatch("KWPS.Application")`，在**未安装 WPS** 的机器上该调用不会立即失败，
+    而是阻塞约 14 秒（等待 COM 激活超时）后才抛错，再回退 olefile。
+    批量采集时每条 .doc 附件都白等一次 → 实测单条采集因此从 ~1s 劣化到 ~15s。
+    故在此以前置探测短路：未安装即 `return None`，让调用方直接走 olefile 兜底。
+    """
+    global _WPS_AVAILABLE
+    if _WPS_AVAILABLE is not None:
+        return _WPS_AVAILABLE
+    _WPS_AVAILABLE = False
+    try:
+        import winreg
+        for prog in ("KWPS.Application", "WPS.Application", "ET.Application"):
+            # ⚠️ 只查 ProgID 键**不够**：WPS 卸载后常残留 `KWPS.Application` 注册项
+            # （实测本机即如此），据此判定"已安装"会照旧 Dispatch 并白等 ~14 秒。
+            # 必须沿 ProgID → CLSID → LocalServer32/InprocServer32 取到 COM 服务器
+            # 可执行文件路径，并确认该文件真实存在。
+            try:
+                k = winreg.OpenKey(winreg.HKEY_CLASSES_ROOT, prog + r"\CLSID")
+                clsid, _ = winreg.QueryValueEx(k, "")
+                winreg.CloseKey(k)
+            except OSError:
+                continue
+            exe = ""
+            for view in ("LocalServer32", "InprocServer32"):
+                try:
+                    k2 = winreg.OpenKey(winreg.HKEY_CLASSES_ROOT,
+                                        rf"CLSID\{clsid}\{view}")
+                    raw, _ = winreg.QueryValueEx(k2, "")
+                    winreg.CloseKey(k2)
+                    exe = str(raw).strip().strip('"')
+                    break
+                except OSError:
+                    continue
+            if exe and os.path.exists(exe):
+                _WPS_AVAILABLE = True
+                break
+    except Exception:  # noqa: BLE001  非 Windows / 无注册表 → 视为未安装
+        _WPS_AVAILABLE = False
+    return _WPS_AVAILABLE
+
+
 def _extract_doc_via_wps(data: bytes, timeout: float = 45.0) -> str | None:
     """
     WPS COM 提取旧版 .doc 文本（LibreOffice 缺失/未接线时的替代路径，
@@ -575,6 +623,10 @@ def _extract_doc_via_wps(data: bytes, timeout: float = 45.0) -> str | None:
     秒未返回时，定向终止本轮调用新派生的 wps.exe 实例（不影响调用前已存在
     的用户 WPS 窗口），并将该文件标记为失败继续后续处理。
     """
+    # 前置短路：未安装 WPS 时 Dispatch 会阻塞 ~14s 才失败（2026-09-15 实测），
+    # 直接返回 None 交由调用方走 olefile 兜底。
+    if not wps_available():
+        return None
     import os
     import subprocess
     import tempfile

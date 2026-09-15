@@ -155,7 +155,14 @@ SOURCES = {
     # 2026-09-04：仅保留 xzfgk（行政法规库）。flk（国家法律法规数据库）正文存站内
     # OBS 外部不可达、仅元数据无正文，已停止抓取并清理（见 docs/gov正文缺失排查报告）。
     "xzfgk": ("https://www.gov.cn/zhengce/xzfgk/", "行政法规"),
+    # 2026-09-15：纳入「国务院政策文件库·国务院部门文件」（zhengceku/bmwj，629 页）
+    # 为 gov 源第 2 个子源。此前该栏目完全缺采，导致其下规范性文件（如银发〔2019〕316号）
+    # 在 gov 源无任何记录；且该栏目正文常以附件(.doc/.pdf)形式发布，须同时抓附件原文。
+    # 实现见 collectors/gov_zhengceku.py（ZhengcekuScraper）。
+    "zhengceku": ("https://www.gov.cn/zhengce/zhengceku/bmwj/home.htm", "部门文件"),
 }
+# ⚠️ 本 dict 为 gov 源子源登记表的**唯一事实源**；gov_collector.py 从此处导入，
+# 不在采集器主文件中重复定义（避免两处漂移，见 2026-09-15 收敛）。
 
 
 _SCRAPERS_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -180,6 +187,9 @@ class ScrapeConfig:
     timeout: int = 30
     retries: int = 4
     summary_len: int = 200
+    # 详情阶段断点落盘间隔（条；0=不落暂存）。供长时子源（zhengceku，全量约 30 小时）
+    # 在中断后可续跑——主库只在全部结束后写一次，中途中断必须靠暂存文件兜底。
+    checkpoint_every: int = 200
 
 
 def clean_text(s: Any) -> str:
@@ -390,6 +400,7 @@ def build_config(args) -> ScrapeConfig:
         timeout=args.timeout,
         retries=args.retries,
         summary_len=args.summary_len,
+        checkpoint_every=getattr(args, "checkpoint_every", 200),
     )
 
 

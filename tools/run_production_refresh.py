@@ -49,7 +49,12 @@ COLLECTORS = os.path.join(SCRAPERS, "collectors")
 SOURCES = ["gov", "mof", "nfra", "pbc", "supp"]
 # 各源采集命令（全量语义）。supp 无网站增量 → 由 clean 刷新即可。
 COLLECT_CMD = {
-    "gov": [PY, os.path.join(COLLECTORS, "gov_collector.py"), "--full"],
+    # gov 含两个子源：xzfgk（行政法规库）+ zhengceku（国务院政策文件库·部门文件，2026-09-15 纳入）。
+    # 去掉历史 `--full`：gov resume 默认开（基于 detail_url 跳过已抓、与主库合并），
+    # 既可持续补全 zhengceku 的历史存量（约 629 页 / 1.7 万条，全量约需 30 小时，
+    # 由每日增量反复调用逐步收敛），又能跟进两个子源的新增条目。
+    # 需要一次性全量重抓时手工执行：gov_collector.py --source all --full
+    "gov": [PY, os.path.join(COLLECTORS, "gov_collector.py"), "--source", "all"],
     # mof 附件主机 10.1.60.36:8888 曾实测 100% HTTP 502：默认全量会空转数十小时，
     # 可用环境 MOF_COLLECT_ARGS="--no-attachments" 追加逃生参数（仍会抓详情正文）。
     "mof": [PY, os.path.join(COLLECTORS, "mof_collector.py")],

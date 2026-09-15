@@ -127,6 +127,7 @@ from gov_parse import (  # noqa: F401  拆分 re-export（显式；规避 F405�
     load_resume,
     make_summary,
     merge_with_master,
+    SOURCES,          # 子源登记表唯一事实源在 gov_parse（2026-09-15 收敛，勿在别处重复定义）
     write_outputs,
 )
 
@@ -513,11 +514,7 @@ CSV_COLUMNS = [
 # 主流程
 # --------------------------------------------------------------------------- #
 
-SOURCES = {
-    # 2026-09-04：仅保留 xzfgk（行政法规库）。flk（国家法律法规数据库）正文存站内
-    # OBS 外部不可达、仅元数据无正文，已停止抓取并清理（见 docs/gov正文缺失排查报告）。
-    "xzfgk": ("https://www.gov.cn/zhengce/xzfgk/", "行政法规"),
-}
+# 子源登记表 SOURCES 由 gov_parse 导入（唯一事实源，见上方 import 块）。
 
 
 # —— 运行锁统一实现（N-8）：判定逻辑收敛到 regulatory_scrapers/fs_lock.py，四源共用 ——
@@ -532,8 +529,9 @@ from std_lib.common_lib import fs_lock
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(
         description="抓取 gov.cn 行政法规库（xzfg.moj.gov.cn）行政法规条目（含正文全文）")
-    parser.add_argument("--source", choices=["xzfgk"], default="xzfgk",
-                        help="数据源：xzfgk=行政法规库(xzfg.moj.gov.cn，唯一数据源)")
+    parser.add_argument("--source", choices=["xzfgk", "zhengceku", "all"], default="all",
+                        help="数据源：xzfgk=行政法规库；zhengceku=国务院政策文件库·部门文件；"
+                             "all=两者依次抓取（默认，gov 源常规采集范围）")
     parser.add_argument("--out-dir",
                         default=os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "raw"),
                         help="输出目录（5b 收敛：默认统一 data/raw/，即 regulatory_scrapers/data/raw）")
@@ -565,6 +563,11 @@ def main(argv=None) -> int:
                         help="纯离线模式：仅读取 --cache-dir 缓存，缓存缺失即跳过（不联网）")
     parser.add_argument("--csv", action="store_true",
                         help="额外输出 CSV 表格视图（默认仅写 JSON 主库，2026-09-09 规范）")
+    parser.add_argument("--stop-on-error", action="store_true",
+                        help="多子源抓取时任一子源失败即中止（默认跳过失败子源、继续其余并汇总）")
+    parser.add_argument("--checkpoint-every", type=int, default=200,
+                        help="详情阶段断点落盘间隔（条；0=不落暂存）。zhengceku 全量约 30 小时，"
+                             "主库仅在全部结束后写一次，中断必须靠暂存文件续跑（默认 200）")
     parser.add_argument("--log-file", default="",
                         help="日志文件路径（默认输出到控制台与 out-dir/scraper.log）")
     args = parser.parse_args(argv)
@@ -596,23 +599,60 @@ def main(argv=None) -> int:
     cfg = build_config(args)
     client = RobustSession(cfg)
 
-    LOG.info("开始抓取数据源：%s（%s）", cfg.source, cfg.category)
-    try:
-        records = XzfgkScraper(cfg, client).run()
-    except Exception as e:
-        LOG.exception("抓取过程发生致命错误：%s", e)
-        return 1
+    # —— 多子源分发（2026-09-15 纳入 zhengceku）——
+    # 原实现硬编码 XzfgkScraper；现按 cfg.source 分发，支持 --source all 依次抓取
+    # 两个子源并**合并进同一 gov 主库** gov_laws.json（按 detail_url 去重，新优先）。
+    from gov_zhengceku import ZhengcekuScraper  # noqa: E402  （同目录子采集器）
 
+    if args.source == "all":
+        want = list(SOURCES)
+    else:
+        want = [args.source]
+
+    # resume：只跳过「已有正文」的 detail_url（无正文的历史记录仍需重抓补全）
+    seen_urls = set()
+    if cfg.resume:
+        _seen, detailed = load_resume(cfg.out_dir, "gov")
+        seen_urls = set(detailed)
+
+    records, failed = [], []
+    for s in want:
+        sub = argparse.Namespace(**vars(args))
+        sub.source = s
+        scfg = build_config(sub)
+        LOG.info("开始抓取子源：%s（%s）", scfg.source, scfg.category)
+        try:
+            if s == "xzfgk":
+                recs = XzfgkScraper(scfg, client).run()
+            else:
+                recs = ZhengcekuScraper(scfg, client, seen_urls).run()
+        except Exception as e:  # noqa: BLE001
+            LOG.exception("子源 %s 抓取过程发生致命错误：%s", s, e)
+            failed.append(s)
+            continue
+        LOG.info("子源 %s 抓取到 %d 条", s, len(recs))
+        records.extend(recs)
+        for r in recs:
+            if r.get("full_text"):
+                seen_urls.add(r.get("detail_url", ""))
+
+    if failed and args.stop_on_error:
+        return 1
     if not records:
-        LOG.warning("未抓取到任何条目。")
+        LOG.warning("未抓取到任何条目（失败子源：%s）。", failed or "无")
         return 0
 
     if cfg.resume:
         # 增量续抓：本次 records 仅含新发现条目 → 与现主库合并后覆盖写，防丢历史
         records = merge_with_master(records, cfg.out_dir)
 
-    paths = write_outputs(records, cfg, source_label=cfg.source, write_csv=args.csv)
-    LOG.info("成功抓取 %d 条。文件：%s", len(records), paths)
+    # 信封 source/category：单子源沿用其自身标识；all 时标为 gov 汇总
+    env_source = cfg.source if len(want) == 1 else "gov"
+    env_cat = cfg.category if len(want) == 1 else "行政法规+部门文件"
+    cfg.source, cfg.category = env_source, env_cat
+    paths = write_outputs(records, cfg, source_label=env_source, write_csv=args.csv)
+    LOG.info("成功抓取 %d 条（子源：%s；失败：%s）。文件：%s",
+             len(records), ",".join(want), ",".join(failed) or "无", paths)
     return 0
 
 if __name__ == "__main__":
