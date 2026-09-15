@@ -44,7 +44,7 @@ class RFNAPI:
     def bridge_upsert(self, rfn, source, source_url, dedup_key, title, docno):
         """按 RFN 幂等 upsert 桥记录（保留既有锚；供 reconcile 后处理调用）。"""
         from rfn.bridge import upsert  # noqa: PLC0415
-        row = {"监管文件编号": rfn, "文件来源": source, "source_url": source_url,
+        row = {"rfn": rfn, "文件来源": source, "source_url": source_url,
                "dedup_key": dedup_key, "登记时标题": title, "登记时文号": docno}
         return upsert(row)
 

@@ -60,7 +60,7 @@ def _load_rfn_bridge() -> tuple:
         return by_dk, by_url
     with open(_RFN_BRIDGE, encoding="utf-8-sig") as fh:
         for row in csv.DictReader(fh):
-            rfn = (row.get("监管文件编号") or "").strip()
+            rfn = (row.get("rfn") or row.get("监管文件编号") or "").strip()
             if not rfn:
                 continue
             dk = (row.get("dedup_key") or "").strip()

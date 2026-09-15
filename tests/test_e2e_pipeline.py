@@ -120,6 +120,9 @@ def test_reconcile_bridge_and_state():
     with open(bp, encoding="utf-8-sig", newline="") as f:
         b = list(_csv.DictReader(f))
     assert len(b) >= 800, f"桥表过少: {len(b)}"
+    # 2026-09-15 键值对格式规范统一：桥表首列须为英文键名 rfn（旧中文列名已归一）
+    assert "rfn" in b[0], f"桥表首列非 rfn: {list(b[0].keys())[:3]}"
+    assert "监管文件编号" not in b[0], "桥表仍含旧中文首列，读写侧契约不一致"
     state = json.load(open(sp, encoding="utf-8"))
     assert state.get("clean_snapshots", {}).get("nfra"), "state 无快照记录"
 

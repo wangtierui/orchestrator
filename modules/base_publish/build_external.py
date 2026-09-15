@@ -70,7 +70,7 @@ def _load_bridge() -> tuple[dict, dict]:
         return by_dedup, by_url
     with open(BRIDGE_CSV, encoding="utf-8-sig", newline="") as fh:
         for row in csv.DictReader(fh):
-            rfn = (row.get("监管文件编号") or "").strip()
+            rfn = (row.get("rfn") or row.get("监管文件编号") or "").strip()
             if not rfn:
                 continue
             dk = (row.get("dedup_key") or "").strip()

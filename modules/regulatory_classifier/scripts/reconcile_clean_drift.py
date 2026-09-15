@@ -54,7 +54,7 @@ for _p in (_MOD_CLASS, _SCRAPERS_MOD, _ORCH_ROOT):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from rfn.bridge import load_bridge, upsert  # noqa: E402
+from rfn.bridge import load_bridge, rfn_of, upsert  # noqa: E402
 
 import paths  # noqa: E402
 
@@ -219,7 +219,7 @@ def reconcile(source=None, apply_c1=False, dry_run=False, force_clean_title=Fals
     bridge = load_bridge()
     by_rfn = collections.defaultdict(list)
     for br in bridge:
-        by_rfn[br["监管文件编号"]].append(br)
+        by_rfn[rfn_of(br)].append(br)
     snap = load_clean_snapshot(source)
 
     today = _today()
@@ -243,7 +243,7 @@ def reconcile(source=None, apply_c1=False, dry_run=False, force_clean_title=Fals
             if full_eq:
                 stats["ok"] += 1
                 if not dry_run:
-                    upsert({"监管文件编号": rfn, "文件来源": src, "source_url": cr["source_url"],
+                    upsert({"rfn": rfn, "文件来源": src, "source_url": cr["source_url"],
                             "dedup_key": cr["dedup_key"], "登记时标题": row.get("文件名称", ""),
                             "登记时文号": row.get("发文字号", ""), "最近确认日期": today,
                             "最近状态": "ok", "relation": "self"})
@@ -260,7 +260,7 @@ def reconcile(source=None, apply_c1=False, dry_run=False, force_clean_title=Fals
                                     "clean标题": cr["title"], "matched_by": matched,
                                     "建议": "C1自动刷新标题（核心标题一致，仅称谓/括注差异）"})
                 if not dry_run:
-                    upsert({"监管文件编号": rfn, "文件来源": src, "source_url": cr["source_url"],
+                    upsert({"rfn": rfn, "文件来源": src, "source_url": cr["source_url"],
                             "dedup_key": cr["dedup_key"], "登记时标题": row.get("文件名称", ""),
                             "登记时文号": row.get("发文字号", ""), "最近确认日期": today,
                             "最近状态": "ok", "relation": "refresh"})
@@ -285,7 +285,7 @@ def reconcile(source=None, apply_c1=False, dry_run=False, force_clean_title=Fals
                             "matched_by": matched,
                             "建议": "C2人工确认（supersede / URL 复用）"})
             if not dry_run:
-                upsert({"监管文件编号": rfn, "文件来源": src, "source_url": cr["source_url"],
+                upsert({"rfn": rfn, "文件来源": src, "source_url": cr["source_url"],
                         "dedup_key": cr["dedup_key"], "登记时标题": row.get("文件名称", ""),
                         "登记时文号": row.get("发文字号", ""), "最近确认日期": today,
                         "最近状态": "drift_c2", "relation": "supersede"})
@@ -326,7 +326,7 @@ def reconcile(source=None, apply_c1=False, dry_run=False, force_clean_title=Fals
         else:
             # 核对式：C1 项归属表展示保留（精炼名视为规范表达），仅将桥最近状态回置 ok
             for d in c1_list:
-                upsert({"监管文件编号": d["监管文件编号"], "文件来源": d["文件来源"],
+                upsert({"rfn": d["监管文件编号"], "文件来源": d["文件来源"],
                         "最近确认日期": today, "最近状态": "ok", "relation": "refresh"})
             stats["c1_acknowledged"] = len(c1_list)
 

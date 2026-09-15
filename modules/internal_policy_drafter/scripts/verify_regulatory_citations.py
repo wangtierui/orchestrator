@@ -3,14 +3,22 @@
 verify_regulatory_citations.py — 制度文档监管引用强制核验工具（唯一事实源门禁）
 
 用途（2026-08-27 治理决策落地）：
-  internal_policy_drafter 后期制定/修订制度时，凡引用政府监管文件，**强制**：
+  internal_policy_drafter 后期制定/修订文档时，凡引用政府监管文件，**强制**：
     1) 数据来源 = regulatory_classifier（RFN 唯一事实源，经 rfn.get_index() 解析）；
     2) 发文字号/文件名称 必须能在 classifier 命中（禁止臆造文号/标题）；
-    3) R-01~R-33 交叉键必须经 docs/监管文件编号与分类对齐表 → RFN → classifier 逐环可验；
+    3) R 交叉键必须经 docs/监管文件编号与分类对齐表 → RFN → classifier 逐环可验；
     4) 效力状态以 classifier 时效状态列为准（含北大法宝核验 ≤90 日复用）。
 
+SSOT 分工（2026-09-15 一致性治理，消除模块私有常量）：
+  - **R↔RFN 载体** = 本模块 docs/监管文件编号与分类对齐表.md（R 号为 drafter 侧交叉键，
+    classifier 无此概念，故 R 映射只能由该表承载）；
+  - **权威事实源** = regulatory_classifier 归属表（名称/文号/时效）；
+  - 本脚本**不再内置 R 号规模常量**（原「预期 43」曾致 R-44~R-48 误判为漂移），
+    R 号范围一律**由对齐表实际内容动态推导**，并校验连续性。
+
 校验维度（对输入 md 文档）：
-  - R 引用（R-01~R-33）：对齐表映射 RFN → classifier is_valid + 名称/文号与权威一致（**门禁**）
+  - R 引用（R-01~对齐表实际最大号，动态）：对齐表映射 RFN → classifier is_valid
+    + 名称/文号与权威一致（**门禁**）
   - 发文字号引用：提取〔20xx〕N号/[20xx]N号/令20xx年第N号/国务院令第N号 核心 → **文号签名
     （年份+序号）主匹配** classifier（对前缀变体如"废止/替代/由"+机关名免疫；0 候选=疑似臆造→FAIL，
     >1 候选=INFO 列出）
@@ -96,6 +104,17 @@ class Verifier:
         self.idx = get_index()
         self.align = load_align_map()
 
+    # ---- R 号范围（动态推导，禁止内置规模常量） ----
+    def align_span(self):
+        """对齐表已登记的 R 号区间字符串，如 'R-48'（相对 R-01）。"""
+        nums = [int(k[2:]) for k in self.align if k[2:].isdigit()]
+        return "R-%02d" % max(nums) if nums else "R-00"
+
+    def align_gaps(self):
+        """对齐表 R 号是否连续；返回缺失号列表（防「扩号只改一半」）。"""
+        nums = sorted(int(k[2:]) for k in self.align if k[2:].isdigit())
+        return [n for n in range(1, nums[-1] + 1) if n not in set(nums)] if nums else []
+
     # ---- 对齐表自检 ----
     def check_align(self):
         issues, warns = [], []
@@ -128,8 +147,10 @@ class Verifier:
                                f"时效值非受控枚举: {cur!r}（合法: {sorted(TIMELINESS_SET)}）"))
                 continue
             if authoritative and cur != authoritative:
-                warns.append((f"对齐表 {r}",
-                              f"时效与 classifier 不一致: 对齐表[{cur}] vs 权威[{authoritative}]（以权威为准）"))
+                # 2026-09-15 一致性治理：时效为「以 classifier 为唯一事实源」的硬约束，
+                # 不一致即模块间数据断裂 → 由 INFO 升为**门禁 FAIL**（原仅告警，漂移可静默通过）。
+                issues.append((f"对齐表 {r}",
+                               f"时效与 classifier 不一致（以权威为准）: 对齐表[{cur}] vs 权威[{authoritative}]"))
         return issues, warns
 
     # ---- 发文字号签名候选 ----
@@ -161,7 +182,8 @@ class Verifier:
                 r = "R-%s" % m.group(1)
                 row = self.align.get(r)
                 if not row:
-                    issues.append((f"{base}:L{i}", f"R 编号 {r} 不在对齐表（R-01~R-43 之外）"))
+                    issues.append((f"{base}:L{i}",
+                                   f"R 编号 {r} 不在对齐表（已登记 R-01~{self.align_span()}）"))
                     continue
                 if self.idx.by_rfn(row["rfn"]):
                     r_ok += 1
@@ -236,9 +258,10 @@ def main():
         print(f"[verify] FAIL 对齐表缺失或为空: {ALIGN}；R/文号引用核验未实检"
               + ("（strict 门禁拦截）" if args.strict else "（非严格模式仅报告）"))
         return 1 if args.strict else 0
-    if len(ver.align) != 48:
-        print(f"[verify] WARN 对齐表解析 R 行数={len(ver.align)}（预期 48，R-01~R-48 主册规模；"
-              f"2026-09-03 扩至 R-43、2026-09-15 补入 R-44~R-48 与 01/05 产物对齐），请检查对齐表格式")
+    _gaps = ver.align_gaps()
+    if _gaps:
+        print(f"[verify] WARN 对齐表 R 号不连续（R-01~{ver.align_span()}），缺 "
+              f"{['R-%02d' % n for n in _gaps]}——扩号须成对补齐（对齐表/01 附件/05 表三处）")
     a_issues, a_warns = ver.check_align()
     for loc, msg in a_issues:
         print(f"[FAIL] {loc}: {msg}")

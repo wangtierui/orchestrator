@@ -151,7 +151,7 @@ def run():
             for b in csv.DictReader(fh):
                 u = b.get("source_url", "")
                 if u:
-                    url2rfn[u] = b.get("监管文件编号", "")
+                    url2rfn[u] = b.get("rfn", "") or b.get("监管文件编号", "")
         ci = None
         try:
             from clean_index import get_clean_index  # noqa: PLC0415

@@ -44,8 +44,11 @@ DETAIL_TABLE_FIELDS: list[str] = [
 ]
 
 # RFN↔clean 溯源桥 11 列（Q1=A；写者=reconcile 后处理 R7；R10 provenance 加 generated_by/at）
+# 2026-09-15（键值对格式规范统一）：桥表为**技术关联表**，首列由中文列名「监管文件编号」
+# 改为**英文键名 `rfn`**；归属表/主题表/明细表等业务展示表按既定决策保留中文列名不变。
+# 读取侧对旧表头做归一（rfn.bridge.load_bridge），写入侧一律按本契约落盘。
 RFN_CLEAN_BRIDGE_FIELDS: list[str] = [
-    "监管文件编号", "文件来源", "source_url", "dedup_key",
+    "rfn", "文件来源", "source_url", "dedup_key",
     "登记时标题", "登记时文号", "最近确认日期", "最近状态", "relation",
     "generated_by", "generated_at",
 ]
