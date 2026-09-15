@@ -1,6 +1,6 @@
 {
   "generated_by": "gen_analysis_deliveries",
-  "generated_at": "2026-09-15 10:29:33",
+  "generated_at": "2026-09-15 12:23:17",
   "count": 17,
   "items": [
     {
@@ -9,7 +9,7 @@
       "file": "2.1.1.1_子主题层级结构总览.md",
       "lines": 109,
       "chars": 5444,
-      "sha256_16": "adb440c440de3e2f",
+      "sha256_16": "74aaf9dff5c78cdd",
       "sources": [
         "modules/regulatory_classifier/data/_t1_final.json"
       ]
@@ -20,7 +20,7 @@
       "file": "2.1.1.2_监管演变阶段与逻辑迁移.md",
       "lines": 236,
       "chars": 5425,
-      "sha256_16": "7675881dbaa1d5a8",
+      "sha256_16": "0bedcae578f3c310",
       "sources": [
         "modules/regulatory_classifier/data/_t1_final.json"
       ]
@@ -29,9 +29,9 @@
       "item": "2.1.1.3",
       "title": "内部关联关系图",
       "file": "2.1.1.3_内部关联关系图.md",
-      "lines": 760,
-      "chars": 52288,
-      "sha256_16": "fff2e1bc52432dff",
+      "lines": 793,
+      "chars": 54805,
+      "sha256_16": "d9c4875ac3102755",
       "sources": [
         "modules/regulatory_classifier/data/_t1_clause_graph.json"
       ]
@@ -41,8 +41,8 @@
       "title": "核心文件引用-细化链条表",
       "file": "2.1.1.4_核心文件引用细化链条表.md",
       "lines": 1172,
-      "chars": 112322,
-      "sha256_16": "fba05dd9f232edc3",
+      "chars": 112454,
+      "sha256_16": "d3432a6561126993",
       "sources": [
         "modules/regulatory_classifier/data/T0_89逐份条款引用与上位法依据明细表.csv",
         "modules/regulatory_classifier/data/T10_143逐份条款引用与上位法依据明细表.csv",
@@ -63,7 +63,7 @@
       "file": "2.1.1.5_监管体系完整性评估.md",
       "lines": 217,
       "chars": 12541,
-      "sha256_16": "b709897c5da7a9e0",
+      "sha256_16": "52221640a86d1801",
       "sources": [
         "modules/regulatory_classifier/data/_t1_final.json",
         "modules/regulatory_classifier/data/_t1_clause_graph.json"
@@ -75,7 +75,7 @@
       "file": "2.1.2.1_核心监管主题总览.md",
       "lines": 27,
       "chars": 1400,
-      "sha256_16": "9d8ea6a9a910dff1",
+      "sha256_16": "32d7011bddb586d5",
       "sources": [
         "modules/regulatory_classifier/data/_t1_final.json"
       ]
@@ -84,9 +84,9 @@
       "item": "2.1.2.2",
       "title": "主题间关联关系图",
       "file": "2.1.2.2_主题间关联关系图.md",
-      "lines": 1027,
-      "chars": 73773,
-      "sha256_16": "36e21fcfaba36455",
+      "lines": 1136,
+      "chars": 81871,
+      "sha256_16": "12caab1b5337e06c",
       "sources": [
         "modules/regulatory_classifier/data/_t1_clause_graph.json"
       ]
@@ -97,7 +97,7 @@
       "file": "2.1.2.3_各主题监管演进阐述.md",
       "lines": 301,
       "chars": 12718,
-      "sha256_16": "7a2adcd3fa48ddbd",
+      "sha256_16": "a2d5a4e33fab23f8",
       "sources": [
         "modules/regulatory_classifier/data/_t1_final.json"
       ]
@@ -107,8 +107,8 @@
       "title": "监管与制度依据废止关系图谱",
       "file": "监管与制度依据废止关系图谱.md",
       "lines": 84,
-      "chars": 2720,
-      "sha256_16": "5fbe4303bc2183c0",
+      "chars": 2721,
+      "sha256_16": "fbb8b39528348c8b",
       "sources": [
         "modules/regulatory_classifier/data/relations/relations_index.jsonl",
         "modules/regulatory_classifier/data/relations/relations_stat.json"
@@ -119,8 +119,8 @@
       "title": "RFN 补登候选清单",
       "file": "RFN补登候选清单.md",
       "lines": 84,
-      "chars": 5534,
-      "sha256_16": "4538b43347eac972",
+      "chars": 5559,
+      "sha256_16": "80e4f34da62d430e",
       "sources": [
         "modules/regulatory_classifier/data/relations/relations_index.jsonl"
       ]
@@ -130,8 +130,8 @@
       "title": "执行摘要",
       "file": "2.1.3.1_执行摘要.md",
       "lines": 37,
-      "chars": 685,
-      "sha256_16": "9af7797a6105dd23",
+      "chars": 687,
+      "sha256_16": "a318a0ae19b3e663",
       "sources": [
         "modules/regulatory_classifier/data/_t1_final.json"
       ]
@@ -141,8 +141,8 @@
       "title": "主题交叉影响全景图",
       "file": "2.1.3.2_主题交叉影响全景图.md",
       "lines": 65,
-      "chars": 1634,
-      "sha256_16": "e5b45922fbcf872c",
+      "chars": 1637,
+      "sha256_16": "e49b8cce8d17257b",
       "sources": [
         "modules/regulatory_classifier/data/_t1_clause_graph.json"
       ]
@@ -153,7 +153,7 @@
       "file": "2.1.3.3_监管空白与薄弱环节识别.md",
       "lines": 56,
       "chars": 1936,
-      "sha256_16": "8f7e124be8fd54f5",
+      "sha256_16": "31ca6186fce80b8c",
       "sources": [
         "modules/regulatory_classifier/data/_t1_final.json"
       ]
@@ -163,8 +163,8 @@
       "title": "上位法覆盖对照表",
       "file": "2.1.3.4_上位法覆盖对照表.md",
       "lines": 106,
-      "chars": 7108,
-      "sha256_16": "d767102fa9cf593d",
+      "chars": 7117,
+      "sha256_16": "f118ef4c3e1743cd",
       "sources": [
         "modules/regulatory_classifier/data/_upper_laws.json"
       ]
@@ -175,7 +175,7 @@
       "file": "2.1.3.5_行业外监管接口矩阵.md",
       "lines": 27,
       "chars": 1039,
-      "sha256_16": "d44d4fc304d650f9",
+      "sha256_16": "087b1cd53dc28d54",
       "sources": [
         "modules/regulatory_classifier/data/_t1_final.json"
       ]
@@ -186,7 +186,7 @@
       "file": "2.1.3.6_监管趋势预判与前瞻性建议.md",
       "lines": 37,
       "chars": 1079,
-      "sha256_16": "95a1b50e17f71c10",
+      "sha256_16": "76c0daf19d2f21ae",
       "sources": [
         "modules/regulatory_classifier/data/_t1_final.json"
       ]
@@ -197,7 +197,7 @@
       "file": "2.1.3.7_后续行动计划建议.md",
       "lines": 58,
       "chars": 2591,
-      "sha256_16": "f4a34b30415a0e7f",
+      "sha256_16": "76c71a158e6cb56a",
       "sources": [
         "modules/regulatory_classifier/data/_t1_final.json"
       ]
