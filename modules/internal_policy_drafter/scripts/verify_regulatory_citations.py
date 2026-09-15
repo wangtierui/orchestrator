@@ -199,6 +199,13 @@ class Verifier:
                     # 国务院令 恒为监管文件
                     cands = self._docno_candidates(gwy_seq=gwy)
                 else:
+                    # 2026-09-15：**废止/失效语境豁免**（与 relations 抽取侧同一纪律——
+                    # 否定/未生效语境不计为「引用」）。典型：原文照录条文内的
+                    # 「…（保监会令2013年第6号）同时废止」，该文号属被废止文件，非本制度引用。
+                    if re.search(r"废止|失效|不再适用", ln):
+                        warns.append((f"{base}:L{i}",
+                                      f"废止/失效语境中文号（跳过门禁）: {year}年第{seq}号"))
+                        continue
                     # 括号式：前缀含机关词 → 监管文件（门禁）；裸文号 → 内部制度 OA（INFO）
                     pre = ln[max(0, m.start() - 10):m.start()]
                     organ = next((p for p in ORGAN_PREFIXES if pre.endswith(p)), None)
