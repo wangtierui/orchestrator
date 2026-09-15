@@ -1,0 +1,105 @@
+{
+ "generated_at": "2026-09-16 03:33:25",
+ "applied": true,
+ "changes": [
+  {
+   "file": "nfra_regulations.json",
+   "level": "raw",
+   "record_title": "中华人民共和国保险法",
+   "field": "document_no",
+   "old": "",
+   "new": "中华人民共和国主席令第二十六号",
+   "basis": "中国人大网《中华人民共和国主席令（第二十六号）》：2015-04-24 十二届全国人大常委会第十四次会议通过《关于修改〈中华人民共和国计量法〉等五部法律的决定》，含《保险法》；语料正文首部版本沿革亦载「根据2015年4月24日…第三次修正」"
+  },
+  {
+   "file": "nfra_regulations.json",
+   "level": "raw",
+   "record_title": "银行保险机构消费者权益保护管理办法",
+   "field": "document_no",
+   "old": "",
+   "new": "中国银行保险监督管理委员会令2022年第9号",
+   "basis": "classifier 归属表登记值；原字段为空（详情页正文首部被导航文字污染）"
+  },
+  {
+   "file": "nfra_regulations.json",
+   "level": "raw",
+   "record_title": "中国保监会关于印发《保险销售行为可回溯管理暂行办法》的通知",
+   "field": "document_no",
+   "old": "国办发〔2015〕81号",
+   "new": "保监发〔2017〕54号",
+   "basis": "语料正文首部明载「保监发〔2017〕54号」；原值串入正文引述的上级文号（国办发〔2015〕81号，与 R-31 撞号）"
+  },
+  {
+   "file": "pbc_laws.json",
+   "level": "raw",
+   "record_title": "中国人民银行 工业和信息化部 市场监管总局 金融监管总局 中国证监会 国家知识产权局 国家网信办 国家外汇局公告〔2026〕第9号",
+   "field": "document_number",
+   "old": null,
+   "new": "人民银行等八部门公告〔2026〕第9号",
+   "basis": "classifier 归属表登记值；raw 字段为 None（记录 title 自身载明「公告〔2026〕第9号」，爬虫未提取）"
+  },
+  {
+   "file": "supplementary_regulations.json",
+   "level": "raw",
+   "record_title": "关于强化管理促进人身险业务平稳健康发展的通知",
+   "field": "document_number",
+   "old": "人身险部函【2023】428号",
+   "new": "人身险部函〔2023〕428号",
+   "basis": "raw 原值为「人身险部函【2023】428号」——非规范方括号【】致 map 层 _resolve_doc_number 解析失败、cleaned 落空；改为法定六角括号〔〕后贯通（与 classifier 归属表口径统一）"
+  },
+  {
+   "file": "nfra_cleaned_20260915.jsonl",
+   "level": "cleaned",
+   "record_title": "中华人民共和国保险法",
+   "field": "document_number",
+   "old": "",
+   "new": "中华人民共和国主席令第二十六号",
+   "basis": "中国人大网《中华人民共和国主席令（第二十六号）》：2015-04-24 十二届全国人大常委会第十四次会议通过《关于修改〈中华人民共和国计量法〉等五部法律的决定》，含《保险法》；语料正文首部版本沿革亦载「根据2015年4月24日…第三次修正」"
+  },
+  {
+   "file": "nfra_cleaned_20260915.jsonl",
+   "level": "cleaned",
+   "record_title": "银行保险机构消费者权益保护管理办法",
+   "field": "document_number",
+   "old": "",
+   "new": "中国银行保险监督管理委员会令2022年第9号",
+   "basis": "classifier 归属表登记值；原字段为空（详情页正文首部被导航文字污染）"
+  },
+  {
+   "file": "nfra_cleaned_20260915.jsonl",
+   "level": "cleaned",
+   "record_title": "中国保监会关于印发《保险销售行为可回溯管理暂行办法》的通知",
+   "field": "document_number",
+   "old": "国办发〔2015〕81号",
+   "new": "保监发〔2017〕54号",
+   "basis": "语料正文首部明载「保监发〔2017〕54号」；原值串入正文引述的上级文号（国办发〔2015〕81号，与 R-31 撞号）"
+  },
+  {
+   "file": "pbc_cleaned_20260915.jsonl",
+   "level": "cleaned",
+   "record_title": "中国人民银行 工业和信息化部 市场监管总局 金融监管总局 中国证监会 国家知识产权局 国家网信办 国家外汇局公告〔2026〕第9号",
+   "field": "document_number",
+   "old": "",
+   "new": "人民银行等八部门公告〔2026〕第9号",
+   "basis": "classifier 归属表登记值；raw 字段为 None（记录 title 自身载明「公告〔2026〕第9号」，爬虫未提取）"
+  },
+  {
+   "file": "supp_cleaned_20260915.jsonl",
+   "level": "cleaned",
+   "record_title": "关于强化管理促进人身险业务平稳健康发展的通知",
+   "field": "document_number",
+   "old": "",
+   "new": "人身险部函〔2023〕428号",
+   "basis": "raw 原值为「人身险部函【2023】428号」——非规范方括号【】致 map 层 _resolve_doc_number 解析失败、cleaned 落空；改为法定六角括号〔〕后贯通（与 classifier 归属表口径统一）"
+  },
+  {
+   "file": "人身保险公司-文件归属表.csv",
+   "level": "归属表",
+   "record_title": "中华人民共和国保险法",
+   "field": "发文字号",
+   "old": "",
+   "new": "中华人民共和国主席令第二十六号",
+   "basis": "中国人大网《中华人民共和国主席令（第二十六号）》：2015-04-24 十二届全国人大常委会第十四次会议通过《关于修改〈中华人民共和国计量法〉等五部法律的决定》，其中含《保险法》；语料正文首部版本沿革亦载明「根据2015年4月24日…第三次修正」"
+  }
+ ]
+}

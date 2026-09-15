@@ -184,13 +184,33 @@ def scan_list(html: str, base_url: str = LIST_BASE):
 # --------------------------------------------------------------------------- #
 # 详情页
 # --------------------------------------------------------------------------- #
+# 「值」其实是另一个字段标签时的识别（gov.cn 页面字段区相邻，取空值会串到下一标签）
+_LABEL_LIKE = re.compile(r"^\s*(发文字号|发文机关|成文日期|主题分类|公文种类|来\s*源|标\s*题)\s*[：:]")
+# 文号形态：〔2009〕68号 / 令〔2010〕4号 / 公告〔2026〕第9号 / 银保监办发〔2020〕118号 / 保监发〔2012〕87号
+_DOCNO_RE = re.compile(
+    r"[\u4e00-\u9fff]{2,12}(?:发|办|令|公告|函|字)?\s*[〔\[【]\s*(?:19|20)\d{2}\s*[〕\]】]\s*第?\s*\d+\s*号"
+    r"|[\u4e00-\u9fff]{2,12}令\s*第?\s*\d+\s*号")
+
+
+def _extract_docno(text: str) -> str:
+    """从标题/正文首部提取发文字号（`_meta_field` 取不到时的兜底）。"""
+    m = _DOCNO_RE.search(text or "")
+    return re.sub(r"\s+", "", m.group(0)) if m else ""
+
+
 def _meta_field(html: str, label: str, maxlen: int = 120) -> str:
     for m in _META.finditer(html):
         if m.group(1).replace(" ", "").replace("\u3000", "") != label.replace(" ", ""):
             continue
         frag = clean_html_text(html[m.end():m.end() + 400]).replace("|", " ").strip()
-        if frag:
-            return frag.split("\n")[0].strip()[:maxlen]
+        if not frag:
+            continue
+        val = frag.split("\n")[0].strip()
+        # ⚠️ 该页此字段为空时，窗口会滑到相邻标签 → 取到「来 源：」之类标签文本，
+        # 会污染 document_number/issue_organ 等字段（实测暂存中曾出现 document_number='来 源：'）。
+        if not val or _LABEL_LIKE.match(val) or len(val) > 160:
+            continue
+        return val[:maxlen]
     return ""
 
 
@@ -227,10 +247,14 @@ def parse_detail(html: str, url: str) -> dict:
             break
     body = clean_html_text(pick_content_html(html))
     pub = _iso(_meta_field(html, "成文日期", 40))
+    docno = _meta_field(html, "发文字号", 60)
+    if not docno:
+        # 兜底：部分部门文件页无「发文字号」标签（或标签后为空），但**标题/正文首部**载明文号。
+        docno = _extract_docno(title) or _extract_docno(body[:600])
     return {
         "title": title,
         "detail_url": url,
-        "document_number": _meta_field(html, "发文字号", 60),
+        "document_number": docno,
         "issue_organ": _meta_field(html, "发文机关", 60),
         "publish_date": pub,
         "pub_date_original": _meta_field(html, "成文日期", 40),
