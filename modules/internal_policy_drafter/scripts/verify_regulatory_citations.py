@@ -236,8 +236,9 @@ def main():
         print(f"[verify] FAIL 对齐表缺失或为空: {ALIGN}；R/文号引用核验未实检"
               + ("（strict 门禁拦截）" if args.strict else "（非严格模式仅报告）"))
         return 1 if args.strict else 0
-    if len(ver.align) != 43:
-        print(f"[verify] WARN 对齐表解析 R 行数={len(ver.align)}（预期 43，R-01~R-43 主册规模，2026-09-03 扩展），请检查对齐表格式")
+    if len(ver.align) != 48:
+        print(f"[verify] WARN 对齐表解析 R 行数={len(ver.align)}（预期 48，R-01~R-48 主册规模；"
+              f"2026-09-03 扩至 R-43、2026-09-15 补入 R-44~R-48 与 01/05 产物对齐），请检查对齐表格式")
     a_issues, a_warns = ver.check_align()
     for loc, msg in a_issues:
         print(f"[FAIL] {loc}: {msg}")
