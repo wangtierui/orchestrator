@@ -152,6 +152,19 @@ def make_summary(full_text: str, length: int = 200) -> str:
 
 
 # --------------------------------------------------------------------------- #
+# 附件处理模式（全量采集提速 / 减重）
+# --------------------------------------------------------------------------- #
+# `ZC_ATTACH_FAST=1` → 正文已完整的条目**不下载、不抽取附件原文**（正文不足者仍完整处理）。
+# 依据：附件原文（OCR + Word COM）是全量采集的耗时与体积主因——实测 1600 条暂存 516 MB
+# （均 322 KB/条），全量 1.22 万条约需 5.5 GB，内存压力是进程中断的首要嫌疑。
+# 默认关闭（保持常规增量采集行为不变）；如需附件原文，对目标条目用
+# `python collectors/gov_zhengceku.py <url>` 单条补录即可（该入口始终完整抽取）。
+_ATTACH_FAST = os.environ.get("ZC_ATTACH_FAST", "").strip().lower() in ("1", "true", "yes", "on")
+_FAST_MIN_BODY = int(os.environ.get("ZC_FAST_MIN_BODY", "200") or 200)
+_skipped = [0]                 # 本次运行跳过附件抽取的条目计数（供收尾日志）
+
+
+# --------------------------------------------------------------------------- #
 # 列表
 # --------------------------------------------------------------------------- #
 def scan_list(html: str, base_url: str = LIST_BASE):
@@ -516,6 +529,10 @@ class ZhengcekuScraper:
                 time.sleep(delay)
         if ckpt and records:
             self._save_partial(records)      # 收尾落盘：保证最后不足一批的增量也持久化
+        if _ATTACH_FAST and _skipped[0]:
+            LOG.info("【提速模式】本次跳过附件原文抽取 %d 条（正文≥%d 字）；"
+                     "如需附件原文，对目标条目用 gov_zhengceku.py <url> 单条补录",
+                     _skipped[0], _FAST_MIN_BODY)
         return records
 
     def fetch_one(self, url: str, title_hint: str = "", date_hint: str = "") -> dict:
@@ -529,7 +546,16 @@ class ZhengcekuScraper:
         if not d["publish_date"]:
             d["publish_date"] = date_hint
         try:
-            atts, att_text = fetch_attachments(html, url, entry_id=url)
+            if _ATTACH_FAST and len(d["full_text"]) >= _FAST_MIN_BODY:
+                # 提速/减重模式：正文已完整时不下载、不抽取附件原文。
+                # 依据：附件原文（OCR + Word COM）是全量采集的耗时与体积主因——
+                # 实测 1600 条暂存达 516 MB（均 322 KB/条），全量 1.22 万条约需 5.5 GB，
+                # 内存压力是进程中断的首要嫌疑；且正文已完整的条目无需附件补正文。
+                # 仅当正文不足（正文以附件形式发布）时才做完整抽取，保证正文不缺失。
+                atts, att_text = [], ""
+                _skipped[0] += 1
+            else:
+                atts, att_text = fetch_attachments(html, url, entry_id=url)
         except Exception as e:  # noqa: BLE001
             LOG.warning("附件处理失败 %s：%s", url, e)
             atts, att_text = [], ""
