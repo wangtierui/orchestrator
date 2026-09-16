@@ -290,8 +290,19 @@ def _word_app():
     （`atexit` 注册）。实例失效则置 `_WORD_DEAD` 短路，回退通用抽取。
     """
     global _WORD_APP, _WORD_DEAD
-    if _WORD_APP is not None or _WORD_DEAD:
+    # ⚠️ 短路修复（2026-09-16）：原写法 `return _WORD_APP` 在 _WORD_DEAD=True 且
+    # _WORD_APP 非 None 时**仍返回坏实例**，致 `_WORD_DEAD` 形同虚设（实测同一轮内
+    # Word COM 失败后仍被反复调用）。改为 True 时一律返回 None。
+    if _WORD_DEAD:
+        return None
+    if _WORD_APP is not None:
         return _WORD_APP
+    if os.environ.get("ZC_NO_WORD_COM", "").strip().lower() in ("1", "true", "yes", "on"):
+        # 全量采集时 Office 文件阻止策略弹窗会让 Documents.Open 永久阻塞（隐藏窗口下无法关闭，
+        # 进程表现为「存活但无日志、CPU 极低」的僵死）。全量首轮可按需禁用，回退通用抽取。
+        LOG.info("Word COM 已按 ZC_NO_WORD_COM 禁用，.doc 走通用抽取")
+        _WORD_DEAD = True
+        return None
     try:
         import atexit
         import win32com.client as wc  # type: ignore
@@ -315,27 +326,51 @@ def _word_app():
     return _WORD_APP
 
 
-def extract_doc_via_word(path: str) -> str:
-    """Word COM 抽取 .doc/.docx 正文（复用单例）；不可用/失败返回空串（由调用方回退）。"""
+def extract_doc_via_word(path: str, timeout: float = 25.0) -> str:
+    """Word COM 抽取 .doc/.docx 正文（复用单例）；不可用/失败/超时返回空串（由调用方回退）。
+
+    ⚠️ **看门狗超时（2026-09-16）**：`Documents.Open` 在 Office 文件阻止策略弹窗时
+    会**永久阻塞**（`DisplayAlerts=False` 管不住安全对话框，且隐藏窗口下无人点关闭）。
+    实测该情形使采集进程僵死 4 小时 45 分（进程存活、内存 110 MB、日志与 CPU 停滞）。
+    故置入守护线程 + join(timeout)：超时即放弃并永久标记 `_WORD_DEAD`，主流程不中断。
+    卡住的线程为 daemon，不阻止进程退出；其残留的 Word 实例由系统回收。
+    """
     global _WORD_DEAD
     app = _word_app()
     if app is None:
         return ""
-    doc = None
-    try:
-        doc = app.Documents.Open(os.path.abspath(path), ReadOnly=True,
-                                 AddToRecentFiles=False, Visible=False)
-        return (doc.Content.Text or "").replace("\r\n", "\n").replace("\r", "\n").strip()
-    except Exception as e:  # noqa: BLE001
-        LOG.warning("Word COM 抽取失败 %s：%s", path, e)
-        _WORD_DEAD = True          # 连续失败视为实例已坏，后续走通用抽取
-        return ""
-    finally:
+    import threading
+    box: dict = {}
+
+    def _work() -> None:
+        doc = None
         try:
-            if doc is not None:
-                doc.Close(False)
-        except Exception:  # noqa: BLE001
-            pass
+            doc = app.Documents.Open(os.path.abspath(path), ReadOnly=True,
+                                     AddToRecentFiles=False, Visible=False)
+            box["text"] = (doc.Content.Text or "").replace(
+                "\r\n", "\n").replace("\r", "\n").strip()
+        except Exception as e:  # noqa: BLE001
+            box["err"] = e
+        finally:
+            try:
+                if doc is not None:
+                    doc.Close(False)
+            except Exception:  # noqa: BLE001
+                pass
+
+    t = threading.Thread(target=_work, daemon=True)
+    t.start()
+    t.join(timeout)
+    if t.is_alive():
+        _WORD_DEAD = True
+        LOG.warning("Word COM 超时（%.0fs，疑 Office 阻止策略弹窗）→ 标记不可用并回退通用抽取：%s",
+                    timeout, path)
+        return ""
+    if "err" in box:
+        LOG.warning("Word COM 抽取失败 %s：%s", path, box["err"])
+        _WORD_DEAD = True          # 失败视为实例已坏，后续走通用抽取
+        return ""
+    return box.get("text", "")
 
 
 def _table_top_level(recs: list) -> dict:
