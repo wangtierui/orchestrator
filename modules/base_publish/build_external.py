@@ -159,14 +159,26 @@ def build() -> dict:
 
     meta = {}            # record_id → {publish_date, timeliness_status, rfn}
     n_att = 0
+    n_dup = 0            # 同一 record_id 被跳过的重复条数（见 _records 内注释）
 
     def _records():
-        nonlocal n_att
+        nonlocal n_att, n_dup
+        seen_rid: set = set()
         for rec in _iter_cleaned_records():
             dk = (rec.get("dedup_key") or "").strip()
             rid = dk or (rec.get("source_url") or "").strip()
             if not rid:
                 continue
+            # ⚠️ record_id 是 records 表 PRIMARY KEY（= dedup_key）。同一 dedup_key 的多条
+            # cleaned 记录会使 INSERT 违反 UNIQUE、令**整个 base publish 失败**
+            # （实测：gov 源引入 zhengceku 全量后出现 20 组「同文号同标题、不同 URL」的
+            # gov.cn 站内重复发布，报 `UNIQUE constraint failed: records.record_id`）。
+            # dedup_key 的语义本就是"去重键"，故在此按 record_id 去重、保留首条；
+            # 被跳过的条数计入 n_dup 以便发布清单如实披露。
+            if rid in seen_rid:
+                n_dup += 1
+                continue
+            seen_rid.add(rid)
             rfn = _rfn_of(dk, (rec.get("source_url") or "").strip(), rec.get("document_number") or "")
             atts = rec.get("attachments") or []
             if isinstance(atts, list):
@@ -191,7 +203,8 @@ def build() -> dict:
                 "theme": theme_map.get(rfn, ""),
             }
 
-    # 两遍：先收集 records 与 meta（内存 ~4043 条，含正文；分批写盘）
+    # 两遍：先收集 records 与 meta（全量含正文常驻内存；2026-09-17 gov 引入 zhengceku 全量后
+    # 五源合计约 1.66 万条、正文量级显著上升，原注释的「~4043 条」已失效）
     rows = []
     for row in _records():
         rows.append(row)
@@ -230,9 +243,16 @@ def build() -> dict:
 
     def _attachments():
         # F-D07：附件对象经契约归一（interfaces/contract.attachment_view，五源 5 套字段收敛）
+        # 去重口径与 _records() 一致（同一 record_id 只取首条的附件），避免同一文件重复发布
+        # 时附件在发布件里出现两份。
+        seen_att: set = set()
         for rec in _iter_cleaned_records():
             dk = (rec.get("dedup_key") or "").strip()
             rid = dk or (rec.get("source_url") or "").strip()
+            if rid and rid in seen_att:
+                continue
+            if rid:
+                seen_att.add(rid)
             rfn = _rfn_of(dk, (rec.get("source_url") or "").strip(), rec.get("document_number") or "")
             for i, a in enumerate(rec.get("attachments") or []):
                 if not isinstance(a, dict):
@@ -288,7 +308,10 @@ def build() -> dict:
         p = os.path.join(PUBLISH_DIR, name)
         manifest["files"][name] = {"sha256": _sha256_file(p), "count": sum(1 for _ in open(p, encoding="utf-8"))}
     manifest["counts"] = {"records": n_rec, "clauses": n_clause, "attachments": n_att,
-                          "relations": n_rel}
+                          "relations": n_rel,
+                          # 同一 record_id（=dedup_key）被跳过的重复条数：如实披露去重规模，
+                          # 便于核验「同文号同标题、不同 URL」类站内重复发布的实际数量。
+                          "records_deduped": n_dup}
     mp = os.path.join(PUBLISH_DIR, "publish_manifest.json")
     tmp = mp + ".tmp"
     with open(tmp, "w", encoding="utf-8") as fh:
