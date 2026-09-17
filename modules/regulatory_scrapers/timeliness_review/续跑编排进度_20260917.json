@@ -57,6 +57,21 @@
    "nomatch": 0,
    "fail": 0,
    "reason": "exit=2"
+  },
+  "gov": {
+   "source": "gov",
+   "elapsed_s": 2646.2,
+   "exit_code": 2,
+   "extra_args": [],
+   "status": "partial",
+   "missing": 13177,
+   "ok": 2,
+   "degraded": 13175,
+   "changed": 2,
+   "queried": 0,
+   "nomatch": 0,
+   "fail": 0,
+   "reason": "连续认证失败自动停止"
   }
  },
  "history": [
@@ -153,7 +168,23 @@
    "nomatch": 0,
    "fail": 0,
    "reason": "exit=2"
+  },
+  {
+   "at": "2026-09-17 21:39:59",
+   "source": "gov",
+   "elapsed_s": 2646.2,
+   "exit_code": 2,
+   "extra_args": [],
+   "status": "partial",
+   "missing": 13177,
+   "ok": 2,
+   "degraded": 13175,
+   "changed": 2,
+   "queried": 0,
+   "nomatch": 0,
+   "fail": 0,
+   "reason": "连续认证失败自动停止"
   }
  ],
- "updated_at": "2026-09-17 20:53:36"
+ "updated_at": "2026-09-17 21:39:59"
 }
