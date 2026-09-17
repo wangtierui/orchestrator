@@ -1,0 +1,38 @@
+{
+ "source": "gov",
+ "stamp": "20260917",
+ "csv": "modules/regulatory_scrapers/data/cleaned/gov_cleaned_20260917.csv",
+ "total": 13177,
+ "layer": {
+  "EXCLUDE": 12374,
+  "BOUNDARY": 752,
+  "INCLUDE": 51
+ },
+ "confidence": {
+  "EXCLUDE/中": 597,
+  "EXCLUDE/—": 11777,
+  "BOUNDARY/低": 752,
+  "INCLUDE/高": 19,
+  "INCLUDE/中": 32
+ },
+ "fin_hit": 1714,
+ "decisions_exported": [
+  "BOUNDARY",
+  "INCLUDE"
+ ],
+ "elapsed_s": 51.5,
+ "year_top": {
+  "1950": 2,
+  "1952": 1,
+  "1955": 1,
+  "1957": 2,
+  "1958": 1,
+  "1964": 1,
+  "1966": 1,
+  "1973": 1,
+  "1978": 1,
+  "1979": 2,
+  "1980": 3,
+  "1981": 3
+ }
+}
