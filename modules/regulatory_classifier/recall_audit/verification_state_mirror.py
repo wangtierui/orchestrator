@@ -16,24 +16,27 @@ verification_state_mirror.py — verification_state.json 本地只读镜像（N-
       verification_state 模块完成，本镜像**单向同步（源→镜像）**，不回写。
     - MIRROR_PATH 为生成物（每次按需刷新），非手工维护文件。
 
-用法：
-    from verification_state_mirror import load_mirror
-    state = load_mirror()   # dict，源比镜像新则先刷新；源缺失则用镜像
+阶段 3（2026-09-18）：源路径改由 `interfaces.timeliness_api.state_path()` 提供，
+本模块不再自行拼兄弟模块目录（跨模块直连收口，方案 §6 阶段 3）。
 """
 import json
 import os
 import shutil
 
-# P4（2026-09-08）：源查验缓存指向新仓同仓 scraper 模块的 timeliness_review（相对解析，无盘符）。
-_THIS = os.path.dirname(os.path.abspath(__file__))                 # modules/regulatory_classifier/recall_audit
-_MOD_CLASS = os.path.dirname(_THIS)                                 # modules/regulatory_classifier
-_SCRAPERS_MOD = os.path.join(os.path.dirname(_MOD_CLASS), "regulatory_scrapers")
-SCRAPERS_STATE = os.path.join(_SCRAPERS_MOD, "timeliness_review", "verification_state.json")
-MIRROR_PATH = os.path.join(_THIS, "output", "verification_state.mirror.json")
+_THIS = os.path.dirname(os.path.abspath(__file__))      # modules/regulatory_classifier/recall_audit
+_MIRROR_PATH_NAME = "verification_state.mirror.json"
+MIRROR_PATH = os.path.join(_THIS, "output", _MIRROR_PATH_NAME)   # 兼容导出（生成物路径）
+
+
+def _state_path() -> str:
+    """时效 SSOT 路径（经 interfaces 唯一入口）。"""
+    from interfaces.timeliness_api import state_path  # noqa: PLC0415
+    return state_path()
 
 
 def _src_mtime():
-    return os.path.getmtime(SCRAPERS_STATE) if os.path.exists(SCRAPERS_STATE) else 0.0
+    p = _state_path()
+    return os.path.getmtime(p) if p and os.path.exists(p) else 0.0
 
 
 def _mirror_mtime():
@@ -42,16 +45,18 @@ def _mirror_mtime():
 
 def refresh(force=False):
     """源比镜像新 或 镜像缺失 → 复制源到镜像。返回最终可用路径（均无则返回 None）。"""
-    if os.path.exists(SCRAPERS_STATE):
+    src = _state_path()
+    if src and os.path.exists(src):
         if force or _mirror_mtime() < _src_mtime():
             try:
-                shutil.copy2(SCRAPERS_STATE, MIRROR_PATH)
+                os.makedirs(os.path.dirname(MIRROR_PATH), exist_ok=True)
+                shutil.copy2(src, MIRROR_PATH)
             except OSError:
                 pass  # 复制失败不阻断：下方回退逻辑处理
     # 优先返回镜像；镜像缺失但源在，则临时用源
     if os.path.exists(MIRROR_PATH):
         return MIRROR_PATH
-    return SCRAPERS_STATE if os.path.exists(SCRAPERS_STATE) else None
+    return src if src and os.path.exists(src) else None
 
 
 def load_mirror():

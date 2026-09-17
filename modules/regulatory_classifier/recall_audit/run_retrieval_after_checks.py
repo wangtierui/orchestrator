@@ -79,16 +79,16 @@ VALIDITY_MAX_AGE_DAYS = 90
 COVERAGE_MIN_RATIO = 0.70
 
 # —— 依赖装配（实测先于推断：依赖既存 clean_index / verification_state / lint 门禁） ——
-sys.path.insert(0, _ORCH_ROOT)  # 根级 lint_hardcoded_snapshots / config / std_lib
-sys.path.insert(0, _SCRAPERS_MOD)
-sys.path.insert(0, os.path.join(_SCRAPERS_MOD, "timeliness_review"))
+sys.path.insert(0, _ORCH_ROOT)  # 根级 config / std_lib / interfaces
 sys.path.insert(0, ROOT)  # Gate 4 schema 预检：rfn.registry / scripts.build_detail_tables
+# 阶段 3（2026-09-18）：五源 cleaned 索引与时效核验状态一律经 interfaces 唯一入口，
+# 本模块不再把兄弟模块目录插进 sys.path（`_SCRAPERS_MOD` 引导已移除）。
 
 CLEAN_INDEX_OK = True
 VERIFICATION_OK = True
 LINT_OK = True
 try:
-    from clean_index import get_clean_index, scan_sources  # noqa: E402
+    from interfaces.clean_index_api import get_clean_index, scan_sources  # noqa: E402
 except Exception as e:  # pragma: no cover
     CLEAN_INDEX_OK = False
     _import_err_clean = repr(e)
@@ -240,7 +240,12 @@ def gate_clean():
     #    禁止硬编码 *_cleaned_(YYYYMMDD)；否则重跑可能读旧快照。
     if os.path.exists(SCANNER_PATH):
         txt = open(SCANNER_PATH, encoding="utf-8").read()
-        uses_clean_index = ("from clean_index import" in txt) and ("get_clean_index" in txt)
+        # 阶段 3（2026-09-18）：判据的**意图**是"scanner 经 clean_index 动态派生 latest"，
+        # 而**访问路径**已按纪律收敛到 `interfaces.clean_index_api`（不再跨模块裸 import）。
+        # 故两种形态均判合规；仍要求出现 `get_clean_index`（不得改为硬编码快照路径）。
+        uses_clean_index = (
+            ("from clean_index import" in txt) or ("interfaces.clean_index_api" in txt)
+        ) and ("get_clean_index" in txt)
         # 检测残留硬编码快照日期：形如 {src}_cleaned_{8位数字}
         hardcoded = re.findall(r'(?:gov|mof|nfra|pbc|supp)_cleaned_(\d{8})', txt)
         detail["scanner_uses_clean_index"] = uses_clean_index

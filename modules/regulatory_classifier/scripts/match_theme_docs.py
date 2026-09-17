@@ -35,12 +35,12 @@ import sys
 # P4（2026-09-08）：同仓注入（R4/Q3）——取消盘符。模块位于 modules/regulatory_classifier/scripts
 _THIS = os.path.dirname(os.path.abspath(__file__))           # modules/regulatory_classifier/scripts
 _MOD_CLASS = os.path.dirname(_THIS)                          # modules/regulatory_classifier
-_SCRAPERS_MOD = os.path.join(os.path.dirname(_MOD_CLASS), "regulatory_scrapers")
 _ORCH_ROOT = os.path.dirname(os.path.dirname(_MOD_CLASS))
-for _p in (_MOD_CLASS, _SCRAPERS_MOD, _ORCH_ROOT):
+for _p in (_MOD_CLASS, _ORCH_ROOT):
     if _p not in sys.path:
         sys.path.insert(0, _p)
-from clean_index import get_clean_index
+# 阶段 3（2026-09-18）：跨模块访问收口 interfaces
+from interfaces.clean_index_api import get_clean_index  # noqa: E402
 
 _idx = get_clean_index()
 DEFAULT_LIBS = {src: _idx.latest_jsonl_path(src) for src in ("nfra", "pbc", "mof", "gov", "supp")}

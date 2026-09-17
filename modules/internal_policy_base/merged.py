@@ -26,9 +26,9 @@ import sys
 _THIS = os.path.dirname(os.path.abspath(__file__))       # modules/internal_policy_base
 _MODULES = os.path.dirname(_THIS)
 _ORCH_ROOT = os.path.dirname(_MODULES)
-for _p in (_ORCH_ROOT, os.path.join(_MODULES, "regulatory_classifier")):
-    if _p not in sys.path:
-        sys.path.insert(0, _p)
+# 阶段 3（2026-09-18）：不再把兄弟模块目录插进 sys.path；跨模块一律经 interfaces。
+if _ORCH_ROOT not in sys.path:
+    sys.path.insert(0, _ORCH_ROOT)
 
 _DATA = os.path.join(_THIS, "data")
 _PROCESSED = os.path.join(_DATA, "processed")
@@ -47,7 +47,7 @@ _idxfac = None
 def _idx():
     global _idxfac
     if _idxfac is None:
-        from rfn import get_index  # noqa: PLC0415
+        from interfaces.rfn_api import get_index  # noqa: PLC0415
         _idxfac = get_index()
     return _idxfac
 
@@ -171,10 +171,11 @@ def build_merged_view() -> dict:
             ext_map[ipn] = rec.get("extracted_at") or ""
     merged = list(merged_map.values())
     n_with_rfn = sum(1 for m in merged if m.get("associated_rfns"))
-    cl_data = os.path.join(_MODULES, "regulatory_classifier", "data")
+    from interfaces.rfn_api import registry_paths as _registry_paths  # noqa: PLC0415
+    _rp = _registry_paths()
     inputs = {
-        "attr_sha": _sha_file(os.path.join(cl_data, "人身保险公司-文件归属表.csv")),
-        "theme_sha": _sha_file(os.path.join(cl_data, "人身保险公司-主题归属表.csv")),
+        "attr_sha": _sha_file(_rp["attr_csv"]),
+        "theme_sha": _sha_file(_rp["theme_csv"]),
         "index_sha": _sha_file(_INDEX_PATH),
         "processed_signature": _processed_signature(),
     }

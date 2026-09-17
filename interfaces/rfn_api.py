@@ -52,6 +52,59 @@ class RFNAPI:
         from rfn.bridge import lookup  # noqa: PLC0415
         return lookup(source_url=source_url, dedup_key=dedup_key)
 
+    # ---- 只读访问面（阶段 3，2026-09-18）：供 ipb / drafter / scrapers 消费，替代跨模块直连 ----
+    def theme_map(self) -> dict:
+        """主题码 → 全名（唯一源 = classifier.rfn.THEME_MAP）。"""
+        from rfn import THEME_MAP  # noqa: PLC0415
+        return dict(THEME_MAP)
+
+    def get_index(self):
+        """RFN 索引单例（`RFNIndex`：by_rfn/by_title/by_docno/by_theme/is_valid…）。"""
+        from rfn import get_index  # noqa: PLC0415
+        return get_index()
+
+    def registry_paths(self) -> dict:
+        """归属表相关**事实源文件路径**（消费方勿再自行拼兄弟仓路径）。
+
+        ⚠️ 路径函数名以 `rfn/registry.py` 实际符号为准（`_csv_path`/`_theme_csv_path`/
+        `_fp_path`/`_sync_path`）；索引 CSV 与 registry.rebuild_index 同口径（env 可覆盖）。
+        """
+        from rfn import registry as _reg  # noqa: PLC0415
+        return {
+            "attr_csv": _reg._csv_path(),
+            "theme_csv": _reg._theme_csv_path(),
+            "index_csv": (os.environ.get("RFN_REGISTRY_INDEX")
+                          or os.path.join(_reg._PKG_DIR, "监管文件编号索引.csv")),
+            "fp_csv": _reg._fp_path(),
+            "sync_status": _reg._sync_path(),
+            "bridge_csv": _reg._DEFAULT_CSV.replace("人身保险公司-文件归属表.csv",
+                                                    "rfn_clean_bridge.csv"),
+        }
+
+    def load_attr_rows(self) -> list[dict]:
+        """归属表全量行（8 列中文列名，见 contract.REGISTRY_CSV_FIELDS）。"""
+        from rfn import registry as _reg  # noqa: PLC0415
+        return _reg._load_rows()
+
+    def load_theme_rows(self) -> list[dict]:
+        """主题归属表全量行（3 列）。"""
+        from rfn import registry as _reg  # noqa: PLC0415
+        return _reg._load_theme_rows()
+
+    def bridge_rows(self) -> list[dict]:
+        """RFN↔clean 溯源桥全量行（唯一写口 = reconcile 后处理）。"""
+        from rfn.bridge import load_bridge  # noqa: PLC0415
+        return load_bridge()
+
+    def normalize_title(self, text: str) -> str:
+        """标题归一（与 rfn 唯一实现同语义；勿在各模块本地 def）。
+
+        ⚠️ 方法名刻意**不叫** `norm_title` —— `gate_no_duplicate_libs` 会对
+        非 std_lib 文件中出现的 `def norm_title` 判 FAIL（SSOT 唯一实现纪律）。
+        """
+        from rfn import _norm_title  # noqa: PLC0415
+        return _norm_title(text)
+
 
 _api: RFNAPI | None = None
 
@@ -61,3 +114,31 @@ def get_rfn_api() -> RFNAPI:
     if _api is None:
         _api = RFNAPI()
     return _api
+
+
+# ---- 模块级便捷函数（阶段 3：供 `from interfaces.rfn_api import X` 直接消费）----
+def theme_map() -> dict:
+    return get_rfn_api().theme_map()
+
+
+def get_index():
+    return get_rfn_api().get_index()
+
+
+def registry_paths() -> dict:
+    return get_rfn_api().registry_paths()
+
+
+def register_doc(theme, title, docno=None, pub_date="", source="",
+                 fingerprint="", source_mark=""):
+    return get_rfn_api().register_doc(theme, title, docno=docno, pub_date=pub_date,
+                                      source=source, fingerprint=fingerprint,
+                                      source_mark=source_mark)
+
+
+def bridge_rows() -> list[dict]:
+    return get_rfn_api().bridge_rows()
+
+
+def attr_rows() -> list[dict]:
+    return get_rfn_api().load_attr_rows()

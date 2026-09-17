@@ -107,9 +107,18 @@ def _data_inputs() -> list[tuple[float, str]]:
 
 
 def _stale_inputs(prod_mtime: float) -> list[str]:
-    """比产物更新的输入标签（按 mtime 降序）。"""
+    """比产物更新的输入标签（按 mtime 降序）——**阶段 4 起降为交叉校验**。"""
     stale = [(t, lbl) for t, lbl in _data_inputs() if t > prod_mtime + _INPUT_TOLERANCE_S]
     return [lbl for _t, lbl in sorted(stale, key=lambda kv: -kv[0])]
+
+
+def _wm_status(key: str):
+    """产物水位状态（阶段 4：判据切换的共用入口 `interfaces.governance_api.wm_status`）。"""
+    try:
+        from interfaces.governance_api import wm_status  # noqa: PLC0415
+        return wm_status(key)
+    except Exception as e:  # noqa: BLE001  水位不可用 → unknown（调用方退回 mtime 判据）
+        return "unknown", {"reason": f"{type(e).__name__}: {e}"}
 
 
 def run():
@@ -209,11 +218,29 @@ def run():
     # 判据 8：产物新鲜度（防"数据更新后未重抽取"的静默陈旧，2026-09-14）
     # 动因：消费面（merged 引用原语 / drafter 关系素材 / 交付库 2.1.2.4·2.1.2.5 关系报告）
     # 会随关系产物**静默反映旧数据**；此前本门禁只查结构一致性，陈旧产物可全额通过。
+    #
+    # 阶段 4（2026-09-18）判据切换：**水位优先，mtime 降为交叉校验**。
+    #   ① 水位判 stale → FAIL（零容差、可解释：直接报出是哪条依赖边）；
+    #   ② 水位 ok 而 mtime 报 stale → **仅告警**（mtime 受 touch/copy/copy2 干扰，误报率高）；
+    #   ③ 水位 unknown（治理库未启用/未登记）→ 退回 mtime 判据并 FAIL（不得因"无水位"放行）。
     stale = _stale_inputs(os.path.getmtime(_INDEX))
-    if stale:
-        problems.append(f"关系产物陈旧：{len(stale)} 项数据面输入比产物更新"
-                        f"（如 {stale[:3]}）—— 先运行 `python cli.py relations gen`"
-                        f"（生产刷新链阶段 2.6 已自动接入）")
+    wm_state, wm_detail = _wm_status("relations_index")
+    cross_check = {"mtime_stale_inputs": stale[:5], "mtime_stale_count": len(stale)}
+    if wm_state == "stale":
+        problems.append(
+            f"关系产物陈旧（水位判据）：{wm_detail.get('stale')} —— 上游已推进但未重抽取；"
+            f"先运行 `python cli.py relations gen`（生产刷新链阶段 2.6 已自动接入）")
+    elif wm_state == "unknown":
+        if stale:
+            problems.append(
+                f"关系产物陈旧（mtime 判据；水位不可用：{wm_detail.get('reason')}）："
+                f"{len(stale)} 项数据面输入比产物更新（如 {stale[:3]}）—— "
+                f"先运行 `python cli.py relations gen`")
+        else:
+            cross_check["note"] = f"水位不可用（{wm_detail.get('reason')}），已退回 mtime 判据"
+    elif stale:
+        cross_check["note"] = ("水位判据为 ok，mtime 报陈旧 —— 判为 **touch/copy 误报**，"
+                               "不阻断（阶段 4 起 mtime 仅作交叉校验）")
 
     detail = {
         "rows": len(rows),
@@ -228,7 +255,9 @@ def run():
         "problems": problems,
         "data_inputs": len(_data_inputs()),
         "stale_inputs": stale,
+        "freshness": {"watermark": wm_state, "watermark_detail": wm_detail,
+                      "cross_check": cross_check},
         "note": "判据=事实源存在 + 键集⊇契约 + 受控枚举闭包 + 强引用可解析 + 溯源非空 + 统计一致"
-                " + 产物新鲜度",
+                " + 产物新鲜度（阶段 4：水位优先，mtime 降为交叉校验）",
     }
     return (not problems), detail

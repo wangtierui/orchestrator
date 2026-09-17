@@ -25,11 +25,11 @@ import sys
 _HERE = os.path.dirname(os.path.abspath(__file__))          # modules/base_publish
 _MODULES = os.path.dirname(_HERE)                            # modules/
 _ROOT = os.path.dirname(_MODULES)                            # orchestrator 根
-for _p in (_ROOT, _MODULES, os.path.join(_ROOT, "std_lib"),
-           os.path.join(_MODULES, "regulatory_scrapers"),
-           os.path.join(_MODULES, "regulatory_classifier")):
+for _p in (_ROOT, _MODULES, os.path.join(_ROOT, "std_lib")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
+# 阶段 3（2026-09-18）：发布层读取双底座产物一律经 interfaces（原插入兄弟模块
+# 目录以 import clean_index/clause_index 的引导已移除）。
 
 from base_publish import SCHEMA_VERSION  # noqa: E402
 
@@ -109,7 +109,7 @@ def _load_attr_maps() -> tuple[dict, dict]:
 
 def _iter_cleaned_records():
     """遍历五源 latest JSONL（clean_index 唯一入口）。"""
-    from clean_index import get_clean_index  # noqa: PLC0415
+    from interfaces.clean_index_api import get_clean_index  # noqa: PLC0415
     idx = get_clean_index()
     for sid in idx.source_ids():
         p = idx.latest_jsonl_path(sid)
@@ -129,7 +129,7 @@ def _iter_cleaned_records():
 
 def _iter_clause_records():
     """遍历五源最新 clauses JSONL（clause_index 公开接口取 latest，无硬编码快照日期）。"""
-    from clause_index import latest_clause_path  # noqa: PLC0415
+    from interfaces.clause_index_api import latest_clause_path  # noqa: PLC0415
     for sid in ("gov", "mof", "nfra", "pbc", "supp"):
         cp = latest_clause_path(sid)
         if not cp or not os.path.exists(cp):
@@ -293,7 +293,7 @@ def build() -> dict:
     n_rel = _write_jsonl(os.path.join(PUBLISH_DIR, "external_relations.jsonl"), _relations())
 
     # snapshot_date：五源 latest date 最大值
-    from clean_index import get_clean_index  # noqa: PLC0415
+    from interfaces.clean_index_api import get_clean_index  # noqa: PLC0415
     idx = get_clean_index()
     snap = max((idx.latest(s) or {}).get("date") or "" for s in idx.source_ids()) or ""
     manifest = {

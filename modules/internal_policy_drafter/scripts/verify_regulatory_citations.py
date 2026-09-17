@@ -51,10 +51,9 @@ ALIGN = os.path.join(DOCS, "监管文件编号与分类对齐表.md")
 # `import rfn` 恒 ModuleNotFoundError（脚本自迁入后从未成功运行）。
 _MODULES = os.path.dirname(ROOT)                             # modules/
 _ORCH_ROOT = os.path.dirname(_MODULES)                       # orchestrator 根
-_CLASSIFIER_ROOT = os.path.join(_MODULES, "regulatory_classifier")
-for _p in (_ORCH_ROOT, _CLASSIFIER_ROOT):
-    if _p not in sys.path:
-        sys.path.insert(0, _p)
+# 阶段 3（2026-09-18）：RFN 索引经 interfaces 唯一入口（原插 classifier 目录已移除）
+if _ORCH_ROOT not in sys.path:
+    sys.path.insert(0, _ORCH_ROOT)
 
 R_PAT = re.compile(r"\bR-(\d{2})\b")
 # R-F01 收敛（2026-09-14）：文号核心形态 / 书名号标题 / 监管机关词表上收
@@ -100,7 +99,7 @@ TIMELINESS_SET = frozenset({"valid", "amended", "repealed", "partially_repealed"
 
 class Verifier:
     def __init__(self):
-        from rfn import get_index  # noqa: PLC0415  延迟加载（见 P7 引导注）
+        from interfaces.rfn_api import get_index  # noqa: PLC0415  延迟加载（见 P7 引导注）
         self.idx = get_index()
         self.align = load_align_map()
 

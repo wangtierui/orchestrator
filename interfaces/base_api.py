@@ -151,20 +151,28 @@ def get_policy(ipn: str) -> dict | None:
     return rows[0] if rows else None
 
 
+_CHAIN_COLS = ("record_id,rfn,title,document_number,publish_date,effective_date,"
+               "timeliness_status,source,body_len")
+
+
 def version_chain(docno: str, limit: int = 50) -> list[dict]:
     """同文号（归一）多版本链（按发布日期升序）——F-K08 版本链视图的最小可用实现。
 
-    view_active 语义 = `query_external(timeliness_status="valid")`（现行视图）；
-    本函数提供"同文号演进链"（历史版本 → 现行）显性化。
+    阶段 3（2026-09-18）：**下推 SQL**。原实现 `SELECT` 全表 records（1.6 万行、含 body_text
+    的宽表）后在 Python 端逐行 `norm_docno` 过滤（方案 §2.2 G7）。现依赖发布库新增的
+    `docno_norm` 列 + 索引直接命中；**旧库（未重建）自动回退**旧路径，行为不变。
     """
     from std_lib.common_lib.norm import norm_docno  # noqa: PLC0415
     nd = norm_docno(docno)
     if not nd:
         return []
     with _conn("external") as c:
-        rows = [dict(r) for r in c.execute(
-            "SELECT record_id,rfn,title,document_number,publish_date,effective_date,"
-            "timeliness_status,source,body_len FROM records")]
+        cols = {r[1] for r in c.execute("PRAGMA table_info(records)")}
+        if "docno_norm" in cols:
+            return [dict(r) for r in c.execute(
+                f"SELECT {_CHAIN_COLS} FROM records WHERE docno_norm=? "
+                "ORDER BY publish_date LIMIT ?", (nd, int(limit)))]
+        rows = [dict(r) for r in c.execute(f"SELECT {_CHAIN_COLS} FROM records")]
     out = [r for r in rows if norm_docno(r.get("document_number") or "") == nd]
     out.sort(key=lambda r: r.get("publish_date") or "")
     return out[:limit]

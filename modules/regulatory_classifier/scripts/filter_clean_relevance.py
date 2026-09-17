@@ -75,8 +75,12 @@ def latest_cleaned(source: str, kind: str = "csv") -> str:
     ⚠️ clean_index 的条目可能是 dict（index.json 原样）也可能是对象（内存模型），
     两者都要兼容——初版只探属性，对 dict 形态恒得 None。
     """
-    sys.path.insert(0, ROOT)
-    from modules.regulatory_scrapers import clean_index as ci  # type: ignore
+    # 阶段 3（2026-09-18）：经 interfaces 唯一入口（原 `from modules.regulatory_scrapers import
+    # clean_index` 跨模块直连已移除）；`_get` 兼容 dict / 对象两种索引形态的语义保留。
+    # 注：ROOT 为**本仓根**（非兄弟模块目录），注入属合法引导（gate_no_cross_module_import 不拦）。
+    if ROOT not in sys.path:
+        sys.path.insert(0, ROOT)
+    from interfaces import clean_index_api as ci  # type: ignore  # noqa: PLC0415
 
     def _get(o, k, d=None):
         if isinstance(o, dict):

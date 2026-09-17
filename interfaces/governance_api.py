@@ -35,7 +35,7 @@ if _ROOT not in sys.path:
 from std_lib.common_lib import governance_store as _gs  # noqa: E402
 
 __all__ = ["enabled", "db_path", "status", "watermarks", "watermark", "edges",
-           "check", "audit", "artifacts", "gate_results"]
+           "check", "wm_status", "audit", "artifacts", "gate_results"]
 
 
 def enabled() -> bool:
@@ -71,6 +71,33 @@ def edges() -> list[dict]:
 def check() -> tuple[bool, dict]:
     """水位一致性判据（与 gate_watermark 同源，单一实现）。"""
     return _gs.check_dependencies()
+
+
+def wm_status(artifact_key: str) -> tuple[str, dict]:
+    """**单产物**水位状态（阶段 4：判据切换的共用入口，避免各门禁各自实现）。
+
+    返回 `(status, detail)`：
+      - `ok`      —— 该产物的每条声明依赖边版本一致；
+      - `stale`   —— 存在"上游已推进、产物未重跑"的边（附 stale 边清单）；
+      - `unknown` —— 治理库未启用 / 该产物未登记水位 / 无法判定。
+    调用方纪律（阶段 4 双判据并行）：`stale` → 阻断；`ok` → 可**豁免**基于 mtime 的
+    旧判据（mtime 受 touch/copy 干扰，误报率高）；`unknown` → **不得**豁免，退回旧判据。
+    """
+    if not _gs.enabled():
+        return "unknown", {"reason": "治理库未启用"}
+    try:
+        wm = _gs.get_watermark(artifact_key)
+        if not wm:
+            return "unknown", {"reason": f"{artifact_key} 未登记水位"}
+        edges = [e for e in _gs.dependency_edges() if e["artifact"] == artifact_key]
+        stale = [e for e in edges if e["status"] == "stale"]
+        if stale:
+            return "stale", {"edges": len(edges), "stale": [
+                {"dep": e["dep"], "declared": e["declared_version"],
+                 "current": e["current_version"]} for e in stale]}
+        return "ok", {"edges": len(edges), "version": wm.get("version")}
+    except Exception as e:  # noqa: BLE001
+        return "unknown", {"reason": f"{type(e).__name__}: {e}"}
 
 
 def audit(limit: int = 200, *, target: str = "", target_key: str = "") -> list[dict]:

@@ -33,6 +33,7 @@ ALL_GATES: list[dict] = [
     {"module": "gates.gate_original_resolvable", "desc": "内部制度索引↔原件库可解析性", "require_impl": True},
     {"module": "gates.gate_relations", "desc": "依据/废止关系产物（R-F01：键集/枚举/强引用/溯源/统计）", "require_impl": True},
     {"module": "gates.gate_watermark", "desc": "产物水位一致性（阶段 1：水位比对替代 mtime）", "require_impl": True},
+    {"module": "gates.gate_no_cross_module_import", "desc": "跨模块直连扫描（阶段 3：modules/ 零越权引导与裸 import）", "require_impl": True},
 ]
 
 

@@ -140,10 +140,12 @@ def stage_classifier(source, changed, dry_run, report):
     # R1 修复（2026-09-08）：原引 sync_all_layers.py / run_gates.py（仓内不存在，哑引用必败）
     # → 改指现仓等价入口：层级同步 = rfn 索引/指纹由归属表重建；门禁 = orchestrator cli.py gates。
     orch = os.path.abspath(os.path.join(CLASSIFIER, "..", ".."))
+    # 阶段 3（2026-09-18）：改经 interfaces 唯一入口（原插 classifier 目录 + 裸 import
+    # `rfn.registry` 的跨模块直连已移除）。orch 注入是为 import interfaces，属合法引导。
     _layers_cmd = ("import sys;"
-                   f"sys.path.insert(0, r'{orch}');sys.path.insert(0, r'{CLASSIFIER}');"
-                   "from rfn.registry import rebuild_index;"
-                   "r=rebuild_index();print('rfn 索引/指纹已由归属表重建')")
+                   f"sys.path.insert(0, r'{orch}');"
+                   "from interfaces.rfn_api import get_rfn_api as _api;"
+                   "r=_api().rebuild_index();print('rfn 索引/指纹已由归属表重建')")
     ok3, t3 = _run(["-c", _layers_cmd], CLASSIFIER,
                    "层级同步（rfn 索引/指纹重建，R1）", dry_run)
     if not dry_run:

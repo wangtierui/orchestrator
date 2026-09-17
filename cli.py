@@ -59,10 +59,13 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser("gates", help="运行交付门禁（ALL_GATES）")
     p_gov = sub.add_parser("governance", help="治理库（阶段 1；水位/审计/原件注册）")
     p_gov.add_argument("sub", choices=["init", "status", "watermarks", "edges",
-                                       "audit", "artifacts", "gates"],
+                                       "audit", "artifacts", "gates",
+                                       "sync", "verify", "export"],
                        help="init 建库建表 | status 概览 | watermarks 产物水位 | "
                             "edges 依赖边（ok/stale/unregistered）| audit 审计日志 | "
-                            "artifacts 原件注册 | gates 门禁历史")
+                            "artifacts 原件注册 | gates 门禁历史 | "
+                            "sync 元数据投影（阶段 2，--apply 写库）| verify 比对断言 | "
+                            "export 导出文本快照")
     sub.add_parser("ping", help="骨架自检")
     p_source = sub.add_parser("source", help="源目录（config/sources.yaml 唯一事实源，R15）")
     p_source.add_argument("action", choices=["list", "add", "diff"],

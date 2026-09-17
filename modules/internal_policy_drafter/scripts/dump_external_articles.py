@@ -23,13 +23,12 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 _MOD_DR = os.path.dirname(_HERE)                          # modules/internal_policy_drafter
 _MODS = os.path.dirname(_MOD_DR)                          # modules
 _ORCH = os.path.dirname(_MODS)                            # orchestrator 根
-for _p in (_ORCH, _MODS, os.path.join(_ORCH, "std_lib"),
-           os.path.join(_MODS, "regulatory_scrapers"),
-           os.path.join(_MODS, "regulatory_scrapers", "clause_index")):
+for _p in (_ORCH, _MODS, os.path.join(_ORCH, "std_lib")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-import clause_index  # noqa: E402
+# 阶段 3（2026-09-18）：条文产物经 interfaces 唯一入口（原插 scrapers 目录已移除）
+from interfaces import clause_index_api as clause_index  # noqa: E402
 
 
 def _strip_art_head(body: str) -> str:

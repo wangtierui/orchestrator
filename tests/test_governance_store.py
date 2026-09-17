@@ -243,3 +243,173 @@ def test_tags_never_hold_secrets(gdb):
     dump = json.dumps(gs.list_watermarks(), ensure_ascii=False).lower()
     for bad in ("token", "password", "secret", "api_key"):
         assert bad not in dump
+
+
+# =========================================================================== #
+# 阶段 2（2026-09-18）：元数据四表投影 + 比对断言
+# =========================================================================== #
+_DOCS = [
+    {"doc_ref": "RFN-a", "kind": "regulatory", "title": "文件甲", "docno": "X〔2020〕1号",
+     "docno_norm": "x20201", "source": "nfra", "timeliness_status": "valid",
+     "row_json": "{}"},
+    {"doc_ref": "IPN-b", "kind": "internal", "title": "制度乙", "docno": "",
+     "source": "internal", "timeliness_status": "active", "row_json": "{}"},
+]
+_THEMES = [{"doc_ref": "RFN-a", "theme": "T1销售行为与消费者保护", "basis": "人工"}]
+_RELS = [
+    {"row_key": "k1", "relation_id": "REL-1", "relation": "basis", "src_kind": "regulatory",
+     "src_ref": "RFN-a", "dst_ref": "RFN-z", "dst_class": "entity", "matched_by": "strict",
+     "row_json": json.dumps({"relation_id": "REL-1", "confidence": 0.9})},
+    {"row_key": "k2", "relation_id": "REL-2", "relation": "repeal", "src_kind": "internal",
+     "src_ref": "IPN-b", "dst_kind": "internal", "dst_ref": "", "dst_key": "dk-2",
+     "dst_class": "corpus", "matched_by": "title_contains",
+     "row_json": json.dumps({"relation_id": "REL-2"})},
+]
+_TL = [{"state_key": "doc:x20201", "status": "valid", "prev_status": "pending",
+        "replacement": "", "verification_source": "北大法宝",
+        "last_checked_at": "2026-09-17 10:00:00", "changed_at": "2026-09-17 10:00:00"}]
+
+
+def _project(**over):
+    payload = {"documents": list(_DOCS), "theme_assigns": list(_THEMES),
+               "relations": list(_RELS), "timeliness_rows": list(_TL)}
+    payload.update(over)
+    return gs.project_metadata(**payload)
+
+
+def test_project_metadata_and_verify(gdb):
+    gs.init_db()
+    counts = _project()
+    assert counts["document"] == 2 and counts["theme_assign"] == 1
+    assert counts["relation"] == 2 and counts["timeliness_history"] == 1
+    res = gs.verify_projection(documents=_DOCS, theme_assigns=_THEMES,
+                               relations=_RELS, timeliness_rows=_TL)
+    assert all(v["ok"] for v in res.values()), res
+    assert gs.table_count("relation") == 2
+
+
+def test_projection_is_full_replace_no_orphan(gdb):
+    """投影语义：源删行 → 库不得残留（原增量 upsert 的静默分叉失败模式）。"""
+    gs.init_db()
+    _project()
+    _project(documents=_DOCS[:1], theme_assigns=[], relations=_RELS[:1], timeliness_rows=[])
+    assert gs.table_count("document") == 1
+    assert gs.table_count("theme_assign") == 0
+    assert gs.table_count("relation") == 1
+    res = gs.verify_projection(documents=_DOCS[:1], theme_assigns=[],
+                               relations=_RELS[:1], timeliness_rows=[])
+    assert all(v["ok"] for v in res.values()), res
+    # timeliness_history 为 append 模式：库保留历史（源为空 → 仍判 ok，无缺失）
+    assert res["timeliness_history"]["mode"] == "append"
+    assert res["timeliness_history"]["db_rows"] == 1
+
+
+def test_verify_detects_missing_history_row(gdb):
+    """append 模式断言：源有而库无 → 必须判分叉（防"历史缺行"被静默放过）。"""
+    gs.init_db()
+    _project()
+    extra = [_TL[0], {"state_key": "doc:zzz", "status": "valid", "prev_status": "",
+                      "replacement": "", "verification_source": "北大法宝",
+                      "last_checked_at": "2026-09-18 09:00:00", "changed_at": ""}]
+    res = gs.verify_projection(documents=_DOCS, theme_assigns=_THEMES,
+                               relations=_RELS, timeliness_rows=extra)
+    assert res["timeliness_history"]["ok"] is False
+    assert res["timeliness_history"]["missing"] == 1
+
+
+def test_timeliness_is_append_only_dedup(gdb):
+    """时效表保留历史观测：同键重复投影不追加，新增观测追加。"""
+    gs.init_db()
+    _project()
+    _project()                                   # 重复投影
+    assert gs.table_count("timeliness_history") == 1
+    nxt = [dict(_TL[0], status="repealed", last_checked_at="2026-09-18 10:00:00")]
+    _project(timeliness_rows=nxt)
+    assert gs.table_count("timeliness_history") == 2
+
+
+def test_row_json_roundtrip_fidelity(gdb):
+    """`row_json` 保证消费方零损耗取回原行（类型不失真）。"""
+    gs.init_db()
+    _project()
+    rows = {r["relation_id"]: r for r in gs.table_rows("relation")}
+    assert rows["REL-1"]["_src"]["confidence"] == 0.9
+    assert rows["REL-1"]["_src"]["relation_id"] == "REL-1"
+
+
+def test_table_digest_detects_change(gdb):
+    gs.init_db()
+    _project()
+    d1 = gs.table_digest("document")
+    assert d1 == gs.table_digest("document", _DOCS)
+    changed = [dict(_DOCS[0], timeliness_status="repealed"), _DOCS[1]]
+    assert gs.table_digest("document", changed) != d1
+
+
+def test_export_snapshot(gdb, tmp_path):
+    gs.init_db()
+    _project()
+    out = gs.export_snapshot(str(tmp_path / "exports"))
+    names = {i["name"] for i in out["items"]}
+    assert names == {"document", "theme_assign", "timeliness_history"}, "relation 不导出（已有事实源）"
+    assert os.path.exists(out["manifest"])
+    man = json.load(open(out["manifest"], encoding="utf-8"))
+    assert man["schema_version"] == gs.SCHEMA_VERSION and man["items"]
+    # 路径一律仓库相对（防盘符字面量门禁命中）
+    assert all(not i["path"].startswith(("d:", "D:", "C:")) for i in man["items"])
+
+
+# =========================================================================== #
+# 阶段 3（2026-09-18）：relations_api 优先查库 + 跨模块直连门禁
+# =========================================================================== #
+def test_relations_api_prefers_db(gdb):
+    gs.init_db()
+    _project()
+    from interfaces import relations_api as ra
+    rows = ra.load("all")
+    assert len(rows) == 2 and {r["relation_id"] for r in rows} == {"REL-1", "REL-2"}
+    assert [r["relation_id"] for r in ra.load("regulatory")] == ["REL-1"]
+    assert [r["relation_id"] for r in ra.load("internal")] == ["REL-2"]
+    assert ra.load("cross") == []
+    assert [r["relation_id"] for r in ra.by_src("RFN-a")] == ["REL-1"]
+    assert [r["relation_id"] for r in ra.by_dst("dk-2")] == ["REL-2"]
+
+
+def test_relations_api_degrades_when_db_absent(gdb):
+    """库未启用 → 回退读事实源文件（不得抛、不得阻断分析路径）。"""
+    from interfaces import relations_api as ra
+    assert isinstance(ra.load("all"), list)      # 真实仓文件存在则返回行，不存在则 []
+
+
+def test_gate_no_cross_module_import_passes_on_repo():
+    """modules/ 零跨模块直连（阶段 3 收口成果的守卫）。"""
+    from gates import gate_no_cross_module_import as g
+    ok, detail = g.run()
+    assert ok, f"存在跨模块直连: {detail.get('new')}"
+    assert detail["findings"] == 0
+
+
+def test_clean_index_api_is_live(gdb):
+    """clean_index_api 不再是 NotImplementedError 空壳（阶段 3 实装）。"""
+    from interfaces import clean_index_api as ci
+    assert callable(ci.get_clean_index) and callable(ci.latest_csv_path)
+    assert hasattr(ci.get_clean_index_api(), "latest_csv_path")
+
+
+# =========================================================================== #
+# 阶段 4（2026-09-18）：判据切换共用入口 wm_status
+# =========================================================================== #
+def test_wm_status_three_states(gdb):
+    from interfaces import governance_api as api
+    assert api.wm_status("relations_index")[0] == "unknown"      # 库未启用
+    gs.init_db()
+    assert api.wm_status("relations_index")[0] == "unknown"      # 未登记
+    gs.record_watermark("cleaned:gov", "clean", "v1")
+    gs.record_watermark("relations_index", "extract", "r1", inputs={"cleaned:gov": "v1"})
+    state, detail = api.wm_status("relations_index")
+    assert state == "ok" and detail["edges"] == 1
+    gs.record_watermark("cleaned:gov", "clean", "v2")
+    state, detail = api.wm_status("relations_index")
+    assert state == "stale"
+    assert detail["stale"][0]["dep"] == "cleaned:gov"
+    assert detail["stale"][0]["declared"] == "v1" and detail["stale"][0]["current"] == "v2"

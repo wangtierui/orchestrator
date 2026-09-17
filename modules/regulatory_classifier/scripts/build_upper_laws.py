@@ -175,8 +175,12 @@ def compute_citations(anchors):
 def build_five_source_index():
     """经 clean_index 单一事实源取五源 latest csv，建 归一化标题 -> 行 索引。"""
     try:
-        sys.path.insert(0, os.path.join(os.path.dirname(BASE_DIR), "regulatory_scrapers"))
-        from clean_index import get_clean_index
+        # 阶段 3（2026-09-18）：经 interfaces 唯一入口（原跨模块 sys.path 引导已移除）；
+        # 注：注入的是**本仓根**（供 import interfaces），非兄弟模块目录。
+        _orch = os.path.dirname(os.path.dirname(BASE_DIR))
+        if _orch not in sys.path:
+            sys.path.insert(0, _orch)
+        from interfaces.clean_index_api import get_clean_index
     except Exception as e:  # noqa: BLE001
         print(f"[WARN] clean_index 不可用，五源匹配跳过：{e}", file=sys.stderr)
         return {}

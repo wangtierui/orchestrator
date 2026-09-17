@@ -219,8 +219,8 @@ def verify_official_source(rec: dict) -> dict:
     return rec
 
 # 4.1b：摄入后接入 RFN 登记（P4 起经 interfaces.rfn_api）。
-# P3b 去硬编码：classifier 目录由 env REG_CLASSIFIER_ROOT 提供；未设置/不存在则跳过登记（降级）。
-_CLASSIFIER_ROOT = os.environ.get("REG_CLASSIFIER_ROOT", "")
+# 阶段 3（2026-09-18）：登记一律经 interfaces 唯一入口（原按 env REG_CLASSIFIER_ROOT
+# 插兄弟模块目录再 `from rfn.registry import register_doc` 的跨模块直连已移除）。
 _REGISTER_DOC = None
 
 def _load_register_doc():
@@ -228,12 +228,10 @@ def _load_register_doc():
     global _REGISTER_DOC
     if _REGISTER_DOC is None:
         try:
-            if _CLASSIFIER_ROOT not in sys.path:
-                sys.path.insert(0, _CLASSIFIER_ROOT)
-            from rfn.registry import register_doc  # noqa: F401
+            from interfaces.rfn_api import register_doc  # noqa: F401  # noqa: PLC0415
             _REGISTER_DOC = register_doc
         except Exception as _e:
-            print(f"[ingest] WARN 无法导入 regulatory_classifier.rfn.registry（跳过 RFN 登记）: {_e}")
+            print(f"[ingest] WARN 无法经 interfaces.rfn_api 取得 register_doc（跳过 RFN 登记）: {_e}")
             _REGISTER_DOC = False
     return _REGISTER_DOC or None
 

@@ -29,12 +29,13 @@ csv.field_size_limit(sys.maxsize)
 #   - orchestrator 根（供 std_lib/config）
 _THIS = os.path.dirname(os.path.abspath(__file__))          # modules/regulatory_classifier/recall_audit
 _MOD_CLASS = os.path.dirname(_THIS)                          # modules/regulatory_classifier
-_SCRAPERS_MOD = os.path.join(os.path.dirname(_MOD_CLASS), "regulatory_scrapers")
 _ORCH_ROOT = os.path.dirname(os.path.dirname(_MOD_CLASS))
-for _p in (_SCRAPERS_MOD, _MOD_CLASS, _ORCH_ROOT):
+for _p in (_MOD_CLASS, _ORCH_ROOT):
     if _p not in sys.path:
         sys.path.insert(0, _p)
-from clean_index import get_clean_index, scan_sources
+# 阶段 3（2026-09-18）：五源 cleaned 索引一律经 interfaces 唯一入口，
+# 不再自行把兄弟模块目录插进 sys.path（跨模块直连收口，方案 §6 阶段 3）。
+from interfaces.clean_index_api import get_clean_index, scan_sources  # noqa: E402
 
 CLASS = os.path.join(_MOD_CLASS, "data")
 ATTR = os.path.join(CLASS, "人身保险公司-文件归属表.csv")

@@ -1,5 +1,82 @@
 # Changelog
 
+## [Unreleased] 2026-09-18 — 阶段 2/3/4：元数据投影 + DAO 收口 + 判据切换（ALL_GATES 17→18）
+
+> 承接同日「阶段 0 止血 + 阶段 1 治理库骨架」。方案见 `reports/数据流转与存储交互优化方案_20260917.md` §6。
+
+### 一、阶段 2 · 元数据迁入（双写期：文件仍是事实源）
+
+- **治理库新增四表**（`governance.db`，schema_version 1.0→1.1，`PRAGMA user_version=2`）：
+  `document`（监管+内部统一文档主档）/ `theme_assign` / `relation` / `timeliness_history`。
+  `init_db()` 升级时**只 DROP 四张投影表**（纯派生、零代价），五张观测表（run_log/watermark/
+  artifact/audit_log/gate_result）承载历史**一律保留**。
+- **新增 `tools/governance_sync.py`（投影器，唯一写入口）**：把归属表 / 主题表 / 内部主索引 /
+  `relations_index.jsonl` / `verification_state.json` 投影进四表；`--apply` 写库、默认仅比对。
+- **比对断言**：`SYNC_TABLES` 声明每表的**断言键**与模式——
+  `replace`（document/theme_assign/relation）判**摘要相等**，`append`（timeliness_history）
+  判**源行均在库中**（历史累积）。`cli.py governance verify` 退出码即断言结果；
+  生产刷新链**新增阶段 3.5 `governance:sync`**，断言失败即计入失败步骤（不静默）。
+- **投影语义 = 全量替换**（而非增量 upsert）：从根本上消除"源已删/改名而库残留"的静默分叉；
+  时效表则**追加去重**（`(state_key,status,last_checked_at)` 唯一），保留历史观测。
+- `row_json` 列保留原始行 → 消费方零损耗取回全部字段（避免类型往返失真）。
+- **新增 `cli.py governance sync|verify|export`**；`export` 产出 `exports/`（文本快照 + manifest，
+  含水位与 sha；**只导出小表**，`relation` 不导出——已有事实源文件）。`exports/` 已入 `.gitignore`
+  （派生只读层；跨机审计链仍由 `reports/` 与 `docs/reports/` 承载）。
+
+### 二、阶段 3 · DAO 收口（`modules/` 跨模块直连 **30 → 0**）
+
+- **实装 `interfaces/clean_index_api.py`**（原四个 `NotImplementedError` 空壳）：
+  唯一 `sys.path` 引导点 + `latest_csv_path/latest_jsonl_path/scan_sources/validate_files/is_fresh/…`。
+- **新增 `interfaces/clause_index_api.py`**、**新增 `interfaces/timeliness_api.py`**；
+  **扩写 `interfaces/rfn_api.py`**（`theme_map/get_index/registry_paths/load_attr_rows/bridge_rows/
+  register_doc` 模块级便捷函数）与 `interfaces/internal_policy_api.py`（`paths()/load_index/
+  load_merged_view/load_processed`）。
+- **改造 22 个文件、30 处直连**：classifier（scanner / build_outputs / run_retrieval_after_checks /
+  verification_state_mirror / match_theme_docs / build_detail_tables / build_upper_laws /
+  reconcile_clean_drift / filter_clean_relevance / build_theme_report）、ipb（merged / align）、
+  drafter（build_draft_clause_view / verify_regulatory_citations / dump_external_articles）、
+  base_publish（build_external）、scrapers（supp_ingest / sync_three_modules）。
+- **`interfaces/relations_api` 读取路径升级**：`load/by_src/by_dst` **优先查治理库 `relation` 表**
+  （索引下推；原实现每次调用重读 7 MB JSONL 再线性过滤），JSONL 退为回退路径（库未建仍可跑）。
+- **`base_api.version_chain` 下推 SQL**：发布库 `records` 新增 `docno_norm` 列 + 索引，
+  由 `WHERE docno_norm=?` 直接命中（原全表 SELECT + Python 端逐行归一过滤）；
+  **旧库（未重建）自动回退**旧路径，行为不变。
+- **新增第 18 道门禁 `gates/gate_no_cross_module_import.py`**：静态扫描 `modules/**` 的
+  ①越权 `sys.path` 引导（含经同文件变量间接注入）②跨模块裸 import ③`modules.<other>` 全路径 import；
+  **基线空集且只减不增**（新增违规即 FAIL）。扫描范围**刻意只含 `modules/`**：
+  `gates/`（门禁）与 `tools/`（运维/生成）是横切治理层，其职责即读取全仓事实源，不参与模块依赖图。
+
+### 三、阶段 4 · 判据切换（水位优先，旧判据降为交叉校验）
+
+- 新增 **`interfaces/governance_api.wm_status(artifact_key)`** —— 判据切换的**共用入口**
+  （返回 ok/stale/unknown；`stale` 阻段、`ok` 可豁免 mtime 类判据、`unknown` **不得豁免**）。
+- **`gate_relations` 判据 8**：水位 stale → FAIL 并直接报出**是哪条依赖边**；
+  水位 ok 而 mtime 报陈旧 → **仅交叉校验告警**（`touch/copy/copy2` 误报）；水位不可用 → 退回 mtime。
+- **`gate_rfn_drift`**：水位 stale → FAIL（按**内容版本**而非日期）；水位 ok → 通过；
+  `unknown` → 退回 `clean_snapshots` 日期比对。
+- **`gate_citations`**：水位 stale → FAIL；水位 ok → `inputs` 指纹（含 `名称|size|mtime` 近似签名）
+  差异降为交叉校验；`unknown` → 退回指纹判据。
+
+### 四、发现的既有缺陷（本次如实登记，未擅自改数据面）
+
+- **`relations_index.jsonl` 的 `relation_id` 并非唯一**：实测 **5266 行 / 4859 个不同 id**
+  （366 个 id 重复、407 行内容互不相同；其中仅 6 行为逐字节完全重复）。与
+  `contract.RELATION_FIELDS` 注释"稳定去重键"的实际语义不符，属**抽取侧去重键派生问题**。
+  处置：投影表主键改用**合成 `row_key` = `sha256(relation_id|row_json|序次)[:16]`**，
+  **保全全部 5266 行**（库行数与事实源严格一致，消费方 `load("all")` 与 `stat.total` 不漂移），
+  `relation_id` 降为普通索引列；该缺陷记为**待治理项**，需另立任务修 `relations.py` 的 id 派生。
+
+### 五、验证
+
+- 新增用例 **+12**（`tests/test_governance_store.py` 共 **27 例**，仍无 `data` marker）：
+  投影/断言（replace 摘要相等、append 子集、缺失历史行必判分叉）、全量替换无孤儿、
+  有效期表追加去重、`row_json` 保真、摘要变更检出、快照导出（路径仓库相对）、
+  `relations_api` 优先查库与降级、`gate_no_cross_module_import` 全仓 PASS、`wm_status` 三态。
+- **阶段 4 两项验收**（实测）：①`touch` 数据面输入 → `gate_relations` **PASS**
+  （旧 mtime 判据会 FAIL，交叉校验如实记录"判为 touch 误报"）②注入陈旧声明（等价跳过
+  `relations gen`）→ `gate_relations` **FAIL** 并报出 `cleaned:gov` 声明 `STALE-INJECTED-0000`
+  vs 当前 `b53ec289c77708a7`；随后恢复治理库并复跑 PASS。
+
 ## [Unreleased] 2026-09-18 — 阶段 0 止血 + 阶段 1 治理库骨架（`reports/数据流转与存储交互优化方案_20260917.md` §6）
 
 ### 一、阶段 0 · 止血（5 项，均为"已定位缺陷"的定点修复）

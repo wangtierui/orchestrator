@@ -2,16 +2,20 @@
 """commands.governance — orchestrator 命令：governance（阶段 1 治理库，2026-09-18）
 
 用法：
-  orchestrator governance init                    建库建表（幂等）
+  orchestrator governance init                    建库建表（幂等，含投影表 schema 升级）
   orchestrator governance status                  概览（表计数 + 水位一致性 + 最近运行）
   orchestrator governance watermarks [--json]    产物水位全量
   orchestrator governance edges [--json]          水位展开的依赖边（ok/stale/unregistered）
   orchestrator governance audit [--limit N] [--target T] [--key K]
   orchestrator governance artifacts [--kind pdf] [--limit N]
   orchestrator governance gates [--run RUN-xxx] [--limit N]
+  orchestrator governance sync [--check] [--export]   元数据投影（阶段 2；默认仅比对）
+  orchestrator governance verify                 比对断言（= sync --check）
+  orchestrator governance export [--out DIR]     导出治理库文本快照 + manifest
 
-设计：本命令是治理库的**只读观测面**（`init` 除外，仅建表不改任何事实源）。
-写路径唯一实现 = `std_lib/common_lib/governance_store.py`（表级唯一写方，见方案 §4.3）。
+设计：本命令是治理库的观测面。**写路径唯一实现** =
+`std_lib/common_lib/governance_store.py`（表级唯一写方，见方案 §4.3）；
+元数据四表的投影唯一入口 = `tools/governance_sync.py`（本命令 `sync` 委托之）。
 """
 from __future__ import annotations
 
@@ -31,6 +35,32 @@ def run(argv):
     from interfaces import governance_api as g
 
     sub = argv[0] if argv else "status"
+    if sub in ("sync", "verify"):
+        # 阶段 2：事实源 → 治理库元数据投影（唯一实现 tools/governance_sync.py）。
+        # `verify` = `sync --check`；`sync` 默认也**只比对**（写库须显式 --apply），
+        # 避免误手执行把库推成与文件不一致的状态。
+        import os as _os  # noqa: PLC0415
+        import sys as _sys  # noqa: PLC0415
+        _tools = _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))),
+                               "tools")
+        if _tools not in _sys.path:
+            _sys.path.insert(0, _tools)
+        import governance_sync as _sync  # noqa: PLC0415
+        argv2 = list(argv[1:])
+        if sub == "verify" and "--check" not in argv2 and "--apply" not in argv2:
+            argv2.append("--check")
+        return _sync.main(argv2)
+    if sub == "export":
+        from std_lib.common_lib import governance_store as gs
+        out_dir = _flag(argv, "--out", "") or __import__("os").path.join(
+            __import__("os").path.dirname(__import__("os").path.dirname(
+                __import__("os").path.abspath(__file__))), "exports")
+        out = gs.export_snapshot(out_dir)
+        if not out.get("enabled"):
+            print("[governance] 治理库未启用（先 `governance init` 并跑一次 sync --apply）")
+            return 1
+        print(_json.dumps(out, ensure_ascii=False, indent=1))
+        return 0
     if sub == "init":
         from std_lib.common_lib import governance_store as gs
         p = gs.init_db()

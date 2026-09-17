@@ -31,13 +31,17 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 _DR = os.path.dirname(_HERE)                              # internal_policy_drafter/
 _MODULES = os.path.dirname(os.path.dirname(_HERE))        # modules/
 _ORCH_ROOT = os.path.dirname(_MODULES)
-for _p in (_ORCH_ROOT, os.path.join(_MODULES, "regulatory_classifier")):
+for _p in (_ORCH_ROOT,):
     if _p not in sys.path:
         sys.path.insert(0, _p)
-from rfn import get_index  # noqa: E402
+# 阶段 3（2026-09-18）：RFN 索引与内部制度产物一律经 interfaces（原插兄弟模块目录已移除）
+from interfaces.rfn_api import get_index  # noqa: E402
 
-PROC = os.path.join(_MODULES, "internal_policy_base", "data", "processed")
-MERGED = os.path.join(_MODULES, "internal_policy_base", "data", "merged_view.json")
+# 阶段 3（2026-09-18）：内部制度产物路径经 interfaces 唯一入口取（勿自行拼兄弟模块路径）
+from interfaces.internal_policy_api import get_internal_policy_api  # noqa: E402
+_IPB_PATHS = get_internal_policy_api().paths()
+PROC = _IPB_PATHS["processed_dir"]
+MERGED = _IPB_PATHS["merged_view"]
 OUT = os.path.join(_DR, "data", "draft_clause")
 
 _ELIDE = 130

@@ -11,11 +11,11 @@ csv.field_size_limit(sys.maxsize)
 # P4（2026-09-08）：相对 orchestrator 根注入（R4/Q3），取消盘符。
 _THIS = os.path.dirname(os.path.abspath(__file__))          # modules/regulatory_classifier/recall_audit
 _MOD_CLASS = os.path.dirname(_THIS)                          # modules/regulatory_classifier
-_SCRAPERS_MOD = os.path.join(os.path.dirname(_MOD_CLASS), "regulatory_scrapers")
 _ORCH_ROOT = os.path.dirname(os.path.dirname(_MOD_CLASS))
-for _p in (_MOD_CLASS, _SCRAPERS_MOD, _ORCH_ROOT):
+for _p in (_MOD_CLASS, _ORCH_ROOT):
     if _p not in sys.path:
         sys.path.insert(0, _p)
+# 阶段 3（2026-09-18）：跨模块访问一律经 interfaces（原 SCRAPERS_MOD 引导已移除）
 OUTDIR = os.path.join(_THIS, "output")   # 代码/产物分离（2026-09-08）
 CLASS = os.path.join(_MOD_CLASS, "data")
 ATTR = os.path.join(CLASS, "人身保险公司-文件归属表.csv")
@@ -170,7 +170,8 @@ with open(os.path.join(OUTDIR,"归属表无全文清单.csv"),"w",encoding="utf-
 # ---------- 各源快照日期（C-8）：经 clean_index 动态派生，严禁硬编码 ----------
 SRC_SNAPSHOT={}
 try:
-    from clean_index import get_clean_index
+    # 阶段 3（2026-09-18）：经 interfaces 唯一入口（原跨模块裸 import 已移除）
+    from interfaces.clean_index_api import get_clean_index
     _ci=get_clean_index()
     for _s in ("gov","mof","nfra","pbc","supp"):
         _m=re.search(r"cleaned_(\d{8})",_ci.latest_csv_path(_s) or "")

@@ -48,9 +48,8 @@ csv.field_size_limit(sys.maxsize)  # cleaned body_text 超默认 128KB 字段上
 # ---- 同仓引导（R4：无盘符；模块位于 modules/regulatory_classifier/scripts） ----
 _THIS = os.path.dirname(os.path.abspath(__file__))            # modules/regulatory_classifier/scripts
 _MOD_CLASS = os.path.dirname(_THIS)                            # modules/regulatory_classifier
-_SCRAPERS_MOD = os.path.join(os.path.dirname(_MOD_CLASS), "regulatory_scrapers")
 _ORCH_ROOT = os.path.dirname(os.path.dirname(_MOD_CLASS))
-for _p in (_MOD_CLASS, _SCRAPERS_MOD, _ORCH_ROOT):
+for _p in (_MOD_CLASS, _ORCH_ROOT):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
@@ -64,7 +63,7 @@ _clean_index = None
 def _ci():
     global _clean_index
     if _clean_index is None:
-        from clean_index import get_clean_index  # noqa: PLC0415
+        from interfaces.clean_index_api import get_clean_index  # noqa: PLC0415
         _clean_index = get_clean_index()
     return _clean_index
 

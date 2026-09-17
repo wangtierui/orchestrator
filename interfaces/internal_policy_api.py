@@ -16,6 +16,8 @@ _MOD_BASE = os.path.join(paths.MODULES_DIR, "internal_policy_base")
 _DATA = os.path.join(_MOD_BASE, "data")
 _INDEX_PATH = os.path.join(_DATA, "internal_policy_index.json")
 _ALIGN_PATH = os.path.join(_DATA, "align_result.json")
+_MERGED_PATH = os.path.join(_DATA, "merged_view.json")
+_PROCESSED = os.path.join(_DATA, "processed")
 
 # merged_view schema 版本（D-06：二期 app 读取前冻结）
 MERGED_VIEW_SCHEMA_VERSION = "1.0"
@@ -59,6 +61,38 @@ class InternalPolicyAPI:
                     "theme_stat": a.get("theme_stat", {})}
         return {"schema_version": MERGED_VIEW_SCHEMA_VERSION, "view": view,
                 "note": "待运行 internal_policy_base/align.py 生成对齐视图"}
+
+    # ---- 只读访问面（阶段 3，2026-09-18）：供 drafter / base_publish 消费，
+    #      替代"自行拼兄弟模块 data/ 路径"（跨模块直连收口）----
+    def paths(self) -> dict:
+        """内部制度层**事实源文件/目录**路径（消费方勿再自行拼路径）。"""
+        return {
+            "data_dir": _DATA,
+            "index_json": _INDEX_PATH,
+            "align_json": _ALIGN_PATH,
+            "merged_view": _MERGED_PATH,
+            "processed_dir": _PROCESSED,
+            "published_dir": os.path.join(_MOD_BASE, "published"),
+        }
+
+    def load_index(self) -> dict:
+        """主索引全量（`records` + `stat`）。"""
+        return _load(_INDEX_PATH) if os.path.exists(_INDEX_PATH) else {}
+
+    def load_merged_view(self) -> dict:
+        """制度×RFN 引用视图（merged_view.json；缺失返回 {}）。"""
+        return _load(_MERGED_PATH) if os.path.exists(_MERGED_PATH) else {}
+
+    def load_processed(self, ipn: str, suffix: str = "_clauses.json"):
+        """单制度 processed 产物（默认条文 json；缺失返回 {}）。"""
+        p = os.path.join(_PROCESSED, f"{ipn}{suffix}")
+        return _load(p) if os.path.exists(p) else {}
+
+    def processed_dir(self) -> str:
+        return _PROCESSED
+
+    def published_dir(self) -> str:
+        return os.path.join(_MOD_BASE, "published")
 
 
 _api: InternalPolicyAPI | None = None

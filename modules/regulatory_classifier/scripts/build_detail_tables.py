@@ -45,16 +45,13 @@ if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 from rfn import THEME_MAP  # noqa: E402  单一事实源：主题码->完整主题名
 
-# P4（2026-09-08）：scrapers 模块同仓相对解析（env 覆盖保留；默认不再盘符）
-SCRAPERS_ROOT = os.environ.get("REG_SCRAPERS_ROOT",
-                               os.path.join(os.path.dirname(ROOT), "regulatory_scrapers"))
-if SCRAPERS_ROOT not in sys.path:
-    sys.path.insert(0, SCRAPERS_ROOT)
-_ORCH_ROOT = os.path.dirname(os.path.dirname(SCRAPERS_ROOT))  # orchestrator 根（供 std_lib）
+_ORCH_ROOT = os.path.dirname(os.path.dirname(ROOT))  # 仓库根（供 std_lib / interfaces）
 if _ORCH_ROOT not in sys.path:
     sys.path.insert(0, _ORCH_ROOT)
 
-from clean_index import get_clean_index  # noqa: E402
+# 阶段 3（2026-09-18）：五源 cleaned 索引经 interfaces 唯一入口，
+# 不再把兄弟模块目录插进 sys.path（原 SCRAPERS_ROOT 引导已移除）。
+from interfaces.clean_index_api import get_clean_index  # noqa: E402
 
 from std_lib.common_lib import fs_lock  # noqa: E402  (旧 `import fs_lock` 语义收口至共享库)
 

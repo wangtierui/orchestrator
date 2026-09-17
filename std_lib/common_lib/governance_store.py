@@ -36,7 +36,7 @@ from datetime import datetime, timedelta, timezone
 from std_lib.common_lib.io_atomic import sha256_file
 
 __all__ = [
-    "SCHEMA_VERSION", "TABLES", "db_path", "enabled", "connect", "init_db",
+    "SCHEMA_VERSION", "TABLES", "SYNC_TABLES", "db_path", "enabled", "connect", "init_db",
     "version_of_file", "file_version", "version_of_files", "now_iso",
     "run_start", "run_finish", "current_run_id", "list_runs",
     "record_watermark", "get_watermark", "list_watermarks", "dependency_edges",
@@ -44,13 +44,48 @@ __all__ = [
     "log_audit", "list_audit",
     "upsert_artifacts", "list_artifacts",
     "record_gate_results", "list_gate_results",
+    # 阶段 2：元数据投影四表
+    "project_metadata", "table_rows", "table_count", "table_digest", "verify_projection",
+    "export_snapshot",
     "snapshot",
 ]
 
-SCHEMA_VERSION = "1.0"
+SCHEMA_VERSION = "1.1"
+_SCHEMA_INT = 2                      # PRAGMA user_version：1=阶段1五表；2=阶段2增四表（relation 用 row_key）
 _TZ = timezone(timedelta(hours=8))   # Asia/Shanghai，与 clean_index 时间基准一致
 
-TABLES = ("run_log", "watermark", "artifact", "audit_log", "gate_result")
+TABLES = ("run_log", "watermark", "artifact", "audit_log", "gate_result",
+          # ---- 阶段 2（2026-09-18）元数据四表：事实源为文件，本库为**事务化投影** ----
+          "document", "theme_assign", "relation", "timeliness_history")
+
+# 阶段 2 四表的「事实源 → 表」映射与**比对断言键**（库/文件一致性判据）。
+# 断言键取"身份 + 语义"字段：不含 generated_at/synced_at 等时间戳（它们天然每轮变化），
+# 也不含可空文本（正文片段/reason），以保证断言**只对内容负责**。
+SYNC_TABLES: dict[str, dict] = {
+    # `mode`：`replace` = 库应等于源那一刻的精确快照（摘要相等）；
+    #         `append`  = 库是源的历史累积（只要求源行**都在**库中，不要求相等）。
+    "document": {
+        "source": "classifier 归属表 + internal_policy_index.json",
+        "keys": ("doc_ref", "kind", "title", "docno", "timeliness_status", "source", "theme"),
+        "mode": "replace",
+    },
+    "theme_assign": {
+        "source": "classifier 主题归属表",
+        "keys": ("doc_ref", "theme"),
+        "mode": "replace",
+    },
+    "relation": {
+        "source": "relations_index.jsonl",
+        "keys": ("relation_id", "relation", "src_ref", "src_key", "dst_ref", "dst_key",
+                 "dst_class", "matched_by"),
+        "mode": "replace",
+    },
+    "timeliness_history": {
+        "source": "timeliness_review/verification_state.json",
+        "keys": ("state_key", "status", "last_checked_at"),
+        "mode": "append",
+    },
+}
 
 # 依赖键（inputs_json 的 key）命名约定：`<域>:<对象>`，与 watermark.artifact_key 同域。
 #   cleaned:<src> / clauses:<src> / relations_index / internal_index / internal_processed
@@ -109,6 +144,97 @@ CREATE TABLE IF NOT EXISTS gate_result(
   recorded_at TEXT NOT NULL,
   PRIMARY KEY(run_id, gate)
 );
+
+-- ================= 阶段 2：元数据四表（2026-09-18）=================
+-- 纪律：本四表是**事实源文件的投影**（文件仍为权威、读方仍读文件，双写期语义）。
+-- 写入唯一入口 = tools/governance_sync.py；比对断言键见 SYNC_TABLES。
+-- `row_json` 保留原始行，供消费方零损耗取回全部字段（避免类型往返失真）。
+CREATE TABLE IF NOT EXISTS document(
+  doc_ref           TEXT PRIMARY KEY,     -- RFN-<16hex>（监管） / IPN-<16hex>（内部）
+  kind              TEXT NOT NULL CHECK(kind IN ('regulatory','internal')),
+  title             TEXT NOT NULL DEFAULT '',
+  docno             TEXT NOT NULL DEFAULT '',
+  docno_norm        TEXT NOT NULL DEFAULT '',
+  issue_organ       TEXT NOT NULL DEFAULT '',
+  publish_date      TEXT NOT NULL DEFAULT '',
+  effective_date    TEXT NOT NULL DEFAULT '',
+  source            TEXT NOT NULL DEFAULT '',
+  timeliness_status TEXT NOT NULL DEFAULT '',
+  verification_source TEXT NOT NULL DEFAULT '',
+  last_verified_at  TEXT NOT NULL DEFAULT '',
+  theme             TEXT NOT NULL DEFAULT '',
+  file_type         TEXT NOT NULL DEFAULT '',
+  extension         TEXT NOT NULL DEFAULT '',
+  origin_path       TEXT NOT NULL DEFAULT '',
+  body_len          INTEGER,
+  article_count     INTEGER,
+  row_json          TEXT NOT NULL DEFAULT '{}',
+  synced_at         TEXT NOT NULL DEFAULT ''
+);
+CREATE INDEX IF NOT EXISTS ix_doc_norm  ON document(docno_norm);
+CREATE INDEX IF NOT EXISTS ix_doc_kind  ON document(kind);
+CREATE INDEX IF NOT EXISTS ix_doc_title ON document(title);
+CREATE INDEX IF NOT EXISTS ix_doc_theme ON document(theme);
+
+CREATE TABLE IF NOT EXISTS theme_assign(
+  doc_ref    TEXT PRIMARY KEY,
+  theme      TEXT NOT NULL DEFAULT '',
+  basis      TEXT NOT NULL DEFAULT '',
+  decided_at TEXT NOT NULL DEFAULT '',
+  synced_at  TEXT NOT NULL DEFAULT ''
+);
+
+-- ⚠️ 主键为**合成行键** `row_key`，**不是** `relation_id`：
+-- 实测（2026-09-18）`relations_index.jsonl` 5266 行仅有 4859 个不同 `relation_id`
+-- （366 个 id 命中 2 次、共 407 行内容互不相同）——`relation_id` 在事实源中
+-- **并非唯一**（与 contract 注释"稳定去重键"的实际语义有出入，已登记为待治理项）。
+-- 若以 relation_id 作主键会**静默丢弃 407 行**并污染下游读取，故改合成键保全全部行，
+-- `relation_id` 降为普通索引列。
+CREATE TABLE IF NOT EXISTS relation(
+  row_key      TEXT PRIMARY KEY,
+  relation_id  TEXT NOT NULL DEFAULT '',
+  relation     TEXT NOT NULL DEFAULT '',
+  src_kind     TEXT NOT NULL DEFAULT '',
+  src_ref      TEXT NOT NULL DEFAULT '',
+  src_key      TEXT NOT NULL DEFAULT '',
+  src_name     TEXT NOT NULL DEFAULT '',
+  src_docno    TEXT NOT NULL DEFAULT '',
+  src_source   TEXT NOT NULL DEFAULT '',
+  dst_kind     TEXT NOT NULL DEFAULT '',
+  dst_ref      TEXT NOT NULL DEFAULT '',
+  dst_key      TEXT NOT NULL DEFAULT '',
+  dst_class    TEXT NOT NULL DEFAULT '',
+  dst_name     TEXT NOT NULL DEFAULT '',
+  basis_type   TEXT NOT NULL DEFAULT '',
+  action       TEXT NOT NULL DEFAULT '',
+  scope        TEXT NOT NULL DEFAULT '',
+  matched_by   TEXT NOT NULL DEFAULT '',
+  confidence   REAL,
+  generated_at TEXT NOT NULL DEFAULT '',
+  row_json     TEXT NOT NULL DEFAULT '{}',
+  synced_at    TEXT NOT NULL DEFAULT ''
+);
+CREATE INDEX IF NOT EXISTS ix_rel_rid   ON relation(relation_id);
+CREATE INDEX IF NOT EXISTS ix_rel_src   ON relation(src_ref);
+CREATE INDEX IF NOT EXISTS ix_rel_srck  ON relation(src_key);
+CREATE INDEX IF NOT EXISTS ix_rel_dst   ON relation(dst_ref);
+CREATE INDEX IF NOT EXISTS ix_rel_dstk  ON relation(dst_key);
+CREATE INDEX IF NOT EXISTS ix_rel_kind  ON relation(relation);
+CREATE INDEX IF NOT EXISTS ix_rel_class ON relation(dst_class);
+
+CREATE TABLE IF NOT EXISTS timeliness_history(
+  id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+  state_key           TEXT NOT NULL DEFAULT '',   -- doc:<归一化文号> / title:<标题前40字>
+  status              TEXT NOT NULL DEFAULT '',
+  prev_status         TEXT NOT NULL DEFAULT '',
+  replacement         TEXT NOT NULL DEFAULT '',
+  verification_source TEXT NOT NULL DEFAULT '',
+  last_checked_at     TEXT NOT NULL DEFAULT '',
+  changed_at          TEXT NOT NULL DEFAULT '',
+  synced_at           TEXT NOT NULL DEFAULT '',
+  UNIQUE(state_key, status, last_checked_at)      -- 幂等：重复投影不追加重复观测
+);
+CREATE INDEX IF NOT EXISTS ix_th_key ON timeliness_history(state_key);
 """
 
 
@@ -165,11 +291,22 @@ def connect(readonly: bool = False) -> sqlite3.Connection:
 
 
 def init_db() -> str:
-    """建库建表（幂等）。返回库路径。"""
+    """建库建表（幂等，含投影表 schema 升级）。返回库路径。
+
+    schema 版本经 `PRAGMA user_version` 记录（当前 `_SCHEMA_INT`）：版本落后时
+    **只 DROP 四张投影表**再重建——投影表是纯派生数据（文件仍是事实源），
+    丢弃零代价；而 run_log/watermark/artifact/audit_log/gate_result 五张**观测表
+    一律保留**（它们承载历史，不可重建）。
+    """
     p = db_path()
     conn = connect()
     try:
+        cur = conn.execute("PRAGMA user_version").fetchone()[0]
+        if cur < _SCHEMA_INT:
+            for t in ("document", "theme_assign", "relation", "timeliness_history"):
+                conn.execute(f"DROP TABLE IF EXISTS {t}")
         conn.executescript(_DDL)
+        conn.execute(f"PRAGMA user_version={_SCHEMA_INT}")
         conn.commit()
     finally:
         conn.close()
@@ -542,6 +679,213 @@ def list_gate_results(run_id: str = "", limit: int = 100) -> list[dict]:
     args.append(int(limit))
     with connect(readonly=True) as c:
         return [dict(r) for r in c.execute(sql, args)]
+
+
+# --------------------------------------------------------------------------- #
+# 阶段 2：元数据四表写入/读取（投影器唯一入口 tools/governance_sync.py 调用）
+# --------------------------------------------------------------------------- #
+_DOC_COLS = ("doc_ref", "kind", "title", "docno", "docno_norm", "issue_organ", "publish_date",
+             "effective_date", "source", "timeliness_status", "verification_source",
+             "last_verified_at", "theme", "file_type", "extension", "origin_path",
+             "body_len", "article_count", "row_json", "synced_at")
+_THEME_COLS = ("doc_ref", "theme", "basis", "decided_at", "synced_at")
+_REL_COLS = ("row_key", "relation_id", "relation", "src_kind", "src_ref", "src_key", "src_name",
+             "src_docno", "src_source", "dst_kind", "dst_ref", "dst_key", "dst_class", "dst_name",
+             "basis_type", "action", "scope", "matched_by", "confidence", "generated_at",
+             "row_json", "synced_at")
+_TH_COLS = ("state_key", "status", "prev_status", "replacement", "verification_source",
+            "last_checked_at", "changed_at", "synced_at")
+
+
+# 允许为 NULL 的数值列（其余列缺失一律归一为 ""，防 NOT NULL 约束把"源未提供"当成错误）
+_NULLABLE = {"body_len", "article_count", "confidence", "source_offset"}
+
+
+def _replace_table(conn, table: str, cols, rows) -> int:
+    """全量替换（投影语义：库 = 文件那一刻的精确快照，不留孤儿行）。
+
+    四表体量均为千级，全量替换代价可忽略；相较增量 upsert，它**从根本上消除
+    "源已删/改名而库残留"这类静默分叉**——这正是双写期最需要防的失败模式。
+    """
+    conn.execute(f"DELETE FROM {table}")
+    conn.executemany(
+        f"INSERT INTO {table}({','.join(cols)}) VALUES({','.join('?' * len(cols))})",
+        [tuple(r.get(c) if (c in _NULLABLE or r.get(c) is not None) else ""
+               for c in cols) for r in rows])
+    return len(rows)
+
+
+def project_metadata(*, documents, theme_assigns, relations, timeliness_rows,
+                     synced_at: str = "") -> dict:
+    """一次事务内投影四表（全有或全无）。
+
+    - `documents` / `theme_assigns` / `relations`：**全量替换**；
+    - `timeliness_rows`：**追加 + 去重**（(state_key,status,last_checked_at) 唯一）——
+      时效表的价值在"历史观测"，故不做全量替换。
+    """
+    ts = synced_at or now_iso()
+    conn = _ensure()
+    counts = {}
+    try:
+        conn.execute("BEGIN")
+        counts["document"] = _replace_table(
+            conn, "document", _DOC_COLS,
+            [{**r, "synced_at": ts} for r in documents])
+        counts["theme_assign"] = _replace_table(
+            conn, "theme_assign", _THEME_COLS,
+            [{**r, "synced_at": ts} for r in theme_assigns])
+        counts["relation"] = _replace_table(
+            conn, "relation", _REL_COLS,
+            [{**r, "synced_at": ts} for r in relations])
+        before = conn.execute("SELECT COUNT(*) FROM timeliness_history").fetchone()[0]
+        conn.executemany(
+            f"INSERT OR IGNORE INTO timeliness_history({','.join(_TH_COLS)})"
+            f" VALUES({','.join('?' * len(_TH_COLS))})",
+            [tuple({**r, "synced_at": ts}.get(c) for c in _TH_COLS) for r in timeliness_rows])
+        after = conn.execute("SELECT COUNT(*) FROM timeliness_history").fetchone()[0]
+        counts["timeliness_history"] = after
+        counts["timeliness_history_added"] = after - before
+        conn.commit()
+    except BaseException:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+    return counts
+
+
+def table_rows(table: str, limit: int = 0) -> list[dict]:
+    """读投影表（`row_json` 自动解回原行，附于 `_src`）。"""
+    if not enabled() or table not in SYNC_TABLES:
+        return []
+    sql = f"SELECT * FROM {table}"
+    args: list = []
+    if limit:
+        sql += " LIMIT ?"
+        args.append(int(limit))
+    with connect(readonly=True) as c:
+        out = []
+        for r in c.execute(sql, args):
+            d = dict(r)
+            rj = d.pop("row_json", "")
+            if rj:
+                try:
+                    d["_src"] = json.loads(rj)
+                except ValueError:
+                    d["_src"] = {}
+            out.append(d)
+        return out
+
+
+def table_count(table: str) -> int:
+    if not enabled():
+        return 0
+    with connect(readonly=True) as c:
+        return c.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
+
+
+def _canon_items(rows, keys) -> list[str]:
+    return ["\x1f".join(str(r.get(k, "") if r.get(k) is not None else "") for k in keys)
+            for r in rows]
+
+
+def _canon(rows, keys) -> str:
+    """规范化摘要：按 keys 取值 → str 归一 → 排序 → sha256（库/文件一致性判据）。"""
+    blob = "\x1e".join(sorted(_canon_items(rows, keys)))
+    return hashlib.sha256(blob.encode("utf-8")).hexdigest()
+
+
+def table_digest(table: str, rows=None) -> str:
+    """表/行集的规范化摘要（`rows=None` 时取库内全量）。"""
+    keys = SYNC_TABLES[table]["keys"]
+    if rows is None:
+        rows = table_rows(table)
+    return _canon(rows, keys)
+
+
+def verify_projection(*, documents, theme_assigns, relations, timeliness_rows) -> dict:
+    """**比对断言**（双写期核心）：库内容 vs 由文件重算的内容，逐表比对。
+
+    - `mode=replace`（document / theme_assign / relation）：**摘要相等**（库 = 源那一刻快照）；
+    - `mode=append`（timeliness_history）：**源行须都在库中**（库是历史累积，不要求相等）。
+
+    返回 {table: {db, src, ok, db_rows, src_rows[, missing]}}。不一致即"库与文件分叉"
+    （须重跑 `governance sync`）——正是阶段 2 验收「连续 3 次生产刷新、断言 0 失败」所判的量。
+    """
+    if not enabled():
+        return {}
+    src = {"document": documents, "theme_assign": theme_assigns,
+           "relation": relations, "timeliness_history": timeliness_rows}
+    out = {}
+    for t, rows in src.items():
+        spec = SYNC_TABLES[t]
+        keys = spec["keys"]
+        d = table_digest(t)
+        s = _canon(rows, keys)
+        item = {"db": d, "src": s, "db_rows": table_count(t), "src_rows": len(rows),
+                "mode": spec["mode"]}
+        if spec["mode"] == "append":
+            have = set(_canon_items(table_rows(t), keys))
+            missing = [x for x in _canon_items(rows, keys) if x not in have]
+            item["ok"] = not missing
+            item["missing"] = len(missing)
+        else:
+            item["ok"] = d == s
+        out[t] = item
+    return out
+
+
+def export_snapshot(out_dir: str, *, tables=None) -> dict:
+    """导出治理库文本快照 + manifest（交换轨；供人工 diff 与跨机审计）。
+
+    只导出**小体量元数据表**（document / theme_assign / timeliness_history）；
+    `relation`（7 MB 级）与语料正文不导出——它们已有各自的事实源文件。
+    路径一律写**仓库相对 POSIX**（防 gate_hardcoded_paths 命中盘符字面量）。
+    """
+    if not enabled():
+        return {"enabled": False}
+    out_dir = os.path.abspath(out_dir)
+    os.makedirs(out_dir, exist_ok=True)
+    names = list(tables or ("document", "theme_assign", "timeliness_history"))
+    items = []
+    for t in names:
+        rows = table_rows(t)
+        p = os.path.join(out_dir, f"governance_{t}.csv")
+        cols = [c for c in (rows[0].keys() if rows else []) if c != "_src"]
+        buf = [",".join(cols)]
+        for r in rows:
+            buf.append(",".join(_csv_cell(r.get(c)) for c in cols))
+        # 经 fs_lock 原子写（与全仓原子写纪律一致）
+        from std_lib.common_lib.fs_lock import atomic_write_text  # noqa: PLC0415
+        atomic_write_text(p, "\n".join(buf) + "\n", encoding="utf-8-sig")
+        try:
+            rel = os.path.relpath(p, repo_root()).replace("\\", "/")
+        except ValueError:
+            # 跨盘符（如测试 tmp_path 在 C:、仓库在 D:）→ 退化为文件名（仍不含盘符字面量）
+            rel = os.path.basename(p)
+        items.append({"name": t, "path": rel, "rows": len(rows),
+                      "content_sha256": version_of_file(p, short=64),
+                      "keys": list(SYNC_TABLES[t]["keys"])})
+    wms = {w["artifact_key"]: w["version"] for w in list_watermarks()}
+    man = {
+        "schema_version": SCHEMA_VERSION,
+        "generated_at": now_iso(),
+        "generator_run_id": current_run_id(),
+        "note": "治理库元数据快照（只读交换层）。事实源仍为各模块文件；本目录为派生只读视图。",
+        "watermarks": wms,
+        "items": items,
+    }
+    mp = os.path.join(out_dir, "manifest.json")
+    from std_lib.common_lib.fs_lock import atomic_write_json  # noqa: PLC0415
+    atomic_write_json(mp, man)
+    return {"enabled": True, "out_dir": out_dir, "manifest": mp, "items": items}
+
+
+def _csv_cell(v) -> str:
+    s = "" if v is None else str(v)
+    if any(ch in s for ch in (",", '"', "\n", "\r")):
+        return '"' + s.replace('"', '""') + '"'
+    return s
 
 
 # --------------------------------------------------------------------------- #

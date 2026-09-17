@@ -11,18 +11,19 @@ run_production_refresh.py —— 生产五源全量数据刷新编排器（2026-
      —— 必须在阶段 1/2 写 cleaned 之后、下游消费者（3/4.2/4.5/6.8）之前；否则
      merged 引用原语、drafter 关系素材与交付库 2.1.2.4/2.1.2.5 会**静默反映旧数据**
  3   reconcile clean_drift（RFN↔clean 漂移核验，写 drift state/ledger）
+ 3.5 governance sync（阶段 2，2026-09-18：元数据四表投影 + 比对断言；断言失败即计入失败步骤）
  4   recall   run_retrieval_after_checks.py（clean/validity/contract/schema 四门禁）
  4.2 internal merged（内部制度 × RFN 引用视图；F-O07 编排唯一化）
  4.5 reports 全量/单主题报告生成（F-O06）
  5.5 base publish（双底座发布件 + SQLite/FTS5；Base Contract v1，F-K03）
- 6   gates    cli.py gates（**17 道**交付门禁，含 gate_watermark）
+ 6   gates    cli.py gates（**18 道**交付门禁，含 gate_watermark）
  6.8 analysis gen（规划 §2.1 交付库 17 项刷新，F-L01；含关系类 2 项）
  6.5 watch baseline（变更监听基线记录，F-O02）
 
 阶段 0/1 接线（2026-09-18；`reports/数据流转与存储交互优化方案_20260917.md` §6）：
   - **单实例锁**：本编排自身加 `ProcessLock`（此前只有各 collector 有锁，编排可并发重入）；
   - **run_log**：本次运行登记 `RUN-<ts>-<pid>`，经 `REG_ORCH_RUN_ID` 下传子进程
-    （`cli.py gates` 据此把 17 道门禁结果归档进 `gate_result`）；
+    （`cli.py gates` 据此把 18 道门禁结果归档进 `gate_result`）；
   - **watermark**：每阶段 rc==0 后登记「产物水位」（产物版本 + 其所依赖的上游版本），
     把本文档阶段表里的**隐式时序约束**变成机器可读的依赖边；`gate_watermark` 据此
     判定「上游已推进、下游未重跑」（替代易受 touch/copy 干扰的 mtime 判据）。
@@ -451,6 +452,15 @@ def _run_chain(args) -> int:
     # 观察型登记：链外写方（归属表/主题表/时效 state/内部索引/clean_index）。
     # 放在 stage 3 之后 = 链内最后一个 attr 写方（reconcile）之后，版本才稳定。
     _wm_observations()
+
+    # ---- 阶段 3.5：治理库元数据投影（阶段 2「双写期」；2026-09-18）----
+    # 语义：**文件仍是事实源**（读方不变），本步把四类元数据（归属表/主题表/内部主索引/
+    # 关系产物/时效 state）事务化投影进 governance.db，并在同一命令内做**比对断言**
+    # （库内摘要 vs 由文件重算的摘要）——不一致即"库与文件分叉"，计入失败步骤（不静默）。
+    # 位置纪律：在链内最后一个 attr 写方（stage 3 reconcile）之后，保证投影取到终态。
+    report.append(_run("governance:sync",
+                       [PY, os.path.join(ROOT, "tools", "governance_sync.py"), "--apply"],
+                       timeout=900))
 
     # ---- 阶段 4：recall ----
     report.append(_run("recall", [PY, os.path.join(CLASSIFIER, "recall_audit",

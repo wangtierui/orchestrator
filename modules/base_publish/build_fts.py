@@ -31,13 +31,15 @@ DROP TABLE IF EXISTS records; DROP TABLE IF EXISTS clauses; DROP TABLE IF EXISTS
 CREATE TABLE records(
   record_id TEXT PRIMARY KEY, rfn TEXT, title TEXT, document_number TEXT,
   issue_organ TEXT, publish_date TEXT, effective_date TEXT, timeliness_status TEXT,
-  verification_source TEXT, source TEXT, url TEXT, body_len INT, body_text TEXT, theme TEXT);
+  verification_source TEXT, source TEXT, url TEXT, body_len INT, body_text TEXT, theme TEXT,
+  docno_norm TEXT);   -- 阶段 3（2026-09-18）：归一化文号，供 version_chain 索引下推
 CREATE TABLE clauses(
   record_id TEXT, rfn TEXT, document_number TEXT, title TEXT, article_no TEXT,
   article_body TEXT, publish_date TEXT, timeliness_status TEXT);
 CREATE TABLE attachments(
   record_id TEXT, rfn TEXT, seq INT, file_name TEXT, kind TEXT, local_path TEXT, sha256 TEXT);
 CREATE INDEX idx_records_rfn ON records(rfn);
+CREATE INDEX idx_records_docno_norm ON records(docno_norm);
 CREATE INDEX idx_clauses_rfn ON clauses(rfn);
 CREATE INDEX idx_clauses_record ON clauses(record_id);
 CREATE VIRTUAL TABLE records_fts USING fts5(title, document_number, body_text,
@@ -131,15 +133,17 @@ def build_external() -> dict:
         raise FileNotFoundError("发布件缺失（先运行 base publish --base external）: " + rec_p)
     conn, tmp = _open_build_db(db_p, _EXT_SCHEMA)
     n_rec = 0
+    from std_lib.common_lib.norm import norm_docno as _nd  # noqa: PLC0415  归一化 SSOT
     for r in _iter_jsonl(rec_p):
         conn.execute(
             "INSERT INTO records(record_id,rfn,title,document_number,issue_organ,publish_date,"
-            "effective_date,timeliness_status,verification_source,source,url,body_len,body_text,theme)"
-            " VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            "effective_date,timeliness_status,verification_source,source,url,body_len,body_text,theme,"
+            "docno_norm) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             (r.get("record_id", ""), r.get("rfn", ""), r.get("title", ""), r.get("document_number", ""),
              r.get("issue_organ", ""), r.get("publish_date", ""), r.get("effective_date", ""),
              r.get("timeliness_status", ""), r.get("verification_source", ""), r.get("source", ""),
-             r.get("url", ""), int(r.get("body_len") or 0), r.get("body_text", ""), r.get("theme", "")))
+             r.get("url", ""), int(r.get("body_len") or 0), r.get("body_text", ""), r.get("theme", ""),
+             _nd(r.get("document_number", "") or "")))
         n_rec += 1
     n_cl = 0
     if os.path.exists(cl_p):

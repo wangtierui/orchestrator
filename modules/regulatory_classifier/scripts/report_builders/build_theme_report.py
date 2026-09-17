@@ -53,10 +53,8 @@ _clause_map: dict[str, int] | None = None
 
 def _load_clause_map() -> dict[str, int]:
     from std_lib.common_lib.norm import norm_docno  # noqa: PLC0415
-    scrapers_mod = os.path.join(os.path.dirname(_MOD_CLASS), "regulatory_scrapers")
-    if scrapers_mod not in sys.path:
-        sys.path.insert(0, scrapers_mod)
-    import clause_index as _ci  # noqa: PLC0415
+    # 阶段 3（2026-09-18）：条文产物经 interfaces 唯一入口（原跨模块引导已移除）
+    from interfaces import clause_index_api as _ci  # noqa: PLC0415
     m: dict[str, int] = {}
     for src in ("gov", "mof", "nfra", "pbc", "supp"):
         try:

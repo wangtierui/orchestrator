@@ -32,9 +32,9 @@ from collections import Counter
 _THIS = os.path.dirname(os.path.abspath(__file__))       # modules/internal_policy_base
 _MODULES = os.path.dirname(_THIS)
 _ORCH_ROOT = os.path.dirname(_MODULES)
-for _p in (_ORCH_ROOT, os.path.join(_ORCH_ROOT, "modules", "regulatory_classifier")):
-    if _p not in sys.path:
-        sys.path.insert(0, _p)
+# 阶段 3（2026-09-18）：不再插入兄弟模块目录；跨模块经 interfaces。
+if _ORCH_ROOT not in sys.path:
+    sys.path.insert(0, _ORCH_ROOT)
 
 
 _DATA = os.path.join(_THIS, "data")
@@ -61,8 +61,8 @@ THEME_TITLE_KW = {
 
 def _themes_map() -> dict:
     try:
-        from rfn import THEME_MAP  # noqa: PLC0415
-        return dict(THEME_MAP)
+        from interfaces.rfn_api import theme_map  # noqa: PLC0415
+        return dict(theme_map())
     except Exception:
         return {}
 

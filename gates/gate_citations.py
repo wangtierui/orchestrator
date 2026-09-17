@@ -30,6 +30,15 @@ for _p in (_MOD_CLASS, paths.ROOT):
         sys.path.insert(0, _p)
 
 
+def _wm_status(key: str):
+    """产物水位状态（阶段 4：判据切换共用入口 `interfaces.governance_api.wm_status`）。"""
+    try:
+        from interfaces.governance_api import wm_status  # noqa: PLC0415
+        return wm_status(key)
+    except Exception as e:  # noqa: BLE001  水位不可用 → unknown（调用方退回指纹判据）
+        return "unknown", {"reason": f"{type(e).__name__}: {e}"}
+
+
 def run():
     if not os.path.exists(_MERGED):
         # F-S09：输入缺失不得空跑放行（原 return True 使"全部门禁通过"含未实检门禁）。
@@ -38,26 +47,45 @@ def run():
     view = json.load(open(_MERGED, encoding="utf-8"))
     # F-C08（2026-09-12）：merged_view 陈旧校验——inputs 指纹（归属表/主题表/内部索引/processed
     # 目录签名）重算比对；上游变化后视图未重建即 FAIL（原实现 inputs 零校验，陈旧视图不可感）。
+    #
+    # 阶段 4（2026-09-18）判据切换：**水位优先，inputs 指纹降为交叉校验/回退**。
+    #   水位 stale   → FAIL（"上游已推进、视图未重建"，零容差且直接报出是哪条依赖边）；
+    #   水位 ok      → 通过（inputs 差异仅作交叉校验信息；`processed_signature` 用
+    #                  名称|size|mtime 近似，touch 即变，误报率高）；
+    #   水位 unknown → 退回原 inputs 指纹判据（不得因"无水位"放行）。
+    _wm_state, _wm_detail = _wm_status("merged_view")
+    fingerprint_note = None
     try:
         _ipb = os.path.join(paths.MODULES_DIR, "internal_policy_base")
         if _ipb not in sys.path:
             sys.path.insert(0, _ipb)
         import merged as _merged  # noqa: PLC0415
-        _cld = os.path.join(paths.MODULES_DIR, "regulatory_classifier", "data")
+        from interfaces.rfn_api import registry_paths as _registry_paths  # noqa: PLC0415
+        _rp = _registry_paths()
         cur = {
-            "attr_sha": _merged._sha_file(os.path.join(_cld, "人身保险公司-文件归属表.csv")),
-            "theme_sha": _merged._sha_file(os.path.join(_cld, "人身保险公司-主题归属表.csv")),
+            "attr_sha": _merged._sha_file(_rp["attr_csv"]),
+            "theme_sha": _merged._sha_file(_rp["theme_csv"]),
             "index_sha": _merged._sha_file(_merged._INDEX_PATH),
             "processed_signature": _merged._processed_signature(),
         }
         stale_keys = [k for k, v in cur.items() if (view.get("inputs") or {}).get(k) != v]
         if stale_keys:
-            return False, {"error": f"merged_view 陈旧（inputs 变化: {stale_keys}）；"
-                                    "先运行 `orchestrator internal merged` 重建视图",
-                           "merged": view.get("count"), "inputs_now": cur}
+            if _wm_state == "stale":
+                return False, {"error": f"merged_view 陈旧（水位判据）：{_wm_detail.get('stale')}；"
+                                        "先运行 `orchestrator internal merged` 重建视图",
+                               "merged": view.get("count"), "inputs_now": cur}
+            if _wm_state == "unknown":
+                return False, {"error": f"merged_view 陈旧（inputs 判据；水位不可用："
+                                        f"{_wm_detail.get('reason')}）: {stale_keys}；"
+                                        "先运行 `orchestrator internal merged` 重建视图",
+                               "merged": view.get("count"), "inputs_now": cur}
+            fingerprint_note = (f"水位判据为 ok，inputs 指纹差异 {stale_keys} 判为近似签名"
+                                "（名称|size|mtime）误报，不阻断")
     except Exception as e:  # noqa: BLE001  校验不可用时显式记录（不静默）
-        return False, {"error": f"merged_view 陈旧校验不可执行: {e!r}（不得视为通过）",
-                       "merged": view.get("count")}
+        if _wm_state != "ok":
+            return False, {"error": f"merged_view 陈旧校验不可执行: {e!r}（不得视为通过）",
+                           "merged": view.get("count")}
+        fingerprint_note = f"inputs 指纹复核不可执行（{e!r}），但水位判据为 ok"
     try:
         from rfn import get_index  # noqa: PLC0415
         idx = get_index()
@@ -79,6 +107,9 @@ def run():
         "ref_rfn_distinct": len(seen_rfn),
         "problems": problems[:30],
         "stat": view.get("stat", {}),
+        "freshness": {"watermark": _wm_state, "watermark_detail": _wm_detail,
+                      "cross_check": fingerprint_note},
+        "note": "陈旧判据：阶段 4 起水位优先，inputs 指纹降为交叉校验（近似签名易误报）",
     }
     return (not problems), detail
 

@@ -23,6 +23,11 @@ logs/
 # 属派生数据：缺失时 get_clean_index() 自动扫描重建（零扫描失效，可接受）。
 modules/regulatory_scrapers/clean_index/index.json
 
+# 治理库文本快照（阶段 2，2026-09-18）：`governance export` 产出的只读交换层，
+# 由治理库重建（`governance sync --apply --export`），非事实源 → 不入库。
+# 跨机审计链仍由 reports/ 与 docs/reports/ 承载（二者入库）。
+exports/
+
 # ===== OCR / 大文件 =====
 *.pdf
 *.doc

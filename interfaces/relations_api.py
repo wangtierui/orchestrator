@@ -56,6 +56,47 @@ def _read_jsonl(path: str) -> list[dict]:
     return out
 
 
+# --------------------------------------------------------------------------- #
+# 阶段 3（2026-09-18）：读取路径升级 —— **优先查治理库 `relation` 表**（索引下推），
+# 事实源 JSONL 退为回退路径。
+#
+# 动因（方案 §2.2 G7）：原实现下 `by_src()` / `by_dst()` **每次调用都重读整个 7 MB
+# JSONL** 再在 Python 端线性过滤（O(N)/次，且 `load()` 全量进内存）。治理库 `relation`
+# 表已按 src_ref/src_key/dst_ref/dst_key/relation/dst_class 建索引 → 单次查询 O(log N)。
+#
+# 一致性：治理库是**投影**（阶段 2，唯一写口 tools/governance_sync.py），与事实源
+# 同源；`governance verify` 的比对断言保证二者不漂移。DB 不可用/表为空 → 回退读文件，
+# 保证"库没建也能跑"（与 base_api 的显式报错不同：关系读取属分析路径，降级不阻断）。
+# --------------------------------------------------------------------------- #
+def _db_rows(where: str = "", args=(), limit: int = 0) -> list[dict] | None:
+    """经治理库取关系行（`row_json` 还原原行）；不可用返回 None（调用方回退文件）。"""
+    try:
+        from std_lib.common_lib import governance_store as gs  # noqa: PLC0415
+        if not gs.enabled() or gs.table_count("relation") == 0:
+            return None
+        sql = "SELECT row_json FROM relation"
+        if where:
+            sql += f" WHERE {where}"
+        if limit:
+            sql += f" LIMIT {int(limit)}"
+        with gs.connect(readonly=True) as c:
+            rows = []
+            for (rj,) in c.execute(sql, args):
+                try:
+                    rows.append(json.loads(rj))
+                except ValueError:
+                    continue
+            return rows
+    except Exception:  # noqa: BLE001  DB 异常不得阻断关系读取（回退文件）
+        return None
+
+
+def _all_rows() -> list[dict]:
+    """关系全量行：优先治理库，回退事实源 JSONL。"""
+    rows = _db_rows()
+    return rows if rows is not None else _read_jsonl(INDEX_PATH)
+
+
 def load(kind: str = "all") -> list[dict]:
     """读取关系（`kind` ∈ KINDS）。
 
@@ -66,9 +107,18 @@ def load(kind: str = "all") -> list[dict]:
     """
     if kind not in KINDS:
         raise ValueError(f"kind 须 ∈ {KINDS}，得到 {kind!r}")
-    rows = _read_jsonl(INDEX_PATH)
     if kind == "all":
+        return _all_rows()
+    # 分类下推 SQL（避免全量进内存后在 Python 端过滤）
+    cond = {
+        "regulatory": ("src_kind='regulatory'", ()),
+        "internal": ("src_kind='internal' AND dst_kind='internal'", ()),
+        "cross": ("src_kind='internal' AND dst_kind='regulatory'", ()),
+    }[kind]
+    rows = _db_rows(cond[0], cond[1])
+    if rows is not None:
         return rows
+    rows = _read_jsonl(INDEX_PATH)
     if kind == "regulatory":
         return [r for r in rows if r.get("src_kind") == "regulatory"]
     if kind == "internal":
@@ -94,15 +144,29 @@ def stat() -> dict:
 
 
 def by_src(ref: str) -> list[dict]:
-    """按源实体取关系（RFN 或 IPN）。"""
+    """按源实体取关系（RFN 或 IPN）。**库可用时走索引查询**（原每次重读 7 MB 全表）。"""
+    if not ref:
+        return []
+    rows = _db_rows("src_ref=? OR src_key=?", (ref, ref))
+    if rows is not None:
+        return rows
     return [r for r in _read_jsonl(INDEX_PATH)
-            if ref and (r.get("src_ref") == ref or r.get("src_key") == ref)]
+            if r.get("src_ref") == ref or r.get("src_key") == ref]
 
 
 def by_dst(ref: str) -> list[dict]:
-    """按目标实体取关系（RFN 或 IPN）——用于"谁依据/废止了我"的反向查询。"""
+    """按目标实体取关系（RFN 或 IPN）——"谁依据/废止了我"的反向查询。
+
+    `dst_ref` 命中为强匹配；`dst_key` 命中属"已采集未登记 RFN"的弱线索（口径见
+    方案 §5：两级解析语义不同，消费方须自行区分）。
+    """
+    if not ref:
+        return []
+    rows = _db_rows("dst_ref=? OR dst_key=?", (ref, ref))
+    if rows is not None:
+        return rows
     return [r for r in _read_jsonl(INDEX_PATH)
-            if ref and (r.get("dst_ref") == ref or r.get("dst_key") == ref)]
+            if r.get("dst_ref") == ref or r.get("dst_key") == ref]
 
 
 def summary() -> dict:
