@@ -70,6 +70,58 @@ def _iter_jsonl(path: str):
                 yield json.loads(line)
 
 
+# --------------------------------------------------------------------------- #
+# 构建设施（阶段 0 止血 2026-09-18）：**先建临时库 → 一次 os.replace 换入**，
+# 替代原「os.remove(db_p) 后原地重建」——后者存在两个致命窗口：
+#   ① 删除与重建之间，任何读者（interfaces/base_api）必然 FileNotFoundError；
+#   ② 构建中途崩溃 → 现网库已删、新库未成，**派生索引彻底丢失**（须整链重跑）。
+# 另：落库后置 journal_mode=WAL（并发读友好；mode 持久化于库文件头，只设一次）。
+# --------------------------------------------------------------------------- #
+def _open_build_db(db_p: str, schema: str) -> tuple[sqlite3.Connection, str]:
+    """在临时文件上建库（不触碰现网库）。返回 (conn, tmp_path)。"""
+    tmp = db_p + ".build"
+    for suf in ("", "-journal", "-wal", "-shm"):
+        try:
+            os.remove(tmp + suf)
+        except OSError:
+            pass
+    conn = sqlite3.connect(tmp)
+    conn.executescript(schema)
+    return conn, tmp
+
+
+def _drop_build_db(conn: sqlite3.Connection, tmp: str) -> None:
+    """构建失败：关闭并清理半成品（现网库不受影响）。"""
+    try:
+        conn.close()
+    except sqlite3.Error:
+        pass
+    for suf in ("", "-journal", "-wal", "-shm"):
+        try:
+            os.remove(tmp + suf)
+        except OSError:
+            pass
+
+
+def _finalize(conn: sqlite3.Connection, tmp: str, db_p: str, rebuild_sql: tuple[str, ...] = ()) -> None:
+    """FTS 重建 → 提交 → 原子换入 → 置 WAL；任一步失败即清理半成品（现网库不动）。"""
+    try:
+        for sql in rebuild_sql:
+            conn.execute(sql)
+        conn.commit()
+        conn.close()
+    except BaseException:
+        _drop_build_db(conn, tmp)
+        raise
+    os.replace(tmp, db_p)
+    c = sqlite3.connect(db_p, isolation_level=None)
+    try:
+        c.execute("PRAGMA journal_mode=WAL")
+        c.execute("PRAGMA synchronous=NORMAL")
+    finally:
+        c.close()
+
+
 def build_external() -> dict:
     rec_p = os.path.join(EXT_DIR, "external_records.jsonl")
     cl_p = os.path.join(EXT_DIR, "external_clauses.jsonl")
@@ -77,10 +129,7 @@ def build_external() -> dict:
     db_p = os.path.join(EXT_DIR, "external_index.sqlite")
     if not os.path.exists(rec_p):
         raise FileNotFoundError("发布件缺失（先运行 base publish --base external）: " + rec_p)
-    if os.path.exists(db_p):
-        os.remove(db_p)
-    conn = sqlite3.connect(db_p)
-    conn.executescript(_EXT_SCHEMA)
+    conn, tmp = _open_build_db(db_p, _EXT_SCHEMA)
     n_rec = 0
     for r in _iter_jsonl(rec_p):
         conn.execute(
@@ -111,10 +160,10 @@ def build_external() -> dict:
                 (a.get("record_id", ""), a.get("rfn", ""), int(a.get("seq") or 0),
                  a.get("file_name", ""), a.get("kind", ""), a.get("local_path", ""), a.get("sha256", "")))
             n_att += 1
-    conn.execute("INSERT INTO records_fts(records_fts) VALUES('rebuild')")
-    conn.execute("INSERT INTO clauses_fts(clauses_fts) VALUES('rebuild')")
-    conn.commit()
-    conn.close()
+    _finalize(conn, tmp, db_p, (
+        "INSERT INTO records_fts(records_fts) VALUES('rebuild')",
+        "INSERT INTO clauses_fts(clauses_fts) VALUES('rebuild')",
+    ))
     return {"db": db_p, "records": n_rec, "clauses": n_cl, "attachments": n_att}
 
 
@@ -124,10 +173,7 @@ def build_internal() -> dict:
     db_p = os.path.join(INT_DIR, "internal_index.sqlite")
     if not os.path.exists(pol_p):
         raise FileNotFoundError("发布件缺失（先运行 base publish --base internal）: " + pol_p)
-    if os.path.exists(db_p):
-        os.remove(db_p)
-    conn = sqlite3.connect(db_p)
-    conn.executescript(_INT_SCHEMA)
+    conn, tmp = _open_build_db(db_p, _INT_SCHEMA)
     n_pol = 0
     for p in _iter_jsonl(pol_p):
         conn.execute(
@@ -146,10 +192,10 @@ def build_internal() -> dict:
                          (c.get("ipn", ""), c.get("article_no", ""), c.get("article_body", ""),
                           json.dumps(c.get("rfns") or [], ensure_ascii=False)))
             n_cl += 1
-    conn.execute("INSERT INTO policies_fts(policies_fts) VALUES('rebuild')")
-    conn.execute("INSERT INTO iclauses_fts(iclauses_fts) VALUES('rebuild')")
-    conn.commit()
-    conn.close()
+    _finalize(conn, tmp, db_p, (
+        "INSERT INTO policies_fts(policies_fts) VALUES('rebuild')",
+        "INSERT INTO iclauses_fts(iclauses_fts) VALUES('rebuild')",
+    ))
     return {"db": db_p, "policies": n_pol, "clauses": n_cl}
 
 

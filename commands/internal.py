@@ -26,7 +26,7 @@ def _require_ipb_index(sub: str) -> bool:
 
 
 def run(argv):
-    """internal index|align [--source-dir ...] — 内部制度摄取/对齐（P6）。"""
+    """internal index|align|merged|backfill|reocr|refine-identity — 内部制度摄取/对齐/词表（P6）。"""
     sys.path.insert(0, os.path.join(paths.ROOT, "modules"))
     if not argv:
         print("用法: orchestrator internal {index|align} [--source-dir DIR] [--dry-run]")
@@ -98,7 +98,8 @@ def run(argv):
         s = backfill_clauses()
         print(json.dumps(s, ensure_ascii=False, indent=2))
         return 0
-    print(f"未知 internal 子命令: {sub}（可用: index, align, merged, backfill）")
+    print(f"未知 internal 子命令: {sub}（可用: index, align, merged, backfill, "
+          "reocr, refine-identity）")
     return 1
 
 

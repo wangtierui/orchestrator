@@ -1,11 +1,11 @@
 # BENCHMARK —— 交付基准登记（回归对照基线）
 
-> 自动生成：tools/gen_benchmark.py @ 2026-09-14 01:16:16 | python 3.13.14
+> 自动生成：tools/gen_benchmark.py @ 2026-09-18 01:39:11 | python 3.13.14
 > 用途：数据重建/重构后重跑 `python tools/gen_benchmark.py` 刷新；数值漂移即回归信号。
 
 ## 1 门禁（gates/ALL_GATES）
 
-实装 16 道（gates/gate_*.py）：
+实装 17 道（gates/gate_*.py）：
 ```
   gate_citations.py
   gate_contract.py
@@ -23,16 +23,17 @@
   gate_secret_scan.py
   gate_sources_config.py
   gate_timeliness_ssot.py
+  gate_watermark.py
 ```
 
 运行：`python cli.py gates`（GatesRunner 汇总，exit code 非 0 即阻断）
 
 ## 2 自动化验收测试（pytest）
 
-用例文件 24：`test_analysis_deliveries.py`、`test_base_publish.py`、`test_clean_index_portability.py`、`test_cli_facade.py`、`test_common_lib.py`、`test_contract_api.py`、`test_crawler_extract.py`、`test_drafter_pure.py`、`test_e2e_pipeline.py`、`test_excel_crawler_pipeline.py`、`test_internal_original_paths.py`、`test_internal_policy_base.py`、`test_ipb_deep.py`、`test_ipb_extract_file.py`、`test_misc_pure.py`、`test_relations.py`、`test_rich_object.py`、`test_scraper_std_core.py`、`test_scraper_std_extra.py`、`test_scraper_std_tables.py`、`test_scrapers_pure.py`、`test_ssot_convergence.py`、`test_std_lib_more.py`、`test_table_structured.py`
+用例文件 25：`test_analysis_deliveries.py`、`test_base_publish.py`、`test_clean_index_portability.py`、`test_cli_facade.py`、`test_common_lib.py`、`test_contract_api.py`、`test_crawler_extract.py`、`test_drafter_pure.py`、`test_e2e_pipeline.py`、`test_excel_crawler_pipeline.py`、`test_governance_store.py`、`test_internal_original_paths.py`、`test_internal_policy_base.py`、`test_ipb_deep.py`、`test_ipb_extract_file.py`、`test_misc_pure.py`、`test_relations.py`、`test_rich_object.py`、`test_scraper_std_core.py`、`test_scraper_std_extra.py`、`test_scraper_std_tables.py`、`test_scrapers_pure.py`、`test_ssot_convergence.py`、`test_std_lib_more.py`、`test_table_structured.py`
 运行：`python -m pytest tests -q`
 
-**覆盖率基线（只升不降）**：TOTAL 22%（采自 `.coverage`；刷新：`python -m coverage run -m pytest tests -q`）
+**覆盖率基线（只升不降）**：TOTAL 21%（采自 `.coverage`；刷新：`python -m coverage run -m pytest tests -q`）
 
 ## 3 数据基线
 
@@ -40,32 +41,32 @@
 
 | 源 | 快照日期 | 备注 |
 |---|---|---|
-| gov | 20260912 | 最新 cleaned |
-| mof | 20260912 | 最新 cleaned |
-| nfra | 20260912 | 最新 cleaned |
-| pbc | 20260912 | 最新 cleaned |
-| supp | 20260912 | 最新 cleaned |
-| 合计 | — | 索引记录 4043 |
+| gov | 20260918 | 最新 cleaned |
+| mof | 20260918 | 最新 cleaned |
+| nfra | 20260918 | 最新 cleaned |
+| pbc | 20260918 | 最新 cleaned |
+| supp | 20260918 | 最新 cleaned |
+| 合计 | — | 索引记录 16617 |
 
 ### 3.2 classifier 底座/明细/桥（数据血缘 R10 已注入 generated_*）
 
 | 产物 | 数值 |
 |---|---|
-| 文件归属表行数 | 1155 |
-| 主题归属表行数 | 1155 |
-| base 底座合计（T1–T10） | 1066 |
-| final 底座合计（含 cluster/finalized 血缘） | 1066 |
-| 明细表份数 / 行数合计 | 11 / 1155 |
-| RFN↔clean 溯源桥行数 | 828 |
-| 时效核验 verification_state 记录 | 3157 |
-| 各主题 final 记录数 | T1=196、T2=149、T3=76、T4=109、T5=142、T6=60、T7=35、T8=78、T9=78、T10=143 |
+| 文件归属表行数 | 1162 |
+| 主题归属表行数 | 1162 |
+| base 底座合计（T1–T10） | 1073 |
+| final 底座合计（含 cluster/finalized 血缘） | 1073 |
+| 明细表份数 / 行数合计 | 11 / 1162 |
+| RFN↔clean 溯源桥行数 | 943 |
+| 时效核验 verification_state 记录 | 14769 |
+| 各主题 final 记录数 | T1=196、T2=150、T3=76、T4=109、T5=142、T6=66、T7=35、T8=78、T9=78、T10=143 |
 
 ### 3.3 internal 制度库
 
 | 产物 | 数值 |
 |---|---|
 | originals 原始制度 | 879 |
-| processed 处理文件（fulltext/main/json/md） | 3839 |
+| processed 处理文件（fulltext/main/json/md） | 3842 |
 | 条文结构 _clauses.json | 877 |
 | 条文视图 _clauses.md | 877 |
 | merged_view 记录 | 878 |
@@ -74,7 +75,7 @@
 
 | 命令 | 职责 |
 |---|---|
-| `python cli.py gates` | 16 道交付门禁（以 ALL_GATES 为准） |
+| `python cli.py gates` | 17 道交付门禁（以 ALL_GATES 为准） |
 | `python cli.py classify --all --steps base,cluster,match,detail,upper,clause_graph` | 底座强序重建（R8 幂等断点） |
 | `python cli.py source list / add --id` | 源目录路由（R15） |
 | `python cli.py internal index/align/merged` | 内部制度链路 |

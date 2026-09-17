@@ -32,6 +32,7 @@ ALL_GATES: list[dict] = [
     {"module": "gates.gate_secret_scan", "desc": "密钥/敏感值硬编码扫描（审查 P1-4）", "require_impl": True},
     {"module": "gates.gate_original_resolvable", "desc": "内部制度索引↔原件库可解析性", "require_impl": True},
     {"module": "gates.gate_relations", "desc": "依据/废止关系产物（R-F01：键集/枚举/强引用/溯源/统计）", "require_impl": True},
+    {"module": "gates.gate_watermark", "desc": "产物水位一致性（阶段 1：水位比对替代 mtime）", "require_impl": True},
 ]
 
 
@@ -45,20 +46,22 @@ class GatesRunner:
             mod = importlib.import_module(spec["module"])
             fn = getattr(mod, "run", None)
             if fn is None:
-                results.append({"desc": spec["desc"], "passed": False, "detail": {"error": "缺 run()"}})
+                results.append({"module": spec["module"], "desc": spec["desc"],
+                                "passed": False, "detail": {"error": "缺 run()"}})
                 continue
             try:
                 passed, detail = fn()
             except Exception as e:  # noqa: BLE001
-                results.append({"desc": spec["desc"], "passed": False,
-                                "detail": {"error": repr(e)}})
+                results.append({"module": spec["module"], "desc": spec["desc"],
+                                "passed": False, "detail": {"error": repr(e)}})
                 continue
             if not passed and not spec.get("require_impl", False):
                 # 未接入门禁在 P0 不阻塞；P1 置 require_impl=True 后未实现即 FAIL
-                results.append({"desc": spec["desc"], "passed": True,
+                results.append({"module": spec["module"], "desc": spec["desc"], "passed": True,
                                 "detail": {"note": "待接入（P0 骨架放行）", "inner": detail}})
             else:
-                results.append({"desc": spec["desc"], "passed": passed, "detail": detail})
+                results.append({"module": spec["module"], "desc": spec["desc"],
+                                "passed": passed, "detail": detail})
         ok = all(r["passed"] for r in results)
         return ok, results
 

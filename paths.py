@@ -23,6 +23,13 @@ TOOLS_DIR = os.path.join(ROOT, "tools")
 DATA_DIR = os.path.join(ROOT, "data")          # 预留：D-05 决策数据随仓，本目录可选
 TESTS_DIR = os.path.join(ROOT, "tests")
 
+# ---- 治理库（阶段 1，2026-09-18）----
+# 三轨制之「治理轨」：只放元数据/状态/关系/审计/水位（目标 < 50 MB），不含语料正文。
+# 位于仓根 data/（.gitignore 的 `data/` 规则已忽略）；机器本地态，跨机审计链由
+# exports/ 文本快照与 reports/ 台账承载。唯一读写实现 =
+# std_lib/common_lib/governance_store.py（环境变量 REG_ORCH_GOVERNANCE_DB 可覆盖）。
+GOVERNANCE_DB = os.path.join(DATA_DIR, "governance.db")
+
 # ---- config 子路径 ----
 ENUMS_FILE = os.path.join(CONFIG_DIR, "enums.py")
 SOURCES_YAML = os.path.join(CONFIG_DIR, "sources.yaml")
@@ -42,7 +49,7 @@ def module_dir(name: str) -> str:
 def ensure_dirs() -> None:
     """确保骨架目录存在（幂等）。P0 后保留供安装/测试调用。"""
     for d in (CONFIG_DIR, INTERFACES_DIR, GATES_DIR, STD_LIB_DIR,
-              MODULES_DIR, REPORTS_DIR, TOOLS_DIR, SCHEMA_DIR):
+              MODULES_DIR, REPORTS_DIR, TOOLS_DIR, SCHEMA_DIR, DATA_DIR):
         os.makedirs(d, exist_ok=True)
 
 

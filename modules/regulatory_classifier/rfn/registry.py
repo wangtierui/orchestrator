@@ -47,7 +47,7 @@ for _p in (_ORCH_ROOT, _MOD_ROOT):
 from rfn import THEME_MAP  # noqa: E402
 
 # 共享件收口（P4）：原子写 / 指纹 / 归一化 由 std_lib.common_lib 提供（专项三）。
-from std_lib.common_lib.fs_lock import WinFileLock  # noqa: E402
+from std_lib.common_lib.fs_lock import WinFileLock, atomic_write_json  # noqa: E402
 from std_lib.common_lib.io_atomic import (
     fingerprint as _fp_fingerprint,  # noqa: E402  (模块尾兼容导出)
 )
@@ -353,6 +353,13 @@ def _sync_status_read(rfn=None):
 
 
 def _sync_status_write(rfn, layer, status, note=""):
+    """写 sync_status.json（阶段 0 止血 2026-09-18：原 `open(...,"w")` 直写改为原子写）。
+
+    背景：本文件 774 KB 且被 register_doc / re_theme / 各 build 管线频繁改写；
+    直写遇崩溃/并发即产出**截断 JSON**，而 `_sync_status_read` 对损坏文件直接抛
+    （`json.load` 无 try）→ 整个 registry 链路不可用。改经
+    `std_lib.common_lib.fs_lock.atomic_write_json`（tempfile + fsync + os.replace）。
+    """
     data = _sync_status_read()
     rec = data.setdefault(rfn, {"status": "pending", "layers": {}})
     rec["layers"][layer] = {"status": status, "note": note, "updated_at": _now()}
@@ -361,8 +368,7 @@ def _sync_status_write(rfn, layer, status, note=""):
     elif status == "ok":
         rec["status"] = ("synced" if all(rec["layers"].get(lyr, {}).get("status") == "ok" for lyr in SYNC_LAYERS)
                          else "partial")
-    with open(_sync_path(), "w", encoding="utf-8") as fh:
-        json.dump(data, fh, ensure_ascii=False, indent=2)
+    atomic_write_json(_sync_path(), data)
 
 
 def sync_status_set(rfn, layer, status, note=""):

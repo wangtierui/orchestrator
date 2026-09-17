@@ -5,7 +5,14 @@
   - 命令注册表 COMMANDS（映射 commands/<name>.run；业务实现全部在 commands/ 包）；
   - argparse 蓝图 build_parser（帮助文本/子命令参数声明）；
   - 分发 main（UTF-8 强置、-h 处理、未知命令提示）。
-命令实现（10 个）见 commands/：gates/source/internal/classify/timeliness/draft/rfn/base/analysis/ping。
+命令实现（12 个）见 commands/：gates/governance/source/internal/classify/timeliness/draft/rfn/
+base/analysis/relations/ping。
+
+⚠️ 阶段 0 澄清（2026-09-18）：`build_parser()` **仅用于 `-h/--help` 文本**，
+实际分发走 `COMMANDS` 注册表（`main()` 直接 `handler(argv[1:])`，不经 argparse 校验）。
+故子命令 `choices` 与 handler 不一致时**不会拒绝执行**，只会让帮助文本失真
+（此前 source diff / internal reocr|refine-identity / timeliness sync|summary 即此情形，
+已于本次对齐）。
 """
 from __future__ import annotations
 
@@ -19,6 +26,7 @@ from commands import base as _m_base
 from commands import classify as _m_classify
 from commands import draft as _m_draft
 from commands import gates as _m_gates
+from commands import governance as _m_governance
 from commands import internal as _m_internal
 from commands import ping as _m_ping
 from commands import relations as _m_relations
@@ -28,6 +36,7 @@ from commands import timeliness as _m_timeliness
 
 COMMANDS = {
     "gates": _m_gates.run,
+    "governance": _m_governance.run,
     "source": _m_source.run,
     "internal": _m_internal.run,
     "classify": _m_classify.run,
@@ -48,16 +57,26 @@ def build_parser() -> argparse.ArgumentParser:
     )
     sub = p.add_subparsers(dest="command", metavar="<command>")
     sub.add_parser("gates", help="运行交付门禁（ALL_GATES）")
+    p_gov = sub.add_parser("governance", help="治理库（阶段 1；水位/审计/原件注册）")
+    p_gov.add_argument("sub", choices=["init", "status", "watermarks", "edges",
+                                       "audit", "artifacts", "gates"],
+                       help="init 建库建表 | status 概览 | watermarks 产物水位 | "
+                            "edges 依赖边（ok/stale/unregistered）| audit 审计日志 | "
+                            "artifacts 原件注册 | gates 门禁历史")
     sub.add_parser("ping", help="骨架自检")
     p_source = sub.add_parser("source", help="源目录（config/sources.yaml 唯一事实源，R15）")
-    p_source.add_argument("action", choices=["list", "add"], help="list 列出源与 collector 路由 | add 新增源 checklist")
+    p_source.add_argument("action", choices=["list", "add", "diff"],
+                          help="list 列出源与 collector 路由 | add 新增源 checklist | "
+                               "diff 快照变更监听（--record 追加基线，F-O02）")
     p_int = sub.add_parser("internal", help="内部制度摄取/对齐/引用视图（P6/P7）")
-    p_int.add_argument("sub", choices=["index", "align", "merged", "backfill"],
-                       help="index 摄取 | align 主题对齐 | merged 制度×RFN 引用视图 | backfill 条文回补(R10)")
+    p_int.add_argument("sub", choices=["index", "align", "merged", "backfill", "reocr", "refine-identity"],
+                       help="index 摄取 | align 主题对齐 | merged 制度×RFN 引用视图 | "
+                            "backfill 条文回补(R10) | reocr OCR 存量回填 | refine-identity 身份纠正")
     sub.add_parser("classify", help="主题底座强序重建（R8，--theme/--all/--steps/--dry-run）")
     p_tl = sub.add_parser("timeliness", help="时效核验（R13 三态：success/partial/unavailable）")
-    p_tl.add_argument("action", choices=["verify"],
-                      help="verify 效力缺失核验（透传 --source/--dry-run/--probe/--workers/--token-file）")
+    p_tl.add_argument("action", choices=["verify", "sync", "summary"],
+                      help="verify 效力缺失核验（透传 --source/--dry-run/--probe/--workers/--token-file）| "
+                           "sync 变更台账→归属表时效同步(F-C03) | summary 读最新 verify_summary_*.json")
     p_draft = sub.add_parser("draft", help="条款级对照素材端到端编排（P8：merged_view × R21 clauses）")
     p_draft.add_argument("--ipn", default="", help="单制度 IPN-xxx（默认全部）")
     sub.add_parser("rfn", help="RFN 登记/查询（registry 唯一写口，F-C01；register/lookup）")

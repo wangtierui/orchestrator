@@ -1,5 +1,71 @@
 # Changelog
 
+## [Unreleased] 2026-09-18 — 阶段 0 止血 + 阶段 1 治理库骨架（`reports/数据流转与存储交互优化方案_20260917.md` §6）
+
+### 一、阶段 0 · 止血（5 项，均为"已定位缺陷"的定点修复）
+
+- **`sync_status.json` 改原子写**（`modules/regulatory_classifier/rfn/registry.py::_sync_status_write`）：
+  原 `open(...,"w")` 直写 774 KB 状态文件，崩溃/并发即产**截断 JSON**，而 `_sync_status_read`
+  对损坏文件直接抛（`json.load` 无兜底）→ 整条 registry 链路不可用。现经
+  `std_lib.common_lib.fs_lock.atomic_write_json`（tempfile + fsync + `os.replace`）。
+- **`build_fts` 改"临时库 → 一次 `os.replace` 换入"**（`modules/base_publish/build_fts.py`）：
+  原实现 `os.remove(db_p)` 后**原地重建**，存在两个致命窗口——①删除与重建之间任何读者
+  （`interfaces/base_api`）必然 `FileNotFoundError`；②构建中途崩溃 → 现网库已删、新库未成，
+  733 MB 派生索引**彻底丢失**。现改为在 `*.build` 上建库、失败即清理半成品、成功后原子换入，
+  并置 **`journal_mode=WAL`**（并发读友好）。FTS 重建纳入同一失败回滚路径。
+- **编排器加单实例锁**（`tools/run_production_refresh.py::main`）：此前只有各 collector 自带
+  `ProcessLock`，**编排本体无锁** → 调度抖动/人工重入会让两条链同时改写 cleaned / 归属表 /
+  published（无锁临界区）。现取仓根 `data/run_production_refresh.lock`，
+  `max_age_sec=48h`（须大于采集阶段自身的 ~30h 量级），占用即 `rc=3` 退出。
+- **处置失效 `raw_loader.py`**（`std_lib/scraper_std/raw_loader.py`）：①`RAW_FILES` 仍指向旧仓
+  扁平形态（`nfra_regulations_scraper/data/raw/...`），实际已拍平到 `modules/regulatory_scrapers/
+  data/raw/` → 调用即 `FileNotFoundError`；②`EXPECTED_COUNTS` 冻结 2026-08-28 基线
+  （gov 预期 30271，实际 13177）→ 与 R23「数量以事实源为准，禁止文本写死」冲突。
+  现修正路径并改为**与 raw 文件自带 `count`/`meta.count` 自校验**，删除冻结基线常量
+  （保留同名空 dict 兼容历史 import）。该模块全仓**零消费方**，属技术债定向清理。
+- **CLI 帮助文本与 handler 对齐**（`cli.py` / `commands/source.py` / `commands/internal.py`）：
+  `source diff`、`internal reocr|refine-identity`、`timeliness sync|summary` 早有实现但
+  `build_parser` 的 `choices` 未声明。**顺带纠正一处认知**：`build_parser()` **仅用于 `-h` 文本**，
+  实际分发走 `COMMANDS` 注册表（`main()` 直接 `handler(argv[1:])`），故 choices 不一致
+  **不会拒绝执行**，只让帮助文本失真——已在 `cli.py` docstring 显式记录该事实。
+
+### 二、阶段 1 · 治理库骨架（`data/governance.db`，五张表）
+
+- **新增 `std_lib/common_lib/governance_store.py`**（唯一读写实现）：`run_log` / `watermark` /
+  `artifact` / `audit_log` / `gate_result` 五表 + WAL + 事务；路径经 `paths.DATA_DIR` 派生、
+  `REG_ORCH_GOVERNANCE_DB` 可覆盖（测试隔离）；**失败不阻断主链**（旁路观测设施）。
+  设计要点：`artifact.path_keys` 为**集合**（原文有跨层硬链接，同 sha 多路径须聚合为一行）。
+- **新增 `interfaces/governance_api.py`**（只读消费面）+ **新增命令 `cli.py governance`**
+  （`init|status|watermarks|edges|audit|artifacts|gates`）。
+- **新增 `gates/gate_watermark.py`（ALL_GATES 第 17 道）**：把"产物新鲜度"从
+  **mtime 比较**（`gate_relations` 判据 8：`getmtime` + 2s 容差，受 touch/copy/copy2 干扰，
+  既假阳也假阴）升级为**水位版本比较**——产物落盘时登记"我在哪个上游版本上算出来的"，
+  门禁比对声明版本 vs 当前版本；不等即 FAIL 并直接报出**是哪条依赖边**。
+  未启用治理库 → PASS + note（不加阻断）；**新增、不替换**旧判据（阶段 4 才切换）。
+- **编排器写水位**（`tools/run_production_refresh.py`）：新增 `GOV_ARTIFACTS` 声明表
+  （§1.4 时序约束的**机器可读形态**）+ `_wm()`/`_wm_observations()`，每阶段 rc==0 后登记
+  `clauses:<src>` / `cleaned:<src>` / `classify:products` / `relations_index` / `reconcile:drift` /
+  `merged_view` / `published:external|internal` / `analysis:manifest`，并观察登记
+  `rfn_attr`/`rfn_theme`/`timeliness:state`/`internal_index`/`clean_index`；
+  运行台账 `run_id` 经 `REG_ORCH_RUN_ID` 下传，`cli.py gates` 据此把 17 道结果归档进 `gate_result`。
+  **覆盖度取舍（刻意保守，防假阻断）**：`rfn_attr`/`rfn_theme` 仅观察不声明依赖——它们在链内
+  被阶段 3 reconcile 二次改写，若在 2.5/2.6 声明版本会同一次运行内自相矛盾（属
+  `gate_rfn_sync`/`gate_timeliness_ssot` 职责域）；`clauses:<src>` 不声明 cleaned 上游
+  （阶段 2 时效回写会改写 cleaned，阶段 1 版本随即作废）——两条边留待阶段 4 处理。
+- **新增 `tools/governance_register_artifacts.py`**：原件注册（内部 879 + 外部附件），
+  以 sha 聚合、多路径并入 `path_keys`；**原件本身不入库**（BLOB 化会摧毁跨层硬链接去重与
+  Word COM/PaddleOCR 抽取链）。
+
+### 三、验证与文档
+
+- **新增用例 +15**（`tests/test_governance_store.py`，无 `data` marker ⇒ 无数据环境可跑）：
+  建库幂等 / 水位三态（ok·stale·unregistered）/ 判据阻断语义 / 未启用全链路降级 /
+  审计追加与查询 / path_keys 集合语义 / `gate_watermark` 三态 / run_log 与 gate_result 幂等覆盖。
+- 实测：`pytest` **327 用例**（301 代码级 + 26 `@data`）；`cli.py gates` **17/17 PASS**。
+- 文档：README（门禁 16→17、命令 10→12、用例 312→327、目录树补 `data/` 与 `common_lib/list`、
+  新增 §6.10 治理库用法段）、`.gitignore`（显式注明 `data/` 承载治理库且**勿白名单化**）、
+  `cli.py` docstring、`gates/__init__.py`、`paths.py`（新增 `GOVERNANCE_DB` + `ensure_dirs` 纳入 DATA_DIR）。
+
 ## [Unreleased] 2026-09-14 — 交付库 sha 口径统一（文件字节）+ 关系类报告随库刷新（链 2.6 + 门禁判据 8）
 
 ### 一、交付库 `sha256_16` 口径统一为**文件字节**哈希

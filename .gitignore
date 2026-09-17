@@ -9,6 +9,9 @@ dist/
 
 # ===== 数据（不入库；用复制快照 + data_migration_manifest 追踪）=====
 data/
+# 仓根 data/ 承载运行期治理库（governance.db：水位/审计/原件注册；阶段 1，2026-09-18）。
+# 由 `cli.py governance init` 或生产刷新链自动创建；机器本地态，**跨机审计链从不由 DB 承担**
+# （以 exports/ 文本快照与 reports/ 台账为准）。故显式保持忽略，勿白名单化。
 cache/
 logs/
 # 生成器运行备份（build_detail_tables 等写 classifier/backups/detail_tables_* 等）

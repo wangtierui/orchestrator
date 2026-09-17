@@ -107,5 +107,5 @@ def run(argv):
         print("  3. 提供 collectors 模块并跑：python -m py_compile + nfra_validate_cache 式只读冒烟")
         print("  4. python cli.py gates（gate_sources_config 校验 collector 模块/clean_project/enums 一致）")
         return 0
-    print(f"未知 source 子命令: {action}（可用: list, add）")
+    print(f"未知 source 子命令: {action}（可用: list, add, diff）")
     return 1
