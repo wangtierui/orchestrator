@@ -1,0 +1,14 @@
+[编排] 优先级顺序：supp → pbc → nfra → mof → **gov（最低，须待前四源全部完成）**
+[编排] 本次执行顺序：supp → pbc → nfra → mof → gov
+[编排] 进度台账：regulatory_scrapers\timeliness_review\续跑编排进度_20260917.json
+[编排] 历史结果：supp=success, pbc=partial, nfra=success, mof=partial
+[断点] supp 上次已完成（status=success fail=0），跳过以避免重复验证（如需重跑请 --only supp）
+[断点] pbc 上次已完成（status=partial fail=0），跳过以避免重复验证（如需重跑请 --only pbc）
+[断点] nfra 上次已完成（status=success fail=0），跳过以避免重复验证（如需重跑请 --only nfra）
+[断点] mof 上次已完成（status=partial fail=0），跳过以避免重复验证（如需重跑请 --only mof）
+[门禁] gov 前四源状态：{'supp': 'success', 'pbc': 'partial', 'nfra': 'success', 'mof': 'partial'}
+[门禁] 前四源全部完成 -> 允许启动 gov
+
+==============================================================================
+[编排] 开始核验源 gov  ← --source gov
+==============================================================================

@@ -114,6 +114,10 @@ def main(argv=None) -> int:
     ap.add_argument("--decisions", default="INCLUDE,BOUNDARY,EXCLUDE",
                     help="导出哪些判定层（逗号分隔；推进体系的候选一般为 INCLUDE,BOUNDARY）")
     ap.add_argument("--limit", type=int, default=0, help="只处理前 N 条（试跑）")
+    ap.add_argument("--title-only", action="store_true",
+                    help="只按**标题**认定命中（忽略 meta/body）。处理成分与词表调优语料差异大的"
+                         "数据源（如 gov 政策文件库全量）时必开——否则 GENERIC 裸词「分支机构」"
+                         "会使大量无关行政法规落入 BOUNDARY。详见 scanner.classify 文档串。")
     ap.add_argument("--stamp", default="", help="产物日期戳（默认今日 YYYYMMDD）")
     args = ap.parse_args(argv)
 
@@ -154,7 +158,8 @@ def main(argv=None) -> int:
                             ("summary", "issue_organ", "column_name", "theme_name", "keyword"))
             body = " ".join((row.get(k, "") or "") for k in
                             ("body_text", "body_text_webpage", "body_text_doc", "attachment_content"))
-            decision, confc, a_kws, b_kws, c_kws, x_kws, snip, _, _ = sc.classify(title, meta, body)
+            decision, confc, a_kws, b_kws, c_kws, x_kws, snip, _, _ = sc.classify(
+                title, meta, body, title_only=args.title_only)
             cnt["total"] += 1
             layer[decision] += 1
             conf_cnt[f"{decision}/{confc}"] += 1

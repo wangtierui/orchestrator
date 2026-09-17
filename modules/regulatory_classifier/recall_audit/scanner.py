@@ -164,7 +164,21 @@ def snippet(text, hit, width=55):
     a=max(0,pos-width); b=min(len(text),pos+len(kw)+width)
     return f"[{field}]…{text[a:b].replace(chr(10),' ').replace(chr(13),' ').strip()}…"
 
-def classify(title, meta, body):
+def classify(title, meta, body, title_only=False):
+    """判定记录与人身险监管的相关性。
+
+    title_only（2026-09-17 新增，默认 False —— 既有 recall_audit 行为完全不变）：
+        只在**标题**范围内认定命中，忽略 meta/body 命中。
+        动机：本词表（尤其 GENERIC 里的**裸词「分支机构」**）是为"以保险类为主的
+        五源语料"调优的；用于成分完全不同的语料（如 gov 政策文件库全量）时，
+        几乎所有行政法规的正文都含"分支机构"，导致 BOUNDARY 层大面积误收
+        ——实测 gov 13177 条中 BOUNDARY/低 达 752 条，样例为《快递暂行条例》
+        《森林病虫害防治条例》等明显无关文件。
+        开启后，泛保险词（GENERIC）须出现在**标题**才认定为相关，
+        口径与"这份文件的主题是否指向保险"一致。
+        排除项（EXCL_*）同样只在标题判定——否则正文里的"商业银行"等
+        会把标题明确指向人身险的文件误排除。
+    """
     text = title + "\n" + meta + "\n" + body
     title_len = len(title)+1
     meta_end = title_len + len(meta)+1
@@ -172,6 +186,9 @@ def classify(title, meta, body):
     b_hits = scan_group(RE_B, text, title_len, meta_end)
     c_hits = scan_group(RE_C, text, title_len, meta_end) if not a_hits else []
     x_hits = scan_group(RE_X, text, title_len, meta_end)
+    if title_only:
+        _t = lambda hs: [h for h in hs if h[2] == "title"]      # noqa: E731
+        a_hits, b_hits, c_hits, x_hits = _t(a_hits), _t(b_hits), _t(c_hits), _t(x_hits)
 
     # 强/弱信号拆分
     hard_hits = [h for h in a_hits if h[0] in
