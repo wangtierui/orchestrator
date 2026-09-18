@@ -36,6 +36,18 @@ TIMELINESS_CN2EN: dict[str, str] = {
 # F3 body_source（正文来源，3 值）
 BODY_SOURCE: frozenset[str] = frozenset({"webpage", "downloaded_doc", "both"})
 
+# 条款解析模式（2026-09-18 条文解析适配；参考 auto_degrade_parser.MODES 的能力集）
+#   law      法令体：第X章/第X条/第X款（本项目主模式，产出 articles）
+#   bulletin 通报体：一、/（一）/X是（产出 structure）
+#   plan     规划体：一、/（一）/——（产出 structure）
+#   notice   通知体：一、/（一）（产出 structure）
+#   plain    纯段落兜底（不物化段落，仅记计数——正文全文由 cleaned 承载）
+CLAUSE_PARSE_MODES: frozenset[str] = frozenset({
+    "law", "bulletin", "plan", "notice", "plain", "empty",
+})
+# 条款校验问题严重度（参考 3.1 校验规则清单 的两档）
+CLAUSE_ISSUE_SEVERITY: frozenset[str] = frozenset({"ERROR", "WARN"})
+
 # F4 source（数据源标识，5 值）——注意：新增源须同步 config/sources.yaml 并重跑断言
 SOURCE_SET: frozenset[str] = frozenset({"nfra", "pbc", "mof", "gov", "supp"})
 # 子源/域名 → 五源标识归并表（v3 3.5）

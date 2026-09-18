@@ -16,7 +16,7 @@
   - **后端核心**：Python 3.13+（脚本编排式，无常驻服务）；标准库 + PyYAML / requests / beautifulsoup4
   - **数据契约与门禁**：`interfaces/contract.py`（程序可读契约，R24）/ `config/enums.py`（受控枚举）/ `gates/`（ALL_GATES 18 道交付门禁，R23）
   - **OCR（按需部署；引擎/语言包不入 git，见 §6.6）**：PaddleOCR 3.7.0（主引擎，源码目录经 `OCR_PADDLE_ROOT` 或 `external/PaddleOCR-3.7.0` 软链接入）+ Tesseract 5.4（备引擎，二进制经 `OCR_TESSERACT_BIN`，语言包置仓内 `tessdata/`）；pytesseract / numpy
-  - **测试与静态检查**：pytest（tests/ **339 用例** = 313 代码级 + **26 数据依赖（`@data`）**）/ ruff（dev 依赖）
+  - **测试与静态检查**：pytest（tests/ **356 用例** = 330 代码级 + **26 数据依赖（`@data`）**）/ ruff（dev 依赖）
   - **知识库联动**：Obsidian vault（`<Obsidian vault>\监管法规库`，`tools/sync_wiki_sources.py` 同步）/ llm_wiki v0.6.11（已装，契约见 `reports/llm_wiki接入适配契约_20260912.md`）
   - **可选外部组件**：pdfplumber / python-docx（解析，**已列 base 依赖**）；`@pkulaw/mcp-cli` + 托管 Node（北大法宝时效核验 CLI；**Node 侧依赖，非 Python extra**，零 LLM 消耗）
   - **依赖管理**：Pyproject.toml（PEP 621，`[project.optional-dependencies]` 分 **dev/ocr**；PDF 文本层解析与编码探测属 base 依赖）
@@ -58,7 +58,7 @@ regulatory_compliance_orchestrator/
 ├── gates/                    # 【常规流程·门禁】ALL_GATES 18 道交付门禁（gates/__init__.py 为准，R23）
 ├── data/                     # 【环境】仓根运行数据（治理库 governance.db 等；git 忽略，非交付物）
 ├── exports/                  # 【环境】治理库文本快照（governance export 产出；git 忽略，派生只读层）
-├── tests/                    # 【常规流程·验收】pytest：339 用例（26 项 @data 依赖本机产物）
+├── tests/                    # 【常规流程·验收】pytest：356 用例（26 项 @data 依赖本机产物）
 ├── tools/                    # 【特殊工具/编排】见 §2.2（编排、迁移、基准、知识库同步、交付库生成…）
 ├── docs/reports/             # 【特殊辅助·交付库】规划 2.1 五级分析 17 项交付（analysis gen 生成 + _manifest）
 ├── reports/                  # 【特殊辅助】蓝图/检视/专项报告/README 规范（权威交付文档）
@@ -100,7 +100,7 @@ regulatory_compliance_orchestrator/
 | `.../scripts/build_draft_clause_view.py` | 文件 | **常规流程** | 条款级端到端对照素材（P8：merged_view × clauses → 每制度 md，自动链接 RFN/⚠待核文号；F-L02 覆盖 878 制度） | `cli.py draft` |
 | `.../scripts/verify_regulatory_citations.py` | 文件 | **特殊工具脚本（起草门禁）** | 对齐表 R-01~R-43 + 文档监管引用核验（`--strict` 门禁；旧仓 docs 权威件链路） | 起草/修订制度后人工执行 |
 | `gates/` | 目录 | **常规流程（质量门禁）** | **18 道**门禁实现（gate_*.py）；数量/实装以 `ALL_GATES` 为准（R23） | `python cli.py gates`；提交/交付前必过 |
-| `tests/` | 目录 | **常规流程（验收）** | pytest：**339 用例**（313 代码级 + 26 `@data` 数据依赖；含 common_lib / 流水线断言 / 发布件契约 / 可移植性回归 / 原件路径治理 / 命名与文号解析规则 / 抽取链质量 / 交付库纳管与 sha 口径 / 关系产物新鲜度 / 治理库·水位·元数据投影等） | `python -m pytest tests -q`（无数据环境加 `-m "not data"`） |
+| `tests/` | 目录 | **常规流程（验收）** | pytest：**356 用例**（330 代码级 + 26 `@data` 数据依赖；含 common_lib / 流水线断言 / 发布件契约 / 可移植性回归 / 原件路径治理 / 命名与文号解析规则 / 抽取链质量 / 交付库纳管与 sha 口径 / 关系产物新鲜度 / 治理库·水位·元数据投影 / 条文解析降级与修复等） | `python -m pytest tests -q`（无数据环境加 `-m "not data"`） |
 | `tools/run_production_refresh.py` | 文件 | **常规流程（编排）** | 生产刷新编排：采集→清洗→全链→gates→**变更监听基线（F-O02）**；`--collect nfra-weekly` 周增量链（F-O04） | 定时/人工触发（运行手册见 §7） |
 | `tools/ingest_corpus.py` | 文件 | **特殊工具脚本（语料归集）** | 本地语料归集进 IPB（`--exclude-top` 目录排除、`_update_index` 索引维护；EAST 报送文档等按指示排除） | 归集制度/法规目录时执行 |
 | `tools/gen_analysis_deliveries.py` | 文件 | **常规流程（交付库生成）** | **规划 §2.1 五级分析 17 项交付生成**（全数据驱动 + `_manifest.json` **文件字节 sha256** 登记 + `--dry`；关系类 2 项复用各自工具单源渲染、零重抽取） | `cli.py analysis gen`；数据重建后刷新 |
@@ -248,7 +248,7 @@ flowchart LR
 
 - **代码门禁**：
   - `ruff check .` 零 Error（手动执行；`[dev]` extra）。
-  - 自动化验收 `pytest tests -q`（**339 用例** = 313 代码级 + 26 `@data` 数据依赖；无数据环境用 `pytest tests -m "not data"` 跑代码级回归）。
+  - 自动化验收 `pytest tests -q`（**356 用例** = 330 代码级 + 26 `@data` 数据依赖；无数据环境用 `pytest tests -m "not data"` 跑代码级回归）。
 - **数据门禁（写入/交付拦截，ALL_GATES 18 道）**：
   - 数据契约：归属表/明细/底座/桥 列头与键集须匹配 `interfaces/contract.py`（gate_contract 逐列比对，超集允许、缺必报）。
   - **中文列名受控注册**：CSV 中文列须在 `CN_FIELD_REGISTRY` 登记（gate_field_aliases；明细加列须同步，F-L03 实证）。
@@ -450,8 +450,8 @@ flowchart LR
 11. **交付验证**：
     ```bash
     %PY% cli.py gates                    # 18 道全绿（需数据就绪；缺数据时 8 道数据门禁 FAIL 属预期）
-    %PY% python -m pytest tests -q       # 339 用例（313 代码级 + 26 @data）
-    %PY% python -m pytest tests -m "not data" -q   # 无数据环境：313 用例
+    %PY% python -m pytest tests -q       # 356 用例（330 代码级 + 26 @data）
+    %PY% python -m pytest tests -m "not data" -q   # 无数据环境：330 用例
     %PY% python tools\gen_benchmark.py   # 刷新交付基准（数据重建后执行）
     ```
     > 门禁示意输出：`PASS: 全部门禁通过`；任一 FAIL 会给出问题明细，修复后重跑，不静默放行。

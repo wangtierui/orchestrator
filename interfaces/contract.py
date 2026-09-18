@@ -226,9 +226,22 @@ CLAUSE_LINE_FIELDS: tuple[str, ...] = (
     "dedup_key", "source_url", "document_number", "title",
     "rfn", "timeliness_status", "publish_date", "effective_date",
     "chapter_count", "article_count", "chapters", "articles",
+    # 2026-09-18 条文解析适配（参考 auto_degrade_parser / 3.x 校验器 / 5.x 修复件）：
+    #   parse_mode      解析模式（受控枚举 config.enums.CLAUSE_PARSE_MODES）
+    #   parse_score     {total, coverage, legality, continuity}（参考 ModeScorer）
+    #   parse_meta      诊断元：all_scores / threshold / repair（合并·去重·章索引修正统计）
+    #   is_fallback     是否降级到纯段兜底
+    #   structure       非条文体（通知/通报/规划）层级结构（原文序号，不重标为「第X条」）
+    #   structure_count 结构单元数（与 chapters/article_count 同口径的快速标量）
+    #   validation      条款校验结果 {status, error_count, warn_count, issues[]}（V001–V007）
+    "parse_mode", "parse_score", "parse_meta", "is_fallback",
+    "structure", "structure_count", "validation",
 )
 CLAUSE_ARTICLE_FIELDS: tuple[str, ...] = ("no", "number", "body")
 CLAUSE_CHAPTER_FIELDS: tuple[str, ...] = ("no", "title", "article_index")
+# 条款结构单元（非条文体 structure[]）节点字段（键集恒定，便于下游消费与校验）
+CLAUSE_STRUCTURE_FIELDS: tuple[str, ...] = ("level", "number", "title", "content",
+                                            "items", "children")
 
 # 富内容对象轨（2026-09-09 rich_object；raw/cleaned JSONL 行内轨，不入 CSV 39 列）：
 #   写者 = 采集/摄取侧 rich_object_fields（docx/doc/xlsx 图形/公式/图片），pipeline 逐行透传。

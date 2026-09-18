@@ -9,11 +9,21 @@ modules.regulatory_scrapers.clause_index — 五源 clean 条文抽取固定节�
 对称 clean_index：build（增量，仅当 clean 快照新于产物）→ data/clauses/{src}_clauses_{date}.jsonl
 （每行=一份文件的条款结构）+ clause_index_state.json（快照日期登记）。
 
-产物行 schema（F-D10 补 4 维）：
+产物行 schema（F-D10 补 4 维 + 2026-09-18 解析适配补 7 维）：
   {dedup_key, source_url, document_number, title,
    rfn, timeliness_status, publish_date, effective_date,
    chapter_count, article_count,
-   chapters:[{no,title}], articles:[{no,number,body}]}
+   chapters:[{no,title,article_index}], articles:[{no,number,body}],
+   parse_mode, parse_score, parse_meta, is_fallback,
+   structure:[{level,number,title,content,items,children}], structure_count, validation}
+
+2026-09-18 解析适配（问题驱动）：
+  - **空解析**：通知/公告/批复类正文无「第X条」，旧实现产出 `article_count=0 / articles=[]`
+    → 现经 `parse_document` 自动降级（notice/bulletin/plan → structure；plain 兜底计数），
+    层级序号**原样保留**（不重标为「第X条」，避免下游引用臆造条号）。
+  - **换行截断 + 交叉引用误判**：`第五十三条、` + `第五十四条规定的行为…` 曾被切成两条
+    （条号重复）→ 切分层收紧为"真条首"判据 + 合并层收编续行残片（详见
+    `std_lib.scraper_std.document_structure` docstring 取舍节）。
 """
 from __future__ import annotations
 
@@ -38,8 +48,13 @@ from clean_index import get_clean_index  # noqa: E402   clean 快照单一事实
 
 from std_lib.common_lib.norm import norm_docno  # noqa: E402
 from std_lib.scraper_std.document_structure import (  # noqa: E402 共享条文抽取/渲染
-    extract_structure,
+    CN_NUM_CHARS,
+    extract_structure,  # noqa: F401  （保留导出：历史调用方）
+    parse_document,
     render_markdown,
+    segment_body,
+    segment_outline,  # noqa: F401  （保留导出：非条文体锚切分）
+    validate_clauses,
 )
 
 CLAUSE_DIR = os.path.join(_SCRAPERS, "data", "clauses")
@@ -126,19 +141,9 @@ def _save_state(state):
     os.replace(tmp, _STATE_PATH)
 
 
-# 无换行长文条锚切分：clean body_text 多被归一为单段（无 \n），须先按 章/条 起始切行，
-# extract_structure（行式）才能识别。排除「内嵌引用」误切（前为汉字/字母数字/闭引括号，
-# 如 "《保险法》第X条" / "依照本办法第X条" → 不切）；句读/空白/行首后的条起始才切。
-_CHAPTER_ANCHOR_RE = re.compile(r"(?<![\n])(第[〇0-9一二三四五六七八九十百千两]+\s*章)")
-_ARTICLE_ANCHOR_RE = re.compile(r"(?<![\u4e00-\u9fffA-Za-z0-9》」』”）])(第[〇0-9一二三四五六七八九十百千两]+\s*条)")
-
-
-def segment_body(body: str) -> str:
-    """把无换行正文按 章/条 起始切为多行（供 extract_structure 行式识别）。"""
-    t = body or ""
-    t = _CHAPTER_ANCHOR_RE.sub(r"\n\1", t)
-    t = _ARTICLE_ANCHOR_RE.sub(r"\n\1", t)
-    return t
+# 2026-09-18：章/条锚切分已上收 `std_lib.scraper_std.document_structure.segment_body`
+# （唯一实现；原 `_ARTICLE_ANCHOR_RE` 的"前非汉字"允许清单会把 Word 项目符号/私用区字符
+# 当成非边界 → 条文被吞进上一条）。`segment_body` 由上方 import re-export，保持本模块可用。
 
 
 def latest_clause_path(src: str) -> str:
@@ -217,9 +222,10 @@ def build_clause_index(rebuild: bool = False) -> dict:
                     rec = json.loads(ln)
                 except Exception:
                     continue
-                body = segment_body(rec.get("body_text") or "")
-                stru = extract_structure(body) if body.strip() else {
-                    "chapters": [], "articles": [], "chapter_count": 0, "article_count": 0}
+                body_text = rec.get("body_text") or ""
+                # 2026-09-18：`parse_document` = 自动降级解析（law 主模式 + 通知/通报/规划层级体 +
+                # 纯段兜底）+ 法条合并/去重/章索引修复（内部自做锚切分，此处传原始正文）。
+                stru = parse_document(body_text)
                 row = {
                     "dedup_key": rec.get("dedup_key", ""),
                     "source_url": rec.get("source_url", ""),
@@ -238,7 +244,21 @@ def build_clause_index(rebuild: bool = False) -> dict:
                         {**a, "number": re.sub(r"\s+", "", a.get("number", "") or "")}  # 条号形态归一（去内部空格）
                         for a in stru["articles"]
                     ],
+                    # 2026-09-18 解析适配：模式/评分/诊断/结构/校验（见模块 docstring schema）
+                    "parse_mode": stru["mode"],
+                    "parse_score": stru["score"],
+                    "parse_meta": {
+                        "threshold": stru.get("threshold"),
+                        "all_scores": stru.get("all_scores", {}),
+                        "plain_paragraphs": stru.get("plain_paragraphs", 0),
+                        "tail_marker": stru.get("tail_marker", ""),
+                        "repair": stru.get("repair", {}),
+                    },
+                    "is_fallback": stru["is_fallback"],
+                    "structure": stru["structure"],
+                    "structure_count": stru["structure_count"],
                 }
+                row["validation"] = validate_clauses(row)   # V001–V007（在行装配完成后执行）
                 fout.write(json.dumps(row, ensure_ascii=False) + "\n")
                 # clauses.md 渲染视图（与 internal_policy_base 共享 render_markdown，双产物）
                 fout_md.write(render_markdown(stru, title=rec.get("title", "")))
@@ -258,13 +278,20 @@ def build_clause_index(rebuild: bool = False) -> dict:
 
 
 def validate_schema() -> dict:
-    """产物契约自检（字段统一性 + 条号形态；契约常量 interfaces.contract.CLAUSE_*）。"""
+    """产物契约自检（字段统一性 + 条号形态 + 解析适配字段；契约 interfaces.contract.CLAUSE_*）。
+
+    2026-09-18 增补：解析适配 7 字段的键集/类型/枚举校验，以及 `structure` 节点键集、
+    `validation` 严重度闭包——使 3.x 校验器与 5.x 修复件的产物被**门禁级**断言守住。
+    """
+    from config.enums import CLAUSE_ISSUE_SEVERITY, CLAUSE_PARSE_MODES  # noqa: PLC0415
     from interfaces import contract  # noqa: PLC0415
     problems = []
-    stat = {"files": 0, "articles": 0, "chapters": 0}
+    stat = {"files": 0, "articles": 0, "chapters": 0, "structures": 0,
+            "law": 0, "degraded": 0, "fallback": 0, "invalid": 0, "warned": 0}
     line_f = set(contract.CLAUSE_LINE_FIELDS)
     art_f = set(contract.CLAUSE_ARTICLE_FIELDS)
     ch_f = set(contract.CLAUSE_CHAPTER_FIELDS)
+    st_f = set(contract.CLAUSE_STRUCTURE_FIELDS)
     for s in _SOURCES:
         for cl in iter_file_clauses(s):
             stat["files"] += 1
@@ -274,13 +301,44 @@ def validate_schema() -> dict:
                 problems.append(f"{s} count 非 int")
             if cl.get("article_count") != len(cl.get("articles") or []):
                 problems.append(f"{s} article_count!=len(articles)")
+            # ---- 2026-09-18 解析适配字段 ----
+            mode = cl.get("parse_mode")
+            if mode not in CLAUSE_PARSE_MODES:
+                problems.append(f"{s} parse_mode 越界: {mode!r}")
+            elif mode == "law":
+                stat["law"] += 1
+            else:
+                stat["degraded"] += 1
+            if cl.get("is_fallback") is True:
+                stat["fallback"] += 1
+            if not isinstance(cl.get("is_fallback"), bool):
+                problems.append(f"{s} is_fallback 非 bool")
+            if cl.get("structure_count") != len(cl.get("structure") or []):
+                problems.append(f"{s} structure_count!=len(structure)")
+            if not isinstance(cl.get("parse_score"), dict) or "total" not in cl["parse_score"]:
+                problems.append(f"{s} parse_score 形态异常")
+            v = cl.get("validation") or {}
+            if not isinstance(v, dict) or "status" not in v:
+                problems.append(f"{s} validation 缺失")
+            elif v.get("status") == "FAILED":
+                stat["invalid"] += 1
+            elif v.get("status") == "PASSED_WITH_WARNINGS":
+                stat["warned"] += 1
+            for i in (v.get("issues") or []):
+                if i.get("severity") not in CLAUSE_ISSUE_SEVERITY:
+                    problems.append(f"{s} validation 严重度越界: {i.get('severity')!r}")
+            for n in cl.get("structure") or []:
+                stat["structures"] += 1
+                if set(n.keys()) != st_f:
+                    problems.append(f"{s} structure 节点键漂移: {sorted(set(n.keys()) ^ st_f)[:4]}")
             for a in cl.get("articles") or []:
                 stat["articles"] += 1
                 if set(a.keys()) != art_f:
                     problems.append(f"{s} article 键漂移")
                 if not isinstance(a.get("no"), int):
                     problems.append(f"{s} article.no 非 int")
-                if not re.fullmatch(r"第[0-9〇一二三四五六七八九十百千两]+条", a.get("number", "") or ""):
+                # 条号形态正则与解析侧**同源**（`CN_NUM_CHARS`；含 零/万 与阿拉伯数字）
+                if not re.fullmatch(r"第[0-9%s]+条" % CN_NUM_CHARS, a.get("number", "") or ""):
                     problems.append(f"{s} 条号形态异常: {a.get('number', '')!r}")
             for c in cl.get("chapters") or []:
                 stat["chapters"] += 1
