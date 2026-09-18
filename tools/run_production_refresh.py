@@ -429,6 +429,16 @@ def _run_chain(args) -> int:
     # 阶段 2.5 水位：分类产物族（以 11 份明细表为版本代表集——交付级产物、体量小）
     _wm("classify:products", rc=_rc_of(report, "classify:all"), paths=_detail_tables())
 
+    # ---- 阶段 2.55：观察型水位**提前登记**（2026-09-19 修复顺序缺陷）----
+    # 动因：`relations_index` 声明 `internal_index` 为依赖，而解析依赖版本走**当前水位表**；
+    # 观察型登记历史上只在阶段 3 做 → 若 `internal_index` 在**本次链之前**被链外写方改动
+    # （如 `cli internal backfill` 回刷章条数），阶段 2.6 解析到的是**上一轮的旧版本**，
+    # 阶段 3 再把新版本登记进去 → `gate_relations` 判据 8 / `gate_watermark` 当场报"产物陈旧"
+    # （实测 2026-09-19：declared=c2a9f380… vs current=dd919a09…）。
+    # 位置纪律：紧邻 relations:gen 之前登记一次（取到链前终态），阶段 3 之后再登记一次
+    # （reconcile 可能改写 attr → 保证观察值在该阶段后仍为终态）；同版本重复登记幂等。
+    _wm_observations()
+
     # ---- 阶段 2.6：relations（依据/废止关系全量重抽取，R-F01）----
     # 动因（2026-09-14）：本链历史上**不接** `relations gen` → cleaned/归属表/内部正文更新后
     # `relations_index.jsonl` 静默过时，而**依赖它的消费面会被连带污染**：merged 引用原语、
@@ -449,8 +459,9 @@ def _run_chain(args) -> int:
     # 阶段 3 水位：漂移核验状态（gate_rfn_drift 的判据载体）
     _wm("reconcile:drift", rc=_rc_of(report, "reconcile"),
         paths=[os.path.join(CLS_DATA, "rfn_drift_state.json")])
-    # 观察型登记：链外写方（归属表/主题表/时效 state/内部索引/clean_index）。
+    # 观察型登记（第二次）：链外写方（归属表/主题表/时效 state/内部索引/clean_index）。
     # 放在 stage 3 之后 = 链内最后一个 attr 写方（reconcile）之后，版本才稳定。
+    # 注：阶段 2.55 已提前登记一次（供 relations:gen 解析依赖版本），此处为终态刷新。
     _wm_observations()
 
     # ---- 阶段 3.5：治理库元数据投影（阶段 2「双写期」；2026-09-18）----

@@ -243,6 +243,14 @@ CLAUSE_CHAPTER_FIELDS: tuple[str, ...] = ("no", "title", "article_index")
 CLAUSE_STRUCTURE_FIELDS: tuple[str, ...] = ("level", "number", "title", "content",
                                             "items", "children")
 
+# 内部制度条文产物（`internal_policy_base/data/processed/<ipn>_clauses.json`）字段契约。
+# 2026-09-19：解析器与外部条款产物同源（`document_structure.parse_document`），载荷增量扩展
+# 三键（structure/structure_count/parse_mode）；`chapters`/`articles` 键集与语义不变
+# （消费方 `build_internal._clauses()` / drafter 条款对照只读 articles）。
+# 唯一装配实现 = `internal_policy_base.extract.build_clause_payload`（三写入点共用）。
+INTERNAL_CLAUSE_FIELDS: tuple[str, ...] = ("ipn", "chapters", "articles",
+                                           "structure", "structure_count", "parse_mode")
+
 # 富内容对象轨（2026-09-09 rich_object；raw/cleaned JSONL 行内轨，不入 CSV 39 列）：
 #   写者 = 采集/摄取侧 rich_object_fields（docx/doc/xlsx 图形/公式/图片），pipeline 逐行透传。
 RICH_OBJECT_KEYS: tuple[str, ...] = ("rich_structured", "rich_text", "rich_count")

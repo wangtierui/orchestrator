@@ -168,6 +168,31 @@ def backfill_reflow() -> dict:
     return {"reflowed": n}
 
 
+def build_clause_payload(ipn: str, text: str, title: str = "") -> tuple[dict, str]:
+    """条文产物装配（**唯一实现**）：返回 (`_clauses.json` 载荷, `_clauses.md` 文本)。
+
+    三个写入点共用本函数（此前各自拼键集，存在漂移风险）：
+      ① `backfill_clauses`（存量回补）② `reocr_backfill`（OCR 提质重建）
+      ③ `indexer.ingest`（新摄取）。
+
+    2026-09-19 解析器升级：`extract_structure`（仅 law）→ **`parse_document`**（自动降级
+    `law/notice/bulletin/plan/plain` + 续行收编 + 章索引钳位），与外部五源条款产物**同源**。
+    载荷为**增量扩展**：新增 `structure/structure_count/parse_mode`，`chapters`/`articles`
+    键集与语义不变 → `build_internal` / drafter 条款对照零改动；非条文体（通知/函/方案）
+    此前得空结构，现由 `structure` 承载并经 `render_markdown` 落进 `_clauses.md`。
+    字段契约 SSOT = `interfaces.contract.INTERNAL_CLAUSE_FIELDS`。
+    """
+    from std_lib.scraper_std.document_structure import (  # noqa: PLC0415
+        parse_document,
+        render_markdown,
+    )
+    res = parse_document(text or "")
+    payload = {"ipn": ipn, "chapters": res["chapters"], "articles": res["articles"],
+               "structure": res["structure"], "structure_count": res["structure_count"],
+               "parse_mode": res["mode"]}
+    return payload, render_markdown(res, title=title)
+
+
 def backfill_clauses() -> dict:
     """对存量 processed fulltext 回补条文结构（R21，无需重摄）：写 <ipn>_clauses.json，
     回刷主 json 与 index 的 chapter_count/article_count。返回统计。"""
@@ -179,10 +204,6 @@ def backfill_clauses() -> dict:
     if not os.path.isdir(proc_dir):
         return {"error": "no processed dir"}
     sys.path.insert(0, os.path.join(_ORCH_ROOT, "std_lib"))
-    from std_lib.scraper_std.document_structure import (  # noqa: PLC0415
-        extract_structure,
-        render_markdown,
-    )
     n = 0
     for fn in sorted(os.listdir(proc_dir)):
         if not fn.endswith("_fulltext.json"):
@@ -190,26 +211,24 @@ def backfill_clauses() -> dict:
         ipn = fn[: -len("_fulltext.json")]
         ft = os.path.join(proc_dir, fn)
         obj = _json.load(open(ft, encoding="utf-8"))
-        stru = extract_structure(obj.get("text", ""))
-        _json.dump({"ipn": ipn, "chapters": stru["chapters"], "articles": stru["articles"]},
+        main_p = os.path.join(proc_dir, ipn + ".json")
+        title = ""
+        if os.path.exists(main_p):
+            try:
+                title = _json.load(open(main_p, encoding="utf-8")).get("title", "")
+            except Exception:
+                pass
+        payload, md = build_clause_payload(ipn, obj.get("text", ""), title)
+        _json.dump(payload,
                    open(os.path.join(proc_dir, ipn + "_clauses.json"), "w", encoding="utf-8"),
                    ensure_ascii=False, indent=2)
         # MD 渲染视图（JSON 为规范源；MD 供 drafter 条款对照/人工审阅）
-        title = ""
-        main_p0 = os.path.join(proc_dir, ipn + ".json")
-        if os.path.exists(main_p0):
-            try:
-                title = _json.load(open(main_p0, encoding="utf-8")).get("title", "")
-            except Exception:
-                pass
-        md = render_markdown(stru, title=title)
         open(os.path.join(proc_dir, ipn + "_clauses.md"), "w", encoding="utf-8").write(md)
-        main_p = os.path.join(proc_dir, ipn + ".json")
         if os.path.exists(main_p):
             try:
                 m = _json.load(open(main_p, encoding="utf-8"))
-                m["chapter_count"] = stru["chapter_count"]
-                m["article_count"] = stru["article_count"]
+                m["chapter_count"] = len(payload["chapters"])
+                m["article_count"] = len(payload["articles"])
                 _json.dump(m, open(main_p, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
             except Exception:
                 pass
@@ -317,11 +336,6 @@ def reocr_backfill(limit: int | None = None, min_cjk: int = 20, force: bool = Fa
     import glob as _glob  # noqa: PLC0415
     import json as _json  # noqa: PLC0415
 
-    from std_lib.scraper_std.document_structure import (  # noqa: PLC0415
-        extract_structure,
-        render_markdown,
-    )
-
     # data_dir 可注入（2026-09-13）：便于单测隔离（默认仍为本模块 data/，行为不变）
     data_dir = data_dir or os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
     proc_dir = os.path.join(data_dir, "processed")
@@ -416,12 +430,12 @@ def reocr_backfill(limit: int | None = None, min_cjk: int = 20, force: bool = Fa
             stats["details"].append({"ipn": ipn, "status": "low_quality",
                                      "file": rec.get("file_name", "")[:40], "cjk": cjk})
             continue
-        stru = extract_structure(txt)
+        payload, md_text = build_clause_payload(ipn, txt, rec.get("title", ""))
         rec.update({"text_chars": len(txt), "needs_ocr": False,
                     "extract_status": res.get("extract_status", "ocr") or "ocr",
                     "ocr_engine": res.get("ocr_engine", "") or rec.get("ocr_engine", ""),
-                    "chapter_count": stru.get("chapter_count", 0),
-                    "article_count": stru.get("article_count", 0)})
+                    "chapter_count": len(payload["chapters"]),
+                    "article_count": len(payload["articles"])})
         if force:
             rec["reocr_force_done"] = True   # 已强制尝试（防无限重跑）
             rec["ocr_force_engine"] = res.get("ocr_engine", "") or ""   # 本次尝试引擎（幂等依据）
@@ -431,12 +445,10 @@ def reocr_backfill(limit: int | None = None, min_cjk: int = 20, force: bool = Fa
         _json.dump({"ipn": ipn, "text": txt},
                    open(os.path.join(proc_dir, ipn + "_fulltext.json"), "w", encoding="utf-8"),
                    ensure_ascii=False, indent=2)
-        _json.dump({"ipn": ipn, "chapters": stru.get("chapters", []),
-                    "articles": stru.get("articles", [])},
+        _json.dump(payload,
                    open(os.path.join(proc_dir, ipn + "_clauses.json"), "w", encoding="utf-8"),
                    ensure_ascii=False, indent=2)
-        open(os.path.join(proc_dir, ipn + "_clauses.md"), "w", encoding="utf-8").write(
-            render_markdown(stru, title=rec.get("title", "")))
+        open(os.path.join(proc_dir, ipn + "_clauses.md"), "w", encoding="utf-8").write(md_text)
         recovered_ipns.append(ipn)
         stats["recovered"] += 1
         stats["chars"] += len(txt)

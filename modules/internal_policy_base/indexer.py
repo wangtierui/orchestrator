@@ -33,7 +33,11 @@ for _p in (_ORCH_ROOT, _MODULES):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from internal_policy_base.extract import copy_original, extract_file  # noqa: E402
+from internal_policy_base.extract import (  # noqa: E402
+    build_clause_payload,
+    copy_original,
+    extract_file,
+)
 from internal_policy_base.scan import (  # noqa: E402
     clean_title_noise,
     ipn_of,
@@ -41,11 +45,9 @@ from internal_policy_base.scan import (  # noqa: E402
     scan_directory,  # noqa: E402
 )
 
-# R21：条文结构解析（章-条），供 merged_view/drafter 条款对照
-from std_lib.scraper_std.document_structure import (  # noqa: E402
-    extract_structure,
-    render_markdown,
-)
+# R21：条文结构解析（章-条），供 merged_view/drafter 条款对照。
+# 2026-09-19 收敛：解析/渲染统一经 `extract.build_clause_payload`（唯一实现，三写入点共用），
+# 本模块不再直接依赖 std_lib.scraper_std.document_structure。
 
 # 富内容(图形/公式)轨：流程图/SmartArt/公式 OMML 抽取与图片落盘（2026-09-09）
 from std_lib.scraper_std.rich_object import rich_object_fields  # noqa: E402
@@ -308,10 +310,11 @@ def ingest(source_root: str, *, enable_ocr: bool = False, dry_run: bool = False,
             "text_chars": len(text), "needs_ocr": bool(res.get("needs_ocr")),
             "original_path": os.path.relpath(orig, _DATA), "extracted_at": now,
         }
-        # R21：条文结构解析 → <ipn>_clauses.json（章/条明细；正文为空或非条文型得空结构）
-        stru = extract_structure(text)
-        rec["chapter_count"] = stru["chapter_count"]
-        rec["article_count"] = stru["article_count"]
+        # R21/2026-09-19：条文解析（`parse_document` 自动降级）→ <ipn>_clauses.json/_clauses.md
+        # （装配唯一实现 `extract.build_clause_payload`；正文为空或非条文型得空 articles）
+        clause_payload, clause_md = build_clause_payload(f["ipn"], text, f["title"])
+        rec["chapter_count"] = len(clause_payload["chapters"])
+        rec["article_count"] = len(clause_payload["articles"])
         # 富内容轨（2026-09-09）：docx/doc/xlsx 内图形/公式 → <ipn>_rich.json + processed/<ipn>_images/
         try:
             with open(orig, "rb") as _fh:
@@ -328,12 +331,11 @@ def ingest(source_root: str, *, enable_ocr: bool = False, dry_run: bool = False,
         json.dump({"ipn": f["ipn"], "text": text},
                   open(os.path.join(_PROCESSED, f["ipn"] + "_fulltext.json"), "w", encoding="utf-8"),
                   ensure_ascii=False, indent=2)
-        json.dump({"ipn": f["ipn"], "chapters": stru["chapters"], "articles": stru["articles"]},
+        json.dump(clause_payload,
                   open(os.path.join(_PROCESSED, f["ipn"] + "_clauses.json"), "w", encoding="utf-8"),
                   ensure_ascii=False, indent=2)
         # MD 渲染视图（JSON 规范源 → MD 供 drafter 条款对照/人工审阅，格式决策 2026-09-08）
-        open(os.path.join(_PROCESSED, f["ipn"] + "_clauses.md"), "w", encoding="utf-8").write(
-            render_markdown(stru, title=f["title"]))
+        open(os.path.join(_PROCESSED, f["ipn"] + "_clauses.md"), "w", encoding="utf-8").write(clause_md)
         state[key] = {"ipn": f["ipn"], "sha256": key,
                       "path_key": path_key, "ingested_at": now}
 

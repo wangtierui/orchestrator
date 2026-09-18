@@ -55,11 +55,39 @@ URL_RE = re.compile(r"\[[^\]]*\]\((https?://[^)]+)\)")
 
 
 # ---------------------------------------------------------------- CLI 定位
+def _resolve_node_exe(node_exe: str) -> str:
+    """解析可用的 node 解释器路径（2026-09-19 加固）。
+
+    背景：WorkBuddy 运行时升级 node 时会把 `versions/<ver>` 递增（实测
+    `22.22.2-2` → `22.22.2-3`），而用户级环境变量 `PKULAW_NODE_EXE` 仍指向**旧版本目录**
+    → `find_cli` 找不到解释器，CLI 静默失联（表现为「未找到 pkulaw-mcp CLI」，易误判为未安装）。
+
+    派生顺序（不写死本机路径）：① 环境给定路径存在即用；② 同层 `versions/current`
+    指针文件指向的版本目录内同名可执行文件；③ `shutil.which` 兜底。
+    """
+    if node_exe and os.path.exists(node_exe):
+        return node_exe
+    base = os.path.basename(node_exe) or "node.exe"
+    if node_exe:
+        versions_dir = os.path.dirname(os.path.dirname(node_exe))   # …/node/versions
+        cur = os.path.join(versions_dir, "current")
+        try:
+            if os.path.exists(cur):
+                ver = open(cur, encoding="utf-8").read().strip()
+                cand = os.path.join(versions_dir, ver, base)
+                if ver and os.path.exists(cand):
+                    return cand
+        except OSError:
+            pass
+    return shutil.which("node") or ""
+
+
 def find_cli(node_exe: str = NODE_EXE, pkg_dir: str = PKG_DIR,
              env_cli: str = "") -> list[str]:
     """返回可执行命令列表：优先 node.exe + 包内 JS 入口（规避 Windows cmd 引号问题）"""
     if env_cli and os.path.exists(env_cli):
         return [env_cli]
+    node_exe = _resolve_node_exe(node_exe)
     pkg_json = os.path.join(pkg_dir, "package.json")
     if os.path.exists(pkg_json):
         try:
@@ -68,7 +96,7 @@ def find_cli(node_exe: str = NODE_EXE, pkg_dir: str = PKG_DIR,
             entry = binmap.get("pkulaw-mcp") or (list(binmap.values())[0] if binmap else None)
             if entry:
                 js = os.path.join(pkg_dir, entry)
-                if os.path.exists(js) and os.path.exists(node_exe):
+                if os.path.exists(js) and node_exe and os.path.exists(node_exe):
                     return [node_exe, js]
         except Exception:
             pass
@@ -418,6 +446,10 @@ def load_checkpoint(checkpoint_path: str) -> dict[str, dict[str, Any]]:
     return done
 
 
+# 分块提交粒度（2026-09-19）：提交/收集/落盘按此粒度交错，保证断点实时（见 execute_queries）
+_CHUNK = 50
+
+
 def execute_queries(plan: list[dict[str, Any]], cli: list[str], token: str,
                     checkpoint_path: str, workers: int = 2,
                     retry_failed: bool = False, pause: float = 0.2,
@@ -437,40 +469,48 @@ def execute_queries(plan: list[dict[str, Any]], cli: list[str], token: str,
     log("待%s查询 %d / 总 %d（并发 %d）" % (mode_txt, len(todo), len(plan), workers))
     consec_auth_fail = 0
     lock = threading.Lock()
+    stop = False
+    n = 0
+    # 2026-09-19 修复：**分块提交 + 分块收集**（原实现一次性提交全部 todo，再 `as_completed`
+    # 收集 → 收集与 checkpoint 落盘被"提交阶段"（pause 0.2s × N，gov 1.2 万条 ≈ 42 min）整体推迟，
+    # 表现为**断点长期不落盘**、认证失败门哨（连续 15 次）要等 42 min 后才可能触发。
+    # 分块后每 ≤`_CHUNK` 条即落盘一次，中断可续、门哨实时。
     with open(checkpoint_path, "a", encoding="utf-8") as fh:
         with ThreadPoolExecutor(max_workers=workers) as ex:
-            futs = {}
-            for it in todo:
-                if pause:
-                    time.sleep(pause)
-                futs[ex.submit(fetch_item, cli, token, it)] = it
-            n = 0
-            for fut in as_completed(futs):
-                it = futs[fut]
-                try:
-                    obj = fut.result()
-                except Exception as e:  # noqa: BLE001
-                    obj = {"query": it["title"], "queried_at": time.strftime("%Y-%m-%d %H:%M:%S"),
-                           "message": "失败: " + str(e)[:300], "total": 0, "data": []}
-                    if it["docno"]:
-                        obj["query_docno"] = it["docno"]
-                if "90001" in obj["message"] or "积分用尽" in obj["message"]:
-                    log("[配额] 北大法宝积分用尽(90001)，停止新增查询")
-                    ex.shutdown(wait=False, cancel_futures=True)
+            for start in range(0, len(todo), _CHUNK):
+                if stop:
                     break
-                if "认证失败" in obj["message"]:
-                    consec_auth_fail += 1
-                    if consec_auth_fail >= 15:
-                        log("[拦截] 连续 %d 次认证失败，暂停续跑（法宝配额耗尽/网关拦截，建议检查控制台）" % consec_auth_fail)
-                        ex.shutdown(wait=False, cancel_futures=True)
+                futs = {}
+                for it in todo[start:start + _CHUNK]:
+                    if pause:
+                        time.sleep(pause)
+                    futs[ex.submit(fetch_item, cli, token, it)] = it
+                for fut in as_completed(futs):
+                    it = futs[fut]
+                    try:
+                        obj = fut.result()
+                    except Exception as e:  # noqa: BLE001
+                        obj = {"query": it["title"], "queried_at": time.strftime("%Y-%m-%d %H:%M:%S"),
+                               "message": "失败: " + str(e)[:300], "total": 0, "data": []}
+                        if it["docno"]:
+                            obj["query_docno"] = it["docno"]
+                    if "90001" in obj["message"] or "积分用尽" in obj["message"]:
+                        log("[配额] 北大法宝积分用尽(90001)，停止新增查询")
+                        stop = True
                         break
-                else:
-                    consec_auth_fail = 0
-                with lock:
-                    fh.write(json.dumps(obj, ensure_ascii=False) + "\n")
-                    fh.flush()
-                    done[it["key"]] = obj
-                n += 1
-                if n % 100 == 0:
-                    log("  进度 %d/%d" % (n, len(todo)))
+                    if "认证失败" in obj["message"]:
+                        consec_auth_fail += 1
+                        if consec_auth_fail >= 15:
+                            log("[拦截] 连续 %d 次认证失败，暂停续跑（法宝配额耗尽/网关拦截，建议检查控制台）" % consec_auth_fail)
+                            stop = True
+                            break
+                    else:
+                        consec_auth_fail = 0
+                    with lock:
+                        fh.write(json.dumps(obj, ensure_ascii=False) + "\n")
+                        fh.flush()
+                        done[it["key"]] = obj
+                    n += 1
+                    if n % 100 == 0:
+                        log("  进度 %d/%d" % (n, len(todo)))
     return done

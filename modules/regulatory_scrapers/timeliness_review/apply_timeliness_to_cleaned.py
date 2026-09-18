@@ -12,6 +12,11 @@ apply_timeliness_to_cleaned.py —— 核验结果 → 五源 cleaned 时效字�
   timeliness_status / replacement_document / verification_source。
   保证「清洗基态 → 时效回写」顺序不可颠倒。
 
+派生刷新（顺序纪律，2026-09-19 补齐）：
+  回写会改变 cleaned 内容 → 必须同轮刷新其**派生产物**，否则下游取到"改前版本"：
+    ① `clean_index`（F-C05，既有）② `clauses` 五源条文产物（本次补：clauses 在编排链
+    阶段 1 由 clean 尾部构建，**早于**本步 → 不刷新则条款行的时效投影系统性滞后一轮）。
+
 重要：
   - **零核验资源消耗**：仅读取既有清单做回写，不调用北大法宝、不发起任何核验请求。
   - 清单标注日期在 90 日内方可复用（reuse 窗口），超期应重新核验后再回写。
@@ -337,6 +342,22 @@ def main() -> int:
                 print("[apply] clean_index 已重建（index.json 刷新，纳入最新内容）")
             except Exception as e:  # noqa: BLE001
                 print(f"[apply] WARN clean_index 重建失败: {e!r}")
+            # 2026-09-19（同 F-C05 理由，补一环）：**同步刷新条款产物**。
+            # 动因：`clauses` 由 cleaned 派生，而编排链的顺序是「阶段 1 clean 尾部建 clauses
+            # → 阶段 2 本步回写 cleaned」→ 不刷新则 `clauses.timeliness_status` **系统性滞后
+            # 一个 apply 轮次**（实测 2026-09-19：五源 16,557 条 clauses 时效全为空，而 cleaned
+            # 已有 3k+ 判定）；且发布层 `published:external` 声明 `clauses:{src}` 为依赖
+            # → 其水位版本必须取到终态。增量建（按 input_sha 判定），仅受影响源重算。
+            try:
+                if ROOT not in sys.path:
+                    sys.path.insert(0, ROOT)
+                from clause_index import build_clause_index  # noqa: PLC0415
+                _cr = build_clause_index()
+                _built = [k for k, v in _cr.items()
+                          if isinstance(v, dict) and v.get("built")]
+                print(f"[apply] 条款产物已刷新（重算源: {_built or '无变更'}）")
+            except Exception as e:  # noqa: BLE001
+                print(f"[apply] WARN 条款产物刷新失败: {e!r}")
     return 0
 
 

@@ -1,6 +1,6 @@
 # BENCHMARK —— 交付基准登记（回归对照基线）
 
-> 自动生成：tools/gen_benchmark.py @ 2026-09-18 13:10:17 | python 3.13.14
+> 自动生成：tools/gen_benchmark.py @ 2026-09-19 02:19:53 | python 3.13.14
 > 用途：数据重建/重构后重跑 `python tools/gen_benchmark.py` 刷新；数值漂移即回归信号。
 
 ## 1 门禁（gates/ALL_GATES）
@@ -42,11 +42,11 @@
 
 | 源 | 快照日期 | 备注 |
 |---|---|---|
-| gov | 20260918 | 最新 cleaned |
-| mof | 20260918 | 最新 cleaned |
-| nfra | 20260918 | 最新 cleaned |
-| pbc | 20260918 | 最新 cleaned |
-| supp | 20260918 | 最新 cleaned |
+| gov | 20260919 | 最新 cleaned |
+| mof | 20260919 | 最新 cleaned |
+| nfra | 20260919 | 最新 cleaned |
+| pbc | 20260919 | 最新 cleaned |
+| supp | 20260919 | 最新 cleaned |
 | 合计 | — | 索引记录 16617 |
 
 ### 3.2 classifier 底座/明细/桥（数据血缘 R10 已注入 generated_*）

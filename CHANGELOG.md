@@ -1,5 +1,76 @@
 # Changelog
 
+## [Unreleased] 2026-09-19 — 三项全链条数据刷新（时效续跑 / clauses 下游 / 内部条文重生成）+ 四处顺序缺陷修复
+
+> 用户指令：①对未完成时效验证的源续跑并刷新下游 ②基于 `regulatory_scrapers/data/clauses`
+> 变更按全链条刷新下游 ③用优化解析重生成 `internal_policy_base/data/processed/*_clauses.json`
+> 并刷新下游。三项统一走 `tools/run_production_refresh.py`（22 步）全链条。
+
+### 一、任务 1：时效验证续跑与落地
+
+- **环境阻断修复**：`PKULAW_NODE_EXE` 指向的 node 版本目录被运行时升级腾空
+  （`…/node/versions/22.22.2-2/node.exe` 不存在，实际在 `22.22.2-3`）→ CLI 静默失联
+  （报「未找到 pkulaw-mcp CLI」，**极易误判为未安装**）。新增
+  `pkulaw_cli._resolve_node_exe`：环境路径不可用时派生同层 `versions/current` 指针解析，
+  **不写死本机路径**（下次运行时升级不再断链）。
+- **引擎缺陷修复**：`execute_queries` 原**一次性提交全部候选**、再 `as_completed` 收集 →
+  收集/断点落盘被"提交阶段"（`pause=0.2s`×N，gov 1.2 万条 ≈ 42 min）整体推迟，表现为
+  **断点长期不落盘**且认证失败门哨（连续 15 次）要 42 min 后才可能触发。
+  改为**分块提交/收集**（`_CHUNK=50`）：断点实时、门哨即时（实测重跑后 14 条即触发停止并落盘）。
+- **续跑结果**（`run_timeliness_resume.py`，前四源 → gov 门禁）：
+  - supp / nfra：无效力缺失记录（已完成）；pbc：2 条 `nomatch`；mof：546 条 `nomatch` + 1 条查询失败
+    （**`nomatch` 属正常结论**：该文件在北大法宝无同名记录）；
+  - gov：**探活成功**（30 条：1 `valid` + 29 `nomatch`，~1.1 s/条）→ 随后**北大法宝网关阻断**
+    （直连 CLI 单条亦报「认证失败」，**非代码缺陷**）→ 按 R13 降级纪律**不写判定**、
+    保留断点续跑（`pkulaw_gov_missing_checkpoint.jsonl` 203 条，gov 待核 **12,586** 条）。
+- **落地**：`consolidate_timeliness --use-state`（全量清单 3,708 条；`无同名命中` 走
+  `skip_downgrade` 不强行升级）→ `apply_timeliness_to_cleaned --source gov|mof|pbc`
+  （gov 写回 1 条新判定 `valid`）→ `rfn_backlog --sync-timeliness --apply`
+  （SSOT 14,768 → 归属表 **188 行**改动）。
+- **⭐ 顺序缺陷修复（新增一环派生刷新）**：`apply_timeliness_to_cleaned` 回写 cleaned 后**同步刷新条款产物**
+  （同 F-C05「回写后重建 clean_index」先例）。动因：clauses 由 cleaned 派生，而编排链顺序是
+  「阶段 1 clean 尾部建 clauses → 阶段 2 apply 改 cleaned」→ 不刷新则
+  `clauses.timeliness_status` **系统性滞后一个 apply 轮次**（实测五源 16,557 条**全为空**）；
+  且 `published:external` 声明 `clauses:{src}` 为依赖，水位必须取到终态。
+
+### 二、任务 2：clauses 产物下游刷新（**编排顺序缺陷修复**）
+
+- **暴露**：重跑链时 `gate_relations` 判据 8 与 `gate_watermark` 双双 FAIL ——
+  `relations_index 声明 internal_index=c2a9f380d9b67dd6 但当前=dd919a09a9a57f8b`。
+- **根因**：`relations:gen`（阶段 2.6）声明 `internal_index` 为依赖，而依赖版本解析走**当前水位表**；
+  观察型水位历史上**只在阶段 3 登记** → 若 `internal_index` 在本次链**之前**被链外写方改动
+  （如 `cli internal backfill` 回刷章条数），阶段 2.6 解析到的是**上一轮旧版本**，
+  阶段 3 再把新版本写进表 → 当场判"产物陈旧"。
+- **修复**：新增**阶段 2.55「观察型水位提前登记」**（紧邻 `relations:gen` 之前），阶段 3 之后仍再登记
+  一次（终态刷新）；同版本重复登记幂等。
+- **结果**：clause 五源产物在链内由 apply 阶段落为终态（时效投影 3,483 条，此前全空），
+  `published:external` 取到终态版本；**重跑链 22 步全 rc=0（含 gates 18/18）**。
+
+### 三、任务 3：内部条文产物重生成（优化解析）
+
+- **三写入点收敛为唯一装配**：`indexer.ingest` / `extract.backfill_clauses` / `extract.reocr_backfill`
+  原先各自拼 `_clauses.json` 键集 → 统一经
+  `internal_policy_base.extract.build_clause_payload`（**唯一实现**）。
+- **解析器升级**：`extract_structure`（仅 law）→ **`parse_document`**（自动降级
+  `law/notice/bulletin/plan/plain` + 续行收编 + 章索引钳位），**与外部五源条款产物同源**；
+  载荷增量扩 3 键（`structure/structure_count/parse_mode`），`chapters`/`articles` 键集与语义不变
+  → `build_internal` / drafter 条款对照**零改动**；契约登记
+  `interfaces.contract.INTERNAL_CLAUSE_FIELDS`。
+- **重生成 877 份**（`cli internal backfill`，55 s）：条文 10,213 → **10,072**
+  （内联交叉引用误切消除）/ 章 2,089 → 2,015 / 零条 474 → **470** / 新增 `structure`
+  **69 份 543 单元**（非条文体通知/方案/预案；其 `_clauses.md` 由**空**变为可读，经 `render_markdown` 落盘）。
+
+### 四、验收
+
+- 全链条刷新 **22 步全 rc=0**（977 s）；`cli.py gates` **18/18 PASS**；`pytest` **全通过**；
+  `clause_index.validate_schema` **consistent=true**（16,617 文件 / 107,520 条 / 12,046 章 / 48,596 结构单元）。
+- 发布件同步：`external_clauses.jsonl` **107,520** 行（反洗钱法 65 行）；
+  `internal_clauses.jsonl` **10,072** 行（= 重生成结果）。
+- 历史两案例复核：`保监发〔2001〕126号` → `parse_mode=notice`、`structure_count=9`、
+  `validation=PASSED`、时效 `repealed`；`反洗钱法` → 65 条、条号 1..65 唯一连续、时效 `valid`。
+- ⏸ **未完成项（外部阻断，非缺陷）**：gov 待核 12,586 条 —— 北大法宝网关阻断中，
+  按断点续跑（`run_timeliness_resume.py --only gov`）；恢复后需再跑一次本链条让判定落地。
+
 ## [Unreleased] 2026-09-18 — 条文解析适配（空解析 / 换行截断 / 交叉引用误判三问题修复）
 
 > 问题驱动：`nfra_clauses_20260918` 中 ①`17b6ff89…`（保监发〔2001〕126号）解析结果为空；
