@@ -1,0 +1,71 @@
+[编排] 优先级顺序：supp → pbc → nfra → mof → **gov（最低，须待前四源全部完成）**
+[编排] 本次执行顺序：supp → pbc → nfra → mof → gov
+[编排] 进度台账：regulatory_scrapers\timeliness_review\续跑编排进度_20260919.json
+[编排] 历史结果：（无）
+[门禁] gov 前四源状态：{'supp': None, 'pbc': None, 'nfra': None, 'mof': None}
+[门禁] !! 前四源尚未全部完成（未完成：['mof', 'nfra', 'pbc', 'supp']） -> 本次不启动 gov（符合「gov 优先级最低」要求；续跑本脚本即可）
+
+==============================================================================
+[编排] 开始核验源 supp  ← --source supp
+==============================================================================
+[verify_missing:supp] cleaned 60 条 | 效力缺失（空）0 条
+[verify_missing:supp] 无效力缺失记录，跳过
+
+[verify_missing] R13 执行摘要 → D:\WorkBuddy\regulatory_compliance_orchestrator\modules\regulatory_scrapers\timeliness_review\verify_summary_20260919.json
+  supp  success      missing=   0 ok=   0 degraded=   0 changed=  0
+  overall: success
+
+[编排] supp → status=success missing=0 ok=0 fail=0 耗时=0.9s
+
+==============================================================================
+[编排] 开始核验源 pbc  ← --source pbc
+==============================================================================
+[verify_missing:pbc] cleaned 571 条 | 效力缺失（空）2 条
+[verify_missing:pbc] 查询计划 2 项（CLI 就绪，workers=2）
+checkpoint 无需新增查询
+[verify_missing:pbc] 判定统计: {'valid': 0, 'amended': 0, 'repealed': 0, 'expired': 0, 'nomatch': 2, 'fail': 0} | 本批变更 0 条 | 台账(追加) D:\WorkBuddy\regulatory_compliance_orchestrator\modules\regulatory_scrapers\timeliness_review\时效核验_pbc变更台账_20260919.csv
+[verify_missing:pbc] 状态已写入 verification_state.json
+
+[verify_missing] R13 执行摘要 → D:\WorkBuddy\regulatory_compliance_orchestrator\modules\regulatory_scrapers\timeliness_review\verify_summary_20260919.json
+  pbc   partial      missing=   2 ok=   0 degraded=   2 changed=  0
+  overall: partial
+
+[编排] pbc → status=partial missing=2 ok=0 fail=0 耗时=0.8s  原因：exit=2
+
+==============================================================================
+[编排] 开始核验源 nfra  ← --source nfra
+==============================================================================
+[verify_missing:nfra] cleaned 1939 条 | 效力缺失（空）0 条
+[verify_missing:nfra] 无效力缺失记录，跳过
+
+[verify_missing] R13 执行摘要 → D:\WorkBuddy\regulatory_compliance_orchestrator\modules\regulatory_scrapers\timeliness_review\verify_summary_20260919.json
+  nfra  success      missing=   0 ok=   0 degraded=   0 changed=  0
+  overall: success
+
+[编排] nfra → status=success missing=0 ok=0 fail=0 耗时=1.2s
+
+==============================================================================
+[编排] 开始核验源 mof  ← --source mof
+==============================================================================
+[verify_missing:mof] cleaned 870 条 | 效力缺失（空）547 条
+[verify_missing:mof] 查询计划 545 项（CLI 就绪，workers=2）
+checkpoint 无需新增查询
+[verify_missing:mof] 判定统计: {'valid': 0, 'amended': 0, 'repealed': 0, 'expired': 0, 'nomatch': 546, 'fail': 1} | 本批变更 0 条 | 台账(追加) D:\WorkBuddy\regulatory_compliance_orchestrator\modules\regulatory_scrapers\timeliness_review\时效核验_mof变更台账_20260919.csv
+[verify_missing:mof] 状态已写入 verification_state.json
+
+[verify_missing] R13 执行摘要 → D:\WorkBuddy\regulatory_compliance_orchestrator\modules\regulatory_scrapers\timeliness_review\verify_summary_20260919.json
+  mof   partial      missing= 547 ok=   0 degraded= 547 changed=  0
+  overall: partial
+
+[编排] mof → status=partial missing=547 ok=0 fail=0 耗时=1.6s  原因：exit=2
+
+==============================================================================
+[编排] 汇总（进度台账：regulatory_scrapers\timeliness_review\续跑编排进度_20260919.json）
+  源      status      missing     ok  fail  changed  原因
+  supp   success           0      0     0        0  
+  pbc    partial           2      0     0        0  exit=2
+  nfra   success           0      0     0        0  
+  mof    partial         547      0     0        0  exit=2
+  gov    —                 —      —     —        —  
+
+[门禁] 前四源是否全部完成（success/partial 且 fail=0）：是 -> 可启动 gov 续跑
