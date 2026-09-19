@@ -44,6 +44,9 @@ EXCLUDE_DIRS = {
     "build", "dist",
     # 本地环境/agent 状态目录（均不入 git；external 为 PaddleOCR/Tesseract 第三方 junction）
     "external", "tessdata", ".codebuddy",
+    # graphify 知识图谱产物（2026-09-20）：派生产物，由 `graphify extract` 在目标机重建，
+    # 内容天然含本机绝对路径（graph.json 的 node label / converted/*.md 副本），不入库、不属硬编码违规
+    "graphify-out",
 }
 # 2026-09-13 扩面：代码 + 文档 + 配置
 SCAN_EXTS = (".py", ".json", ".yaml", ".yml", ".toml", ".cfg", ".ini", ".md", ".txt", ".mermaid")

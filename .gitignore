@@ -90,3 +90,9 @@ _tmp_smoke/
 *.bak_2026*
 *.bak[0-9]_2026*
 *.bak[0-9][0-9]_2026*
+
+# ===== graphify 知识图谱产物（2026-09-20）=====
+# 派生产物：由 `graphify extract .` 在目标机重建（graph.json / graph.html / GRAPH_REPORT.md /
+# manifest.json / cache/ / converted/），内容含本机绝对路径且体积较大（~9 MB），不入库；
+# 助手侧依赖说明见仓库根 CODEBUDDY.md（该文件入库）。
+graphify-out/
