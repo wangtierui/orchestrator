@@ -78,7 +78,9 @@ from config.enums import (  # noqa: E402
 from std_lib.common_lib.norm import norm_docno, norm_title_strict  # noqa: E402
 
 SCHEMA_VERSION = "1.0"
-EXTRACTOR_VERSION = "relations-1.0"
+# 2026-09-20 → 1.1：relation_id 派生纳入判别字段（article/action/scope/reason/dst_docno/
+# dst_kind/src_key）并在写入前做确定性唯一化——修复"同一 id 命中多行"的既有缺陷。
+EXTRACTOR_VERSION = "relations-1.1"
 
 CN_NUM = "一二三四五六七八九十百千零两"
 _CN_NUM_RE = rf"[{CN_NUM}\d]"

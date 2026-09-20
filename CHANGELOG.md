@@ -1,5 +1,65 @@
 # Changelog
 
+## [Unreleased] 2026-09-20 — 条款产物六类缺陷修复（F1–F7）+ 三项相邻问题 + 全链刷新
+
+> 用户指令：针对 `nfra_clauses_20260919.{md,jsonl}` 的六类问题排查五源数据、锁定根因并出具修复方案；
+> 随后要求**自主推进全部修复至验证通过**（含相邻问题）。排查报告见
+> `reports/2026-09-20_nfra条款产物_01_六类缺陷根因排查与修复方案.md`（§9 实施结果）。
+
+### 一、解析层修复（`std_lib/scraper_std/document_structure.py`）
+
+- **F1 锚切分**：新增 `resplit_embedded_anchors`（段内二次切分）——修复「二、基本原则（一）服务…」
+  中 `（一）` 紧贴标题末字导致**子节点被吞**（实测五源 577 处 / 182 份）；三重判据（短标题形态 +
+  标记后 ≥20 字实质正文 + 非内联引用「项/款/目…」）+ **层级一致性**（只切更深层或同层不同号）
+  否证 `负责一、二类口岸…`、`上述(一)、(二)项…`、`本通知第（一）（二）…`；同步修复章标题粘连
+  （`总 则第一章 总 则`）与**节标题并入上一条正文**（新增 `_SECTION_RE` 分支：flush + 留痕计数）。
+- **F2 标题·正文分离**：`_split_node_title_body`（候选①整段 / ②首个空白前片段，取首个标题形态者）
+  ——修复「（一）总体目标 借鉴…」整段进 `title`、「五、发行人应充分…」无标题却被写成 title
+  （实测 81,489 处 / 7,923 份）。
+- **F3 文档级尾部截断**：`strip_document_tail`（**尾区**判定：`附：`/答记者问/此件发至/发文机关+日期/
+  联合发布网页噪声），命中落 `parse_meta.tail_cut` 可追溯；反例（正文内合法生效日期、「附件一」引用）不误截。
+- **F5a 解析输入归一**：`normalize_parse_text`（异常空白 → 空格、汉字间异常空白删除、断句注入型空格去除）
+  ——**只读**，事实源由 clean 层负责（F5b）。
+- **F6 条内层级**：`parse_article_structure`（条 → 项（一）→ 目 1.），新增行级 `article_structure`
+  字段（契约 `CLAUSE_LINE_FIELDS` **18 → 19**）+ `render_markdown` 层级渲染。
+- **F7 检核增强**：新增 V008 结构层级完整性 / V009 尾部污染 / V010 空白污染（判据唯一实现
+  `structure_semantics`，单次遍历）；`validate_schema` 增补 key 集/level 闭包/条号对应与
+  **结构语义指标**（`title_swallow`/`tail_contam`/`space_contam`/`law_items`），
+  `test_clause_index_schema` 断言指标上限 —— 堵死"子层级被吞静默通过"。
+
+### 二、清洗层修复（事实源保真）
+
+- **F4 段落边界保真**：`pipeline._clean_record_body` 改用 `clean_text(..., keep_newlines=True)`，
+  **断句产物不再回写 `body_text`**（旧实现按"断句"目标插入句末 `\n` 与标点后空格，导致"标题行/正文行"
+  信号丢失、同段被切成 title+content）。
+- **F5b 异常空白归一**：`cleaner._EXOTIC_SPACE(_CJK)` 覆盖 NBSP/EN SPACE/EM/THIN/FIGURE/IDEOGRAPHIC
+  （原 `_MULTI_SPACE=[ \t\u3000]+` 未覆盖，五源产物残留 23,974 个）。
+- **联动适配（段落化输入暴露的三处隐性依赖）**：
+  ①`_parse_law` 遇附件/目录行**不再中断整篇**（原 `^关于印发.*的通知$`/`^附件` 会在首条前 break，
+  实测《…证券期货规范性文件的决定》835 → 45 条、全源一度 107,520 → 99,234）；
+  ②`score_parse` coverage **计入结构单元续行**（否则 notice 8,154 → 4,950、plain 5,853 → 9,069 退化）；
+  ③`_join_para` **标点边界不插空格**（消除段落拼接回流的「， 并履行」类空格 3,622 处）。
+
+### 三、相邻问题
+
+- **章/节粘连**：见 F1（含节边界处理，523 处节标题不再并入条文正文）。
+- **nfra 正文重复导语**：新增 `unified_schema.dedup_webpage_lead`（首部同段以「：」结尾重复两次 → 保留一份），
+  `map_nfra` 接入；实测 nfra 82/1939 份，其余四源 0 份。
+- **`relation_id` 不唯一**：`extract_relations._relation_id` 纳入判别字段（article/action/scope/reason/
+  dst_docno/dst_kind/src_key）+ `_ensure_unique_ids` 确定性唯一化；stat 增 `relation_id{rows,distinct,renamed}`；
+  **`gate_relations` 新增判据 9（id 唯一性）**；extractor 1.0 → 1.1。实测 5,266 行/4,859 id（366 重复）
+  → **5,272 行 / 5,272 id（0 重复）**。
+
+### 四、数据刷新与验收
+
+- `cli.py internal backfill`（877 份，共用解析面）→ `tools/run_production_refresh.py --no-scrape`
+  全链 22 步（每轮 1,004~1,010s，失败步骤 0，gates rc=0）；末轮定点重建（clauses `rebuild=True` →
+  `base publish` → 水位重登记 → gates）→ 产物换版 `{src}_clauses_20260920.*`。
+- **验收**：行数 16,617 = 16,617（仅旧 0/仅新 0）；条文 107,520 → **108,222（+0.65%）**；
+  文本量 −0.06%（仅尾部噪声）；**A 577→0、B 81,489→0、C 563→92、D 38,487→40、E 17,805→446、F 23,974→47**；
+  新增条内层级节点 17,380；notice 8,154→9,176、plain 5,853→4,843（结构覆盖改善）；
+  门禁 **18/18 PASS**、`pytest` **367**（基线 356 + 新增 11）全绿。
+
 ## [Unreleased] 2026-09-19 — 三项全链条数据刷新（时效续跑 / clauses 下游 / 内部条文重生成）+ 四处顺序缺陷修复
 
 > 用户指令：①对未完成时效验证的源续跑并刷新下游 ②基于 `regulatory_scrapers/data/clauses`

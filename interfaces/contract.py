@@ -230,16 +230,21 @@ CLAUSE_LINE_FIELDS: tuple[str, ...] = (
     #   parse_mode      解析模式（受控枚举 config.enums.CLAUSE_PARSE_MODES）
     #   parse_score     {total, coverage, legality, continuity}（参考 ModeScorer）
     #   parse_meta      诊断元：all_scores / threshold / repair（合并·去重·章索引修正统计）
+    #                   / tail_cut（F3 尾部截断留痕，2026-09-20）
     #   is_fallback     是否降级到纯段兜底
     #   structure       非条文体（通知/通报/规划）层级结构（原文序号，不重标为「第X条」）
     #   structure_count 结构单元数（与 chapters/article_count 同口径的快速标量）
-    #   validation      条款校验结果 {status, error_count, warn_count, issues[]}（V001–V007）
+    #   validation      条款校验结果 {status, error_count, warn_count, issues[]}（V001–V010）
     "parse_mode", "parse_score", "parse_meta", "is_fallback",
     "structure", "structure_count", "validation",
+    # 2026-09-20 条内层级（F6）：law 模式条文内的「项（一）/目 1.」层级。
+    # 节点键集**复用** CLAUSE_STRUCTURE_FIELDS；level ∈ CLAUSE_STRUCTURE_LEVELS（含 条/项/目）。
+    # 只对含（X）的条文产出节点（`articles[].body` 原文保持不动 → 下游零改动）。
+    "article_structure",
 )
 CLAUSE_ARTICLE_FIELDS: tuple[str, ...] = ("no", "number", "body")
 CLAUSE_CHAPTER_FIELDS: tuple[str, ...] = ("no", "title", "article_index")
-# 条款结构单元（非条文体 structure[]）节点字段（键集恒定，便于下游消费与校验）
+# 条款结构单元（非条文体 structure[] 与条内 article_structure[]）节点字段（键集恒定）
 CLAUSE_STRUCTURE_FIELDS: tuple[str, ...] = ("level", "number", "title", "content",
                                             "items", "children")
 

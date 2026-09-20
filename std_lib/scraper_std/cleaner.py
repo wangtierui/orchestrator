@@ -25,6 +25,13 @@ LOG = logging.getLogger("scraper_std.cleaner")
 # --------------------------------------------------------------------------- #
 _CONTROL_CHARS = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
 _ZERO_WIDTH = re.compile(r"[\u200b\u200c\u200d\u2060\ufeff]")
+# 异常空白（2026-09-20 F5b）：NBSP/EN SPACE/EM/THIN/FIGURE/IDEOGRAPHIC 等。
+# 源端（网页 `&nbsp;`、PDF 文本层）大量携带这些字符，原 `_MULTI_SPACE=[ \t\u3000]+`
+# 不覆盖 → 五源 clauses 产物实测残留 23,974 个（nfra 15,064）。
+_EXOTIC_SPACE = re.compile(r"[\u00a0\u2002\u2003\u2007\u2009\u200a\u202f\u205f]")
+# 两侧均为汉字者：直接删除（插入空格会切断词形）；其余归一为半角空格
+_EXOTIC_SPACE_CJK = re.compile(
+    r"(?<=[\u4e00-\u9fff])[\u00a0\u2002\u2003\u2007\u2009\u200a\u202f\u205f]+(?=[\u4e00-\u9fff])")
 _MULTI_SPACE = re.compile(r"[ \t\u3000]+")
 _MULTI_NL = re.compile(r"\n{3,}")
 # 全角标点转半角（仅空格类；中文标点保留）
@@ -35,11 +42,11 @@ _GARBLE_CHARS = re.compile(r"[�▇□■◇◆●○◎※→←↑↓＊※�
 
 def normalize_ws(text: str, *, keep_newlines: bool = False) -> str:
     """
-    将 \r\n / \n / \t / 全角空格等标准化为单个空格（规范 7.1）；
+    将 \r\n / \n / \t / 全角空格 / 异常空白（NBSP 等）标准化为单个空格（规范 7.1）；
     移除控制字符与零宽字符；压缩连续空行。
 
     keep_newlines=True 时保留换行结构（仅折叠多余空行、不折叠单换行），
-    供断句修复流程在引入句末换行后使用。
+    供**段落边界保真**的正文清洗使用（2026-09-20 F4：clauses 解析依赖段落边界）。
     """
     if not isinstance(text, str):
         return ""
@@ -47,6 +54,8 @@ def normalize_ws(text: str, *, keep_newlines: bool = False) -> str:
     t = _CONTROL_CHARS.sub("", t)
     t = _ZERO_WIDTH.sub("", t)
     t = t.replace("\r\n", "\n").replace("\r", "\n")
+    t = _EXOTIC_SPACE_CJK.sub("", t)
+    t = _EXOTIC_SPACE.sub(" ", t)
     if keep_newlines:
         t = _MULTI_SPACE.sub(" ", t)
         t = _MULTI_NL.sub("\n\n", t)
@@ -117,14 +126,14 @@ _NOISE_PATTERNS = [
 _NOISE_RE = [re.compile(p, re.S | re.I) for p in _NOISE_PATTERNS]
 
 
-def denoise(text: str) -> str:
-    """按规则过滤广告/导航/页脚/版权/脚本片段。"""
+def denoise(text: str, *, keep_newlines: bool = False) -> str:
+    """按规则过滤广告/导航/页脚/版权/脚本片段（keep_newlines 透传，见 normalize_ws）。"""
     if not text:
         return ""
     t = text
     for rx in _NOISE_RE:
         t = rx.sub(" ", t)
-    return normalize_ws(t)
+    return normalize_ws(t, keep_newlines=keep_newlines)
 
 
 # --------------------------------------------------------------------------- #
@@ -212,10 +221,19 @@ def fill_missing(record: dict[str, Any], fields: dict[str, Any] | None = None) -
 # --------------------------------------------------------------------------- #
 # 组合清洗入口（正文文本）
 # --------------------------------------------------------------------------- #
-def clean_text(text: str, *, denoise_on: bool = True) -> str:
-    """正文基础清洗：去噪 → 空白标准化 → 全角空格修正 → 去乱码符号。"""
-    t = denoise(text) if denoise_on else normalize_ws(text)
+def clean_text(text: str, *, denoise_on: bool = True, keep_newlines: bool = False) -> str:
+    """正文基础清洗：去噪 → 空白标准化（异常空白归一）→ 去乱码符号。
+
+    keep_newlines=True（2026-09-20 F4）：**保留段落边界**——clauses 条的层级解析依赖
+    源端段落换行（clean 管道 `_clean_record_body` 以此产出 body_text）。
+    """
+    if denoise_on:
+        t = denoise(text, keep_newlines=keep_newlines)
+    else:
+        t = normalize_ws(text, keep_newlines=keep_newlines)
     t = _GARBLE_CHARS.sub("", t)
+    if keep_newlines:
+        t = _MULTI_NL.sub("\n\n", t)
     return t.strip()
 
 

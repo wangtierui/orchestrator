@@ -303,9 +303,39 @@ def iter_internal_docs(limit: int = 0):
 # 三、关系行构建（统一 schema，三类关系同表）
 # ===========================================================================
 def _relation_id(src_kind: str, src_ref: str, relation: str,
-                 dst_ref: str, normalized_name: str) -> str:
-    raw = f"{src_kind}|{src_ref}|{relation}|{dst_ref}|{normalized_name}"
+                 dst_ref: str, normalized_name: str, *,
+                 src_key: str = "", dst_kind: str = "", dst_docno: str = "",
+                 article: str = "", action: str = "", scope: str = "",
+                 reason: str = "") -> str:
+    """关系行稳定去重键 `REL-<16hex>`。
+
+    2026-09-20（相邻项修复，extractor 1.0 → 1.1）：纳入此前**遗漏的判别字段**
+    （`article/action/scope/reason/dst_docno/dst_kind/src_key`）。旧式仅取 5 元组，
+    同一对文件在同一文档的不同条款、或不同处置方式（废止/部分废止/另有规定）下会派生
+    **同一 id**（实测 5266 行仅 4859 个 id、366 个 id 命中 2 行且行内容互不相同），
+    迫使治理库改用合成 `row_key` 主键（保全了行数，但 id 语义失真）。
+    """
+    raw = "|".join([src_kind, src_ref, relation, dst_ref, normalized_name,
+                    src_key, dst_kind, dst_docno, article, action, scope, reason])
     return "REL-" + hashlib.sha1(raw.encode("utf-8")).hexdigest()[:16]
+
+
+def _ensure_unique_ids(rows: list[dict]) -> int:
+    """关系 id **全局唯一化**（确定性）：完全同判别字段的重复引用按出现序加 `-N` 后缀。
+
+    返回被改写的行数（写入统计，供审计；正常情况下应为 0）。
+    """
+    seen: dict[str, int] = {}
+    n = 0
+    for r in rows:
+        rid = r.get("relation_id") or ""
+        if rid not in seen:
+            seen[rid] = 1
+            continue
+        seen[rid] += 1
+        r["relation_id"] = f"{rid}-{seen[rid]}"
+        n += 1
+    return n
 
 
 def build_rows(doc: dict, pipeline: RelationPipeline, reg_ix: dict, int_ix: dict,
@@ -336,8 +366,14 @@ def build_rows(doc: dict, pipeline: RelationPipeline, reg_ix: dict, int_ix: dict
             if i_ref:
                 dst_ref, matched_by, dst_kind, dst_key = i_ref, i_mb, "internal", ""
         rows.append({
-            "relation_id": _relation_id(src_kind, src_ref or src_key or doc["name"], relation,
-                                        dst_ref or dst_key, item.normalized_name),
+            "relation_id": _relation_id(
+                src_kind, src_ref or src_key or doc["name"], relation,
+                dst_ref or dst_key, item.normalized_name,
+                src_key=src_key, dst_kind=dst_kind, dst_docno=docno,
+                article=item.article,
+                action=getattr(item, "action", "") if relation == "repeal" else "",
+                scope=getattr(item, "scope", "") if relation == "repeal" else "",
+                reason=getattr(item, "reason", "") if relation == "repeal" else ""),
             "src_kind": src_kind, "src_ref": src_ref, "src_key": src_key,
             "src_name": doc["name"],
             "src_docno": doc["docno"], "src_source": doc["source"],
@@ -401,8 +437,13 @@ def run(*, sources: list[str] | None = None, limit: int = 0, dry_run: bool = Fal
             warnings.extend(w)
             filtered_generic += fg
 
+    # 关系 id 唯一化（2026-09-20 相邻项修复）：判别字段完全相同的重复引用加确定性后缀
+    n_id_dups = _ensure_unique_ids(rows)
+    if n_id_dups:
+        print(f"[relations] relation_id 撞车 {n_id_dups} 行（同判别字段重复引用）→ 已按出现序加后缀")
+
     stat = _build_stat(rows, docs_stat, warnings, generated_at,
-                       filtered_generic=filtered_generic)
+                       filtered_generic=filtered_generic, id_dups=n_id_dups)
     if dry_run:
         print("[relations] dry-run：不落盘。")
         print(json.dumps({k: stat[k] for k in ("documents", "relations", "resolution")},
@@ -418,7 +459,8 @@ def run(*, sources: list[str] | None = None, limit: int = 0, dry_run: bool = Fal
 
 
 def _build_stat(rows: list[dict], docs_stat: dict, warnings: list[str],
-                generated_at: str, *, filtered_generic: int = 0) -> dict:
+                generated_at: str, *, filtered_generic: int = 0,
+                id_dups: int = 0) -> dict:
     def _cnt(pred) -> int:
         return sum(1 for r in rows if pred(r))
 
@@ -449,6 +491,11 @@ def _build_stat(rows: list[dict], docs_stat: dict, warnings: list[str],
         "generated_at": generated_at,
         "documents": docs_stat,
         "relations": {"total": len(rows), "by_kind": by_kind, "by_cross": cross},
+        # 关系 id 唯一性（2026-09-20）：行数 / 不同 id 数 / 撞车改写数 —— 三者须满足
+        # `rows == distinct_ids` 且 `id_dups == 0`（gate_relations 判据 9 断言）。
+        "relation_id": {"rows": len(rows),
+                        "distinct": len({r.get("relation_id") for r in rows}),
+                        "renamed": id_dups},
         "resolution": resolution,
         # 两级解析率（口径显式命名，避免"解析率"歧义）
         "resolved_to_entity_ratio": round(n_ref / len(rows), 4) if rows else 0.0,

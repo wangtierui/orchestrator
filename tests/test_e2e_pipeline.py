@@ -108,6 +108,13 @@ def test_clause_index_schema():
     r = validate_schema()
     assert r["consistent"], r["problems"][:5]
     assert r["files"] >= 1000 and r["articles"] >= 10000
+    # 2026-09-20（F7）：**结构语义指标上限** —— 六类问题的门禁级堵漏断言。
+    # 旧实现（V001–V007 只做行级自洽校验）曾让"子层级被吞"静默通过（问题一）。
+    assert r["title_swallow"] == 0, f"层级被吞 {r['title_swallow']} 处"
+    assert r["tail_contam"] <= 300, f"尾部污染 {r['tail_contam']} 处"
+    assert r["space_contam"] <= 300, f"空白污染 {r['space_contam']} 处"
+    assert r["law_items"] <= 2000, f"未抽取条内层级 {r['law_items']} 条"
+    assert r["article_structures"] > 0 and r["item_nodes"] > 0, "条内层级字段未产出"
 
 
 # ---------------- 层4：reconcile 桥表 / 漂移状态 ----------------

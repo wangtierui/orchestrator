@@ -47,6 +47,10 @@ CLAUSE_PARSE_MODES: frozenset[str] = frozenset({
 })
 # 条款校验问题严重度（参考 3.1 校验规则清单 的两档）
 CLAUSE_ISSUE_SEVERITY: frozenset[str] = frozenset({"ERROR", "WARN"})
+# 条款结构单元 level 受控值（2026-09-20 F6：`structure[]` 层级体 + `article_structure[]` 条内层级）
+#   一级/二级：非条文体（通知/通报/规划）层级序号（原文序号，不重标「第X条」）
+#   条/项/目 ：law 模式条内层级（条 → 项（一）→ 目 1.）
+CLAUSE_STRUCTURE_LEVELS: frozenset[str] = frozenset({"一级", "二级", "条", "项", "目"})
 
 # F4 source（数据源标识，5 值）——注意：新增源须同步 config/sources.yaml 并重跑断言
 SOURCE_SET: frozenset[str] = frozenset({"nfra", "pbc", "mof", "gov", "supp"})
@@ -263,6 +267,9 @@ def assert_enum_bindings() -> None:
                                     "judicial_interpretation", "law", "local_government_normative",
                                     "local_government_rule", "local_regulation", "other",
                                     "state_council_normative"]
+    # 条款解析（2026-09-20 F6）：解析模式 + 结构单元 level 闭包
+    assert len(CLAUSE_PARSE_MODES) == 6, CLAUSE_PARSE_MODES
+    assert CLAUSE_STRUCTURE_LEVELS == {"一级", "二级", "条", "项", "目"}, CLAUSE_STRUCTURE_LEVELS
 
 
 if __name__ == "__main__":  # 离线自检

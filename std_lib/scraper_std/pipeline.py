@@ -83,25 +83,32 @@ def build_high_freq_dict(
 
 
 def _clean_record_body(rec: dict[str, Any], cfg: dict[str, Any]) -> dict[str, Any]:
-    """正文基础清洗 + 断句修复（7.2）+ 清洗版本标记。"""
+    """正文基础清洗（**段落边界保真**）+ 断句诊断（7.2）+ 清洗版本标记。
+
+    ⛔ 2026-09-20（F4/F5b，问题二/三根因）：
+      - `clean_text(..., keep_newlines=True)`：**保留源端段落换行**——旧实现把 `\\n` 折叠为
+        空格，clauses 层级解析因此丢失"标题行 / 正文行"的唯一判别信号
+        （nfra《新监管标准指导意见》`（一）总体目标\\n借鉴…` 被折叠 → 整段进 title）；
+      - `repair_text` 的产物**不回写 `body_text`**：它按"断句"目标插入句末 `\\n`
+        与标点后空格，回写会污染事实源（同一段被误判为 title+content 两段、出现
+        「、 」「100 号」等无效空格）。断句结果只作派生字段（`split_sentences` /
+        `raw_uncut_text`）与表格块判定，事实源保持原文形态。
+    """
     body = rec.get("body_text") or ""
     if not body:
         return rec
-    cleaned = clean_text(body)
+    cleaned = clean_text(body, keep_newlines=True)
     cleaning_cfg = cfg.get("cleaning", {})
+    meta = rec.setdefault("_metadata", {})
+    meta["clean_version"] = cleaning_cfg.get("clean_version", "v1.0.0")
+    rec["body_text"] = cleaned
     if cleaning_cfg.get("sentence_split_on", True):
         repaired = repair_text(cleaned, source="webpage")
-        rec["body_text"] = repaired["text"]
-        meta = rec.setdefault("_metadata", {})
-        meta["clean_version"] = cleaning_cfg.get("clean_version", "v1.0.0")
         if repaired["is_table"]:
             meta["table_recovery_method"] = meta.get("table_recovery_method") or "pending_table_block"
         if repaired["split_sentences"]:
             rec["split_sentences"] = repaired["split_sentences"]
             rec["raw_uncut_text"] = repaired["raw_uncut_text"]
-    else:
-        rec["body_text"] = cleaned
-        rec.setdefault("_metadata", {})["clean_version"] = cleaning_cfg.get("clean_version", "v1.0.0")
     return rec
 
 

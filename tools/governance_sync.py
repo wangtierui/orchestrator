@@ -181,10 +181,11 @@ def load_relations() -> tuple[list[dict], list[str]]:
             dup_ids.add(rid)
         seen_ids.add(rid)
         rj = json.dumps(r, ensure_ascii=False, sort_keys=True)
-        # 合成行键：`relation_id` 在事实源中**不唯一**（同 id 可有多行、内容互不相同），
-        # 故以 `sha256(relation_id|row_json|序次)[:16]` 作主键 —— **确定性且保全全部行**。
-        # 序次仅用于同 id 同内容的**逐字节重复行**（实测 6 行），使其各占一行而不互相覆盖，
-        # 保证「库行数 == 事实源行数」（消费方 `load("all")` 的条数与 stat 完全一致）。
+        # 合成行键：以 `sha256(relation_id|row_json|序次)[:16]` 作主键 —— **确定性且保全全部行**。
+        # 历史动因（2026-09-18）：`relation_id` 当时**不唯一**（同 id 多行、内容互不相同），
+        # 以其作主键会静默丢行。2026-09-20 抽取侧已修（extractor 1.1：id 纳入全部判别字段
+        # + 写入前确定性唯一化，`gate_relations` 判据 9 断言），此处**保留合成键作纵深防御**
+        # （兼防逐字节重复行互相覆盖，保证「库行数 == 事实源行数」）。
         base = f"{rid}|{rj}"
         n = occ.get(base, 0)
         occ[base] = n + 1
@@ -210,10 +211,11 @@ def load_relations() -> tuple[list[dict], list[str]]:
             "row_json": json.dumps(r, ensure_ascii=False),
         })
     if dup_ids or exact_dup:
-        print(f"[sync] ⚠ relations_index.jsonl 去重键缺陷：{len(rows)} 行 / "
+        print(f"[sync] ⚠ relations_index.jsonl 去重键异常：{len(rows)} 行 / "
               f"{len(seen_ids)} 个不同 relation_id；其中 {len(dup_ids)} 个 id 重复、"
               f"{exact_dup} 行为逐字节重复。已按合成 row_key **保全全部 {len(out)} 行**"
-              "（库行数与事实源一致）；该缺陷属抽取侧 relation_id 派生问题，登记为待治理项")
+              "（库行数与事实源一致）。id 重复在 extractor 1.1 后不应出现 → "
+              "请运行 `python cli.py relations gen` 重抽取（gate_relations 判据 9 亦会阻断）")
     return out, []
 
 

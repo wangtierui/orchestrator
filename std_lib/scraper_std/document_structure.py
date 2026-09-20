@@ -80,6 +80,91 @@ _TRAIL_DOTS_RE = re.compile(r"[.。·•…\s]*\d*\s*$")
 _HEADER_DROP = re.compile(r"^(目录|目\s*录|卷首语|扉页|编写说明)")
 
 # --------------------------------------------------------------------------- #
+# 〇、解析输入归一（F5a）+ 文档级尾部截断（F3）—— 2026-09-20 问题驱动
+# --------------------------------------------------------------------------- #
+# 异常空白：NBSP(U+00A0)/EN SPACE(U+2002)/EM/THIN/IDEOGRAPHIC/零宽。clean 层
+# `cleaner._MULTI_SPACE = [ \t\u3000]+` 未覆盖这些字符，而源端（网页 `&nbsp;`、
+# PDF 抽取）与 `sentence_split.fix_cn_en_spacing` 会引入 → 实测五源 clauses 产物
+# 残留 23,974 个（nfra 15,064），污染标题/正文且干扰文号与引用比对。
+_EXOTIC_SPACE = re.compile(
+    r"[\u00a0\u2002\u2003\u2007\u2009\u200a\u202f\u205f\u200b\u200c\u200d\ufeff]")
+# 两侧均为汉字的异常空白：直接删除（不插空格）
+_EXOTIC_SPACE_CJK = re.compile(
+    r"(?<=[\u4e00-\u9fff])[\u00a0\u2002\u2003\u2007\u2009\u200a\u202f\u205f\u200b\u200c\u200d\ufeff]+"
+    r"(?=[\u4e00-\u9fff])")
+# 断句加工（`sentence_split.sentence_break` / `fix_cn_en_spacing`）注入的空格：
+# ①`，；、：,` 后 + 空格；②汉字↔ASCII 数字/字母之间 + 空格。
+# **仅用于解析输入归一，不写回 cleaned 事实源**（事实源保真由 clean 层纪律保证）。
+_INJECT_AFTER_PUNCT = re.compile(r"([，；、：,;])[ \t]+(?=[\u4e00-\u9fff0-9A-Za-z（(])")
+_INJECT_CN_ASCII = re.compile(r"(?<=[\u4e00-\u9fff])[ \t]+(?=[0-9A-Za-z])")
+_INJECT_ASCII_CN = re.compile(r"(?<=[0-9A-Za-z])[ \t]+(?=[\u4e00-\u9fff])")
+
+
+def normalize_parse_text(text: str) -> str:
+    """解析输入归一（F5a，**只读**）：异常空白归一/删除；去除断句注入的空格。
+
+    只改变空白字符，不增删实义字符 → 与事实源的"去空白比对"仍然成立（回源核验口径不变）。
+    异常空白处理分两档：**两侧均为汉字 → 直接删除**（版面/折行残渣，插入空格会切断词形）；
+    其余 → 归一为半角空格（再由下方规则决定是否删除）。
+    注意**不**触碰源端的普通半角空格（如章标题「总 则」的版式空格，属原文形态）。
+    """
+    if not text:
+        return ""
+    t = _EXOTIC_SPACE_CJK.sub("", text)
+    t = _EXOTIC_SPACE.sub(" ", t)
+    t = _INJECT_AFTER_PUNCT.sub(r"\1", t)
+    t = _INJECT_CN_ASCII.sub("", t)
+    t = _INJECT_ASCII_CN.sub("", t)
+    return t
+
+
+# 尾部噪声起标记（行内形态；原 `_TAIL_RE` 只认行首，网页拼接的 inline 形态漏检）
+_TAIL_INLINE_RES = (
+    re.compile(r"附\s*[：:]"),          # 「…同时废止。 附：中国银保监会发布《…》」
+    re.compile(r"答记者问"),            # 「…就《…》答记者问（链接）」
+    re.compile(r"此件发至"),            # 「（此件发至银保监分局与地方法人银行保险机构）」
+)
+# 发文机关（可多个）+ 发文日期 的署名块
+_TAIL_ORGS = (r"中国银保监会|中国银监会|中国保监会|中国银行保险监督管理委员会|银保监会|银监会|"
+              r"中国人民银行|人民银行|金融监管总局|国家金融监督管理总局|国务院|财政部|证监会|"
+              r"民政部|发展改革委|税务总局|国家外汇管理局|审计署")
+_TAIL_SIGN_RE = re.compile(
+    r"(?:%s)(?:\s*(?:%s))*\s*\d{4}\s*年\s*\d{1,2}\s*月\s*\d{1,2}\s*日" % (_TAIL_ORGS, _TAIL_ORGS))
+# 网页噪声：站方拼接的「XX 联合发布《…》」（常跟 URL）
+_TAIL_WEB_RE = re.compile(r"(?:%s)[^。！？]{0,16}?联合发布《[^》]{0,80}》" % _TAIL_ORGS)
+# 署名块之后允许存在的尾巴（括注/空白）；出现句末标点说明是正文，不判署名
+_TAIL_TAIL_OK = re.compile(r"^[\s\u3000（(【\[].{0,80}?[）)】\]]?$")
+
+
+def strip_document_tail(text: str, *, zone_ratio: float = 0.15,
+                        zone_min: int = 400) -> tuple[str, dict]:
+    """文档级尾部截断（F3）：截去附件/答记者问起标记、发文机关署名日期、网页噪声。
+
+    只作用于**尾区**（末 400 字与末 15% 取大者），命中即截断并返回诊断
+    （marker/at/removed）供 `parse_meta.tail_cut` 落盘——**可追溯、不静默**。
+    署名块须满足「其后仅剩括注/空白」，避免误截正文中出现的合法日期（如
+    「本条例自2010年6月1日起施行。」——不含机关名前置，天然不命中）。
+    """
+    t = (text or "").rstrip()
+    if not t:
+        return t, {}
+    start = max(0, len(t) - max(zone_min, int(len(t) * zone_ratio)))
+    cut, marker = len(t), ""
+    for rx in _TAIL_INLINE_RES + (_TAIL_WEB_RE,):
+        m = rx.search(t, start)
+        if m and m.start() < cut:
+            cut, marker = m.start(), rx.pattern[:24]
+    for m in _TAIL_SIGN_RE.finditer(t, start):
+        if _TAIL_TAIL_OK.match(t[m.end():]):
+            if m.start() < cut:
+                cut, marker = m.start(), "signature"
+    if cut >= len(t):
+        return t, {}
+    return (t[:cut].strip(),
+            {"marker": marker, "at": cut, "removed": len(t) - cut})
+
+
+# --------------------------------------------------------------------------- #
 # 一、锚切分（章/条真起始 + 层级序号）
 # --------------------------------------------------------------------------- #
 # 「第X章/条」锚（节不切：节标题后必跟条，切节会造出无条的碎片行）
@@ -126,7 +211,8 @@ def segment_body(body: str) -> str:
 
     - 章标题行后强制断行：`第一章 总 则第一条 为了…` → 章行 + `第一条 …`
       （章标题以 CJK 结尾，若只靠 `_prev_allows_head` 会漏切首条 → 由章态豁免）；
-    - 内嵌引用不断行（`本法第五十三条、第五十四条规定的行为` 保持同条正文）。
+    - 内嵌引用不断行（`本法第五十三条、第五十四条规定的行为` 保持同条正文）；
+    - 段内二次切分（F1）：章行内粘连的「第X章/第X节」由 `resplit_embedded_anchors` 切开。
     """
     t = body or ""
     if not t.strip():
@@ -142,7 +228,8 @@ def segment_body(body: str) -> str:
         buf = m.start()
         after_chapter = kind == "章"
     out.append(t[buf:])
-    return "\n".join(x.strip() for x in out if x.strip())
+    seg = "\n".join(x.strip() for x in out if x.strip())
+    return resplit_embedded_anchors(seg, kind="law")
 
 
 # 层级序号锚（一、/（一）/1、/——），用于非条文体（通知/通报/规划）
@@ -156,16 +243,134 @@ _OUTLINE_ANCHOR_RE = re.compile(
 
 
 def segment_outline(text: str) -> str:
-    """把正文按**层级序号**（一、/（一）/1、/——）切行。
+    """把正文按**层级序号**（一、/（一）/1、/——）切行，再做**段内二次切分**（F1）。
 
     本项目语料 body_text 多为**单段无换行**（与参考实现假定的"已换行文本"不同），
     故非条文体解析前须先做锚切分，否则 `^一、` 行式匹配只能命中零星行。
+    锚切分要求锚前为句末标点/空白 → 「二、基本原则（一）服务…」中紧贴标题末字的
+    `（一）` 漏切 → 由 `resplit_embedded_anchors` 二次切分补足。
     """
     t = text or ""
     if not t.strip():
         return t
-    return "\n".join(x.strip() for x in _OUTLINE_ANCHOR_RE.sub(r"\n\1", t).split("\n")
-                     if x.strip())
+    seg = "\n".join(x.strip() for x in _OUTLINE_ANCHOR_RE.sub(r"\n\1", t).split("\n")
+                    if x.strip())
+    return resplit_embedded_anchors(seg, kind="outline")
+
+
+_HEAD_SHAPED_BAD = re.compile(r"[。！？，；、：:]")          # law 模式（章标题短名）
+_HEAD_SHAPED_BAD_OUTLINE = re.compile(r"[。！？]")          # outline 模式（允许「，、」）
+_EMBED_HEAD_MAX = 40
+_EMBED_OUTLINE_RE = re.compile(
+    r"%s{1,6}[、．.](?!\d)" % _CN_CLS
+    + r"|[（(【\[]\s*%s{1,6}\s*[）)】\]]" % _CN_CLS
+    + r"|\d{1,3}\s*[、．.](?!\d)")
+_EMBED_LAW_RE = re.compile(r"第\s*(?:[0-9]+|%s+)\s*[章节]" % _CN_CLS)
+# 交叉引用否证：标记后紧接「项/款/目/条/章/节/个/是」或并列标点 → 内联引用，不切
+_EMBED_XREF_AFTER = re.compile(r"^\s*[项款目条章节个是、，]")
+_EMBED_MIN_BODY = 20      # 标记之后须有 ≥20 字实质正文
+_EMBED_BODY_END = re.compile(r"[。；]")
+# 节标题（结构分隔；正文不保留节名，仅留痕计数）
+_SECTION_RE = re.compile(r"^第\s*(?:[0-9]+|%s+)\s*节" % _CN_CLS)
+
+
+def _heading_shaped(seg: str, max_len: int = _EMBED_HEAD_MAX, *, kind: str = "law") -> bool:
+    """短标题形态：非空、≤max_len 字、不含句末标点（outline 允许「，、」）。"""
+    s = (seg or "").strip()
+    if not s or len(s) > max_len:
+        return False
+    bad = _HEAD_SHAPED_BAD if kind == "law" else _HEAD_SHAPED_BAD_OUTLINE
+    return not bad.search(s)
+
+
+_LAW_REST_BAD = re.compile(r"^\s*[的之和与及等之所中内前后、，。；:：]")
+
+
+def _law_title_side_ok(rest: str, max_len: int = 60) -> bool:
+    """law 模式二次切分右侧（章/节标题本身）形态校验：非虚词残片、无句末标点、不超长。"""
+    s = (rest or "").strip()
+    return bool(s) and len(s) <= max_len and not _HEAD_SHAPED_BAD.search(s) \
+        and not _LAW_REST_BAD.match(s)
+
+
+def _mk_kind(mk: str) -> str:
+    """层级序号标记的层级种类：L1（一、）/ L2（（一））/ L3（1.）。"""
+    mk = (mk or "").strip()
+    if not mk:
+        return ""
+    if mk[0] in "（(【[":
+        return "L2"
+    if mk[0].isdigit():
+        return "L3"
+    return "L1"
+
+
+def _resplit_level_ok(lead_mk: str, emb_mk: str) -> bool:
+    """F1 层级一致性：只允许切出**更深层级**（或同层但不同号）的序号。
+
+    否证「一、负责一、二类口岸开放或关闭的审查…」（同层同号 = 词组，非层级）；
+    「1.」行内不再切分（已是末级）。
+    """
+    lk, ek = _mk_kind(lead_mk), _mk_kind(emb_mk)
+    if lk == "L3":
+        return False
+    if lk == "L1":
+        return ek in ("L2", "L3")
+    return ek == "L3" or (ek == "L2" and emb_mk.strip() != lead_mk.strip())
+
+
+def resplit_embedded_anchors(text: str, *, kind: str = "outline") -> str:
+    """段内二次切分（F1）：把**已锚定行**中嵌着的层级序号切到新行。
+
+    动因（2026-09-20）：`_OUTLINE_ANCHOR_RE` 的 lookbehind 要求锚前为句末标点/空白，
+    源文本「二、基本原则（一）服务国家战略…」中 `（一）` 紧贴标题末字 → 不切行 →
+    整行成为一级节点文本、`（一）` 节点丢失（实测五源 574 处 / 182 份）。
+    同类：章标题粘连（「总 则第一章 总 则」「…要求 第一节 产品募集信息披露」）。
+
+    三重判据（防误切，全部为"必须同时满足"）：
+      ① **head 短标题形态**：待切标记之前 ≤40 字且不含句末标点（outline 额外允许 `，、`）；
+      ② **标记后有实质正文**：≥20 字且含 `。`/`；`；
+      ③ **标记后不得是内联引用**：紧接 `项/款/目/条/章/节/个/是/、/，` 即否证。
+    law 模式额外要求该行以**章标记**开头（条行内的「第五章」必是引用，禁止切）。
+    经否证校核：`负责一、二类口岸…`、`上述(一)、(二)项…`、`本通知第（一）（二）…`、
+    `以完善（一）项规定…` 均不切。
+    """
+    rx = _EMBED_LAW_RE if kind == "law" else _EMBED_OUTLINE_RE
+    out: list[str] = []
+    for raw in (text or "").split("\n"):
+        ln = raw.strip()
+        if not ln:
+            continue
+        cur, guard = ln, 0
+        # law 模式只对章行做二次切分（条行内的章/节字样一律视为引用）
+        if kind == "law" and not _CHAPTER_RE.match(ln):
+            out.append(ln)
+            continue
+        while guard < 20:
+            guard += 1
+            head_m = rx.match(cur)
+            start = head_m.end() if head_m else 0   # 行首标记本身不计入标题形态判定
+            m = rx.search(cur, start)
+            if not m:
+                break
+            rest = cur[m.end():]
+            if not _heading_shaped(cur[start:m.start()], kind=kind):
+                break
+            if kind == "law":
+                # 章/节标题形态：标记两侧均须「标题样」（无句末标点、不超长、非虚词残片）
+                if not _law_title_side_ok(rest):
+                    break
+            else:
+                if len(rest.strip()) < _EMBED_MIN_BODY or not _EMBED_BODY_END.search(rest):
+                    break
+                if _EMBED_XREF_AFTER.match(rest):
+                    break
+                if not _resplit_level_ok(head_m.group(0) if head_m else "", m.group(0)):
+                    break
+            out.append(cur[:m.start()].strip())
+            cur = cur[m.start():].strip()
+        out.append(cur)
+    return "\n".join(x for x in out if x)
 
 
 def _to_int(num: str) -> int:
@@ -368,14 +573,16 @@ def fix_chapter_index(chapters: list[dict], articles: list[dict]) -> tuple[list[
 # 四、解析器（law 主模式 + 层级体降级 + 纯段兜底）
 # --------------------------------------------------------------------------- #
 def _parse_law(text: str) -> dict:
-    """法令体：第X章 / 第X条（本项目主模式）。"""
-    empty = {"chapters": [], "articles": [], "structure": [], "tail_marker": ""}
+    """法令体：第X章 / 第X节 / 第X条（本项目主模式）。"""
+    empty = {"chapters": [], "articles": [], "structure": [], "tail_marker": "",
+             "sections": []}
     if not text or not text.strip():
         return empty
     lines = [ln.strip() for ln in text.split("\n") if ln.strip()]
     chapters: list[dict] = []
     articles: list[dict] = []
     tail_marker = ""
+    sections: list[str] = []
     cur: dict | None = None
 
     def _flush_article():
@@ -387,10 +594,25 @@ def _parse_law(text: str) -> dict:
 
     for ln in lines:
         if _HEADER_DROP.match(ln) or _TAIL_RE.match(ln):
+            # 2026-09-20（F4 联动修复）：附件/附则/目录行**只跳过、不再 break**。
+            # 动因：段落边界保真后这些标记各自成行（旧实现依赖"整篇被折叠为单行"，
+            # 故几乎不命中）。原 break 语义会在首个附件行处终止整篇解析：
+            #   · 文档标题行「关于印发《…》的通知」命中 `^关于印发.*的通知$` → 首条前即中断
+            #     （gov《…企业国有资产交易规则》99 条 → 0 条、66 条 → 0 条）；
+            #   · 「修改决定」类文档的附件内嵌被修订全文 → 在首个附件行处截断
+            #     （gov《关于修改部分证券期货规范性文件的决定》835 条 → 45 条）。
+            # 现语义：跳过标记行（不并入正文），继续按章/条解析 —— 与"多文档嵌套不得
+            # 静默丢弃"（V003 报出）的既有纪律一致；**尾部噪声**由 F3 `strip_document_tail`
+            # 在文档级按尾区截断负责，两者职责互补。
             tail_marker = tail_marker or ln
-            if _TAIL_RE.match(ln):
-                _flush_article()
-                break
+            continue
+        if _SECTION_RE.match(ln):
+            # 节标题 = 结构分隔（2026-09-20 相邻项修复）：原实现「节不切」→
+            # 「第二节 风险管理」被并入上一条正文（条款内混入结构标题）。
+            # 现：flush 当前条文、丢弃节名（chapters 键集恒定，节不入 chapters），
+            # 仅计数留痕（parse_meta.repair.sections_dropped），可回溯。
+            _flush_article()
+            sections.append(ln[:24])
             continue
         cm = _CHAPTER_RE.match(ln)
         if cm:
@@ -414,7 +636,7 @@ def _parse_law(text: str) -> dict:
     _flush_article()
     chapters = _drop_toc_chapters(chapters)
     return {"chapters": chapters, "articles": articles, "structure": [],
-            "tail_marker": tail_marker[:20]}
+            "tail_marker": tail_marker[:20], "sections": sections}
 
 
 # 层级体各模式的补充模式（与参考 BulletinParser / PlanParser 的差异点一致）
@@ -432,6 +654,59 @@ def _node(level: str, number: str, title: str = "") -> dict:
     """层级节点（**键集恒定**，便于下游消费与校验）。"""
     return {"level": level, "number": number, "title": title,
             "content": "", "items": [], "children": []}
+
+
+# 标题形态（F2）：≤30 字且不含句末标点/逗号类标点
+_NODE_TITLE_MAX = 30
+_NODE_TITLE_BAD = re.compile(r"[。！？，；、：:]")
+_CJK_RE = re.compile(r"[\u4e00-\u9fff]")
+# 中文标点（拼接时两侧不插空格）
+_CJK_PUNCT = "，。！？；：、（）《》【】「」“”‘’…—～·"
+
+
+def _split_node_title_body(rest: str, max_len: int = _NODE_TITLE_MAX) -> tuple[str, str]:
+    """层级节点「marker 之后的文本」→ `(title, content)`（F2，2026-09-20）。
+
+    动因：原实现把 marker 后**整行剩余文本**无条件写入 `title`（`:459`/`:463`），
+    于是「（一）总体目标 借鉴国际金融监管…」整段正文变成标题，
+    「五、发行人应充分、及时披露…」本无标题的条款也被塞进 `title`
+    （实测五源 81,489 处 / 7,923 份，nfra 10,396 处）。
+
+    判据：候选①=marker 后整段；候选②=首个空白前的片段（清洗层把源端换行折叠为空格、
+    或源端本就「标题 正文」同行）。取**首个标题形态**者为 `title`，其余为 `content`；
+    都不成形则 `title=""`、全部作为正文 —— **不臆造标题**。
+    """
+    s = (rest or "").strip()
+    if not s:
+        return "", ""
+    cands = [s]
+    m = re.search(r"[ \u00a0\u2002\u2003\u3000]", s)
+    if m and m.start() > 0:
+        cands.append(s[:m.start()].strip())
+    for c in cands:
+        if c and len(c) <= max_len and not _NODE_TITLE_BAD.search(c):
+            return c, s[len(c):].strip()
+    return "", s
+
+
+def _join_para(a: str, b: str) -> str:
+    """段落拼接（中文边界不插空格，避免清洗注入型空格回流到 content）。
+
+    2026-09-20（F5a 联动）：**标点边界也不插空格**——否则段落保真后逐段拼接会把
+    「…评估，」+「并履行…」拼成「…评估， 并履行…」（实测五源残留 3,622 处
+    「标点+空格」，与问题三"无效空格"同源）。
+    """
+    a, b = (a or "").strip(), (b or "").strip()
+    if not a:
+        return b
+    if not b:
+        return a
+    if _CJK_RE.match(a[-1]) and _CJK_RE.match(b[0]):
+        return a + b
+    if a[-1] in _CJK_PUNCT or b[0] in _CJK_PUNCT:
+        return a + b
+    return a + " " + b
+
 
 
 def _parse_outline(text: str, mode: str) -> dict:
@@ -456,11 +731,17 @@ def _parse_outline(text: str, mode: str) -> dict:
             if mx:
                 break
         if m1:
-            l1 = _node("一级", m1.group(1), m1.group(2).strip())
+            _t, _c = _split_node_title_body(m1.group(2))
+            l1 = _node("一级", m1.group(1), _t)
+            if _c:
+                l1["content"] = _c
             structure.append(l1)
             l2 = None
         elif m2:
-            l2 = _node("二级", f"（{m2.group(1)}）", m2.group(2).strip())
+            _t, _c = _split_node_title_body(m2.group(2))
+            l2 = _node("二级", f"（{m2.group(1)}）", _t)
+            if _c:
+                l2["content"] = _c
             if l1 is not None:
                 l1["children"].append(l2)
             else:
@@ -479,8 +760,9 @@ def _parse_outline(text: str, mode: str) -> dict:
         else:
             tgt = l2 if l2 is not None else l1
             if tgt is not None:
-                tgt["content"] = (tgt["content"] + " " + ln).strip()
-    return {"chapters": [], "articles": [], "structure": structure, "tail_marker": ""}
+                tgt["content"] = _join_para(tgt["content"], ln)
+    return {"chapters": [], "articles": [], "structure": structure, "tail_marker": "",
+            "sections": []}
 
 
 def _parse_plain(text: str) -> dict:
@@ -488,6 +770,73 @@ def _parse_plain(text: str) -> dict:
     n = len([ln for ln in (text or "").split("\n") if ln.strip()])
     return {"chapters": [], "articles": [], "structure": [], "tail_marker": "",
             "plain_paragraphs": n}
+
+
+# --------------------------------------------------------------------------- #
+# 四之二、条内层级（F6，2026-09-20）：条 → 项（（一））→ 目（1.）
+# --------------------------------------------------------------------------- #
+_ITEM_L2_RE = re.compile(r"^[（(【\[]\s*([%s]{1,6})\s*[）)】\]]\s*(.*)$" % _CN)
+_ITEM_L3_RE = re.compile(r"^(\d{1,3})\s*[.．、]\s*(.*)$")
+# 仅在**句末标点/冒号之后**切（`（一）`/`1.` 的开头形态），避免切到小数与行内引用
+_ITEM_CUT_L2 = re.compile(r"(?<=[。；：:])[（(【\[]\s*([%s]{1,6})\s*[）)】\]]" % _CN)
+_ITEM_CUT_L3 = re.compile(r"(?<=[。；：:])(\d{1,3})\s*[.．、](?!\d)")
+_ITEM_ANY_L2 = re.compile(r"[（(【\[]\s*[%s]{1,6}\s*[）)】\]]" % _CN)
+
+
+def _parse_item_nodes(body: str) -> tuple[list[dict], str]:
+    """条文 body → `(项节点列表, 引导段)`；项内含「目」挂 `items[]`。
+
+    序号**原样保留**（`（一）` / `1`），不重标为「第X条」；键集 = `_node()` 恒定。
+    """
+    t = (body or "").strip()
+    m0 = _ARTICLE_RE.match(t)
+    if m0:
+        t = t[m0.end():].strip()
+    t = _ITEM_CUT_L2.sub(r"\n（\1）", t)
+    t = _ITEM_CUT_L3.sub(r"\n\1.", t)
+    items: list[dict] = []
+    lead: list[str] = []
+    cur2: dict | None = None
+    for raw in t.split("\n"):
+        ln = raw.strip()
+        if not ln:
+            continue
+        m2 = _ITEM_L2_RE.match(ln)
+        m3 = _ITEM_L3_RE.match(ln)
+        if m2:
+            cur2 = _node("项", "（%s）" % m2.group(1))
+            cur2["content"] = m2.group(2).strip()
+            items.append(cur2)
+        elif m3 and cur2 is not None:
+            sub = _node("目", m3.group(1))
+            sub["content"] = m3.group(2).strip()
+            cur2["items"].append(sub)
+        elif cur2 is not None:
+            cur2["content"] = _join_para(cur2["content"], ln)
+        else:
+            lead.append(ln)
+    return items, "\n".join(lead).strip()
+
+
+def parse_article_structure(articles) -> list[dict]:
+    """条文列表 → 行级 `article_structure`（F6）：每个**含条内层级**的条文一个「条」节点。
+
+    只对命中 `（X）` 的条文产出（五源实测 17,795 条 / 107,520 条），避免产物体积翻倍。
+    无条内层级的条文不产出节点（`articles[].body` 已承载原文，不重复）。
+    """
+    out: list[dict] = []
+    for art in articles or []:
+        body = art.get("body") or ""
+        if not _ITEM_ANY_L2.search(body):
+            continue
+        items, lead = _parse_item_nodes(body)
+        if not items:
+            continue
+        node = _node("条", (art.get("number") or "").strip())
+        node["content"] = lead
+        node["items"] = items
+        out.append(node)
+    return out
 
 
 _MODES: tuple[tuple[str, int], ...] = (("notice", 2), ("bulletin", 3), ("plan", 4))
@@ -511,12 +860,25 @@ def _is_structure_line(line: str) -> bool:
 def score_parse(result: dict, text: str) -> dict:
     """模式评分（参考 `ModeScorer`）：coverage 0.5 / legality 0.3 / continuity 0.2。
 
-    适配点：**continuity 取该模式自身结构单元的序号连续性**——law 用 `articles[].no`；
-    层级体（无 articles）用 `structure` 一级节点序号。参考对"无 articles"一律给 0，
-    会使层级体恒低于阈值而失去降级意义。
+    适配点：
+      - **continuity 取该模式自身结构单元的序号连续性**——law 用 `articles[].no`；
+        层级体（无 articles）用 `structure` 一级节点序号。参考对"无 articles"一律给 0，
+        会使层级体恒低于阈值而失去降级意义；
+      - **coverage 计入"结构单元续行"**（2026-09-20，F4 联动）：段落边界保真后一行即
+        一整段正文（旧实现被折叠为单行/句级行），若只认锚行则 coverage 被人为压低，
+        大量真实通知类文档跌破阈值退化为 `plain`（实测 notice 8,154 → 4,950、
+        plain 5,853 → 9,069）。现口径：锚行 + 其后续非锚行均计入覆盖（前者为结构首、
+        后者归属该结构单元）；未被任何结构单元覆盖的**前导行**（标题/前言）不计。
     """
     lines = [ln for ln in (text or "").split("\n") if ln.strip()]
-    matched = sum(1 for ln in lines if _is_structure_line(ln))
+    matched = 0
+    pending = False
+    for ln in lines:
+        if _is_structure_line(ln):
+            matched += 1
+            pending = True
+        elif pending:
+            matched += 1
     coverage = matched / len(lines) if lines else 0.0
 
     nodes = 0
@@ -563,15 +925,26 @@ def parse_document(text: str) -> dict:
     返回（**扁平超集**，兼作 `extract_structure` 的返回形态）：
       {mode, score, all_scores, is_fallback, chapters, articles, chapter_count,
        article_count, structure, structure_count, plain_paragraphs, method,
-       tail_marker, repair}
+       tail_marker, repair, tail_cut, article_structure}
+
+    2026-09-20 增补（问题驱动）：
+      - 入口先做 `normalize_parse_text`（F5a 异常空白/注入空格归一，只读）与
+        `strip_document_tail`（F3 文档级尾部截断），命中信息落 `tail_cut`；
+      - `article_structure`（F6）：law 模式的条内层级（项/目）。
     """
+    empty = {"mode": "empty", "score": {"total": 0.0}, "all_scores": {},
+             "is_fallback": True, "chapters": [], "articles": [], "chapter_count": 0,
+             "article_count": 0, "structure": [], "structure_count": 0,
+             "plain_paragraphs": 0, "method": "regex", "tail_marker": "",
+             "threshold": _THRESHOLD, "tail_cut": {}, "article_structure": [],
+             "repair": {"merged": 0, "merged_nos": [], "reasons": []}}
     if not text or not text.strip():
-        return {"mode": "empty", "score": {"total": 0.0}, "all_scores": {},
-                "is_fallback": True, "chapters": [], "articles": [], "chapter_count": 0,
-                "article_count": 0, "structure": [], "structure_count": 0,
-                "plain_paragraphs": 0, "method": "regex", "tail_marker": "",
-                "threshold": _THRESHOLD,
-                "repair": {"merged": 0, "merged_nos": [], "reasons": []}}
+        return empty
+
+    text = normalize_parse_text(text)               # F5a：解析输入归一（只读）
+    text, tail_cut = strip_document_tail(text)      # F3：文档级尾部截断
+    if not text.strip():
+        return {**empty, "tail_cut": tail_cut}
 
     law_text = segment_body(text)
     law = _parse_law(law_text)
@@ -582,18 +955,22 @@ def parse_document(text: str) -> dict:
     chapters, chfix = fix_chapter_index(law["chapters"], arts)
     if chfix["clamped"]:
         rep["chapter_clamped"] = chfix["clamped"]
+    if law.get("sections"):
+        rep["sections_dropped"] = len(law["sections"])
     law_score = score_parse({"chapters": chapters, "articles": arts}, law_text)
     all_scores = {"law": law_score["total"]}
 
     def _pack(mode: str, res: dict, score: dict, is_fallback: bool) -> dict:
+        arts_ = res["articles"]
         return {"mode": mode, "score": score, "all_scores": all_scores,
                 "is_fallback": is_fallback,
-                "chapters": res["chapters"], "articles": res["articles"],
-                "chapter_count": len(res["chapters"]), "article_count": len(res["articles"]),
+                "chapters": res["chapters"], "articles": arts_,
+                "chapter_count": len(res["chapters"]), "article_count": len(arts_),
                 "structure": res["structure"], "structure_count": len(res["structure"]),
                 "plain_paragraphs": res.get("plain_paragraphs", 0),
                 "method": "regex", "tail_marker": res.get("tail_marker", ""),
-                "threshold": _THRESHOLD, "repair": rep}
+                "threshold": _THRESHOLD, "repair": rep, "tail_cut": tail_cut,
+                "article_structure": parse_article_structure(arts_)}
 
     # ① 主模式（law）一旦出条即采用 —— 保证既有法规文档解析零回归
     if arts:
@@ -626,7 +1003,89 @@ def parse_document(text: str) -> dict:
 
 # --------------------------------------------------------------------------- #
 # 五、条款校验器（参考 `3.1 校验规则清单` + `3.2 核心校验函数` + `3.3 校验输出格式`）
+#      + 2026-09-20 结构语义体检（F7：V008–V010）
 # --------------------------------------------------------------------------- #
+# 结构语义体检判据（唯一实现；clause_index.validate_schema 与 V008–V010 共用）
+_STRUCT_SWALLOW_RE = re.compile(
+    r"^[^。！？，；：]{1,40}(?:[（(][%s]{1,3}[）)]|[%s]{1,3}[、．.](?!\d)).{30,}" % (_CN, _CN))
+_SPACE_CONTAM_RE = re.compile(
+    r"[，；、：,][ \u00a0\u2002\u3000](?=[\u4e00-\u9fff0-9])|[\u00a0\u2002\u3000\u200b\ufeff]")
+_ITEM_L2_ANY = re.compile(r"[（(【\[]\s*[%s]{1,6}\s*[）)】\]]" % _CN)
+
+
+def structure_semantics(row: dict) -> dict:
+    """结构语义体检（2026-09-20 F7）：一次遍历给出四类计数，供 V008–V010 与产物自检共用。
+
+    返回 `{swallowed, tail, space, items}`：
+      swallowed：`structure` 节点 title 内嵌层级序号（短标题段 + 序号 + ≥30 字正文）——
+                 即 2026-09-20 问题一"子层级被吞进父级标题"的判据；
+      tail     ：条文/节点文本仍混入 `附：`/`答记者问`/`此件发至`/「机关名+日期」署名
+                 （问题三-bis、问题四判据）；
+      space    ：文本含「标点 + 空格」或异常空白（NBSP/U+2002/U+3000/零宽）（问题三判据）；
+      items    ：**未抽取条内层级**的条文数（body 含 `（X）` 但无对应 `article_structure`
+                 节点）——F6 落地后应趋近 0。
+    """
+    n = {"swallowed": 0, "tail": 0, "space": 0, "items": 0}
+    astr_nos = {(nd.get("number") or "") for nd in (row.get("article_structure") or [])}
+
+    def _scan(text: str) -> None:
+        if not text:
+            return
+        if any(rx.search(text) for rx in _TAIL_INLINE_RES) or _TAIL_WEB_RE.search(text):
+            n["tail"] += 1
+        else:
+            m = _TAIL_SIGN_RE.search(text)
+            if m and _TAIL_TAIL_OK.match(text[m.end():]):
+                n["tail"] += 1
+        if _SPACE_CONTAM_RE.search(text):
+            n["space"] += 1
+
+    def _walk(nodes, *, structural: bool) -> None:
+        for nd in nodes:
+            if structural and _STRUCT_SWALLOW_RE.match(nd.get("title") or ""):
+                n["swallowed"] += 1
+            _scan(nd.get("title") or "")
+            _scan(nd.get("content") or "")
+            for it in nd.get("items") or []:
+                _scan(it.get("content") or "")
+            _walk(nd.get("children") or [], structural=structural)
+
+    _walk(row.get("structure") or [], structural=True)
+    _walk(row.get("article_structure") or [], structural=False)
+    for a in row.get("articles") or []:
+        body = a.get("body") or ""
+        _scan(body)
+        if _ITEM_L2_ANY.search(body) and (a.get("number") or "") not in astr_nos:
+            n["items"] += 1
+    return n
+
+
+def _sem_of(row: dict) -> dict:
+    """取校验期缓存的语义体检结果（`validate_clauses` 单次遍历注入），缺失即现算。"""
+    return row.get("_semantics") or structure_semantics(row)
+
+
+def _check_structure_integrity(row: dict):
+    sem = _sem_of(row)
+    if sem["swallowed"]:
+        return (False, f"{sem['swallowed']} 个结构节点的标题内嵌层级序号（子层级被吞，"
+                       f"层级未展开）", "WARN")
+    return True, "结构层级完整", None
+
+
+def _check_tail_contamination(row: dict):
+    sem = _sem_of(row)
+    if sem["tail"]:
+        return False, f"{sem['tail']} 处文本混入附件/答记者问/发文署名（尾部未截断）", "WARN"
+    return True, "无尾部污染", None
+
+
+def _check_space_contamination(row: dict):
+    sem = _sem_of(row)
+    if sem["space"]:
+        return False, f"{sem['space']} 处文本含无效空格/异常空白（NBSP 等）", "WARN"
+    return True, "无空白污染", None
+
 # 身份字段（空 ⇒ 产物不可用）；其余 4 项为源数据属性（空 ⇒ WARN，依据见模块 docstring）
 _REQUIRED_STRICT = ("dedup_key", "title")
 _REQUIRED_SOFT = ("source_url", "document_number", "publish_date", "effective_date")
@@ -746,6 +1205,10 @@ CLAUSE_VALIDATION_RULES = (
     ("V005", "章节映射合法性", _check_chapter_mapping, "ERROR"),
     ("V006", "正文非空", _check_body_not_empty, "WARN"),
     ("V007", "RFN有效性", _check_rfn_valid, "WARN"),
+    # 2026-09-20 F7：结构语义三条（原 V001–V007 不读 structure 语义 → 问题一静默通过）
+    ("V008", "结构层级完整性", _check_structure_integrity, "WARN"),
+    ("V009", "尾部污染", _check_tail_contamination, "WARN"),
+    ("V010", "空白污染", _check_space_contamination, "WARN"),
 )
 
 
@@ -755,22 +1218,29 @@ def validate_clauses(row: dict) -> dict:
     `status`：有 ERROR → FAILED；仅 WARN → PASSED_WITH_WARNINGS；否则 PASSED。
     `issues` 最多保留 `_MAX_ISSUES` 条（ERROR 优先）——全量计数另由 error/warn_count 给出，
     避免产物体积被 WARN 噪声放大。
+
+    2026-09-20（F7）：结构语义体检（`structure_semantics`）**单次遍历**后经临时键
+    `_semantics` 供 V008–V010 复用；`finally` 中移除，保证产物行不含该键（键集契约不变）。
     """
     issues: list[dict] = []
     e = w = 0
-    for rid, name, fn, sev_default in CLAUSE_VALIDATION_RULES:
-        try:
-            ok, msg, sev_override = fn(row)
-        except Exception as ex:  # noqa: BLE001  校验异常不得影响产物生成
-            ok, msg, sev_override = False, f"校验异常：{ex!r}", "WARN"
-        if ok:
-            continue
-        sev = sev_override or sev_default
-        if sev not in CLAUSE_ISSUE_SEVERITY:
-            sev = "WARN"
-        e += 1 if sev == "ERROR" else 0
-        w += 1 if sev == "WARN" else 0
-        issues.append({"rule_id": rid, "rule": name, "severity": sev, "message": msg})
+    row["_semantics"] = structure_semantics(row)
+    try:
+        for rid, name, fn, sev_default in CLAUSE_VALIDATION_RULES:
+            try:
+                ok, msg, sev_override = fn(row)
+            except Exception as ex:  # noqa: BLE001  校验异常不得影响产物生成
+                ok, msg, sev_override = False, f"校验异常：{ex!r}", "WARN"
+            if ok:
+                continue
+            sev = sev_override or sev_default
+            if sev not in CLAUSE_ISSUE_SEVERITY:
+                sev = "WARN"
+            e += 1 if sev == "ERROR" else 0
+            w += 1 if sev == "WARN" else 0
+            issues.append({"rule_id": rid, "rule": name, "severity": sev, "message": msg})
+    finally:
+        row.pop("_semantics", None)
     issues.sort(key=lambda x: 0 if x["severity"] == "ERROR" else 1)
     status = "FAILED" if e else ("PASSED_WITH_WARNINGS" if w else "PASSED")
     return {"status": status, "error_count": e, "warn_count": w,
@@ -804,7 +1274,10 @@ def extract_structure(text: str, *, repair: bool = True) -> dict:
         return {"chapters": [], "articles": [], "chapter_count": 0, "article_count": 0,
                 "structure": [], "structure_count": 0, "method": "regex", "tail_marker": "",
                 "mode": "empty", "score": {"total": 0.0}, "is_fallback": True,
+                "tail_cut": {}, "article_structure": [],
                 "repair": {"merged": 0, "merged_nos": [], "reasons": []}}
+    text = normalize_parse_text(text)               # F5a（与 parse_document 同口径）
+    text, tail_cut = strip_document_tail(text)      # F3
     law = _parse_law(segment_body(text))
     if repair:
         arts, rep = repair_articles(law["articles"])
@@ -818,12 +1291,15 @@ def extract_structure(text: str, *, repair: bool = True) -> dict:
     chapters, chfix = fix_chapter_index(law["chapters"], arts)
     if chfix["clamped"]:
         rep["chapter_clamped"] = chfix["clamped"]
+    if law.get("sections"):
+        rep["sections_dropped"] = len(law["sections"])
     return {"chapters": chapters, "articles": arts,
             "chapter_count": len(chapters), "article_count": len(arts),
             "structure": [], "structure_count": 0, "method": "regex",
             "tail_marker": law["tail_marker"], "mode": "law",
             "score": score_parse({"chapters": chapters, "articles": arts}, text),
-            "is_fallback": False, "repair": rep}
+            "is_fallback": False, "repair": rep, "tail_cut": tail_cut,
+            "article_structure": parse_article_structure(arts)}
 
 
 def render_markdown(stru: dict, title: str = "") -> str:
@@ -834,6 +1310,10 @@ def render_markdown(stru: dict, title: str = "") -> str:
       # <title>
       ## 第一章 总则
       **第一条** 条文正文…
+    条内含「项/目」层级的条文按层级缩进渲染（F6，2026-09-20）：
+      **第二十九条** 引导段…
+        - **（一）** …
+            - 1 …
     非条文体（`structure` 非空）渲染为层级列表——
       + **一、** 标题
         - （一）二级标题
@@ -846,14 +1326,14 @@ def render_markdown(stru: dict, title: str = "") -> str:
     chapters = stru.get("chapters") or []
     articles = stru.get("articles") or []
     structure = stru.get("structure") or []
+    as_map = {n.get("number"): n for n in (stru.get("article_structure") or [])}
     if not chapters and not articles and structure:
         for n in structure:
             _render_node(n, lines, 0)
         return "\n".join(lines).strip()
     if not chapters:
         for a in articles:
-            lines.append(f"**{a['number']}** {_article_body(a.get('body', ''))}")
-            lines.append("")
+            _emit_article(a, lines, as_map)
         return "\n".join(lines).strip()
     # 章边界：chapter.article_index 为该章首条在 articles 的索引
     bounds = [c.get("article_index", 0) for c in chapters]
@@ -865,11 +1345,25 @@ def render_markdown(stru: dict, title: str = "") -> str:
         lines.append(f"## 第{ch_no}章 {ch_title}".rstrip())
         lines.append("")
         for a in articles[start:end]:
-            lines.append(f"**{a.get('number', '')}** {_article_body(a.get('body', ''))}")
-            lines.append("")
+            _emit_article(a, lines, as_map)
     # 兜底：无任何章（前面已 return）或最后一个章未覆盖到尾部时的章外条文
     # （正常时最后章 end=len(articles) 已覆盖，无需重复追加）
     return "\n".join(lines).strip()
+
+
+def _emit_article(a: dict, out: list[str], as_map: dict) -> None:
+    """条文 → MD 行（F6：有条内层级时按「项/目」缩进；否则平铺原文）。"""
+    num = a.get("number", "")
+    node = as_map.get(num) if num else None
+    if node and node.get("items"):
+        out.append(f"**{num}** {node.get('content') or ''}".rstrip())
+        for it in node.get("items") or []:
+            out.append(f"  - **{it.get('number', '')}** {it.get('content', '')}".rstrip())
+            for sub in it.get("items") or []:
+                out.append(f"    - {sub.get('number', '')} {sub.get('content', '')}".rstrip())
+    else:
+        out.append(f"**{num}** {_article_body(a.get('body', ''))}")
+    out.append("")
 
 
 def _render_node(node: dict, out: list[str], depth: int) -> None:

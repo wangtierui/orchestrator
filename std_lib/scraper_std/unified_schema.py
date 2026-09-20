@@ -281,6 +281,25 @@ _NFRA_URL_FRAG = re.compile(
     re.I)
 
 
+# nfra 站点特有去噪②（2026-09-20 相邻项）：正文首部**重复导语**（主送机关整段重复两次）。
+# 实测 nfra 82/1939 份，其余四源 0 份：
+#   `各金融监管局，…：各金融监管局，…：为贯彻落实…`
+_DUP_LEAD_RE = re.compile(r"^(.{10,300}?[：:])\1", re.S)
+
+
+def dedup_webpage_lead(text: str) -> str:
+    """消除网页正文首部**重复导语**：同一段（≤300 字、以「：」结尾）连续出现两次时保留一份。
+
+    仅作首部判定（`^` 锚定 + 定长 + 冒号结尾），不触碰正文中后部的合法重复表述。
+    """
+    if not text:
+        return text
+    m = _DUP_LEAD_RE.match(text)
+    if not m:
+        return text
+    return (m.group(1) + text[m.end():]).lstrip()
+
+
 def strip_nfra_url_fragments(text: str) -> str:
     """移除 nfra 正文尾部站点 URL 残渣（7.1 去噪：页面导航/页脚无关文本）。
     仅剥离空白，保留合法句末标点（。！？等）。"""
@@ -294,7 +313,7 @@ def map_nfra(rec: dict[str, Any], clean_version: str, captured_at: str = "") -> 
     index_no = empty_str(rec.get("index_no") or rec.get("doc_id"))
     source_url = empty_str(rec.get("detail_url"))
     m = _mk_meta(rec, source_url, "nfra", clean_version, captured_at)
-    body = strip_nfra_url_fragments(empty_str(rec.get("content")))
+    body = dedup_webpage_lead(strip_nfra_url_fragments(empty_str(rec.get("content"))))
     doc_url = empty_str(rec.get("doc_file_url") or rec.get("pdf_file_url") or "")
     return {
         "index_no": index_no,

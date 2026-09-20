@@ -9,13 +9,25 @@ modules.regulatory_scrapers.clause_index — 五源 clean 条文抽取固定节�
 对称 clean_index：build（增量，仅当 clean 快照新于产物）→ data/clauses/{src}_clauses_{date}.jsonl
 （每行=一份文件的条款结构）+ clause_index_state.json（快照日期登记）。
 
-产物行 schema（F-D10 补 4 维 + 2026-09-18 解析适配补 7 维）：
+产物行 schema（F-D10 补 4 维 + 2026-09-18 解析适配补 7 维 + 2026-09-20 条内层级 1 维）：
   {dedup_key, source_url, document_number, title,
    rfn, timeliness_status, publish_date, effective_date,
    chapter_count, article_count,
    chapters:[{no,title,article_index}], articles:[{no,number,body}],
    parse_mode, parse_score, parse_meta, is_fallback,
-   structure:[{level,number,title,content,items,children}], structure_count, validation}
+   structure:[{level,number,title,content,items,children}], structure_count, validation,
+   article_structure:[{level:条,number,title,content,items:[{level:项,...}],children}]}
+
+2026-09-20 六类缺陷修复（问题驱动；详见 reports 排查报告）：
+  - **锚切分（F1）**：`segment_outline`/`segment_body` 后接 `resplit_embedded_anchors`
+    段内二次切分 —— 修复「二、基本原则（一）服务…」中 `（一）` 被吞（缺失子节点）；
+  - **标题·正文分离（F2）**：`_split_node_title_body` —— 修复「（一）总体目标 借鉴…」
+    整段正文进 `title`、「五、发行人应充分…」无标题却被写成 title；
+  - **文档级尾部截断（F3）**：`strip_document_tail` —— 修复条款内混入
+    `附：/答记者问/发文机关+日期/联合发布网页噪声`，留痕 `parse_meta.tail_cut`；
+  - **解析输入归一（F5a）**：`normalize_parse_text` —— NBSP/注入型空格归一（只读，不写回事实源）；
+  - **条内层级（F6）**：`parse_article_structure` —— law 条文内「项/目」带 level（`article_structure`）；
+  - **检核增强（F7）**：V008 结构完整性 / V009 尾部污染 / V010 空白污染。
 
 2026-09-18 解析适配（问题驱动）：
   - **空解析**：通知/公告/批复类正文无「第X条」，旧实现产出 `article_count=0 / articles=[]`
@@ -253,10 +265,19 @@ def build_clause_index(rebuild: bool = False) -> dict:
                         "plain_paragraphs": stru.get("plain_paragraphs", 0),
                         "tail_marker": stru.get("tail_marker", ""),
                         "repair": stru.get("repair", {}),
+                        # F3（2026-09-20）：文档级尾部截断留痕 {marker, at, removed}
+                        "tail_cut": stru.get("tail_cut", {}),
                     },
                     "is_fallback": stru["is_fallback"],
                     "structure": stru["structure"],
                     "structure_count": stru["structure_count"],
+                    # F6（2026-09-20）：条内层级（项/目）；`articles[].body` 原文保真不动。
+                    # 条号同步做「去内部空格」归一——与 `articles[].number` 同规则，
+                    # 否则源端「第 五十八条」会导致 article_structure 与 articles 键不可对应。
+                    "article_structure": [
+                        {**n, "number": re.sub(r"\s+", "", n.get("number", "") or "")}
+                        for n in (stru.get("article_structure") or [])
+                    ],
                 }
                 row["validation"] = validate_clauses(row)   # V001–V007（在行装配完成后执行）
                 fout.write(json.dumps(row, ensure_ascii=False) + "\n")
@@ -278,16 +299,23 @@ def build_clause_index(rebuild: bool = False) -> dict:
 
 
 def validate_schema() -> dict:
-    """产物契约自检（字段统一性 + 条号形态 + 解析适配字段；契约 interfaces.contract.CLAUSE_*）。
+    """产物契约自检（字段统一性 + 条号形态 + 解析适配字段 + 结构语义；契约 CLAUSE_*）。
 
     2026-09-18 增补：解析适配 7 字段的键集/类型/枚举校验，以及 `structure` 节点键集、
     `validation` 严重度闭包——使 3.x 校验器与 5.x 修复件的产物被**门禁级**断言守住。
+    2026-09-20 增补（F6/F7）：`article_structure` 键集/level 闭包/条号可对应，
+    `structure` 节点 level 闭包，以及**结构语义计数**（title_swallow / tail_contam /
+    space_contam / law_items）——后者是"问题一曾被静默放过"的直接堵漏（e2e 断言指标上限）。
     """
-    from config.enums import CLAUSE_ISSUE_SEVERITY, CLAUSE_PARSE_MODES  # noqa: PLC0415
+    from config.enums import (  # noqa: PLC0415
+        CLAUSE_ISSUE_SEVERITY, CLAUSE_PARSE_MODES, CLAUSE_STRUCTURE_LEVELS)
     from interfaces import contract  # noqa: PLC0415
+    from std_lib.scraper_std.document_structure import structure_semantics  # noqa: PLC0415
     problems = []
     stat = {"files": 0, "articles": 0, "chapters": 0, "structures": 0,
-            "law": 0, "degraded": 0, "fallback": 0, "invalid": 0, "warned": 0}
+            "law": 0, "degraded": 0, "fallback": 0, "invalid": 0, "warned": 0,
+            "article_structures": 0, "item_nodes": 0,
+            "title_swallow": 0, "tail_contam": 0, "space_contam": 0, "law_items": 0}
     line_f = set(contract.CLAUSE_LINE_FIELDS)
     art_f = set(contract.CLAUSE_ARTICLE_FIELDS)
     ch_f = set(contract.CLAUSE_CHAPTER_FIELDS)
@@ -331,6 +359,37 @@ def validate_schema() -> dict:
                 stat["structures"] += 1
                 if set(n.keys()) != st_f:
                     problems.append(f"{s} structure 节点键漂移: {sorted(set(n.keys()) ^ st_f)[:4]}")
+                if n.get("level") not in CLAUSE_STRUCTURE_LEVELS:
+                    problems.append(f"{s} structure level 越界: {n.get('level')!r}")
+            # ---- 2026-09-20 条内层级（F6）----
+            art_nos = {(a.get("number") or "") for a in (cl.get("articles") or [])}
+            astr = cl.get("article_structure")
+            if not isinstance(astr, list):
+                problems.append(f"{s} article_structure 非 list")
+                astr = []
+            for n in astr:
+                stat["article_structures"] += 1
+                if set(n.keys()) != st_f:
+                    problems.append(f"{s} article_structure 键漂移: {sorted(set(n.keys()) ^ st_f)[:4]}")
+                if n.get("level") != "条":
+                    problems.append(f"{s} article_structure 顶层 level 非「条」: {n.get('level')!r}")
+                if (n.get("number") or "") not in art_nos:
+                    problems.append(f"{s} article_structure 条号无对应条文: {n.get('number')!r}")
+                for it in n.get("items") or []:
+                    stat["item_nodes"] += 1
+                    if it.get("level") != "项":
+                        problems.append(f"{s} 项节点 level 非「项」: {it.get('level')!r}")
+                    if it.get("level") not in CLAUSE_STRUCTURE_LEVELS:
+                        problems.append(f"{s} 项节点 level 越界: {it.get('level')!r}")
+                    for sub in it.get("items") or []:
+                        if sub.get("level") != "目":
+                            problems.append(f"{s} 目节点 level 非「目」: {sub.get('level')!r}")
+            # ---- 结构语义指标（F7：问题一/三/四的堵漏指标）----
+            sem = structure_semantics(cl)
+            stat["title_swallow"] += sem["swallowed"]
+            stat["tail_contam"] += sem["tail"]
+            stat["space_contam"] += sem["space"]
+            stat["law_items"] += sem["items"]
             for a in cl.get("articles") or []:
                 stat["articles"] += 1
                 if set(a.keys()) != art_f:

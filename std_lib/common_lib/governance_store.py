@@ -184,7 +184,7 @@ CREATE TABLE IF NOT EXISTS theme_assign(
   synced_at  TEXT NOT NULL DEFAULT ''
 );
 
--- ⚠️ 主键为**合成行键** `row_key`，**不是** `relation_id`：
+-- ⚠️ 主键为**合成行键** `row_key`，**不是** `relation_id`（纵深防御，保留）：
 -- 实测（2026-09-18）`relations_index.jsonl` 5266 行仅有 4859 个不同 `relation_id`
 -- （366 个 id 命中 2 次、共 407 行内容互不相同）——`relation_id` 在事实源中
 -- **并非唯一**（与 contract 注释"稳定去重键"的实际语义有出入，已登记为待治理项）。

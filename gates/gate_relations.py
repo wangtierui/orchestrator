@@ -18,6 +18,9 @@ classifier 报告、base 关联（merged）、drafter 起草素材共同消费�
 5. **溯源字段非空**：`source_snippet` / `generated_by` / `generated_at`（关系须可回溯到正文出处）；
 6. **源侧可识别**：`src_ref` 或 `src_key` 至少一个非空；
 7. **统计一致性**：`relations_stat.json` 的 `total` 与 `by_kind` 计数须与实际行数一致；
+9. **`relation_id` 唯一性（2026-09-20 追加）**：事实源主键语义成立（行数 == 不同 id 数）。
+   动因：旧 id 派生式遗漏判别字段（article/action/scope/reason…）→ 同一 id 命中多行；
+   extractor 1.1 起纳入全部判别字段并做确定性唯一化，本判据防其再次静默复发。
 8. **产物新鲜度（2026-09-14 追加）**：关系产物**不得早于其数据面输入**
    （五源 cleaned 最新 JSONL / `internal_policy_index.json` / `processed/*_fulltext.json` / 归属表 CSV）。
    **动因**：消费面（merged 引用原语、drafter 关系素材、交付库 2.1.2.4·2.1.2.5 关系报告）
@@ -209,6 +212,18 @@ def run():
         problems.append(f"溯源字段为空的关系 {trace_missing} 条（source_snippet/generated_* 须非空）")
     if src_unidentified:
         problems.append(f"源侧不可识别的行 {src_unidentified} 条（src_ref 与 src_key 皆空）")
+    # 判据 9（2026-09-20 追加）：**relation_id 唯一性** —— 事实源键语义必须成立。
+    # 动因：旧派生式（5 元组）遗漏 article/action/scope/reason 等判别字段 → 5266 行仅 4859 个 id，
+    # 迫使治理库改用合成 row_key 主键（行数保全但 id 失真）。extractor 1.1 起已纳入并做确定性
+    # 唯一化；本判据使该缺陷**不可能再次静默出现**。
+    rid_seen: dict[str, int] = {}
+    for r in rows:
+        rid = r.get("relation_id") or ""
+        rid_seen[rid] = rid_seen.get(rid, 0) + 1
+    dup_ids = sorted(x for x, v in rid_seen.items() if v > 1)
+    if dup_ids:
+        problems.append(f"relation_id 不唯一：{len(dup_ids)} 个 id 命中多行"
+                        f"（示例 {dup_ids[:3]}）—— 关系 id 派生须纳入全部判别字段")
     if unresolvable:
         problems.append(f"强引用不可解析 {len(unresolvable)} 条（示例 {unresolvable[:5]}）")
     if not stat_ok:
@@ -249,6 +264,9 @@ def run():
         "dst_ref_rows": len(refs),
         "unresolvable_refs": len(unresolvable),
         "stat_consistent": stat_ok,
+        # 判据 9：relation_id 唯一性（2026-09-20）
+        "relation_id_distinct": len(rid_seen),
+        "relation_id_dups": len(dup_ids),
         "extractor_version": stat.get("extractor_version"),
         "resolved_to_entity_ratio": stat.get("resolved_to_entity_ratio"),
         "located_in_corpus_ratio": stat.get("located_in_corpus_ratio"),
@@ -258,6 +276,7 @@ def run():
         "freshness": {"watermark": wm_state, "watermark_detail": wm_detail,
                       "cross_check": cross_check},
         "note": "判据=事实源存在 + 键集⊇契约 + 受控枚举闭包 + 强引用可解析 + 溯源非空 + 统计一致"
+                " + relation_id 唯一（2026-09-20）"
                 " + 产物新鲜度（阶段 4：水位优先，mtime 降为交叉校验）",
     }
     return (not problems), detail

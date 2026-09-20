@@ -253,6 +253,18 @@ class TestRelationsProducts:
             by_kind[r["relation"]] = by_kind.get(r["relation"], 0) + 1
         assert s["relations"]["by_kind"] == by_kind
 
+    def test_relation_id_is_unique(self):
+        """关系 id 唯一（2026-09-20 修复）：id 派生须纳入 article/action/scope 等判别字段。"""
+        from interfaces.relations_api import load, stat
+        rows = load("all")
+        ids = [r["relation_id"] for r in rows]
+        assert len(ids) == len(set(ids)), \
+            f"relation_id 不唯一：{len(ids)} 行 / {len(set(ids))} 个 id"
+        info = (stat() or {}).get("relation_id") or {}
+        if info:
+            assert info.get("rows") == len(rows)
+            assert info.get("distinct") == len(set(ids))
+
     def test_unresolved_rows_keep_original_text_never_fabricate(self):
         """未解析者必须保留原文名称（**禁止臆造 RFN**）——drafter 引用核验同纪律。"""
         from interfaces.relations_api import load
