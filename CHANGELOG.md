@@ -1,5 +1,56 @@
 # Changelog
 
+## [Unreleased] 2026-09-21 — 时效验证续跑（五源）+ 全链条下游刷新
+
+> 任务：对**尚未完成时效验证**的五源数据续跑，并完成该模块数据/脚本变动所需的下游刷新。
+> 承接 2026-09-19（当日 gov 遭外部网关阻断）——本轮**网关恢复**，核验家族三脚本并行推进。
+
+### 一、续跑结果（`timeliness_review` 三脚本 + 断点续跑）
+
+| 脚本 | 续跑前 | 续跑后 | 本批新判定 |
+| :--- | ---: | ---: | --- |
+| `verify_missing`（gov） | 断点 203 行 / 成功 63 | 断点 **645 行 / 成功 463** | **18 条**（valid 14 / amended 3 / repealed 1）+ `nomatch` 442 |
+| `classifier_pkulaw_verify`（归属表未查验） | 待查验 72 | 待查验 **7** | **2 条**（`法释〔2013〕14号` valid→amended、`国务院令第765号` pending→valid） |
+| `authority_backfill`（非权威来源权威复核） | — | — | **31 条**（nfra 28 = valid 24/repealed 4；mof 1 / pbc 1 / supp 1） |
+
+- 其余四源：nfra / supp 待核 **0**（已清）；pbc 2、mof 547 属**已核验但法宝无同名命中**
+  （`nomatch` 为正常结论，**非 backlog**，按设计不写判定）。
+- `classifier_pkulaw_verify` 产出经**统一单点写口**落库：归属表同步 **2 条** + 五源 cleaned 三字段 **2 处**。
+- **限流特征（外部约束，非代码缺陷）**：单批次放行约 150–260 次新查询后即进入限流，
+  由「连续 15 次认证失败自动停止」风控红线收口 → **全程未误写任何判定**（R13 降级纪律）。
+
+### 二、落地与下游刷新
+
+- `consolidate_timeliness --use-state` → 全量清单 **3,727 条**（种子 3009 / 新增 718 / 应用 57 / 确认 819）；
+- `rfn_backlog --sync-timeliness --apply`：SSOT **14,796** 条 → 归属表 **3 行**（键精确）；
+- 编排链阶段 2 `apply_timeliness_to_cleaned` 五源回写，并经 **2026-09-19 新增的"条款产物同轮刷新"**
+  把判定投影进条款产物（gov `valid` 325→**339**、`repealed` 0→**1**；五源时效投影合计 **3,501** 条）；
+- **全链条 22 步全 rc=0**（1,374 s）；`cli.py gates` **18/18 PASS**；`pytest` 全通过；
+  `gen_benchmark` 已刷新（`state=14797`、`merged=878`）；关系表 5,266 → **5,272** 行
+  （时效判定带动废止关系重算）。
+
+### 三、残余（外部配额约束，断点在手可续跑）
+
+| 项 | 残余 | 性质 |
+| :--- | ---: | :--- |
+| `verify_missing` gov | **12,567** | 真 backlog（其中约 94% 判为 `nomatch` 型） |
+| `authority_backfill` | **15,258**（gov 12,577 / mof 708 / nfra 1,429 / pbc 535 / supp 9） | 待配额续跑 |
+| `classifier_pkulaw_verify` | **7** | 待配额续跑 |
+
+**一键续跑**（配额恢复后；断点自动续、幂等）：
+
+```powershell
+python modules\regulatory_scrapers\timeliness_review\run_timeliness_resume.py --only gov   # 五源编排（gov 最低优先级）
+python modules\regulatory_scrapers\timeliness_review\classifier_pkulaw_verify.py --retry-failed
+python modules\regulatory_scrapers\timeliness_review\authority_backfill_verify.py --source all --retry-failed
+python modules\regulatory_scrapers\timeliness_review\authority_backfill_verify.py --source all --judge-only  # 零配额补齐
+python tools\rfn_backlog.py --sync-timeliness --apply
+python tools\run_production_refresh.py --no-scrape
+```
+
+> 时效运行产物（`verification_state.json` / `*_checkpoint.jsonl` / `时效核验_*变更台账_*.csv` /
+> `时效性标注结果清单_*`）按 `.gitignore` **刻意不入库**（数据以本地文件 + 门禁校验为准）。
+
 ## [Unreleased] 2026-09-20 — 条款产物六类缺陷修复（F1–F7）+ 三项相邻问题 + 全链刷新
 
 > 用户指令：针对 `nfra_clauses_20260919.{md,jsonl}` 的六类问题排查五源数据、锁定根因并出具修复方案；

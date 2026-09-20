@@ -1,6 +1,6 @@
 # BENCHMARK —— 交付基准登记（回归对照基线）
 
-> 自动生成：tools/gen_benchmark.py @ 2026-09-19 02:19:53 | python 3.13.14
+> 自动生成：tools/gen_benchmark.py @ 2026-09-21 00:40:22 | python 3.13.14
 > 用途：数据重建/重构后重跑 `python tools/gen_benchmark.py` 刷新；数值漂移即回归信号。
 
 ## 1 门禁（gates/ALL_GATES）
@@ -42,11 +42,11 @@
 
 | 源 | 快照日期 | 备注 |
 |---|---|---|
-| gov | 20260919 | 最新 cleaned |
-| mof | 20260919 | 最新 cleaned |
-| nfra | 20260919 | 最新 cleaned |
-| pbc | 20260919 | 最新 cleaned |
-| supp | 20260919 | 最新 cleaned |
+| gov | 20260921 | 最新 cleaned |
+| mof | 20260921 | 最新 cleaned |
+| nfra | 20260921 | 最新 cleaned |
+| pbc | 20260921 | 最新 cleaned |
+| supp | 20260921 | 最新 cleaned |
 | 合计 | — | 索引记录 16617 |
 
 ### 3.2 classifier 底座/明细/桥（数据血缘 R10 已注入 generated_*）
@@ -59,7 +59,7 @@
 | final 底座合计（含 cluster/finalized 血缘） | 1073 |
 | 明细表份数 / 行数合计 | 11 / 1162 |
 | RFN↔clean 溯源桥行数 | 943 |
-| 时效核验 verification_state 记录 | 14769 |
+| 时效核验 verification_state 记录 | 14797 |
 | 各主题 final 记录数 | T1=196、T2=150、T3=76、T4=109、T5=142、T6=66、T7=35、T8=78、T9=78、T10=143 |
 
 ### 3.3 internal 制度库
