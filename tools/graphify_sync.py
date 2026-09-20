@@ -9,10 +9,14 @@ tools/graphify_sync — 让 graphify 产物跟随本仓 git 提交同步更新�
     固化成 git hook，保证**图与 HEAD 一致**。
 
 同步动作（无 LLM、无 API 成本）：
-    1) `graphify update .`  —— 增量重抽代码 AST、重聚类、重写 graph.json / GRAPH_REPORT.md /
-       graph.html（只解析代码，不调用模型）；
-    2) `tools/graphify_offline_html.py` —— 重新本地化 vis-network 依赖（`graphify update`
-       会把 graph.html 的 <script> 还原成 unpkg CDN，不重跑补丁就会白屏）。
+    1) `graphify update .`        —— 增量重抽代码 AST（含 .md 链接与 # NOTE: 依据节点），
+       重写 graph.json / GRAPH_REPORT.md / graph.html；
+    2) `graphify cluster-only .`  —— 重算社区，刷新 .graphify_analysis.json（god node / 内聚度）
+       与社区标签，消除 "analysis sidecar is stale" 告警；
+    3) `graphify export html --node-limit N` —— **节点数 >5000 时 graphify 默认把 graph.html
+       退化为社区聚合视图**（实测 5047 节点 → 只剩 346 社区节点），此处强制全节点交互视图；
+    4) `tools/graphify_offline_html.py` —— 重新本地化 vis-network 依赖（graphify 每次重写
+       graph.html 都会把 <script> 还原成 unpkg CDN，不重跑补丁就会白屏）。
 
 hook 形态（**后台执行**，不拖慢 commit / checkout）：
     post-commit    —— 提交后刷新（图跟随本次提交）
@@ -40,6 +44,9 @@ HOOK_DIR = os.path.join(ROOT, ".git", "hooks")
 GRAPH_DIR = os.path.join(ROOT, "graphify-out")
 SYNC_LOG = os.path.join(GRAPH_DIR, "sync.log")
 PATCH_TOOL = os.path.join(ROOT, "tools", "graphify_offline_html.py")
+# graph.html 的节点上限：超过该值 graphify 会退化为社区聚合视图（丢全节点交互图），
+# 用 --node-limit 提高阈值。可用环境变量覆盖，便于超大图时下调以控制 html 体积。
+NODE_LIMIT = os.environ.get("GRAPHIFY_HTML_NODE_LIMIT", "20000")
 
 BEGIN = "# >>> graphify-sync (managed by tools/graphify_sync.py) >>>"
 END = "# <<< graphify-sync <<<"
@@ -67,22 +74,35 @@ def _sh_path(path: str) -> str:
 
 
 def run_sync(quiet: bool = False) -> int:
-    """执行一次同步：graphify update + graph.html 本地化补丁。"""
+    """执行一次同步：update + cluster-only + 全节点 html 导出 + 本地化补丁。"""
     exe = find_graphify()
     if not exe:
         print("[FAIL] 未找到 graphify 可执行文件（期望 ~/.local/bin/graphify，"
               "或先 uv tool install graphifyy）")
         return 1
 
-    if not quiet:
-        print("[1/2] graphify update . （AST 增量重抽，无 API 成本）")
-    rc = subprocess.run([exe, "update", "."], cwd=ROOT).returncode
-    if rc != 0:
-        print("[FAIL] graphify update 返回 rc=%d —— 图谱未刷新，保留上一版" % rc)
-        return rc
+    # 注意：graph.html 默认在节点数 >5000 时**退化为社区聚合视图**（346 节点），
+    # 会丢掉可交互的全节点图；--node-limit 提高阈值即恢复全节点视图。
+    steps = [
+        ("graphify update .（AST 增量重抽，无 API 成本）", [exe, "update", "."]),
+        ("graphify cluster-only .（刷新社区与分析 sidecar）", [exe, "cluster-only", "."]),
+        ("graphify export html --node-limit %s（强制全节点视图）" % NODE_LIMIT,
+         [exe, "export", "html", "--node-limit", NODE_LIMIT]),
+    ]
+
+    total = len(steps) + 1
+    for idx, (desc, cmd) in enumerate(steps, start=1):
+        if not quiet:
+            print("[%d/%d] %s" % (idx, total, desc))
+        rc = subprocess.run(cmd, cwd=ROOT).returncode
+        if rc != 0:
+            if idx == 1:  # update 是根步骤：失败即中止，保留上一版图谱
+                print("[FAIL] graphify update 返回 rc=%d —— 图谱未刷新，保留上一版" % rc)
+                return rc
+            print("[WARN] %s 返回 rc=%d（图谱本体已刷新，继续）" % (desc, rc))
 
     if not quiet:
-        print("[2/2] graph.html 依赖本地化（防止回归为 unpkg CDN 白屏）")
+        print("[%d/%d] graph.html 依赖本地化（防止回归为 unpkg CDN 白屏）" % (total, total))
     rc = subprocess.run([sys.executable, PATCH_TOOL, "--check"], cwd=ROOT).returncode
     if rc != 0:
         rc = subprocess.run([sys.executable, PATCH_TOOL], cwd=ROOT).returncode
