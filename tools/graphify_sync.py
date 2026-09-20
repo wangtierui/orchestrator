@@ -113,6 +113,8 @@ def hook_block() -> str:
         "%s\n"
         '# 提交/检出后后台刷新 graphify 派生产物（图跟 HEAD 走；日志 graphify-out/sync.log）\n'
         'export PATH="$HOME/.local/bin:$PATH"\n'
+        '# 日志固定 UTF-8（否则 Git Bash 下 python stdout 走 GBK，中文状态行变乱码）\n'
+        'export PYTHONIOENCODING=utf-8\n'
         'mkdir -p "%s"\n'
         '"%s" "%s" --quiet >> "%s" 2>&1 &\n'
         "%s\n"
