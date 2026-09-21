@@ -1,6 +1,6 @@
 # BENCHMARK —— 交付基准登记（回归对照基线）
 
-> 自动生成：tools/gen_benchmark.py @ 2026-09-21 00:40:22 | python 3.13.14
+> 自动生成：tools/gen_benchmark.py @ 2026-09-21 21:13:14 | python 3.13.14
 > 用途：数据重建/重构后重跑 `python tools/gen_benchmark.py` 刷新；数值漂移即回归信号。
 
 ## 1 门禁（gates/ALL_GATES）
