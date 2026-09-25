@@ -172,6 +172,199 @@ def _check_tools(manifest: dict) -> tuple[list[str], dict, list[str]]:
     return problems, detail, warnings
 
 
+# P2-5 待接的产生方（v2 §3.14.3 已登记 kind，但产生方尚未实装）——只披露、不阻断。
+# 接入后须同步删除本集合（gate 会提示）。
+_PENDING_PRODUCERS = {
+    "rfn_theme_uncertain",    # D1 tools/rfn_backlog.py（v2 §3.14.5 归 P2-5）
+    "internal_unaligned",     # D2 internal_policy_base/align.py（D2 归 P2-5）
+    "relevance_boundary",     # D6 filter_clean_relevance.py（relevance/ 当前"有产出无消费"）
+    "corpus_needs_review",    # §3.12.6 tools/inbox_scan.py（P2-3b）
+    "ingest_quota_blocked",   # 配额阻断显式化（随 P2-1 触发链）
+}
+
+# ⚠️ 刻意**不用正则、不用任何反斜杠转义**：本仓的编辑/同步链路会把 new_str 里的反斜杠
+# 二次转义（实测：正则 `\(` 落盘为 `\\(` → 语义变成"字面反斜杠 + 分组"，全部漏匹配；
+# 字符集 `" \t\r\n"` 落盘为字面 `\t\r\n` 四字符 → 跳过空白失效）。故此处一律改用
+# `str.find` + `str.isspace()` 等**零转义**原语。
+_WL_MARK = "worklist_add("
+_WL_QUOTES = ('"', "'")
+
+
+def _wl_kinds_in(text: str) -> list[str]:
+    """提取 `worklist_add(<quote>kind<quote>` 中的 kind 字面量（零转义实现）。"""
+    out: list[str] = []
+    start = 0
+    while True:
+        i = text.find(_WL_MARK, start)
+        if i < 0:
+            return out
+        j = i + len(_WL_MARK)
+        while j < len(text) and text[j].isspace():   # 覆盖空格/制表/换行/CR
+            j += 1
+        if j < len(text) and text[j] in _WL_QUOTES:
+            q = text[j]
+            k = text.find(q, j + 1)
+            if k > 0:
+                cand = text[j + 1:k]
+                # 用标识符判定而非逐字符 islower()：kind 里可能含**数字**
+                # （如 `rfn_clean_drift_c2` 的 `2` 不满足 islower() → 曾被漏匹配）
+                if cand and cand.isidentifier() and cand == cand.lower():
+                    out.append(cand)
+                j = k
+        start = j + 1
+
+
+def _check_worklist() -> tuple[list[str], dict]:
+    """J7：`WORKLIST_KIND` 与产生方**双向闭合**（v2 §3.14.3 判据 ②）。
+
+    - 代码里出现的 `worklist_add("<kind>", …)` 字面量必须已登记（防"只写队列不登记"）；
+    - 每个已登记 kind 必须有产生方（`_PENDING_PRODUCERS` 为 P2-5 待接清单，只披露）。
+    """
+    problems: list[str] = []
+    detail: dict = {}
+    from config.enums import WORKLIST_KIND  # noqa: PLC0415
+
+    used: dict[str, list[str]] = {}
+    for dirpath, dirnames, filenames in os.walk(ROOT):
+        # `tests` 必须排除：单测会**故意**写入未登记 kind（覆盖软校验负例）并调用
+        # 待接的 kind（覆盖队列行为）——若纳入扫描，"产生方"判据会被测试夹具假命中
+        # （实测：tests/test_governance_worklist.py 的 `some_new_kind` 曾使 J7 误报）。
+        dirnames[:] = [d for d in dirnames
+                       if d not in {".git", "__pycache__", ".pytest_cache", "data",
+                                    "reports", "graphify-out", "external", "backups",
+                                    ".ruff_cache", ".codebuddy", "retired", "tests"}]
+        for fn in filenames:
+            if not fn.endswith(".py"):
+                continue
+            fp = os.path.join(dirpath, fn)
+            try:
+                text = open(fp, encoding="utf-8", errors="replace").read()
+            except OSError:
+                continue
+            for kind in _wl_kinds_in(text):
+                rel = os.path.relpath(fp, ROOT).replace(os.sep, "/")
+                used.setdefault(kind, []).append(rel)
+
+    literal_kinds = set(used)
+    unregistered = sorted(literal_kinds - WORKLIST_KIND)
+    if unregistered:
+        problems.append(
+            f"J7: 代码写入未登记的 worklist kind {unregistered}"
+            "（须先加入 config.enums.WORKLIST_KIND）")
+    missing = sorted(k for k in WORKLIST_KIND
+                     if k not in literal_kinds and k not in _PENDING_PRODUCERS)
+    if missing:
+        problems.append(f"J7: 已登记 kind 缺产生方 {missing}（或移入 _PENDING_PRODUCERS 并注明期次）")
+    pending_hit = sorted(k for k in _PENDING_PRODUCERS if k in literal_kinds)
+    if pending_hit:
+        problems.append(f"J7: {pending_hit} 已接入产生方，须从 _PENDING_PRODUCERS 移除")
+    detail["worklist"] = {
+        "declared": len(WORKLIST_KIND),
+        "wired": sorted(literal_kinds & WORKLIST_KIND),
+        "pending": sorted(_PENDING_PRODUCERS),
+        "producers": {k: sorted(set(v)) for k, v in sorted(used.items())},
+    }
+    return problems, detail
+
+
+def _check_corpus() -> tuple[list[str], dict]:
+    """J8：语料分层自洽（v2 §3.12 / P2-3a，决策 D-9）。
+
+    判据（每条都对应一个已发生的真实缺陷）：
+      J8.1 `modules/**/data/corpus` 不得存在 —— 归属不当（挂"采集"模块下却服务 ipb 去重）
+      J8.2 `_index.json` 每域在 `data/corpus/<domain>/` 有本体目录
+      J8.3 **清单条数 == 本体文件数** —— 实测曾漂移 586 条（源侧含中间目录、本体已拍平 → N-14）
+      J8.4 域内不得残留 `_ingest_manifest.json` —— 清单唯一源 = `reports/corpus/`（F2 防回归）
+      J8.5 `hash_mode == "sha256"` 且 sha256 非空率 100% —— F1（历史 `--no-hash` 致空哈希）
+    """
+    problems: list[str] = []
+    detail: dict = {"domains": {}, "index": os.path.join("reports", "corpus", "_index.json")}
+    corpus = paths.CORPUS_DIR
+    man_dir = os.path.join(paths.REPORTS_DIR, "corpus")
+    idx_path = os.path.join(man_dir, "_index.json")
+
+    # J8.1 旧落点不得残留
+    for pkg_dir in (paths.MODULES_DIR,):
+        for dirpath, dirnames, _fns in os.walk(pkg_dir):
+            if "data" not in dirnames:
+                continue
+            legacy = os.path.join(dirpath, "data", "corpus")
+            if os.path.isdir(legacy):
+                rel = os.path.relpath(legacy, ROOT).replace(os.sep, "/")
+                problems.append(f"J8.1: 旧语料落点仍存在 {rel}（本体应统一在 data/corpus/）")
+
+    if not os.path.isdir(corpus):
+        return problems, {**detail, "note": "data/corpus/ 尚未创建（P2-3a 未执行或未归集）"}
+    if not os.path.exists(idx_path):
+        problems.append("J8: 缺少 reports/corpus/_index.json（唯一可审计入口）")
+        return problems, detail
+
+    try:
+        with open(idx_path, encoding="utf-8") as fh:
+            idx = json.load(fh)
+    except (OSError, ValueError) as e:
+        problems.append(f"J8: _index.json 不可解析（{type(e).__name__}: {e}）")
+        return problems, detail
+
+    for dom in idx.get("domains") or []:
+        name = str(dom.get("domain") or "")
+        if not name:
+            problems.append("J8: _index.json 存在无 domain 的条目")
+            continue
+        body = os.path.join(corpus, name)
+        entry: dict = {"body_exists": os.path.isdir(body)}
+
+        # J8.2
+        if not entry["body_exists"]:
+            problems.append(f"J8.2: 域 {name} 在 _index.json 中登记但本体目录不存在 {body}")
+            detail["domains"][name] = entry
+            continue
+
+        # J8.4
+        if os.path.exists(os.path.join(body, "_ingest_manifest.json")):
+            problems.append(f"J8.4: 域 {name} 本体残留 _ingest_manifest.json"
+                            "（清单唯一源应为 reports/corpus/）")
+
+        # J8.3
+        disk = 0
+        for _dp, _dn, fns in os.walk(body):
+            disk += len(fns)
+        entry["files_on_disk"] = disk
+        entry["declared"] = int(dom.get("file_count") or 0)
+        if disk != entry["declared"]:
+            problems.append(
+                f"J8.3: 域 {name} 清单声明 {entry['declared']} 条 ≠ 本体实际 {disk} 个文件"
+                "（清单与本体不自洽；可用 --resync-manifest 以本体为准重建）")
+
+        # J8.5
+        mp = os.path.join(man_dir, f"{name}.manifest.json")
+        if not os.path.exists(mp):
+            problems.append(f"J8: 域 {name} 的清单文件不存在 {mp}")
+            detail["domains"][name] = entry
+            continue
+        try:
+            with open(mp, encoding="utf-8") as fh:
+                man = json.load(fh)
+        except (OSError, ValueError) as e:
+            problems.append(f"J8: 清单不可解析 {name}（{type(e).__name__}: {e}）")
+            detail["domains"][name] = entry
+            continue
+        files = man.get("files") or []
+        empty = sum(1 for r in files if not str(r.get("sha256") or "").strip())
+        entry["hash_mode"] = man.get("hash_mode", "")
+        entry["sha256_empty"] = empty
+        if man.get("hash_mode") != "sha256":
+            problems.append(f"J8.5: 域 {name} hash_mode={man.get('hash_mode')!r}"
+                            "（应为 sha256；size_only 不可用于去重判定）")
+        if empty:
+            problems.append(f"J8.5: 域 {name} 清单有 {empty} 条 sha256 为空"
+                            "（F1：历史 --no-hash 遗留；用 --backfill-hash 回填）")
+        detail["domains"][name] = entry
+
+    detail["total_files"] = idx.get("total_files")
+    return problems, detail
+
+
 def _check_constants() -> tuple[list[str], dict]:
     problems: list[str] = []
     detail: dict = {}
@@ -245,6 +438,14 @@ def run() -> tuple[bool, dict]:
     p2, d2 = _check_constants()
     problems += p2
     detail.update(d2)
+
+    p3, d3 = _check_worklist()
+    problems += p3
+    detail.update(d3)
+
+    p4, d4 = _check_corpus()
+    problems += p4
+    detail.update(d4)
 
     if warnings:
         detail["warnings"] = warnings

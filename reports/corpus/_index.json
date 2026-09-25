@@ -1,18 +1,19 @@
 {
  "schema_version": "1.0",
- "generated_at": "2026-09-12 14:47:42",
- "policy": "语料本体 data/corpus/（不入库）；清单 reports/corpus/（入库，唯一可审计入口）",
+ "policy": "语料本体 data/corpus/<domain>/（归集·审计层，只读，不入库；为 originals/ 的硬链接目标）；清单 reports/corpus/（入库，唯一可审计入口）。v2 §3.12：投放区 data/inbox/ 与本体分离，域内不再保留清单副本",
  "domains": [
   {
    "domain": "dept_policies",
    "source_dir": "D:/Desktop/1.总公司各部门制度",
-   "file_count": 1019,
-   "total_bytes": 332138728,
+   "file_count": 1027,
+   "total_bytes": 322150367,
    "ingested_at": "2026-09-12 04:01:39",
+   "excludes": [],
+   "exclude_tops": [],
    "manifest": "reports/corpus/dept_policies.manifest.json"
   },
   {
-   "domain": "east2_m20",
+   "domain": "regulatory_stats",
    "source_dir": "D:/0数据治理/00.EAST2.0#M20",
    "file_count": 313,
    "total_bytes": 214098678,
@@ -26,9 +27,10 @@
     "邮件宣导",
     "相关法规"
    ],
-   "manifest": "reports/corpus/east2_m20.manifest.json"
+   "manifest": "reports/corpus/regulatory_stats.manifest.json"
   }
  ],
- "total_files": 1332,
- "total_bytes": 546237406
+ "total_files": 1340,
+ "total_bytes": 536249045,
+ "generated_at": "2026-09-26 06:11:25"
 }

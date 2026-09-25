@@ -8,6 +8,7 @@ gates/gate_contract — 数据契约门禁（实装：归属表 8 列 / 主题�
 from __future__ import annotations
 
 import csv
+import importlib
 import json
 import os
 import re
@@ -38,6 +39,88 @@ def _header(path):
         return next(csv.reader(fh))
 
 
+_MANIFEST = os.path.join(paths.CONFIG_DIR, "schema", "contract_manifest.json")
+
+
+def _dotted(rel: str) -> str:
+    """仓库相对 .py 路径 → 可导入的点号路径（`a/b/__init__.py` → `a.b`）。"""
+    p = rel[:-3] if rel.endswith(".py") else rel
+    if p.endswith("/__init__"):
+        p = p[: -len("/__init__")]
+    return p.replace("/", ".")
+
+
+def _manifest_checks() -> tuple[list[str], dict]:
+    """M1 修复（v2 §3.4 / P1-4）：让契约清单**有消费方**——file/symbol/count 三元断言。
+
+    背景：`config/schema/contract_manifest.json` 改造前**全仓 0 处代码读取**（仅文档与
+    一处注释提及），因此静默漂移两处：`detail_table_fields.count=10`（实为 14）、
+    `base_json_keys.file` 指向**不存在**的 `theme_analysis/node2_rebuild/`。
+    本判据逐条断言：① `file` 存在；② `symbol`（或 `symbols` 映射）可经点号导入取得；
+    ③ `len(符号) == count`。清单新增 `version` 顶层字段以便未来做格式演进判别。
+    """
+    problems: list[str] = []
+    detail: dict = {"checked": {}, "missing": []}
+    root = paths.ROOT
+
+    if not os.path.exists(_MANIFEST):
+        return [f"契约清单不存在：{_MANIFEST}"], detail
+    try:
+        man = json.load(open(_MANIFEST, encoding="utf-8"))
+    except (OSError, ValueError) as e:
+        return [f"契约清单不可解析：{type(e).__name__}: {e}"], detail
+
+    detail["version"] = man.get("version", "")
+    if not str(man.get("version") or "").strip():
+        problems.append("契约清单缺顶层 version（v2 §3.4：加 version 以便格式演进判别）")
+
+    for name, spec in sorted((man.get("contracts") or {}).items()):
+        rel = str(spec.get("file") or "")
+        fp = os.path.join(root, rel.replace("/", os.sep))
+        if not rel:
+            problems.append(f"{name}: 缺 file 字段")
+            continue
+        if not os.path.exists(fp):
+            # 目录型/文件型统一判定：两者都必须存在（历史漂移即此判据抓出）
+            problems.append(f"{name}: file 不存在 {rel}")
+            detail["missing"].append(rel)
+            continue
+
+        pairs: list[tuple[str, int]] = []
+        if spec.get("symbol") and spec.get("count") is not None:
+            pairs.append((str(spec["symbol"]), int(spec["count"])))
+        for sym, cnt in (spec.get("symbols") or {}).items():
+            pairs.append((str(sym), int(cnt)))
+        if not pairs:
+            detail["checked"][name] = {"file": rel, "symbols": "（无 symbol/count，仅登记定位）"}
+            continue
+
+        if not rel.endswith(".py"):
+            problems.append(f"{name}: 登记了 symbol 但 file 非 .py（{rel}）")
+            continue
+        mod_name = _dotted(rel)
+        try:
+            mod = importlib.import_module(mod_name)
+        except Exception as e:  # noqa: BLE001  加载失败本身即清单漂移信号
+            problems.append(f"{name}: 无法导入 {mod_name}（{type(e).__name__}: {e}）")
+            continue
+        got: dict = {}
+        for sym, cnt in pairs:
+            obj = getattr(mod, sym, None)
+            if obj is None:
+                problems.append(f"{name}: {mod_name} 无符号 {sym}")
+                continue
+            actual = len(obj)
+            got[sym] = {"count": actual, "declared": cnt, "shape": type(obj).__name__}
+            if actual != cnt:
+                problems.append(
+                    f"{name}: {mod_name}::{sym} 实际 {actual} ≠ 清单声明 {cnt}"
+                    f"（清单漂移，须同步）")
+        detail["checked"][name] = {"file": rel, "module": mod_name, **got}
+
+    return problems, detail
+
+
 def _json_shape(path):
     d = json.load(open(path, encoding="utf-8"))
     if isinstance(d, list):
@@ -50,6 +133,11 @@ def _json_shape(path):
 
 def run():
     problems, checked = [], {}
+
+    # 0) 契约清单自洽（M1 修复 / P1-4）：与数据面无关，先跑——清单漂移必须独立可报
+    _mp, _mdet = _manifest_checks()
+    problems += _mp
+    checked["manifest"] = _mdet
 
     # 1) 归属表 8 列
     attr = os.path.join(_DATA, "人身保险公司-文件归属表.csv")

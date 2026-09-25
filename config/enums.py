@@ -232,6 +232,27 @@ CATEGORY_MAP: dict[str, str] = {
 # 括号修饰变体（内部便函/内部文件/内部备案）→ dept_normative + 修饰迁 _raw_fields.公开属性
 CATEGORY_MODIFIER_HINTS: tuple[str, ...] = ("内部便函", "内部文件", "内部备案")
 
+# ==================== 待办队列种类（v2 §3.14.3，P1-6） ====================
+# 背景：链外节点的"决策自动化"缺口共 6 处（D1–D6）+ 投放区/配额两类断点。它们的共同
+# 缺陷不是"需要人"，而是"需要人、但**系统不告诉人**"——v1 靠 reports/*.md 清单与 CSV
+# 台账，v2 起统一落 `governance.db.worklist` 队列（`cli.py worklist`）。
+# 纪律：
+#   ① 每个 kind 必须与**唯一产生方**对应（gate_config_integrity 断言双向闭合）；
+#   ② `open` 项**不阻断门禁**（与 gate_rfn_drift 的"存量治理不阻断"口径一致）；
+#   ③ 新增 kind 必须同时更新本表与产生方，禁止只写队列不登记。
+WORKLIST_KIND: frozenset[str] = frozenset({
+    "rfn_theme_uncertain",         # D1 tools/rfn_backlog.py：主题投票 uncertain（无票/并列/形态不明）
+    "internal_unaligned",          # D2 internal_policy_base/align.py：无对应监管主题，不进主视图
+    "timeliness_conflict",         # D3 consolidate_timeliness.py：needs_review 冲突台账
+    "rfn_clean_drift_c2",          # D4 reconcile_clean_drift.py：c2_pending（supersede 待人工）
+    "internal_identity_conflict",  # D5 internal_policy_base/indexer.py：IPN 身份冲突（标题变更）
+    "relevance_boundary",          # D6 filter_clean_relevance.py：BOUNDARY 边界案例裁决
+    "corpus_needs_review",         # §3.12.6 tools/inbox_scan.py：投放区不可识别扩展名
+    "ingest_quota_blocked",        # 配额/认证阻断的显式化（E 类断点）
+})
+# 待办状态（`worklist.status`）
+WORKLIST_STATUS: frozenset[str] = frozenset({"open", "resolved", "dismissed"})
+
 # ==================== 自检 ====================
 def assert_enum_bindings() -> None:
     """枚举常量自检（供 gate_enum_values 调用）。"""
@@ -270,6 +291,9 @@ def assert_enum_bindings() -> None:
     # 条款解析（2026-09-20 F6）：解析模式 + 结构单元 level 闭包
     assert len(CLAUSE_PARSE_MODES) == 6, CLAUSE_PARSE_MODES
     assert CLAUSE_STRUCTURE_LEVELS == {"一级", "二级", "条", "项", "目"}, CLAUSE_STRUCTURE_LEVELS
+    # 待办队列（v2 §3.14.3）：8 类 kind 与 3 态 status 闭包
+    assert len(WORKLIST_KIND) == 8, WORKLIST_KIND
+    assert WORKLIST_STATUS == {"open", "resolved", "dismissed"}, WORKLIST_STATUS
 
 
 if __name__ == "__main__":  # 离线自检

@@ -48,7 +48,6 @@ from internal_policy_base.scan import (  # noqa: E402
 # R21：条文结构解析（章-条），供 merged_view/drafter 条款对照。
 # 2026-09-19 收敛：解析/渲染统一经 `extract.build_clause_payload`（唯一实现，三写入点共用），
 # 本模块不再直接依赖 std_lib.scraper_std.document_structure。
-
 # 富内容(图形/公式)轨：流程图/SmartArt/公式 OMML 抽取与图片落盘（2026-09-09）
 from std_lib.scraper_std.rich_object import rich_object_fields  # noqa: E402
 
@@ -517,6 +516,20 @@ def refine_identity_backfill(limit: int | None = None) -> dict:
             stats["details"].append({"ipn": ipn_old, "status": "conflict",
                                      "file": rec.get("file_name", "")[:40], "target": ipn_new,
                                      "title": nt[:40]})
+            # v2 §3.14.3（D5）：IPN 身份冲突是"需人工裁决但系统不告诉人"的典型——
+            # 原先只进 stats，翻不出来。现登记进待办队列（处置：cli.py worklist resolve）。
+            try:
+                from std_lib.common_lib import governance_store as _gs  # noqa: PLC0415
+                _gs.worklist_add(
+                    "internal_identity_conflict", ipn_old,
+                    stage="internal-index", artifact_key="internal_index",
+                    payload={"ipn_old": ipn_old, "ipn_new": ipn_new, "title_new": nt,
+                             "docno_new": nd, "file": rec.get("file_name", ""),
+                             "note": "同 title 多版本，目标 IPN 已被占用；当前策略=IPN 保持稳定"},
+                    suggestion="默认可接受现状（IPN 稳定优先）；若确认系新制度，"
+                               "经 `cli.py internal refine-identity` 走受控改名")
+            except Exception:  # noqa: BLE001  旁路设施：登记失败不得中断摄取
+                pass
             continue
         rec.update({"docno": nd, "title": nt, "ipn": ipn_new})
         if ipn_new != ipn_old:

@@ -1,8 +1,10 @@
 {
   "schema_version": "1.0",
+  "version": "1.0.0",
   "generated_at": null,
   "owner": "regulatory_compliance_orchestrator",
-  "note": "程序可读契约清单（R24）：实际列头/键集唯一事实由各接口模块持有；本清单仅登记版本与定位，防文本漂移。",
+  "consumer": "gates.gate_contract._check_manifest（file/symbol/count 三元断言）",
+  "note": "程序可读契约清单（R24）：实际列头/键集唯一事实由各接口模块持有；本清单登记版本与定位，防文本漂移。v2 §3.4（M1 修复，2026-09-26）：新增顶层 version，并由 gate_contract 断言 file 存在 + symbol 可加载 + len == count；两处历史漂移已修正（detail_table_fields 10→14；base_json_keys 指向不存在的 theme_analysis/node2_rebuild/ 已改为 interfaces/contract.py）。",
   "contracts": {
     "cleaned_csv_columns": {
       "file": "std_lib/scraper_std/unified_schema.py",
@@ -25,8 +27,9 @@
     "detail_table_fields": {
       "file": "modules/regulatory_classifier/scripts/build_detail_tables.py",
       "symbol": "FIELDS",
-      "count": 10,
-      "consumer": ["gates.gate_contract"]
+      "count": 14,
+      "consumer": ["gates.gate_contract"],
+      "note": "2026-09-26 修正：原声明 count=10，而 interfaces/contract.py:DETAIL_TABLE_FIELDS 与实测明细表列头均为 14（F-L03 增时效状态/核验来源两列后未同步 → 已是漂移）"
     },
     "theme_map": {
       "file": "modules/regulatory_classifier/rfn/__init__.py",
@@ -35,8 +38,14 @@
       "note": "T0上位法锚点 + T1-T10；扩展主题唯一入口（R16）"
     },
     "base_json_keys": {
-      "file": "modules/regulatory_classifier/theme_analysis/node2_rebuild/",
-      "note": "base7/final10/matched6+/citerefs7+；Gate4 定义核心键（run_retrieval_after_checks.gate_schema）"
+      "file": "interfaces/contract.py",
+      "symbols": {
+        "BASE_KEYS": 7,
+        "FINAL_KEYS": 10,
+        "MATCHED_KEYS": 6,
+        "CITEREFS_KEYS": 7
+      },
+      "note": "2026-09-26 修正：原 file 指向不存在的 modules/regulatory_classifier/theme_analysis/node2_rebuild/（过期契约指针）。底座键集唯一事实源实为 interfaces/contract.py 的四个集合（由 gate_contract 判据 4 对数据做超集校验，此处只断言清单自身计数）。"
     }
   }
 }

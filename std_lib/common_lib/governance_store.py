@@ -41,6 +41,8 @@ __all__ = [
     "run_start", "run_finish", "current_run_id", "list_runs",
     "record_watermark", "get_watermark", "list_watermarks", "dependency_edges",
     "check_dependencies",
+    # v2 §3.14.3：待办队列
+    "worklist_add", "worklist_list", "worklist_resolve", "worklist_stats",
     "log_audit", "list_audit",
     "upsert_artifacts", "list_artifacts",
     "record_gate_results", "list_gate_results",
@@ -50,13 +52,27 @@ __all__ = [
     "snapshot",
 ]
 
-SCHEMA_VERSION = "1.1"
-_SCHEMA_INT = 2                      # PRAGMA user_version：1=阶段1五表；2=阶段2增四表（relation 用 row_key）
+SCHEMA_VERSION = "1.2"
+# PRAGMA user_version 语义（只增不改）：
+#   1 = 阶段 1 五表
+#   2 = 阶段 2 增四表（relation 用 row_key）
+#   3 = v2 §3.3.1：watermark 增 `round` / `stage`（观测表**只 ALTER 不 DROP**）
+#   4 = v2 §3.14.3：增 `worklist` 待办队列表（P1-6）
+# 注意：投影表（document/theme_assign/relation/timeliness_history）版本落后时**DROP 重建**；
+#      观测表（run_log/watermark/artifact/audit_log/gate_result/worklist）一律 ALTER 增量迁移
+#      （新增整表由 `_DDL` 的 CREATE TABLE IF NOT EXISTS 完成，无需迁移项）。
+_SCHEMA_INT = 4
 _TZ = timezone(timedelta(hours=8))   # Asia/Shanghai，与 clean_index 时间基准一致
 
 TABLES = ("run_log", "watermark", "artifact", "audit_log", "gate_result",
+          # ---- v2 §3.14.3（2026-09-26）待办队列：链外节点的"决策自动化"缺口显式化 ----
+          "worklist",
           # ---- 阶段 2（2026-09-18）元数据四表：事实源为文件，本库为**事务化投影** ----
           "document", "theme_assign", "relation", "timeliness_history")
+
+# 待办队列的**开放态唯一性**（v2 §3.14.3）：同 (kind, subject) 只允许一条 open，
+# 使产生方可重复调用 `worklist_add` 而不产生重复待办（幂等）。
+WORKLIST_OPEN_UNIQUE = ("kind", "subject")
 
 # 阶段 2 四表的「事实源 → 表」映射与**比对断言键**（库/文件一致性判据）。
 # 断言键取"身份 + 语义"字段：不含 generated_at/synced_at 等时间戳（它们天然每轮变化），
@@ -109,7 +125,12 @@ CREATE TABLE IF NOT EXISTS watermark(
   version        TEXT NOT NULL,
   inputs_json    TEXT NOT NULL DEFAULT '{}',
   record_count   INTEGER,
-  run_id         TEXT
+  run_id         TEXT,
+  -- v2 §3.3.1（_SCHEMA_INT 3）：轮次与阶段。`round` = 登记时的 run_id（同值即"同一轮"），
+  -- `stage` = 产生该产物的阶段 id。用途：dependency_edges 的 `ok_within_round` 判据
+  -- （同轮内"先算后用 + 上游被再次推进"不再误判 stale）。
+  round          TEXT NOT NULL DEFAULT '',
+  stage          TEXT NOT NULL DEFAULT ''
 );
 CREATE TABLE IF NOT EXISTS artifact(
   artifact_key  TEXT PRIMARY KEY,
@@ -144,6 +165,33 @@ CREATE TABLE IF NOT EXISTS gate_result(
   recorded_at TEXT NOT NULL,
   PRIMARY KEY(run_id, gate)
 );
+
+-- ================= worklist：待办队列（v2 §3.14.3，_SCHEMA_INT 4）=================
+-- 设计：把"需要人处置、但系统不告诉人"的散落清单（CSV 台账 / *_pending 计数 / 人工台账）
+-- 统一为可查询队列。写方 = 各产生方（kind 必须 ∈ config.enums.WORKLIST_KIND）；
+-- 读方 = `cli.py worklist` / `cli.py governance status`。
+-- 纪律：① open 项**不阻断门禁**（同 gate_rfn_drift 的存量治理口径）；
+--      ② payload_json 存决策所需上下文，处置时无需二次查询；
+--      ③ 同 (kind, subject) 的 open 项唯一（部分唯一索引）→ 产生方可幂等重复写入。
+CREATE TABLE IF NOT EXISTS worklist(
+  item_id      TEXT PRIMARY KEY,
+  kind         TEXT NOT NULL,
+  stage        TEXT NOT NULL DEFAULT '',
+  artifact_key TEXT NOT NULL DEFAULT '',
+  round        TEXT NOT NULL DEFAULT '',
+  subject      TEXT NOT NULL DEFAULT '',
+  payload_json TEXT NOT NULL DEFAULT '{}',
+  suggestion   TEXT NOT NULL DEFAULT '',
+  confidence   REAL,
+  status       TEXT NOT NULL DEFAULT 'open',
+  resolved_by  TEXT NOT NULL DEFAULT '',
+  resolved_at  TEXT NOT NULL DEFAULT '',
+  resolution   TEXT NOT NULL DEFAULT '',
+  created_at   TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS ix_wl_status ON worklist(status);
+CREATE INDEX IF NOT EXISTS ix_wl_kind   ON worklist(kind);
+CREATE UNIQUE INDEX IF NOT EXISTS ux_wl_open ON worklist(kind, subject) WHERE status='open';
 
 -- ================= 阶段 2：元数据四表（2026-09-18）=================
 -- 纪律：本四表是**事实源文件的投影**（文件仍为权威、读方仍读文件，双写期语义）。
@@ -290,13 +338,45 @@ def connect(readonly: bool = False) -> sqlite3.Connection:
     return conn
 
 
+# --------------------------------------------------------------------------- #
+# 观测表列级迁移（v2 §3.3.1）
+# --------------------------------------------------------------------------- #
+# 语义：观测表承载历史、**不可 DROP 重建**，结构演进只能 `ALTER TABLE ADD COLUMN`。
+# 键 = 目标 `_SCHEMA_INT`；值 = ((表, 列, 列定义), ...)。新增版本时**只追加**，不改历史项。
+_OBSERVATION_MIGRATIONS: dict[int, tuple[tuple[str, str, str], ...]] = {
+    # 3 = v2 §3.3.1：watermark 增 round/stage（供 dependency_edges 的 ok_within_round 判据）
+    3: (("watermark", "round", "TEXT NOT NULL DEFAULT ''"),
+        ("watermark", "stage", "TEXT NOT NULL DEFAULT ''")),
+}
+
+
+def _migrate_observations(conn: sqlite3.Connection, cur: int) -> list[str]:
+    """按 `_OBSERVATION_MIGRATIONS` 补齐观测表缺失列（幂等：先查 `PRAGMA table_info`）。"""
+    applied: list[str] = []
+    for ver in sorted(v for v in _OBSERVATION_MIGRATIONS if v > cur):
+        for table, col, ddl in _OBSERVATION_MIGRATIONS[ver]:
+            try:
+                cols = {r[1] for r in conn.execute(f"PRAGMA table_info({table})")}
+            except sqlite3.Error:
+                continue
+            if not cols or col in cols:
+                continue
+            try:
+                conn.execute(f"ALTER TABLE {table} ADD COLUMN {col} {ddl}")
+                applied.append(f"{table}.{col}")
+            except sqlite3.Error:
+                continue
+    return applied
+
+
 def init_db() -> str:
-    """建库建表（幂等，含投影表 schema 升级）。返回库路径。
+    """建库建表（幂等，含投影表 schema 升级 + 观测表列级迁移）。返回库路径。
 
     schema 版本经 `PRAGMA user_version` 记录（当前 `_SCHEMA_INT`）：版本落后时
     **只 DROP 四张投影表**再重建——投影表是纯派生数据（文件仍是事实源），
     丢弃零代价；而 run_log/watermark/artifact/audit_log/gate_result 五张**观测表
-    一律保留**（它们承载历史，不可重建）。
+    一律保留**（它们承载历史，不可重建），其结构演进走 `_migrate_observations()`
+    的 `ALTER TABLE ADD COLUMN`（v2 §3.3.1）。
     """
     p = db_path()
     conn = connect()
@@ -306,18 +386,28 @@ def init_db() -> str:
             for t in ("document", "theme_assign", "relation", "timeliness_history"):
                 conn.execute(f"DROP TABLE IF EXISTS {t}")
         conn.executescript(_DDL)
+        applied = _migrate_observations(conn, cur)
         conn.execute(f"PRAGMA user_version={_SCHEMA_INT}")
         conn.commit()
+        if applied:
+            print(f"[governance] 观测表列级迁移：{', '.join(applied)}")
     finally:
         conn.close()
     return p
 
 
 def _ensure() -> sqlite3.Connection:
-    """写路径统一入口：库/表不存在则先建（幂等），返回连接。"""
+    """写路径统一入口：库/表不存在则先建（幂等）+ 观测表列级迁移，返回连接。"""
     conn = connect()
     try:
         conn.executescript(_DDL)
+    except sqlite3.Error:
+        pass
+    try:
+        cur = conn.execute("PRAGMA user_version").fetchone()[0]
+        if _migrate_observations(conn, cur):
+            conn.execute(f"PRAGMA user_version={_SCHEMA_INT}")
+        conn.commit()
     except sqlite3.Error:
         pass
     return conn
@@ -408,15 +498,26 @@ def record_watermark(artifact_key: str, produced_by: str, version: str, *,
                      inputs: dict | None = None, produced_at: str = "",
                      record_count: int | None = None,
                      schema_version: str = SCHEMA_VERSION,
-                     recorded_by: str = "", run_id: str | None = None) -> dict | None:
+                     recorded_by: str = "", run_id: str | None = None,
+                     round_id: str | None = None, stage: str = "") -> dict | None:
     """登记/更新产物水位（幂等 upsert）。
 
     inputs: {依赖 artifact_key: 该依赖**登记时**的 version} —— 即"我是在哪个上游版本上算出来的"。
             调用方只应登记**当前实际可得**的依赖版本；取不到（如上游未登记）则不要放进 inputs，
             否则会造出"永远对不上"的假边（门禁会判陈旧）。
+    round_id: 轮次标识（列名 `round`，取 `run_id`）；同值即"同一轮"，供
+            `dependency_edges` 的 `ok_within_round` 判据使用（v2 §3.3.1）。
+    stage:    产生该产物的阶段 id（如 `"2.6"`）；仅审计与排障用，不参与判据。
+
+    **校验收紧（v2 §3.3.1，2026-09-26）**：`produced_by` 为空即**拒绝写入**并告警
+    （原实现允许任意字符串入库，导致"谁产的"不可追溯）；此时返回 None。
     返回登记后的行（dict）；`version` 为空（产物缺失）时**不写**并返回 None。
     """
     if not version:
+        return None
+    if not str(produced_by or "").strip():
+        print(f"[governance] WARN 拒绝登记 {artifact_key}：produced_by 为空"
+              "（水位必须可追溯到唯一产出方）")
         return None
     row = {
         "artifact_key": artifact_key,
@@ -428,19 +529,22 @@ def record_watermark(artifact_key: str, produced_by: str, version: str, *,
         "inputs_json": json.dumps(inputs or {}, ensure_ascii=False, sort_keys=True),
         "record_count": record_count,
         "run_id": run_id if run_id is not None else current_run_id(),
+        "round": round_id if round_id is not None else current_run_id(),
+        "stage": stage,
     }
     conn = _ensure()
     try:
         conn.execute(
             "INSERT INTO watermark(artifact_key,produced_by,recorded_by,produced_at,"
-            "schema_version,version,inputs_json,record_count,run_id)"
+            "schema_version,version,inputs_json,record_count,run_id,round,stage)"
             " VALUES(:artifact_key,:produced_by,:recorded_by,:produced_at,"
-            ":schema_version,:version,:inputs_json,:record_count,:run_id)"
+            ":schema_version,:version,:inputs_json,:record_count,:run_id,:round,:stage)"
             " ON CONFLICT(artifact_key) DO UPDATE SET"
             " produced_by=excluded.produced_by, recorded_by=excluded.recorded_by,"
             " produced_at=excluded.produced_at, schema_version=excluded.schema_version,"
             " version=excluded.version, inputs_json=excluded.inputs_json,"
-            " record_count=excluded.record_count, run_id=excluded.run_id",
+            " record_count=excluded.record_count, run_id=excluded.run_id,"
+            " round=excluded.round, stage=excluded.stage",
             row)
         conn.commit()
     finally:
@@ -476,8 +580,16 @@ def _wm_row(r: sqlite3.Row) -> dict:
 def dependency_edges() -> list[dict]:
     """把 watermark 表展开为有向边列表（`reports/…方案_20260917.md` §1.4 的机器可读形态）。
 
-    每行：{artifact, produced_by, version, dep, declared_version, current_version, status}
-    status ∈ ok（版本一致）/ stale（上游已推进，产物未重跑）/ unregistered（上游未登记水位）。
+    每行：{artifact, produced_by, version, round, dep, declared_version, current_version,
+           dep_round, status}
+    **四态判据**（v2 §3.3.1，2026-09-26 增第 4 态）：
+      - `ok`              ：声明版本 == 当前版本；
+      - `ok_within_round` ：版本不一致，但上游与本产物**同一轮**（`round` 相同且非空）
+                            —— 链内"先算后用 + 同轮内上游被再次推进"属正常顺序特性
+                            （典型：`clauses:{src}` 在阶段 1 登记，`cleaned:{src}` 在
+                            阶段 2 时效回写后才重新登记），不再误判为陈旧；
+      - `stale`           ：上游在**更晚轮次**推进，或双方轮次不可比 → 阻断；
+      - `unregistered`    ：上游未登记水位 → 披露不阻断。
     """
     wms = {w["artifact_key"]: w for w in list_watermarks()}
     edges: list[dict] = []
@@ -485,18 +597,24 @@ def dependency_edges() -> list[dict]:
         ins = w.get("inputs") or {}
         if not ins:
             continue
+        a_round = str(w.get("round") or "")
         for dep, declared in sorted(ins.items()):
-            cur = (wms.get(dep) or {}).get("version", "")
+            dep_w = wms.get(dep) or {}
+            cur = dep_w.get("version", "")
+            dep_round = str(dep_w.get("round") or "")
             if not cur:
                 status = "unregistered"
             elif str(cur) == str(declared):
                 status = "ok"
+            elif a_round and dep_round and a_round == dep_round:
+                status = "ok_within_round"
             else:
                 status = "stale"
             edges.append({
                 "artifact": key, "produced_by": w.get("produced_by", ""),
-                "version": w.get("version", ""),
+                "version": w.get("version", ""), "round": a_round,
                 "dep": dep, "declared_version": declared, "current_version": cur,
+                "dep_round": dep_round,
                 "status": status,
             })
     return edges
@@ -506,16 +624,19 @@ def check_dependencies() -> tuple[bool, dict]:
     """一致性判据（供 gate_watermark 消费）：任一边 stale 即 False。
 
     - `stale` → 阻断（上游已推进、产物未重跑 —— 正是 mtime 判据想抓却抓不准的情形）
+    - `ok_within_round` → **不阻断**（同轮顺序特性；计数在 detail 披露）
     - `unregistered` / 无 inputs → 不阻断（过渡期覆盖度不足属预期，只在 detail 披露）
     """
     if not enabled():
         return True, {"enabled": False, "note": "治理库未启用（阶段 1 未运行），本判据跳过"}
     edges = dependency_edges()
     stale = [e for e in edges if e["status"] == "stale"]
+    within = [e for e in edges if e["status"] == "ok_within_round"]
     unreg = sorted({e["dep"] for e in edges if e["status"] == "unregistered"})
     wms = list_watermarks()
     bad_rows = [w["artifact_key"] for w in wms
                 if not str(w.get("produced_at") or "").strip() or not str(w.get("version") or "").strip()]
+    no_round = [w["artifact_key"] for w in wms if not str(w.get("round") or "").strip()]
     problems = []
     if stale:
         problems.append(
@@ -528,11 +649,162 @@ def check_dependencies() -> tuple[bool, dict]:
     detail = {
         "enabled": True, "db": db_path(),
         "artifacts": len(wms), "edges": len(edges),
-        "stale_edges": len(stale), "unregistered_deps": unreg,
+        "stale_edges": len(stale),
+        "within_round_edges": len(within),
+        "unregistered_deps": unreg,
         "problems": problems,
-        "note": "判据=已登记产物的每条声明依赖边版本一致（unregistered 不阻断，仅披露）",
+        "note": "判据=已登记产物的每条声明依赖边版本一致；`ok_within_round`（同轮顺序特性）与 "
+                "`unregistered`（覆盖度不足）均不阻断，仅在 detail 披露",
     }
+    if within:
+        detail["within_round_deps"] = sorted({f"{e['artifact']}<-{e['dep']}" for e in within})
+    if no_round and wms:
+        # 过渡期披露：迁移前登记的历史水位缺 round，无法参与同轮判据（会按 stale 处理）
+        detail["rows_without_round"] = len(no_round)
     return (not problems), detail
+
+
+# --------------------------------------------------------------------------- #
+# worklist（待办队列，v2 §3.14.3 / P1-6）
+# --------------------------------------------------------------------------- #
+def _wl_row(r: sqlite3.Row) -> dict:
+    d = dict(r)
+    try:
+        d["payload"] = json.loads(d.get("payload_json") or "{}")
+    except ValueError:
+        d["payload"] = {}
+    return d
+
+
+def worklist_add(kind: str, subject: str, *, stage: str = "", artifact_key: str = "",
+                 payload: dict | None = None, suggestion: str = "",
+                 confidence: float | None = None, round_id: str | None = None,
+                 item_id: str = "") -> str | None:
+    """登记一条待办（**幂等**：同 `(kind, subject)` 的 open 项已存在则更新上下文并复用 id）。
+
+    kind      : 必须 ∈ `config.enums.WORKLIST_KIND`。本模块做**软校验**——不在集合内仅打印
+                告警仍写入（保持治理库与 config 解耦）；硬断言由 `gate_config_integrity` 承担。
+    subject   : 目标标识（RFN / IPN / dedup_key / 冲突键 / 文件路径）——与 kind 共同构成 open 唯一键。
+    payload   : 决策所需上下文（建议 / 票数 / 置信度 / 冲突双方 / change_trace…）。
+    suggestion: 机器建议（可为空）；confidence: 建议置信度。
+
+    返回 item_id；治理库未启用或写入异常时返回 None（**调用方不得因此中断**）。
+    """
+    if not kind or not subject:
+        return None
+    try:
+        from config.enums import WORKLIST_KIND  # noqa: PLC0415
+        if kind not in WORKLIST_KIND:
+            print(f"[worklist] WARN 未登记的 kind={kind!r}（应加入 config.enums.WORKLIST_KIND）")
+    except Exception:  # noqa: BLE001  非源码树/未注入 sys.path：跳过软校验
+        pass
+    if not enabled():
+        return None
+
+    rid = round_id if round_id is not None else current_run_id()
+    payload_json = json.dumps(payload or {}, ensure_ascii=False, sort_keys=True)
+    conn = _ensure()
+    try:
+        existing = conn.execute(
+            "SELECT item_id FROM worklist WHERE kind=? AND subject=? AND status='open'",
+            (kind, subject)).fetchone()
+        if existing:
+            # 幂等刷新：上下文可能随数据变化（票数/冲突双方），但保留 created_at 与 item_id
+            conn.execute(
+                "UPDATE worklist SET stage=?, artifact_key=?, round=?, payload_json=?,"
+                " suggestion=?, confidence=? WHERE item_id=?",
+                (stage, artifact_key, rid, payload_json, suggestion, confidence,
+                 existing["item_id"]))
+            conn.commit()
+            return existing["item_id"]
+
+        # item_id 需在"同一秒内处置后重新登记"时仍唯一 → 带毫秒 + 冲突自增后缀。
+        # （曾被单测检出：秒级时间戳 + 同 pid + 同 kind|subject 哈希 → 重开时主键冲突）
+        base = ("WL-" + datetime.now(_TZ).strftime("%Y%m%d%H%M%S%f")[:-3]
+                + f"-{os.getpid()}-"
+                + hashlib.sha256(f"{kind}|{subject}".encode()).hexdigest()[:6])
+        iid = item_id or base
+        _n = 1
+        while conn.execute("SELECT 1 FROM worklist WHERE item_id=?", (iid,)).fetchone():
+            _n += 1
+            iid = f"{base}-{_n}"
+        conn.execute(
+            "INSERT INTO worklist(item_id,kind,stage,artifact_key,round,subject,payload_json,"
+            "suggestion,confidence,status,created_at)"
+            " VALUES(?,?,?,?,?,?,?,?,?, 'open', ?)",
+            (iid, kind, stage, artifact_key, rid, subject, payload_json, suggestion,
+             confidence, now_iso()))
+        conn.commit()
+        return iid
+    except sqlite3.Error as e:
+        print(f"[worklist] WARN 登记失败（不影响主链）: {type(e).__name__}: {e}")
+        return None
+    finally:
+        conn.close()
+
+
+def worklist_list(*, status: str = "open", kind: str = "", limit: int = 0) -> list[dict]:
+    """列出待办（默认仅 open）；`status=""` 表示全部状态。"""
+    if not enabled():
+        return []
+    sql = "SELECT * FROM worklist"
+    where, args = [], []
+    if status:
+        where.append("status=?")
+        args.append(status)
+    if kind:
+        where.append("kind=?")
+        args.append(kind)
+    if where:
+        sql += " WHERE " + " AND ".join(where)
+    sql += " ORDER BY created_at, kind, subject"
+    if limit:
+        sql += f" LIMIT {int(limit)}"
+    with connect(readonly=True) as c:
+        return [_wl_row(r) for r in c.execute(sql, args)]
+
+
+def worklist_resolve(item_id: str, resolution: str, *, by: str = "",
+                     status: str = "resolved") -> bool:
+    """处置一条待办（`resolved` = 已裁决；`dismissed` = 判为无需处置）。
+
+    返回是否命中并更新（未命中返回 False，调用方据此提示）。
+    """
+    if not enabled() or not item_id:
+        return False
+    if status not in ("resolved", "dismissed"):
+        raise ValueError(f"非法 status={status!r}（仅 resolved / dismissed）")
+    conn = _ensure()
+    try:
+        cur = conn.execute(
+            "UPDATE worklist SET status=?, resolved_by=?, resolved_at=?, resolution=?"
+            " WHERE item_id=? AND status='open'",
+            (status, by or current_run_id() or "cli", now_iso(), resolution, item_id))
+        conn.commit()
+        return cur.rowcount > 0
+    finally:
+        conn.close()
+
+
+def worklist_stats() -> dict:
+    """待办统计（供 `cli.py status` / 告警联动）：按 kind 计数 + 最老 open 滞留天数。"""
+    if not enabled():
+        return {"enabled": False, "open": 0, "by_kind": {}}
+    rows = worklist_list(status="open")
+    by_kind: dict[str, int] = {}
+    for r in rows:
+        by_kind[r["kind"]] = by_kind.get(r["kind"], 0) + 1
+    oldest_days = 0
+    if rows:
+        try:
+            first = min(r["created_at"] for r in rows)
+            t0 = datetime.strptime(first[:19], "%Y-%m-%dT%H:%M:%S").replace(tzinfo=_TZ)
+            oldest_days = max(0, (datetime.now(_TZ) - t0).days)
+        except (ValueError, TypeError):
+            oldest_days = 0
+    return {"enabled": True, "open": len(rows), "by_kind": dict(sorted(by_kind.items())),
+            "oldest_open_days": oldest_days,
+            "all": {s: len(worklist_list(status=s)) for s in ("resolved", "dismissed")}}
 
 
 # --------------------------------------------------------------------------- #

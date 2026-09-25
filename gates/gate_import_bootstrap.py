@@ -30,7 +30,9 @@ SKIP_DIRS = {".git", "__pycache__", ".pytest_cache", "data", "reports", "graphif
 BASELINE: dict[str, int] = {
     "gates": 17,
     "interfaces": 15,
-    "modules": 127,
+    # 128（2026-09-26，P1-6）：+1 = consolidate_timeliness.py 的 `_wl_add` 引导
+    # （该脚本原为纯 stdlib、无仓内导入，为接 worklist 队列首次引入仓根引导）
+    "modules": 128,
     "std_lib": 9,
     "tests": 35,
     "tools": 16,

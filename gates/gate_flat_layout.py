@@ -22,9 +22,11 @@ ALLOWED_DATA_SUBDIRS = {
     # docs：五源正文原文/附件统一根（docs_root(source) → data/docs/<scraper_slug>/）
     # reports/state：collector 运行产物（mof_laws_report.html 等报告、status.json/运行时锁，
     #   2026-09-09 mof 全量轮实证创建，写入位置=dirname(outdir) 下的 reports/state）
-    # corpus：外部语料归集根（F-L05：EAST2.0/部门制度等按域归集，保留原始目录树；
-    #   清单 reports/corpus/*.manifest.json 入库，语料本体不入库）
-    "regulatory_scrapers": {"cleaned", "clauses", "history", "raw", "docs", "reports", "state", "corpus"},
+    # 注：`corpus` 曾在此白名单（F-L05 外部语料归集根）。v2 §3.12（P2-3a，2026-09-26）已把
+    #   语料本体统一到**仓根 `data/corpus/<domain>/`**（该层同时服务 classifier 的 recall 与
+    #   ipb 的硬链接去重，挂在"采集"模块下属归属不当）→ 白名单移除，防"已迁走却仍留白名单"的
+    #   幽灵条目。迁移为同卷 rename，`originals/` 的 811 个硬链接保持有效。
+    "regulatory_scrapers": {"cleaned", "clauses", "history", "raw", "docs", "reports", "state"},
     # ledgers/misc：非制度正文的隔离区（2026-09-13）——台账/清单类与图片/压缩/数据库等
     # 从 originals 分离出来，使 originals 回归"单一扁平原件层"（命名规范 文号_名称）。
     "internal_policy_base": {"originals", "processed", "ledgers", "misc"},

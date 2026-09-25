@@ -37,6 +37,37 @@ except (AttributeError, OSError):  # 非 TTY/旧 Python 容错
     pass
 
 REVIEW = os.path.dirname(os.path.abspath(__file__))
+
+# v2 §3.14.3（D3）：时效冲突的待办登记。
+# 本脚本**无仓内依赖**（纯 stdlib，文件头无 sys.path 引导），故此处自行派生仓根以导入
+# `std_lib.common_lib.governance_store`；登记失败一律降级（旁路设施纪律）。
+_ORCH_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(REVIEW)))
+
+
+def _wl_add(match: dict, d: dict) -> None:
+    """登记时效冲突待办（同键出现 ≥2 个高质量且相互冲突的 verdict）。
+
+    v1 实现只把冲突写进 `冲突台账_<date>.csv` 与 `needs_review` 标记——**无处置入口**，
+    翻不回去。现登记进队列（`cli.py worklist resolve` 即处置通道）。
+    """
+    try:
+        if _ORCH_ROOT not in sys.path:
+            sys.path.insert(0, _ORCH_ROOT)
+        from std_lib.common_lib import governance_store as _gs  # noqa: PLC0415
+        _gs.worklist_add(
+            "timeliness_conflict",
+            str(match.get("document_number") or match.get("title") or "")[:80],
+            stage="2", artifact_key="cleaned:{src}",
+            payload={"title": match.get("title", ""),
+                     "document_number": match.get("document_number", ""),
+                     "source": match.get("source", ""),
+                     "final_status": d.get("new_status", ""),
+                     "ledger": d.get("ledger_name", ""),
+                     "reason": "同一键出现 ≥2 个高质量且相互冲突的 verdict"},
+            suggestion="按权威源优先级裁决（权威核验级 > 台账级）；裁决后用 --ledger "
+                       "指定台账重跑 consolidate_timeliness")
+    except Exception:  # noqa: BLE001  旁路设施：登记失败不得中断合并
+        pass
 ROOT = os.path.dirname(REVIEW)
 
 BASELINE = "时效性标注结果清单_20260824.jsonl"
@@ -341,6 +372,7 @@ def apply_delta(acc: Accumulator, d: dict, stats: dict, conflicts: list):
                 "ledger": d["ledger_name"],
                 "reason": "同一键出现 ≥2 个高质量且相互冲突的 verdict",
             })
+            _wl_add(match, d)
         stats["applied"] += 1
     else:
         # 增量质量 < 当前 → 跳过降级

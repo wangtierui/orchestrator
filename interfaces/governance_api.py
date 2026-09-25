@@ -64,7 +64,7 @@ def watermark(artifact_key: str) -> dict | None:
 
 
 def edges() -> list[dict]:
-    """水位展开的依赖边（status ∈ ok/stale/unregistered）。"""
+    """水位展开的依赖边（status ∈ ok / ok_within_round / stale / unregistered）。"""
     return _gs.dependency_edges()
 
 
@@ -77,8 +77,10 @@ def wm_status(artifact_key: str) -> tuple[str, dict]:
     """**单产物**水位状态（阶段 4：判据切换的共用入口，避免各门禁各自实现）。
 
     返回 `(status, detail)`：
-      - `ok`      —— 该产物的每条声明依赖边版本一致；
-      - `stale`   —— 存在"上游已推进、产物未重跑"的边（附 stale 边清单）；
+      - `ok`      —— 该产物的每条声明依赖边版本一致；**或**仅存在 `ok_within_round`
+                     边（同轮"先算后用 + 上游被再次推进"，属正常顺序特性，见 v2 §3.3.1）；
+                     detail 的 `within_round` / `within_round_deps` 会披露该情形；
+      - `stale`   —— 存在"上游在**更晚轮次**推进、产物未重跑"的边（附 stale 边清单）；
       - `unknown` —— 治理库未启用 / 该产物未登记水位 / 无法判定。
     调用方纪律（阶段 4 双判据并行）：`stale` → 阻断；`ok` → 可**豁免**基于 mtime 的
     旧判据（mtime 受 touch/copy 干扰，误报率高）；`unknown` → **不得**豁免，退回旧判据。
@@ -91,11 +93,14 @@ def wm_status(artifact_key: str) -> tuple[str, dict]:
             return "unknown", {"reason": f"{artifact_key} 未登记水位"}
         edges = [e for e in _gs.dependency_edges() if e["artifact"] == artifact_key]
         stale = [e for e in edges if e["status"] == "stale"]
+        within = [e for e in edges if e["status"] == "ok_within_round"]
         if stale:
-            return "stale", {"edges": len(edges), "stale": [
+            return "stale", {"edges": len(edges), "within_round": len(within), "stale": [
                 {"dep": e["dep"], "declared": e["declared_version"],
                  "current": e["current_version"]} for e in stale]}
-        return "ok", {"edges": len(edges), "version": wm.get("version")}
+        return "ok", {"edges": len(edges), "version": wm.get("version"),
+                      "within_round": len(within),
+                      "within_round_deps": sorted(e["dep"] for e in within)}
     except Exception as e:  # noqa: BLE001
         return "unknown", {"reason": f"{type(e).__name__}: {e}"}
 

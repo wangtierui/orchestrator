@@ -305,6 +305,7 @@ def _word_app():
         return None
     try:
         import atexit
+
         import win32com.client as wc  # type: ignore
         app = wc.Dispatch("Word.Application")
         app.Visible = False
@@ -510,7 +511,6 @@ class ZhengcekuScraper:
         LOG.info("zhengceku 栏目：共 %d 页，本次抓取 %d 页", total_pages(first), n_pages)
 
         seen = self.seen_urls
-        n_before = len(seen)          # 主库既有（resume 跳过基线）
         n_listed = 0                  # 列表命中总数（含已跳过）
         pending = []
         for i in range(n_pages):

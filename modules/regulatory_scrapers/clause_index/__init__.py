@@ -64,7 +64,7 @@ from std_lib.scraper_std.document_structure import (  # noqa: E402 共享条文�
     extract_structure,  # noqa: F401  （保留导出：历史调用方）
     parse_document,
     render_markdown,
-    segment_body,
+    segment_body,  # noqa: F401  （保留导出：唯一实现已上收本模块上游，见文件末尾说明）
     segment_outline,  # noqa: F401  （保留导出：非条文体锚切分）
     validate_clauses,
 )
@@ -308,7 +308,10 @@ def validate_schema() -> dict:
     space_contam / law_items）——后者是"问题一曾被静默放过"的直接堵漏（e2e 断言指标上限）。
     """
     from config.enums import (  # noqa: PLC0415
-        CLAUSE_ISSUE_SEVERITY, CLAUSE_PARSE_MODES, CLAUSE_STRUCTURE_LEVELS)
+        CLAUSE_ISSUE_SEVERITY,
+        CLAUSE_PARSE_MODES,
+        CLAUSE_STRUCTURE_LEVELS,
+    )
     from interfaces import contract  # noqa: PLC0415
     from std_lib.scraper_std.document_structure import structure_semantics  # noqa: PLC0415
     problems = []

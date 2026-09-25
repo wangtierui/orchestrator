@@ -171,7 +171,7 @@ def main(argv=None) -> int:
     print(f"[编排] 优先级顺序：{' → '.join(PRIORITY)} → **{LOWEST}（最低，须待前四源全部完成）**")
     print(f"[编排] 本次执行顺序：{' → '.join(order)}")
     print(f"[编排] 进度台账：{os.path.relpath(prog_p, ROOT)}")
-    print(f"[编排] 历史结果：" + (", ".join(
+    print("[编排] 历史结果：" + (", ".join(
         f"{s}={v.get('status')}" for s, v in prog.get("sources", {}).items()) or "（无）"))
 
     # 既有进度：已 success 的源跳过（断点：避免重复验证）

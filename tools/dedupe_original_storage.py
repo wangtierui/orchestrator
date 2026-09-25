@@ -56,8 +56,9 @@ DATA = os.path.join(IPB, "data")
 ORIGINALS = os.path.join(DATA, "originals")
 PROCESSED = os.path.join(DATA, "processed")
 INDEX_PATH = os.path.join(DATA, "internal_policy_index.json")
-CORPUS = os.path.join(ROOT, "modules", "regulatory_scrapers", "data",
-                      "corpus", "dept_policies")
+# A 侧（归集·审计层）：v2 §3.12（P2-3a，2026-09-26）已统一到仓根 `data/corpus/<domain>/`。
+# 迁移为**同卷 rename**，故 B 侧（originals/）的硬链接仍然有效（实测迁移后 811/879 不变）。
+CORPUS = os.path.join(ROOT, "data", "corpus", "dept_policies")
 BACKUP_ROOT = os.path.join(IPB, "backups")
 
 NON_POLICY_EXTS = {".xls", ".xlsx"}

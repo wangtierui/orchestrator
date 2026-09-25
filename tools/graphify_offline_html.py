@@ -120,7 +120,7 @@ def ensure_vendor(html_path: str) -> tuple:
 
 def patch_html(html_path: str) -> tuple:
     """统一 vis-network 引用为极简本地标签并注入 guard。返回 (changed, msg)。"""
-    with open(html_path, "r", encoding="utf-8") as fh:
+    with open(html_path, encoding="utf-8") as fh:
         text = fh.read()
 
     m = PAT_ANY.search(text)
@@ -168,7 +168,7 @@ def main(argv=None) -> int:
     print("[OK] vendor: %s (%s)" % (vendor, vmsg))
 
     if args.check:
-        with open(html_path, "r", encoding="utf-8") as fh:
+        with open(html_path, encoding="utf-8") as fh:
             text = fh.read()
         m = PAT_ANY.search(text)
         if not m or m.group(0) != MIN_TAG or GUARD_ID not in text:

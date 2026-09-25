@@ -158,7 +158,7 @@ def install_hooks() -> int:
         path = os.path.join(HOOK_DIR, name)
         text = ""
         if os.path.isfile(path):
-            with open(path, "r", encoding="utf-8", errors="replace") as fh:
+            with open(path, encoding="utf-8", errors="replace") as fh:
                 text = fh.read()
         else:
             text = "#!/bin/sh\n"
@@ -177,7 +177,7 @@ def uninstall_hooks() -> int:
         path = os.path.join(HOOK_DIR, name)
         if not os.path.isfile(path):
             continue
-        with open(path, "r", encoding="utf-8", errors="replace") as fh:
+        with open(path, encoding="utf-8", errors="replace") as fh:
             text = fh.read()
         new = _strip_block(text)
         if new.strip() in ("", "#!/bin/sh"):
@@ -198,7 +198,7 @@ def show_status() -> int:
         if not os.path.isfile(path):
             print("%-15s: 无" % name)
             continue
-        with open(path, "r", encoding="utf-8", errors="replace") as fh:
+        with open(path, encoding="utf-8", errors="replace") as fh:
             text = fh.read()
         print("%-15s: %s" % (name, "已安装受管块" if BEGIN in text else "未安装"))
     if os.path.isfile(SYNC_LOG):

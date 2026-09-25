@@ -279,6 +279,36 @@ def _sig_prev(entry):
         entry.get("summary"),
     )
 
+def _sig_eq(a, b):
+    """指纹等价比较：把 None 归一为 '' 后再比。
+
+    背景（2026-09-22 周调度**P0 定位**）：`_sig_current` 对列表侧缺失/不可解析的
+    `lSsDate` 走 `normalize_date` → **None**，而主库历史值多为 **''**；`None != ''`
+    使 **254 条/周**被误判为"变更" → 触发无谓的详情+附件重抓（附件为本地重抽取，
+    单条数秒级）→ 整轮跑不完、主库长期不更新。该字段在列表接口中本就不可得，
+    排除其 null 形态差异不损失任何真实可检测的变更能力。
+    """
+    return (tuple("" if x is None else x for x in a)
+            == tuple("" if x is None else x for x in b))
+
+def _canon_law_id(v):
+    """法规主键统一到**单一类型**（主库既有约定：纯数字 → int）。
+
+    背景（2026-09-22 周调度**P0 定位**）：`fgk.mof.gov.cn` 列表接口现以**字符串**
+    返回 `id`，而主库历史条目为 **int**（同一数值）。原实现 `prev_by_id.get(rid)`
+    按原类型取值 → 恒不命中 → **每一条都被判为 "added"**，记录级指纹增量彻底失效，
+    表现为每周对全部 ~870 条重抓详情+附件（数小时），主库因此长期停留在旧日期。
+    实测：`OVERLAP_raw=0 / OVERLAP_str=90`（100% 同值异型）。
+    """
+    if v is None:
+        return None
+    if isinstance(v, bool):
+        return int(v)
+    if isinstance(v, int):
+        return v
+    s = str(v).strip()
+    return int(s) if s.lstrip("-").isdigit() else s
+
 # --------------------------------------------------------------------------- #
 # 输出
 # --------------------------------------------------------------------------- #
@@ -507,7 +537,9 @@ def main():
             except Exception as e:
                 logger.warning("历史存储读取失败，本次将作为全量新增处理：%s", e)
                 prev_items = []
-        prev_by_id = {it.get("id"): it for it in prev_items if it.get("id")}
+        # 键统一为 str（与 `_canon_law_id` 呼应）：主库为 int、列表接口现返回 str，
+        # 若按原类型作键则恒不命中 → 记录级增量退化为全量重抓（见 `_canon_law_id` 注释）。
+        prev_by_id = {str(it.get("id")): it for it in prev_items if it.get("id")}
 
         new_store = []
         current_raw_by_id = {}
@@ -525,15 +557,17 @@ def main():
             fetch_att = fetch_detail_enabled and not args.no_attachments
             for rec in raw_records:
                 rid = rec.get("id")
-                current_raw_by_id[rid] = rec
-                prev = prev_by_id.get(rid)
-                sig_changed = prev is not None and _sig_current(rec) != _sig_prev(prev)
+                # 网络调用仍用**接口原样 id**；仅比对/记账键做规范化，避免影响请求语义与缓存键
+                current_raw_by_id[str(rid)] = rec
+                prev = prev_by_id.get(str(rid))
+                sig_changed = prev is not None and not _sig_eq(_sig_current(rec), _sig_prev(prev))
                 if prev is None:
                     # 新增：抓详情以补全字段 + 抓附件
                     detail = fetch_detail(rid, rate) if fetch_detail_enabled else None
                     atts = collect_attachments(rid, rate) if fetch_att else []
                     entry = build_entry(rec, detail, lfgcc, cat_map.get(lfgcc, lfgcc),
                                        fetch_detail_enabled, attachments=atts)
+                    entry["id"] = _canon_law_id(entry.get("id"))
                     entry["active"] = True
                     entry["change"] = "added"
                     added += 1
@@ -543,6 +577,7 @@ def main():
                     atts = collect_attachments(rid, rate) if fetch_att else []
                     entry = build_entry(rec, detail, lfgcc, cat_map.get(lfgcc, lfgcc),
                                        fetch_detail_enabled, attachments=atts)
+                    entry["id"] = _canon_law_id(entry.get("id"))
                     entry["active"] = True
                     entry["change"] = "updated"
                     updated += 1

@@ -1,19 +1,22 @@
 # BENCHMARK —— 交付基准登记（回归对照基线）
 
-> 自动生成：tools/gen_benchmark.py @ 2026-09-21 21:13:14 | python 3.13.14
+> 自动生成：tools/gen_benchmark.py @ 2026-09-26 06:49:41 | python 3.13.14
 > 用途：数据重建/重构后重跑 `python tools/gen_benchmark.py` 刷新；数值漂移即回归信号。
 
 ## 1 门禁（gates/ALL_GATES）
 
-实装 18 道（gates/gate_*.py）：
+实装 22 道（gates/gate_*.py）：
 ```
   gate_citations.py
+  gate_clean_schema.py
+  gate_config_integrity.py
   gate_contract.py
   gate_enum_values.py
   gate_field_aliases.py
   gate_flat_layout.py
   gate_hardcoded_paths.py
   gate_hardcoded_snapshots.py
+  gate_import_bootstrap.py
   gate_no_cross_module_import.py
   gate_no_duplicate_libs.py
   gate_original_resolvable.py
@@ -21,6 +24,7 @@
   gate_relations.py
   gate_rfn_drift.py
   gate_rfn_sync.py
+  gate_runtime_hygiene.py
   gate_secret_scan.py
   gate_sources_config.py
   gate_timeliness_ssot.py
@@ -31,10 +35,10 @@
 
 ## 2 自动化验收测试（pytest）
 
-用例文件 26：`test_analysis_deliveries.py`、`test_base_publish.py`、`test_clean_index_portability.py`、`test_cli_facade.py`、`test_common_lib.py`、`test_contract_api.py`、`test_crawler_extract.py`、`test_document_structure.py`、`test_drafter_pure.py`、`test_e2e_pipeline.py`、`test_excel_crawler_pipeline.py`、`test_governance_store.py`、`test_internal_original_paths.py`、`test_internal_policy_base.py`、`test_ipb_deep.py`、`test_ipb_extract_file.py`、`test_misc_pure.py`、`test_relations.py`、`test_rich_object.py`、`test_scraper_std_core.py`、`test_scraper_std_extra.py`、`test_scraper_std_tables.py`、`test_scrapers_pure.py`、`test_ssot_convergence.py`、`test_std_lib_more.py`、`test_table_structured.py`
+用例文件 29：`test_analysis_deliveries.py`、`test_base_publish.py`、`test_clean_index_portability.py`、`test_cli_facade.py`、`test_common_lib.py`、`test_contract_api.py`、`test_contract_manifest.py`、`test_crawler_extract.py`、`test_document_structure.py`、`test_drafter_pure.py`、`test_e2e_pipeline.py`、`test_excel_crawler_pipeline.py`、`test_governance_store.py`、`test_governance_watermark.py`、`test_governance_worklist.py`、`test_internal_original_paths.py`、`test_internal_policy_base.py`、`test_ipb_deep.py`、`test_ipb_extract_file.py`、`test_misc_pure.py`、`test_relations.py`、`test_rich_object.py`、`test_scraper_std_core.py`、`test_scraper_std_extra.py`、`test_scraper_std_tables.py`、`test_scrapers_pure.py`、`test_ssot_convergence.py`、`test_std_lib_more.py`、`test_table_structured.py`
 运行：`python -m pytest tests -q`
 
-**覆盖率基线（只升不降）**：TOTAL 20%（采自 `.coverage`；刷新：`python -m coverage run -m pytest tests -q`）
+**覆盖率基线（只升不降）**：TOTAL ?%（采自 `.coverage`；刷新：`python -m coverage run -m pytest tests -q`）
 
 ## 3 数据基线
 
@@ -42,12 +46,12 @@
 
 | 源 | 快照日期 | 备注 |
 |---|---|---|
-| gov | 20260921 | 最新 cleaned |
-| mof | 20260921 | 最新 cleaned |
-| nfra | 20260921 | 最新 cleaned |
-| pbc | 20260921 | 最新 cleaned |
-| supp | 20260921 | 最新 cleaned |
-| 合计 | — | 索引记录 16617 |
+| gov | 20260922 | 最新 cleaned |
+| mof | 20260922 | 最新 cleaned |
+| nfra | 20260922 | 最新 cleaned |
+| pbc | 20260922 | 最新 cleaned |
+| supp | 20260922 | 最新 cleaned |
+| 合计 | — | 索引记录 16618 |
 
 ### 3.2 classifier 底座/明细/桥（数据血缘 R10 已注入 generated_*）
 
@@ -76,7 +80,7 @@
 
 | 命令 | 职责 |
 |---|---|
-| `python cli.py gates` | 18 道交付门禁（以 ALL_GATES 为准） |
+| `python cli.py gates` | 22 道交付门禁（以 ALL_GATES 为准） |
 | `python cli.py classify --all --steps base,cluster,match,detail,upper,clause_graph` | 底座强序重建（R8 幂等断点） |
 | `python cli.py source list / add --id` | 源目录路由（R15） |
 | `python cli.py internal index/align/merged` | 内部制度链路 |

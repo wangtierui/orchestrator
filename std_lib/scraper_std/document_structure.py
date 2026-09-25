@@ -915,8 +915,8 @@ def score_parse(result: dict, text: str) -> dict:
 def _iter_nodes(nodes):
     for n in nodes:
         yield n
-        for c in n.get("children") or []:
-            yield c
+        # R7（2026-09-26）：`yield from` 替代 for+yield（等价且更简洁）
+        yield from n.get("children") or []
 
 
 def parse_document(text: str) -> dict:

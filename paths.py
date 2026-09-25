@@ -11,9 +11,9 @@ paths.py — regulatory_compliance_orchestrator 路径唯一事实源（R4 落�
 
 常量消费状况（v2 §2.1 A5，`gate_runtime_hygiene` 记录基线）：
   - 已消费：ROOT / MODULES_DIR / REPORTS_DIR / DATA_DIR / GOVERNANCE_DB /
-    SOURCES_YAML / OCR_YAML / TOOLS_DIR / TESTS_DIR
+    SOURCES_YAML / OCR_YAML / TOOLS_DIR / TESTS_DIR / CORPUS_DIR
   - 预留（当前无消费方，保持 API 稳定，供后续接入）：CONFIG_DIR / INTERFACES_DIR /
-    GATES_DIR / STD_LIB_DIR / ENUMS_FILE / SCHEMA_DIR
+    GATES_DIR / STD_LIB_DIR / ENUMS_FILE / SCHEMA_DIR / INBOX_DIR（P2-3b 接入）
 """
 import os
 
@@ -37,6 +37,15 @@ DATA_DIR = os.path.join(ROOT, "data")          # 运行期数据（git 忽略）
 # exports/ 文本快照与 reports/ 台账承载。唯一读写实现 =
 # std_lib/common_lib/governance_store.py（环境变量 REG_ORCH_GOVERNANCE_DB 可覆盖）。
 GOVERNANCE_DB = os.path.join(DATA_DIR, "governance.db")
+
+# ---- 语料分层（v2 §3.12，决策 D-9；2026-09-26 落地）----
+# 三层：① 归集本体 `data/corpus/<domain>/`（**只读审计层**，为 originals/ 的硬链接目标）
+#       ② 投放区 `data/inbox/<consumer>/`（投放/暂存，P2-3b）
+#       ③ 归集清单 `reports/corpus/<domain>.manifest.json`（入库，唯一可审计入口）
+# 纪律：本体必须**同卷 rename** 迁移（硬链接保活）；任何写方（ingest_corpus）只写本体目录，
+#       不得写投放区；清单只写 reports/corpus/（域内不再保留副本）。
+CORPUS_DIR = os.path.join(DATA_DIR, "corpus")
+INBOX_DIR = os.path.join(DATA_DIR, "inbox")
 
 # ---- config 子路径 ----
 ENUMS_FILE = os.path.join(CONFIG_DIR, "enums.py")

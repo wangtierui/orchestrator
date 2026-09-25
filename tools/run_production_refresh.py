@@ -107,48 +107,69 @@ PUB_INT = os.path.join(IPB, "published")
 #     同一次运行内必然自相矛盾（正是 gate_rfn_sync / gate_timeliness_ssot 的职责域）。
 #     attr 边留待阶段 4「判据切换」与旧判据一并处理。
 #   - `cleaned:<src>` 只在**阶段 2（时效回写）之后**登记一次：apply_timeliness_to_cleaned
-#     会 jsonl+csv 双轨回写三字段，阶段 1 的 cleaned 版本随即作废（故 `clauses:<src>`
-#     不声明 cleaned 上游——其输入是阶段 1 的瞬时版本，属已知的顺序特性，留待阶段 4）。
+#     会 jsonl+csv 双轨回写三字段，阶段 1 的 cleaned 版本随即作废。
+#     v2 §3.3.1（2026-09-26）：`clauses:<src>` 现已声明 `cleaned:<src>` 上游——"版本随即作废"
+#     不再致命，因为二者同属一轮（`round` 相同）→ `dependency_edges` 判 `ok_within_round`
+#     而非 `stale`。判据语义从"结构性 FAIL"转为"同轮顺序特性披露"。
 # --------------------------------------------------------------------------- #
 GOV_ARTIFACTS: dict[str, dict] = {
+    # `stage`（v2 §3.3.1，2026-09-26 新增）：产生该产物的阶段 id，仅审计/排障用、不参与判据
+    # （判据用 `round` = run_id，由 `_wm` 自动取 `current_run_id()`）。
     # ---- 观察型（无声明依赖；供下游 `inputs` 引用）----
-    "clean_index": {"produced_by": "regulatory_scrapers.clean_index.build_clean_index"},
-    "rfn_attr": {"produced_by": "regulatory_classifier.rfn.registry._save_rows"},
-    "rfn_theme": {"produced_by": "regulatory_classifier.rfn.registry._save_theme_rows"},
-    "timeliness:state": {"produced_by": "timeliness_review.verification_state.save_state"},
-    "internal_index": {"produced_by": "internal_policy_base.indexer.ingest"},
+    "clean_index": {"produced_by": "regulatory_scrapers.clean_index.build_clean_index",
+                    "stage": "1"},
+    "rfn_attr": {"produced_by": "regulatory_classifier.rfn.registry._save_rows", "stage": "3"},
+    "rfn_theme": {"produced_by": "regulatory_classifier.rfn.registry._save_theme_rows",
+                  "stage": "3"},
+    "timeliness:state": {"produced_by": "timeliness_review.verification_state.save_state",
+                         "stage": "2"},
+    "internal_index": {"produced_by": "internal_policy_base.indexer.ingest", "stage": "3"},
     # ---- 声明依赖型（阶段 1 主链边）----
-    "clauses:{src}": {"produced_by": "regulatory_scrapers.clause_index.build_clause_index"},
-    "cleaned:{src}": {"produced_by": "regulatory_scrapers.clean.run_clean_pipeline.main"},
+    # v2 §3.3.1（2026-09-26）：`clauses:{src}` **现声明** `cleaned:{src}` 上游。
+    #   此前不声明的原因——"阶段 1 的 cleaned 版本会被阶段 2 时效回写作废，声明即恒 stale"
+    #   ——已由 `dependency_edges` 的新增态 `ok_within_round` 解决：clauses（阶段 1）与
+    #   cleaned（阶段 2）同在**同一轮**（round = 同一 run_id），版本差异不再判陈旧。
+    #   残留语义差（clauses 基于阶段 1 的**瞬时** cleaned，而非阶段 2 回写后版本）由
+    #   detail 披露；是否需在阶段 2 之后重算 clauses 属「判据切换」议题，另行评估。
+    "clauses:{src}": {"produced_by": "regulatory_scrapers.clause_index.build_clause_index",
+                      "stage": "1", "inputs": ["cleaned:{src}"]},
+    "cleaned:{src}": {"produced_by": "regulatory_scrapers.clean.run_clean_pipeline.main",
+                      "stage": "2"},
     "classify:products": {
         "produced_by": "regulatory_classifier.scripts.classify.run",
-        "inputs": ["cleaned:{src}"],
+        "stage": "2.5", "inputs": ["cleaned:{src}"],
     },
     "relations_index": {
         "produced_by": "tools.extract_relations",
-        "inputs": ["cleaned:{src}", "internal_index"],
+        "stage": "2.6", "inputs": ["cleaned:{src}", "internal_index"],
     },
     "reconcile:drift": {
         "produced_by": "regulatory_classifier.scripts.reconcile_clean_drift",
-        "inputs": ["cleaned:{src}"],
+        "stage": "3", "inputs": ["cleaned:{src}"],
     },
     "merged_view": {
         "produced_by": "internal_policy_base.merged.build_merged_view",
-        "inputs": ["internal_index"],
+        "stage": "4.2", "inputs": ["internal_index"],
     },
     "published:external": {
         "produced_by": "base_publish.build_external+build_fts",
-        "inputs": ["cleaned:{src}", "clauses:{src}", "relations_index"],
+        "stage": "5.5", "inputs": ["cleaned:{src}", "clauses:{src}", "relations_index"],
     },
     "published:internal": {
         "produced_by": "base_publish.build_internal+build_fts",
-        "inputs": ["internal_index", "merged_view"],
+        "stage": "5.5", "inputs": ["internal_index", "merged_view"],
     },
-    # `analysis:manifest` **只观察、不声明依赖**：它在阶段 6.8 生成，而门禁在阶段 6 运行
-    # → 若声明 inputs，则从第二次运行起，阶段 6 处的"声明版本"必然是上一轮的（本轮依赖已推进）
-    # → gate_watermark **结构性恒 FAIL**。其新鲜度已由 `tests/test_analysis_deliveries`
-    # （_manifest sha16 与磁盘字节对齐）继续覆盖。
-    "analysis:manifest": {"produced_by": "tools.gen_analysis_deliveries"},
+    # `analysis:manifest` **仍只观察、不声明依赖**（v2 §3.3.1 的 `ok_within_round` 未能覆盖它）：
+    #   它在阶段 6.8 生成，而门禁在**阶段 6** 运行 → 门禁看到的是**上一轮**的
+    #   `analysis:manifest`（artifact.round = 上一轮）而依赖已在本轮推进（dep.round = 本轮）
+    #   → 轮次不同 → 仍判 `stale` → 声明即结构性恒 FAIL。
+    #   这与 `clauses:{src}` 的情形**本质不同**（后者 artifact 与 dep 同轮）。
+    #   【执行中新发现问题 N-13】真正的解法是消除"产在 6.8 / 判在 6"的顺序耦合（二者取一）：
+    #     (a) 把 `gates` 移到 6.8 之后；(b) 把 analysis:gen 前移到阶段 6 之前。
+    #   两者都改变主链顺序，需独立评估影响面（gate_result 的 run_id 归档、BENCHMARK 基线、
+    #   人工处置习惯等），故本批不动，登记为 **P3-5 待决项**。
+    #   当前新鲜度由 `tests/test_analysis_deliveries`（_manifest sha16 与磁盘字节对齐）覆盖。
+    "analysis:manifest": {"produced_by": "tools.gen_analysis_deliveries", "stage": "6.8"},
 }
 
 
@@ -259,7 +280,10 @@ def _wm(artifact_key: str, *, rc: int = 0, version: str = "", paths=(),
             if w and w.get("version"):
                 inputs[dep] = w["version"]
         gs.record_watermark(artifact_key, spec.get("produced_by", ""), version,
-                            inputs=inputs, record_count=record_count)
+                            inputs=inputs, record_count=record_count,
+                            # v2 §3.3.1：轮次取当前 run_id（链内由 run_start 置入 env），
+                            # 供 dependency_edges 判 `ok_within_round`；stage 取声明表的阶段 id。
+                            round_id=gs.current_run_id(), stage=spec.get("stage", ""))
     except Exception as e:  # noqa: BLE001
         print(f"[watermark] WARN {artifact_key} 登记失败（不影响主链）: "
               f"{type(e).__name__}: {e}")

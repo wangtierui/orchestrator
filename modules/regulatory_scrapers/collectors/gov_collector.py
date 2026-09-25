@@ -115,6 +115,7 @@ _OfflineMiss = OfflineMiss  # 兼容别名
 
 # ---- 拆分（2026-09-13，P3）：下列符号迁 gov_parse，re-export 保持外部调用兼容 ----
 from gov_parse import (  # noqa: F401  拆分 re-export（显式；规避 F405）
+    SOURCES,  # 子源登记表唯一事实源在 gov_parse（2026-09-15 收敛，勿在别处重复定义）
     ScrapeConfig,
     _is_https_scheme_upgrade,
     _longest_text_block,
@@ -127,7 +128,6 @@ from gov_parse import (  # noqa: F401  拆分 re-export（显式；规避 F405�
     load_resume,
     make_summary,
     merge_with_master,
-    SOURCES,          # 子源登记表唯一事实源在 gov_parse（2026-09-15 收敛，勿在别处重复定义）
     write_outputs,
 )
 
@@ -596,9 +596,6 @@ def main(argv=None) -> int:
         return 0
     atexit.register(_lock.release)
 
-    cfg = build_config(args)
-    client = RobustSession(cfg)
-
     # —— 多子源分发（2026-09-15 纳入 zhengceku）——
     # 原实现硬编码 XzfgkScraper；现按 cfg.source 分发，支持 --source all 依次抓取
     # 两个子源并**合并进同一 gov 主库** gov_laws.json（按 detail_url 去重，新优先）。
@@ -608,6 +605,16 @@ def main(argv=None) -> int:
         want = list(SOURCES)
     else:
         want = [args.source]
+
+    # P0 修复（2026-09-22 周调度发现）：`SOURCES` 中并无 "all" 键，原先在子源分发前
+    # 直接 `build_config(args)` 会 KeyError('all') → `--source all`（**即默认值**）与
+    # 无参调用必然崩溃（2026-09-15 纳入 zhengceku 时引入的回归）。
+    # 现按**首个子源**构建公共配置：RobustSession 的超时/重试/延时以及 resume/out_dir
+    # 均与子源无关；子源专属 cfg 仍在下方循环内按 `scfg = build_config(sub)` 重建。
+    _cfg_args = argparse.Namespace(**vars(args))
+    _cfg_args.source = want[0]
+    cfg = build_config(_cfg_args)
+    client = RobustSession(cfg)
 
     # resume：只跳过「已有正文」的 detail_url（无正文的历史记录仍需重抓补全）
     seen_urls = set()

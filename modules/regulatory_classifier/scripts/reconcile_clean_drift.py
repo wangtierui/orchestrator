@@ -57,6 +57,29 @@ from rfn.bridge import load_bridge, rfn_of, upsert  # noqa: E402
 
 import paths  # noqa: E402
 
+
+def _wl_add(rfn: str, cr: dict, matched: str, reason: str) -> None:
+    """登记 C2 待办（v2 §3.14.3 / D4）：supersede 类"实体换代"需人工确认。
+
+    背景：本脚本 docstring 已写明「C2 = 人工确认 supersede，本脚本只列出清单，不自动处理」，
+    而该"清单"此前只落 CSV 与 state 计数（`c2_pending`，门禁仅提示数字）——**无处置入口**。
+    现登记进待办队列，`cli.py worklist resolve` 即为处置通道。
+
+    旁路设施纪律：任何异常一律降级，reconcile 的既有语义不因队列写入而改变。
+    """
+    try:
+        from std_lib.common_lib import governance_store as _gs  # noqa: PLC0415
+        _gs.worklist_add(
+            "rfn_clean_drift_c2", rfn,
+            stage="3", artifact_key="reconcile:drift",
+            payload={"rfn": rfn, "clean_title": cr.get("title", ""),
+                     "clean_docno": cr.get("docno", ""), "matched_by": matched,
+                     "reason": reason},
+            suggestion="按 bridge relation=supersede 语义确认：若确为实体换代则接受新文号；"
+                       "若属登记错误则修正归属表（同文号多文件）")
+    except Exception:  # noqa: BLE001  旁路设施：登记失败不得中断核验
+        pass
+
 _clean_index = None
 
 
@@ -272,6 +295,7 @@ def reconcile(source=None, apply_c1=False, dry_run=False, force_clean_title=Fals
                                 "clean标题": cr["title"], "clean文号": cr["docno"],
                                 "matched_by": matched,
                                 "建议": "C2人工确认（同文号核心标题不同）"})
+                _wl_add(rfn, cr, matched, "同文号核心标题不同（可能与多文件/登记错误有关）")
             continue
         # 文号不一致：
         if matched in ("bridge_url", "bridge_dedup"):
@@ -283,6 +307,7 @@ def reconcile(source=None, apply_c1=False, dry_run=False, force_clean_title=Fals
                             "clean标题": cr["title"], "clean文号": cr["docno"],
                             "matched_by": matched,
                             "建议": "C2人工确认（supersede / URL 复用）"})
+            _wl_add(rfn, cr, matched, "桥锚命中同一条但文号变化（实体换代 / URL 复用）")
             if not dry_run:
                 upsert({"rfn": rfn, "文件来源": src, "source_url": cr["source_url"],
                         "dedup_key": cr["dedup_key"], "登记时标题": row.get("文件名称", ""),

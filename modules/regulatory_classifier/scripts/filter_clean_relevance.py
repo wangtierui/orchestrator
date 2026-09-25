@@ -29,7 +29,6 @@ from __future__ import annotations
 
 import argparse
 import csv
-import importlib.util
 import json
 import os
 import sys
@@ -139,9 +138,9 @@ def main(argv=None) -> int:
     print(f"[in ] {args.source} cleaned → {os.path.relpath(csv_path, ROOT)}")
     print(f"[out] {os.path.relpath(out_dir, ROOT)}  导出层：{sorted(want)}")
 
-    cols = ["title", "summary", "issue_organ", "column_name", "theme_name", "keyword",
-            "body_text", "body_text_webpage", "body_text_doc", "attachment_content",
-            "document_number", "publish_date", "source", "source_url"]
+    # 2026-09-26（R7）：删除此处未被使用的 `cols` 字面量副本——cleaned CSV 列契约的
+    # 唯一事实源是 `std_lib/scraper_std/unified_schema.CSV_COLUMNS`（39 列，经
+    # `interfaces/contract.py` 登记并由 gate_contract 断言），此处再抄一份只会漂移。
     cnt, layer, conf_cnt, yr = Counter(), Counter(), Counter(), Counter()
     # 「金融/保险相关」的独立统计：不以 scanner 的 INCLUDE 为限，
     # 另按"泛金融"词表单独计数，供确认筛选口径是否过窄。
@@ -190,11 +189,11 @@ def main(argv=None) -> int:
 
     el = time.time() - t0
     print(f"\n[耗时] {el:.1f}s（{cnt['total']} 条，{cnt['total'] / max(el, 0.1):.0f} 条/秒）")
-    print(f"[分层] " + "  ".join(f"{k}={v}" for k, v in layer.most_common()))
+    print("[分层] " + "  ".join(f"{k}={v}" for k, v in layer.most_common()))
     print(f"[推进候选] INCLUDE+BOUNDARY = {layer['INCLUDE'] + layer['BOUNDARY']} 条")
     print(f"[泛金融词命中] {fin_hit} 条（标题+元数据级）")
-    print(f"[置信度] " + "  ".join(f"{k}={v}" for k, v in sorted(conf_cnt.items())))
-    print(f"[年份前 8] " + "  ".join(f"{k}:{v}" for k, v in sorted(yr.items())[:8]))
+    print("[置信度] " + "  ".join(f"{k}={v}" for k, v in sorted(conf_cnt.items())))
+    print("[年份前 8] " + "  ".join(f"{k}:{v}" for k, v in sorted(yr.items())[:8]))
     print(f"[产物] {os.path.relpath(out_path, ROOT)}（{len(want)} 层）")
     # ⚠️ 产物中**不得写绝对路径**：门禁「盘符字面量扫描（R4）」会扫 .json/.md 等非 py 文件，
     # 出现盘符字面量即 FAIL（连注释里的示例也算）。统一落相对路径，与全仓可移植性约定一致。

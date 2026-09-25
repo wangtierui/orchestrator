@@ -18,7 +18,11 @@ if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 
 from std_lib.scraper_std.document_structure import (  # noqa: E402
-    extract_structure, parse_document, render_markdown, segment_body, segment_outline,
+    extract_structure,
+    parse_document,
+    render_markdown,
+    segment_body,
+    segment_outline,
     validate_clauses,
 )
 

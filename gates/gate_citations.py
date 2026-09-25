@@ -60,6 +60,7 @@ def run():
         if _ipb not in sys.path:
             sys.path.insert(0, _ipb)
         import merged as _merged  # noqa: PLC0415
+
         from interfaces.rfn_api import registry_paths as _registry_paths  # noqa: PLC0415
         _rp = _registry_paths()
         cur = {

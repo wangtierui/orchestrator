@@ -5,8 +5,8 @@
   - 命令注册表 COMMANDS（映射 commands/<name>.run；业务实现全部在 commands/ 包）；
   - argparse 蓝图 build_parser（帮助文本/子命令参数声明）；
   - 分发 main（UTF-8 强置、-h 处理、未知命令提示）。
-命令实现（12 个）见 commands/：gates/governance/source/internal/classify/timeliness/draft/rfn/
-base/analysis/relations/ping。
+命令实现（13 个）见 commands/：gates/governance/source/internal/classify/timeliness/draft/rfn/
+base/analysis/relations/worklist/ping。
 
 ⚠️ 阶段 0 澄清（2026-09-18）：`build_parser()` **仅用于 `-h/--help` 文本**，
 实际分发走 `COMMANDS` 注册表（`main()` 直接 `handler(argv[1:])`，不经 argparse 校验）。
@@ -33,6 +33,7 @@ from commands import relations as _m_relations
 from commands import rfn as _m_rfn
 from commands import source as _m_source
 from commands import timeliness as _m_timeliness
+from commands import worklist as _m_worklist
 
 COMMANDS = {
     "gates": _m_gates.run,
@@ -46,6 +47,8 @@ COMMANDS = {
     "base": _m_base.run,
     "analysis": _m_analysis.run,
     "relations": _m_relations.run,
+    # v2 §3.14.3（P1-6）：待办队列（链外节点决策自动化缺口的处置入口）
+    "worklist": _m_worklist.run,
     "ping": _m_ping.run,
 }
 
@@ -86,6 +89,11 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser("base", help="双底座发布件构建与统一查询（Base Contract v1；publish/query/search）")
     sub.add_parser("analysis", help="规划 2.1 五级分析交付库（F-L01；gen/status）")
     sub.add_parser("relations", help="依据/废止关系（R-F01；gen/status/show）——三类关系唯一事实源")
+    p_wl = sub.add_parser("worklist", help="待办队列（v2 §3.14.3；list/resolve/export/stats）")
+    p_wl.add_argument("action", nargs="?", default="list",
+                      choices=["list", "resolve", "export", "stats"],
+                      help="list 列出待办（默认 open，--all 全部）| resolve 处置（--resolution 必填，"
+                           "--dismiss 判为无需处置）| export 导出 reports/worklist_<date>.md | stats 统计")
     return p
 
 

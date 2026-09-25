@@ -47,6 +47,7 @@ if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 
 from std_lib.common_lib import governance_store as gs  # noqa: E402
+
 # 归一化 SSOT（gate_no_duplicate_libs：业务仓禁止本地 def 归一化）
 from std_lib.common_lib.norm import norm_docno  # noqa: E402
 
@@ -191,7 +192,7 @@ def load_relations() -> tuple[list[dict], list[str]]:
         occ[base] = n + 1
         if n:
             exact_dup += 1
-        row_key = hashlib.sha256(f"{base}|{n}".encode("utf-8")).hexdigest()[:16]
+        row_key = hashlib.sha256(f"{base}|{n}".encode()).hexdigest()[:16]
         conf = r.get("confidence")
         try:
             conf = float(conf) if conf not in (None, "") else None

@@ -399,17 +399,40 @@ def test_clean_index_api_is_live(gdb):
 # =========================================================================== #
 # 阶段 4（2026-09-18）：判据切换共用入口 wm_status
 # =========================================================================== #
-def test_wm_status_three_states(gdb):
+def test_wm_status_three_states(gdb, monkeypatch):
     from interfaces import governance_api as api
+    # 显式控制轮次：本用例验证**跨轮**陈旧（v2 §3.3.1 后同轮推进不再判 stale →
+    # 必须由测试自己指定 round，避免受环境遗留的 REG_ORCH_RUN_ID 影响）
+    monkeypatch.delenv("REG_ORCH_RUN_ID", raising=False)
     assert api.wm_status("relations_index")[0] == "unknown"      # 库未启用
     gs.init_db()
     assert api.wm_status("relations_index")[0] == "unknown"      # 未登记
-    gs.record_watermark("cleaned:gov", "clean", "v1")
-    gs.record_watermark("relations_index", "extract", "r1", inputs={"cleaned:gov": "v1"})
+    gs.record_watermark("cleaned:gov", "clean", "v1", round_id="R1")
+    gs.record_watermark("relations_index", "extract", "r1",
+                        inputs={"cleaned:gov": "v1"}, round_id="R1")
     state, detail = api.wm_status("relations_index")
     assert state == "ok" and detail["edges"] == 1
-    gs.record_watermark("cleaned:gov", "clean", "v2")
+    assert detail["within_round"] == 0
+    gs.record_watermark("cleaned:gov", "clean", "v2", round_id="R2")   # 更晚轮次推进
     state, detail = api.wm_status("relations_index")
     assert state == "stale"
     assert detail["stale"][0]["dep"] == "cleaned:gov"
     assert detail["stale"][0]["declared"] == "v1" and detail["stale"][0]["current"] == "v2"
+
+
+def test_wm_status_ok_within_round(gdb):
+    """v2 §3.3.1 新增第 4 态：**同一轮**内上游被再次推进 → 不判 stale（链内顺序特性）。
+
+    真实场景：`clauses:{src}` 在阶段 1 登记（读阶段 1 的 cleaned 版本），
+    阶段 2 时效回写后 `cleaned:{src}` 重新登记 → 版本变了但同属一轮。
+    """
+    from interfaces import governance_api as api
+    gs.init_db()
+    gs.record_watermark("cleaned:gov", "clean", "v1", round_id="R9")
+    gs.record_watermark("clauses:gov", "clause", "c1",
+                        inputs={"cleaned:gov": "v1"}, round_id="R9")
+    gs.record_watermark("cleaned:gov", "clean", "v2", round_id="R9")   # 同轮推进
+    state, detail = api.wm_status("clauses:gov")
+    assert state == "ok", "同轮顺序特性不得阻断"
+    assert detail["within_round"] == 1
+    assert detail["within_round_deps"] == ["cleaned:gov"]
