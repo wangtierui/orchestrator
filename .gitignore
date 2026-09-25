@@ -77,6 +77,13 @@ modules/regulatory_scrapers/timeliness_review/*_consolidate_manifest.json
 # 会随仓库分发给克隆方造成误导；与 .vscode/ 同类，属本地状态不入库）
 .codebuddy/
 
+# ===== 本地工具链产物（2026-09-26，v2 §3.15.4）=====
+# file_list_watcher.py 生成物：内容含**仓库绝对路径**（"根目录：D:\..."），
+# 一旦入库必然触发 gate_hardcoded_paths（R4）——按"派生产物"处理，与 clean_index/index.json 同口径。
+FILE_LIST.md
+# 临时调试日志（曾误入库；现忽略）
+_p.log
+
 # ===== reports 保留但忽略临时产物 =====
 reports/_tmp/
 _tmp_smoke/

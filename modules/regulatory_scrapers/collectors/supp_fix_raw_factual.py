@@ -37,7 +37,12 @@ for _p in (UTILS, PROJECT_ROOT):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-import pymupdf as fitz  # noqa: E402
+try:
+    # 2026-09-26（v2 §3.7 G2）：原为顶层无保护导入——"只装 .[dev]"（无 [ocr]）时
+    # 任何 import 本模块即 `ModuleNotFoundError`。改为模块可导入、调用期显式失败。
+    import pymupdf as fitz  # noqa: E402
+except ImportError:  # pragma: no cover - 依赖缺失环境
+    fitz = None  # type: ignore[assignment]
 
 from std_lib.scraper_std.naming import standard_filename  # noqa: E402
 
@@ -46,6 +51,11 @@ DOCS = os.path.join(PROJECT_ROOT, "downloaded_docs")
 TMP = os.path.join(PROJECT_ROOT, "tmp", "iachina")
 
 def extract_pdf(path: str) -> str:
+    if fitz is None:  # 依赖缺失：显式失败并给出可执行指引（替代 import 期崩溃）
+        raise RuntimeError(
+            "缺少 PyMuPDF（pip install -e \".[ocr]\" 或 pip install PyMuPDF>=1.24.3）；"
+            "supp_fix_raw_factual 无法解析 PDF"
+        )
     d = fitz.open(path)
     txt = "".join(p.get_text() for p in d)
     d.close()

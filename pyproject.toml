@@ -29,6 +29,14 @@ dependencies = [
     "pdfplumber>=0.11",
     # 编码探测（std_lib/scraper_std/encoding.py 惰性导入；缺失会静默降级为 gb18030→utf-8）
     "chardet>=5.0",
+    # 2026-09-26（v2 §3.7 G1/G2）依赖声明完整性修复：
+    #  - Pillow：ocr_engine / supp_ocr_pdf / pbc_backfill_pdfs 直接 `from PIL import ...`（原未声明）
+    #  - urllib3：gov_collector / gov_parse 直接 `from urllib3.util.retry import Retry`（原仅经 requests 传递）
+    #  - PyMuPDF：supp_fix_raw_factual 顶层导入（已补保护）；原先只在 [ocr] extra，
+    #    导致"只装 .[dev]"时 import 即崩——按真实依赖层上移 base（下界取舍见原 [ocr] 注释）
+    "Pillow>=10.0",
+    "urllib3>=2.0",
+    "PyMuPDF>=1.24.3,<2",
     # 说明（2026-09-13）：原 `cryptography>=3.0` 已移除——全仓零引用（死声明，扩大安装面）。
 ]
 
@@ -37,11 +45,10 @@ dev = ["pytest>=7.0.0", "coverage>=7.0.0", "ruff>=0.6", "mypy>=1.10"]
 # OCR extra（2026-09-12 审查补版本区间 D3：Paddle 生态变动快，锁主版本）
 # 2026-09-13：pypdf/pdfplumber 上移 base（非 OCR 组件）；PyMuPDF 下界修正见下。
 ocr = [
+    # 2026-09-26：PyMuPDF 已上移 base（supp_fix_raw_factual 顶层导入；见 dependencies 注释）。
+    # 代码统一使用 `import pymupdf`（该导入名自 PyMuPDF 1.24.3 起提供，旧版仅 `fitz`）。
     "paddleocr>=3.0,<4",
     "paddlex[ocr]>=3.0,<4",
-    # 代码统一使用 `import pymupdf`（该导入名自 PyMuPDF 1.24.3 起提供，旧版仅 `fitz`）
-    # ——原声明 >=1.24 允许 1.24.0~1.24.2，落到区间下界即 ImportError，故下界提至 1.24.3。
-    "PyMuPDF>=1.24.3,<2",
 ]
 # 说明（2026-09-13）：原 `mcp = ["mcp>=2.0.0"]` 已移除——全仓零 `import mcp`（死 extra）。
 # 北大法宝时效核验的真实依赖在 **Node 侧**：`@pkulaw/mcp-cli` + 托管 Node
@@ -75,7 +82,9 @@ config = ["*.yaml", "schema/*.json", "schema/*.yaml"]
 [tool.ruff]
 line-length = 100
 target-version = "py313"
-extend-exclude = ["data", "cache", "logs", "backups", "venv", "reports/_tmp", "_tmp_smoke"]
+extend-exclude = ["data", "cache", "logs", "backups", "venv", "reports/_tmp", "_tmp_smoke",
+                  # 2026-09-26（v2 §3.15.3 A4）：退役脚本隔离层不再维护风格
+                  "tools/retired"]
 
 # 迁移既有代码豁免：collectors / classifier 复制代码保留其紧凑风格（单行/短变量名），
 # 与旧仓 ruff 配置同口径；语义修复（F821 等）已在迁移时完成，风格项逐步清理。

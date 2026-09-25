@@ -47,6 +47,9 @@ EXCLUDE_DIRS = {
     # graphify 知识图谱产物（2026-09-20）：派生产物，由 `graphify extract` 在目标机重建，
     # 内容天然含本机绝对路径（graph.json 的 node label / converted/*.md 副本），不入库、不属硬编码违规
     "graphify-out",
+    # 退役脚本隔离层（2026-09-26，v2 §3.15.3 A3）：历史留存物，不作运行时判据；
+    # 其中 migrate_collectors_p3b.py 等本就以旧仓盘符路径为复制源（见 EXCLUDE_FILES 注释）。
+    "retired",
 }
 # 2026-09-13 扩面：代码 + 文档 + 配置
 SCAN_EXTS = (".py", ".json", ".yaml", ".yml", ".toml", ".cfg", ".ini", ".md", ".txt", ".mermaid")
@@ -54,14 +57,18 @@ SCAN_EXTS = (".py", ".json", ".yaml", ".yml", ".toml", ".cfg", ".ini", ".md", ".
 EXCLUDE_RELPATHS = {
     "modules/regulatory_scrapers/clean_index/index.json",   # clean_index 派生索引
     "modules/regulatory_classifier/recall_audit/output",    # recall 四门禁产物目录
+    # 2026-09-26（v2 §3.15.4）：本地工具链派生产物——file_list_watcher.py 生成物首行写
+    # "根目录：<仓库绝对路径>"，属派生产物（已 gitignore，与 clean_index/index.json 同口径），
+    # 非"硬编码违规"。修掉自 2026-09-24 起长期存在的 1 处 FAIL。
+    "FILE_LIST.md",
 }
 
 # 定义/注释含"盘符"字样者跳过：本文件、paths.py（ROOT 定义）；tools 显式 --root 默认值豁免在下方处理。
 # 一次性迁移工具豁免（仅引用旧仓只读源，非运行时业务代码，运行时仅开发期手工执行）：
-#   - migrate_collectors_p3b.py：定义旧仓父目录作复制源；
 #   - build_migration_manifest.py：--root 默认指向旧仓父目录（可被参数覆盖）。
-EXCLUDE_FILES = {"paths.py", "gate_hardcoded_paths.py",
-                 "migrate_collectors_p3b.py", "build_migration_manifest.py"}
+# 2026-09-26（v2 §3.15）：`migrate_collectors_p3b.py` 已迁入 `tools/retired/`（该目录由
+# EXCLUDE_DIRS 整体排除），故其 basename 豁免已冗余 —— 移除，避免"退役后仍留豁免"的语义漂移。
+EXCLUDE_FILES = {"paths.py", "gate_hardcoded_paths.py", "build_migration_manifest.py"}
 
 # tools/* 默认参数中的演示路径白名单（如 build_migration_manifest --root default）
 ALLOW_SUBSTR = ("--root", "--out", "default=")

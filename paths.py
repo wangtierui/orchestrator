@@ -3,9 +3,17 @@
 paths.py — regulatory_compliance_orchestrator 路径唯一事实源（R4 落地）
 
 设计纪律：
-  1) 本文件是**全仓唯一**路径解析入口；禁止在业务代码中硬编码盘符绝对路径或 sys.path.insert。
+  1) 本文件是**全仓唯一**路径解析入口；业务代码禁止硬编码盘符绝对路径。
   2) 环境变量可覆盖（REG_ORCH_ROOT），用于 CI / 非标准部署 / 测试隔离。
-  3) common_lib 不再内置第二套路径逻辑（R4：删除 paths_api 概念），一律 from paths import ...。
+  3) 模块清单不再本地定义：`module_dir()` 取自 `config.constants.MODULE_SPECS`
+     （v2 §3.1.1；此前本地 4 项白名单与门禁的 5 项互相矛盾，且本函数零调用方）。
+  4) `sys.path` 引导统一走 `bootstrap.py`（v2 §3.1.2）；本文件不做引导。
+
+常量消费状况（v2 §2.1 A5，`gate_runtime_hygiene` 记录基线）：
+  - 已消费：ROOT / MODULES_DIR / REPORTS_DIR / DATA_DIR / GOVERNANCE_DB /
+    SOURCES_YAML / OCR_YAML / TOOLS_DIR / TESTS_DIR
+  - 预留（当前无消费方，保持 API 稳定，供后续接入）：CONFIG_DIR / INTERFACES_DIR /
+    GATES_DIR / STD_LIB_DIR / ENUMS_FILE / SCHEMA_DIR
 """
 import os
 
@@ -20,8 +28,8 @@ STD_LIB_DIR = os.path.join(ROOT, "std_lib")
 MODULES_DIR = os.path.join(ROOT, "modules")
 REPORTS_DIR = os.path.join(ROOT, "reports")
 TOOLS_DIR = os.path.join(ROOT, "tools")
-DATA_DIR = os.path.join(ROOT, "data")          # 预留：D-05 决策数据随仓，本目录可选
 TESTS_DIR = os.path.join(ROOT, "tests")
+DATA_DIR = os.path.join(ROOT, "data")          # 运行期数据（git 忽略）
 
 # ---- 治理库（阶段 1，2026-09-18）----
 # 三轨制之「治理轨」：只放元数据/状态/关系/审计/水位（目标 < 50 MB），不含语料正文。
@@ -36,14 +44,20 @@ SOURCES_YAML = os.path.join(CONFIG_DIR, "sources.yaml")
 OCR_YAML = os.path.join(CONFIG_DIR, "ocr.yaml")
 SCHEMA_DIR = os.path.join(CONFIG_DIR, "schema")
 
-# ---- modules 子仓（沿用现有名，D-02）----
+
 def module_dir(name: str) -> str:
-    """返回 modules/<name> 绝对路径（仅允许白名单名）。"""
-    allowed = {"regulatory_scrapers", "regulatory_classifier",
-               "internal_policy_base", "internal_policy_drafter"}
-    if name not in allowed:
-        raise ValueError(f"未知模块名: {name}（允许 {sorted(allowed)}）")
-    return os.path.join(MODULES_DIR, name)
+    """返回 `modules/<name>` 绝对路径。
+
+    `name` 接受**模块包名**（如 `regulatory_scrapers`）或**短键**（如 `scrapers`）；
+    白名单唯一来源 = `config.constants.MODULE_SPECS`（含 `base_publish`）。
+    """
+    import config.constants as _c  # noqa: PLC0415  局部导入：避免 config 包初始化顺序耦合
+
+    try:
+        spec = _c.module_by_pkg(name)
+    except KeyError:
+        spec = _c.module_by_key(name)      # 未知时抛出带允许值的 KeyError
+    return os.path.join(MODULES_DIR, spec.pkg)
 
 
 def ensure_dirs() -> None:

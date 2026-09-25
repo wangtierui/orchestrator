@@ -2,18 +2,16 @@
 """commands.classify — orchestrator 命令：classify（自 cli.py 迁移，2026-09-13 审查 P3）。"""
 from __future__ import annotations
 
-import sys
-
-import paths
-
 
 def run(argv):
     """classify --theme T3|--all [--steps base,cluster,detail,...] [--dry-run]
     主题底座强序重建（R8：base→cluster→match→detail→upper→clause_graph，hash 断点幂等）。"""
-    import os
-    sys.path.insert(0, os.path.join(paths.ROOT, "modules", "regulatory_classifier", "scripts"))
-    sys.path.insert(0, os.path.join(paths.ROOT, "modules", "regulatory_classifier"))
     import argparse  # noqa: PLC0415
+
+    # P0-2（v2 §3.1.2）：sys.path 引导统一走 bootstrap（scripts/ 为非包目录，经 extra 注入）
+    from bootstrap import bootstrap  # noqa: PLC0415
+    bootstrap("regulatory_classifier",
+              extra=("modules/regulatory_classifier/scripts",))
 
     from modules.regulatory_classifier.scripts import classify as _cl  # noqa: PLC0415
     ap = argparse.ArgumentParser(description="主题底座强序重建（R8）")
@@ -38,7 +36,7 @@ def run(argv):
     # 失败不阻断 classify（交付库可经 `cli.py analysis gen` 手动补跑）。
     if not a.dry_run and not a.no_analysis:
         try:
-            sys.path.insert(0, os.path.join(paths.ROOT, "tools"))
+            bootstrap(include_tools=True)
             from gen_analysis_deliveries import main as _gen  # noqa: PLC0415
             _rc = _gen([])
             print(f"[classify] 分析交付库已自动刷新（rc={_rc}；--no-analysis 可跳过）")

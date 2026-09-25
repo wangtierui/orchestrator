@@ -34,6 +34,15 @@ ALL_GATES: list[dict] = [
     {"module": "gates.gate_relations", "desc": "依据/废止关系产物（R-F01：键集/枚举/强引用/溯源/统计）", "require_impl": True},
     {"module": "gates.gate_watermark", "desc": "产物水位一致性（阶段 1：水位比对替代 mtime）", "require_impl": True},
     {"module": "gates.gate_no_cross_module_import", "desc": "跨模块直连扫描（阶段 3：modules/ 零越权引导与裸 import）", "require_impl": True},
+    # ---- v2 重构新增（2026-09-26）：18 → 22 道 ----
+    # 口径修正（v2 §3.8 表 A/B 的门禁计数不一致）：原计划"新增 6 道"，
+    # 其中 `gate_module_registry` 与 `gate_cross_module_data` 实际以**判据**形式
+    # 落在 `gate_config_integrity`（B2）与 `gate_no_cross_module_import`（判据 D，P1-3）中，
+    # 不单独计数；因此本次新增 **4 道**，总数为 22。
+    {"module": "gates.gate_config_integrity", "desc": "配置与清单一致性（tools 清单 J1–J6/结构清单/退出码）", "require_impl": True},
+    {"module": "gates.gate_import_bootstrap", "desc": "sys.path 引导纪律（commands/ 清零；其余层基线冻结）", "require_impl": True},
+    {"module": "gates.gate_runtime_hygiene", "desc": "运行时卫生（退出码/静默异常/接口空壳；首期只披露）", "require_impl": True},
+    {"module": "gates.gate_clean_schema", "desc": "清洗校验质量（失败记录不得进入交付；v2 §3.4）", "require_impl": True},
 ]
 
 

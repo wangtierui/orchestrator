@@ -118,9 +118,15 @@ def extract_pdf_text(path: str) -> tuple[str, str]:
 # 内联 Tesseract 回退（仅当统一模块不可用时启用）
 # ---------------------------------------------------------------------------
 def _tesseract_fallback(path: str, *, dpi: int = 220) -> str:
-    import pymupdf as fitz
-    import pytesseract
-    from PIL import Image, ImageFilter, ImageOps
+    try:
+        # 2026-09-26（v2 §3.7 G2）：原为函数内无保护导入，缺 [ocr] extra 时抛
+        # ModuleNotFoundError 打断整批；改为明确降级（返回空文本，语义同 library_missing）。
+        import pymupdf as fitz
+        import pytesseract
+        from PIL import Image, ImageFilter, ImageOps
+    except ImportError as e:  # pragma: no cover - 依赖缺失环境
+        print(f"[supp_ocr] 回退链不可用（缺 {e.name}）：pip install -e \".[ocr]\"；本页按空文本处理")
+        return ""
 
     os.environ.setdefault("TESSDATA_PREFIX", _TESSDATA)
     pytesseract.pytesseract.tesseract_cmd = _TESSERACT_CMD

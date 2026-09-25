@@ -270,6 +270,7 @@ def run_pipeline(
     on_alarm: Any | None = None,
     cfg_path: str | None = None,
     history_dir: str | None = None,
+    allow_schema_errors: bool = False,
 ) -> dict[str, Any]:
     """
     统一清洗管道主入口。返回汇总：
@@ -367,12 +368,20 @@ def run_pipeline(
     monitor = NullThresholdMonitor(CORE_NULL_FIELDS, alarm_fields=hard_fields,
                                    on_alarm=on_alarm)
     valid_records: list[dict[str, Any]] = []
+    quarantined: list[dict[str, Any]] = []
     for rec in mapped:
         ok, errors = validate_record(rec, UNIFIED_SCHEMA, allow_missing=allowed_missing)
         if not ok:
             metrics.inc("schema_failed")
             rec["_metadata"]["validation_errors"] = errors
             LOG.warning("[%s] 校验未过 %s：%s", project, rec.get("title", "")[:30], errors[:2])
+            if not allow_schema_errors:
+                # v2 §3.4 V1（2026-09-26）：校验失败记录**不再进入交付**——原实现把失败记录
+                # 照常 append 进 valid_records 并无条件写盘，等于"校验失败仍交付"（假成功）。
+                # 此处改为转入隔离序列；空值监测仍计入（保留源端质量问题可见性）。
+                monitor.record(rec)
+                quarantined.append(rec)
+                continue
         monitor.record(rec)
         valid_records.append(rec)
     allow, null_rates = monitor.alarm()
@@ -416,6 +425,20 @@ def run_pipeline(
                           if project_root else "data/cleaned")
     outputs = write_cleaned(out_dir, project, cleaned_final)
 
+    # 8.5) 校验失败记录隔离落盘（v2 §3.4 V1）：不进交付，但**不静默丢弃**——
+    #      落 {src}_cleaned_{date}.quarantine.jsonl，供定位与修复后重跑。
+    quarantine_path = ""
+    if quarantined:
+        _qdate = _dt.date.today().strftime("%Y%m%d")
+        quarantine_path = os.path.join(out_dir, f"{project}_cleaned_{_qdate}.quarantine.jsonl")
+        _tmp = quarantine_path + ".tmp"
+        with open(_tmp, "w", encoding="utf-8") as fh:
+            for _r in quarantined:
+                fh.write(json.dumps(_r, ensure_ascii=False) + "\n")
+        os.replace(_tmp, quarantine_path)
+        LOG.warning("[%s] 校验未过记录已隔离 %d 条 → %s",
+                    project, len(quarantined), quarantine_path)
+
     # 9) 历史版本（每次清洗前将上一版归档——用当前产出做快照基线）
     # history_dir 改为由 out_dir **同级派生**（dirname(out_dir)/history）：
     #   - 默认 out_dir={project_root}/data/cleaned → history={project_root}/data/history，
@@ -444,6 +467,12 @@ def run_pipeline(
         "cleaned_total": len(cleaned_final),
         "dedup_removed": before - len(deduped),
         "validation_failed": metrics.counts["schema_failed"],
+        # v2 §3.4 V1（2026-09-26）：隔离量与失败率——供 run_clean_pipeline 判阈值与
+        # gate_clean_schema 断言（原实现只有 validation_failed 计数，且失败记录仍交付）
+        "quarantined_total": len(quarantined),
+        "quarantine_path": quarantine_path,
+        "schema_failed_rate": round(len(quarantined) / max(1, len(mapped)), 4),
+        "allow_schema_errors": allow_schema_errors,
         "allow_delivery": allow,
         "null_rates": null_rates,
         "true_nonempty_rates": true_nonempty_rates,

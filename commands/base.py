@@ -2,8 +2,6 @@
 """commands.base — orchestrator 命令：base（自 cli.py 迁移，2026-09-13 审查 P3）。"""
 from __future__ import annotations
 
-import paths
-
 
 def run(argv):
     """base publish|query|search —— 双底座发布件构建与统一查询（Base Contract v1，F-K03/O09）。
@@ -14,13 +12,10 @@ def run(argv):
     """
     import argparse as _ap  # noqa: PLC0415
     import json as _json  # noqa: PLC0415
-    import os as _os  # noqa: PLC0415
-    import sys as _sys  # noqa: PLC0415
 
-    mods = _os.path.join(paths.ROOT, "modules")
-    for _p in (_os.path.join(paths.ROOT, "interfaces"), mods, _os.path.join(paths.ROOT, "std_lib")):
-        if _p not in _sys.path:
-            _sys.path.insert(0, _p)
+    # P0-2（v2 §3.1.2）：sys.path 引导统一走 bootstrap（原 3 处自注入收口）
+    from bootstrap import bootstrap  # noqa: PLC0415
+    bootstrap("all")
     ap = _ap.ArgumentParser(prog="orchestrator base")
     sub = ap.add_subparsers(dest="action", required=True)
     pp = sub.add_parser("publish", help="构建发布件 + 索引")

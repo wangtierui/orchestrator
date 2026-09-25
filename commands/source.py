@@ -2,8 +2,6 @@
 """commands.source — orchestrator 命令：source（自 cli.py 迁移，2026-09-13 审查 P3）。"""
 from __future__ import annotations
 
-import sys
-
 import paths
 
 
@@ -20,7 +18,9 @@ def run(argv):
         import datetime as _dt  # noqa: PLC0415
         import json as _json  # noqa: PLC0415
         import os as _os  # noqa: PLC0415
-        sys.path.insert(0, _os.path.join(paths.ROOT, "modules", "regulatory_scrapers"))
+
+        from bootstrap import bootstrap  # noqa: PLC0415
+        bootstrap("regulatory_scrapers")
         from clean_index import get_clean_index  # noqa: PLC0415
         idx = get_clean_index()
         base_p = _os.path.join(paths.MODULES_DIR, "regulatory_scrapers", "data",

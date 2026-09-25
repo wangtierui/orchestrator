@@ -14,11 +14,12 @@ def run(argv):
     """
     import json as _json  # noqa: PLC0415
     import os as _os  # noqa: PLC0415
-    import sys as _sys  # noqa: PLC0415
+
+    from bootstrap import bootstrap  # noqa: PLC0415
     action = argv[0] if argv else ""
     outdir = _os.path.join(paths.ROOT, "docs", "reports")
     if action == "gen":
-        _sys.path.insert(0, _os.path.join(paths.ROOT, "tools"))
+        bootstrap(include_tools=True)
         from gen_analysis_deliveries import main as _gen  # noqa: PLC0415
         return _gen(argv[1:])
     if action == "status":

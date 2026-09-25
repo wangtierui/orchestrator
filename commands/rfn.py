@@ -2,8 +2,6 @@
 """commands.rfn — orchestrator 命令：rfn（自 cli.py 迁移，2026-09-13 审查 P3）。"""
 from __future__ import annotations
 
-import sys
-
 import paths
 
 
@@ -22,9 +20,9 @@ def run(argv):
     import json as _json  # noqa: PLC0415
     import os as _os  # noqa: PLC0415
 
+    from bootstrap import bootstrap  # noqa: PLC0415
+    bootstrap("regulatory_classifier")
     cls_root = _os.path.join(paths.ROOT, "modules", "regulatory_classifier")
-    if cls_root not in sys.path:
-        sys.path.insert(0, cls_root)
     ap = _ap.ArgumentParser(prog="orchestrator rfn")
     sub = ap.add_subparsers(dest="action", required=True)
     pr = sub.add_parser("register", help="登记监管文件（幂等：命中则复用现有 RFN）")

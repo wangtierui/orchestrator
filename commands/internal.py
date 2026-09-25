@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import os
-import sys
 
 import paths
 
@@ -27,7 +26,9 @@ def _require_ipb_index(sub: str) -> bool:
 
 def run(argv):
     """internal index|align|merged|backfill|reocr|refine-identity — 内部制度摄取/对齐/词表（P6）。"""
-    sys.path.insert(0, os.path.join(paths.ROOT, "modules"))
+    # P0-2：引导统一走 bootstrap；保留 `modules/` 以便 `from internal_policy_base.x import y`
+    from bootstrap import bootstrap  # noqa: PLC0415
+    bootstrap("all", extra=("modules",))
     if not argv:
         print("用法: orchestrator internal {index|align} [--source-dir DIR] [--dry-run]")
         return 1

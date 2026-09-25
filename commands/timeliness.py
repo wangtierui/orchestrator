@@ -22,8 +22,10 @@ def run(argv):
         # F-C03：state/台账 → 归属表"时效状态"列同步（sync_to_classifier 唯一实现）唯一 CLI 入口。
         import csv as _csv  # noqa: PLC0415
         import glob as _glob  # noqa: PLC0415
-        if _rev not in sys.path:
-            sys.path.insert(0, _rev)
+
+        from bootstrap import bootstrap  # noqa: PLC0415
+        bootstrap("regulatory_scrapers",
+                  extra=("modules/regulatory_scrapers/timeliness_review",))
         import verification_state as _vstate  # noqa: PLC0415
         ledgers = sorted(_glob.glob(os.path.join(_rev, "时效核验_*变更台账_*.csv")))
         if not ledgers:

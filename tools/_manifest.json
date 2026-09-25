@@ -1,0 +1,37 @@
+{
+ "schema_version": "1.0",
+ "generated_at": "2026-09-26",
+ "note": "tools/ 脚本语义分区清单（v2 §3.2 D-1 / §3.15.5）。category=retired 的文件必须位于 tools/retired/；本清单由 gates/gate_config_integrity.py 断言（J1–J5）。新增脚本必须登记，禁止遗漏。",
+ "root_py_allowlist": [
+  "bootstrap.py",
+  "cli.py",
+  "file_list_watcher.py",
+  "paths.py"
+ ],
+ "entries": [
+  {"file": "build_east_backlog.py", "category": "tool", "entry": "EAST2.0 表格类监管文件 → supp backlog（§3.12.5 的 supp 通道）"},
+  {"file": "build_migration_manifest.py", "category": "tool", "entry": "生成 data_migration_manifest.json（R22）；gate_hardcoded_paths 保留其 basename 豁免"},
+  {"file": "check_llm_wiki_upstream.py", "category": "tool", "entry": "llm_wiki 上游 Releases 监测（网络失败 rc=2）"},
+  {"file": "ci_check.py", "category": "tool", "entry": "本地 CI 等价物：ruff → pytest → gates（+可选 coverage）"},
+  {"file": "dedupe_original_storage.py", "category": "tool", "entry": "原件库冗余处置 + 跨层硬链接（A 侧只读）"},
+  {"file": "extract_relations.py", "category": "pipeline", "entry": "阶段 2.6 关系全量重抽（cli.py relations gen 的被调实现）"},
+  {"file": "gen_analysis_deliveries.py", "category": "pipeline", "entry": "阶段 6.8 五级分析交付库（17 项）"},
+  {"file": "gen_benchmark.py", "category": "tool", "entry": "BENCHMARK.md 回归对照基线生成"},
+  {"file": "gen_supp_timeliness_audit.py", "category": "tool", "entry": "supp 时效标注口径审计（只读）"},
+  {"file": "gen_theme_moc.py", "category": "tool", "entry": "vault 主题 MOC 生成（--out 必填）"},
+  {"file": "governance_register_artifacts.py", "category": "tool", "entry": "原件注册进治理库（阶段 1）"},
+  {"file": "governance_sync.py", "category": "pipeline", "entry": "阶段 3.5 元数据四表投影（cli.py governance sync 的被调实现）"},
+  {"file": "graphify_offline_html.py", "category": "tool", "entry": "graph.html 的 vis-network 依赖本地化（被 graphify_sync 调用）"},
+  {"file": "graphify_sync.py", "category": "tool", "entry": "graphify 产物随提交同步（CODEBUDDY.md 指向）"},
+  {"file": "ingest_corpus.py", "category": "tool", "entry": "外部语料归集（F-L05；§3.12 的归集入口）"},
+  {"file": "normalize_internal_naming.py", "category": "tool", "entry": "内部制度规范命名与归集（dry-run 前置 + 备份）"},
+  {"file": "prune_orphan_processed.py", "category": "tool", "entry": "清理孤儿 processed 记录（dry-run / --apply）"},
+  {"file": "reconcile_original_paths.py", "category": "tool", "entry": "主索引路径 ↔ 原件库对账（gate_original_resolvable 指定的处置入口）"},
+  {"file": "rfn_backlog.py", "category": "tool", "entry": "RFN 补登候选（关系线索 + 引用者主题投票）"},
+  {"file": "run_production_refresh.py", "category": "pipeline", "entry": "主链编排（14 阶段 / 22 步）；v2 起由 cli.py run 调用（库形态）"},
+  {"file": "split_internal_nonpolicy.py", "category": "tool", "entry": "非制度正文件隔离归置（misc/ ledgers/）"},
+  {"file": "sync_wiki_sources.py", "category": "tool", "entry": "发布件 → vault Markdown（SHA256 增量 + --prune）"},
+  {"file": "retired/flatten_collectors.py", "category": "retired", "since": "2026-09-13", "note": "collectors 物理拍平（一次性）；替代物：无（映射保留在本文件）"},
+  {"file": "retired/migrate_collectors_p3b.py", "category": "retired", "since": "2026-09-08", "note": "旧四仓复制（一次性，COPY_PLAN）；替代物：无（旧仓已冻结）"}
+ ]
+}

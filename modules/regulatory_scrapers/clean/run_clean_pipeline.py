@@ -33,6 +33,13 @@ for _p in (_REPO,):
 
 from std_lib.scraper_std.pipeline import run_pipeline  # noqa: E402
 
+# v2 §3.4 V1（2026-09-26）：校验失败率阈值。
+# 定档依据：改造前校验失败记录**照常交付**（假成功），无任何阈值；首次启用取 2%
+# ——高于"个别脏记录"的噪声，低于"源结构变化"的量级；超阈值即 rc=2（交付未完成）。
+# 若实际源存在结构性缺口需长期高于该值，应显式调高并记录原因（或对单源用
+# --schema-fail-rate-max 临时放宽），不得直接删检查。
+SCHEMA_FAIL_RATE_MAX = 0.02
+
 # 五源 raw 主库 json 文件名（与 data_migration_manifest / 旧仓 data/raw 一致）
 RAW_MASTER_NAMES: dict[str, str] = {
     "gov": "gov_laws.json",
@@ -99,6 +106,12 @@ def main(argv=None) -> int:
                     help="JSONL 字段换行一并归一（默认保留原始 \\n）")
     ap.add_argument("--no-clauses", action="store_true",
                     help="跳过 clean→条文 固定节点（默认清洗成功后自动增量构建 clause_index，②）")
+    # v2 §3.4 V1（2026-09-26）：校验失败记录默认**不进入交付**（隔离落盘）。
+    ap.add_argument("--allow-schema-errors", action="store_true", dest="allow_schema_errors",
+                    help="逃生阀：校验失败记录仍进入交付（兼容旧行为；默认关闭）")
+    ap.add_argument("--schema-fail-rate-max", type=float, default=SCHEMA_FAIL_RATE_MAX,
+                    dest="schema_fail_rate_max",
+                    help=f"校验失败率阈值（超过则 rc=2；默认 {SCHEMA_FAIL_RATE_MAX:.2%}）")
     args = ap.parse_args(argv)
 
     project = args.project
@@ -116,6 +129,7 @@ def main(argv=None) -> int:
         clean_version=args.clean_version,
         captured_at=args.captured_at,
         on_alarm=None if args.on_alarm == "raise" else _on_alarm_default,
+        allow_schema_errors=args.allow_schema_errors,
     )
     print(json.dumps(summary, ensure_ascii=False, indent=2))
 
@@ -132,6 +146,20 @@ def main(argv=None) -> int:
 
     if not summary.get("allow_delivery"):
         print(f"[{project}] WARN 空值率超阈值，按规范不生成交付文件（已告警）。")
+        return 2
+
+    # v2 §3.4 V1（2026-09-26）：校验失败记录的显式失败面。
+    # 改造前：validate_record 失败仅记 _metadata.validation_errors 并**照常交付**（假成功）；
+    # 现在：失败记录隔离落盘 + 失败率超阈值即 rc=2（交付视为未完成）。
+    _q = int(summary.get("quarantined_total") or 0)
+    _rate = float(summary.get("schema_failed_rate") or 0.0)
+    if _q:
+        print(f"[{project}] 校验未过已隔离 {_q} 条（失败率 {_rate:.2%}）"
+              f"→ {summary.get('quarantine_path') or '(未落盘)'}")
+    if _rate > args.schema_fail_rate_max:
+        print(f"[{project}] FAIL 校验失败率 {_rate:.2%} 超阈值 "
+              f"{args.schema_fail_rate_max:.2%}——交付视为未完成；请修源后重跑，"
+              f"或用 --allow-schema-errors 显式接受（逃生阀）。")
         return 2
 
     tail_failures: list[str] = []   # F-S08：尾部固定节点失败登记（决定 rc）

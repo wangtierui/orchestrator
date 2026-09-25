@@ -21,7 +21,9 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # 构建产物目录亦排除（2026-09-13）：pip wheel / pip install . 会整树复制到 build/lib，
 # 其中的旧快照文件名会造成误报（这些目录 .gitignore 已忽略，非源码）。
 EXCLUDE_DIRS = {"backups", "data", "cache", "logs", "reports", "venv", ".venv", ".git",
-                "__pycache__", "clean_index", "build", "dist", ".pytest_cache"}
+                "__pycache__", "clean_index", "build", "dist", ".pytest_cache",
+                # 2026-09-26（v2 §3.15.3 A2）：退役脚本隔离层
+                "retired"}
 EXCLUDE_FILES = {"gate_hardcoded_snapshots.py", "clean_index.py"}
 
 

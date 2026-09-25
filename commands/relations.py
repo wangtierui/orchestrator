@@ -13,21 +13,19 @@
 from __future__ import annotations
 
 import json
-import os
-import sys
-
-import paths
 
 
 def _api():
-    sys.path.insert(0, paths.ROOT)
+    from bootstrap import bootstrap  # noqa: PLC0415
+    bootstrap()
     from interfaces import relations_api  # noqa: PLC0415
     return relations_api
 
 
 def _gen(argv) -> int:
     """全量抽取（透传到 tools/extract_relations.py，保持单一实现）。"""
-    sys.path.insert(0, os.path.join(paths.ROOT, "tools"))
+    from bootstrap import bootstrap  # noqa: PLC0415
+    bootstrap(include_tools=True)
     import argparse  # noqa: PLC0415
 
     from extract_relations import run  # noqa: PLC0415
