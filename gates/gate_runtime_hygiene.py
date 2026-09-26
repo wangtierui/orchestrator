@@ -23,7 +23,8 @@ import paths
 
 ROOT = paths.ROOT
 SKIP_DIRS = {".git", "__pycache__", ".pytest_cache", "data", "reports", "graphify-out",
-             "external", "tessdata", "backups", ".ruff_cache", ".codebuddy", "retired"}
+             "external", "tessdata", "backups", ".ruff_cache", ".codebuddy", "retired",
+             "archive"}   # v2 §3.10（P2-3）：归档层不参与运行时卫生计数
 
 PAT_RETURN_INT = re.compile(r"^\s*return\s+[1-9]\d*\s*(?:#.*)?$", re.M)
 PAT_BARE_PASS = re.compile(r"except[^\n]*:\s*\n\s*pass\b")

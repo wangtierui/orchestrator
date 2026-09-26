@@ -35,7 +35,10 @@ domains:
   regulatory_stats:
     layer: corpus
     source_kind: regulatory_statistics
-    consumer: regulatory_stats              # 新域（承接内控 4.2「要求/规则来源」）
+    # P3-3（v2 §3.13.1 / R11）：本域当前**无已实现的下游消费者**（内控 4.2「要求/规则来源」
+    # 尚未接入）→ 显式标注 `pending_consumer`，由判据 V 持续披露，**不假装已消费**
+    # （原值 `regulatory_stats` 是自指环：自己消费自己 = 事实上的"有产出无消费"）。
+    consumer: pending_consumer
     inbox: data/inbox/regulatory_stats
     writable: false
     ingress_policy: new_and_unhashed_only

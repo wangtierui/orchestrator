@@ -23,7 +23,9 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 EXCLUDE_DIRS = {"backups", "data", "cache", "logs", "reports", "venv", ".venv", ".git",
                 "__pycache__", "clean_index", "build", "dist", ".pytest_cache",
                 # 2026-09-26（v2 §3.15.3 A2）：退役脚本隔离层
-                "retired"}
+                "retired",
+                # v2 §3.10（P2-3）：数据生命周期归档层（可能含旧快照，不参与扫描）
+                "archive"}
 EXCLUDE_FILES = {"gate_hardcoded_snapshots.py", "clean_index.py"}
 
 

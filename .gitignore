@@ -14,6 +14,10 @@ data/
 # （以 exports/ 文本快照与 reports/ 台账为准）。故显式保持忽略，勿白名单化。
 cache/
 logs/
+# ===== 数据生命周期归档层（v2 §3.10，P2-3）=====
+# tools/retention.py 把超出保留量的备份/临时产物**移动**到此（只移动不删除，人工复核后再清）。
+# 归档物不是源码，不入库；`archive/` 亦在 6 处门禁扫描的排除集内（不构成新盲区）。
+archive/
 # 生成器运行备份（build_detail_tables 等写 classifier/backups/detail_tables_* 等）
 **/backups/
 *.csv.bak_*

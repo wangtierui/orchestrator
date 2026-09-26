@@ -24,7 +24,8 @@ import paths
 ROOT = paths.ROOT
 PAT = re.compile(r"sys\.path\.(insert|append)")
 SKIP_DIRS = {".git", "__pycache__", ".pytest_cache", "data", "reports", "graphify-out",
-             "external", "tessdata", "backups", ".ruff_cache", ".codebuddy"}
+             "external", "tessdata", "backups", ".ruff_cache", ".codebuddy",
+             "archive"}   # v2 §3.10（P2-3）：归档层不参与注入计数
 
 # 冻结基线（2026-09-26 **P1-3 实测重标**）：只减不增
 #
@@ -44,7 +45,8 @@ BASELINE: dict[str, int] = {
     "tests": 33,
     # 14 → 17（2026-09-26，P2-1/2/3b/6）：新增 3 个工具各自带 1 处仓根引导
     # （gen_schedule_doc / install_schedule / inbox_scan —— 均为"可独立直调"的运维工具）
-    "tools": 17,
+    # 17 → 18（同日 P2-3）：+1 = tools/retention.py 的仓根引导（同上，可独立直调）
+    "tools": 18,
 }
 # 硬零层：P0-2 已收口，禁止回退
 HARD_ZERO_GROUPS = ("commands",)

@@ -154,10 +154,11 @@ def test_inbox_unrecognized_ext_needs_review():
 
 
 def test_doctor_checks_complete():
+    """T3：数量不写死 18（方案 §3.13.4 的目标），断言 id 唯一 + quick ⊆ 全量。"""
     from commands import doctor
     ids = [c[0] for c in doctor.CHECKS]
-    assert len(ids) == 18, ids
-    assert len(set(ids)) == 18
+    assert len(ids) >= 18, f"检查项少于方案要求的 18 项：{ids}"
+    assert len(set(ids)) == len(ids), ids
     assert set(doctor.QUICK_IDS) <= set(ids)
 
 

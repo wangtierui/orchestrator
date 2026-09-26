@@ -27,6 +27,7 @@
   {"file": "ingest_corpus.py", "category": "tool", "entry": "外部语料归集（F-L05；§3.12 的归集入口）"},
   {"file": "inbox_scan.py", "category": "tool", "entry": "投放区扫描与路由（v2 §3.12.6，P2-3b；按 config/inbox_registry.yaml 路由，落 _inbox_manifest.json）"},
   {"file": "install_schedule.py", "category": "tool", "entry": "由 config/schedule.yaml 生成/安装/校验 Windows 计划任务与 crontab（v2 §3.13.6，P2-6）"},
+  {"file": "retention.py", "category": "tool", "entry": "数据生命周期与保留策略（v2 §3.10，P2-3；默认 dry-run，--apply 移动至 archive/ 并落台账）"},
   {"file": "normalize_internal_naming.py", "category": "tool", "entry": "内部制度规范命名与归集（dry-run 前置 + 备份）"},
   {"file": "prune_orphan_processed.py", "category": "tool", "entry": "清理孤儿 processed 记录（dry-run / --apply）"},
   {"file": "reconcile_original_paths.py", "category": "tool", "entry": "主索引路径 ↔ 原件库对账（gate_original_resolvable 指定的处置入口）"},

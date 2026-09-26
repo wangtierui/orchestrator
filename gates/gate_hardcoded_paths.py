@@ -42,6 +42,8 @@ EXCLUDE_DIRS = {
     "reports", "published", ".pytest_cache", "node_modules",
     # 构建产物（.gitignore 已忽略；pip wheel / pip install . 会整树复制到 build/lib）
     "build", "dist",
+    # v2 §3.10（P2-3）：数据生命周期归档层（tools/retention.py 的目标；不入 git）
+    "archive",
     # 本地环境/agent 状态目录（均不入 git；external 为 PaddleOCR/Tesseract 第三方 junction）
     "external", "tessdata", ".codebuddy",
     # graphify 知识图谱产物（2026-09-20）：派生产物，由 `graphify extract` 在目标机重建，

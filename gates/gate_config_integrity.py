@@ -168,7 +168,10 @@ def _check_tools(manifest: dict) -> tuple[list[str], dict, list[str]]:
         warnings.append(f"J5: 白名单条目已不存在 {stale}（建议收缩）")
     detail["root_py"] = sorted(actual_root)
 
-    # J6 报告项：仓根未跟踪且未忽略的文件
+    # J6 **已转严格**（v2 §3.15.5，P2-7）：仓根未跟踪且未忽略的文件 → FAIL（入库/忽略/删除三选一）。
+    # 理由（§3.15.4）：仓根是"最容易被随手丢文件"的地方（`file_list_watcher_bak.py`、`_p.log`
+    # 即为此类残留）；仅报告不阻断 → 残留会长期累积。gates/ 与 tools/ 内的同类检查
+    # 由 A1–A4 与 J3 承担，此处只盯**仓根**（`/` 不在路径里）。
     try:
         r = subprocess.run(["git", "status", "--porcelain", "--untracked-files=all", "--", "."],
                            cwd=ROOT, capture_output=True, text=True, encoding="utf-8",
@@ -176,9 +179,10 @@ def _check_tools(manifest: dict) -> tuple[list[str], dict, list[str]]:
         untracked = [ln[3:].strip() for ln in (r.stdout or "").splitlines()
                      if ln.startswith("??") and "/" not in ln[3:].strip()]
         if untracked:
-            warnings.append(f"J6: 仓根存在未跟踪且未忽略的文件 {sorted(untracked)}"
-                            "（P2-7 将转严格：入库/忽略/删除三选一）")
+            problems.append(f"J6: 仓根存在未跟踪且未忽略的文件 {sorted(untracked)}"
+                            "（三选一：入库 / 写进 .gitignore / 删除；勿堆在仓根）")
     except (OSError, subprocess.SubprocessError) as e:  # noqa: BLE001
+        # git 不可用（tarball/无 git 环境）→ 只告警，不 FAIL（判据不可执行 ≠ 判据通过）
         warnings.append(f"J6: 未跟踪文件检查跳过（{type(e).__name__}）")
 
     return problems, detail, warnings
@@ -538,6 +542,237 @@ def _check_triggers() -> tuple[list[str], dict]:
     return problems, detail
 
 
+# --------------------------------------------------------------------------- #
+# R. 步骤清单一致性（v2 §3.13.3，P2-6 收尾）
+#    `tools/run_production_refresh.STEP_ORDER` 是 `--from/--only/--list-steps` 的判据来源；
+#    它与本文件实际 `_run("<step>")` 调用点漂移 → `--only` 会"静默不选中"（最坏的静默失败）。
+#    故断言**双向一致**：每个调用点字面量在清单内，每个清单项有调用点。
+#    实现刻意**零正则**（本仓写入链路会二次转义反斜杠，见本文件同名注释）。
+# --------------------------------------------------------------------------- #
+_RPR_REL = ("tools", "run_production_refresh.py")
+_STEP_CHARS = frozenset("abcdefghijklmnopqrstuvwxyz0123456789_:{}")
+_QUOTES = ('"', "'")
+
+
+def _quoted_after(text: str, idx: int, quotes=_QUOTES) -> tuple[str, int]:
+    """`idx` 之后首个引号串 → (内容, 结束位置)；无可解析内容返回 ("", idx)。"""
+    j = idx
+    while j < len(text) and text[j].isspace():
+        j += 1
+    if j < len(text) and text[j] == "f" and j + 1 < len(text) and text[j + 1] in quotes:
+        j += 1
+    if j >= len(text) or text[j] not in quotes:
+        return "", idx
+    q = text[j]
+    k = text.find(q, j + 1)
+    if k < 0:
+        return "", idx
+    return text[j + 1:k], k
+
+
+def _run_step_literals(text: str) -> list[str]:
+    """提取 `_run("<step>"` / `_run(f"<step>"` 的字面量（过滤注释里的示例形如 `<step>`）。"""
+    out: list[str] = []
+    start = 0
+    while True:
+        i = text.find("_run(", start)
+        if i < 0:
+            return out
+        cand, j = _quoted_after(text, i + len("_run("))
+        if cand and all(c in _STEP_CHARS for c in cand):
+            out.append(cand)
+        start = (j if j > i else i + len("_run(")) + 1
+
+
+def _tuple_of_quotes(text: str, marker: str) -> list[str]:
+    """取 `marker = ( "a", "b", ... )` 中的引号串列表（零正则，遇 `)` 结束）。
+
+    `marker` 须带赋值特征（如 `STEP_ORDER:`）以避开**注释里的同名提及**——本批实测：
+    文件头 `_ARTIFACTS` 注释中出现「现 `STEP_ORDER` 末位」字样，若用裸名查找会命中注释、
+    再就近吞掉后面第一个 `(` → 清单解析为空（判据 R 误报"未声明"）。
+    """
+    i = text.find(marker)
+    if i < 0:
+        return []
+    i = text.find("(", i)
+    if i < 0:
+        return []
+    out: list[str] = []
+    j = i + 1
+    while j < len(text):
+        ch = text[j]
+        if ch == ")":
+            break
+        if ch in _QUOTES:
+            k = text.find(ch, j + 1)
+            if k < 0:
+                break
+            out.append(text[j + 1:k])
+            j = k + 1
+            continue
+        j += 1
+    return out
+
+
+def _check_step_order() -> tuple[list[str], dict]:
+    problems: list[str] = []
+    fp = os.path.join(ROOT, *_RPR_REL)
+    rel = "/".join(_RPR_REL)
+    if not os.path.exists(fp):
+        return [f"R1: 缺 {rel}（主链实现）"], {}
+    text = open(fp, encoding="utf-8", errors="replace").read()
+    order = _tuple_of_quotes(text, "STEP_ORDER:")
+    used = _run_step_literals(text)
+    if not order:
+        return [f"R1: {rel} 未声明 STEP_ORDER（--from/--only 将失去判据来源）"], {}
+    miss_in_order = sorted(set(used) - set(order))
+    if miss_in_order:
+        problems.append(f"R2: {rel} 的 `_run(...)` 调用点 {miss_in_order} 未登记进 STEP_ORDER"
+                        "（`--only/--from` 将静默漏选该步骤）")
+    miss_in_file = sorted(set(order) - set(used))
+    if miss_in_file:
+        problems.append(f"R2: STEP_ORDER 声明了 {miss_in_file} 但本文件无对应 `_run(...)` 调用"
+                        "（清单漂移：删步骤后未同步清单）")
+    detail = {"step_order": {"declared": len(order), "wired": len(used),
+                             "missing_in_order": miss_in_order,
+                             "missing_in_file": miss_in_file,
+                             "steps": order}}
+    return problems, detail
+
+
+# --------------------------------------------------------------------------- #
+# U. 助手状态与记忆权威（v2 §3.13.1 M2 / §3.13.7，P3-1 + P3-4）
+#    背景：仓内 `.codebuddy/`（执行历史 2 处 + 按日记忆）与**用户级仓外记忆**长期并存，
+#    权威性不明；且它一度是"调度口径"的事实来源（M1/M3 二义）。
+#    判据（对应 `.codebuddy/README.md` 的三条纪律）：
+#      U1 代码/配置**不得把 `.codebuddy` 当输入**（路径构造/读取）；排除集里的纯字符串条目豁免
+#      U2 `.codebuddy/README.md` 存在且声明"仓外记忆为权威"（防口径再次失传）
+#      U3 调度/触发事实源（schedule.yaml / triggers.yaml）不得回指 `.codebuddy`
+#      U4 仓内 `.codebuddy/**` 不得新增 `*.yaml` 声明（防记忆再次成为流程输入）
+# --------------------------------------------------------------------------- #
+_AGENT_DIR = ".codebuddy"
+_AGENT_README = os.path.join(ROOT, _AGENT_DIR, "README.md")
+_CODEBUDDY_MARK = "." + "codebuddy"          # 拼接写法：避免本文件自身被"引用扫描"误伤
+_INPUT_MARKS = ("os.path.join(", "os.path.abspath(", "open(", "Path(", "listdir(",
+                "glob.glob(", "read_text(", "json.load(")
+_U_SCAN_SKIP = {".git", "__pycache__", ".pytest_cache", "data", "reports", "archive",
+                "external", "tessdata", "node_modules", ".venv", "venv"}
+_U_EXT = (".py", ".yaml", ".yml", ".json", ".toml", ".cfg", ".ini", ".bat")
+
+
+def _check_agent_state() -> tuple[list[str], dict]:
+    problems: list[str] = []
+    detail: dict = {}
+
+    # ---- U1：.codebuddy 作为输入（引用扫描）----
+    refs: list[str] = []
+    for dirpath, dirnames, filenames in os.walk(ROOT):
+        dirnames[:] = [d for d in dirnames if d not in _U_SCAN_SKIP and d != _AGENT_DIR]
+        for fn in filenames:
+            if not fn.endswith(_U_EXT):
+                continue
+            fp = os.path.join(dirpath, fn)
+            rel = os.path.relpath(fp, ROOT).replace(os.sep, "/")
+            if rel in ("gates/gate_config_integrity.py", "CODEBUDDY.md"):
+                continue          # 判据自身与仓级说明（口径声明处）
+            try:
+                lines = open(fp, encoding="utf-8", errors="replace").read().splitlines()
+            except OSError:
+                continue
+            for i, ln in enumerate(lines, 1):
+                if _CODEBUDDY_MARK not in ln:
+                    continue
+                s = ln.strip()
+                if s.startswith("#") or s.startswith("//"):
+                    continue
+                if any(m in ln for m in _INPUT_MARKS):
+                    refs.append(f"{rel}:{i}")
+    if refs:
+        problems.append(f"U1: 有 {len(refs)} 处把 `.{_AGENT_DIR}/` 当输入引用 {refs[:5]}"
+                        "（它只是历史归档；把目录写进**扫描排除集**的字符串条目不算）")
+    detail["agent_refs"] = refs[:10]
+
+    # ---- U2：权威声明存在且写明"仓外为权威" ----
+    if not os.path.exists(_AGENT_README):
+        problems.append(f"U2: 缺 {_AGENT_DIR}/README.md（记忆权威口径无落点 → 会再次二义）")
+    else:
+        txt = open(_AGENT_README, encoding="utf-8", errors="replace").read()
+        if ("权威" not in txt) or ("仓外" not in txt and "用户级" not in txt):
+            problems.append(f"U2: {_AGENT_DIR}/README.md 未声明'仓外（用户级）为权威'")
+
+    # ---- U3：调度/触发事实源不得回指 .codebuddy ----
+    for name in ("schedule.yaml", "triggers.yaml"):
+        fp = os.path.join(ROOT, "config", name)
+        if os.path.exists(fp):
+            txt = open(fp, encoding="utf-8", errors="replace").read()
+            if _CODEBUDDY_MARK in txt:
+                problems.append(f"U3: config/{name} 引用了 `.{_AGENT_DIR}/`"
+                                "（调度/触发事实源不得回指助手记忆）")
+
+    # ---- U4：.codebuddy/** 不得新增 yaml 声明 ----
+    yamls: list[str] = []
+    for dirpath, _dirnames, filenames in os.walk(os.path.join(ROOT, _AGENT_DIR)):
+        for fn in filenames:
+            if fn.endswith((".yaml", ".yml")):
+                yamls.append(os.path.relpath(os.path.join(dirpath, fn), ROOT).replace(os.sep, "/"))
+    if yamls:
+        problems.append(f"U4: {_AGENT_DIR}/ 出现声明类 yaml {yamls}"
+                        "（防记忆再次成为流程输入；声明应落 config/）")
+
+    # 披露：仓内归档规模（信息项，不阻断）
+    n_hist = 0
+    for _dirpath, _dirnames, filenames in os.walk(os.path.join(ROOT, _AGENT_DIR)):
+        n_hist += sum(1 for fn in filenames if fn.endswith(".md"))
+    detail["agent_state"] = {"repo_archived_md": n_hist, "refs": len(refs), "yaml": yamls,
+                             "authority": "仓外（用户级）记忆为权威；仓内为历史归档"}
+    return problems, detail
+
+
+# --------------------------------------------------------------------------- #
+# V. 投放区域消费者已登记（v2 §3.12.4 / R11「有产出无消费」，P3-3）
+#    每个域的 `consumer` 必须非空，且 ∈ 模块包名 ∪ {pending_consumer}；
+#    `pending_consumer` 允许但**必须被披露**（不假装已消费）。
+# --------------------------------------------------------------------------- #
+_PENDING_CONSUMER = "pending_consumer"
+
+
+def _check_domains() -> tuple[list[str], dict]:
+    problems: list[str] = []
+    detail: dict = {}
+    fp = os.path.join(ROOT, "config", "inbox_registry.yaml")
+    if not os.path.exists(fp):
+        return [f"V1: 缺 {os.path.relpath(fp, ROOT)}"], {}
+    try:
+        import yaml  # noqa: PLC0415
+
+        data = yaml.safe_load(open(fp, encoding="utf-8")) or {}
+    except Exception as e:  # noqa: BLE001
+        return [f"V1: inbox_registry.yaml 解析失败：{type(e).__name__}: {e}"], {}
+    from config.constants import MODULE_PKG_SET  # noqa: PLC0415
+
+    rows: dict[str, dict] = {}
+    pending: list[str] = []
+    for dom, spec in (data.get("domains") or {}).items():
+        consumer = (spec.get("consumer") or "").strip()
+        rows[dom] = {"consumer": consumer, "layer": spec.get("layer", ""),
+                     "pipeline": spec.get("pipeline") or []}
+        if not consumer:
+            problems.append(f"V2: 域 {dom} 未声明 consumer（有产出无消费）")
+        elif consumer == _PENDING_CONSUMER:
+            pending.append(dom)
+        elif consumer == dom:
+            problems.append(f"V2: 域 {dom} 的 consumer 指向自身（自指环 = 事实上的无消费）")
+        elif consumer not in MODULE_PKG_SET:
+            problems.append(f"V2: 域 {dom} 的 consumer={consumer!r} 不在已登记模块"
+                            f"（{sorted(MODULE_PKG_SET)}）或 {_PENDING_CONSUMER}")
+        if not rows[dom]["pipeline"]:
+            problems.append(f"V2: 域 {dom} 未声明 pipeline（投放后无处理路径）")
+    # ⚠️ 键名刻意不叫 `domains`：该键已被 P2-3a 的 `_check_corpus()`（语料域本体/清单一致性）
+    # 占用，且其在 run() 中**在本判据之后**执行 → 同名会静默互相覆盖（本批实测踩到）。
+    detail["inbox_domains"] = {"count": len(rows), "pending_consumer": pending, "rows": rows}
+    return problems, detail
+
+
 def _check_constants() -> tuple[list[str], dict]:
     problems: list[str] = []
     detail: dict = {}
@@ -623,6 +858,18 @@ def run() -> tuple[bool, dict]:
     p5, d5 = _check_triggers()
     problems += p5
     detail.update(d5)
+
+    p6, d6 = _check_step_order()
+    problems += p6
+    detail.update(d6)
+
+    p7, d7 = _check_agent_state()
+    problems += p7
+    detail.update(d7)
+
+    p8, d8 = _check_domains()
+    problems += p8
+    detail.update(d8)
 
     p4, d4 = _check_corpus()
     problems += p4

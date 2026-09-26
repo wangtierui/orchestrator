@@ -16,14 +16,14 @@ run_production_refresh.py —— 生产五源全量数据刷新编排器（2026-
  4.2 internal merged（内部制度 × RFN 引用视图；F-O07 编排唯一化）
  4.5 reports 全量/单主题报告生成（F-O06）
  5.5 base publish（双底座发布件 + SQLite/FTS5；Base Contract v1，F-K03）
- 6   gates    cli.py gates（**18 道**交付门禁，含 gate_watermark）
- 6.8 analysis gen（规划 §2.1 交付库 17 项刷新，F-L01；含关系类 2 项）
+ 6.8 analysis gen（规划 §2.1 交付库 17 项刷新，F-L01；含关系类 2 项）—— P3-5 前移到门禁之前
  6.5 watch baseline（变更监听基线记录，F-O02）
+ 6   gates    cli.py gates（**22 道**交付门禁，含 gate_watermark）—— **链尾**（P3-5：门禁须看到本轮全部产物）
 
 阶段 0/1 接线（2026-09-18；`reports/数据流转与存储交互优化方案_20260917.md` §6）：
   - **单实例锁**：本编排自身加 `ProcessLock`（此前只有各 collector 有锁，编排可并发重入）；
   - **run_log**：本次运行登记 `RUN-<ts>-<pid>`，经 `REG_ORCH_RUN_ID` 下传子进程
-    （`cli.py gates` 据此把 18 道门禁结果归档进 `gate_result`）；
+    （`cli.py gates` 据此把 22 道门禁结果归档进 `gate_result`）；
   - **watermark**：每阶段 rc==0 后登记「产物水位」（产物版本 + 其所依赖的上游版本），
     把本文档阶段表里的**隐式时序约束**变成机器可读的依赖边；`gate_watermark` 据此
     判定「上游已推进、下游未重跑」（替代易受 touch/copy 干扰的 mtime 判据）。
@@ -159,17 +159,20 @@ GOV_ARTIFACTS: dict[str, dict] = {
         "produced_by": "base_publish.build_internal+build_fts",
         "stage": "5.5", "inputs": ["internal_index", "merged_view"],
     },
-    # `analysis:manifest` **仍只观察、不声明依赖**（v2 §3.3.1 的 `ok_within_round` 未能覆盖它）：
-    #   它在阶段 6.8 生成，而门禁在**阶段 6** 运行 → 门禁看到的是**上一轮**的
-    #   `analysis:manifest`（artifact.round = 上一轮）而依赖已在本轮推进（dep.round = 本轮）
-    #   → 轮次不同 → 仍判 `stale` → 声明即结构性恒 FAIL。
-    #   这与 `clauses:{src}` 的情形**本质不同**（后者 artifact 与 dep 同轮）。
-    #   【执行中新发现问题 N-13】真正的解法是消除"产在 6.8 / 判在 6"的顺序耦合（二者取一）：
-    #     (a) 把 `gates` 移到 6.8 之后；(b) 把 analysis:gen 前移到阶段 6 之前。
-    #   两者都改变主链顺序，需独立评估影响面（gate_result 的 run_id 归档、BENCHMARK 基线、
-    #   人工处置习惯等），故本批不动，登记为 **P3-5 待决项**。
-    #   当前新鲜度由 `tests/test_analysis_deliveries`（_manifest sha16 与磁盘字节对齐）覆盖。
-    "analysis:manifest": {"produced_by": "tools.gen_analysis_deliveries", "stage": "6.8"},
+    # `analysis:manifest` —— **P3-5 已解耦（2026-09-26）**：原登记（N-13）为"只观察、不声明依赖"，
+    #   因其在 6.8 生成而门禁在阶段 6 运行 → 门禁看到**上一轮**产物、依赖已在本轮推进
+    #   → artifact.round ≠ dep.round → 判 `stale` → 声明即结构性恒 FAIL。
+    #   解法（原 N-13 方案 (a)）：**把 gates 移为链尾**（现 `STEP_ORDER` 末位），
+    #   门禁因此看到**本轮**的 `analysis:manifest`，依赖可按同轮判定。
+    #   影响面已在第五批报告中评估登记：`gate_result` 仍记同一 run_id（无归档变化）、
+    #   BENCHMARK 基线不受影响（gen_benchmark 独立跑门禁）、人工心智更顺（"最后一道门"）。
+    #   输入取 `gen_analysis_deliveries` 的真实读取面（classifier 数据 + 双底座发布件 +
+    #   关系产物 + 内部制度 merged 视图）。
+    "analysis:manifest": {
+        "produced_by": "tools.gen_analysis_deliveries", "stage": "6.8",
+        "inputs": ["clean_index", "rfn_attr", "rfn_theme", "relations_index", "merged_view",
+                   "published:external", "published:internal"],
+    },
 }
 
 
@@ -377,14 +380,14 @@ def _run(step: str, argv, cwd=ROOT, timeout: int | None = None) -> dict:
 STEP_ORDER: tuple[str, ...] = (
     "collect:nfra_weekly", "collect:{src}", "supp:ingest_batch", "clean:{src}",
     "timeliness:consolidate", "apply:{src}", "classify:all", "relations:gen", "reconcile",
-    "governance:sync", "recall", "internal:merged", "reports:build", "base:publish", "gates",
-    "analysis:gen", "watch:baseline",
+    "governance:sync", "recall", "internal:merged", "reports:build", "base:publish",
+    "analysis:gen", "watch:baseline", "gates",
 )
 # ⚠️ 上表为**执行顺序**（取自本文件 `_run(...)` 调用点出现次序，2026-09-26 实测）。
-#    注意与模块 docstring 的"阶段编号"存在一处**文档漂移**：docstring 写
-#    「6 gates → 6.5 watch:baseline → 6.8 analysis:gen」，而实装顺序是
-#    `gates → analysis:gen → watch:baseline`（见本文件 L643/L652）。此处以**实装为准**，
-#    漂移已在第四批报告中登记（N-29）。
+#    **gates 已移为链尾**（P3-5 顺序解耦，同日）：原顺序 gates→analysis:gen→watch:baseline
+#    使 `analysis:manifest` 无法声明依赖（门禁看到上一轮产物）。此处以**实装为准**；
+#    模块 docstring 的阶段编号（6 gates / 6.5 watch / 6.8 analysis）为旧口径，
+#    已在第四批报告 N-29 与第五批报告登记。
 #    `{src}` 为动态步骤（五源循环），匹配按前缀进行。
 
 
@@ -666,12 +669,16 @@ def _run_chain(args) -> int:
     _wm("published:external", rc=_rc_pub, paths=[_m_ext], record_count=_pub_count(_m_ext))
     _wm("published:internal", rc=_rc_pub, paths=[_m_int], record_count=_pub_count(_m_int))
 
-    # ---- 阶段 6：gates ----
-    report.append(_run("gates", [PY, os.path.join(ROOT, "cli.py"), "gates"], timeout=1800))
-
     # ---- 阶段 6.8：分析交付库刷新（F-L01）----
     # 数据重建后刷新规划 §2.1 五级分析 17 项交付（docs/reports/）；classify 阶段已
     # 自动触发一次，此处显式再跑确保 merged/publish 后数据面一致（幂等，~2s）。
+    #
+    # P3-5（2026-09-26）**顺序解耦**：本步与 6.5 已**前移到 gates 之前**。
+    #   原顺序（gates 在阶段 6 → analysis:gen 在 6.8）使 `gate_watermark` 看到的是
+    #   **上一轮**的 `analysis:manifest`，而它的依赖已在本轮推进 → artifact.round ≠ dep.round
+    #   → 判 `stale` → **一旦声明 inputs 即结构性恒 FAIL**（v2 §3.3.1 的 `ok_within_round`
+    #   对"产在被判之后"无解）。把 gates 收束为**链尾**后，门禁看到的是本轮产物，
+    #   `analysis:manifest` 因而可正常声明依赖（见文件头 `_ARTIFACTS`）。
     report.append(_run("analysis:gen",
                        [PY, os.path.join(ROOT, "cli.py"), "analysis", "gen"], timeout=600))
     # 阶段 6.8 水位：分析交付库清单（版本取 _manifest.json）
@@ -684,6 +691,12 @@ def _run_chain(args) -> int:
     report.append(_run("watch:baseline",
                        [PY, os.path.join(ROOT, "cli.py"), "source", "diff", "--record"],
                        timeout=300))
+
+    # ---- 阶段 6：gates（**链尾**，P3-5）----
+    # 交付门禁应在**全部产物生成之后**运行：① 才覆盖本轮 6.8 的 `analysis:manifest`；
+    # ② 与人工心智一致（"最后一道门"）；③ `gate_result` 仍记同一 run_id，无归档方式变化；
+    # ④ 门禁失败时其**之前**的产物已落盘（与改动前一致：原顺序下 analysis:gen 也在门禁之后）。
+    report.append(_run("gates", [PY, os.path.join(ROOT, "cli.py"), "gates"], timeout=1800))
 
     summary = {
         "run_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),

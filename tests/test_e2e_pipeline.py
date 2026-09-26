@@ -62,8 +62,12 @@ def test_base_and_detail_contract():
     from gates.gate_contract import run  # noqa: PLC0415
     ok, detail = run()
     assert ok, detail.get("problems", [])[:5]
-    assert detail["checked"]["base_files"]["count"] == 40
-    assert detail["checked"]["detail_tables"]["count"] == 11
+    # T3（P2-4）：原为字面量 `== 40` / `== 11`（主题数一变即误报）→ 改为**派生**：
+    #   底座 = {T1..Tn} × {base,final,matched,citerefs}；明细表 = 每主题 1 张（T0–Tn 全覆盖）
+    from interfaces.rfn_api import theme_map  # noqa: PLC0415
+    n_theme = len(theme_map())
+    assert detail["checked"]["base_files"]["count"] == (n_theme - 1) * 4
+    assert detail["checked"]["detail_tables"]["count"] == n_theme
 
 
 def test_rfn_sync_consistency():

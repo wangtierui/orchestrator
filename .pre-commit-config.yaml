@@ -1,0 +1,32 @@
+# .pre-commit-config.yaml —— 提交前置钩子（v2 §3.7 G4，P2-4）
+#
+# 背景：本仓无远端 CI，"改动即被看见"的最低成本路径是本地钩子（G4 明文要求）。
+# 用法：pip install pre-commit && pre-commit install
+# 说明：hooks 调本仓自身工具（language: system），**不引入外部仓库**（离线可跑）。
+repos:
+  - repo: local
+    hooks:
+      # ① 静态检查：与 CI 的第一道闸同源（同一命令，避免两套判据）
+      - id: ruff
+        name: ruff check（静态检查）
+        entry: python -m ruff check . --exclude reports/_tmp
+        language: system
+        pass_filenames: false
+        always_run: true
+
+      # ② 交付门禁：与 `cli.py gates` 同源（22 道，约 30s）——
+      #    本仓纪律是「commit ≈ 发布」，故门禁放在提交前而非推送后。
+      - id: gates
+        name: cli.py gates（22 道交付门禁）
+        entry: python cli.py gates
+        language: system
+        pass_filenames: false
+        always_run: true
+
+      # ③ 手册定时表与 schedule.yaml 一致性（判据 S4；生成物被手改时立即拦住）
+      - id: schedule-doc
+        name: gen_schedule_doc --check（调度事实源一致性）
+        entry: python tools/gen_schedule_doc.py --check
+        language: system
+        pass_filenames: false
+        always_run: true

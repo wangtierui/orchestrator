@@ -164,7 +164,12 @@ class TestRelationDeliveries:
 
 @pytest.mark.data
 class TestRelationDeliveriesWithData:
-    def test_delivery_lib_has_17_items(self):
+    def test_delivery_lib_items_match_renderers(self):
+        """T3（P2-4）：原为字面量 `== 17` → 改为**从渲染器清单派生**。
+
+        每个交付项在 `tools/gen_analysis_deliveries.py` 中对应一个 `def d_2xx_x(...)` 渲染器
+        （计划书 §2.1 的分节即实现清单）—— 故 manifest 项数必须等于渲染器数量。
+        """
         rows, _stat = g._load_relations()
         if rows is None:
             pytest.skip("关系事实源缺失（无数据环境）")
@@ -172,7 +177,11 @@ class TestRelationDeliveriesWithData:
         if not os.path.exists(mpath):
             pytest.skip("交付库未生成")
         m = json.load(open(mpath, encoding="utf-8"))
-        assert m["count"] == len(m["items"]) == 17
+        n_renderers = sum(1 for ln in open(os.path.join(ROOT, "tools", "gen_analysis_deliveries.py"),
+                                          encoding="utf-8")
+                          if ln.lstrip().startswith("def d_2"))
+        assert n_renderers >= 17, f"渲染器数量异常：{n_renderers}"
+        assert m["count"] == len(m["items"]) == n_renderers
         assert {"2.1.2.4", "2.1.2.5"} <= {it["item"] for it in m["items"]}
 
     def test_manifest_sha_matches_disk_bytes(self):

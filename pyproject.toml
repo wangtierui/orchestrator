@@ -110,6 +110,25 @@ python_version = "3.13"
 ignore_missing_imports = true
 exclude = ["data/", "cache/", "logs/", "backups/"]
 
+# ---- 覆盖率口径（v2 §3.7 G4/G5，P2-4）----
+# 口径说明：只计"本仓自有的治理/标准/接口/命令/工具层"（modules/** 为历史语料处理代码，
+# 体量大且多为一次性脚本，纳入会掩盖真实趋势）；阈值 20% 为**起点**（现状基线），
+# 只升不降——新增代码应带测试，旧代码在触及处补测。
+[tool.coverage.run]
+source = ["std_lib", "config", "interfaces", "gates", "commands", "tools"]
+branch = false
+
+[tool.coverage.report]
+fail_under = 20
+show_missing = true
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "def main\\(argv=None\\) -> int:",
+]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"

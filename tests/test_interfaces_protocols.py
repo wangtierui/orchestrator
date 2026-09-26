@@ -21,10 +21,16 @@ from interfaces import protocols, theme_api
 
 
 def test_theme_map_matches_single_source():
-    """`THEME_MAP_P0` 不再是硬编码副本（re-export 唯一事实源）。"""
+    """`THEME_MAP_P0` 不再是硬编码副本（re-export 唯一事实源）。
+
+    T3（P2-4）：去掉字面量 `== 11` —— 真正的不变量是「主题码为 T0..Tn **连续**」，
+    数量变化（扩主题）不应导致用例误报。
+    """
     from interfaces import rfn_api
     assert theme_api.THEME_MAP_P0 == rfn_api.theme_map()
-    assert len(theme_api.theme_map()) == 11
+    codes = list(theme_api.theme_map())
+    assert len(codes) >= 11
+    assert codes == [f"T{i}" for i in range(len(codes))]
 
 
 def test_theme_api_no_stub():

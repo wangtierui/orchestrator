@@ -1,0 +1,536 @@
+{
+ "mode": "apply",
+ "plan": {
+  "plan": [
+   {
+    "file": "modules/regulatory_classifier/backups/_upper_laws_20260918_032030.json",
+    "size": 1915904,
+    "age_days": 8.4,
+    "reason": "超出保留量 10（第 11 新）",
+    "category": "classifier_backups",
+    "move_to": "archive/classifier_backups"
+   },
+   {
+    "file": "modules/regulatory_classifier/backups/_upper_laws_20260918_030337.json",
+    "size": 1915904,
+    "age_days": 8.4,
+    "reason": "超出保留量 10（第 12 新）",
+    "category": "classifier_backups",
+    "move_to": "archive/classifier_backups"
+   },
+   {
+    "file": "modules/regulatory_classifier/backups/_upper_laws_20260918_025240.json",
+    "size": 1915904,
+    "age_days": 8.5,
+    "reason": "超出保留量 10（第 13 新）",
+    "category": "classifier_backups",
+    "move_to": "archive/classifier_backups"
+   },
+   {
+    "file": "modules/regulatory_classifier/backups/_upper_laws_20260918_013101.json",
+    "size": 1915904,
+    "age_days": 8.5,
+    "reason": "超出保留量 10（第 14 新）",
+    "category": "classifier_backups",
+    "move_to": "archive/classifier_backups"
+   },
+   {
+    "file": "modules/regulatory_classifier/backups/_upper_laws_20260918_011256.json",
+    "size": 1915831,
+    "age_days": 11.1,
+    "reason": "超出保留量 10（第 15 新）",
+    "category": "classifier_backups",
+    "move_to": "archive/classifier_backups"
+   },
+   {
+    "file": "modules/regulatory_classifier/backups/_upper_laws_20260915_121958.json",
+    "size": 1915831,
+    "age_days": 11.1,
+    "reason": "超出保留量 10（第 16 新）",
+    "category": "classifier_backups",
+    "move_to": "archive/classifier_backups"
+   },
+   {
+    "file": "modules/regulatory_classifier/backups/_upper_laws_20260915_121355.json",
+    "size": 1915811,
+    "age_days": 11.1,
+    "reason": "超出保留量 10（第 17 新）",
+    "category": "classifier_backups",
+    "move_to": "archive/classifier_backups"
+   },
+   {
+    "file": "modules/regulatory_classifier/backups/_upper_laws_20260915_120902.json",
+    "size": 1915811,
+    "age_days": 11.8,
+    "reason": "超出保留量 10（第 18 新）",
+    "category": "classifier_backups",
+    "move_to": "archive/classifier_backups"
+   },
+   {
+    "file": "modules/regulatory_classifier/backups/_upper_laws_20260914_191759.json",
+    "size": 1915811,
+    "age_days": 12.5,
+    "reason": "超出保留量 10（第 19 新）",
+    "category": "classifier_backups",
+    "move_to": "archive/classifier_backups"
+   },
+   {
+    "file": "modules/regulatory_classifier/backups/_upper_laws_20260914_011123.json",
+    "size": 251830,
+    "age_days": 12.9,
+    "reason": "超出保留量 10（第 20 新）",
+    "category": "classifier_backups",
+    "move_to": "archive/classifier_backups"
+   },
+   {
+    "file": "modules/regulatory_classifier/backups/_upper_laws_20260913_162440.json",
+    "size": 251830,
+    "age_days": 13.6,
+    "reason": "超出保留量 10（第 21 新）",
+    "category": "classifier_backups",
+    "move_to": "archive/classifier_backups"
+   },
+   {
+    "file": "modules/regulatory_classifier/backups/_upper_laws_20260912_230509.json",
+    "size": 251830,
+    "age_days": 14.0,
+    "reason": "超出保留量 10（第 22 新）",
+    "category": "classifier_backups",
+    "move_to": "archive/classifier_backups"
+   },
+   {
+    "file": "modules/regulatory_classifier/backups/_upper_laws_20260912_123948.json",
+    "size": 251830,
+    "age_days": 14.4,
+    "reason": "超出保留量 10（第 23 新）",
+    "category": "classifier_backups",
+    "move_to": "archive/classifier_backups"
+   },
+   {
+    "file": "modules/regulatory_classifier/backups/_upper_laws_20260912_033733.json",
+    "size": 175511,
+    "age_days": 14.4,
+    "reason": "超出保留量 10（第 24 新）",
+    "category": "classifier_backups",
+    "move_to": "archive/classifier_backups"
+   },
+   {
+    "file": "reports/_tmp/commit_msg_phase01.txt",
+    "size": 3018,
+    "age_days": 8.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/commit_msg_refresh.txt",
+    "size": 654,
+    "age_days": 8.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/commit_p234_code.txt",
+    "size": 4315,
+    "age_days": 8.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/commit_p234_refresh.txt",
+    "size": 459,
+    "age_days": 8.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/commit_parse_fix.txt",
+    "size": 3724,
+    "age_days": 8.0,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/commit_parse_refresh.txt",
+    "size": 615,
+    "age_days": 8.0,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/commit_t3_code.txt",
+    "size": 2593,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/commit_t3_data.txt",
+    "size": 776,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/refresh_p23_run1.err.log",
+    "size": 0,
+    "age_days": 8.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/refresh_p23_run1.log",
+    "size": 9792,
+    "age_days": 8.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/refresh_p23_run2.err.log",
+    "size": 0,
+    "age_days": 8.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/refresh_p23_run2.log",
+    "size": 9419,
+    "age_days": 8.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/refresh_p23_run3.err.log",
+    "size": 0,
+    "age_days": 8.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/refresh_p23_run3.log",
+    "size": 9421,
+    "age_days": 8.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/refresh_p23_run4.err.log",
+    "size": 0,
+    "age_days": 8.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/refresh_p23_run4.log",
+    "size": 9421,
+    "age_days": 8.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/refresh_parse.err.log",
+    "size": 0,
+    "age_days": 8.0,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/refresh_parse.log",
+    "size": 9424,
+    "age_days": 8.0,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/refresh_run1.err.log",
+    "size": 0,
+    "age_days": 8.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/refresh_run1.log",
+    "size": 9041,
+    "age_days": 8.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/refresh_run2.err.log",
+    "size": 0,
+    "age_days": 8.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/refresh_run2.log",
+    "size": 9035,
+    "age_days": 8.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/refresh_t3.err.log",
+    "size": 0,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/refresh_t3.log",
+    "size": 9510,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/refresh_t3b.err.log",
+    "size": 0,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/refresh_t3b.log",
+    "size": 9352,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/生产刷新汇总_20260909_190345.json",
+    "size": 6597,
+    "age_days": 16.8,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/生产刷新汇总_20260918_011928.json",
+    "size": 8184,
+    "age_days": 8.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/生产刷新汇总_20260918_013616.json",
+    "size": 8178,
+    "age_days": 8.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/生产刷新汇总_20260918_024124.json",
+    "size": 9443,
+    "age_days": 8.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/生产刷新汇总_20260918_030858.json",
+    "size": 8549,
+    "age_days": 8.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/生产刷新汇总_20260918_032545.json",
+    "size": 8550,
+    "age_days": 8.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/生产刷新汇总_20260918_034247.json",
+    "size": 8550,
+    "age_days": 8.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/生产刷新汇总_20260918_130510.json",
+    "size": 8553,
+    "age_days": 8.0,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/生产刷新汇总_20260919_015413.json",
+    "size": 8765,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/生产刷新汇总_20260919_021416.json",
+    "size": 8481,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "modules/regulatory_scrapers/timeliness_review/gov轮2_20260919.log.err",
+    "size": 0,
+    "age_days": 7.5,
+    "reason": "匹配 *.log.err（§3.10：运行日志统一落 reports/_tmp）",
+    "category": "timeliness_err",
+    "move_to": "reports/_tmp/timeliness_err"
+   },
+   {
+    "file": "modules/regulatory_scrapers/timeliness_review/编排日志_20260917.log.err",
+    "size": 0,
+    "age_days": 8.7,
+    "reason": "匹配 *.log.err（§3.10：运行日志统一落 reports/_tmp）",
+    "category": "timeliness_err",
+    "move_to": "reports/_tmp/timeliness_err"
+   },
+   {
+    "file": "modules/regulatory_scrapers/timeliness_review/编排日志_20260919.log.err",
+    "size": 0,
+    "age_days": 7.5,
+    "reason": "匹配 *.log.err（§3.10：运行日志统一落 reports/_tmp）",
+    "category": "timeliness_err",
+    "move_to": "reports/_tmp/timeliness_err"
+   },
+   {
+    "file": "modules/regulatory_scrapers/timeliness_review/编排日志_20260919_gov轮.log.err",
+    "size": 0,
+    "age_days": 7.5,
+    "reason": "匹配 *.log.err（§3.10：运行日志统一落 reports/_tmp）",
+    "category": "timeliness_err",
+    "move_to": "reports/_tmp/timeliness_err"
+   },
+   {
+    "file": "modules/regulatory_scrapers/timeliness_review/编排日志_gov轮_20260917.log.err",
+    "size": 0,
+    "age_days": 8.7,
+    "reason": "匹配 *.log.err（§3.10：运行日志统一落 reports/_tmp）",
+    "category": "timeliness_err",
+    "move_to": "reports/_tmp/timeliness_err"
+   }
+  ],
+  "stats": {
+   "classifier_backups": {
+    "exists": true,
+    "total": 24,
+    "kept": 10,
+    "incident_kept": 0
+   },
+   "ipb_backups": {
+    "exists": true,
+    "total": 1,
+    "kept": 1,
+    "incident_kept": 0
+   },
+   "reports_tmp": {
+    "exists": true,
+    "total": 66,
+    "older_than_days": 7
+   },
+   "timeliness_err": {
+    "exists": true,
+    "total": 5
+   },
+   "repo_baks": {
+    "total": 30,
+    "included": false
+   }
+  },
+  "bytes": 18609961
+ },
+ "applied": {
+  "moved": 55,
+  "failed": [],
+  "dests": {
+   "modules/regulatory_classifier/backups/_upper_laws_20260918_032030.json": "archive/classifier_backups/_upper_laws_20260918_032030.json",
+   "modules/regulatory_classifier/backups/_upper_laws_20260918_030337.json": "archive/classifier_backups/_upper_laws_20260918_030337.json",
+   "modules/regulatory_classifier/backups/_upper_laws_20260918_025240.json": "archive/classifier_backups/_upper_laws_20260918_025240.json",
+   "modules/regulatory_classifier/backups/_upper_laws_20260918_013101.json": "archive/classifier_backups/_upper_laws_20260918_013101.json",
+   "modules/regulatory_classifier/backups/_upper_laws_20260918_011256.json": "archive/classifier_backups/_upper_laws_20260918_011256.json",
+   "modules/regulatory_classifier/backups/_upper_laws_20260915_121958.json": "archive/classifier_backups/_upper_laws_20260915_121958.json",
+   "modules/regulatory_classifier/backups/_upper_laws_20260915_121355.json": "archive/classifier_backups/_upper_laws_20260915_121355.json",
+   "modules/regulatory_classifier/backups/_upper_laws_20260915_120902.json": "archive/classifier_backups/_upper_laws_20260915_120902.json",
+   "modules/regulatory_classifier/backups/_upper_laws_20260914_191759.json": "archive/classifier_backups/_upper_laws_20260914_191759.json",
+   "modules/regulatory_classifier/backups/_upper_laws_20260914_011123.json": "archive/classifier_backups/_upper_laws_20260914_011123.json",
+   "modules/regulatory_classifier/backups/_upper_laws_20260913_162440.json": "archive/classifier_backups/_upper_laws_20260913_162440.json",
+   "modules/regulatory_classifier/backups/_upper_laws_20260912_230509.json": "archive/classifier_backups/_upper_laws_20260912_230509.json",
+   "modules/regulatory_classifier/backups/_upper_laws_20260912_123948.json": "archive/classifier_backups/_upper_laws_20260912_123948.json",
+   "modules/regulatory_classifier/backups/_upper_laws_20260912_033733.json": "archive/classifier_backups/_upper_laws_20260912_033733.json",
+   "reports/_tmp/commit_msg_phase01.txt": "archive/reports_tmp/commit_msg_phase01.txt",
+   "reports/_tmp/commit_msg_refresh.txt": "archive/reports_tmp/commit_msg_refresh.txt",
+   "reports/_tmp/commit_p234_code.txt": "archive/reports_tmp/commit_p234_code.txt",
+   "reports/_tmp/commit_p234_refresh.txt": "archive/reports_tmp/commit_p234_refresh.txt",
+   "reports/_tmp/commit_parse_fix.txt": "archive/reports_tmp/commit_parse_fix.txt",
+   "reports/_tmp/commit_parse_refresh.txt": "archive/reports_tmp/commit_parse_refresh.txt",
+   "reports/_tmp/commit_t3_code.txt": "archive/reports_tmp/commit_t3_code.txt",
+   "reports/_tmp/commit_t3_data.txt": "archive/reports_tmp/commit_t3_data.txt",
+   "reports/_tmp/refresh_p23_run1.err.log": "archive/reports_tmp/refresh_p23_run1.err.log",
+   "reports/_tmp/refresh_p23_run1.log": "archive/reports_tmp/refresh_p23_run1.log",
+   "reports/_tmp/refresh_p23_run2.err.log": "archive/reports_tmp/refresh_p23_run2.err.log",
+   "reports/_tmp/refresh_p23_run2.log": "archive/reports_tmp/refresh_p23_run2.log",
+   "reports/_tmp/refresh_p23_run3.err.log": "archive/reports_tmp/refresh_p23_run3.err.log",
+   "reports/_tmp/refresh_p23_run3.log": "archive/reports_tmp/refresh_p23_run3.log",
+   "reports/_tmp/refresh_p23_run4.err.log": "archive/reports_tmp/refresh_p23_run4.err.log",
+   "reports/_tmp/refresh_p23_run4.log": "archive/reports_tmp/refresh_p23_run4.log",
+   "reports/_tmp/refresh_parse.err.log": "archive/reports_tmp/refresh_parse.err.log",
+   "reports/_tmp/refresh_parse.log": "archive/reports_tmp/refresh_parse.log",
+   "reports/_tmp/refresh_run1.err.log": "archive/reports_tmp/refresh_run1.err.log",
+   "reports/_tmp/refresh_run1.log": "archive/reports_tmp/refresh_run1.log",
+   "reports/_tmp/refresh_run2.err.log": "archive/reports_tmp/refresh_run2.err.log",
+   "reports/_tmp/refresh_run2.log": "archive/reports_tmp/refresh_run2.log",
+   "reports/_tmp/refresh_t3.err.log": "archive/reports_tmp/refresh_t3.err.log",
+   "reports/_tmp/refresh_t3.log": "archive/reports_tmp/refresh_t3.log",
+   "reports/_tmp/refresh_t3b.err.log": "archive/reports_tmp/refresh_t3b.err.log",
+   "reports/_tmp/refresh_t3b.log": "archive/reports_tmp/refresh_t3b.log",
+   "reports/_tmp/生产刷新汇总_20260909_190345.json": "archive/reports_tmp/生产刷新汇总_20260909_190345.json",
+   "reports/_tmp/生产刷新汇总_20260918_011928.json": "archive/reports_tmp/生产刷新汇总_20260918_011928.json",
+   "reports/_tmp/生产刷新汇总_20260918_013616.json": "archive/reports_tmp/生产刷新汇总_20260918_013616.json",
+   "reports/_tmp/生产刷新汇总_20260918_024124.json": "archive/reports_tmp/生产刷新汇总_20260918_024124.json",
+   "reports/_tmp/生产刷新汇总_20260918_030858.json": "archive/reports_tmp/生产刷新汇总_20260918_030858.json",
+   "reports/_tmp/生产刷新汇总_20260918_032545.json": "archive/reports_tmp/生产刷新汇总_20260918_032545.json",
+   "reports/_tmp/生产刷新汇总_20260918_034247.json": "archive/reports_tmp/生产刷新汇总_20260918_034247.json",
+   "reports/_tmp/生产刷新汇总_20260918_130510.json": "archive/reports_tmp/生产刷新汇总_20260918_130510.json",
+   "reports/_tmp/生产刷新汇总_20260919_015413.json": "archive/reports_tmp/生产刷新汇总_20260919_015413.json",
+   "reports/_tmp/生产刷新汇总_20260919_021416.json": "archive/reports_tmp/生产刷新汇总_20260919_021416.json",
+   "modules/regulatory_scrapers/timeliness_review/gov轮2_20260919.log.err": "reports/_tmp/timeliness_err/gov轮2_20260919.log.err",
+   "modules/regulatory_scrapers/timeliness_review/编排日志_20260917.log.err": "reports/_tmp/timeliness_err/编排日志_20260917.log.err",
+   "modules/regulatory_scrapers/timeliness_review/编排日志_20260919.log.err": "reports/_tmp/timeliness_err/编排日志_20260919.log.err",
+   "modules/regulatory_scrapers/timeliness_review/编排日志_20260919_gov轮.log.err": "reports/_tmp/timeliness_err/编排日志_20260919_gov轮.log.err",
+   "modules/regulatory_scrapers/timeliness_review/编排日志_gov轮_20260917.log.err": "reports/_tmp/timeliness_err/编排日志_gov轮_20260917.log.err"
+  }
+ }
+}

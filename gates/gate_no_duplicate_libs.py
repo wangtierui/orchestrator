@@ -27,7 +27,9 @@ EXCLUDE_DIRS = {"backups", "data", "cache", "logs", "venv", ".venv", ".git", "__
                 "reports", "build", "dist", ".pytest_cache",
                 # 2026-09-26（v2 §3.15.3 A1）：退役脚本隔离层不再参与"增量防漏"；
                 # 其"不再被引用"由 gate_config_integrity 的 J3 判据保证。
-                "retired"}
+                "retired",
+                # v2 §3.10（P2-3）：归档层（可能含与在役文件同名的历史副本，不参与防漏）
+                "archive"}
 # 本文件自身含 msvcrt.locking 字面量（检测正则定义，非使用）
 EXCLUDE_FILES = {"gate_no_duplicate_libs.py"}
 # 共享库为事实源，允许其定义规范符号（只允许一次）
