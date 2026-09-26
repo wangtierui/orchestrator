@@ -156,6 +156,18 @@ GOV_ARTIFACTS: dict[str, dict] = {
         "stage": "2.5",
         "inputs": ["cleaned:{src}"],
     },
+    # N-46（2026-09-27）：报告类产物**此前无任何水位声明**——`reports:build` 只接
+    # `build_overview_report.py`（全景/主题分类报告），`build_theme_report.py`（T0–T10
+    # 主题报告 ×11）**从未接线** → 自 2026-09-08 起滞后 19 天且无水门禁可发现。
+    # 本条令"报告是否随底座刷新"成为可校验项：inputs 取两类报告的真实读取面。
+    "reports:classifier": {
+        "produced_by": (
+            "regulatory_classifier.scripts.report_builders.build_overview_report"
+            "+build_theme_report"
+        ),
+        "stage": "4.5",
+        "inputs": ["classify:products", "rfn_attr", "rfn_theme"],
+    },
     "relations_index": {
         "produced_by": "tools.extract_relations",
         "stage": "2.6",
@@ -287,6 +299,18 @@ def _detail_tables() -> list[str]:
         for f in sorted(os.listdir(CLS_DATA))
         if f.startswith("T") and f.endswith(".csv")
     ]
+
+
+def _classifier_reports() -> list[str]:
+    """报告类产物代表集：`docs/reports/` 下的 全景/主题分类/T0–T10 主题报告（13 份 md）。
+
+    N-46（2026-09-27）：与 `_detail_tables()` 同风格——取目录内交付级 md 作为版本代表集
+    （体量小、覆盖两类报告），避免对全部底座 JSON 逐一哈希。
+    """
+    d = os.path.join(CLASSIFIER, "docs", "reports")
+    if not os.path.isdir(d):
+        return []
+    return [os.path.join(d, f) for f in sorted(os.listdir(d)) if f.endswith(".md")]
 
 
 def _spec_of(artifact_key: str) -> dict:
@@ -476,6 +500,7 @@ STEP_ORDER: tuple[str, ...] = (
     "recall",
     "internal:merged",
     "reports:build",
+    "reports:theme",
     "base:publish",
     "analysis:gen",
     "watch:baseline",
@@ -847,6 +872,25 @@ def _run_chain(args) -> int:
             timeout=1800,
         )
     )
+    # ---- 阶段 4.6：reports:theme（T0–T10 主题报告 ×11；N-46 修复 2026-09-27）----
+    # 此前 `build_theme_report.py` **从未接入编排**（阶段 4.5 只调 build_overview_report.py）
+    # → `modules/regulatory_classifier/docs/reports/T{n}_主题报告.md` 自 2026-09-08 起
+    # 19 天未更新，且因报告类产物无水位声明而无门禁可发现（链外遗漏，N-46）。
+    report.append(
+        _run(
+            "reports:theme",
+            [
+                PY,
+                os.path.join(CLASSIFIER, "scripts", "report_builders", "build_theme_report.py"),
+            ],
+            timeout=1800,
+        )
+    )
+    # 阶段 4.6 水位：报告类产物族（rc 取两报告步骤中**先出现的失败**；均成功则 0）
+    _rc_rep = _rc_of(report, "reports:build")
+    _rc_theme = _rc_of(report, "reports:theme")
+    _rc_reports = _rc_theme if _rc_theme not in (None, 0) else (_rc_rep or 0)
+    _wm("reports:classifier", rc=_rc_reports, paths=_classifier_reports())
 
     # ---- 阶段 5.5：base publish（双底座发布件 + SQLite/FTS5；Base Contract v1，F-K03）----
     # 发布层在 gates 前刷新：门禁校验的是底座产物，应用模块消费的是发布件（同一批快照）。

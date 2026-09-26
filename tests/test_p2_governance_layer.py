@@ -182,7 +182,10 @@ def test_run_step_order_matches_call_sites():
     spec = importlib.util.spec_from_file_location("_rpr_test", fp)
     rpr = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(rpr)
-    assert len(rpr.STEP_ORDER) == 17
+    # 18（原 17）：N-46（2026-09-27）新增 `reports:theme` —— `build_theme_report.py`
+    # 原从未接入编排（T0–T10 主题报告 ×11 滞后 19 天，且无水位声明可发现）。
+    # 步骤数变化须在此显式确认（防清单漂移）。
+    assert len(rpr.STEP_ORDER) == 18
     # 每个步骤名必须能在本文件中找到**引号字面量**（`"gates"` / `f"clean:{src}"` ⇒ `"clean:{src}"`）
     text = open(fp, encoding="utf-8").read()
     for step in rpr.STEP_ORDER:
