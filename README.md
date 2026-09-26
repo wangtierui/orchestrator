@@ -1,72 +1,83 @@
 # 监管合规治理编排仓（regulatory_compliance_orchestrator）
 
 > **项目名称**：监管合规治理编排仓（五源法规采集 · RFN 监管分类 · 内部制度对齐 · 制度起草 · 分析交付库）
-> **文档版本**：`v2.1.0`
+> **文档版本**：`v3.0.0`
 > **维护团队**：数据治理与合规工程组
-> **最后更新**：2026-09-12
-> **演进状态**：本仓为唯一演进点（原四仓只读冻结，见 §7 来源映射）；F 系列遗留项批次已全落地（详见 §7 报告索引）
+> **最后更新**：2026-09-26
+> **演进状态**：本仓为唯一演进点（原四仓只读冻结，见 §7 来源映射）。**v2 全链路重构已闭环**（九批执行报告见 §7），
+> 运行时卫生（`gate_runtime_hygiene` 五判据）、类型检查（mypy）、数据校验（dedup_key 唯一性）与调度/触发
+> 事实源（`schedule.yaml`/`triggers.yaml`/`inbox_registry.yaml`）均已落地为阻断级门禁。
 
 ---
 
 ## 1. 项目概述 (Project Overview)
 
 - **背景与痛点**：保险机构合规治理依赖的监管文件散落五源官网（gov/mof/nfra/pbc/supp），采集/清洗/分类链路分布在四个独立仓库、脚本互不统一；内部制度正文与外部监管依据之间缺少可核验的对齐关系，起草时引用文号/标题存在"臆造漂移"风险；时效（废止/修订）核验结果在多副本间重复维护，无单一事实源。
-- **核心目标**：构建单入口的监管合规编排器——五源采集清洗 → RFN（监管文件编号）唯一实体分类 → 内部制度对齐 → 起草条款对照素材 → **规划 §2.1 五级分析交付库**，全部经**程序可读契约**与**交付门禁**收敛为可审计、可重建、可回归的单一数据管道。
+- **核心目标**：构建单入口的监管合规编排器——五源采集清洗 → RFN（监管文件编号）唯一实体分类 → 内部制度对齐 → 起草条款对照素材 → 五级分析交付库，全部经**程序可读契约**、**唯一事实源（SSOT）**与**交付门禁**收敛为可审计、可重建、可回归的单一数据管道。
 - **技术栈全景**：
-  - **后端核心**：Python 3.13+（脚本编排式，无常驻服务）；标准库 + PyYAML / requests / beautifulsoup4
-  - **数据契约与门禁**：`interfaces/contract.py`（程序可读契约，R24）/ `config/enums.py`（受控枚举）/ `gates/`（ALL_GATES 18 道交付门禁，R23）
-  - **OCR（按需部署；引擎/语言包不入 git，见 §6.6）**：PaddleOCR 3.7.0（主引擎，源码目录经 `OCR_PADDLE_ROOT` 或 `external/PaddleOCR-3.7.0` 软链接入）+ Tesseract 5.4（备引擎，二进制经 `OCR_TESSERACT_BIN`，语言包置仓内 `tessdata/`）；pytesseract / numpy
-  - **测试与静态检查**：pytest（tests/ **356 用例** = 330 代码级 + **26 数据依赖（`@data`）**）/ ruff（dev 依赖）
-  - **知识库联动**：Obsidian vault（`<Obsidian vault>\监管法规库`，`tools/sync_wiki_sources.py` 同步）/ llm_wiki v0.6.11（已装，契约见 `reports/llm_wiki接入适配契约_20260912.md`）
-  - **可选外部组件**：pdfplumber / python-docx（解析，**已列 base 依赖**）；`@pkulaw/mcp-cli` + 托管 Node（北大法宝时效核验 CLI；**Node 侧依赖，非 Python extra**，零 LLM 消耗）
+  - **后端核心**：Python 3.13+（脚本编排式，无常驻服务）；标准库 + PyYAML / requests / beautifulsoup4 / lxml / numpy / pypdf / pdfplumber / chardet / Pillow / urllib3 / PyMuPDF
+  - **数据契约与门禁**：`interfaces/contract.py`（程序可读契约）+ `interfaces/protocols.py`（四协议：CleanIndex/Rfn/InternalPolicy/Relations）+ `config/enums.py`（受控枚举）+ `config/exitcodes.py`（退出码 IntEnum）+ `gates/`（**22 道交付门禁**）
+  - **唯一事实源**：`config/sources.yaml`（源目录）、`config/schedule.yaml`（定时任务）、`config/triggers.yaml`（条件触发）、`config/inbox_registry.yaml`（投放区）、`interfaces/theme_api`（主题集合）、`config/enums.py`（枚举域）
+  - **OCR（按需部署）**：PaddleOCR 3.7.0（主引擎）+ Tesseract 5.4（备引擎）；引擎/语言包不入 git（见 §6）
+  - **测试与静态检查**：pytest（**487 用例** = 代码级 + `@data` 数据依赖）/ ruff（dev 依赖）/ **mypy（owned 层 0 error，阻断）** / coverage（**45%**）
+  - **统一执行入口**：`cli.py run/doctor/status/schedule/triggers`（18 命令）；`tools/ci_check.py` 本地 CI 5/5
+  - **知识库联动**：Obsidian vault（`tools/sync_wiki_sources.py` 同步）/ llm_wiki v0.6.11（契约见 `reports/llm_wiki接入适配契约_20260912.md`）
+  - **可选外部组件**：`@pkulaw/mcp-cli` + 托管 Node（北大法宝时效核验；**Node 侧依赖，非 Python extra**，零 LLM 消耗）
   - **依赖管理**：Pyproject.toml（PEP 621，`[project.optional-dependencies]` 分 **dev/ocr**；PDF 文本层解析与编码探测属 base 依赖）
 
 ---
 
 ## 2. 目录结构规范与文件用途详解 (Directory Structure & File Manifest)
 
-> **核心原则**：本仓为脚本编排型工程（无常驻服务、无 Web 框架），仍沿用"常规流程脚本 / 特殊工具脚本"分类，明确运维与数据治理责任：**常规流程脚本**（clean/classify/align/reconcile/gates/analysis 等）随数据推进被调度执行；**特殊/工具脚本**（flatten_collectors、gen_benchmark、一次性修复）由人工按需执行。
+> **核心原则**：本仓为脚本编排型工程（无常驻服务、无 Web 框架），沿用"常规流程脚本 / 特殊工具脚本"分类：
+> **常规流程脚本**（clean/classify/align/reconcile/gates/analysis/run 等）随数据推进被调度执行；
+> **特殊/工具脚本**（迁移、拍平、基准登记、知识库同步、一次性修复）由人工按需执行。
 
 ### 2.1 根目录与一级模块总览
 
 ```
 regulatory_compliance_orchestrator/
-├── cli.py                    # 【常规流程·入口】薄壳（2026-09-13 审查 P3：611→87 行）——
-│                             #   COMMANDS 注册 + build_parser + main 分发仅此三件事
-├── commands/                 # 【常规流程·命令实现】12 命令实现包（gates/governance/source/internal/classify/
-│                             #   timeliness/draft/rfn/base/analysis/relations/ping，各含 run(argv)）
+├── cli.py                    # 【常规流程·入口】统一命令分发（18 命令注册 + build_parser + main）
+├── commands/                 # 【常规流程·命令实现】18 命令实现包（各含 run(argv)）
+│                             #   analysis/base/classify/doctor/draft/gates/governance/internal/ping/
+│                             #   relations/rfn/run/schedule/source/status/timeliness/triggers/worklist
 ├── paths.py                  # 【常规流程】路径唯一解析（ROOT/MODULES_DIR/GOVERNANCE_DB…，禁盘符字面量）
-├── config/                   # 【常规流程】配置层
-│   ├── enums.py              #   受控枚举唯一源（SOURCE_SET/TIMELINESS_STATUS/doc_type/category…，含自检）
+├── config/                   # 【常规流程】配置层（唯一事实源）
+│   ├── enums.py              #   受控枚举唯一源（SOURCE_SET/TIMELINESS_STATUS/doc_type/category/RELATION_*…含自检）
+│   ├── exitcodes.py          #   退出码 IntEnum（OK/FAIL/DATA/ENV/NOT_SOURCE_TREE…，裸整数 return 判据参照）
+│   ├── constants.py          #   模块清单/结构清单 SSOT（MODULE_PKGS/MODULE_KEYS）
 │   ├── loader.py             #   sources.yaml/ocr.yaml 唯一读取口（${VAR} 嵌套展开、collector 路由 API）
 │   ├── sources.yaml          #   源目录唯一事实源（五源 collector/clean_project 字段消费，R15）
+│   ├── schedule.yaml         #   定时任务唯一事实源（P2-2；反向生成运行手册定时表）
+│   ├── triggers.yaml         #   条件触发唯一事实源（P2-1；TriggerRunner 消费）
+│   ├── inbox_registry.yaml   #   投放区注册唯一事实源（P2-3b；inbox_scan 消费）
 │   └── ocr.yaml              #   OCR 引擎配置（Paddle/Tesseract 双引擎 + 质量闸门阈值）
 ├── interfaces/               # 【常规流程】跨层唯一调用面（R4：模块间禁止直接互引）
-│   ├── contract.py           #   数据契约 SSOT：CLEANED_CSV_COLUMNS / BASE·FINAL·MATCHED·CITEREFS_KEYS /
-│   │                         #   DETAIL_TABLE_FIELDS(14列) / ATTACHMENT_FIELDS / RFN_CLEAN_BRIDGE_FIELDS /
-│   │                         #   CN_FIELD_REGISTRY(37+) / FIELD_SEMANTIC_EQUIV …
-│   └── *_api.py              #   访问网关（阶段 3 全部实装）：clean_index / clause_index / timeliness /
-│                             #   rfn / theme / internal_policy / relations / base / governance
-│                             #   —— modules/ 跨模块访问的唯一入口（gate_no_cross_module_import 守卫）
+│   ├── contract.py           #   数据契约 SSOT（列头/键集/枚举域/别名映射/中文列注册/附件字段）
+│   ├── protocols.py          #   依赖协议（4 个 Protocol：CleanIndex/Rfn/InternalPolicy/Relations + assert_provider）
+│   └── *_api.py              #   访问网关（全部实装）：clean_index/clause_index/timeliness/rfn/theme/
+│                             #   internal_policy/relations/base/governance —— modules/ 跨模块唯一入口
 ├── modules/
-│   ├── regulatory_scrapers/  # 【常规流程·外部域】五源采集/清洗/条文固定节点/时效核验/发布件
+│   ├── regulatory_scrapers/  # 【常规流程·外部域】五源采集/清洗/条文固定节点/时效核验/发布件/投放区
 │   ├── regulatory_classifier/# 【常规流程·分类域】RFN 归属/主题/底座/明细(14列)/桥表/召回审计/关系图
 │   ├── internal_policy_base/ # 【常规流程·内部域】制度扫描/摄取(878)/条文抽取/对齐/merged 视图
 │   └── internal_policy_drafter/  # 【常规流程·起草域】条款级对照素材 + 引用核验门禁
 ├── std_lib/                  # 【共享库单副本】scraper_std（doc_type/category/unified_schema/ocr_engine…）
-│   └── common_lib/           #   fs_lock / io_atomic / governance_store / logger（原子写、审计与治理库）
-├── gates/                    # 【常规流程·门禁】ALL_GATES 18 道交付门禁（gates/__init__.py 为准，R23）
-├── data/                     # 【环境】仓根运行数据（治理库 governance.db 等；git 忽略，非交付物）
+│   └── common_lib/           #   fs_lock / io_atomic / governance_store / logging / notify / triggers /
+│                             #   retention / relations / norm（原子写、审计、日志、触发、保留策略、关系抽取）
+├── gates/                    # 【常规流程·门禁】ALL_GATES 22 道交付门禁（gates/__init__.py 为准）
+├── data/                     # 【环境】仓根运行数据（治理库 governance.db / inbox 投放区 / archive 归档；git 忽略）
 ├── exports/                  # 【环境】治理库文本快照（governance export 产出；git 忽略，派生只读层）
-├── tests/                    # 【常规流程·验收】pytest：356 用例（26 项 @data 依赖本机产物）
-├── tools/                    # 【特殊工具/编排】见 §2.2（编排、迁移、基准、知识库同步、交付库生成…）
-├── docs/reports/             # 【特殊辅助·交付库】规划 2.1 五级分析 17 项交付（analysis gen 生成 + _manifest）
-├── reports/                  # 【特殊辅助】蓝图/检视/专项报告/README 规范（权威交付文档）
+├── tests/                    # 【常规流程·验收】pytest：487 用例（33 文件；`@data` 依赖本机产物）
+├── tools/                    # 【特殊工具/编排】见 §2.2（编排、迁移、基准、知识库同步、交付库生成、调度…）
+├── docs/reports/             # 【特殊辅助·交付库】五级分析 17 项交付（analysis gen 生成 + _manifest）
+├── reports/                  # 【特殊辅助】蓝图/检视/专项报告/重构执行报告/README 规范（权威交付文档）
 ├── external/                 # 【环境】tesseract junction（→ 系统安装目录，git 忽略）
 ├── tessdata/                 # 【环境】Tesseract 语言包（chi_sim 等，git 忽略）
 ├── BENCHMARK.md              # 【特殊辅助·基准登记】交付基准（tools/gen_benchmark.py 生成，回归对照）
 ├── data_migration_manifest.json  # 【特殊工具】旧仓→新仓数据复制追踪（P0 产物）
-├── pyproject.toml            # 【元数据】PEP 621 依赖与 optional-dependencies
+├── .git-blame-ignore-revs    # 【元数据】git blame 忽略纯格式化/机械改造提交（R7）
+├── pyproject.toml            # 【元数据】PEP 621 依赖与 optional-dependencies + ruff/mypy/coverage/pytest 配置
 └── README.md                 # 本文档
 ```
 
@@ -76,39 +87,48 @@ regulatory_compliance_orchestrator/
 
 | 路径 (Path) | 类型 | 脚本分类 (Script Type) | 用途描述 (Description) | 依赖/被调用方 (Caller) |
 | :--- | :--- | :--- | :--- | :--- |
-| `cli.py` | 文件 | **常规流程（入口）** | 统一命令分发：`gates / source / internal / classify / timeliness / draft / rfn / base / analysis / ping` | 由用户/automation 调用；`python cli.py <cmd>` |
-| `paths.py` | 文件 | **常规流程** | ROOT/MODULES_DIR/SOURCES_YAML/OCR_YAML 等路径唯一解析 | 被仓内几乎全部模块引用（R4，禁盘符） |
-| `config/enums.py` | 文件 | **常规流程** | 受控枚举 SSOT：`SOURCE_SET`(5)/`TIMELINESS_STATUS`(7)/`INTERNAL_STATUS`(5)/G1·G2 文种与位阶；`assert_enum_bindings()` 自检 | 被 `gates/gate_enum_values` 与各清洗/分类模块引用 |
+| `cli.py` | 文件 | **常规流程（入口）** | 统一命令分发（18 命令：`gates/source/internal/classify/timeliness/draft/rfn/base/analysis/relations/governance/run/doctor/status/schedule/triggers/worklist/ping`） | 由用户/automation 调用；`python cli.py <cmd>` |
+| `paths.py` | 文件 | **常规流程** | ROOT/MODULES_DIR/SOURCES_YAML/OCR_YAML/GOVERNANCE_DB/INBOX_DIR 等路径唯一解析 | 被仓内几乎全部模块引用（R4，禁盘符） |
+| `config/enums.py` | 文件 | **常规流程** | 受控枚举 SSOT：`SOURCE_SET`(5)/`TIMELINESS_STATUS`(7)/`INTERNAL_STATUS`(5)/`RELATION_*`/G1·G2 文种与位阶；`assert_enum_bindings()` 自检 | 被 `gates/gate_enum_values` 与各清洗/分类/关系模块引用 |
+| `config/exitcodes.py` | 文件 | **常规流程** | 退出码 IntEnum（OK=0/FAIL=1/DATA=2/ENV=3/NOT_SOURCE_TREE=4…）；裸整数 `return N` 判据（gate_runtime_hygiene 判据①）参照 | 被 cli/commands/tools/modules 退出码语义化引用 |
 | `config/loader.py` | 文件 | **常规流程** | sources.yaml/ocr.yaml 唯一读取口；`active_source_ids/collector_module/collector_path`（R15 路由）；OCRConfig 同源 | 被 `cli source`、clean `--project`、编排、extract 引用 |
-| `config/sources.yaml` | 文件 | **常规流程（配置）** | 源目录唯一事实源：`collector: collectors.<模块>` + `clean_project` | 启动即被 loader 消费（新增源走 `source add` checklist） |
-| `interfaces/contract.py` | 文件 | **常规流程** | 数据契约 SSOT（列头/键集/枚举域/别名映射/中文列注册/附件字段），gate_contract 与 gate_field_aliases 逐列比对依据 | 被 gates、全部生成脚本引用 |
+| `config/schedule.yaml` | 文件 | **常规流程（配置）** | 定时任务唯一事实源（P2-2）；`tools/gen_schedule_doc.py` 反向生成运行手册定时表；`cli schedule install` 安装 Windows 计划任务 | 判据 S（gate_config_integrity）断言一致性 |
+| `config/triggers.yaml` | 文件 | **常规流程（配置）** | 条件触发唯一事实源（P2-1）；`std_lib/common_lib/triggers.py` 的 TriggerRunner 消费 | 判据 T（gate_config_integrity）断言一致性；`cli triggers` 驱动 |
+| `config/inbox_registry.yaml` | 文件 | **常规流程（配置）** | 投放区注册唯一事实源（P2-3b）；`tools/inbox_scan.py` 消费 | 判据 J7（worklist 双向闭合）断言 |
+| `interfaces/contract.py` | 文件 | **常规流程** | 数据契约 SSOT（列头/键集/枚举域/别名映射/中文列注册/附件字段） | 被 gates、全部生成脚本引用 |
+| `interfaces/protocols.py` | 文件 | **常规流程** | 4 个依赖协议（`CleanIndexProvider`/`RfnProvider`/`InternalPolicyProvider`/`RelationsProvider`）+ `assert_provider` | 被 gates/tools 治理层引用（不依赖 modules 内部实现） |
+| `interfaces/theme_api.py` | 文件 | **常规流程** | 主题集合唯一入口（`theme_map/set_theme/by_theme/align_record`）；`THEME_MAP_P0` 改 re-export | 被 gate_contract、classifier、align 引用 |
 | `modules/regulatory_scrapers/` | 目录 | **常规流程（外部域）** | 采集(collectors/)、清洗(clean/)、快照索引(clean_index/)、条文固定节点(clause_index/)、时效核验(timeliness_review/)、发布件(published/) | 被 classifier 经 clean_index 唯一消费（interfaces 面） |
-| `.../clean/run_clean_pipeline.py` | 文件 | **常规流程** | 单源统一清洗 → `data/cleaned/{src}_cleaned_{date}.csv/jsonl`（39 列契约 + 空值告警 + 原子写） | 每源采集后人工/automation 执行；`--project` 由 sources.yaml 派生 |
-| `.../collectors/nfra_weekly.py` | 文件 | **常规流程（周度增量）** | nfra 周度增量链（列表顶部窗口刷新→详情续跑→离线重建）；编排经 `--collect nfra-weekly` 接入（F-O04） | `tools/run_production_refresh.py` |
+| `.../clean/run_clean_pipeline.py` | 文件 | **常规流程** | 单源统一清洗 → `data/cleaned/{src}_cleaned_{date}.csv/jsonl`（39 列契约 + 空值告警 + 原子写 + **校验失败隔离** + **dedup_key 唯一性校验（转严格）**） | 每源采集后人工/automation 执行；`--project` 由 sources.yaml 派生 |
+| `.../collectors/nfra_weekly.py` | 文件 | **常规流程（周度增量）** | nfra 周度增量链（列表顶部窗口刷新→详情续跑→离线重建）；编排经 `--collect nfra-weekly` 接入 | `tools/run_production_refresh.py` |
 | `.../timeliness_review/verify_missing.py` | 文件 | **常规流程（定时/核验）** | 效力缺失记录北大法宝核验（R13 三态 success/partial/unavailable，摘要落盘，降级不误标） | `cli.py timeliness verify` 子进程；依赖 `@pkulaw/mcp-cli` + token env |
 | `modules/regulatory_classifier/` | 目录 | **常规流程（分类域）** | RFN 归属/主题（rfn/registry）、底座/明细生成（scripts/）、召回审计（recall_audit/）、关系图（clause_graph） | 消费 scrapers clean；供给 internal merged / drafter / analysis |
-| `.../scripts/classify.py` | 文件 | **常规流程** | 主题底座强序重建编排（R8：base→cluster→match→detail→upper→clause_graph，hash 断点幂等） | `cli.py classify`；数据变更后重跑 |
-| `.../scripts/build_base_from_attr.py` | 文件 | **常规流程** | 归属表→各主题 `_t{n}_base.json`（含 R10 provenance：generated_by/at/source_snapshot） | 被 classify base 子步调用；`--check` 校验模式 |
-| `.../scripts/build_detail_tables.py` | 文件 | **常规流程** | 逐份条款引用与上位法依据明细表（`DETAIL_TABLE_FIELDS` 契约 **14 列**——含 F-L03 时效状态/核验来源，R10 血缘列） | classify detail 子步；`--apply` 才写盘 |
-| `.../scripts/reconcile_clean_drift.py` | 文件 | **常规流程** | RFN↔clean 溯源桥 + 漂移核验（R7：桥表唯一写者；快照推进后须先跑再重建，gate_rfn_drift 强制） | 清洗/快照推进后执行；`--apply` 才刷新归属表展示字段 |
-| `.../scripts/cluster_by_keywords.py` | 文件 | **常规流程** | final 子主题聚类（T1–T10；T9/T10 用 RFN 键 u_fix 冻结，R8 修复） | classify cluster 子步 |
-| `.../scripts/build_clause_graph.py` | 文件 | **常规流程** | 主题内/跨主题引用关系边（book_title/docno/docno_sig；dst_theme 无 T 前缀——消费须归一） | classify 末步；供 relations 发布件与 analysis 交付库 |
-| `modules/internal_policy_base/` | 目录 | **常规流程（内部域）** | indexer/extract/scan/align/merged：**878 制度**摄取→条文抽取→主题对齐→merged 视图（原件库 `originals/` 为**规范命名单一扁平层**：`文号_名称`，无文号则 `_名称`） | 消费 classifier RFN；供给 drafter / analysis / vault |
-| `.../indexer.py` | 文件 | **常规流程** | 制度入库（IPN-16hex 指纹、正文、条文结构 `_clauses.json` + 渲染 `_clauses.md`，R21；同 IPN 多 sha 去重） | `cli.py internal index` |
-| `.../merged.py` | 文件 | **常规流程** | 制度 × RFN 引用关联 → `merged_view.json`（associated_rfns + matched_by；同 IPN 多版本去重透明登记） | `cli.py internal merged`；被 gate_citations 消费 |
+| `.../rfn/registry.py` | 文件 | **常规流程** | RFN 归属与主题唯一写接口（`register_doc`/`set_theme`）；主题归属表唯一写者 | 被 `interfaces/rfn_api`、`rfn_backlog` 消费 |
+| `.../scripts/classify.py` | 文件 | **常规流程** | 主题底座强序重建编排（base→cluster→match→detail→upper→clause_graph，hash 断点幂等） | `cli.py classify`；数据变更后重跑 |
+| `.../scripts/reconcile_clean_drift.py` | 文件 | **常规流程** | RFN↔clean 溯源桥 + 漂移核验（桥表唯一写者；gate_rfn_drift 强制） | 清洗/快照推进后执行 |
+| `modules/internal_policy_base/` | 目录 | **常规流程（内部域）** | indexer/extract/scan/align/merged：**878 制度**摄取→条文抽取→主题对齐→merged 视图（原件库 `originals/` 单一扁平层） | 消费 classifier RFN；供给 drafter / analysis / vault |
 | `modules/internal_policy_drafter/` | 目录 | **常规流程（起草域）** | 起草条款对照素材（build_draft_clause_view）与引用核验（verify_regulatory_citations） | 读 merged_view + clauses |
-| `.../scripts/build_draft_clause_view.py` | 文件 | **常规流程** | 条款级端到端对照素材（P8：merged_view × clauses → 每制度 md，自动链接 RFN/⚠待核文号；F-L02 覆盖 878 制度） | `cli.py draft` |
-| `.../scripts/verify_regulatory_citations.py` | 文件 | **特殊工具脚本（起草门禁）** | 对齐表 R-01~R-43 + 文档监管引用核验（`--strict` 门禁；旧仓 docs 权威件链路） | 起草/修订制度后人工执行 |
-| `gates/` | 目录 | **常规流程（质量门禁）** | **18 道**门禁实现（gate_*.py）；数量/实装以 `ALL_GATES` 为准（R23） | `python cli.py gates`；提交/交付前必过 |
-| `tests/` | 目录 | **常规流程（验收）** | pytest：**356 用例**（330 代码级 + 26 `@data` 数据依赖；含 common_lib / 流水线断言 / 发布件契约 / 可移植性回归 / 原件路径治理 / 命名与文号解析规则 / 抽取链质量 / 交付库纳管与 sha 口径 / 关系产物新鲜度 / 治理库·水位·元数据投影 / 条文解析降级与修复等） | `python -m pytest tests -q`（无数据环境加 `-m "not data"`） |
-| `tools/run_production_refresh.py` | 文件 | **常规流程（编排）** | 生产刷新编排：采集→清洗→全链→gates→**变更监听基线（F-O02）**；`--collect nfra-weekly` 周增量链（F-O04） | 定时/人工触发（运行手册见 §7） |
-| `tools/ingest_corpus.py` | 文件 | **特殊工具脚本（语料归集）** | 本地语料归集进 IPB（`--exclude-top` 目录排除、`_update_index` 索引维护；EAST 报送文档等按指示排除） | 归集制度/法规目录时执行 |
-| `tools/gen_analysis_deliveries.py` | 文件 | **常规流程（交付库生成）** | **规划 §2.1 五级分析 17 项交付生成**（全数据驱动 + `_manifest.json` **文件字节 sha256** 登记 + `--dry`；关系类 2 项复用各自工具单源渲染、零重抽取） | `cli.py analysis gen`；数据重建后刷新 |
-| `tools/sync_wiki_sources.py` | 文件 | **特殊工具脚本（知识库同步）** | 发布件 → Obsidian vault（`<Obsidian vault>\监管法规库`；`--scope all/internal` + `--prune` + 截断声明 F-L08） | 数据更新后执行；llm_wiki 喂数同款 |
-| `tools/gen_theme_moc.py` | 文件 | **特殊工具脚本（知识库）** | 主题 MOC（双体系归一，13 页 → vault 主题索引） | vault 同步后可选执行 |
-| `tools/check_llm_wiki_upstream.py` | 文件 | **特殊工具脚本（上游适配）** | llm_wiki 版本巡检（基线 v0.6.11 登记；大版本变更 4 步核对清单） | 月度巡检（运行手册并入） |
-| `tools/gen_benchmark.py` | 文件 | **特殊工具脚本（基准登记）** | 聚合当前产物统计渲染 `BENCHMARK.md`（数据重建后重跑刷新，回归对照） | 手动执行 |
-| `tools/flatten_collectors.py` | 文件 | **特殊工具脚本（一次性迁移）** | collectors 物理拍平（单层 + 源前缀 + 互引改写；`--fix` 幂等修复） | 仅目录重构时执行 |
+| `std_lib/common_lib/governance_store.py` | 文件 | **常规流程** | 治理库唯一读写实现（11 表：run_log/watermark/artifact/audit_log/gate_result/worklist/run_step/document/theme_assign/relation/timeliness_history） | 被 `cli governance`、编排水位登记、worklist 队列消费 |
+| `std_lib/common_lib/logging.py` | 文件 | **常规流程** | 日志统一入口（re-export `scraper_std.logging_setup` + `get_logger` + `setup_cli_logging` + `fatal`） | 被生产脚本、`run --json-logs` 调用 |
+| `std_lib/common_lib/notify.py` | 文件 | **常规流程** | 通知通道（P2-6 告警；JSON 可读） | 被 `cli doctor`/`status`/`schedule verify` 调用 |
+| `std_lib/common_lib/triggers.py` | 文件 | **常规流程** | 条件触发执行器（TriggerRunner，读 triggers.yaml） | 被 `cli triggers`/`cli run --triggers` 调用 |
+| `std_lib/common_lib/retention.py` | 文件 | **常规流程** | 数据保留策略（P2-3；归档规则 + 到期清理） | 被 `tools/retention.py` 调用 |
+| `std_lib/common_lib/relations.py` | 文件 | **常规流程** | 依据/废止关系统一抽取（唯一实现，七层结构 + 词表外置） | 被 `extract_relations`/`merged`/`build_detail_tables` 消费 |
+| `gates/` | 目录 | **常规流程（质量门禁）** | **22 道**门禁实现（gate_*.py）；数量/实装以 `ALL_GATES` 为准 | `python cli.py gates`；提交/交付前必过 |
+| `gates/gate_runtime_hygiene.py` | 文件 | **常规流程（门禁）** | 运行时卫生**五判据全阻断**：①裸整数退出码 ②宽泛吞异常 ③接口空壳 ④生产脚本日志化 ⑤owned 层卫生 | `cli gates` 子项 |
+| `gates/gate_config_integrity.py` | 文件 | **常规流程（门禁）** | 配置完整性（判据 S 调度 / T 触发 / J7 worklist 双向 / R 步骤清单 / 结构清单派生一致） | `cli gates` 子项 |
+| `tests/` | 目录 | **常规流程（验收）** | pytest：**487 用例**（33 文件；含 `@data` 数据依赖） | `python -m pytest tests -q`（无数据环境加 `-m "not data"`） |
+| `tools/run_production_refresh.py` | 文件 | **常规流程（编排）** | 生产刷新编排：采集→清洗→全链→gates→变更监听基线；单实例锁；`--no-scrape`/`--resume`/`--json-logs` | 定时/人工触发；`cli run` 转调其 `main()` |
+| `tools/ci_check.py` | 文件 | **常规流程（CI）** | 本地 CI 一键校验（ruff + mypy + pytest + gates + coverage）**5/5** | 提交前执行 |
+| `tools/install_schedule.py` | 文件 | **特殊工具（调度安装）** | 由 schedule.yaml 安装 Windows 计划任务（N-44 修复后 5/5 成功） | `cli schedule install` |
+| `tools/gen_schedule_doc.py` | 文件 | **常规流程（文档生成）** | 由 schedule.yaml 反向生成运行手册定时表 + crontab（判据 S 一致性） | `cli schedule print`；门禁校验 |
+| `tools/inbox_scan.py` | 文件 | **常规流程（投放区）** | 投放区扫描（inbox_registry.yaml → worklist 决策项） | 数据投放入 data/inbox 后执行 |
+| `tools/retention.py` | 文件 | **特殊工具（数据生命周期）** | 数据保留/归档/清理（P2-3；保留策略 + archive/） | 按月/按需执行 |
+| `tools/gen_analysis_deliveries.py` | 文件 | **常规流程（交付库生成）** | 五级分析 **17 项交付生成**（全数据驱动 + `_manifest.json` 文件字节 sha256 登记 + `--dry`） | `cli.py analysis gen` |
+| `tools/gen_benchmark.py` | 文件 | **特殊工具脚本（基准登记）** | 聚合当前产物统计渲染 `BENCHMARK.md`（数据重建后重跑刷新） | 手动执行 |
+| `tools/sync_wiki_sources.py` | 文件 | **特殊工具脚本（知识库同步）** | 发布件 → Obsidian vault（`--scope all/internal` + `--prune`） | 数据更新后执行 |
+| `tools/rfn_backlog.py` | 文件 | **常规流程（补登）** | RFN 补登候选（`dst_key` 线索 → 强关联；经 register_doc 唯一写口） | `cli relations` 联动 |
+| `tools/extract_relations.py` | 文件 | **常规流程（关系抽取）** | 依据/废止关系编排（实体解析 + 三类产物） | `cli relations gen` |
 
 ---
 
@@ -129,46 +149,46 @@ erDiagram
     STATE ||--o{ RFN_ATTR : "时效(SSOT传播)"
     INTERNAL ||--o{ PROCESSED : "878制度"
     PROCESSED ||--o{ CLAUSES : "条文结构"
-    PROCESSED ||--o{ ATTACH : "附件对象(7字段契约)"
     RFN_ATTR ||--o{ MERGED : "associated_rfns"
-    INTERNAL ||--o{ MERGED : "制度侧"
     MERGED ||--o{ DRAFT : "条款对照素材"
     FINAL ||--o{ GRAPH : "clause_graph 关系边"
     DETAIL ||--o{ GRAPH : "引用实证"
-    GRAPH ||--o{ ANALYSIS : "analysis 交付库15项"
-    DETAIL ||--o{ ANALYSIS : "链条表/核验"
+    GRAPH ||--o{ ANALYSIS : "analysis 交付库17项"
     MERGED ||--o{ ANALYSIS : "制度侧视图"
+    WORKLIST ||--o{ DECISION : "9类决策项(worklist)"
 ```
-- 数据血缘：各底座/明细/桥表/合并视图记录含 **R10 provenance**（`generated_by/generated_at/source_snapshot/finalized_*`），gate_provenance 强制覆盖。
-- 状态文件版本锚点：`classify_state / clause_index_state / rfn_drift_state / verification_state / _ingest_state` 写盘注入 `_meta{schema_version,written_by,written_at}`（**副本写入**防污染调用方），读侧剥离（F-D14）。
+- 数据血缘：各底座/明细/桥表/合并视图记录含 provenance（`generated_by/generated_at/source_snapshot`），gate_provenance 强制覆盖。
+- 状态文件版本锚点：`classify_state / clause_index_state / rfn_drift_state / verification_state / _ingest_state` 写盘注入 `_meta{schema_version,written_by,written_at}`（副本写入防污染调用方），读侧剥离。
 
 ### 3.2 核心数据对象定义
 
 | 数据项 (Field) | 类型 (Type) | 必填 | 枚举/格式约束 (Enum/Format) | 业务含义/示例 | 所属表/模块 (Scope) |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | `监管文件编号` | `string` | 是 | `^RFN-[0-9a-f]{16}$` | 外部监管文件全局唯一实体标识（文号\|标题派生）例：`RFN-4ab1a1555817bbc8` | 归属/主题归属/底座/桥 |
-| `时效状态` | `enum` | 是 | 7 值：`valid/amended/repealed/partially_repealed/expired/pending/uncertain` | 文件效力状态；SSOT=verification_state → 归属表 → 底座（R3 单路传播）；**明细表 14 列同源投影（F-L03）** | 归属表、base `eff_status`、明细表 |
-| `核验来源` | `string` | 否 | 例：`北大法宝` / `规则判断` | 时效判定来源（**F-L03**：法宝核验标记联入分析层；明细表 14 列之一） | 明细表（CN_FIELD_REGISTRY 登记） |
+| `时效状态` | `enum` | 是 | 7 值：`valid/amended/repealed/partially_repealed/expired/pending/uncertain` | 文件效力状态；SSOT=verification_state → 归属表 → 底座（单路传播）；明细表 14 列同源投影 | 归属表、base `eff_status`、明细表 |
+| `核验来源` | `string` | 否 | 例：`北大法宝` / `规则判断` | 时效判定来源（明细表 14 列之一） | 明细表 |
 | `source` / `文件来源` | `enum` | 是 | 5 值：`gov/mof/nfra/pbc/supp` | 五源标识（子源经 SOURCE_ALIASES 归并） | cleaned/base/file_src |
-| `主题` | `enum` | 是 | `T0`(上位法锚点)+`T1..T10`（THEME_MAP） | 主题归属（完整名见 `rfn.THEME_MAP`） | 主题归属表、明细 |
+| `主题` | `enum` | 是 | `T0`(上位法锚点)+`T1..T10`（THEME_MAP） | 主题归属（完整名见 `interfaces/theme_api`） | 主题归属表、明细 |
 | `cluster` | `string` | 是 | 关键词聚类值或 `U未分类` | final 子主题（T9/T10 以 RFN u_fix 冻结） | final |
 | `associated_rfns[]` | `array` | 否 | 元素：`{rfn,title,docno,matched_by}` | 内部制度引用的监管依据（matched_by∈{docno_sig,title}） | merged_view |
-| `attachments[]` | `array` | 否 | 规范视图 7 字段（见 §3.3） | 原文附件对象（pdf/docx/xlsx…），消费经 `contract.attachment_view()` 归一（五源 5 套字段收敛，F-D07） | cleaned/published external_attachments |
-| `body_text` | `string` | 是 | 读侧别名归一（`full_text/content_text/content`） | 正文文本（**读侧一律经 `contract.read_field()` 归一**；写侧保留原始字段防历史重写，F-D06） | cleaned/JSONL |
-| `generated_by/at/source_snapshot` | `string` | 是 | 时间 `%Y-%m-%d %H:%M:%S` | 行级血缘（R10）：写者/批次时间/源快照(mtime) | base/base 派生链 |
+| `dedup_key` | `string` | 是 | 唯一 | 去重键（下游建索引依据；**唯一性校验转严格**：重复即 rc=2） | cleaned |
+| `attachments[]` | `array` | 否 | 规范视图 7 字段 | 原文附件对象（pdf/docx/xlsx…），消费经 `contract.attachment_view()` 归一 | cleaned/published |
+| `body_text` | `string` | 是 | 读侧别名归一 | 正文文本（读侧经 `contract.read_field()` 归一；写侧保留原始字段） | cleaned/JSONL |
+| `generated_by/at/source_snapshot` | `string` | 是 | 时间 `%Y-%m-%d %H:%M:%S` | 行级血缘：写者/批次时间/源快照(mtime) | base/base 派生链 |
 
 ### 3.3 枚举值全量清单（关键受控枚举，源=config/enums.py）
 
-- **`SOURCE_SET`**：`gov`（国务院及地方 gov.cn）/ `mof`（财政部）/ `nfra`（金融监管总局）/ `pbc`（人民银行）/ `supp`（补充法规库）——sources.yaml enabled 集合与之双向一致（gate_sources_config）。
-- **`TIMELINESS_STATUS`（时效状态，7 值）**：`valid` 现行有效 / `amended` 已修改 / `repealed` 已废止 / `partially_repealed` 部分废止 / `expired` 已失效 / `pending` 核验中(占位) / `uncertain` 不确定。语义：北大法宝等核验结论（fresh≤90 日）→ 归属表人工权威 → 底座派生。
-- **`INTERNAL_STATUS`（内部制度，5 值）**：`draft / active / expiring / deprecated / archived`。
-- **`INTERNAL_FILE_TYPE`**：`policy / process / guideline / manual / other`。
-- **G1 文种（doc_type）**：`FILE_TYPES` 60 项有序列表（命令/通知/条例/办法…）；`DOC_TYPE_GROUP`（规划部署/制度治理/说明解释/文书凭证等）；别名 `DOC_TYPE_ALIAS={令→命令, 法→法律}`。
-- **G2 效力位阶（category）**：13 级英文枚举 `constitution(1)…other(12)`，数值型 `AUTHORITY_RANK`（司法解释 2.5）；存量中文映射 `CATEGORY_MAP`（法律解释=司法解释，更正 3）。
-- **附件对象字段（`ATTACHMENT_FIELDS`，F-D07）**：`file_name / kind / local_path / sha256 / bytes / text_len / url`（别名收敛 `ATTACHMENT_ALIASES`——五源 attachment_name/name/file_name 等 5 套）。
-- **字段语义等价（`FIELD_SEMANTIC_EQUIV`，F-D06）**：`body_text`(5 名)/`publish_date`(+original)/`effective_date`(+original)/`source_url`(detail_url,url)/`document_number`/`title`/`source`/`timeliness_status`——**读侧 `read_field` 统一归口**。
-- **中文列名受控注册（`CN_FIELD_REGISTRY`，gate_field_aliases）**：归属/主题/明细/桥/recall 各域中文列登记（37+ 项）；**新增明细列必须同步登记**（F-L03 实证：漏登记即门禁 FAIL）。
+- **`SOURCE_SET`**：`gov` / `mof` / `nfra` / `pbc` / `supp`——sources.yaml enabled 集合与之双向一致（gate_sources_config）。
+- **`TIMELINESS_STATUS`（时效状态，7 值）**：`valid` 现行有效 / `amended` 已修改 / `repealed` 已废止 / `partially_repealed` 部分废止 / `expired` 已失效 / `pending` 核验中 / `uncertain` 不确定。
+- **`INTERNAL_STATUS`（内部制度，5 值）**：`draft / active / expiring / deprecated / archived`；`INTERNAL_FILE_TYPE`：`policy / process / guideline / manual / other`。
+- **G1 文种（doc_type）**：`FILE_TYPES` 60 项有序列表；`DOC_TYPE_GROUP`；别名 `DOC_TYPE_ALIAS={令→命令, 法→法律}`。
+- **G2 效力位阶（category）**：13 级英文枚举 `constitution(1)…other(12)`；存量中文映射 `CATEGORY_MAP`。
+- **附件对象字段（`ATTACHMENT_FIELDS`）**：`file_name / kind / local_path / sha256 / bytes / text_len / url`（别名收敛 `ATTACHMENT_ALIASES`）。
+- **字段语义等价（`FIELD_SEMANTIC_EQUIV`）**：`body_text`(5 名)/`publish_date`/`effective_date`/`source_url`/`document_number`/`title`/`source`/`timeliness_status`——读侧 `read_field` 统一归口。
+- **中文列名受控注册（`CN_FIELD_REGISTRY`）**：归属/主题/明细/桥/recall 各域中文列登记；新增明细列必须同步登记。
+- **关系受控值**：`RELATION_KIND`/`RELATION_DOC_KIND`/`BASIS_TYPE`/`REPEAL_ACTION`/`REPEAL_SCOPE`/`RELATION_MATCH_METHOD`/`RELATION_TARGET_CLASS`（`entity/corpus/organ/generic/external`）。
 - **编号空间**：外部 `RFN-<16hex>`；内部 `IPN-<16hex>`（独立空间不冲突）；`BRIDGE_RELATION`：`self/refresh/supersede`。
+- **退出码（`config/exitcodes.ExitCode`）**：`OK=0 / FAIL=1 / DATA=2 / ENV=3 / NOT_SOURCE_TREE=4`（IntEnum；裸整数 `return N` 由 gate_runtime_hygiene 判据① 阻断）。
 
 ---
 
@@ -183,291 +203,199 @@ flowchart LR
     end
     G & M & N & P & S -->|collectors/run_clean_pipeline| C[(data/cleaned<br/>39列双轨)]
     C --> CI[clean_index 快照索引]
-    C -->|recall 召回 + 条文节点| CL[(data/clauses)]
+    C -->|条文节点| CL[(data/clauses)]
     C -->|reconcile 桥/漂移| B[(rfn_clean_bridge)]
-    V[北大法宝核验] -->|verify_missing R13三态| ST[(verification_state)] -->|R3 单路传播| AT[(文件归属表)]
-    AT -->|build_base+cluster| BS[(_t*_base/final 40底座)]
-    BS -->|match/detail/upper/clause_graph| DT[(明细表 11份 14列<br/>+ 关系边 1508)]
-    CI --> R[retrieval 四门禁编排]
-    AT --> R
-    R --->|scanner→build_outputs→report| OUT[recall_audit/output]
-    INT[内部制度 originals] -->|scan+extract OCR<br/>Paddle/Tesseract| PC[(processed<br/>fulltext/clauses.json/md)]
+    V[北大法宝核验] -->|verify_missing R13三态| ST[(verification_state)] -->|单路传播| AT[(文件归属表)]
+    AT -->|build_base+cluster| BS[(_t*_base/final 底座)]
+    BS -->|match/detail/clause_graph| DT[(明细表 11份 14列)]
+    INT[内部制度 originals] -->|scan+extract OCR| PC[(processed)]
     PC -->|align + merged 878| MV[(merged_view)]
     MV -->|build_draft_clause_view| DK[(draft_clause 条款对照素材)]
-    MV -->|gate_citations| G8{15道交付门禁 gates}
-    ST --> G8
-    DT -->|gen_analysis_deliveries| AN[(docs/reports<br/>五级分析交付15项)]
-    AT & DT & MV --> AN
-    PC & MV -->|base publish| PUB[(published<br/>external/internal 发布件)]
+    ST --> G8{22道交付门禁 gates}
+    DT -->|gen_analysis_deliveries| AN[(docs/reports<br/>五级分析交付17项)]
+    PC & MV -->|base publish| PUB[(published 发布件)]
     PUB -->|sync_wiki_sources| KB[Obsidian vault]
+    INBOX[(data/inbox 投放区)] -->|inbox_scan| WL[(worklist 9类决策项)]
     G8 -->|全绿| OK[交付]
     classDef src fill:#e1d5e7
     classDef store fill:#d5e8d4
     class G,M,N,P,S src
-    class C,CL,B,ST,AT,BS,DT,PC,MV,DK,AN,PUB store
+    class C,CL,B,ST,AT,BS,DT,PC,MV,DK,AN,PUB,WL store
 ```
-单向依赖纪律：scraper → classifier → internal_base → drafter → analysis；跨模块仅经 `interfaces/`；同仓唯一模块互引 = classifier→clean_index。
+单向依赖纪律：scraper → classifier → internal_base → drafter → analysis；跨模块仅经 `interfaces/`；同仓唯一模块互引 = classifier→clean_index（gate_no_cross_module_import 守卫）。
 
 ### 4.2 数据处理管道明细
 
 | 阶段 (Stage) | 数据源 (Source) | 目标存储 (Target) | 转换逻辑 (Transform) | 所属脚本/Job | 脚本分类 |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Extract 采集** | 五源官网 | `data/raw` → collectors 输出 | 各源 scraper（gov/mof/nfra/pbc/supp，源前缀拍平命名）；nfra 另有周度增量链 | `modules/.../collectors/<src>_*.py` | 常规流程（采集） |
-| **Transform 清洗** | raw | `data/cleaned/{src}_cleaned_{date}.{csv,jsonl}` | unified_schema 归一（39 列契约 + enum 归并 + 空值告警阈值 3%） | `clean/run_clean_pipeline.py --project <src>` | **常规流程** |
-| **时效核验** | cleaned 效力空记录 | `verification_state.json` + 归属表 | 北大法宝 CLI 判定（7 值）；R13 三态摘要；降级不误标 | `timeliness_review/verify_missing.py` | **常规流程（定时/需 token）** |
-| **Load 底座** | 归属表（权威） | `_t{n}_base/final.json`（40） | base 投影（R10 血缘）→ cluster 子主题 | `classify --steps base,cluster` | 常规流程（幂等断点） |
-| **关联 Load** | base/final + clean | 明细表（11 份 **14 列**）与桥表（11 列）；clause_graph 关系边（1508） | 条款引用/上位法抽取；时效/核验联入（F-L03）；RFN↔clean 漂移判定 | `build_detail_tables` / `reconcile_clean_drift` / `build_clause_graph` | 常规流程 |
-| **Index 内部对齐** | internal originals | `processed/*_clauses.{json,md}` + `merged_view` | OCR（Paddle 主/Tesseract 备，质量闸门）→全文→条文结构（R21）→主题对齐×RFN 引用（**878 制度**） | `cli.py internal index/align/merged`；`internal reocr` 重扫 | 常规流程 |
-| **Export 起草** | merged_view | `drafter/data/draft_clause/*.md` | 条款级对照素材（逐条链接 RFN / ⚠ 待核文号；覆盖 878 制度） | `cli.py draft` | 常规流程（P8） |
-| **Publish 发布** | cleaned + merged | `published/external_*.jsonl`（records/clauses/attachments/relations）+ internal 发布件 + FTS | 发布件构建（附件 7 字段契约/关系边 1508 汇聚） | `cli.py base publish` | 常规流程 |
-| **Analysis 交付库** | final × 明细 × 图 × upper_laws × 关系产物 | `docs/reports/`（**17 项 + _manifest**） | 规划 §2.1 五级分析结构产出（全数据驱动）；关系类 2 项（2.1.2.4/2.1.2.5）复用 `extract_relations`/`rfn_backlog` 单源渲染 | `cli.py analysis gen` | **常规流程（F-L01）** |
-| **Knowledge 同步** | 发布件 | `<Obsidian vault>\监管法规库`（Obsidian） | frontmatter 溯源 + 截断声明（F-L08）+ `--prune` 旧名清理 | `tools/sync_wiki_sources.py` | 特殊工具（知识库） |
-| **Validate 门禁** | 全仓数据/代码 | gates 报告 | **18 道** ALL_GATES（契约/枚举/拍平/血缘/漂移/时效 SSOT/字段别名/原件可解析/关系产物/产物水位/跨模块直连…） | `cli.py gates` | 常规流程（阻断） |
+| **Extract 采集** | 五源官网 | `data/raw` → collectors 输出 | 各源 scraper；nfra 周度增量链 | `modules/.../collectors/<src>_*.py` | 常规流程（采集） |
+| **Transform 清洗** | raw | `data/cleaned/{src}_cleaned_{date}.{csv,jsonl}` | unified_schema 归一（39 列契约 + enum 归并 + **校验失败隔离** + **dedup_key 唯一性**） | `clean/run_clean_pipeline.py --project <src>` | **常规流程** |
+| **时效核验** | cleaned 效力空记录 | `verification_state.json` + 归属表 | 北大法宝 CLI 判定（7 值）；R13 三态摘要；降级不误标 | `timeliness_review/verify_missing.py` | **常规流程（需 token）** |
+| **Load 底座** | 归属表（权威） | `_t{n}_base/final.json` | base 投影（血缘）→ cluster 子主题 | `classify --steps base,cluster` | 常规流程（幂等断点） |
+| **关联 Load** | base/final + clean | 明细表（11 份 14 列）与桥表；clause_graph 关系边 | 条款引用/上位法抽取；RFN↔clean 漂移判定 | `build_detail_tables` / `reconcile_clean_drift` / `build_clause_graph` | 常规流程 |
+| **Index 内部对齐** | internal originals | `processed/*_clauses.{json,md}` + `merged_view` | OCR →全文→条文结构→主题对齐×RFN 引用（**878 制度**） | `cli.py internal index/align/merged` | 常规流程 |
+| **Export 起草** | merged_view | `drafter/data/draft_clause/*.md` | 条款级对照素材（逐条链接 RFN / ⚠ 待核文号） | `cli.py draft` | 常规流程 |
+| **Publish 发布** | cleaned + merged | `published/external_*.jsonl` + internal 发布件 + FTS | 发布件构建（附件 7 字段契约/关系边汇聚） | `cli.py base publish` | 常规流程 |
+| **Analysis 交付库** | final × 明细 × 图 × 关系产物 | `docs/reports/`（**17 项 + _manifest**） | 五级分析结构产出（全数据驱动）；关系类复用单源渲染 | `cli.py analysis gen` | **常规流程** |
+| **Knowledge 同步** | 发布件 | `<Obsidian vault>\监管法规库` | frontmatter 溯源 + 截断声明 + `--prune` | `tools/sync_wiki_sources.py` | 特殊工具 |
+| **Ingest 投放区** | data/inbox | worklist 决策项 | inbox_scan 按 inbox_registry.yaml 归类 → worklist | `tools/inbox_scan.py` | 常规流程 |
+| **Validate 门禁** | 全仓数据/代码 | gates 报告 | **22 道** ALL_GATES（契约/枚举/漂移/时效 SSOT/血缘/水位/跨模块/运行时卫生/调度触发一致性…） | `cli.py gates` | 常规流程（阻断） |
 
 ---
 
 ## 5. 自动化任务节点与门禁设置 (Automation & Guardrails)
 
-### 5.1 定时与事件驱动任务清单（IDE automation，R11）
+### 5.1 定时与事件驱动任务清单（唯一事实源 = config/schedule.yaml + config/triggers.yaml）
 
-| 任务名称 | 触发方式 (Trigger) | 执行动作 (Action) | 脚本/入口位置 | 脚本分类 | 失败处理 |
+| 任务名称 | 触发方式 (Trigger) | 执行动作 (Action) | 入口位置 | 脚本分类 | 失败处理 |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| `orchestrator-五源周采集与漂移核验` | Cron 每周二 01:00 | 五源采集（含 **nfra-weekly 增量链**）→清洗→快照重建→时效回写→classify→**关系重抽取（阶段 2.6）**→retrieval 编排→reconcile 桥/漂移→**变更监听基线（source diff --record）**→`cli.py gates` | `tools/run_production_refresh.py` + `cli.py gates`（prompt 编排） | 常规流程（定时批） | 门禁 FAIL 输出清单留人工，不静默通过 |
-| `orchestrator-每日检索门禁核验` | Cron 每日 06:00 | retrieval 四门禁编排（签名幂等，变化则重跑）→ `cli.py gates` 全绿确认 | `recall_audit/run_retrieval_after_checks.py` + `cli.py gates` | 常规流程（定时） | 任一 FAIL 输出失败门禁与原因清单，不改数据 |
-| （自动）分析交付库刷新 | **数据重建后自动**（`cli.py classify` 成功尾部触发；编排阶段 6.8 显式再跑） | `cli.py analysis gen` → `docs/reports/` 17 项刷新（幂等，~4s；关系类 2 项从关系产物重建，零重抽取） | `tools/gen_analysis_deliveries.py` | 常规流程（交付库） | 生成失败不阻断 classify（可手动 `analysis gen` 补跑；`--no-analysis` 跳过） |
+| `REG_ORCH_refresh` | Cron 每日 06:00 | `cli.py run --no-scrape --resume`（全链刷新；无 raw 变化各阶段快跳） | `tools/run_production_refresh.py` | 常规流程（定时批） | 门禁 FAIL 输出清单留人工，不静默通过 |
+| `REG_ORCH_nfra_weekly` | Cron 每周二 01:00 | `cli.py run --collect nfra-weekly`（nfra 周度增量链） | `tools/run_production_refresh.py` | 常规流程（定时） | 同上 |
+| `REG_ORCH_verify` | Cron 每周一 07:00 | `cli.py run --only 6.9`（效力缺失核验批次，断点续跑） | `timeliness_review/verify_missing.py` | 常规流程（需 token） | 配额自动停，断点续跑 |
+| `REG_ORCH_publish_wiki` | Cron 每周一 08:00 | `cli.py run --only 21.5`（发布件刷新 + llm_wiki 源同步） | `base_publish` + `sync_wiki_sources` | 常规流程 | 同上 |
+| `REG_ORCH_monthly_check` | Cron 每月 1 日 09:00 | `cli.py gates` + `source diff` + `timeliness summary` + llm_wiki 巡检 | `cli.py gates` | 常规流程（月度巡检） | 同上 |
+| （自动）分析交付库刷新 | 数据重建后自动（classify 尾部 + 编排阶段 6.8） | `cli.py analysis gen` → `docs/reports/` 17 项刷新 | `tools/gen_analysis_deliveries.py` | 常规流程（交付库） | 生成失败不阻断 classify（可手动补跑） |
 
-> 真实核验（北大法宝）运行需环境：`PKULAW_NODE_EXE`/`PKULAW_PKG_DIR`（托管 Node + `@pkulaw/mcp-cli`）与 token 文件 `.pkulaw_token`（git 忽略）。
-> **⚠️ `PKULAW_PKG_DIR` 必须指向包本体目录**（即 `.../node_modules/@pkulaw/mcp-cli`，含 `package.json` 的 `bin` 字段），
-> **不是** npm 安装根 —— 指向安装根时 `find_cli()` 读不到 `bin` 映射、`shutil.which` 亦无果，报"未找到 pkulaw-mcp CLI"（易误判为未安装）。
-> **降级态（配额耗尽/令牌被拒，CLI 报 `认证失败`）**：三脚本**均不写判定**（R13 不误标），断点保留可直接续跑；
-> 此时 `authority_backfill_verify --judge-only` 可**零配额**把断点中"已成功查询但未落判"的结果补齐。
-> **变更监听**：`cli.py source diff [--record]`——对比 `data/watch_baseline.jsonl` 基线与当前各源快照（日期/记录数/内容 sha），编排阶段 6.5 自动 `--record`（F-O02）。
-> **编排与定时全景**：见 `reports/运行手册_编排与定时_20260912.md`（调度清单/命令基准/rc 告警语义表；新增任务须登记）。
+> **调度事实源纪律（P2-2）**：定时任务**唯一事实源** = `config/schedule.yaml`；运行手册的定时表与 crontab 片段由
+> `tools/gen_schedule_doc.py` 反向生成（**勿手改**）；`cli.py schedule install` 安装 Windows 计划任务、
+> `cli.py schedule verify` 比对已装任务。判据 S（gate_config_integrity）断言「手册自动段 == yaml 渲染结果」。
+> **触发事实源纪律（P2-1）**：条件触发唯一事实源 = `config/triggers.yaml`，`cli.py triggers` 驱动
+> `std_lib/common_lib/triggers.TriggerRunner`（`cli.py run --triggers` 主链成功后追加执行）。判据 T 断言一致。
+> **真实核验（北大法宝）**需 env：`PKULAW_NODE_EXE`/`PKULAW_PKG_DIR`（**指向包本体** `node_modules/@pkulaw/mcp-cli`）
+> 与 token 文件 `.pkulaw_token`（git 忽略）。降级态（配额耗尽/令牌被拒）三脚本均不写判定（R13 不误标）。
+> **变更监听**：`cli.py source diff [--record]` 对比 `data/watch_baseline.jsonl` 与当前快照。
 
 ### 5.2 数据与质量门禁 (Quality Gates)
 
-- **代码门禁**：
-  - `ruff check .` 零 Error（手动执行；`[dev]` extra）。
-  - 自动化验收 `pytest tests -q`（**356 用例** = 330 代码级 + 26 `@data` 数据依赖；无数据环境用 `pytest tests -m "not data"` 跑代码级回归）。
-- **数据门禁（写入/交付拦截，ALL_GATES 18 道）**：
-  - 数据契约：归属表/明细/底座/桥 列头与键集须匹配 `interfaces/contract.py`（gate_contract 逐列比对，超集允许、缺必报）。
-  - **中文列名受控注册**：CSV 中文列须在 `CN_FIELD_REGISTRY` 登记（gate_field_aliases；明细加列须同步，F-L03 实证）。
-  - 受控枚举：所有枚举取值 ∈ `config/enums.py`（gate_enum_values）。
-  - 时效单源：SSOT `verification_state` → 归属表 → 底座逐层一致（gate_timeliness_ssot；pending/陈旧/时间差容忍语义）。
-  - RFN 一致性：归属表与 40 底座/11 明细 RFN 全一致（gate_rfn_sync）；快照推进后未跑 reconcile 即阻断重建（gate_rfn_drift）。
-  - 数据血缘：底座/明细/桥表 provenance 字段覆盖 100%（gate_provenance）。
-  - 制度引用：merged_view associated_rfns 全部在 classifier 存在（gate_citations）；起草引用核验见 drafter `verify_regulatory_citations.py --strict`（R-01~R-43 对齐表，旧仓 docs 权威件）。
-  - **依据/废止关系产物**：键集 ⊇ 契约 + 受控枚举闭包 + 强引用可解析 + 溯源非空 + 统计一致，**且产物不得早于其主要数据输入**（gate_relations，R-F01）。判据 8「产物新鲜度」于 **2026-09-14 追加**——此前只查结构一致性，陈旧产物可**全额通过**，使 merged 引用原语 / drafter 关系素材 / 交付库 2.1.2.4·2.1.2.5 报告**静默反映旧数据**。处置：`python cli.py relations gen`（生产刷新链**阶段 2.6** 已自动接入）。
-  - 目录拍平：modules data/docs 禁止未经白名单的子目录（gate_flat_layout）。
-  - 硬编码零容忍：盘符字面量（gate_hardcoded_paths）与 cleaned 快照日期 N-3 外推（gate_hardcoded_snapshots）扫描。
-  - 重复工具/重名再定义扫描（gate_no_duplicate_libs；SSOT 分层 + `# norm-specialization` 豁免标记）。
-  - **内部制度原件可解析**：`internal_policy_index.json` 的 `relative_path` 逐条须在 `originals/` 可解析（gate_original_resolvable）——**制度正文 100%**；非正文表格类失效台账不超**登记基线 0**（2026-09-13 治理后收紧：台账已隔离至 `data/ledgers/`，索引内不应再有非正文件）。漂移处置：`python tools/reconcile_original_paths.py [--apply]`（详见 `reports/内部制度原件双份存储与索引漂移分析_20260913.md`）。
+- **代码门禁（CI = `tools/ci_check.py`，5 项全阻断）**：
+  - `ruff check .` 零 Error（`[dev]` extra）。
+  - **`mypy` owned 层 0 error（阻断）**——只检查 `std_lib/common_lib` + `config` + `interfaces` + `gates` + `commands`
+    （`follow_imports="silent"` 排除历史层 scraper_std/modules 无注解遗留）。
+  - `pytest tests -q`（**487 用例**；无数据环境 `pytest tests -m "not data"` 跑代码级回归）。
+  - `cli.py gates` 全绿。
+  - `coverage` ≥ 20%（当前 **45%**，只升不降）。
+- **数据门禁（写入/交付拦截，ALL_GATES 22 道）**：
+  - 数据契约（gate_contract 逐列比对）、受控枚举（gate_enum_values）、中文列名注册（gate_field_aliases）。
+  - 时效单源（gate_timeliness_ssot）、RFN 一致（gate_rfn_sync）、漂移（gate_rfn_drift）、血缘（gate_provenance）。
+  - 制度引用（gate_citations）、原件可解析（gate_original_resolvable）、关系产物（gate_relations）、产物水位（gate_watermark）。
+  - **运行时卫生（gate_runtime_hygiene，五判据全阻断）**：①裸整数退出码（有顶层仓内导入的文件须 `ExitCode` 语义化）
+    ②宽泛吞异常（`except Exception: pass` 且无意图声明）③接口空壳（`interfaces/**` 0 `NotImplementedError`）
+    ④生产脚本日志化（LOG 下限 + print 上限）⑤owned 层卫生（config/interfaces/gates/commands 0 裸 return/except-pass）。
+  - **cleaned schema（gate_clean_schema）**：交付文件含 validation_errors 即 FAIL（隔离机制生效后归零）；隔离率只披露。
+  - **配置完整性（gate_config_integrity）**：判据 S（调度）/T（触发）/J7（worklist 双向）/R（步骤清单）/结构清单派生一致。
+  - **导入引导纪律（gate_import_bootstrap）**：各层 sys.path 注入只减不增（基线冻结）。
+  - **跨模块直连（gate_no_cross_module_import）**：modules/ 越权引导 + 裸 import + 兄弟模块路径拼接（判据 D）。
+  - 目录拍平（gate_flat_layout）、硬编码零容忍（gate_hardcoded_paths / gate_hardcoded_snapshots）、
+    重复工具扫描（gate_no_duplicate_libs）、密钥扫描（gate_secret_scan）、源配置（gate_sources_config）。
 - **发布门禁**：
-  - 交付前 `python cli.py gates` **全绿（PASS）** 方可；ALL_GATES 数量/实装以 `gates/__init__.py` 为准（R23，禁止文本写死）。
-  - 快照/归属表/时效数据变更纪律：先 reconcile → 再重建底座链（classify）→ gates → 刷新 `BENCHMARK.md` 与 **analysis 交付库**；禁手动直接改归属表核心字段（应经 reconcile C1/核验路径，C2 一律人工）。
+  - 交付前 `python cli.py gates` 全绿（PASS）方可；ALL_GATES 数量/实装以 `gates/__init__.py` 为准（禁止文本写死）。
+  - 快照/归属表/时效数据变更纪律：先 reconcile → 再重建底座链（classify）→ gates → 刷新 `BENCHMARK.md` 与 analysis 交付库。
 
 ---
 
 ## 6. 环境搭建与本地开发 (Quick Start)
 
-### 6.0 异机部署先决条件（必读 · 2026-09-13 可移植性补强）
+### 6.0 异机部署先决条件（必读）
 
 > 本仓为**源码树编排工程**：`data/`、`published/`、`external/`、`tessdata/` 均不入 git。
-> 在新机器上克隆后**代码可运行，但业务链路需要按下表补齐前提**。
-> 完整检视与实测证据见 `reports/克隆可移植性检视报告_20260913.md`。
+> 克隆后**代码可运行，但业务链路需按下表补齐前提**（完整检视见 `reports/克隆可移植性检视报告_20260913.md`）。
 
 | 前提 | 要求 | 缺失后果 |
 | :--- | :--- | :--- |
 | Python | **≥ 3.13**（`requires-python`） | pip 直接拒绝安装 |
-| 安装方式 | `pip install -e ".[dev]"`（**必须可编辑**），或直接在仓库根运行 `python cli.py` | 非源码树安装（`pip install .`）不含 `modules/`；`cli.py` 启动校验会以 **rc=4** 显式拒绝并给出指引（不再抛晦涩的 `ModuleNotFoundError`） |
-| PDF/编码依赖 | 已列 **base** 依赖（`pypdf` / `pdfplumber` / `chardet`） | 缺则 `internal index` 对 PDF **静默**产出空正文（`extract_status=library_missing`，不报错） |
-| OCR（可选） | `pip install -e ".[ocr]"`；或设 `OCR_PADDLE_ROOT` / `OCR_TESSERACT_BIN` / `OCR_TESSDATA_DIR` 指向本地引擎 | 扫描件走 OCR 降级（不影响有文本层的 PDF） |
-| 数据 | 活跃数据在 `modules/*/data`，**不入 git**：按 `data_migration_manifest.json`（**相对路径 + sha256**）从备份恢复，或按 §6.5 重新采集/重建 | `cli.py gates` 会有 **7 道数据门禁 FAIL**（契约 / RFN 一致性 / RFN 漂移 / 时效单源 / 引用 / 血缘 / 原件可解析）——**属预期，非代码缺陷** |
-| 时效核验（可选） | env `PKULAW_NODE_EXE` + `PKULAW_PKG_DIR`（**指向 `node_modules/@pkulaw/mcp-cli` 包本体**，非安装根）+ token 文件 `modules/regulatory_scrapers/timeliness_review/.pkulaw_token` | R13 三态降级为 `unavailable`（不误标，但零核验）；`--judge-only` 可零配额补齐已查结果 |
-| 采集外网前提 | gov/mof/nfra/pbc 官网可达；**mof 附件主机为内网地址**，外网需 `MOF_COLLECT_ARGS="--no-attachments"` | mof 全量采集长时间空转 |
-| 非 Windows | 旧 `.doc` 抽取依赖 WPS COM（Windows 专属）；非 Windows 需装 LibreOffice 并以 `LO_BIN` 指向其可执行文件 | `.doc`（仓内主力格式之一）大面积抽取降级 |
+| 安装方式 | `pip install -e ".[dev]"`（**必须可编辑**），或直接在仓库根运行 `python cli.py` | 非源码树安装不含 `modules/`；`cli.py` 启动校验以 rc=4 显式拒绝 |
+| PDF/编码依赖 | 已列 base 依赖（pypdf/pdfplumber/chardet） | 缺则 `internal index` 对 PDF 静默产出空正文 |
+| OCR（可选） | `pip install -e ".[ocr]"`；或设 `OCR_PADDLE_ROOT`/`OCR_TESSERACT_BIN`/`OCR_TESSDATA_DIR` | 扫描件走 OCR 降级 |
+| 数据 | 活跃数据在 `modules/*/data`，**不入 git**：按 `data_migration_manifest.json` 恢复，或按 §6.5 重建 | `cli.py gates` 有 7 道数据门禁 FAIL（属预期，非代码缺陷） |
+| 时效核验（可选） | env `PKULAW_NODE_EXE` + `PKULAW_PKG_DIR` + token 文件 | R13 三态降级为 `unavailable`（不误标） |
+| 采集外网 | gov/mof/nfra/pbc 官网可达；mof 附件主机为内网地址 | mof 全量采集长时间空转 |
 
-**无数据环境的验收口径**（代码级回归，可直接用于新克隆）：
+**无数据环境的验收口径**（代码级回归）：
 
 ```bash
-%PY% -m pytest tests -m "not data" -q     # 284 用例：不依赖本机数据产物
-%PY% cli.py source list                   # 源目录唯一事实源（sources.yaml）自检
+%PY% -m pytest tests -m "not data" -q     # 代码级用例（不依赖本机数据产物）
 %PY% cli.py ping                          # 骨架自检
+%PY% cli.py source list                   # 源目录唯一事实源（sources.yaml）自检
 ```
 
 ---
 
-1. **克隆代码**：
+1. **克隆代码**：`git clone <repo-url> regulatory_compliance_orchestrator && cd regulatory_compliance_orchestrator`
+2. **准备 Python 运行时**（≥ 3.13）：
    ```bash
-   git clone <repo-url> regulatory_compliance_orchestrator
-   cd regulatory_compliance_orchestrator
+   PY=<你的 Python 3.13 解释器路径>
+   %PY% -m pip install -e ".[dev]"        # OCR/扫描件场景追加 [ocr]
    ```
-2. **准备 Python 运行时**（本机采用托管 Python 3.13）：
+3. **数据就绪**：活跃数据在 `modules/*/data`，不入 git——按 `data_migration_manifest.json` 恢复，或按第 5 步重建。
+4. **骨架自检**：`%PY% cli.py ping` / `%PY% cli.py source list`
+5. **统一执行入口（推荐）**：
    ```bash
-   PY=<你的 Python 3.13 解释器路径>       # 例：托管 Python 3.13.12 的 python.exe
-   %PY% -m pip install -e ".[dev]"        # OCR/扫描件场景追加 [ocr]；PDF 文本层解析已在 base 依赖
+   %PY% cli.py run --no-scrape             # 全链刷新（跳过采集，仅清洗+全链）
+   %PY% cli.py run --list-steps            # 列出步骤名（执行顺序）
+   %PY% cli.py run --resume                # 从上次失败/未执行步骤续跑
+   %PY% cli.py run --dry-run               # 只打印将执行的 argv
+   %PY% cli.py run --json-logs             # 结构化日志（JSON lines）
+   %PY% cli.py doctor                      # 环境自检（run 前置自动跑 --quick）
+   %PY% cli.py status                      # 水位/待办/告警概览
    ```
-3. **数据就绪**：活跃数据在 `modules/*/data`（`data/` 同样被忽略），**不入 git**——按 `data_migration_manifest.json`（schema 1.1：**相对仓库根**路径 + size + sha256）从备份复制并校验，或按第 5 步重新采集/重建（内部制度：`%PY% cli.py internal index --source-dir <制度目录>`）。**注意**：无数据时 `cli.py gates` 会有 7 道数据门禁 FAIL，属预期而非代码缺陷（见 §6.0）。
-4. **骨架自检**：
+6. **外部数据推进（按需，单步）**：
    ```bash
-   %PY% cli.py ping                      # 骨架自检
-   %PY% cli.py source list               # 五源 + internal（sources.yaml 唯一事实源）
-   ```
-5. **外部数据推进（按需）**：
-   ```bash
-   # 清洗单源（--project 由 sources.yaml 派生；raw 缺省自动探测）
    %PY% modules\regulatory_scrapers\clean\run_clean_pipeline.py --project <gov|mof|nfra|pbc|supp> [--raw <path>]
-   # 底座强序重建（R8 幂等断点：base→cluster→match→detail→upper→clause_graph）
    %PY% cli.py classify --all [--steps base,cluster,detail,...]
-   # 漂移核验/桥表（快照推进后必跑，gate_rfn_drift 前置）
    %PY% modules\regulatory_classifier\scripts\reconcile_clean_drift.py [--apply]
-   # 变更监听（对比上次运行基线）
    %PY% cli.py source diff
    ```
-6. **OCR（已部署；扫描件补扫按需）**：
+7. **内部制度链路（878 制度）**：
    ```bash
-   # 环境：PaddleOCR 3.7.0（源码目录经 OCR_PADDLE_ROOT / external 软链接入）+ Tesseract 5.4
-   #      （OCR_TESSERACT_BIN 指向二进制 + 仓内 tessdata/chi_sim、tessdata/eng）
-   %PY% cli.py internal reocr              # 零文本/低质 PDF 重扫（质量闸门；幂等）
-   %PY% cli.py internal reocr --force      # 强制重扫（判据：fitz<30 或文本层<100 字；done 标记防重）
+   %PY% cli.py internal index --source-dir <制度目录>
+   %PY% cli.py internal align
+   %PY% cli.py internal merged
+   %PY% cli.py draft
    ```
-7. **时效核验（可选，需 token + CLI）**：
+8. **关系抽取与 RFN 补登**：
    ```bash
-   set PKULAW_NODE_EXE=<托管 Node 的 node.exe 绝对路径>            # Node ≥ 22
-   set PKULAW_PKG_DIR=<node_modules>\@pkulaw\mcp-cli              # npm install @pkulaw/mcp-cli 的安装目录
-   %PY% cli.py timeliness verify --source gov --probe 1    # 冒烟；--source all 全量
+   %PY% cli.py relations gen [--source nfra] [--report]
+   %PY% cli.py relations status --samples
+   %PY% tools\rfn_backlog.py --apply --theme-mode suggested   # 补登候选 → 强关联
    ```
-   > R13 三态 exit：`0=success / 2=partial(可续跑) / 3=unavailable(降级不误标)`；token 位于 `modules/.../timeliness_review/.pkulaw_token`（git 忽略）。
-8. **内部制度链路（878 制度）**：
+9. **调度与触发**：
    ```bash
-   %PY% cli.py internal index --source-dir <制度目录>     # 制度摄取（幂等；同 IPN 多版本自动去重）
-   %PY% cli.py internal align                              # 主题对齐（UNALIGNED 兜底）
-   %PY% cli.py internal merged                             # 制度×RFN 引用视图
-   %PY% cli.py draft                                       # 条款级对照素材（P8）
+   %PY% cli.py schedule print              # 打印 crontab（由 schedule.yaml）
+   %PY% cli.py schedule install            # 安装 Windows 计划任务（5 项）
+   %PY% cli.py schedule verify             # 比对已装任务
+   %PY% cli.py triggers                    # 条件触发决策表（triggers.yaml）
+   %PY% cli.py run --triggers              # 主链成功后追加触发项
    ```
-
-   **制度原件命名与归集规范（用户指令，2026-09-13）**：
-   - 命名格式 **`文号_名称`**；未取得文号则 **`_名称`**（如 `_振兴计划规划师基本管理办法（2022版）.pdf`）；
-   - **文号与名称优先从文档内容获取**（`scan.parse_content_identity`，内容权威）；内容未取得
-     **文号**时，按名称匹配 `originals/制度清单.xlsx`（列：起草部门/制度名称/发文文号/…）兜底；
-     名称不回退清单；
-   - 规范化后**归集至 `originals/` 根层**（单一扁平原件层）；生产该状态的工具与流程：
-     ```bash
-     %PY% tools\normalize_internal_naming.py                # dry-run：解析质量统计 + 抽样
-     %PY% tools\normalize_internal_naming.py --apply        # 规范命名 + 归集根层（含备份/manifest，幂等）
-     %PY% tools\split_internal_nonpolicy.py --apply --prune-index   # 非正文件隔离（台账→data/ledgers、其余→data/misc）并清理失效索引
-     %PY% cli.py internal index --source-dir modules\internal_policy_base\data\originals --only-unindexed
-                                                            # 定向补摄取：把归集后仍未被索引的制度正文纳入索引
-     %PY% cli.py internal merged                            # 索引变更后重建视图（否则 gate_citations 阻断）
-     ```
-   - 纪律：`originals/` 只放**制度正文**（pdf/doc/docx）+ 文号兜底用的 `制度清单.xlsx`；
-     台账/清单类与图片/压缩/数据库等非正文件一律不进原件库（`gate_flat_layout` 白名单
-     `{originals, processed, ledgers, misc}`；`gate_original_resolvable` 基线 0 保证索引内无失效路径）。
-   - **文号解析纪律（2026-09-13 修正，详见报告 §12）**：
-     · **文号只会在文档标题处出现** → 仅从**标题区域**（前 260 字）提取，并排除引用语境与
-       `（…〔年〕号）` 式未闭合括号（否则会把"根据《X》（保监发〔2013〕40号）"、文末
-       "同步废止…673号文件"当成本文文号）；
-     · **公司内部文号均以 `阳光人寿`/`阳光保险` 开头** → 前缀白名单；`保监发/银保监发/金办发/法释…`
-       一律判否（全库实测由 106 条非白名单收敛至 0）；
-     · 红头机关名（`阳光人寿保险股份有限公司文件`）须剥离；括号归一 `【】[]（）→〔〕`；
-     · **三级来源**：标题区域（内容权威）→ `originals/制度清单.xlsx` 名称匹配兜底 → **附件继承**
-       （附件型文档内容出现在正文结尾处，与正文同文号，`scan.inherit_docno_by_containment`）。
-   - **名称解析纪律**：内容标题优先（`scan.parse_content_identity`，取**最早**关键词结尾以防标题跑进
-     正文；含句读即判为正文混入而拒）；失败才回退文件名解构；并回 `（A类）/（2025版）` 等变体后缀。
-   - **依据/废止关系统一抽取（R-F01，2026-09-14）**：跨**监管文件**与**内部制度**两类文本的
-    **唯一抽取实现** = `std_lib/common_lib/relations.py`（七层结构 + 词表外置 `RelationConfig`；
-    复用 `std_lib/common_lib/norm` 归一与 `config.enums` 受控值）。产物（**唯一事实源**）
-    `modules/regulatory_classifier/data/relations/relations_index.jsonl` 一张表承载**三类关系**：
-    ①`src_kind=regulatory`（监管依据/废止）②`src_kind=internal ∧ dst_kind=internal`（内部依据/废止）
-    ③`src_kind=internal ∧ dst_kind=regulatory`（内部→监管依据，纯依据边另存派生视图 `cross_basis.jsonl`）。
-    读取一律经 `interfaces/relations_api.py`；键集契约 `interfaces.contract.RELATION_FIELDS`（26 字段）；
-    受控值 `config.enums`（`RELATION_KIND`/`RELATION_DOC_KIND`/`BASIS_TYPE`/`REPEAL_ACTION`/`REPEAL_SCOPE`/
-    `RELATION_MATCH_METHOD`）；门禁 `gates/gate_relations.py`。命令：
+10. **治理库与投放区**：
     ```bash
-    %PY% cli.py relations gen [--source nfra] [--report]   # 抽取并落盘三类产物（~32s 全量）
-    %PY% cli.py relations status --samples                 # 生成元信息 / 三类计数 / 两级解析率
-    %PY% cli.py relations show <RFN-xxx|IPN-xxx>           # 某实体作为源/目标的关系
+    %PY% cli.py governance init|status|edges|watermarks|sync|verify|export
+    %PY% tools\governance_register_artifacts.py
+    %PY% tools\inbox_scan.py               # 投放区扫描（inbox_registry.yaml → worklist）
+    %PY% tools\retention.py                # 数据保留/归档/清理
+    %PY% cli.py worklist                   # 待办队列（9 类决策项）
     ```
-    **随库刷新（2026-09-14）**：`relations gen` 已纳入生产刷新链**阶段 2.6**
-    （`tools/run_production_refresh.py`，位于阶段 1/2 写 cleaned 之后、下游消费者之前）→
-    正常运营无需手工；且 `gate_relations` 判据 8 会**检出新旧并阻断**（防漏跑）。
-    交付库 2.1.2.4/2.1.2.5 两份关系报告由阶段 6.8 `analysis gen` 从**新**产物重建。
-    **解析纪律**：目标解析分两级——`dst_ref`（强实体 RFN/IPN，可 join 底座）与 `dst_key`
-    （cleaned `dedup_key` 弱引用，"已采集未登记 RFN"的线索）；**未定位者保留原文 + `unresolved`，
-    禁止臆造**。**跨域匹配必须 `strict`**（禁 `title_contains`，防"法规名 ⊃ 制度名"误配）。
-    **目标性质分层 `dst_class`**（`entity`/`corpus`/`organ`/`generic`/`external`）：只有 `external`
-    是"真·文件引用未定位"；`organ`（机关名，程序性依据目标）与 `generic`（`《条例》`式泛指词，
-    抽取侧已过滤）**不计入文件级解析率**——2026-09-14 口径修正把"文件级定位率"从被低估的 52.7%
-    校正为 **64.6%**（2026-09-14 20:14 全量重抽取实测：文件级分母 1754，强解析率 59.5%）。
-    **RFN 补登（提升强关联覆盖）**：`corpus` 类即补登候选，处置入口
-    ```bash
-    %PY% tools\rfn_backlog.py                                   # 候选清单 + 主题建议（dry-run）
-    %PY% tools\rfn_backlog.py --apply --theme-mode suggested    # 批量登记（register_doc 唯一写口；幂等+备份）
-    %PY% cli.py relations gen                                    # 重跑 → 升级为 entity（强关联）
-    %PY% cli.py classify --all                                   # 归属表变化 → 底座/明细/报告重算
-    ```
-    主题建议三种依据（`decision` 列，禁臆造）：`law_to_t0`（法律/行政法规 → T0 上位法锚点）、
-    `votes`（引用者主题唯一最高票）、`uncertain`（须人工裁决）。**补登会自动执行
-    「SSOT→归属表」时效键精确同步**（`--sync-timeliness`），避免新行 `pending` 与时效 SSOT 冲突。
-  - **抽取质量判断**：文本层"有效"按**有效汉字数**（`crawler_common.cjk_count`），不按总字符数——
-     页眉/页脚/水印（`eoa.sinosig.com` 打印链接等）会虚增字符数却无汉字，曾致扫描件跳过 OCR。
-     抽取不足的 PDF：`%PY% cli.py internal reocr --force`（目标 = 现有正文有效汉字 < 100，或
-     含**缺字信号**且**从未提质尝试**），完成后重跑命名；引擎升级后用 `--retry` 重跑已尝试者。
-   - **抽取链顺序纪律**：PDF 文本层一律 **pymupdf → pypdf → pdfplumber**，取首个"质量合格"者
-     （`text_layer_ok` = 有效汉字 ≥30 **且** 无空引号对）。**不得以 pypdf 为首**——pypdf 对部分
-     嵌入字体**逐 token 分行**输出（`…股份有限\n公司\n2\n022\n年\n“\n楼兰\n”`），
-     `normalize_text._drop_junk_lines` 的水印启发式随即把 **2 汉字短行**当水印删除 → 正文缺字
-     （实测 11 份，留下空引号对 `“”`）。而经 `normalize_text` 清洗后，**无 Unicode 映射的符号字形**
-     被删除后同样留 `“”`（属**原文特征**，如 `点击序号前的“＋”`）——故缺字信号只用于
-     "首次提质触发"，不得作为永久重跑依据（否则 reocr 永不幂等）。
-   - **候选择优纪律**：标题候选之间以**包含关系**择优（候选须为文件名词干的**子串**，取最长），
-     **不用字符相似度**（difflib 偏向长串，实测把页眉/目录噪声并进标题）。
-   - **孤儿产物清理**：`%PY% tools\prune_orphan_processed.py` —— IPN 重算后遗留、不在主索引中的
-     `processed` 产物会以 `missing_original` 噪声淹没 reocr 的真实缺口（实测 179 个 IPN / 741 文件 /
-     12.74 MB）；移入 `backups/` 可回滚，不删除。
-9. **发布件 / 分析交付库 / 知识库**：
-   ```bash
-   %PY% cli.py base publish --base all    # 双底座发布件 + FTS（external_relations 等）
-   %PY% cli.py analysis gen               # 规划 §2.1 五级分析交付库 → docs/reports/（17 项）
-   %PY% cli.py analysis status            # 交付库在位检查
-   %PY% tools\sync_wiki_sources.py --out "<Obsidian vault>\监管法规库" --scope all --prune   # Obsidian 同步
-   ```
-10. **治理库（阶段 1/2，可选观测面）**：
-   ```bash
-   %PY% cli.py governance init          # 建库建表（首次运行生产刷新链会自动建库；含投影表 schema 升级）
-   %PY% cli.py governance status        # 概览：表计数 + 水位一致性 + 最近运行
-   %PY% cli.py governance edges         # 依赖边（ok / stale / unregistered）
-   %PY% cli.py governance watermarks    # 产物水位全量
-   %PY% cli.py governance sync --apply  # 元数据四表投影（document/theme_assign/relation/timeliness_history）
-   %PY% cli.py governance verify        # 比对断言（库内容 vs 由事实源文件重算；退出码即结论）
-   %PY% cli.py governance export        # 导出 exports/ 文本快照 + manifest（只读交换层）
-   %PY% tools\governance_register_artifacts.py   # 原件注册（sha → 路径集合，识别跨层硬链接）
-   ```
-   > 位置：仓根 `data/governance.db`（`data/` 不入 git）。只放**元数据/水位/审计**，不含语料正文；
-   > 唯一读写实现 `std_lib/common_lib/governance_store.py`；元数据投影唯一入口
-   > `tools/governance_sync.py`（**文件仍是事实源**，库是事务化投影；生产刷新链阶段 3.5 自动执行）。
-   > 治理库缺失时全部登记为 no-op，`gate_watermark` 跳过、各门禁自动退回旧判据（不得因"无水位"放行）。
 11. **交付验证**：
     ```bash
-    %PY% cli.py gates                    # 18 道全绿（需数据就绪；缺数据时 8 道数据门禁 FAIL 属预期）
-    %PY% python -m pytest tests -q       # 356 用例（330 代码级 + 26 @data）
-    %PY% python -m pytest tests -m "not data" -q   # 无数据环境：330 用例
-    %PY% python tools\gen_benchmark.py   # 刷新交付基准（数据重建后执行）
+    %PY% cli.py gates                      # 22 道全绿（缺数据时数据门禁 FAIL 属预期）
+    %PY% python -m pytest tests -q         # 487 用例
+    %PY% python -m pytest tests -m "not data" -q   # 无数据环境：代码级用例
+    %PY% python tools\ci_check.py --cov    # 本地 CI（ruff+mypy+pytest+gates+coverage）5/5
+    %PY% python tools\gen_benchmark.py     # 刷新交付基准
     ```
-    > 门禁示意输出：`PASS: 全部门禁通过`；任一 FAIL 会给出问题明细，修复后重跑，不静默放行。
+    > 门禁示意输出：`PASS: 全部门禁通过`；任一 FAIL 给出问题明细，修复后重跑，不静默放行。
 
 ---
 
 ## 7. 附录与延伸阅读
 
-- **架构与演进文档（ADR 类比）**：参见 `reports/`（整体重构方案评估 v3 / 最终实施蓝图 v1.1 + 检视报告 / 专项评估 v2 / 端到端联动流程图.mermaid / 最终版审查报告 / 中间产物衔接分析）。
 - **README 撰写规范与内容大纲**：参见 `reports/README撰写规范与内容大纲.md`（本文件依其结构撰写）。
-- **运行手册（编排与定时）**：参见 `reports/运行手册_编排与定时_20260912.md`（调度清单/命令基准/rc 告警语义表/新增任务登记；llm_wiki 月度巡检并入）。
-- **分析交付库（规划 §2.1）**：`docs/reports/`——**17 项**（2.1.1 纵向深化 5 + 2.1.2 横向整合 **5**〔含 2026-09-14 纳入的 2.1.2.4 关系图谱 / 2.1.2.5 补登候选清单〕+ 2.1.3 全景分析 7）+ `_manifest.json`（**文件字节 sha256 前 16 位**登记，可作一致性判据）；由 `cli.py analysis gen` 全数据驱动生成；关键数据：10 主题 / 1051 文件 / 2000–2026 / 明细 1060 行（时效核验 94.9%）/ 关系边 1508（内部 660 + 跨 848）。
-  - 关系类 2 项为**纳管**（非重新实现）：渲染仍由 `tools/extract_relations.py` / `tools/rfn_backlog.py` 单源提供，交付库侧从 `relations_index.jsonl` + `relations_stat.json` 重建，**零重抽取**；关系事实源缺失时**跳过并告警**（不写占位、不登记）。
-- **F 系列遗留项报告索引**：`reports/遗留项完成报告_20260912.md` / `_第二批_20260912.md` / `遗留项执行报告_第三批_20260912.md` / `F-L01_五级分析交付库专项报告_20260912.md` / `三项落地完成报告_20260912.md` / `剩余任务完成报告_20260912.md`。
-- **知识库联动**：Obsidian vault（`<Obsidian vault>\监管法规库`，4985 篇）；llm_wiki v0.6.11 接入契约见 `reports/llm_wiki接入适配契约_20260912.md`（耦合面 2 处；0.6.x 零适配）。
-- **交付基准登记**：参见 `BENCHMARK.md`（`tools/gen_benchmark.py` 生成：门禁/测试/cleaned 快照/归属/base·final/明细/桥/时效 state/内部 878/merged 878）。
+- **v2 全链路重构（九批执行报告）**：`reports/重构执行报告_20260926.md`（第一批）…`_第九批_20260926.md`；
+  施工依据 `reports/全链路重构方案_修订版_v2_20260926.md`；数据流图 `reports/全链路数据流链路图_v2_20260926.md`。
+- **运行手册（编排与定时）**：`reports/运行手册_编排与定时_20260912.md`（调度清单/命令基准/rc 告警语义表；定时表由 schedule.yaml 生成）。
+- **分析交付库（五级）**：`docs/reports/`——**17 项** + `_manifest.json`（文件字节 sha256 登记）；由 `cli.py analysis gen` 生成。
+- **F 系列遗留项报告**：`reports/遗留项完成报告_20260912.md` 等（2026-09-12 批次）。
+- **知识库联动**：Obsidian vault（`<Obsidian vault>\监管法规库`）；llm_wiki v0.6.11 接入契约见 `reports/llm_wiki接入适配契约_20260912.md`。
+- **交付基准登记**：`BENCHMARK.md`（`tools/gen_benchmark.py` 生成）。
 - **来源映射（原仓只读冻结，R19）**：
 
   | 原仓（工作区根下旧四仓，现已冻结只读） | 新仓 modules/ | 迁移阶段 |
@@ -475,23 +403,25 @@ flowchart LR
   | regulatory_scrapers | `modules/regulatory_scrapers` | P1–P3 |
   | regulatory_classifier | `modules/regulatory_classifier` | P4–P5 |
   | internal_policy_base（原空） | `modules/internal_policy_base`（新实现） | P6 |
-  | internal_policy_drafter | `modules/internal_policy_drafter`（verify/dump 迁入） | P7 |
+  | internal_policy_drafter | `modules/internal_policy_drafter` | P7 |
 
 - **演进纪律**：
   1. 原四仓与旧 std_lib 冻结只读；复用一律"复制进新仓后修改"。
   2. 跨模块调用仅经 `interfaces/`；禁止盘符字面量（gate_hardcoded_paths 强检）。
-  3. 枚举 import `config.enums`；契约以 `interfaces/contract.py` 为准（**加列/新列须同步 CN_FIELD_REGISTRY**）；来源以 `config/sources.yaml` 为准。
+  3. 枚举 import `config.enums`；退出码 import `config.exitcodes.ExitCode`；契约以 `interfaces/contract.py` 为准；来源以 `config/sources.yaml` 为准；调度/触发/投放区以 `config/schedule.yaml`/`triggers.yaml`/`inbox_registry.yaml` 为准。
   4. 数据不入 git（`data/` ignore）；活跃数据按 `data_migration_manifest.json` 复制追踪。
-  5. 交付前 `cli.py gates` 全绿；快照推进先 reconcile 再重建底座（gate_rfn_drift）；数据重建后刷新 `BENCHMARK.md` 与 `cli.py analysis gen` 交付库。
-  6. 运行核验/采集等外部依赖任务的执行环境与 token 纪律见 §5.1（automation 词内已内置）。
-  7. 远程同步：每次提交后自动 `git push origin main`（本地 `.git/hooks/post-commit`，fast-forward 语义；push 失败不阻断 commit，手工 `git push origin main` 补推）。
+  5. 交付前 `cli.py gates` 全绿；数据重建后刷新 `BENCHMARK.md` 与 `cli.py analysis gen` 交付库。
+  6. 新代码须过 mypy（owned 层）、ruff、pytest、gates（`tools/ci_check.py` 一键 5/5）。
+  7. 远程同步：每次提交后自动 `git push origin main`（本地 post-commit hook；失败不阻断 commit）。
+  8. git blame 忽略机械改造提交（`.git-blame-ignore-revs`，已启用）。
 
 ---
 
-### 📌 撰写提示（分类与维护约定，与规范文档一致）
+### 📌 撰写提示（分类与维护约定）
 
 1. **脚本分类逻辑**：本仓为数据管道型工程，"常规流程脚本"指随数据推进按 §5 调度执行的链路成员（含完整摘要/审计输出）；"特殊工具脚本"指一次性/运维辅助（迁移、拍平、基准登记、知识库同步），运行前建议双人复核。
 2. **文件级颗粒度**：本文档 2.2 按"核心入口 + 模块通识"分级列示，全量文件清单见 `reports/物理目录结构.txt`，避免 README 臃肿。
-3. **依赖关系链**：2.2 表格"依赖/被调用方"列给出调用层级（如 base 生成器被 classify 子步调用、merged_view 被 gate_citations/draft 消费），助新人理解依赖方向。
-4. **Mermaid 渲染**：§3.1/§4.1 图表在 GitHub/GitLab 原生渲染；本地可用 VS Code Markdown Preview Mermaid 支持查看。
-5. **保持同步**：本节内容随 R/F 系列重构持续演进，新增模块/命令/门禁后请同步更新 2.2 与 §5（门禁数量一律以 `gates/__init__.py ALL_GATES` 为准）；**数字类事实（制度数/用例数/门禁数/交付项数）更新时以实测输出为准**（本版：gates 16 / pytest 297 / 制度 878 / 交付 15）。
+3. **依赖关系链**：2.2 表格"依赖/被调用方"列给出调用层级，助新人理解依赖方向。
+4. **Mermaid 渲染**：§3.1/§4.1 图表在 GitHub/GitLab 原生渲染。
+5. **保持同步**：本节内容随重构持续演进，新增模块/命令/门禁后同步更新 2.2 与 §5；
+   **数字类事实以实测输出为准**（本版：命令 18 / 门禁 22 / 用例 487 / 制度 878 / 交付 17 / 覆盖率 45% / mypy 0 error）。

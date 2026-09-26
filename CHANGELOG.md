@@ -1,5 +1,60 @@
 # Changelog
 
+## [Unreleased] 2026-09-24 ~ 09-26 — v2 全链路重构（九批，回链 `reports/重构执行报告_*.md`）
+
+> 依据《全链路重构方案_修订版_v2_20260926.md》落地，把采集→清洗→分类→对齐→起草→交付全链路收敛为
+> 可审计、可重建、可回归的单一数据管道。九批提交 `16e3c4f`…`427516b`。
+
+### 第一批 · P0 骨架 + P1-1 校验假成功修复
+- P0-1 清单/退出码 SSOT、P0-2 `bootstrap.py`（两类路径注入）、P0-3 `paths.py` 派生、P0-4 依赖声明补全、
+  P0-5 `tools/_manifest.json` + `tools/retired/` 退役隔离、P0-6 新门禁（**18→22**）。
+- **P1-1 校验假成功修复**：清洗校验失败记录隔离落盘（`.quarantine.jsonl`）+ 失败率阈值（rc=2），不再"照常交付"。
+
+### 第二批 · 水位/待办队列/契约消费/语料分层
+- P1-2 水位 `round/stage`、P1-6 `worklist` 待办队列（8 类 kind）、P1-4 契约清单消费、P2-3a 语料分层、R2/R7/R8 清理。
+
+### 第三批 · interfaces 收口 + 日志与失败语义
+- **P1-3 interfaces 收口（I-1~I-7）**：`theme_api` 实装（空壳归零）、`protocols.py` 四协议、
+  `gate_no_cross_module_import` 判据 D（兄弟模块路径拼接）、接口空壳判据转阻断；timeliness_review/base_publish
+  改经 interfaces 读输入。
+- **P1-5 日志与失败语义（X3/X4）**：`common_lib/logging.py` + 生产脚本 print→LOG；`_run` 增 `exit_code`（语义化）/
+  `stderr_tail_len`；生产脚本日志化判据④。
+- 修复 `bootstrap("all")` 缺 modules/ 父目录注入（包形态导入死代码）、门禁计数改只数代码行。
+
+### 第四批 · 调度/触发事实源 + 统一执行入口 + 投放区
+- P2-2 `config/schedule.yaml`（调度唯一事实源）+ `gen_schedule_doc.py` 反向生成运行手册；P2-1 `config/triggers.yaml` + TriggerRunner。
+- P2-6 统一执行入口 `cli.py run/doctor/status/schedule`；P2-3b `data/inbox/` + `inbox_registry.yaml` + `inbox_scan.py`；
+  P2-5 六类决策项接入 worklist。
+
+### 第五批 · 数据生命周期 + 测试/CI + 退役收尾 + 顺序解耦
+- P2-3 `retention.py` + `archive/`；P2-4 测试与 CI（覆盖率门槛/用例分层）；P2-7 退役收尾判据 J6 转严；
+  P3-1/3-3/3-4/3-5 顺序解耦（**gates 移链尾**，`analysis:manifest` 可声明依赖边）；判据 **U/V/R** 升为门禁。
+
+### 第六批 · 审查驱动收口（P3-2/R3）
+- `from __future__` 100% 补齐、owned 层退出码/异常收敛、`dedup_key` 唯一性校验接线、`ruff format` 自有层；
+  `.git-blame-ignore-revs` 登记机械改造提交（R7）。
+
+### 第七批 · D6 接入 + dedup_key 接线 + tools 层退出码收敛
+- D6 `relevance_boundary` 接入 `filter_clean_relevance`（worklist 九类 kind 全部有产生方，J7 双向闭合 9/0）；
+  `run_clean_pipeline` dedup_key 唯一性校验；tools 层裸整数退出码收敛。
+
+### 第八批 · gate_runtime_hygiene 五判据全阻断 + N-38 + dedup_key 转严格
+- **判据①退出码 ②静默异常转阻断**（语义收窄：只统计有顶层引导文件的裸 return、只抓宽泛吞异常）；
+  71 处宽泛吞异常加意图声明归零；`common_lib/logging.py` 相对导入修复（N-38）；dedup_key 默认重复即 rc=2（逃生阀）；
+  mypy 首跑（owned 层 78 错误基线）。
+
+### 第九批 · 遗留收口
+- **mypy 转阻断**：`follow_imports="silent"` 收窄到 owned 层，19 处错误归零（0 error）；`NONBLOCKING=∅`。
+- **`gate_clean_schema` 转严格**：删 `LEGACY_WITH_ERRORS`，交付文件含 validation_errors 即 FAIL；隔离率改只披露。
+- **计划任务安装**（`cli.py schedule install` 5/5）；N-44（DayOfWeek 大小写）、N-45（`_expand` 五源展开）修复。
+- 新发现 N-42（supp 源 4 条草稿，数据治理待办）、N-43（隔离率阈值对小源过严）。
+
+### 口径变更（v2 重构累计）
+- 命令 **12 → 18**（新增 doctor/run/status/schedule/triggers/worklist/relations/governance）；
+- 门禁 **18 → 22**（新增 gate_watermark/gate_relations/gate_no_cross_module_import/gate_config_integrity/gate_import_bootstrap/gate_runtime_hygiene/gate_clean_schema）；
+- 用例 **356 → 487**；交付 **15 → 17**；覆盖率 **45%**；**mypy owned 层 0 error（转阻断）**；
+- `tools/ci_check.py` 本地 CI **5/5**（ruff/mypy/pytest/gates/coverage）。
+
 ## [Unreleased] 2026-09-21（第二轮）— 时效验证续跑增量 + 全链条刷新
 
 > 承接同日晚间首轮（见下条）。本轮引入**自适应冷却续跑循环**，在网关配额窗口下最大化推进。
