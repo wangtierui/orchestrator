@@ -162,7 +162,10 @@ def _c_inbox_corpus() -> tuple[str, str, str]:
     inbox = paths.INBOX_DIR
     corpus = os.path.join(paths.ROOT, "data", "corpus")
     if not os.path.isdir(inbox):
-        return "fail", f"投放区不存在：{os.path.relpath(inbox, paths.ROOT)}", "v2 §3.12.6"
+        # N-31：`data/**` 不入库 → 投放区目录须由工具创建，故"缺失"是**待初始化**而非环境缺陷。
+        # 判 FAIL 会让每个新克隆都红；给 warn + 明确修复命令（判据本意是"自指环防护"，见下）。
+        return "warn", f"投放区未初始化：{os.path.relpath(inbox, paths.ROOT)}", \
+            "跑 `python tools/inbox_scan.py --apply` 创建（幂等）"
     if not os.path.isdir(corpus):
         return "warn", f"语料本体缺失：{os.path.relpath(corpus, paths.ROOT)}", "v2 §3.12"
     if os.path.abspath(inbox) == os.path.abspath(corpus):

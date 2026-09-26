@@ -113,6 +113,14 @@ def scan(apply: bool = False) -> dict:
     reg = load_registry()
     domains = reg.get("domains") or {}
     recognized = set(reg.get("recognized_ext") or [])
+    if apply:
+        # N-31（2026-09-26）：`data/**` 被 .gitignore 整目录排除 → 域目录**不入库**，
+        # 新克隆没有它们。故由本工具在 `--apply` 时按注册表**创建**（幂等），
+        # 与 `governance init` 创建 data/governance.db 同一思路。
+        for spec in domains.values():
+            d = spec.get("inbox") or ""
+            if d:
+                os.makedirs(d if os.path.isabs(d) else os.path.join(paths.ROOT, d), exist_ok=True)
     known, sizes = _known_hashes()  # type: ignore[misc]
 
     rows: list[dict] = []
