@@ -308,10 +308,25 @@ def _wm_observations() -> None:
         _wm(key, paths=[p])
 
 
+def _exit_semantic(rc: int) -> str:
+    """退出码语义化（v2 §3.6 X4）：整数 → `ExitCode` 成员名；非受控值标注 `RAW(...)`。
+
+    动机：编排器原先把 rc 当裸数字看，`2` 究竟是"数据问题/配置不可用/依赖缺失"
+    无法区分（v2 §2.4.2 的四义冲突）。语义化后 `run_log.note` 与汇总 JSON 都带名字。
+    """
+    try:
+        from config.exitcodes import ExitCode  # noqa: PLC0415
+        return ExitCode(rc).name
+    except Exception:  # noqa: BLE001  非受控值（子进程自定义码）→ 显式标注
+        return f"RAW({rc})"
+
+
 def _run(step: str, argv, cwd=ROOT, timeout: int | None = None) -> dict:
     t0 = time.time()
     rec = {"step": step, "cmd": " ".join(os.path.basename(a) if os.sep in a else a
-                                         for a in argv), "rc": -1, "elapsed_s": 0, "tail": ""}
+                                         for a in argv), "rc": -1, "elapsed_s": 0, "tail": "",
+           # X4（P1-5）：语义化退出码 + 完整 stderr 长度（tail 只留 2 行，长度反映真实体量）
+           "exit_code": "", "stderr_tail": "", "stderr_tail_len": 0, "stdout_len": 0}
     print(f"\n[step:{step}] {' '.join(rec['cmd'])}", flush=True)
     try:
         env = dict(os.environ)
@@ -319,17 +334,25 @@ def _run(step: str, argv, cwd=ROOT, timeout: int | None = None) -> dict:
         r = subprocess.run(argv, cwd=cwd, capture_output=True, text=True,
                            encoding="utf-8", errors="replace", timeout=timeout, env=env)
         rec["rc"] = r.returncode
+        rec["exit_code"] = _exit_semantic(r.returncode)
         rec["tail"] = "\n".join((r.stdout or "").strip().splitlines()[-3:])
         rec["stderr_tail"] = "\n".join((r.stderr or "").strip().splitlines()[-2:])
+        rec["stderr_tail_len"] = len(r.stderr or "")
+        rec["stdout_len"] = len(r.stdout or "")
     except subprocess.TimeoutExpired:
         rec["tail"] = "timeout"
+        rec["exit_code"] = "TIMEOUT"
         rec["stderr_tail"] = f"timeout {timeout}s"
+        rec["stderr_tail_len"] = len(rec["stderr_tail"])
     except Exception as e:  # noqa: BLE001
+        rec["exit_code"] = f"EXC:{type(e).__name__}"
         rec["stderr_tail"] = f"{type(e).__name__}: {e}"
+        rec["stderr_tail_len"] = len(rec["stderr_tail"])
     rec["elapsed_s"] = round(time.time() - t0, 1)
     if rec["tail"]:
         print("    " + "\n    ".join(rec["tail"].splitlines()), flush=True)
-    print(f"    → rc={rec['rc']} elapsed={rec['elapsed_s']}s", flush=True)
+    print(f"    → rc={rec['rc']}({rec['exit_code']}) elapsed={rec['elapsed_s']}s"
+          f" stderr={rec['stderr_tail_len']}B", flush=True)
     return rec
 
 
@@ -562,7 +585,9 @@ def _run_chain(args) -> int:
                                 for k, v in summary["raw"].items()))
     print(f"总耗时 {summary['total_elapsed_s']}s | 失败步骤 {len(summary['failed'])}")
     for f in summary["failed"]:
-        print(f"  ✗ {f['step']} rc={f['rc']} {f.get('tail', '')} {f.get('stderr_tail', '')}")
+        print(f"  ✗ {f['step']} rc={f['rc']}({f.get('exit_code', '')})"
+              f" stderr={f.get('stderr_tail_len', 0)}B"
+              f" {f.get('tail', '')} {f.get('stderr_tail', '')}")
     out_p = os.path.join(ROOT, "reports", "_tmp",
                          f"生产刷新汇总_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.json")
     os.makedirs(os.path.dirname(out_p), exist_ok=True)
@@ -627,7 +652,9 @@ def main(argv=None) -> int:
 
     if gs is not None and run_id:
         try:
-            gs.run_finish(run_id, rc == 0, note=f"rc={rc}")
+            # X4（P1-5）：run_log.note 带**语义化**退出码（原为裸数字，2 的四义无法区分）；
+            # 逐步骤的 exit_code / stderr_tail_len 见汇总 JSON（路径随本次输出打印）。
+            gs.run_finish(run_id, rc == 0, note=f"rc={rc}({_exit_semantic(rc)})")
         except Exception as e:  # noqa: BLE001
             print(f"[refresh] WARN 运行台账收尾失败: {type(e).__name__}: {e}")
     return rc

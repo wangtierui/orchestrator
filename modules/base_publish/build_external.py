@@ -33,15 +33,22 @@ for _p in (_ROOT, _MODULES, os.path.join(_ROOT, "std_lib")):
 
 from base_publish import SCHEMA_VERSION  # noqa: E402
 
+from interfaces.clause_index_api import clauses_dir as _clauses_dir  # noqa: E402
+from interfaces.clean_index_api import published_dir as _published_dir  # noqa: E402
 from interfaces.contract import attachment_view  # noqa: E402  (F-D07 附件字段契约归一)
+from interfaces.rfn_api import registry_paths as _registry_paths  # noqa: E402
 from std_lib.common_lib.norm import norm_docno  # noqa: E402
 
-PUBLISH_DIR = os.path.join(_MODULES, "regulatory_scrapers", "published")
-CLAUSE_DIR = os.path.join(_MODULES, "regulatory_scrapers", "data", "clauses")
-CLASSIFIER_DATA = os.path.join(_MODULES, "regulatory_classifier", "data")
-ATTR_CSV = os.path.join(CLASSIFIER_DATA, "人身保险公司-文件归属表.csv")
-THEME_CSV = os.path.join(CLASSIFIER_DATA, "人身保险公司-主题归属表.csv")
-BRIDGE_CSV = os.path.join(CLASSIFIER_DATA, "rfn_clean_bridge.csv")
+# v2 §3.1.3 I-3（2026-09-26）：原三处「拼兄弟模块目录字符串」（scrapers/published、
+# scrapers/data/clauses、classifier/data + 三个表）改经 interfaces 访问器
+# （gate_no_cross_module_import 判据 D 断言此纪律）。
+_RFN_PATHS = _registry_paths()
+PUBLISH_DIR = _published_dir()
+CLAUSE_DIR = _clauses_dir()
+ATTR_CSV = _RFN_PATHS["attr_csv"]
+THEME_CSV = _RFN_PATHS["theme_csv"]
+BRIDGE_CSV = _RFN_PATHS["bridge_csv"]
+CLASSIFIER_DATA = os.path.dirname(ATTR_CSV)   # 与归属表同源派生，不另立「data 在哪」的判定
 
 
 def _sha256_file(path: str) -> str:

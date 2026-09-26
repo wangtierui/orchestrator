@@ -66,6 +66,14 @@ TIMELINESS_STATUS = frozenset({
 TARGET_FIELDS = ("timeliness_status", "replacement_document", "verification_source")
 
 
+
+# v2 §3.6 X3（P1-5，2026-09-26）：状态行改经统一日志设施（原 print）。
+# 规则：**状态/进度/告警行 → LOG**；**机器可读载荷（json.dumps）/多列表格行 → 保留 print**
+# （后者是 stdout 契约，加日志前缀会破坏编排器 tail 与下游解析）。
+# 判据：`gate_runtime_hygiene` 判据④断言本文件的 LOG 使用下限与 print 上限。
+from std_lib.common_lib.logging import get_logger  # noqa: E402
+
+LOG = get_logger("timeliness_apply")
 def _norm(s: str) -> str:
     return re.sub(r"\s+", "", s or "")
 
@@ -290,17 +298,17 @@ def main() -> int:
         age = "标注日期 %s（距今 %d 天%s）" % (
             m.group(1), (datetime.date.today() - d).days,
             "，≤90 日可复用" if (datetime.date.today() - d).days <= 90 else "，⚠️超 90 日")
-    print("核验结果清单: %s  %s" % (os.path.basename(ledger), age))
+    LOG.info("核验结果清单: %s  %s" % (os.path.basename(ledger), age))
 
     rows = load_ledger(ledger)
-    print("清单条数: %d" % len(rows))
+    LOG.info("清单条数: %d" % len(rows))
     sources = [args.source] if args.source else ["nfra", "mof", "pbc", "gov", "supp"]
 
     stats = []
     for s in sources:
         by_no, by_td, by_tu, conflicts = build_index(rows, s)
         if not by_no and not by_td and not by_tu:
-            print("\n[%s] 清单无该源核验结果，跳过" % s)
+            LOG.info("\n[%s] 清单无该源核验结果，跳过" % s)
             continue
         st = apply_source(s, by_no, by_td, by_tu, args.dry_run, args.no_backup)
         st["ledger_keys"] = len(by_no) + len(by_td) + len(by_tu)
@@ -324,7 +332,7 @@ def main() -> int:
         if st.get("csv_warn"):
             print("       ⚠️ %s" % st["csv_warn"])
     print("=" * 68)
-    print("模式: %s" % ("DRY-RUN（未写盘）" if args.dry_run else "已回写"))
+    LOG.info("模式: %s" % ("DRY-RUN（未写盘）" if args.dry_run else "已回写"))
     # F-C05：回写后重建 clean_index——同日期内容已变，必须刷新索引（含内容 sha），
     # 否则 classify/validate/签名与"同日改写"脱节（M-10 四重隐身组合项之一）。
     if not args.dry_run:
@@ -339,9 +347,9 @@ def main() -> int:
                     sys.path.insert(0, ROOT)
                 from clean_index import get_clean_index  # noqa: PLC0415
                 get_clean_index(rebuild=True)
-                print("[apply] clean_index 已重建（index.json 刷新，纳入最新内容）")
+                LOG.info("[apply] clean_index 已重建（index.json 刷新，纳入最新内容）")
             except Exception as e:  # noqa: BLE001
-                print(f"[apply] WARN clean_index 重建失败: {e!r}")
+                LOG.warning(f"[apply] WARN clean_index 重建失败: {e!r}")
             # 2026-09-19（同 F-C05 理由，补一环）：**同步刷新条款产物**。
             # 动因：`clauses` 由 cleaned 派生，而编排链的顺序是「阶段 1 clean 尾部建 clauses
             # → 阶段 2 本步回写 cleaned」→ 不刷新则 `clauses.timeliness_status` **系统性滞后
@@ -355,9 +363,9 @@ def main() -> int:
                 _cr = build_clause_index()
                 _built = [k for k, v in _cr.items()
                           if isinstance(v, dict) and v.get("built")]
-                print(f"[apply] 条款产物已刷新（重算源: {_built or '无变更'}）")
+                LOG.info(f"[apply] 条款产物已刷新（重算源: {_built or '无变更'}）")
             except Exception as e:  # noqa: BLE001
-                print(f"[apply] WARN 条款产物刷新失败: {e!r}")
+                LOG.warning(f"[apply] WARN 条款产物刷新失败: {e!r}")
     return 0
 
 

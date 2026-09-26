@@ -43,10 +43,16 @@ import subprocess
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))       # regulatory_scrapers/
-CLASSIFIER = os.path.abspath(os.path.join(ROOT, "..", "regulatory_classifier"))
-INTERNAL = os.path.abspath(os.path.join(ROOT, "..", "internal_policy_drafter"))
 REVIEW = os.path.join(ROOT, "timeliness_review")
 PY = sys.executable
+
+# v2 §3.1.3 I-2（判据 D）：兄弟模块根**不再拼字面量**——经 `paths.module_dir()` 派生
+# （§3.1.1 结构清单 SSOT）。引导前提与下方 `from std_lib...` 相同：本脚本始终在
+# 「仓根可导入」的环境下运行（编排器注入/仓根 cwd），故此处不新增 sys.path 注入。
+from paths import module_dir  # noqa: E402
+
+CLASSIFIER = module_dir("regulatory_classifier")
+INTERNAL = module_dir("internal_policy_drafter")
 
 
 from std_lib.common_lib.norm import norm_docno as _norm_docno  # A-10：SSOT 收敛（标准层）
@@ -161,7 +167,9 @@ def stage_classifier(source, changed, dry_run, report):
 
 def _propagate_final():
     """归属表时效 → final.json eff_status（末尾再跑，避免中间态）。"""
-    attr_csv = os.path.join(CLASSIFIER, "data", "人身保险公司-文件归属表.csv")
+    # v2 §3.1.3 I-2：归属表路径经 interfaces 唯一入口（原 os.path.join(CLASSIFIER, "data", …)）
+    from interfaces.rfn_api import registry_paths  # noqa: PLC0415
+    attr_csv = registry_paths()["attr_csv"]
     attr = {r["监管文件编号"]: (r.get("时效状态") or "").strip()
             for r in csv.DictReader(open(attr_csv, encoding="utf-8-sig"))}
     data = os.path.join(CLASSIFIER, "data")

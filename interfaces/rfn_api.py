@@ -142,3 +142,12 @@ def bridge_rows() -> list[dict]:
 
 def attr_rows() -> list[dict]:
     return get_rfn_api().load_attr_rows()
+
+
+def data_dir() -> str:
+    """classifier 数据目录（`modules/regulatory_classifier/data`；I-3 新增访问器）。
+
+    取法：由归属表路径 `registry_paths()["attr_csv"]` 的父目录派生 —— 与归属表**同源**，
+    不引入第二个「classifier data 在哪」的判定。
+    """
+    return os.path.dirname(registry_paths()["attr_csv"])

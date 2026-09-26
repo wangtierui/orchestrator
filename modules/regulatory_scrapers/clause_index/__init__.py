@@ -75,8 +75,11 @@ _STATE_PATH = os.path.join(CLAUSE_DIR, "clause_index_state.json")
 _SOURCES = ("gov", "mof", "nfra", "pbc", "supp")
 
 # F-D10（2026-09-13 SSOT 专项）：RFN 桥表（classifier 唯一登记源）——条款行内联 rfn 投影。
-_RFN_BRIDGE = os.path.join(_ORCH_ROOT, "modules", "regulatory_classifier", "data",
-                           "rfn_clean_bridge.csv")
+# v2 §3.1.3 I-3（2026-09-26）：路径改经 `interfaces.rfn_api.registry_paths()` 唯一入口
+# （原为拼兄弟模块目录字符串，`gate_no_cross_module_import` 判据 D 已断言该纪律）。
+from interfaces.rfn_api import registry_paths as _registry_paths  # noqa: E402
+
+_RFN_BRIDGE = _registry_paths()["bridge_csv"]
 
 
 def _load_rfn_bridge() -> tuple:

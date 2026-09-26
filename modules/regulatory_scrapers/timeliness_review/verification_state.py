@@ -32,8 +32,9 @@ STATE_FILE = os.path.join(TASK_DIR, "verification_state.json")
 # 北大法宝查验记录默认有效期（规范要求 ≤ 90 日）
 DEFAULT_MAX_AGE_DAYS = 90
 
-# regulatory_classifier 归属表（权威交付库）
-CLASSIFIER_CSV = os.path.join(ROOT, "..", "regulatory_classifier", "data", "人身保险公司-文件归属表.csv")
+# regulatory_classifier 归属表（权威交付库）——路径在下方引导之后解析。
+# v2 §3.1.3 I-2（2026-09-26）：原「os.path.join(ROOT, "..", "regulatory_classifier", …)」
+# 属「自行拼兄弟模块目录」，改经 `interfaces.rfn_api.registry_paths()` 唯一入口（见 _classifier_csv）。
 
 # R4 适配修复（2026-09-14）：原 `sys.path.insert(0, ROOT/"std_lib")` 是**已失效旧路径**
 # （std_lib 早前上收 orchestrator 根）→ ①`scraper_std` 导入必失败并被 except 静默降级为硬编码
@@ -45,6 +46,26 @@ _ORCH_ROOT = os.path.dirname(os.path.dirname(ROOT))                  # orchestra
 for _p in (_ORCH_ROOT, os.path.join(_ORCH_ROOT, "std_lib")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
+
+def classifier_csv() -> str:
+    """归属表（权威交付库）路径 —— 经 `interfaces.rfn_api.registry_paths()` 唯一入口。
+
+    v2 §3.1.3 I-2（2026-09-26）：本模块与 `classifier_pkulaw_verify.py`、
+    `sync_three_modules.py` 三处「自行拼兄弟模块目录」的写法统一收敛到该接口
+    （归属表路径的唯一事实源 = `rfn.registry._csv_path()`，含 `RFN_REGISTRY_CSV` 环境覆盖）。
+    回退路径同样经 SSOT（`paths.module_dir`，§3.1.1 结构清单），**不拼兄弟模块名字面量**
+    ——`gate_no_cross_module_import` 判据 D 会断言这一点。
+    """
+    try:
+        from interfaces.rfn_api import registry_paths  # noqa: PLC0415
+        return registry_paths()["attr_csv"]
+    except Exception:  # noqa: BLE001  接口不可用时回退（仓根已在 sys.path，见上方引导）
+        from paths import module_dir  # noqa: PLC0415
+        return os.path.join(module_dir("regulatory_classifier"), "data",
+                            "人身保险公司-文件归属表.csv")
+
+
+CLASSIFIER_CSV = os.path.abspath(classifier_csv())
 
 # 效力状态合法值（与 unified_schema 共享常量对齐，规范 v3：7 值含 partially_repealed）
 try:

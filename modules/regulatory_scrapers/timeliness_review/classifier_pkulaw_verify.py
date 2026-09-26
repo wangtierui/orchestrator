@@ -39,8 +39,7 @@ from scraper_std import pkulaw_cli as pk  # noqa: E402
 OUT_DIR = os.path.join(ROOT, "timeliness_review")
 CHECKPOINT = os.path.join(OUT_DIR, "classifier_pkulaw_checkpoint.jsonl")
 BACKUP_SUBDIR = "backups/classifier_pkulaw_20260827"
-CLASSIFIER_CSV = os.environ.get("RFN_REGISTRY_CSV") or os.path.join(
-    ROOT, "..", "regulatory_classifier", "data", "人身保险公司-文件归属表.csv")
+CLASSIFIER_CSV = os.environ.get("RFN_REGISTRY_CSV") or vstate.classifier_csv()
 
 # 五源 cleaned（动态取 clean_index latest；禁止硬编码快照日期，含 supplementary 经 glob 最新）
 _idx = get_clean_index()

@@ -26,20 +26,56 @@ PAT = re.compile(r"sys\.path\.(insert|append)")
 SKIP_DIRS = {".git", "__pycache__", ".pytest_cache", "data", "reports", "graphify-out",
              "external", "tessdata", "backups", ".ruff_cache", ".codebuddy"}
 
-# 冻结基线（2026-09-26 实测，P0-2 完成后）：只减不增
+# 冻结基线（2026-09-26 **P1-3 实测重标**）：只减不增
+#
+# ⚠️ 口径变更（同日）：本门禁改为**只统计代码行**（`_code_hits` 跳过注释行与文档字符串）。
+#    旧口径把文档/注释里的文字提及也算成"注入"（gates/ 的 18 里有 7 处是散文），
+#    导致"加一句说明性注释即顶破基线"。下表为**新口径实测值**。
 BASELINE: dict[str, int] = {
-    "gates": 17,
-    "interfaces": 15,
-    # 128（2026-09-26，P1-6）：+1 = consolidate_timeliness.py 的 `_wl_add` 引导
-    # （该脚本原为纯 stdlib、无仓内导入，为接 worklist 队列首次引入仓根引导）
-    "modules": 128,
+    # 9（P1-3 I-4 后实测）：gate_contract.py 不再为拿主题集合而自行注入 classifier 目录
+    # （改经 `interfaces.theme_api` + `interfaces/protocols.RfnProvider`）
+    "gates": 9,
+    # 11（P1-3 实测）：`interfaces/*_api.py` 为访问具体模块仍需少量引导，
+    # 待 P1-3 后续 / P2-x 逐步收敛
+    "interfaces": 11,
+    # 127（P1-6 的 consolidate_timeliness `_wl_add` +1；新口径下再减）
+    "modules": 127,
     "std_lib": 9,
-    "tests": 35,
-    "tools": 16,
+    "tests": 33,
+    "tools": 14,
 }
 # 硬零层：P0-2 已收口，禁止回退
 HARD_ZERO_GROUPS = ("commands",)
 HARD_ZERO_ROOT_FILES = ("paths.py", "cli.py", "file_list_watcher.py")
+
+
+_TQ_D = '"' * 3
+_TQ_S = "'" * 3
+
+
+def _code_hits(text: str) -> int:
+    """统计**代码行**中的注入次数（跳过注释行与文档字符串）。
+
+    修正（2026-09-26，P1-3 执行中发现）：原实现直接对全文跑正则，于是**文档/注释里的
+    文字提及**（如「禁止业务代码 sys.path.insert」「A 越权引导：sys.path.insert/append」）
+    也被计成"注入"——实测 gates/ 的 18 计数里有 7 处纯属散文，且新增一句说明性注释
+    就会顶破基线（本批亲历）。判据意图是"有多少真实引导点"，故此处只数代码行。
+    """
+    n = 0
+    in_doc = False
+    for ln in text.splitlines():
+        s = ln.strip()
+        if in_doc:
+            if _TQ_D in s or _TQ_S in s:
+                in_doc = False
+            continue
+        if s.startswith("#"):
+            continue
+        for q in (_TQ_D, _TQ_S):
+            if q in s and s.count(q) % 2 == 1:
+                in_doc = True
+        n += len(PAT.findall(ln))
+    return n
 
 
 def _scan() -> dict[str, int]:
@@ -59,7 +95,7 @@ def _scan() -> dict[str, int]:
                 text = open(fp, encoding="utf-8", errors="replace").read()
             except OSError:
                 continue
-            n = len(PAT.findall(text))
+            n = _code_hits(text)
             if n:
                 counts[key] = counts.get(key, 0) + n
     return counts

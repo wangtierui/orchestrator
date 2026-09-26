@@ -67,6 +67,15 @@ def bootstrap(*modules: str, include_tools: bool = False, extra=()) -> None:
                         f"未知模块: {name!r}（允许包名 {sorted(MODULE_PKGS)} "
                         f"或短键 {sorted(MODULE_KEYS)}）"
                     ) from None
+    # ⚠️ 两类注入都必要（2026-09-26 实测缺口，P1-3 执行中发现）：
+    #   · `modules/<pkg>`（**子目录**）→「子包形态」导入可用（`from clean_index import …`、
+    #     `import rfn.registry`）——本仓 modules/ 内的主流写法；
+    #   · `modules`（**父目录**）→「包形态」导入可用（`import internal_policy_base.align`）
+    #     ——`interfaces/internal_policy_api`、`interfaces/theme_api` 等使用该形态。
+    # 缺后者时症状极隐蔽：`bootstrap("all")` 后 `import internal_policy_base` 仍
+    # `ModuleNotFoundError`（目录在 sys.path 上但缺的是它的**父目录**），
+    # 导致 `internal_policy_api.register()` 等路径成为"从未被走通的死代码"。
+    _add(ROOT / "modules")
     for pkg in wanted:
         _add(ROOT / "modules" / pkg)
     if include_tools:

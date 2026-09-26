@@ -23,8 +23,12 @@ for _p in (_ROOT, _MODULES):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-EXT_DIR = os.path.join(_MODULES, "regulatory_scrapers", "published")
-INT_DIR = os.path.join(_MODULES, "internal_policy_base", "published")
+# v2 §3.1.3 I-3（2026-09-26）：发布件目录改经 interfaces 访问器（判据 D）
+from interfaces.clean_index_api import published_dir as _ext_published_dir  # noqa: E402
+from interfaces.internal_policy_api import published_dir as _ipb_published_dir  # noqa: E402
+
+EXT_DIR = _ext_published_dir()
+INT_DIR = _ipb_published_dir()
 
 _EXT_SCHEMA = """
 DROP TABLE IF EXISTS records; DROP TABLE IF EXISTS clauses; DROP TABLE IF EXISTS attachments;

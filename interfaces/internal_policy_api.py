@@ -64,6 +64,10 @@ class InternalPolicyAPI:
 
     # ---- 只读访问面（阶段 3，2026-09-18）：供 drafter / base_publish 消费，
     #      替代"自行拼兄弟模块 data/ 路径"（跨模块直连收口）----
+    def data_dir(self) -> str:
+        """数据目录（v2 §3.1.3 I-4：补齐 `InternalPolicyProvider` 协议形状）。"""
+        return _DATA
+
     def paths(self) -> dict:
         """内部制度层**事实源文件/目录**路径（消费方勿再自行拼路径）。"""
         return {
@@ -96,6 +100,16 @@ class InternalPolicyAPI:
 
 
 _api: InternalPolicyAPI | None = None
+
+
+def data_dir() -> str:
+    """内部制度数据目录（`modules/internal_policy_base/data`；I-3 新增访问器）。"""
+    return _DATA
+
+
+def published_dir() -> str:
+    """内部制度发布件目录（I-3 新增访问器；与 `InternalPolicyAPI.published_dir` 同源）。"""
+    return os.path.join(_MOD_BASE, "published")
 
 
 def get_internal_policy_api() -> InternalPolicyAPI:

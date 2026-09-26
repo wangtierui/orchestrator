@@ -33,6 +33,11 @@ def _impl():
     return _ci
 
 
+def clauses_dir() -> str:
+    """条款产物目录（`modules/regulatory_scrapers/data/clauses`；I-3 新增访问器）。"""
+    return os.path.join(_SCRAPERS, "data", "clauses")
+
+
 def latest_clause_path(source_id: str) -> str:
     """该源最新条文 jsonl 路径（无产物返回 ""）。"""
     return _impl().latest_clause_path(source_id)

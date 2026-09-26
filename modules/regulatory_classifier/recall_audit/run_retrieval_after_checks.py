@@ -60,7 +60,6 @@ from datetime import datetime, timedelta, timezone
 # —— 路径装配（P4：相对 orchestrator 根，无盘符） ——
 _THIS = os.path.dirname(os.path.abspath(__file__))          # modules/regulatory_classifier/recall_audit
 _MOD_CLASS = os.path.dirname(_THIS)                          # modules/regulatory_classifier
-_SCRAPERS_MOD = os.path.join(os.path.dirname(_MOD_CLASS), "regulatory_scrapers")
 _ORCH_ROOT = os.path.dirname(os.path.dirname(_MOD_CLASS))
 RECALL_DIR = _THIS
 ROOT = _MOD_CLASS  # （rfn 包 / scripts 所在根）

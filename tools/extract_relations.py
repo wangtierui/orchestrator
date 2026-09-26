@@ -91,6 +91,14 @@ MIN_SIG_LEN = 6               # 文号签名最短长度（四位年 + 至少两
 # ===========================================================================
 # 一、实体索引（监管域 RFN / 内部域 IPN）
 # ===========================================================================
+
+# v2 §3.6 X3（P1-5，2026-09-26）：状态行改经统一日志设施（原 print）。
+# 规则：**状态/进度/告警行 → LOG**；**机器可读载荷（json.dumps）/多列表格行 → 保留 print**
+# （后者是 stdout 契约，加日志前缀会破坏编排器 tail 与下游解析）。
+# 判据：`gate_runtime_hygiene` 判据④断言本文件的 LOG 使用下限与 print 上限。
+from std_lib.common_lib.logging import get_logger  # noqa: E402
+
+LOG = get_logger("relations")
 def _empty_index() -> dict:
     """实体索引容器。
 
@@ -242,7 +250,7 @@ def iter_regulatory_docs(sources: list[str], limit: int = 0):
     for src in sources:
         p = _latest_cleaned_jsonl(src)
         if not p:
-            print(f"[relations] 跳过源 {src}：无 cleaned JSONL")
+            LOG.info(f"[relations] 跳过源 {src}：无 cleaned JSONL")
             continue
         n = 0
         with open(p, encoding="utf-8") as fh:
@@ -266,14 +274,14 @@ def iter_regulatory_docs(sources: list[str], limit: int = 0):
                     "extra_text": rec.get("attachment_content") or "",
                     "dedup_key": rec.get("dedup_key", ""),
                 }
-        print(f"[relations] 源 {src}：正文可抽取 {n} 份（{os.path.basename(p)}）")
+        LOG.info(f"[relations] 源 {src}：正文可抽取 {n} 份（{os.path.basename(p)}）")
 
 
 def iter_internal_docs(limit: int = 0):
     """迭代内部制度（正文取 processed/<ipn>_fulltext.json）。"""
     p = os.path.join(IPB_DATA, "internal_policy_index.json")
     if not os.path.exists(p):
-        print("[relations] 跳过内部制度：缺 internal_policy_index.json")
+        LOG.info("[relations] 跳过内部制度：缺 internal_policy_index.json")
         return
     recs = json.load(open(p, encoding="utf-8")).get("records", [])
     n = 0
@@ -296,7 +304,7 @@ def iter_internal_docs(limit: int = 0):
             "ref": ipn, "name": r.get("title", ""), "docno": r.get("docno", ""),
             "url": "", "text": text, "extra_text": "",
         }
-    print(f"[relations] 内部制度：正文可抽取 {n} 份")
+    LOG.info(f"[relations] 内部制度：正文可抽取 {n} 份")
 
 
 # ===========================================================================
@@ -411,7 +419,7 @@ def run(*, sources: list[str] | None = None, limit: int = 0, dry_run: bool = Fal
     generated_at = datetime.now(_TZ).strftime("%Y-%m-%d %H:%M:%S")
     reg_ix, int_ix = build_regulatory_index(), build_internal_index()
     n_weak = add_cleaned_weak_index(reg_ix, cfg_sources)
-    print(f"[relations] 实体索引：监管 {len(reg_ix['refs'])} 个 RFN / 内部 {len(int_ix['refs'])} 个 IPN "
+    LOG.info(f"[relations] 实体索引：监管 {len(reg_ix['refs'])} 个 RFN / 内部 {len(int_ix['refs'])} 个 IPN "
           f"/ 弱索引 {n_weak} 份 cleaned（未登记 RFN 的引用目标可追溯到 dedup_key）")
 
     pipeline = RelationPipeline()
@@ -440,12 +448,12 @@ def run(*, sources: list[str] | None = None, limit: int = 0, dry_run: bool = Fal
     # 关系 id 唯一化（2026-09-20 相邻项修复）：判别字段完全相同的重复引用加确定性后缀
     n_id_dups = _ensure_unique_ids(rows)
     if n_id_dups:
-        print(f"[relations] relation_id 撞车 {n_id_dups} 行（同判别字段重复引用）→ 已按出现序加后缀")
+        LOG.info(f"[relations] relation_id 撞车 {n_id_dups} 行（同判别字段重复引用）→ 已按出现序加后缀")
 
     stat = _build_stat(rows, docs_stat, warnings, generated_at,
                        filtered_generic=filtered_generic, id_dups=n_id_dups)
     if dry_run:
-        print("[relations] dry-run：不落盘。")
+        LOG.info("[relations] dry-run：不落盘。")
         print(json.dumps({k: stat[k] for k in ("documents", "relations", "resolution")},
                          ensure_ascii=False, indent=2))
         return {"rows": rows, "stat": stat, "written": False}
@@ -453,7 +461,7 @@ def run(*, sources: list[str] | None = None, limit: int = 0, dry_run: bool = Fal
     written = write_products(rows, stat)
     if report:
         write_report(rows, stat)
-    print(f"[relations] 完成：{len(rows)} 条关系 → {written['index']}")
+    LOG.info(f"[relations] 完成：{len(rows)} 条关系 → {written['index']}")
     print(json.dumps({k: stat[k] for k in ("relations", "resolution")}, ensure_ascii=False, indent=2))
     return {"rows": rows, "stat": stat, "written": True, "paths": written}
 

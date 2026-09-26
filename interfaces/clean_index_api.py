@@ -56,6 +56,20 @@ def scan_sources(scraper_root: str = "", *, hash_files: bool = True) -> dict:
     return m.scan_sources(scraper_root or m.SCRAPER_ROOT, hash_files=hash_files)
 
 
+# ---- 目录/文件定位访问器（v2 §3.1.3 I-3，2026-09-26）----
+# 补 I-3：发布层（`base_publish/*`）与 classifier 需读 scrapers 的发布件目录与
+# clean_index 索引文件，此前各自拼 `os.path.join(_MODULES, "regulatory_scrapers", …)`。
+# 判据 D（gate_no_cross_module_import）据此断言「路径必须经 interfaces 或 paths.module_dir」。
+def published_dir() -> str:
+    """五源发布件目录（`modules/regulatory_scrapers/published`）。"""
+    return os.path.join(_SCRAPERS, "published")
+
+
+def index_path() -> str:
+    """clean_index 索引文件（`clean_index/index.json`；快照内容签名与 latest 的事实源）。"""
+    return os.path.join(_SCRAPERS, "clean_index", "index.json")
+
+
 def latest_csv_path(source_id: str) -> str | None:
     return get_clean_index().latest_csv_path(source_id)
 
@@ -97,7 +111,12 @@ def is_fresh() -> bool:
 
 
 class CleanIndexAPI:
-    """向后兼容壳：历史调用方 `get_clean_index_api().latest_csv_path(...)` 语义不变。"""
+    """向后兼容壳：历史调用方 `get_clean_index_api().latest_csv_path(...)` 语义不变。
+
+    v2 §3.1.3 I-4（2026-09-26）：补齐 `interfaces.protocols.CleanIndexProvider` 声明的
+    形状（`source_ids` / `latest` / `published_dir` / `index_path`）——协议描述的是
+    **provider 对象**（消费方经 `get_clean_index_api()` 取），故类需与协议同形。
+    """
 
     def latest_csv_path(self, source_id: str) -> str | None:
         return latest_csv_path(source_id)
@@ -110,6 +129,19 @@ class CleanIndexAPI:
 
     def is_fresh(self) -> bool:
         return is_fresh()
+
+    # ---- I-4 协议形状补齐 ----
+    def source_ids(self) -> list[str]:
+        return source_ids()
+
+    def latest(self, source_id: str) -> dict | None:
+        return latest(source_id)
+
+    def published_dir(self) -> str:
+        return published_dir()
+
+    def index_path(self) -> str:
+        return index_path()
 
 
 _api: CleanIndexAPI | None = None

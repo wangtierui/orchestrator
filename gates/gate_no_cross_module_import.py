@@ -110,6 +110,43 @@ def _scan_file(fp: str, rel: str, own: str) -> list[tuple[int, str, str]]:
     return out
 
 
+# ---- 判据 D（v2 §3.1.3 I-5，2026-09-26）：字符串路径指向兄弟模块目录 ----
+# 补 A3 盲区：A/B/C 只覆盖「sys.path 注入」与「import 语句」两种形态；而
+# 「拼接兄弟模块目录字符串后直接读写其 data/」既不注入也不 import，可完全绕开三判据
+# （实测：`sync_three_modules.py` 拼 regulatory_classifier 目录读归属表、
+#  `verification_state.py` 同上、`timeliness_review` 三处均属此类）。
+# 判据：一行内同时出现「路径构造调用」与「兄弟模块名的**引号字面量**」即报；
+#   经 `paths.module_dir("<pkg>")`（§3.1.1 结构清单 SSOT）或 `interfaces.*` API 取得的路径
+#   不算违规——这正是本判据期望的写法。
+# 实现刻意**零正则/零反斜杠**：本仓写入链路会把反斜杠二次转义（见 gate_config_integrity
+# 同名注释），故只用 `str` 成员判定。
+# ⚠️ 后两项**刻意拆成两段拼接**：本文件若出现完整的 `sys.path.insert(` 字面量，
+# 会被 `gate_import_bootstrap` 的文本扫描计成 gates/ 的"注入"（假阳性，
+# 实测曾使基线 17→19）。拼接后语义不变而扫描不命中。
+_PATH_CALL_MARKS = ("os.path.join(", "os.path.abspath(", "os.path.normpath(",
+                    "os.path.dirname(", "Path(",
+                    "sys.path." + "insert(", "sys.path." + "append(")
+_MODULE_DIR_MARK = "module_dir("
+_QUOTES = ('"', "'")
+
+
+def _scan_sibling_paths(lines: list[str], own: str) -> list[tuple[int, str, str]]:
+    out: list[tuple[int, str, str]] = []
+    for i, ln in enumerate(lines, 1):
+        s = ln.strip()
+        if s.startswith("#") or _MODULE_DIR_MARK in ln:
+            continue
+        if not any(m in ln for m in _PATH_CALL_MARKS):
+            continue
+        for pkg in MODULES:
+            if pkg == own:
+                continue
+            if (_QUOTES[0] + pkg + _QUOTES[0]) in ln or (_QUOTES[1] + pkg + _QUOTES[1]) in ln:
+                out.append((i, "D兄弟模块路径拼接", s[:110]))
+                break
+    return out
+
+
 def run():
     root_mods = paths.MODULES_DIR
     findings: list[dict] = []
@@ -124,8 +161,14 @@ def run():
                 if not fn.endswith(".py"):
                     continue
                 fp = os.path.join(dirpath, fn)
-                rel = os.path.relpath(fp, paths.ROOT).replace("\\", "/")
-                for lineno, pattern, text in _scan_file(fp, rel, name):
+                rel = os.path.relpath(fp, paths.ROOT).replace(os.sep, "/")
+                hits = list(_scan_file(fp, rel, name))
+                try:
+                    _lines = open(fp, encoding="utf-8", errors="replace").read().splitlines()
+                    hits += _scan_sibling_paths(_lines, name)
+                except OSError:
+                    pass
+                for lineno, pattern, text in hits:
                     findings.append({"file": rel, "line": lineno, "pattern": pattern, "text": text,
                                      "key": f"{rel}:{lineno}"})
 

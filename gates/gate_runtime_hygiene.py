@@ -31,11 +31,26 @@ PAT_BARE_PASS = re.compile(r"except[^\n]*:\s*\n\s*pass\b")
 # 三项开关：True 即阻断（首期为 False，只披露）
 _STRICT_EXITCODES = False
 _STRICT_BARE_PASS = False
-_STRICT_IFACE_STUBS = False
+# ③ 接口空壳：**已转严格**（v2 §3.1.3 I-7，2026-09-26）——P1-3 实装 `theme_api` 后
+# `interfaces/**` 的 `NotImplementedError` 为 0，故此处从"只披露"切为"阻断"。
+# 白名单仅允许「抽象基类的正当声明」，须写明期次；当前为空（`ocr_engine.py` 未用该模式）。
+_IFACE_STUB_ALLOW: dict[str, str] = {}
+_STRICT_IFACE_STUBS = True
 
 # 基线（只减不增；None = 尚未冻结）
 BASELINE_BARE_PASS: int | None = None
 BASELINE_RETURN_INT: int | None = None
+
+# ④ 生产脚本日志化目标（v2 §3.6 X3）：LOG 下限 / print 上限
+# 取值依据（2026-09-26 P1-5 实测）：三脚本各自 8 处状态行已转 LOG；
+# 残余 print 为**机器可读载荷**（extract_relations 的 json.dumps 汇总、
+# governance_sync 的双列表头/行、apply_timeliness 的多列表格行与分隔线）。
+_PROD_LOG_TARGETS: dict[str, dict[str, int]] = {
+    "tools/extract_relations.py": {"log_min": 8, "print_max": 2},
+    "tools/governance_sync.py": {"log_min": 8, "print_max": 2},
+    "modules/regulatory_scrapers/timeliness_review/apply_timeliness_to_cleaned.py":
+        {"log_min": 8, "print_max": 8},
+}
 
 
 def _iter_py(*, only_prefix: str = ""):
@@ -104,13 +119,44 @@ def run() -> tuple[bool, dict]:
                 for m in re.finditer(r"raise\s+NotImplementedError", text)]
         if locs:
             stubs[rel] = locs
-    detail["interface_stubs"] = {"total": sum(len(v) for v in stubs.values()), "files": stubs}
+    allowed = {k: stubs.pop(k) for k in list(stubs) if k in _IFACE_STUB_ALLOW}
+    detail["interface_stubs"] = {
+        "total": sum(len(v) for v in stubs.values()), "files": stubs,
+        "allowlisted": allowed, "strict": _STRICT_IFACE_STUBS,
+    }
     if stubs and _STRICT_IFACE_STUBS:
-        problems.append(f"interfaces/ 存在 NotImplementedError 空壳：{stubs}")
+        problems.append(f"interfaces/ 存在 NotImplementedError 空壳：{stubs}"
+                        "（实现后须删除空壳；抽象基类声明请登记 _IFACE_STUB_ALLOW 并注明期次）")
+
+    # ④ 生产脚本日志化（v2 §3.6 X3，P1-5 新增）：LOG 使用**下限** + print **上限**（只减不增）。
+    #    针对 §2.4.3 点名的三个"纯 print"脚本——它们的 print 使编排器只能靠 stdout tail
+    #    判失败，结构化日志在主链上完全未启用。保留的 print 是**机器可读载荷/多列表格行**
+    #    （stdout 契约），故上限非 0。
+    logs: dict[str, dict] = {}
+    for rel, spec in sorted(_PROD_LOG_TARGETS.items()):
+        fp = os.path.join(ROOT, rel.replace("/", os.sep))
+        if not os.path.exists(fp):
+            problems.append(f"④ 生产脚本缺失：{rel}")
+            continue
+        lines = open(fp, encoding="utf-8", errors="replace").read().splitlines()
+        n_log = sum(1 for s in (ln.strip() for ln in lines)
+                    if s.startswith(("LOG.info(", "LOG.warning(", "LOG.error(",
+                                     "LOG.exception(", "LOG.debug(")))
+        n_print = sum(1 for s in (ln.strip() for ln in lines) if s.startswith("print("))
+        logs[rel] = {"log": n_log, "log_min": spec["log_min"],
+                     "print": n_print, "print_max": spec["print_max"]}
+        if n_log < spec["log_min"]:
+            problems.append(f"④ {rel} LOG 使用 {n_log} < 下限 {spec['log_min']}"
+                            "（状态行须经统一日志设施，不得用 print）")
+        if n_print > spec["print_max"]:
+            problems.append(f"④ {rel} print {n_print} > 上限 {spec['print_max']}"
+                            "（仅机器可读载荷/表格行可保留 print）")
+    detail["prod_logging"] = logs
 
     if problems:
         detail["problems"] = problems
-    detail["note"] = "首期只披露不阻断（v2 D-8）；三项 _STRICT_* 开关待对应期次完成后置 True"
+    detail["note"] = ("①退出码 ②静默异常 为**只披露**（v2 D-8，待 P1-5 完全落地后转严）；"
+                      "③接口空壳 ④生产脚本日志化 为**阻断**（P1-3/P1-5 已落地）")
     return (not problems), detail
 
 

@@ -31,6 +31,10 @@ for _p in (_CLASS, os.path.dirname(_CLASS), os.path.dirname(os.path.dirname(_CLA
         sys.path.insert(0, _p)
 from rfn import THEME_MAP  # noqa: E402
 
+# v2 §3.1.3 I-3（2026-09-26）：clean_index 索引路径经 interfaces 唯一入口
+# （原为拼兄弟模块目录字符串，判据 D 断言该纪律）
+from interfaces.clean_index_api import index_path as _clean_index_path  # noqa: E402
+
 _SCRIPTS = _THIS
 _DATA = os.path.join(_CLASS, "data")
 _ATTR = os.path.join(_DATA, "人身保险公司-文件归属表.csv")
@@ -43,7 +47,7 @@ _THEME_CSV = os.path.join(_DATA, "人身保险公司-主题归属表.csv")
 # index 每源 sha 会变，match/detail/upper 断点据此级联重跑，消除"正文变但条数同"的静默过时。
 # F-D05④（2026-09-12）：index.json 现已带每源文件内容 sha256（clean 管道 hash_files=True +
 # apply 尾部重建）——同日改写即使 size 相同也会改变 index.json 内容 → 断点级联刷新。
-_CLEAN_INDEX = os.path.join(os.path.dirname(_CLASS), "regulatory_scrapers", "clean_index", "index.json")
+_CLEAN_INDEX = _clean_index_path()
 _PY = sys.executable
 _BODY_THEMES = [c for c in THEME_MAP if c != "T0"]       # 有底座的 T1–T10
 

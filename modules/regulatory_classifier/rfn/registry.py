@@ -237,10 +237,10 @@ def register_doc(theme, title, docno=None, pub_date="", source="", fingerprint="
         })
         _save_rows(rows)
 
-        # 主题归属表同步写入
-        trows = _load_theme_rows()
-        trows.append({"监管文件编号": rfn, "主题": theme_full, "判定依据": "registry自动登记"})
-        _save_theme_rows(trows)
+        # 主题归属表同步写入（R2 唯一写接口 `set_theme`；此处已持锁 → _locked=True，
+        # 且 rebuild=False：本函数末尾统一重建索引，避免重复重建）
+        set_theme(rfn, theme_full, "registry自动登记", insert=True,
+                  rebuild=False, _locked=True)
 
         # 指纹登记（防重复摄入；唯一键=去重键 uk，对齐 FP_FIELDS 6 列）
         frows = _load_fp()
@@ -264,17 +264,27 @@ def register_doc(theme, title, docno=None, pub_date="", source="", fingerprint="
         _unlock(fh)
 
 
-def re_theme(rfn: str, new_theme: str, reason: str = "人工改判"):
-    """R7 治理入口（2026-09-08）：修改既有 RFN 的主题归属（主题归属表行）并联动重建。
+def set_theme(rfn: str, theme: str, basis: str = "", *, insert: bool = False,
+              rebuild: bool = True, sync_pending: bool = False, _locked: bool = False) -> dict:
+    """主题归属**唯一写接口**（R2 收敛；v2 §3.1.3 I-1 起由 `interfaces.theme_api` 委派）。
 
-    补审计缺口「registry 仅 append、无改既有 RFN 主题路径」——主题改判后 base/final/明细
-    归组迁移由调用方随后触发 classify 底座链重建（本函数写 sync_status 标记 pending）。
+    语义（幂等 upsert，`_save_theme_rows` 的唯一调用方）：
+      - RFN 已在主题归属表 → 更新「主题/判定依据」；
+      - RFN 不在表内 → 仅当 `insert=True` 允许追加（供 `register_doc` 首次登记复用），
+        否则 `LookupError`（防"未登记 RFN 被静默建档"）。
+      - `theme` 接受**主题码**（T0..T10）或**完整主题名**（`THEME_MAP` 值）。
+      - `rebuild=False` / `_locked=True` / `sync_pending=False` 供 `register_doc`
+        在**已持锁**路径内复用（其末尾统一重建索引），避免二次加锁与重复重建。
 
-    返回 dict：{rfn, from_theme, to_theme, updated}。
+    返回 {rfn, from_theme, to_theme, changed, inserted}。
     """
-    if new_theme not in THEME_MAP:
-        raise ValueError("new_theme 必须是主题码 T0..T10，收到 %r" % new_theme)
-    fh = _lock()
+    code = theme if theme in THEME_MAP else next(
+        (c for c, n in THEME_MAP.items() if n == theme), "")
+    if not code:
+        raise ValueError("theme 必须是主题码 T0..T10 或完整主题名，收到 %r" % (theme,))
+    full = THEME_MAP[code]
+
+    fh = None if _locked else _lock()
     try:
         trows = _load_theme_rows()
         hit = None
@@ -282,21 +292,42 @@ def re_theme(rfn: str, new_theme: str, reason: str = "人工改判"):
             if t.get("监管文件编号") == rfn:
                 hit = t
                 break
-        if hit is None:
+        inserted = hit is None
+        if inserted and not insert:
             raise LookupError(f"RFN {rfn} 不在主题归属表（无此记录）")
-        old_full = hit.get("主题", "")
-        hit["主题"] = THEME_MAP[new_theme]
-        hit["判定依据"] = f"{reason}（re_theme {_now()}）"
-        _save_theme_rows(trows)
-        try:
-            rebuild_index()
-        except OSError as _e:
-            print(f"[re_theme] WARN 索引重建失败（主题已改）: {_e}")
-        _sync_status_write(rfn, "数据底座", "pending",
-                           note=f"主题改判 {old_full}→{THEME_MAP[new_theme]}，需 classify 底座链重建")
-        return {"rfn": rfn, "from_theme": old_full, "to_theme": THEME_MAP[new_theme], "updated": True}
+        old_full = "" if inserted else hit.get("主题", "")
+        changed = old_full != full or bool(basis)
+        if inserted:
+            trows.append({"监管文件编号": rfn, "主题": full,
+                          "判定依据": basis or "registry自动登记"})
+        elif changed:
+            hit["主题"] = full
+            hit["判定依据"] = basis or hit.get("判定依据", "")
+        if changed:
+            _save_theme_rows(trows)
+        if rebuild:
+            try:
+                rebuild_index()
+            except OSError as _e:
+                print(f"[set_theme] WARN 索引重建失败（主题已改）: {_e}")
+        if sync_pending and changed:
+            _sync_status_write(rfn, "数据底座", "pending",
+                               note=f"主题改判 {old_full}→{full}，需 classify 底座链重建")
+        return {"rfn": rfn, "from_theme": old_full, "to_theme": full,
+                "changed": changed, "inserted": inserted}
     finally:
-        _unlock(fh)
+        if fh is not None:
+            _unlock(fh)
+
+
+def re_theme(rfn: str, new_theme: str, reason: str = "人工改判"):
+    """R7 治理入口（2026-09-08；2026-09-26 收敛为 `set_theme` 的薄封装，保留调用方兼容）。
+
+    返回 dict：{rfn, from_theme, to_theme, updated}。
+    """
+    r = set_theme(rfn, new_theme, f"{reason}（re_theme {_now()}）", sync_pending=True)
+    return {"rfn": r["rfn"], "from_theme": r["from_theme"], "to_theme": r["to_theme"],
+            "updated": True}
 
 
 # 文件指纹表 6 列（唯一定义，_save_fp 单处引用；2026-09-08 对齐实际表头含历史「唯一键」列，

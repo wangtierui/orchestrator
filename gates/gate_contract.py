@@ -15,13 +15,15 @@ import re
 
 import paths
 from interfaces import contract
+from interfaces.theme_api import theme_map as _theme_map
 
-_CLASS_MOD = os.path.join(paths.MODULES_DIR, "regulatory_classifier")
-if _CLASS_MOD not in __import__("sys").path:
-    __import__("sys").path.insert(0, _CLASS_MOD)
 _DATA = os.path.join(paths.MODULES_DIR, "regulatory_classifier", "data")
 # R16（二期）：主题集合唯一事实源 = rfn.THEME_MAP，期望数量/命名由遍历派生，禁字面 40/11。
-from rfn import THEME_MAP  # noqa: E402
+# v2 §3.1.3 I-4（2026-09-26）：原为治理层**直接依赖模块内部实现**
+# （自行 sys.path 注入 classifier 目录 + `from rfn import THEME_MAP`），现改经
+# `interfaces.theme_api`（协议见 `interfaces/protocols.RfnProvider`）——
+# 治理层由此不再持有任何 modules 内部导入，本文件也不再需要 sys.path 注入。
+THEME_MAP = _theme_map()
 
 _DET_RE = re.compile(r"^(T\d+)_\d+逐份条款引用与上位法依据明细表\.csv$")
 # 底座命名：{T1..T10}×{base,final,matched,citerefs}（T0 不生成底座）

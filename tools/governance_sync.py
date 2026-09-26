@@ -67,6 +67,14 @@ _C_PUB, _C_SRC, _C_TL = "发布日期", "文件来源", "时效状态"
 _C_NOTE = "编号备注"
 
 
+
+# v2 §3.6 X3（P1-5，2026-09-26）：状态行改经统一日志设施（原 print）。
+# 规则：**状态/进度/告警行 → LOG**；**机器可读载荷（json.dumps）/多列表格行 → 保留 print**
+# （后者是 stdout 契约，加日志前缀会破坏编排器 tail 与下游解析）。
+# 判据：`gate_runtime_hygiene` 判据④断言本文件的 LOG 使用下限与 print 上限。
+from std_lib.common_lib.logging import get_logger  # noqa: E402
+
+LOG = get_logger("governance_sync")
 def _rows_csv(path: str) -> list[dict]:
     if not os.path.exists(path):
         return []
@@ -212,7 +220,7 @@ def load_relations() -> tuple[list[dict], list[str]]:
             "row_json": json.dumps(r, ensure_ascii=False),
         })
     if dup_ids or exact_dup:
-        print(f"[sync] ⚠ relations_index.jsonl 去重键异常：{len(rows)} 行 / "
+        LOG.info(f"[sync] ⚠ relations_index.jsonl 去重键异常：{len(rows)} 行 / "
               f"{len(seen_ids)} 个不同 relation_id；其中 {len(dup_ids)} 个 id 重复、"
               f"{exact_dup} 行为逐字节重复。已按合成 row_key **保全全部 {len(out)} 行**"
               "（库行数与事实源一致）。id 重复在 extractor 1.1 后不应出现 → "
@@ -286,31 +294,31 @@ def main(argv=None) -> int:
     args = ap.parse_args(argv)
 
     if not gs.enabled() and args.require_db:
-        print("[sync] 治理库不存在（先 `python cli.py governance init`）")
+        LOG.info("[sync] 治理库不存在（先 `python cli.py governance init`）")
         return 2
     gs.init_db()
 
     payload, notes = collect()
     for n in notes:
-        print(f"[sync] {n}")
-    print("[sync] 源侧装载：" + " / ".join(f"{k}={len(v)}" for k, v in payload.items()))
+        LOG.info(f"[sync] {n}")
+    LOG.info("[sync] 源侧装载：" + " / ".join(f"{k}={len(v)}" for k, v in payload.items()))
 
     if args.apply:
         counts = gs.project_metadata(
             documents=payload["documents"], theme_assigns=payload["theme_assigns"],
             relations=payload["relations"], timeliness_rows=payload["timeliness_rows"])
-        print("[sync] 已投影：" + " / ".join(f"{k}={v}" for k, v in counts.items()))
+        LOG.info("[sync] 已投影：" + " / ".join(f"{k}={v}" for k, v in counts.items()))
 
     if not gs.enabled():
-        print("[sync] 治理库不可用，跳过比对断言")
+        LOG.info("[sync] 治理库不可用，跳过比对断言")
         return 2
     result = gs.verify_projection(**payload)
     bad = _print_result(result)
     if args.export:
         out = gs.export_snapshot(os.path.join(ROOT, "exports"))
-        print(f"[sync] 已导出快照：{out.get('out_dir')}"
+        LOG.info(f"[sync] 已导出快照：{out.get('out_dir')}"
               f"（{len(out.get('items') or [])} 张表；relation 不导出——已有事实源文件）")
-    print("[sync] 比对断言：" + ("全部一致" if bad == 0 else f"{bad} 张表分叉"))
+    LOG.info("[sync] 比对断言：" + ("全部一致" if bad == 0 else f"{bad} 张表分叉"))
     return 0 if bad == 0 else 1
 
 
