@@ -55,11 +55,11 @@ for _p in (
 ):
     if _p not in sys.path:
         sys.path.insert(0, _p)
-
 from config.enums import (  # noqa: E402
     RELATION_KIND,
     RELATION_MATCH_METHOD,
 )
+from config.exitcodes import ExitCode  # noqa: E402
 from std_lib.common_lib.norm import norm_docno, norm_title_strict  # noqa: E402
 from std_lib.common_lib.relations import (  # noqa: E402
     EXTRACTOR_VERSION,
@@ -807,7 +807,7 @@ def main() -> int:
         with_attachments=a.with_attachments,
         report=a.report,
     )
-    return 0
+    return ExitCode.OK
 
 
 if __name__ == "__main__":

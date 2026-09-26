@@ -32,7 +32,7 @@ _THIS = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(_THIS)
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
-
+from config.exitcodes import ExitCode  # noqa: E402
 from std_lib.common_lib import governance_store as gs  # noqa: E402
 
 IPB_ORIGINALS = os.path.join(ROOT, "modules", "internal_policy_base", "data", "originals")
@@ -156,7 +156,7 @@ def main(argv=None) -> int:
             f"[artifacts] 其中 {len(multi)} 行含**多路径**（跨层硬链接/同内容副本）——"
             "这正是 path_keys 采用集合语义的原因"
         )
-    return 0
+    return ExitCode.OK
 
 
 def _flush(batch: list[dict], dry_run: bool) -> int:

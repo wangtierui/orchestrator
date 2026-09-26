@@ -47,6 +47,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 for _p in (ROOT, os.path.join(ROOT, "modules")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
+from config.exitcodes import ExitCode  # noqa: E402
 
 IPB = os.path.join(ROOT, "modules", "internal_policy_base")
 DATA = os.path.join(IPB, "data")
@@ -707,7 +708,7 @@ def main() -> int:
     for p in (ORIGINALS, PROCESSED):
         if not os.path.isdir(p):
             print(f"[naming] 缺少输入：{p}")
-            return 1
+            return ExitCode.FAIL
 
     registry = load_registry()
     print(f"[naming] 制度清单条目 {len(registry)}（兜底文号来源：{REGISTRY_XLSX}）")
@@ -740,13 +741,13 @@ def main() -> int:
 
     if not args.apply:
         print("[naming] dry-run 结束（未改动）。加 --apply 执行。")
-        return 0
+        return ExitCode.OK
 
     res = apply_plan(plan, backup=not args.no_backup, update_index=not args.no_index)
     print(f"[naming] 完成：{res['actions']}")
     if res["backup_dir"]:
         print(f"[naming] 备份与清单 → {res['backup_dir']}")
-    return 0
+    return ExitCode.OK
 
 
 if __name__ == "__main__":

@@ -21,6 +21,7 @@ _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 import paths  # noqa: E402
+from config.exitcodes import ExitCode  # noqa: E402
 
 csv.field_size_limit(sys.maxsize)  # body_text 超默认字段上限
 
@@ -39,7 +40,7 @@ def main() -> int:
     p = latest_supp_csv()
     if not os.path.exists(p):
         print("supp cleaned 缺失")
-        return 1
+        return ExitCode.FAIL
     rows = list(csv.DictReader(open(p, encoding="utf-8-sig", newline="")))
     from collections import Counter
 
@@ -98,7 +99,7 @@ def main() -> int:
     print(f"supp 审计报告 → {out}")
     print("  状态:", dict(ts))
     print("  来源类别:", dict(vs_kind))
-    return 0
+    return ExitCode.OK
 
 
 if __name__ == "__main__":

@@ -217,12 +217,10 @@ def _check_tools(manifest: dict) -> tuple[list[str], dict, list[str]]:
 
 # P2-5 待接的产生方（v2 §3.14.3 已登记 kind，但产生方尚未实装）——只披露、不阻断。
 # 接入后须同步删除本集合（gate 会提示）。
-_PENDING_PRODUCERS = {
-    # D6 `filter_clean_relevance.py` 的 BOUNDARY 边界案例裁决 —— **P2-5 剩余项**：
-    # 该脚本的 BOUNDARY 分层还需先确定"逐条裁决"的落点（当前为批量分层导出，
-    # 逐条登记需与 `--decisions` 过滤语义对齐），故本批未接（见第四批报告 N-27）。
-    "relevance_boundary",
-}
+# 待接的产生方（v2 §3.14.3 已登记 kind、产生方尚未实装者）。D6（`relevance_boundary`）已于
+# 第六批接入（filter_clean_relevance.py 的 `_wl_boundary`，**仅显式导出 BOUNDARY 时登记、
+# 单次上限 50 条防灌爆**）→ 本集合清空；J7 的双向闭合由此**全量成立**。
+_PENDING_PRODUCERS: frozenset[str] = frozenset()
 
 # ⚠️ 刻意**不用正则、不用任何反斜杠转义**：本仓的编辑/同步链路会把 new_str 里的反斜杠
 # 二次转义（实测：正则 `\(` 落盘为 `\\(` → 语义变成"字面反斜杠 + 分组"，全部漏匹配；

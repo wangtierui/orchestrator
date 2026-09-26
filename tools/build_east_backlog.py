@@ -25,6 +25,7 @@ import sys
 _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
+from config.exitcodes import ExitCode  # noqa: E402
 
 # R4：禁盘符字面量——EAST 素材目录（绝对路径）经 --dir 命令行传入
 MAX_XLSX_ROWS = 4000  # 单 sheet 行上限（防超大表爆内存）
@@ -317,7 +318,7 @@ def main() -> int:
     if not a.dry_run:
         json.dump([rec], open(a.out, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
         print(f"[east] backlog 已写: {a.out}")
-    return 0
+    return ExitCode.OK
 
 
 if __name__ == "__main__":

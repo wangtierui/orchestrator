@@ -65,6 +65,7 @@ DOCS_REPORTS = os.path.join(ROOT, "docs", "reports")
 # 需显式补仓根才能 import std_lib（阶段 0/1 治理库接线）。
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
+from config.exitcodes import ExitCode  # noqa: E402
 
 SOURCES = ["gov", "mof", "nfra", "pbc", "supp"]
 # 各源采集命令（全量语义）。supp 无网站增量 → 由 clean 刷新即可。
@@ -363,7 +364,6 @@ def _exit_semantic(rc: int) -> str:
     无法区分（v2 §2.4.2 的四义冲突）。语义化后 `run_log.note` 与汇总 JSON 都带名字。
     """
     try:
-        from config.exitcodes import ExitCode  # noqa: PLC0415
 
         return ExitCode(rc).name
     except Exception:  # noqa: BLE001  非受控值（子进程自定义码）→ 显式标注
@@ -1009,7 +1009,7 @@ def main(argv=None) -> int:
     if getattr(args, "list_steps", False):
         for i, s in enumerate(STEP_ORDER, 1):
             print(f"{i:>2}. {s}" + ("   （动态：每源一步）" if "{src}" in s else ""))
-        return 0
+        return ExitCode.OK
     if args.json_logs:
         try:
             from std_lib.common_lib.logging import setup_cli_logging  # noqa: PLC0415
@@ -1037,7 +1037,7 @@ def main(argv=None) -> int:
     if not lock.acquire():
         print("[refresh] 已有实例在运行（锁被占用）——本次退出以避免并发改写数据面")
         print(f"[refresh] 锁文件：{lock.lock_path}（陈旧锁可删除或等待 PID 退出）")
-        return 3
+        return ExitCode.ENV
 
     # ---- 运行台账（治理库为**旁路观测设施**：建库/登记失败一律降级为告警，不得阻断主链）----
     gs = None

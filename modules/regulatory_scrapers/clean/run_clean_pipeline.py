@@ -133,6 +133,25 @@ def main(argv=None) -> int:
     )
     print(json.dumps(summary, ensure_ascii=False, indent=2))
 
+    # v2 §2.3.2（第六批）：`dedup_key` 唯一性校验（此前仅有非空断言，跨记录去重键冲突
+    # 无人发现 → 下游按 dedup_key 建索引会静默覆盖）。**非阻断**：报告重复组与样例，
+    # 供排查；转严格（rc≠0）留待全链 clean 重跑后按实测规模定阈值（同 V1 的失败率分档）。
+    _jl0 = (summary.get("outputs") or {}).get("jsonl", "")
+    if _jl0 and os.path.exists(_jl0):
+        try:
+            from std_lib.scraper_std.schema_validation import (  # noqa: PLC0415
+                check_unique_dedup_keys as _cdk,
+            )
+            _recs = [json.loads(ln) for ln in open(_jl0, encoding="utf-8") if ln.strip()]
+            _ok, _dups = _cdk(_recs)
+            if _dups:
+                _d0 = _dups[0]
+                print(f"[{project}] dedup 唯一性：{len(_dups)} 组重复键"
+                      f"（样例 {_d0['dedup_key'][:40]} ×{_d0['count']}）"
+                      "——下游按 dedup_key 建索引会静默覆盖，请排查源数据")
+        except Exception as _e:  # noqa: BLE001  旁路：唯一性校验失败不得中断清洗
+            print(f"[{project}] WARN dedup 唯一性校验跳过（{type(_e).__name__}）")
+
     # N2：CSV 错行治理（统一执行）；JSONL 默认保留换行，显式开启才归一
     outs = summary.get("outputs") or {}
     csv_path = outs.get("csv", "")

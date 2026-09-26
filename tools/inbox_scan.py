@@ -23,9 +23,8 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 import paths  # noqa: E402
-from config.exitcodes import ExitCode  # noqa: E402  (R3：退出码语义化)
+from config.exitcodes import ExitCode  # noqa: E402
 
 INBOX = paths.INBOX_DIR
 # ⚠️ 落点修正（2026-09-26，P2-3b 执行中发现 N-26）：方案 §3.12.4 写 `data/inbox/_registry.yaml`，

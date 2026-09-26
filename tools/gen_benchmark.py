@@ -23,6 +23,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 import paths  # noqa: E402
+from config.exitcodes import ExitCode  # noqa: E402
 
 _TODAY = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -152,11 +153,11 @@ def gather() -> dict:
 
 def _read_count(p: str, key: str) -> int:
     if not os.path.exists(p):
-        return 0
+        return ExitCode.OK
     try:
         x = json.load(open(p, encoding="utf-8"))
     except Exception:  # noqa: BLE001
-        return 0
+        return ExitCode.OK
     if isinstance(x, dict):
         if isinstance(x.get(key), int):
             return x[key]
@@ -267,7 +268,7 @@ def main() -> int:
         f"bridge={g['classifier']['bridge_rows']} state={g['state_records']} "
         f"merged={g['internal']['merged_records']}"
     )
-    return 0
+    return ExitCode.OK
 
 
 if __name__ == "__main__":

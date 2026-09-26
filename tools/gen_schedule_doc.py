@@ -19,9 +19,8 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 import paths  # noqa: E402
-from config.exitcodes import ExitCode  # noqa: E402  (R3：退出码语义化)
+from config.exitcodes import ExitCode  # noqa: E402
 
 SCHEDULE_YAML = os.path.join(paths.CONFIG_DIR, "schedule.yaml")
 MANUAL = os.path.join(paths.ROOT, "reports", "运行手册_编排与定时_20260912.md")

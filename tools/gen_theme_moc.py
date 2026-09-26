@@ -23,6 +23,7 @@ _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 for _p in (_ROOT, os.path.join(_ROOT, "modules"), os.path.join(_ROOT, "interfaces")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
+from config.exitcodes import ExitCode  # noqa: E402
 
 EXT_PUB = os.path.join(
     _ROOT, "modules", "regulatory_scrapers", "published", "external_records.jsonl"
@@ -155,7 +156,7 @@ def main() -> int:
     for th in sorted(by_theme.keys()):
         nm = names.get(th) or tnames.get(th, th) or th
         print(f"  {th}_{nm}: ext {len(by_theme[th]['ext'])} / int {len(by_theme[th]['int'])}")
-    return 0
+    return ExitCode.OK
 
 
 if __name__ == "__main__":

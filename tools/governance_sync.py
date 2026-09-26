@@ -46,7 +46,7 @@ _THIS = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(_THIS)
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
-
+from config.exitcodes import ExitCode  # noqa: E402
 from std_lib.common_lib import governance_store as gs  # noqa: E402
 
 # 归一化 SSOT（gate_no_duplicate_libs：业务仓禁止本地 def 归一化）
@@ -335,7 +335,7 @@ def main(argv=None) -> int:
 
     if not gs.enabled() and args.require_db:
         LOG.info("[sync] 治理库不存在（先 `python cli.py governance init`）")
-        return 2
+        return ExitCode.DATA
     gs.init_db()
 
     payload, notes = collect()
@@ -354,7 +354,7 @@ def main(argv=None) -> int:
 
     if not gs.enabled():
         LOG.info("[sync] 治理库不可用，跳过比对断言")
-        return 2
+        return ExitCode.DATA
     result = gs.verify_projection(**payload)
     bad = _print_result(result)
     if args.export:

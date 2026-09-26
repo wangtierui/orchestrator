@@ -24,9 +24,8 @@ import sys
 import xml.sax.saxutils as sx
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 import paths  # noqa: E402
-from config.exitcodes import ExitCode  # noqa: E402  (R3：退出码语义化)
+from config.exitcodes import ExitCode  # noqa: E402
 
 PREFIX = "REG_ORCH_"
 SCHTASKS = "schtasks"

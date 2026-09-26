@@ -29,6 +29,8 @@ import json
 import os
 import sys
 
+from config.exitcodes import ExitCode  # noqa: E402  (经 cli.py 引导后导入；本模块非独立入口)
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CDATA = os.path.join(ROOT, "modules", "regulatory_classifier", "data")
 PUBLISH = os.path.join(ROOT, "modules", "regulatory_scrapers", "published")
@@ -127,7 +129,7 @@ def _norm_year(v) -> int:
         y = int(str(v)[:4])
         return y if 1900 < y < 2100 else 0
     except (ValueError, TypeError):
-        return 0
+        return ExitCode.OK
 
 
 def _n(x) -> str:
@@ -1258,7 +1260,7 @@ def main(argv=None) -> int:
     print(f"[deliveries] 交付 {len(manifest)} 项 → {args.out}")
     for m in manifest:
         print(f"  {m['item']:9s} {m['lines']:5d} 行  {m['title']}")
-    return 0
+    return ExitCode.OK
 
 
 if __name__ == "__main__":

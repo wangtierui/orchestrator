@@ -106,8 +106,9 @@ def test_all_worklist_kinds_wired_or_pending():
     wired = set(detail["worklist"]["wired"])
     pending = set(detail["worklist"]["pending"])
     assert wired | pending == set(WORKLIST_KIND), (wired, pending)
-    # P2-5 后仅剩 D6 一项待接（记录在案，见报告 N-27）
-    assert pending == {"relevance_boundary"}
+    # 第六批（D6 接入后）：所有 kind 均有产生方 → pending 清空、wired 全量闭合
+    assert pending == set(), pending
+    assert wired == set(WORKLIST_KIND), (wired, set(WORKLIST_KIND))
 
 
 # ---- P2-3b 投放区 ----

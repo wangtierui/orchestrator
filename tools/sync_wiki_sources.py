@@ -32,6 +32,7 @@ for _p in (
 ):
     if _p not in sys.path:
         sys.path.insert(0, _p)
+from config.exitcodes import ExitCode  # noqa: E402
 
 DEFAULT_OUT = os.path.join(_ROOT, "reports", "_wiki_sources")
 MANIFEST_NAME = ".wiki_sync_manifest.json"
@@ -232,7 +233,7 @@ def main() -> int:
         f"[wiki-sync] 新增 {added} / 更新 {changed} / 清理 {pruned} / 累计 {len(manifest)}"
         + ("［dry-run］" if args.dry_run else f" → {args.out}")
     )
-    return 0
+    return ExitCode.OK
 
 
 if __name__ == "__main__":

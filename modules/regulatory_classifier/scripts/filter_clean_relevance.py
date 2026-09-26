@@ -38,6 +38,48 @@ from collections import Counter
 _HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(_HERE)))   # 仓库根
 
+# P2-5（D6，v2 §3.14.3）：单次最多登记 BOUNDARY 待办数 —— 防数千条 BOUNDARY 淹没 worklist
+# （超出改记一条汇总待办，含总数）。处置入口 = `cli.py worklist resolve`。
+_MAX_BOUNDARY_WL = 50
+
+
+def _wl_boundary(items: list[dict]) -> None:
+    """BOUNDARY 边界案例登记待办（**仅当显式导出 BOUNDARY 时**调用）。
+
+    原状（D6）：BOUNDARY 只进分层统计与候选清单，**无处置入口**。现登记进 worklist。
+    本脚本经 `python -m modules…` 从仓根运行，`std_lib` 可导入（同 D1/D2 产生方惯例）；
+    登记失败一律降级（旁路设施纪律：不得中断相关性筛选）。
+    """
+    try:
+        from std_lib.common_lib import governance_store as _gs  # noqa: PLC0415
+        n = 0
+        for it in items[: _MAX_BOUNDARY_WL]:
+            key = str(it.get("document_number") or it.get("title") or "")[:80]
+            if not key:
+                continue
+            _gs.worklist_add(
+                "relevance_boundary", key, stage="2.7", artifact_key="relevance:boundary",
+                payload={"title": it.get("title", ""),
+                         "document_number": it.get("document_number", ""),
+                         "source": it.get("source", ""), "confidence": it.get("confidence"),
+                         "hits": [it.get("hit_a"), it.get("hit_b"), it.get("hit_c"),
+                                  it.get("hit_x")],
+                         "snippet": (it.get("snippet") or "")[:200]},
+                suggestion="裁决：金融/保险相关 → INCLUDE 推进；确属无关 → EXCLUDE；"
+                           "边界模糊 → 人工留痕后 dismiss")
+            n += 1
+        if len(items) > _MAX_BOUNDARY_WL:
+            _gs.worklist_add(
+                "relevance_boundary", f"summary:{len(items)}", stage="2.7",
+                artifact_key="relevance:boundary",
+                payload={"total": len(items), "registered": n,
+                         "note": "BOUNDARY 超过单次登记上限，仅记汇总；抽样细节见候选清单"},
+                suggestion="分批处理或收紧 INCLUDE 词表；`cli.py worklist export` 导出台账")
+        if n:
+            print(f"[relevance] 待办：{n} 条 BOUNDARY 已登记 worklist（cli.py worklist resolve）")
+    except Exception:  # noqa: BLE001  旁路设施：登记失败不得中断筛选
+        pass
+
 
 def load_scanner():
     """载入 recall_audit/scanner.py 的**判定器段**（复用关键词库与分层规则，不触发扫描）。
@@ -150,6 +192,7 @@ def main(argv=None) -> int:
     out_path = os.path.join(out_dir, f"{args.source}_relevance_{stamp}.jsonl")
     t0 = time.time()
     n = 0
+    boundary_items: list[dict] = []
     with open(csv_path, encoding="utf-8-sig", newline="") as f, \
             open(out_path + ".tmp", "w", encoding="utf-8") as fo:
         for row in csv.DictReader(f):
@@ -165,6 +208,13 @@ def main(argv=None) -> int:
                 title, meta, body, title_only=args.title_only)
             cnt["total"] += 1
             layer[decision] += 1
+            if decision == "BOUNDARY" and "BOUNDARY" in want:
+                boundary_items.append({"title": title,
+                                       "document_number": row.get("document_number", ""),
+                                       "source": row.get("source", ""),
+                                       "source_url": row.get("source_url", ""),
+                                       "confidence": confc, "hit_a": a_kws, "hit_b": b_kws,
+                                       "hit_c": c_kws, "hit_x": x_kws, "snippet": snip})
             conf_cnt[f"{decision}/{confc}"] += 1
             y = (row.get("publish_date", "") or "")[:4]
             if y.isdigit():
@@ -186,6 +236,8 @@ def main(argv=None) -> int:
                     "snippet": snip,
                 }, ensure_ascii=False) + "\n")
     os.replace(out_path + ".tmp", out_path)
+    if boundary_items:
+        _wl_boundary(boundary_items)
 
     el = time.time() - t0
     print(f"\n[耗时] {el:.1f}s（{cnt['total']} 条，{cnt['total'] / max(el, 0.1):.0f} 条/秒）")

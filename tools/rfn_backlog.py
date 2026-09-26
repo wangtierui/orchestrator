@@ -52,6 +52,7 @@ for _p in (
 ):
     if _p not in sys.path:
         sys.path.insert(0, _p)
+from config.exitcodes import ExitCode  # noqa: E402
 
 CLS_DATA = os.path.join(ROOT, "modules", "regulatory_classifier", "data")
 CLEANED = os.path.join(ROOT, "modules", "regulatory_scrapers", "data", "cleaned")
@@ -444,11 +445,11 @@ def main() -> int:
 
     if a.sync_tl:
         sync_timeliness(dry_run=not a.apply)
-        return 0
+        return ExitCode.OK
 
     if not os.path.exists(REL_INDEX):
         print(f"[backlog] 关系事实源缺失：{REL_INDEX}（先运行 `cli.py relations gen`）")
-        return 1
+        return ExitCode.FAIL
     bl = build_backlog()
     out = write_outputs(bl)
     print(
@@ -465,10 +466,10 @@ def main() -> int:
         )
     if not a.apply:
         print("[backlog] dry-run 结束（未写归属表）。加 --apply 执行。")
-        return 0
+        return ExitCode.OK
     if not (a.theme_mode == "suggested" or a.theme):
         print("[backlog] --apply 需配合 --theme-mode suggested 或 --theme Tx")
-        return 1
+        return ExitCode.FAIL
     res = apply_backlog(bl, theme_mode=a.theme_mode, fixed_theme=a.theme)
     print(
         f"[backlog] 登记完成：registered {res['registered']} / reused {res['reused']} / "
@@ -479,7 +480,7 @@ def main() -> int:
         # 补登后必须继承已知时效状态（否则新行 pending 会与 SSOT 冲突 → 门禁 FAIL）
         sync_timeliness()
     print("[backlog] 后续：`cli.py relations gen` 升级强关联；`cli.py classify --all` 重算底座")
-    return 0
+    return ExitCode.OK
 
 
 if __name__ == "__main__":

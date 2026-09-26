@@ -25,8 +25,8 @@ import sys
 
 _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, _ROOT)
-
 import paths  # noqa: E402  路径唯一事实源（P2-3a：语料本体落点统一）
+from config.exitcodes import ExitCode  # noqa: E402
 
 # v2 §3.12（决策 D-9 / P2-3a，2026-09-26）：语料归集本体统一到**仓根 `data/corpus/<domain>/`**。
 #   改造前落 `modules/regulatory_scrapers/data/corpus/`——归属不当：该层同时服务 classifier 的
@@ -124,13 +124,13 @@ def _resync_manifest(domain: str, *, dry_run: bool = False) -> int:
     mp = os.path.join(MANIFEST_DIR, f"{domain}.manifest.json")
     if not os.path.exists(mp):
         print(f"[ingest] 清单不存在：{mp}")
-        return 1
+        return ExitCode.FAIL
     with open(mp, encoding="utf-8") as fh:
         man = json.load(fh)
     body = os.path.join(CORPUS_DIR, domain)
     if not os.path.isdir(body):
         print(f"[ingest] 本体不存在：{body}")
-        return 1
+        return ExitCode.FAIL
 
     old_rels = {r.get("rel", "") for r in man.get("files") or []}
     files, nbytes = [], 0
@@ -176,13 +176,13 @@ def _resync_manifest(domain: str, *, dry_run: bool = False) -> int:
         + ("［dry-run］" if dry_run else "")
     )
     if dry_run:
-        return 0
+        return ExitCode.OK
     tmp = mp + ".tmp"
     with open(tmp, "w", encoding="utf-8") as fh:
         json.dump(man, fh, ensure_ascii=False, indent=1)
     os.replace(tmp, mp)
     _update_index(man.get("domain") or domain, man)
-    return 0
+    return ExitCode.OK
 
 
 def _rebuild_index() -> int:
@@ -233,7 +233,7 @@ def _rebuild_index() -> int:
         json.dump(idx, fh, ensure_ascii=False, indent=1)
     os.replace(tmp, idx_path)
     print(f"[ingest] 索引重建：{len(domains)} 域 / {idx['total_files']} 文件 → {idx_path}")
-    return 0
+    return ExitCode.OK
 
 
 def _backfill_hash(domain: str) -> int:
@@ -245,7 +245,7 @@ def _backfill_hash(domain: str) -> int:
     mp = os.path.join(MANIFEST_DIR, f"{domain}.manifest.json")
     if not os.path.exists(mp):
         print(f"[ingest] 清单不存在：{mp}（先执行一次归集）")
-        return 1
+        return ExitCode.FAIL
     with open(mp, encoding="utf-8") as fh:
         man = json.load(fh)
     dst_root = os.path.join(CORPUS_DIR, domain)
@@ -278,7 +278,7 @@ def _backfill_hash(domain: str) -> int:
         f"[ingest] {domain}: 回填 sha256 {filled} 条"
         f"（原有 {already} / 本体缺失 {len(missing)}）→ {mp}"
     )
-    return 0
+    return ExitCode.OK
 
 
 def main() -> int:
@@ -332,13 +332,13 @@ def main() -> int:
     if args.resync_manifest:
         if not args.domain:
             print("[ingest] --resync-manifest 需 --domain <域标识>")
-            return 1
+            return ExitCode.FAIL
         return _resync_manifest(args.domain, dry_run=args.dry_run)
 
     if args.backfill_hash:
         if not args.domain:
             print("[ingest] --backfill-hash 需 --domain <域标识>")
-            return 1
+            return ExitCode.FAIL
         return _backfill_hash(args.domain)
 
     if not args.src or not args.domain:
@@ -346,11 +346,11 @@ def main() -> int:
             "[ingest] 归集模式需 --src <源目录> 与 --domain <域标识>"
             "（就地维护用 --reindex / --backfill-hash --domain <域标识>）"
         )
-        return 1
+        return ExitCode.FAIL
     src = os.path.abspath(args.src)
     if not os.path.isdir(src):
         print(f"[ingest] 源目录不存在: {src}")
-        return 1
+        return ExitCode.FAIL
     dst_root = os.path.join(CORPUS_DIR, args.domain)
     os.makedirs(dst_root, exist_ok=True)
 
@@ -419,7 +419,7 @@ def main() -> int:
         f"（复制 {copied} / 已存在(已校验) {skipped} / 已存在(未校验) {skipped_unverified}）"
         + ("［dry-run］" if args.dry_run else f" → {dst_root}")
     )
-    return 0
+    return ExitCode.OK
 
 
 if __name__ == "__main__":
