@@ -92,6 +92,19 @@ class RFNAPI:
 
         return get_index()
 
+    def registry_title_key(self, title: str) -> str:
+        """归属表**标题匹配键**（唯一源 = `rfn.norm_title` 兼容导出；N-48，2026-09-27）。
+
+        ⚠️ 命名刻意避开 `norm_title`（该符号按 `gate_no_duplicate_libs` 须**单点实现于
+        共享库**，接口层只转发不得再定义同名）；口径亦**刻意区别**于
+        `std_lib.common_lib.norm.norm_title*`（本键保留其余标点、不转小写——见 `rfn` 包
+        `_norm_title` 的 `norm-specialization` 注释）。凡与归属表标题比对（rfn 投影、
+        主体解析）**必须**经本入口取同口径，否则索引漂移。
+        """
+        from rfn import norm_title as _nt  # noqa: PLC0415
+
+        return _nt(title or "")
+
     def registry_paths(self) -> dict:
         """归属表相关**事实源文件路径**（消费方勿再自行拼兄弟仓路径）。
 
@@ -160,6 +173,10 @@ def theme_map() -> dict:
 
 def get_index():
     return get_rfn_api().get_index()
+
+
+def registry_title_key(title: str) -> str:
+    return get_rfn_api().registry_title_key(title)
 
 
 def registry_paths() -> dict:

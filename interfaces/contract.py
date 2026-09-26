@@ -206,6 +206,11 @@ RELATION_FIELDS: tuple[str, ...] = (
     "confidence",  # 按 matched_by 的置信度（0-1）
     "source_offset",
     "source_snippet",  # 溯源：正文偏移 + 出处片段
+    # N-49（2026-09-27）条款级定位（**增强轨**：两侧均"唯一命中才填"，不进
+    # `relation_id` 判别字段 → 既有 id 与下游依赖保持稳定）：
+    "src_article_located",  # 源侧条款号（`source_offset` 在条款区间反查；未定位为空）
+    "dst_article",  # 目标侧条款号（snippet『第 M 条』+ 目标条款表唯一命中；未定位为空）
+    "article_placement",  # ∈ ARTICLE_PLACEMENT：定位来源标记（审计/改进统计用）
     "generated_by",
     "generated_at",
 )

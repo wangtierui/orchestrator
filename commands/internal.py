@@ -152,6 +152,12 @@ def _index_main_internal(argv):
     )
     args = ap.parse_args(argv)
     src = args.source_dir or __import__("os").environ.get("INTERNAL_POLICY_ROOT", "")
+    if not src and args.only_unindexed:
+        # N-55（2026-09-27）：`--only-unindexed` 的语义即"补摄取**原件库**中未被索引引用
+        # 的正文"（`unindexed_originals()` 本就扫描该目录）→ 源目录无需外部传入。
+        # 原实现要求必填 `--source-dir`/`INTERNAL_POLICY_ROOT`，使 `triggers.yaml:internal_update`
+        # 第 2 步在无人值守下**必失败**（实测 rc=1，processed 长期停在 09-20）。
+        src = os.path.join(paths.MODULES_DIR, "internal_policy_base", "data", "originals")
     if not src:
         print("需提供 --source-dir 或设置 INTERNAL_POLICY_ROOT 环境变量")
         return ExitCode.FAIL

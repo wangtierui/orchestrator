@@ -102,6 +102,69 @@ def _load_rfn_bridge() -> tuple:
     return by_dk, by_url
 
 
+def _load_rfn_title_index() -> dict:
+    """N-48（2026-09-27）：归属表**标题兜底索引** `{norm_title: rfn}`（仅保留唯一命中）。
+
+    背景：`_load_rfn_bridge()` 的 by_dk/by_url 只覆盖"已登记且 clean 已锚定"的 ~943 份；
+    而 clauses 是**全量**（16k+ 文件），其中 200+ 份的标题在归属表内但桥表未锚（实测 nfra
+    未投影 1147 份中标题命中 170 / 文号命中 42；gov 命中 117/34）→ 补齐可提升 rfn 覆盖。
+
+    复用（不另建副本）：
+      · 属主索引 = `interfaces.rfn_api.get_index()`（`RFNIndex` 模块级单例）；
+      · 标题归一化 = `rfn.norm_title`（**包内兼容导出**）——其口径刻意区别于
+        `std_lib.common_lib.norm.norm_title*`（保标点/不 lower，见 rfn 包 `_norm_title`
+        的 `norm-specialization` 注释），此处**必须**同口径，否则与既有 RFN 索引漂移。
+    歧义安全：同一标题映射到多个 RFN → **弃用该标题**（不猜，宁缺勿错）。
+    """
+    by_title: dict = {}
+    dup: set = set()
+    try:
+        from interfaces.rfn_api import get_index as _get_index  # noqa: PLC0415
+        from interfaces.rfn_api import registry_title_key as _rfn_title  # noqa: PLC0415
+
+        for r in _get_index().records():
+            rfn = (r.get("监管文件编号") or "").strip()
+            nt = _rfn_title(r.get("文件名称") or "")
+            if not rfn or not nt:
+                continue
+            if nt in by_title and by_title[nt] != rfn:
+                dup.add(nt)
+            else:
+                by_title.setdefault(nt, rfn)
+    except Exception:  # noqa: BLE001  兜底通道失败不阻断构建（主通道 by_dk/by_url 仍在）
+        return {}
+    for k in dup:
+        by_title.pop(k, None)
+    return by_title
+
+
+def _make_rfn_title_lookup(by_title: dict):
+    """把标题索引包装成查询函数（归一化惰性导入一次；无索引 → 恒空串）。"""
+    if not by_title:
+        return lambda _t: ""
+    try:
+        from interfaces.rfn_api import registry_title_key as _nt  # noqa: PLC0415
+    except Exception:  # noqa: BLE001
+        return lambda _t: ""
+    return lambda t: by_title.get(_nt(t or ""), "")
+
+
+def _rfn_by_docno_fallback(docno: str) -> str:
+    """归属表**文号兜底**：`RFNIndex.by_docno()`（公共接口，归一化在包内完成），
+    唯一命中才返回（多义 → 空串，不猜）。"""
+    if not docno:
+        return ""
+    try:
+        from interfaces.rfn_api import get_index as _get_index  # noqa: PLC0415
+
+        rfns = {
+            (r.get("监管文件编号") or "").strip() for r in _get_index().by_docno(docno)
+        } - {""}
+        return next(iter(rfns)) if len(rfns) == 1 else ""
+    except Exception:  # noqa: BLE001
+        return ""
+
+
 def _rotate_clause_history(current_dates: dict[str, str], keep: int = 3) -> None:
     """clauses 单版化（2026-09-10）：CLAUSE_DIR 仅保留当前日期产物，旧日期 jsonl/md 移入
     data/clauses/history/ 并仅保留最近 keep 个日期版本。"""
@@ -208,6 +271,8 @@ def build_clause_index(rebuild: bool = False) -> dict:
     out = {}
     cur_dates: dict[str, str] = {}
     rfn_by_dk, rfn_by_url = _load_rfn_bridge()   # F-D10：条款行 rfn 投影（桥表批量预载）
+    # N-48（2026-09-27）：归属表兜底通道（标题唯一命中 + 文号唯一命中），补桥表未锚的存量
+    rfn_of_title = _make_rfn_title_lookup(_load_rfn_title_index())
     for src in _SOURCES:
         cp = ci.latest_jsonl_path(src)
         if not cp or not os.path.exists(cp):
@@ -246,9 +311,13 @@ def build_clause_index(rebuild: bool = False) -> dict:
                     "source_url": rec.get("source_url", ""),
                     "document_number": rec.get("document_number", ""),
                     "title": rec.get("title", ""),
-                    # F-D10（2026-09-13 SSOT 专项）：条款级维度——rfn 桥表投影 + 时效/日期直取
+                    # F-D10（2026-09-13 SSOT 专项）+ N-48（2026-09-27）：rfn **四通道**投影
+                    # —— 桥表 by_dk/by_url → 归属表标题/文号兜底（兜底仅唯一命中，不猜）；
+                    # 时效/日期直取。
                     "rfn": (rfn_by_dk.get(rec.get("dedup_key", ""))
-                            or rfn_by_url.get(rec.get("source_url", ""), "")),
+                            or rfn_by_url.get(rec.get("source_url", ""), "")
+                            or rfn_of_title(rec.get("title", ""))
+                            or _rfn_by_docno_fallback(rec.get("document_number", ""))),
                     "timeliness_status": rec.get("timeliness_status", ""),
                     "publish_date": rec.get("publish_date", ""),
                     "effective_date": rec.get("effective_date", ""),

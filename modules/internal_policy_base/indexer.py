@@ -202,27 +202,36 @@ def _sha_match(a: str, b: str) -> bool:
     try:
         if os.path.getsize(a) != os.path.getsize(b):
             return False
-        import hashlib as _hl  # noqa: PLC0415
-
-        def _h(p: str) -> str:
-            hh = _hl.sha256()
-            with open(p, "rb") as fh:
-                for c in iter(lambda: fh.read(1 << 20), b""):
-                    hh.update(c)
-            return hh.hexdigest()
-
-        return _h(a) == _h(b)
+        return _content_sha256(a) == _content_sha256(b)
     except OSError:
         return False
 
 
+def _content_sha256(path: str) -> str:
+    """文件内容 sha256（与 `_ingest_state` 键、`scan_directory` 的 sha256 同口径）。"""
+    import hashlib as _hl  # noqa: PLC0415
+
+    hh = _hl.sha256()
+    with open(path, "rb") as fh:
+        for c in iter(lambda: fh.read(1 << 20), b""):
+            hh.update(c)
+    return hh.hexdigest()
+
+
 def unindexed_originals() -> list[str]:
-    """原件库中**未被索引引用**的制度正文类文件（补摄取清单，2026-09-13）。
+    """原件库中**未被索引引用且内容未处理过**的制度正文类文件（补摄取清单，2026-09-13）。
 
     用途：`internal index --source-dir <originals> --only-unindexed` —— 把后期补入 / 经
     `tools/normalize_internal_naming.py` 规范化归集进来的制度正文件纳入索引，而**不全库重扫**：
     全库重扫会因"文件名解构 IPN"与"内容权威 IPN"的口径差异把既有记录判为 changed，
     从而产生重复记录（实测风险）。
+
+    N-57（2026-09-27）：补**内容级**过滤——索引在"同内容多 sha"时只保留一条
+    （`stat.deduped_duplicates`），被去重的重复件其 `relative_path` 不在索引中，原判定
+    视其为"未索引"→ 条件 `unindexed_originals` **恒真**（每次链跑都全量重跑该触发项，
+    实测 17 份重复件使 `internal_update` 永不休止）。现以 `_ingest_state`
+    （键 = 内容 sha256，`ingest` 的幂等游标）为第二判据：内容已处理过即不算未索引。
+    仅对"不在索引路径集"的少量候选算 sha（避免全库重算）。
     """
     ref = set()
     if os.path.exists(_INDEX_PATH):
@@ -234,6 +243,7 @@ def unindexed_originals() -> list[str]:
             rel = (r.get("relative_path") or "").replace("/", os.sep)
             if rel:
                 ref.add(os.path.normcase(os.path.abspath(os.path.join(_ORIGINALS, rel))))
+    handled = {k for k in _load_state() if not k.startswith("_")}
     out = []
     for dp, _dn, fn in os.walk(_ORIGINALS):
         for f in sorted(fn):
@@ -242,8 +252,11 @@ def unindexed_originals() -> list[str]:
             if os.path.splitext(f)[1].lower() not in (".pdf", ".doc", ".docx"):
                 continue
             p = os.path.join(dp, f)
-            if os.path.normcase(os.path.abspath(p)) not in ref:
-                out.append(p)
+            if os.path.normcase(os.path.abspath(p)) in ref:
+                continue
+            if handled and _content_sha256(p) in handled:   # N-57：内容已处理（重复件）
+                continue
+            out.append(p)
     return sorted(out)
 
 

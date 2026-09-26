@@ -127,12 +127,22 @@ def _sha_file(p: str) -> str:
 
 
 def _processed_signature() -> str:
-    """processed 目录内容指纹（名称+大小+mtime），快速近似全文 sha（R5 断点语义）。"""
+    """processed 目录**文件**内容指纹（名称+大小+mtime），快速近似全文 sha（R5 断点语义）。
+
+    N-47 修正（2026-09-27）：**只统计文件，排除 `<ipn>_images/` 富内容目录**。
+    该目录是 `indexer._write_rich()` 的正规产物（docx/xlsx 内图形/公式 → `_rich.json` +
+    `_images/`），与制度主记录同目录是有意设计（`refine_identity_backfill` 重命名时
+    五类文件 + `_images` 一并迁移，保证一致性）。但它的增删/重写**不影响本视图的读取面**
+    （merged_view 只读 `_fulltext.json` 文本）——旧实现按 `os.listdir` 全量统计（目录
+    mtime 亦入哈希）→ 图片重写即改签名（gate_citations 已注"touch 即变、误报率高"）。
+    """
     import hashlib  # noqa: PLC0415
     h = hashlib.sha256()
     if os.path.isdir(_PROCESSED):
         for fn in sorted(os.listdir(_PROCESSED)):
             p = os.path.join(_PROCESSED, fn)
+            if not os.path.isfile(p):     # 目录（<ipn>_images/）不参与：非本视图读取面
+                continue
             try:
                 st = os.stat(p)
                 h.update(f"{fn}|{st.st_size}|{int(st.st_mtime)};".encode())

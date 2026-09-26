@@ -94,8 +94,12 @@ def plan_theme(theme: str):
         {"step": "detail", "inputs": (_ATTR, _THEME_CSV, final, _CLEAN_INDEX),  # R6 + F-C04
          "desc": "明细表",
          "args": ["--theme", theme, "--apply"]},
-        {"step": "clause_graph", "inputs": (matched, citerefs),
-         "desc": "clause_graph",
+        # N-49（2026-09-27）：inputs 增**脚本自身**因子——原仅 (matched, citerefs)，
+        # 抽取/复核逻辑变更后断点仍命中 → 产物陈旧而无人察觉（"代码变更不触发重建"盲区；
+        # 与 R6 对 clean_index 的处理同思路：把真实影响产物的输入纳入签名）。
+        {"step": "clause_graph",
+         "inputs": (matched, citerefs, os.path.join(_SCRIPTS, "build_clause_graph.py")),
+         "desc": "clause_graph（含脚本版本因子）",
          "args": ["--theme", theme]},
     ]
 

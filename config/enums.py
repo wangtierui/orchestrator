@@ -195,6 +195,17 @@ RELATION_TARGET_CLASS: frozenset[str] = frozenset(
         "external",  # 语料外文件（法律/行政法规等，客观未采集）
     }
 )
+# 条款定位来源标记（N-49，2026-09-27）："" = 未定位；组合值按 `+` 连接（受控顺序）
+ARTICLE_PLACEMENT_SRC_OFFSET = "src_offset"  # 源侧：字符偏移在条款区间反查（精确）
+ARTICLE_PLACEMENT_SNIPPET = "snippet"  # 目标侧：snippet 抽『第M条』+ 目标条款表唯一命中
+ARTICLE_PLACEMENT: frozenset[str] = frozenset(
+    {
+        "",
+        ARTICLE_PLACEMENT_SRC_OFFSET,
+        ARTICLE_PLACEMENT_SNIPPET,
+        f"{ARTICLE_PLACEMENT_SRC_OFFSET}+{ARTICLE_PLACEMENT_SNIPPET}",
+    }
+)
 # 关系目标实体解析方式（**扩展** REF_MATCH_METHOD：关系抽取需处理"精确/包含/未解析"）
 RELATION_MATCH_METHOD: frozenset[str] = frozenset(
     {
@@ -433,6 +444,7 @@ def assert_enum_bindings() -> None:
     assert len(BRIDGE_RELATION) == 3, BRIDGE_RELATION
     # 关系抽取（R-F01）：三类关系共用一套受控值；闭包 + 交叉一致性
     assert len(RELATION_KIND) == 2 and len(RELATION_DOC_KIND) == 2
+    assert len(ARTICLE_PLACEMENT) == 4, ARTICLE_PLACEMENT  # N-49 条款定位来源标记闭包
     assert len(BASIS_TYPE) == 2 and len(REPEAL_ACTION) == 5 and len(REPEAL_SCOPE) == 3
     assert len(RELATION_MATCH_METHOD) == 5, RELATION_MATCH_METHOD
     assert len(RELATION_TARGET_CLASS) == 5, RELATION_TARGET_CLASS

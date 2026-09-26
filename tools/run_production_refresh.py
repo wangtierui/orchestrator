@@ -480,6 +480,84 @@ def _run(step: str, argv, cwd=ROOT, timeout: int | None = None) -> dict:
     return rec
 
 
+def _run_conditional(step: str, tid: str) -> dict:
+    """链内**条件步骤**（N-53 修复，2026-09-27）：把 `config/triggers.yaml` 的触发项作为
+    `STEP_ORDER` 的一步执行——**决策与执行全部复用 `common_lib.triggers`**
+    （该文件是条件与步骤序列的唯一事实源），本函数只负责"入链"：接 `_skip_reason`
+    （选择/续跑/试跑）与 `_record_step`（run_step 台账）的既有语义。
+
+    动机：`--triggers` 是**可选标志**且 `config/schedule.yaml` 的 refresh 任务未传参
+    → 触发项声明完备却**从未执行**（`internal_update` 长期有未索引原件、processed 停在
+    09-20 即其证据）。按 v2「数据处理节点归入全流程链路」，此处在链内**按判据**执行：
+    条件不满足 → SKIP（原因入台账），满足 → 跑该触发项的全部 steps。
+    """
+    global _FROM_HIT
+    t0 = time.time()
+    rec = {
+        "step": step,
+        "cmd": f"triggers:{tid}",
+        "rc": -1,
+        "elapsed_s": 0,
+        "tail": "",
+        "exit_code": "",
+        "stderr_tail": "",
+        "stderr_tail_len": 0,
+        "stdout_len": 0,
+        "skipped": False,
+        "note": "",
+    }
+    skip_reason = _skip_reason(step)
+    if skip_reason:
+        rec.update({
+            "rc": 0,
+            "exit_code": "SKIP",
+            "skipped": True,
+            "note": skip_reason,
+            "elapsed_s": round(time.time() - t0, 1),
+        })
+        _record_step(rec)
+        print(f"\n[step:{step}] SKIP（{skip_reason}）", flush=True)
+        return rec
+    print(f"\n[step:{step}] triggers:{tid}", flush=True)
+    try:
+        from std_lib.common_lib import triggers as trg  # noqa: PLC0415
+
+        res = trg.run_trigger(tid, {"argv": list(sys.argv)})
+    except Exception as e:  # noqa: BLE001  触发链异常不拖垮主链（但须显式记录）
+        res = {"status": "failed", "steps": [], "note": f"{type(e).__name__}: {e}"}
+    status = res.get("status", "")
+    if status == "skipped":
+        rec.update({
+            "rc": 0,
+            "exit_code": "SKIP",
+            "skipped": True,
+            "note": f"条件未满足：{res.get('note', '')}",
+        })
+        print(f"    → SKIP（{res.get('note', '')}）", flush=True)
+    elif status == "ran":
+        rec.update({"rc": 0, "exit_code": "OK"})
+        tails = [str(s.get("tail") or "") for s in (res.get("steps") or []) if s.get("tail")]
+        rec["tail"] = "\n".join("\n".join(t.splitlines()[-2:]) for t in tails)[-800:]
+        rec["stdout_len"] = len(rec["tail"])
+        print(f"    → rc=0（{len(res.get('steps') or [])} 步）", flush=True)
+    else:  # failed / unknown
+        bad = next((s for s in (res.get("steps") or []) if s.get("rc") != 0), {})
+        rc = int(bad.get("rc") or 1)
+        tail = str(bad.get("tail") or res.get("note") or "")
+        rec.update({
+            "rc": rc,
+            "exit_code": _exit_semantic(rc),
+            "tail": tail[-800:],
+            "stderr_tail": tail[-400:],
+            "stderr_tail_len": len(tail),
+            "note": f"触发项 {tid} 失败（on_fail={res.get('on_fail', '')}）",
+        })
+        print(f"    → rc={rc} 失败（{res.get('note', '')}）", flush=True)
+    rec["elapsed_s"] = round(time.time() - t0, 1)
+    _record_step(rec)
+    return rec
+
+
 # --------------------------------------------------------------------------- #
 # 步骤选择 / 续跑 / 试跑（v2 §3.13.3，P2-6）
 # --------------------------------------------------------------------------- #
@@ -491,6 +569,10 @@ STEP_ORDER: tuple[str, ...] = (
     "collect:{src}",
     "supp:ingest_batch",
     "clean:{src}",
+    # N-53（2026-09-27）：触发项**入链**为条件步骤（决策复用 common_lib.triggers；
+    #   config/triggers.yaml 仍是条件唯一事实源）。插入位置按**数据依赖**而非其
+    #   stage 编号（旧口径，与现行链序不一致）：verify 产出台账 → 在 consolidate 之前。
+    "timeliness:verify",
     "timeliness:consolidate",
     "apply:{src}",
     "classify:all",
@@ -498,12 +580,20 @@ STEP_ORDER: tuple[str, ...] = (
     "reconcile",
     "governance:sync",
     "recall",
+    # inbox_drop / internal_update 产出 index/align/processed → 必须在 internal:merged 之前。
+    "inbox:drop",
+    "internal:update",
     "internal:merged",
     "reports:build",
     "reports:theme",
+    # N-52（2026-09-27）：条款对照素材（drafter/data/draft_clause/）此前**无任何调度**
+    #   （STEP_ORDER 与 triggers.yaml 皆无）→ 自 09-08 起滞后。依赖 merged_view，故在其后。
+    "draft:clause",
     "base:publish",
     "analysis:gen",
     "watch:baseline",
+    # wiki_sync 依赖 published 清单（publish_manifest）→ 在 base:publish 之后、gates 之前。
+    "wiki:sync",
     "gates",
 )
 # ⚠️ 上表为**执行顺序**（取自本文件 `_run(...)` 调用点出现次序，2026-09-26 实测）。
@@ -725,6 +815,11 @@ def _run_chain(args) -> int:
     for src in SOURCES:
         _wm(f"clauses:{src}", rc=_rc_of(report, f"clean:{src}"), paths=[_clauses_jsonl(src)])
 
+    # ---- 阶段 1.9：时效核验（← triggers.yaml:timeliness_verify，条件步骤）----
+    # N-53：原由 `cli.py run --only 6.9` 驱动，而 `--only` 只认**步骤名**（实测 6.9
+    # 使全部步骤 SKIP = 空跑）。入链后由 `days_since: 7` 条件自守（核验后 7 天内跳过）。
+    report.append(_run_conditional("timeliness:verify", "timeliness_verify"))
+
     # ---- 阶段 2：时效回写（consolidate → apply 五源）----
     led = None
     r1 = _run(
@@ -845,6 +940,14 @@ def _run_chain(args) -> int:
         )
     )
 
+    # ---- 阶段 4.0/4.1：内部制度增量摄取（← triggers.yaml，条件步骤；N-53）----
+    # 顺序按数据依赖：投放区投递（inbox_drop）→ 原件库增量摄取（internal_update：
+    #   normalize/index/align/reocr）→ 两者都写 index/align/processed，必须在 merged 之前。
+    # 原状态：二者声明的 stage（7.4/7.5）为旧口径，且 `--triggers` 未传 → 从未执行
+    #   （证据：`unindexed_originals` 长期为真、processed 停在 09-20）。
+    report.append(_run_conditional("inbox:drop", "inbox_drop"))
+    report.append(_run_conditional("internal:update", "internal_update"))
+
     # ---- 阶段 4.2：internal merged（内部制度 × RFN 引用视图；F-O07 编排唯一化）----
     report.append(
         _run(
@@ -892,6 +995,14 @@ def _run_chain(args) -> int:
     _rc_reports = _rc_theme if _rc_theme not in (None, 0) else (_rc_rep or 0)
     _wm("reports:classifier", rc=_rc_reports, paths=_classifier_reports())
 
+    # ---- 阶段 4.7：draft（条款对照素材；N-52 修复 2026-09-27）----
+    # 此前 `cli.py draft`（build_draft_clause_view.py → drafter/data/draft_clause/）
+    # **既不在 STEP_ORDER 也不在 triggers.yaml** → 自 2026-09-08 起滞后（真链外节点）。
+    # 依赖 merged_view（阶段 4.2）+ processed（阶段 4.1），故排在此处。
+    report.append(
+        _run("draft:clause", [PY, os.path.join(ROOT, "cli.py"), "draft"], timeout=3600)
+    )
+
     # ---- 阶段 5.5：base publish（双底座发布件 + SQLite/FTS5；Base Contract v1，F-K03）----
     # 发布层在 gates 前刷新：门禁校验的是底座产物，应用模块消费的是发布件（同一批快照）。
     report.append(
@@ -935,6 +1046,11 @@ def _run_chain(args) -> int:
             timeout=300,
         )
     )
+
+    # ---- 阶段 6.7：llm_wiki 源同步（← triggers.yaml:wiki_sync，条件步骤；N-53）----
+    # 依赖 published 清单（`publish_manifest_changed` 判据）；vault 不可达时跳过（on_fail:
+    #   skip_and_warn）。原由 `cli.py run --only 21.5` 驱动 → 阶段号不匹配步骤名，空跑。
+    report.append(_run_conditional("wiki:sync", "wiki_sync"))
 
     # ---- 阶段 6：gates（**链尾**，P3-5）----
     # 交付门禁应在**全部产物生成之后**运行：① 才覆盖本轮 6.8 的 `analysis:manifest`；

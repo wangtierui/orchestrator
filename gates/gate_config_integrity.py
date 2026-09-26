@@ -637,17 +637,25 @@ def _quoted_after(text: str, idx: int, quotes=_QUOTES) -> tuple[str, int]:
 
 
 def _run_step_literals(text: str) -> list[str]:
-    """提取 `_run("<step>"` / `_run(f"<step>"` 的字面量（过滤注释里的示例形如 `<step>`）。"""
+    """提取步骤调用点的字面量（过滤注释里的示例形如 `<step>`）。
+
+    覆盖两种调用形态（N-53，2026-09-27）：
+      · `_run("<step>", ...)`              —— 常规步骤；
+      · `_run_conditional("<step>", ...)`  —— **条件步骤**（触发项入链，决策复用
+        `common_lib.triggers`）。二者都必须登记进 `STEP_ORDER`，故此处同扫。
+    """
     out: list[str] = []
-    start = 0
-    while True:
-        i = text.find("_run(", start)
-        if i < 0:
-            return out
-        cand, j = _quoted_after(text, i + len("_run("))
-        if cand and all(c in _STEP_CHARS for c in cand):
-            out.append(cand)
-        start = (j if j > i else i + len("_run(")) + 1
+    for marker in ("_run(", "_run_conditional("):
+        start = 0
+        while True:
+            i = text.find(marker, start)
+            if i < 0:
+                break
+            cand, j = _quoted_after(text, i + len(marker))
+            if cand and all(c in _STEP_CHARS for c in cand):
+                out.append(cand)
+            start = (j if j > i else i + len(marker)) + 1
+    return out
 
 
 def _tuple_of_quotes(text: str, marker: str) -> list[str]:

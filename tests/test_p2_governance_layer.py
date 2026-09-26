@@ -182,10 +182,11 @@ def test_run_step_order_matches_call_sites():
     spec = importlib.util.spec_from_file_location("_rpr_test", fp)
     rpr = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(rpr)
-    # 18（原 17）：N-46（2026-09-27）新增 `reports:theme` —— `build_theme_report.py`
-    # 原从未接入编排（T0–T10 主题报告 ×11 滞后 19 天，且无水位声明可发现）。
+    # 23（18 → +5）：N-53/N-52（2026-09-27）链外节点入链 ——
+    #   `timeliness:verify` / `inbox:drop` / `internal:update` / `wiki:sync`（触发项入链为
+    #   条件步骤，决策复用 common_lib.triggers）+ `draft:clause`（条款对照素材，原无任何调度）。
     # 步骤数变化须在此显式确认（防清单漂移）。
-    assert len(rpr.STEP_ORDER) == 18
+    assert len(rpr.STEP_ORDER) == 23
     # 每个步骤名必须能在本文件中找到**引号字面量**（`"gates"` / `f"clean:{src}"` ⇒ `"clean:{src}"`）
     text = open(fp, encoding="utf-8").read()
     for step in rpr.STEP_ORDER:

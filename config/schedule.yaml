@@ -28,13 +28,17 @@ jobs:
   - id: verify
     kind: cron
     when: "0 7 * * 1"
-    argv: ["cli.py", "run", "--only", "6.9"]
+    # N-51（2026-09-27）：原 `--only 6.9` 用**阶段号**，而 `--only` 只认**步骤名**
+    # （实测 6.9 令全部步骤 SKIP = 空跑 5.7s）。改为步骤名；该步已入主链为条件步骤，
+    # 此处保留为**独立周入口**（条件 days_since≥7 自守，重复调用无害）。
+    argv: ["cli.py", "run", "--only", "timeliness:verify"]
     on_miss: skip
     desc: "效力核验批次（有 Token 时；断点续跑，配额耗尽自动停）"
   - id: publish_wiki
     kind: cron
     when: "0 8 * * 1"
-    argv: ["cli.py", "run", "--only", "21.5"]
+    # N-51：同上（原 `--only 21.5` → 步骤名）；wiki_sync 已入主链为条件步骤。
+    argv: ["cli.py", "run", "--only", "wiki:sync"]
     on_miss: skip
     desc: "发布件刷新 + llm_wiki 源同步（SHA256 增量；条件触发 wiki_sync，见 triggers.yaml）"
   - id: monthly_check

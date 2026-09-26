@@ -37,6 +37,10 @@ DATA_DIR = os.path.join(BASE_DIR, "data")
 _ORCH_ROOT = os.path.dirname(os.path.dirname(BASE_DIR))
 if _ORCH_ROOT not in sys.path:
     sys.path.insert(0, _ORCH_ROOT)
+from std_lib.common_lib.clause_locator import (  # noqa: E402  N-49 条款复核（共享实现）
+    load_regulatory_index,
+    norm_article_no,
+)
 from std_lib.common_lib.relations import (  # noqa: E402
     ARTICLE_CHAIN,
     ARTICLE_CHAIN_CAPTURE,
@@ -170,6 +174,8 @@ def main():
     matched = json.load(open(os.path.join(DATA_DIR, f"_t{n}_matched.json"), encoding="utf-8"))
     citerefs = json.load(open(os.path.join(DATA_DIR, f"_t{n}_citerefs.json"), encoding="utf-8"))
     idx = load_global_index()
+    # N-49（2026-09-27）：目标条款表（复核正则抽出的目标条款号是否真存在；进程内单例）
+    clause_idx = load_regulatory_index()
 
     meta = {r["监管文件编号"]: r for r in base}   # 2026-08-31 重构：键=RFN（无 seq）
     records, edges = [], []
@@ -204,9 +210,15 @@ def main():
                        "target_title": tti, "ctx": ctx}
                 art_refs.append(rec)
                 if ok and th != "UP":
+                    # N-49（2026-09-27）目标条款**查表复核**（三态；见 `_verify_dst_art`）
+                    _ver = _verify_dst_art(trfn, art, clause_idx)
                     edges.append({"src_rfn": rfn, "src_title": title,
                                   "dst_rfn": trfn, "dst_title": tti, "dst_theme": th,
-                                  "kind": "article", "art": art, "para": para, "item": item})
+                                  "kind": "article", "art": art, "para": para, "item": item,
+                                  "art_verified": _ver})
+                    stat["art_verified" if _ver else "art_unverified"] += 1
+                    if _ver is None:
+                        stat["art_no_table"] += 1
                 stat["art_total"] += 1
                 stat["art_resolved" if ok else "art_unresolved"] += 1
                 if para: stat["with_para"] += 1
@@ -250,6 +262,22 @@ def main():
         json.dump(out, f, ensure_ascii=False, indent=1)
     os.replace(tmp, p)
     print(f"✅ 已写盘 -> {p}")
+
+
+def _verify_dst_art(rfn: str, art: str, clause_idx: dict):
+    """目标条款**查表复核**（N-49，2026-09-27）：`art` 来自纯正则（`《X》…第N条`），
+    而标题解析含别名/包含匹配（可能错配）；仅当目标文件条款表**真含**该条号才可信。
+
+    返回三态：True=表中确有此条；False=表存在但无此条（可疑，报告可降权）；
+    None=目标文件无条款表或未登记 RFN（无从判定，**不等于错**）。
+    """
+    tab = (clause_idx.get("by_rfn") or {}).get(rfn or "")
+    if not tab:
+        return None
+    try:
+        return norm_article_no(art) in (tab.get("by_norm") or {})
+    except Exception:  # noqa: BLE001  复核失败不阻断图构建
+        return None
 
 
 def _cluster_of(rfn, n):

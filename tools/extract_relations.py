@@ -60,6 +60,13 @@ from config.enums import (  # noqa: E402
     RELATION_MATCH_METHOD,
 )
 from config.exitcodes import ExitCode  # noqa: E402
+from std_lib.common_lib.clause_locator import (  # noqa: E402  N-49 条款级定位（共享实现）
+    load_internal_spans,
+    load_regulatory_index,
+    load_regulatory_spans,
+    locate_dst_article,
+    locate_src_article,
+)
 from std_lib.common_lib.norm import norm_docno, norm_title_strict  # noqa: E402
 from std_lib.common_lib.relations import (  # noqa: E402
     EXTRACTOR_VERSION,
@@ -404,7 +411,7 @@ def _ensure_unique_ids(rows: list[dict]) -> int:
 def build_rows(
     doc: dict, pipeline: RelationPipeline, reg_ix: dict, int_ix: dict, *, generated_at: str
 ) -> tuple[list[dict], list[str], int]:
-    """单篇文档 → `(关系行列表, 警告, 被过滤的泛指词目标数)`（含跨域解析）。"""
+    """单篇文档 → `(关系行列表, 警告, 被过滤的泛指词目标数)`（含跨域解析 + 条款级定位）。"""
     text = doc["text"]
     res = pipeline.extractor.extract(text)
     src_kind = doc["doc_kind"]
@@ -416,6 +423,15 @@ def build_rows(
         src_key = src_key or doc.get("dedup_key", "")
     else:
         src_ref = doc.get("ref", "")
+    # N-49（2026-09-27）：条款级定位资源（进程内单例；首次调用读五源 clauses，此后零成本）
+    #   源侧：内部制度走 processed（IPN）；**监管文件走 clauses 条号表 + 本文正文**
+    #         （正文由 cleaned 提供，不重复读盘）；两类都只取"有条文结构"的文档。
+    #   目标侧：监管 clauses 双键空间（RFN 强实体 / cleaned dedup_key 弱键）。
+    _cindex = load_regulatory_index()
+    if src_kind == "internal":
+        _spans = load_internal_spans(src_ref)
+    else:
+        _spans = load_regulatory_spans(doc.get("dedup_key", ""), text, _cindex)
 
     rows: list[dict] = []
     # 同域优先、再跨域：监管侧只解析监管域；内部侧先内部域再监管域
@@ -429,6 +445,16 @@ def build_rows(
             i_ref, i_mb, _ = resolve_target(name, docno, int_ix, strict=True)
             if i_ref:
                 dst_ref, matched_by, dst_kind, dst_key = i_ref, i_mb, "internal", ""
+        # N-49（2026-09-27）：条款级定位（两侧均**唯一命中**才填）
+        _snip = getattr(item, "source_snippet", "")
+        _src_art = locate_src_article(getattr(item, "offset", -1), _spans) if _spans else ""
+        if dst_kind == "regulatory":
+            # 目标侧：优先强实体 RFN（dst_ref），退化 cleaned 弱键（dst_key）
+            _dst_art = (locate_dst_article(_snip, dst_ref, _cindex) if dst_ref else "") or (
+                locate_dst_article(_snip, dst_key, _cindex) if dst_key else ""
+            )
+        else:
+            _dst_art = ""
         rows.append(
             {
                 "relation_id": _relation_id(
@@ -475,6 +501,16 @@ def build_rows(
                 "confidence": CONFIDENCE.get(matched_by, 0.0),
                 "source_offset": item.offset,
                 "source_snippet": item.source_snippet[:400],
+                # N-49（2026-09-27）：条款级定位（**纯增强字段**——不进 `_relation_id` 判别
+                #   字段，故既有 id 与下游依赖保持稳定，可安全回填）：
+                #   · src_article_located：源侧条款（`source_offset` 在条款区间反查，精确）；
+                #   · dst_article：目标侧条款（snippet 抽『第 M 条』+ 目标条款表命中，唯一）；
+                #   · article_placement：定位来源标记（"" = 未定位，供审计与后续改进统计）。
+                "src_article_located": _src_art,
+                "dst_article": _dst_art,
+                "article_placement": (
+                    ("src_offset" if _src_art else "") + ("+snippet" if _dst_art else "")
+                ).lstrip("+"),
                 "generated_by": GENERATED_BY,
                 "generated_at": generated_at,
             }

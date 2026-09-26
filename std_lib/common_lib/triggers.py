@@ -78,28 +78,64 @@ def _c_days_since(days: int, _ctx: dict) -> tuple[bool, str]:
 
 
 def _c_unindexed_originals(want: bool, _ctx: dict) -> tuple[bool, str]:
-    """原件库是否存在未索引文件（v2 §3.5 修正 T3：不用"目录非空"，而用"未索引"）。
+    """原件库是否存在**未索引**文件（v2 §3.5 修正 T3：不用"目录非空"，而用"未索引"）。
 
-    实现取廉价且可判定的口径：原件库文件数 > 索引记录数 → 有未索引（差额）。
-    无法读取索引时返回 False + 原因（不猜）。
+    口径与**唯一实现** `internal_policy_base.indexer.unindexed_originals()` **一致**
+    （std_lib 不反向依赖 modules，故此处直接读同一数据面：索引 `relative_path` 集 +
+    `_ingest_state` 内容 sha 集），二者须同步演进。
+
+    N-57（2026-09-27）：原实现为"原件文件数 > 索引记录数"的**独立近似**——索引在同内容
+    多 sha 时只保留一条（`stat.deduped_duplicates`），被去重的重复件使差额**恒 > 0**
+    → 条件恒真（每次链跑都全量重跑该触发项，实测 17 份重复件所致）。现补内容级过滤，
+    仅对"不在索引路径集"的少量候选算 sha（避免全库重算）。
     """
-    originals = os.path.join(paths.MODULES_DIR, "internal_policy_base", "data", "originals")
-    idx = os.path.join(
-        paths.MODULES_DIR, "internal_policy_base", "data", "internal_policy_index.json"
-    )
+    base = os.path.join(paths.MODULES_DIR, "internal_policy_base", "data")
+    originals = os.path.join(base, "originals")
+    idx = os.path.join(base, "internal_policy_index.json")
+    state_p = os.path.join(base, "_ingest_state.json")
     if not os.path.isdir(originals):
         return False, f"原件库不存在（{os.path.relpath(originals, paths.ROOT)}）"
-    n_files = sum(1 for _ in os.scandir(originals) if _.is_file())
-    if not os.path.exists(idx):
-        return bool(want), f"原件 {n_files} 份；索引缺失（视为未索引 → 满足）"
-    try:
-        recs = json.load(open(idx, encoding="utf-8")).get("records", [])
-    except (OSError, ValueError) as e:
-        return False, f"索引不可读（{type(e).__name__}）→ 不判定"
-    gap = n_files - len(recs)
-    return (gap > 0) == bool(
-        want
-    ), f"原件 {n_files} 份 / 索引 {len(recs)} 条（未索引 {max(0, gap)}）"
+    ref: set = set()
+    if os.path.exists(idx):
+        try:
+            for r in json.load(open(idx, encoding="utf-8")).get("records", []):
+                rel = (r.get("relative_path") or "").replace("/", os.sep)
+                if rel:
+                    ref.add(os.path.normcase(os.path.abspath(os.path.join(originals, rel))))
+        except (OSError, ValueError) as e:
+            return False, f"索引不可读（{type(e).__name__}）→ 不判定"
+    handled: set = set()
+    if os.path.exists(state_p):
+        try:
+            handled = {
+                k for k in json.load(open(state_p, encoding="utf-8")) if not k.startswith("_")
+            }
+        except (OSError, ValueError):
+            handled = set()
+    import hashlib as _hl  # noqa: PLC0415
+
+    n = 0
+    for dp, _dn, fn in os.walk(originals):
+        for f in fn:
+            if f.startswith(("~$", ".")):
+                continue
+            if os.path.splitext(f)[1].lower() not in (".pdf", ".doc", ".docx"):
+                continue
+            p = os.path.join(dp, f)
+            if os.path.normcase(os.path.abspath(p)) in ref:
+                continue
+            if handled:
+                try:
+                    h = _hl.sha256()
+                    with open(p, "rb") as fh:
+                        for c in iter(lambda: fh.read(1 << 20), b""):
+                            h.update(c)
+                    if h.hexdigest() in handled:   # N-57：内容已处理（同内容重复件）
+                        continue
+                except OSError:
+                    pass
+            n += 1
+    return (n > 0) == bool(want), f"未索引原件 {n} 份（索引 {len(ref)} 路径 / 已处理 {len(handled)} sha）"
 
 
 def _c_explicit_arg(flag: str, ctx: dict) -> tuple[bool, str]:
@@ -228,12 +264,35 @@ def _expand_args(argv: list[str], ctx: dict) -> list[str]:
 
 
 def _argv_abs(argv: list[str]) -> list[str]:
-    """把 argv[0] 为仓内脚本（cli.py / 相对路径）的形态补成绝对路径（不经 shell）。"""
+    """规整 argv：仓内脚本/路径补成绝对路径；**选项参数与其值保持原样**（不经 shell）。
+
+    N-54（2026-09-27）修复：原实现对 `python <script> …` 形态把 `argv[1:]` **一律** `_abs`
+    → `--apply` 被改写成 `<ROOT>\\--apply`、`--only-unindexed` 同理 → 子进程报
+    `unrecognized arguments`（实测 `internal_update` 四步全失败）。判据改为：仅
+    「首个位置参数 / 含路径分隔符 / `.py` 结尾」视为路径；`-` 开头的选项与普通值原样。
+    """
     if not argv:
         return argv
-    if argv[0] in ("python", "python.exe", "py", "python3"):
-        return [sys.executable] + [_abs(a) for a in argv[1:]]
-    return [_abs(argv[0])] + list(argv[1:])
+    is_py = argv[0] in ("python", "python.exe", "py", "python3")
+    if is_py:
+        head = [sys.executable]
+        rest = argv[1:]
+    elif argv[0].endswith(".py"):
+        # `cli.py …` 形态：Windows 无 shebang 支持，直接 subprocess 会报
+        # `WinError 193（不是有效的 Win32 应用程序）`——须显式补解释器。
+        head = [sys.executable]
+        rest = list(argv)
+    else:
+        head, rest = [], list(argv)
+    out: list[str] = []
+    for i, a in enumerate(rest):
+        if a.startswith("-"):  # 选项（`--x` / `--x=y`）→ 原样
+            out.append(a)
+        elif i == 0 or os.sep in a or a.endswith(".py"):  # 脚本/路径 → 绝对化
+            out.append(_abs(a))
+        else:  # 子命令 / 普通值 → 原样
+            out.append(a)
+    return head + out
 
 
 def _abs(p: str) -> str:
