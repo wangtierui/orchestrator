@@ -51,15 +51,18 @@ def _cron_parts(when: str) -> tuple[str, str, str, str, str] | None:
     return (p[0], p[1], p[2], p[3], p[4]) if len(p) == 5 else None
 
 
+# N-44（P9，2026-09-26）：Windows 计划任务 XML 的 <DaysOfWeek> 节点要求**首字母大写**
+# （<Monday/> 而非 <MONDAY/>）——原为全大写，`schtasks` 报「task XML contains an unexpected
+# node」(10,71):MONDAY:。与下方 _MONTH_ELEM 的 `.capitalize()` 口径对齐。
 _WEEK_MAP = {
-    "0": "SUNDAY",
-    "1": "MONDAY",
-    "2": "TUESDAY",
-    "3": "WEDNESDAY",
-    "4": "THURSDAY",
-    "5": "FRIDAY",
-    "6": "SATURDAY",
-    "7": "SUNDAY",
+    "0": "Sunday",
+    "1": "Monday",
+    "2": "Tuesday",
+    "3": "Wednesday",
+    "4": "Thursday",
+    "5": "Friday",
+    "6": "Saturday",
+    "7": "Sunday",
 }
 _MONTH_NUM = {
     m: i + 1

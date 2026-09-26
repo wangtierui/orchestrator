@@ -449,7 +449,9 @@ def _load_module_from_path(name: str, path: str):
     import importlib.util  # noqa: PLC0415
 
     spec = importlib.util.spec_from_file_location(name, path)
+    assert spec is not None, f"spec_from_file_location 返回 None: {path}"
     mod = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None, f"spec 无 loader: {path}"
     spec.loader.exec_module(mod)
     return mod
 

@@ -80,7 +80,8 @@ def query_external(
     )
     if with_body:
         cols += ",body_text"
-    where, args = [], []
+    where: list[str] = []
+    args: list[object] = []   # SQL 参数可为 str/int（如 LIMIT ? 的 int）
     for k, v in (
         ("rfn", rfn),
         ("document_number", document_number),
@@ -126,7 +127,8 @@ def get_external(record_id: str) -> dict | None:
 
 
 def query_internal(*, theme: str = "", ipn: str = "", limit: int = 200) -> list[dict]:
-    where, args = [], []
+    where: list[str] = []
+    args: list[object] = []   # SQL 参数可为 str/int（如 LIMIT ? 的 int）
     if theme:
         where.append("primary_theme=?")
         args.append(theme)

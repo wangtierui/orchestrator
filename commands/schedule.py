@@ -57,7 +57,7 @@ def run(argv=None) -> int:
 
 if __name__ == "__main__":
     try:
-        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
     except Exception:  # noqa: BLE001
         pass
     raise SystemExit(main())

@@ -168,7 +168,7 @@ class GatesRunner:
 
 def main(argv=None) -> int:
     with contextlib.suppress(Exception):
-        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
     runner = GatesRunner()
     ok, results = runner.run()
     for r in results:

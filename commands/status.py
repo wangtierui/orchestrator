@@ -67,7 +67,8 @@ def _worklist_summary() -> dict:
         oldest = f"{oldest_row.get('item_id', '')} ({oldest_row.get('created_at', '')[:10]})"
     return {
         **st,
-        "aged": (st.get("oldest_open_days", 0) >= WORKLIST_AGED_DAYS),
+        # worklist_stats 返回裸 dict（历史遗留，值类型运行时确定：oldest_open_days 恒为 int）
+        "aged": (int(st.get("oldest_open_days", 0)) >= WORKLIST_AGED_DAYS),  # type: ignore[arg-type]
         "oldest": oldest,
         "aged_threshold_days": WORKLIST_AGED_DAYS,
     }

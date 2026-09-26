@@ -20,7 +20,7 @@ sys.path.insert(0, paths.ROOT)  # noqa: E402
 try:
     import config.enums as E
 except Exception as e:  # pragma: no cover
-    E = None
+    E = None  # type: ignore[assignment]
     _import_err = repr(e)
 
 _PYYAML_OK = False

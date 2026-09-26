@@ -152,7 +152,7 @@ def recent(limit: int = 10) -> list[dict]:
 
 
 if __name__ == "__main__":
-    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
     print("events:", sorted(NOTIFY_EVENTS))
     print("cfg:", _load_cfg())
     print("recent:", len(recent()))

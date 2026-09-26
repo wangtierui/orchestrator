@@ -37,7 +37,7 @@ import re
 import paths
 
 # 包/模块名 → 归属模块（用于判定"是否跨模块"）
-PKG_OWNER: dict[str, str] = {
+PKG_OWNER: dict[str, str | None] = {
     "regulatory_scrapers": "regulatory_scrapers",
     "regulatory_classifier": "regulatory_classifier",
     "internal_policy_base": "internal_policy_base",

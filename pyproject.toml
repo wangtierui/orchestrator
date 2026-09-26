@@ -109,6 +109,11 @@ indent-style = "space"
 python_version = "3.13"
 ignore_missing_imports = true
 exclude = ["data/", "cache/", "logs/", "backups/"]
+# v2 §3.7（P9，2026-09-26）收口：mypy 只检查**显式指定的 owned 层**，不跟进历史层
+# （scraper_std / modules）—— 它们是无注解的遗留语料处理代码，`follow_imports=normal`
+# 会把其 ~58 处错误（union-attr / var-annotated / operator …）带进基线、掩盖 owned 层的
+# 真实信号。`silent` 后基线只反映 owned 层（config/interfaces/gates/commands/std_lib/common_lib）。
+follow_imports = "silent"
 
 # ---- 覆盖率口径（v2 §3.7 G4/G5，P2-4）----
 # 口径说明：只计"本仓自有的治理/标准/接口/命令/工具层"（modules/** 为历史语料处理代码，

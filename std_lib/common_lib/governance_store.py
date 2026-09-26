@@ -1062,7 +1062,8 @@ def list_audit(limit: int = 200, *, target: str = "", target_key: str = "") -> l
     if not enabled():
         return []
     sql = "SELECT * FROM audit_log"
-    where, args = [], []
+    where: list[str] = []
+    args: list[object] = []   # SQL 参数可为 str/int（如 LIMIT ? 的 int）
     if target:
         where.append("target=?")
         args.append(target)
@@ -1499,5 +1500,5 @@ def snapshot() -> dict:
 
 
 if __name__ == "__main__":  # pragma: no cover - 手工冒烟
-    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
     print(json.dumps(snapshot(), ensure_ascii=False, indent=2))

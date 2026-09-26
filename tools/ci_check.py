@@ -55,9 +55,11 @@ def main(argv=None) -> int:
     ap.add_argument("--cov", action="store_true", help="追加覆盖率报告")
     a = ap.parse_args(argv)
 
-    # ---- 非阻断项（v2 §3.7 G4，P2-4）：先"可观察"，收紧后再转阻断 ----
-    # mypy：本仓历史注解不完整，全绿不现实；首期只报告错误数（不参与 PASS/FAIL）。
-    NONBLOCKING = {"mypy"}
+    # ---- 阻断项（v2 §3.7 G4，P2-4 → P9 转阻断）----
+    # mypy（P9，2026-09-26 转阻断）：收窄到 owned 层（`std_lib/common_lib` + config/interfaces/
+    # gates/commands），`pyproject.toml [tool.mypy] follow_imports="silent"` 已排除历史层
+    # scraper_std/modules；owned 层已收敛到 0 error → mypy 参与 PASS/FAIL。
+    NONBLOCKING: set[str] = set()
 
     plan = [
         ("ruff", [PY, "-m", "ruff", "check", ".", "--exclude", "reports/_tmp"], 300),
@@ -67,7 +69,7 @@ def main(argv=None) -> int:
                 PY,
                 "-m",
                 "mypy",
-                "std_lib",
+                "std_lib/common_lib",
                 "config",
                 "interfaces",
                 "gates",

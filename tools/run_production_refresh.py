@@ -206,12 +206,22 @@ GOV_ARTIFACTS: dict[str, dict] = {
 }
 
 
-def _expand(keys) -> list[str]:
-    """把 `{src}` 占位展开为五源（声明表用单行表达 5 条同类边）。"""
+def _expand(keys, src: str = "") -> list[str]:
+    """把 `{src}` 占位展开为**当前产物的源**（如 `clauses:supp` 的 inputs `cleaned:{src}`
+    → `cleaned:supp`）；`src` 缺省（无源产物）才回退五源展开。
+
+    N-45（P9，2026-09-26）：此前**一律五源展开**，使 `clauses:supp` 错误依赖全部 5 个
+    cleaned（`cleaned:gov/mof/nfra/pbc/supp`）——任一源单独重跑（如 clean:nfra）即让
+    `clauses:supp` 的水位依赖版本失配、误报 stale。正确语义是 clauses:{src} 只依赖
+    同源 cleaned:{src}。
+    """
     out: list[str] = []
     for k in keys or ():
         if "{src}" in k:
-            out.extend(k.replace("{src}", s) for s in SOURCES)
+            if src:
+                out.append(k.replace("{src}", src))
+            else:
+                out.extend(k.replace("{src}", s) for s in SOURCES)
         else:
             out.append(k)
     return out
@@ -319,7 +329,8 @@ def _wm(
             print(f"[watermark] 跳过 {artifact_key}：产物不存在或无版本")
             return
         inputs: dict[str, str] = {}
-        for dep in _expand(spec.get("inputs")):
+        _src = artifact_key.split(":")[-1] if ":" in artifact_key else ""
+        for dep in _expand(spec.get("inputs"), _src):
             w = gs.get_watermark(dep)
             if w and w.get("version"):
                 inputs[dep] = w["version"]

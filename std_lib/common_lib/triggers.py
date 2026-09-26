@@ -355,7 +355,7 @@ def decision_table_text(ctx: dict | None = None) -> str:
 
 if __name__ == "__main__":  # 库自检：打印决策表（不执行任何步骤）
     try:
-        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
     except Exception:  # noqa: BLE001
         pass
     print(decision_table_text({"argv": sys.argv[1:]}))

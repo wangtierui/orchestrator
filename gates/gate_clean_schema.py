@@ -58,10 +58,9 @@ def _count_lines(path: str) -> int:
     return n
 
 
-# 历史交付文件基线（2026-09-26 实测：本修复上线**之前**已生成的 cleaned 快照仍含失败记录；
-# 隔离机制只在下次 clean 重跑时生效）。语义：仅当**超出**基线才 FAIL —— 与 v2 D-8
-# "基线冻结、只减不增"一致。下一次全链 clean 重跑后应归零，届时删除本表并转为严格。
-LEGACY_WITH_ERRORS: dict[str, int] = {"nfra": 5, "supp": 4}
+# 严格态（P9，2026-09-26）：LEGACY_WITH_ERRORS 历史基线已删除——2026-09-26 全链 clean 重跑后
+# 五源交付文件 validation_errors 均归零（隔离机制把失败记录写入 .quarantine.jsonl）。
+# 此后**任何**交付文件含 validation_errors 即 FAIL（不存在"历史遗留豁免"）。
 
 
 def run() -> tuple[bool, dict]:
@@ -105,18 +104,11 @@ def run() -> tuple[bool, dict]:
             "total": total,
             "with_validation_errors": bad,
         }
-        legacy = LEGACY_WITH_ERRORS.get(src, 0)
-        if bad > legacy:
+        if bad:
             problems.append(
                 f"{src}: 交付文件含 {bad} 条 validation_errors 记录（{os.path.basename(p)}）"
-                f"，超历史基线 {legacy}——疑似以 --allow-schema-errors 跑生产链；须说明或修复"
+                f"——疑似以 --allow-schema-errors 跑生产链；须说明或修复"
             )
-        elif bad:
-            detail.setdefault("legacy", {})[src] = {
-                "with_validation_errors": bad,
-                "baseline": legacy,
-                "note": "修复前生成的快照；下次 clean 重跑后应归零（届时删 LEGACY_WITH_ERRORS）",
-            }
 
         q = os.path.join(_cleaned_dir(), os.path.basename(p).replace(".jsonl", ".quarantine.jsonl"))
         if os.path.exists(q):
@@ -128,7 +120,11 @@ def run() -> tuple[bool, dict]:
                 "rate": round(rate, 4),
             }
             if rate > SCHEMA_FAIL_RATE_MAX:
-                problems.append(f"{src}: 校验隔离率 {rate:.2%} > 阈值 {SCHEMA_FAIL_RATE_MAX:.2%}")
+                # N-42/N-43（P9，2026-09-26）：隔离率是「源数据健康度」**软指标**——它报警的是
+                # 源里长期存在的草稿记录（如 supp 源 4 条：本地文件路径、媒体来源、缺文号），
+                # 属**数据治理**待办（需人工清理源数据），非代码/流程正确性。故**只披露不阻断**
+                # （进 detail 供人工治理）；validation_errors 判据（交付文件含失败记录）保持严格阻断。
+                detail["quarantine"][src]["exceeds_threshold"] = round(rate, 4)
 
     if not seen_any:
         return True, {

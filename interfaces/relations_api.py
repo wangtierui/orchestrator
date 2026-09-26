@@ -192,5 +192,5 @@ def summary() -> dict:
 
 
 if __name__ == "__main__":  # 离线自检
-    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
     print(json.dumps(summary(), ensure_ascii=False, indent=2))

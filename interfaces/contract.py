@@ -238,7 +238,7 @@ def assert_alias_integrity() -> None:
     FIELD_SEMANTIC_EQUIV 别名重复错配（同名不同 en 时报）。"""
     for en, group in FIELD_SEMANTIC_EQUIV.items():
         assert group and group[0] == en, (en, group)
-    en_of_cn = {}
+    en_of_cn: dict[str, str] = {}
     for cn, meta in CN_FIELD_REGISTRY.items():
         en = meta.get("en") or ""
         assert en, f"CN_FIELD_REGISTRY 缺 en: {cn}"
