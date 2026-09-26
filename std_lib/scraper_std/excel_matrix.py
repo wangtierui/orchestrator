@@ -38,6 +38,7 @@ table_structured 的「分类后合理结构」（schema=excel_classified_v2）�
   · 说明表：subtype 识别（narrative 逐段 / key_value 键值 / indicator_doc 指标表）→
     items / paragraphs 结构化 + raw_rows 留存。
 """
+
 from __future__ import annotations
 
 import datetime
@@ -63,21 +64,68 @@ SCHEMA_VERSION = "excel_classified_v2"
 # ===========================================================================
 
 
+TITLE_PATTERNS = [
+    r"^附录[一二三四五六七八九十\d]",
+    r"^附件",
+    r"^附表",
+    r"统计表\s*$",
+    r"填制说明\s*$",
+    r"采集表\s*$",
+    r"目录\s*$",
+    r"说明\s*$",
+]
 
-TITLE_PATTERNS = [r"^附录[一二三四五六七八九十\d]", r"^附件", r"^附表", r"统计表\s*$",
-                  r"填制说明\s*$", r"采集表\s*$", r"目录\s*$", r"说明\s*$"]
+PREAMBLE_PATTERNS = [
+    r"^\d{4}\s*年.*月.*日",
+    r"^20[×xX]+\s*年",
+    r"^填报机构",
+    r"^填报单位",
+    r"^填报日期",
+    r"^单位[:：]",
+    r"^金额单位",
+    r"^制表单位",
+    r"^报告期",
+    r"^公司名称",
+    r"^机构名称",
+    r"^被审计单位",
+]
 
-PREAMBLE_PATTERNS = [r"^\d{4}\s*年.*月.*日", r"^20[×xX]+\s*年", r"^填报机构", r"^填报单位",
-                     r"^填报日期", r"^单位[:：]", r"^金额单位", r"^制表单位", r"^报告期",
-                     r"^公司名称", r"^机构名称", r"^被审计单位"]
-
-FOOTER_PATTERNS = [r"^制表[:：]", r"^审核[:：]", r"^说明[:：]", r"^注[:：]", r"^填表人",
-                   r"^负责人[:：]"]
+FOOTER_PATTERNS = [
+    r"^制表[:：]",
+    r"^审核[:：]",
+    r"^说明[:：]",
+    r"^注[:：]",
+    r"^填表人",
+    r"^负责人[:：]",
+]
 
 HEADER_HINT_WORDS = {
-    "序号", "代码", "编号", "名称", "地区", "区域", "项目", "指标", "主题域", "表名",
-    "数据项", "字段", "值", "单位", "合计", "总计", "类型", "状态", "日期", "时间",
-    "备注", "规则", "说明", "金额", "机构", "目录",
+    "序号",
+    "代码",
+    "编号",
+    "名称",
+    "地区",
+    "区域",
+    "项目",
+    "指标",
+    "主题域",
+    "表名",
+    "数据项",
+    "字段",
+    "值",
+    "单位",
+    "合计",
+    "总计",
+    "类型",
+    "状态",
+    "日期",
+    "时间",
+    "备注",
+    "规则",
+    "说明",
+    "金额",
+    "机构",
+    "目录",
 }
 
 _ANNOT_RE = re.compile(r"^[\d.．]*\s*(其中|注[:：]?|说明[:：]|备注[:：])")
@@ -86,8 +134,20 @@ _NUMCODE_RE = re.compile(r"^\d+([-－./]\d+)*$")
 
 _KEY_SAFE = re.compile(r"[^\w\u4e00-\u9fff]+")
 
-DOC_HINT_WORDS = {"说明", "描述", "释义", "定义", "备注", "解释",
-                  "填报", "要求", "规范", "示例", "内容", "格式"}
+DOC_HINT_WORDS = {
+    "说明",
+    "描述",
+    "释义",
+    "定义",
+    "备注",
+    "解释",
+    "填报",
+    "要求",
+    "规范",
+    "示例",
+    "内容",
+    "格式",
+}
 
 DIM_MAX_NUM_RATIO = 0.15
 
@@ -106,6 +166,7 @@ METRIC_COL_MIN_FILL_CAP = 20
 _IDENT_COL_RE = re.compile(r"序号|编号|代码|行次|行号")
 
 DOC_KEY_WORDS = ("项目名称", "数据格式", "字段", "名称", "项目", "指标")
+
 
 @dataclass
 class MergedRegion:
@@ -141,10 +202,14 @@ def _read_xlsx_bytes(data: bytes):
     out = []
     for ws in wb.worksheets:
         max_row, max_col = ws.max_row or 0, ws.max_column or 0
-        matrix = [[_cell_to_value(ws.cell(row=r, column=c).value)
-                   for c in range(1, max_col + 1)] for r in range(1, max_row + 1)]
-        merged = [MergedRegion(mc.min_row - 1, mc.min_col - 1, mc.max_row - 1, mc.max_col - 1)
-                  for mc in ws.merged_cells.ranges]
+        matrix = [
+            [_cell_to_value(ws.cell(row=r, column=c).value) for c in range(1, max_col + 1)]
+            for r in range(1, max_row + 1)
+        ]
+        merged = [
+            MergedRegion(mc.min_row - 1, mc.min_col - 1, mc.max_row - 1, mc.max_col - 1)
+            for mc in ws.merged_cells.ranges
+        ]
         out.append((ws.title, matrix, merged))
     wb.close()
     return out
@@ -155,10 +220,12 @@ def _read_xls_bytes(data: bytes):
     out = []
     for si in range(book.nsheets):
         sh = book.sheet_by_index(si)
-        matrix = [[_cell_to_value(sh.cell_value(r, c)) for c in range(sh.ncols)]
-                  for r in range(sh.nrows)]
-        merged = [MergedRegion(rlo, clo, rhi - 1, chi - 1)
-                  for (rlo, rhi, clo, chi) in sh.merged_cells]
+        matrix = [
+            [_cell_to_value(sh.cell_value(r, c)) for c in range(sh.ncols)] for r in range(sh.nrows)
+        ]
+        merged = [
+            MergedRegion(rlo, clo, rhi - 1, chi - 1) for (rlo, rhi, clo, chi) in sh.merged_cells
+        ]
         out.append((sh.name, matrix, merged))
     return out
 
@@ -201,7 +268,8 @@ def _is_preamble_row(row):
             return True
         # 单值长文本标题行（"附件11-1"/表名长标题等）：≥6 字且无字段关键词 → 前导行。
         if len(text_norm) >= 6 and not any(
-                w in text_norm for w in ("名称", "日期", "金额", "类型", "代码", "编号")):
+            w in text_norm for w in ("名称", "日期", "金额", "类型", "代码", "编号")
+        ):
             return True
     for p in PREAMBLE_PATTERNS + FOOTER_PATTERNS:
         if re.search(p, text_norm):
@@ -221,11 +289,13 @@ def _trim(matrix, r0, r1, c0, c1):
         r0 += 1
     while r1 > r0 and _row_is_empty(matrix[r1 - 1][c0:c1]):
         r1 -= 1
-    while c0 < c1 and all(_is_blank(matrix[r][c0]) if c0 < len(matrix[r]) else True
-                          for r in range(r0, r1)):
+    while c0 < c1 and all(
+        _is_blank(matrix[r][c0]) if c0 < len(matrix[r]) else True for r in range(r0, r1)
+    ):
         c0 += 1
-    while c1 > c0 and all(_is_blank(matrix[r][c1 - 1]) if c1 - 1 < len(matrix[r]) else True
-                          for r in range(r0, r1)):
+    while c1 > c0 and all(
+        _is_blank(matrix[r][c1 - 1]) if c1 - 1 < len(matrix[r]) else True for r in range(r0, r1)
+    ):
         c1 -= 1
     if r0 >= r1 or c0 >= c1:
         return [], r0, c0
@@ -261,10 +331,16 @@ def split_blocks(matrix, merged):
         if not sub:
             continue
         nr1, nc1 = nr0 + len(sub), nc0 + len(sub[0])
-        local_merged = [MergedRegion(max(m.r1, nr0) - nr0, max(m.c1, nc0) - nc0,
-                                     min(m.r2, nr1 - 1) - nr0, min(m.c2, nc1 - 1) - nc0)
-                        for m in merged
-                        if not (m.r2 < nr0 or m.r1 >= nr1 or m.c2 < nc0 or m.c1 >= nc1)]
+        local_merged = [
+            MergedRegion(
+                max(m.r1, nr0) - nr0,
+                max(m.c1, nc0) - nc0,
+                min(m.r2, nr1 - 1) - nr0,
+                min(m.c2, nc1 - 1) - nc0,
+            )
+            for m in merged
+            if not (m.r2 < nr0 or m.r1 >= nr1 or m.c2 < nc0 or m.c1 >= nc1)
+        ]
         out.append((sub, (nr0, nr1, nc0, nc1), local_merged))
     return out
 
@@ -274,8 +350,7 @@ def _header_score(row):
     if not cells:
         return 0.0
     n = len(cells)
-    hit = sum(1 for v in cells if isinstance(v, str)
-              and any(w in v for w in HEADER_HINT_WORDS))
+    hit = sum(1 for v in cells if isinstance(v, str) and any(w in v for w in HEADER_HINT_WORDS))
     text_ratio = sum(1 for v in cells if isinstance(v, str)) / n
     return 0.5 * text_ratio + 0.5 * (hit / n)
 
@@ -340,8 +415,11 @@ def detect_header(matrix, merged):
             # 单值标题样行（如 '附件11-1'/'压力测试明细表…'）不作表头起始（eff95012 实证：
             # 标题占 first 会把真表头区留在数据区 → 维度/指标错位）。
             vals = [v for v in matrix[r] if not _is_blank(v)]
-            if len(vals) <= 1 and _text_len(vals[0]) >= 6 and not any(
-                    w in str(vals[0]) for w in HEADER_HINT_WORDS):
+            if (
+                len(vals) <= 1
+                and _text_len(vals[0]) >= 6
+                and not any(w in str(vals[0]) for w in HEADER_HINT_WORDS)
+            ):
                 continue
             first = r
             break
@@ -349,14 +427,20 @@ def detect_header(matrix, merged):
         first = start
     last = first
     for i, r in enumerate(range(first + 1, max_scan), start=1):
-        if i > 3:   # 多级表头至多 4 行（含列号辅助行）
+        if i > 3:  # 多级表头至多 4 行（含列号辅助行）
             break
-        if r in merged_rows and not _is_single_title_row(matrix[r]) \
-                and not _looks_like_data_row(matrix[r]):
+        if (
+            r in merged_rows
+            and not _is_single_title_row(matrix[r])
+            and not _looks_like_data_row(matrix[r])
+        ):
             last = r
             continue
-        if scores[i] >= 0.25 and not _looks_like_data_row(matrix[r]) \
-                and not _is_single_title_row(matrix[r]):
+        if (
+            scores[i] >= 0.25
+            and not _looks_like_data_row(matrix[r])
+            and not _is_single_title_row(matrix[r])
+        ):
             last = r
         else:
             break
@@ -371,8 +455,10 @@ def detect_header(matrix, merged):
 
 
 def _fill_merged_header(matrix, merged, header):
-    h = [list(matrix[r][header.col_start:header.col_end])
-         for r in range(header.row_start, header.row_end)]
+    h = [
+        list(matrix[r][header.col_start : header.col_end])
+        for r in range(header.row_start, header.row_end)
+    ]
     for m in merged:
         if m.r2 < header.row_start or m.r1 >= header.row_end:
             continue
@@ -402,4 +488,27 @@ def _forward_fill_row(row):
     return out
 
 
-__all__ = ["MergedRegion", "Region", "_cell_to_value", "_fill_merged_header", "_find_header_start", "_forward_fill_row", "_header_score", "_is_blank", "_is_header_annotation_row", "_is_number", "_is_preamble_row", "_is_single_title_row", "_looks_like_data_row", "_norm_matrix", "_read_xls_bytes", "_read_xlsx_bytes", "_row_fill", "_row_is_empty", "_text_len", "_trim", "detect_header", "split_blocks"]
+__all__ = [
+    "MergedRegion",
+    "Region",
+    "_cell_to_value",
+    "_fill_merged_header",
+    "_find_header_start",
+    "_forward_fill_row",
+    "_header_score",
+    "_is_blank",
+    "_is_header_annotation_row",
+    "_is_number",
+    "_is_preamble_row",
+    "_is_single_title_row",
+    "_looks_like_data_row",
+    "_norm_matrix",
+    "_read_xls_bytes",
+    "_read_xlsx_bytes",
+    "_row_fill",
+    "_row_is_empty",
+    "_text_len",
+    "_trim",
+    "detect_header",
+    "split_blocks",
+]

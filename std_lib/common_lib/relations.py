@@ -47,6 +47,7 @@
     out["basis"]    # [{target_name, article, basis_type, ...}]
     out["repeal"]   # [{target_name, target_docno, action, scope, ...}]
 """
+
 from __future__ import annotations
 
 import json
@@ -95,15 +96,40 @@ class RelationConfig:
 
     # ---- 依据关系 ----
     basis_triggers: tuple[str, ...] = (
-        "根据", "依据", "依照", "按照", "遵照", "基于", "循", "参照",
+        "根据",
+        "依据",
+        "依照",
+        "按照",
+        "遵照",
+        "基于",
+        "循",
+        "参照",
     )
     basis_actions: tuple[str, ...] = (
-        "制定", "起草", "发布", "印发", "出台", "拟定", "编制",
-        "制订", "颁发", "下发", "修订",
+        "制定",
+        "起草",
+        "发布",
+        "印发",
+        "出台",
+        "拟定",
+        "编制",
+        "制订",
+        "颁发",
+        "下发",
+        "修订",
     )
     hierarchy_words: tuple[str, ...] = (
-        "法律", "法规", "规章", "规定", "条例", "办法", "意见",
-        "通知", "文件", "决定", "命令",
+        "法律",
+        "法规",
+        "规章",
+        "规定",
+        "条例",
+        "办法",
+        "意见",
+        "通知",
+        "文件",
+        "决定",
+        "命令",
     )
     # ---- 废止关系（**长词在前**，防"同时废止"被切为"废止"）----
     repeal_actions: tuple[tuple[str, str], ...] = (
@@ -130,18 +156,34 @@ class RelationConfig:
     )
     # ---- 排除上下文（命中窗口内含其一 → 不视为依据/废止关系）----
     exclude_contexts: tuple[str, ...] = (
-        "负责解释", "解释权", "授权解释", "委托解释",
-        "行政复议", "行政诉讼", "申请复议", "提起诉讼",
-        "法律适用", "参考资料",
+        "负责解释",
+        "解释权",
+        "授权解释",
+        "委托解释",
+        "行政复议",
+        "行政诉讼",
+        "申请复议",
+        "提起诉讼",
+        "法律适用",
+        "参考资料",
     )
     # ---- 否定/未生效语境（命中窗口内含其一 → 不视为废止关系；本项目新增）----
     negations: tuple[str, ...] = (
-        "拟废止", "建议废止", "征求意见", "草案", "待废止", "是否废止",
+        "拟废止",
+        "建议废止",
+        "征求意见",
+        "草案",
+        "待废止",
+        "是否废止",
     )
     # ---- 程序性依据 ----
     procedural_triggers: tuple[str, ...] = ("经", "报经")
     procedural_actions: tuple[str, ...] = (
-        "同意", "批准", "审核同意", "审议通过", "批复",
+        "同意",
+        "批准",
+        "审核同意",
+        "审议通过",
+        "批复",
     )
     # ---- 引用与句法 ----
     open_quote: str = "《"
@@ -278,8 +320,15 @@ QUOTE_TITLE_MIN, QUOTE_TITLE_MAX = 2, 40
 # `RelationConfig.basis_triggers` 默认值 = 本元组 + 扩展词（遵照/基于/循/参照）。
 BASIS_TRIGGER_CORE: tuple[str, ...] = ("根据", "依据", "依照", "按照")
 # 自指词（P2 自指条款：本办法第N条）
-SELF_REF_WORDS: tuple[str, ...] = ("本办法", "本规定", "本通知", "本指引", "本细则",
-                                   "本条例", "本规则")
+SELF_REF_WORDS: tuple[str, ...] = (
+    "本办法",
+    "本规定",
+    "本通知",
+    "本指引",
+    "本细则",
+    "本条例",
+    "本规则",
+)
 # 立法类名称结尾（明细表「立法依据」列筛选）
 LAW_SUFFIX_ALT = "法|条例|规定|决定|解释|细则"
 # 文号**核心形态**（不含机关代字约束）：`〔20xx〕N号 / [20xx]N号 / （20xx）N号 /
@@ -294,14 +343,56 @@ DOCNO_CORE_PATTERN = (
 # "监管文件文号"进入引用门禁；无机关词的裸文号（如〔2023〕687号）视为内部 OA 文号。
 # 新增监管机关时在此扩展（按最长优先匹配）。
 ORGAN_WORDS: tuple[str, ...] = (
-    "国家金融监督管理总局办公厅", "中国银行保险监督管理委员会办公厅", "中国保险监督管理委员会办公厅",
-    "国家金融监督管理总局", "中国银行保险监督管理委员会", "中国保险监督管理委员会", "银保监会办公厅",
-    "中国人民银行等八部门公告", "最高人民法院", "国务院办公厅", "人民银行", "银保监会", "保监会",
-    "银监发", "银监办发", "银监通", "银监办通", "银监复", "银监函",
-    "保监发", "保监厅发", "保监产险", "保监财会", "保监稽查", "保监消保", "保监厅函", "保监复", "保监函",
-    "银保监发", "银保监办发", "金办发", "金办便函", "金规", "银发", "国发", "国办发", "财金", "发改",
-    "银监会令", "保监会令", "银保监会令", "国务院令", "证监会", "外汇局", "网信办", "知识产权局",
-    "工信部", "市场监管总局", "中保协", "八部门公告",
+    "国家金融监督管理总局办公厅",
+    "中国银行保险监督管理委员会办公厅",
+    "中国保险监督管理委员会办公厅",
+    "国家金融监督管理总局",
+    "中国银行保险监督管理委员会",
+    "中国保险监督管理委员会",
+    "银保监会办公厅",
+    "中国人民银行等八部门公告",
+    "最高人民法院",
+    "国务院办公厅",
+    "人民银行",
+    "银保监会",
+    "保监会",
+    "银监发",
+    "银监办发",
+    "银监通",
+    "银监办通",
+    "银监复",
+    "银监函",
+    "保监发",
+    "保监厅发",
+    "保监产险",
+    "保监财会",
+    "保监稽查",
+    "保监消保",
+    "保监厅函",
+    "保监复",
+    "保监函",
+    "银保监发",
+    "银保监办发",
+    "金办发",
+    "金办便函",
+    "金规",
+    "银发",
+    "国发",
+    "国办发",
+    "财金",
+    "发改",
+    "银监会令",
+    "保监会令",
+    "银保监会令",
+    "国务院令",
+    "证监会",
+    "外汇局",
+    "网信办",
+    "知识产权局",
+    "工信部",
+    "市场监管总局",
+    "中保协",
+    "八部门公告",
 )
 
 
@@ -310,14 +401,12 @@ def quote_title_span(min_len: int = QUOTE_TITLE_MIN, max_len: int = QUOTE_TITLE_
     return rf"《[^《》]{{{min_len},{max_len}}}》"
 
 
-def quote_title_capture(min_len: int = QUOTE_TITLE_MIN,
-                        max_len: int = QUOTE_TITLE_MAX) -> str:
+def quote_title_capture(min_len: int = QUOTE_TITLE_MIN, max_len: int = QUOTE_TITLE_MAX) -> str:
     """书名号标题**捕获**形态，如 `《([^《》]{2,40})》`（第 1 组 = 标题）。"""
     return rf"《([^《》]{{{min_len},{max_len}}})》"
 
 
-def quote_title_re(min_len: int = QUOTE_TITLE_MIN,
-                   max_len: int = QUOTE_TITLE_MAX) -> re.Pattern:
+def quote_title_re(min_len: int = QUOTE_TITLE_MIN, max_len: int = QUOTE_TITLE_MAX) -> re.Pattern:
     """编译版书名号标题（`TITLE_PAT` 等旧实现同源）。"""
     return re.compile(quote_title_capture(min_len, max_len))
 
@@ -341,29 +430,57 @@ def docno_core_re() -> re.Pattern:
 # （`《条例》` 原文即泛指，属抽取噪声）。把它们计入"文件解析率"会**低估**真实覆盖度。
 # 故对每条关系的目标做性质分类，只在 `external`（语料外文件）上计算"未定位"。
 # ===========================================================================
-TARGET_ENTITY = "entity"      # 强实体：解析到 RFN / IPN（可 join 底座）
-TARGET_CORPUS = "corpus"      # 弱引用：命中 cleaned 全集（dedup_key），RFN 未登记
-TARGET_ORGAN = "organ"        # 机关名（程序性依据目标，**非文件**）
-TARGET_GENERIC = "generic"    # 纯类型泛指词（`《条例》`/`《办法》`），抽取噪声
+TARGET_ENTITY = "entity"  # 强实体：解析到 RFN / IPN（可 join 底座）
+TARGET_CORPUS = "corpus"  # 弱引用：命中 cleaned 全集（dedup_key），RFN 未登记
+TARGET_ORGAN = "organ"  # 机关名（程序性依据目标，**非文件**）
+TARGET_GENERIC = "generic"  # 纯类型泛指词（`《条例》`/`《办法》`），抽取噪声
 TARGET_EXTERNAL = "external"  # 语料外文件（法律/行政法规/司法解释等，客观未采集）
 
-TARGET_CLASSES: tuple[str, ...] = (TARGET_ENTITY, TARGET_CORPUS, TARGET_ORGAN,
-                                   TARGET_GENERIC, TARGET_EXTERNAL)
+TARGET_CLASSES: tuple[str, ...] = (
+    TARGET_ENTITY,
+    TARGET_CORPUS,
+    TARGET_ORGAN,
+    TARGET_GENERIC,
+    TARGET_EXTERNAL,
+)
 
 # 机关名后缀（判定"目标是否为机关而非文件"；须同时不命中制度类关键词，见 _is_organ_target）
 _ORGAN_TAIL_RE = re.compile(
     r"(?:国务院|人民政府|政府|委员会|管理委员会|银行业监督管理机构|保险监督管理机构|监督管理机构"
     r"|监管机构|总公司|分公司|公司|银行|总行|法院|检察院|院|署|部|厅|局|中心|协会|联合会"
-    r"|交易所|办公室|事业部)$")
+    r"|交易所|办公室|事业部)$"
+)
 # 制度类关键词（判定目标是否"文件"而非"机关"：命中即不判为机关）
 _DOC_KW_RE = re.compile(
     r"办法|规定|通知|条例|细则|指引|制度|方案|规程|准则|标准|意见|决定|公告|通告|规则|规范"
-    r"|批复|解释|协议|清单|手册|备忘录|要点|规划|计划|报告|文书|凭证|承诺书|确认书")
+    r"|批复|解释|协议|清单|手册|备忘录|要点|规划|计划|报告|文书|凭证|承诺书|确认书"
+)
 # 纯类型泛指词（书名号内**只有**类型词 → 不是具体文件）
-GENERIC_ONLY: frozenset[str] = frozenset({
-    "条例", "办法", "规定", "细则", "通知", "决定", "意见", "指引", "制度", "方案",
-    "规程", "准则", "标准", "法", "公告", "通告", "规则", "规范", "批复", "函", "命令",
-})
+GENERIC_ONLY: frozenset[str] = frozenset(
+    {
+        "条例",
+        "办法",
+        "规定",
+        "细则",
+        "通知",
+        "决定",
+        "意见",
+        "指引",
+        "制度",
+        "方案",
+        "规程",
+        "准则",
+        "标准",
+        "法",
+        "公告",
+        "通告",
+        "规则",
+        "规范",
+        "批复",
+        "函",
+        "命令",
+    }
+)
 
 
 def is_generic_target(name: str) -> bool:
@@ -382,8 +499,9 @@ def is_organ_target(name: str) -> bool:
     return False
 
 
-def classify_target(*, dst_ref: str = "", dst_key: str = "", name: str = "",
-                    basis_type: str = "") -> str:
+def classify_target(
+    *, dst_ref: str = "", dst_key: str = "", name: str = "", basis_type: str = ""
+) -> str:
     """关系目标的性质分类（见 TARGET_CLASSES）。
 
     判定顺序：强实体 → 弱引用 → 程序性依据（目标即机关）→ 机关名 → 泛指词 → 语料外文件。
@@ -402,7 +520,9 @@ def classify_target(*, dst_ref: str = "", dst_key: str = "", name: str = "",
 
 
 # 编译版常量（供三处旧实现直接 import，避免各自 compile 字面量）
-SELF_REF_RE = re.compile(rf"(?:{'|'.join(map(re.escape, SELF_REF_WORDS))})[^。；\n]{{0,6}}?第({ARTICLE_NUM})条")
+SELF_REF_RE = re.compile(
+    rf"(?:{'|'.join(map(re.escape, SELF_REF_WORDS))})[^。；\n]{{0,6}}?第({ARTICLE_NUM})条"
+)
 BARE_ARTICLE_RE = re.compile(rf"(?<![0-9{CN_NUM_CHARS}])第({ARTICLE_NUM})条")
 
 
@@ -498,8 +618,10 @@ class RelationExtractor:
         # 书名号列表：**分隔符可缺省**（真实公文中 `《A》《B》` 常紧邻，参照实现要求分隔符会漏抽）
         reflist = rf"{one}(?:\s*(?:{sep})?\s*{one})*"
         # 中间连接段：等? + 位阶词（可连写，如"法律法规"）+ 的+规定/要求/精神? + 逗号?
-        mid = (rf"\s*(?:等)?\s*(?:(?:有关)?(?:{hier})+)?\s*"
-               rf"(?:的\s*(?:相关|有关)?(?:规定|要求|精神|条款|内容|通知|办法|意见|细则))?\s*[，,]?\s*")
+        mid = (
+            rf"\s*(?:等)?\s*(?:(?:有关)?(?:{hier})+)?\s*"
+            rf"(?:的\s*(?:相关|有关)?(?:规定|要求|精神|条款|内容|通知|办法|意见|细则))?\s*[，,]?\s*"
+        )
 
         # ① 依据主模式：触发词 + 书名号列表 + 中间连接段 + 动作词
         self.basis_pattern = re.compile(
@@ -530,10 +652,8 @@ class RelationExtractor:
             rf"(?P<action>{ract})"
         )
         # ⑤ 废止列表：动作 + 书名号列表
-        self.repeal_list_pattern = re.compile(
-            rf"(?P<action>{ract})\s*(?P<refs>{reflist})"
-        )
-        _ = dn   # （保留占位说明：文号形态见 self.docno_re，本处不内联以降低正则复杂度）
+        self.repeal_list_pattern = re.compile(rf"(?P<action>{ract})\s*(?P<refs>{reflist})")
+        _ = dn  # （保留占位说明：文号形态见 self.docno_re，本处不内联以降低正则复杂度）
         # ⑥ 部分废止：《名》 第X条 动作
         self.partial_repeal_pattern = re.compile(
             rf"{cfg.open_quote}(?P<name>[^{cfg.close_quote}]+){cfg.close_quote}\s*(?:中|的)?\s*"
@@ -568,7 +688,7 @@ class RelationExtractor:
         res.warnings.extend(warns)
         res.filtered_generic = self._filtered_generic
         if self.attachment_hint.search(t):
-            res.warnings.append("检测到\"见附件\"提示，废止/依据清单可能位于附件中")
+            res.warnings.append('检测到"见附件"提示，废止/依据清单可能位于附件中')
         return res
 
     # ---- 依据 ----
@@ -586,10 +706,14 @@ class RelationExtractor:
                 if key in seen:
                     continue
                 seen.add(key)
-                out.append(BasisRelation(
-                    target_name=name.strip(), normalized_name=key[0],
-                    source_snippet=self._snippet(text, m.start()), offset=m.start(),
-                ))
+                out.append(
+                    BasisRelation(
+                        target_name=name.strip(),
+                        normalized_name=key[0],
+                        source_snippet=self._snippet(text, m.start()),
+                        offset=m.start(),
+                    )
+                )
 
         for m in self.basis_article_pattern.finditer(text):
             if self._excluded(text, m.start()):
@@ -606,10 +730,15 @@ class RelationExtractor:
                         break
                 continue
             seen.add(key)
-            out.append(BasisRelation(
-                target_name=name, normalized_name=key[0], article=art,
-                source_snippet=self._snippet(text, m.start()), offset=m.start(),
-            ))
+            out.append(
+                BasisRelation(
+                    target_name=name,
+                    normalized_name=key[0],
+                    article=art,
+                    source_snippet=self._snippet(text, m.start()),
+                    offset=m.start(),
+                )
+            )
 
         for m in self.procedural_pattern.finditer(text):
             if self._excluded(text, m.start()):
@@ -621,10 +750,15 @@ class RelationExtractor:
             if key in seen:
                 continue
             seen.add(key)
-            out.append(BasisRelation(
-                target_name=auth, normalized_name=key[0], basis_type=BASIS_TYPE_PROCEDURAL,
-                source_snippet=self._snippet(text, m.start()), offset=m.start(),
-            ))
+            out.append(
+                BasisRelation(
+                    target_name=auth,
+                    normalized_name=key[0],
+                    basis_type=BASIS_TYPE_PROCEDURAL,
+                    source_snippet=self._snippet(text, m.start()),
+                    offset=m.start(),
+                )
+            )
         return out
 
     # ---- 废止 ----
@@ -634,8 +768,16 @@ class RelationExtractor:
         seen: set[tuple[str, str]] = set()
         reason = self._reason(text)
 
-        def _add(name: str, action_cn: str, *, number: str = "", scope: str = REPEAL_ACTION_REPEAL,
-                 article: str = "", snippet: str, offset: int) -> None:
+        def _add(
+            name: str,
+            action_cn: str,
+            *,
+            number: str = "",
+            scope: str = REPEAL_ACTION_REPEAL,
+            article: str = "",
+            snippet: str,
+            offset: int,
+        ) -> None:
             action = dict(self._ract_pairs).get(action_cn, REPEAL_ACTION_REPEAL)
             if not name.strip() or self._skip_generic(name):
                 return
@@ -643,44 +785,74 @@ class RelationExtractor:
             if key in seen:
                 return
             seen.add(key)
-            out.append(RepealRelation(
-                target_name=name.strip(), normalized_name=key[0],
-                target_docno=(number or "").strip(), action=action, scope=scope,
-                article=article, reason=reason, source_snippet=snippet, offset=offset,
-            ))
+            out.append(
+                RepealRelation(
+                    target_name=name.strip(),
+                    normalized_name=key[0],
+                    target_docno=(number or "").strip(),
+                    action=action,
+                    scope=scope,
+                    article=article,
+                    reason=reason,
+                    source_snippet=snippet,
+                    offset=offset,
+                )
+            )
 
         # ① 单文件 + 动作
         for m in self.repeal_pattern.finditer(text):
             if self._excluded(text, m.start()) or self._negated(text, m.start()):
                 continue
             num = m.group("number") or ""
-            if not num:   # 《名》后紧跟动作但无括注 → 从邻域回填文号
+            if not num:  # 《名》后紧跟动作但无括注 → 从邻域回填文号
                 num = self._nearby_docno(text, m.start(), m.end())
-            _add(m.group("name"), m.group("action"), number=num, scope=REPEAL_SCOPE_WHOLE,
-                 snippet=self._snippet(text, m.start()), offset=m.start())
+            _add(
+                m.group("name"),
+                m.group("action"),
+                number=num,
+                scope=REPEAL_SCOPE_WHOLE,
+                snippet=self._snippet(text, m.start()),
+                offset=m.start(),
+            )
 
         # ② 动作 + 多文件列表
         for m in self.repeal_list_pattern.finditer(text):
             if self._excluded(text, m.start()) or self._negated(text, m.start()):
                 continue
             for name in self._quotes(m.group("refs")):
-                _add(name, m.group("action"), scope=REPEAL_SCOPE_WHOLE,
-                     snippet=self._snippet(text, m.start()), offset=m.start())
+                _add(
+                    name,
+                    m.group("action"),
+                    scope=REPEAL_SCOPE_WHOLE,
+                    snippet=self._snippet(text, m.start()),
+                    offset=m.start(),
+                )
 
         # ③ 部分废止
         for m in self.partial_repeal_pattern.finditer(text):
             if self._excluded(text, m.start()) or self._negated(text, m.start()):
                 continue
-            _add(m.group("name"), m.group("action"), scope=REPEAL_SCOPE_PARTIAL,
-                 article="第" + m.group("article") + "条",
-                 snippet=self._snippet(text, m.start()), offset=m.start())
+            _add(
+                m.group("name"),
+                m.group("action"),
+                scope=REPEAL_SCOPE_PARTIAL,
+                article="第" + m.group("article") + "条",
+                snippet=self._snippet(text, m.start()),
+                offset=m.start(),
+            )
 
         # ④ 专项废止列表（表头 + 编号条目）
         if self.repeal_list_header.search(text):
             items = self._parse_repeal_list(text)
             for it in items:
-                _add(it["name"], "废止", number=it["number"], scope=REPEAL_SCOPE_WHOLE,
-                     snippet=it["source"], offset=it["offset"])
+                _add(
+                    it["name"],
+                    "废止",
+                    number=it["number"],
+                    scope=REPEAL_SCOPE_WHOLE,
+                    snippet=it["source"],
+                    offset=it["offset"],
+                )
             if not items:
                 warns.append("检测到废止列表头，但未解析出条目，请检查格式")
         return out, warns
@@ -690,12 +862,18 @@ class RelationExtractor:
         if not head:
             return []
         out = []
-        for m in self.list_item_pattern.finditer(text[head.end():]):
+        for m in self.list_item_pattern.finditer(text[head.end() :]):
             name = m.group("name").strip()
             if not name:
                 continue
-            out.append({"name": name, "number": (m.group("number") or "").strip(),
-                        "source": m.group(0).strip(), "offset": head.end() + m.start()})
+            out.append(
+                {
+                    "name": name,
+                    "number": (m.group("number") or "").strip(),
+                    "source": m.group(0).strip(),
+                    "offset": head.end() + m.start(),
+                }
+            )
         return out
 
     # ---- 辅助 ----
@@ -707,27 +885,29 @@ class RelationExtractor:
         return ""
 
     def _nearby_docno(self, text: str, start: int, end: int, *, window: int = 60) -> str:
-        seg = text[max(0, start - window): min(len(text), end + window)]
+        seg = text[max(0, start - window) : min(len(text), end + window)]
         m = self.docno_re.search(seg)
         return re.sub(r"\s+", "", m.group(0)) if m else ""
 
     def _excluded(self, text: str, pos: int) -> bool:
         w = self.cfg.exclude_window
-        ctx = text[max(0, pos - w): pos + w]
+        ctx = text[max(0, pos - w) : pos + w]
         return any(k in ctx for k in self.cfg.exclude_contexts)
 
     def _negated(self, text: str, pos: int) -> bool:
         """否定/未生效语境（拟废止、征求意见、草案…）→ 不算废止关系。"""
         w = self.cfg.exclude_window
-        ctx = text[max(0, pos - w): pos + w]
+        ctx = text[max(0, pos - w) : pos + w]
         return any(k in ctx for k in self.cfg.negations)
 
     def _snippet(self, text: str, pos: int) -> str:
         h = self.cfg.snippet_window // 2
-        return text[max(0, pos - h): min(len(text), pos + h)].strip()
+        return text[max(0, pos - h) : min(len(text), pos + h)].strip()
 
     def _quotes(self, seg: str) -> list[str]:
-        return re.findall(rf"{self.cfg.open_quote}([^{self.cfg.close_quote}]+){self.cfg.close_quote}", seg or "")
+        return re.findall(
+            rf"{self.cfg.open_quote}([^{self.cfg.close_quote}]+){self.cfg.close_quote}", seg or ""
+        )
 
 
 # ===========================================================================
@@ -773,7 +953,7 @@ class DocumentMeta:
     """文件元信息（与项目实体键对齐：RFN=监管文件，IPN=内部制度）。"""
 
     doc_kind: str = "regulatory"
-    ref: str = ""              # RFN-xxx / IPN-xxx
+    ref: str = ""  # RFN-xxx / IPN-xxx
     name: str = ""
     doc_number: str = ""
     source: str = ""
@@ -788,8 +968,9 @@ class DocumentMeta:
 class RelationPipeline:
     """抽取管道：原文 → 抽取 → （可选）别名解析 → 统一 dict。"""
 
-    def __init__(self, config: RelationConfig | None = None,
-                 alias_resolver: AliasResolver | None = None):
+    def __init__(
+        self, config: RelationConfig | None = None, alias_resolver: AliasResolver | None = None
+    ):
         self.cfg = config or default_config()
         self.extractor = RelationExtractor(self.cfg)
         self.alias_resolver = alias_resolver
@@ -823,13 +1004,22 @@ def _self_check() -> None:
     # 枚举闭包
     assert BASIS_TYPE_SUBSTANTIVE in {"substantive"} and REPEAL_SCOPE_PARTIAL in {"partial"}
     assert RELATION_KIND == {"basis", "repeal"}
-    assert docno_signature("银保监发〔2019〕19号") == "201919", docno_signature("银保监发〔2019〕19号")
+    assert docno_signature("银保监发〔2019〕19号") == "201919", docno_signature(
+        "银保监发〔2019〕19号"
+    )
     print(f"[common_lib.relations] 自检通过（{EXTRACTOR_VERSION}）")
 
 
 if __name__ == "__main__":
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     _self_check()
-    print(json.dumps(RelationPipeline().run(
-        "根据《中华人民共和国预算法》，制定本规定。《政府采购信息公告管理办法》"
-        "（财库〔2010〕20号）予以废止。"), ensure_ascii=False, indent=2))
+    print(
+        json.dumps(
+            RelationPipeline().run(
+                "根据《中华人民共和国预算法》，制定本规定。《政府采购信息公告管理办法》"
+                "（财库〔2010〕20号）予以废止。"
+            ),
+            ensure_ascii=False,
+            indent=2,
+        )
+    )

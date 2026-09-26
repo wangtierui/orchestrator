@@ -39,6 +39,7 @@
   python tools/dedupe_original_storage.py --apply                # 三类全做
   python tools/dedupe_original_storage.py --apply --no-hardlink  # 仅去冗余 + 标记
 """
+
 from __future__ import annotations
 
 import argparse
@@ -103,8 +104,11 @@ def build_plan() -> dict:
     """只读对账：产出 去冗余/硬链接/标记 三类动作清单。"""
     index = json.load(open(INDEX_PATH, encoding="utf-8"))
     recs = index.get("records", [])
-    referenced = {_norm(os.path.join(ORIGINALS, (r.get("relative_path") or "").replace("/", os.sep)))
-                  for r in recs if r.get("relative_path")}
+    referenced = {
+        _norm(os.path.join(ORIGINALS, (r.get("relative_path") or "").replace("/", os.sep)))
+        for r in recs
+        if r.get("relative_path")
+    }
 
     disk = _walk(ORIGINALS)
     by_sha: dict[str, list[str]] = collections.defaultdict(list)
@@ -136,15 +140,21 @@ def build_plan() -> dict:
                 corpus_by_sha.setdefault(_sha256(p), p)
             except OSError:
                 continue
-    links = [(p, corpus_by_sha[_sha256(p)]) for p in keep
-             if _sha256(p) in corpus_by_sha
-             and not os.path.samefile(p, corpus_by_sha[_sha256(p)])]
+    links = [
+        (p, corpus_by_sha[_sha256(p)])
+        for p in keep
+        if _sha256(p) in corpus_by_sha and not os.path.samefile(p, corpus_by_sha[_sha256(p)])
+    ]
 
-    marks = [r for r in recs
-             if os.path.splitext(r.get("file_name") or "")[1].lower() in NON_POLICY_EXTS
-             and not os.path.exists(os.path.join(ORIGINALS,
-                                                (r.get("relative_path") or "").replace("/", os.sep)))
-             and not r.get("excluded_at")]
+    marks = [
+        r
+        for r in recs
+        if os.path.splitext(r.get("file_name") or "")[1].lower() in NON_POLICY_EXTS
+        and not os.path.exists(
+            os.path.join(ORIGINALS, (r.get("relative_path") or "").replace("/", os.sep))
+        )
+        and not r.get("excluded_at")
+    ]
 
     def _sz(paths) -> int:
         t = 0
@@ -158,15 +168,22 @@ def build_plan() -> dict:
     # 保留下来的、但无任何索引记录引用的文件（多为"内容未被索引覆盖"的散件/图片/台账本体）
     unreferenced = [p for p in keep if _norm(p) not in referenced]
 
-    return {"records": len(recs), "disk_files": len(disk), "by_sha": by_sha,
-            "move": move, "move_bytes": _sz(move), "orphans": orphans,
-            "unreferenced": unreferenced,
-            "links": links, "link_bytes": _sz([p for p, _c in links]),
-            "marks": marks, "corpus_files": len(corpus_by_sha)}
+    return {
+        "records": len(recs),
+        "disk_files": len(disk),
+        "by_sha": by_sha,
+        "move": move,
+        "move_bytes": _sz(move),
+        "orphans": orphans,
+        "unreferenced": unreferenced,
+        "links": links,
+        "link_bytes": _sz([p for p, _c in links]),
+        "marks": marks,
+        "corpus_files": len(corpus_by_sha),
+    }
 
 
-def apply_plan(plan: dict, *, dedupe=True, hardlink=True, mark=True,
-               backup=True) -> dict:
+def apply_plan(plan: dict, *, dedupe=True, hardlink=True, mark=True, backup=True) -> dict:
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     backup_dir = os.path.join(BACKUP_ROOT, f"originals_dedupe_{ts}") if backup else ""
     actions = {"moved": 0, "linked": 0, "link_skipped": 0, "marked": 0}
@@ -228,8 +245,7 @@ def apply_plan(plan: dict, *, dedupe=True, hardlink=True, mark=True,
         "backup_dir": backup_dir,
         "actions": actions,
         "moved": [_rel_safe(p, DATA) for p in plan["move"]],
-        "linked": [[_rel_safe(p, ORIGINALS), _rel_safe(c, ROOT)]
-                   for p, c in plan["links"]],
+        "linked": [[_rel_safe(p, ORIGINALS), _rel_safe(c, ROOT)] for p, c in plan["links"]],
         "orphans_kept": [_rel_safe(p, ORIGINALS) for p in plan["orphans"]],
         "unreferenced_kept": [_rel_safe(p, ORIGINALS) for p in plan.get("unreferenced", [])],
         "marked_ipns": [r.get("ipn") for r in plan["marks"]],
@@ -240,7 +256,9 @@ def apply_plan(plan: dict, *, dedupe=True, hardlink=True, mark=True,
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description="原件库冗余处置（内部去冗余 / 跨层硬链接 / 非正文标记）")
+    ap = argparse.ArgumentParser(
+        description="原件库冗余处置（内部去冗余 / 跨层硬链接 / 非正文标记）"
+    )
     ap.add_argument("--apply", action="store_true", help="执行（默认 dry-run）")
     ap.add_argument("--no-dedupe", action="store_true", help="跳过①内部去冗余")
     ap.add_argument("--no-hardlink", action="store_true", help="跳过②跨层硬链接")
@@ -255,24 +273,37 @@ def main() -> int:
 
     plan = build_plan()
     mb = lambda n: round(n / 1048576, 1)  # noqa: E731
-    print(f"[dedupe] 索引记录 {plan['records']} | originals 文件 {plan['disk_files']}"
-          f" | corpus 唯一内容 {plan['corpus_files']}")
-    print(f"  ① 内部冗余副本可移出 : {len(plan['move'])} 个（{mb(plan['move_bytes'])} MB）"
-          f"；无引用代表(孤儿待查) {len(plan['orphans'])}")
+    print(
+        f"[dedupe] 索引记录 {plan['records']} | originals 文件 {plan['disk_files']}"
+        f" | corpus 唯一内容 {plan['corpus_files']}"
+    )
+    print(
+        f"  ① 内部冗余副本可移出 : {len(plan['move'])} 个（{mb(plan['move_bytes'])} MB）"
+        f"；无引用代表(孤儿待查) {len(plan['orphans'])}"
+    )
     print(f"  ② 可跨层硬链接       : {len(plan['links'])} 个（约省 {mb(plan['link_bytes'])} MB）")
     print(f"  ③ 非正文台账可标记   : {len(plan['marks'])} 条")
-    print(f"  ·  保留但无索引引用   : {len(plan['unreferenced'])} 个（散件/图片/台账本体；"
-          "不处置，仅登记）")
+    print(
+        f"  ·  保留但无索引引用   : {len(plan['unreferenced'])} 个（散件/图片/台账本体；"
+        "不处置，仅登记）"
+    )
 
     if not args.apply:
         print("[dedupe] dry-run 结束（未改动任何文件）。加 --apply 执行。")
         return 0
 
-    res = apply_plan(plan, dedupe=not args.no_dedupe, hardlink=not args.no_hardlink,
-                     mark=not args.no_mark, backup=not args.no_backup)
+    res = apply_plan(
+        plan,
+        dedupe=not args.no_dedupe,
+        hardlink=not args.no_hardlink,
+        mark=not args.no_mark,
+        backup=not args.no_backup,
+    )
     a = res["actions"]
-    print(f"[dedupe] 已移出 {a['moved']} | 已硬链接 {a['linked']}（跳过 {a['link_skipped']}）"
-          f" | 已标记 {a['marked']}")
+    print(
+        f"[dedupe] 已移出 {a['moved']} | 已硬链接 {a['linked']}（跳过 {a['link_skipped']}）"
+        f" | 已标记 {a['marked']}"
+    )
     if res["backup_dir"]:
         print(f"[dedupe] 备份与清单 → {res['backup_dir']}")
     return 0

@@ -73,9 +73,7 @@ def setup_logging(
     if json_lines:
         fmt = JsonFormatter(project_name, task_id)
     else:
-        fmt = logging.Formatter(
-            "%(asctime)s %(levelname)s %(name)s %(message)s"
-        )
+        fmt = logging.Formatter("%(asctime)s %(levelname)s %(name)s %(message)s")
 
     fh = logging.FileHandler(log_path, encoding="utf-8")
     fh.setFormatter(fmt)
@@ -94,6 +92,7 @@ def snapshot_failure(html: str, snapshot_dir: str, meta: dict[str, Any] | None =
     返回快照文件路径。meta 中的 url 会被哈希后用于文件名去重。
     """
     import hashlib
+
     os.makedirs(snapshot_dir, exist_ok=True)
     url = (meta or {}).get("url", "")
     ident = hashlib.md5(url.encode("utf-8")).hexdigest()[:12] if url else "unknown"
@@ -142,7 +141,8 @@ class LogContext:
         if exc_type is not None:
             self.logger.error(
                 "context error: %s: %s",
-                exc_type.__name__, exc_val,
+                exc_type.__name__,
+                exc_val,
                 exc_info=(exc_type, exc_val, exc_tb),
             )
         for k in self._fields:
@@ -168,6 +168,7 @@ logging.getLogger().addFilter(_CONTEXT_FILTER)
 
 if __name__ == "__main__":  # 离线自检
     import tempfile
+
     td = tempfile.mkdtemp()
     setup_logging(td, "test_proj", "task_1", json_lines=True, console=False)
     log = logging.getLogger("scraper_std.logging_setup")

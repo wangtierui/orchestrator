@@ -29,6 +29,7 @@
 纪律：写入一律经 `rfn.register_doc`（registry 唯一写口；幂等 + 时效置 `pending`）；
       `--apply` 前自动备份归属表/主题表/索引；登记后需重跑 `relations gen` 与分类链。
 """
+
 from __future__ import annotations
 
 import argparse
@@ -42,10 +43,13 @@ from datetime import datetime
 from glob import glob
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-for _p in (ROOT, os.path.join(ROOT, "std_lib"),
-           os.path.join(ROOT, "modules"),
-           os.path.join(ROOT, "modules", "regulatory_classifier"),
-           os.path.join(ROOT, "modules", "regulatory_scrapers")):
+for _p in (
+    ROOT,
+    os.path.join(ROOT, "std_lib"),
+    os.path.join(ROOT, "modules"),
+    os.path.join(ROOT, "modules", "regulatory_classifier"),
+    os.path.join(ROOT, "modules", "regulatory_scrapers"),
+):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
@@ -58,10 +62,20 @@ OUT_MD = os.path.join(ROOT, "docs", "reports", "RFN补登候选清单.md")
 BACKUP_ROOT = os.path.join(ROOT, "modules", "regulatory_classifier", "backups")
 
 LEGAL_SOURCES = ("gov", "mof", "nfra", "pbc", "supp")
-CSV_FIELDS = ("dedup_key", "title", "docno", "source", "publish_date",
-              "cited_count", "cited_by_distinct", "suggested_theme", "theme_votes",
-              "theme_confidence", "sample_cited_by",
-              "decision")   # decision ∈ {votes, law_to_t0, uncertain}：主题建议的**依据**
+CSV_FIELDS = (
+    "dedup_key",
+    "title",
+    "docno",
+    "source",
+    "publish_date",
+    "cited_count",
+    "cited_by_distinct",
+    "suggested_theme",
+    "theme_votes",
+    "theme_confidence",
+    "sample_cited_by",
+    "decision",
+)  # decision ∈ {votes, law_to_t0, uncertain}：主题建议的**依据**
 
 
 def _read_jsonl(path: str) -> list[dict]:
@@ -93,7 +107,8 @@ def _law_shape(title: str) -> bool:
         _LAW_SHAPE_RE = re.compile(
             r"^中华人民共和国[^，。]{1,60}(?:法|条例|细则)(?:（[^）]*）)?$"
             r"|^最高人民法院关于[^，。]{2,60}(?:解释|规定|批复|答复)$"
-            r"|^[^，。]{2,30}条例$")
+            r"|^[^，。]{2,30}条例$"
+        )
     return bool(_LAW_SHAPE_RE.match(t))
 
 
@@ -102,8 +117,11 @@ def load_theme_map() -> dict[str, str]:
     try:
         from rfn import get_index  # noqa: PLC0415
 
-        return {r.get("监管文件编号", ""): (r.get("主题") or "")
-                for r in get_index().rows() if r.get("监管文件编号")}
+        return {
+            r.get("监管文件编号", ""): (r.get("主题") or "")
+            for r in get_index().rows()
+            if r.get("监管文件编号")
+        }
     except Exception:  # noqa: BLE001
         return {}
 
@@ -133,18 +151,26 @@ def load_cleaned_meta() -> dict[str, dict]:
 
 def build_backlog() -> dict:
     """聚合补登候选：`dst_class=corpus` 的关系 → 按 `dst_key` 归并 + 引用者主题投票。"""
-    rows = [r for r in _read_jsonl(REL_INDEX)
-            if r.get("dst_class") == "corpus" and r.get("dst_key")]
+    rows = [
+        r for r in _read_jsonl(REL_INDEX) if r.get("dst_class") == "corpus" and r.get("dst_key")
+    ]
     theme_of = load_theme_map()
     meta = load_cleaned_meta()
 
     by_key: dict[str, dict] = {}
     for r in rows:
         k = r["dst_key"]
-        it = by_key.setdefault(k, {
-            "dedup_key": k, "cited_count": 0, "voters": collections.Counter(),
-            "srcs": [], "names": collections.Counter(), "docnos": collections.Counter(),
-        })
+        it = by_key.setdefault(
+            k,
+            {
+                "dedup_key": k,
+                "cited_count": 0,
+                "voters": collections.Counter(),
+                "srcs": [],
+                "names": collections.Counter(),
+                "docnos": collections.Counter(),
+            },
+        )
         it["cited_count"] += 1
         it["names"][r.get("dst_name") or ""] += 1
         if r.get("dst_docno"):
@@ -169,21 +195,28 @@ def build_backlog() -> dict:
             suggested, conf, theme_src = "T0", 0.6, "law_to_t0"
         elif top and (len(top) == 1 or top[0][1] > top[1][1]):
             # ② 具体监管文件：引用者主题多数票（须唯一最高，并列则弃权）
-            suggested, conf, theme_src = top[0][0], round(top[0][1] / sum(votes.values()), 3), "votes"
-        items.append({
-            "dedup_key": k,
-            "title": title,
-            "docno": m.get("docno") or (it["docnos"].most_common(1)[0][0] if it["docnos"] else ""),
-            "source": m.get("source", ""),
-            "publish_date": m.get("publish_date", ""),
-            "cited_count": it["cited_count"],
-            "cited_by_distinct": len(set(it["srcs"])),
-            "suggested_theme": suggested,
-            "theme_votes": json.dumps(dict(votes.most_common(5)), ensure_ascii=False),
-            "theme_confidence": conf,
-            "sample_cited_by": " / ".join(sorted(set(it["srcs"]))[:5]),
-            "decision": theme_src,
-        })
+            suggested, conf, theme_src = (
+                top[0][0],
+                round(top[0][1] / sum(votes.values()), 3),
+                "votes",
+            )
+        items.append(
+            {
+                "dedup_key": k,
+                "title": title,
+                "docno": m.get("docno")
+                or (it["docnos"].most_common(1)[0][0] if it["docnos"] else ""),
+                "source": m.get("source", ""),
+                "publish_date": m.get("publish_date", ""),
+                "cited_count": it["cited_count"],
+                "cited_by_distinct": len(set(it["srcs"])),
+                "suggested_theme": suggested,
+                "theme_votes": json.dumps(dict(votes.most_common(5)), ensure_ascii=False),
+                "theme_confidence": conf,
+                "sample_cited_by": " / ".join(sorted(set(it["srcs"]))[:5]),
+                "decision": theme_src,
+            }
+        )
     items.sort(key=lambda x: (-x["cited_count"], x["title"]))
     return {"items": items, "theme_of": theme_of, "relations_scanned": len(rows)}
 
@@ -222,9 +255,11 @@ def render_md(bl: dict, *, generated_at: str = "") -> str:
         "| ---: | ---: | :--- | :--- | :--- | :--- | :--- | :--- | ---: |",
     ]
     for n, i in enumerate(items[:40], 1):
-        lines.append(f"| {n} | {i['cited_count']} | {i['title'][:44]} | {i['docno'][:20]} "
-                     f"| {i['source']} | {i['suggested_theme']} | {i['decision']} "
-                     f"| {i['theme_votes'][:34]} | {i['theme_confidence']:.2f} |")
+        lines.append(
+            f"| {n} | {i['cited_count']} | {i['title'][:44]} | {i['docno'][:20]} "
+            f"| {i['source']} | {i['suggested_theme']} | {i['decision']} "
+            f"| {i['theme_votes'][:34]} | {i['theme_confidence']:.2f} |"
+        )
     if len(items) > 40:
         lines.append(f"| … | | （其余 {len(items) - 40} 项见 CSV） | | | | | | |")
     lines += [
@@ -280,14 +315,23 @@ def apply_backlog(bl: dict, *, theme_mode: str = "", fixed_theme: str = "") -> d
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     backup_dir = os.path.join(BACKUP_ROOT, f"rfn_backlog_{ts}")
     os.makedirs(backup_dir, exist_ok=True)
-    for p in glob(os.path.join(ROOT, "modules", "regulatory_classifier", "*归属表.csv")) + \
-            glob(os.path.join(ROOT, "modules", "regulatory_classifier", "*主题表.csv")) + \
-            glob(os.path.join(CLS_DATA, "*索引.csv")):
+    for p in (
+        glob(os.path.join(ROOT, "modules", "regulatory_classifier", "*归属表.csv"))
+        + glob(os.path.join(ROOT, "modules", "regulatory_classifier", "*主题表.csv"))
+        + glob(os.path.join(CLS_DATA, "*索引.csv"))
+    ):
         if os.path.exists(p):
             shutil.copy2(p, os.path.join(backup_dir, os.path.basename(p)))
 
-    res = {"registered": 0, "reused": 0, "skipped_theme": 0, "skipped_nodata": 0,
-           "failed": 0, "backup_dir": backup_dir, "details": []}
+    res = {
+        "registered": 0,
+        "reused": 0,
+        "skipped_theme": 0,
+        "skipped_nodata": 0,
+        "failed": 0,
+        "backup_dir": backup_dir,
+        "details": [],
+    }
     for it in bl["items"]:
         theme = fixed_theme or (it["suggested_theme"] if theme_mode == "suggested" else "")
         if not theme or theme == "uncertain":
@@ -298,16 +342,27 @@ def apply_backlog(bl: dict, *, theme_mode: str = "", fixed_theme: str = "") -> d
             continue
         src = it["source"] if it["source"] in LEGAL_SOURCES else ""
         try:
-            r = registry.register_doc(theme=theme, title=it["title"], docno=it["docno"] or None,
-                                      pub_date=it["publish_date"], source=src,
-                                      source_mark="relations_backlog")
+            r = registry.register_doc(
+                theme=theme,
+                title=it["title"],
+                docno=it["docno"] or None,
+                pub_date=it["publish_date"],
+                source=src,
+                source_mark="relations_backlog",
+            )
         except Exception as e:  # noqa: BLE001
             res["failed"] += 1
             res["details"].append({"dedup_key": it["dedup_key"], "error": repr(e)[:120]})
             continue
         res["reused" if r.get("action") == "reused" else "registered"] += 1
-        res["details"].append({"dedup_key": it["dedup_key"], "rfn": r.get("rfn"),
-                               "theme": theme, "action": r.get("action")})
+        res["details"].append(
+            {
+                "dedup_key": it["dedup_key"],
+                "rfn": r.get("rfn"),
+                "theme": theme,
+                "action": r.get("action"),
+            }
+        )
     with open(os.path.join(backup_dir, "apply_result.json"), "w", encoding="utf-8") as fh:
         json.dump(res, fh, ensure_ascii=False, indent=2)
     return res
@@ -358,8 +413,10 @@ def sync_timeliness(*, dry_run: bool = False, only_rfns: set[str] | None = None)
             print(f"[backlog] 时效备份 → {bak}")
     finally:
         registry._unlock(fh)
-    print(f"[backlog] 时效同步（键精确）：SSOT {len(st)} 条 → 归属表改动 {changed} 行"
-          f"{'（dry-run）' if dry_run else ''}")
+    print(
+        f"[backlog] 时效同步（键精确）：SSOT {len(st)} 条 → 归属表改动 {changed} 行"
+        f"{'（dry-run）' if dry_run else ''}"
+    )
     return {"changed": changed, "scanned": len(rows)}
 
 
@@ -370,11 +427,19 @@ def main() -> int:
         pass
     ap = argparse.ArgumentParser(description="RFN 补登候选（关系线索驱动）")
     ap.add_argument("--apply", action="store_true", help="执行批量登记（默认 dry-run）")
-    ap.add_argument("--theme-mode", choices=["suggested"], default="",
-                    help="suggested：按「引用者主题投票」建议登记")
+    ap.add_argument(
+        "--theme-mode",
+        choices=["suggested"],
+        default="",
+        help="suggested：按「引用者主题投票」建议登记",
+    )
     ap.add_argument("--theme", default="", help="强制全部登记到指定主题（如 T5）")
-    ap.add_argument("--sync-timeliness", action="store_true", dest="sync_tl",
-                    help="仅执行「SSOT→归属表」时效同步（补登后补齐已知状态）")
+    ap.add_argument(
+        "--sync-timeliness",
+        action="store_true",
+        dest="sync_tl",
+        help="仅执行「SSOT→归属表」时效同步（补登后补齐已知状态）",
+    )
     a = ap.parse_args()
 
     if a.sync_tl:
@@ -386,14 +451,18 @@ def main() -> int:
         return 1
     bl = build_backlog()
     out = write_outputs(bl)
-    print(f"[backlog] 候选文件 {out['items']} 个（可自动登记 {out['sure']} / 待人工裁决 "
-          f"{out['items'] - out['sure']}）；涉及关系 {bl['relations_scanned']} 条")
+    print(
+        f"[backlog] 候选文件 {out['items']} 个（可自动登记 {out['sure']} / 待人工裁决 "
+        f"{out['items'] - out['sure']}）；涉及关系 {bl['relations_scanned']} 条"
+    )
     print(f"[backlog] 清单 → {out['csv']}")
     print(f"[backlog] 报告 → {out['md']}")
     top = bl["items"][:8]
     for i in top:
-        print(f"   {i['cited_count']:>3}× {i['title'][:52]:54s} 建议主题 {i['suggested_theme']}"
-              f"（{i['theme_confidence']:.2f}）")
+        print(
+            f"   {i['cited_count']:>3}× {i['title'][:52]:54s} 建议主题 {i['suggested_theme']}"
+            f"（{i['theme_confidence']:.2f}）"
+        )
     if not a.apply:
         print("[backlog] dry-run 结束（未写归属表）。加 --apply 执行。")
         return 0
@@ -401,8 +470,10 @@ def main() -> int:
         print("[backlog] --apply 需配合 --theme-mode suggested 或 --theme Tx")
         return 1
     res = apply_backlog(bl, theme_mode=a.theme_mode, fixed_theme=a.theme)
-    print(f"[backlog] 登记完成：registered {res['registered']} / reused {res['reused']} / "
-          f"跳过(主题) {res['skipped_theme']} / 失败 {res['failed']}")
+    print(
+        f"[backlog] 登记完成：registered {res['registered']} / reused {res['reused']} / "
+        f"跳过(主题) {res['skipped_theme']} / 失败 {res['failed']}"
+    )
     print(f"[backlog] 备份与明细 → {res['backup_dir']}")
     if res["registered"]:
         # 补登后必须继承已知时效状态（否则新行 pending 会与 SSOT 冲突 → 门禁 FAIL）
@@ -423,6 +494,7 @@ def _wl_uncertain(items) -> None:
     """
     try:
         from std_lib.common_lib import governance_store as _gs  # noqa: PLC0415
+
         n = 0
         for it in items:
             if it.get("suggested_theme") != "uncertain":
@@ -431,13 +503,23 @@ def _wl_uncertain(items) -> None:
             if not key:
                 continue
             _gs.worklist_add(
-                "rfn_theme_uncertain", key, stage="2.7", artifact_key="rfn_backlog",
-                payload={"title": it.get("title", ""), "document_number": it.get("document_number", ""),
-                         "decision": it.get("decision", ""), "theme_src": it.get("theme_src", ""),
-                         "reason": "无票 / 票数并列 / 形态不明"},
-                suggestion="人工裁决后 `cli.py rfn register --theme Tx` 强制登记（或 dismiss）")
+                "rfn_theme_uncertain",
+                key,
+                stage="2.7",
+                artifact_key="rfn_backlog",
+                payload={
+                    "title": it.get("title", ""),
+                    "document_number": it.get("document_number", ""),
+                    "decision": it.get("decision", ""),
+                    "theme_src": it.get("theme_src", ""),
+                    "reason": "无票 / 票数并列 / 形态不明",
+                },
+                suggestion="人工裁决后 `cli.py rfn register --theme Tx` 强制登记（或 dismiss）",
+            )
             n += 1
         if n:
-            print(f"[rfn_backlog] 待办：{n} 条 uncertain 已登记 worklist（cli.py worklist resolve）")
+            print(
+                f"[rfn_backlog] 待办：{n} 条 uncertain 已登记 worklist（cli.py worklist resolve）"
+            )
     except Exception:  # noqa: BLE001  旁路设施：登记失败不得中断生成
         pass

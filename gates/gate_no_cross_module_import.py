@@ -27,8 +27,10 @@
 规则：**新增违规 → FAIL**；基线条目消失 → 报告 `baseline_stale`（提示收缩基线，不阻断）。
 新增残留必须**显式登记进基线**并写明理由，使"放宽纪律"永远是一次有记录的决策。
 """
+
 from __future__ import annotations
 
+import contextlib
 import os
 import re
 
@@ -45,11 +47,16 @@ PKG_OWNER: dict[str, str] = {
     "clean_index": "regulatory_scrapers",
     "clause_index": "regulatory_scrapers",
     "rfn": "regulatory_classifier",
-    "verification_state": None,       # 见 §已知例外：scrapers 内部子包，非跨模块
+    "verification_state": None,  # 见 §已知例外：scrapers 内部子包，非跨模块
 }
 
-MODULES = ("regulatory_scrapers", "regulatory_classifier", "internal_policy_base",
-           "internal_policy_drafter", "base_publish")
+MODULES = (
+    "regulatory_scrapers",
+    "regulatory_classifier",
+    "internal_policy_base",
+    "internal_policy_drafter",
+    "base_publish",
+)
 
 # 冻结基线（`相对路径:行号`）；当前为空 —— 阶段 3 已把 30 处直连全部收口。
 # 新增残留须在此登记并注明理由（"只减不增"）。
@@ -123,9 +130,15 @@ def _scan_file(fp: str, rel: str, own: str) -> list[tuple[int, str, str]]:
 # ⚠️ 后两项**刻意拆成两段拼接**：本文件若出现完整的 `sys.path.insert(` 字面量，
 # 会被 `gate_import_bootstrap` 的文本扫描计成 gates/ 的"注入"（假阳性，
 # 实测曾使基线 17→19）。拼接后语义不变而扫描不命中。
-_PATH_CALL_MARKS = ("os.path.join(", "os.path.abspath(", "os.path.normpath(",
-                    "os.path.dirname(", "Path(",
-                    "sys.path." + "insert(", "sys.path." + "append(")
+_PATH_CALL_MARKS = (
+    "os.path.join(",
+    "os.path.abspath(",
+    "os.path.normpath(",
+    "os.path.dirname(",
+    "Path(",
+    "sys.path." + "insert(",
+    "sys.path." + "append(",
+)
 _MODULE_DIR_MARK = "module_dir("
 _QUOTES = ('"', "'")
 
@@ -155,22 +168,30 @@ def run():
         if not os.path.isdir(base):
             continue
         for dirpath, dirnames, filenames in os.walk(base):
-            dirnames[:] = [d for d in dirnames
-                           if d not in ("__pycache__", "data", "published", "backups", "docs")]
+            dirnames[:] = [
+                d
+                for d in dirnames
+                if d not in ("__pycache__", "data", "published", "backups", "docs")
+            ]
             for fn in filenames:
                 if not fn.endswith(".py"):
                     continue
                 fp = os.path.join(dirpath, fn)
                 rel = os.path.relpath(fp, paths.ROOT).replace(os.sep, "/")
                 hits = list(_scan_file(fp, rel, name))
-                try:
+                with contextlib.suppress(OSError):
                     _lines = open(fp, encoding="utf-8", errors="replace").read().splitlines()
                     hits += _scan_sibling_paths(_lines, name)
-                except OSError:
-                    pass
                 for lineno, pattern, text in hits:
-                    findings.append({"file": rel, "line": lineno, "pattern": pattern, "text": text,
-                                     "key": f"{rel}:{lineno}"})
+                    findings.append(
+                        {
+                            "file": rel,
+                            "line": lineno,
+                            "pattern": pattern,
+                            "text": text,
+                            "key": f"{rel}:{lineno}",
+                        }
+                    )
 
     new = [f for f in findings if f["key"] not in BASELINE]
     stale = sorted(set(BASELINE) - {f["key"] for f in findings})
@@ -182,14 +203,18 @@ def run():
         "baseline": len(BASELINE),
         "baseline_stale": stale,
         "note": "判据=modules/ 内不得出现跨模块 sys.path 引导 / 裸 import / modules.<other> 导入；"
-                "基线只减不增（新增违规即 FAIL）。gates/ 与 tools/ 为横切治理层，不在扫描范围。",
+        "基线只减不增（新增违规即 FAIL）。gates/ 与 tools/ 为横切治理层，不在扫描范围。",
     }
     return (not new), detail
 
 
 if __name__ == "__main__":
     import json
+
     passed, d = run()
-    print("[no_cross_module_import]", "PASS" if passed else "FAIL",
-          json.dumps(d, ensure_ascii=False, indent=1))
+    print(
+        "[no_cross_module_import]",
+        "PASS" if passed else "FAIL",
+        json.dumps(d, ensure_ascii=False, indent=1),
+    )
     raise SystemExit(0 if passed else 1)

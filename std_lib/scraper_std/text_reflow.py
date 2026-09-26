@@ -19,6 +19,7 @@ text_reflow.py —— 中文文档行长硬换行合并（reflow，纯函数，2
 注意：不做 OCR 版面恢复（扫描件文本质量由其 OCR 保证）；表格/表单类天然短行由上游分类，
 本函数仅处理「叙述行续行」，不破坏既有结构化行。
 """
+
 from __future__ import annotations
 
 import re
@@ -60,7 +61,11 @@ def reflow_chinese(text: str) -> str:
                 paras.append(cur)
                 cur = None
             continue
-        is_struct = bool(_STRUCT_RE.match(ln)) or bool(_TABLEISH_RE.match(ln)) or bool(_ID_LINE_RE.match(ln))
+        is_struct = (
+            bool(_STRUCT_RE.match(ln))
+            or bool(_TABLEISH_RE.match(ln))
+            or bool(_ID_LINE_RE.match(ln))
+        )
         if cur is None or is_struct:
             if cur is not None:
                 paras.append(cur)

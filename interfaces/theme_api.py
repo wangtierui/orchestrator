@@ -13,6 +13,7 @@ v2 §3.1.3 I-1（2026-09-26）：
 本模块**不自带 sys.path 引导**——引导统一由 `bootstrap.bootstrap("all")` 承担（v2 §3.1.2）；
 `rfn_api` 的模块级引导在先，故 `rfn` 命名空间在本模块导入时已可用。
 """
+
 from __future__ import annotations
 
 from interfaces import rfn_api as _rfn_api
@@ -38,6 +39,7 @@ class ThemeAPI:
         返回 {rfn, from_theme, to_theme, changed, inserted}。
         """
         from rfn.registry import set_theme as _set  # noqa: PLC0415
+
         return _set(rfn, theme, basis, sync_pending=True)
 
     # ---- 读：按主题查询 ----
@@ -58,22 +60,27 @@ class ThemeAPI:
         返回 {ipn, title, primary, secondary[], method, hint?, hint_match?}。
         """
         from interfaces.internal_policy_api import get_internal_policy_api  # noqa: PLC0415
+
         try:
             from internal_policy_base.align import align_one  # noqa: PLC0415
         except ModuleNotFoundError as e:  # pragma: no cover - 引导缺失时的明确提示
             raise ModuleNotFoundError(
                 "internal_policy_base 不可导入：请先 `from bootstrap import bootstrap; "
-                "bootstrap(\"all\")`（v2 §3.1.2 唯一引导点）") from e
+                'bootstrap("all")`（v2 §3.1.2 唯一引导点）'
+            ) from e
 
         api = get_internal_policy_api()
         rec = api.query(ipn=ipn) or {}
         fulltext = api.load_processed(ipn, "_fulltext.json") or {}
         text = fulltext.get("text", "") if isinstance(fulltext, dict) else ""
         res = align_one(rec.get("title", ""), text)
-        out = {"ipn": ipn, "title": rec.get("title", ""),
-               "primary": res.get("primary", ""),
-               "secondary": list(res.get("secondary") or []),
-               "method": res.get("method", "")}
+        out = {
+            "ipn": ipn,
+            "title": rec.get("title", ""),
+            "primary": res.get("primary", ""),
+            "secondary": list(res.get("secondary") or []),
+            "method": res.get("method", ""),
+        }
         if theme_hint:
             out["hint"] = theme_hint
             out["hint_match"] = theme_hint in ([out["primary"]] + out["secondary"])

@@ -15,6 +15,7 @@ mcp.pkulaw.com 官方 CLI（@pkulaw/mcp-cli）：纯命令执行、不经 LLM（
 依赖：仅标准库 + 系统 Node（CLI 运行环境）。
 安全红线：Token 只读自环境变量/本机文件，绝不写入日志、命令参数、输出文件。
 """
+
 from __future__ import annotations
 
 import json
@@ -30,7 +31,13 @@ from typing import Any
 
 # ---------------------------------------------------------------- 状态常量
 VALID, AMENDED, REPEALED, EXPIRED, PENDING, UNCERTAIN = (
-    "valid", "amended", "repealed", "expired", "pending", "uncertain")
+    "valid",
+    "amended",
+    "repealed",
+    "expired",
+    "pending",
+    "uncertain",
+)
 
 # ---------------------------------------------------------------- 环境事实
 # P1 去硬编码：node.exe 与 @pkulaw/mcp-cli 包目录不再写死本机路径。
@@ -40,15 +47,32 @@ PKG_DIR = os.environ.get("PKULAW_PKG_DIR", "")
 
 # 接口返回字段 → 既有 jsonl schema 字段映射（按语义，见 pkulaw skill 3.2）
 FIELD_MAP = {
-    "title": "Title", "Title": "Title", "original": "Title",
-    "url": "Url", "Url": "Url", "source": "Url",
-    "category": "Category", "Category": "Category",
-    "documentno": "DocumentNO", "DocumentNO": "DocumentNO", "doc_no": "DocumentNO",
-    "issuedepartment": "IssueDepartment", "IssueDepartment": "IssueDepartment", "issue_department": "IssueDepartment",
-    "issuedate": "IssueDate", "IssueDate": "IssueDate", "issue_date": "IssueDate",
-    "implementdate": "ImplementDate", "ImplementDate": "ImplementDate", "implement_date": "ImplementDate",
-    "timeliness": "TimelinessDic", "TimelinessDic": "TimelinessDic", "timeliness_dic": "TimelinessDic",
-    "effectiveness": "EffectivenessDic", "EffectivenessDic": "EffectivenessDic", "effectiveness_dic": "EffectivenessDic",
+    "title": "Title",
+    "Title": "Title",
+    "original": "Title",
+    "url": "Url",
+    "Url": "Url",
+    "source": "Url",
+    "category": "Category",
+    "Category": "Category",
+    "documentno": "DocumentNO",
+    "DocumentNO": "DocumentNO",
+    "doc_no": "DocumentNO",
+    "issuedepartment": "IssueDepartment",
+    "IssueDepartment": "IssueDepartment",
+    "issue_department": "IssueDepartment",
+    "issuedate": "IssueDate",
+    "IssueDate": "IssueDate",
+    "issue_date": "IssueDate",
+    "implementdate": "ImplementDate",
+    "ImplementDate": "ImplementDate",
+    "implement_date": "ImplementDate",
+    "timeliness": "TimelinessDic",
+    "TimelinessDic": "TimelinessDic",
+    "timeliness_dic": "TimelinessDic",
+    "effectiveness": "EffectivenessDic",
+    "EffectivenessDic": "EffectivenessDic",
+    "effectiveness_dic": "EffectivenessDic",
 }
 
 URL_RE = re.compile(r"\[[^\]]*\]\((https?://[^)]+)\)")
@@ -69,7 +93,7 @@ def _resolve_node_exe(node_exe: str) -> str:
         return node_exe
     base = os.path.basename(node_exe) or "node.exe"
     if node_exe:
-        versions_dir = os.path.dirname(os.path.dirname(node_exe))   # …/node/versions
+        versions_dir = os.path.dirname(os.path.dirname(node_exe))  # …/node/versions
         cur = os.path.join(versions_dir, "current")
         try:
             if os.path.exists(cur):
@@ -82,8 +106,7 @@ def _resolve_node_exe(node_exe: str) -> str:
     return shutil.which("node") or ""
 
 
-def find_cli(node_exe: str = NODE_EXE, pkg_dir: str = PKG_DIR,
-             env_cli: str = "") -> list[str]:
+def find_cli(node_exe: str = NODE_EXE, pkg_dir: str = PKG_DIR, env_cli: str = "") -> list[str]:
     """返回可执行命令列表：优先 node.exe + 包内 JS 入口（规避 Windows cmd 引号问题）"""
     if env_cli and os.path.exists(env_cli):
         return [env_cli]
@@ -140,7 +163,7 @@ def _parse_json_embedded(s: str) -> Any | None:
     if i_close < i_open:
         return None
     try:
-        return json.loads(s[i_open:i_close + 1])
+        return json.loads(s[i_open : i_close + 1])
     except json.JSONDecodeError:
         return None
 
@@ -190,9 +213,9 @@ def normalize_records(raw: Any) -> list[dict[str, Any]]:
     return out
 
 
-def call_cli(cli: list[str], token: str, title: str,
-             fulltext: str | None = None,
-             timeout: int = 180) -> tuple[list[Any], str | None]:
+def call_cli(
+    cli: list[str], token: str, title: str, fulltext: str | None = None, timeout: int = 180
+) -> tuple[list[Any], str | None]:
     """调用 get_law_list。返回 (原始记录列表, 错误信息或None)。Token 经环境变量注入。"""
     env = dict(os.environ)
     env["PKULAW_MCP_AUTHORIZATION"] = "Bearer " + token
@@ -200,8 +223,16 @@ def call_cli(cli: list[str], token: str, title: str,
     if fulltext:
         cmd += ["--fulltext", fulltext]
     cmd += ["--json"]
-    proc = subprocess.run(cmd, shell=False, env=env, capture_output=True, text=True,
-                          encoding="utf-8", errors="replace", timeout=timeout)
+    proc = subprocess.run(
+        cmd,
+        shell=False,
+        env=env,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=timeout,
+    )
     if proc.returncode != 0:
         err = (proc.stderr or proc.stdout or "").strip()
         return [], "[CLI失败 rc=%d] %s" % (proc.returncode, err[:300])
@@ -215,8 +246,9 @@ def call_cli(cli: list[str], token: str, title: str,
     return data, None
 
 
-def get_law_list_records(cli: list[str], token: str, title: str,
-                         fulltext: str | None = None) -> tuple[list[dict[str, Any]], str | None]:
+def get_law_list_records(
+    cli: list[str], token: str, title: str, fulltext: str | None = None
+) -> tuple[list[dict[str, Any]], str | None]:
     """便捷：返回归一化记录 + 错误信息"""
     data, err = call_cli(cli, token, title, fulltext)
     if err:
@@ -241,7 +273,13 @@ def _norm_title(t: Any) -> str:
     （顿号『、』分隔、半角括号『()』，如『总局、中国人民银行』）的形态差异。"""
     t = str(t or "")
     t = t.replace("（", "(").replace("）", ")").replace("〔", "[").replace("〕", "]")
-    t = t.replace("、", " ").replace("，", " ").replace(",", " ").replace("；", " ").replace(";", " ")
+    t = (
+        t.replace("、", " ")
+        .replace("，", " ")
+        .replace(",", " ")
+        .replace("；", " ")
+        .replace(";", " ")
+    )
     t = re.sub(r"\s+", "", t)
     return t
 
@@ -256,7 +294,7 @@ def same_doc(query: str, t: Any) -> bool:
     if qn == tn:
         return True
     if tn.startswith(qn):
-        rest = tn[len(qn):]
+        rest = tn[len(qn) :]
         return rest.startswith("(")
     return False
 
@@ -303,21 +341,28 @@ def _tl(rec: dict[str, Any]) -> str:
     return str(rec.get("TimelinessDic", "") or "")
 
 
-def pick_verdict(records: list[dict[str, Any]], base_title: str) -> tuple[dict[str, Any] | None, int]:
+def pick_verdict(
+    records: list[dict[str, Any]], base_title: str
+) -> tuple[dict[str, Any] | None, int]:
     """同名自版本优先判定（单名称查询用）：现行有效 ∩ 同名自版本 → 取 IssueDate 最新。
     返回 (现行版本记录或None, 现行有效记录数)"""
     cur = [r for r in records if "现行有效" in _tl(r)]
     if not cur:
         return None, 0
     base = base_title.strip()
-    selfv = [r for r in cur
-             if r.get("Title") == base or str(r.get("Title", "")).startswith(base + "(")]
-    pool = sorted(selfv if selfv else cur,
-                  key=lambda r: (_norm_date(r.get("IssueDate")), _norm_date(r.get("ImplementDate"))))
+    selfv = [
+        r for r in cur if r.get("Title") == base or str(r.get("Title", "")).startswith(base + "(")
+    ]
+    pool = sorted(
+        selfv if selfv else cur,
+        key=lambda r: (_norm_date(r.get("IssueDate")), _norm_date(r.get("ImplementDate"))),
+    )
     return pool[-1], len(cur)
 
 
-def match_record(records: list[dict[str, Any]], cand: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[str, Any] | None]:
+def match_record(
+    records: list[dict[str, Any]], cand: dict[str, Any]
+) -> tuple[list[dict[str, Any]], dict[str, Any] | None]:
     """匹配库内记录对应的法宝版本：文号(DocumentNO) → 发布日期 → 最新。
     cand 需含 title / document_number / publish_date。"""
     same = [r for r in records if same_doc(cand["title"], str(r.get("Title", "")))]
@@ -337,18 +382,27 @@ def match_record(records: list[dict[str, Any]], cand: dict[str, Any]) -> tuple[l
     return same, max(same, key=lambda r: _norm_date(r.get("IssueDate")))
 
 
-def judge_candidate(records: list[dict[str, Any]], cand: dict[str, Any]) -> tuple[str, str, str, str]:
+def judge_candidate(
+    records: list[dict[str, Any]], cand: dict[str, Any]
+) -> tuple[str, str, str, str]:
     """用北大法宝返回记录判定库内记录 → (status, replacement, source, note)"""
     same, matched = match_record(records, cand)
     if matched is None:
         note = "北大法宝无同名命中"
         if same:
             note += "（文号%s未匹配）" % norm_docno(cand.get("document_number", ""))
-        return cand.get("timeliness_status", PENDING), cand.get("replacement_document", ""), "规则判断", note
+        return (
+            cand.get("timeliness_status", PENDING),
+            cand.get("replacement_document", ""),
+            "规则判断",
+            note,
+        )
 
     tl = _tl(matched)
     cur = [r for r in same if "现行有效" in _tl(r)]
-    cur_title = max(cur, key=lambda r: _norm_date(r.get("IssueDate"))).get("Title", "") if cur else ""
+    cur_title = (
+        max(cur, key=lambda r: _norm_date(r.get("IssueDate"))).get("Title", "") if cur else ""
+    )
 
     if "现行有效" in tl:
         return VALID, "", "北大法宝", "同名现行有效: %s" % matched.get("Title", "")
@@ -363,11 +417,18 @@ def judge_candidate(records: list[dict[str, Any]], cand: dict[str, Any]) -> tupl
         return REPEALED, cur_title, "北大法宝", "北大法宝标注废止: %s" % matched.get("Title", "")
     if "失效" in tl:
         return EXPIRED, cur_title, "北大法宝", "北大法宝标注失效: %s" % matched.get("Title", "")
-    return cand.get("timeliness_status", PENDING), cand.get("replacement_document", ""), "规则判断", "同名但时效标注异常: %s" % tl
+    return (
+        cand.get("timeliness_status", PENDING),
+        cand.get("replacement_document", ""),
+        "规则判断",
+        "同名但时效标注异常: %s" % tl,
+    )
 
 
 # ---------------------------------------------------------------- 查询计划与执行
-def build_query_plan(cands: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], list[dict[str, Any] | None]]:
+def build_query_plan(
+    cands: list[dict[str, Any]],
+) -> tuple[list[dict[str, Any]], list[dict[str, Any] | None]]:
     """查询计划：重复标题且文号可区分 → 逐记录查询（key=标题||文号）；
     其余按标题单次查询。返回 (plan, cand2item[候选下标]=项)"""
     by_title = {}
@@ -383,8 +444,9 @@ def build_query_plan(cands: list[dict[str, Any]]) -> tuple[list[dict[str, Any]],
         if len(idxs) > 1 and len(distinct) >= 2:
             for dn, sub in docnos.items():
                 if dn:
-                    plan.append({"key": "%s||%s" % (title, dn), "title": title,
-                                 "docno": dn, "idxs": sub})
+                    plan.append(
+                        {"key": "%s||%s" % (title, dn), "title": title, "docno": dn, "idxs": sub}
+                    )
                 else:
                     plan.append({"key": title, "title": title, "docno": "", "idxs": sub})
         else:
@@ -396,10 +458,13 @@ def build_query_plan(cands: list[dict[str, Any]]) -> tuple[list[dict[str, Any]],
     return plan, cand2item
 
 
-def run_query(cli: list[str], token: str, title: str, docno: str = "",
-              use_fulltext: bool = False) -> dict[str, Any]:
+def run_query(
+    cli: list[str], token: str, title: str, docno: str = "", use_fulltext: bool = False
+) -> dict[str, Any]:
     """单次查询 → 信封记录（含 query_docno/fulltext 审计字段，data 为归一化全字段）"""
-    records, err = get_law_list_records(cli, token, title, fulltext=(docno if use_fulltext else None))
+    records, err = get_law_list_records(
+        cli, token, title, fulltext=(docno if use_fulltext else None)
+    )
     ts = time.strftime("%Y-%m-%d %H:%M:%S")
     env: dict[str, Any] = {"query": title, "queried_at": ts}
     if docno:
@@ -424,8 +489,11 @@ def fetch_item(cli: list[str], token: str, item: dict[str, Any]) -> dict[str, An
         hit = any(docno_eq(item["docno"], r.get("DocumentNO", "")) for r in obj["data"])
         if not hit:
             obj2 = run_query(cli, token, item["title"], item["docno"], use_fulltext=True)
-            if obj2["message"] == "成功" and obj2["data"] and \
-                    any(docno_eq(item["docno"], r.get("DocumentNO", "")) for r in obj2["data"]):
+            if (
+                obj2["message"] == "成功"
+                and obj2["data"]
+                and any(docno_eq(item["docno"], r.get("DocumentNO", "")) for r in obj2["data"])
+            ):
                 obj = obj2
     return obj
 
@@ -450,10 +518,16 @@ def load_checkpoint(checkpoint_path: str) -> dict[str, dict[str, Any]]:
 _CHUNK = 50
 
 
-def execute_queries(plan: list[dict[str, Any]], cli: list[str], token: str,
-                    checkpoint_path: str, workers: int = 2,
-                    retry_failed: bool = False, pause: float = 0.2,
-                    log: Callable[[str], None] = print) -> dict[str, dict[str, Any]]:
+def execute_queries(
+    plan: list[dict[str, Any]],
+    cli: list[str],
+    token: str,
+    checkpoint_path: str,
+    workers: int = 2,
+    retry_failed: bool = False,
+    pause: float = 0.2,
+    log: Callable[[str], None] = print,
+) -> dict[str, dict[str, Any]]:
     """并发断点查询引擎。checkpoint 即查询 JSONL（逐条 append，可中断续跑）。
     安全参数：workers≤2、间隔≥0.2s（实测 6 并发 ~760 次即触发网关拦截/配额耗尽）。"""
     done = load_checkpoint(checkpoint_path)
@@ -481,7 +555,7 @@ def execute_queries(plan: list[dict[str, Any]], cli: list[str], token: str,
                 if stop:
                     break
                 futs = {}
-                for it in todo[start:start + _CHUNK]:
+                for it in todo[start : start + _CHUNK]:
                     if pause:
                         time.sleep(pause)
                     futs[ex.submit(fetch_item, cli, token, it)] = it
@@ -490,8 +564,13 @@ def execute_queries(plan: list[dict[str, Any]], cli: list[str], token: str,
                     try:
                         obj = fut.result()
                     except Exception as e:  # noqa: BLE001
-                        obj = {"query": it["title"], "queried_at": time.strftime("%Y-%m-%d %H:%M:%S"),
-                               "message": "失败: " + str(e)[:300], "total": 0, "data": []}
+                        obj = {
+                            "query": it["title"],
+                            "queried_at": time.strftime("%Y-%m-%d %H:%M:%S"),
+                            "message": "失败: " + str(e)[:300],
+                            "total": 0,
+                            "data": [],
+                        }
                         if it["docno"]:
                             obj["query_docno"] = it["docno"]
                     if "90001" in obj["message"] or "积分用尽" in obj["message"]:
@@ -502,7 +581,10 @@ def execute_queries(plan: list[dict[str, Any]], cli: list[str], token: str,
                     if "认证失败" in obj["message"]:
                         consec_auth_fail += 1
                         if consec_auth_fail >= 15:
-                            log("[拦截] 连续 %d 次认证失败，暂停续跑（法宝配额耗尽/网关拦截，建议检查控制台）" % consec_auth_fail)
+                            log(
+                                "[拦截] 连续 %d 次认证失败，暂停续跑（法宝配额耗尽/网关拦截，建议检查控制台）"
+                                % consec_auth_fail
+                            )
                             _wl_quota("auth_fail", it)
                             stop = True
                             break
@@ -526,13 +608,21 @@ def _wl_quota(blocker: str, item: dict) -> None:
     """
     try:
         from std_lib.common_lib import governance_store as _gs  # noqa: PLC0415
+
         key = f"{blocker}:{item.get('docno') or item.get('title') or ''}"[:80]
         _gs.worklist_add(
-            "ingest_quota_blocked", key, stage="6.9", artifact_key="timeliness_verify",
-            payload={"blocker": blocker, "query": item.get("title", ""),
-                     "docno": item.get("docno", ""),
-                     "message": str(item.get("message", ""))[:300]},
+            "ingest_quota_blocked",
+            key,
+            stage="6.9",
+            artifact_key="timeliness_verify",
+            payload={
+                "blocker": blocker,
+                "query": item.get("title", ""),
+                "docno": item.get("docno", ""),
+                "message": str(item.get("message", ""))[:300],
+            },
             suggestion="检查北大法宝控制台（积分/鉴权）；恢复后重跑 `cli.py timeliness verify`"
-                       "（断点续跑）；确认已恢复 → resolve")
+            "（断点续跑）；确认已恢复 → resolve",
+        )
     except Exception:  # noqa: BLE001  旁路设施
         pass

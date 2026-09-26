@@ -11,6 +11,7 @@ commands/doctor — 环境前置自检（v2 §3.13.4，P2-6）
     python cli.py doctor --quick    # 只跑 run 前置所需的子集
     python cli.py doctor --json     # 机器可读（写 reports/_tmp/doctor.json 之外再打印）
 """
+
 from __future__ import annotations
 
 import json
@@ -20,12 +21,23 @@ import subprocess
 import sys
 
 import paths
+from config.exitcodes import ExitCode  # noqa: E402  (R3：退出码语义化)
 
 OUT_JSON = os.path.join(paths.ROOT, "reports", "_tmp", "doctor.json")
 DISK_MIN_GB = 5.0
 # `run` 前置子集（§3.13.4：①python ②node ④依赖 ⑤Pillow ⑥pymupdf ⑦tesseract ⑩token ⑫治理库 ⑬源码树 ⑮锁）
-QUICK_IDS = ("python", "node", "deps", "pillow", "pymupdf", "tesseract", "token",
-             "gov_db", "sourcetree", "lock")
+QUICK_IDS = (
+    "python",
+    "node",
+    "deps",
+    "pillow",
+    "pymupdf",
+    "tesseract",
+    "token",
+    "gov_db",
+    "sourcetree",
+    "lock",
+)
 
 
 def _importable(mod: str) -> tuple[bool, str]:
@@ -56,6 +68,7 @@ def _c_node() -> tuple[str, str, str]:
 def _c_pkulaw_pkg() -> tuple[str, str, str]:
     try:
         from scraper_std import pkulaw_cli  # noqa: PLC0415
+
         cli = pkulaw_cli.find_cli()
         return ("ok" if cli else "warn"), f"pkulaw cli={cli or '(未找到)'}", "北大法宝官方 CLI 目录"
     except Exception as e:  # noqa: BLE001
@@ -63,11 +76,25 @@ def _c_pkulaw_pkg() -> tuple[str, str, str]:
 
 
 def _c_deps() -> tuple[str, str, str]:
-    mods = ("requests", "bs4", "yaml", "lxml", "numpy", "openpyxl", "xlrd", "docx",
-            "pypdf", "pdfplumber", "chardet")
+    mods = (
+        "requests",
+        "bs4",
+        "yaml",
+        "lxml",
+        "numpy",
+        "openpyxl",
+        "xlrd",
+        "docx",
+        "pypdf",
+        "pdfplumber",
+        "chardet",
+    )
     bad = [m for m in mods if not _importable(m)[0]]
-    return ("ok" if not bad else "fail"), (f"{len(mods) - len(bad)}/{len(mods)} 可导入"
-                                          + (f"；缺 {bad}" if bad else "")), "pyproject [project.dependencies]"
+    return (
+        ("ok" if not bad else "fail"),
+        (f"{len(mods) - len(bad)}/{len(mods)} 可导入" + (f"；缺 {bad}" if bad else "")),
+        "pyproject [project.dependencies]",
+    )
 
 
 def _c_pillow() -> tuple[str, str, str]:
@@ -86,6 +113,7 @@ def _c_pymupdf() -> tuple[str, str, str]:
 def _c_tesseract() -> tuple[str, str, str]:
     try:
         from config.loader import load_ocr  # noqa: PLC0415
+
         exe = (load_ocr().get("ocr") or {}).get("tesseract_bin", "")
     except Exception as e:  # noqa: BLE001
         return "warn", f"ocr.yaml 不可读：{type(e).__name__}", ""
@@ -96,15 +124,23 @@ def _c_tesseract() -> tuple[str, str, str]:
 
 def _c_tessdata() -> tuple[str, str, str]:
     base = os.path.join(paths.ROOT, "tessdata")
-    miss = [n for n in ("chi_sim", "eng", "osd")
-            if not os.path.exists(os.path.join(base, n + ".traineddata"))]
-    return ("ok" if not miss else "fail"), (f"缺失 {miss}" if miss else "chi_sim/eng/osd 就位"), base
+    miss = [
+        n
+        for n in ("chi_sim", "eng", "osd")
+        if not os.path.exists(os.path.join(base, n + ".traineddata"))
+    ]
+    return (
+        ("ok" if not miss else "fail"),
+        (f"缺失 {miss}" if miss else "chi_sim/eng/osd 就位"),
+        base,
+    )
 
 
 def _c_paddle() -> tuple[str, str, str]:
     try:
         from config.loader import load_ocr  # noqa: PLC0415
-        cfg = (load_ocr().get("ocr") or {})
+
+        cfg = load_ocr().get("ocr") or {}
         d = cfg.get("paddle_model_dir") or cfg.get("paddleocr_dir") or ""
     except Exception as e:  # noqa: BLE001
         return "warn", f"ocr.yaml 不可读：{type(e).__name__}", ""
@@ -130,8 +166,8 @@ def _c_token_fresh() -> tuple[str, str, str]:
     if not os.path.exists(p):
         return "warn", "无 token，跳过时效探测", ""
     import datetime  # noqa: PLC0415
-    days = (datetime.datetime.now()
-            - datetime.datetime.fromtimestamp(os.path.getmtime(p))).days
+
+    days = (datetime.datetime.now() - datetime.datetime.fromtimestamp(os.path.getmtime(p))).days
     return "warn", f"token 最后更新 {days} 天前（**无法本地判定有效性**，以首次核验为准）", ""
 
 
@@ -140,6 +176,7 @@ def _c_gov_db() -> tuple[str, str, str]:
         import sqlite3  # noqa: PLC0415
 
         from std_lib.common_lib import governance_store as gs  # noqa: PLC0415
+
         p = gs.db_path()
         if not os.path.exists(p):
             return "fail", f"治理库不存在：{p}（先 `python cli.py governance init`）", ""
@@ -151,11 +188,17 @@ def _c_gov_db() -> tuple[str, str, str]:
 
 
 def _c_sourcetree() -> tuple[str, str, str]:
-    need = (os.path.join(paths.ROOT, "paths.py"), paths.MODULES_DIR,
-            os.path.join(paths.MODULES_DIR, "regulatory_scrapers"))
+    need = (
+        os.path.join(paths.ROOT, "paths.py"),
+        paths.MODULES_DIR,
+        os.path.join(paths.MODULES_DIR, "regulatory_scrapers"),
+    )
     miss = [p for p in need if not os.path.exists(p)]
-    return ("ok" if not miss else "fail"), (f"缺 {miss}" if miss else "仓根 + modules/** 就位"), \
-        "非源码树安装（缺路径）会使全部模块级脚本失效"
+    return (
+        ("ok" if not miss else "fail"),
+        (f"缺 {miss}" if miss else "仓根 + modules/** 就位"),
+        "非源码树安装（缺路径）会使全部模块级脚本失效",
+    )
 
 
 def _c_inbox_corpus() -> tuple[str, str, str]:
@@ -164,8 +207,11 @@ def _c_inbox_corpus() -> tuple[str, str, str]:
     if not os.path.isdir(inbox):
         # N-31：`data/**` 不入库 → 投放区目录须由工具创建，故"缺失"是**待初始化**而非环境缺陷。
         # 判 FAIL 会让每个新克隆都红；给 warn + 明确修复命令（判据本意是"自指环防护"，见下）。
-        return "warn", f"投放区未初始化：{os.path.relpath(inbox, paths.ROOT)}", \
-            "跑 `python tools/inbox_scan.py --apply` 创建（幂等）"
+        return (
+            "warn",
+            f"投放区未初始化：{os.path.relpath(inbox, paths.ROOT)}",
+            "跑 `python tools/inbox_scan.py --apply` 创建（幂等）",
+        )
     if not os.path.isdir(corpus):
         return "warn", f"语料本体缺失：{os.path.relpath(corpus, paths.ROOT)}", "v2 §3.12"
     if os.path.abspath(inbox) == os.path.abspath(corpus):
@@ -179,22 +225,34 @@ def _c_lock() -> tuple[str, str, str]:
     if not os.path.exists(p):
         return "ok", "无锁文件（未在运行）", ""
     import datetime  # noqa: PLC0415
+
     age_h = (datetime.datetime.now().timestamp() - os.path.getmtime(p)) / 3600
     if age_h < 48:
-        return "warn", f"锁文件存在且 {age_h:.1f}h 内更新 → **可能有实例在运行**", \
-            "并发 run 会被锁拒绝（退出码 3）"
+        return (
+            "warn",
+            f"锁文件存在且 {age_h:.1f}h 内更新 → **可能有实例在运行**",
+            "并发 run 会被锁拒绝（退出码 3）",
+        )
     return "ok", f"锁文件陈旧（{age_h:.1f}h）", ""
 
 
 def _c_schedule() -> tuple[str, str, str]:
     try:
         from bootstrap import bootstrap  # noqa: PLC0415
-        bootstrap("all", include_tools=True)   # commands/ 禁自行注入（gate_import_bootstrap 硬零层）
+
+        bootstrap("all", include_tools=True)  # commands/ 禁自行注入（gate_import_bootstrap 硬零层）
         import install_schedule  # noqa: PLC0415
+
         ok, det = install_schedule.verify()
-        return ("ok" if ok else "warn"), ("已安装任务与 schedule.yaml 一致" if ok
-                                         else f"{len(det['problems'])} 项不一致（未安装/参数漂移）"), \
-            "`python cli.py schedule verify`"
+        return (
+            ("ok" if ok else "warn"),
+            (
+                "已安装任务与 schedule.yaml 一致"
+                if ok
+                else f"{len(det['problems'])} 项不一致（未安装/参数漂移）"
+            ),
+            "`python cli.py schedule verify`",
+        )
     except Exception as e:  # noqa: BLE001
         return "warn", f"无法校验计划任务：{type(e).__name__}", "非 Windows 或 schtasks 不可用"
 
@@ -202,6 +260,7 @@ def _c_schedule() -> tuple[str, str, str]:
 def _c_triggers() -> tuple[str, str, str]:
     try:
         from std_lib.common_lib import triggers as trg  # noqa: PLC0415
+
         rows = trg.decide({"argv": []})
         return ("ok" if rows else "fail"), f"{len(rows)} 个触发项可判定", "config/triggers.yaml"
     except Exception as e:  # noqa: BLE001
@@ -211,10 +270,14 @@ def _c_triggers() -> tuple[str, str, str]:
 def _c_disk() -> tuple[str, str, str]:
     try:
         import shutil as _sh  # noqa: PLC0415
+
         total, used, free = _sh.disk_usage(paths.ROOT)
-        free_gb = free / (1024 ** 3)
-        return ("ok" if free_gb >= DISK_MIN_GB else "fail"), \
-            f"余量 {free_gb:.1f} GB（阈值 {DISK_MIN_GB}）", "备份堆积会加速消耗"
+        free_gb = free / (1024**3)
+        return (
+            ("ok" if free_gb >= DISK_MIN_GB else "fail"),
+            f"余量 {free_gb:.1f} GB（阈值 {DISK_MIN_GB}）",
+            "备份堆积会加速消耗",
+        )
     except Exception as e:  # noqa: BLE001
         return "warn", f"{type(e).__name__}", ""
 
@@ -255,9 +318,16 @@ def run_checks(quick: bool = False) -> dict:
         items.append({"id": cid, "group": group, "state": state, "detail": detail, "note": note})
     fails = [i["id"] for i in items if i["state"] == "fail"]
     warns = [i["id"] for i in items if i["state"] == "warn"]
-    return {"items": items, "checked": len(items), "ok": len(items) - len(fails) - len(warns),
-            "warn": len(warns), "fail": len(fails), "failed_ids": fails, "warn_ids": warns,
-            "quick": quick}
+    return {
+        "items": items,
+        "checked": len(items),
+        "ok": len(items) - len(fails) - len(warns),
+        "warn": len(warns),
+        "fail": len(fails),
+        "failed_ids": fails,
+        "warn_ids": warns,
+        "quick": quick,
+    }
 
 
 def write_report(res: dict) -> str:
@@ -269,6 +339,7 @@ def write_report(res: dict) -> str:
 
 def main(argv=None) -> int:
     import argparse  # noqa: PLC0415
+
     ap = argparse.ArgumentParser(description="环境前置自检（v2 §3.13.4；18 项机器判定）")
     ap.add_argument("--quick", action="store_true", help="只跑 run 前置子集")
     ap.add_argument("--json", action="store_true", help="输出 JSON（stdout）")
@@ -286,7 +357,7 @@ def main(argv=None) -> int:
         if res["fail"]:
             print("环境不满足：修复上方 [FAIL] 项后重试（`cli.py run` 会被前置自检拒绝）")
         print(f"报告：{os.path.relpath(OUT_JSON, paths.ROOT)}")
-    return 3 if res["fail"] else 0
+    return ExitCode.ENV if res["fail"] else ExitCode.OK
 
 
 def run(argv=None) -> int:

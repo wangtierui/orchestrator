@@ -15,6 +15,7 @@
   - 禁止在其它模块本地定义模块名列表（含 `gates/`、`tools/`、`tests/`）；
   - 阶段 id 供 `cli.py run --from/--only` 与 `triggers.yaml` 的 `stage` 字段引用。
 """
+
 from __future__ import annotations
 
 from typing import Final, NamedTuple
@@ -81,8 +82,21 @@ def is_module_pkg(name: str) -> bool:
 # 注意：**编号顺序 ≠ 执行顺序**（6.8 analysis gen 先于 6.5 watch baseline 执行，
 # 见该文件 docstring）。此处按编号排序，执行顺序由编排器持有。
 PIPELINE_STAGES: Final[tuple[str, ...]] = (
-    "0", "1", "2", "2.5", "2.55", "2.6", "3", "3.5",
-    "4", "4.2", "4.5", "5.5", "6", "6.8", "6.5",
+    "0",
+    "1",
+    "2",
+    "2.5",
+    "2.55",
+    "2.6",
+    "3",
+    "3.5",
+    "4",
+    "4.2",
+    "4.5",
+    "5.5",
+    "6",
+    "6.8",
+    "6.5",
 )
 
 # 条件触发链阶段（v2 §3.5 设计，尚未接线；供 triggers.yaml 的 stage 字段引用）

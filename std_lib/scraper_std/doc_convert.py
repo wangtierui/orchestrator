@@ -15,6 +15,7 @@ doc→docx 转换（pbc 原内联 detect/convert 提升至此），供五源附�
       bytes → 临时文件 → 转换 → 读回 docx bytes → 清理临时目录。
 本模块零网络、纯本地工具；转换失败/环境缺失一律返回 None（由调用方降级）。
 """
+
 from __future__ import annotations
 
 import os
@@ -55,8 +56,10 @@ def find_libreoffice(bin: str | None = None) -> str | None:
     for cand in _windows_lo_candidates():
         if os.path.exists(cand):
             return cand
-    for cand in ("/c/Program Files/LibreOffice/program/soffice.exe",
-                 "/c/Program Files (x86)/LibreOffice/program/soffice.exe"):
+    for cand in (
+        "/c/Program Files/LibreOffice/program/soffice.exe",
+        "/c/Program Files (x86)/LibreOffice/program/soffice.exe",
+    ):
         if os.path.exists(cand):
             return cand
     return None
@@ -71,7 +74,9 @@ def doc_to_docx(doc_path: str, *, bin: str | None = None, timeout: int = 120) ->
     try:
         subprocess.run(
             [lo, "--headless", "--convert-to", "docx", "--outdir", out_dir, doc_path],
-            check=False, capture_output=True, timeout=timeout,
+            check=False,
+            capture_output=True,
+            timeout=timeout,
         )
     except (OSError, subprocess.TimeoutExpired):
         return None
@@ -80,8 +85,9 @@ def doc_to_docx(doc_path: str, *, bin: str | None = None, timeout: int = 120) ->
     return conv if os.path.exists(conv) else None
 
 
-def doc_bytes_to_docx(data: bytes, name: str = "", *, bin: str | None = None,
-                      timeout: int = 120) -> bytes | None:
+def doc_bytes_to_docx(
+    data: bytes, name: str = "", *, bin: str | None = None, timeout: int = 120
+) -> bytes | None:
     """bytes → 临时 .doc → 转 docx → 读回 bytes → 清理。失败返回 None。"""
     if not data:
         return None

@@ -28,6 +28,8 @@ graphify 重新生成 graph.html（`graphify extract` / `cluster-only` / `update
 再跑一次本工具即可恢复离线可用。
 """
 
+from __future__ import annotations
+
 import argparse
 import base64
 import hashlib
@@ -131,7 +133,7 @@ def patch_html(html_path: str) -> tuple:
     if m.group(0) == MIN_TAG:
         msg = "已是极简本地引用"
     else:
-        text = text[: m.start()] + MIN_TAG + text[m.end():]
+        text = text[: m.start()] + MIN_TAG + text[m.end() :]
         changed = True
         msg = "vis-network 引用 -> %s（去 integrity/crossorigin）" % VENDOR_REL
 
@@ -151,8 +153,11 @@ def patch_html(html_path: str) -> tuple:
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="graphify graph.html 依赖本地化")
-    ap.add_argument("--html", default=os.path.join(GRAPH_DIR, "graph.html"),
-                    help="目标 HTML（默认 graphify-out/graph.html）")
+    ap.add_argument(
+        "--html",
+        default=os.path.join(GRAPH_DIR, "graph.html"),
+        help="目标 HTML（默认 graphify-out/graph.html）",
+    )
     ap.add_argument("--check", action="store_true", help="只检查不写盘")
     args = ap.parse_args(argv)
 

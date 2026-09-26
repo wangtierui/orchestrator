@@ -19,6 +19,7 @@
     return ExitCode.OK
     raise SystemExit(ExitCode.DATA)
 """
+
 from __future__ import annotations
 
 from enum import IntEnum
@@ -32,17 +33,17 @@ class ExitCode(IntEnum):
 
     # ---- 1：通用失败（用法错误、门禁 FAIL）----
     FAIL = 1
-    USAGE = 1        # 别名：未知命令 / 参数用法错误
-    GATE = 1         # 别名：门禁 FAIL（`cli.py gates`）
+    USAGE = 1  # 别名：未知命令 / 参数用法错误
+    GATE = 1  # 别名：门禁 FAIL（`cli.py gates`）
 
     # ---- 2：数据 / 配置 / 外部依赖不可用 ----
     DATA = 2
-    CONFIG = 2       # 别名：sources.yaml 等配置不可用
-    DEPENDENCY = 2   # 别名：治理库未启用 / 网络失败
+    CONFIG = 2  # 别名：sources.yaml 等配置不可用
+    DEPENDENCY = 2  # 别名：治理库未启用 / 网络失败
 
     # ---- 3：环境不满足 / 前置未就绪 ----
     ENV = 3
-    LOCKED = 3       # 别名：单实例锁被占用（编排器既有语义）
+    LOCKED = 3  # 别名：单实例锁被占用（编排器既有语义）
     PRECONDITION = 3  # 别名：外部脚本/组件缺失、尾部固定节点失败
 
     # ---- 4：非源码树安装（`cli.py` 既有对外契约，保持不变）----

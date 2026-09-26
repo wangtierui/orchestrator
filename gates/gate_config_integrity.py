@@ -40,6 +40,7 @@
 
     过渡策略（v2 D-8）：D 组为"待落地"，仅出现在 detail.pending 中，不影响 PASS/FAIL。
 """
+
 from __future__ import annotations
 
 import json
@@ -57,7 +58,12 @@ _RETIRED_README = os.path.join(_TOOLS, _RETIRED_DIR, "README.md")
 
 # J3：引用扫描的扩展名（文档 .md 允许提及，但须带"已退役"字样，由人工维护）
 _REF_EXTS = (".py", ".yaml", ".yml", ".toml", ".bat", ".cfg", ".ini", ".ps1")
-_REF_SKIP_DIRS = {".git", "__pycache__", ".pytest_cache", "tools"}  # tools 由本门禁自身与 README 覆盖
+_REF_SKIP_DIRS = {
+    ".git",
+    "__pycache__",
+    ".pytest_cache",
+    "tools",
+}  # tools 由本门禁自身与 README 覆盖
 
 
 def _load_manifest() -> dict:
@@ -81,8 +87,9 @@ def _tools_py() -> set[str]:
 def _iter_ref_files():
     """J3 扫描范围：仓内 .py/.yaml/.toml/.bat 等（跳过 tools/、.git、缓存）。"""
     for dirpath, dirnames, filenames in os.walk(ROOT):
-        dirnames[:] = [d for d in dirnames
-                       if d not in _REF_SKIP_DIRS and d not in {"data", ".codebuddy"}]
+        dirnames[:] = [
+            d for d in dirnames if d not in _REF_SKIP_DIRS and d not in {"data", ".codebuddy"}
+        ]
         for fn in filenames:
             if fn.endswith(_REF_EXTS):
                 yield os.path.join(dirpath, fn)
@@ -101,7 +108,9 @@ def _check_tools(manifest: dict) -> tuple[list[str], dict, list[str]]:
     missing = sorted(actual - declared)
     ghost = sorted(declared - actual)
     if missing:
-        problems.append(f"J1: tools/ 下未登记脚本 {missing}（新增脚本必须写入 tools/_manifest.json）")
+        problems.append(
+            f"J1: tools/ 下未登记脚本 {missing}（新增脚本必须写入 tools/_manifest.json）"
+        )
     if ghost:
         problems.append(f"J1: 清单登记的幽灵条目 {ghost}（文件不存在）")
     detail["tools_total"] = len(actual)
@@ -114,7 +123,8 @@ def _check_tools(manifest: dict) -> tuple[list[str], dict, list[str]]:
         if is_retired_cat != is_retired_path:
             problems.append(
                 f"J2: {f} 的 category={e.get('category')!r} 与路径不一致"
-                f"（retired ⟺ tools/retired/，双向）")
+                f"（retired ⟺ tools/retired/，双向）"
+            )
     retired = [e for e in entries if e.get("category") == "retired"]
     detail["retired_count"] = len(retired)
 
@@ -138,8 +148,9 @@ def _check_tools(manifest: dict) -> tuple[list[str], dict, list[str]]:
                 continue
             rel = os.path.relpath(fp, ROOT).replace("\\", "/")
             # 逐行判定：整行注释（`#` 起头）视为历史痕迹
-            code_hit = any(pat.search(ln) and not ln.lstrip().startswith("#")
-                           for ln in text.splitlines())
+            code_hit = any(
+                pat.search(ln) and not ln.lstrip().startswith("#") for ln in text.splitlines()
+            )
             (refs if code_hit else comment_hits).setdefault(e["file"], []).append(rel)
     for f, locs in refs.items():
         problems.append(f"J3: 已退役脚本仍被**可执行引用** {f} <- {sorted(set(locs))[:5]}")
@@ -158,11 +169,16 @@ def _check_tools(manifest: dict) -> tuple[list[str], dict, list[str]]:
 
     # J5 仓根 .py 白名单
     allow = set(manifest.get("root_py_allowlist") or [])
-    actual_root = {fn for fn in os.listdir(ROOT)
-                   if fn.endswith(".py") and os.path.isfile(os.path.join(ROOT, fn))}
+    actual_root = {
+        fn
+        for fn in os.listdir(ROOT)
+        if fn.endswith(".py") and os.path.isfile(os.path.join(ROOT, fn))
+    }
     extra = sorted(actual_root - allow)
     if extra:
-        problems.append(f"J5: 仓根存在未登记 .py {extra}（须落位/删除，或显式登记进 root_py_allowlist）")
+        problems.append(
+            f"J5: 仓根存在未登记 .py {extra}（须落位/删除，或显式登记进 root_py_allowlist）"
+        )
     stale = sorted(allow - actual_root)
     if stale:
         warnings.append(f"J5: 白名单条目已不存在 {stale}（建议收缩）")
@@ -173,14 +189,25 @@ def _check_tools(manifest: dict) -> tuple[list[str], dict, list[str]]:
     # 即为此类残留）；仅报告不阻断 → 残留会长期累积。gates/ 与 tools/ 内的同类检查
     # 由 A1–A4 与 J3 承担，此处只盯**仓根**（`/` 不在路径里）。
     try:
-        r = subprocess.run(["git", "status", "--porcelain", "--untracked-files=all", "--", "."],
-                           cwd=ROOT, capture_output=True, text=True, encoding="utf-8",
-                           errors="replace", timeout=30)
-        untracked = [ln[3:].strip() for ln in (r.stdout or "").splitlines()
-                     if ln.startswith("??") and "/" not in ln[3:].strip()]
+        r = subprocess.run(
+            ["git", "status", "--porcelain", "--untracked-files=all", "--", "."],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=30,
+        )
+        untracked = [
+            ln[3:].strip()
+            for ln in (r.stdout or "").splitlines()
+            if ln.startswith("??") and "/" not in ln[3:].strip()
+        ]
         if untracked:
-            problems.append(f"J6: 仓根存在未跟踪且未忽略的文件 {sorted(untracked)}"
-                            "（三选一：入库 / 写进 .gitignore / 删除；勿堆在仓根）")
+            problems.append(
+                f"J6: 仓根存在未跟踪且未忽略的文件 {sorted(untracked)}"
+                "（三选一：入库 / 写进 .gitignore / 删除；勿堆在仓根）"
+            )
     except (OSError, subprocess.SubprocessError) as e:  # noqa: BLE001
         # git 不可用（tarball/无 git 环境）→ 只告警，不 FAIL（判据不可执行 ≠ 判据通过）
         warnings.append(f"J6: 未跟踪文件检查跳过（{type(e).__name__}）")
@@ -214,13 +241,13 @@ def _wl_kinds_in(text: str) -> list[str]:
         if i < 0:
             return out
         j = i + len(_WL_MARK)
-        while j < len(text) and text[j].isspace():   # 覆盖空格/制表/换行/CR
+        while j < len(text) and text[j].isspace():  # 覆盖空格/制表/换行/CR
             j += 1
         if j < len(text) and text[j] in _WL_QUOTES:
             q = text[j]
             k = text.find(q, j + 1)
             if k > 0:
-                cand = text[j + 1:k]
+                cand = text[j + 1 : k]
                 # 用标识符判定而非逐字符 islower()：kind 里可能含**数字**
                 # （如 `rfn_clean_drift_c2` 的 `2` 不满足 islower() → 曾被漏匹配）
                 if cand and cand.isidentifier() and cand == cand.lower():
@@ -244,10 +271,25 @@ def _check_worklist() -> tuple[list[str], dict]:
         # `tests` 必须排除：单测会**故意**写入未登记 kind（覆盖软校验负例）并调用
         # 待接的 kind（覆盖队列行为）——若纳入扫描，"产生方"判据会被测试夹具假命中
         # （实测：tests/test_governance_worklist.py 的 `some_new_kind` 曾使 J7 误报）。
-        dirnames[:] = [d for d in dirnames
-                       if d not in {".git", "__pycache__", ".pytest_cache", "data",
-                                    "reports", "graphify-out", "external", "backups",
-                                    ".ruff_cache", ".codebuddy", "retired", "tests"}]
+        dirnames[:] = [
+            d
+            for d in dirnames
+            if d
+            not in {
+                ".git",
+                "__pycache__",
+                ".pytest_cache",
+                "data",
+                "reports",
+                "graphify-out",
+                "external",
+                "backups",
+                ".ruff_cache",
+                ".codebuddy",
+                "retired",
+                "tests",
+            }
+        ]
         for fn in filenames:
             if not fn.endswith(".py"):
                 continue
@@ -265,11 +307,15 @@ def _check_worklist() -> tuple[list[str], dict]:
     if unregistered:
         problems.append(
             f"J7: 代码写入未登记的 worklist kind {unregistered}"
-            "（须先加入 config.enums.WORKLIST_KIND）")
-    missing = sorted(k for k in WORKLIST_KIND
-                     if k not in literal_kinds and k not in _PENDING_PRODUCERS)
+            "（须先加入 config.enums.WORKLIST_KIND）"
+        )
+    missing = sorted(
+        k for k in WORKLIST_KIND if k not in literal_kinds and k not in _PENDING_PRODUCERS
+    )
     if missing:
-        problems.append(f"J7: 已登记 kind 缺产生方 {missing}（或移入 _PENDING_PRODUCERS 并注明期次）")
+        problems.append(
+            f"J7: 已登记 kind 缺产生方 {missing}（或移入 _PENDING_PRODUCERS 并注明期次）"
+        )
     pending_hit = sorted(k for k in _PENDING_PRODUCERS if k in literal_kinds)
     if pending_hit:
         problems.append(f"J7: {pending_hit} 已接入产生方，须从 _PENDING_PRODUCERS 移除")
@@ -337,8 +383,9 @@ def _check_corpus() -> tuple[list[str], dict]:
 
         # J8.4
         if os.path.exists(os.path.join(body, "_ingest_manifest.json")):
-            problems.append(f"J8.4: 域 {name} 本体残留 _ingest_manifest.json"
-                            "（清单唯一源应为 reports/corpus/）")
+            problems.append(
+                f"J8.4: 域 {name} 本体残留 _ingest_manifest.json（清单唯一源应为 reports/corpus/）"
+            )
 
         # J8.3
         disk = 0
@@ -349,7 +396,8 @@ def _check_corpus() -> tuple[list[str], dict]:
         if disk != entry["declared"]:
             problems.append(
                 f"J8.3: 域 {name} 清单声明 {entry['declared']} 条 ≠ 本体实际 {disk} 个文件"
-                "（清单与本体不自洽；可用 --resync-manifest 以本体为准重建）")
+                "（清单与本体不自洽；可用 --resync-manifest 以本体为准重建）"
+            )
 
         # J8.5
         mp = os.path.join(man_dir, f"{name}.manifest.json")
@@ -369,11 +417,15 @@ def _check_corpus() -> tuple[list[str], dict]:
         entry["hash_mode"] = man.get("hash_mode", "")
         entry["sha256_empty"] = empty
         if man.get("hash_mode") != "sha256":
-            problems.append(f"J8.5: 域 {name} hash_mode={man.get('hash_mode')!r}"
-                            "（应为 sha256；size_only 不可用于去重判定）")
+            problems.append(
+                f"J8.5: 域 {name} hash_mode={man.get('hash_mode')!r}"
+                "（应为 sha256；size_only 不可用于去重判定）"
+            )
         if empty:
-            problems.append(f"J8.5: 域 {name} 清单有 {empty} 条 sha256 为空"
-                            "（F1：历史 --no-hash 遗留；用 --backfill-hash 回填）")
+            problems.append(
+                f"J8.5: 域 {name} 清单有 {empty} 条 sha256 为空"
+                "（F1：历史 --no-hash 遗留；用 --backfill-hash 回填）"
+            )
         detail["domains"][name] = entry
 
     detail["total_files"] = idx.get("total_files")
@@ -442,8 +494,9 @@ def _check_schedule() -> tuple[list[str], dict]:
         else:
             target = os.path.join(ROOT, argv[0])
         if not target or not os.path.exists(target):
-            problems.append(f"S2: {jid} argv[0]={argv[0]!r} 目标不存在"
-                            f"（解析为 {target or '<空>'}）")
+            problems.append(
+                f"S2: {jid} argv[0]={argv[0]!r} 目标不存在（解析为 {target or '<空>'}）"
+            )
 
     notify = data.get("notify") or {}
     if notify.get("kind") not in _NOTIFY_KINDS:
@@ -458,21 +511,25 @@ def _check_schedule() -> tuple[list[str], dict]:
     if os.path.exists(manual):
         text = open(manual, encoding="utf-8", errors="replace").read()
         try:
-            want = gsd._replace_block(text, gsd.TABLE_START, gsd.TABLE_END,
-                                      gsd.render_table(jobs))
+            want = gsd._replace_block(text, gsd.TABLE_START, gsd.TABLE_END, gsd.render_table(jobs))
             want = gsd._replace_block(want, gsd.CRON_START, gsd.CRON_END, gsd.render_cron(jobs))
         except LookupError as e:
             problems.append(f"S4: 运行手册缺自动段标记对：{e}")
             want = text
         if want != text:
-            problems.append("S4: 运行手册定时表与 config/schedule.yaml **不一致**"
-                            "（跑 `python tools/gen_schedule_doc.py` 重写；勿手改手册）")
+            problems.append(
+                "S4: 运行手册定时表与 config/schedule.yaml **不一致**"
+                "（跑 `python tools/gen_schedule_doc.py` 重写；勿手改手册）"
+            )
         detail["manual"] = os.path.relpath(manual, ROOT)
     else:
         detail["manual"] = "（缺运行手册：跳过 S4）"
-    detail["schedule"] = {"jobs": len(jobs), "cron": sum(1 for j in jobs
-                                                         if j.get("kind") == "cron"),
-                          "ids": sorted(ids), "notify": notify.get("kind", "")}
+    detail["schedule"] = {
+        "jobs": len(jobs),
+        "cron": sum(1 for j in jobs if j.get("kind") == "cron"),
+        "ids": sorted(ids),
+        "notify": notify.get("kind", ""),
+    }
     return problems, detail
 
 
@@ -516,8 +573,10 @@ def _check_triggers() -> tuple[list[str], dict]:
             problems.append(f"T2: {tid} 未声明 enabled_when（拒绝无判据执行）")
         for name in cond:
             if name not in impls:
-                problems.append(f"T2: {tid} 条件 {name!r} 无实现"
-                                f"（须登记进 CONDITION_IMPLS；当前 {sorted(impls)}）")
+                problems.append(
+                    f"T2: {tid} 条件 {name!r} 无实现"
+                    f"（须登记进 CONDITION_IMPLS；当前 {sorted(impls)}）"
+                )
         if t.get("on_fail") not in getattr(trg, "ON_FAIL", frozenset()):
             problems.append(f"T2: {tid} on_fail={t.get('on_fail')!r} 非法")
         steps = t.get("steps") or []
@@ -530,15 +589,22 @@ def _check_triggers() -> tuple[list[str], dict]:
                 problems.append(f"T3: {tid} steps[].argv 须为非空字符串列表")
                 continue
             head = argv[0]
-            target = (os.path.join(ROOT, argv[1]) if len(argv) > 1 else "") \
-                if head in _PYTHON_ALIASES_T else os.path.join(ROOT, head)
+            target = (
+                (os.path.join(ROOT, argv[1]) if len(argv) > 1 else "")
+                if head in _PYTHON_ALIASES_T
+                else os.path.join(ROOT, head)
+            )
             if not target or not os.path.exists(target):
                 problems.append(f"T3: {tid} argv[0]={head!r} 目标不存在（{target or '<空>'}）")
             to = s.get("timeout")
             if not isinstance(to, int) or not (0 < to <= _MAX_TIMEOUT):
                 problems.append(f"T3: {tid} timeout={to!r} 非法（1..{_MAX_TIMEOUT} 秒）")
-    detail["triggers"] = {"count": len(items), "steps": n_steps, "ids": sorted(ids),
-                          "conditions": sorted(impls)}
+    detail["triggers"] = {
+        "count": len(items),
+        "steps": n_steps,
+        "ids": sorted(ids),
+        "conditions": sorted(impls),
+    }
     return problems, detail
 
 
@@ -567,7 +633,7 @@ def _quoted_after(text: str, idx: int, quotes=_QUOTES) -> tuple[str, int]:
     k = text.find(q, j + 1)
     if k < 0:
         return "", idx
-    return text[j + 1:k], k
+    return text[j + 1 : k], k
 
 
 def _run_step_literals(text: str) -> list[str]:
@@ -607,7 +673,7 @@ def _tuple_of_quotes(text: str, marker: str) -> list[str]:
             k = text.find(ch, j + 1)
             if k < 0:
                 break
-            out.append(text[j + 1:k])
+            out.append(text[j + 1 : k])
             j = k + 1
             continue
         j += 1
@@ -627,16 +693,25 @@ def _check_step_order() -> tuple[list[str], dict]:
         return [f"R1: {rel} 未声明 STEP_ORDER（--from/--only 将失去判据来源）"], {}
     miss_in_order = sorted(set(used) - set(order))
     if miss_in_order:
-        problems.append(f"R2: {rel} 的 `_run(...)` 调用点 {miss_in_order} 未登记进 STEP_ORDER"
-                        "（`--only/--from` 将静默漏选该步骤）")
+        problems.append(
+            f"R2: {rel} 的 `_run(...)` 调用点 {miss_in_order} 未登记进 STEP_ORDER"
+            "（`--only/--from` 将静默漏选该步骤）"
+        )
     miss_in_file = sorted(set(order) - set(used))
     if miss_in_file:
-        problems.append(f"R2: STEP_ORDER 声明了 {miss_in_file} 但本文件无对应 `_run(...)` 调用"
-                        "（清单漂移：删步骤后未同步清单）")
-    detail = {"step_order": {"declared": len(order), "wired": len(used),
-                             "missing_in_order": miss_in_order,
-                             "missing_in_file": miss_in_file,
-                             "steps": order}}
+        problems.append(
+            f"R2: STEP_ORDER 声明了 {miss_in_file} 但本文件无对应 `_run(...)` 调用"
+            "（清单漂移：删步骤后未同步清单）"
+        )
+    detail = {
+        "step_order": {
+            "declared": len(order),
+            "wired": len(used),
+            "missing_in_order": miss_in_order,
+            "missing_in_file": miss_in_file,
+            "steps": order,
+        }
+    }
     return problems, detail
 
 
@@ -652,11 +727,30 @@ def _check_step_order() -> tuple[list[str], dict]:
 # --------------------------------------------------------------------------- #
 _AGENT_DIR = ".codebuddy"
 _AGENT_README = os.path.join(ROOT, _AGENT_DIR, "README.md")
-_CODEBUDDY_MARK = "." + "codebuddy"          # 拼接写法：避免本文件自身被"引用扫描"误伤
-_INPUT_MARKS = ("os.path.join(", "os.path.abspath(", "open(", "Path(", "listdir(",
-                "glob.glob(", "read_text(", "json.load(")
-_U_SCAN_SKIP = {".git", "__pycache__", ".pytest_cache", "data", "reports", "archive",
-                "external", "tessdata", "node_modules", ".venv", "venv"}
+_CODEBUDDY_MARK = "." + "codebuddy"  # 拼接写法：避免本文件自身被"引用扫描"误伤
+_INPUT_MARKS = (
+    "os.path.join(",
+    "os.path.abspath(",
+    "open(",
+    "Path(",
+    "listdir(",
+    "glob.glob(",
+    "read_text(",
+    "json.load(",
+)
+_U_SCAN_SKIP = {
+    ".git",
+    "__pycache__",
+    ".pytest_cache",
+    "data",
+    "reports",
+    "archive",
+    "external",
+    "tessdata",
+    "node_modules",
+    ".venv",
+    "venv",
+}
 _U_EXT = (".py", ".yaml", ".yml", ".json", ".toml", ".cfg", ".ini", ".bat")
 
 
@@ -674,7 +768,7 @@ def _check_agent_state() -> tuple[list[str], dict]:
             fp = os.path.join(dirpath, fn)
             rel = os.path.relpath(fp, ROOT).replace(os.sep, "/")
             if rel in ("gates/gate_config_integrity.py", "CODEBUDDY.md"):
-                continue          # 判据自身与仓级说明（口径声明处）
+                continue  # 判据自身与仓级说明（口径声明处）
             try:
                 lines = open(fp, encoding="utf-8", errors="replace").read().splitlines()
             except OSError:
@@ -688,8 +782,10 @@ def _check_agent_state() -> tuple[list[str], dict]:
                 if any(m in ln for m in _INPUT_MARKS):
                     refs.append(f"{rel}:{i}")
     if refs:
-        problems.append(f"U1: 有 {len(refs)} 处把 `.{_AGENT_DIR}/` 当输入引用 {refs[:5]}"
-                        "（它只是历史归档；把目录写进**扫描排除集**的字符串条目不算）")
+        problems.append(
+            f"U1: 有 {len(refs)} 处把 `.{_AGENT_DIR}/` 当输入引用 {refs[:5]}"
+            "（它只是历史归档；把目录写进**扫描排除集**的字符串条目不算）"
+        )
     detail["agent_refs"] = refs[:10]
 
     # ---- U2：权威声明存在且写明"仓外为权威" ----
@@ -706,8 +802,9 @@ def _check_agent_state() -> tuple[list[str], dict]:
         if os.path.exists(fp):
             txt = open(fp, encoding="utf-8", errors="replace").read()
             if _CODEBUDDY_MARK in txt:
-                problems.append(f"U3: config/{name} 引用了 `.{_AGENT_DIR}/`"
-                                "（调度/触发事实源不得回指助手记忆）")
+                problems.append(
+                    f"U3: config/{name} 引用了 `.{_AGENT_DIR}/`（调度/触发事实源不得回指助手记忆）"
+                )
 
     # ---- U4：.codebuddy/** 不得新增 yaml 声明 ----
     yamls: list[str] = []
@@ -716,15 +813,20 @@ def _check_agent_state() -> tuple[list[str], dict]:
             if fn.endswith((".yaml", ".yml")):
                 yamls.append(os.path.relpath(os.path.join(dirpath, fn), ROOT).replace(os.sep, "/"))
     if yamls:
-        problems.append(f"U4: {_AGENT_DIR}/ 出现声明类 yaml {yamls}"
-                        "（防记忆再次成为流程输入；声明应落 config/）")
+        problems.append(
+            f"U4: {_AGENT_DIR}/ 出现声明类 yaml {yamls}（防记忆再次成为流程输入；声明应落 config/）"
+        )
 
     # 披露：仓内归档规模（信息项，不阻断）
     n_hist = 0
     for _dirpath, _dirnames, filenames in os.walk(os.path.join(ROOT, _AGENT_DIR)):
         n_hist += sum(1 for fn in filenames if fn.endswith(".md"))
-    detail["agent_state"] = {"repo_archived_md": n_hist, "refs": len(refs), "yaml": yamls,
-                             "authority": "仓外（用户级）记忆为权威；仓内为历史归档"}
+    detail["agent_state"] = {
+        "repo_archived_md": n_hist,
+        "refs": len(refs),
+        "yaml": yamls,
+        "authority": "仓外（用户级）记忆为权威；仓内为历史归档",
+    }
     return problems, detail
 
 
@@ -754,8 +856,11 @@ def _check_domains() -> tuple[list[str], dict]:
     pending: list[str] = []
     for dom, spec in (data.get("domains") or {}).items():
         consumer = (spec.get("consumer") or "").strip()
-        rows[dom] = {"consumer": consumer, "layer": spec.get("layer", ""),
-                     "pipeline": spec.get("pipeline") or []}
+        rows[dom] = {
+            "consumer": consumer,
+            "layer": spec.get("layer", ""),
+            "pipeline": spec.get("pipeline") or [],
+        }
         if not consumer:
             problems.append(f"V2: 域 {dom} 未声明 consumer（有产出无消费）")
         elif consumer == _PENDING_CONSUMER:
@@ -763,8 +868,10 @@ def _check_domains() -> tuple[list[str], dict]:
         elif consumer == dom:
             problems.append(f"V2: 域 {dom} 的 consumer 指向自身（自指环 = 事实上的无消费）")
         elif consumer not in MODULE_PKG_SET:
-            problems.append(f"V2: 域 {dom} 的 consumer={consumer!r} 不在已登记模块"
-                            f"（{sorted(MODULE_PKG_SET)}）或 {_PENDING_CONSUMER}")
+            problems.append(
+                f"V2: 域 {dom} 的 consumer={consumer!r} 不在已登记模块"
+                f"（{sorted(MODULE_PKG_SET)}）或 {_PENDING_CONSUMER}"
+            )
         if not rows[dom]["pipeline"]:
             problems.append(f"V2: 域 {dom} 未声明 pipeline（投放后无处理路径）")
     # ⚠️ 键名刻意不叫 `domains`：该键已被 P2-3a 的 `_check_corpus()`（语料域本体/清单一致性）
@@ -800,16 +907,23 @@ def _check_constants() -> tuple[list[str], dict]:
     if set(gate_no_cross_module_import.MODULES) != set(C.MODULE_PKGS):
         problems.append(
             "B2: gate_no_cross_module_import.MODULES 与 MODULE_PKGS 不一致："
-            f"{sorted(gate_no_cross_module_import.MODULES)} vs {sorted(C.MODULE_PKGS)}")
+            f"{sorted(gate_no_cross_module_import.MODULES)} vs {sorted(C.MODULE_PKGS)}"
+        )
 
-    flat_mods = {"regulatory_scrapers", "regulatory_classifier",
-                 "internal_policy_base", "internal_policy_drafter"}   # 见 gate_flat_layout 遍历表
+    flat_mods = {
+        "regulatory_scrapers",
+        "regulatory_classifier",
+        "internal_policy_base",
+        "internal_policy_drafter",
+    }  # 见 gate_flat_layout 遍历表
     if not flat_mods <= set(C.MODULE_PKGS):
-        problems.append(f"B2: gate_flat_layout 遍历的模块未全部登记：{sorted(flat_mods - set(C.MODULE_PKGS))}")
+        problems.append(
+            f"B2: gate_flat_layout 遍历的模块未全部登记：{sorted(flat_mods - set(C.MODULE_PKGS))}"
+        )
     if set(gate_flat_layout.ALLOWED_DATA_SUBDIRS) - set(C.MODULE_PKGS):
         problems.append("B2: gate_flat_layout.ALLOWED_DATA_SUBDIRS 含未登记模块键")
 
-    for m in C.MODULE_SPECS:      # PKG_OWNER 应覆盖全部模块包
+    for m in C.MODULE_SPECS:  # PKG_OWNER 应覆盖全部模块包
         if m.pkg not in gate_no_cross_module_import.PKG_OWNER:
             problems.append(f"B2: PKG_OWNER 缺模块 {m.pkg}")
     detail["modules"] = list(C.MODULE_PKGS)
@@ -884,6 +998,9 @@ def run() -> tuple[bool, dict]:
 
 if __name__ == "__main__":
     passed, detail = run()
-    print("[config_integrity]", "PASS" if passed else "FAIL",
-          json.dumps(detail, ensure_ascii=False, indent=1))
+    print(
+        "[config_integrity]",
+        "PASS" if passed else "FAIL",
+        json.dumps(detail, ensure_ascii=False, indent=1),
+    )
     raise SystemExit(0 if passed else 1)

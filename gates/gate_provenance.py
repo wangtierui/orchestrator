@@ -9,6 +9,7 @@ gates/gate_provenance — 数据血缘（provenance）覆盖门禁（R10，2026-
   - rfn_clean_bridge.csv：表头含 generated_by/generated_at（reconcile/rfn.bridge upsert 注入）
 归属表为人工权威表，其血缘由 base source_snapshot（归属表 mtime）间接承载，不另行要求行级字段。
 """
+
 from __future__ import annotations
 
 import csv
@@ -41,7 +42,9 @@ def _check_records(problems, warns):
         recs = json.load(open(fp, encoding="utf-8"))
         bad = [r for r in recs if not all(r.get(k) for k in FINAL_PROV)]
         if bad:
-            problems.append(f"{name}: {len(bad)}/{len(recs)} 条缺 finalized provenance({FINAL_PROV})")
+            problems.append(
+                f"{name}: {len(bad)}/{len(recs)} 条缺 finalized provenance({FINAL_PROV})"
+            )
 
 
 def _check_csv(problems, pattern, what, warn_if_empty=True):
@@ -64,8 +67,10 @@ def run():
     problems, warns = [], []
     if not os.path.isdir(_DATA):
         # F-S09：输入缺失不得空跑放行（原 return True 使"全部门禁通过"含未实检门禁）。
-        return False, {"error": f"classifier data 未就绪（{_DATA}）；provenance 门禁未实检，不得视为通过",
-                       "problems": problems}
+        return False, {
+            "error": f"classifier data 未就绪（{_DATA}）；provenance 门禁未实检，不得视为通过",
+            "problems": problems,
+        }
     _check_records(problems, warns)
     _check_csv(problems, "T*_*.csv", "明细表")
     _check_csv(problems, "rfn_clean_bridge.csv", "桥表")
@@ -77,5 +82,8 @@ def run():
         nob = [r for r in rows if not (r.get("generated_by") and r.get("generated_at"))]
         if nob:
             problems.append(f"rfn_clean_bridge.csv: {len(nob)}/{len(rows)} 行缺 provenance 值")
-    return (not problems), {"base_files": len(glob.glob(os.path.join(_DATA, "_t*_base.json"))),
-                            "problems": problems[:30], "warnings": warns[:10]}
+    return (not problems), {
+        "base_files": len(glob.glob(os.path.join(_DATA, "_t*_base.json"))),
+        "problems": problems[:30],
+        "warnings": warns[:10],
+    }

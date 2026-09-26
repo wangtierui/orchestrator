@@ -23,6 +23,7 @@ gates/gate_hardcoded_paths — 盘符 / 跨仓 sys.path / 非代码文件硬编�
 
 输出 detail 同时给出 总命中 / 代码命中 / 非代码命中，避免"非代码命中"再次被忽略。
 """
+
 from __future__ import annotations
 
 import os
@@ -32,20 +33,35 @@ import re
 # 负向前瞻 (?<![A-Za-z:]) 使 "p:/"（http）/"s:/"（https）不命中，而 "D:/"、'C:\\' 正常命中。
 PAT_DRIVE = re.compile(r"(?<![A-Za-z:])[A-Za-z]:[/\\]")
 # sys.path 场景的跨仓引用（仅对 .py 生效）
-PAT_SYSPATH_LEGACY = re.compile(r"sys\.path\.(?:insert|append)\([^)]*(?:regulatory_scrapers|regulatory_classifier|internal_policy_drafter|internal_policy_base)")
+PAT_SYSPATH_LEGACY = re.compile(
+    r"sys\.path\.(?:insert|append)\([^)]*(?:regulatory_scrapers|regulatory_classifier|internal_policy_drafter|internal_policy_base)"
+)
 # OCR 旧硬编码
 PAT_TESS = re.compile(r"Program Files[/\\]Tesseract", re.IGNORECASE)
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # repo root
 EXCLUDE_DIRS = {
-    "backups", "data", "cache", "logs", "venv", ".venv", ".git", "__pycache__",
-    "reports", "published", ".pytest_cache", "node_modules",
+    "backups",
+    "data",
+    "cache",
+    "logs",
+    "venv",
+    ".venv",
+    ".git",
+    "__pycache__",
+    "reports",
+    "published",
+    ".pytest_cache",
+    "node_modules",
     # 构建产物（.gitignore 已忽略；pip wheel / pip install . 会整树复制到 build/lib）
-    "build", "dist",
+    "build",
+    "dist",
     # v2 §3.10（P2-3）：数据生命周期归档层（tools/retention.py 的目标；不入 git）
     "archive",
     # 本地环境/agent 状态目录（均不入 git；external 为 PaddleOCR/Tesseract 第三方 junction）
-    "external", "tessdata", ".codebuddy",
+    "external",
+    "tessdata",
+    ".codebuddy",
     # graphify 知识图谱产物（2026-09-20）：派生产物，由 `graphify extract` 在目标机重建，
     # 内容天然含本机绝对路径（graph.json 的 node label / converted/*.md 副本），不入库、不属硬编码违规
     "graphify-out",
@@ -57,8 +73,8 @@ EXCLUDE_DIRS = {
 SCAN_EXTS = (".py", ".json", ".yaml", ".yml", ".toml", ".cfg", ".ini", ".md", ".txt", ".mermaid")
 # 派生产物（不入库，内容含运行时绝对路径）：由生成器在目标机重建，不属"硬编码违规"
 EXCLUDE_RELPATHS = {
-    "modules/regulatory_scrapers/clean_index/index.json",   # clean_index 派生索引
-    "modules/regulatory_classifier/recall_audit/output",    # recall 四门禁产物目录
+    "modules/regulatory_scrapers/clean_index/index.json",  # clean_index 派生索引
+    "modules/regulatory_classifier/recall_audit/output",  # recall 四门禁产物目录
     # 2026-09-26（v2 §3.15.4）：本地工具链派生产物——file_list_watcher.py 生成物首行写
     # "根目录：<仓库绝对路径>"，属派生产物（已 gitignore，与 clean_index/index.json 同口径），
     # 非"硬编码违规"。修掉自 2026-09-24 起长期存在的 1 处 FAIL。
@@ -105,8 +121,7 @@ def _excluded_rel(rel: str) -> bool:
 def _walk():
     """产出 (绝对路径, 仓库相对 POSIX 路径, 小写扩展名)。"""
     for dirpath, dirnames, filenames in os.walk(ROOT):
-        dirnames[:] = [d for d in dirnames
-                       if d not in EXCLUDE_DIRS and not d.endswith(".egg-info")]
+        dirnames[:] = [d for d in dirnames if d not in EXCLUDE_DIRS and not d.endswith(".egg-info")]
         for fn in filenames:
             ext = os.path.splitext(fn)[1].lower()
             if ext not in SCAN_EXTS:
@@ -130,17 +145,22 @@ def run():
                     # 豁免仅对 .py 生效（文档/配置中的演示参数不应整体放行）
                     if is_py and (_is_allowed_line(line) or _is_repo_relative_syspath(line)):
                         continue
-                    hit = (PAT_DRIVE.search(line) or PAT_TESS.search(line)
-                           or (is_py and PAT_SYSPATH_LEGACY.search(line)))
+                    hit = (
+                        PAT_DRIVE.search(line)
+                        or PAT_TESS.search(line)
+                        or (is_py and PAT_SYSPATH_LEGACY.search(line))
+                    )
                     if hit:
                         findings.append((rel, lineno, line.strip()[:90]))
         except OSError:
             continue
     py_hits = sum(1 for f in findings if f[0].endswith(".py"))
     passed = not findings
-    detail = {"count": len(findings),
-              "py_count": py_hits,
-              "non_py_count": len(findings) - py_hits,
-              "scan_exts": list(SCAN_EXTS),
-              "examples": [f"{f}:{line_no}: {text}" for f, line_no, text in findings[:10]]}
+    detail = {
+        "count": len(findings),
+        "py_count": py_hits,
+        "non_py_count": len(findings) - py_hits,
+        "scan_exts": list(SCAN_EXTS),
+        "examples": [f"{f}:{line_no}: {text}" for f, line_no, text in findings[:10]],
+    }
     return passed, detail

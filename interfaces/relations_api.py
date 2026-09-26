@@ -24,6 +24,7 @@
         print(r["src_ref"], "→", r["dst_ref"] or r["dst_name"])
     stat()                                     # 生成元信息与质量指标
 """
+
 from __future__ import annotations
 
 import json
@@ -72,6 +73,7 @@ def _db_rows(where: str = "", args=(), limit: int = 0) -> list[dict] | None:
     """经治理库取关系行（`row_json` 还原原行）；不可用返回 None（调用方回退文件）。"""
     try:
         from std_lib.common_lib import governance_store as gs  # noqa: PLC0415
+
         if not gs.enabled() or gs.table_count("relation") == 0:
             return None
         sql = "SELECT row_json FROM relation"
@@ -122,10 +124,12 @@ def load(kind: str = "all") -> list[dict]:
     if kind == "regulatory":
         return [r for r in rows if r.get("src_kind") == "regulatory"]
     if kind == "internal":
-        return [r for r in rows if r.get("src_kind") == "internal"
-                and r.get("dst_kind") == "internal"]
-    return [r for r in rows if r.get("src_kind") == "internal"
-            and r.get("dst_kind") == "regulatory"]
+        return [
+            r for r in rows if r.get("src_kind") == "internal" and r.get("dst_kind") == "internal"
+        ]
+    return [
+        r for r in rows if r.get("src_kind") == "internal" and r.get("dst_kind") == "regulatory"
+    ]
 
 
 def load_cross_basis() -> list[dict]:
@@ -150,8 +154,9 @@ def by_src(ref: str) -> list[dict]:
     rows = _db_rows("src_ref=? OR src_key=?", (ref, ref))
     if rows is not None:
         return rows
-    return [r for r in _read_jsonl(INDEX_PATH)
-            if r.get("src_ref") == ref or r.get("src_key") == ref]
+    return [
+        r for r in _read_jsonl(INDEX_PATH) if r.get("src_ref") == ref or r.get("src_key") == ref
+    ]
 
 
 def by_dst(ref: str) -> list[dict]:
@@ -165,8 +170,9 @@ def by_dst(ref: str) -> list[dict]:
     rows = _db_rows("dst_ref=? OR dst_key=?", (ref, ref))
     if rows is not None:
         return rows
-    return [r for r in _read_jsonl(INDEX_PATH)
-            if r.get("dst_ref") == ref or r.get("dst_key") == ref]
+    return [
+        r for r in _read_jsonl(INDEX_PATH) if r.get("dst_ref") == ref or r.get("dst_key") == ref
+    ]
 
 
 def summary() -> dict:

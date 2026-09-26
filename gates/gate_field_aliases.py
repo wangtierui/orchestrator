@@ -9,6 +9,7 @@ gates/gate_field_aliases — 中文列名受控注册门禁（字段治理 2026-
 
 补充（FP 契约对齐）：rfn/文件指纹.csv 表头须 = registry.FP_FIELDS(6 列，含「唯一键」)。
 """
+
 from __future__ import annotations
 
 import csv
@@ -63,9 +64,14 @@ def run():
             problems.append(f"rfn/文件指纹.csv 表头 ≠ registry.FP_FIELDS(6列): {_head(fp)}")
     # 回验：非 recall 的登记列至少出现一次
     seen = {c for h in scanned for c in h}
-    unused = [k for k, v in CN_FIELD_REGISTRY.items()
-              if v.get("scope") != "recall" and k not in seen]
+    unused = [
+        k for k, v in CN_FIELD_REGISTRY.items() if v.get("scope") != "recall" and k not in seen
+    ]
     if unused:
         warns.append(f"注册表未命中列（scope≠recall 却未见文件表头）: {unused}")
-    return (not problems), {"problems": problems[:30], "warnings": warns[:10],
-                            "registered": len(CN_FIELD_REGISTRY), "checked_files": len(scanned)}
+    return (not problems), {
+        "problems": problems[:30],
+        "warnings": warns[:10],
+        "registered": len(CN_FIELD_REGISTRY),
+        "checked_files": len(scanned),
+    }

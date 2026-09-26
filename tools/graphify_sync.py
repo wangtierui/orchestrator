@@ -33,6 +33,8 @@ hook 形态（**后台执行**，不拖慢 commit / checkout）：
 hook 日志：graphify-out/sync.log（该目录不入库）。
 """
 
+from __future__ import annotations
+
 import argparse
 import os
 import shutil
@@ -77,8 +79,10 @@ def run_sync(quiet: bool = False) -> int:
     """执行一次同步：update + cluster-only + 全节点 html 导出 + 本地化补丁。"""
     exe = find_graphify()
     if not exe:
-        print("[FAIL] 未找到 graphify 可执行文件（期望 ~/.local/bin/graphify，"
-              "或先 uv tool install graphifyy）")
+        print(
+            "[FAIL] 未找到 graphify 可执行文件（期望 ~/.local/bin/graphify，"
+            "或先 uv tool install graphifyy）"
+        )
         return 1
 
     # 注意：graph.html 默认在节点数 >5000 时**退化为社区聚合视图**（346 节点），
@@ -86,8 +90,10 @@ def run_sync(quiet: bool = False) -> int:
     steps = [
         ("graphify update .（AST 增量重抽，无 API 成本）", [exe, "update", "."]),
         ("graphify cluster-only .（刷新社区与分析 sidecar）", [exe, "cluster-only", "."]),
-        ("graphify export html --node-limit %s（强制全节点视图）" % NODE_LIMIT,
-         [exe, "export", "html", "--node-limit", NODE_LIMIT]),
+        (
+            "graphify export html --node-limit %s（强制全节点视图）" % NODE_LIMIT,
+            [exe, "export", "html", "--node-limit", NODE_LIMIT],
+        ),
     ]
 
     total = len(steps) + 1
@@ -131,10 +137,10 @@ def hook_block() -> str:
     """生成受管 hook 片段：后台执行，输出落 graphify-out/sync.log。"""
     return (
         "%s\n"
-        '# 提交/检出后后台刷新 graphify 派生产物（图跟 HEAD 走；日志 graphify-out/sync.log）\n'
+        "# 提交/检出后后台刷新 graphify 派生产物（图跟 HEAD 走；日志 graphify-out/sync.log）\n"
         'export PATH="$HOME/.local/bin:$PATH"\n'
-        '# 日志固定 UTF-8（否则 Git Bash 下 python stdout 走 GBK，中文状态行变乱码）\n'
-        'export PYTHONIOENCODING=utf-8\n'
+        "# 日志固定 UTF-8（否则 Git Bash 下 python stdout 走 GBK，中文状态行变乱码）\n"
+        "export PYTHONIOENCODING=utf-8\n"
         'mkdir -p "%s"\n'
         '"%s" "%s" --quiet >> "%s" 2>&1 &\n'
         "%s\n"
@@ -217,7 +223,9 @@ def _mtime_str(path: str) -> str:
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="graphify 产物跟随 git 提交同步")
-    ap.add_argument("--install-hooks", action="store_true", help="安装 post-commit / post-checkout 受管块")
+    ap.add_argument(
+        "--install-hooks", action="store_true", help="安装 post-commit / post-checkout 受管块"
+    )
     ap.add_argument("--uninstall-hooks", action="store_true", help="移除受管块")
     ap.add_argument("--status", action="store_true", help="查看安装状态")
     ap.add_argument("--quiet", action="store_true", help="静默模式（供 hook 调用）")

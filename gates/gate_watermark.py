@@ -23,6 +23,7 @@
 与既有门禁的关系：**新增、不替换**。`gate_relations` 判据 8（mtime）仍保留；
 待阶段 4「判据切换」双判据并行验证无误后再移除旧判据。
 """
+
 from __future__ import annotations
 
 import os
@@ -39,16 +40,19 @@ def run() -> tuple[bool, dict]:
     db = gs.db_path()
     if not gs.enabled():
         return True, {
-            "enabled": False, "db": db, "problems": [],
+            "enabled": False,
+            "db": db,
+            "problems": [],
             "note": "治理库未启用（阶段 1 未运行）——本判据跳过；"
-                    "启用：`python cli.py governance init` 后跑生产刷新链",
+            "启用：`python cli.py governance init` 后跑生产刷新链",
         }
 
     try:
         passed, detail = gs.check_dependencies()
     except Exception as e:  # noqa: BLE001  库损坏属实质问题 → FAIL 并给出可执行指引
         return False, {
-            "enabled": True, "db": db,
+            "enabled": True,
+            "db": db,
             "problems": [f"治理库不可读：{type(e).__name__}: {e}"],
             "note": "治理库损坏时须显式处置（可删除后由刷新链重建；审计链以 exports/ 与 reports/ 为准）",
         }

@@ -96,6 +96,7 @@ BlobCache（二进制附件缓存）：
   * 写入仅在「获取到成功响应」后进行（与 nfra 既有契约一致，不缓存错误/拦截页）；
   * 迁移/合并：因命名算法确定性，不同根目录间整体 rename 即保命中，无需重抓。
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -171,10 +172,10 @@ def configure_cache_root(root: str) -> None:
 
 def scraper_cache_base() -> str:
     """统一缓存基根：优先 ``<repo>/modules/regulatory_scrapers/cache``（本仓布局）。"""
-    here = os.path.dirname(os.path.abspath(__file__))       # std_lib/scraper_std/
+    here = os.path.dirname(os.path.abspath(__file__))  # std_lib/scraper_std/
     repo_root = os.path.dirname(os.path.dirname(here))
     modules_cand = os.path.join(repo_root, "modules", "regulatory_scrapers", "cache")
-    if os.path.isdir(os.path.dirname(modules_cand)):        # modules/regulatory_scrapers 存在
+    if os.path.isdir(os.path.dirname(modules_cand)):  # modules/regulatory_scrapers 存在
         return modules_cand
     return os.path.join(repo_root, "cache")
 
@@ -204,7 +205,7 @@ _DOC_SLUGS: dict[str, str] = {
 
 def scraper_docs_base() -> str:
     """统一文档产物基根：``<repo>/modules/regulatory_scrapers/data/docs``。"""
-    here = os.path.dirname(os.path.abspath(__file__))       # std_lib/scraper_std/
+    here = os.path.dirname(os.path.abspath(__file__))  # std_lib/scraper_std/
     repo_root = os.path.dirname(os.path.dirname(here))
     return os.path.join(repo_root, "modules", "regulatory_scrapers", "data", "docs")
 
@@ -220,8 +221,9 @@ def docs_root(source: str, sub: str | None = None) -> str:
     return os.path.join(base, sub) if sub else base
 
 
-def bind_source_cache(source: str, kind: str = "json", *, root: str | None = None,
-                      offline: bool = False):
+def bind_source_cache(
+    source: str, kind: str = "json", *, root: str | None = None, offline: bool = False
+):
     """源级请求/附件缓存**单例绑定**：返回（首次创建并记忆的）缓存实例。
 
     kind：

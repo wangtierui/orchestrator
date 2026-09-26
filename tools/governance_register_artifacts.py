@@ -20,6 +20,7 @@
 幂等：以 sha 聚合 upsert，重复执行为 no-op（只做路径集合的并集）。
 治理库未创建时本工具会**自动建库**（`governance_store.init_db`）。
 """
+
 from __future__ import annotations
 
 import argparse
@@ -35,8 +36,9 @@ if ROOT not in sys.path:
 from std_lib.common_lib import governance_store as gs  # noqa: E402
 
 IPB_ORIGINALS = os.path.join(ROOT, "modules", "internal_policy_base", "data", "originals")
-EXT_ATTACHMENTS = os.path.join(ROOT, "modules", "regulatory_scrapers", "published",
-                               "external_attachments.jsonl")
+EXT_ATTACHMENTS = os.path.join(
+    ROOT, "modules", "regulatory_scrapers", "published", "external_attachments.jsonl"
+)
 
 
 def _row(path: str) -> dict | None:
@@ -62,8 +64,9 @@ def _row(path: str) -> dict | None:
 def _iter_internal(limit: int = 0):
     """内部制度原件（单一扁平原件层）。"""
     if not os.path.isdir(IPB_ORIGINALS):
-        print(f"[artifacts] 跳过 internal：目录不存在 {IPB_ORIGINALS}"
-              "（数据不入 git，异机需先恢复）")
+        print(
+            f"[artifacts] 跳过 internal：目录不存在 {IPB_ORIGINALS}（数据不入 git，异机需先恢复）"
+        )
         return
     names = sorted(os.listdir(IPB_ORIGINALS))
     if limit:
@@ -77,8 +80,10 @@ def _iter_internal(limit: int = 0):
 def _iter_external(limit: int = 0):
     """外部附件（发布件登记的 local_path；仅登记磁盘仍存在者）。"""
     if not os.path.exists(EXT_ATTACHMENTS):
-        print(f"[artifacts] 跳过 external：发布件不存在 {EXT_ATTACHMENTS}"
-              "（先运行 `orchestrator base publish`）")
+        print(
+            f"[artifacts] 跳过 external：发布件不存在 {EXT_ATTACHMENTS}"
+            "（先运行 `orchestrator base publish`）"
+        )
         return
     seen = set()
     n = 0
@@ -142,11 +147,15 @@ def main(argv=None) -> int:
 
     rows = gs.list_artifacts() if not args.dry_run else []
     multi = [r for r in rows if len(r.get("paths") or []) > 1]
-    print(f"[artifacts] 完成：登记 {done} 件"
-          + ("（dry-run 未写库）" if args.dry_run else f"；库内共 {len(rows)} 行"))
+    print(
+        f"[artifacts] 完成：登记 {done} 件"
+        + ("（dry-run 未写库）" if args.dry_run else f"；库内共 {len(rows)} 行")
+    )
     if multi:
-        print(f"[artifacts] 其中 {len(multi)} 行含**多路径**（跨层硬链接/同内容副本）——"
-              "这正是 path_keys 采用集合语义的原因")
+        print(
+            f"[artifacts] 其中 {len(multi)} 行含**多路径**（跨层硬链接/同内容副本）——"
+            "这正是 path_keys 采用集合语义的原因"
+        )
     return 0
 
 

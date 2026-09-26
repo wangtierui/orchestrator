@@ -5,6 +5,7 @@ gates/gate_contract — 数据契约门禁（实装：归属表 8 列 / 主题�
 数据契约唯一事实 = interfaces/contract.py（程序可读契约）。gate 读 modules 数据与契约比对，
 超集判定（允许下游加字段，缺必报）。纯读校验，不写回。
 """
+
 from __future__ import annotations
 
 import csv
@@ -29,10 +30,12 @@ _DET_RE = re.compile(r"^(T\d+)_\d+逐份条款引用与上位法依据明细表\
 # 底座命名：{T1..T10}×{base,final,matched,citerefs}（T0 不生成底座）
 _EXPECT_BASE_FILES = sorted(
     f"_t{int(c[1:])}_{suf}.json"
-    for c in THEME_MAP if c != "T0"
-    for suf in ("base", "final", "matched", "citerefs"))
+    for c in THEME_MAP
+    if c != "T0"
+    for suf in ("base", "final", "matched", "citerefs")
+)
 _BASE_RE = re.compile(r"^_t\d+_(base|final|matched|citerefs)\.json$")
-_EXPECT_DETS = len(THEME_MAP)   # 每主题 ≥1 明细（T0–T10 主题码全覆盖）
+_EXPECT_DETS = len(THEME_MAP)  # 每主题 ≥1 明细（T0–T10 主题码全覆盖）
 _EXPECT_BASE = len(_EXPECT_BASE_FILES)
 
 
@@ -116,8 +119,8 @@ def _manifest_checks() -> tuple[list[str], dict]:
             got[sym] = {"count": actual, "declared": cnt, "shape": type(obj).__name__}
             if actual != cnt:
                 problems.append(
-                    f"{name}: {mod_name}::{sym} 实际 {actual} ≠ 清单声明 {cnt}"
-                    f"（清单漂移，须同步）")
+                    f"{name}: {mod_name}::{sym} 实际 {actual} ≠ 清单声明 {cnt}（清单漂移，须同步）"
+                )
         detail["checked"][name] = {"file": rel, "module": mod_name, **got}
 
     return problems, detail
@@ -161,15 +164,20 @@ def run():
     dets = sorted(f for f in os.listdir(_DATA) if _DET_RE.match(f))
     det_codes = {_DET_RE.match(f).group(1) for f in dets}
     missing_codes = set(THEME_MAP) - det_codes
-    checked["detail_tables"] = {"count": len(dets), "expected": _EXPECT_DETS,
-                                "covered_themes": sorted(det_codes),
-                                "cols": len(contract.DETAIL_TABLE_FIELDS)}
+    checked["detail_tables"] = {
+        "count": len(dets),
+        "expected": _EXPECT_DETS,
+        "covered_themes": sorted(det_codes),
+        "cols": len(contract.DETAIL_TABLE_FIELDS),
+    }
     if missing_codes:
         problems.append(f"明细表主题覆盖缺 {sorted(missing_codes)}（THEME_MAP 驱动）: {dets}")
     for f in dets:
         head = _header(os.path.join(_DATA, f))
         if head != contract.DETAIL_TABLE_FIELDS:
-            problems.append(f"明细表 {f} 列头 ≠ 契约({len(contract.DETAIL_TABLE_FIELDS)}列): {head}")
+            problems.append(
+                f"明细表 {f} 列头 ≠ 契约({len(contract.DETAIL_TABLE_FIELDS)}列): {head}"
+            )
 
     # 4) 数据底座（R16：期望文件名集 = THEME_MAP{T1..T10}×4 派生）：结构类型 + 核心键超集
     bfiles = sorted(f for f in os.listdir(_DATA) if _BASE_RE.match(f))
@@ -180,8 +188,12 @@ def run():
         problems.append(f"数据底座缺 {len(miss)} 个（THEME_MAP 派生期望）: {miss[:5]}")
     if extra:
         problems.append(f"数据底座多余 {len(extra)} 个: {extra[:5]}")
-    expect = {"base": contract.BASE_KEYS, "final": contract.FINAL_KEYS,
-              "matched": contract.MATCHED_KEYS, "citerefs": contract.CITEREFS_KEYS}
+    expect = {
+        "base": contract.BASE_KEYS,
+        "final": contract.FINAL_KEYS,
+        "matched": contract.MATCHED_KEYS,
+        "citerefs": contract.CITEREFS_KEYS,
+    }
     shape = {"base": "list", "final": "list", "matched": "dict", "citerefs": "dict"}
     for f in bfiles:
         suf = _BASE_RE.match(f).group(1)

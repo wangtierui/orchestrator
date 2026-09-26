@@ -9,6 +9,7 @@ tools/gen_supp_timeliness_audit.py — supp 时效标注口径审计（批次3�
 
 用法：python tools/gen_supp_timeliness_audit.py
 """
+
 from __future__ import annotations
 
 import csv
@@ -28,8 +29,9 @@ _REPORTS = paths.REPORTS_DIR
 
 
 def latest_supp_csv() -> str:
-    cands = sorted(f for f in os.listdir(_CLEAN_DIR)
-                   if f.startswith("supp_cleaned_") and f.endswith(".csv"))
+    cands = sorted(
+        f for f in os.listdir(_CLEAN_DIR) if f.startswith("supp_cleaned_") and f.endswith(".csv")
+    )
     return os.path.join(_CLEAN_DIR, cands[-1]) if cands else ""
 
 
@@ -40,6 +42,7 @@ def main() -> int:
         return 1
     rows = list(csv.DictReader(open(p, encoding="utf-8-sig", newline="")))
     from collections import Counter
+
     ts = Counter((r.get("timeliness_status") or "").strip() or "(空)" for r in rows)
     vs_kind = Counter()
     vs_detail = Counter()
@@ -57,14 +60,21 @@ def main() -> int:
             vs_kind["其他"] += 1
             vs_detail[vs[:40]] += 1
     today = datetime.date.today().isoformat()
-    L = [f"# supp 时效标注口径审计（{today}）", "",
-         f"> 快照：`{os.path.basename(p)}`（{len(rows)} 行）| 工具：tools/gen_supp_timeliness_audit.py（只读）", "",
-         "## 1. 背景与修复", "",
-         "- 评估 P2：supp 清洗 `map_supp` 曾对无显式时效值默认 `valid` → 已修复（2026-09-08）：无显式值即保空（待核验位，不臆造现行有效）。",
-         "- 本仓 supp 存量各行均带 `verification_source`（数据源标注），属合法标注而非默认污染；口径：**supp 状态=数据源/官网标注的展示口径**，权威核验统一走 `verification_state`（北大法宝，`cli.py timeliness verify --source supp`）。",
-         "",
-         "## 2. 状态分布", "",
-         "| timeliness_status | 行数 |", "|---|---|"]
+    L = [
+        f"# supp 时效标注口径审计（{today}）",
+        "",
+        f"> 快照：`{os.path.basename(p)}`（{len(rows)} 行）| 工具：tools/gen_supp_timeliness_audit.py（只读）",
+        "",
+        "## 1. 背景与修复",
+        "",
+        "- 评估 P2：supp 清洗 `map_supp` 曾对无显式时效值默认 `valid` → 已修复（2026-09-08）：无显式值即保空（待核验位，不臆造现行有效）。",
+        "- 本仓 supp 存量各行均带 `verification_source`（数据源标注），属合法标注而非默认污染；口径：**supp 状态=数据源/官网标注的展示口径**，权威核验统一走 `verification_state`（北大法宝，`cli.py timeliness verify --source supp`）。",
+        "",
+        "## 2. 状态分布",
+        "",
+        "| timeliness_status | 行数 |",
+        "|---|---|",
+    ]
     for k, v in ts.most_common():
         L.append(f"| {k} | {v} |")
     L += ["", "## 3. 核验来源标注分布", "", "| 来源类别 | 行数 |", "|---|---|"]
@@ -73,10 +83,14 @@ def main() -> int:
     L += ["", "### 明细（前 12 类标注文本）", "", "| verification_source | 行数 |", "|---|---|"]
     for k, v in vs_detail.most_common(12):
         L.append(f"| {k} | {v} |")
-    L += ["", "## 4. 消费口径建议", "",
-          "1. classifier 底座 `eff_status` 以归属表时效列为权威（supp 行归入其中，不直接消费 supp cleaned 状态）。",
-          "2. 展示/检索类消费 supp cleaned 时明确 `verification_source` 口径（数据源标注），不作北大法宝核验结论。",
-          "3. 需要对 supp 补充权威核验 → `cli.py timeliness verify --source supp`（R13 三态，候选=cleaned 空时效行）。"]
+    L += [
+        "",
+        "## 4. 消费口径建议",
+        "",
+        "1. classifier 底座 `eff_status` 以归属表时效列为权威（supp 行归入其中，不直接消费 supp cleaned 状态）。",
+        "2. 展示/检索类消费 supp cleaned 时明确 `verification_source` 口径（数据源标注），不作北大法宝核验结论。",
+        "3. 需要对 supp 补充权威核验 → `cli.py timeliness verify --source supp`（R13 三态，候选=cleaned 空时效行）。",
+    ]
     os.makedirs(_REPORTS, exist_ok=True)
     out = os.path.join(_REPORTS, f"supp时效口径审计_{today.replace('-', '')}.md")
     with open(out, "w", encoding="utf-8", newline="\n") as fh:

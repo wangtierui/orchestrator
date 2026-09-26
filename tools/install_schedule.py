@@ -14,6 +14,7 @@ tools/install_schedule.py — 由 `config/schedule.yaml` 生成并安装计划�
 命名规则：`REG_ORCH_<id>`（固定前缀，使 verify/remove 可枚举、不误伤他人任务）。
 纪律：argv 一律来自 yaml，**不在此处再写一遍命令**（否则又出现第二处事实源）。
 """
+
 from __future__ import annotations
 
 import argparse
@@ -25,6 +26,7 @@ import xml.sax.saxutils as sx
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import paths  # noqa: E402
+from config.exitcodes import ExitCode  # noqa: E402  (R3：退出码语义化)
 
 PREFIX = "REG_ORCH_"
 SCHTASKS = "schtasks"
@@ -50,13 +52,41 @@ def _cron_parts(when: str) -> tuple[str, str, str, str, str] | None:
     return (p[0], p[1], p[2], p[3], p[4]) if len(p) == 5 else None
 
 
-_WEEK_MAP = {"0": "SUNDAY", "1": "MONDAY", "2": "TUESDAY", "3": "WEDNESDAY",
-             "4": "THURSDAY", "5": "FRIDAY", "6": "SATURDAY", "7": "SUNDAY"}
-_MONTH_NUM = {m: i + 1 for i, m in enumerate(
-    ("JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"))}
-_MONTH_ELEM = {i + 1: m.capitalize() for i, m in enumerate(
-    ("JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST",
-     "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"))}
+_WEEK_MAP = {
+    "0": "SUNDAY",
+    "1": "MONDAY",
+    "2": "TUESDAY",
+    "3": "WEDNESDAY",
+    "4": "THURSDAY",
+    "5": "FRIDAY",
+    "6": "SATURDAY",
+    "7": "SUNDAY",
+}
+_MONTH_NUM = {
+    m: i + 1
+    for i, m in enumerate(
+        ("JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC")
+    )
+}
+_MONTH_ELEM = {
+    i + 1: m.capitalize()
+    for i, m in enumerate(
+        (
+            "JANUARY",
+            "FEBRUARY",
+            "MARCH",
+            "APRIL",
+            "MAY",
+            "JUNE",
+            "JULY",
+            "AUGUST",
+            "SEPTEMBER",
+            "OCTOBER",
+            "NOVEMBER",
+            "DECEMBER",
+        )
+    )
+}
 
 
 def _start_boundary(mi: str, hh: str) -> str:
@@ -82,25 +112,31 @@ def build_xml(job: dict) -> str:
         if m != "*":
             if m not in _MONTH_NUM:
                 raise ValueError(f"{job.get('id')}: 月份 {m!r} 不支持（用 JAN..DEC）")
-            mon_xml = ("\n            <Months><" + _MONTH_ELEM[_MONTH_NUM[m]] + "/></Months>")
+            mon_xml = "\n            <Months><" + _MONTH_ELEM[_MONTH_NUM[m]] + "/></Months>"
         if dow != "*":
             days = "".join(f"<{_WEEK_MAP[d]}/>" for d in dow.split(",") if d in _WEEK_MAP)
-            trigger = (f"      <CalendarTrigger>\n"
-                       f"        <StartBoundary>{_start_boundary(mi, hh)}</StartBoundary>\n"
-                       f"        <ScheduleByWeek><WeeksInterval>1</WeeksInterval>"
-                       f"<DaysOfWeek>{days}</DaysOfWeek></ScheduleByWeek>\n"
-                       f"      </CalendarTrigger>")
+            trigger = (
+                f"      <CalendarTrigger>\n"
+                f"        <StartBoundary>{_start_boundary(mi, hh)}</StartBoundary>\n"
+                f"        <ScheduleByWeek><WeeksInterval>1</WeeksInterval>"
+                f"<DaysOfWeek>{days}</DaysOfWeek></ScheduleByWeek>\n"
+                f"      </CalendarTrigger>"
+            )
         elif dom != "*":
-            trigger = (f"      <CalendarTrigger>\n"
-                       f"        <StartBoundary>{_start_boundary(mi, hh)}</StartBoundary>\n"
-                       f"        <ScheduleByMonth><DaysOfMonth><Day>{int(dom)}</Day></DaysOfMonth>"
-                       f"{mon_xml}</ScheduleByMonth>\n"
-                       f"      </CalendarTrigger>")
+            trigger = (
+                f"      <CalendarTrigger>\n"
+                f"        <StartBoundary>{_start_boundary(mi, hh)}</StartBoundary>\n"
+                f"        <ScheduleByMonth><DaysOfMonth><Day>{int(dom)}</Day></DaysOfMonth>"
+                f"{mon_xml}</ScheduleByMonth>\n"
+                f"      </CalendarTrigger>"
+            )
         else:
-            trigger = (f"      <CalendarTrigger>\n"
-                       f"        <StartBoundary>{_start_boundary(mi, hh)}</StartBoundary>\n"
-                       f"        <ScheduleByDay><DaysInterval>1</DaysInterval></ScheduleByDay>\n"
-                       f"      </CalendarTrigger>")
+            trigger = (
+                f"      <CalendarTrigger>\n"
+                f"        <StartBoundary>{_start_boundary(mi, hh)}</StartBoundary>\n"
+                f"        <ScheduleByDay><DaysInterval>1</DaysInterval></ScheduleByDay>\n"
+                f"      </CalendarTrigger>"
+            )
         sched.append(trigger)
     argv = list(job.get("argv") or [])
     if not argv:
@@ -112,32 +148,34 @@ def build_xml(job: dict) -> str:
     else:
         command = os.path.join(paths.ROOT, head)
         args = " ".join(rest)
-    xml = ("<?xml version=\"1.0\" encoding=\"UTF-16\"?>\n"
-           "<Task version=\"1.4\" xmlns=\"http://schemas.microsoft.com/windows/2004/02/mit/task\">\n"
-           "  <RegistrationInfo>\n"
-           f"    <Description>REG_ORCH {sx.escape(job.get('id', ''))}: "
-           f"{sx.escape(job.get('desc', ''))}</Description>\n"
-           "    <Author>regulatory_compliance_orchestrator</Author>\n"
-           "  </RegistrationInfo>\n"
-           "  <Triggers>\n" + "\n".join(sched) + "\n  </Triggers>\n"
-           "  <Principals><Principal id=\"Author\"><LogonType>InteractiveToken</LogonType>"
-           "<RunLevel>LeastPrivilege</RunLevel></Principal></Principals>\n"
-           "  <Settings>\n"
-           "    <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>\n"
-           "    <DisallowStartIfOnBatteries>true</DisallowStartIfOnBatteries>\n"
-           "    <StopIfGoingOnBatteries>true</StopIfGoingOnBatteries>\n"
-           "    <StartWhenAvailable>true</StartWhenAvailable>\n"
-           "    <ExecutionTimeLimit>PT12H</ExecutionTimeLimit>\n"
-           "    <Enabled>true</Enabled>\n"
-           "  </Settings>\n"
-           "  <Actions Context=\"Author\">\n"
-           "    <Exec>\n"
-           f"      <Command>{sx.escape(command)}</Command>\n"
-           f"      <Arguments>{sx.escape(args)}</Arguments>\n"
-           f"      <WorkingDirectory>{sx.escape(paths.ROOT)}</WorkingDirectory>\n"
-           "    </Exec>\n"
-           "  </Actions>\n"
-           "</Task>\n")
+    xml = (
+        '<?xml version="1.0" encoding="UTF-16"?>\n'
+        '<Task version="1.4" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">\n'
+        "  <RegistrationInfo>\n"
+        f"    <Description>REG_ORCH {sx.escape(job.get('id', ''))}: "
+        f"{sx.escape(job.get('desc', ''))}</Description>\n"
+        "    <Author>regulatory_compliance_orchestrator</Author>\n"
+        "  </RegistrationInfo>\n"
+        "  <Triggers>\n" + "\n".join(sched) + "\n  </Triggers>\n"
+        '  <Principals><Principal id="Author"><LogonType>InteractiveToken</LogonType>'
+        "<RunLevel>LeastPrivilege</RunLevel></Principal></Principals>\n"
+        "  <Settings>\n"
+        "    <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>\n"
+        "    <DisallowStartIfOnBatteries>true</DisallowStartIfOnBatteries>\n"
+        "    <StopIfGoingOnBatteries>true</StopIfGoingOnBatteries>\n"
+        "    <StartWhenAvailable>true</StartWhenAvailable>\n"
+        "    <ExecutionTimeLimit>PT12H</ExecutionTimeLimit>\n"
+        "    <Enabled>true</Enabled>\n"
+        "  </Settings>\n"
+        '  <Actions Context="Author">\n'
+        "    <Exec>\n"
+        f"      <Command>{sx.escape(command)}</Command>\n"
+        f"      <Arguments>{sx.escape(args)}</Arguments>\n"
+        f"      <WorkingDirectory>{sx.escape(paths.ROOT)}</WorkingDirectory>\n"
+        "    </Exec>\n"
+        "  </Actions>\n"
+        "</Task>\n"
+    )
     return xml
 
 
@@ -147,8 +185,9 @@ def cron_jobs() -> list[dict]:
 
 def _run(argv: list[str]) -> tuple[int, str]:
     try:
-        r = subprocess.run(argv, capture_output=True, text=True, encoding="utf-8",
-                           errors="replace", timeout=60)
+        r = subprocess.run(
+            argv, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60
+        )
         return r.returncode, (r.stdout or "") + (r.stderr or "")
     except Exception as e:  # noqa: BLE001  schtasks 不可用（非 Windows/权限）→ 明确返回
         return 127, f"{type(e).__name__}: {e}"
@@ -178,9 +217,16 @@ def verify() -> tuple[bool, dict]:
         tn = task_name(j["id"])
         got = installed_argv(tn)
         want_args = " ".join((j.get("argv") or [])[1:])
-        rows.append({"id": j["id"], "task": tn, "installed": got is not None,
-                     "want_args": want_args,
-                     "got_args": (got[0] if got else ""), "start": (got[1] if got else "")})
+        rows.append(
+            {
+                "id": j["id"],
+                "task": tn,
+                "installed": got is not None,
+                "want_args": want_args,
+                "got_args": (got[0] if got else ""),
+                "start": (got[1] if got else ""),
+            }
+        )
         if got is None:
             problems.append(f"{tn}: 未安装")
         elif want_args and want_args not in got[0]:
@@ -196,34 +242,40 @@ def main(argv=None) -> int:
     g.add_argument("--verify", action="store_true", help="比对已安装任务与 yaml")
     g.add_argument("--remove", action="store_true", help="删除本工具注册的任务")
     g.add_argument("--list", action="store_true", help="列出任务名")
-    ap.add_argument("--xml-dir", default=os.path.join(paths.ROOT, "reports", "_tmp", "schedule"),
-                    help="XML 落盘目录（默认 reports/_tmp/schedule）")
+    ap.add_argument(
+        "--xml-dir",
+        default=os.path.join(paths.ROOT, "reports", "_tmp", "schedule"),
+        help="XML 落盘目录（默认 reports/_tmp/schedule）",
+    )
     args = ap.parse_args(argv)
 
     jobs = cron_jobs()
     if args.do_print:
         print(_gsd().render_cron(jobs))
-        return 0
+        return ExitCode.OK
     if args.list:
         for j in jobs:
             print(f"{task_name(j['id']):<28} {j['when']:<12} {' '.join(j['argv'])}")
-        return 0
+        return ExitCode.OK
     if args.verify:
         ok, det = verify()
         for r in det["rows"]:
-            print(f"  {'[OK]  ' if r['installed'] else '[缺失]'} {r['task']:<28} "
-                  f"{r['got_args'][:60]}")
+            print(
+                f"  {'[OK]  ' if r['installed'] else '[缺失]'} {r['task']:<28} {r['got_args'][:60]}"
+            )
         for p in det["problems"]:
             print(f"  [FAIL] {p}")
         print("[schedule] " + ("已安装任务与 schedule.yaml 一致" if ok else "存在不一致"))
-        return 0 if ok else 1
+        return ExitCode.OK if ok else ExitCode.FAIL
     if args.remove:
         rc_all = 0
         for j in jobs:
             rc, out = _run([SCHTASKS, "/delete", "/tn", task_name(j["id"]), "/f"])
-            print(f"  {'[OK]  ' if rc == 0 else '[FAIL]'} delete {task_name(j['id'])} {out.strip()[:60]}")
+            print(
+                f"  {'[OK]  ' if rc == 0 else '[FAIL]'} delete {task_name(j['id'])} {out.strip()[:60]}"
+            )
             rc_all |= rc
-        return 0 if rc_all == 0 else 1
+        return ExitCode.OK if rc_all == 0 else ExitCode.FAIL
 
     # ---- --install ----
     os.makedirs(args.xml_dir, exist_ok=True)
@@ -243,7 +295,7 @@ def main(argv=None) -> int:
         print(f"  {'[OK]  ' if rc == 0 else '[FAIL]'} create {tn} （{fp}）{out.strip()[:80]}")
         rc_all |= rc
     print("[schedule] 安装完成" if rc_all == 0 else "[schedule] 安装存在失败项")
-    return 0 if rc_all == 0 else 1
+    return ExitCode.OK if rc_all == 0 else ExitCode.FAIL
 
 
 if __name__ == "__main__":

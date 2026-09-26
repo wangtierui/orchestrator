@@ -11,26 +11,36 @@ scraper_std/unified_schema.py 迁移后从本文件 re-export（R5），保持�
   - 新增枚举值：先登记本文件 + 同步 config/schema 契约，再跑 gate_enum_values。
   - 值风格统一小写英文；历史中文台账仅允许在兼容读侧映射，不写入新数据。
 """
+
 from __future__ import annotations
 
 # ==================== external（监管外部文件） ====================
 
 # F1 timeliness_status（时效状态，7 值）——与 scraper_std/unified_schema 对齐
-TIMELINESS_STATUS: frozenset[str] = frozenset({
-    "valid",            # 现行有效
-    "amended",          # 已修订（原文件仍有效但被修订影响）
-    "repealed",         # 已废止
-    "partially_repealed",  # 部分废止
-    "expired",          # 已失效
-    "pending",          # 尚未施行
-    "uncertain",        # 不确定（占位 N/A 归并，表示未完成核验）
-})
+TIMELINESS_STATUS: frozenset[str] = frozenset(
+    {
+        "valid",  # 现行有效
+        "amended",  # 已修订（原文件仍有效但被修订影响）
+        "repealed",  # 已废止
+        "partially_repealed",  # 部分废止
+        "expired",  # 已失效
+        "pending",  # 尚未施行
+        "uncertain",  # 不确定（占位 N/A 归并，表示未完成核验）
+    }
+)
 # 中文 → 英文兼容映射（仅读旧台账/旧脚本时使用；新数据禁止写入中文值）
 TIMELINESS_CN2EN: dict[str, str] = {
-    "已废止": "repealed", "已失效": "expired", "现行有效": "valid",
-    "有效": "valid", "修订": "amended", "部分废止": "partially_repealed",
-    "待定": "pending", "尚未施行": "pending", "不确定": "uncertain",
-    "未核验": "uncertain", "未知": "uncertain",
+    "已废止": "repealed",
+    "已失效": "expired",
+    "现行有效": "valid",
+    "有效": "valid",
+    "修订": "amended",
+    "部分废止": "partially_repealed",
+    "待定": "pending",
+    "尚未施行": "pending",
+    "不确定": "uncertain",
+    "未核验": "uncertain",
+    "未知": "uncertain",
 }
 
 # F3 body_source（正文来源，3 值）
@@ -42,9 +52,16 @@ BODY_SOURCE: frozenset[str] = frozenset({"webpage", "downloaded_doc", "both"})
 #   plan     规划体：一、/（一）/——（产出 structure）
 #   notice   通知体：一、/（一）（产出 structure）
 #   plain    纯段落兜底（不物化段落，仅记计数——正文全文由 cleaned 承载）
-CLAUSE_PARSE_MODES: frozenset[str] = frozenset({
-    "law", "bulletin", "plan", "notice", "plain", "empty",
-})
+CLAUSE_PARSE_MODES: frozenset[str] = frozenset(
+    {
+        "law",
+        "bulletin",
+        "plan",
+        "notice",
+        "plain",
+        "empty",
+    }
+)
 # 条款校验问题严重度（参考 3.1 校验规则清单 的两档）
 CLAUSE_ISSUE_SEVERITY: frozenset[str] = frozenset({"ERROR", "WARN"})
 # 条款结构单元 level 受控值（2026-09-20 F6：`structure[]` 层级体 + `article_structure[]` 条内层级）
@@ -56,45 +73,66 @@ CLAUSE_STRUCTURE_LEVELS: frozenset[str] = frozenset({"一级", "二级", "条", 
 SOURCE_SET: frozenset[str] = frozenset({"nfra", "pbc", "mof", "gov", "supp"})
 # 子源/域名 → 五源标识归并表（v3 3.5）
 SOURCE_ALIASES: dict[str, str] = {
-    "xzfgk": "gov", "flk": "gov", "gov.cn": "gov", "gov.cn补充": "gov",
+    "xzfgk": "gov",
+    "flk": "gov",
+    "gov.cn": "gov",
+    "gov.cn补充": "gov",
     # 2026-09-15：gov 源第 2 子源「国务院政策文件库·国务院部门文件」
     # （www.gov.cn/zhengce/zhengceku/bmwj），采集器 collectors/gov_zhengceku.py；
     # 归并为 gov，子源名进 _raw_fields.子源。
-    "zhengceku": "gov", "bmwj": "gov",
-    "fgk.mof.gov.cn": "mof", "mof.gov.cn": "mof", "mof": "mof",
-    "nfra": "nfra", "pbc": "pbc", "supp": "supp",
+    "zhengceku": "gov",
+    "bmwj": "gov",
+    "fgk.mof.gov.cn": "mof",
+    "mof.gov.cn": "mof",
+    "mof": "mof",
+    "nfra": "nfra",
+    "pbc": "pbc",
+    "supp": "supp",
 }
 # supp 补充途径 → 内部通道（v3：source 仅五源，途径迁 _raw_fields）
 SUPP_SOURCE_CHANNEL: dict[str, str] = {
-    "gov.cn补充": "gov_website", "本地补充": "local_doc",
-    "官方发布": "official_publish", "本地非公开": "local_restricted",
+    "gov.cn补充": "gov_website",
+    "本地补充": "local_doc",
+    "官方发布": "official_publish",
+    "本地非公开": "local_restricted",
 }
 
 # ==================== internal（内部制度，D-03：IPN 独立体系） ====================
 
 # 内部制度状态（对齐参考蓝图 ACTIVE/EXPIRING/DEPRECATED 语义，小写统一）
-INTERNAL_STATUS: frozenset[str] = frozenset({
-    "draft",      # 起草中
-    "active",     # 现行有效
-    "expiring",   # 即将过期(≤30天)
-    "deprecated", # 已废止/被替代
-    "archived",   # 已归档
-})
+INTERNAL_STATUS: frozenset[str] = frozenset(
+    {
+        "draft",  # 起草中
+        "active",  # 现行有效
+        "expiring",  # 即将过期(≤30天)
+        "deprecated",  # 已废止/被替代
+        "archived",  # 已归档
+    }
+)
 # 内部制度文件类型
-INTERNAL_FILE_TYPE: frozenset[str] = frozenset({
-    "policy",     # 制度/管理办法
-    "process",    # 流程/作业指引
-    "guideline",  # 操作指引/细则
-    "manual",     # 手册
-    "other",
-})
+INTERNAL_FILE_TYPE: frozenset[str] = frozenset(
+    {
+        "policy",  # 制度/管理办法
+        "process",  # 流程/作业指引
+        "guideline",  # 操作指引/细则
+        "manual",  # 手册
+        "other",
+    }
+)
 # 内部制度编号前缀（D-03：与 RFN 空间分离）
 IPN_PREFIX = "IPN-"
 
 # 内部制度源文件扩展名（scan 支持集；2026-09-08 收口，避免散落扩展名字面量）
-INTERNAL_EXT: frozenset[str] = frozenset({
-    "pdf", "doc", "docx", "xlsx", "xls", "xlsm",
-})
+INTERNAL_EXT: frozenset[str] = frozenset(
+    {
+        "pdf",
+        "doc",
+        "docx",
+        "xlsx",
+        "xls",
+        "xlsm",
+    }
+)
 # 主题对齐方式（internal align_one.method；R18 只增不删）
 ALIGN_METHOD: frozenset[str] = frozenset({"title", "body", "unaligned"})
 # 桥/merged 引用匹配方式（matched_by）
@@ -106,127 +144,251 @@ BRIDGE_RELATION: frozenset[str] = frozenset({"self", "refresh", "supersede"})
 # 唯一抽取实现 = std_lib/common_lib/relations.py（跨监管文件与内部制度两类文本）；
 # 产物三类视图由 tools/extract_relations.py 生成（详见报告《依据与废止关系统一抽取》）。
 # 纪律：值统一小写英文（本层 SSOT），中文语义经本表映射/注释承载。
-RELATION_KIND: frozenset[str] = frozenset({
-    "basis",    # 依据关系（本文以《X》为制定/起草依据）
-    "repeal",   # 废止关系（本文废止/宣布失效《X》）
-})
+RELATION_KIND: frozenset[str] = frozenset(
+    {
+        "basis",  # 依据关系（本文以《X》为制定/起草依据）
+        "repeal",  # 废止关系（本文废止/宣布失效《X》）
+    }
+)
 # 关系两端主体类别（决定实体键空间：regulatory→RFN，internal→IPN）
 RELATION_DOC_KIND: frozenset[str] = frozenset({"regulatory", "internal"})
 # 依据类型（参照《…通用抽取器》的"实体法律依据/程序批准依据"二分）
-BASIS_TYPE_SUBSTANTIVE = "substantive"     # 实体法律依据（依据/根据《X》制定）
-BASIS_TYPE_PROCEDURAL = "procedural"       # 程序批准依据（经 X 同意/批准）
+BASIS_TYPE_SUBSTANTIVE = "substantive"  # 实体法律依据（依据/根据《X》制定）
+BASIS_TYPE_PROCEDURAL = "procedural"  # 程序批准依据（经 X 同意/批准）
 BASIS_TYPE: frozenset[str] = frozenset({BASIS_TYPE_SUBSTANTIVE, BASIS_TYPE_PROCEDURAL})
 # 废止动作（长词优先在 relations.RelationConfig 中保证）
-REPEAL_ACTION_REPEAL = "repeal"                    # 废止/同时废止/予以废止/宣布废止
-REPEAL_ACTION_INVALIDATE = "invalidate"            # 宣布失效/失效
-REPEAL_ACTION_CEASE = "cease"                      # 停止执行
-REPEAL_ACTION_INAPPLICABLE = "inapplicable"        # 不再适用
-REPEAL_ACTION_CANCEL = "cancel"                    # 予以取消/取消
-REPEAL_ACTION: frozenset[str] = frozenset({
-    REPEAL_ACTION_REPEAL, REPEAL_ACTION_INVALIDATE, REPEAL_ACTION_CEASE,
-    REPEAL_ACTION_INAPPLICABLE, REPEAL_ACTION_CANCEL,
-})
+REPEAL_ACTION_REPEAL = "repeal"  # 废止/同时废止/予以废止/宣布废止
+REPEAL_ACTION_INVALIDATE = "invalidate"  # 宣布失效/失效
+REPEAL_ACTION_CEASE = "cease"  # 停止执行
+REPEAL_ACTION_INAPPLICABLE = "inapplicable"  # 不再适用
+REPEAL_ACTION_CANCEL = "cancel"  # 予以取消/取消
+REPEAL_ACTION: frozenset[str] = frozenset(
+    {
+        REPEAL_ACTION_REPEAL,
+        REPEAL_ACTION_INVALIDATE,
+        REPEAL_ACTION_CEASE,
+        REPEAL_ACTION_INAPPLICABLE,
+        REPEAL_ACTION_CANCEL,
+    }
+)
 # 废止范围
-REPEAL_SCOPE_WHOLE = "whole"                # 整体
-REPEAL_SCOPE_PARTIAL = "partial"            # 部分（指定条款）
-REPEAL_SCOPE_ATTACHMENT = "attachment"      # 附件载明（清单在附件，需人工复核）
-REPEAL_SCOPE: frozenset[str] = frozenset({
-    REPEAL_SCOPE_WHOLE, REPEAL_SCOPE_PARTIAL, REPEAL_SCOPE_ATTACHMENT,
-})
+REPEAL_SCOPE_WHOLE = "whole"  # 整体
+REPEAL_SCOPE_PARTIAL = "partial"  # 部分（指定条款）
+REPEAL_SCOPE_ATTACHMENT = "attachment"  # 附件载明（清单在附件，需人工复核）
+REPEAL_SCOPE: frozenset[str] = frozenset(
+    {
+        REPEAL_SCOPE_WHOLE,
+        REPEAL_SCOPE_PARTIAL,
+        REPEAL_SCOPE_ATTACHMENT,
+    }
+)
 # 关系**目标类别**（R-F01 语义分层，2026-09-14）：把"未解析"按性质拆开——
 # 只有 `external` 才是"真·文件引用未定位"；`organ`（机关名，程序性依据目标）与
 # `generic`（`《条例》`式泛指词）**不应计入文件解析率**（实测二者合计约 280 条，
 # 若混入会把真实覆盖度低估约 13 个百分点）。
-RELATION_TARGET_CLASS: frozenset[str] = frozenset({
-    "entity",    # 强实体：解析到 RFN / IPN
-    "corpus",    # 弱引用：命中 cleaned 全集（dedup_key），RFN 未登记
-    "organ",     # 机关名（程序性依据目标，非文件）
-    "generic",   # 纯类型泛指词（抽取噪声）
-    "external",  # 语料外文件（法律/行政法规等，客观未采集）
-})
+RELATION_TARGET_CLASS: frozenset[str] = frozenset(
+    {
+        "entity",  # 强实体：解析到 RFN / IPN
+        "corpus",  # 弱引用：命中 cleaned 全集（dedup_key），RFN 未登记
+        "organ",  # 机关名（程序性依据目标，非文件）
+        "generic",  # 纯类型泛指词（抽取噪声）
+        "external",  # 语料外文件（法律/行政法规等，客观未采集）
+    }
+)
 # 关系目标实体解析方式（**扩展** REF_MATCH_METHOD：关系抽取需处理"精确/包含/未解析"）
-RELATION_MATCH_METHOD: frozenset[str] = frozenset({
-    "docno_sig",       # 文号签名（四位年+序号）匹配 —— 与 merged.associated_rfns 同义
-    "docno_exact",     # 文号归一后精确匹配（无法规年四年式者）
-    "title",           # 标题归一后精确匹配（norm_title_strict）
-    "title_contains",  # 标题包含匹配（短名 ⊆ 长名，长度阈值 ≥4）
-    "unresolved",      # 未解析到实体（**保留原文，禁止臆造**）
-})
+RELATION_MATCH_METHOD: frozenset[str] = frozenset(
+    {
+        "docno_sig",  # 文号签名（四位年+序号）匹配 —— 与 merged.associated_rfns 同义
+        "docno_exact",  # 文号归一后精确匹配（无法规年四年式者）
+        "title",  # 标题归一后精确匹配（norm_title_strict）
+        "title_contains",  # 标题包含匹配（短名 ⊆ 长名，长度阈值 ≥4）
+        "unresolved",  # 未解析到实体（**保留原文，禁止臆造**）
+    }
+)
 
 # ==================== doc_type 文种（G1，上收自 scraper_std/doc_type_cleaner，2026-09-08） ====================
 # 注意：FILE_TYPES 为 list，顺序承载「按匹配优先级」语义，禁止改序/去重时改变相对优先级。
 FILE_TYPES: list[str] = [
     # ===== 第一优先级：法定公文文种（15 种 + 令/函） =====
-    "命令", "决定", "决议", "公报", "公告", "通告", "意见",
-    "通知", "通报", "报告", "请示", "批复", "议案", "纪要", "令", "函",
+    "命令",
+    "决定",
+    "决议",
+    "公报",
+    "公告",
+    "通告",
+    "意见",
+    "通知",
+    "通报",
+    "报告",
+    "请示",
+    "批复",
+    "议案",
+    "纪要",
+    "令",
+    "函",
     # ===== 第二优先级：规范性文件类型 =====
-    "条例", "办法", "细则", "规则", "规定", "法",
+    "条例",
+    "办法",
+    "细则",
+    "规则",
+    "规定",
+    "法",
     # ===== 第三优先级：其他类型（常见） =====
-    "规划", "纲要", "计划", "方案", "要点", "安排", "预案",
-    "章程", "制度", "准则", "规范", "守则", "公约", "规程",
-    "说明", "解读", "指南", "指引", "问答", "释义",
-    "答复", "复函", "意见书", "告知书", "决定书",
-    "白皮书", "蓝皮书", "年报", "专报", "信息", "动态", "统计",
-    "公示", "证明", "凭证",
-    "合同", "协议", "备忘录",
+    "规划",
+    "纲要",
+    "计划",
+    "方案",
+    "要点",
+    "安排",
+    "预案",
+    "章程",
+    "制度",
+    "准则",
+    "规范",
+    "守则",
+    "公约",
+    "规程",
+    "说明",
+    "解读",
+    "指南",
+    "指引",
+    "问答",
+    "释义",
+    "答复",
+    "复函",
+    "意见书",
+    "告知书",
+    "决定书",
+    "白皮书",
+    "蓝皮书",
+    "年报",
+    "专报",
+    "信息",
+    "动态",
+    "统计",
+    "公示",
+    "证明",
+    "凭证",
+    "合同",
+    "协议",
+    "备忘录",
 ]
 # 法定公文文种（doc_type group=公文 用）
-LEGAL_DOC_TYPES: frozenset[str] = frozenset({
-    "决议", "决定", "命令", "令", "公报", "公告", "通告", "意见",
-    "通知", "通报", "报告", "请示", "批复", "议案", "函", "纪要",
-})
+LEGAL_DOC_TYPES: frozenset[str] = frozenset(
+    {
+        "决议",
+        "决定",
+        "命令",
+        "令",
+        "公报",
+        "公告",
+        "通告",
+        "意见",
+        "通知",
+        "通报",
+        "报告",
+        "请示",
+        "批复",
+        "议案",
+        "函",
+        "纪要",
+    }
+)
 # 规范性文件类型（doc_type group=法规类型 用）
 REGULATORY_TYPES: frozenset[str] = frozenset({"法", "条例", "规定", "办法", "细则", "规则"})
 # 别名归一（v3 确认 1=A：令→命令、法→法律）
 DOC_TYPE_ALIAS: dict[str, str] = {"令": "命令", "法": "法律"}
 # 其他类型分组（doc_type group=其他_分组名）
 DOC_TYPE_GROUP: dict[str, str] = {
-    "规划": "规划部署", "纲要": "规划部署", "计划": "规划部署",
-    "方案": "规划部署", "要点": "规划部署", "安排": "规划部署", "预案": "规划部署",
-    "章程": "制度治理", "制度": "制度治理", "准则": "制度治理",
-    "规范": "制度治理", "守则": "制度治理", "公约": "制度治理", "规程": "制度治理",
-    "说明": "说明解释", "解读": "说明解释", "指南": "说明解释",
-    "指引": "说明解释", "问答": "说明解释", "释义": "说明解释",
-    "答复": "答复处理", "复函": "答复处理", "意见书": "答复处理",
-    "告知书": "答复处理", "决定书": "答复处理",
-    "白皮书": "信息数据", "蓝皮书": "信息数据", "年报": "信息数据",
-    "专报": "信息数据", "信息": "信息数据", "动态": "信息数据", "统计": "信息数据",
-    "公示": "文书凭证", "证明": "文书凭证", "凭证": "文书凭证",
-    "合同": "合同协议", "协议": "合同协议", "备忘录": "合同协议",
+    "规划": "规划部署",
+    "纲要": "规划部署",
+    "计划": "规划部署",
+    "方案": "规划部署",
+    "要点": "规划部署",
+    "安排": "规划部署",
+    "预案": "规划部署",
+    "章程": "制度治理",
+    "制度": "制度治理",
+    "准则": "制度治理",
+    "规范": "制度治理",
+    "守则": "制度治理",
+    "公约": "制度治理",
+    "规程": "制度治理",
+    "说明": "说明解释",
+    "解读": "说明解释",
+    "指南": "说明解释",
+    "指引": "说明解释",
+    "问答": "说明解释",
+    "释义": "说明解释",
+    "答复": "答复处理",
+    "复函": "答复处理",
+    "意见书": "答复处理",
+    "告知书": "答复处理",
+    "决定书": "答复处理",
+    "白皮书": "信息数据",
+    "蓝皮书": "信息数据",
+    "年报": "信息数据",
+    "专报": "信息数据",
+    "信息": "信息数据",
+    "动态": "信息数据",
+    "统计": "信息数据",
+    "公示": "文书凭证",
+    "证明": "文书凭证",
+    "凭证": "文书凭证",
+    "合同": "合同协议",
+    "协议": "合同协议",
+    "备忘录": "合同协议",
 }
 
 # ==================== category 效力位阶（G2，上收自 scraper_std/category_classifier，2026-09-08） ====================
 # 13 级位阶（位阶序：数值型，司法解释用 2.5；category 受控值英文小写）
-CONSTITUTION = "constitution"                        # 宪法 1
-LAW = "law"                                          # 法律 2
+CONSTITUTION = "constitution"  # 宪法 1
+LAW = "law"  # 法律 2
 JUDICIAL_INTERPRETATION = "judicial_interpretation"  # 司法解释 2.5
-ADMIN_REGULATION = "admin_regulation"                # 行政法规 3
-LOCAL_REGULATION = "local_regulation"                # 地方性法规 4
-AUTONOMOUS_REGULATION = "autonomous_regulation"      # 自治条例 5
-DEPT_RULE = "dept_rule"                              # 部门规章 6
-LOCAL_GOVERNMENT_RULE = "local_government_rule"      # 地方政府规章 7
+ADMIN_REGULATION = "admin_regulation"  # 行政法规 3
+LOCAL_REGULATION = "local_regulation"  # 地方性法规 4
+AUTONOMOUS_REGULATION = "autonomous_regulation"  # 自治条例 5
+DEPT_RULE = "dept_rule"  # 部门规章 6
+LOCAL_GOVERNMENT_RULE = "local_government_rule"  # 地方政府规章 7
 STATE_COUNCIL_NORMATIVE = "state_council_normative"  # 国务院规范性文件 8
-DEPT_NORMATIVE = "dept_normative"                    # 部门规范性文件 9
+DEPT_NORMATIVE = "dept_normative"  # 部门规范性文件 9
 LOCAL_GOVERNMENT_NORMATIVE = "local_government_normative"  # 地方政府规范性文件 10
-INDUSTRY_RULE = "industry_rule"                      # 行业规定 11
-OTHER = "other"                                      # 其他 12
+INDUSTRY_RULE = "industry_rule"  # 行业规定 11
+OTHER = "other"  # 其他 12
 AUTHORITY_RANK: dict[str, float] = {
-    CONSTITUTION: 1, LAW: 2, JUDICIAL_INTERPRETATION: 2.5, ADMIN_REGULATION: 3,
-    LOCAL_REGULATION: 4, AUTONOMOUS_REGULATION: 5, DEPT_RULE: 6,
-    LOCAL_GOVERNMENT_RULE: 7, STATE_COUNCIL_NORMATIVE: 8, DEPT_NORMATIVE: 9,
-    LOCAL_GOVERNMENT_NORMATIVE: 10, INDUSTRY_RULE: 11, OTHER: 12,
+    CONSTITUTION: 1,
+    LAW: 2,
+    JUDICIAL_INTERPRETATION: 2.5,
+    ADMIN_REGULATION: 3,
+    LOCAL_REGULATION: 4,
+    AUTONOMOUS_REGULATION: 5,
+    DEPT_RULE: 6,
+    LOCAL_GOVERNMENT_RULE: 7,
+    STATE_COUNCIL_NORMATIVE: 8,
+    DEPT_NORMATIVE: 9,
+    LOCAL_GOVERNMENT_NORMATIVE: 10,
+    INDUSTRY_RULE: 11,
+    OTHER: 12,
 }
 CATEGORY_SET: frozenset[str] = frozenset(AUTHORITY_RANK)
 # raw category 存量映射（用户确认 3=A + 更正 3：法律解释=司法解释）
 CATEGORY_MAP: dict[str, str] = {
-    "法律": LAW, "国家法律": LAW, "法律法规": LAW, "宪法": CONSTITUTION,
-    "修正案": LAW, "法律解释": JUDICIAL_INTERPRETATION,  # 更正 3
+    "法律": LAW,
+    "国家法律": LAW,
+    "法律法规": LAW,
+    "宪法": CONSTITUTION,
+    "修正案": LAW,
+    "法律解释": JUDICIAL_INTERPRETATION,  # 更正 3
     "司法解释": JUDICIAL_INTERPRETATION,
     "行政法规": ADMIN_REGULATION,
-    "部门规章": DEPT_RULE, "财政法律法规（财政部规章）": DEPT_RULE,
-    "政策规章规范性文件": DEPT_NORMATIVE, "规范性文件": DEPT_NORMATIVE,
-    "财政部规范性文件": DEPT_NORMATIVE, "部门规范性文件": DEPT_NORMATIVE,
-    "地方法规": LOCAL_REGULATION, "监察法规": LOCAL_REGULATION,
+    "部门规章": DEPT_RULE,
+    "财政法律法规（财政部规章）": DEPT_RULE,
+    "政策规章规范性文件": DEPT_NORMATIVE,
+    "规范性文件": DEPT_NORMATIVE,
+    "财政部规范性文件": DEPT_NORMATIVE,
+    "部门规范性文件": DEPT_NORMATIVE,
+    "地方法规": LOCAL_REGULATION,
+    "监察法规": LOCAL_REGULATION,
     "行业自律文本": INDUSTRY_RULE,
 }
 # 括号修饰变体（内部便函/内部文件/内部备案）→ dept_normative + 修饰迁 _raw_fields.公开属性
@@ -240,19 +402,22 @@ CATEGORY_MODIFIER_HINTS: tuple[str, ...] = ("内部便函", "内部文件", "内
 #   ① 每个 kind 必须与**唯一产生方**对应（gate_config_integrity 断言双向闭合）；
 #   ② `open` 项**不阻断门禁**（与 gate_rfn_drift 的"存量治理不阻断"口径一致）；
 #   ③ 新增 kind 必须同时更新本表与产生方，禁止只写队列不登记。
-WORKLIST_KIND: frozenset[str] = frozenset({
-    "rfn_theme_uncertain",         # D1 tools/rfn_backlog.py：主题投票 uncertain（无票/并列/形态不明）
-    "internal_unaligned",          # D2 internal_policy_base/align.py：无对应监管主题，不进主视图
-    "timeliness_conflict",         # D3 consolidate_timeliness.py：needs_review 冲突台账
-    "rfn_clean_drift_c2",          # D4 reconcile_clean_drift.py：c2_pending（supersede 待人工）
-    "internal_identity_conflict",  # D5 internal_policy_base/indexer.py：IPN 身份冲突（标题变更）
-    "relevance_boundary",          # D6 filter_clean_relevance.py：BOUNDARY 边界案例裁决
-    "corpus_needs_review",         # §3.12.6 tools/inbox_scan.py：投放区不可识别扩展名
-    "ingest_quota_blocked",        # 配额/认证阻断的显式化（E 类断点）
-    "trigger_manual_breakpoint",   # P2-1 std_lib/common_lib/triggers.py：触发链 on_fail=manual_breakpoint
-})
+WORKLIST_KIND: frozenset[str] = frozenset(
+    {
+        "rfn_theme_uncertain",  # D1 tools/rfn_backlog.py：主题投票 uncertain（无票/并列/形态不明）
+        "internal_unaligned",  # D2 internal_policy_base/align.py：无对应监管主题，不进主视图
+        "timeliness_conflict",  # D3 consolidate_timeliness.py：needs_review 冲突台账
+        "rfn_clean_drift_c2",  # D4 reconcile_clean_drift.py：c2_pending（supersede 待人工）
+        "internal_identity_conflict",  # D5 internal_policy_base/indexer.py：IPN 身份冲突（标题变更）
+        "relevance_boundary",  # D6 filter_clean_relevance.py：BOUNDARY 边界案例裁决
+        "corpus_needs_review",  # §3.12.6 tools/inbox_scan.py：投放区不可识别扩展名
+        "ingest_quota_blocked",  # 配额/认证阻断的显式化（E 类断点）
+        "trigger_manual_breakpoint",  # P2-1 std_lib/common_lib/triggers.py：触发链 on_fail=manual_breakpoint
+    }
+)
 # 待办状态（`worklist.status`）
 WORKLIST_STATUS: frozenset[str] = frozenset({"open", "resolved", "dismissed"})
+
 
 # ==================== 自检 ====================
 def assert_enum_bindings() -> None:
@@ -271,7 +436,9 @@ def assert_enum_bindings() -> None:
     assert len(BASIS_TYPE) == 2 and len(REPEAL_ACTION) == 5 and len(REPEAL_SCOPE) == 3
     assert len(RELATION_MATCH_METHOD) == 5, RELATION_MATCH_METHOD
     assert len(RELATION_TARGET_CLASS) == 5, RELATION_TARGET_CLASS
-    assert REF_MATCH_METHOD.issubset(RELATION_MATCH_METHOD), "REF_MATCH_METHOD 须为关系匹配方式的子集"
+    assert REF_MATCH_METHOD.issubset(RELATION_MATCH_METHOD), (
+        "REF_MATCH_METHOD 须为关系匹配方式的子集"
+    )
     assert {BASIS_TYPE_SUBSTANTIVE, BASIS_TYPE_PROCEDURAL} == BASIS_TYPE
     assert {REPEAL_SCOPE_WHOLE, REPEAL_SCOPE_PARTIAL, REPEAL_SCOPE_ATTACHMENT} == REPEAL_SCOPE
     # G1 doc_type：FILE_TYPES 须含全部法定文种/法规类型值且与别名归一闭包一致
@@ -284,11 +451,21 @@ def assert_enum_bindings() -> None:
     assert len(AUTHORITY_RANK) == 13, AUTHORITY_RANK
     assert len(set(AUTHORITY_RANK.values())) == 13, "位阶数值重复"
     assert set(CATEGORY_MAP.values()).issubset(CATEGORY_SET)
-    assert sorted(CATEGORY_SET) == ["admin_regulation", "autonomous_regulation", "constitution",
-                                    "dept_normative", "dept_rule", "industry_rule",
-                                    "judicial_interpretation", "law", "local_government_normative",
-                                    "local_government_rule", "local_regulation", "other",
-                                    "state_council_normative"]
+    assert sorted(CATEGORY_SET) == [
+        "admin_regulation",
+        "autonomous_regulation",
+        "constitution",
+        "dept_normative",
+        "dept_rule",
+        "industry_rule",
+        "judicial_interpretation",
+        "law",
+        "local_government_normative",
+        "local_government_rule",
+        "local_regulation",
+        "other",
+        "state_council_normative",
+    ]
     # 条款解析（2026-09-20 F6）：解析模式 + 结构单元 level 闭包
     assert len(CLAUSE_PARSE_MODES) == 6, CLAUSE_PARSE_MODES
     assert CLAUSE_STRUCTURE_LEVELS == {"一级", "二级", "条", "项", "目"}, CLAUSE_STRUCTURE_LEVELS

@@ -25,9 +25,9 @@ LOG = logging.getLogger("scraper_std.sentence_split")
 
 # ① 标签语义
 _BLOCK_TAGS = re.compile(
-    r"<(?:div|p|h[1-6]|li|tr|table|section|article|header|footer|br)\b[^>]*>", re.I)
-_INLINE_TAGS = re.compile(
-    r"<(?:span|a|b|i|em|strong|u|font|label)\b[^>]*>", re.I)
+    r"<(?:div|p|h[1-6]|li|tr|table|section|article|header|footer|br)\b[^>]*>", re.I
+)
+_INLINE_TAGS = re.compile(r"<(?:span|a|b|i|em|strong|u|font|label)\b[^>]*>", re.I)
 _END_TAGS = re.compile(r"</(?:div|p|h[1-6]|li|tr|table|section|article|header|footer|br)\s*>", re.I)
 _REMOVE_TAGS = re.compile(r"<[^>]+>")
 

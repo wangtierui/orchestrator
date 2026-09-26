@@ -8,6 +8,7 @@ interfaces/contract.py — 数据契约（列头/枚举/键集/等价别名/血�
 P0 状态：以下常量从既有代码复制（值已核验）；P1 迁移 scraper_std/unified_schema 后，
 CSV_COLUMNS 等改为 re-export（R5）避免双定义。
 """
+
 from __future__ import annotations
 
 import os
@@ -26,8 +27,14 @@ if _STD_LIB not in sys.path:
 # 注：归属表保持 8 列零变更（Q1）；RFN↔clean 溯源走独立 rfn_clean_bridge.csv。
 # --------------------------------------------------------------------------- #
 REGISTRY_CSV_FIELDS: list[str] = [
-    "监管文件编号", "文件名称", "发文字号", "发布日期",
-    "文件来源", "时效状态", "判定日期", "编号备注",
+    "监管文件编号",
+    "文件名称",
+    "发文字号",
+    "发布日期",
+    "文件来源",
+    "时效状态",
+    "判定日期",
+    "编号备注",
 ]
 
 # 主题归属表 3 列
@@ -38,9 +45,20 @@ THEME_FIELDS: list[str] = ["监管文件编号", "主题", "判定依据"]
 # "核心文件引用-细化链条表（含法宝核验标记）"数据面落地；来源 clean 记录 timeliness_status/
 # verification_source 字段）。
 DETAIL_TABLE_FIELDS: list[str] = [
-    "监管文件编号", "主题", "标题", "发文字号", "文件来源",
-    "正文状态", "时效状态", "核验来源", "立法依据", "条款引用", "备注", "子主题",
-    "generated_by", "generated_at",
+    "监管文件编号",
+    "主题",
+    "标题",
+    "发文字号",
+    "文件来源",
+    "正文状态",
+    "时效状态",
+    "核验来源",
+    "立法依据",
+    "条款引用",
+    "备注",
+    "子主题",
+    "generated_by",
+    "generated_at",
 ]
 
 # RFN↔clean 溯源桥 11 列（Q1=A；写者=reconcile 后处理 R7；R10 provenance 加 generated_by/at）
@@ -48,9 +66,17 @@ DETAIL_TABLE_FIELDS: list[str] = [
 # 改为**英文键名 `rfn`**；归属表/主题表/明细表等业务展示表按既定决策保留中文列名不变。
 # 读取侧对旧表头做归一（rfn.bridge.load_bridge），写入侧一律按本契约落盘。
 RFN_CLEAN_BRIDGE_FIELDS: list[str] = [
-    "rfn", "文件来源", "source_url", "dedup_key",
-    "登记时标题", "登记时文号", "最近确认日期", "最近状态", "relation",
-    "generated_by", "generated_at",
+    "rfn",
+    "文件来源",
+    "source_url",
+    "dedup_key",
+    "登记时标题",
+    "登记时文号",
+    "最近确认日期",
+    "最近状态",
+    "relation",
+    "generated_by",
+    "generated_at",
 ]
 
 # --------------------------------------------------------------------------- #
@@ -85,7 +111,11 @@ CN_FIELD_REGISTRY: dict[str, dict] = {
     # 明细表 detail（10 中文 + 2 英文 generated_*）
     "标题": {"en": "title", "scope": "detail", "note": "明细叙述列（按归属表权威投影 R12）"},
     "正文状态": {"en": "body_status", "scope": "detail", "note": "完整/摘要/核心要点/无正文"},
-    "核验来源": {"en": "verification_source", "scope": "detail", "note": "F-L03：法宝核验标记（北大法宝/规则判断）"},
+    "核验来源": {
+        "en": "verification_source",
+        "scope": "detail",
+        "note": "F-L03：法宝核验标记（北大法宝/规则判断）",
+    },
     "立法依据": {"en": "basis", "scope": "detail", "note": "抽取（人工列保留）"},
     "条款引用": {"en": "article_refs", "scope": "detail", "note": "抽取（人工列保留）"},
     "备注": {"en": "note", "scope": "detail", "note": "人工列"},
@@ -94,10 +124,18 @@ CN_FIELD_REGISTRY: dict[str, dict] = {
     "登记时标题": {"en": "title_at_register", "scope": "bridge", "note": ""},
     "登记时文号": {"en": "doc_no_at_register", "scope": "bridge", "note": ""},
     "最近确认日期": {"en": "last_confirmed_date", "scope": "bridge", "note": ""},
-    "最近状态": {"en": "bridge_state", "scope": "bridge", "note": "ok/drift_c1/drift_c2 —— 桥同步状态，非时效状态（同名不同语义）"},
+    "最近状态": {
+        "en": "bridge_state",
+        "scope": "bridge",
+        "note": "ok/drift_c1/drift_c2 —— 桥同步状态，非时效状态（同名不同语义）",
+    },
     # rfn 索引 index（6，派生自归属表）
     # 指纹 fingerprint（6，含历史"唯一键"列）
-    "唯一键": {"en": "unique_key", "scope": "fingerprint", "note": "DOC:/MD5: 去重键（dedup_key 语义不同=内容 sha256）"},
+    "唯一键": {
+        "en": "unique_key",
+        "scope": "fingerprint",
+        "note": "DOC:/MD5: 去重键（dedup_key 语义不同=内容 sha256）",
+    },
     "文件指纹": {"en": "fingerprint", "scope": "fingerprint", "note": "MD5 摘要"},
     "登记时间": {"en": "registered_at", "scope": "fingerprint", "note": ""},
     # recall 产物关键列
@@ -143,26 +181,33 @@ FIELD_SEMANTIC_EQUIV: dict[str, tuple[str, ...]] = {
 #                    ③ src_kind=internal ∧ dst_kind=regulatory ∧ relation=basis（内部→监管依据）
 # 键集为程序消费硬契约：新增维度须同步本契约 + config/enums 受控值 + gate_relations。
 RELATION_FIELDS: tuple[str, ...] = (
-    "relation_id",          # REL-<16hex>：稳定去重键
-    "src_kind",             # ∈ RELATION_DOC_KIND
-    "src_ref",              # RFN / IPN（强实体；未登记时为空）
-    "src_key",              # 弱键：cleaned dedup_key（监管源未登记 RFN 时）
-    "src_name", "src_docno", "src_source",
-    "dst_kind",             # ∈ RELATION_DOC_KIND
-    "dst_ref",              # RFN / IPN（强实体；未解析时为空 —— 禁止臆造）
-    "dst_key",              # 弱键：cleaned dedup_key
-    "dst_class",            # ∈ RELATION_TARGET_CLASS：目标性质（entity/corpus/organ/generic/external）
-    "dst_name", "dst_docno", "dst_normalized_name",
-    "relation",             # ∈ RELATION_KIND（basis / repeal）
-    "basis_type",           # ∈ BASIS_TYPE ∪ {""}（repeal 行为空）
-    "article", "is_explicit",
-    "action",               # ∈ REPEAL_ACTION ∪ {""}（basis 行为空）
-    "scope",                # ∈ REPEAL_SCOPE ∪ {""}
+    "relation_id",  # REL-<16hex>：稳定去重键
+    "src_kind",  # ∈ RELATION_DOC_KIND
+    "src_ref",  # RFN / IPN（强实体；未登记时为空）
+    "src_key",  # 弱键：cleaned dedup_key（监管源未登记 RFN 时）
+    "src_name",
+    "src_docno",
+    "src_source",
+    "dst_kind",  # ∈ RELATION_DOC_KIND
+    "dst_ref",  # RFN / IPN（强实体；未解析时为空 —— 禁止臆造）
+    "dst_key",  # 弱键：cleaned dedup_key
+    "dst_class",  # ∈ RELATION_TARGET_CLASS：目标性质（entity/corpus/organ/generic/external）
+    "dst_name",
+    "dst_docno",
+    "dst_normalized_name",
+    "relation",  # ∈ RELATION_KIND（basis / repeal）
+    "basis_type",  # ∈ BASIS_TYPE ∪ {""}（repeal 行为空）
+    "article",
+    "is_explicit",
+    "action",  # ∈ REPEAL_ACTION ∪ {""}（basis 行为空）
+    "scope",  # ∈ REPEAL_SCOPE ∪ {""}
     "reason",
-    "matched_by",           # ∈ RELATION_MATCH_METHOD
-    "confidence",           # 按 matched_by 的置信度（0-1）
-    "source_offset", "source_snippet",     # 溯源：正文偏移 + 出处片段
-    "generated_by", "generated_at",
+    "matched_by",  # ∈ RELATION_MATCH_METHOD
+    "confidence",  # 按 matched_by 的置信度（0-1）
+    "source_offset",
+    "source_snippet",  # 溯源：正文偏移 + 出处片段
+    "generated_by",
+    "generated_at",
 )
 # 派生视图（类别 3 的纯依据边；非事实源，由 SSOT 过滤而来）
 CROSS_BASIS_FIELDS: tuple[str, ...] = RELATION_FIELDS
@@ -206,14 +251,20 @@ def assert_alias_integrity() -> None:
 # 底座 JSON 键集（Gate4 核心键，source: recall_audit/run_retrieval_after_checks.py:455-464）
 # 超集判定：允许未来加字段，缺字段必报。
 # --------------------------------------------------------------------------- #
-BASE_KEYS = {"监管文件编号", "doc_no", "eff_status", "file_src", "real_year",
-             "title", "year_reported"}
+BASE_KEYS = {
+    "监管文件编号",
+    "doc_no",
+    "eff_status",
+    "file_src",
+    "real_year",
+    "title",
+    "year_reported",
+}
 FINAL_KEYS = BASE_KEYS | {"cluster", "source_origin", "src_mark"}
 # matched/citerefs 顶层为 dict{监管文件编号: 记录}；行内**含**「监管文件编号」键（R9 生效后
 # 实测一致，F-D11：原注释"行内不再重复"与数据不符，已按实测补入必选键集）。
 MATCHED_KEYS = {"监管文件编号", "body", "body_len", "docno", "lib", "title"}
-CITEREFS_KEYS = {"监管文件编号", "art_refs", "basis", "body_len", "lib",
-                 "name_refs_top", "title"}
+CITEREFS_KEYS = {"监管文件编号", "art_refs", "basis", "body_len", "lib", "name_refs_top", "title"}
 
 # ============ clause_index 条文产物契约（②，2026-09-08） ============
 # 产物：modules/regulatory_scrapers/data/clauses/{src}_clauses_{date}.jsonl（每行一份文件条款）
@@ -223,9 +274,18 @@ CITEREFS_KEYS = {"监管文件编号", "art_refs", "basis", "body_len", "lib",
 # F-D10（2026-09-13 SSOT 专项）：条款级维度补全——行内联 rfn（rfn_clean_bridge 投影）+
 # 时效/日期（cleaned 记录直取）；消费端按条款行即可做 RFN/时效筛选，无需二次 join。
 CLAUSE_LINE_FIELDS: tuple[str, ...] = (
-    "dedup_key", "source_url", "document_number", "title",
-    "rfn", "timeliness_status", "publish_date", "effective_date",
-    "chapter_count", "article_count", "chapters", "articles",
+    "dedup_key",
+    "source_url",
+    "document_number",
+    "title",
+    "rfn",
+    "timeliness_status",
+    "publish_date",
+    "effective_date",
+    "chapter_count",
+    "article_count",
+    "chapters",
+    "articles",
     # 2026-09-18 条文解析适配（参考 auto_degrade_parser / 3.x 校验器 / 5.x 修复件）：
     #   parse_mode      解析模式（受控枚举 config.enums.CLAUSE_PARSE_MODES）
     #   parse_score     {total, coverage, legality, continuity}（参考 ModeScorer）
@@ -235,8 +295,13 @@ CLAUSE_LINE_FIELDS: tuple[str, ...] = (
     #   structure       非条文体（通知/通报/规划）层级结构（原文序号，不重标为「第X条」）
     #   structure_count 结构单元数（与 chapters/article_count 同口径的快速标量）
     #   validation      条款校验结果 {status, error_count, warn_count, issues[]}（V001–V010）
-    "parse_mode", "parse_score", "parse_meta", "is_fallback",
-    "structure", "structure_count", "validation",
+    "parse_mode",
+    "parse_score",
+    "parse_meta",
+    "is_fallback",
+    "structure",
+    "structure_count",
+    "validation",
     # 2026-09-20 条内层级（F6）：law 模式条文内的「项（一）/目 1.」层级。
     # 节点键集**复用** CLAUSE_STRUCTURE_FIELDS；level ∈ CLAUSE_STRUCTURE_LEVELS（含 条/项/目）。
     # 只对含（X）的条文产出节点（`articles[].body` 原文保持不动 → 下游零改动）。
@@ -245,16 +310,28 @@ CLAUSE_LINE_FIELDS: tuple[str, ...] = (
 CLAUSE_ARTICLE_FIELDS: tuple[str, ...] = ("no", "number", "body")
 CLAUSE_CHAPTER_FIELDS: tuple[str, ...] = ("no", "title", "article_index")
 # 条款结构单元（非条文体 structure[] 与条内 article_structure[]）节点字段（键集恒定）
-CLAUSE_STRUCTURE_FIELDS: tuple[str, ...] = ("level", "number", "title", "content",
-                                            "items", "children")
+CLAUSE_STRUCTURE_FIELDS: tuple[str, ...] = (
+    "level",
+    "number",
+    "title",
+    "content",
+    "items",
+    "children",
+)
 
 # 内部制度条文产物（`internal_policy_base/data/processed/<ipn>_clauses.json`）字段契约。
 # 2026-09-19：解析器与外部条款产物同源（`document_structure.parse_document`），载荷增量扩展
 # 三键（structure/structure_count/parse_mode）；`chapters`/`articles` 键集与语义不变
 # （消费方 `build_internal._clauses()` / drafter 条款对照只读 articles）。
 # 唯一装配实现 = `internal_policy_base.extract.build_clause_payload`（三写入点共用）。
-INTERNAL_CLAUSE_FIELDS: tuple[str, ...] = ("ipn", "chapters", "articles",
-                                           "structure", "structure_count", "parse_mode")
+INTERNAL_CLAUSE_FIELDS: tuple[str, ...] = (
+    "ipn",
+    "chapters",
+    "articles",
+    "structure",
+    "structure_count",
+    "parse_mode",
+)
 
 # 富内容对象轨（2026-09-09 rich_object；raw/cleaned JSONL 行内轨，不入 CSV 39 列）：
 #   写者 = 采集/摄取侧 rich_object_fields（docx/doc/xlsx 图形/公式/图片），pipeline 逐行透传。
@@ -264,8 +341,15 @@ RICH_OBJECT_KEYS: tuple[str, ...] = ("rich_structured", "rich_text", "rich_count
 # 背景：五源 attachments 字段长期 5 套并存（attachment_name/name/file_name；url/file_url；
 # char_count/text_length/size_bytes；ocr_status/fetch_status/extract_status）。
 # 契约（读取侧归一，写侧保留原始字段防历史重写；发布件 external_attachments 即规范形态）：
-ATTACHMENT_FIELDS: tuple[str, ...] = ("file_name", "kind", "local_path", "sha256",
-                                      "bytes", "text_len", "url")
+ATTACHMENT_FIELDS: tuple[str, ...] = (
+    "file_name",
+    "kind",
+    "local_path",
+    "sha256",
+    "bytes",
+    "text_len",
+    "url",
+)
 ATTACHMENT_ALIASES: dict[str, tuple[str, ...]] = {
     "file_name": ("file_name", "name", "attachment_name", "title"),
     "kind": ("kind", "mime", "file_type", "attachment_kind"),
@@ -306,13 +390,17 @@ def record_attachment_views(rec: dict) -> list:
     if isinstance(rec, dict) and (rec.get("link_type") or "") == "attachment":
         content = rec.get("content")
         text_len = len(content) if isinstance(content, str) else 0
-        return [attachment_view({
-            "file_name": rec.get("title", ""),
-            "kind": rec.get("file_type", ""),
-            "local_path": rec.get("local_path") or "",
-            "url": rec.get("detail_url") or "",
-            "text_len": text_len,
-        })]
+        return [
+            attachment_view(
+                {
+                    "file_name": rec.get("title", ""),
+                    "kind": rec.get("file_type", ""),
+                    "local_path": rec.get("local_path") or "",
+                    "url": rec.get("detail_url") or "",
+                    "text_len": text_len,
+                }
+            )
+        ]
     return []
 
 

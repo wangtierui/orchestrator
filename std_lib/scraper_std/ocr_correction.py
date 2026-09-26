@@ -31,8 +31,26 @@ _NOISE_SYMBOLS = re.compile(r"[\ufffd▇□■◇◆●○◉◎△▲☆★♠�
 _CTRL = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f]")
 _DUP_PUNCT = re.compile(r"([。！？；：，、.])\1{2,}")
 # ⑤ 常见停用词（判定整句是否可疑）
-_STOPWORDS = ("的", "了", "和", "与", "是", "在", "为", "及", "对", "以",
-              "本", "该", "应当", "规定", "管理", "工作", "政府", "人民")
+_STOPWORDS = (
+    "的",
+    "了",
+    "和",
+    "与",
+    "是",
+    "在",
+    "为",
+    "及",
+    "对",
+    "以",
+    "本",
+    "该",
+    "应当",
+    "规定",
+    "管理",
+    "工作",
+    "政府",
+    "人民",
+)
 
 
 def load_confusion_map(path: str) -> dict[str, str]:
@@ -68,8 +86,7 @@ def load_confusion_map(path: str) -> dict[str, str]:
     out: dict[str, str] = {}
     _collect_map(raw, out)
     # 顶层本身即为映射（所有值为字符串）
-    if not out and isinstance(raw, dict) and raw and all(
-            isinstance(v, str) for v in raw.values()):
+    if not out and isinstance(raw, dict) and raw and all(isinstance(v, str) for v in raw.values()):
         out.update({str(k): str(v) for k, v in raw.items() if not str(k).startswith("_")})
     if not out:
         return builtin
@@ -123,6 +140,7 @@ class JiebaDict:
             return
         try:
             import jieba
+
             self._jieba = jieba
             if self.dict_path and os.path.exists(self.dict_path):
                 dict_path = self._filtered_dict(self.dict_path)
@@ -154,6 +172,7 @@ class JiebaDict:
         if len(cleaned) == len(lines):
             return path
         import tempfile
+
         fd, tmp = tempfile.mkstemp(suffix=".dict", prefix="jd_")
         try:
             with os.fdopen(fd, "w", encoding="utf-8") as f:
@@ -217,6 +236,7 @@ def filter_noise(text: str) -> str:
 def _is_table_like(text: str) -> bool:
     """④ OCR 表格段落判定：连续多行字符数相近 + 数字文字交替。"""
     from .cleaner import is_table_block
+
     return is_table_block(text)
 
 
@@ -245,8 +265,15 @@ def correct_ocr_text(
     """
     notes: list[str] = []
     if not text:
-        return {"text": "", "corrected": 0, "dict_fixed": 0, "uncertain": False,
-                "original": "", "table_like": False, "notes": notes}
+        return {
+            "text": "",
+            "corrected": 0,
+            "dict_fixed": 0,
+            "uncertain": False,
+            "original": "",
+            "table_like": False,
+            "notes": notes,
+        }
     table_like = _is_table_like(text)
     corrected = 0
     dict_fixed = 0
@@ -276,13 +303,20 @@ def correct_ocr_text(
         t = "[OCR存疑] " + t
         if uncertain_export_dir:
             _export_uncertain(text, t, uncertain_export_dir, corrected, dict_fixed)
-    return {"text": t, "corrected": corrected, "dict_fixed": dict_fixed,
-            "uncertain": uncertain, "original": text,
-            "table_like": table_like, "notes": notes}
+    return {
+        "text": t,
+        "corrected": corrected,
+        "dict_fixed": dict_fixed,
+        "uncertain": uncertain,
+        "original": text,
+        "table_like": table_like,
+        "notes": notes,
+    }
 
 
-def _export_uncertain(original: str, corrected: str, export_dir: str,
-                      corrected_n: int, dict_fixed_n: int) -> None:
+def _export_uncertain(
+    original: str, corrected: str, export_dir: str, corrected_n: int, dict_fixed_n: int
+) -> None:
     """⑤ 存疑样本导出 logs/ocr_uncertain_{date}.json。"""
     os.makedirs(export_dir, exist_ok=True)
     date = _dt.date.today().strftime("%Y%m%d")
@@ -315,7 +349,6 @@ if __name__ == "__main__":  # 离线自检
     assert filter_noise("ab\u0000cd�ef。。。。") == "abcdef。"
     r = correct_ocr_text("己经规定的曰期", confusion_map=cmap)
     assert "已经" in r["text"] or "已" in r["text"]
-    r2 = correct_ocr_text("序号 项目 金额\n1 收入 100\n2 支出 50",
-                          confusion_map={"0": "O"})
+    r2 = correct_ocr_text("序号 项目 金额\n1 收入 100\n2 支出 50", confusion_map={"0": "O"})
     assert r2["table_like"] is True
     print("[scraper_std.ocr_correction] 离线自检通过")

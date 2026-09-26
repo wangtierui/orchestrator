@@ -18,6 +18,7 @@ common_lib.notify — 告警通道（v2 §3.13.6，P2-6）
    `gate_config_integrity` 判据 S3 断言 yaml 里的 on 不含未登记项；
 ④ `reports/` 已在门禁排除集内 → 告警文件不构成新的门禁盲区（v2 §3.10 明确不新增顶层 `tmp/`）。
 """
+
 from __future__ import annotations
 
 import datetime
@@ -54,7 +55,9 @@ def enabled_for(event: str) -> bool:
     return event in set(cfg.get("on") or [])
 
 
-def notify(event: str, title: str, payload: dict | None = None, *, force: bool = False) -> str | None:
+def notify(
+    event: str, title: str, payload: dict | None = None, *, force: bool = False
+) -> str | None:
     """发一次告警。返回落盘路径（或 webhook 结果）；`notify.kind=none` 或事件未声明 → None。
 
     `force=True` 绕过 `notify.on` 声明（供 `cli.py doctor` 直调等显式场景）。
@@ -78,20 +81,30 @@ def _file(cfg: dict, event: str, title: str, payload: dict) -> str | None:
         os.makedirs(out_dir, exist_ok=True)
         ts = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
         base = os.path.join(out_dir, f"{ts}_{event}")
-        rec = {"event": event, "title": title, "at": datetime.datetime.now().isoformat(timespec="seconds"),
-               "run_id": os.environ.get("REG_ORCH_RUN_ID", ""), "payload": payload}
+        rec = {
+            "event": event,
+            "title": title,
+            "at": datetime.datetime.now().isoformat(timespec="seconds"),
+            "run_id": os.environ.get("REG_ORCH_RUN_ID", ""),
+            "payload": payload,
+        }
         with open(base + ".json", "w", encoding="utf-8") as fh:
             json.dump(rec, fh, ensure_ascii=False, indent=1)
         ev = payload.get("evidence") or []
         with open(base + ".md", "w", encoding="utf-8", newline="") as fh:
-            fh.write(f"# {title}\n\n- 事件: `{event}`\n- 时间: {rec['at']}\n"
-                     f"- run: `{rec['run_id'] or '(无)'}`\n\n")
+            fh.write(
+                f"# {title}\n\n- 事件: `{event}`\n- 时间: {rec['at']}\n"
+                f"- run: `{rec['run_id'] or '(无)'}`\n\n"
+            )
             if ev:
                 fh.write("## 证据\n\n" + "\n".join(f"- {e}" for e in ev) + "\n")
             rest = {k: v for k, v in payload.items() if k != "evidence"}
             if rest:
-                fh.write("\n## 载荷\n\n```json\n"
-                         + json.dumps(rest, ensure_ascii=False, indent=1) + "\n```\n")
+                fh.write(
+                    "\n## 载荷\n\n```json\n"
+                    + json.dumps(rest, ensure_ascii=False, indent=1)
+                    + "\n```\n"
+                )
         return base + ".md"
     except Exception as e:  # noqa: BLE001  旁路设施：告警失败不得中断主链
         print(f"[notify] WARN 文件告警写入失败（不影响主链）: {type(e).__name__}: {e}")
@@ -106,10 +119,10 @@ def _webhook(event: str, title: str, payload: dict) -> str | None:
     try:
         import urllib.request  # noqa: PLC0415
 
-        body = json.dumps({"event": event, "title": title, "payload": payload},
-                          ensure_ascii=False).encode("utf-8")
-        req = urllib.request.Request(url, data=body,
-                                     headers={"Content-Type": "application/json"})
+        body = json.dumps(
+            {"event": event, "title": title, "payload": payload}, ensure_ascii=False
+        ).encode("utf-8")
+        req = urllib.request.Request(url, data=body, headers={"Content-Type": "application/json"})
         with urllib.request.urlopen(req, timeout=10) as r:  # noqa: S310  受控 URL（env 提供）
             return f"webhook rc={getattr(r, 'status', '?')}"
     except Exception as e:  # noqa: BLE001  发送失败不得中断主链

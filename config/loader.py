@@ -6,6 +6,7 @@ config/loader.py — 配置加载器（R24：程序可读配置唯一读取口�
 - ocr.yaml：OCR 引擎配置；${VAR} 占位符展开（REG_ORCH_ROOT→paths.ROOT；同名环境变量覆盖）。
 - 所有模块不得直接 open 本目录 yaml；一律 from config.loader import load_sources, load_ocr。
 """
+
 from __future__ import annotations
 
 import os
@@ -37,6 +38,7 @@ def _expand(value: str) -> str:
         if name == "REG_ORCH_ROOT":
             return paths.ROOT
         return default if default is not None else ""
+
     out = value
     for _ in range(5):  # 迭代展开（嵌套 ${A:-${B}}：内层随下一轮次消化）
         prev = out
@@ -88,7 +90,8 @@ def active_source_ids(refresh: bool = False) -> list[str]:
     与 config.enums.SOURCE_SET 交叉一致由 gate_sources_config 校验（R15：无集合字面量）。"""
     srcs = load_sources(refresh)
     return sorted(
-        sid for sid, cfg in srcs.items()
+        sid
+        for sid, cfg in srcs.items()
         if cfg.get("enabled") and "." not in sid and sid != "internal"
     )
 

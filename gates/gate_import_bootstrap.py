@@ -14,6 +14,7 @@
 收敛路径：P1-3（interfaces 收口）→ P2-x（modules 逐步收敛）；每完成一层，
 在本文件 `BASELINE` 中下调对应数字。
 """
+
 from __future__ import annotations
 
 import os
@@ -23,9 +24,20 @@ import paths
 
 ROOT = paths.ROOT
 PAT = re.compile(r"sys\.path\.(insert|append)")
-SKIP_DIRS = {".git", "__pycache__", ".pytest_cache", "data", "reports", "graphify-out",
-             "external", "tessdata", "backups", ".ruff_cache", ".codebuddy",
-             "archive"}   # v2 §3.10（P2-3）：归档层不参与注入计数
+SKIP_DIRS = {
+    ".git",
+    "__pycache__",
+    ".pytest_cache",
+    "data",
+    "reports",
+    "graphify-out",
+    "external",
+    "tessdata",
+    "backups",
+    ".ruff_cache",
+    ".codebuddy",
+    "archive",
+}  # v2 §3.10（P2-3）：归档层不参与注入计数
 
 # 冻结基线（2026-09-26 **P1-3 实测重标**）：只减不增
 #
@@ -126,7 +138,9 @@ def run() -> tuple[bool, dict]:
         cur = sum(n for k, n in counts.items() if k.split("/")[0] == group)
         detail.setdefault("by_group", {})[group] = {"current": cur, "baseline": base}
         if cur > base:
-            problems.append(f"{group}/ 注入数 {cur} > 基线 {base}（只减不增；新代码须经 bootstrap）")
+            problems.append(
+                f"{group}/ 注入数 {cur} > 基线 {base}（只减不增；新代码须经 bootstrap）"
+            )
         elif cur < base:
             warnings.append(f"{group}/ 注入数 {cur} < 基线 {base}（建议下调 BASELINE）")
 

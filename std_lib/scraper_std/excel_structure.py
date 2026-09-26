@@ -38,6 +38,7 @@ table_structured 的「分类后合理结构」（schema=excel_classified_v2）�
   · 说明表：subtype 识别（narrative 逐段 / key_value 键值 / indicator_doc 指标表）→
     items / paragraphs 结构化 + raw_rows 留存。
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -119,40 +120,43 @@ class TableBlock:
 # ===========================================================================
 
 
-
-
-
-
-
-
 # ===========================================================================
 # 基础工具
 # ===========================================================================
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-TITLE_PATTERNS = [r"^附录[一二三四五六七八九十\d]", r"^附件", r"^附表", r"统计表\s*$",
-                  r"填制说明\s*$", r"采集表\s*$", r"目录\s*$", r"说明\s*$"]
-PREAMBLE_PATTERNS = [r"^\d{4}\s*年.*月.*日", r"^20[×xX]+\s*年", r"^填报机构", r"^填报单位",
-                     r"^填报日期", r"^单位[:：]", r"^金额单位", r"^制表单位", r"^报告期",
-                     r"^公司名称", r"^机构名称", r"^被审计单位"]
-FOOTER_PATTERNS = [r"^制表[:：]", r"^审核[:：]", r"^说明[:：]", r"^注[:：]", r"^填表人",
-                   r"^负责人[:：]"]
-
-
-
-
+TITLE_PATTERNS = [
+    r"^附录[一二三四五六七八九十\d]",
+    r"^附件",
+    r"^附表",
+    r"统计表\s*$",
+    r"填制说明\s*$",
+    r"采集表\s*$",
+    r"目录\s*$",
+    r"说明\s*$",
+]
+PREAMBLE_PATTERNS = [
+    r"^\d{4}\s*年.*月.*日",
+    r"^20[×xX]+\s*年",
+    r"^填报机构",
+    r"^填报单位",
+    r"^填报日期",
+    r"^单位[:：]",
+    r"^金额单位",
+    r"^制表单位",
+    r"^报告期",
+    r"^公司名称",
+    r"^机构名称",
+    r"^被审计单位",
+]
+FOOTER_PATTERNS = [
+    r"^制表[:：]",
+    r"^审核[:：]",
+    r"^说明[:：]",
+    r"^注[:：]",
+    r"^填表人",
+    r"^负责人[:：]",
+]
 
 
 # ===========================================================================
@@ -160,39 +164,44 @@ FOOTER_PATTERNS = [r"^制表[:：]", r"^审核[:：]", r"^说明[:：]", r"^注[
 # ===========================================================================
 
 
-
-
-
-
 # ===========================================================================
 # 表头识别 + 多级列构建
 # ===========================================================================
 
 HEADER_HINT_WORDS = {
-    "序号", "代码", "编号", "名称", "地区", "区域", "项目", "指标", "主题域", "表名",
-    "数据项", "字段", "值", "单位", "合计", "总计", "类型", "状态", "日期", "时间",
-    "备注", "规则", "说明", "金额", "机构", "目录",
+    "序号",
+    "代码",
+    "编号",
+    "名称",
+    "地区",
+    "区域",
+    "项目",
+    "指标",
+    "主题域",
+    "表名",
+    "数据项",
+    "字段",
+    "值",
+    "单位",
+    "合计",
+    "总计",
+    "类型",
+    "状态",
+    "日期",
+    "时间",
+    "备注",
+    "规则",
+    "说明",
+    "金额",
+    "机构",
+    "目录",
 }
-
-
 
 
 _ANNOT_RE = re.compile(r"^[\d.．]*\s*(其中|注[:：]?|说明[:：]|备注[:：])")
 
 
-
-
-
-
 _NUMCODE_RE = re.compile(r"^\d+([-－./]\d+)*$")
-
-
-
-
-
-
-
-
 
 
 _KEY_SAFE = re.compile(r"[^\w\u4e00-\u9fff]+")
@@ -220,9 +229,9 @@ def build_columns(matrix, merged, header):
             v = h[r][c]
             if _is_blank(v):
                 continue
-            s = re.sub(r"\s+", " ", str(v).strip())   # 列名空白折叠（\n 换行 → 空格）
+            s = re.sub(r"\s+", " ", str(v).strip())  # 列名空白折叠（\n 换行 → 空格）
             if re.fullmatch(r"[0-9]{1,3}", s):
-                continue   # 列序号注释段（'1'/'2'…）不进列名（真年份 4 位不受影响）
+                continue  # 列序号注释段（'1'/'2'…）不进列名（真年份 4 位不受影响）
             if not path or path[-1] != s:
                 path.append(s)
         if not path:
@@ -288,7 +297,7 @@ def _is_index_number_row(row):
 def extract_rows(matrix, merged, data, columns, filter_preamble=True):
     filled = _fill_merged_in_data(matrix, merged, data)
     rows = []
-    head_limit = min(data.row_start + 2, data.row_end)   # 仅对数据区首 2 行做列号行剔除
+    head_limit = min(data.row_start + 2, data.row_end)  # 仅对数据区首 2 行做列号行剔除
     for r in range(data.row_start, data.row_end):
         if r >= len(filled):
             break
@@ -313,8 +322,20 @@ def extract_rows(matrix, merged, data, columns, filter_preamble=True):
 # 统计表 / 说明表 分类（长文本 / 列数 / 关键词）
 # ===========================================================================
 
-DOC_HINT_WORDS = {"说明", "描述", "释义", "定义", "备注", "解释",
-                  "填报", "要求", "规范", "示例", "内容", "格式"}
+DOC_HINT_WORDS = {
+    "说明",
+    "描述",
+    "释义",
+    "定义",
+    "备注",
+    "解释",
+    "填报",
+    "要求",
+    "规范",
+    "示例",
+    "内容",
+    "格式",
+}
 
 
 def classify_block(matrix, merged):
@@ -335,13 +356,17 @@ def classify_block(matrix, merged):
         max_avg = max(max_avg, avg)
         max_long_ratio = max(max_long_ratio, lr)
     overall = [v for r in matrix for v in r if not _is_blank(v)]
-    long_ratio = (sum(1 for v in overall if _text_len(v) >= 30) / len(overall)
-                  if overall else 0)
+    long_ratio = sum(1 for v in overall if _text_len(v) >= 30) / len(overall) if overall else 0
     header_text = "".join(str(v) for v in matrix[0] if not _is_blank(v))
     doc_hit = sum(1 for w in DOC_HINT_WORDS if w in header_text)
-    meta = {"n_rows": n_rows, "n_cols": n_cols, "max_avg_len": round(max_avg, 1),
-            "max_long_ratio": round(max_long_ratio, 3),
-            "overall_long_ratio": round(long_ratio, 3), "doc_hit": doc_hit}
+    meta = {
+        "n_rows": n_rows,
+        "n_cols": n_cols,
+        "max_avg_len": round(max_avg, 1),
+        "max_long_ratio": round(max_long_ratio, 3),
+        "overall_long_ratio": round(long_ratio, 3),
+        "doc_hit": doc_hit,
+    }
     if max_long_ratio >= 0.6:
         return "说明表", meta
     if n_cols <= 2 and long_ratio >= 0.3:
@@ -390,13 +415,16 @@ def detect_dimension_columns(rows, columns):
         fill = len(valid) / n
         num_ratio = sum(1 for v in valid if _is_number(v)) / len(valid)
         avg_len = sum(_text_len(v) for v in valid) / len(valid)
-        ok = (fill >= DIM_MIN_FILL_RATIO and num_ratio <= DIM_MAX_NUM_RATIO
-              and avg_len <= DIM_MAX_AVG_LEN)
+        ok = (
+            fill >= DIM_MIN_FILL_RATIO
+            and num_ratio <= DIM_MAX_NUM_RATIO
+            and avg_len <= DIM_MAX_AVG_LEN
+        )
         if ok:
             dim_cols.append(col.key)
             continue
         if _IDENT_COL_RE.search(col.name or ""):
-            dim_cols.append(col.key)   # 行标识维度（序号/编号/代码）
+            dim_cols.append(col.key)  # 行标识维度（序号/编号/代码）
             continue
         break
     return dim_cols
@@ -465,8 +493,7 @@ def process_doc_block(block):
                 if not _is_blank(v):
                     paragraphs.append(str(v).strip())
                     break
-        block.columns = [Column(key="paragraph", name="paragraph",
-                                path=["paragraph"], col_index=0)]
+        block.columns = [Column(key="paragraph", name="paragraph", path=["paragraph"], col_index=0)]
         block.rows = [{"paragraph": p} for p in paragraphs]
         block.meta["paragraph_count"] = len(paragraphs)
         return
@@ -484,13 +511,17 @@ def process_doc_block(block):
     rows = extract_rows(m2, merged, data, columns)
     keep = [c for c in columns if any(not _is_blank(r.get(c.key)) for r in rows)] or columns
     items = [{c.key: r.get(c.key) for c in keep} for r in rows]
-    raw_rows = ([[r.get(c.key) for c in keep] for r in rows]
-                if any((c.key or "").startswith("col_") for c in keep) else None)
+    raw_rows = (
+        [[r.get(c.key) for c in keep] for r in rows]
+        if any((c.key or "").startswith("col_") for c in keep)
+        else None
+    )
     block.columns = keep
     block.rows = items
-    key_col = next((c for c in keep
-                    if any(w in (c.name or "") for w in DOC_KEY_WORDS)),
-                   keep[0] if keep else None)
+    key_col = next(
+        (c for c in keep if any(w in (c.name or "") for w in DOC_KEY_WORDS)),
+        keep[0] if keep else None,
+    )
     block.meta["key_column"] = key_col.key if key_col else None
     block.meta["item_count"] = len(items)
     block.meta["dropped_empty_columns"] = [c.name for c in columns if c not in keep]
@@ -541,22 +572,30 @@ def _build_stat_unit(block, sheet_name, sheet_index):
     #    大表阈值 clamp(3%×行数, 3, 20)；裁剪后若为空则回退保留有值列（防全丢）。
     kept_metric_cols, dropped_count, dropped_sample = [], 0, []
     if any_metric:
-        _fills = {c.key: sum(1 for r in rows if not _is_blank(r.get(c.key)))
-                  for c in columns if c.key in metric_all}
+        _fills = {
+            c.key: sum(1 for r in rows if not _is_blank(r.get(c.key)))
+            for c in columns
+            if c.key in metric_all
+        }
         if len(columns) < 32:
-            kept_metric_cols = [c for c in columns
-                                if c.key in metric_all and _fills[c.key] >= 1]
+            kept_metric_cols = [c for c in columns if c.key in metric_all and _fills[c.key] >= 1]
         else:
-            min_fill = min(max(METRIC_COL_MIN_FILL,
-                               int(METRIC_COL_MIN_FILL_RATIO * len(rows) + 0.999)),
-                           METRIC_COL_MIN_FILL_CAP)
-            kept_metric_cols = [c for c in columns
-                                if c.key in metric_all and _fills[c.key] >= min_fill]
-            if not kept_metric_cols:   # 回退：防"阈值高于所有列"时整表数据丢失
-                kept_metric_cols = [c for c in columns
-                                    if c.key in metric_all and _fills[c.key] >= 1]
-        dropped = [c for c in columns if c.key in metric_all
-                   and c.key not in {k.key for k in kept_metric_cols}]
+            min_fill = min(
+                max(METRIC_COL_MIN_FILL, int(METRIC_COL_MIN_FILL_RATIO * len(rows) + 0.999)),
+                METRIC_COL_MIN_FILL_CAP,
+            )
+            kept_metric_cols = [
+                c for c in columns if c.key in metric_all and _fills[c.key] >= min_fill
+            ]
+            if not kept_metric_cols:  # 回退：防"阈值高于所有列"时整表数据丢失
+                kept_metric_cols = [
+                    c for c in columns if c.key in metric_all and _fills[c.key] >= 1
+                ]
+        dropped = [
+            c
+            for c in columns
+            if c.key in metric_all and c.key not in {k.key for k in kept_metric_cols}
+        ]
         dropped_count = len(dropped)
         dropped_sample = [c.name for c in dropped[:20]]
 
@@ -570,9 +609,11 @@ def _build_stat_unit(block, sheet_name, sheet_index):
     if any_metric:
         kept_keys = dim_cols + [c.key for c in kept_metric_cols]
     else:
-        kept_keys = [c.key for c in columns
-                     if c.key in dim_cols
-                     or sum(1 for r in rows if not _is_blank(r.get(c.key))) >= 2]
+        kept_keys = [
+            c.key
+            for c in columns
+            if c.key in dim_cols or sum(1 for r in rows if not _is_blank(r.get(c.key))) >= 2
+        ]
     projection = [{k: r.get(k) for k in kept_keys} for r in rows]
 
     meta = dict(block.meta)
@@ -583,11 +624,13 @@ def _build_stat_unit(block, sheet_name, sheet_index):
     elif dropped_count:
         meta["dropped_metric_columns"] = {"count": dropped_count, "sample": dropped_sample}
     return {
-        "sheet_name": sheet_name, "sheet_index": sheet_index,
-        "table_id": block.table_id, "type": "统计表",
+        "sheet_name": sheet_name,
+        "sheet_index": sheet_index,
+        "table_id": block.table_id,
+        "type": "统计表",
         "row_count": len(rows),
-        "columns": kept_keys,                          # 输出列（无维度回退用）
-        "rows": projection,                            # 输出行（无维度回退用）
+        "columns": kept_keys,  # 输出列（无维度回退用）
+        "rows": projection,  # 输出行（无维度回退用）
         "dimension_columns": dim_cols,
         "dimension_names": dim_names,
         "dimension_rows": dim_rows,
@@ -595,17 +638,20 @@ def _build_stat_unit(block, sheet_name, sheet_index):
         "metric_columns": [c.key for c in kept_metric_cols],
         "metric_names": [c.name for c in kept_metric_cols],
         "metric_rows": extract_metric_rows(rows, [c.key for c in kept_metric_cols])
-        if kept_metric_cols else [],
+        if kept_metric_cols
+        else [],
         "meta": meta,
     }
 
 
 def _build_doc_unit(block, sheet_name, sheet_index):
     meta = dict(block.meta)
-    raw_rows_meta = meta.pop("raw_rows", None)   # meta 不留大数组副本（去冗余 null）
+    raw_rows_meta = meta.pop("raw_rows", None)  # meta 不留大数组副本（去冗余 null）
     unit = {
-        "sheet_name": sheet_name, "sheet_index": sheet_index,
-        "table_id": block.table_id, "type": "说明表",
+        "sheet_name": sheet_name,
+        "sheet_index": sheet_index,
+        "table_id": block.table_id,
+        "type": "说明表",
         "subtype": block.doc_subtype or "narrative",
         "title": meta.get("title"),
         "key_column": meta.get("key_column"),
@@ -624,20 +670,23 @@ def _build_doc_unit(block, sheet_name, sheet_index):
 def _stat_sheet(unit, *, with_dim_rows=True, full_rows=False):
     """统计表独立单元（单 variant 退回 / 无维度回退）。空指标/空数组键省略。"""
     out = {
-        "sheet_name": unit["sheet_name"], "sheet_index": unit["sheet_index"],
-        "table_id": unit["table_id"], "type": unit["type"],
-        "row_count": unit["row_count"], "meta": unit["meta"],
+        "sheet_name": unit["sheet_name"],
+        "sheet_index": unit["sheet_index"],
+        "table_id": unit["table_id"],
+        "type": unit["type"],
+        "row_count": unit["row_count"],
+        "meta": unit["meta"],
     }
     if full_rows:
         out["columns"] = unit["columns"]
-        out["rows"] = unit["rows"]                 # 行已含指标值，不再单列 metric_rows
+        out["rows"] = unit["rows"]  # 行已含指标值，不再单列 metric_rows
     if with_dim_rows:
         out["dimension_columns"] = unit["dimension_columns"]
         out["dimension_rows"] = unit["dimension_rows"]
     if unit["metric_columns"] and not full_rows:
         out["metric_columns"] = unit["metric_columns"]
         out["metric_names"] = unit.get("metric_names")
-        out["metric_rows"] = unit["metric_rows"]   # 数据完整性加固（v2 原版无）
+        out["metric_rows"] = unit["metric_rows"]  # 数据完整性加固（v2 原版无）
     return out
 
 
@@ -646,11 +695,17 @@ def aggregate_units(units):
     for u in units:
         if u["type"] == "说明表":
             sheet = {
-                "sheet_name": u["sheet_name"], "sheet_index": u["sheet_index"],
-                "table_id": u["table_id"], "type": "说明表", "subtype": u["subtype"],
-                "title": u["title"], "key_column": u.get("key_column"),
-                "columns": u["columns"], "item_count": u["item_count"],
-                "items": u["items"], "meta": u["meta"],
+                "sheet_name": u["sheet_name"],
+                "sheet_index": u["sheet_index"],
+                "table_id": u["table_id"],
+                "type": "说明表",
+                "subtype": u["subtype"],
+                "title": u["title"],
+                "key_column": u.get("key_column"),
+                "columns": u["columns"],
+                "item_count": u["item_count"],
+                "items": u["items"],
+                "meta": u["meta"],
             }
             if u.get("raw_rows"):
                 sheet["raw_rows"] = u["raw_rows"]
@@ -678,8 +733,11 @@ def aggregate_units(units):
                 "variants": [],
             }
         var = {
-            "sheet_name": u["sheet_name"], "sheet_index": u["sheet_index"],
-            "table_id": u["table_id"], "type": u["type"], "row_count": u["row_count"],
+            "sheet_name": u["sheet_name"],
+            "sheet_index": u["sheet_index"],
+            "table_id": u["table_id"],
+            "type": u["type"],
+            "row_count": u["row_count"],
             "meta": u["meta"],
         }
         if u["metric_columns"]:
@@ -695,9 +753,13 @@ def aggregate_units(units):
             v = ts["variants"][0]
             rs = row_sets[h]
             sheet = {
-                "sheet_name": v["sheet_name"], "sheet_index": v["sheet_index"],
-                "table_id": v["table_id"], "type": v["type"], "row_count": v["row_count"],
-                "dimension_columns": rs["columns"], "dimension_rows": rs["rows"],
+                "sheet_name": v["sheet_name"],
+                "sheet_index": v["sheet_index"],
+                "table_id": v["table_id"],
+                "type": v["type"],
+                "row_count": v["row_count"],
+                "dimension_columns": rs["columns"],
+                "dimension_rows": rs["rows"],
                 "meta": v["meta"],
             }
             if v.get("metric_columns"):
@@ -721,23 +783,37 @@ def process_workbook_bytes(data: bytes, source_file: str = "") -> dict:
     all_units, sheet_overview, form_summary = [], [], {}
     for sheet_index, (sheet_name, matrix, merged) in enumerate(raw_sheets, start=1):
         if not matrix:
-            sheet_overview.append({"sheet_name": sheet_name, "sheet_index": sheet_index,
-                                   "type": "空表", "row_count": 0})
+            sheet_overview.append(
+                {
+                    "sheet_name": sheet_name,
+                    "sheet_index": sheet_index,
+                    "type": "空表",
+                    "row_count": 0,
+                }
+            )
             continue
         blocks = split_blocks(matrix, merged)
         sheet_type, total_rows = "未知", 0
         for bi, (sub, _span, local_merged) in enumerate(blocks, start=1):
             blk = process_block(sheet_index, bi, sub, local_merged)
-            unit = (_build_doc_unit(blk, sheet_name, sheet_index)
-                    if blk.form_category == "说明表"
-                    else _build_stat_unit(blk, sheet_name, sheet_index))
+            unit = (
+                _build_doc_unit(blk, sheet_name, sheet_index)
+                if blk.form_category == "说明表"
+                else _build_stat_unit(blk, sheet_name, sheet_index)
+            )
             all_units.append(unit)
             total_rows += unit.get("row_count", 0)
             if sheet_type == "未知":
                 sheet_type = blk.form_category
             form_summary[blk.form_category] = form_summary.get(blk.form_category, 0) + 1
-        sheet_overview.append({"sheet_name": sheet_name, "sheet_index": sheet_index,
-                               "type": sheet_type, "row_count": total_rows})
+        sheet_overview.append(
+            {
+                "sheet_name": sheet_name,
+                "sheet_index": sheet_index,
+                "type": sheet_type,
+                "row_count": total_rows,
+            }
+        )
 
     agg = aggregate_units(all_units)
     return {

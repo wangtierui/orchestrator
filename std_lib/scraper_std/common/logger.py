@@ -5,6 +5,7 @@ so downstream crawler code is unchanged; the actual configuration delegates to
 ``std_lib.scraper_std.logging_setup.setup_logging`` (single logging source for the
 whole project).
 """
+
 from __future__ import annotations
 
 import logging

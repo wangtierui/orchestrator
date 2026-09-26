@@ -32,6 +32,7 @@ classifier 报告、base 关联（merged）、drafter 起草素材共同消费�
     python cli.py relations gen        # 重新抽取与落盘（含三类视图）
     python cli.py relations status     # 查看生成元信息与解析率
 """
+
 from __future__ import annotations
 
 import json
@@ -79,7 +80,7 @@ def _enum_ok(v: str, allowed, *, empty_ok: bool) -> bool:
 # 故本断言不会因"自己刚跑完后续阶段"而自造 FAIL。
 # 已知取舍：归属表仅"时效状态"列变化也会触发（该列参与实体索引 extra），属**偏严**；
 # 代价为一次 `relations gen`（~32s，已入刷新链阶段 2.6），换取"登记后未重抽取"这一真实缺口不被静默放过。
-_INPUT_TOLERANCE_S = 2.0        # 容忍秒级写盘先后差（防毫秒抖动误报）
+_INPUT_TOLERANCE_S = 2.0  # 容忍秒级写盘先后差（防毫秒抖动误报）
 
 
 def _data_inputs() -> list[tuple[float, str]]:
@@ -93,12 +94,14 @@ def _data_inputs() -> list[tuple[float, str]]:
     paths_and_labels: list[tuple[str, str]] = []
     for p in glob.glob(os.path.join(scrapers, "data", "cleaned", "*_cleaned_*.jsonl")):
         paths_and_labels.append((p, os.path.basename(p)))
-    paths_and_labels.append((os.path.join(ipb, "internal_policy_index.json"),
-                             "internal_policy_index.json"))
+    paths_and_labels.append(
+        (os.path.join(ipb, "internal_policy_index.json"), "internal_policy_index.json")
+    )
     for p in glob.glob(os.path.join(ipb, "processed", "*_fulltext.json")):
         paths_and_labels.append((p, "processed/" + os.path.basename(p)))
-    paths_and_labels.append((os.path.join(cls_data, "人身保险公司-文件归属表.csv"),
-                             "人身保险公司-文件归属表.csv"))
+    paths_and_labels.append(
+        (os.path.join(cls_data, "人身保险公司-文件归属表.csv"), "人身保险公司-文件归属表.csv")
+    )
 
     out: list[tuple[float, str]] = []
     for p, label in paths_and_labels:
@@ -119,6 +122,7 @@ def _wm_status(key: str):
     """产物水位状态（阶段 4：判据切换的共用入口 `interfaces.governance_api.wm_status`）。"""
     try:
         from interfaces.governance_api import wm_status  # noqa: PLC0415
+
         return wm_status(key)
     except Exception as e:  # noqa: BLE001  水位不可用 → unknown（调用方退回 mtime 判据）
         return "unknown", {"reason": f"{type(e).__name__}: {e}"}
@@ -126,8 +130,10 @@ def _wm_status(key: str):
 
 def run():
     if not os.path.exists(_INDEX):
-        return False, {"error": f"关系事实源不存在：{_INDEX}"
-                                "；门禁未实检，不得视为通过（先运行 `cli.py relations gen`）"}
+        return False, {
+            "error": f"关系事实源不存在：{_INDEX}"
+            "；门禁未实检，不得视为通过（先运行 `cli.py relations gen`）"
+        }
     try:
         rows = _load_jsonl(_INDEX)
         stat = json.load(open(_STAT, encoding="utf-8")) if os.path.exists(_STAT) else {}
@@ -176,8 +182,7 @@ def run():
         try:
             import sys  # noqa: PLC0415
 
-            for p in (paths.MODULES_DIR,
-                      os.path.join(paths.MODULES_DIR, "regulatory_classifier")):
+            for p in (paths.MODULES_DIR, os.path.join(paths.MODULES_DIR, "regulatory_classifier")):
                 if p not in sys.path:
                     sys.path.insert(0, p)
             from rfn import get_index  # noqa: PLC0415
@@ -185,8 +190,9 @@ def run():
             rfns = set(get_index().all_rfns())
         except Exception as e:  # noqa: BLE001
             problems.append(f"归属表索引不可读，强引用无法校验：{e!r}")
-        ipb = os.path.join(paths.MODULES_DIR, "internal_policy_base", "data",
-                           "internal_policy_index.json")
+        ipb = os.path.join(
+            paths.MODULES_DIR, "internal_policy_base", "data", "internal_policy_index.json"
+        )
         if os.path.exists(ipb):
             ipns = {x.get("ipn") for x in json.load(open(ipb, encoding="utf-8")).get("records", [])}
         for kind, ref in refs:
@@ -201,15 +207,20 @@ def run():
         by_kind_actual[r.get("relation", "")] = by_kind_actual.get(r.get("relation", ""), 0) + 1
     stat_total = (stat.get("relations") or {}).get("total")
     stat_kind = (stat.get("relations") or {}).get("by_kind") or {}
-    stat_ok = (stat_total == len(rows)) and all(stat_kind.get(k, 0) == v
-                                                for k, v in by_kind_actual.items())
+    stat_ok = (stat_total == len(rows)) and all(
+        stat_kind.get(k, 0) == v for k, v in by_kind_actual.items()
+    )
 
     if missing_keys:
         problems.append(f"键集缺字段：{dict(sorted(missing_keys.items()))}")
     if enum_bad:
-        problems.append(f"受控枚举越界：{dict(sorted(enum_bad.items(), key=lambda kv: -kv[1])[:8])}")
+        problems.append(
+            f"受控枚举越界：{dict(sorted(enum_bad.items(), key=lambda kv: -kv[1])[:8])}"
+        )
     if trace_missing:
-        problems.append(f"溯源字段为空的关系 {trace_missing} 条（source_snippet/generated_* 须非空）")
+        problems.append(
+            f"溯源字段为空的关系 {trace_missing} 条（source_snippet/generated_* 须非空）"
+        )
     if src_unidentified:
         problems.append(f"源侧不可识别的行 {src_unidentified} 条（src_ref 与 src_key 皆空）")
     # 判据 9（2026-09-20 追加）：**relation_id 唯一性** —— 事实源键语义必须成立。
@@ -222,13 +233,17 @@ def run():
         rid_seen[rid] = rid_seen.get(rid, 0) + 1
     dup_ids = sorted(x for x, v in rid_seen.items() if v > 1)
     if dup_ids:
-        problems.append(f"relation_id 不唯一：{len(dup_ids)} 个 id 命中多行"
-                        f"（示例 {dup_ids[:3]}）—— 关系 id 派生须纳入全部判别字段")
+        problems.append(
+            f"relation_id 不唯一：{len(dup_ids)} 个 id 命中多行"
+            f"（示例 {dup_ids[:3]}）—— 关系 id 派生须纳入全部判别字段"
+        )
     if unresolvable:
         problems.append(f"强引用不可解析 {len(unresolvable)} 条（示例 {unresolvable[:5]}）")
     if not stat_ok:
-        problems.append(f"统计不一致：stat.total={stat_total} vs 实际 {len(rows)}，"
-                        f"by_kind {stat_kind} vs {by_kind_actual}")
+        problems.append(
+            f"统计不一致：stat.total={stat_total} vs 实际 {len(rows)}，"
+            f"by_kind {stat_kind} vs {by_kind_actual}"
+        )
 
     # 判据 8：产物新鲜度（防"数据更新后未重抽取"的静默陈旧，2026-09-14）
     # 动因：消费面（merged 引用原语 / drafter 关系素材 / 交付库 2.1.2.4·2.1.2.5 关系报告）
@@ -244,18 +259,22 @@ def run():
     if wm_state == "stale":
         problems.append(
             f"关系产物陈旧（水位判据）：{wm_detail.get('stale')} —— 上游已推进但未重抽取；"
-            f"先运行 `python cli.py relations gen`（生产刷新链阶段 2.6 已自动接入）")
+            f"先运行 `python cli.py relations gen`（生产刷新链阶段 2.6 已自动接入）"
+        )
     elif wm_state == "unknown":
         if stale:
             problems.append(
                 f"关系产物陈旧（mtime 判据；水位不可用：{wm_detail.get('reason')}）："
                 f"{len(stale)} 项数据面输入比产物更新（如 {stale[:3]}）—— "
-                f"先运行 `python cli.py relations gen`")
+                f"先运行 `python cli.py relations gen`"
+            )
         else:
             cross_check["note"] = f"水位不可用（{wm_detail.get('reason')}），已退回 mtime 判据"
     elif stale:
-        cross_check["note"] = ("水位判据为 ok，mtime 报陈旧 —— 判为 **touch/copy 误报**，"
-                               "不阻断（阶段 4 起 mtime 仅作交叉校验）")
+        cross_check["note"] = (
+            "水位判据为 ok，mtime 报陈旧 —— 判为 **touch/copy 误报**，"
+            "不阻断（阶段 4 起 mtime 仅作交叉校验）"
+        )
 
     detail = {
         "rows": len(rows),
@@ -273,10 +292,13 @@ def run():
         "problems": problems,
         "data_inputs": len(_data_inputs()),
         "stale_inputs": stale,
-        "freshness": {"watermark": wm_state, "watermark_detail": wm_detail,
-                      "cross_check": cross_check},
+        "freshness": {
+            "watermark": wm_state,
+            "watermark_detail": wm_detail,
+            "cross_check": cross_check,
+        },
         "note": "判据=事实源存在 + 键集⊇契约 + 受控枚举闭包 + 强引用可解析 + 溯源非空 + 统计一致"
-                " + relation_id 唯一（2026-09-20）"
-                " + 产物新鲜度（阶段 4：水位优先，mtime 降为交叉校验）",
+        " + relation_id 唯一（2026-09-20）"
+        " + 产物新鲜度（阶段 4：水位优先，mtime 降为交叉校验）",
     }
     return (not problems), detail

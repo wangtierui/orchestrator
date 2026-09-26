@@ -71,10 +71,12 @@ def build_high_freq_dict(
     except Exception:
         return {}
     for rec in records:
-        text = " ".join([
-            str(rec.get("title") or ""),
-            str(rec.get("body_text") or "")[:500],
-        ])
+        text = " ".join(
+            [
+                str(rec.get("title") or ""),
+                str(rec.get("body_text") or "")[:500],
+            ]
+        )
         for w in jieba.cut(text):
             w = w.strip()
             if len(w) >= 2 and not w.isdigit():
@@ -105,7 +107,9 @@ def _clean_record_body(rec: dict[str, Any], cfg: dict[str, Any]) -> dict[str, An
     if cleaning_cfg.get("sentence_split_on", True):
         repaired = repair_text(cleaned, source="webpage")
         if repaired["is_table"]:
-            meta["table_recovery_method"] = meta.get("table_recovery_method") or "pending_table_block"
+            meta["table_recovery_method"] = (
+                meta.get("table_recovery_method") or "pending_table_block"
+            )
         if repaired["split_sentences"]:
             rec["split_sentences"] = repaired["split_sentences"]
             rec["raw_uncut_text"] = repaired["raw_uncut_text"]
@@ -212,8 +216,9 @@ def write_cleaned(
     return {"csv": csv_path, "jsonl": jsonl_path}
 
 
-def rotate_history(cleaned_dir: str, history_dir: str, project: str,
-                   current_date: str, keep: int = 3) -> int:
+def rotate_history(
+    cleaned_dir: str, history_dir: str, project: str, current_date: str, keep: int = 3
+) -> int:
     """clean 单版化 + history 归档（2026-09-09 任务三改造）。
 
     语义：
@@ -235,8 +240,7 @@ def rotate_history(cleaned_dir: str, history_dir: str, project: str,
                 continue
             try:
                 # 同日期历史版本若已存在则覆盖（keep 裁剪在下方统一执行）
-                shutil.move(os.path.join(cleaned_dir, fn),
-                            os.path.join(history_dir, fn))
+                shutil.move(os.path.join(cleaned_dir, fn), os.path.join(history_dir, fn))
                 moved += 1
             except OSError as e:
                 LOG.warning("历史归档失败：%s", e)
@@ -285,8 +289,12 @@ def run_pipeline(
     log_dir = cfg.get("logging", {}).get("log_dir", "logs")
     if project_root:
         log_dir = os.path.join(project_root, log_dir)
-    setup_logging(log_dir, project_name=project, task_id=f"{project}-clean",
-                  json_lines=cfg.get("logging", {}).get("json_lines", True))
+    setup_logging(
+        log_dir,
+        project_name=project,
+        task_id=f"{project}-clean",
+        json_lines=cfg.get("logging", {}).get("json_lines", True),
+    )
     metrics = MetricsCollector(project, f"{project}-clean")
 
     # 1) 加载原始数据
@@ -332,18 +340,22 @@ def run_pipeline(
         LOG.info("[%s] 高频词典构建：%d 词", project, len(high_freq))
         cmap = load_confusion_map(
             os.path.join(project_root, cleaning_cfg["confusion_map_file"])
-            if project_root else cleaning_cfg.get("confusion_map_file", ""))
+            if project_root
+            else cleaning_cfg.get("confusion_map_file", "")
+        )
         dict_path = (
             os.path.join(project_root, cleaning_cfg["custom_dict_file"])
-            if project_root else cleaning_cfg.get("custom_dict_file", ""))
+            if project_root
+            else cleaning_cfg.get("custom_dict_file", "")
+        )
         checker = JiebaDict(dict_path, high_freq) if (high_freq or dict_path) else None
         for rec in mapped:
             body = rec.get("body_text") or ""
             if not body:
                 continue
             result = correct_ocr_text(
-                body, confusion_map=cmap, dict_checker=checker,
-                uncertain_export_dir=log_dir)
+                body, confusion_map=cmap, dict_checker=checker, uncertain_export_dir=log_dir
+            )
             meta = rec.setdefault("_metadata", {})
             if result["uncertain"]:
                 meta["ocr_uncertain"] = True
@@ -363,10 +375,11 @@ def run_pipeline(
     #    源级已知豁免（2026-09-08 演练发现）：pbc 官网发布无公文索引号（结构性）、正文依赖实时
     #    网页 enrich；gov xzfgk 行政法规库多数国务院法规无公文索引号（结构性）。指标仍透明计入。
     _SRC_ALLOWED = {"pbc": {"index_no", "body_text"}, "gov": {"index_no"}}
-    allowed_missing = set(cleaning_cfg.get("expected_null_fields") or []) | _SRC_ALLOWED.get(project, set())
+    allowed_missing = set(cleaning_cfg.get("expected_null_fields") or []) | _SRC_ALLOWED.get(
+        project, set()
+    )
     hard_fields = [f for f in CORE_NULL_FIELDS if f not in allowed_missing]
-    monitor = NullThresholdMonitor(CORE_NULL_FIELDS, alarm_fields=hard_fields,
-                                   on_alarm=on_alarm)
+    monitor = NullThresholdMonitor(CORE_NULL_FIELDS, alarm_fields=hard_fields, on_alarm=on_alarm)
     valid_records: list[dict[str, Any]] = []
     quarantined: list[dict[str, Any]] = []
     for rec in mapped:
@@ -397,8 +410,7 @@ def run_pipeline(
 
     # 7) 缺失值填充（S-3 纪律）：枚举/受控字段保持空串（空=未填/未核验），
     #    不得用 'N/A' 填充——'N/A' 非合法枚举值，会触发 check_enum_values 违规。
-    _ENUM_KEEP_EMPTY = {"source": "", "timeliness_status": "",
-                        "body_source": "", "status": ""}
+    _ENUM_KEEP_EMPTY = {"source": "", "timeliness_status": "", "body_source": "", "status": ""}
     cleaned_final = [fill_missing(r, _ENUM_KEEP_EMPTY) for r in deduped]
 
     # 7.5) 真实非空率（2026-09-04 口径修正）：对交付终态统计「排除 N/A/空占位后的真实非空率」，
@@ -415,14 +427,17 @@ def run_pipeline(
         return True
 
     true_nonempty_rates = {
-        f: round(sum(1 for r in cleaned_final if _true_nonempty(r.get(f)))
-                 / max(1, len(cleaned_final)), 4)
+        f: round(
+            sum(1 for r in cleaned_final if _true_nonempty(r.get(f))) / max(1, len(cleaned_final)),
+            4,
+        )
         for f in CORE_NULL_FIELDS
     }
 
     # 8) 输出（双轨）
-    out_dir = out_dir or (os.path.join(project_root, "data", "cleaned")
-                          if project_root else "data/cleaned")
+    out_dir = out_dir or (
+        os.path.join(project_root, "data", "cleaned") if project_root else "data/cleaned"
+    )
     outputs = write_cleaned(out_dir, project, cleaned_final)
 
     # 8.5) 校验失败记录隔离落盘（v2 §3.4 V1）：不进交付，但**不静默丢弃**——
@@ -436,8 +451,9 @@ def run_pipeline(
             for _r in quarantined:
                 fh.write(json.dumps(_r, ensure_ascii=False) + "\n")
         os.replace(_tmp, quarantine_path)
-        LOG.warning("[%s] 校验未过记录已隔离 %d 条 → %s",
-                    project, len(quarantined), quarantine_path)
+        LOG.warning(
+            "[%s] 校验未过记录已隔离 %d 条 → %s", project, len(quarantined), quarantine_path
+        )
 
     # 9) 历史版本（每次清洗前将上一版归档——用当前产出做快照基线）
     # history_dir 改为由 out_dir **同级派生**（dirname(out_dir)/history）：
@@ -445,12 +461,15 @@ def run_pipeline(
     #     与改造前**完全等价**（零行为变更）；
     #   - 产物目录统一后 out_dir=repo/data/cleaned → history 自动跟随为 repo/data/history，
     #     无需调用方再传参。
-    history_dir = history_dir or os.path.join(
-        os.path.dirname(os.path.abspath(out_dir)), "history")
+    history_dir = history_dir or os.path.join(os.path.dirname(os.path.abspath(out_dir)), "history")
     # 9) 单版化：cleaned 仅留本次当前日期；旧日期移入 history 且仅保留 keep 个日期版本
     _archived = rotate_history(
-        out_dir, history_dir, project, _dt.date.today().strftime("%Y%m%d"),
-        keep=cfg.get("output", {}).get("keep_history_versions", 3))
+        out_dir,
+        history_dir,
+        project,
+        _dt.date.today().strftime("%Y%m%d"),
+        keep=cfg.get("output", {}).get("keep_history_versions", 3),
+    )
     if _archived:
         LOG.debug("[%s] 历史归档 %d 个旧版文件", project, _archived)
 
@@ -482,9 +501,14 @@ def run_pipeline(
         "metrics_path": metrics_path,
         "elapsed_seconds": round(time.time() - t0, 2),
     }
-    LOG.info("[%s] 管道完成：raw=%d → cleaned=%d（去重 %d，耗时 %.1fs）",
-             project, len(raw), len(cleaned_final),
-             summary["dedup_removed"], summary["elapsed_seconds"])
+    LOG.info(
+        "[%s] 管道完成：raw=%d → cleaned=%d（去重 %d，耗时 %.1fs）",
+        project,
+        len(raw),
+        len(cleaned_final),
+        summary["dedup_removed"],
+        summary["elapsed_seconds"],
+    )
     return summary
 
 

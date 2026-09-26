@@ -27,6 +27,7 @@ interfaces/protocols — 接口层**依赖协议**（v2 §3.1.3 I-4，2026-09-26
 `InternalPolicyProvider` ← `interfaces.internal_policy_api`
 `RelationsProvider`      ← `interfaces.relations_api`
 """
+
 from __future__ import annotations
 
 from typing import Any, Protocol, runtime_checkable
@@ -94,8 +95,8 @@ def assert_provider(obj: Any, protocol: type) -> None:
     只做**存在性**检查（结构化子类型不校验签名细节），失败时抛出带缺失方法名的
     `TypeError`，便于定位「接口实装与协议漂移」。
     """
-    missing = [name for name in getattr(protocol, "__protocol_attrs__", ())
-               if not hasattr(obj, name)]
+    missing = [
+        name for name in getattr(protocol, "__protocol_attrs__", ()) if not hasattr(obj, name)
+    ]
     if missing:
-        raise TypeError(
-            f"{type(obj).__name__} 不满足 {protocol.__name__}：缺 {sorted(missing)}")
+        raise TypeError(f"{type(obj).__name__} 不满足 {protocol.__name__}：缺 {sorted(missing)}")

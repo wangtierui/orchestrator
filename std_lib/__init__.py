@@ -8,3 +8,5 @@ std_lib — 共享库唯一副本（P1 自旧仓复制 scraper_std；common_lib 
 依赖方向：modules → std_lib；common_lib 不 import scraper_std；禁止反向 import modules。
 路径一律 from paths import ...（R4）；不内置第二套路径逻辑。
 """
+
+from __future__ import annotations

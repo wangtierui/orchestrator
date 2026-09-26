@@ -29,6 +29,7 @@ std_lib.common_lib.norm — 归一化唯一实现（专项三；A-10 分层收�
   - 比较键（豁免）：`scraper_std.pkulaw_cli._norm_date`（→ (y, m, d) tuple，仅供排序/比对）。
   收敛基线测试：tests/test_ssot_convergence.py（跨实现兼容断言，防再分叉）。
 """
+
 from __future__ import annotations
 
 import re
@@ -86,6 +87,9 @@ def norm_title_strict(title) -> str:
 if __name__ == "__main__":  # 离线自检
     assert norm_docno("银保监办发〔2019〕19号") == "银保监办发201919"
     assert norm_title("《保险销售行为管理办法》（试行）") == "保险销售行为管理办法"
-    assert norm_title_strict("中国银保监会办公厅关于A、B事项的通知") == "中国银保监会办公厅关于A、B事项的通知"
+    assert (
+        norm_title_strict("中国银保监会办公厅关于A、B事项的通知")
+        == "中国银保监会办公厅关于A、B事项的通知"
+    )
     assert norm_title_strict("《XX办法》（试行）") == "XX办法"
     print("[common_lib.norm] 自检通过")

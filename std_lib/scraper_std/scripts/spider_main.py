@@ -17,6 +17,7 @@ Schedule 元数据（2026-08-27 固化，显式声明供编排侧参考）：
     pid_lock=True（PID 锁防陈旧）, policy=incremental_diff（绝不 WAF 全量重抓）,
     pipeline=run_clean_pipeline, timeliness=timeliness_review
 """
+
 from __future__ import annotations
 
 import glob

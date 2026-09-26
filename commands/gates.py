@@ -6,6 +6,7 @@
   - 治理库未启用或非编排运行（无 run_id）→ 静默跳过，**不影响门禁语义与退出码**；
   - 归档失败只告警（治理库是旁路观测设施，不得反过来阻断门禁）。
 """
+
 from __future__ import annotations
 
 
@@ -13,6 +14,7 @@ def _archive(results) -> None:
     """把本次门禁结果写入治理库（尽力而为）。"""
     try:
         from std_lib.common_lib import governance_store as gs
+
         run_id = gs.current_run_id()
         if not gs.enabled() or not run_id:
             return
@@ -24,6 +26,7 @@ def _archive(results) -> None:
 
 def run(argv):
     from gates import GatesRunner
+
     ok, results = GatesRunner().run()
     for r in results:
         flag = "[OK] " if r["passed"] else "[FAIL]"

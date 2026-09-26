@@ -209,7 +209,10 @@ class AdaptiveHttpClient:
         # 物理开关：每日上限 / 连续错误熔断（0 值也生效，用 is not None 判断）
         if self.max_pages_today is not None and self._pages_today >= self.max_pages_today:
             return None, f"max_pages_today exceeded ({self.max_pages_today})"
-        if self.stop_after_n_errors is not None and self._consecutive_errors >= self.stop_after_n_errors:
+        if (
+            self.stop_after_n_errors is not None
+            and self._consecutive_errors >= self.stop_after_n_errors
+        ):
             return None, f"stop_after_n_errors exceeded ({self.stop_after_n_errors})"
 
         t0 = time.time()
@@ -227,7 +230,9 @@ class AdaptiveHttpClient:
                     self._consecutive_errors = 0
                     self.log.info(
                         "GET %s status=%s elapsed=%.2fs",
-                        url, status, time.time() - t0,
+                        url,
+                        status,
+                        time.time() - t0,
                     )
                     if binary:
                         data = resp.read()
@@ -248,8 +253,14 @@ class AdaptiveHttpClient:
                     retry_after = e.headers.get("Retry-After") if hasattr(e, "headers") else None
                     wait = self._backoff(attempt, retry_after)
                     self._enter_cooldown(wait)
-                    self.log.warning("HTTP %d @ %s 限流/暂不可用，%ss 后重试(%d/%d)",
-                                     status, url, round(wait, 1), attempt, self.retries)
+                    self.log.warning(
+                        "HTTP %d @ %s 限流/暂不可用，%ss 后重试(%d/%d)",
+                        status,
+                        url,
+                        round(wait, 1),
+                        attempt,
+                        self.retries,
+                    )
                     continue
                 last_err = f"HTTP {status}"
                 return status, last_err
@@ -257,8 +268,14 @@ class AdaptiveHttpClient:
                 self._consecutive_errors += 1
                 last_err = f"{type(e).__name__}: {e}"
                 wait = self._backoff(attempt, None)
-                self.log.warning("网络异常 @ %s，%ss 后重试(%d/%d): %s",
-                                 url, round(wait, 1), attempt, self.retries, e)
+                self.log.warning(
+                    "网络异常 @ %s，%ss 后重试(%d/%d): %s",
+                    url,
+                    round(wait, 1),
+                    attempt,
+                    self.retries,
+                    e,
+                )
                 time.sleep(wait)
                 continue
         self.log.error("GET %s 重试 %d 次仍失败：%s", url, self.retries, last_err)
@@ -268,7 +285,7 @@ class AdaptiveHttpClient:
     def _backoff(attempt: int, retry_after: str | None) -> float:
         if retry_after and str(retry_after).isdigit():
             return float(int(retry_after))
-        return min(2 ** attempt, 16) + random.uniform(0, 1)
+        return min(2**attempt, 16) + random.uniform(0, 1)
 
     # ---------------- 流式下载（附件/正文文档） ---------------- #
     def download_file(
@@ -297,12 +314,15 @@ class AdaptiveHttpClient:
                     if status in _RETRY_STATUS:
                         wait = self._backoff(attempt, resp.headers.get("Retry-After"))
                         self._enter_cooldown(wait)
-                        self.log.warning("下载 HTTP %d @ %s 重试(%d/%d)", status, url, attempt, self.retries)
+                        self.log.warning(
+                            "下载 HTTP %d @ %s 重试(%d/%d)", status, url, attempt, self.retries
+                        )
                         continue
                     if status in _NO_RETRY_STATUS or status >= 400:
                         return False, f"HTTP {status}", 0
                     import hashlib
                     import os
+
                     sha = hashlib.sha256()
                     size = 0
                     tmp = dest_path + ".part"
@@ -323,8 +343,13 @@ class AdaptiveHttpClient:
                             sha.update(chunk)
                             f.write(chunk)
                     os.replace(tmp, dest_path)
-                    self.log.info("下载完成 %s → %s (%.2f KB, %.2fs)",
-                                  url, dest_path, size / 1024, time.time() - t0)
+                    self.log.info(
+                        "下载完成 %s → %s (%.2f KB, %.2fs)",
+                        url,
+                        dest_path,
+                        size / 1024,
+                        time.time() - t0,
+                    )
                     return True, sha.hexdigest(), size
             except urllib.error.HTTPError as e:
                 if e.code in _RETRY_STATUS:

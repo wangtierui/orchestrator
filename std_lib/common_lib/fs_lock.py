@@ -12,6 +12,7 @@ pbc collector 与 classifier 迁移代码 `from std_lib.common_lib import fs_loc
 占用判定：锁文件存在且（PID 存活 且 未超 max_age_sec）→ 被占用；否则（PID 死/内容损坏/超龄）
 → 可抢占。路径一律由调用方经 paths 派生传入，本模块不硬编码任何绝对路径。
 """
+
 from __future__ import annotations
 
 import json
@@ -70,6 +71,7 @@ def _pid_alive(pid):
         return False
     if os.name == "nt":
         import ctypes
+
         kernel32 = ctypes.windll.kernel32
         PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
         handle = kernel32.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, pid)
@@ -118,19 +120,19 @@ class ProcessLock:
         if os.path.exists(self.lock_path):
             pid = _read_lock_pid(self.lock_path)
             stale = False
-            if pid is None:                    # 内容损坏 → 可抢占
+            if pid is None:  # 内容损坏 → 可抢占
                 stale = True
-            elif not _pid_alive(pid):           # PID 已死 → 可抢占
+            elif not _pid_alive(pid):  # PID 已死 → 可抢占
                 stale = True
             else:
                 try:
                     age = time.time() - os.path.getmtime(self.lock_path)
                 except OSError:
                     age = 0
-                if age > self.max_age_sec:      # 超龄 → 可抢占
+                if age > self.max_age_sec:  # 超龄 → 可抢占
                     stale = True
             if not stale:
-                return False                    # 被占用
+                return False  # 被占用
         os.makedirs(os.path.dirname(os.path.abspath(self.lock_path)), exist_ok=True)
         with open(self.lock_path, "w", encoding="utf-8") as fh:
             fh.write(str(self.own_pid))
@@ -184,6 +186,7 @@ class WinFileLock:
 
     def acquire(self):
         import msvcrt
+
         os.makedirs(os.path.dirname(os.path.abspath(self.lock_path)), exist_ok=True)
         self._fh = open(self.lock_path, "a+")
         msvcrt.locking(self._fh.fileno(), msvcrt.LK_LOCK, 1)
@@ -191,6 +194,7 @@ class WinFileLock:
 
     def release(self):
         import msvcrt
+
         if self._fh is None:
             return
         try:
@@ -215,6 +219,7 @@ def atomic_write_csv_dict(path, rows, fieldnames, encoding="utf-8-sig"):
     """原子写 DictWriter CSV（UTF-8 BOM）。registry/consolidate 收口专用（P2 扩展，旧仓无）。"""
     import csv
     import io
+
     # 在内存组装后经 atomic_write_text 落盘，保证与旧仓一致的原子语义
     buf = io.StringIO()
     w = csv.DictWriter(buf, fieldnames=fieldnames)

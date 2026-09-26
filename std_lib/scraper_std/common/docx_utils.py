@@ -1,5 +1,7 @@
 """DOCX parsing and Chinese law article extraction utilities."""
 
+from __future__ import annotations
+
 import re
 import subprocess
 import zipfile
@@ -23,9 +25,7 @@ def extract_paragraphs_from_docx(content: bytes) -> list:
     # Old .doc format - try antiword or catdoc
     for tool in ["antiword", "catdoc"]:
         try:
-            result = subprocess.run(
-                [tool, "-"], input=content, capture_output=True, timeout=30
-            )
+            result = subprocess.run([tool, "-"], input=content, capture_output=True, timeout=30)
             if result.returncode == 0:
                 text = result.stdout.decode("utf-8", errors="replace")
                 if text.strip():
@@ -77,9 +77,7 @@ def match_article_query(query: str, article_number: str) -> bool:
     m = re.match(r"^第(\d+)条$", query)
     if m:
         n = int(m.group(1))
-        return (
-            f"第{int_to_chinese(n)}条" == article_number or f"第{n}条" == article_number
-        )
+        return f"第{int_to_chinese(n)}条" == article_number or f"第{n}条" == article_number
     if re.match(r"^\d+$", query):
         n = int(query)
         return f"第{int_to_chinese(n)}条" == article_number

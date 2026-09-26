@@ -23,6 +23,7 @@
   python tools/prune_orphan_processed.py            # dry-run：列出孤儿与体量
   python tools/prune_orphan_processed.py --apply
 """
+
 from __future__ import annotations
 
 import argparse
@@ -49,10 +50,14 @@ def build_plan() -> dict:
     """只读规划：找出不在主索引中的 IPN 及其产物文件。"""
     if not os.path.exists(INDEX_PATH):
         return {"orphans": [], "suffix_counts": {}, "bytes": 0, "indexed": 0, "total_ipn": 0}
-    indexed = {r.get("ipn") for r in
-               json.load(open(INDEX_PATH, encoding="utf-8")).get("records", [])}
-    mains = [p for p in glob.glob(os.path.join(PROCESSED, "*.json"))
-             if not p.endswith(("_fulltext.json", "_clauses.json", "_rich.json"))]
+    indexed = {
+        r.get("ipn") for r in json.load(open(INDEX_PATH, encoding="utf-8")).get("records", [])
+    }
+    mains = [
+        p
+        for p in glob.glob(os.path.join(PROCESSED, "*.json"))
+        if not p.endswith(("_fulltext.json", "_clauses.json", "_rich.json"))
+    ]
     orphan_ipns = []
     for p in mains:
         ipn = os.path.basename(p)[: -len(".json")]
@@ -65,9 +70,17 @@ def build_plan() -> dict:
             if os.path.exists(f):
                 files.append(f)
                 nbytes += os.path.getsize(f)
-                suffix_counts[os.path.basename(f).split("_", 1)[1] if "_" in os.path.basename(f) else ".json"] += 1
-    return {"orphans": orphan_ipns, "files": files, "suffix_counts": dict(suffix_counts),
-            "bytes": nbytes, "indexed": len(indexed), "total_ipn": len(mains)}
+                suffix_counts[
+                    os.path.basename(f).split("_", 1)[1] if "_" in os.path.basename(f) else ".json"
+                ] += 1
+    return {
+        "orphans": orphan_ipns,
+        "files": files,
+        "suffix_counts": dict(suffix_counts),
+        "bytes": nbytes,
+        "indexed": len(indexed),
+        "total_ipn": len(mains),
+    }
 
 
 def apply_plan(plan: dict, *, backup: bool = True) -> dict:
@@ -87,11 +100,19 @@ def apply_plan(plan: dict, *, backup: bool = True) -> dict:
     if backup:
         os.makedirs(backup_dir, exist_ok=True)
         with open(os.path.join(backup_dir, "manifest.json"), "w", encoding="utf-8") as fh:
-            json.dump({"generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                       "orphan_ipns": plan["orphans"], "moved_files": entries,
-                       "moved": moved, "failed": failed,
-                       "note": "孤儿 processed 产物（不在主索引中的 IPN）。回滚：把本目录文件移回 processed/。"},
-                      fh, ensure_ascii=False, indent=2)
+            json.dump(
+                {
+                    "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    "orphan_ipns": plan["orphans"],
+                    "moved_files": entries,
+                    "moved": moved,
+                    "failed": failed,
+                    "note": "孤儿 processed 产物（不在主索引中的 IPN）。回滚：把本目录文件移回 processed/。",
+                },
+                fh,
+                ensure_ascii=False,
+                indent=2,
+            )
     return {"moved": moved, "failed": failed, "backup_dir": backup_dir}
 
 
@@ -103,8 +124,10 @@ def main() -> int:
 
     plan = build_plan()
     mb = plan["bytes"] / 1048576
-    print(f"[orphan] 主索引 {plan['indexed']} 条 | processed IPN {plan['total_ipn']} 个"
-          f" | 孤儿 {len(plan['orphans'])} 个 / {len(plan.get('files', []))} 文件 / {mb:.2f} MB")
+    print(
+        f"[orphan] 主索引 {plan['indexed']} 条 | processed IPN {plan['total_ipn']} 个"
+        f" | 孤儿 {len(plan['orphans'])} 个 / {len(plan.get('files', []))} 文件 / {mb:.2f} MB"
+    )
     print(f"[orphan] 产物构成：{plan['suffix_counts']}")
     for ipn in plan["orphans"][:6]:
         print("   ", ipn)

@@ -37,7 +37,9 @@ def _type_ok(value: Any, ftype: str) -> bool:
     if ftype in ("int", "number"):
         if isinstance(value, bool):
             return False
-        return isinstance(value, (int, float)) and (ftype == "float" or not isinstance(value, float))
+        return isinstance(value, (int, float)) and (
+            ftype == "float" or not isinstance(value, float)
+        )
     if ftype == "float":
         return isinstance(value, (int, float)) and not isinstance(value, bool)
     if ftype == "datetime":
@@ -62,8 +64,9 @@ def _type_ok(value: Any, ftype: str) -> bool:
     return True
 
 
-def validate_record(record: dict[str, Any], schema: dict[str, Any],
-                    allow_missing: set | None = None) -> tuple[bool, list[str]]:
+def validate_record(
+    record: dict[str, Any], schema: dict[str, Any], allow_missing: set | None = None
+) -> tuple[bool, list[str]]:
     """
     按 schema 校验单条记录。schema 形如：
       {
@@ -88,9 +91,9 @@ def validate_record(record: dict[str, Any], schema: dict[str, Any],
             if required:
                 if field in allow_missing:
                     # 已知源限制：记入警告，由调用方追加到 _metadata
-                    record.setdefault("_metadata", {}).setdefault(
-                        "validation_warnings", []).append(
-                        f"{field}: null (known source limitation)")
+                    record.setdefault("_metadata", {}).setdefault("validation_warnings", []).append(
+                        f"{field}: null (known source limitation)"
+                    )
                     continue
                 errors.append(f"{field}: required but null/empty")
             continue
@@ -125,8 +128,11 @@ def normalize_datetime(text: Any) -> str:
     """统一日期格式为 YYYY-MM-DD（含 HH:MM:SS 可选）；无法识别返回空串。"""
     if not isinstance(text, str):
         if isinstance(text, (_dt.date, _dt.datetime)):
-            return text.strftime("%Y-%m-%d %H:%M:%S") if isinstance(text, _dt.datetime) \
+            return (
+                text.strftime("%Y-%m-%d %H:%M:%S")
+                if isinstance(text, _dt.datetime)
                 else text.strftime("%Y-%m-%d")
+            )
         return ""
     s = text.strip()
     m = re.match(r"(\d{4})[-年/](\d{1,2})[-月/](\d{1,2})日?", s)
@@ -168,9 +174,12 @@ class NullThresholdMonitor:
             return (not s) or s.upper() in NullThresholdMonitor._NA_LITERALS
         return False
 
-    def __init__(self, core_fields: list[str] | None = None,
-                 alarm_fields: list[str] | None = None,
-                 on_alarm: Any | None = None):
+    def __init__(
+        self,
+        core_fields: list[str] | None = None,
+        alarm_fields: list[str] | None = None,
+        on_alarm: Any | None = None,
+    ):
         self.core_fields = core_fields or ["title", "body_text", "index_no"]
         self.alarm_fields = alarm_fields or list(self.core_fields)
         self._null = {f: 0 for f in self.core_fields}
@@ -197,8 +206,7 @@ class NullThresholdMonitor:
         rates 返回全部 core_fields 的真实空值率（含豁免字段）。
         """
         rates = self.rates()
-        over = {f: r for f, r in rates.items()
-                if f in self.alarm_fields and r > self.THRESHOLD}
+        over = {f: r for f, r in rates.items() if f in self.alarm_fields and r > self.THRESHOLD}
         allow = not over
         if not allow:
             LOG.error("空值率超阈值告警：%s（阈值 %.0f%%）", over, self.THRESHOLD * 100)
@@ -210,6 +218,29 @@ class NullThresholdMonitor:
         return allow, rates
 
 
+def check_unique_dedup_keys(records: list[dict]) -> tuple[bool, list[dict]]:
+    """批量唯一性校验：`dedup_key` 是**唯一业务主键**（SSOT，v2 §2.3.2 曾标记"无唯一性校验"）。
+
+    同一批次内重复 → 返回 (False, duplicates)，供 clean 管道/门禁据以告警或隔离。
+    此前的"唯一性"只有 `assert rec["dedup_key"]`（非空断言），**跨记录去重键冲突无人发现**；
+    `reconcile_clean_drift` 等下游按 dedup_key 建索引，重复会静默覆盖。本函数补上唯一性。
+
+    返回 duplicates 列表：`[{dedup_key, count, indices: [首次, ...]}]`（仅重复项，保持出现序）。
+    """
+    count: dict[str, int] = {}
+    indices: dict[str, list[int]] = {}
+    for i, rec in enumerate(records):
+        if not isinstance(rec, dict):
+            continue
+        key = rec.get("dedup_key")
+        if not key:
+            continue
+        count[key] = count.get(key, 0) + 1
+        indices.setdefault(key, []).append(i)
+    dups = [{"dedup_key": k, "count": c, "indices": indices[k]} for k, c in count.items() if c > 1]
+    return (not dups), dups
+
+
 if __name__ == "__main__":  # 离线自检
     schema = {
         "title": {"type": "string", "required": True},
@@ -218,8 +249,14 @@ if __name__ == "__main__":  # 离线自检
         "issue_organ": {"type": "string"},
     }
     ok, errs = validate_record(
-        {"title": "测试", "publish_date": "2024年3月5日",
-         "detail_url": "https://x.gov.cn/a", "issue_organ": "财政部"}, schema)
+        {
+            "title": "测试",
+            "publish_date": "2024年3月5日",
+            "detail_url": "https://x.gov.cn/a",
+            "issue_organ": "财政部",
+        },
+        schema,
+    )
     assert ok and not errs, errs
     ok, errs = validate_record({"title": "", "detail_url": "ftp://x"}, schema)
     assert not ok and any("required" in e for e in errs)

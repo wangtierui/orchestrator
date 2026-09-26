@@ -13,6 +13,7 @@
   - 合格判定（gate_timeliness_ssot）：`now - last_checked_at <= 90 天`
     且 status ∉ {pending, uncertain}。
 """
+
 from __future__ import annotations
 
 import os
@@ -33,6 +34,7 @@ if REVIEW_DIR not in sys.path:
 
 def _impl():
     import verification_state as _vs  # noqa: PLC0415
+
     return _vs
 
 
@@ -43,6 +45,7 @@ def state_path() -> str:
 def load_state() -> dict:
     """全量状态（键 → 记录）。文件缺失返回 {}。"""
     import json  # noqa: PLC0415
+
     if not os.path.exists(STATE_PATH):
         return {}
     try:
@@ -80,6 +83,7 @@ def latest_summary() -> dict | None:
     """最新 `verify_summary_*.json`（无则 None）。"""
     import glob  # noqa: PLC0415
     import json  # noqa: PLC0415
+
     files = sorted(glob.glob(os.path.join(REVIEW_DIR, "verify_summary_*.json")))
     if not files:
         return None

@@ -12,6 +12,7 @@ std_lib.common_lib.index_store — 单例 JSON 索引骨架（get_index() 模式
 
     idx = get_store("my_index", MyIndex, path=...)   # 模块级单例
 """
+
 from __future__ import annotations
 
 import json

@@ -12,6 +12,7 @@ tools/gen_schedule_doc.py — 由 `config/schedule.yaml` **反向生成**运行�
     python tools/gen_schedule_doc.py --check    # 只比对，漂移则 rc=1（供门禁/CI）
     python tools/gen_schedule_doc.py --print    # 打到 stdout（不写文件）
 """
+
 from __future__ import annotations
 
 import os
@@ -20,6 +21,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import paths  # noqa: E402
+from config.exitcodes import ExitCode  # noqa: E402  (R3：退出码语义化)
 
 SCHEDULE_YAML = os.path.join(paths.CONFIG_DIR, "schedule.yaml")
 MANUAL = os.path.join(paths.ROOT, "reports", "运行手册_编排与定时_20260912.md")
@@ -88,8 +90,10 @@ def render_cron(jobs: list[dict], *, repo_placeholder: str = "/path/to/repo") ->
         if j.get("kind") != "cron":
             continue
         argv = " ".join(a for a in (j.get("argv") or []) if a != "cli.py")
-        lines.append(f"{j['when']}   cd {repo_placeholder} && python cli.py{(' ' + argv) if argv else ''}"
-                     f" >> logs/cron_{j['id']}.log 2>&1")
+        lines.append(
+            f"{j['when']}   cd {repo_placeholder} && python cli.py{(' ' + argv) if argv else ''}"
+            f" >> logs/cron_{j['id']}.log 2>&1"
+        )
     lines.append("```")
     return "\n".join(lines)
 
@@ -119,8 +123,10 @@ def write_manual(check: bool = False) -> tuple[bool, str]:
     if new == text:
         return True, "手册自动段与 schedule.yaml 一致（无漂移）"
     if check:
-        return False, ("手册自动段与 schedule.yaml **不一致**：请运行 "
-                       "`python tools/gen_schedule_doc.py` 重写（勿手改手册）")
+        return False, (
+            "手册自动段与 schedule.yaml **不一致**：请运行 "
+            "`python tools/gen_schedule_doc.py` 重写（勿手改手册）"
+        )
     with open(MANUAL, "w", encoding="utf-8", newline="") as fh:
         fh.write(new)
     return True, f"手册自动段已重写：{os.path.relpath(MANUAL, paths.ROOT)}"
@@ -133,10 +139,10 @@ def main(argv=None) -> int:
         print(render_table(data.get("jobs") or []).replace("| **", "\n| **").lstrip())
         print()
         print(cron)
-        return 0
+        return ExitCode.OK
     ok, msg = write_manual(check="--check" in argv)
     print(f"[schedule-doc] {'OK' if ok else 'FAIL'} {msg}")
-    return 0 if ok else 1
+    return ExitCode.OK if ok else ExitCode.FAIL
 
 
 if __name__ == "__main__":

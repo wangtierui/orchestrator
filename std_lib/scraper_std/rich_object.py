@@ -21,6 +21,7 @@ rich_structured 对象 schema：
    "image_path": str,              # 有图且落盘时相对路径
    "converted": bool}              # doc→docx 转换路径标记
 """
+
 from __future__ import annotations
 
 import os
@@ -35,6 +36,7 @@ CONVERT_EXT = (".doc", ".wps", ".rtf", ".ceb")
 
 def _log(msg: str) -> None:
     import logging  # noqa: PLC0415
+
     logging.getLogger("rich_object").warning("%s %s", _LOG_PREFIX, msg)
 
 
@@ -81,7 +83,7 @@ def _omml_linear(el: ET.Element, out: list[str]) -> None:
                 for gc in c:
                     _omml_linear(gc, sub)
                 parts.append("".join(sub))
-        out.append("(" + ")/(" .join("" if not p else p for p in parts) + ")")
+        out.append("(" + ")/(".join("" if not p else p for p in parts) + ")")
         return
     for c in el:
         _omml_linear(c, out)
@@ -119,8 +121,7 @@ def _iter_descendants(root: ET.Element, localname: str):
             yield el
 
 
-def extract_rich_objects(data: bytes, name: str = "", *,
-                         max_chars: int = 60000) -> dict[str, Any]:
+def extract_rich_objects(data: bytes, name: str = "", *, max_chars: int = 60000) -> dict[str, Any]:
     """docx/doc/xlsx → 富内容对象与图片字节。
 
     返回 {objects, images(dict name→bytes), text, count, converted}；
@@ -133,6 +134,7 @@ def extract_rich_objects(data: bytes, name: str = "", *,
     if low.endswith(CONVERT_EXT):
         try:
             from std_lib.scraper_std.doc_convert import doc_bytes_to_docx  # noqa: PLC0415
+
             conv = doc_bytes_to_docx(data, low)
             if conv:
                 data, converted = conv, True
@@ -143,8 +145,13 @@ def extract_rich_objects(data: bytes, name: str = "", *,
         objs, images, _z = _extract_docx_rich(data, max_chars)
         if objs is None:
             return _extract_xlsx_rich(data, converted)
-        return {"objects": objs, "images": images, "text": _join_text(objs),
-                "count": len(objs), "converted": converted}
+        return {
+            "objects": objs,
+            "images": images,
+            "text": _join_text(objs),
+            "count": len(objs),
+            "converted": converted,
+        }
     return {"objects": [], "images": {}, "text": "", "count": 0, "converted": False}
 
 
@@ -170,8 +177,14 @@ def _extract_docx_rich(data: bytes, max_chars: int):
         _omml_linear(m, lin)
         txt = "".join(lin).strip()
         if txt:
-            objects.append({"index": len(objects) + 1, "kind": "formula",
-                            "text": txt[:max_chars], "converted": False})
+            objects.append(
+                {
+                    "index": len(objects) + 1,
+                    "kind": "formula",
+                    "text": txt[:max_chars],
+                    "converted": False,
+                }
+            )
 
     # 2) DrawingML 图形/图片（文本按段落聚合 → 节点粒度拓扑底稿）
     for d in _iter_descendants(root, "drawing"):
@@ -181,7 +194,9 @@ def _extract_docx_rich(data: bytes, max_chars: int):
         media: list[bytes] = []
         img_names: list[str] = []
         for b in blips:
-            embed = b.get("{http://schemas.openxmlformats.org/officeDocument/2006/relationships}embed")
+            embed = b.get(
+                "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}embed"
+            )
             if not embed:
                 embed = b.get("embed")
             tgt = rels.get(embed or "", "")
@@ -194,15 +209,19 @@ def _extract_docx_rich(data: bytes, max_chars: int):
             media.append(raw)
             img_names.append(os.path.basename(tgt))
         if sub or media:
-            obj: dict[str, Any] = {"index": len(objects) + 1,
-                                   "kind": "diagram" if sub else "image",
-                                   "text": sub[:max_chars] if sub else "",
-                                   "converted": False}
+            obj: dict[str, Any] = {
+                "index": len(objects) + 1,
+                "kind": "diagram" if sub else "image",
+                "text": sub[:max_chars] if sub else "",
+                "converted": False,
+            }
             if sub:
-                obj["shape_count"] = len(paras)   # 节点数（近似拓扑粒度，行=节点文本）
+                obj["shape_count"] = len(paras)  # 节点数（近似拓扑粒度，行=节点文本）
             objects.append(obj)
             for i, raw in enumerate(media):
-                images[f"d{len(objects)}_img{i + 1}_{img_names[i] if img_names else 'media' + str(i)}"] = raw
+                images[
+                    f"d{len(objects)}_img{i + 1}_{img_names[i] if img_names else 'media' + str(i)}"
+                ] = raw
     return objects, images, z
 
 
@@ -223,8 +242,14 @@ def _extract_xlsx_rich(data: bytes, converted: bool):
         for d in _iter_descendants(root, "txBody"):
             txt = _text_of(d)
             if txt:
-                objects.append({"index": len(objects) + 1, "kind": "diagram",
-                                "text": txt, "converted": converted})
+                objects.append(
+                    {
+                        "index": len(objects) + 1,
+                        "kind": "diagram",
+                        "text": txt,
+                        "converted": converted,
+                    }
+                )
         base = os.path.dirname(dname)
         relp = dname.replace(".xml", ".rels")
         rels = {}
@@ -233,12 +258,15 @@ def _extract_xlsx_rich(data: bytes, converted: bool):
             for rel in r:
                 tgt = rel.get("Target", "").lstrip("/")
                 if tgt:
-                    rels[rel.get("Id", "")] = (os.path.join(base, tgt)
-                                               if not tgt.startswith("xl/") else tgt)
+                    rels[rel.get("Id", "")] = (
+                        os.path.join(base, tgt) if not tgt.startswith("xl/") else tgt
+                    )
         except (KeyError, ET.ParseError):
             pass
         for b in _iter_descendants(root, "blip"):
-            embed = b.get("{http://schemas.openxmlformats.org/officeDocument/2006/relationships}embed") or b.get("embed")
+            embed = b.get(
+                "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}embed"
+            ) or b.get("embed")
             tgt = rels.get(embed or "")
             if not tgt:
                 continue
@@ -246,12 +274,17 @@ def _extract_xlsx_rich(data: bytes, converted: bool):
                 images[os.path.basename(tgt)] = z.read(tgt)
             except KeyError:
                 pass
-    return {"objects": objects, "images": images, "text": _join_text(objects),
-            "count": len(objects), "converted": converted}
+    return {
+        "objects": objects,
+        "images": images,
+        "text": _join_text(objects),
+        "count": len(objects),
+        "converted": converted,
+    }
 
 
-_MIN_REGION = 60        # 区域渲染最小宽高（像素阈值：过滤装饰线/小徽标）
-_MAX_PDF_REGIONS = 20   # 单 pdf 最大 region 数（防示意图页泛滥）
+_MIN_REGION = 60  # 区域渲染最小宽高（像素阈值：过滤装饰线/小徽标）
+_MAX_PDF_REGIONS = 20  # 单 pdf 最大 region 数（防示意图页泛滥）
 
 
 def _extract_pdf_rich(data: bytes, max_chars: int) -> dict[str, Any]:
@@ -265,6 +298,7 @@ def _extract_pdf_rich(data: bytes, max_chars: int) -> dict[str, Any]:
     images: dict[str, bytes] = {}
     try:
         import pymupdf as fitz  # noqa: PLC0415 PyMuPDF（现代导入名，弃用 fitz 别名）
+
         doc = fitz.open(stream=data, filetype="pdf")
     except Exception as e:  # noqa: BLE001
         _log(f"pdf open: {e}")
@@ -299,16 +333,28 @@ def _extract_pdf_rich(data: bytes, max_chars: int) -> dict[str, Any]:
             ocr = ""
             try:
                 from std_lib.scraper_std.ocr_engine import get_ocr  # noqa: PLC0415
+
                 res = get_ocr().recognize_image(png)
                 ocr = (getattr(res, "text", "") or "").strip()
             except Exception:  # noqa: BLE001  OCR 不可用 → 图仍归档
                 pass
-            objects.append({"index": len(objects) + 1, "kind": "image",
-                            "text": ocr[:max_chars] if ocr else "",
-                            "shape_count": 0, "converted": False})
+            objects.append(
+                {
+                    "index": len(objects) + 1,
+                    "kind": "image",
+                    "text": ocr[:max_chars] if ocr else "",
+                    "shape_count": 0,
+                    "converted": False,
+                }
+            )
             images[f"p{pno}_fig{ii}.png"] = png
-    return {"objects": objects, "images": images, "text": _join_text(objects),
-            "count": len(objects), "converted": False}
+    return {
+        "objects": objects,
+        "images": images,
+        "text": _join_text(objects),
+        "count": len(objects),
+        "converted": False,
+    }
 
 
 def _join_text(objects: list[dict[str, Any]]) -> str:
@@ -319,8 +365,9 @@ def _join_text(objects: list[dict[str, Any]]) -> str:
     return "\n".join(lines)
 
 
-def rich_object_fields(data: bytes, name: str = "", *, image_dir: str | None = None,
-                       rec_key: str = "") -> dict[str, Any]:
+def rich_object_fields(
+    data: bytes, name: str = "", *, image_dir: str | None = None, rec_key: str = ""
+) -> dict[str, Any]:
     """富内容抽取 → 记录轨键（供 raw/processed 存储；同 structured_table_fields 样板）。
 
     无富内容/异常 → {}。image_dir 给定时将 images 写入
@@ -353,5 +400,9 @@ def rich_object_fields(data: bytes, name: str = "", *, image_dir: str | None = N
                 if not o.get("image_path"):
                     o["image_path"] = os.path.relpath(dest, image_dir).replace("\\", "/")
                     break
-    return {"rich_structured": out, "rich_text": res.get("text", ""),
-            "rich_count": len(out), "_rich_images_saved": saved}
+    return {
+        "rich_structured": out,
+        "rich_text": res.get("text", ""),
+        "rich_count": len(out),
+        "_rich_images_saved": saved,
+    }

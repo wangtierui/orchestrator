@@ -1,5 +1,7 @@
 """File-based cache with TTL support."""
 
+from __future__ import annotations
+
 import hashlib
 import json
 import time
@@ -8,9 +10,9 @@ from pathlib import Path
 from .constants import NO_CACHE
 
 # Maximum on-disk retention per file type
-JSON_MAX_AGE = 86400        # .json cache entries: 24h
-FILE_MAX_AGE = 604800       # .bin/.meta binary cache: 7 days
-CLEANUP_INTERVAL = 604800   # cleanup throttle: 7 days
+JSON_MAX_AGE = 86400  # .json cache entries: 24h
+FILE_MAX_AGE = 604800  # .bin/.meta binary cache: 7 days
+CLEANUP_INTERVAL = 604800  # cleanup throttle: 7 days
 CLEANUP_MARKER = ".last_cleanup"
 
 
@@ -84,6 +86,7 @@ class CacheManager:
 
     def clear(self) -> None:
         import shutil
+
         if self.dir.exists():
             shutil.rmtree(self.dir)
             self.dir.mkdir(parents=True, exist_ok=True)
@@ -137,7 +140,7 @@ class CacheManager:
 
         # Collect files by stem
         json_files = []
-        bin_files = {}   # stem -> Path
+        bin_files = {}  # stem -> Path
         meta_files = {}  # stem -> Path
 
         for entry in self.dir.iterdir():
@@ -251,8 +254,13 @@ class CacheManager:
         return {"files": files, "bytes": bytes_reclaimed}
 
     def _bin_meta_expired(
-        self, stem: str, bin_path: Path | None, meta_path: Path | None, now: float,
-        has_bin: bool, has_meta: bool
+        self,
+        stem: str,
+        bin_path: Path | None,
+        meta_path: Path | None,
+        now: float,
+        has_bin: bool,
+        has_meta: bool,
     ) -> bool:
         """Determine whether a .bin/.meta entry is expired."""
         ts = None

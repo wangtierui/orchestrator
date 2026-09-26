@@ -143,6 +143,7 @@ def ensure_utf8_bom(text: str) -> bytes:
 def write_text_utf8_bom(path: str, text: str) -> None:
     """便捷写文件（UTF-8 with BOM）。"""
     import os
+
     os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
     with open(path, "wb") as f:
         f.write(ensure_utf8_bom(text))

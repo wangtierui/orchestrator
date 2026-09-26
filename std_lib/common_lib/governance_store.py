@@ -24,6 +24,7 @@
   3) **WAL + busy_timeout**：读并发友好；写入经 sqlite 事务（跨表原子）。
   4) 主键/代理键**不可变**（RFN/IPN 教训）：本模块不重算任何现有代理键。
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -36,18 +37,43 @@ from datetime import datetime, timedelta, timezone
 from std_lib.common_lib.io_atomic import sha256_file
 
 __all__ = [
-    "SCHEMA_VERSION", "TABLES", "SYNC_TABLES", "db_path", "enabled", "connect", "init_db",
-    "version_of_file", "file_version", "version_of_files", "now_iso",
-    "run_start", "run_finish", "current_run_id", "list_runs",
-    "record_watermark", "get_watermark", "list_watermarks", "dependency_edges",
+    "SCHEMA_VERSION",
+    "TABLES",
+    "SYNC_TABLES",
+    "db_path",
+    "enabled",
+    "connect",
+    "init_db",
+    "version_of_file",
+    "file_version",
+    "version_of_files",
+    "now_iso",
+    "run_start",
+    "run_finish",
+    "current_run_id",
+    "list_runs",
+    "record_watermark",
+    "get_watermark",
+    "list_watermarks",
+    "dependency_edges",
     "check_dependencies",
     # v2 §3.14.3：待办队列
-    "worklist_add", "worklist_list", "worklist_resolve", "worklist_stats",
-    "log_audit", "list_audit",
-    "upsert_artifacts", "list_artifacts",
-    "record_gate_results", "list_gate_results",
+    "worklist_add",
+    "worklist_list",
+    "worklist_resolve",
+    "worklist_stats",
+    "log_audit",
+    "list_audit",
+    "upsert_artifacts",
+    "list_artifacts",
+    "record_gate_results",
+    "list_gate_results",
     # 阶段 2：元数据投影四表
-    "project_metadata", "table_rows", "table_count", "table_digest", "verify_projection",
+    "project_metadata",
+    "table_rows",
+    "table_count",
+    "table_digest",
+    "verify_projection",
     "export_snapshot",
     "snapshot",
 ]
@@ -62,17 +88,26 @@ SCHEMA_VERSION = "1.2"
 #      观测表（run_log/watermark/artifact/audit_log/gate_result/worklist）一律 ALTER 增量迁移
 #      （新增整表由 `_DDL` 的 CREATE TABLE IF NOT EXISTS 完成，无需迁移项）。
 _SCHEMA_INT = 5
-_TZ = timezone(timedelta(hours=8))   # Asia/Shanghai，与 clean_index 时间基准一致
+_TZ = timezone(timedelta(hours=8))  # Asia/Shanghai，与 clean_index 时间基准一致
 
-TABLES = ("run_log", "watermark", "artifact", "audit_log", "gate_result",
-          # ---- v2 §3.14.3（2026-09-26）待办队列：链外节点的"决策自动化"缺口显式化 ----
-          "worklist",
-          # ---- v2 §3.13.3/§3.13.5（2026-09-26，P2-6）步骤级运行台账 ----
-          # 背景：run_log 只有"一次运行"一行，无法回答 `status` 的"本轮哪些步骤失败"，
-          # 也无法支撑 `run --resume` 的"跳过已 rc=0 步骤"（v2 R13：跳过判据不得自建第二套）。
-          "run_step",
-          # ---- 阶段 2（2026-09-18）元数据四表：事实源为文件，本库为**事务化投影** ----
-          "document", "theme_assign", "relation", "timeliness_history")
+TABLES = (
+    "run_log",
+    "watermark",
+    "artifact",
+    "audit_log",
+    "gate_result",
+    # ---- v2 §3.14.3（2026-09-26）待办队列：链外节点的"决策自动化"缺口显式化 ----
+    "worklist",
+    # ---- v2 §3.13.3/§3.13.5（2026-09-26，P2-6）步骤级运行台账 ----
+    # 背景：run_log 只有"一次运行"一行，无法回答 `status` 的"本轮哪些步骤失败"，
+    # 也无法支撑 `run --resume` 的"跳过已 rc=0 步骤"（v2 R13：跳过判据不得自建第二套）。
+    "run_step",
+    # ---- 阶段 2（2026-09-18）元数据四表：事实源为文件，本库为**事务化投影** ----
+    "document",
+    "theme_assign",
+    "relation",
+    "timeliness_history",
+)
 
 # 待办队列的**开放态唯一性**（v2 §3.14.3）：同 (kind, subject) 只允许一条 open，
 # 使产生方可重复调用 `worklist_add` 而不产生重复待办（幂等）。
@@ -96,8 +131,16 @@ SYNC_TABLES: dict[str, dict] = {
     },
     "relation": {
         "source": "relations_index.jsonl",
-        "keys": ("relation_id", "relation", "src_ref", "src_key", "dst_ref", "dst_key",
-                 "dst_class", "matched_by"),
+        "keys": (
+            "relation_id",
+            "relation",
+            "src_ref",
+            "src_key",
+            "dst_ref",
+            "dst_key",
+            "dst_class",
+            "matched_by",
+        ),
         "mode": "replace",
     },
     "timeliness_history": {
@@ -317,6 +360,7 @@ def repo_root() -> str:
     """仓库根：优先 `paths.ROOT`（唯一路径事实源），退化时按本文件上溯三级。"""
     try:
         import paths  # noqa: PLC0415
+
         return paths.ROOT
     except Exception:  # noqa: BLE001  非源码树/未注入 sys.path 时的保守回退
         return os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -333,6 +377,7 @@ def db_path() -> str:
         return os.path.abspath(env)
     try:
         import paths  # noqa: PLC0415
+
         return os.path.join(paths.DATA_DIR, "governance.db")
     except Exception:  # noqa: BLE001
         return os.path.join(repo_root(), "data", "governance.db")
@@ -369,8 +414,10 @@ def connect(readonly: bool = False) -> sqlite3.Connection:
 # 键 = 目标 `_SCHEMA_INT`；值 = ((表, 列, 列定义), ...)。新增版本时**只追加**，不改历史项。
 _OBSERVATION_MIGRATIONS: dict[int, tuple[tuple[str, str, str], ...]] = {
     # 3 = v2 §3.3.1：watermark 增 round/stage（供 dependency_edges 的 ok_within_round 判据）
-    3: (("watermark", "round", "TEXT NOT NULL DEFAULT ''"),
-        ("watermark", "stage", "TEXT NOT NULL DEFAULT ''")),
+    3: (
+        ("watermark", "round", "TEXT NOT NULL DEFAULT ''"),
+        ("watermark", "stage", "TEXT NOT NULL DEFAULT ''"),
+    ),
 }
 
 
@@ -486,9 +533,10 @@ def run_start(argv=None, note: str = "") -> str:
     os.environ["REG_ORCH_RUN_ID"] = rid
     conn = _ensure()
     try:
-        conn.execute("INSERT OR REPLACE INTO run_log(run_id,started_at,argv,ok,note)"
-                     " VALUES(?,?,?,NULL,?)",
-                     (rid, now_iso(), " ".join(str(a) for a in (argv or [])), note))
+        conn.execute(
+            "INSERT OR REPLACE INTO run_log(run_id,started_at,argv,ok,note) VALUES(?,?,?,NULL,?)",
+            (rid, now_iso(), " ".join(str(a) for a in (argv or [])), note),
+        )
         conn.commit()
     finally:
         conn.close()
@@ -500,15 +548,25 @@ def run_finish(run_id: str, ok: bool, note: str = "") -> None:
         return
     conn = _ensure()
     try:
-        conn.execute("UPDATE run_log SET finished_at=?, ok=?, note=? WHERE run_id=?",
-                     (now_iso(), 1 if ok else 0, note, run_id))
+        conn.execute(
+            "UPDATE run_log SET finished_at=?, ok=?, note=? WHERE run_id=?",
+            (now_iso(), 1 if ok else 0, note, run_id),
+        )
         conn.commit()
     finally:
         conn.close()
 
 
-def step_record(step: str, rc: int, *, exit_code: str = "", elapsed_s: float = 0,
-                skipped: bool = False, note: str = "", run_id: str | None = None) -> None:
+def step_record(
+    step: str,
+    rc: int,
+    *,
+    exit_code: str = "",
+    elapsed_s: float = 0,
+    skipped: bool = False,
+    note: str = "",
+    run_id: str | None = None,
+) -> None:
     """登记一个步骤的结果（**幂等 upsert**：同 (run_id, step) 覆盖）。
 
     由 `tools/run_production_refresh._run` 调用；治理库未启用时静默返回（不中断主链）。
@@ -526,8 +584,8 @@ def step_record(step: str, rc: int, *, exit_code: str = "", elapsed_s: float = 0
             " ON CONFLICT(run_id,step) DO UPDATE SET rc=excluded.rc,"
             " exit_code=excluded.exit_code, elapsed_s=excluded.elapsed_s,"
             " skipped=excluded.skipped, note=excluded.note, recorded_at=excluded.recorded_at",
-            (rid, step, int(rc), exit_code, float(elapsed_s), 1 if skipped else 0,
-             note, now_iso()))
+            (rid, step, int(rc), exit_code, float(elapsed_s), 1 if skipped else 0, note, now_iso()),
+        )
         conn.commit()
     except sqlite3.Error as e:
         print(f"[run_step] WARN 登记失败（不影响主链）: {type(e).__name__}: {e}")
@@ -541,8 +599,10 @@ def steps_of(run_id: str) -> list[dict]:
         return []
     try:
         with connect(readonly=True) as c:
-            return [dict(r) for r in c.execute(
-                "SELECT * FROM run_step WHERE run_id=? ORDER BY step", (run_id,))]
+            return [
+                dict(r)
+                for r in c.execute("SELECT * FROM run_step WHERE run_id=? ORDER BY step", (run_id,))
+            ]
     except sqlite3.Error as e:
         # 旧库（_SCHEMA_INT < 5）未迁移 → 读侧不得因此失败（写侧 init_db 会补建表）
         print(f"[run_step] WARN 步骤表不可读（跑 `cli.py governance init` 迁移）: {e}")
@@ -555,8 +615,9 @@ def last_run_with_steps() -> tuple[str, list[dict]]:
         return "", []
     try:
         with connect(readonly=True) as c:
-            row = c.execute("SELECT run_id FROM run_step GROUP BY run_id"
-                            " ORDER BY MAX(recorded_at) DESC LIMIT 1").fetchone()
+            row = c.execute(
+                "SELECT run_id FROM run_step GROUP BY run_id ORDER BY MAX(recorded_at) DESC LIMIT 1"
+            ).fetchone()
             if not row:
                 return "", []
             rid = row["run_id"]
@@ -570,19 +631,31 @@ def list_runs(limit: int = 20) -> list[dict]:
     if not enabled():
         return []
     with connect(readonly=True) as c:
-        return [dict(r) for r in c.execute(
-            "SELECT * FROM run_log ORDER BY started_at DESC LIMIT ?", (int(limit),))]
+        return [
+            dict(r)
+            for r in c.execute(
+                "SELECT * FROM run_log ORDER BY started_at DESC LIMIT ?", (int(limit),)
+            )
+        ]
 
 
 # --------------------------------------------------------------------------- #
 # watermark（核心）
 # --------------------------------------------------------------------------- #
-def record_watermark(artifact_key: str, produced_by: str, version: str, *,
-                     inputs: dict | None = None, produced_at: str = "",
-                     record_count: int | None = None,
-                     schema_version: str = SCHEMA_VERSION,
-                     recorded_by: str = "", run_id: str | None = None,
-                     round_id: str | None = None, stage: str = "") -> dict | None:
+def record_watermark(
+    artifact_key: str,
+    produced_by: str,
+    version: str,
+    *,
+    inputs: dict | None = None,
+    produced_at: str = "",
+    record_count: int | None = None,
+    schema_version: str = SCHEMA_VERSION,
+    recorded_by: str = "",
+    run_id: str | None = None,
+    round_id: str | None = None,
+    stage: str = "",
+) -> dict | None:
     """登记/更新产物水位（幂等 upsert）。
 
     inputs: {依赖 artifact_key: 该依赖**登记时**的 version} —— 即"我是在哪个上游版本上算出来的"。
@@ -599,8 +672,10 @@ def record_watermark(artifact_key: str, produced_by: str, version: str, *,
     if not version:
         return None
     if not str(produced_by or "").strip():
-        print(f"[governance] WARN 拒绝登记 {artifact_key}：produced_by 为空"
-              "（水位必须可追溯到唯一产出方）")
+        print(
+            f"[governance] WARN 拒绝登记 {artifact_key}：produced_by 为空"
+            "（水位必须可追溯到唯一产出方）"
+        )
         return None
     row = {
         "artifact_key": artifact_key,
@@ -628,7 +703,8 @@ def record_watermark(artifact_key: str, produced_by: str, version: str, *,
             " version=excluded.version, inputs_json=excluded.inputs_json,"
             " record_count=excluded.record_count, run_id=excluded.run_id,"
             " round=excluded.round, stage=excluded.stage",
-            row)
+            row,
+        )
         conn.commit()
     finally:
         conn.close()
@@ -639,8 +715,7 @@ def get_watermark(artifact_key: str) -> dict | None:
     if not enabled():
         return None
     with connect(readonly=True) as c:
-        r = c.execute("SELECT * FROM watermark WHERE artifact_key=?",
-                      (artifact_key,)).fetchone()
+        r = c.execute("SELECT * FROM watermark WHERE artifact_key=?", (artifact_key,)).fetchone()
         return _wm_row(r) if r else None
 
 
@@ -693,13 +768,19 @@ def dependency_edges() -> list[dict]:
                 status = "ok_within_round"
             else:
                 status = "stale"
-            edges.append({
-                "artifact": key, "produced_by": w.get("produced_by", ""),
-                "version": w.get("version", ""), "round": a_round,
-                "dep": dep, "declared_version": declared, "current_version": cur,
-                "dep_round": dep_round,
-                "status": status,
-            })
+            edges.append(
+                {
+                    "artifact": key,
+                    "produced_by": w.get("produced_by", ""),
+                    "version": w.get("version", ""),
+                    "round": a_round,
+                    "dep": dep,
+                    "declared_version": declared,
+                    "current_version": cur,
+                    "dep_round": dep_round,
+                    "status": status,
+                }
+            )
     return edges
 
 
@@ -717,27 +798,36 @@ def check_dependencies() -> tuple[bool, dict]:
     within = [e for e in edges if e["status"] == "ok_within_round"]
     unreg = sorted({e["dep"] for e in edges if e["status"] == "unregistered"})
     wms = list_watermarks()
-    bad_rows = [w["artifact_key"] for w in wms
-                if not str(w.get("produced_at") or "").strip() or not str(w.get("version") or "").strip()]
+    bad_rows = [
+        w["artifact_key"]
+        for w in wms
+        if not str(w.get("produced_at") or "").strip() or not str(w.get("version") or "").strip()
+    ]
     no_round = [w["artifact_key"] for w in wms if not str(w.get("round") or "").strip()]
     problems = []
     if stale:
         problems.append(
-            "水位陈旧（上游已推进、产物未重跑）：" + "; ".join(
+            "水位陈旧（上游已推进、产物未重跑）："
+            + "; ".join(
                 f"{e['artifact']} 声明 {e['dep']}={e['declared_version']} "
                 f"但当前 {e['dep']}={e['current_version']}"
-                for e in stale[:5]) + f"（共 {len(stale)} 条）")
+                for e in stale[:5]
+            )
+            + f"（共 {len(stale)} 条）"
+        )
     if bad_rows:
         problems.append(f"水位行缺 produced_at/version：{bad_rows[:5]}")
     detail = {
-        "enabled": True, "db": db_path(),
-        "artifacts": len(wms), "edges": len(edges),
+        "enabled": True,
+        "db": db_path(),
+        "artifacts": len(wms),
+        "edges": len(edges),
         "stale_edges": len(stale),
         "within_round_edges": len(within),
         "unregistered_deps": unreg,
         "problems": problems,
         "note": "判据=已登记产物的每条声明依赖边版本一致；`ok_within_round`（同轮顺序特性）与 "
-                "`unregistered`（覆盖度不足）均不阻断，仅在 detail 披露",
+        "`unregistered`（覆盖度不足）均不阻断，仅在 detail 披露",
     }
     if within:
         detail["within_round_deps"] = sorted({f"{e['artifact']}<-{e['dep']}" for e in within})
@@ -759,10 +849,18 @@ def _wl_row(r: sqlite3.Row) -> dict:
     return d
 
 
-def worklist_add(kind: str, subject: str, *, stage: str = "", artifact_key: str = "",
-                 payload: dict | None = None, suggestion: str = "",
-                 confidence: float | None = None, round_id: str | None = None,
-                 item_id: str = "") -> str | None:
+def worklist_add(
+    kind: str,
+    subject: str,
+    *,
+    stage: str = "",
+    artifact_key: str = "",
+    payload: dict | None = None,
+    suggestion: str = "",
+    confidence: float | None = None,
+    round_id: str | None = None,
+    item_id: str = "",
+) -> str | None:
     """登记一条待办（**幂等**：同 `(kind, subject)` 的 open 项已存在则更新上下文并复用 id）。
 
     kind      : 必须 ∈ `config.enums.WORKLIST_KIND`。本模块做**软校验**——不在集合内仅打印
@@ -777,6 +875,7 @@ def worklist_add(kind: str, subject: str, *, stage: str = "", artifact_key: str 
         return None
     try:
         from config.enums import WORKLIST_KIND  # noqa: PLC0415
+
         if kind not in WORKLIST_KIND:
             print(f"[worklist] WARN 未登记的 kind={kind!r}（应加入 config.enums.WORKLIST_KIND）")
     except Exception:  # noqa: BLE001  非源码树/未注入 sys.path：跳过软校验
@@ -790,22 +889,34 @@ def worklist_add(kind: str, subject: str, *, stage: str = "", artifact_key: str 
     try:
         existing = conn.execute(
             "SELECT item_id FROM worklist WHERE kind=? AND subject=? AND status='open'",
-            (kind, subject)).fetchone()
+            (kind, subject),
+        ).fetchone()
         if existing:
             # 幂等刷新：上下文可能随数据变化（票数/冲突双方），但保留 created_at 与 item_id
             conn.execute(
                 "UPDATE worklist SET stage=?, artifact_key=?, round=?, payload_json=?,"
                 " suggestion=?, confidence=? WHERE item_id=?",
-                (stage, artifact_key, rid, payload_json, suggestion, confidence,
-                 existing["item_id"]))
+                (
+                    stage,
+                    artifact_key,
+                    rid,
+                    payload_json,
+                    suggestion,
+                    confidence,
+                    existing["item_id"],
+                ),
+            )
             conn.commit()
             return existing["item_id"]
 
         # item_id 需在"同一秒内处置后重新登记"时仍唯一 → 带毫秒 + 冲突自增后缀。
         # （曾被单测检出：秒级时间戳 + 同 pid + 同 kind|subject 哈希 → 重开时主键冲突）
-        base = ("WL-" + datetime.now(_TZ).strftime("%Y%m%d%H%M%S%f")[:-3]
-                + f"-{os.getpid()}-"
-                + hashlib.sha256(f"{kind}|{subject}".encode()).hexdigest()[:6])
+        base = (
+            "WL-"
+            + datetime.now(_TZ).strftime("%Y%m%d%H%M%S%f")[:-3]
+            + f"-{os.getpid()}-"
+            + hashlib.sha256(f"{kind}|{subject}".encode()).hexdigest()[:6]
+        )
         iid = item_id or base
         _n = 1
         while conn.execute("SELECT 1 FROM worklist WHERE item_id=?", (iid,)).fetchone():
@@ -815,8 +926,19 @@ def worklist_add(kind: str, subject: str, *, stage: str = "", artifact_key: str 
             "INSERT INTO worklist(item_id,kind,stage,artifact_key,round,subject,payload_json,"
             "suggestion,confidence,status,created_at)"
             " VALUES(?,?,?,?,?,?,?,?,?, 'open', ?)",
-            (iid, kind, stage, artifact_key, rid, subject, payload_json, suggestion,
-             confidence, now_iso()))
+            (
+                iid,
+                kind,
+                stage,
+                artifact_key,
+                rid,
+                subject,
+                payload_json,
+                suggestion,
+                confidence,
+                now_iso(),
+            ),
+        )
         conn.commit()
         return iid
     except sqlite3.Error as e:
@@ -847,8 +969,9 @@ def worklist_list(*, status: str = "open", kind: str = "", limit: int = 0) -> li
         return [_wl_row(r) for r in c.execute(sql, args)]
 
 
-def worklist_resolve(item_id: str, resolution: str, *, by: str = "",
-                     status: str = "resolved") -> bool:
+def worklist_resolve(
+    item_id: str, resolution: str, *, by: str = "", status: str = "resolved"
+) -> bool:
     """处置一条待办（`resolved` = 已裁决；`dismissed` = 判为无需处置）。
 
     返回是否命中并更新（未命中返回 False，调用方据此提示）。
@@ -862,7 +985,8 @@ def worklist_resolve(item_id: str, resolution: str, *, by: str = "",
         cur = conn.execute(
             "UPDATE worklist SET status=?, resolved_by=?, resolved_at=?, resolution=?"
             " WHERE item_id=? AND status='open'",
-            (status, by or current_run_id() or "cli", now_iso(), resolution, item_id))
+            (status, by or current_run_id() or "cli", now_iso(), resolution, item_id),
+        )
         conn.commit()
         return cur.rowcount > 0
     finally:
@@ -885,25 +1009,50 @@ def worklist_stats() -> dict:
             oldest_days = max(0, (datetime.now(_TZ) - t0).days)
         except (ValueError, TypeError):
             oldest_days = 0
-    return {"enabled": True, "open": len(rows), "by_kind": dict(sorted(by_kind.items())),
-            "oldest_open_days": oldest_days,
-            "all": {s: len(worklist_list(status=s)) for s in ("resolved", "dismissed")}}
+    return {
+        "enabled": True,
+        "open": len(rows),
+        "by_kind": dict(sorted(by_kind.items())),
+        "oldest_open_days": oldest_days,
+        "all": {s: len(worklist_list(status=s)) for s in ("resolved", "dismissed")},
+    }
 
 
 # --------------------------------------------------------------------------- #
 # audit_log（append-only）
 # --------------------------------------------------------------------------- #
-def log_audit(action: str, target: str, *, target_key: str = "", field: str = "",
-              old: str = "", new: str = "", basis: str = "", actor: str = "",
-              run_id: str | None = None, ts: str = "") -> None:
+def log_audit(
+    action: str,
+    target: str,
+    *,
+    target_key: str = "",
+    field: str = "",
+    old: str = "",
+    new: str = "",
+    basis: str = "",
+    actor: str = "",
+    run_id: str | None = None,
+    ts: str = "",
+) -> None:
     """追加一条审计（受控修补留痕：只改目标字段 + 记录 old/new/basis）。"""
     conn = _ensure()
     try:
         conn.execute(
             "INSERT INTO audit_log(ts,actor,action,target,target_key,field,old_value,"
             "new_value,basis,run_id) VALUES(?,?,?,?,?,?,?,?,?,?)",
-            (ts or now_iso(), actor, action, target, target_key, field,
-             str(old), str(new), basis, run_id if run_id is not None else current_run_id()))
+            (
+                ts or now_iso(),
+                actor,
+                action,
+                target,
+                target_key,
+                field,
+                str(old),
+                str(new),
+                basis,
+                run_id if run_id is not None else current_run_id(),
+            ),
+        )
         conn.commit()
     finally:
         conn.close()
@@ -947,8 +1096,9 @@ def upsert_artifacts(rows) -> int:
             if not key:
                 continue
             path = os.path.abspath(r.get("path") or "")
-            cur = conn.execute("SELECT path_keys FROM artifact WHERE artifact_key=?",
-                               (key,)).fetchone()
+            cur = conn.execute(
+                "SELECT path_keys FROM artifact WHERE artifact_key=?", (key,)
+            ).fetchone()
             keys = []
             if cur:
                 try:
@@ -963,9 +1113,16 @@ def upsert_artifacts(rows) -> int:
                 " ON CONFLICT(artifact_key) DO UPDATE SET"
                 " sha256=excluded.sha256, bytes=excluded.bytes, kind=excluded.kind,"
                 " path_keys=excluded.path_keys, inode=excluded.inode",
-                (key, sha, int(r.get("bytes") or 0), r.get("kind") or "",
-                 json.dumps(sorted(keys), ensure_ascii=False),
-                 str(r.get("inode") or ""), now_iso()))
+                (
+                    key,
+                    sha,
+                    int(r.get("bytes") or 0),
+                    r.get("kind") or "",
+                    json.dumps(sorted(keys), ensure_ascii=False),
+                    str(r.get("inode") or ""),
+                    now_iso(),
+                ),
+            )
             n += 1
         conn.commit()
     finally:
@@ -1012,9 +1169,15 @@ def record_gate_results(run_id: str, results, *, recorded_at: str = "") -> int:
             conn.execute(
                 "INSERT OR REPLACE INTO gate_result(run_id,gate,descr,passed,detail_json,recorded_at)"
                 " VALUES(?,?,?,?,?,?)",
-                (run_id, r.get("module") or r.get("gate") or r.get("desc", ""),
-                 r.get("desc", ""), 1 if r.get("passed") else 0,
-                 json.dumps(r.get("detail", {}), ensure_ascii=False, default=str), ts))
+                (
+                    run_id,
+                    r.get("module") or r.get("gate") or r.get("desc", ""),
+                    r.get("desc", ""),
+                    1 if r.get("passed") else 0,
+                    json.dumps(r.get("detail", {}), ensure_ascii=False, default=str),
+                    ts,
+                ),
+            )
             n += 1
         conn.commit()
     finally:
@@ -1039,17 +1202,63 @@ def list_gate_results(run_id: str = "", limit: int = 100) -> list[dict]:
 # --------------------------------------------------------------------------- #
 # 阶段 2：元数据四表写入/读取（投影器唯一入口 tools/governance_sync.py 调用）
 # --------------------------------------------------------------------------- #
-_DOC_COLS = ("doc_ref", "kind", "title", "docno", "docno_norm", "issue_organ", "publish_date",
-             "effective_date", "source", "timeliness_status", "verification_source",
-             "last_verified_at", "theme", "file_type", "extension", "origin_path",
-             "body_len", "article_count", "row_json", "synced_at")
+_DOC_COLS = (
+    "doc_ref",
+    "kind",
+    "title",
+    "docno",
+    "docno_norm",
+    "issue_organ",
+    "publish_date",
+    "effective_date",
+    "source",
+    "timeliness_status",
+    "verification_source",
+    "last_verified_at",
+    "theme",
+    "file_type",
+    "extension",
+    "origin_path",
+    "body_len",
+    "article_count",
+    "row_json",
+    "synced_at",
+)
 _THEME_COLS = ("doc_ref", "theme", "basis", "decided_at", "synced_at")
-_REL_COLS = ("row_key", "relation_id", "relation", "src_kind", "src_ref", "src_key", "src_name",
-             "src_docno", "src_source", "dst_kind", "dst_ref", "dst_key", "dst_class", "dst_name",
-             "basis_type", "action", "scope", "matched_by", "confidence", "generated_at",
-             "row_json", "synced_at")
-_TH_COLS = ("state_key", "status", "prev_status", "replacement", "verification_source",
-            "last_checked_at", "changed_at", "synced_at")
+_REL_COLS = (
+    "row_key",
+    "relation_id",
+    "relation",
+    "src_kind",
+    "src_ref",
+    "src_key",
+    "src_name",
+    "src_docno",
+    "src_source",
+    "dst_kind",
+    "dst_ref",
+    "dst_key",
+    "dst_class",
+    "dst_name",
+    "basis_type",
+    "action",
+    "scope",
+    "matched_by",
+    "confidence",
+    "generated_at",
+    "row_json",
+    "synced_at",
+)
+_TH_COLS = (
+    "state_key",
+    "status",
+    "prev_status",
+    "replacement",
+    "verification_source",
+    "last_checked_at",
+    "changed_at",
+    "synced_at",
+)
 
 
 # 允许为 NULL 的数值列（其余列缺失一律归一为 ""，防 NOT NULL 约束把"源未提供"当成错误）
@@ -1065,13 +1274,17 @@ def _replace_table(conn, table: str, cols, rows) -> int:
     conn.execute(f"DELETE FROM {table}")
     conn.executemany(
         f"INSERT INTO {table}({','.join(cols)}) VALUES({','.join('?' * len(cols))})",
-        [tuple(r.get(c) if (c in _NULLABLE or r.get(c) is not None) else ""
-               for c in cols) for r in rows])
+        [
+            tuple(r.get(c) if (c in _NULLABLE or r.get(c) is not None) else "" for c in cols)
+            for r in rows
+        ],
+    )
     return len(rows)
 
 
-def project_metadata(*, documents, theme_assigns, relations, timeliness_rows,
-                     synced_at: str = "") -> dict:
+def project_metadata(
+    *, documents, theme_assigns, relations, timeliness_rows, synced_at: str = ""
+) -> dict:
     """一次事务内投影四表（全有或全无）。
 
     - `documents` / `theme_assigns` / `relations`：**全量替换**；
@@ -1084,19 +1297,20 @@ def project_metadata(*, documents, theme_assigns, relations, timeliness_rows,
     try:
         conn.execute("BEGIN")
         counts["document"] = _replace_table(
-            conn, "document", _DOC_COLS,
-            [{**r, "synced_at": ts} for r in documents])
+            conn, "document", _DOC_COLS, [{**r, "synced_at": ts} for r in documents]
+        )
         counts["theme_assign"] = _replace_table(
-            conn, "theme_assign", _THEME_COLS,
-            [{**r, "synced_at": ts} for r in theme_assigns])
+            conn, "theme_assign", _THEME_COLS, [{**r, "synced_at": ts} for r in theme_assigns]
+        )
         counts["relation"] = _replace_table(
-            conn, "relation", _REL_COLS,
-            [{**r, "synced_at": ts} for r in relations])
+            conn, "relation", _REL_COLS, [{**r, "synced_at": ts} for r in relations]
+        )
         before = conn.execute("SELECT COUNT(*) FROM timeliness_history").fetchone()[0]
         conn.executemany(
             f"INSERT OR IGNORE INTO timeliness_history({','.join(_TH_COLS)})"
             f" VALUES({','.join('?' * len(_TH_COLS))})",
-            [tuple({**r, "synced_at": ts}.get(c) for c in _TH_COLS) for r in timeliness_rows])
+            [tuple({**r, "synced_at": ts}.get(c) for c in _TH_COLS) for r in timeliness_rows],
+        )
         after = conn.execute("SELECT COUNT(*) FROM timeliness_history").fetchone()[0]
         counts["timeliness_history"] = after
         counts["timeliness_history_added"] = after - before
@@ -1140,8 +1354,9 @@ def table_count(table: str) -> int:
 
 
 def _canon_items(rows, keys) -> list[str]:
-    return ["\x1f".join(str(r.get(k, "") if r.get(k) is not None else "") for k in keys)
-            for r in rows]
+    return [
+        "\x1f".join(str(r.get(k, "") if r.get(k) is not None else "") for k in keys) for r in rows
+    ]
 
 
 def _canon(rows, keys) -> str:
@@ -1169,16 +1384,25 @@ def verify_projection(*, documents, theme_assigns, relations, timeliness_rows) -
     """
     if not enabled():
         return {}
-    src = {"document": documents, "theme_assign": theme_assigns,
-           "relation": relations, "timeliness_history": timeliness_rows}
+    src = {
+        "document": documents,
+        "theme_assign": theme_assigns,
+        "relation": relations,
+        "timeliness_history": timeliness_rows,
+    }
     out = {}
     for t, rows in src.items():
         spec = SYNC_TABLES[t]
         keys = spec["keys"]
         d = table_digest(t)
         s = _canon(rows, keys)
-        item = {"db": d, "src": s, "db_rows": table_count(t), "src_rows": len(rows),
-                "mode": spec["mode"]}
+        item = {
+            "db": d,
+            "src": s,
+            "db_rows": table_count(t),
+            "src_rows": len(rows),
+            "mode": spec["mode"],
+        }
         if spec["mode"] == "append":
             have = set(_canon_items(table_rows(t), keys))
             missing = [x for x in _canon_items(rows, keys) if x not in have]
@@ -1212,15 +1436,22 @@ def export_snapshot(out_dir: str, *, tables=None) -> dict:
             buf.append(",".join(_csv_cell(r.get(c)) for c in cols))
         # 经 fs_lock 原子写（与全仓原子写纪律一致）
         from std_lib.common_lib.fs_lock import atomic_write_text  # noqa: PLC0415
+
         atomic_write_text(p, "\n".join(buf) + "\n", encoding="utf-8-sig")
         try:
             rel = os.path.relpath(p, repo_root()).replace("\\", "/")
         except ValueError:
             # 跨盘符（如测试 tmp_path 在 C:、仓库在 D:）→ 退化为文件名（仍不含盘符字面量）
             rel = os.path.basename(p)
-        items.append({"name": t, "path": rel, "rows": len(rows),
-                      "content_sha256": version_of_file(p, short=64),
-                      "keys": list(SYNC_TABLES[t]["keys"])})
+        items.append(
+            {
+                "name": t,
+                "path": rel,
+                "rows": len(rows),
+                "content_sha256": version_of_file(p, short=64),
+                "keys": list(SYNC_TABLES[t]["keys"]),
+            }
+        )
     wms = {w["artifact_key"]: w["version"] for w in list_watermarks()}
     man = {
         "schema_version": SCHEMA_VERSION,
@@ -1232,6 +1463,7 @@ def export_snapshot(out_dir: str, *, tables=None) -> dict:
     }
     mp = os.path.join(out_dir, "manifest.json")
     from std_lib.common_lib.fs_lock import atomic_write_json  # noqa: PLC0415
+
     atomic_write_json(mp, man)
     return {"enabled": True, "out_dir": out_dir, "manifest": mp, "items": items}
 
@@ -1249,16 +1481,20 @@ def _csv_cell(v) -> str:
 def snapshot() -> dict:
     """治理库概览（只读；未启用时 `enabled=False` 且各计数为 0）。"""
     if not enabled():
-        return {"enabled": False, "db": db_path(),
-                "note": "未启用：先运行 `python cli.py governance init`"}
+        return {
+            "enabled": False,
+            "db": db_path(),
+            "note": "未启用：先运行 `python cli.py governance init`",
+        }
     out: dict = {"enabled": True, "db": db_path(), "schema_version": SCHEMA_VERSION, "counts": {}}
     with connect(readonly=True) as c:
         for t in TABLES:
             out["counts"][t] = c.execute(f"SELECT COUNT(*) FROM {t}").fetchone()[0]
         ok, det = check_dependencies()
         out["watermark_check"] = det
-        out["runs"] = [dict(r) for r in c.execute(
-            "SELECT * FROM run_log ORDER BY started_at DESC LIMIT 5")]
+        out["runs"] = [
+            dict(r) for r in c.execute("SELECT * FROM run_log ORDER BY started_at DESC LIMIT 5")
+        ]
     return out
 
 

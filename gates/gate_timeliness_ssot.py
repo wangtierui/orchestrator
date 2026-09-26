@@ -17,6 +17,7 @@ SSOT：regulatory_scrapers/timeliness_review/verification_state.json（核验缓
      归属表时效状态（仅对桥表存在 source_url 的记录校验；桥缺失跳过——recall 未收录非漂移）。
   4) 全链路状态值必须 ∈ config.enums.TIMELINESS_STATUS（受控枚举，R6）。
 """
+
 from __future__ import annotations
 
 import csv
@@ -42,10 +43,12 @@ for _p in (_MOD_CLASS, _MOD_SCRAPERS, paths.ROOT):
 
 try:
     from config.enums import TIMELINESS_STATUS  # noqa: E402
+
     _ENUM = frozenset(TIMELINESS_STATUS)
 except Exception:
-    _ENUM = frozenset({"valid", "amended", "repealed", "partially_repealed",
-                       "expired", "pending", "uncertain"})
+    _ENUM = frozenset(
+        {"valid", "amended", "repealed", "partially_repealed", "expired", "pending", "uncertain"}
+    )
 
 
 from std_lib.common_lib.norm import norm_docno as _norm_docno  # A-10：SSOT 收敛（标准层）
@@ -61,6 +64,7 @@ def _is_fresh_rec(rec):
     """state 记录核验是否 ≤ 90 日（fresh 才作为 SSOT 断言依据；陈旧由下次 verify 刷新，不阻断）。"""
     try:
         from datetime import datetime, timedelta  # noqa: PLC0415
+
         last = datetime.strptime(rec.get("last_checked_at", ""), "%Y-%m-%d %H:%M:%S")
         return (datetime.now() - last) <= timedelta(days=90)
     except Exception:  # noqa: BLE001
@@ -72,8 +76,11 @@ def run():
     warn = []
     if not os.path.exists(_STATE_JSON):
         # F-S09：输入缺失不得空跑放行（原 return True 使"全部门禁通过"含未实检门禁）。
-        return False, {"error": "verification_state.json 未生成（时效核验尚未运行）；"
-                                "SSOT 一致性未实检，不得视为通过", "state": None}
+        return False, {
+            "error": "verification_state.json 未生成（时效核验尚未运行）；"
+            "SSOT 一致性未实检，不得视为通过",
+            "state": None,
+        }
     state = json.load(open(_STATE_JSON, encoding="utf-8"))
     # 快速索引：docno 归一 → rec（含状态 + 核验时间）
     st_docno = {}
@@ -140,7 +147,8 @@ def run():
             # 原实现双向非空才比，导致"归属表空 → 底座默认 valid"链路静默无感）。
             if a_st != eff and (a_st or eff):
                 problems.append(
-                    f"归属表→底座漂移 {rfn} in {fn}: 归属表={a_st or '(空)'} vs base={eff or '(空)'}")
+                    f"归属表→底座漂移 {rfn} in {fn}: 归属表={a_st or '(空)'} vs base={eff or '(空)'}"
+                )
 
     # 层3：归属表→cleaned（尽力，经 bridge）
     bridge_ok = 0
@@ -155,6 +163,7 @@ def run():
         ci = None
         try:
             from clean_index import get_clean_index  # noqa: PLC0415
+
             ci = get_clean_index()
         except Exception:  # noqa: BLE001
             ci = None
@@ -177,9 +186,16 @@ def run():
                         a_st = (ar.get("时效状态") or "").strip()
                         # cleaned 反映采集时点官网状态，归属表 pending 为后续人工核验占位，时间差合法。
                         # 仅当 归属表=结论性 && clean=结论性 且二者相反时才提示（warning，不阻断）。
-                        if (a_st and cst and a_st != cst and a_st not in ("pending", "uncertain")
-                                and cst not in ("pending", "uncertain")):
-                            warn.append(f"归属表→cleaned 提示 {rfn}({src}): 归属表={a_st} vs clean={cst}")
+                        if (
+                            a_st
+                            and cst
+                            and a_st != cst
+                            and a_st not in ("pending", "uncertain")
+                            and cst not in ("pending", "uncertain")
+                        ):
+                            warn.append(
+                                f"归属表→cleaned 提示 {rfn}({src}): 归属表={a_st} vs clean={cst}"
+                            )
 
     return (not problems), {
         "state_records": len(state),

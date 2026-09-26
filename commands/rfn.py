@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 """commands.rfn — orchestrator 命令：rfn（自 cli.py 迁移，2026-09-13 审查 P3）。"""
+
 from __future__ import annotations
 
 import paths
+from config.exitcodes import ExitCode
 
 
 def run(argv):
@@ -21,6 +23,7 @@ def run(argv):
     import os as _os  # noqa: PLC0415
 
     from bootstrap import bootstrap  # noqa: PLC0415
+
     bootstrap("regulatory_classifier")
     cls_root = _os.path.join(paths.ROOT, "modules", "regulatory_classifier")
     ap = _ap.ArgumentParser(prog="orchestrator rfn")
@@ -42,27 +45,35 @@ def run(argv):
         from rfn import registry  # noqa: PLC0415
     except Exception as e:  # noqa: BLE001
         print(f"[rfn] rfn.registry 不可用: {e!r}")
-        return 1
+        return ExitCode.FAIL
     if args.action == "register":
         try:
-            res = registry.register_doc(theme=args.theme, title=args.title, docno=args.docno,
-                                        pub_date=args.pub_date, source=args.source,
-                                        fingerprint=args.fingerprint)
+            res = registry.register_doc(
+                theme=args.theme,
+                title=args.title,
+                docno=args.docno,
+                pub_date=args.pub_date,
+                source=args.source,
+                fingerprint=args.fingerprint,
+            )
         except Exception as e:  # noqa: BLE001
             print(f"[rfn] 登记失败: {e!r}")
-            return 1
+            return ExitCode.FAIL
         print(f"[rfn] {res['action']} {res['rfn']} <- {args.docno or '(无文号)'} {args.title[:40]}")
         sync = res.get("sync") or {}
         if sync:
             print("[rfn] sync:", _json.dumps(sync, ensure_ascii=False)[:200])
-        return 0
-    rec = registry.lookup(docno=args.docno, title=args.title, source=args.source, pub_date=args.pub_date)
+        return ExitCode.OK
+    rec = registry.lookup(
+        docno=args.docno, title=args.title, source=args.source, pub_date=args.pub_date
+    )
     if rec:
         print("[rfn] 命中:", _json.dumps(rec, ensure_ascii=False))
-        return 0
+        return ExitCode.OK
     # 部分键回退：全键未命中时按给到的键模糊扫描归属表（查询体验；不做登记）
     if args.docno or args.title:
         import csv as _csv  # noqa: PLC0415
+
         attr = _os.path.join(cls_root, "data", "人身保险公司-文件归属表.csv")
         if _os.path.exists(attr):
             hits = []
@@ -77,6 +88,6 @@ def run(argv):
                 print(f"[rfn] 模糊命中 {len(hits)} 条（全键未精确命中，以下为部分键扫描）:")
                 for h in hits[:5]:
                     print("   ", _json.dumps(h, ensure_ascii=False))
-                return 0
+                return ExitCode.OK
     print("[rfn] 未命中（无相同去重键登记）")
-    return 1
+    return ExitCode.FAIL

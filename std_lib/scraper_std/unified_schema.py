@@ -56,8 +56,7 @@ def _resolve_doc_number(rec: dict[str, Any]) -> str:
     2) 规范化结果不具文号形态（空/纯编号/占位）→ 从标题抽取内嵌文号兜底
        （如『关于印发《X办法》的通知（银发〔1999〕407号）』）。
     """
-    raw = (rec.get("document_number") or rec.get("doc_no")
-           or rec.get("document_no") or "")
+    raw = rec.get("document_number") or rec.get("doc_no") or rec.get("document_no") or ""
     body = empty_str(rec.get("body_text") or rec.get("content"))
     title = empty_str(rec.get("title"))
     dn = normalize_doc_number(raw)
@@ -74,6 +73,7 @@ def _resolve_doc_number(rec: dict[str, Any]) -> str:
     # 兜底：原始文号与标题均无文号形态时，从正文发布语境抽取
     # （如『（2001年11月23日国务院令第324号发布）』→ 中华人民共和国国务院令第324号）
     return extract_from_body(body)
+
 
 # --------------------------------------------------------------------------- #
 # 共享受控枚举常量 —— R5：re-export 自 config/enums.py（《三项目状态码值统一规范》v3
@@ -146,8 +146,9 @@ def empty_str(v: Any) -> str:
 # --------------------------------------------------------------------------- #
 # 四项目字段映射器
 # --------------------------------------------------------------------------- #
-def _mk_meta(rec: dict[str, Any], source_url: str, source: str, clean_version: str,
-             captured_at: str = "") -> dict[str, Any]:
+def _mk_meta(
+    rec: dict[str, Any], source_url: str, source: str, clean_version: str, captured_at: str = ""
+) -> dict[str, Any]:
     return {
         "source_url": source_url or "",
         "source": source,
@@ -171,8 +172,7 @@ def map_gov(rec: dict[str, Any], clean_version: str, captured_at: str = "") -> d
     m = _mk_meta(rec, source_url, src, clean_version, captured_at)
     body = empty_str(rec.get("full_text") or rec.get("summary"))
     # H-07（2026-09-12）：删死字段（gov 抓取产物不含 sxx_label/flxz，恒 None 的死引用）
-    _raw = {k: rec.get(k) for k in (
-        "bbbs", "pub_date_original") if rec.get(k) is not None}
+    _raw = {k: rec.get(k) for k in ("bbbs", "pub_date_original") if rec.get(k) is not None}
     if raw_source and raw_source != src:
         _raw["子源"] = raw_source
     return {
@@ -202,7 +202,9 @@ def map_gov(rec: dict[str, Any], clean_version: str, captured_at: str = "") -> d
         "verification_source": "",
         "keyword": "",
         "attachments": rec.get("attachments") or [],
-        "attachment_content": empty_str(rec.get("attachment_content") or rec.get("attachment_text") or ""),
+        "attachment_content": empty_str(
+            rec.get("attachment_content") or rec.get("attachment_text") or ""
+        ),
         "attachment_count": int(rec.get("attachment_count") or 0),
         "table_structured": rec.get("table_structured") or [],
         "table_raw_text": empty_str(rec.get("table_raw_text")),
@@ -210,8 +212,7 @@ def map_gov(rec: dict[str, Any], clean_version: str, captured_at: str = "") -> d
         "downloaded_doc_path": "",
         "downloaded_doc_url": "",
         "body_source": "webpage",
-        "dedup_key": build_dedup_key(index_no or source_url, source_url,
-                                     rec.get("publish_date")),
+        "dedup_key": build_dedup_key(index_no or source_url, source_url, rec.get("publish_date")),
         "_metadata": m,
         "_raw_fields": _raw,
     }
@@ -225,9 +226,20 @@ def map_mof(rec: dict[str, Any], clean_version: str, captured_at: str = "") -> d
     src = canonical_source(raw_source) or "mof"
     m = _mk_meta(rec, source_url, src, clean_version, captured_at)
     body = empty_str(rec.get("content_text"))
-    _raw = {k: rec.get(k) for k in (
-        "id", "category_id", "create_dept", "expire_date", "abolish_date",
-        "fetch_time", "active", "change") if rec.get(k) is not None}
+    _raw = {
+        k: rec.get(k)
+        for k in (
+            "id",
+            "category_id",
+            "create_dept",
+            "expire_date",
+            "abolish_date",
+            "fetch_time",
+            "active",
+            "change",
+        )
+        if rec.get(k) is not None
+    }
     if raw_source and raw_source != src:
         _raw["子源"] = raw_source
     return {
@@ -278,7 +290,8 @@ _NFRA_URL_FRAG = re.compile(
     r"(?:https?://[A-Za-z0-9_\-./:%]*)?"
     r"(?:ItemDetail\.html|ItemDetail\.aspx|index\.html|detail|l)"
     r"\?docId=\d+&itemId=\d+(?:&generaltype=\d+)?[\s\u3000，,。]?",
-    re.I)
+    re.I,
+)
 
 
 # nfra 站点特有去噪②（2026-09-20 相邻项）：正文首部**重复导语**（主送机关整段重复两次）。
@@ -297,7 +310,7 @@ def dedup_webpage_lead(text: str) -> str:
     m = _DUP_LEAD_RE.match(text)
     if not m:
         return text
-    return (m.group(1) + text[m.end():]).lstrip()
+    return (m.group(1) + text[m.end() :]).lstrip()
 
 
 def strip_nfra_url_fragments(text: str) -> str:
@@ -343,8 +356,8 @@ def map_nfra(rec: dict[str, Any], clean_version: str, captured_at: str = "") -> 
         # 附件正文聚合（2026-09-10）：nfra 附件 text 原先写死空 → 附件内容（含公式等）
         # 无法进 cleaned 检索。现从 attachments[].text 聚合（与 mof 同模式），raw 已有
         # attachment_content 时优先保留。
-        "attachment_content": empty_str(rec.get("attachment_content")) or "\n\n".join(
-            a.get("text") for a in (rec.get("attachments") or []) if a.get("text")),
+        "attachment_content": empty_str(rec.get("attachment_content"))
+        or "\n\n".join(a.get("text") for a in (rec.get("attachments") or []) if a.get("text")),
         "attachment_count": int(len(rec.get("attachments") or [])),
         "table_structured": rec.get("table_structured") or [],
         "table_raw_text": empty_str(rec.get("table_raw_text")),
@@ -354,8 +367,11 @@ def map_nfra(rec: dict[str, Any], clean_version: str, captured_at: str = "") -> 
         "body_source": "webpage",
         "dedup_key": build_dedup_key(index_no, source_url, rec.get("publish_date")),
         "_metadata": m,
-        "_raw_fields": {k: rec.get(k) for k in (
-            "doc_id", "build_date", "category_type") if rec.get(k) is not None},
+        "_raw_fields": {
+            k: rec.get(k)
+            for k in ("doc_id", "build_date", "category_type")
+            if rec.get(k) is not None
+        },
     }
 
 
@@ -399,12 +415,13 @@ def map_pbc(rec: dict[str, Any], clean_version: str, captured_at: str = "") -> d
         "downloaded_doc_path": empty_str(rec.get("local_path")),
         "downloaded_doc_url": source_url,
         "body_source": "webpage",
-        "dedup_key": build_dedup_key(index_no or source_url, source_url,
-                                     rec.get("publish_date")),
+        "dedup_key": build_dedup_key(index_no or source_url, source_url, rec.get("publish_date")),
         "_metadata": m,
-        "_raw_fields": {k: rec.get(k) for k in (
-            "link_type", "file_type", "local_path", "fetch_status", "error")
-            if rec.get(k) is not None},
+        "_raw_fields": {
+            k: rec.get(k)
+            for k in ("link_type", "file_type", "local_path", "fetch_status", "error")
+            if rec.get(k) is not None
+        },
     }
 
 
@@ -451,13 +468,23 @@ def canonical_source(raw: Any) -> str:
 
 # 时效状态归并表：占位值/中文 → 规范 7 值
 TIMELINESS_ALIASES: dict[str, str] = {
-    "n/a": "uncertain", "na": "uncertain", "none": "uncertain", "null": "uncertain",
-    "未知": "uncertain", "未核验": "uncertain", "不确定": "uncertain",
-    "现行有效": "valid", "有效": "valid",
-    "已废止": "repealed", "废止": "repealed",
-    "已失效": "expired", "失效": "expired",
-    "修订": "amended", "部分废止": "partially_repealed",
-    "待定": "pending", "尚未施行": "pending",
+    "n/a": "uncertain",
+    "na": "uncertain",
+    "none": "uncertain",
+    "null": "uncertain",
+    "未知": "uncertain",
+    "未核验": "uncertain",
+    "不确定": "uncertain",
+    "现行有效": "valid",
+    "有效": "valid",
+    "已废止": "repealed",
+    "废止": "repealed",
+    "已失效": "expired",
+    "失效": "expired",
+    "修订": "amended",
+    "部分废止": "partially_repealed",
+    "待定": "pending",
+    "尚未施行": "pending",
 }
 
 
@@ -482,16 +509,21 @@ def assert_enum_bindings() -> None:
     防止 schema 声明与常量漂移（历史上 body_source 的 enum_values 为硬编码字面量，
     与 BODY_SOURCE 常量存在不一致风险）。不一致即抛 AssertionError，供门禁与自检调用。
     """
-    assert set(UNIFIED_SCHEMA["source"]["enum_values"]) == SOURCE_SET, \
+    assert set(UNIFIED_SCHEMA["source"]["enum_values"]) == SOURCE_SET, (
         "source enum_values 与 SOURCE_SET 不一致"
-    assert set(UNIFIED_SCHEMA["timeliness_status"]["enum_values"]) == TIMELINESS_STATUS, \
+    )
+    assert set(UNIFIED_SCHEMA["timeliness_status"]["enum_values"]) == TIMELINESS_STATUS, (
         "timeliness_status enum_values 与 TIMELINESS_STATUS 不一致"
-    assert set(UNIFIED_SCHEMA["body_source"]["enum_values"]) == BODY_SOURCE, \
+    )
+    assert set(UNIFIED_SCHEMA["body_source"]["enum_values"]) == BODY_SOURCE, (
         "body_source enum_values 与 BODY_SOURCE 不一致"
+    )
 
 
 _SUPP_SCAN_DECL_MARKS = ("无文本层", "扫描件", "未做文本化", "OCR")
-_SUPP_ATTACH_MERGE_NOTE = "【附件全文并入正文：主文件扫描件无文本层/无可读正文，内容见附件（表格/doc）】"
+_SUPP_ATTACH_MERGE_NOTE = (
+    "【附件全文并入正文：主文件扫描件无文本层/无可读正文，内容见附件（表格/doc）】"
+)
 
 
 def _supp_body_with_attachments(rec: dict[str, Any]) -> str:
@@ -535,8 +567,11 @@ def map_supp(rec: dict[str, Any], clean_version: str, captured_at: str = "") -> 
     m["doc_source"] = body_src
     if rec.get("_retrieval_channel"):
         m["retrieval_channel"] = rec["_retrieval_channel"]
-    m["missing_fields"] = [f for f in ("index_no", "title", "body_text")
-                           if not empty_str(rec.get(f)) and f == "body_text" and not body]
+    m["missing_fields"] = [
+        f
+        for f in ("index_no", "title", "body_text")
+        if not empty_str(rec.get(f)) and f == "body_text" and not body
+    ]
     data_format = "PDF" if body_src == "downloaded_doc" else "TXT"
     mime_type = "application/pdf" if body_src == "downloaded_doc" else "text/plain"
     _raw = dict(rec.get("_raw_fields") or {})
@@ -602,8 +637,14 @@ MAPPERS: dict[str, Callable[[dict[str, Any], str, str], dict[str, Any]]] = {
 DATA_DICTIONARY: dict[str, dict[str, str]] = {
     "index_no": {"含义": "索引号（政府信息唯一标识；无则 URL MD5 前 8 位）", "类型": "string"},
     "title": {"含义": "信息标题", "类型": "string"},
-    "doc_type": {"含义": "文件类型标识（受控三档 ≈62 值：法定文种 16/法规类型 6/其他 40，令→命令、法→法律；提取失败→pending；规范 v3）", "类型": "string"},
-    "category": {"含义": "效力位阶（受控 13 级：constitution/law/judicial_interpretation/admin_regulation/local_regulation/autonomous_regulation/dept_rule/local_government_rule/state_council_normative/dept_normative/local_government_normative/industry_rule/other；规范 v3）", "类型": "string"},
+    "doc_type": {
+        "含义": "文件类型标识（受控三档 ≈62 值：法定文种 16/法规类型 6/其他 40，令→命令、法→法律；提取失败→pending；规范 v3）",
+        "类型": "string",
+    },
+    "category": {
+        "含义": "效力位阶（受控 13 级：constitution/law/judicial_interpretation/admin_regulation/local_regulation/autonomous_regulation/dept_rule/local_government_rule/state_council_normative/dept_normative/local_government_normative/industry_rule/other；规范 v3）",
+        "类型": "string",
+    },
     "publish_date": {"含义": "发文/公布时间", "类型": "datetime YYYY-MM-DD"},
     "effective_date": {"含义": "生效日期", "类型": "datetime YYYY-MM-DD"},
     "issue_organ": {"含义": "发布机构", "类型": "string"},
@@ -618,64 +659,127 @@ DATA_DICTIONARY: dict[str, dict[str, str]] = {
     "mime_type": {"含义": "文件格式（MIME）", "类型": "string"},
     "column_name": {"含义": "栏目名称", "类型": "string"},
     "theme_name": {"含义": "专题名称", "类型": "string"},
-    "status": {"含义": "有效性状态（规范 v3：由 timeliness_status 派生英文值，中文仅展示层）", "类型": "string"},
-    "timeliness_status": {"含义": "时效状态（受控 7 值：valid/amended/repealed/partially_repealed/expired/pending/uncertain；规范 v3）", "类型": "string"},
-    "replacement_document": {"含义": "现行替代文件标题（已过期记录指向替代版本，无则空）", "类型": "string"},
+    "status": {
+        "含义": "有效性状态（规范 v3：由 timeliness_status 派生英文值，中文仅展示层）",
+        "类型": "string",
+    },
+    "timeliness_status": {
+        "含义": "时效状态（受控 7 值：valid/amended/repealed/partially_repealed/expired/pending/uncertain；规范 v3）",
+        "类型": "string",
+    },
+    "replacement_document": {
+        "含义": "现行替代文件标题（已过期记录指向替代版本，无则空）",
+        "类型": "string",
+    },
     "verification_source": {"含义": "核验来源（北大法宝/数据源标注/规则判断）", "类型": "string"},
     "keyword": {"含义": "关键词", "类型": "string"},
     "attachment_count": {"含义": "附件数量", "类型": "int"},
-    "attachments": {"含义": "附件元数据列表（文件名/URL/路径/MD5/状态/字数）", "类型": "array[object]"},
+    "attachments": {
+        "含义": "附件元数据列表（文件名/URL/路径/MD5/状态/字数）",
+        "类型": "array[object]",
+    },
     "attachment_content": {"含义": "附件全文文本（多附件用 | 分隔）", "类型": "string"},
     "attachment_content_path": {"含义": "超大附件全文 .txt 相对路径", "类型": "string"},
     "attachment_content_md5": {"含义": "超大附件全文 MD5", "类型": "string"},
-    "table_structured": {"含义": "表格结构化二维数组 list[list[str]]", "类型": "array[array[string]]"},
+    "table_structured": {
+        "含义": "表格结构化二维数组 list[list[str]]",
+        "类型": "array[array[string]]",
+    },
     "table_raw_text": {"含义": "表格原始提取文本（兜底）", "类型": "string"},
     "table_recovery_method": {"含义": "表格恢复方法（structured/raw_only）", "类型": "string"},
     "downloaded_doc_path": {"含义": "正文文档下载路径（6.2）", "类型": "string"},
     "downloaded_doc_url": {"含义": "正文文档来源 URL", "类型": "url"},
-    "body_source": {"含义": "正文来源（受控 3 值：webpage/downloaded_doc/both；规范 v3 3.4）", "类型": "enum"},
+    "body_source": {
+        "含义": "正文来源（受控 3 值：webpage/downloaded_doc/both；规范 v3 3.4）",
+        "类型": "enum",
+    },
     "dedup_key": {"含义": "唯一业务主键（索引号+URL哈希+发布日期）", "类型": "string"},
     "raw_uncut_text": {"含义": "无标点兜底切分时的原文留存（7.2④）", "类型": "string"},
     "split_sentences": {"含义": "无标点长文兜底切分短句列表（7.2④）", "类型": "array[string]"},
     "renamed_filename": {"含义": "标准重命名后的主文档/附件文件名（6.4/7.4）", "类型": "string"},
-    "_metadata": {"含义": "元数据（抓取时间/清洗版本/OCR存疑/表格恢复方法/缺失字段/version）", "类型": "object"},
-    "_raw_fields": {"含义": "源记录专有字段保留（溯源；supp 补充 task_index/检索词/检索途径/OCR缓存等）", "类型": "object"},
+    "_metadata": {
+        "含义": "元数据（抓取时间/清洗版本/OCR存疑/表格恢复方法/缺失字段/version）",
+        "类型": "object",
+    },
+    "_raw_fields": {
+        "含义": "源记录专有字段保留（溯源；supp 补充 task_index/检索词/检索途径/OCR缓存等）",
+        "类型": "object",
+    },
 }
 
 # CSV 列顺序（稳定可复现）
 CSV_COLUMNS = [
-    "index_no", "title", "doc_type", "category", "publish_date", "effective_date",
-    "issue_organ", "document_number", "source_url", "source", "body_text",
-    "body_text_webpage", "body_text_doc", "summary", "data_format", "mime_type",
-    "column_name", "theme_name", "status", "timeliness_status",
-    "replacement_document", "verification_source", "keyword", "attachment_count",
-    "attachment_content", "attachment_content_path", "attachment_content_md5",
-    "table_structured", "table_raw_text", "table_recovery_method",
-    "downloaded_doc_path",     "downloaded_doc_url", "body_source", "dedup_key",
-    "raw_uncut_text", "split_sentences", "renamed_filename",
-    "_metadata", "_raw_fields",
+    "index_no",
+    "title",
+    "doc_type",
+    "category",
+    "publish_date",
+    "effective_date",
+    "issue_organ",
+    "document_number",
+    "source_url",
+    "source",
+    "body_text",
+    "body_text_webpage",
+    "body_text_doc",
+    "summary",
+    "data_format",
+    "mime_type",
+    "column_name",
+    "theme_name",
+    "status",
+    "timeliness_status",
+    "replacement_document",
+    "verification_source",
+    "keyword",
+    "attachment_count",
+    "attachment_content",
+    "attachment_content_path",
+    "attachment_content_md5",
+    "table_structured",
+    "table_raw_text",
+    "table_recovery_method",
+    "downloaded_doc_path",
+    "downloaded_doc_url",
+    "body_source",
+    "dedup_key",
+    "raw_uncut_text",
+    "split_sentences",
+    "renamed_filename",
+    "_metadata",
+    "_raw_fields",
 ]
 
 
 if __name__ == "__main__":  # 离线自检
-    rec = map_mof({"id": "1", "title": "测试办法", "doc_no": "财会〔2024〕1号",
-                   "publish_date": "2024-01-01", "category_name": "部门规章",
-                   "content_text": "第一条 为规范……", "issue_org": "财政部",
-                   "detail_link": "https://fgk.mof.gov.cn/a"}, "v1.0", "2026-08-19")
+    rec = map_mof(
+        {
+            "id": "1",
+            "title": "测试办法",
+            "doc_no": "财会〔2024〕1号",
+            "publish_date": "2024-01-01",
+            "category_name": "部门规章",
+            "content_text": "第一条 为规范……",
+            "issue_org": "财政部",
+            "detail_link": "https://fgk.mof.gov.cn/a",
+        },
+        "v1.0",
+        "2026-08-19",
+    )
     assert rec["index_no"] == "财会〔2024〕1号"
     assert rec["dedup_key"]
     assert rec["body_text"] == "第一条 为规范……"
     # S-3：枚举绑定一致性 + canonical 归并函数自检
     assert_enum_bindings()
-    assert canonical_source("xzfgk") == "gov"          # gov 行政法规库子源
-    assert canonical_source("flk") == "gov"            # gov 国家法律法规库子源
+    assert canonical_source("xzfgk") == "gov"  # gov 行政法规库子源
+    assert canonical_source("flk") == "gov"  # gov 国家法律法规库子源
     assert canonical_source("fgk.mof.gov.cn") == "mof"
     assert canonical_source("nfra") == "nfra"
-    assert canonical_source("某未知源") == ""            # 无法识别→空，不臆造
+    assert canonical_source("某未知源") == ""  # 无法识别→空，不臆造
     assert canonical_timeliness_status("N/A") == "uncertain"
     assert canonical_timeliness_status("已废止") == "repealed"
     assert canonical_timeliness_status("valid") == "valid"
     assert canonical_timeliness_status("") == ""
-    assert canonical_timeliness_status("火星值") == ""    # 无法归并→空（未核验）
+    assert canonical_timeliness_status("火星值") == ""  # 无法归并→空（未核验）
     assert len(CSV_COLUMNS) == len(set(CSV_COLUMNS))
     print("[scraper_std.unified_schema] 离线自检通过（含 S-3 枚举校验）")

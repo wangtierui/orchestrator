@@ -10,6 +10,7 @@
   python tools/ci_check.py --fast     # 跳过 pytest（仅 ruff+gates）
   python tools/ci_check.py --cov      # 追加覆盖率报告（需 coverage 已装）
 """
+
 from __future__ import annotations
 
 import argparse
@@ -25,16 +26,27 @@ PY = sys.executable
 def _run(name: str, argv: list, timeout: int) -> dict:
     t0 = time.time()
     try:
-        r = subprocess.run(argv, cwd=ROOT, capture_output=True, text=True,
-                           encoding="utf-8", errors="replace", timeout=timeout)
+        r = subprocess.run(
+            argv,
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=timeout,
+        )
         rc, out = r.returncode, (r.stdout or "") + (r.stderr or "")
     except subprocess.TimeoutExpired:
         rc, out = 124, f"（超时 {timeout}s）"
     except OSError as e:
         rc, out = 125, repr(e)
     tail = [ln for ln in out.strip().splitlines() if ln.strip()][-2:]
-    return {"name": name, "rc": rc, "sec": round(time.time() - t0, 1),
-            "tail": " | ".join(tail)[:160]}
+    return {
+        "name": name,
+        "rc": rc,
+        "sec": round(time.time() - t0, 1),
+        "tail": " | ".join(tail)[:160],
+    }
 
 
 def main(argv=None) -> int:
@@ -49,15 +61,45 @@ def main(argv=None) -> int:
 
     plan = [
         ("ruff", [PY, "-m", "ruff", "check", ".", "--exclude", "reports/_tmp"], 300),
-        ("mypy", [PY, "-m", "mypy", "std_lib", "config", "interfaces", "gates", "commands",
-                  "--no-error-summary"], 600),
+        (
+            "mypy",
+            [
+                PY,
+                "-m",
+                "mypy",
+                "std_lib",
+                "config",
+                "interfaces",
+                "gates",
+                "commands",
+                "--no-error-summary",
+            ],
+            600,
+        ),
     ]
     if not a.fast:
         if a.cov:
             # 覆盖率：pytest 走 coverage 插桩，随后 `coverage report` 以 pyproject 的
             # `fail_under=20` 判定（§3.7 G5）
-            plan.append(("pytest", [PY, "-m", "coverage", "run", "-m", "pytest", "tests",
-                                    "-m", "not data", "--color=no", "-q"], 900))
+            plan.append(
+                (
+                    "pytest",
+                    [
+                        PY,
+                        "-m",
+                        "coverage",
+                        "run",
+                        "-m",
+                        "pytest",
+                        "tests",
+                        "-m",
+                        "not data",
+                        "--color=no",
+                        "-q",
+                    ],
+                    900,
+                )
+            )
         else:
             plan.append(("pytest", [PY, "-m", "pytest", "tests", "--color=no", "-q"], 600))
     plan.append(("gates", [PY, os.path.join(ROOT, "cli.py"), "gates"], 600))
@@ -75,9 +117,12 @@ def main(argv=None) -> int:
     bad = [r for r in results if r["rc"] != 0 and r["blocking"]]
     warn = [r for r in results if r["rc"] != 0 and not r["blocking"]]
     print("=" * 40)
-    print(f"CI: {'PASS 全绿' if not bad else 'FAIL: ' + ', '.join(b['name'] for b in bad)}"
-          f"（{len(results) - len(bad)}/{len(results)} 阻断项通过"
-          + (f"；非阻断告警 {', '.join(w['name'] for w in warn)}" if warn else "") + "）")
+    print(
+        f"CI: {'PASS 全绿' if not bad else 'FAIL: ' + ', '.join(b['name'] for b in bad)}"
+        f"（{len(results) - len(bad)}/{len(results)} 阻断项通过"
+        + (f"；非阻断告警 {', '.join(w['name'] for w in warn)}" if warn else "")
+        + "）"
+    )
     return 0 if not bad else 1
 
 

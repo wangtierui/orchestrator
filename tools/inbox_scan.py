@@ -13,6 +13,7 @@ tools/inbox_scan.py — 投放区扫描与路由（v2 §3.12.6，P2-3b）
     python tools/inbox_scan.py            # 只扫描并打印结论（不落盘）
     python tools/inbox_scan.py --apply    # 落盘 manifest + 登记 needs_review 待办
 """
+
 from __future__ import annotations
 
 import argparse
@@ -24,6 +25,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import paths  # noqa: E402
+from config.exitcodes import ExitCode  # noqa: E402  (R3：退出码语义化)
 
 INBOX = paths.INBOX_DIR
 # ⚠️ 落点修正（2026-09-26，P2-3b 执行中发现 N-26）：方案 §3.12.4 写 `data/inbox/_registry.yaml`，
@@ -95,9 +97,9 @@ def _known_hashes() -> dict[str, str]:
                 data = json.load(open(os.path.join(CORPUS_MANIFESTS, fn), encoding="utf-8"))
             except (OSError, ValueError):
                 continue
-            dom = fn[:-len(".manifest.json")]
+            dom = fn[: -len(".manifest.json")]
             for key in ("files", "records", "entries", "items"):
-                for rec in (data.get(key) or []):
+                for rec in data.get(key) or []:
                     if isinstance(rec, dict) and rec.get("sha256"):
                         known[rec["sha256"]] = f"corpus:{dom}:{rec.get('rel', '')}"
     _walk(CORPUS_ROOT, "corpus_file")
@@ -144,14 +146,26 @@ def scan(apply: bool = False) -> dict:
                     st = os.stat(fp)
                     digest = sha256_of(fp)
                 except OSError as e:
-                    rows.append({"file": rel, "decision": "needs_review",
-                                 "reason": f"读取失败 {type(e).__name__}"})
+                    rows.append(
+                        {
+                            "file": rel,
+                            "decision": "needs_review",
+                            "reason": f"读取失败 {type(e).__name__}",
+                        }
+                    )
                     counters["needs_review"] += 1
                     continue
-                rec = {"file": rel, "domain": dom, "sha256": digest, "size": st.st_size,
-                       "mtime": int(st.st_mtime)}
+                rec = {
+                    "file": rel,
+                    "domain": dom,
+                    "sha256": digest,
+                    "size": st.st_size,
+                    "mtime": int(st.st_mtime),
+                }
                 if digest in known:
-                    rec.update({"decision": "duplicate", "reason": f"内容已归档（{known[digest]}）"})
+                    rec.update(
+                        {"decision": "duplicate", "reason": f"内容已归档（{known[digest]}）"}
+                    )
                 else:
                     hit = ""
                     for cand in _hash_candidates(st.st_size, sizes):
@@ -162,23 +176,40 @@ def scan(apply: bool = False) -> dict:
                         except OSError:
                             continue
                     if hit:
-                        rec.update({"decision": "duplicate",
-                                    "reason": f"内容已归档（按大小候选命中 {hit}）"})
+                        rec.update(
+                            {
+                                "decision": "duplicate",
+                                "reason": f"内容已归档（按大小候选命中 {hit}）",
+                            }
+                        )
                     elif os.path.splitext(fn)[1].lower() not in recognized:
-                        rec.update({"decision": "needs_review",
-                                    "reason": f"扩展名不可识别（{os.path.splitext(fn)[1] or '无'}）"
-                                              "——按 §3.12.6 不静默丢弃"})
+                        rec.update(
+                            {
+                                "decision": "needs_review",
+                                "reason": f"扩展名不可识别（{os.path.splitext(fn)[1] or '无'}）"
+                                "——按 §3.12.6 不静默丢弃",
+                            }
+                        )
                     else:
-                        rec.update({"decision": "routed",
-                                    "routed_to": (spec.get("pipeline") or [""])[0],
-                                    "reason": f"新增内容 → {spec.get('pipeline') or []}"})
+                        rec.update(
+                            {
+                                "decision": "routed",
+                                "routed_to": (spec.get("pipeline") or [""])[0],
+                                "reason": f"新增内容 → {spec.get('pipeline') or []}",
+                            }
+                        )
                         routed_by_domain[dom] = routed_by_domain.get(dom, 0) + 1
                 counters[rec["decision"]] += 1
                 rows.append(rec)
 
-    result = {"schema_version": reg.get("schema_version", ""), "inbox": os.path.relpath(INBOX, paths.ROOT),
-              "scanned": len(rows), "counters": counters, "by_domain": routed_by_domain,
-              "rows": rows}
+    result = {
+        "schema_version": reg.get("schema_version", ""),
+        "inbox": os.path.relpath(INBOX, paths.ROOT),
+        "scanned": len(rows),
+        "counters": counters,
+        "by_domain": routed_by_domain,
+        "rows": rows,
+    }
     if apply:
         os.makedirs(INBOX, exist_ok=True)
         with open(MANIFEST, "w", encoding="utf-8") as fh:
@@ -186,14 +217,22 @@ def scan(apply: bool = False) -> dict:
         # needs_review → worklist（v2 §3.12.6：不静默丢弃；处置入口 = cli.py worklist resolve）
         try:
             from std_lib.common_lib import governance_store as gs  # noqa: PLC0415
+
             for r in rows:
                 if r["decision"] == "needs_review":
                     gs.worklist_add(
-                        "corpus_needs_review", r["file"], stage="7.4",
+                        "corpus_needs_review",
+                        r["file"],
+                        stage="7.4",
                         artifact_key="inbox_manifest",
-                        payload={"file": r["file"], "domain": r.get("domain", ""),
-                                 "reason": r.get("reason", ""), "size": r.get("size")},
-                        suggestion="判定是否可入管线：可识别格式则移入对应域并核验；否则人工归档或移除")
+                        payload={
+                            "file": r["file"],
+                            "domain": r.get("domain", ""),
+                            "reason": r.get("reason", ""),
+                            "size": r.get("size"),
+                        },
+                        suggestion="判定是否可入管线：可识别格式则移入对应域并核验；否则人工归档或移除",
+                    )
         except Exception as e:  # noqa: BLE001  旁路设施：登记失败不得中断扫描
             print(f"[inbox] WARN 待办登记失败（不影响扫描结果）: {type(e).__name__}: {e}")
     return result
@@ -203,8 +242,11 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="投放区扫描与路由（v2 §3.12.6）")
     ap.add_argument("--apply", action="store_true", help="落盘 manifest + 登记 needs_review 待办")
     ap.add_argument("--json", action="store_true", help="打印 JSON")
-    ap.add_argument("--new-only", action="store_true",
-                    help="只列出需处理的（routed/needs_review 且非 duplicate）")
+    ap.add_argument(
+        "--new-only",
+        action="store_true",
+        help="只列出需处理的（routed/needs_review 且非 duplicate）",
+    )
     args = ap.parse_args(argv)
     res = scan(apply=args.apply)
     if args.json:
@@ -216,11 +258,13 @@ def main(argv=None) -> int:
                 continue
             print(f"  [{r['decision']:<12}] {r['file']}  {r.get('reason', '')[:70]}")
         if res["by_domain"]:
-            print(f"[inbox] 需路由：{res['by_domain']}"
-                  "（dept_policies → triggers 的 inbox_drop；regulatory_stats → ingest_corpus）")
+            print(
+                f"[inbox] 需路由：{res['by_domain']}"
+                "（dept_policies → triggers 的 inbox_drop；regulatory_stats → ingest_corpus）"
+            )
         if args.apply:
             print(f"[inbox] manifest 已落盘：{os.path.relpath(MANIFEST, paths.ROOT)}")
-    return 0
+    return ExitCode.OK
 
 
 if __name__ == "__main__":

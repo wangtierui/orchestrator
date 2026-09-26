@@ -34,6 +34,8 @@ scraper_std —— 监管爬虫项目共享标准库（S 级交付基线）
   - 可测试：每模块提供离线自检（`python -m scraper_std.<mod>` 或 pytest）。
 """
 
+from __future__ import annotations
+
 __version__ = "1.0.0"
 __clean_version__ = "v1.0.0"
 

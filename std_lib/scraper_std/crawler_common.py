@@ -16,6 +16,8 @@ crawler_common.py —— 四监管爬虫（gov / mof / nfra / pbc）共享加固
 本文件为纯标准库 + 惰性第三方导入，可在隔离环境离线单元测试。
 """
 
+from __future__ import annotations
+
 import hashlib
 import logging
 import os
@@ -49,7 +51,7 @@ USER_AGENTS = [
 # 富请求头模板（模拟真实浏览器；不含 br 压缩，避免无 brotli 解码器导致乱码）
 BASE_HEADERS = {
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,"
-              "application/json;q=0.8,application/pdf;q=0.7,*/*;q=0.6",
+    "application/json;q=0.8,application/pdf;q=0.7,*/*;q=0.6",
     "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
     "Accept-Encoding": "gzip, deflate",
     "Connection": "keep-alive",
@@ -118,16 +120,23 @@ def robust_get(
                 return e.code, None
             if e.code in _RETRY_STATUS:
                 wait = _backoff_wait(attempt, e.headers.get("Retry-After"))
-                LOG.warning("HTTP %s @ %s 限流/暂不可用，%ss 后重试(%d/%d)",
-                            e.code, url, round(wait, 1), attempt, retries)
+                LOG.warning(
+                    "HTTP %s @ %s 限流/暂不可用，%ss 后重试(%d/%d)",
+                    e.code,
+                    url,
+                    round(wait, 1),
+                    attempt,
+                    retries,
+                )
                 time.sleep(wait)
                 continue
             return e.code, None
         except (urllib.error.URLError, ConnectionError, TimeoutError, OSError) as e:
             last_err = f"{type(e).__name__}: {e}"
             wait = _backoff_wait(attempt, None)
-            LOG.warning("网络异常 @ %s，%ss 后重试(%d/%d): %s",
-                        url, round(wait, 1), attempt, retries, e)
+            LOG.warning(
+                "网络异常 @ %s，%ss 后重试(%d/%d): %s", url, round(wait, 1), attempt, retries, e
+            )
             time.sleep(wait)
             continue
     LOG.error("GET %s 重试 %d 次仍失败：%s", url, retries, last_err)
@@ -138,7 +147,7 @@ def _backoff_wait(attempt: int, retry_after: str | None) -> float:
     """退避时长：优先 Retry-After（秒），否则 2**attempt 上限 16s，加随机抖动。"""
     if retry_after and retry_after.isdigit():
         return float(int(retry_after))
-    return min(2 ** attempt, 16) + random.uniform(0, 1)
+    return min(2**attempt, 16) + random.uniform(0, 1)
 
 
 def _safe_url(url: str) -> str:
@@ -167,7 +176,10 @@ def sniff_kind(data: bytes, name: str = "") -> str:
     if head[:4] == b"PK\x03\x04" or head[:4] == b"PK\x05\x06" or head[:4] == b"PK\x07\x08":
         # docx / xlsx / zip 均为 ZIP 容器，需进一步区分
         if _is_office_openxml(data):
-            if b"xl/" in data[: min(len(data), 2_000_000)] or b"workbook" in data[: min(len(data), 2_000_000)]:
+            if (
+                b"xl/" in data[: min(len(data), 2_000_000)]
+                or b"workbook" in data[: min(len(data), 2_000_000)]
+            ):
                 return "xlsx"
             return "docx"
         # 无法判定为 OOXML（损坏/截断）→ 退而用扩展名，避免误标 zip
@@ -198,6 +210,7 @@ def _is_office_openxml(data: bytes) -> bool:
     """ZIP 容器中是否含 [Content_Types].xml（OOXML 标识）。"""
     try:
         import zipfile
+
         if not data.startswith(b"PK"):
             return False
         # 仅在头部探测，避免整文件加载
@@ -240,6 +253,7 @@ def is_attachment_url(url: str, text: str = "") -> bool:
 # --------------------------------------------------------------------------- #
 # 3. 多格式文档文本抽取（透明标记 + sha256）
 # --------------------------------------------------------------------------- #
+
 
 def sha256_of(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
@@ -312,7 +326,9 @@ def _merge(rec: dict[str, Any], sub: dict[str, Any]) -> dict[str, Any]:
     return rec
 
 
-_PAGENO_RE = re.compile(r"^\s*[—\-–一]\s*\d+\s*[—\-–]?\s*$|^\s*第\s*\d+\s*页(共\d+页)?\s*$|^\s*\d{1,3}\s*$")
+_PAGENO_RE = re.compile(
+    r"^\s*[—\-–一]\s*\d+\s*[—\-–]?\s*$|^\s*第\s*\d+\s*页(共\d+页)?\s*$|^\s*\d{1,3}\s*$"
+)
 
 
 def clean_pdf_text(text: str, min_repeat: int = 3) -> str:
@@ -330,7 +346,7 @@ def clean_pdf_text(text: str, min_repeat: int = 3) -> str:
         lines = [ln.strip() for ln in pg.splitlines()]
         body = [ln for ln in lines if ln]
         parsed.append(body)
-        for ln in body[:3] + body[-3:]:          # 页眉/页脚只可能出现在页首尾
+        for ln in body[:3] + body[-3:]:  # 页眉/页脚只可能出现在页首尾
             if len(ln) <= 40:
                 freq[ln] = freq.get(ln, 0) + 1
     out = []
@@ -400,18 +416,19 @@ def _extract_pdf(data: bytes, enable_ocr: bool, ocr_timeout: int) -> dict[str, A
     # ① pymupdf（首选：按行输出，不会把短词拆成独立行）
     try:
         import pymupdf
+
         with pymupdf.open(stream=data, filetype="pdf") as doc:
             t = clean_pdf_text("".join(p.get_text() for p in doc))
         if t.strip():
             if text_layer_ok(t):
-                return {"text": t, "extracted": True, "extract_status": "ok",
-                        "needs_ocr": False}
+                return {"text": t, "extracted": True, "extract_status": "ok", "needs_ocr": False}
             cands.append(t)
     except Exception:  # noqa: BLE001  缺库/解析失败 → 下一库
         pass
     # ② pypdf（轻量）
     try:
         from pypdf import PdfReader
+
         reader = PdfReader(__import__("io").BytesIO(data))
         text = ""
         for page in reader.pages:
@@ -422,14 +439,14 @@ def _extract_pdf(data: bytes, enable_ocr: bool, ocr_timeout: int) -> dict[str, A
         t = clean_pdf_text(text)
         if t.strip():
             if text_layer_ok(t):
-                return {"text": t, "extracted": True, "extract_status": "ok",
-                        "needs_ocr": False}
+                return {"text": t, "extracted": True, "extract_status": "ok", "needs_ocr": False}
             cands.append(t)
     except ImportError:
         pass
     # ③ 回退 pdfplumber
     try:
         import pdfplumber
+
         text = ""
         with pdfplumber.open(__import__("io").BytesIO(data)) as pdf:
             for page in pdf.pages:
@@ -440,48 +457,56 @@ def _extract_pdf(data: bytes, enable_ocr: bool, ocr_timeout: int) -> dict[str, A
         t = clean_pdf_text(text)
         if t.strip():
             if text_layer_ok(t):
-                return {"text": t, "extracted": True, "extract_status": "ok",
-                        "needs_ocr": False}
+                return {"text": t, "extracted": True, "extract_status": "ok", "needs_ocr": False}
             cands.append(t)
     except ImportError:
         pass
     # ③′ 取"有效汉字最多"的候选；三库皆缺 → library_missing
     best = max(cands, key=cjk_count) if cands else ""
     if not _pdf_lib_available():
-        return {"text": "", "extracted": False, "extract_status": "library_missing",
-                "needs_ocr": False}
+        return {
+            "text": "",
+            "extracted": False,
+            "extract_status": "library_missing",
+            "needs_ocr": False,
+        }
     # 库存在但文本层有效汉字不足（空 / 仅页眉页脚）→ 疑似扫描件 → OCR
     if enable_ocr and _ocr_available():
         try:
             ocr_text, ocr_engine = _run_ocr_detail(data, ocr_timeout)
             if ocr_text.strip():
                 # 2026-09-12：透出实际生效引擎（reocr --force 提质重跑跳过标记用）
-                return {"text": ocr_text.strip(), "extracted": True,
-                        "extract_status": "ok", "needs_ocr": True,
-                        "ocr_engine": ocr_engine}
+                return {
+                    "text": ocr_text.strip(),
+                    "extracted": True,
+                    "extract_status": "ok",
+                    "needs_ocr": True,
+                    "ocr_engine": ocr_engine,
+                }
         except Exception as e:
             LOG.warning("PDF OCR 失败：%s", e)
     if best.strip():
         # 文本层残量不足（多为页眉水印），保留但显式标记 needs_ocr（不再伪装 ok）
-        return {"text": best, "extracted": True, "extract_status": "ok",
-                "needs_ocr": True}
-    return {"text": "", "extracted": False, "extract_status": "needs_ocr",
-            "needs_ocr": True}
+        return {"text": best, "extracted": True, "extract_status": "ok", "needs_ocr": True}
+    return {"text": "", "extracted": False, "extract_status": "needs_ocr", "needs_ocr": True}
 
 
 def _pdf_lib_available() -> bool:
     try:
         import pymupdf  # noqa: F401
+
         return True
     except ImportError:
         pass
     try:
         import pypdf  # noqa: F401
+
         return True
     except ImportError:
         pass
     try:
         import pdfplumber  # noqa: F401
+
         return True
     except ImportError:
         return False
@@ -491,6 +516,7 @@ def _extract_docx(data: bytes) -> dict[str, Any]:
     # 优先 python-docx
     try:
         import docx
+
         d = docx.Document(__import__("io").BytesIO(data))
         text = "\n".join(p.text for p in d.paragraphs if p.text)
         if text.strip():
@@ -500,13 +526,17 @@ def _extract_docx(data: bytes) -> dict[str, Any]:
     # 零依赖回退：zipfile + word/document.xml
     try:
         import zipfile
+
         with zipfile.ZipFile(__import__("io").BytesIO(data)) as z:
             xml = z.read("word/document.xml").decode("utf-8", "replace")
         texts = re.findall(r"<w:t[^>]*>(.*?)</w:t>", xml, re.S)
         text = "".join(texts)
         if text.strip():
-            return {"text": re.sub(r"\s+", " ", text).strip(),
-                    "extracted": True, "extract_status": "ok"}
+            return {
+                "text": re.sub(r"\s+", " ", text).strip(),
+                "extracted": True,
+                "extract_status": "ok",
+            }
     except Exception:
         pass
     if not _docx_lib_available():
@@ -517,6 +547,7 @@ def _extract_docx(data: bytes) -> dict[str, Any]:
 def _docx_lib_available() -> bool:
     try:
         import docx  # noqa: F401
+
         return True
     except ImportError:
         return False
@@ -525,6 +556,7 @@ def _docx_lib_available() -> bool:
 def _extract_xlsx(data: bytes) -> dict[str, Any]:
     try:
         import openpyxl
+
         wb = openpyxl.load_workbook(__import__("io").BytesIO(data), data_only=True, read_only=True)
         rows = []
         for ws in wb.worksheets:
@@ -539,6 +571,7 @@ def _extract_xlsx(data: bytes) -> dict[str, Any]:
     # 零依赖回退：sharedStrings.xml
     try:
         import zipfile
+
         with zipfile.ZipFile(__import__("io").BytesIO(data)) as z:
             names = z.namelist()
             if "xl/sharedStrings.xml" in names:
@@ -546,8 +579,11 @@ def _extract_xlsx(data: bytes) -> dict[str, Any]:
                 strings = re.findall(r"<t[^>]*>(.*?)</t>", xml, re.S)
                 text = "\n".join(strings)
                 if text.strip():
-                    return {"text": re.sub(r"\s+", " ", text).strip(),
-                            "extracted": True, "extract_status": "ok"}
+                    return {
+                        "text": re.sub(r"\s+", " ", text).strip(),
+                        "extracted": True,
+                        "extract_status": "ok",
+                    }
     except Exception:
         pass
     if not _xlsx_lib_available():
@@ -558,12 +594,13 @@ def _extract_xlsx(data: bytes) -> dict[str, Any]:
 def _xlsx_lib_available() -> bool:
     try:
         import openpyxl  # noqa: F401
+
         return True
     except ImportError:
         return False
 
 
-_WPS_AVAILABLE: bool | None = None      # 模块级缓存：WPS 是否安装（None=未探测）
+_WPS_AVAILABLE: bool | None = None  # 模块级缓存：WPS 是否安装（None=未探测）
 
 
 def wps_available() -> bool:
@@ -581,6 +618,7 @@ def wps_available() -> bool:
     _WPS_AVAILABLE = False
     try:
         import winreg
+
         for prog in ("KWPS.Application", "WPS.Application", "ET.Application"):
             # ⚠️ 只查 ProgID 键**不够**：WPS 卸载后常残留 `KWPS.Application` 注册项
             # （实测本机即如此），据此判定"已安装"会照旧 Dispatch 并白等 ~14 秒。
@@ -595,8 +633,7 @@ def wps_available() -> bool:
             exe = ""
             for view in ("LocalServer32", "InprocServer32"):
                 try:
-                    k2 = winreg.OpenKey(winreg.HKEY_CLASSES_ROOT,
-                                        rf"CLSID\{clsid}\{view}")
+                    k2 = winreg.OpenKey(winreg.HKEY_CLASSES_ROOT, rf"CLSID\{clsid}\{view}")
                     raw, _ = winreg.QueryValueEx(k2, "")
                     winreg.CloseKey(k2)
                     exe = str(raw).strip().strip('"')
@@ -636,7 +673,9 @@ def _extract_doc_via_wps(data: bytes, timeout: float = 45.0) -> str | None:
         try:
             out = subprocess.run(
                 ["tasklist", "/FI", "IMAGENAME eq wps.exe", "/FO", "CSV", "/NH"],
-                capture_output=True, timeout=10)
+                capture_output=True,
+                timeout=10,
+            )
             raw = out.stdout
             try:
                 text = raw.decode("gbk", errors="replace")
@@ -669,10 +708,11 @@ def _extract_doc_via_wps(data: bytes, timeout: float = 45.0) -> str | None:
                 time.sleep(0.3)
             if not result["done"]:
                 after = _wps_pids()
-                for pid in (after - before):
+                for pid in after - before:
                     try:
-                        subprocess.run(["taskkill", "/F", "/PID", pid],
-                                       capture_output=True, timeout=10)
+                        subprocess.run(
+                            ["taskkill", "/F", "/PID", pid], capture_output=True, timeout=10
+                        )
                     except Exception:
                         pass
 
@@ -681,6 +721,7 @@ def _extract_doc_via_wps(data: bytes, timeout: float = 45.0) -> str | None:
         # COM 调用必须在主线程：实测（2026-08-20）同一进程内 worker 线程
         # 只首次 Dispatch 成功，第二次起即快速失败；主线程连续调用稳定。
         import win32com.client
+
         app = win32com.client.Dispatch("KWPS.Application")
         try:
             app.Visible = False
@@ -726,11 +767,14 @@ def _extract_ole2(data: bytes) -> dict[str, Any]:
     注：Excel 判定仅用精确的 b"Workbook" 魔数——b"Book" 过宽，.doc 二进制流常误命中。"""
     # 先判断是否 Excel：兼容 BIFF8("Workbook") 与 BIFF5 及更早("Book"，CFB 目录流 UTF-16LE)
     # 旧实现仅 b"Workbook" 会漏检 BIFF5 xls → 落到 doc 分支 utf-16-le 全流扫描产生乱码（2026-09-10）。
-    if (b"Workbook" in data[:200_000]
-            or b"\x00B\x00o\x00o\x00k" in data[:4096]
-            or b"Book" in data[:512]):
+    if (
+        b"Workbook" in data[:200_000]
+        or b"\x00B\x00o\x00o\x00k" in data[:4096]
+        or b"Book" in data[:512]
+    ):
         try:
             import xlrd
+
             bk = xlrd.open_workbook(__import__("io").BytesIO(data))
             rows = []
             for sh in bk.sheets():
@@ -750,6 +794,7 @@ def _extract_ole2(data: bytes) -> dict[str, Any]:
         return {"text": wps_text, "extracted": True, "extract_status": "ok_wps_com"}
     try:
         import olefile
+
         if not olefile.isOleFile(__import__("io").BytesIO(data)):
             return {"text": "", "extracted": False, "extract_status": "unsupported"}
         ol = olefile.OleFileIO(__import__("io").BytesIO(data))
@@ -805,6 +850,7 @@ def _run_ocr(data: bytes, timeout: int) -> str:
         from ocr_engine import get_ocr
     import os
     import tempfile
+
     fd, tmp = tempfile.mkstemp(suffix=".pdf", prefix="ocr_run_")
     try:
         with os.fdopen(fd, "wb") as f:
@@ -828,6 +874,7 @@ def _run_ocr_detail(data: bytes, timeout: int) -> tuple[str, str]:
         from ocr_engine import get_ocr
     import os
     import tempfile
+
     fd, tmp = tempfile.mkstemp(suffix=".pdf", prefix="ocr_run_")
     try:
         with os.fdopen(fd, "wb") as f:
@@ -883,6 +930,7 @@ def content_sha256(text: str) -> str:
 # --------------------------------------------------------------------------- #
 # 5. 标准化附件记录构造
 # --------------------------------------------------------------------------- #
+
 
 def build_attachment_record(
     file_name: str,

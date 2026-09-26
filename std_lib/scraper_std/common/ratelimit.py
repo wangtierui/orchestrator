@@ -1,5 +1,7 @@
 """Smart rate limiter and HTTP client with retry/429 handling."""
 
+from __future__ import annotations
+
 import random
 import sys
 import time
@@ -72,8 +74,9 @@ class SmartRateLimiter:
             total += 1
         return max(1, total)
 
-    def init_for_task(self, estimated_requests: int,
-                      forced_mode: RateLimitMode | None = None) -> RateLimitMode:
+    def init_for_task(
+        self, estimated_requests: int, forced_mode: RateLimitMode | None = None
+    ) -> RateLimitMode:
         if forced_mode:
             self.mode = forced_mode
         else:
@@ -105,8 +108,9 @@ class SmartRateLimiter:
         if self.mode == RateLimitMode.OFF:
             return
         self._total_requests += 1
-        interval = 1.0 / (self._current_rps if self.mode == RateLimitMode.ADAPTIVE
-                          else self.cfg.fixed_rps)
+        interval = 1.0 / (
+            self._current_rps if self.mode == RateLimitMode.ADAPTIVE else self.cfg.fixed_rps
+        )
         now = time.time()
         elapsed = now - self._last_request_time
         if elapsed < interval:
@@ -130,8 +134,10 @@ class SmartRateLimiter:
         exp = min(BASE_BACKOFF * (2 ** (self._consecutive_429 - 1)), MAX_BACKOFF)
         jitter = random.uniform(0, exp * 0.3)
         backoff = max(0.1, exp + jitter)
-        print(f"  [429] Rate limited. Backing off {backoff:.1f}s..."
-              f" (strike {self._consecutive_429})", file=sys.stderr)
+        print(
+            f"  [429] Rate limited. Backing off {backoff:.1f}s... (strike {self._consecutive_429})",
+            file=sys.stderr,
+        )
         time.sleep(backoff)
         if self.mode == RateLimitMode.ADAPTIVE:
             self._current_rps = max(self._current_rps * 0.6, self.cfg.adaptive_min_rps)
@@ -147,10 +153,12 @@ class SmartRateLimiter:
         elapsed = time.time() - (self._start_time or time.time())
         actual_rps = self._total_requests / elapsed if elapsed > 0 else 0
         r429 = f" | 429s: {self._429_count}" if self._429_count else ""
-        print(f"\n[RateLimit] {self.mode_desc()} | "
-              f"{self._total_requests} requests in {elapsed:.1f}s "
-              f"({actual_rps:.1f} req/s){r429}",
-              file=sys.stderr)
+        print(
+            f"\n[RateLimit] {self.mode_desc()} | "
+            f"{self._total_requests} requests in {elapsed:.1f}s "
+            f"({actual_rps:.1f} req/s){r429}",
+            file=sys.stderr,
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -226,9 +234,7 @@ def http_request(method, url, headers=None, session=None, allowed_statuses=None,
                 last_err = f"HTTP 429 url={redact_url(url)}"
                 if attempt < MAX_RETRIES:
                     continue
-                raise RuntimeError(
-                    f"HTTP 429 Too Many Requests after {MAX_RETRIES} retries"
-                )
+                raise RuntimeError(f"HTTP 429 Too Many Requests after {MAX_RETRIES} retries")
 
             # Retryable server errors
             if resp.status_code in RETRYABLE_STATUS_CODES:
@@ -236,9 +242,7 @@ def http_request(method, url, headers=None, session=None, allowed_statuses=None,
                 if attempt < MAX_RETRIES:
                     time.sleep(_backoff(attempt))
                     continue
-                raise RuntimeError(
-                    f"HTTP {resp.status_code} after {MAX_RETRIES} retries"
-                )
+                raise RuntimeError(f"HTTP {resp.status_code} after {MAX_RETRIES} retries")
 
             # 2xx — success
             if 200 <= resp.status_code < 300:
@@ -253,21 +257,15 @@ def http_request(method, url, headers=None, session=None, allowed_statuses=None,
 
             # 401/403 — access denied, no retry
             if resp.status_code in (401, 403):
-                raise RuntimeError(
-                    f"HTTP {resp.status_code} (access denied): {redact_url(url)}"
-                )
+                raise RuntimeError(f"HTTP {resp.status_code} (access denied): {redact_url(url)}")
 
             # 404 — not found, no retry
             if resp.status_code == 404:
-                raise RuntimeError(
-                    f"HTTP 404 Not Found: {redact_url(url)}"
-                )
+                raise RuntimeError(f"HTTP 404 Not Found: {redact_url(url)}")
 
             # Other 4xx — client error, no retry
             if 400 <= resp.status_code < 500:
-                raise RuntimeError(
-                    f"HTTP {resp.status_code} (client error): {redact_url(url)}"
-                )
+                raise RuntimeError(f"HTTP {resp.status_code} (client error): {redact_url(url)}")
 
             # Remaining 5xx
             last_err = f"HTTP {resp.status_code}"

@@ -15,6 +15,7 @@
   python tools/check_llm_wiki_upstream.py            # 查询并对比（需网络）
   python tools/check_llm_wiki_upstream.py --record   # 查询后把当前最新版写入状态文件
 """
+
 from __future__ import annotations
 
 import argparse
@@ -29,10 +30,13 @@ API = "https://api.github.com/repos/nashsu/llm_wiki/releases/latest"
 
 
 def _fetch_latest() -> dict:
-    req = urllib.request.Request(API, headers={
-        "User-Agent": "regulatory-orchestrator/llm_wiki-upstream-check",
-        "Accept": "application/vnd.github+json",
-    })
+    req = urllib.request.Request(
+        API,
+        headers={
+            "User-Agent": "regulatory-orchestrator/llm_wiki-upstream-check",
+            "Accept": "application/vnd.github+json",
+        },
+    )
     with urllib.request.urlopen(req, timeout=30) as r:
         return json.loads(r.read().decode("utf-8"))
 
@@ -57,8 +61,11 @@ def main() -> int:
         return 2
     latest = (rel.get("tag_name") or "").lstrip("v")
     pub = rel.get("published_at") or ""
-    wins = [a.get("name") for a in (rel.get("assets") or [])
-            if a.get("name", "").lower().endswith((".exe", "-portable.zip", ".msi"))]
+    wins = [
+        a.get("name")
+        for a in (rel.get("assets") or [])
+        if a.get("name", "").lower().endswith((".exe", "-portable.zip", ".msi"))
+    ]
     print(f"[upstream] llm_wiki 最新: v{latest}（{pub}）")
     print(f"[upstream] Windows 资产: {wins or '（未列出）'}")
     if not known:
@@ -67,13 +74,19 @@ def main() -> int:
         print(f"[upstream] 与本地基线一致（v{known}）——无需动作")
     else:
         print(f"[upstream] **发现新版本**：基线 v{known} → 最新 v{latest}")
-        print("[upstream] 请按 reports/llm_wiki接入适配契约_20260912.md 的核对清单"
-              "确认 3 个适配点（文件协议/HTTP API/安装资产名）")
+        print(
+            "[upstream] 请按 reports/llm_wiki接入适配契约_20260912.md 的核对清单"
+            "确认 3 个适配点（文件协议/HTTP API/安装资产名）"
+        )
     if args.record:
-        state.update({"known_latest": latest, "published_at": pub,
-                      "windows_assets": wins,
-                      "checked_at": __import__("datetime").datetime.now()
-                      .strftime("%Y-%m-%d %H:%M:%S")})
+        state.update(
+            {
+                "known_latest": latest,
+                "published_at": pub,
+                "windows_assets": wins,
+                "checked_at": __import__("datetime").datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            }
+        )
         tmp = STATE + ".tmp"
         with open(tmp, "w", encoding="utf-8") as fh:
             json.dump(state, fh, ensure_ascii=False, indent=1)

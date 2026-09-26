@@ -4,3 +4,5 @@
 P0 提供 fs_lock 与 io_atomic（自旧仓 fs_lock.py 与既有原子写实现移植）；
 norm/index_store/audit 逐步补齐。
 """
+
+from __future__ import annotations

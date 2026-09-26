@@ -62,8 +62,8 @@ LOG = logging.getLogger("scraper_std.ocr_engine")
 # ---------------------------------------------------------------------------
 # 路径常量（与 supplementary/scripts/ocr_pdf.py 保持一致的寻址规则）
 # ---------------------------------------------------------------------------
-_HERE = os.path.dirname(os.path.abspath(__file__))          # std_lib/scraper_std/
-_REPO = os.path.dirname(os.path.dirname(_HERE))             # orchestrator 仓库根（dirname×2）
+_HERE = os.path.dirname(os.path.abspath(__file__))  # std_lib/scraper_std/
+_REPO = os.path.dirname(os.path.dirname(_HERE))  # orchestrator 仓库根（dirname×2）
 # P1 去硬编码（R17）：Tesseract 路径不再默认写死安装目录。
 # 取值优先级：环境变量 OCR_TESSERACT_BIN > config/ocr.yaml（由 orchestrator cli 注入环境）> 空。
 # 空路径时 TesseractEngine.available() 判定不存在并降级到 paddle/文本层，不影响无 Tesseract 环境。
@@ -89,18 +89,20 @@ class OCRConfig:
     """统一 OCR 模块的可配置项。"""
 
     # PaddleOCR 构造参数（详见 paddleocr.PaddleOCR.__init__；注意 3.x 已移除 show_log）
-    paddle_init: dict = field(default_factory=lambda: dict(
-        lang="ch",
-        ocr_version="PP-OCRv6",
-        use_textline_orientation=True,
-        # 2026-09-12 速度优化：制度扫描件均为正立文档——关闭整页方向分类（doc_ori）与
-        # 去畸变（UVDoc）子管线；检测输入长边限 1280（200DPI 渲染下实测 23s/页，
-        # 由 144s 降 6 倍且识别质量不变——"PP-OCRv6 mobile"档不存在，勿指定）。
-        use_doc_orientation_classify=False,
-        use_doc_unwarping=False,
-        text_det_limit_side_len=1280,
-        text_det_limit_type="max",
-    ))
+    paddle_init: dict = field(
+        default_factory=lambda: dict(
+            lang="ch",
+            ocr_version="PP-OCRv6",
+            use_textline_orientation=True,
+            # 2026-09-12 速度优化：制度扫描件均为正立文档——关闭整页方向分类（doc_ori）与
+            # 去畸变（UVDoc）子管线；检测输入长边限 1280（200DPI 渲染下实测 23s/页，
+            # 由 144s 降 6 倍且识别质量不变——"PP-OCRv6 mobile"档不存在，勿指定）。
+            use_doc_orientation_classify=False,
+            use_doc_unwarping=False,
+            text_det_limit_side_len=1280,
+            text_det_limit_type="max",
+        )
+    )
     # Tesseract 配置
     tesseract_cmd: str = _TESSERACT_DEFAULT
     tessdata_prefix: str = _TESSDATA_DEFAULT
@@ -139,10 +141,12 @@ class OCRConfig:
         kwargs: dict = {}
         try:
             import sys as _sys  # noqa: PLC0415
+
             _root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
             if _root not in _sys.path:
                 _sys.path.insert(0, _root)
             from config.loader import load_ocr  # noqa: PLC0415
+
             ocr = (load_ocr() or {}).get("ocr") or {}
             if ocr.get("tesseract_bin"):
                 kwargs["tesseract_cmd"] = str(ocr["tesseract_bin"])
@@ -221,8 +225,7 @@ class BaseOCREngine:
 class PaddleOCREngine(BaseOCREngine):
     name = ENGINE_PADDLE
 
-    def __init__(self, init_params: dict, allow_download: bool = True,
-                 disable_mkldnn: bool = True):
+    def __init__(self, init_params: dict, allow_download: bool = True, disable_mkldnn: bool = True):
         self._init_params = dict(init_params)
         self._allow_download = allow_download
         self._disable_mkldnn = disable_mkldnn
@@ -238,6 +241,7 @@ class PaddleOCREngine(BaseOCREngine):
             # 缓存为默认值 True，后续设置无效。
             self._apply_mkldnn_env()
             import paddleocr  # noqa: F401
+
             return True
         except Exception as e:  # pragma: no cover - 依赖缺失
             self._import_error = f"import paddleocr failed: {e}"
@@ -262,6 +266,7 @@ class PaddleOCREngine(BaseOCREngine):
         if self._disable_mkldnn:
             self._apply_mkldnn_env()
         import paddleocr
+
         self._instance = paddleocr.PaddleOCR(**self._init_params)
         return self._instance
 
@@ -286,6 +291,7 @@ class PaddleOCREngine(BaseOCREngine):
         """将输入归一化为 PaddleOCR 接受的 np.ndarray（RGB）。"""
         import numpy as np
         from PIL import Image
+
         if isinstance(img, str) or isinstance(img, (bytes, bytearray)):
             return img
         if isinstance(img, Image.Image):
@@ -322,6 +328,7 @@ class TesseractEngine(BaseOCREngine):
             return False
         try:
             import pytesseract  # noqa: F401
+
             return True
         except Exception as e:  # pragma: no cover
             self._import_error = f"import pytesseract failed: {e}"
@@ -332,6 +339,7 @@ class TesseractEngine(BaseOCREngine):
     def _preprocess(pil_img):
         """灰度 + 自动对比度 + 中值滤波（提升扫描件识别率）。"""
         from PIL import ImageFilter, ImageOps
+
         gray = ImageOps.grayscale(pil_img).convert("L")
         gray = ImageOps.autocontrast(gray)
         gray = gray.filter(ImageFilter.MedianFilter(3))
@@ -341,6 +349,7 @@ class TesseractEngine(BaseOCREngine):
     def _normalize_to_pil(img: Any):
         import numpy as np
         from PIL import Image
+
         if isinstance(img, Image.Image):
             return img
         if isinstance(img, np.ndarray):
@@ -352,15 +361,14 @@ class TesseractEngine(BaseOCREngine):
     def recognize(self, img: Any) -> str:
         import pytesseract
         from PIL import Image
+
         pytesseract.pytesseract.tesseract_cmd = self._cmd
         os.environ.setdefault("TESSDATA_PREFIX", self._tessdata)
         pil = self._normalize_to_pil(img)
         if not isinstance(pil, Image.Image):
             pil = Image.open(pil)
         gray = self._preprocess(pil)
-        return pytesseract.image_to_string(
-            gray, lang=self._langs, config=self._config
-        )
+        return pytesseract.image_to_string(gray, lang=self._langs, config=self._config)
 
 
 # ---------------------------------------------------------------------------
@@ -402,6 +410,7 @@ class UnifiedOCR:
     def warmup(self) -> OCRResult:
         """预加载默认（最高优先级）引擎；用 1x1 空白图触发模型下载/加载。"""
         import numpy as np
+
         blank = np.zeros((8, 8, 3), dtype=np.uint8)
         return self.recognize_image(blank)
 
@@ -420,8 +429,11 @@ class UnifiedOCR:
                 if text and text.strip():
                     attempts.append((engine.name, True, None))
                     return OCRResult(
-                        text=text, engine=engine.name, success=True,
-                        mode="ocr", attempts=attempts,
+                        text=text,
+                        engine=engine.name,
+                        success=True,
+                        mode="ocr",
+                        attempts=attempts,
                     )
                 # 引擎返回空：视作该引擎未识别到，尝试下一引擎
                 attempts.append((engine.name, False, "empty_result"))
@@ -432,8 +444,12 @@ class UnifiedOCR:
                 LOG.warning("OCR 引擎 %s 失败，尝试降级：%s", engine.name, e)
         # 全部失败 → 失败标记
         return OCRResult(
-            text="", engine=ENGINE_NONE, success=False, mode="failed",
-            error=last_err, attempts=attempts,
+            text="",
+            engine=ENGINE_NONE,
+            success=False,
+            mode="failed",
+            error=last_err,
+            attempts=attempts,
         )
 
     # -- 后处理 -------------------------------------------------------------
@@ -467,8 +483,9 @@ class UnifiedOCR:
             return text
 
     # -- PDF 提取 -----------------------------------------------------------
-    def extract_pdf(self, path: str, *, force_ocr: bool = False,
-                    dpi: int | None = None) -> PDFExtractResult:
+    def extract_pdf(
+        self, path: str, *, force_ocr: bool = False, dpi: int | None = None
+    ) -> PDFExtractResult:
         """PDF 文本提取：文本层优先 → 扫描页走 OCR 引擎链。
 
         返回 PDFExtractResult；source="text_layer" 表示直接采用文本层（未走 OCR），
@@ -478,8 +495,12 @@ class UnifiedOCR:
         render_dpi = dpi or self.config.dpi
         if not os.path.exists(path):
             return PDFExtractResult(
-                text="", source="ocr", engine=ENGINE_NONE, success=False,
-                page_count=0, error=f"file not found: {path}",
+                text="",
+                source="ocr",
+                engine=ENGINE_NONE,
+                success=False,
+                page_count=0,
+                error=f"file not found: {path}",
             )
 
         # 1) 文本层优先
@@ -489,8 +510,11 @@ class UnifiedOCR:
             if len(layer_text) >= self.config.min_text_len and cjk >= self.config.min_cjk_for_text:
                 t = self._post_process(layer_text)
                 return PDFExtractResult(
-                    text=t, source=ENGINE_TEXT_LAYER, engine=ENGINE_TEXT_LAYER,
-                    success=True, page_count=self._page_count(path),
+                    text=t,
+                    source=ENGINE_TEXT_LAYER,
+                    engine=ENGINE_TEXT_LAYER,
+                    success=True,
+                    page_count=self._page_count(path),
                 )
 
         # 2) 扫描件 → 逐页 OCR（引擎链 + 降级）
@@ -498,8 +522,12 @@ class UnifiedOCR:
             import pymupdf as fitz
         except Exception as e:
             return PDFExtractResult(
-                text="", source="ocr", engine=ENGINE_NONE, success=False,
-                page_count=0, error=f"PyMuPDF unavailable: {e}",
+                text="",
+                source="ocr",
+                engine=ENGINE_NONE,
+                success=False,
+                page_count=0,
+                error=f"PyMuPDF unavailable: {e}",
             )
         doc = fitz.open(path)
         page_texts: list[str] = []
@@ -509,6 +537,7 @@ class UnifiedOCR:
                 pix = page.get_pixmap(dpi=render_dpi)
                 import numpy as np
                 from PIL import Image
+
                 pil = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
                 arr = np.asarray(pil)
                 res = self.recognize_image(arr)
@@ -526,8 +555,12 @@ class UnifiedOCR:
                 used_engine = r.engine
                 break
         return PDFExtractResult(
-            text=full, source="ocr", engine=used_engine, success=ok,
-            page_count=len(ocr_results), ocr_results=ocr_results,
+            text=full,
+            source="ocr",
+            engine=used_engine,
+            success=ok,
+            page_count=len(ocr_results),
+            ocr_results=ocr_results,
             error=None if ok else (ocr_results[0].error if ocr_results else "no pages"),
         )
 
@@ -536,6 +569,7 @@ class UnifiedOCR:
     def _page_count(path: str) -> int:
         try:
             import pymupdf as fitz
+
             with fitz.open(path) as d:
                 return d.page_count
         except Exception:
@@ -545,6 +579,7 @@ class UnifiedOCR:
     def _extract_text_layer(path: str) -> str:
         try:
             from pypdf import PdfReader
+
             parts = []
             reader = PdfReader(path)
             for page in reader.pages:
@@ -577,8 +612,9 @@ def recognize_image(img: Any, config: OCRConfig | None = None) -> OCRResult:
     return get_ocr(config).recognize_image(img)
 
 
-def extract_pdf(path: str, config: OCRConfig | None = None, *,
-                force_ocr: bool = False) -> PDFExtractResult:
+def extract_pdf(
+    path: str, config: OCRConfig | None = None, *, force_ocr: bool = False
+) -> PDFExtractResult:
     """模块级便捷函数：PDF 文本提取（文本层优先 + OCR 引擎链降级）。"""
     return get_ocr(config).extract_pdf(path, force_ocr=force_ocr)
 

@@ -24,6 +24,7 @@ common_lib.logging — 日志设施统一入口（v2 §3.6 X3，2026-09-26）
   契约，加日志前缀会破坏下游可解析性（编排器 `_run` 会 tail stdout 判定）；
 - 纪律由 `gate_runtime_hygiene` 判据④断言（生产脚本须有 LOG 使用下限，print 只减不增）。
 """
+
 from __future__ import annotations
 
 import logging
@@ -38,8 +39,15 @@ from scraper_std.logging_setup import (  # noqa: F401
     snapshot_failure,
 )
 
-__all__ = ["JsonFormatter", "LogContext", "setup_logging", "snapshot_failure",
-           "get_logger", "json_logs_enabled", "setup_cli_logging"]
+__all__ = [
+    "JsonFormatter",
+    "LogContext",
+    "setup_logging",
+    "snapshot_failure",
+    "get_logger",
+    "json_logs_enabled",
+    "setup_cli_logging",
+]
 
 JSON_LOGS_ENV = "REG_ORCH_JSON_LOGS"
 
@@ -56,8 +64,9 @@ def json_logs_enabled(json_logs: bool | None = None) -> bool:
     return os.environ.get(JSON_LOGS_ENV, "").strip() not in ("", "0", "false", "False")
 
 
-def setup_cli_logging(name: str = "", *, log_dir: str = "", json_logs: bool | None = None,
-                      level: str = "INFO") -> logging.Logger:
+def setup_cli_logging(
+    name: str = "", *, log_dir: str = "", json_logs: bool | None = None, level: str = "INFO"
+) -> logging.Logger:
     """CLI/脚本的日志初始化（幂等；重复调用会重置 handler）。
 
     - 默认（未显式要求 JSON 且环境未置位）→ 人类可读格式写 **stdout**（保留 CLI 可读输出，
@@ -68,14 +77,19 @@ def setup_cli_logging(name: str = "", *, log_dir: str = "", json_logs: bool | No
     if not log_dir:
         root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         log_dir = os.path.join(root, "reports", "_tmp", "logs")
-    return setup_logging(log_dir, project_name="regulatory_compliance_orchestrator",
-                         task_id=name or "cli",
-                         level=level, json_lines=json_logs_enabled(json_logs), console=True)
+    return setup_logging(
+        log_dir,
+        project_name="regulatory_compliance_orchestrator",
+        task_id=name or "cli",
+        level=level,
+        json_lines=json_logs_enabled(json_logs),
+        console=True,
+    )
 
 
 def fatal(msg: str, code: int = 2) -> int:
     """记录错误日志并返回退出码（供脚本 `return fatal(...)` 惯用；避免裸整数语义分歧）。"""
     get_logger("fatal").error("%s", msg)
-    if not sys.stderr.isatty():   # 重定向场景下同时落 stderr，保证编排器 tail 可见
+    if not sys.stderr.isatty():  # 重定向场景下同时落 stderr，保证编排器 tail 可见
         print(msg, file=sys.stderr, flush=True)
     return code

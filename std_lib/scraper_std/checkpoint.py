@@ -43,8 +43,12 @@ class Checkpoint:
         self.path = path
         self.project = project
         self.data: dict[str, Any] = {
-            "schema": 1, "project": project, "updated_at": "",
-            "done_urls": {}, "failed_urls": {}, "page_count": 0,
+            "schema": 1,
+            "project": project,
+            "updated_at": "",
+            "done_urls": {},
+            "failed_urls": {},
+            "page_count": 0,
         }
         self._lock = threading.Lock()
         self._load()
@@ -55,8 +59,7 @@ class Checkpoint:
                 with open(self.path, encoding="utf-8") as f:
                     loaded = json.load(f)
                 if isinstance(loaded, dict):
-                    self.data.update({k: v for k, v in loaded.items()
-                                      if k in self.data})
+                    self.data.update({k: v for k, v in loaded.items() if k in self.data})
             except Exception as e:
                 LOG.warning("断点文件解析失败，从零开始：%s", e)
 
@@ -102,8 +105,9 @@ class GracefulRunner:
     由调用方捕获并跳出循环；退出时强制落盘。
     """
 
-    def __init__(self, checkpoint: Checkpoint | None = None,
-                 on_interrupt: Callable[[], None] | None = None):
+    def __init__(
+        self, checkpoint: Checkpoint | None = None, on_interrupt: Callable[[], None] | None = None
+    ):
         self.checkpoint = checkpoint
         self.on_interrupt = on_interrupt
         self.grace = False
@@ -161,6 +165,7 @@ class GracefulRunner:
 
 if __name__ == "__main__":  # 离线自检
     import tempfile
+
     td = tempfile.mkdtemp()
     cp = Checkpoint(os.path.join(td, "checkpoint.json"), "test")
     cp.mark_done("http://a")

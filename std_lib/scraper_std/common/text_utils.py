@@ -1,5 +1,7 @@
 """Text and filename utility functions."""
 
+from __future__ import annotations
+
 import re
 from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlparse
@@ -69,8 +71,11 @@ def extract_year(value: str) -> str:
     return match.group(1) if match else "未知"
 
 
-def create_crawler_headers(accept: str = "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8") -> dict:
+def create_crawler_headers(
+    accept: str = "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+) -> dict:
     from .constants import DEFAULT_USER_AGENT
+
     return {
         "User-Agent": DEFAULT_USER_AGENT,
         "Accept": accept,

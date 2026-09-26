@@ -8,6 +8,7 @@ gates/gate_sources_config — 源目录配置一致性门禁（R15 补全，2026
   3) 每 enabled 源「clean_project」字段存在且 ∈ SOURCE_SET（供 clean 管道 --project 路由）；
   4) disabled 条目应给 disabled_reasons（透明告知，warning 级）。
 """
+
 from __future__ import annotations
 
 import os
@@ -28,7 +29,8 @@ def run():
     if active != set(SOURCE_SET):
         problems.append(
             f"sources.yaml enabled 源 {sorted(active)} ≠ config.enums.SOURCE_SET {sorted(SOURCE_SET)}"
-            "（新增源需同步登记两处并重跑 assert_enum_bindings）")
+            "（新增源需同步登记两处并重跑 assert_enum_bindings）"
+        )
 
     # 2/3) collector 与 clean_project 解析
     for sid in sorted(active):
@@ -51,5 +53,9 @@ def run():
             if not cfg.get("disabled_reasons"):
                 warns.append(f"{sid}: disabled 但缺 disabled_reasons")
 
-    return (not problems), {"problems": problems[:30], "warnings": warns[:10],
-                            "active": sorted(active), "collectors_dir": _COLLECTORS_DIR}
+    return (not problems), {
+        "problems": problems[:30],
+        "warnings": warns[:10],
+        "active": sorted(active),
+        "collectors_dir": _COLLECTORS_DIR,
+    }

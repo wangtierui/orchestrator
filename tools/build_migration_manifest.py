@@ -20,6 +20,7 @@ tools/build_migration_manifest.py — 生成 data_migration_manifest.json（P0 /
         —— processed/ 下逐制度产物可由 `orchestrator internal index|reocr` 重建，不入清单。
 用法：python tools/build_migration_manifest.py [--root <仓库根>] [--out ...]
 """
+
 from __future__ import annotations
 
 import argparse
@@ -46,6 +47,7 @@ MODULE_SUBDIRS = {
 def _rel(root: str, path: str) -> str:
     """绝对路径 → 相对仓库根的 POSIX 路径（清单可移植性的唯一保障）。"""
     return os.path.relpath(path, root).replace("\\", "/")
+
 
 # 每个 (source_root_key, 相对 glob, 目标相对路径模板, 说明)
 # 用 {date_latest} 占位不支持——改为手工挑选最新（按文件名日期后缀排序取最大）。
@@ -82,16 +84,20 @@ def _latest_cleaned(scrapers_root: str) -> list[dict]:
         for ext in ("csv", "jsonl"):
             p = hit.get(ext)
             if p and os.path.exists(p):
-                out.append({"src": f"scrapers/data/cleaned/{os.path.basename(p)}",
-                            "path": p})
+                out.append({"src": f"scrapers/data/cleaned/{os.path.basename(p)}", "path": p})
     return out
 
 
 def _latest_raw_master(scrapers_root: str) -> list[dict]:
     """data/raw 定长主库 json（gov_laws/mof_laws/nfra_regulations/pbc_laws/supplementary_regulations.json）。"""
     raw_dir = os.path.join(scrapers_root, "data", "raw")
-    names = ["gov_laws.json", "mof_laws.json", "nfra_regulations.json",
-             "pbc_laws.json", "supplementary_regulations.json"]
+    names = [
+        "gov_laws.json",
+        "mof_laws.json",
+        "nfra_regulations.json",
+        "pbc_laws.json",
+        "supplementary_regulations.json",
+    ]
     out = []
     for n in names:
         p = os.path.join(raw_dir, n)
@@ -105,8 +111,7 @@ def _latest_timeliness(scrapers_root: str) -> list[dict]:
     state = os.path.join(scrapers_root, "timeliness_review", "verification_state.json")
     if os.path.exists(state):
         out.append({"src": "scrapers/timeliness_review/verification_state.json", "path": state})
-    full_glob = os.path.join(scrapers_root, "timeliness_review",
-                             "时效性标注结果清单_全量_*.csv")
+    full_glob = os.path.join(scrapers_root, "timeliness_review", "时效性标注结果清单_全量_*.csv")
     cands = sorted(glob.glob(full_glob))
     if cands:
         p = cands[-1]
@@ -174,8 +179,11 @@ def _internal_base(base_root: str) -> list[dict]:
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--root", default=REPO_ROOT,
-                    help="仓库根（默认本仓根；活跃数据位于 modules/<模块>，见 MODULE_SUBDIRS）")
+    ap.add_argument(
+        "--root",
+        default=REPO_ROOT,
+        help="仓库根（默认本仓根；活跃数据位于 modules/<模块>，见 MODULE_SUBDIRS）",
+    )
     ap.add_argument("--out", default="")
     args = ap.parse_args()
     root = args.root
@@ -194,13 +202,15 @@ def main() -> int:
     manifest = []
     for it in items:
         try:
-            manifest.append({
-                "src": it["src"],
-                # 2026-09-13：一律相对仓库根（原为绝对路径，异机不可执行）
-                "path": _rel(root, it["path"]),
-                "size_bytes": os.path.getsize(it["path"]),
-                "sha256": _sha(it["path"]),
-            })
+            manifest.append(
+                {
+                    "src": it["src"],
+                    # 2026-09-13：一律相对仓库根（原为绝对路径，异机不可执行）
+                    "path": _rel(root, it["path"]),
+                    "size_bytes": os.path.getsize(it["path"]),
+                    "sha256": _sha(it["path"]),
+                }
+            )
         except OSError as e:
             print(f"[warn] 跳过 {it['src']}: {e}")
     out_path = args.out or os.path.join(REPO_ROOT, "data_migration_manifest.json")
@@ -210,8 +220,10 @@ def main() -> int:
         "generated_at": datetime.now(_TZ).strftime("%Y-%m-%dT%H:%M:%S%z"),
         "path_semantics": "全部 path 为相对仓库根的 POSIX 路径（schema 1.1 起；1.0 为绝对路径，异机不可用）",
         "source_roots": dict(MODULE_SUBDIRS),
-        "note": ("现行活跃数据清单：用于异机恢复与完整性核对（sha256）。数据不入 git，"
-                 "按本清单从备份复制或按 README §6 重建；校验后比对 sha256。"),
+        "note": (
+            "现行活跃数据清单：用于异机恢复与完整性核对（sha256）。数据不入 git，"
+            "按本清单从备份复制或按 README §6 重建；校验后比对 sha256。"
+        ),
         "items": manifest,
     }
     tmp = out_path + ".tmp"

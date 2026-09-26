@@ -11,6 +11,7 @@ scraper_std 的成熟实现，本模块仅做再导出，保证与既有爬虫�
     client = AdaptiveHttpClient()
     ok, sha, size = download_file(client, url, "tmp.bin")
 """
+
 from __future__ import annotations
 
 from ..attachments import (  # noqa: F401
@@ -28,6 +29,12 @@ def download_file(client: AdaptiveHttpClient, url: str, dest_path: str, **kw) ->
 
 
 __all__ = [
-    "AdaptiveHttpClient", "download_file", "download_and_extract",
-    "pick_body_doc", "is_attachment_url", "sniff_kind", "safe_filename", "sha256_of",
+    "AdaptiveHttpClient",
+    "download_file",
+    "download_and_extract",
+    "pick_body_doc",
+    "is_attachment_url",
+    "sniff_kind",
+    "safe_filename",
+    "sha256_of",
 ]

@@ -37,7 +37,12 @@ class AnchorDetector:
     def __init__(self, selectors: list[str] | None = None):
         self.selectors = list(selectors or [])
         # 预编译关键词
-        self._kw = [s for s in self.selectors if not s.startswith(("#", ".", "//")) and not s.startswith(tuple("abcdefghijklmnopqrstuvwxyz"))]
+        self._kw = [
+            s
+            for s in self.selectors
+            if not s.startswith(("#", ".", "//"))
+            and not s.startswith(tuple("abcdefghijklmnopqrstuvwxyz"))
+        ]
         self._kw_re = [re.compile(re.escape(k)) for k in self._kw]
 
     def check(self, html: str) -> tuple[bool, str]:
@@ -96,8 +101,13 @@ class Fuse:
             self.miss_count = 0
             return True, matched
         self.miss_count += 1
-        LOG.warning("锚点未命中(%d/%d) matched=%s url=%s",
-                    self.miss_count, self.max_miss, matched, (meta or {}).get("url"))
+        LOG.warning(
+            "锚点未命中(%d/%d) matched=%s url=%s",
+            self.miss_count,
+            self.max_miss,
+            matched,
+            (meta or {}).get("url"),
+        )
         if self.miss_count >= self.max_miss:
             self.trip(html, meta)
         return False, matched
@@ -108,16 +118,23 @@ class Fuse:
             return
         self.tripped = True
         from .logging_setup import snapshot_failure
+
         path = snapshot_failure(html or "", self.snapshot_dir, meta)
-        LOG.error("熔断触发！连续 %d 次锚点未命中。快照已保存：%s meta=%s",
-                  self.miss_count, path, meta or {})
+        LOG.error(
+            "熔断触发！连续 %d 次锚点未命中。快照已保存：%s meta=%s",
+            self.miss_count,
+            path,
+            meta or {},
+        )
         if self.on_trip:
             try:
                 self.on_trip(path)
             except Exception as e:  # 告警回调失败不阻断主流程
                 LOG.error("熔断告警回调失败：%s", e)
-        raise RuntimeError(f"circuit_breaker tripped after {self.miss_count} misses; "
-                           f"snapshot={path}; 请人工检查站点结构变化并更新选择器")
+        raise RuntimeError(
+            f"circuit_breaker tripped after {self.miss_count} misses; "
+            f"snapshot={path}; 请人工检查站点结构变化并更新选择器"
+        )
 
 
 if __name__ == "__main__":  # 离线自检
@@ -126,8 +143,10 @@ if __name__ == "__main__":  # 离线自检
     assert ad.check(html) == (True, "#detail-title")
     assert ad.check("<html><body>no anchor</body></html>") == (False, "no_anchor_found")
     import tempfile
-    f = Fuse(detector=AnchorDetector(["#never-exists"]), max_miss=3,
-             snapshot_dir=tempfile.mkdtemp())
+
+    f = Fuse(
+        detector=AnchorDetector(["#never-exists"]), max_miss=3, snapshot_dir=tempfile.mkdtemp()
+    )
     try:
         for _ in range(3):
             f.check("<html></html>")

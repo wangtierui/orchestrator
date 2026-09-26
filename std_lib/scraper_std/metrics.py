@@ -57,12 +57,14 @@ class MetricsCollector:
 
     def record_error(self, url: str, error_type: str, detail: str = "") -> None:
         self.inc("failure")
-        self.errors.append({
-            "url": url,
-            "error_type": error_type,
-            "detail": detail[:500],
-            "ts": _dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        })
+        self.errors.append(
+            {
+                "url": url,
+                "error_type": error_type,
+                "detail": detail[:500],
+                "ts": _dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            }
+        )
 
     def record_null(self, field: str, is_null: bool) -> None:
         self.field_total[field] = self.field_total.get(field, 0) + 1
@@ -74,16 +76,18 @@ class MetricsCollector:
         total = self.counts["total_targets"] or 1
         succ = self.counts["success"]
         fail = self.counts["failure"]
-        attach_total = (self.counts["attachments_download_ok"]
-                        + self.counts["attachments_download_fail"]) or 1
-        extract_total = (self.counts["attachments_text_extract_ok"]
-                         + self.counts["attachments_text_extract_fail"]) or 1
+        attach_total = (
+            self.counts["attachments_download_ok"] + self.counts["attachments_download_fail"]
+        ) or 1
+        extract_total = (
+            self.counts["attachments_text_extract_ok"]
+            + self.counts["attachments_text_extract_fail"]
+        ) or 1
         table_total = self.counts["table_total"] or 1
         doc_total = (self.counts["doc_download_ok"] + self.counts["doc_download_fail"]) or 1
 
         field_null_rate = {
-            k: round(v / max(1, self.field_total.get(k, 0)), 4)
-            for k, v in self.field_null.items()
+            k: round(v / max(1, self.field_total.get(k, 0)), 4) for k, v in self.field_null.items()
         }
         elapsed = time.time() - self._t0
         return {
@@ -96,17 +100,20 @@ class MetricsCollector:
                 "success_rate": round(succ / total, 4),
                 "failure_rate": round(fail / total, 4),
                 "attachment_download_success_rate": round(
-                    self.counts["attachments_download_ok"] / attach_total, 4),
+                    self.counts["attachments_download_ok"] / attach_total, 4
+                ),
                 "attachment_text_extract_success_rate": round(
-                    self.counts["attachments_text_extract_ok"] / extract_total, 4),
+                    self.counts["attachments_text_extract_ok"] / extract_total, 4
+                ),
                 "table_recovery_success_rate": round(
-                    (self.counts["table_recovered"]) / table_total, 4),
-                "doc_download_success_rate": round(
-                    self.counts["doc_download_ok"] / doc_total, 4),
+                    (self.counts["table_recovered"]) / table_total, 4
+                ),
+                "doc_download_success_rate": round(self.counts["doc_download_ok"] / doc_total, 4),
             },
             "field_null_rate": field_null_rate,
-            "avg_page_seconds": round(
-                (sum(self._page_times) / len(self._page_times)), 3) if self._page_times else 0.0,
+            "avg_page_seconds": round((sum(self._page_times) / len(self._page_times)), 3)
+            if self._page_times
+            else 0.0,
             "error_count": len(self.errors),
             "errors_sample": self.errors[:50],
         }
@@ -123,6 +130,7 @@ class MetricsCollector:
 
 if __name__ == "__main__":  # 离线自检
     import tempfile
+
     m = MetricsCollector("test", "t1")
     m.inc("total_targets", 2)
     m.inc("success", 2)

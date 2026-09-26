@@ -12,6 +12,7 @@
   #   --src "<EAST2.0 语料根>" --domain east2_m20
   #   --src "<公司各部门制度根>" --domain dept_policies
 """
+
 from __future__ import annotations
 
 import argparse
@@ -56,9 +57,10 @@ def _iter_files(src: str, excludes: list[str], exclude_tops: list[str] | None = 
     for dirpath, dirnames, filenames in os.walk(src):
         rel_dir = os.path.relpath(dirpath, src)
         if rel_dir == "." and tops:
-            dirnames[:] = [d for d in dirnames if d not in tops]   # 顶层剪枝（整棵跳过）
-        dirnames[:] = [d for d in dirnames
-                       if not any(e and e in os.path.join(rel_dir, d) for e in excludes)]
+            dirnames[:] = [d for d in dirnames if d not in tops]  # 顶层剪枝（整棵跳过）
+        dirnames[:] = [
+            d for d in dirnames if not any(e and e in os.path.join(rel_dir, d) for e in excludes)
+        ]
         for fn in filenames:
             full = os.path.join(dirpath, fn)
             rel = os.path.relpath(full, src)
@@ -72,27 +74,31 @@ def _iter_files(src: str, excludes: list[str], exclude_tops: list[str] | None = 
 def _update_index(domain: str, manifest: dict) -> None:
     """同步 reports/corpus/_index.json 的域条目与总计（2026-09-12 落地；原 _index 无生成器）。"""
     idx_path = os.path.join(MANIFEST_DIR, "_index.json")
-    idx: dict = {"schema_version": "1.0",
-                 "policy": "语料本体 data/corpus/<domain>/（归集·审计层，只读，不入库；"
-                           "为 originals/ 的硬链接目标）；清单 reports/corpus/（入库，唯一可审计入口）。"
-                           "v2 §3.12：投放区 data/inbox/ 与本体分离，域内不再保留清单副本",
-                 "domains": []}
+    idx: dict = {
+        "schema_version": "1.0",
+        "policy": "语料本体 data/corpus/<domain>/（归集·审计层，只读，不入库；"
+        "为 originals/ 的硬链接目标）；清单 reports/corpus/（入库，唯一可审计入口）。"
+        "v2 §3.12：投放区 data/inbox/ 与本体分离，域内不再保留清单副本",
+        "domains": [],
+    }
     if os.path.exists(idx_path):
         try:
             idx = json.load(open(idx_path, encoding="utf-8"))
         except (OSError, ValueError):
             pass
     domains = [d for d in (idx.get("domains") or []) if d.get("domain") != domain]
-    domains.append({
-        "domain": domain,
-        "source_dir": manifest.get("source_dir", ""),
-        "file_count": manifest.get("file_count", 0),
-        "total_bytes": manifest.get("total_bytes", 0),
-        "ingested_at": manifest.get("ingested_at", ""),
-        "excludes": manifest.get("excludes", []),
-        "exclude_tops": manifest.get("exclude_tops", []),
-        "manifest": f"reports/corpus/{domain}.manifest.json",
-    })
+    domains.append(
+        {
+            "domain": domain,
+            "source_dir": manifest.get("source_dir", ""),
+            "file_count": manifest.get("file_count", 0),
+            "total_bytes": manifest.get("total_bytes", 0),
+            "ingested_at": manifest.get("ingested_at", ""),
+            "excludes": manifest.get("excludes", []),
+            "exclude_tops": manifest.get("exclude_tops", []),
+            "manifest": f"reports/corpus/{domain}.manifest.json",
+        }
+    )
     idx["domains"] = sorted(domains, key=lambda d: d.get("domain", ""))
     idx["total_files"] = sum(int(d.get("file_count") or 0) for d in idx["domains"])
     idx["total_bytes"] = sum(int(d.get("total_bytes") or 0) for d in idx["domains"])
@@ -134,10 +140,16 @@ def _resync_manifest(domain: str, *, dry_run: bool = False) -> int:
             st = os.stat(full)
             rel = os.path.relpath(full, body).replace(os.sep, "/")
             nbytes += st.st_size
-            files.append({
-                "rel": rel, "bytes": st.st_size, "sha256": _sha256(full),
-                "mtime": datetime.datetime.fromtimestamp(st.st_mtime).strftime("%Y-%m-%d %H:%M:%S"),
-            })
+            files.append(
+                {
+                    "rel": rel,
+                    "bytes": st.st_size,
+                    "sha256": _sha256(full),
+                    "mtime": datetime.datetime.fromtimestamp(st.st_mtime).strftime(
+                        "%Y-%m-%d %H:%M:%S"
+                    ),
+                }
+            )
     files.sort(key=lambda r: r["rel"])
     new_rels = {r["rel"] for r in files}
     dropped = sorted(old_rels - new_rels)
@@ -148,14 +160,21 @@ def _resync_manifest(domain: str, *, dry_run: bool = False) -> int:
     man["total_bytes"] = nbytes
     man["hash_mode"] = "sha256"
     man["resynced_at"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    man["resync"] = {"declared_before": len(old_rels), "actual_after": len(files),
-                     "dropped_total": len(dropped), "added_total": len(added),
-                     "dropped_sample": dropped[:20], "added_sample": added[:20],
-                     "reason": "2026-09-26 执行发现 N-14：清单 rel 与本体布局不一致（源含中间目录、"
-                               "本体已拍平 + 部门改名）→ 以本体为准重建"}
-    print(f"[ingest] {domain}: 清单重建 {len(old_rels)} → {len(files)} 条"
-          f"（陈旧 {len(dropped)} / 新增 {len(added)} / {nbytes / 1048576:.1f} MB）"
-          + ("［dry-run］" if dry_run else ""))
+    man["resync"] = {
+        "declared_before": len(old_rels),
+        "actual_after": len(files),
+        "dropped_total": len(dropped),
+        "added_total": len(added),
+        "dropped_sample": dropped[:20],
+        "added_sample": added[:20],
+        "reason": "2026-09-26 执行发现 N-14：清单 rel 与本体布局不一致（源含中间目录、"
+        "本体已拍平 + 部门改名）→ 以本体为准重建",
+    }
+    print(
+        f"[ingest] {domain}: 清单重建 {len(old_rels)} → {len(files)} 条"
+        f"（陈旧 {len(dropped)} / 新增 {len(added)} / {nbytes / 1048576:.1f} MB）"
+        + ("［dry-run］" if dry_run else "")
+    )
     if dry_run:
         return 0
     tmp = mp + ".tmp"
@@ -185,22 +204,24 @@ def _rebuild_index() -> int:
             print(f"[ingest] 跳过无法解析的清单 {fn}: {type(e).__name__}: {e}")
             continue
         dom = man.get("domain") or fn[: -len(".manifest.json")]
-        domains.append({
-            "domain": dom,
-            "source_dir": man.get("source_dir", ""),
-            "file_count": man.get("file_count", 0),
-            "total_bytes": man.get("total_bytes", 0),
-            "ingested_at": man.get("ingested_at", ""),
-            "excludes": man.get("excludes", []),
-            "exclude_tops": man.get("exclude_tops", []),
-            "hash_mode": man.get("hash_mode", "sha256"),
-            "manifest": f"reports/corpus/{fn}",
-        })
+        domains.append(
+            {
+                "domain": dom,
+                "source_dir": man.get("source_dir", ""),
+                "file_count": man.get("file_count", 0),
+                "total_bytes": man.get("total_bytes", 0),
+                "ingested_at": man.get("ingested_at", ""),
+                "excludes": man.get("excludes", []),
+                "exclude_tops": man.get("exclude_tops", []),
+                "hash_mode": man.get("hash_mode", "sha256"),
+                "manifest": f"reports/corpus/{fn}",
+            }
+        )
     idx = {
         "schema_version": "1.0",
         "policy": "语料本体 data/corpus/<domain>/（归集·审计层，只读，不入库；为 originals/ 的"
-                  "硬链接目标）；清单 reports/corpus/（入库，唯一可审计入口）。"
-                  "v2 §3.12：投放区 data/inbox/ 与本体分离，域内不再保留清单副本",
+        "硬链接目标）；清单 reports/corpus/（入库，唯一可审计入口）。"
+        "v2 §3.12：投放区 data/inbox/ 与本体分离，域内不再保留清单副本",
         "domains": sorted(domains, key=lambda d: d["domain"]),
         "total_files": sum(int(d["file_count"] or 0) for d in domains),
         "total_bytes": sum(int(d["total_bytes"] or 0) for d in domains),
@@ -241,16 +262,22 @@ def _backfill_hash(domain: str) -> int:
         filled += 1
     man["hash_mode"] = "sha256"
     man["backfilled_at"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    man["backfill"] = {"filled": filled, "already_had_hash": already,
-                       "missing_total": len(missing), "missing_sample": missing[:20]}
+    man["backfill"] = {
+        "filled": filled,
+        "already_had_hash": already,
+        "missing_total": len(missing),
+        "missing_sample": missing[:20],
+    }
     tmp = mp + ".tmp"
     with open(tmp, "w", encoding="utf-8") as fh:
         json.dump(man, fh, ensure_ascii=False, indent=1)
     os.replace(tmp, mp)
     # 清单是唯一事实源 → `_index.json` 由其派生（含 domain 改名后的一致性）
     _update_index(man.get("domain") or domain, man)
-    print(f"[ingest] {domain}: 回填 sha256 {filled} 条"
-          f"（原有 {already} / 本体缺失 {len(missing)}）→ {mp}")
+    print(
+        f"[ingest] {domain}: 回填 sha256 {filled} 条"
+        f"（原有 {already} / 本体缺失 {len(missing)}）→ {mp}"
+    )
     return 0
 
 
@@ -260,20 +287,43 @@ def main() -> int:
     # 只需 `--domain`。改为在各模式下显式校验（否则"就地维护"类子命令无法调用）。
     ap.add_argument("--src", default="", help="源目录（归集模式必填）")
     ap.add_argument("--domain", default="", help="域标识（目标子目录名）")
-    ap.add_argument("--exclude", action="append", default=[],
-                    help="排除的相对路径片段（可多次；慎用——片段会误伤深层同名子目录）")
-    ap.add_argument("--exclude-top", action="append", default=[], dest="exclude_tops",
-                    help="排除的**顶层目录名**（精确；源根一级整棵排除；可多次）")
+    ap.add_argument(
+        "--exclude",
+        action="append",
+        default=[],
+        help="排除的相对路径片段（可多次；慎用——片段会误伤深层同名子目录）",
+    )
+    ap.add_argument(
+        "--exclude-top",
+        action="append",
+        default=[],
+        dest="exclude_tops",
+        help="排除的**顶层目录名**（精确；源根一级整棵排除；可多次）",
+    )
     ap.add_argument("--dry-run", action="store_true")
-    ap.add_argument("--no-hash", action="store_true",
-                    help="跳过 sha256（大目录快速模式）；清单会记 hash_mode=size_only 使清单可自证")
-    ap.add_argument("--reindex", action="store_true",
-                    help="由 reports/corpus/*.manifest.json 重建 _index.json（域改名/退役后收口）")
-    ap.add_argument("--resync-manifest", action="store_true", dest="resync_manifest",
-                    help="由**磁盘本体**重建清单 files 段（rel/bytes/sha256/mtime；修正路径漂移）")
-    ap.add_argument("--backfill-hash", action="store_true", dest="backfill_hash",
-                    help="就地回填：对**已归集**语料重算 sha256 并写回清单（无需 --src）；"
-                         "用于修正历史 --no-hash 造成的空哈希（F1）")
+    ap.add_argument(
+        "--no-hash",
+        action="store_true",
+        help="跳过 sha256（大目录快速模式）；清单会记 hash_mode=size_only 使清单可自证",
+    )
+    ap.add_argument(
+        "--reindex",
+        action="store_true",
+        help="由 reports/corpus/*.manifest.json 重建 _index.json（域改名/退役后收口）",
+    )
+    ap.add_argument(
+        "--resync-manifest",
+        action="store_true",
+        dest="resync_manifest",
+        help="由**磁盘本体**重建清单 files 段（rel/bytes/sha256/mtime；修正路径漂移）",
+    )
+    ap.add_argument(
+        "--backfill-hash",
+        action="store_true",
+        dest="backfill_hash",
+        help="就地回填：对**已归集**语料重算 sha256 并写回清单（无需 --src）；"
+        "用于修正历史 --no-hash 造成的空哈希（F1）",
+    )
     args = ap.parse_args()
 
     if args.reindex:
@@ -292,8 +342,10 @@ def main() -> int:
         return _backfill_hash(args.domain)
 
     if not args.src or not args.domain:
-        print("[ingest] 归集模式需 --src <源目录> 与 --domain <域标识>"
-              "（就地维护用 --reindex / --backfill-hash --domain <域标识>）")
+        print(
+            "[ingest] 归集模式需 --src <源目录> 与 --domain <域标识>"
+            "（就地维护用 --reindex / --backfill-hash --domain <域标识>）"
+        )
         return 1
     src = os.path.abspath(args.src)
     if not os.path.isdir(src):
@@ -308,8 +360,12 @@ def main() -> int:
         nbytes += st.st_size
         sha = "" if args.no_hash else _sha256(full)
         target = os.path.join(dst_root, rel)
-        rec = {"rel": rel.replace("\\", "/"), "bytes": st.st_size,
-               "sha256": sha, "mtime": datetime.datetime.fromtimestamp(st.st_mtime).strftime("%Y-%m-%d %H:%M:%S")}
+        rec = {
+            "rel": rel.replace("\\", "/"),
+            "bytes": st.st_size,
+            "sha256": sha,
+            "mtime": datetime.datetime.fromtimestamp(st.st_mtime).strftime("%Y-%m-%d %H:%M:%S"),
+        }
         files.append(rec)
         if args.dry_run:
             continue
@@ -357,10 +413,12 @@ def main() -> int:
         with open(tmp, "w", encoding="utf-8") as fh:
             json.dump(manifest, fh, ensure_ascii=False, indent=1)
         os.replace(tmp, mp)
-        _update_index(args.domain, manifest)   # 2026-09-12：_index.json 同步（原无生成器）
-    print(f"[ingest] {args.domain}: {len(files)} 文件 / {nbytes / 1048576:.1f} MB"
-          f"（复制 {copied} / 已存在(已校验) {skipped} / 已存在(未校验) {skipped_unverified}）"
-          + ("［dry-run］" if args.dry_run else f" → {dst_root}"))
+        _update_index(args.domain, manifest)  # 2026-09-12：_index.json 同步（原无生成器）
+    print(
+        f"[ingest] {args.domain}: {len(files)} 文件 / {nbytes / 1048576:.1f} MB"
+        f"（复制 {copied} / 已存在(已校验) {skipped} / 已存在(未校验) {skipped_unverified}）"
+        + ("［dry-run］" if args.dry_run else f" → {dst_root}")
+    )
     return 0
 
 

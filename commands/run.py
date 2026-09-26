@@ -16,12 +16,14 @@ commands/run — **唯一主链入口**（v2 §3.13.2/§3.13.3，P2-6）
 - `run` 启动前自动跑 `doctor --quick`（§3.13.4），环境 FAIL 直接拒绝执行（rc=3）；
 - `--resume` 的跳过判据与**水位同源**（v2 R13），只跳过「上次 rc=0 且全库水位无 stale」的步骤。
 """
+
 from __future__ import annotations
 
 import argparse
 import sys
 
 from bootstrap import bootstrap
+from config.exitcodes import ExitCode  # noqa: E402  (R3：退出码语义化)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -36,9 +38,12 @@ def build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--json-logs", action="store_true", help="结构化日志（JSON lines）")
     ap.add_argument("--dry-run", action="store_true", help="只打印将执行的 argv，不执行")
     ap.add_argument("--list-steps", action="store_true", help="列出步骤名后退出")
-    ap.add_argument("--triggers", action="store_true",
-                    help="主链成功后追加执行**已启用**的条件触发项（默认不执行：避免与主链"
-                         "既有阶段重复；决策表见 `cli.py triggers`）")
+    ap.add_argument(
+        "--triggers",
+        action="store_true",
+        help="主链成功后追加执行**已启用**的条件触发项（默认不执行：避免与主链"
+        "既有阶段重复；决策表见 `cli.py triggers`）",
+    )
     ap.add_argument("--skip-doctor", action="store_true", help="跳过前置环境自检（排障用）")
     return ap
 
@@ -46,13 +51,22 @@ def build_parser() -> argparse.ArgumentParser:
 def _argv_for_chain(args) -> list[str]:
     """把本命令的参数转成 `run_production_refresh.main(argv)` 的 argv（单一来源）。"""
     out: list[str] = []
-    for flag, val in (("--no-scrape", args.no_scrape), ("--resume", args.resume),
-                      ("--stop-on-error", args.stop_on_error), ("--json-logs", args.json_logs),
-                      ("--dry-run", args.dry_run), ("--list-steps", args.list_steps)):
+    for flag, val in (
+        ("--no-scrape", args.no_scrape),
+        ("--resume", args.resume),
+        ("--stop-on-error", args.stop_on_error),
+        ("--json-logs", args.json_logs),
+        ("--dry-run", args.dry_run),
+        ("--list-steps", args.list_steps),
+    ):
         if val:
             out.append(flag)
-    for flag, val in (("--collect", args.collect), ("--supp-batch", args.supp_batch),
-                      ("--from", args.from_step), ("--only", args.only)):
+    for flag, val in (
+        ("--collect", args.collect),
+        ("--supp-batch", args.supp_batch),
+        ("--from", args.from_step),
+        ("--only", args.only),
+    ):
         if val and not (flag == "--collect" and val == "all"):
             out += [flag, val]
     return out
@@ -63,12 +77,15 @@ def main(argv=None) -> int:
 
     if not args.skip_doctor and not args.list_steps:
         from commands import doctor as _doctor  # noqa: PLC0415
+
         res = _doctor.run_checks(quick=True)
         _doctor.write_report(res)
         if res["fail"]:
-            print(f"[run] 前置环境自检未通过（fail={res['failed_ids']}）→ 拒绝执行主链"
-                  f"（先跑 `python cli.py doctor`；排障可加 --skip-doctor）")
-            return 3
+            print(
+                f"[run] 前置环境自检未通过（fail={res['failed_ids']}）→ 拒绝执行主链"
+                f"（先跑 `python cli.py doctor`；排障可加 --skip-doctor）"
+            )
+            return ExitCode.ENV
         print(f"[run] 前置自检通过（{res['checked']} 项，warn={res['warn']}）")
 
     bootstrap("all", include_tools=True)
@@ -78,10 +95,11 @@ def main(argv=None) -> int:
 
     if args.triggers and rc == 0 and not args.dry_run:
         from std_lib.common_lib import triggers as trg  # noqa: PLC0415
+
         rep = trg.run_all({"argv": list(argv or [])})
         print(f"[run] 条件触发：执行 {rep['ran']} / 跳过 {rep['skipped']} / 失败 {rep['failed']}")
         if rep["failed"]:
-            return 2
+            return ExitCode.DATA
     return rc
 
 

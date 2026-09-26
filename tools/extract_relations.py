@@ -35,6 +35,7 @@
     python tools/extract_relations.py --limit 50 --dry-run # 试跑不落盘
     python tools/extract_relations.py --report             # 额外生成关系图谱报告
 """
+
 from __future__ import annotations
 
 import argparse
@@ -46,8 +47,12 @@ from datetime import datetime, timedelta, timezone
 from glob import glob
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-for _p in (ROOT, os.path.join(ROOT, "std_lib"), os.path.join(ROOT, "modules"),
-           os.path.join(ROOT, "modules", "regulatory_classifier")):
+for _p in (
+    ROOT,
+    os.path.join(ROOT, "std_lib"),
+    os.path.join(ROOT, "modules"),
+    os.path.join(ROOT, "modules", "regulatory_classifier"),
+):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
@@ -84,8 +89,8 @@ CONFIDENCE = {
     "title_contains": 0.70,
     "unresolved": 0.00,
 }
-MIN_CONTAINS_LEN = 4          # 标题包含匹配的最短长度（防"办法"类短词误配）
-MIN_SIG_LEN = 6               # 文号签名最短长度（四位年 + 至少两位序号）
+MIN_CONTAINS_LEN = 4  # 标题包含匹配的最短长度（防"办法"类短词误配）
+MIN_SIG_LEN = 6  # 文号签名最短长度（四位年 + 至少两位序号）
 
 
 # ===========================================================================
@@ -99,6 +104,8 @@ MIN_SIG_LEN = 6               # 文号签名最短长度（四位年 + 至少两
 from std_lib.common_lib.logging import get_logger  # noqa: E402
 
 LOG = get_logger("relations")
+
+
 def _empty_index() -> dict:
     """实体索引容器。
 
@@ -106,8 +113,16 @@ def _empty_index() -> dict:
     - **弱索引**（`weak_*`）：cleaned 全集 → `dedup_key`（"已采集但未登记 RFN"的线索；
       关系抽取中大量目标是法律/行政法规，不在 1060 份归属表内，弱索引可避免全部落入 unresolved）
     """
-    return {"by_sig": {}, "by_docno": {}, "by_title": {}, "title_list": [], "refs": {},
-            "weak_docno": {}, "weak_title": {}, "weak_list": []}
+    return {
+        "by_sig": {},
+        "by_docno": {},
+        "by_title": {},
+        "title_list": [],
+        "refs": {},
+        "weak_docno": {},
+        "weak_title": {},
+        "weak_list": [],
+    }
 
 
 def _add_entity(ix: dict, *, ref: str, name: str, docno: str, extra: dict | None = None) -> None:
@@ -132,9 +147,13 @@ def build_regulatory_index() -> dict:
 
     ix = _empty_index()
     for r in get_index().rows():
-        _add_entity(ix, ref=r.get("监管文件编号", ""), name=r.get("文件名称", ""),
-                    docno=r.get("发文字号", ""),
-                    extra={"source": r.get("文件来源", ""), "status": r.get("时效状态", "")})
+        _add_entity(
+            ix,
+            ref=r.get("监管文件编号", ""),
+            name=r.get("文件名称", ""),
+            docno=r.get("发文字号", ""),
+            extra={"source": r.get("文件来源", ""), "status": r.get("时效状态", "")},
+        )
     ix["title_list"].sort(key=lambda t: -len(t[0]))
     return ix
 
@@ -182,16 +201,20 @@ def build_internal_index() -> dict:
     if not os.path.exists(p):
         return ix
     for r in json.load(open(p, encoding="utf-8")).get("records", []):
-        _add_entity(ix, ref=r.get("ipn", ""), name=r.get("title", ""),
-                    docno=r.get("docno", ""),
-                    extra={"extension": r.get("extension", ""),
-                           "dept": r.get("drafting_dept", "")})
+        _add_entity(
+            ix,
+            ref=r.get("ipn", ""),
+            name=r.get("title", ""),
+            docno=r.get("docno", ""),
+            extra={"extension": r.get("extension", ""), "dept": r.get("drafting_dept", "")},
+        )
     ix["title_list"].sort(key=lambda t: -len(t[0]))
     return ix
 
 
-def resolve_target(name: str, docno: str, index: dict, *,
-                   strict: bool = False) -> tuple[str, str, str]:
+def resolve_target(
+    name: str, docno: str, index: dict, *, strict: bool = False
+) -> tuple[str, str, str]:
     """目标（名称/文号）→ `(strong_ref, matched_by, weak_key)`。
 
     - `strong_ref`：RFN / IPN（**强实体**，可 join 归属表/底座/门禁）；
@@ -221,7 +244,7 @@ def resolve_target(name: str, docno: str, index: dict, *,
         if nt in index["by_title"]:
             return index["by_title"][nt], "title", ""
         if not strict and len(nt) >= MIN_CONTAINS_LEN:
-            for cand, ref in index["title_list"]:      # 已按长度降序 → 最长者优先
+            for cand, ref in index["title_list"]:  # 已按长度降序 → 最长者优先
                 if len(cand) < MIN_CONTAINS_LEN:
                     break
                 if cand in nt or nt in cand:
@@ -268,9 +291,12 @@ def iter_regulatory_docs(sources: list[str], limit: int = 0):
                     continue
                 n += 1
                 yield {
-                    "doc_kind": "regulatory", "source": src,
-                    "name": rec.get("title", ""), "docno": rec.get("document_number", ""),
-                    "url": rec.get("source_url", ""), "text": text,
+                    "doc_kind": "regulatory",
+                    "source": src,
+                    "name": rec.get("title", ""),
+                    "docno": rec.get("document_number", ""),
+                    "url": rec.get("source_url", ""),
+                    "text": text,
                     "extra_text": rec.get("attachment_content") or "",
                     "dedup_key": rec.get("dedup_key", ""),
                 }
@@ -300,9 +326,14 @@ def iter_internal_docs(limit: int = 0):
             continue
         n += 1
         yield {
-            "doc_kind": "internal", "source": "internal",
-            "ref": ipn, "name": r.get("title", ""), "docno": r.get("docno", ""),
-            "url": "", "text": text, "extra_text": "",
+            "doc_kind": "internal",
+            "source": "internal",
+            "ref": ipn,
+            "name": r.get("title", ""),
+            "docno": r.get("docno", ""),
+            "url": "",
+            "text": text,
+            "extra_text": "",
         }
     LOG.info(f"[relations] 内部制度：正文可抽取 {n} 份")
 
@@ -310,11 +341,21 @@ def iter_internal_docs(limit: int = 0):
 # ===========================================================================
 # 三、关系行构建（统一 schema，三类关系同表）
 # ===========================================================================
-def _relation_id(src_kind: str, src_ref: str, relation: str,
-                 dst_ref: str, normalized_name: str, *,
-                 src_key: str = "", dst_kind: str = "", dst_docno: str = "",
-                 article: str = "", action: str = "", scope: str = "",
-                 reason: str = "") -> str:
+def _relation_id(
+    src_kind: str,
+    src_ref: str,
+    relation: str,
+    dst_ref: str,
+    normalized_name: str,
+    *,
+    src_key: str = "",
+    dst_kind: str = "",
+    dst_docno: str = "",
+    article: str = "",
+    action: str = "",
+    scope: str = "",
+    reason: str = "",
+) -> str:
     """关系行稳定去重键 `REL-<16hex>`。
 
     2026-09-20（相邻项修复，extractor 1.0 → 1.1）：纳入此前**遗漏的判别字段**
@@ -323,8 +364,22 @@ def _relation_id(src_kind: str, src_ref: str, relation: str,
     **同一 id**（实测 5266 行仅 4859 个 id、366 个 id 命中 2 行且行内容互不相同），
     迫使治理库改用合成 `row_key` 主键（保全了行数，但 id 语义失真）。
     """
-    raw = "|".join([src_kind, src_ref, relation, dst_ref, normalized_name,
-                    src_key, dst_kind, dst_docno, article, action, scope, reason])
+    raw = "|".join(
+        [
+            src_kind,
+            src_ref,
+            relation,
+            dst_ref,
+            normalized_name,
+            src_key,
+            dst_kind,
+            dst_docno,
+            article,
+            action,
+            scope,
+            reason,
+        ]
+    )
     return "REL-" + hashlib.sha1(raw.encode("utf-8")).hexdigest()[:16]
 
 
@@ -346,8 +401,9 @@ def _ensure_unique_ids(rows: list[dict]) -> int:
     return n
 
 
-def build_rows(doc: dict, pipeline: RelationPipeline, reg_ix: dict, int_ix: dict,
-               *, generated_at: str) -> tuple[list[dict], list[str], int]:
+def build_rows(
+    doc: dict, pipeline: RelationPipeline, reg_ix: dict, int_ix: dict, *, generated_at: str
+) -> tuple[list[dict], list[str], int]:
     """单篇文档 → `(关系行列表, 警告, 被过滤的泛指词目标数)`（含跨域解析）。"""
     text = doc["text"]
     res = pipeline.extractor.extract(text)
@@ -373,54 +429,79 @@ def build_rows(doc: dict, pipeline: RelationPipeline, reg_ix: dict, int_ix: dict
             i_ref, i_mb, _ = resolve_target(name, docno, int_ix, strict=True)
             if i_ref:
                 dst_ref, matched_by, dst_kind, dst_key = i_ref, i_mb, "internal", ""
-        rows.append({
-            "relation_id": _relation_id(
-                src_kind, src_ref or src_key or doc["name"], relation,
-                dst_ref or dst_key, item.normalized_name,
-                src_key=src_key, dst_kind=dst_kind, dst_docno=docno,
-                article=item.article,
-                action=getattr(item, "action", "") if relation == "repeal" else "",
-                scope=getattr(item, "scope", "") if relation == "repeal" else "",
-                reason=getattr(item, "reason", "") if relation == "repeal" else ""),
-            "src_kind": src_kind, "src_ref": src_ref, "src_key": src_key,
-            "src_name": doc["name"],
-            "src_docno": doc["docno"], "src_source": doc["source"],
-            "dst_kind": dst_kind, "dst_ref": dst_ref, "dst_key": dst_key,
-            # 目标性质分类（2026-09-14）：区分"真·文件引用未定位"与"机关名/泛指词"
-            "dst_class": classify_target(
-                dst_ref=dst_ref, dst_key=dst_key, name=name,
-                basis_type=getattr(item, "basis_type", "") if relation == "basis" else ""),
-            "dst_name": name,
-            "dst_docno": docno, "dst_normalized_name": item.normalized_name,
-            "relation": relation,
-            "basis_type": getattr(item, "basis_type", "") if relation == "basis" else "",
-            "article": item.article,
-            "is_explicit": bool(getattr(item, "is_explicit", True)),
-            "action": getattr(item, "action", "") if relation == "repeal" else "",
-            "scope": getattr(item, "scope", "") if relation == "repeal" else "",
-            "reason": getattr(item, "reason", "") if relation == "repeal" else "",
-            "matched_by": matched_by,
-            "confidence": CONFIDENCE.get(matched_by, 0.0),
-            "source_offset": item.offset,
-            "source_snippet": item.source_snippet[:400],
-            "generated_by": GENERATED_BY,
-            "generated_at": generated_at,
-        })
+        rows.append(
+            {
+                "relation_id": _relation_id(
+                    src_kind,
+                    src_ref or src_key or doc["name"],
+                    relation,
+                    dst_ref or dst_key,
+                    item.normalized_name,
+                    src_key=src_key,
+                    dst_kind=dst_kind,
+                    dst_docno=docno,
+                    article=item.article,
+                    action=getattr(item, "action", "") if relation == "repeal" else "",
+                    scope=getattr(item, "scope", "") if relation == "repeal" else "",
+                    reason=getattr(item, "reason", "") if relation == "repeal" else "",
+                ),
+                "src_kind": src_kind,
+                "src_ref": src_ref,
+                "src_key": src_key,
+                "src_name": doc["name"],
+                "src_docno": doc["docno"],
+                "src_source": doc["source"],
+                "dst_kind": dst_kind,
+                "dst_ref": dst_ref,
+                "dst_key": dst_key,
+                # 目标性质分类（2026-09-14）：区分"真·文件引用未定位"与"机关名/泛指词"
+                "dst_class": classify_target(
+                    dst_ref=dst_ref,
+                    dst_key=dst_key,
+                    name=name,
+                    basis_type=getattr(item, "basis_type", "") if relation == "basis" else "",
+                ),
+                "dst_name": name,
+                "dst_docno": docno,
+                "dst_normalized_name": item.normalized_name,
+                "relation": relation,
+                "basis_type": getattr(item, "basis_type", "") if relation == "basis" else "",
+                "article": item.article,
+                "is_explicit": bool(getattr(item, "is_explicit", True)),
+                "action": getattr(item, "action", "") if relation == "repeal" else "",
+                "scope": getattr(item, "scope", "") if relation == "repeal" else "",
+                "reason": getattr(item, "reason", "") if relation == "repeal" else "",
+                "matched_by": matched_by,
+                "confidence": CONFIDENCE.get(matched_by, 0.0),
+                "source_offset": item.offset,
+                "source_snippet": item.source_snippet[:400],
+                "generated_by": GENERATED_BY,
+                "generated_at": generated_at,
+            }
+        )
     return rows, list(res.warnings), int(res.filtered_generic or 0)
 
 
 # ===========================================================================
 # 四、门面：全流程
 # ===========================================================================
-def run(*, sources: list[str] | None = None, limit: int = 0, dry_run: bool = False,
-        with_internal: bool = True, with_attachments: bool = False,
-        report: bool = False) -> dict:
+def run(
+    *,
+    sources: list[str] | None = None,
+    limit: int = 0,
+    dry_run: bool = False,
+    with_internal: bool = True,
+    with_attachments: bool = False,
+    report: bool = False,
+) -> dict:
     cfg_sources = sources or ["gov", "mof", "nfra", "pbc", "supp"]
     generated_at = datetime.now(_TZ).strftime("%Y-%m-%d %H:%M:%S")
     reg_ix, int_ix = build_regulatory_index(), build_internal_index()
     n_weak = add_cleaned_weak_index(reg_ix, cfg_sources)
-    LOG.info(f"[relations] 实体索引：监管 {len(reg_ix['refs'])} 个 RFN / 内部 {len(int_ix['refs'])} 个 IPN "
-          f"/ 弱索引 {n_weak} 份 cleaned（未登记 RFN 的引用目标可追溯到 dedup_key）")
+    LOG.info(
+        f"[relations] 实体索引：监管 {len(reg_ix['refs'])} 个 RFN / 内部 {len(int_ix['refs'])} 个 IPN "
+        f"/ 弱索引 {n_weak} 份 cleaned（未登记 RFN 的引用目标可追溯到 dedup_key）"
+    )
 
     pipeline = RelationPipeline()
     rows: list[dict] = []
@@ -448,41 +529,72 @@ def run(*, sources: list[str] | None = None, limit: int = 0, dry_run: bool = Fal
     # 关系 id 唯一化（2026-09-20 相邻项修复）：判别字段完全相同的重复引用加确定性后缀
     n_id_dups = _ensure_unique_ids(rows)
     if n_id_dups:
-        LOG.info(f"[relations] relation_id 撞车 {n_id_dups} 行（同判别字段重复引用）→ 已按出现序加后缀")
+        LOG.info(
+            f"[relations] relation_id 撞车 {n_id_dups} 行（同判别字段重复引用）→ 已按出现序加后缀"
+        )
 
-    stat = _build_stat(rows, docs_stat, warnings, generated_at,
-                       filtered_generic=filtered_generic, id_dups=n_id_dups)
+    stat = _build_stat(
+        rows,
+        docs_stat,
+        warnings,
+        generated_at,
+        filtered_generic=filtered_generic,
+        id_dups=n_id_dups,
+    )
     if dry_run:
         LOG.info("[relations] dry-run：不落盘。")
-        print(json.dumps({k: stat[k] for k in ("documents", "relations", "resolution")},
-                         ensure_ascii=False, indent=2))
+        print(
+            json.dumps(
+                {k: stat[k] for k in ("documents", "relations", "resolution")},
+                ensure_ascii=False,
+                indent=2,
+            )
+        )
         return {"rows": rows, "stat": stat, "written": False}
 
     written = write_products(rows, stat)
     if report:
         write_report(rows, stat)
     LOG.info(f"[relations] 完成：{len(rows)} 条关系 → {written['index']}")
-    print(json.dumps({k: stat[k] for k in ("relations", "resolution")}, ensure_ascii=False, indent=2))
+    print(
+        json.dumps({k: stat[k] for k in ("relations", "resolution")}, ensure_ascii=False, indent=2)
+    )
     return {"rows": rows, "stat": stat, "written": True, "paths": written}
 
 
-def _build_stat(rows: list[dict], docs_stat: dict, warnings: list[str],
-                generated_at: str, *, filtered_generic: int = 0,
-                id_dups: int = 0) -> dict:
+def _build_stat(
+    rows: list[dict],
+    docs_stat: dict,
+    warnings: list[str],
+    generated_at: str,
+    *,
+    filtered_generic: int = 0,
+    id_dups: int = 0,
+) -> dict:
     def _cnt(pred) -> int:
         return sum(1 for r in rows if pred(r))
 
     by_kind = {k: _cnt(lambda r, k=k: r["relation"] == k) for k in sorted(RELATION_KIND)}
     cross = {
-        "regulatory->regulatory": _cnt(lambda r: r["src_kind"] == "regulatory" and r["dst_kind"] == "regulatory"),
-        "internal->internal": _cnt(lambda r: r["src_kind"] == "internal" and r["dst_kind"] == "internal"),
-        "internal->regulatory": _cnt(lambda r: r["src_kind"] == "internal" and r["dst_kind"] == "regulatory"),
-        "regulatory->internal": _cnt(lambda r: r["src_kind"] == "regulatory" and r["dst_kind"] == "internal"),
+        "regulatory->regulatory": _cnt(
+            lambda r: r["src_kind"] == "regulatory" and r["dst_kind"] == "regulatory"
+        ),
+        "internal->internal": _cnt(
+            lambda r: r["src_kind"] == "internal" and r["dst_kind"] == "internal"
+        ),
+        "internal->regulatory": _cnt(
+            lambda r: r["src_kind"] == "internal" and r["dst_kind"] == "regulatory"
+        ),
+        "regulatory->internal": _cnt(
+            lambda r: r["src_kind"] == "regulatory" and r["dst_kind"] == "internal"
+        ),
     }
-    resolution = {m: _cnt(lambda r, m=m: r["matched_by"] == m) for m in sorted(RELATION_MATCH_METHOD)}
+    resolution = {
+        m: _cnt(lambda r, m=m: r["matched_by"] == m) for m in sorted(RELATION_MATCH_METHOD)
+    }
     unresolved = [r for r in rows if r["matched_by"] == "unresolved"]
-    n_ref = _cnt(lambda r: bool(r["dst_ref"]))          # 强关联：解析到 RFN/IPN
-    n_any = _cnt(lambda r: r["matched_by"] != "unresolved")   # 含弱关联（cleaned dedup_key）
+    n_ref = _cnt(lambda r: bool(r["dst_ref"]))  # 强关联：解析到 RFN/IPN
+    n_any = _cnt(lambda r: r["matched_by"] != "unresolved")  # 含弱关联（cleaned dedup_key）
 
     # ---- 目标性质分层（2026-09-14 口径修正）------------------------------------
     # 只有 `external` 是"真·文件引用未定位"；`organ`（机关名）与 `generic`（泛指词）
@@ -490,8 +602,11 @@ def _build_stat(rows: list[dict], docs_stat: dict, warnings: list[str],
     by_class = {c: _cnt(lambda r, c=c: r.get("dst_class") == c) for c in TARGET_CLASSES}
     file_denom = by_class[TARGET_ENTITY] + by_class[TARGET_CORPUS] + by_class[TARGET_EXTERNAL]
     file_resolved = round(by_class[TARGET_ENTITY] / file_denom, 4) if file_denom else 0.0
-    file_located = (round((by_class[TARGET_ENTITY] + by_class[TARGET_CORPUS]) / file_denom, 4)
-                    if file_denom else 0.0)
+    file_located = (
+        round((by_class[TARGET_ENTITY] + by_class[TARGET_CORPUS]) / file_denom, 4)
+        if file_denom
+        else 0.0
+    )
     return {
         "schema_version": SCHEMA_VERSION,
         "extractor_version": EXTRACTOR_VERSION,
@@ -501,9 +616,11 @@ def _build_stat(rows: list[dict], docs_stat: dict, warnings: list[str],
         "relations": {"total": len(rows), "by_kind": by_kind, "by_cross": cross},
         # 关系 id 唯一性（2026-09-20）：行数 / 不同 id 数 / 撞车改写数 —— 三者须满足
         # `rows == distinct_ids` 且 `id_dups == 0`（gate_relations 判据 9 断言）。
-        "relation_id": {"rows": len(rows),
-                        "distinct": len({r.get("relation_id") for r in rows}),
-                        "renamed": id_dups},
+        "relation_id": {
+            "rows": len(rows),
+            "distinct": len({r.get("relation_id") for r in rows}),
+            "renamed": id_dups,
+        },
         "resolution": resolution,
         # 两级解析率（口径显式命名，避免"解析率"歧义）
         "resolved_to_entity_ratio": round(n_ref / len(rows), 4) if rows else 0.0,
@@ -517,9 +634,13 @@ def _build_stat(rows: list[dict], docs_stat: dict, warnings: list[str],
         "warnings_total": len(warnings),
         "warnings_sample": sorted(set(warnings))[:10],
         "unresolved_sample": [
-            {"src_ref": r["src_ref"] or r["src_key"][:12], "relation": r["relation"],
-             "dst_class": r.get("dst_class", ""),
-             "dst_name": r["dst_name"][:60], "dst_docno": r["dst_docno"][:40]}
+            {
+                "src_ref": r["src_ref"] or r["src_key"][:12],
+                "relation": r["relation"],
+                "dst_class": r.get("dst_class", ""),
+                "dst_name": r["dst_name"][:60],
+                "dst_docno": r["dst_docno"][:40],
+            }
             for r in unresolved[:20]
         ],
     }
@@ -532,12 +653,18 @@ def write_products(rows: list[dict], stat: dict) -> dict:
     cross_p = os.path.join(OUT_DIR, "cross_basis.jsonl")
     stat_p = os.path.join(OUT_DIR, "relations_stat.json")
 
-    rows_sorted = sorted(rows, key=lambda r: (r["src_kind"], r["src_ref"], r["relation"],
-                                              r["dst_ref"], r["dst_name"]))
+    rows_sorted = sorted(
+        rows,
+        key=lambda r: (r["src_kind"], r["src_ref"], r["relation"], r["dst_ref"], r["dst_name"]),
+    )
     _write_jsonl(index_p, rows_sorted)
-    cross = [r for r in rows_sorted
-             if r["src_kind"] == "internal" and r["dst_kind"] == "regulatory"
-             and r["relation"] == "basis"]
+    cross = [
+        r
+        for r in rows_sorted
+        if r["src_kind"] == "internal"
+        and r["dst_kind"] == "regulatory"
+        and r["relation"] == "basis"
+    ]
     _write_jsonl(cross_p, cross)
     stat["cross_basis_rows"] = len(cross)
     # 就地注入文件信息（调用方（write_report 等）在同一 stat 上继续消费）
@@ -629,8 +756,10 @@ def render_report(rows: list[dict], stat: dict) -> str:
     if stat["unresolved_sample"]:
         lines += ["| 源 | 关系 | 目标名称 | 目标文号 |", "| :--- | :--- | :--- | :--- |"]
         for u in stat["unresolved_sample"]:
-            lines.append(f"| {u['src_ref'] or '—'} | {u['relation']} | {u['dst_name']} | "
-                         f"{u['dst_docno'] or '—'} |")
+            lines.append(
+                f"| {u['src_ref'] or '—'} | {u['relation']} | {u['dst_name']} | "
+                f"{u['dst_docno'] or '—'} |"
+            )
     else:
         lines.append("（无）")
     lines += ["", "## 五、按源统计", "", "| 源 | 关系数 |", "| :--- | ---: |"]
@@ -658,16 +787,26 @@ def main() -> int:
     except Exception:  # noqa: BLE001
         pass
     ap = argparse.ArgumentParser(description="依据/废止关系统一抽取（三类关系产物）")
-    ap.add_argument("--source", action="append", default=None,
-                    help="限定监管源（可多次；默认 gov/mof/nfra/pbc/supp）")
+    ap.add_argument(
+        "--source",
+        action="append",
+        default=None,
+        help="限定监管源（可多次；默认 gov/mof/nfra/pbc/supp）",
+    )
     ap.add_argument("--no-internal", action="store_true", help="不抽取内部制度")
     ap.add_argument("--with-attachments", action="store_true", help="并入附件正文抽取")
     ap.add_argument("--limit", type=int, default=0, help="每个源最多处理 N 份（0=全部）")
     ap.add_argument("--dry-run", action="store_true", help="只统计不落盘")
     ap.add_argument("--report", action="store_true", help="额外生成关系图谱报告")
     a = ap.parse_args()
-    run(sources=a.source, limit=a.limit, dry_run=a.dry_run,
-        with_internal=not a.no_internal, with_attachments=a.with_attachments, report=a.report)
+    run(
+        sources=a.source,
+        limit=a.limit,
+        dry_run=a.dry_run,
+        with_internal=not a.no_internal,
+        with_attachments=a.with_attachments,
+        report=a.report,
+    )
     return 0
 
 

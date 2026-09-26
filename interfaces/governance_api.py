@@ -22,20 +22,32 @@
     - **写路径不在此暴露**：写入一律经 `governance_store`（表级唯一写方，§4.3 矩阵）。
     - 治理库是旁路观测设施：未启用（库不存在）时应**静默降级为空结果**，不阻断调用链。
 """
+
 from __future__ import annotations
 
 import os
 import sys
 
-_HERE = os.path.dirname(os.path.abspath(__file__))          # interfaces/
-_ROOT = os.path.dirname(_HERE)                                # orchestrator 根
+_HERE = os.path.dirname(os.path.abspath(__file__))  # interfaces/
+_ROOT = os.path.dirname(_HERE)  # orchestrator 根
 if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
 from std_lib.common_lib import governance_store as _gs  # noqa: E402
 
-__all__ = ["enabled", "db_path", "status", "watermarks", "watermark", "edges",
-           "check", "wm_status", "audit", "artifacts", "gate_results"]
+__all__ = [
+    "enabled",
+    "db_path",
+    "status",
+    "watermarks",
+    "watermark",
+    "edges",
+    "check",
+    "wm_status",
+    "audit",
+    "artifacts",
+    "gate_results",
+]
 
 
 def enabled() -> bool:
@@ -95,12 +107,24 @@ def wm_status(artifact_key: str) -> tuple[str, dict]:
         stale = [e for e in edges if e["status"] == "stale"]
         within = [e for e in edges if e["status"] == "ok_within_round"]
         if stale:
-            return "stale", {"edges": len(edges), "within_round": len(within), "stale": [
-                {"dep": e["dep"], "declared": e["declared_version"],
-                 "current": e["current_version"]} for e in stale]}
-        return "ok", {"edges": len(edges), "version": wm.get("version"),
-                      "within_round": len(within),
-                      "within_round_deps": sorted(e["dep"] for e in within)}
+            return "stale", {
+                "edges": len(edges),
+                "within_round": len(within),
+                "stale": [
+                    {
+                        "dep": e["dep"],
+                        "declared": e["declared_version"],
+                        "current": e["current_version"],
+                    }
+                    for e in stale
+                ],
+            }
+        return "ok", {
+            "edges": len(edges),
+            "version": wm.get("version"),
+            "within_round": len(within),
+            "within_round_deps": sorted(e["dep"] for e in within),
+        }
     except Exception as e:  # noqa: BLE001
         return "unknown", {"reason": f"{type(e).__name__}: {e}"}
 

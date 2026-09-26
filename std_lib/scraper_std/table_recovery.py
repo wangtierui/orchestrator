@@ -55,8 +55,22 @@ def normalize_table(rows: list[list[Any]]) -> list[list[str]]:
 
 
 # 表头关键词（首列强信号 + 全文弱信号；数据行通常首列为编号/数值）
-_STRONG_HEADER_FIRST = ("序号", "项目", "指标", "科目", "类别", "名称", "年度",
-                        "月份", "合计", "总计", "单位", "编号", "代码", "日期")
+_STRONG_HEADER_FIRST = (
+    "序号",
+    "项目",
+    "指标",
+    "科目",
+    "类别",
+    "名称",
+    "年度",
+    "月份",
+    "合计",
+    "总计",
+    "单位",
+    "编号",
+    "代码",
+    "日期",
+)
 _HEADER_WEAK_KW = ("序号", "项目名称", "金额单位", "备注", "数量")
 
 
@@ -177,6 +191,7 @@ def extract_tables_from_doc(
     kind 可显式指定（pdf/docx/xlsx/ole2）；缺省自动嗅探。
     """
     from .crawler_common import sniff_kind
+
     kind = kind or sniff_kind(data, name)
     notes: list[str] = []
     tables: list[list[list[str]]] = []
@@ -192,17 +207,25 @@ def extract_tables_from_doc(
             tables, notes = _tables_from_ole2(data)
         else:
             return {
-                "tables": [], "table_raw_text": "",
-                "recovery_method": "raw_only", "table_count": 0,
-                "rows_total": 0, "cols_max": 0, "removed_header_rows": 0,
+                "tables": [],
+                "table_raw_text": "",
+                "recovery_method": "raw_only",
+                "table_count": 0,
+                "rows_total": 0,
+                "cols_max": 0,
+                "removed_header_rows": 0,
                 "notes": [f"unsupported kind {kind}"],
             }
     except Exception as e:
         LOG.warning("表格提取异常 %s: %s", name, e)
         return {
-            "tables": [], "table_raw_text": "",
-            "recovery_method": "raw_only", "table_count": 0,
-            "rows_total": 0, "cols_max": 0, "removed_header_rows": 0,
+            "tables": [],
+            "table_raw_text": "",
+            "recovery_method": "raw_only",
+            "table_count": 0,
+            "rows_total": 0,
+            "cols_max": 0,
+            "removed_header_rows": 0,
             "notes": [f"extract_error: {e}"],
         }
 
@@ -249,7 +272,9 @@ def _structured_from(doc_result: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def structured_table_fields(data: bytes, name: str = "", *, kind: str | None = None) -> dict[str, Any]:
+def structured_table_fields(
+    data: bytes, name: str = "", *, kind: str | None = None
+) -> dict[str, Any]:
     """附件表格抽取 → raw 记录表格键（2026-09-08 四源仿 supp 统一接入样板）。
 
     2026-09-10 升级：**xls/xlsx 优先走 excel_structure 分类化结构**（参照通用
@@ -272,12 +297,16 @@ def structured_table_fields(data: bytes, name: str = "", *, kind: str | None = N
     if low.endswith((".xlsx", ".xls")):
         try:
             from std_lib.scraper_std.excel_structure import process_workbook_bytes
+
             wb_struct = process_workbook_bytes(data, os.path.basename(low))
-            has = bool(wb_struct.get("sheets") or wb_struct.get("row_sets")
-                       or wb_struct.get("table_sets"))
+            has = bool(
+                wb_struct.get("sheets") or wb_struct.get("row_sets") or wb_struct.get("table_sets")
+            )
             if has:
-                return {"table_structured": [wb_struct],
-                        "table_recovery_method": "excel_classified_v2"}
+                return {
+                    "table_structured": [wb_struct],
+                    "table_recovery_method": "excel_classified_v2",
+                }
         except Exception as e:  # noqa: BLE001  分类化失败降级矩阵轨
             LOG.warning("excel_structure %s: %s", name, e)
     try:
@@ -293,6 +322,7 @@ def structured_table_fields(data: bytes, name: str = "", *, kind: str | None = N
         return {}
     try:
         from std_lib.scraper_std.doc_convert import doc_bytes_to_docx  # noqa: PLC0415
+
         conv = doc_bytes_to_docx(data, low)
     except Exception:  # noqa: BLE001
         conv = None
@@ -316,6 +346,7 @@ def _tables_to_raw_text(tables: list[list[list[str]]], sep: str = "|") -> str:
 def _tables_from_pdf(data: bytes) -> tuple[list[list[list[str]]], list[str]]:
     """PDF 表格：pdfplumber 按页抽取（保留行列结构，技术红线首选）。"""
     import pdfplumber
+
     tables: list[list[list[str]]] = []
     notes: list[str] = []
     with pdfplumber.open(io.BytesIO(data)) as pdf:
@@ -326,8 +357,10 @@ def _tables_from_pdf(data: bytes) -> tuple[list[list[list[str]]], list[str]]:
                 notes.append(f"p{pno}: extract_tables error {e}")
                 continue
             for tb in found or []:
-                rows = [[(c or {}).get("text", "") if isinstance(c, dict) else (c or "")
-                         for c in row] for row in tb]
+                rows = [
+                    [(c or {}).get("text", "") if isinstance(c, dict) else (c or "") for c in row]
+                    for row in tb
+                ]
                 if rows and any(any(c.strip() for c in r) for r in rows):
                     tables.append(rows)
     return tables, notes
@@ -336,6 +369,7 @@ def _tables_from_pdf(data: bytes) -> tuple[list[list[list[str]]], list[str]]:
 def _tables_from_docx(data: bytes) -> tuple[list[list[list[str]]], list[str]]:
     """Word 表格：python-docx 按表格/行/单元格抽取。"""
     import docx
+
     d = docx.Document(io.BytesIO(data))
     tables: list[list[list[str]]] = []
     for tb in d.tables:
@@ -352,9 +386,11 @@ def _compact_table(rows: list[list[str]]) -> list[list[str]]:
         return []
     width = max(len(r) for r in kept)
     kept = [r + [""] * (width - len(r)) for r in kept]
+
     # 裁首尾全空列
     def _col_empty(idx: int) -> bool:
         return all(not str(r[idx]).strip() for r in kept)
+
     lo, hi = 0, width - 1
     while lo <= hi and _col_empty(lo):
         lo += 1
@@ -362,12 +398,13 @@ def _compact_table(rows: list[list[str]]) -> list[list[str]]:
         hi -= 1
     if lo > hi:
         return []
-    return [r[lo:hi + 1] for r in kept]
+    return [r[lo : hi + 1] for r in kept]
 
 
 def _tables_from_xlsx(data: bytes) -> tuple[list[list[list[str]]], list[str]]:
     """Excel 表格：openpyxl 读取所有 Sheet，二维数组输出（逐 sheet 紧凑化）。"""
     import openpyxl
+
     wb = openpyxl.load_workbook(io.BytesIO(data), data_only=True, read_only=True)
     tables: list[list[list[str]]] = []
     for ws in wb.worksheets:
@@ -383,6 +420,7 @@ def _tables_from_xlsx(data: bytes) -> tuple[list[list[list[str]]], list[str]]:
 def _tables_from_ole2(data: bytes) -> tuple[list[list[list[str]]], list[str]]:
     """旧版 .xls：xlrd 读取所有 Sheet（OLE2，逐 sheet 紧凑化）。"""
     import xlrd
+
     bk = xlrd.open_workbook(file_contents=data)
     tables: list[list[list[str]]] = []
     for sh in bk.sheets():

@@ -22,6 +22,7 @@ gates/gate_original_resolvable — 内部制度「主索引 ↔ 原件库」路�
   python tools/reconcile_original_paths.py            # dry-run 查看漂移分类
   python tools/reconcile_original_paths.py --apply    # 按内容对账重定位（含备份）
 """
+
 from __future__ import annotations
 
 import json
@@ -45,8 +46,10 @@ NON_POLICY_EXTS = {".xls", ".xlsx"}
 
 def run():
     if not os.path.exists(_INDEX):
-        return False, {"error": f"内部制度主索引不存在：{_INDEX}"
-                                "；门禁未实检，不得视为通过（先运行 internal index 摄取）"}
+        return False, {
+            "error": f"内部制度主索引不存在：{_INDEX}"
+            "；门禁未实检，不得视为通过（先运行 internal index 摄取）"
+        }
     try:
         with open(_INDEX, encoding="utf-8") as fh:
             records = json.load(fh).get("records", [])
@@ -65,19 +68,25 @@ def run():
 
     problems = []
     if unresolvable_policy:
-        problems.append(f"制度正文类原件不可解析 {len(unresolvable_policy)} 条（应为 0；"
-                        "运行 tools/reconcile_original_paths.py 对账重定位）")
+        problems.append(
+            f"制度正文类原件不可解析 {len(unresolvable_policy)} 条（应为 0；"
+            "运行 tools/reconcile_original_paths.py 对账重定位）"
+        )
     if len(non_policy) > KNOWN_NON_POLICY_BASELINE:
-        problems.append(f"非正文表格类失效台账 {len(non_policy)} 条 > 登记基线 "
-                        f"{KNOWN_NON_POLICY_BASELINE}（疑似新增漂移；须先对账，再评估是否收紧基线）")
+        problems.append(
+            f"非正文表格类失效台账 {len(non_policy)} 条 > 登记基线 "
+            f"{KNOWN_NON_POLICY_BASELINE}（疑似新增漂移；须先对账，再评估是否收紧基线）"
+        )
 
     detail = {
-        "records": len(records), "resolvable": ok,
+        "records": len(records),
+        "resolvable": ok,
         "unresolvable_policy": len(unresolvable_policy),
         "non_policy_sheets": len(non_policy),
         "non_policy_baseline": KNOWN_NON_POLICY_BASELINE,
-        "examples": [f"{r.get('ipn')} | {(r.get('file_name') or '')[:60]}"
-                     for r in unresolvable_policy[:10]],
+        "examples": [
+            f"{r.get('ipn')} | {(r.get('file_name') or '')[:60]}" for r in unresolvable_policy[:10]
+        ],
         "problems": problems,
         "note": "判据=制度正文 100% 可解析 + 表格类失效台账不超登记基线（只减不增）",
     }

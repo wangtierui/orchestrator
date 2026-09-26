@@ -15,6 +15,7 @@
 `modules/internal_policy_base/published/`（internal）——JSONL 权威 + SQLite 派生索引。
 索引缺失时明确报错指引 `orchestrator base publish`，不做兜底裸读。
 """
+
 from __future__ import annotations
 
 import json
@@ -22,8 +23,8 @@ import os
 import sqlite3
 import sys
 
-_HERE = os.path.dirname(os.path.abspath(__file__))          # interfaces/
-_ROOT = os.path.dirname(_HERE)                                # orchestrator 根
+_HERE = os.path.dirname(os.path.abspath(__file__))  # interfaces/
+_ROOT = os.path.dirname(_HERE)  # orchestrator 根
 if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
@@ -62,17 +63,31 @@ def manifest(base: str = "external") -> dict:
     return json.load(open(p, encoding="utf-8"))
 
 
-def query_external(*, rfn: str = "", document_number: str = "", source: str = "",
-                   theme: str = "", timeliness_status: str = "", limit: int = 100,
-                   with_body: bool = False) -> list[dict]:
+def query_external(
+    *,
+    rfn: str = "",
+    document_number: str = "",
+    source: str = "",
+    theme: str = "",
+    timeliness_status: str = "",
+    limit: int = 100,
+    with_body: bool = False,
+) -> list[dict]:
     """外部记录精确过滤（等值匹配；空参数忽略）。with_body=False 时省略正文（默认轻量）。"""
-    cols = ("record_id,rfn,title,document_number,issue_organ,publish_date,effective_date,"
-            "timeliness_status,verification_source,source,url,body_len,theme")
+    cols = (
+        "record_id,rfn,title,document_number,issue_organ,publish_date,effective_date,"
+        "timeliness_status,verification_source,source,url,body_len,theme"
+    )
     if with_body:
         cols += ",body_text"
     where, args = [], []
-    for k, v in (("rfn", rfn), ("document_number", document_number), ("source", source),
-                 ("theme", theme), ("timeliness_status", timeliness_status)):
+    for k, v in (
+        ("rfn", rfn),
+        ("document_number", document_number),
+        ("source", source),
+        ("theme", theme),
+        ("timeliness_status", timeliness_status),
+    ):
         if v:
             where.append(f"{k}=?")
             args.append(v)
@@ -90,13 +105,17 @@ def search_external(text: str, limit: int = 20, kind: str = "records") -> list[d
     q = '"' + (text or "").replace('"', "") + '"'
     with _conn("external") as c:
         if kind == "clauses":
-            sql = ("SELECT cl.record_id, cl.rfn, cl.title, cl.article_no, cl.article_body "
-                   "FROM clauses_fts f JOIN clauses cl ON cl.rowid=f.rowid "
-                   "WHERE clauses_fts MATCH ? LIMIT ?")
+            sql = (
+                "SELECT cl.record_id, cl.rfn, cl.title, cl.article_no, cl.article_body "
+                "FROM clauses_fts f JOIN clauses cl ON cl.rowid=f.rowid "
+                "WHERE clauses_fts MATCH ? LIMIT ?"
+            )
             return [dict(r) for r in c.execute(sql, (q, int(limit)))]
-        sql = ("SELECT r.record_id, r.rfn, r.title, r.document_number, r.publish_date, "
-               "r.timeliness_status, r.source, r.body_len FROM records_fts f "
-               "JOIN records r ON r.rowid=f.rowid WHERE records_fts MATCH ? LIMIT ?")
+        sql = (
+            "SELECT r.record_id, r.rfn, r.title, r.document_number, r.publish_date, "
+            "r.timeliness_status, r.source, r.body_len FROM records_fts f "
+            "JOIN records r ON r.rowid=f.rowid WHERE records_fts MATCH ? LIMIT ?"
+        )
         return [dict(r) for r in c.execute(sql, (q, int(limit)))]
 
 
@@ -137,12 +156,16 @@ def search_internal(text: str, limit: int = 20, kind: str = "policies") -> list[
     q = '"' + (text or "").replace('"', "") + '"'
     with _conn("internal") as c:
         if kind == "clauses":
-            sql = ("SELECT ic.ipn, ic.article_no, ic.article_body, p.title "
-                   "FROM iclauses_fts f JOIN internal_clauses ic ON ic.rowid=f.rowid "
-                   "LEFT JOIN policies p ON p.ipn=ic.ipn WHERE iclauses_fts MATCH ? LIMIT ?")
+            sql = (
+                "SELECT ic.ipn, ic.article_no, ic.article_body, p.title "
+                "FROM iclauses_fts f JOIN internal_clauses ic ON ic.rowid=f.rowid "
+                "LEFT JOIN policies p ON p.ipn=ic.ipn WHERE iclauses_fts MATCH ? LIMIT ?"
+            )
             return [dict(r) for r in c.execute(sql, (q, int(limit)))]
-        sql = ("SELECT p.ipn, p.title, p.docno, p.primary_theme FROM policies_fts f "
-               "JOIN policies p ON p.rowid=f.rowid WHERE policies_fts MATCH ? LIMIT ?")
+        sql = (
+            "SELECT p.ipn, p.title, p.docno, p.primary_theme FROM policies_fts f "
+            "JOIN policies p ON p.rowid=f.rowid WHERE policies_fts MATCH ? LIMIT ?"
+        )
         return [dict(r) for r in c.execute(sql, (q, int(limit)))]
 
 
@@ -151,8 +174,10 @@ def get_policy(ipn: str) -> dict | None:
     return rows[0] if rows else None
 
 
-_CHAIN_COLS = ("record_id,rfn,title,document_number,publish_date,effective_date,"
-               "timeliness_status,source,body_len")
+_CHAIN_COLS = (
+    "record_id,rfn,title,document_number,publish_date,effective_date,"
+    "timeliness_status,source,body_len"
+)
 
 
 def version_chain(docno: str, limit: int = 50) -> list[dict]:
@@ -163,15 +188,21 @@ def version_chain(docno: str, limit: int = 50) -> list[dict]:
     `docno_norm` 列 + 索引直接命中；**旧库（未重建）自动回退**旧路径，行为不变。
     """
     from std_lib.common_lib.norm import norm_docno  # noqa: PLC0415
+
     nd = norm_docno(docno)
     if not nd:
         return []
     with _conn("external") as c:
         cols = {r[1] for r in c.execute("PRAGMA table_info(records)")}
         if "docno_norm" in cols:
-            return [dict(r) for r in c.execute(
-                f"SELECT {_CHAIN_COLS} FROM records WHERE docno_norm=? "
-                "ORDER BY publish_date LIMIT ?", (nd, int(limit)))]
+            return [
+                dict(r)
+                for r in c.execute(
+                    f"SELECT {_CHAIN_COLS} FROM records WHERE docno_norm=? "
+                    "ORDER BY publish_date LIMIT ?",
+                    (nd, int(limit)),
+                )
+            ]
         rows = [dict(r) for r in c.execute(f"SELECT {_CHAIN_COLS} FROM records")]
     out = [r for r in rows if norm_docno(r.get("document_number") or "") == nd]
     out.sort(key=lambda r: r.get("publish_date") or "")

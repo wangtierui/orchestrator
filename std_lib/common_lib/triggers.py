@@ -23,6 +23,7 @@ common_lib.triggers — 条件触发链（TriggerRunner，v2 §3.5，P2-1）
     table = decide(ctx)                 # 决策表（含 enabled/原因）
     rep = run_trigger("timeliness_verify", ctx)
 """
+
 from __future__ import annotations
 
 import datetime
@@ -38,11 +39,13 @@ TRIGGERS_YAML = os.path.join(paths.CONFIG_DIR, "triggers.yaml")
 # 触发项失败语义（受控值）
 ON_FAIL = frozenset({"stop", "stop_on_quota", "manual_breakpoint", "skip_and_warn"})
 # 时效核验状态文件（`days_since` 条件的默认计时锚点）
-_TIMELINESS_STATE = os.path.join(paths.MODULES_DIR, "regulatory_scrapers", "timeliness_review",
-                                 "verification_state.json")
+_TIMELINESS_STATE = os.path.join(
+    paths.MODULES_DIR, "regulatory_scrapers", "timeliness_review", "verification_state.json"
+)
 # 发布件清单（`publish_manifest_changed` 条件的观察对象）
-_PUBLISH_MANIFEST = os.path.join(paths.MODULES_DIR, "base_publish", "published",
-                                 "publish_manifest.json")
+_PUBLISH_MANIFEST = os.path.join(
+    paths.MODULES_DIR, "base_publish", "published", "publish_manifest.json"
+)
 _PKULAW_TOKEN = os.path.join(paths.ROOT, ".pkulaw_token")
 
 
@@ -60,7 +63,9 @@ def load_triggers() -> dict:
 def _c_token_exists(want: bool, _ctx: dict) -> tuple[bool, str]:
     ok = os.path.exists(_PKULAW_TOKEN) and bool(
         open(_PKULAW_TOKEN, encoding="utf-8", errors="replace").read().strip()
-        if os.path.exists(_PKULAW_TOKEN) else "")
+        if os.path.exists(_PKULAW_TOKEN)
+        else ""
+    )
     return (ok == bool(want)), f"token 存在={ok}（{os.path.basename(_PKULAW_TOKEN)}）"
 
 
@@ -79,8 +84,9 @@ def _c_unindexed_originals(want: bool, _ctx: dict) -> tuple[bool, str]:
     无法读取索引时返回 False + 原因（不猜）。
     """
     originals = os.path.join(paths.MODULES_DIR, "internal_policy_base", "data", "originals")
-    idx = os.path.join(paths.MODULES_DIR, "internal_policy_base", "data",
-                       "internal_policy_index.json")
+    idx = os.path.join(
+        paths.MODULES_DIR, "internal_policy_base", "data", "internal_policy_index.json"
+    )
     if not os.path.isdir(originals):
         return False, f"原件库不存在（{os.path.relpath(originals, paths.ROOT)}）"
     n_files = sum(1 for _ in os.scandir(originals) if _.is_file())
@@ -91,7 +97,9 @@ def _c_unindexed_originals(want: bool, _ctx: dict) -> tuple[bool, str]:
     except (OSError, ValueError) as e:
         return False, f"索引不可读（{type(e).__name__}）→ 不判定"
     gap = n_files - len(recs)
-    return (gap > 0) == bool(want), f"原件 {n_files} 份 / 索引 {len(recs)} 条（未索引 {max(0, gap)}）"
+    return (gap > 0) == bool(
+        want
+    ), f"原件 {n_files} 份 / 索引 {len(recs)} 条（未索引 {max(0, gap)}）"
 
 
 def _c_explicit_arg(flag: str, ctx: dict) -> tuple[bool, str]:
@@ -106,6 +114,7 @@ def _c_publish_manifest_changed(want: bool, _ctx: dict) -> tuple[bool, str]:
         return False, "publish_manifest.json 不存在 → 不判定"
     try:
         from common_lib import governance_store as gs  # noqa: PLC0415
+
         if not gs.enabled():
             return False, "治理库未启用 → 无基线可比（不判定）"
         cur = gs.version_of_file(_PUBLISH_MANIFEST)
@@ -189,11 +198,19 @@ def decide(ctx: dict | None = None, *, only: str = "") -> list[dict]:
                 ok, ev = False, f"条件异常 {type(e).__name__}: {e}"
             reasons.append(f"{name}={want} → {'满足' if ok else '不满足'}（{ev}）")
             enabled = enabled and bool(ok)
-        out.append({"id": tid, "stage": t.get("stage", ""), "enabled": enabled,
-                    "reasons": reasons, "steps": t.get("steps") or [],
-                    "on_fail": t.get("on_fail", "stop"),
-                    "on_skip": t.get("on_skip", ""), "desc": t.get("desc", ""),
-                    "resume": t.get("resume", "")})
+        out.append(
+            {
+                "id": tid,
+                "stage": t.get("stage", ""),
+                "enabled": enabled,
+                "reasons": reasons,
+                "steps": t.get("steps") or [],
+                "on_fail": t.get("on_fail", "stop"),
+                "on_skip": t.get("on_skip", ""),
+                "desc": t.get("desc", ""),
+                "resume": t.get("resume", ""),
+            }
+        )
     return out
 
 
@@ -223,8 +240,7 @@ def _abs(p: str) -> str:
     return p if os.path.isabs(p) else os.path.join(paths.ROOT, p)
 
 
-def run_trigger(tid: str, ctx: dict | None = None, *, dry_run: bool = False,
-                worklist=True) -> dict:
+def run_trigger(tid: str, ctx: dict | None = None, *, dry_run: bool = False, worklist=True) -> dict:
     """执行一个触发项。返回 {id, status, steps[], note}（status ∈ ran/partial/failed/skipped）。"""
     ctx = dict(ctx or {})
     ctx.setdefault("argv", [])
@@ -233,13 +249,26 @@ def run_trigger(tid: str, ctx: dict | None = None, *, dry_run: bool = False,
         return {"id": tid, "status": "unknown", "steps": [], "note": "触发项未登记"}
     row = rows[0]
     if not row["enabled"]:
-        return {"id": tid, "status": "skipped", "steps": [], "on_skip": row["on_skip"],
-                "note": "；".join(row["reasons"])}
+        return {
+            "id": tid,
+            "status": "skipped",
+            "steps": [],
+            "on_skip": row["on_skip"],
+            "note": "；".join(row["reasons"]),
+        }
     if dry_run:
-        return {"id": tid, "status": "dry-run",
-                "steps": [{"argv": _argv_abs(_expand_args(s.get("argv") or [], ctx)),
-                           "timeout": s.get("timeout")} for s in row["steps"]],
-                "note": "；".join(row["reasons"])}
+        return {
+            "id": tid,
+            "status": "dry-run",
+            "steps": [
+                {
+                    "argv": _argv_abs(_expand_args(s.get("argv") or [], ctx)),
+                    "timeout": s.get("timeout"),
+                }
+                for s in row["steps"]
+            ],
+            "note": "；".join(row["reasons"]),
+        }
 
     results: list[dict] = []
     failed = False
@@ -248,8 +277,15 @@ def run_trigger(tid: str, ctx: dict | None = None, *, dry_run: bool = False,
         timeout = s.get("timeout")
         rec = {"argv": argv, "rc": -1, "timeout": timeout}
         try:
-            r = subprocess.run(argv, cwd=paths.ROOT, capture_output=True, text=True,
-                               encoding="utf-8", errors="replace", timeout=timeout)
+            r = subprocess.run(
+                argv,
+                cwd=paths.ROOT,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                timeout=timeout,
+            )
             rec["rc"] = r.returncode
             rec["tail"] = "\n".join((r.stderr or r.stdout or "").strip().splitlines()[-3:])
         except subprocess.TimeoutExpired:
@@ -271,12 +307,22 @@ def _worklist(tid: str, results: list[dict], note: str) -> None:
     """`on_fail: manual_breakpoint` → 失败必须进 worklist（v2 §3.5 纪律④）。"""
     try:
         from common_lib import governance_store as gs  # noqa: PLC0415
+
         bad = next((r for r in results if r.get("rc") != 0), {})
         gs.worklist_add(
-            "trigger_manual_breakpoint", tid, stage="", artifact_key=f"trigger:{tid}",
-            payload={"trigger": tid, "argv": bad.get("argv"), "rc": bad.get("rc"),
-                     "tail": bad.get("tail", ""), "reason": note},
-            suggestion="人工处置触发链失败（修复后重跑该触发项）")
+            "trigger_manual_breakpoint",
+            tid,
+            stage="",
+            artifact_key=f"trigger:{tid}",
+            payload={
+                "trigger": tid,
+                "argv": bad.get("argv"),
+                "rc": bad.get("rc"),
+                "tail": bad.get("tail", ""),
+                "reason": note,
+            },
+            suggestion="人工处置触发链失败（修复后重跑该触发项）",
+        )
     except Exception:  # noqa: BLE001  旁路设施：登记失败不得中断触发链
         pass
 
@@ -286,10 +332,12 @@ def run_all(ctx: dict | None = None, *, dry_run: bool = False) -> dict:
     ctx = dict(ctx or {})
     ctx.setdefault("argv", [])
     details = [run_trigger(r["id"], ctx, dry_run=dry_run) for r in decide(ctx)]
-    return {"ran": sum(1 for d in details if d["status"] == "ran"),
-            "skipped": sum(1 for d in details if d["status"] == "skipped"),
-            "failed": sum(1 for d in details if d["status"] == "failed"),
-            "details": details}
+    return {
+        "ran": sum(1 for d in details if d["status"] == "ran"),
+        "skipped": sum(1 for d in details if d["status"] == "skipped"),
+        "failed": sum(1 for d in details if d["status"] == "failed"),
+        "details": details,
+    }
 
 
 def decision_table_text(ctx: dict | None = None) -> str:

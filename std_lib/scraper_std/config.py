@@ -107,6 +107,7 @@ def load_settings(path: str | None = None, *, project_root: str | None = None) -
 def save_settings(path: str, cfg: dict[str, Any]) -> None:
     """写出配置（含注释说明）。"""
     import yaml
+
     os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         yaml.safe_dump(cfg, f, allow_unicode=True, sort_keys=False)

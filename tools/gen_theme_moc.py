@@ -10,6 +10,7 @@
 用法：
   python tools/gen_theme_moc.py --out "D:\\DeMon KB\\监管法规库\\主题索引"
 """
+
 from __future__ import annotations
 
 import argparse
@@ -23,12 +24,17 @@ for _p in (_ROOT, os.path.join(_ROOT, "modules"), os.path.join(_ROOT, "interface
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-EXT_PUB = os.path.join(_ROOT, "modules", "regulatory_scrapers", "published", "external_records.jsonl")
-INT_PUB = os.path.join(_ROOT, "modules", "internal_policy_base", "published", "internal_policies.jsonl")
+EXT_PUB = os.path.join(
+    _ROOT, "modules", "regulatory_scrapers", "published", "external_records.jsonl"
+)
+INT_PUB = os.path.join(
+    _ROOT, "modules", "internal_policy_base", "published", "internal_policies.jsonl"
+)
 
 
 def _slug(s: str, n: int = 48) -> str:
     import re
+
     s = re.sub(r"[\\/:*?\"<>|\s]+", "", (s or "").strip())
     return s[:n] or "untitled"
 
@@ -36,6 +42,7 @@ def _slug(s: str, n: int = 48) -> str:
 def _theme_names() -> dict:
     try:
         from rfn import registry  # type: ignore
+
         return dict(getattr(registry, "THEME_MAP", {}) or {})
     except Exception:  # noqa: BLE001
         return {}
@@ -99,30 +106,44 @@ def main() -> int:
         ext_rows = sorted(by_theme[th]["ext"], key=lambda x: x.get("publish_date") or "")
         int_rows = sorted(by_theme[th]["int"], key=lambda x: x.get("docno") or "")
         lines = [
-            "---", f'theme: "{th}"', f'theme_name: "{name}"',
-            f"ext_count: {len(ext_rows)}", f"int_count: {len(int_rows)}", "---", "",
-            f"# {th} {name} · 主题索引（MOC）", "",
+            "---",
+            f'theme: "{th}"',
+            f'theme_name: "{name}"',
+            f"ext_count: {len(ext_rows)}",
+            f"int_count: {len(int_rows)}",
+            "---",
+            "",
+            f"# {th} {name} · 主题索引（MOC）",
+            "",
             f"> 外部文件 {len(ext_rows)} 份 ｜ 内部制度 {len(int_rows)} 份 ｜ 由发布件自动生成",
-            "> 双链点击可回链到全文页；Obsidian 图谱将按本页聚合该主题。", "",
+            "> 双链点击可回链到全文页；Obsidian 图谱将按本页聚合该主题。",
+            "",
         ]
         if ext_rows:
             lines += ["## 外部监管文件", ""]
-            for r in ext_rows[:args.limit]:
+            for r in ext_rows[: args.limit]:
                 key = r.get("rfn") or r.get("record_id", "")
                 fname = f"{_slug(key, 40)}__{_slug(r.get('title', ''))}"
-                lines.append("- [[%s|%s]]（%s｜%s）" % (
-                    fname, (r.get("title") or "")[:48],
-                    r.get("document_number") or "无文号",
-                    r.get("publish_date") or "—"))
+                lines.append(
+                    "- [[%s|%s]]（%s｜%s）"
+                    % (
+                        fname,
+                        (r.get("title") or "")[:48],
+                        r.get("document_number") or "无文号",
+                        r.get("publish_date") or "—",
+                    )
+                )
             if len(ext_rows) > args.limit:
                 lines.append(f"- …（其余 {len(ext_rows) - args.limit} 份见底库）")
             lines.append("")
         if int_rows:
             lines += ["## 内部制度", ""]
-            for p in int_rows[:args.limit]:
+            for p in int_rows[: args.limit]:
                 fname = f"{_slug(p.get('ipn', ''), 40)}__{_slug(p.get('title', ''))}"
-                lines.append("- [[%s|%s]]（%s）" % (
-                    fname, (p.get("title") or "")[:48], p.get("docno") or "无文号"))
+                lines.append(
+                    "- [[%s|%s]]（%s）"
+                    % (fname, (p.get("title") or "")[:48], p.get("docno") or "无文号")
+                )
             if len(int_rows) > args.limit:
                 lines.append(f"- …（其余 {len(int_rows) - args.limit} 份见底库）")
             lines.append("")

@@ -1,5 +1,7 @@
 """CLI argument helpers for crawler scripts."""
 
+from __future__ import annotations
+
 import argparse
 
 

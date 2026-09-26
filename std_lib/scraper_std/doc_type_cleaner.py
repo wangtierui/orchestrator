@@ -11,6 +11,7 @@ doc_type_cleaner.py —— 文件类型标识（doc_type）提取与归一（纯
 
 本模块为纯函数、无 IO，探查层与清洗层共用同一事实源。
 """
+
 from __future__ import annotations
 
 import os
@@ -56,7 +57,12 @@ def extract_doc_type(title: str) -> dict[str, Any]:
     """
     t = (title or "").strip()
     if not t:
-        return {"doc_type": None, "group": None, "match_pos": "empty_title", "status": "empty_title"}
+        return {
+            "doc_type": None,
+            "group": None,
+            "match_pos": "empty_title",
+            "status": "empty_title",
+        }
     # 策略 0（v3 补丁）：标题以右括号结尾时，先取末尾括号内文本作为真实文种载体
     #   例：中国人民银行令〔2025〕第4号(中国人民银行业务领域网络安全事件报告管理办法)
     #       → 括号内「…报告管理办法」→ 正确提取「办法」（否则末尾是「)」导致误命中「报告」）
@@ -65,15 +71,29 @@ def extract_doc_type(title: str) -> dict[str, Any]:
         inner = m.group(1).strip()
         for ft in _FILE_TYPES_SORTED:
             if inner.endswith(ft):
-                return {"doc_type": ft, "group": _group_of(ft),
-                        "match_pos": "end_bracket", "status": "success"}
+                return {
+                    "doc_type": ft,
+                    "group": _group_of(ft),
+                    "match_pos": "end_bracket",
+                    "status": "success",
+                }
     for ft in _FILE_TYPES_SORTED:
         if t.endswith(ft):
             return {"doc_type": ft, "group": _group_of(ft), "match_pos": "end", "status": "success"}
     for ft in _FILE_TYPES_SORTED:
         if ft in t:
-            return {"doc_type": ft, "group": _group_of(ft), "match_pos": "middle", "status": "success"}
-    return {"doc_type": None, "group": "其他未分类", "match_pos": "not_found", "status": "not_found"}
+            return {
+                "doc_type": ft,
+                "group": _group_of(ft),
+                "match_pos": "middle",
+                "status": "success",
+            }
+    return {
+        "doc_type": None,
+        "group": "其他未分类",
+        "match_pos": "not_found",
+        "status": "not_found",
+    }
 
 
 def normalize_doc_type(value: str, title: str = "") -> str:
@@ -101,7 +121,7 @@ if __name__ == "__main__":
         ("中国银保监会关于印发《商业银行代理销售业务管理办法》的通知", "通知"),
         ("中华人民共和国反洗钱法", "法律"),
         ("国务院关于修改《中华人民共和国外资保险公司管理条例》的决定", "决定"),
-        ("企业财务通则", ""),          # 通则不在 FILE_TYPES（不扩充）→ 提取失败
+        ("企业财务通则", ""),  # 通则不在 FILE_TYPES（不扩充）→ 提取失败
     ]
     for title, expect in cases:
         got = normalize_doc_type("", title)

@@ -7,6 +7,7 @@ tools/gen_benchmark.py — 交付基准登记生成器（二期 2026-09-08）
 门禁/测试变化后重跑本脚本刷新登记：
   python tools/gen_benchmark.py            # 覆盖写入根 BENCHMARK.md
 """
+
 from __future__ import annotations
 
 import csv
@@ -27,12 +28,22 @@ _TODAY = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 CLS_DATA = os.path.join(paths.MODULES_DIR, "regulatory_classifier", "data")
 INT_DATA = os.path.join(paths.MODULES_DIR, "internal_policy_base", "data")
-STATE_JSON = os.path.join(paths.MODULES_DIR, "regulatory_scrapers", "timeliness_review",
-                          "verification_state.json")
-CLS_MAP = {"T0": "上位法锚点", "T1": "销售行为与消费者保护", "T2": "偿付能力",
-           "T3": "产品条款费率", "T4": "资金运用", "T5": "公司治理",
-           "T6": "数据与信息管理", "T7": "风险处置", "T8": "机构管理",
-           "T9": "机构设置与撤销/再保险", "T10": "市场行为"}  # 近似名；权威=THEME_MAP
+STATE_JSON = os.path.join(
+    paths.MODULES_DIR, "regulatory_scrapers", "timeliness_review", "verification_state.json"
+)
+CLS_MAP = {
+    "T0": "上位法锚点",
+    "T1": "销售行为与消费者保护",
+    "T2": "偿付能力",
+    "T3": "产品条款费率",
+    "T4": "资金运用",
+    "T5": "公司治理",
+    "T6": "数据与信息管理",
+    "T7": "风险处置",
+    "T8": "机构管理",
+    "T9": "机构设置与撤销/再保险",
+    "T10": "市场行为",
+}  # 近似名；权威=THEME_MAP
 
 
 def _csv_len(p: str) -> int:
@@ -45,7 +56,9 @@ def gather() -> dict:
 
     # 1) gates
     gates_dir = os.path.join(ROOT, "gates")
-    g_files = sorted(f for f in os.listdir(gates_dir) if f.startswith("gate_") and f.endswith(".py"))
+    g_files = sorted(
+        f for f in os.listdir(gates_dir) if f.startswith("gate_") and f.endswith(".py")
+    )
     out["gates"] = g_files
 
     # 2) tests
@@ -67,12 +80,18 @@ def gather() -> dict:
             n = len(json.load(open(fp, encoding="utf-8")))
             final_tot += n
             theme_rows[f"T{i}"] = n
-    dets = sorted(f for f in os.listdir(cd) if re.match(r"^T\d+_\d+逐份条款引用与上位法依据明细表\.csv$", f))
+    dets = sorted(
+        f for f in os.listdir(cd) if re.match(r"^T\d+_\d+逐份条款引用与上位法依据明细表\.csv$", f)
+    )
     det_tot = sum(_csv_len(os.path.join(cd, f)) for f in dets)
     brid = os.path.join(cd, "rfn_clean_bridge.csv")
     out["classifier"] = {
-        "attr_rows": attr_len, "theme_rows": theme_len, "base_total": base_tot,
-        "final_total": final_tot, "per_theme": theme_rows, "detail_files": len(dets),
+        "attr_rows": attr_len,
+        "theme_rows": theme_len,
+        "base_total": base_tot,
+        "final_total": final_tot,
+        "per_theme": theme_rows,
+        "detail_files": len(dets),
         "detail_rows_total": det_tot,
         "bridge_rows": _csv_len(brid) if os.path.exists(brid) else 0,
         "base_final_matched_citerefs_files": len(glob.glob(os.path.join(cd, "_t*_*.json"))),
@@ -84,9 +103,13 @@ def gather() -> dict:
     oreg = os.path.join(INT_DATA, "originals")
     out["internal"] = {
         "originals": len([f for f in os.listdir(oreg) if os.path.isfile(os.path.join(oreg, f))])
-        if os.path.isdir(oreg) else 0,
-        "processed_files": len([f for f in os.listdir(proc) if os.path.isfile(os.path.join(proc, f))])
-        if os.path.isdir(proc) else 0,
+        if os.path.isdir(oreg)
+        else 0,
+        "processed_files": len(
+            [f for f in os.listdir(proc) if os.path.isfile(os.path.join(proc, f))]
+        )
+        if os.path.isdir(proc)
+        else 0,
         "clauses_json": len(glob.glob(os.path.join(proc, "*_clauses.json"))),
         "clauses_md": len(glob.glob(os.path.join(proc, "*_clauses.md"))),
         "merged_records": _read_count(os.path.join(INT_DATA, "merged_view.json"), "count"),
@@ -106,11 +129,20 @@ def gather() -> dict:
     # 覆盖率基线（审查 P2-7，2026-09-12）：有 .coverage 数据则取 TOTAL%（"只升不降"回归闸）
     try:
         if os.path.exists(os.path.join(ROOT, ".coverage")):
-            r = subprocess.run([sys.executable, "-m", "coverage", "report", "--format=total"],
-                               cwd=ROOT, capture_output=True, text=True,
-                               encoding="utf-8", errors="replace", timeout=120)
-            out["coverage_total"] = ((r.stdout or "").strip().splitlines() or ["?"])[-1].strip() \
-                if r.returncode == 0 else "?"
+            r = subprocess.run(
+                [sys.executable, "-m", "coverage", "report", "--format=total"],
+                cwd=ROOT,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                timeout=120,
+            )
+            out["coverage_total"] = (
+                ((r.stdout or "").strip().splitlines() or ["?"])[-1].strip()
+                if r.returncode == 0
+                else "?"
+            )
         else:
             out["coverage_total"] = "（未采集；python -m coverage run -m pytest tests -q）"
     except Exception:  # noqa: BLE001
@@ -137,7 +169,9 @@ def render(g: dict) -> str:
     L = []
     L.append("# BENCHMARK —— 交付基准登记（回归对照基线）\n")
     L.append(f"> 自动生成：tools/gen_benchmark.py @ {g['generated_at']} | python {g['python']}")
-    L.append("> 用途：数据重建/重构后重跑 `python tools/gen_benchmark.py` 刷新；数值漂移即回归信号。\n")
+    L.append(
+        "> 用途：数据重建/重构后重跑 `python tools/gen_benchmark.py` 刷新；数值漂移即回归信号。\n"
+    )
 
     L.append("## 1 门禁（gates/ALL_GATES）\n")
     L.append(f"实装 {len(g['gates'])} 道（gates/gate_*.py）：")
@@ -150,8 +184,10 @@ def render(g: dict) -> str:
     L.append("## 2 自动化验收测试（pytest）\n")
     L.append(f"用例文件 {len(g['test_files'])}：`" + "`、`".join(g["test_files"]) + "`")
     L.append("运行：`python -m pytest tests -q`\n")
-    L.append(f"**覆盖率基线（只升不降）**：TOTAL {g.get('coverage_total', '?')}%"
-             "（采自 `.coverage`；刷新：`python -m coverage run -m pytest tests -q`）\n")
+    L.append(
+        f"**覆盖率基线（只升不降）**：TOTAL {g.get('coverage_total', '?')}%"
+        "（采自 `.coverage`；刷新：`python -m coverage run -m pytest tests -q`）\n"
+    )
 
     c = g["classifier"]
     L.append("## 3 数据基线\n")
@@ -182,7 +218,9 @@ def render(g: dict) -> str:
     L.append("| 产物 | 数值 |")
     L.append("|---|---|")
     L.append(f"| originals 原始制度 | {g['internal']['originals']} |")
-    L.append(f"| processed 处理文件（fulltext/main/json/md） | {g['internal']['processed_files']} |")
+    L.append(
+        f"| processed 处理文件（fulltext/main/json/md） | {g['internal']['processed_files']} |"
+    )
     L.append(f"| 条文结构 _clauses.json | {g['internal']['clauses_json']} |")
     L.append(f"| 条文视图 _clauses.md | {g['internal']['clauses_md']} |")
     L.append(f"| merged_view 记录 | {g['internal']['merged_records']} |")
@@ -191,17 +229,25 @@ def render(g: dict) -> str:
     L.append("| 命令 | 职责 |")
     L.append("|---|---|")
     L.append(f"| `python cli.py gates` | {len(g['gates'])} 道交付门禁（以 ALL_GATES 为准） |")
-    L.append("| `python cli.py classify --all --steps base,cluster,match,detail,upper,clause_graph` | 底座强序重建（R8 幂等断点） |")
+    L.append(
+        "| `python cli.py classify --all --steps base,cluster,match,detail,upper,clause_graph` | 底座强序重建（R8 幂等断点） |"
+    )
     L.append("| `python cli.py source list / add --id` | 源目录路由（R15） |")
     L.append("| `python cli.py internal index/align/merged` | 内部制度链路 |")
-    L.append("| `python cli.py timeliness verify --source all` | 时效核验三态（R13，需北大法宝 token） |")
+    L.append(
+        "| `python cli.py timeliness verify --source all` | 时效核验三态（R13，需北大法宝 token） |"
+    )
     L.append("| `clean\\run_clean_pipeline.py --project <源>` | 单源清洗 |")
     L.append("| `recall_audit\\run_retrieval_after_checks.py` | retrieval 四门禁编排（幂等） |")
     L.append("| `python tools/gen_benchmark.py` | 刷新本基准 |")
     L.append("")
     L.append("## 5 回归说明\n")
-    L.append("1. 归属表/时效数据变更后：重跑 `classify` 底座链 → `reconcile_clean_drift`（桥）→ gates → 刷新本表。")
-    L.append("2. internal 源变后：`internal index`（backfill_clauses 幂等）→ `internal align` → merged 视图。")
+    L.append(
+        "1. 归属表/时效数据变更后：重跑 `classify` 底座链 → `reconcile_clean_drift`（桥）→ gates → 刷新本表。"
+    )
+    L.append(
+        "2. internal 源变后：`internal index`（backfill_clauses 幂等）→ `internal align` → merged 视图。"
+    )
     L.append("3. 任一基线与上表不符且非预期升级 → 先查对应门禁 FAIL 输出，勿静默覆盖。")
     L.append("4. 本表只登记当前仓产物；历史一次性脚本（旧仓）不在此列。")
     return "\n".join(L) + "\n"
@@ -214,11 +260,13 @@ def main() -> int:
     with open(out_p, "w", encoding="utf-8", newline="\n") as fh:
         fh.write(text)
     print(f"BENCHMARK.md 已写入 {out_p}")
-    print(f"  gates={len(g['gates'])} tests={len(g['test_files'])} "
-          f"attr={g['classifier']['attr_rows']} base={g['classifier']['base_total']} "
-          f"final={g['classifier']['final_total']} detail_rows={g['classifier']['detail_rows_total']} "
-          f"bridge={g['classifier']['bridge_rows']} state={g['state_records']} "
-          f"merged={g['internal']['merged_records']}")
+    print(
+        f"  gates={len(g['gates'])} tests={len(g['test_files'])} "
+        f"attr={g['classifier']['attr_rows']} base={g['classifier']['base_total']} "
+        f"final={g['classifier']['final_total']} detail_rows={g['classifier']['detail_rows_total']} "
+        f"bridge={g['classifier']['bridge_rows']} state={g['state_records']} "
+        f"merged={g['internal']['merged_records']}"
+    )
     return 0
 
 

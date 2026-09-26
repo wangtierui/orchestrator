@@ -32,6 +32,7 @@
     python tools/governance_sync.py --apply      # 投影（写库）+ 比对
     python tools/governance_sync.py --apply --export   # 另导出 exports/ 文本快照
 """
+
 from __future__ import annotations
 
 import argparse
@@ -67,7 +68,6 @@ _C_PUB, _C_SRC, _C_TL = "发布日期", "文件来源", "时效状态"
 _C_NOTE = "编号备注"
 
 
-
 # v2 §3.6 X3（P1-5，2026-09-26）：状态行改经统一日志设施（原 print）。
 # 规则：**状态/进度/告警行 → LOG**；**机器可读载荷（json.dumps）/多列表格行 → 保留 print**
 # （后者是 stdout 契约，加日志前缀会破坏编排器 tail 与下游解析）。
@@ -75,6 +75,8 @@ _C_NOTE = "编号备注"
 from std_lib.common_lib.logging import get_logger  # noqa: E402
 
 LOG = get_logger("governance_sync")
+
+
 def _rows_csv(path: str) -> list[dict]:
     if not os.path.exists(path):
         return []
@@ -119,15 +121,19 @@ def load_documents() -> tuple[list[dict], list[str]]:
         if not ref:
             continue
         docno = (r.get(_C_DOCNO) or "").strip()
-        out.append({
-            "doc_ref": ref, "kind": "regulatory",
-            "title": (r.get(_C_TITLE) or "").strip(),
-            "docno": docno, "docno_norm": _nd(docno),
-            "source": (r.get(_C_SRC) or "").strip(),
-            "publish_date": (r.get(_C_PUB) or "").strip(),
-            "timeliness_status": (r.get(_C_TL) or "").strip(),
-            "row_json": json.dumps(r, ensure_ascii=False),
-        })
+        out.append(
+            {
+                "doc_ref": ref,
+                "kind": "regulatory",
+                "title": (r.get(_C_TITLE) or "").strip(),
+                "docno": docno,
+                "docno_norm": _nd(docno),
+                "source": (r.get(_C_SRC) or "").strip(),
+                "publish_date": (r.get(_C_PUB) or "").strip(),
+                "timeliness_status": (r.get(_C_TL) or "").strip(),
+                "row_json": json.dumps(r, ensure_ascii=False),
+            }
+        )
     idx = {}
     if os.path.exists(IPB_INDEX):
         try:
@@ -137,25 +143,28 @@ def load_documents() -> tuple[list[dict], list[str]]:
     else:
         notes.append(f"跳过 document(internal)：{os.path.relpath(IPB_INDEX, ROOT)} 缺失")
     recs = idx.get("records") if isinstance(idx, dict) else None
-    for rec in (recs or []):
+    for rec in recs or []:
         ipn = (rec.get("ipn") or "").strip()
         if not ipn:
             continue
-        out.append({
-            "doc_ref": ipn, "kind": "internal",
-            "title": (rec.get("title") or "").strip(),
-            "docno": (rec.get("docno") or "").strip(),
-            "docno_norm": _nd(rec.get("docno") or ""),
-            "source": "internal",
-            "publish_date": (rec.get("issue_date") or "").strip(),
-            "timeliness_status": (rec.get("status") or "").strip(),
-            "theme": (rec.get("primary_theme") or "").strip(),
-            "file_type": (rec.get("file_type") or "").strip(),
-            "extension": (rec.get("extension") or "").strip(),
-            "origin_path": (rec.get("relative_path") or "").strip(),
-            "article_count": rec.get("article_count"),
-            "row_json": json.dumps(rec, ensure_ascii=False),
-        })
+        out.append(
+            {
+                "doc_ref": ipn,
+                "kind": "internal",
+                "title": (rec.get("title") or "").strip(),
+                "docno": (rec.get("docno") or "").strip(),
+                "docno_norm": _nd(rec.get("docno") or ""),
+                "source": "internal",
+                "publish_date": (rec.get("issue_date") or "").strip(),
+                "timeliness_status": (rec.get("status") or "").strip(),
+                "theme": (rec.get("primary_theme") or "").strip(),
+                "file_type": (rec.get("file_type") or "").strip(),
+                "extension": (rec.get("extension") or "").strip(),
+                "origin_path": (rec.get("relative_path") or "").strip(),
+                "article_count": rec.get("article_count"),
+                "row_json": json.dumps(rec, ensure_ascii=False),
+            }
+        )
     return out, notes
 
 
@@ -168,8 +177,14 @@ def load_theme_assigns() -> tuple[list[dict], list[str]]:
         ref = (r.get(_C_REF) or "").strip()
         if not ref:
             continue
-        out.append({"doc_ref": ref, "theme": (r.get("主题") or "").strip(),
-                    "basis": (r.get("判定依据") or "").strip(), "decided_at": ""})
+        out.append(
+            {
+                "doc_ref": ref,
+                "theme": (r.get("主题") or "").strip(),
+                "basis": (r.get("判定依据") or "").strip(),
+                "decided_at": "",
+            }
+        )
     return out, []
 
 
@@ -206,25 +221,39 @@ def load_relations() -> tuple[list[dict], list[str]]:
             conf = float(conf) if conf not in (None, "") else None
         except (TypeError, ValueError):
             conf = None
-        out.append({
-            "row_key": row_key, "relation_id": rid, "relation": (r.get("relation") or ""),
-            "src_kind": r.get("src_kind") or "", "src_ref": r.get("src_ref") or "",
-            "src_key": r.get("src_key") or "", "src_name": r.get("src_name") or "",
-            "src_docno": r.get("src_docno") or "", "src_source": r.get("src_source") or "",
-            "dst_kind": r.get("dst_kind") or "", "dst_ref": r.get("dst_ref") or "",
-            "dst_key": r.get("dst_key") or "", "dst_class": r.get("dst_class") or "",
-            "dst_name": r.get("dst_name") or "", "basis_type": r.get("basis_type") or "",
-            "action": r.get("action") or "", "scope": r.get("scope") or "",
-            "matched_by": r.get("matched_by") or "", "confidence": conf,
-            "generated_at": r.get("generated_at") or "",
-            "row_json": json.dumps(r, ensure_ascii=False),
-        })
+        out.append(
+            {
+                "row_key": row_key,
+                "relation_id": rid,
+                "relation": (r.get("relation") or ""),
+                "src_kind": r.get("src_kind") or "",
+                "src_ref": r.get("src_ref") or "",
+                "src_key": r.get("src_key") or "",
+                "src_name": r.get("src_name") or "",
+                "src_docno": r.get("src_docno") or "",
+                "src_source": r.get("src_source") or "",
+                "dst_kind": r.get("dst_kind") or "",
+                "dst_ref": r.get("dst_ref") or "",
+                "dst_key": r.get("dst_key") or "",
+                "dst_class": r.get("dst_class") or "",
+                "dst_name": r.get("dst_name") or "",
+                "basis_type": r.get("basis_type") or "",
+                "action": r.get("action") or "",
+                "scope": r.get("scope") or "",
+                "matched_by": r.get("matched_by") or "",
+                "confidence": conf,
+                "generated_at": r.get("generated_at") or "",
+                "row_json": json.dumps(r, ensure_ascii=False),
+            }
+        )
     if dup_ids or exact_dup:
-        LOG.info(f"[sync] ⚠ relations_index.jsonl 去重键异常：{len(rows)} 行 / "
-              f"{len(seen_ids)} 个不同 relation_id；其中 {len(dup_ids)} 个 id 重复、"
-              f"{exact_dup} 行为逐字节重复。已按合成 row_key **保全全部 {len(out)} 行**"
-              "（库行数与事实源一致）。id 重复在 extractor 1.1 后不应出现 → "
-              "请运行 `python cli.py relations gen` 重抽取（gate_relations 判据 9 亦会阻断）")
+        LOG.info(
+            f"[sync] ⚠ relations_index.jsonl 去重键异常：{len(rows)} 行 / "
+            f"{len(seen_ids)} 个不同 relation_id；其中 {len(dup_ids)} 个 id 重复、"
+            f"{exact_dup} 行为逐字节重复。已按合成 row_key **保全全部 {len(out)} 行**"
+            "（库行数与事实源一致）。id 重复在 extractor 1.1 后不应出现 → "
+            "请运行 `python cli.py relations gen` 重抽取（gate_relations 判据 9 亦会阻断）"
+        )
     return out, []
 
 
@@ -244,15 +273,17 @@ def load_timeliness() -> tuple[list[dict], list[str]]:
     for key, rec in (rows or {}).items():
         if str(key).startswith("_") or not isinstance(rec, dict):
             continue
-        out.append({
-            "state_key": key,
-            "status": rec.get("status") or "",
-            "prev_status": rec.get("prev_status") or "",
-            "replacement": rec.get("replacement_document") or rec.get("replacement") or "",
-            "verification_source": rec.get("verification_source") or "",
-            "last_checked_at": rec.get("last_checked_at") or "",
-            "changed_at": rec.get("changed_at") or "",
-        })
+        out.append(
+            {
+                "state_key": key,
+                "status": rec.get("status") or "",
+                "prev_status": rec.get("prev_status") or "",
+                "replacement": rec.get("replacement_document") or rec.get("replacement") or "",
+                "verification_source": rec.get("verification_source") or "",
+                "last_checked_at": rec.get("last_checked_at") or "",
+                "changed_at": rec.get("changed_at") or "",
+            }
+        )
     return out, []
 
 
@@ -262,21 +293,29 @@ def collect() -> tuple[dict, list[str]]:
     themes, n2 = load_theme_assigns()
     rels, n3 = load_relations()
     tls, n4 = load_timeliness()
-    return ({"documents": docs, "theme_assigns": themes,
-             "relations": rels, "timeliness_rows": tls}, n1 + n2 + n3 + n4)
+    return (
+        {"documents": docs, "theme_assigns": themes, "relations": rels, "timeliness_rows": tls},
+        n1 + n2 + n3 + n4,
+    )
 
 
 def _print_result(result: dict) -> int:
     bad = 0
-    print(f"{'table':<20}{'mode':<9}{'db':>7}{'src':>7}  "
-          f"{'db_sha16':<18}{'src_sha16':<18}status")
+    print(f"{'table':<20}{'mode':<9}{'db':>7}{'src':>7}  {'db_sha16':<18}{'src_sha16':<18}status")
     for t, d in result.items():
-        flag = "OK" if d["ok"] else (
-            f"MISMATCH(missing={d.get('missing')})" if d.get("mode") == "append" else "MISMATCH")
+        flag = (
+            "OK"
+            if d["ok"]
+            else (
+                f"MISMATCH(missing={d.get('missing')})" if d.get("mode") == "append" else "MISMATCH"
+            )
+        )
         if not d["ok"]:
             bad += 1
-        print(f"{t:<20}{d.get('mode', ''):<9}{d['db_rows']:>7}{d['src_rows']:>7}  "
-              f"{d['db'][:16]:<18}{d['src'][:16]:<18}{flag}")
+        print(
+            f"{t:<20}{d.get('mode', ''):<9}{d['db_rows']:>7}{d['src_rows']:>7}  "
+            f"{d['db'][:16]:<18}{d['src'][:16]:<18}{flag}"
+        )
     return bad
 
 
@@ -289,8 +328,9 @@ def main(argv=None) -> int:
     ap.add_argument("--apply", action="store_true", help="投影写库（默认仅比对）")
     ap.add_argument("--check", action="store_true", help="比对断言（--apply 时自动附带）")
     ap.add_argument("--export", action="store_true", help="另导出 exports/ 文本快照")
-    ap.add_argument("--require-db", action="store_true",
-                    help="治理库不存在时报错退出（默认自动建库）")
+    ap.add_argument(
+        "--require-db", action="store_true", help="治理库不存在时报错退出（默认自动建库）"
+    )
     args = ap.parse_args(argv)
 
     if not gs.enabled() and args.require_db:
@@ -305,8 +345,11 @@ def main(argv=None) -> int:
 
     if args.apply:
         counts = gs.project_metadata(
-            documents=payload["documents"], theme_assigns=payload["theme_assigns"],
-            relations=payload["relations"], timeliness_rows=payload["timeliness_rows"])
+            documents=payload["documents"],
+            theme_assigns=payload["theme_assigns"],
+            relations=payload["relations"],
+            timeliness_rows=payload["timeliness_rows"],
+        )
         LOG.info("[sync] 已投影：" + " / ".join(f"{k}={v}" for k, v in counts.items()))
 
     if not gs.enabled():
@@ -316,8 +359,10 @@ def main(argv=None) -> int:
     bad = _print_result(result)
     if args.export:
         out = gs.export_snapshot(os.path.join(ROOT, "exports"))
-        LOG.info(f"[sync] 已导出快照：{out.get('out_dir')}"
-              f"（{len(out.get('items') or [])} 张表；relation 不导出——已有事实源文件）")
+        LOG.info(
+            f"[sync] 已导出快照：{out.get('out_dir')}"
+            f"（{len(out.get('items') or [])} 张表；relation 不导出——已有事实源文件）"
+        )
     LOG.info("[sync] 比对断言：" + ("全部一致" if bad == 0 else f"{bad} 张表分叉"))
     return 0 if bad == 0 else 1
 

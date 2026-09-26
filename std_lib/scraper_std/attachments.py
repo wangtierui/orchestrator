@@ -27,8 +27,22 @@ LOG = logging.getLogger("scraper_std.attachments")
 
 # 正文文档优先级（6.2 ①）
 _DOC_PRIORITY = [".docx", ".doc", ".pdf", ".ofd", ".ceb", ".wps", ".rtf"]
-_ATTACH_EXTS = {".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx",
-                ".ofd", ".ceb", ".wps", ".rtf", ".zip", ".rar", ".txt"}
+_ATTACH_EXTS = {
+    ".pdf",
+    ".doc",
+    ".docx",
+    ".xls",
+    ".xlsx",
+    ".ppt",
+    ".pptx",
+    ".ofd",
+    ".ceb",
+    ".wps",
+    ".rtf",
+    ".zip",
+    ".rar",
+    ".txt",
+}
 
 
 def pick_body_doc(urls: list[str]) -> str | None:
@@ -38,12 +52,14 @@ def pick_body_doc(urls: list[str]) -> str | None:
     """
     if not urls:
         return None
+
     def _rank(u: str) -> int:
         path = (u or "").split("?")[0].lower()
         for i, ext in enumerate(_DOC_PRIORITY):
             if path.endswith(ext):
                 return i
         return 99
+
     best = min(urls, key=_rank)
     return best if _rank(best) < 99 else None
 
@@ -78,6 +94,7 @@ def download_and_extract(
     下载/解析失败均返回结构化记录（不抛异常）。
     """
     from .crawler_common import sniff_kind
+
     rec: dict[str, Any] = {
         "file_url": url,
         "original_name": file_name_hint or os.path.basename(url.split("?")[0]) or url,
@@ -107,14 +124,24 @@ def download_and_extract(
         data = f.read()
     kind = sniff_kind(data, file_name_hint or tmp_name)
     ext = {
-        "pdf": ".pdf", "docx": ".docx", "xlsx": ".xlsx", "ole2": ".xls",
-        "zip": ".zip", "rar": ".rar",
+        "pdf": ".pdf",
+        "docx": ".docx",
+        "xlsx": ".xlsx",
+        "ole2": ".xls",
+        "zip": ".zip",
+        "rar": ".rar",
     }.get(kind, os.path.splitext(file_name_hint)[1].lower() or ".bin")
 
     # 3) 标准重命名（6.4）
     final_name = standard_filename(
-        index_no=index_no, title=title or file_name_hint, pub_date=pub_date,
-        ext=ext, file_type=file_type, seq=seq, url=url)
+        index_no=index_no,
+        title=title or file_name_hint,
+        pub_date=pub_date,
+        ext=ext,
+        file_type=file_type,
+        seq=seq,
+        url=url,
+    )
     final_path = os.path.join(dest_dir, final_name)
     try:
         if os.path.abspath(tmp_path) != os.path.abspath(final_path):
@@ -126,14 +153,17 @@ def download_and_extract(
 
     # 4) 全文提取（6.3 硬性要求）
     from .crawler_common import extract_document_text
-    rec.update({
-        "file_name": final_name,
-        "local_path": final_path,
-        "sha256": sha_or_msg,
-        "size_bytes": size,
-        "fetch_status": "ok",
-        "extension": ext,
-    })
+
+    rec.update(
+        {
+            "file_name": final_name,
+            "local_path": final_path,
+            "sha256": sha_or_msg,
+            "size_bytes": size,
+            "fetch_status": "ok",
+            "extension": ext,
+        }
+    )
     if not text_extract:
         rec["extract_status"] = "skipped"
         rec["attachment_content"] = "[附件文本提取已跳过]"
@@ -148,7 +178,9 @@ def download_and_extract(
         rec["text_length"] = len(text)
         if text:
             rec["attachment_content"] = text
-            LOG.info("附件文本提取成功 %s（%d 字，%s）", final_name, len(text), rec["extract_status"])
+            LOG.info(
+                "附件文本提取成功 %s（%d 字，%s）", final_name, len(text), rec["extract_status"]
+            )
         else:
             status = rec["extract_status"]
             rec["attachment_content"] = f"[附件解析失败: {status}]"

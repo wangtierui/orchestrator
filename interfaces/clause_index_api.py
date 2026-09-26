@@ -9,6 +9,7 @@ drafter（外部条款导出）、base_publish（发布件）三处**各自 `sys
 纪律：**只读**。产物唯一写方 = `clause_index.build_clause_index`
 （clean 管线尾部/显式调用）。
 """
+
 from __future__ import annotations
 
 import os
@@ -30,6 +31,7 @@ CLAUSE_DIR = os.path.join(_SCRAPERS, "data", "clauses")
 
 def _impl():
     import clause_index as _ci  # noqa: PLC0415
+
     return _ci
 
 

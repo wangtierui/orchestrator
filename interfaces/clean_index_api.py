@@ -15,13 +15,14 @@
 
 纪律：本模块**只读**（clean_index 是派生索引，唯一写方 = `build_clean_index`）。
 """
+
 from __future__ import annotations
 
 import os
 import sys
 
-_HERE = os.path.dirname(os.path.abspath(__file__))            # interfaces/
-_ROOT = os.path.dirname(_HERE)                                # orchestrator 根
+_HERE = os.path.dirname(os.path.abspath(__file__))  # interfaces/
+_ROOT = os.path.dirname(_HERE)  # orchestrator 根
 if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
@@ -37,6 +38,7 @@ INDEX_PATH = os.path.join(_SCRAPERS, "clean_index", "index.json")
 def _impl():
     """真实实现模块（`modules/regulatory_scrapers/clean_index`）。"""
     import clean_index as _ci  # noqa: PLC0415
+
     return _ci
 
 

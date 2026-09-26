@@ -42,6 +42,7 @@
   python tools/reconcile_original_paths.py --apply         # 执行重定位（含备份）
   python tools/reconcile_original_paths.py --apply --no-backup   # 跳过备份（已知有外部备份时）
 """
+
 from __future__ import annotations
 
 import argparse
@@ -126,8 +127,14 @@ def build_plan() -> dict:
     records = index.get("records", [])
     by_sha = scan_originals()
 
-    plan: dict = {"total": len(records), "resolvable": [], "relocate": [],
-                  "non_policy": [], "missing": [], "unchanged": 0}
+    plan: dict = {
+        "total": len(records),
+        "resolvable": [],
+        "relocate": [],
+        "non_policy": [],
+        "missing": [],
+        "unchanged": 0,
+    }
     for rec in records:
         rel = (rec.get("relative_path") or "").replace("/", os.sep)
         if rel and os.path.exists(os.path.join(ORIGINALS, rel)):
@@ -135,13 +142,23 @@ def build_plan() -> dict:
             continue
         cands = by_sha.get(rec.get("sha256") or "", [])
         if not cands:
-            bucket = plan["non_policy"] if is_non_policy_sheet(rec.get("file_name", "")) \
+            bucket = (
+                plan["non_policy"]
+                if is_non_policy_sheet(rec.get("file_name", ""))
                 else plan["missing"]
+            )
             bucket.append(rec)
             continue
         target, ambiguous = pick_candidate(rec, cands)
-        plan["relocate"].append({"rec": rec, "target": target, "ambiguous": ambiguous,
-                                 "old": rel, "candidates": len(cands)})
+        plan["relocate"].append(
+            {
+                "rec": rec,
+                "target": target,
+                "ambiguous": ambiguous,
+                "old": rel,
+                "candidates": len(cands),
+            }
+        )
     return plan
 
 
@@ -167,8 +184,9 @@ def _atomic_json(path: str, obj) -> None:
 
 def apply_plan(plan: dict, *, backup: bool = True) -> dict:
     """执行重定位：改索引 + 改 processed 路径字段 + 迁移 state 的 path_key。"""
-    touched_proc = [os.path.join(PROCESSED, (r["rec"].get("ipn") or "") + ".json")
-                    for r in plan["relocate"]]
+    touched_proc = [
+        os.path.join(PROCESSED, (r["rec"].get("ipn") or "") + ".json") for r in plan["relocate"]
+    ]
     touched_proc = [p for p in touched_proc if os.path.exists(p)]
     backup_dir = ""
     if backup:
@@ -215,8 +233,7 @@ def apply_plan(plan: dict, *, backup: bool = True) -> dict:
     state_migrated = 0
     if os.path.exists(STATE_PATH):
         state = json.load(open(STATE_PATH, encoding="utf-8"))
-        path_of_ipn = {r.get("ipn"): r.get("relative_path", "")
-                       for r in index.get("records", [])}
+        path_of_ipn = {r.get("ipn"): r.get("relative_path", "") for r in index.get("records", [])}
         for key, val in state.items():
             if str(key).startswith("_") or not isinstance(val, dict):
                 continue
@@ -225,15 +242,22 @@ def apply_plan(plan: dict, *, backup: bool = True) -> dict:
                 val["path_key"] = want
                 state_migrated += 1
         meta = state.get("_meta") or {}
-        meta.update({"schema_version": "2.0",
-                     "written_by": "tools/reconcile_original_paths.py",
-                     "written_at": now,
-                     "path_key": "仓内落位路径（relative_path）；与 sha256 共同构成幂等键"})
+        meta.update(
+            {
+                "schema_version": "2.0",
+                "written_by": "tools/reconcile_original_paths.py",
+                "written_at": now,
+                "path_key": "仓内落位路径（relative_path）；与 sha256 共同构成幂等键",
+            }
+        )
         state["_meta"] = meta
         _atomic_json(STATE_PATH, state)
 
-    return {"relocated": changed, "state_path_key_migrated": state_migrated,
-            "backup_dir": backup_dir}
+    return {
+        "relocated": changed,
+        "state_path_key_migrated": state_migrated,
+        "backup_dir": backup_dir,
+    }
 
 
 def main() -> int:
@@ -250,8 +274,10 @@ def main() -> int:
     plan = build_plan()
     print(f"[reconcile] 索引记录 {plan['total']} 条")
     print(f"  可解析            : {len(plan['resolvable'])}")
-    print(f"  待重定位（漂移）  : {len(plan['relocate'])}"
-          f"（其中多重匹配歧义 {sum(1 for x in plan['relocate'] if x['ambiguous'])}）")
+    print(
+        f"  待重定位（漂移）  : {len(plan['relocate'])}"
+        f"（其中多重匹配歧义 {sum(1 for x in plan['relocate'] if x['ambiguous'])}）"
+    )
     print(f"  台账类（非正文）  : {len(plan['non_policy'])}")
     print(f"  真缺失（无内容）  : {len(plan['missing'])}")
     for rec in plan["missing"][:10]:
@@ -262,16 +288,20 @@ def main() -> int:
         return 0
 
     res = apply_plan(plan, backup=not args.no_backup)
-    print(f"[reconcile] 已重定位 {res['relocated']} 条；"
-          f"state path_key 迁移 {res['state_path_key_migrated']} 条")
+    print(
+        f"[reconcile] 已重定位 {res['relocated']} 条；"
+        f"state path_key 迁移 {res['state_path_key_migrated']} 条"
+    )
     if res["backup_dir"]:
         print(f"[reconcile] 备份 → {res['backup_dir']}")
 
     # 复核：重定位后的可解析率
     after = build_plan()
     ok = len(after["resolvable"]) + len(after["relocate"])
-    print(f"[reconcile] 复核：可解析 {len(after['resolvable'])} + 仍漂移 {len(after['relocate'])}"
-          f" = {ok}/{after['total']}")
+    print(
+        f"[reconcile] 复核：可解析 {len(after['resolvable'])} + 仍漂移 {len(after['relocate'])}"
+        f" = {ok}/{after['total']}"
+    )
     return 0
 
 

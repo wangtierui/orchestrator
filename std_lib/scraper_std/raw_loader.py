@@ -26,6 +26,7 @@ raw_loader.py —— 五源 data/raw 统一只读入口（探查/清洗解耦架
   兼容性：模块级 `EXPECTED_COUNTS` 符号保留（空 dict 语义），避免历史调用点
   `from raw_loader import EXPECTED_COUNTS` 直接 ImportError；新代码勿依赖。
 """
+
 from __future__ import annotations
 
 import json
@@ -102,8 +103,9 @@ def load_doc(source: str, root: str | None = None) -> Any:
         return json.load(fh)
 
 
-def iter_records(source: str | None = None, root: str | None = None
-                 ) -> Iterator[tuple[str, dict[str, Any]]]:
+def iter_records(
+    source: str | None = None, root: str | None = None
+) -> Iterator[tuple[str, dict[str, Any]]]:
     """按源迭代 (source, record)。source=None 时遍历五源。只读。"""
     sources = [source] if source else list(RAW_FILES)
     for s in sources:
@@ -111,8 +113,9 @@ def iter_records(source: str | None = None, root: str | None = None
             yield s, rec
 
 
-def load_all(source: str | None = None, root: str | None = None
-             ) -> list[tuple[str, dict[str, Any]]]:
+def load_all(
+    source: str | None = None, root: str | None = None
+) -> list[tuple[str, dict[str, Any]]]:
     """一次性加载全部记录（探查统计用）。只读。"""
     return list(iter_records(source, root))
 

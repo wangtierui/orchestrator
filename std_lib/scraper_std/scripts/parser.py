@@ -10,6 +10,7 @@ parser —— 解析/清洗模块再导出（单一事实源，对应四源 scri
     from scraper_std.scripts.parser import parse_document
     result = parse_document(data_bytes, "scan.pdf")
 """
+
 from __future__ import annotations
 
 from ..cleaner import clean_text, is_table_block, normalize_ws  # noqa: F401
@@ -37,7 +38,15 @@ def parse_document(data: bytes, name: str = "", *, enable_ocr: bool = True) -> d
 
 
 __all__ = [
-    "extract_document_text", "sniff_kind", "garble_ratio", "normalize_date",
-    "normalize_digits", "clean_text", "normalize_ws", "is_table_block",
-    "repair_text", "extract_tables_from_doc", "parse_document",
+    "extract_document_text",
+    "sniff_kind",
+    "garble_ratio",
+    "normalize_date",
+    "normalize_digits",
+    "clean_text",
+    "normalize_ws",
+    "is_table_block",
+    "repair_text",
+    "extract_tables_from_doc",
+    "parse_document",
 ]

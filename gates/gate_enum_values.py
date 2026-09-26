@@ -9,6 +9,7 @@ P0 阶段：
 P1 起扩展：扫描 modules/**/*.py 中枚举值字面量，凡不在 config.enums 登记集合且不在
 豁免白名单者即 FAIL。
 """
+
 from __future__ import annotations
 
 import sys
@@ -25,6 +26,7 @@ except Exception as e:  # pragma: no cover
 _PYYAML_OK = False
 try:
     import yaml  # noqa: F401
+
     _PYYAML_OK = True
 except Exception:
     _PYYAML_OK = False
@@ -42,14 +44,20 @@ def run():
     if _PYYAML_OK:
         try:
             from config.loader import active_source_ids
+
             active = active_source_ids()
             if set(active) != set(E.SOURCE_SET):
-                problems.append(f"sources.yaml active {sorted(active)} != SOURCE_SET {sorted(E.SOURCE_SET)}")
+                problems.append(
+                    f"sources.yaml active {sorted(active)} != SOURCE_SET {sorted(E.SOURCE_SET)}"
+                )
         except Exception as e:  # pragma: no cover
             warnings.append(f"loader 检查跳过: {e}")
     else:
         warnings.append("PyYAML 未安装，sources.yaml 一致性检查跳过（P0 放行）")
-    detail = {"problems": problems, "warnings": warnings,
-              "SOURCE_SET": sorted(E.SOURCE_SET),
-              "TIMELINESS_STATUS": sorted(E.TIMELINESS_STATUS)}
+    detail = {
+        "problems": problems,
+        "warnings": warnings,
+        "SOURCE_SET": sorted(E.SOURCE_SET),
+        "TIMELINESS_STATUS": sorted(E.TIMELINESS_STATUS),
+    }
     return (not problems), detail

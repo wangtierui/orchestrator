@@ -27,6 +27,7 @@ dry-run 默认；`--apply` 写 `backups/nonpolicy_<ts>/manifest.json`（逐条 f
   python tools/split_internal_nonpolicy.py            # dry-run
   python tools/split_internal_nonpolicy.py --apply
 """
+
 from __future__ import annotations
 
 import argparse
@@ -47,7 +48,7 @@ BACKUP_ROOT = os.path.join(IPB, "backups")
 
 DOC_EXTS = {".pdf", ".doc", ".docx"}
 LEDGER_EXTS = {".xls", ".xlsx", ".xlsm"}
-KEEP_IN_PLACE = {"制度清单.xlsx"}          # 规则 3 指定的文号兜底来源，留在 originals 根层
+KEEP_IN_PLACE = {"制度清单.xlsx"}  # 规则 3 指定的文号兜底来源，留在 originals 根层
 
 
 def _norm(p: str) -> str:
@@ -84,8 +85,9 @@ def build_plan() -> dict:
                 if ext in DOC_EXTS and not f.startswith("~$"):
                     doc_left.append(os.path.relpath(src, ORIGINALS))
                     continue
-                kind = "temp" if f.startswith("~$") else \
-                    ("ledger" if ext in LEDGER_EXTS else "misc")
+                kind = (
+                    "temp" if f.startswith("~$") else ("ledger" if ext in LEDGER_EXTS else "misc")
+                )
                 base = LEDGERS if kind == "ledger" else MISC
                 move.append((src, os.path.join(base, rel, f), kind, rel.split(os.sep)[0]))
     return {"move": move, "keep": keep, "doc_left": doc_left}
@@ -104,9 +106,14 @@ def apply_plan(plan: dict, *, backup: bool = True) -> dict:
             os.makedirs(os.path.dirname(dst), exist_ok=True)
             os.replace(src, dst)
             acts[kind] += 1
-            entries.append({"src": os.path.relpath(src, DATA).replace(os.sep, "/"),
-                            "dst": os.path.relpath(dst, DATA).replace(os.sep, "/"),
-                            "kind": kind, "dept": dept})
+            entries.append(
+                {
+                    "src": os.path.relpath(src, DATA).replace(os.sep, "/"),
+                    "dst": os.path.relpath(dst, DATA).replace(os.sep, "/"),
+                    "kind": kind,
+                    "dept": dept,
+                }
+            )
         except OSError as e:
             acts["failed"] += 1
             entries.append({"src": src, "error": repr(e)[:120]})
@@ -124,9 +131,17 @@ def apply_plan(plan: dict, *, backup: bool = True) -> dict:
     if backup:
         os.makedirs(backup_dir, exist_ok=True)
         with open(os.path.join(backup_dir, "manifest.json"), "w", encoding="utf-8") as fh:
-            json.dump({"generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                       "actions": dict(acts), "removed_empty_dirs": removed_dirs,
-                       "entries": entries}, fh, ensure_ascii=False, indent=2)
+            json.dump(
+                {
+                    "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    "actions": dict(acts),
+                    "removed_empty_dirs": removed_dirs,
+                    "entries": entries,
+                },
+                fh,
+                ensure_ascii=False,
+                indent=2,
+            )
     return {"actions": dict(acts), "removed_empty_dirs": removed_dirs, "backup_dir": backup_dir}
 
 
@@ -192,40 +207,64 @@ def apply_prune(plan: dict, *, backup: bool = True) -> dict:
         os.replace(tmp, sp)
     if backup:
         with open(os.path.join(backup_dir, "pruned.json"), "w", encoding="utf-8") as fh:
-            json.dump({"kept": len(plan["keep"]), "dropped": len(plan["drop"]),
-                       "state_removed": state_removed,
-                       "dropped_records": [{"ipn": r.get("ipn"),
-                                            "file_name": r.get("file_name"),
-                                            "relative_path": r.get("relative_path")}
-                                           for r in plan["drop"]]},
-                      fh, ensure_ascii=False, indent=2)
-    return {"kept": len(plan["keep"]), "dropped": len(plan["drop"]),
-            "state_removed": state_removed, "backup_dir": backup_dir}
+            json.dump(
+                {
+                    "kept": len(plan["keep"]),
+                    "dropped": len(plan["drop"]),
+                    "state_removed": state_removed,
+                    "dropped_records": [
+                        {
+                            "ipn": r.get("ipn"),
+                            "file_name": r.get("file_name"),
+                            "relative_path": r.get("relative_path"),
+                        }
+                        for r in plan["drop"]
+                    ],
+                },
+                fh,
+                ensure_ascii=False,
+                indent=2,
+            )
+    return {
+        "kept": len(plan["keep"]),
+        "dropped": len(plan["drop"]),
+        "state_removed": state_removed,
+        "backup_dir": backup_dir,
+    }
 
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="非制度正文件从原件库隔离归置（含失效索引清理）")
     ap.add_argument("--apply", action="store_true")
-    ap.add_argument("--prune-index", action="store_true",
-                    help="同时剔除已隔离文件的失效索引记录（表格类 / ~$ 锁文件）")
+    ap.add_argument(
+        "--prune-index",
+        action="store_true",
+        help="同时剔除已隔离文件的失效索引记录（表格类 / ~$ 锁文件）",
+    )
     ap.add_argument("--no-backup", action="store_true")
     args = ap.parse_args()
 
     plan = build_plan()
     kinds = collections.Counter(k for _s, _d, k, _dept in plan["move"])
-    print(f"[split] 待隔离 {len(plan['move'])} 个：ledger {kinds.get('ledger', 0)} / "
-          f"misc {kinds.get('misc', 0)} / temp {kinds.get('temp', 0)}")
+    print(
+        f"[split] 待隔离 {len(plan['move'])} 个：ledger {kinds.get('ledger', 0)} / "
+        f"misc {kinds.get('misc', 0)} / temp {kinds.get('temp', 0)}"
+    )
     print(f"[split] 保留原位 {len(plan['keep'])}（含制度清单.xlsx，规则 3 兜底来源）")
     if plan["doc_left"]:
-        print(f"[split] 注意：子目录中仍有制度正文 {len(plan['doc_left'])} 个（应先跑 "
-              f"normalize_internal_naming.py）：{plan['doc_left'][:3]}")
+        print(
+            f"[split] 注意：子目录中仍有制度正文 {len(plan['doc_left'])} 个（应先跑 "
+            f"normalize_internal_naming.py）：{plan['doc_left'][:3]}"
+        )
     for s, _dst, k, _dept in plan["move"][:8]:
         print(f"   [{k:6s}] {os.path.relpath(s, DATA)}")
     if args.prune_index:
         pp = plan_prune()
-        print(f"[split] 索引清理：总 {pp.get('total', 0)} → 剔除 {len(pp['drop'])} / "
-              f"保留 {len(pp['keep'])}；**制度正文类不可解析（需先重定位，不剔除）** "
-              f"{len(pp['stuck'])}")
+        print(
+            f"[split] 索引清理：总 {pp.get('total', 0)} → 剔除 {len(pp['drop'])} / "
+            f"保留 {len(pp['keep'])}；**制度正文类不可解析（需先重定位，不剔除）** "
+            f"{len(pp['stuck'])}"
+        )
         for r in pp["stuck"][:8]:
             print(f"   [stuck] {r.get('ipn')} | {r.get('file_name')}")
     if not args.apply:
@@ -236,8 +275,10 @@ def main() -> int:
     print(f"[split] 清单 → {res['backup_dir']}\\manifest.json")
     if args.prune_index:
         pr = apply_prune(plan_prune(), backup=not args.no_backup)
-        print(f"[split] 索引清理完成：保留 {pr['kept']} / 剔除 {pr['dropped']}；"
-              f"state 移除 {pr['state_removed']} 条")
+        print(
+            f"[split] 索引清理完成：保留 {pr['kept']} / 剔除 {pr['dropped']}；"
+            f"state 移除 {pr['state_removed']} 条"
+        )
         print(f"[split] 清理清单 → {pr['backup_dir']}\\pruned.json")
     return 0
 

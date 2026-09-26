@@ -16,6 +16,7 @@ gates/gate_rfn_sync — RFN 跨文件一致性（由旧 classifier scripts/check
   - KNOWN_LEGACY_RFNS（历史治理接受）差异仅透明报告，不计失败；
   - 仅校验+报告，不自动写回（回写须经 rfn_api，见 P5）。
 """
+
 from __future__ import annotations
 
 import csv
@@ -83,7 +84,7 @@ def run():
             problems.append(f"{loc} {rfn or '<空>'} RFN 不在归属表")
             return
         if not _doc_equal(rec_doc, auth_row.get("发文字号", "")):
-            msg = f"{rfn} 文号 {str(rec_doc)[:16]!r} != 归属表 {str(auth_row.get('发文字号',''))[:16]!r}"
+            msg = f"{rfn} 文号 {str(rec_doc)[:16]!r} != 归属表 {str(auth_row.get('发文字号', ''))[:16]!r}"
             (legacy if rfn in KNOWN_LEGACY_RFNS else problems).append(f"{loc} {msg}")
 
     authority = {r["监管文件编号"]: r for r in rows}
@@ -137,7 +138,9 @@ def run():
         "attr_rows": len(rows),
         "final_checked": sum(
             len(json.load(open(os.path.join(_DATA, f"_t{t}_final.json"), encoding="utf-8")))
-            for t in range(1, 11) if os.path.exists(os.path.join(_DATA, f"_t{t}_final.json"))),
+            for t in range(1, 11)
+            if os.path.exists(os.path.join(_DATA, f"_t{t}_final.json"))
+        ),
         "detail_tables": len(dets),
         "problems": problems[:50],
         "legacy_transparent": len(legacy),

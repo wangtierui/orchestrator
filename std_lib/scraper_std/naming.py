@@ -24,7 +24,9 @@ import re
 LOG = logging.getLogger("scraper_std.naming")
 
 _ILLEGAL = re.compile(r'[\\/:*?"<>|\r\n\t]+')
-_REDUNDANT_PREFIX = re.compile(r"^(关于|关于印发|印发|关于进一步|关于做好|关于规范|关于明确|关于调整|关于开展|关于公布)")
+_REDUNDANT_PREFIX = re.compile(
+    r"^(关于|关于印发|印发|关于进一步|关于做好|关于规范|关于明确|关于调整|关于开展|关于公布)"
+)
 _PUNCT = re.compile(r"[，。、；：！？「」『』（）()《》〈〉\[\]{}——…·,.;:!?\"'`~\-— ]")
 _DEFAULT_MAX_LEN = 200  # Windows 260 字符保护阈值
 
@@ -80,7 +82,7 @@ def standard_filename(
     if len(name) > max_len:
         LOG.warning("文件名超长(%d>%d)自动截断：%s", len(name), max_len, name)
         budget = max_len - len(idx) - len(type_tag) - len(date8) - len(ext_l) - 4
-        stem = stem[:max(1, budget)]
+        stem = stem[: max(1, budget)]
         name = f"{idx}_{type_tag}_{stem}_{date8}{ext_l}"
     return name
 
@@ -93,17 +95,30 @@ def safe_join(directory: str, filename: str) -> str:
 
 if __name__ == "__main__":  # 离线自检
     fn = standard_filename(
-        index_no="ZNBG2024001", title="国务院关于进一步优化政务服务提升行政效能的意见",
-        pub_date="2024-08-19", ext=".docx", file_type="正文")
+        index_no="ZNBG2024001",
+        title="国务院关于进一步优化政务服务提升行政效能的意见",
+        pub_date="2024-08-19",
+        ext=".docx",
+        file_type="正文",
+    )
     # 规范示例：标题摘要保留“国务院关于…”，截前 20 字符加省略号
-    assert fn.startswith("ZNBG2024001_正文_国务院关于进一步优化政务服务提升行政效能..._20240819.docx"), fn
+    assert fn.startswith(
+        "ZNBG2024001_正文_国务院关于进一步优化政务服务提升行政效能..._20240819.docx"
+    ), fn
     assert "/" not in fn and "\\" not in fn and ":" not in fn
     # 冗余前缀剥离：标题以“关于”开头时去除
-    fn3 = standard_filename(index_no="X1", title="关于规范行业协会商会收费的通知",
-                            pub_date="2023-01-01", ext=".pdf")
+    fn3 = standard_filename(
+        index_no="X1", title="关于规范行业协会商会收费的通知", pub_date="2023-01-01", ext=".pdf"
+    )
     assert fn3.startswith("X1_附件_规范行业协会商会收费的通知_20230101.pdf"), fn3
-    fn2 = standard_filename(index_no="", title="附件问答", pub_date="2024-01-02",
-                            ext=".pdf", seq=2, url="http://x.gov.cn/a?id=1")
+    fn2 = standard_filename(
+        index_no="",
+        title="附件问答",
+        pub_date="2024-01-02",
+        ext=".pdf",
+        seq=2,
+        url="http://x.gov.cn/a?id=1",
+    )
     # 无索引号 → URL MD5 前 8 位；多附件序号追加
     assert "_附件2_" in fn2 and fn2.endswith(".pdf"), fn2
     assert fn2.startswith(hashlib.md5(b"http://x.gov.cn/a?id=1").hexdigest()[:8]), fn2

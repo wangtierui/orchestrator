@@ -1,5 +1,7 @@
 """File I/O helpers for structured data."""
 
+from __future__ import annotations
+
 import csv
 import json
 import os

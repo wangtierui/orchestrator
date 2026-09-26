@@ -10,6 +10,7 @@ commands/schedule — 调度事实源的查看 / 安装 / 校验（v2 §3.13.6�
     python cli.py schedule verify     # 比对已安装任务与 yaml（不一致 → rc=1）
     python cli.py schedule remove     # 删除本工具注册的任务
 """
+
 from __future__ import annotations
 
 import argparse
@@ -21,9 +22,16 @@ ACTIONS = ("print", "list", "install", "verify", "remove")
 
 
 def build_parser() -> argparse.ArgumentParser:
-    ap = argparse.ArgumentParser(prog="cli.py schedule", description="调度事实源操作面（v2 §3.13.6）")
-    ap.add_argument("action", nargs="?", default="verify", choices=list(ACTIONS),
-                    help="print 打印 crontab | list 列任务 | install 注册 | verify 校验 | remove 删除")
+    ap = argparse.ArgumentParser(
+        prog="cli.py schedule", description="调度事实源操作面（v2 §3.13.6）"
+    )
+    ap.add_argument(
+        "action",
+        nargs="?",
+        default="verify",
+        choices=list(ACTIONS),
+        help="print 打印 crontab | list 列任务 | install 注册 | verify 校验 | remove 删除",
+    )
     return ap
 
 
@@ -31,6 +39,7 @@ def main(argv=None) -> int:
     args = build_parser().parse_args(argv)
     bootstrap("all", include_tools=True)
     import install_schedule  # noqa: PLC0415
+
     if args.action == "install":
         return install_schedule.main(["--install"])
     if args.action == "remove":

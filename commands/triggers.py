@@ -11,6 +11,7 @@ commands/triggers — 条件触发链的决策表与执行（v2 §3.5，P2-1）
 （主链既有阶段已覆盖多数链外节点，重复执行会双写）；本命令是触发链的**显式驱动面**，
 `run --triggers` 为"主链成功后追加执行"的开关。
 """
+
 from __future__ import annotations
 
 import argparse
@@ -18,17 +19,27 @@ import json
 import sys
 
 from bootstrap import bootstrap
+from config.exitcodes import ExitCode  # noqa: E402  (R3：退出码语义化)
 
 
 def build_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(prog="cli.py triggers", description="条件触发链（v2 §3.5）")
-    ap.add_argument("action", nargs="?", default="table", choices=["table", "list", "run"],
-                    help="table 决策表（默认）| list 列出触发项 | run 执行")
+    ap.add_argument(
+        "action",
+        nargs="?",
+        default="table",
+        choices=["table", "list", "run"],
+        help="table 决策表（默认）| list 列出触发项 | run 执行",
+    )
     ap.add_argument("--id", default="", help="只处理指定触发项")
     ap.add_argument("--dry-run", action="store_true", help="只列 argv，不执行")
     ap.add_argument("--json", action="store_true", help="输出 JSON")
-    ap.add_argument("--arg", action="append", default=[],
-                    help="上下文变量 k=v（供 {arg}/{vault} 占位符；可多次）")
+    ap.add_argument(
+        "--arg",
+        action="append",
+        default=[],
+        help="上下文变量 k=v（供 {arg}/{vault} 占位符；可多次）",
+    )
     return ap
 
 
@@ -48,6 +59,7 @@ def main(argv=None) -> int:
     args = build_parser().parse_args(argv)
     bootstrap("all")
     from std_lib.common_lib import triggers as trg  # noqa: PLC0415
+
     ctx = _ctx(args)
 
     if args.action == "list":
@@ -57,18 +69,23 @@ def main(argv=None) -> int:
         else:
             for r in rows:
                 print(f"{r['id']:<20} stage={r['stage']:<6} steps={len(r['steps'])}  {r['desc']}")
-        return 0
+        return ExitCode.OK
 
     if args.action == "table":
         rows = trg.decide(ctx, only=args.id)
         if args.json:
             print(json.dumps(rows, ensure_ascii=False, indent=1))
         else:
-            print(trg.decision_table_text(ctx) if not args.id
-                  else "\n".join(f"[{'将执行' if r['enabled'] else '跳过  '}] {r['id']}\n"
-                                 + "\n".join(f"          └ {x}" for x in r["reasons"])
-                                 for r in rows))
-        return 0
+            print(
+                trg.decision_table_text(ctx)
+                if not args.id
+                else "\n".join(
+                    f"[{'将执行' if r['enabled'] else '跳过  '}] {r['id']}\n"
+                    + "\n".join(f"          └ {x}" for x in r["reasons"])
+                    for r in rows
+                )
+            )
+        return ExitCode.OK
 
     # ---- run ----
     if args.dry_run:
@@ -82,14 +99,14 @@ def main(argv=None) -> int:
                     print(f"    argv={s.get('argv')} timeout={s.get('timeout')}")
                 if d.get("note"):
                     print(f"    依据: {d['note']}")
-        return 0
+        return ExitCode.OK
     if args.id:
         rep = trg.run_trigger(args.id, ctx)
         print(f"[triggers] {rep['id']}: {rep['status']} {rep.get('note', '')}")
-        return 0 if rep["status"] in ("ran", "skipped") else 2
+        return ExitCode.OK if rep["status"] in ("ran", "skipped") else ExitCode.DATA
     rep = trg.run_all(ctx)
     print(f"[triggers] 执行 {rep['ran']} / 跳过 {rep['skipped']} / 失败 {rep['failed']}")
-    return 0 if not rep["failed"] else 2
+    return ExitCode.OK if not rep["failed"] else ExitCode.DATA
 
 
 def run(argv=None) -> int:

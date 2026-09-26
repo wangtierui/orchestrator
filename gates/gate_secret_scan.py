@@ -10,6 +10,7 @@
 
 通过标准：无 CRITICAL/HIGH 命中（placeholder/环境变量注入形态不报）。
 """
+
 from __future__ import annotations
 
 import os
@@ -24,19 +25,23 @@ def run() -> tuple[bool, dict]:
 
     from scraper_std.secret_scan import scan_directory  # noqa: PLC0415
 
-    findings = scan_directory(root, include_ext=[".py", ".yaml", ".yml", ".json",
-                                                 ".toml", ".ini", ".cfg", ".env"])
-    skip_frag = (os.sep + "reports" + os.sep, os.sep + "data" + os.sep,
-                 os.sep + "published" + os.sep, os.sep + "corpus" + os.sep,
-                 os.sep + "backups" + os.sep, os.sep + "_tmp" + os.sep,
-                 "secret_scan.py",        # 扫描器自身（自检夹具动态拼接）
-                 "gate_secret_scan.py")   # 本门禁（描述文本含规则名，防自命中）
-    kept = [f for f in findings
-            if not any(s in (f.file or "") for s in skip_frag)]
+    findings = scan_directory(
+        root, include_ext=[".py", ".yaml", ".yml", ".json", ".toml", ".ini", ".cfg", ".env"]
+    )
+    skip_frag = (
+        os.sep + "reports" + os.sep,
+        os.sep + "data" + os.sep,
+        os.sep + "published" + os.sep,
+        os.sep + "corpus" + os.sep,
+        os.sep + "backups" + os.sep,
+        os.sep + "_tmp" + os.sep,
+        "secret_scan.py",  # 扫描器自身（自检夹具动态拼接）
+        "gate_secret_scan.py",
+    )  # 本门禁（描述文本含规则名，防自命中）
+    kept = [f for f in findings if not any(s in (f.file or "") for s in skip_frag)]
     crit = [f for f in kept if f.level == "CRITICAL"]
     high = [f for f in kept if f.level == "HIGH"]
-    problems = [f"{f.file}:{f.line} [{f.level}] {f.hint} → {f.matched[:80]}"
-                for f in (crit + high)]
+    problems = [f"{f.file}:{f.line} [{f.level}] {f.hint} → {f.matched[:80]}" for f in (crit + high)]
     passed = not problems
     detail = {
         "checked_root": root,

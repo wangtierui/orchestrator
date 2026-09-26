@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 """commands.analysis — orchestrator 命令：analysis（自 cli.py 迁移，2026-09-13 审查 P3）。"""
+
 from __future__ import annotations
 
 import paths
+from config.exitcodes import ExitCode
 
 
 def run(argv):
@@ -16,27 +18,34 @@ def run(argv):
     import os as _os  # noqa: PLC0415
 
     from bootstrap import bootstrap  # noqa: PLC0415
+
     action = argv[0] if argv else ""
     outdir = _os.path.join(paths.ROOT, "docs", "reports")
     if action == "gen":
         bootstrap(include_tools=True)
         from gen_analysis_deliveries import main as _gen  # noqa: PLC0415
+
         return _gen(argv[1:])
     if action == "status":
         mpath = _os.path.join(outdir, "_manifest.json")
         if not _os.path.exists(mpath):
             print("[analysis] 交付库未生成（先跑: orchestrator analysis gen）")
-            return 1
+            return ExitCode.FAIL
         m = _json.load(open(mpath, encoding="utf-8"))
-        miss = [it for it in m.get("items", [])
-                if not _os.path.exists(_os.path.join(outdir, it["file"]))]
-        print(f"[analysis] 交付库 {m.get('count')} 项 | 生成于 {m.get('generated_at')} | 目录 {outdir}")
+        miss = [
+            it
+            for it in m.get("items", [])
+            if not _os.path.exists(_os.path.join(outdir, it["file"]))
+        ]
+        print(
+            f"[analysis] 交付库 {m.get('count')} 项 | 生成于 {m.get('generated_at')} | 目录 {outdir}"
+        )
         for it in m.get("items", []):
             print(f"  {it['item']:9s} {it['lines']:5d} 行  {it['file']}")
         if miss:
             print(f"[analysis] ⚠ 缺失 {len(miss)} 个文件: {[x['file'] for x in miss]}")
-            return 1
+            return ExitCode.FAIL
         print("[analysis] 全部交付物在位")
-        return 0
+        return ExitCode.OK
     print("用法: orchestrator analysis {gen [--out dir] [--dry] | status}")
-    return 1
+    return ExitCode.FAIL

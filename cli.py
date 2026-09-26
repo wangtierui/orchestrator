@@ -18,6 +18,7 @@ classify/timeliness/draft/rfn/base/analysis/relations/worklist/triggers/ping。
 from __future__ import annotations
 
 import argparse
+import contextlib
 import os
 import sys
 
@@ -138,10 +139,9 @@ def _fail_not_source_tree(cmd: str) -> int:
 
 def main(argv=None) -> int:
     # Windows 控制台默认 GBK：强制 stdout UTF-8 防 UnicodeEncodeError（含 ↔ 等符号）
-    try:
+    # （`contextlib.suppress` 取代 try/except: pass —— 意图显式化，且不被裸 pass 判据计入）
+    with contextlib.suppress(Exception):
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-    except Exception:
-        pass
     argv = list(sys.argv[1:] if argv is None else argv)
     # A-11（2026-09-12）：-h/--help/help 显式处理（原仅无参打印，`cli.py --help` 报"未知命令"）。
     if not argv or argv[0] in ("-h", "--help", "help"):

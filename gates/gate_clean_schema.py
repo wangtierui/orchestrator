@@ -18,6 +18,7 @@
        （默认取 run_clean_pipeline.SCHEMA_FAIL_RATE_MAX）；
     3) 无数据环境（未跑过 clean）→ PASS + note（与 gate_watermark 同口径）。
 """
+
 from __future__ import annotations
 
 import json
@@ -99,30 +100,42 @@ def run() -> tuple[bool, dict]:
                 meta = rec.get("_metadata") or {}
                 if meta.get("validation_errors"):
                     bad += 1
-        detail["checked"][src] = {"file": os.path.basename(p), "total": total,
-                                  "with_validation_errors": bad}
+        detail["checked"][src] = {
+            "file": os.path.basename(p),
+            "total": total,
+            "with_validation_errors": bad,
+        }
         legacy = LEGACY_WITH_ERRORS.get(src, 0)
         if bad > legacy:
             problems.append(
                 f"{src}: 交付文件含 {bad} 条 validation_errors 记录（{os.path.basename(p)}）"
-                f"，超历史基线 {legacy}——疑似以 --allow-schema-errors 跑生产链；须说明或修复")
+                f"，超历史基线 {legacy}——疑似以 --allow-schema-errors 跑生产链；须说明或修复"
+            )
         elif bad:
             detail.setdefault("legacy", {})[src] = {
-                "with_validation_errors": bad, "baseline": legacy,
-                "note": "修复前生成的快照；下次 clean 重跑后应归零（届时删 LEGACY_WITH_ERRORS）"}
+                "with_validation_errors": bad,
+                "baseline": legacy,
+                "note": "修复前生成的快照；下次 clean 重跑后应归零（届时删 LEGACY_WITH_ERRORS）",
+            }
 
         q = os.path.join(_cleaned_dir(), os.path.basename(p).replace(".jsonl", ".quarantine.jsonl"))
         if os.path.exists(q):
             qn = _count_lines(q)
             rate = qn / max(1, qn + total)
-            detail["quarantine"][src] = {"file": os.path.basename(q), "count": qn,
-                                         "rate": round(rate, 4)}
+            detail["quarantine"][src] = {
+                "file": os.path.basename(q),
+                "count": qn,
+                "rate": round(rate, 4),
+            }
             if rate > SCHEMA_FAIL_RATE_MAX:
                 problems.append(f"{src}: 校验隔离率 {rate:.2%} > 阈值 {SCHEMA_FAIL_RATE_MAX:.2%}")
 
     if not seen_any:
-        return True, {**detail, "note": "无 cleaned 快照（未跑过 clean）——本判据跳过；"
-                                      "跑一次 `python cli.py run` 后自动生效"}
+        return True, {
+            **detail,
+            "note": "无 cleaned 快照（未跑过 clean）——本判据跳过；"
+            "跑一次 `python cli.py run` 后自动生效",
+        }
 
     detail["problems"] = problems
     return (not problems), detail
@@ -130,5 +143,9 @@ def run() -> tuple[bool, dict]:
 
 if __name__ == "__main__":
     passed, det = run()
-    print("[clean_schema]", "PASS" if passed else "FAIL", json.dumps(det, ensure_ascii=False, indent=1))
+    print(
+        "[clean_schema]",
+        "PASS" if passed else "FAIL",
+        json.dumps(det, ensure_ascii=False, indent=1),
+    )
     raise SystemExit(0 if passed else 1)
