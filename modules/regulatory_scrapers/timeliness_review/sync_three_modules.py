@@ -55,6 +55,7 @@ CLASSIFIER = module_dir("regulatory_classifier")
 INTERNAL = module_dir("internal_policy_drafter")
 
 
+from config.exitcodes import ExitCode  # noqa: E402
 from std_lib.common_lib.norm import norm_docno as _norm_docno  # A-10：SSOT 收敛（标准层）
 
 
@@ -214,13 +215,13 @@ def main() -> int:
         cands = sorted(glob.glob(os.path.join(REVIEW, f"时效核验_{args.source}变更台账_{today}.csv")))
         if not cands:
             print(f"[sync] 未找到当日台账（{args.source} / {today}），无变更可同步")
-            return 0
+            return ExitCode.OK
         ledger = cands[-1]
     else:
         ledger = args.ledger
     if not os.path.exists(ledger):
         print(f"[sync] 台账不存在：{ledger}")
-        return 1
+        return ExitCode.FAIL
     changed = list(csv.DictReader(open(ledger, encoding="utf-8-sig")))
     print(f"[sync] 台账 {os.path.basename(ledger)}：变更 {len(changed)} 条 | 源 {args.source}"
           + (" | DRY-RUN" if args.dry_run else ""))

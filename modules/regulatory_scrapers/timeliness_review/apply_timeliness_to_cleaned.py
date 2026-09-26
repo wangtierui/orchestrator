@@ -46,6 +46,8 @@ csv.field_size_limit(sys.maxsize)
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))   # modules/regulatory_scrapers/
 sys.path.insert(0, os.path.join(ROOT, "std_lib"))
+from config.exitcodes import ExitCode  # noqa: E402
+
 # R4 适配：std_lib 上收 orchestrator 根（scrapers/std_lib 旧仓路径已失效）
 _ORCH_ROOT = os.path.dirname(os.path.dirname(ROOT))
 if _ORCH_ROOT not in sys.path:
@@ -366,7 +368,7 @@ def main() -> int:
                 LOG.info(f"[apply] 条款产物已刷新（重算源: {_built or '无变更'}）")
             except Exception as e:  # noqa: BLE001
                 LOG.warning(f"[apply] WARN 条款产物刷新失败: {e!r}")
-    return 0
+    return ExitCode.OK
 
 
 if __name__ == "__main__":

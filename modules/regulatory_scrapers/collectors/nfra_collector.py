@@ -162,7 +162,7 @@ def http_get_json(opener, url, params, timeout=25, max_retries=4):
             try:
                 with open(cp, encoding="utf-8") as fh:
                     return json.load(fh)
-            except Exception:
+            except Exception:  # noqa: BLE001  采集容错（字段/附件缺失不阻断采集）
                 pass  # 缓存损坏则重新请求
         if _RESP.offline:
             # 离线模式：缓存缺失直接跳过，避免无意义的联网重试
@@ -189,7 +189,7 @@ def http_get_json(opener, url, params, timeout=25, max_retries=4):
             if _RESP is not None:
                 try:
                     _RESP.put(url, params, data)
-                except Exception:
+                except Exception:  # noqa: BLE001  采集容错（字段/附件缺失不阻断采集）
                     pass
             return data
         except (TimeoutError, urllib.error.HTTPError, urllib.error.URLError, ConnectionError, json.JSONDecodeError, RuntimeError) as e:
@@ -757,7 +757,7 @@ def scrape(args):
                     if rem.get("xls_legacy"):
                         f.write("- **旧版 .xls（%d 个）**：%s\n"
                                 % (by_type.get("xls_legacy", {}).get("total", 0), rem["xls_legacy"]))
-            except Exception:
+            except Exception:  # noqa: BLE001  采集容错（字段/附件缺失不阻断采集）
                 pass
         if errors:
             f.write("\n## 失败明细\n\n")

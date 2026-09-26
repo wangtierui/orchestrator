@@ -44,6 +44,7 @@ try:
 except ImportError:  # pragma: no cover - 依赖缺失环境
     fitz = None  # type: ignore[assignment]
 
+from config.exitcodes import ExitCode  # noqa: E402
 from std_lib.scraper_std.naming import standard_filename  # noqa: E402
 
 RAW = os.path.join(PROJECT_ROOT, "data", "raw", "supplementary_regulations.json")
@@ -107,7 +108,7 @@ def main() -> int:
     nonprop_pdf = os.path.join(TMP, "nonprop.pdf")
     if not (os.path.exists(prop_pdf) and os.path.exists(nonprop_pdf)):
         print("[fix] I2 错误：tmp/iachina 下未找到已下载的 PDF，请先下载", file=sys.stderr)
-        return 1
+        return ExitCode.FAIL
     prop_txt = extract_pdf(prop_pdf)
     nonprop_txt = extract_pdf(nonprop_pdf)
     header = ("中国保险行业协会财产再保险比例及非比例合同范本（中文版）\n"
@@ -145,7 +146,7 @@ def main() -> int:
 
     json.dump(data, open(RAW, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
     print(f"[fix] 已写回 raw：{RAW}（{len(data)} 条）")
-    return 0
+    return ExitCode.OK
 
 if __name__ == "__main__":
     raise SystemExit(main())

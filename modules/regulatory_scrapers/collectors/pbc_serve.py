@@ -155,7 +155,7 @@ class RangeHTTPRequestHandler(SimpleHTTPRequestHandler):
         except Exception as e:  # noqa: BLE001
             try:
                 self.send_error(500, f"Server error: {e}")
-            except Exception:
+            except Exception:  # noqa: BLE001  采集容错（字段/附件缺失不阻断采集）
                 pass
 
     do_HEAD = do_GET  # HEAD 复用同一逻辑（do_GET 内已对 HEAD 跳过 body）

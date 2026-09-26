@@ -43,7 +43,7 @@ def extract_doc_text(b):
         t = "\n".join(runs).strip()
         if len(re.findall(r"[一-鿿]", t)) >= 200:
             return t
-    except Exception:
+    except Exception:  # noqa: BLE001  采集容错（字段/附件缺失不阻断采集）
         pass
     # 2) UTF-16BE 兜底
     try:
@@ -52,7 +52,7 @@ def extract_doc_text(b):
         t = "\n".join(runs).strip()
         if len(re.findall(r"[一-鿿]", t)) >= 200:
             return t
-    except Exception:
+    except Exception:  # noqa: BLE001  采集容错（字段/附件缺失不阻断采集）
         pass
     return ""
 

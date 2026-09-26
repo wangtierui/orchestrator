@@ -58,6 +58,7 @@ if _ORCH_ROOT not in sys.path:
 R_PAT = re.compile(r"\bR-(\d{2})\b")
 # R-F01 收敛（2026-09-14）：文号核心形态 / 书名号标题 / 监管机关词表上收
 # std_lib.common_lib.relations（原为本文件字面量，与 clause_graph、detail_tables 三份重复）。
+from config.exitcodes import ExitCode  # noqa: E402
 from std_lib.common_lib.relations import ORGAN_WORDS, docno_core_re, quote_title_re  # noqa: E402
 
 # 发文字号核心：〔20xx〕N号 / [20xx]N号 / （20xx）N号 / 令20xx年第N号 / 国务院令第N号
@@ -276,7 +277,7 @@ def main():
     if a_issues:
         print(f"[verify] 对齐表漂移 {len(a_issues)} 项" + ("（strict 门禁拦截）" if args.strict else ""))
         if args.strict:
-            return 1
+            return ExitCode.FAIL
     elif not a_warns:
         print(f"[verify] 对齐表核验：{len(ver.align)} 个 R 行 RFN 全部有效、名称/文号与权威一致")
 
@@ -289,7 +290,7 @@ def main():
     if t_issues:
         print(f"[verify] 对齐表时效 {len(t_issues)} 项问题（{'strict 门禁拦截' if args.strict else '非严格，仅报告'}）")
         if args.strict:
-            return 1
+            return ExitCode.FAIL
     elif not t_warns:
         print(f"[verify] 对齐表时效核验：{len(ver.align)} 个 R 行时效均受控且与 classifier 一致")
 
@@ -307,7 +308,7 @@ def main():
         print(f"\n[verify] ❌ 共 {total_issues} 项门禁问题（{'strict 已拦截' if args.strict else '非严格，仅报告'}）")
         return 1 if args.strict else 0
     print(f"\n[verify] ✅ 全部引用命中 regulatory_classifier 唯一事实源（{len(files)} 文件，R/文号 0 未命中）")
-    return 0
+    return ExitCode.OK
 
 
 if __name__ == "__main__":

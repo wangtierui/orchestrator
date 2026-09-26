@@ -216,7 +216,7 @@ def backfill_clauses() -> dict:
         if os.path.exists(main_p):
             try:
                 title = _json.load(open(main_p, encoding="utf-8")).get("title", "")
-            except Exception:
+            except Exception:  # noqa: BLE001  解析容错（非关键字段缺失降级）
                 pass
         payload, md = build_clause_payload(ipn, obj.get("text", ""), title)
         _json.dump(payload,
@@ -230,7 +230,7 @@ def backfill_clauses() -> dict:
                 m["chapter_count"] = len(payload["chapters"])
                 m["article_count"] = len(payload["articles"])
                 _json.dump(m, open(main_p, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
-            except Exception:
+            except Exception:  # noqa: BLE001  解析容错（非关键字段缺失降级）
                 pass
         n += 1
     if os.path.exists(idx_path):
@@ -245,7 +245,7 @@ def backfill_clauses() -> dict:
             _json.dump(idx, open(idx_path + ".tmp", "w", encoding="utf-8"),
                        ensure_ascii=False, indent=2)
             os.replace(idx_path + ".tmp", idx_path)
-        except Exception:
+        except Exception:  # noqa: BLE001  解析容错（非关键字段缺失降级）
             pass
     return {"backfilled": n}
 
@@ -291,7 +291,7 @@ def renormalize_processed() -> dict:
             _json.dump(idx, open(idx_path + ".tmp", "w", encoding="utf-8"),
                        ensure_ascii=False, indent=2)
             os.replace(idx_path + ".tmp", idx_path)
-        except Exception:
+        except Exception:  # noqa: BLE001  解析容错（非关键字段缺失降级）
             pass
     return {"changed": changed, "unchanged": unchanged, "processed_dir": proc_dir}
 

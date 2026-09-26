@@ -44,7 +44,7 @@ def _warmup():
         subprocess.run(["curl", "-s", "-L", "-A", UA, "-c", CK, "--max-time", "30",
                         API.rsplit("/cbircweb", 1)[0] + "/cn/view/pages/index/index.html"],
                        capture_output=True, timeout=40)
-    except Exception:
+    except Exception:  # noqa: BLE001  采集容错（字段/附件缺失不阻断采集）
         pass
     time.sleep(1.0)
 

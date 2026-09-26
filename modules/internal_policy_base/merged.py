@@ -203,7 +203,7 @@ def build_merged_view() -> dict:
 def main():
     try:
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-    except Exception:
+    except Exception:  # noqa: BLE001  解析容错（非关键字段缺失降级）
         pass
     s = build_merged_view()
     print(json.dumps(s, ensure_ascii=False, indent=2))

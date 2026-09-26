@@ -219,7 +219,7 @@ def process_attachment(doc_id, att, att_root, args, cooldown_state, ex=None):
                     if k in ex:
                         entry[k] = ex[k]
             return entry, True
-        except Exception:
+        except Exception:  # noqa: BLE001  采集容错（字段/附件缺失不阻断采集）
             pass
 
     if not entry["url"]:
@@ -281,7 +281,7 @@ def process_attachment(doc_id, att, att_root, args, cooldown_state, ex=None):
         # 表格结构化（2026-09-08 仿 supp 打通）：xlsx/docx 附件表 → manifest entry 表键
         try:
             entry.update(structured_table_fields(data, name))
-        except Exception:
+        except Exception:  # noqa: BLE001  采集容错（字段/附件缺失不阻断采集）
             pass  # 表格抽取失败不影响文本/落盘/续跑
         # 富内容轨（2026-09-09 rich_object）：docx/xlsx 图形/公式/图片
         try:
@@ -289,7 +289,7 @@ def process_attachment(doc_id, att, att_root, args, cooldown_state, ex=None):
                 data, name,
                 image_dir=docs_root("nfra", "diagrams"),
                 rec_key=str(entry.get("doc_id", ""))))
-        except Exception:
+        except Exception:  # noqa: BLE001  采集容错（字段/附件缺失不阻断采集）
             pass  # 富内容失败不影响文本/落盘/续跑
         cooldown_state["consecutive"] = 0
         return entry, True
@@ -544,7 +544,7 @@ def refresh_stats():
                     if e.get("page_count") != pc:
                         e["page_count"] = pc
                         changed = True
-                except Exception:
+                except Exception:  # noqa: BLE001  采集容错（字段/附件缺失不阻断采集）
                     pass
             # 以源文件重新计算 sha256（权威校验值）
             sha = sha256_of(data)

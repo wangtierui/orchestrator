@@ -150,7 +150,7 @@ def align_all() -> dict:
 def main():
     try:
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-    except Exception:
+    except Exception:  # noqa: BLE001  解析容错（非关键字段缺失降级）
         pass
     s = align_all()
     print(json.dumps(s, ensure_ascii=False, indent=2))

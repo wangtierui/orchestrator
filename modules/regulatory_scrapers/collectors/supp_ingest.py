@@ -65,6 +65,7 @@ for _p in (HERE, SCRAPERS_ROOT):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from config.exitcodes import ExitCode  # noqa: E402
 from std_lib.scraper_std.naming import standard_filename  # noqa: E402
 
 REPO_ROOT = SCRAPERS_ROOT  # 数据根 = modules/regulatory_scrapers（拍平后单层上溯一次即到）
@@ -571,7 +572,7 @@ def main() -> int:
         tag = r.get("task_index") or r.get("document_number") or r.get("title", "")[:8]
         print(f"  - {tag} | {r['document_number']} | {r['title'][:24]} | {src_tag}{doc}")
     print("[ingest] 台账：state/ingest.last.json")
-    return 0
+    return ExitCode.OK
 
 if __name__ == "__main__":
     raise SystemExit(main())

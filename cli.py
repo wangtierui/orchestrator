@@ -43,6 +43,7 @@ from commands import status as _m_status
 from commands import timeliness as _m_timeliness
 from commands import triggers as _m_triggers
 from commands import worklist as _m_worklist
+from config.exitcodes import ExitCode
 
 COMMANDS = {
     "gates": _m_gates.run,
@@ -134,7 +135,7 @@ def _fail_not_source_tree(cmd: str) -> int:
     print('  1) 可编辑安装（推荐）：pip install -e ".[dev]"，随后执行 orchestrator <cmd>')
     print("  2) 免安装：在仓库根目录直接执行 python cli.py <cmd>")
     print("  3) 容器：按 .devcontainer 启动（数据与 OCR 引擎仍需在宿主准备）")
-    return 4
+    return ExitCode.NOT_SOURCE_TREE
 
 
 def main(argv=None) -> int:
@@ -146,13 +147,13 @@ def main(argv=None) -> int:
     # A-11（2026-09-12）：-h/--help/help 显式处理（原仅无参打印，`cli.py --help` 报"未知命令"）。
     if not argv or argv[0] in ("-h", "--help", "help"):
         print(build_parser().format_help())
-        return 0 if argv else 1
+        return ExitCode.OK if argv else ExitCode.USAGE
     # 兼容 "orchestrator source list" / "orchestrator gates"
     cmd = argv[0]
     handler = COMMANDS.get(cmd)
     if handler is None:
         print(f"未知命令: {cmd}（可用: {sorted(COMMANDS)}）")
-        return 1
+        return ExitCode.USAGE
     # 源码树校验（2026-09-13）：ping 为骨架自检，允许在缺 modules/ 时继续（用于诊断）。
     if cmd != "ping" and not os.path.isdir(paths.MODULES_DIR):
         return _fail_not_source_tree(cmd)

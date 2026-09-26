@@ -24,6 +24,7 @@ for _p in (_ROOT, _MODULES):
         sys.path.insert(0, _p)
 
 # v2 §3.1.3 I-3（2026-09-26）：发布件目录改经 interfaces 访问器（判据 D）
+from config.exitcodes import ExitCode  # noqa: E402
 from interfaces.clean_index_api import published_dir as _ext_published_dir  # noqa: E402
 from interfaces.internal_policy_api import published_dir as _ipb_published_dir  # noqa: E402
 
@@ -215,7 +216,7 @@ def main() -> int:
     if what in ("internal", "all"):
         out["internal"] = build_internal()
     print(json.dumps(out, ensure_ascii=False, indent=1))
-    return 0
+    return ExitCode.OK
 
 
 if __name__ == "__main__":

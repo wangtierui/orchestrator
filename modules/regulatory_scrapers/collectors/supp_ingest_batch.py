@@ -59,7 +59,7 @@ def load_existing():
                 data = json.load(f)
             if isinstance(data, list):
                 return data
-        except Exception:
+        except Exception:  # noqa: BLE001  采集容错（字段/附件缺失不阻断采集）
             pass
     return []
 

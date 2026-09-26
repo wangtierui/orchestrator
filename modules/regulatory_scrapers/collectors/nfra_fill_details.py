@@ -57,7 +57,7 @@ def _warmup():
         subprocess.run(["curl", "-s", "-L", "-A", UA, "-c", COOKIE_JAR,
                         "--max-time", "30", BASE + "/cn/view/pages/index/index.html"],
                        capture_output=True, timeout=40)
-    except Exception:
+    except Exception:  # noqa: BLE001  采集容错（字段/附件缺失不阻断采集）
         pass
     time.sleep(1.0)
 
@@ -98,7 +98,7 @@ def _fetch_one(did, delay):
                     f.write(out)
                 time.sleep(delay)
                 return True
-        except Exception:
+        except Exception:  # noqa: BLE001  采集容错（字段/附件缺失不阻断采集）
             pass
         time.sleep(2 ** attempt)
     return False
@@ -107,14 +107,14 @@ def _read_state():
     if os.path.exists(STATE_FILE):
         try:
             return json.load(open(STATE_FILE, encoding="utf-8"))
-        except Exception:
+        except Exception:  # noqa: BLE001  采集容错（字段/附件缺失不阻断采集）
             pass
     return {}
 
 def _write_state(st):
     try:
         json.dump(st, open(STATE_FILE, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
-    except Exception:
+    except Exception:  # noqa: BLE001  采集容错（字段/附件缺失不阻断采集）
         pass
 
 def main():
@@ -135,7 +135,7 @@ def main():
         try:
             did = int(base.split("docId_")[1].split(".")[0])
             cached.add(did)
-        except Exception:
+        except Exception:  # noqa: BLE001  采集容错（字段/附件缺失不阻断采集）
             pass
     missing = [i for i in all_ids if i not in cached]
     print("[fill] 总文档=%d | 已缓存详情=%d | 待补=%d"

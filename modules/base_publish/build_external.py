@@ -33,6 +33,7 @@ for _p in (_ROOT, _MODULES, os.path.join(_ROOT, "std_lib")):
 
 from base_publish import SCHEMA_VERSION  # noqa: E402
 
+from config.exitcodes import ExitCode  # noqa: E402
 from interfaces.clause_index_api import clauses_dir as _clauses_dir  # noqa: E402
 from interfaces.clean_index_api import published_dir as _published_dir  # noqa: E402
 from interfaces.contract import attachment_view  # noqa: E402  (F-D07 附件字段契约归一)
@@ -331,7 +332,7 @@ def main() -> int:
     m = build()
     print(json.dumps({k: v for k, v in m.items() if k != "files"}, ensure_ascii=False, indent=1))
     print("[base_publish] external 发布件 →", PUBLISH_DIR)
-    return 0
+    return ExitCode.OK
 
 
 if __name__ == "__main__":

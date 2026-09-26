@@ -109,7 +109,7 @@ def _cleanup_backups(keep=3):
         )
         for old in dirs[keep:]:
             shutil.rmtree(old, ignore_errors=True)
-    except Exception:
+    except Exception:  # noqa: BLE001  采集容错（字段/附件缺失不阻断采集）
         pass
 
 MAX_K = 50  # 自适应窗口上限，防止极端批量发布导致请求失控
@@ -133,7 +133,7 @@ def _backup_and_delete(pages, bk):
         try:
             shutil.copy2(f, os.path.join(bk, os.path.basename(f)))
             os.remove(f)
-        except Exception:
+        except Exception:  # noqa: BLE001  采集容错（字段/附件缺失不阻断采集）
             pass
 
 def refresh_list():
@@ -288,7 +288,7 @@ def main():
         st = {}
         try:
             st = json.load(open(STATE_FILE, encoding="utf-8"))
-        except Exception:
+        except Exception:  # noqa: BLE001  采集容错（字段/附件缺失不阻断采集）
             pass
         summary["fill_state"] = st
         summary["attachments_ok"] = att_ok
@@ -296,7 +296,7 @@ def main():
         try:
             json.dump(summary, open(LAST_FILE, "w", encoding="utf-8"),
                       ensure_ascii=False, indent=2)
-        except Exception:
+        except Exception:  # noqa: BLE001  采集容错（字段/附件缺失不阻断采集）
             pass
         print("\n[weekly] 完成。refresh_ok=%s remaining=%s"
               % (ok, st.get("remaining")))

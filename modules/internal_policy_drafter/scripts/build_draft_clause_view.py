@@ -36,6 +36,7 @@ for _p in (_ORCH_ROOT,):
         sys.path.insert(0, _p)
 # 阶段 3（2026-09-18）：RFN 索引与内部制度产物一律经 interfaces（原插兄弟模块目录已移除）
 # 阶段 3（2026-09-18）：内部制度产物路径经 interfaces 唯一入口取（勿自行拼兄弟模块路径）
+from config.exitcodes import ExitCode  # noqa: E402
 from interfaces.internal_policy_api import get_internal_policy_api  # noqa: E402
 from interfaces.rfn_api import get_index  # noqa: E402
 
@@ -206,7 +207,7 @@ def main() -> int:
 
     if not os.path.exists(MERGED):
         print("[draft] merged_view 缺失：先运行 `python cli.py internal merged`")
-        return 1
+        return ExitCode.FAIL
     os.makedirs(OUT, exist_ok=True)
     view = json.load(open(MERGED, encoding="utf-8"))
     idx = get_index()
@@ -239,7 +240,7 @@ def main() -> int:
               f"链接 {st['rfn_links']} | 待核文号 {st['unlinked_regulatory_refs']} → {os.path.relpath(out_p, _DR)}")
     print(f"[draft] 完成 {total['done']} 份 | 条文 {total['articles']} | RFN 条款链接 {total['links']} | "
           f"⚠ 待核监管文号 {total['warns']} | 无条文结构 {len(total['no_clause'])} {total['no_clause'][:5]}")
-    return 0
+    return ExitCode.OK
 
 
 if __name__ == "__main__":

@@ -36,6 +36,7 @@
 from __future__ import annotations
 
 import argparse
+import contextlib
 import csv
 import hashlib
 import json
@@ -320,10 +321,8 @@ def _print_result(result: dict) -> int:
 
 
 def main(argv=None) -> int:
-    try:
+    with contextlib.suppress(Exception):
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-    except Exception:
-        pass
     ap = argparse.ArgumentParser(description="事实源 → 治理库元数据投影器（阶段 2）")
     ap.add_argument("--apply", action="store_true", help="投影写库（默认仅比对）")
     ap.add_argument("--check", action="store_true", help="比对断言（--apply 时自动附带）")

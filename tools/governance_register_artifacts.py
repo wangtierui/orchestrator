@@ -24,6 +24,7 @@
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import os
 import sys
@@ -110,10 +111,8 @@ def _iter_external(limit: int = 0):
 
 
 def main(argv=None) -> int:
-    try:
+    with contextlib.suppress(Exception):
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-    except Exception:
-        pass
     ap = argparse.ArgumentParser(description="原件注册进治理库（阶段 1）")
     ap.add_argument("--scope", choices=["internal", "external", "all"], default="all")
     ap.add_argument("--limit", type=int, default=0, help="每类最多登记 N 件（0=全部）")

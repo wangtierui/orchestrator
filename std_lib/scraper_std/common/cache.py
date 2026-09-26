@@ -55,7 +55,7 @@ class CacheManager:
                 json.dumps({"_cached_at": time.time(), "payload": payload}, ensure_ascii=False),
                 encoding="utf-8",
             )
-        except Exception:
+        except Exception:  # noqa: BLE001  旁路设施/缓存降级（主路径不受影响）
             pass
 
     def get_file(self, key: str, max_age: float = 604800) -> bytes | None:
@@ -81,7 +81,7 @@ class CacheManager:
             self._path(key, ".meta").write_text(
                 json.dumps({"cached_at": time.time()}), encoding="utf-8"
             )
-        except Exception:
+        except Exception:  # noqa: BLE001  旁路设施/缓存降级（主路径不受影响）
             pass
 
     def clear(self) -> None:

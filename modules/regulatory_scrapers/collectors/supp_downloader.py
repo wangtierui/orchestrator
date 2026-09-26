@@ -131,7 +131,7 @@ def download_file(client: AdaptiveHttpClient, url: str, dest_path: str, **kw) ->
             with open(dest_path, "rb") as fh:
                 data = fh.read()
             _BLOB.save(owner, data, os.path.basename(dest_path), url=url, source_saved=True)
-        except Exception:
+        except Exception:  # noqa: BLE001  采集容错（字段/附件缺失不阻断采集）
             pass  # 缓存失败不影响主流程落盘
     return ok, msg, size
 

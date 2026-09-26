@@ -121,7 +121,7 @@ def find_cli(node_exe: str = NODE_EXE, pkg_dir: str = PKG_DIR, env_cli: str = ""
                 js = os.path.join(pkg_dir, entry)
                 if os.path.exists(js) and node_exe and os.path.exists(node_exe):
                     return [node_exe, js]
-        except Exception:
+        except Exception:  # noqa: BLE001  旁路设施/缓存降级（主路径不受影响）
             pass
     w = shutil.which("pkulaw-mcp")
     if w:

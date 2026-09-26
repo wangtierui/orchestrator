@@ -205,7 +205,7 @@ def _request(method, path, payload=None, *, rate=None, timeout=30,
             try:
                 with open(cp, encoding="utf-8") as fh:
                     return json.load(fh)
-            except Exception:
+            except Exception:  # noqa: BLE001  采集容错（字段/附件缺失不阻断采集）
                 pass  # 缓存损坏则重新请求
         if _RESP.offline:
             raise _OfflineMiss("%s" % endpoint)
@@ -235,7 +235,7 @@ def _request(method, path, payload=None, *, rate=None, timeout=30,
             if _RESP is not None and isinstance(data, dict) and data.get("code") == 200:
                 try:
                     _RESP.put(endpoint, params, data)
-                except Exception:
+                except Exception:  # noqa: BLE001  采集容错（字段/附件缺失不阻断采集）
                     pass
             return data
         except urllib.error.HTTPError as e:
@@ -387,13 +387,13 @@ def _finalize_attachment(att, data, fname, law_id, dest):
         att["garble_ratio"] = ext.get("garble_ratio", 0.0)
         try:
             att.update(structured_table_fields(data, fname))
-        except Exception:
+        except Exception:  # noqa: BLE001  采集容错（字段/附件缺失不阻断采集）
             pass
         try:
             att.update(rich_object_fields(data, fname,
                                           image_dir=docs_root("mof", "diagrams"),
                                           rec_key=str(law_id)))
-        except Exception:
+        except Exception:  # noqa: BLE001  采集容错（字段/附件缺失不阻断采集）
             pass
     except Exception as e:
         logger.warning("附件文本抽取异常 %s：%s", att.get("file_url"), e)

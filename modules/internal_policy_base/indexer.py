@@ -45,6 +45,8 @@ from internal_policy_base.scan import (  # noqa: E402
     scan_directory,  # noqa: E402
 )
 
+from config.exitcodes import ExitCode  # noqa: E402
+
 # R21：条文结构解析（章-条），供 merged_view/drafter 条款对照。
 # 2026-09-19 收敛：解析/渲染统一经 `extract.build_clause_payload`（唯一实现，三写入点共用），
 # 本模块不再直接依赖 std_lib.scraper_std.document_structure。
@@ -74,9 +76,9 @@ def _write_rich(ipn: str, data: bytes, fname: str) -> int:
             data, fname,
             image_dir=os.path.join(_PROCESSED, ipn + "_images"), rec_key=ipn)
     except Exception:  # noqa: BLE001  富内容失败不阻断摄取
-        return 0
+        return ExitCode.OK
     if not fields:
-        return 0
+        return ExitCode.OK
     json.dump({"ipn": ipn, "rich_structured": fields["rich_structured"],
                "rich_text": fields["rich_text"], "rich_count": fields["rich_count"]},
               open(os.path.join(_PROCESSED, ipn + "_rich.json"), "w", encoding="utf-8"),
@@ -598,7 +600,7 @@ def backfill_rich() -> dict:
 def main():
     try:
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-    except Exception:
+    except Exception:  # noqa: BLE001  解析容错（非关键字段缺失降级）
         pass
     import argparse
     ap = argparse.ArgumentParser(description="内部制度摄取索引")
@@ -611,7 +613,7 @@ def main():
     args = ap.parse_args()
     if not args.source_dir:
         print("需提供 --source-dir 或设置 INTERNAL_POLICY_ROOT 环境变量")
-        return 1
+        return ExitCode.FAIL
     import json as _j
     only = unindexed_originals() if args.only_unindexed else None
     if only is not None:
@@ -619,7 +621,7 @@ def main():
     s = ingest(args.source_dir, enable_ocr=args.enable_ocr, dry_run=args.dry_run,
                only_paths=only)
     print(_j.dumps(s, ensure_ascii=False, indent=2))
-    return 0
+    return ExitCode.OK
 
 
 if __name__ == "__main__":

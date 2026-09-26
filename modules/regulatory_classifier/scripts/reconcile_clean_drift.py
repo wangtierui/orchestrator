@@ -400,7 +400,7 @@ def reconcile(source=None, apply_c1=False, dry_run=False, force_clean_title=Fals
 def main():
     try:
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-    except Exception:
+    except Exception:  # noqa: BLE001  分类/检索容错
         pass
     ap = argparse.ArgumentParser(description="RFN↔clean 漂移核验与桥表维护")
     ap.add_argument("--apply", action="store_true", help="自动执行 C1 标题刷新（RFN 不变）")

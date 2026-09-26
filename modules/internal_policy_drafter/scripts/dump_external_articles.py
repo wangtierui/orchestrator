@@ -28,6 +28,7 @@ for _p in (_ORCH, _MODS, os.path.join(_ORCH, "std_lib")):
         sys.path.insert(0, _p)
 
 # 阶段 3（2026-09-18）：条文产物经 interfaces 唯一入口（原插 scrapers 目录已移除）
+from config.exitcodes import ExitCode  # noqa: E402
 from interfaces import clause_index_api as clause_index  # noqa: E402
 
 
@@ -56,7 +57,7 @@ def _match_article_no(article: str):
 def main() -> int:
     try:
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-    except Exception:
+    except Exception:  # noqa: BLE001  容错降级
         pass
     ap = argparse.ArgumentParser(description="外部监管文件条款正文查询（clause_index ②）")
     ap.add_argument("--docno", default="", help="发文字号（归一匹配）")
@@ -66,7 +67,7 @@ def main() -> int:
     args = ap.parse_args()
     if not (args.docno or args.title):
         print("[usage] 至少给 --docno 或 --title")
-        return 2
+        return ExitCode.USAGE
     want = _match_article_no(args.article)
     hits = 0
     for cl in clause_index.find_clauses(docno=args.docno, title=args.title, src=args.src):
@@ -86,8 +87,8 @@ def main() -> int:
     if not hits:
         print("[未命中] 请确认 clean 已跑且 clause_index 已构建（clean 管道固定节点自动构建；"
               "或 python -m modules.regulatory_scrapers.clause_index 触发）")
-        return 1
-    return 0
+        return ExitCode.DATA
+    return ExitCode.OK
 
 
 if __name__ == "__main__":

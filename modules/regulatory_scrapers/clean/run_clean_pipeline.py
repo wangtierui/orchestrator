@@ -31,6 +31,7 @@ for _p in (_REPO,):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from config.exitcodes import ExitCode  # noqa: E402
 from std_lib.scraper_std.pipeline import run_pipeline  # noqa: E402
 
 # v2 §3.4 V1（2026-09-26）：校验失败率阈值。
@@ -112,6 +113,10 @@ def main(argv=None) -> int:
     ap.add_argument("--schema-fail-rate-max", type=float, default=SCHEMA_FAIL_RATE_MAX,
                     dest="schema_fail_rate_max",
                     help=f"校验失败率阈值（超过则 rc=2；默认 {SCHEMA_FAIL_RATE_MAX:.2%}）")
+    # v2 §2.3.2（P8，2026-09-26）：dedup_key 唯一性校验**转严格**——此前仅有非空断言，
+    # 跨记录去重键冲突无人发现（下游按 dedup_key 建索引会静默覆盖）。默认重复即 rc=2。
+    ap.add_argument("--allow-dup-dedup-key", action="store_true", dest="allow_dup_dedup_key",
+                    help="逃生阀：dedup_key 重复仍交付（默认重复即 rc=2，交付视为未完成）")
     args = ap.parse_args(argv)
 
     project = args.project
@@ -146,9 +151,15 @@ def main(argv=None) -> int:
             _ok, _dups = _cdk(_recs)
             if _dups:
                 _d0 = _dups[0]
-                print(f"[{project}] dedup 唯一性：{len(_dups)} 组重复键"
-                      f"（样例 {_d0['dedup_key'][:40]} ×{_d0['count']}）"
-                      "——下游按 dedup_key 建索引会静默覆盖，请排查源数据")
+                _msg = (f"dedup 唯一性：{len(_dups)} 组重复键"
+                        f"（样例 {_d0['dedup_key'][:40]} ×{_d0['count']}）")
+                if args.allow_dup_dedup_key:
+                    print(f"[{project}] WARN {_msg}——下游按 dedup_key 建索引会静默覆盖；"
+                          "已用 --allow-dup-dedup-key 显式接受")
+                else:
+                    print(f"[{project}] FAIL {_msg}——下游按 dedup_key 建索引会静默覆盖；"
+                          "请修源数据，或用 --allow-dup-dedup-key 显式接受（逃生阀）")
+                    return ExitCode.DATA
         except Exception as _e:  # noqa: BLE001  旁路：唯一性校验失败不得中断清洗
             print(f"[{project}] WARN dedup 唯一性校验跳过（{type(_e).__name__}）")
 
@@ -165,7 +176,7 @@ def main(argv=None) -> int:
 
     if not summary.get("allow_delivery"):
         print(f"[{project}] WARN 空值率超阈值，按规范不生成交付文件（已告警）。")
-        return 2
+        return ExitCode.DATA
 
     # v2 §3.4 V1（2026-09-26）：校验失败记录的显式失败面。
     # 改造前：validate_record 失败仅记 _metadata.validation_errors 并**照常交付**（假成功）；
@@ -179,7 +190,7 @@ def main(argv=None) -> int:
         print(f"[{project}] FAIL 校验失败率 {_rate:.2%} 超阈值 "
               f"{args.schema_fail_rate_max:.2%}——交付视为未完成；请修源后重跑，"
               f"或用 --allow-schema-errors 显式接受（逃生阀）。")
-        return 2
+        return ExitCode.DATA
 
     tail_failures: list[str] = []   # F-S08：尾部固定节点失败登记（决定 rc）
 
@@ -221,8 +232,8 @@ def main(argv=None) -> int:
     # 失败必须显式 rc≠0（原仅 WARN + rc=0 → 索引/clause 缺而下游误判"成功"）。
     if tail_failures:
         print(f"[clean] FAIL 尾部固定节点失败: {tail_failures}——请修复后重跑本源 clean")
-        return 3
-    return 0
+        return ExitCode.ENV
+    return ExitCode.OK
 
 
 if __name__ == "__main__":

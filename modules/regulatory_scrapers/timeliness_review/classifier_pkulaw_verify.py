@@ -30,6 +30,8 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))      # regulatory_scrapers/
 sys.path.insert(0, ROOT)                                                # clean_index 包（五源 cleaned 索引事实源）
+from config.exitcodes import ExitCode  # noqa: E402
+
 sys.path.insert(0, os.path.join(ROOT, "std_lib"))
 sys.path.insert(0, os.path.join(ROOT, "timeliness_review"))
 import verification_state as vstate  # noqa: E402
@@ -100,7 +102,7 @@ def load_five_source_rows():
             if ln:
                 try:
                     rows.append(json.loads(ln))
-                except Exception:
+                except Exception:  # noqa: BLE001  容错降级
                     pass
         out[src] = rows
     return out
@@ -135,7 +137,7 @@ def main():
 
     if not os.path.exists(args.csv):
         print(f"[verify] 归属表不存在: {args.csv}")
-        return 1
+        return ExitCode.FAIL
 
     state = vstate.load_state()
     rows = load_classifier_rows(args.csv)
@@ -146,10 +148,10 @@ def main():
         for c in cands[:10]:
             print(f"  待查: {c['document_number'] or '(无文号)'} | {c['title'][:28]} | 现值={c['timeliness_status']!r}")
         print("[verify] dry-run：未发起任何北大法宝查询")
-        return 0
+        return ExitCode.OK
     if not cands:
         print("[verify] 无待查验文件，全部已北大法宝核验（≤90日）")
-        return 0
+        return ExitCode.OK
 
     cli = pk.find_cli()
     token = pk.load_token(args.token_file)
@@ -157,7 +159,7 @@ def main():
         token = pk.load_token(os.path.join(OUT_DIR, ".pkulaw_token"))
     if not token:
         print("[verify] 未找到 Token：请设置 PKULAW_TOKEN 环境变量或提供 --token-file")
-        return 1
+        return ExitCode.FAIL
 
     plan, cand2item = pk.build_query_plan(cands)
     if args.probe:
@@ -259,7 +261,7 @@ def main():
             w.writeheader()
         w.writerows(changed)
     print(f"[verify] 判定统计: {stats} | 本批变更 {len(changed)} 条 | 台账(追加) {ledger_out}")
-    return 0
+    return ExitCode.OK
 
 
 if __name__ == "__main__":

@@ -144,6 +144,6 @@ def _write(fname: str, md: str) -> None:
 if __name__ == "__main__":
     try:
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-    except Exception:
+    except Exception:  # noqa: BLE001  分类/检索容错
         pass
     print(json.dumps(build(), ensure_ascii=False))

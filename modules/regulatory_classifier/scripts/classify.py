@@ -207,7 +207,7 @@ def _step_script(step: str, theme: str) -> str:
 if __name__ == "__main__":
     try:
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-    except Exception:
+    except Exception:  # noqa: BLE001  分类/检索容错
         pass
     import argparse  # noqa: PLC0415
     ap = argparse.ArgumentParser(description="主题底座强序重建编排器（R8）")

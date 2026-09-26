@@ -42,6 +42,7 @@ run_production_refresh.py —— 生产五源全量数据刷新编排器（2026-
 from __future__ import annotations
 
 import argparse
+import contextlib
 import datetime
 import json
 import os
@@ -965,11 +966,9 @@ def main(argv=None) -> int:
     """编排入口：单实例锁 → 运行台账 → 主链 → 归档（阶段 0/1，2026-09-18）。"""
     # Windows 控制台/重定向下默认 GBK：状态标记含 ✗ 等非 GBK 字符 → UnicodeEncodeError
     # （2026-09-17 已记录该教训：长跑脚本须纯 ASCII + 强置 PYTHONIOENCODING/UTF-8）。
-    try:
+    with contextlib.suppress(Exception):
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
         sys.stderr.reconfigure(encoding="utf-8", errors="replace")
-    except Exception:
-        pass
     ap = argparse.ArgumentParser(
         description="生产五源全量刷新（抓取→clean→时效→reconcile→recall→gates）"
     )

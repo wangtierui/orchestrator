@@ -337,7 +337,7 @@ class ResponseCache:
             try:
                 with open(p, encoding="utf-8") as fh:
                     return json.load(fh)
-            except Exception:
+            except Exception:  # noqa: BLE001  旁路设施/缓存降级（主路径不受影响）
                 pass  # 损坏则重新获取
         if use_offline:
             raise OfflineMiss("%s ? %s" % (endpoint, urllib.parse.urlencode(params)))
@@ -441,7 +441,7 @@ class TextResponseCache:
             try:
                 with open(p, encoding="utf-8") as fh:
                     return fh.read()
-            except Exception:
+            except Exception:  # noqa: BLE001  旁路设施/缓存降级（主路径不受影响）
                 pass  # 损坏则重新获取
         if use_offline:
             raise OfflineMiss("%s ? %s" % (endpoint, urllib.parse.urlencode(params)))
@@ -475,7 +475,7 @@ class BlobCache:
                 m.setdefault("doc_id", owner_id)
                 m.setdefault("attachments", [])
                 return m
-            except Exception:
+            except Exception:  # noqa: BLE001  旁路设施/缓存降级（主路径不受影响）
                 pass
         return {"doc_id": owner_id, "attachments": []}
 

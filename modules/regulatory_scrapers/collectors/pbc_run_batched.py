@@ -47,7 +47,7 @@ def log(msg):
     try:
         with open(LOG, "a", encoding="utf-8") as f:
             f.write(line + "\n")
-    except Exception:
+    except Exception:  # noqa: BLE001  采集容错（字段/附件缺失不阻断采集）
         pass
 
 def main():

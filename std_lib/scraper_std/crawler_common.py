@@ -434,7 +434,7 @@ def _extract_pdf(data: bytes, enable_ocr: bool, ocr_timeout: int) -> dict[str, A
         for page in reader.pages:
             try:
                 text += (page.extract_text() or "") + "\n"
-            except Exception:
+            except Exception:  # noqa: BLE001  旁路设施/缓存降级（主路径不受影响）
                 pass
         t = clean_pdf_text(text)
         if t.strip():
@@ -452,7 +452,7 @@ def _extract_pdf(data: bytes, enable_ocr: bool, ocr_timeout: int) -> dict[str, A
             for page in pdf.pages:
                 try:
                     text += (page.extract_text() or "") + "\n"
-                except Exception:
+                except Exception:  # noqa: BLE001  旁路设施/缓存降级（主路径不受影响）
                     pass
         t = clean_pdf_text(text)
         if t.strip():
@@ -537,7 +537,7 @@ def _extract_docx(data: bytes) -> dict[str, Any]:
                 "extracted": True,
                 "extract_status": "ok",
             }
-    except Exception:
+    except Exception:  # noqa: BLE001  旁路设施/缓存降级（主路径不受影响）
         pass
     if not _docx_lib_available():
         return {"text": "", "extracted": False, "extract_status": "library_missing"}
@@ -584,7 +584,7 @@ def _extract_xlsx(data: bytes) -> dict[str, Any]:
                         "extracted": True,
                         "extract_status": "ok",
                     }
-    except Exception:
+    except Exception:  # noqa: BLE001  旁路设施/缓存降级（主路径不受影响）
         pass
     if not _xlsx_lib_available():
         return {"text": "", "extracted": False, "extract_status": "library_missing"}
@@ -713,7 +713,7 @@ def _extract_doc_via_wps(data: bytes, timeout: float = 45.0) -> str | None:
                         subprocess.run(
                             ["taskkill", "/F", "/PID", pid], capture_output=True, timeout=10
                         )
-                    except Exception:
+                    except Exception:  # noqa: BLE001  旁路设施/缓存降级（主路径不受影响）
                         pass
 
         wt = threading.Thread(target=_watchdog, daemon=True)
@@ -725,11 +725,11 @@ def _extract_doc_via_wps(data: bytes, timeout: float = 45.0) -> str | None:
         app = win32com.client.Dispatch("KWPS.Application")
         try:
             app.Visible = False
-        except Exception:
+        except Exception:  # noqa: BLE001  旁路设施/缓存降级（主路径不受影响）
             pass
         try:
             app.DisplayAlerts = 0
-        except Exception:
+        except Exception:  # noqa: BLE001  旁路设施/缓存降级（主路径不受影响）
             pass
         try:
             doc = app.Documents.Open(tmp, ReadOnly=True, AddToRecentFiles=False)
@@ -738,12 +738,12 @@ def _extract_doc_via_wps(data: bytes, timeout: float = 45.0) -> str | None:
             finally:
                 try:
                     doc.Close(False)
-                except Exception:
+                except Exception:  # noqa: BLE001  旁路设施/缓存降级（主路径不受影响）
                     pass
         finally:
             try:
                 app.Quit()
-            except Exception:
+            except Exception:  # noqa: BLE001  旁路设施/缓存降级（主路径不受影响）
                 pass
         text = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f]", "", text)
         text = re.sub(r"\r\n?", "\n", text)
@@ -785,7 +785,7 @@ def _extract_ole2(data: bytes) -> dict[str, Any]:
                 return {"text": text.strip(), "extracted": True, "extract_status": "ok"}
         except ImportError:
             return {"text": "", "extracted": False, "extract_status": "library_missing"}
-        except Exception:
+        except Exception:  # noqa: BLE001  旁路设施/缓存降级（主路径不受影响）
             pass
     # 否则按 .doc 处理：优先 WPS COM（可靠，LibreOffice 缺失时的可行路径），
     # 失败再兜底 olefile 流解析。
@@ -803,7 +803,7 @@ def _extract_ole2(data: bytes) -> dict[str, Any]:
             try:
                 raw = ol.openstream(stream).read()
                 text_parts.append(raw.decode("utf-16-le", "ignore"))
-            except Exception:
+            except Exception:  # noqa: BLE001  旁路设施/缓存降级（主路径不受影响）
                 pass
         text = "\n".join(text_parts)
         text = re.sub(r"[\x00-\x1f\x7f-\x9f]", " ", text)

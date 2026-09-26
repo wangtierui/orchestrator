@@ -6,6 +6,7 @@ docx 样例用 python-docx 现场生成字节。
 """
 from __future__ import annotations
 
+import contextlib
 import io
 import os
 import sys
@@ -50,11 +51,9 @@ class TestExtractDocumentText:
 class TestRobustGetValidation:
     def test_invalid_url_returns(self):
         # 非法协议应快速失败（不发起网络）
-        try:
+        with contextlib.suppress(Exception):
             r = cc.robust_get("not-a-url", timeout=1)
             assert r is None or r is not None
-        except Exception:
-            pass    # 快速失败亦可
 
     def test_backoff_wait_no_retry_after(self):
         cc._backoff_wait(1, None)     # 应立即返回不抛

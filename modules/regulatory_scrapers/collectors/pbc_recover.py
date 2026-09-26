@@ -94,7 +94,7 @@ def parse_pdf_bytes(data):
         cjk = sum(1 for c in text if "\u4e00" <= c <= "\u9fff")
         if len(text) >= 50 and cjk >= 10:
             return text, "text"
-    except Exception:
+    except Exception:  # noqa: BLE001  采集容错（字段/附件缺失不阻断采集）
         pass
     # 2) 扫描件 → 统一 OCR 模块（PaddleOCR 默认 + Tesseract 降级）
     # 修复：原实现直接调 tesseract 子进程（绕过 pytesseract 包装崩溃），
@@ -136,7 +136,7 @@ def parse_doc_bytes(data):
         paras = [p.text for p in d.paragraphs if p.text.strip()]
         if paras:
             return "\n".join(paras).strip(), "docx"
-    except Exception:
+    except Exception:  # noqa: BLE001  采集容错（字段/附件缺失不阻断采集）
         pass
     # 2) 二进制抽取 CJK 连续文本段（Word 97-2003 常有可读文本夹杂）
     for enc in ("utf-8", "gbk", "gb18030"):
@@ -146,7 +146,7 @@ def parse_doc_bytes(data):
             t = "\n".join(runs).strip()
             if len(t) >= 80:
                 return t, "doc_binary"
-        except Exception:
+        except Exception:  # noqa: BLE001  采集容错（字段/附件缺失不阻断采集）
             pass
     return "", "doc_unparsed"
 

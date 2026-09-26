@@ -176,7 +176,7 @@ def extract_xlsx(data):
             for r in ws.iter_rows(values_only=True):
                 rows.append("\t".join("" if c is None else str(c) for c in r))
         return "\n".join(rows)
-    except Exception:
+    except Exception:  # noqa: BLE001  采集容错（字段/附件缺失不阻断采集）
         pass
     # 回退：共享字符串拼接（无 openpyxl 时）
     import xml.etree.ElementTree as ET
@@ -452,14 +452,14 @@ def _handle_ole2(data):
         t, ok, _reason = extract_doc_ole(data)
         if ok:
             return t, None, len(t), False, True, None
-    except Exception:
+    except Exception:  # noqa: BLE001  采集容错（字段/附件缺失不阻断采集）
         pass
     # Excel（旧版 .xls）：xlrd 抽取单元格
     try:
         t = extract_xls_ole(data)
         if t.strip():
             return t, None, len(t), False, True, None
-    except Exception:
+    except Exception:  # noqa: BLE001  采集容错（字段/附件缺失不阻断采集）
         pass
     return "", None, 0, False, False, "unsupported_binary_doc(.doc需外部转换)"
 

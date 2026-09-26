@@ -51,6 +51,7 @@ if _ORCH_ROOT not in sys.path:
 
 # 阶段 3（2026-09-18）：五源 cleaned 索引经 interfaces 唯一入口，
 # 不再把兄弟模块目录插进 sys.path（原 SCRAPERS_ROOT 引导已移除）。
+from config.exitcodes import ExitCode  # noqa: E402
 from interfaces.clean_index_api import get_clean_index  # noqa: E402
 from std_lib.common_lib import fs_lock  # noqa: E402  (旧 `import fs_lock` 语义收口至共享库)
 
@@ -287,7 +288,7 @@ def main():
 
     mode = "已写入" if args.apply else "校验（--apply 写入）"
     print(f"\n合计：缺失补齐 {n_missing} 行 | 口径收敛 {n_converge} 行 | {mode}")
-    return 0
+    return ExitCode.OK
 
 
 if __name__ == "__main__":

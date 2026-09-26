@@ -237,7 +237,7 @@ class RobustSession:
                     with open(cp, encoding="utf-8") as fh:
                         cached = fh.read()
                     return json.loads(cached) if is_json else cached
-                except Exception:
+                except Exception:  # noqa: BLE001  采集容错（字段/附件缺失不阻断采集）
                     pass  # 缓存损坏则重新请求
             if _RESP_TEXT.offline:
                 raise _OfflineMiss("%s ? %s" % (url, urllib.parse.urlencode(params)))
@@ -259,7 +259,7 @@ class RobustSession:
                                 _cache_ep(url), params,
                                 json.dumps(result, ensure_ascii=False) if is_json else result,
                             )
-                        except Exception:
+                        except Exception:  # noqa: BLE001  采集容错（字段/附件缺失不阻断采集）
                             pass
                     return result
                 LOG.warning("GET %s -> HTTP %s (尝试 %d)",
@@ -523,6 +523,7 @@ import atexit  # noqa: E402
 _SCRAPERS_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _SCRAPERS_ROOT not in sys.path:
     sys.path.insert(0, _SCRAPERS_ROOT)
+from config.exitcodes import ExitCode  # noqa: E402
 from std_lib.common_lib import fs_lock
 
 
@@ -593,7 +594,7 @@ def main(argv=None) -> int:
     _lock = fs_lock.ProcessLock(os.path.join(args.out_dir, "scrape.lock"))
     if not _lock.acquire():
         LOG.warning("已有抓取任务在运行（锁存在且 PID 存活），本次跳过以避免重复抓取。")
-        return 0
+        return ExitCode.OK
     atexit.register(_lock.release)
 
     # —— 多子源分发（2026-09-15 纳入 zhengceku）——
@@ -644,10 +645,10 @@ def main(argv=None) -> int:
                 seen_urls.add(r.get("detail_url", ""))
 
     if failed and args.stop_on_error:
-        return 1
+        return ExitCode.FAIL
     if not records:
         LOG.warning("未抓取到任何条目（失败子源：%s）。", failed or "无")
-        return 0
+        return ExitCode.OK
 
     if cfg.resume:
         # 增量续抓：本次 records 仅含新发现条目 → 与现主库合并后覆盖写，防丢历史
@@ -660,7 +661,7 @@ def main(argv=None) -> int:
     paths = write_outputs(records, cfg, source_label=env_source, write_csv=args.csv)
     LOG.info("成功抓取 %d 条（子源：%s；失败：%s）。文件：%s",
              len(records), ",".join(want), ",".join(failed) or "无", paths)
-    return 0
+    return ExitCode.OK
 
 if __name__ == "__main__":
     sys.exit(main())

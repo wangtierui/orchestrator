@@ -232,7 +232,7 @@ class Fetcher:
                 try:
                     with open(cp, encoding="utf-8") as fh:
                         return 200, fh.read()
-                except Exception:
+                except Exception:  # noqa: BLE001  采集容错（字段/附件缺失不阻断采集）
                     pass  # 缓存损坏则重新请求
             if _RESP_TEXT.offline:
                 raise _OfflineMiss(url)
@@ -260,7 +260,7 @@ class Fetcher:
                     if _RESP_TEXT is not None and status == 200 and text:
                         try:
                             _RESP_TEXT.put(_cache_ep(url), {}, text)
-                        except Exception:
+                        except Exception:  # noqa: BLE001  采集容错（字段/附件缺失不阻断采集）
                             pass
                     return status, text
             except urllib.error.HTTPError as e:
@@ -717,7 +717,7 @@ def main():
                     done_urls.add(r["detail_url"])
                     existing_map[r["detail_url"]] = r
             print(f"[*] 检测到已有结果，跳过 {len(done_urls)} 条已成功条目（断点续跑）")
-        except Exception:
+        except Exception:  # noqa: BLE001  采集容错（字段/附件缺失不阻断采集）
             pass
 
     cats = [c for c in CATEGORIES if (not args.category or c["name"] == args.category)]

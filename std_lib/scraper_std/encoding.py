@@ -36,7 +36,7 @@ def _chardet_detect(data: bytes) -> str | None:
         res = chardet.detect(data)
         if res and res.get("encoding"):
             return res["encoding"]
-    except Exception:
+    except Exception:  # noqa: BLE001  旁路设施/缓存降级（主路径不受影响）
         pass
     return None
 
@@ -51,7 +51,7 @@ def _confidence(data: bytes, enc: str) -> float:
         res = chardet.detect(data)
         if res and res.get("encoding") == enc:
             return float(res.get("confidence") or 0.0)
-    except Exception:
+    except Exception:  # noqa: BLE001  旁路设施/缓存降级（主路径不受影响）
         pass
     return 0.0
 
