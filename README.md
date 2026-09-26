@@ -140,25 +140,33 @@ regulatory_compliance_orchestrator/
 
 ```mermaid
 erDiagram
-    SOURCE ||--o{ CLEANED : "collect(5源快照)"
-    CLEANED ||--o{ RFN_ATTR : "归属(reconcile/reconciled)"
-    RFN_ATTR ||--|| THEME_ATTR : "监管文件编号"
-    RFN_ATTR ||--o{ BASE : "派生(T1-T10)"
-    BASE ||--|| FINAL : "cluster(子主题)"
-    RFN_ATTR ||--o{ BRIDGE : "RFN-clean锚"
-    STATE ||--o{ RFN_ATTR : "时效(SSOT传播)"
-    INTERNAL ||--o{ PROCESSED : "878制度"
-    PROCESSED ||--o{ CLAUSES : "条文结构"
+    SOURCE ||--o{ RAW : "采集 collect"
+    RAW ||--o{ CLEANED : "清洗 clean"
+    CLEANED ||--o{ CLAUSES : "条文抽取 clause_index"
+    CLEANED ||--o{ CIDX : "快照索引 clean_index"
+    TLSTATE ||--o{ RFN_ATTR : "时效 SSOT 传播"
+    RFN_ATTR ||--o{ THEME_ATTR : "主题归属"
+    RFN_ATTR ||--o{ BASE : "派生 base"
+    BASE ||--|| FINAL : "cluster 子主题"
+    FINAL ||--o{ DETAIL : "明细表 14 列"
+    CLEANED ||--o{ BRIDGE : "clean 锚"
+    RFN_ATTR ||--o{ BRIDGE : "reconcile 桥"
+    CLEANED ||--o{ RELATIONS : "关系抽取(监管侧)"
+    INTERNAL ||--o{ PROCESSED : "摄取 878 制度"
+    PROCESSED ||--o{ RELATIONS : "关系抽取(内部侧)"
     RFN_ATTR ||--o{ MERGED : "associated_rfns"
+    INTERNAL ||--o{ MERGED : "制度侧"
     MERGED ||--o{ DRAFT : "条款对照素材"
-    FINAL ||--o{ GRAPH : "clause_graph 关系边"
-    DETAIL ||--o{ GRAPH : "引用实证"
-    GRAPH ||--o{ ANALYSIS : "analysis 交付库17项"
+    CLEANED ||--o{ PUBLISHED : "发布件"
+    RELATIONS ||--o{ PUBLISHED : "关系边"
+    FINAL ||--o{ ANALYSIS : "交付库 17 项"
     MERGED ||--o{ ANALYSIS : "制度侧视图"
-    WORKLIST ||--o{ DECISION : "9类决策项(worklist)"
+    RELATIONS ||--o{ ANALYSIS : "关系报告"
+    WORKLIST ||--o{ DECISION : "9 类决策项"
 ```
 - 数据血缘：各底座/明细/桥表/合并视图记录含 provenance（`generated_by/generated_at/source_snapshot`），gate_provenance 强制覆盖。
 - 状态文件版本锚点：`classify_state / clause_index_state / rfn_drift_state / verification_state / _ingest_state` 写盘注入 `_meta{schema_version,written_by,written_at}`（副本写入防污染调用方），读侧剥离。
+- 关系抽取（`extract_relations`）是**跨两类文本的唯一抽取实现**：读 `cleaned`（监管侧）+ `processed`（内部侧）→ 写 `relations_index.jsonl`（一张表三类关系）。
 
 ### 3.2 核心数据对象定义
 
@@ -201,26 +209,32 @@ flowchart LR
     subgraph SRC[五源官网]
         G[gov] ; M[mof] ; N[nfra] ; P[pbc] ; S[supp]
     end
-    G & M & N & P & S -->|collectors/run_clean_pipeline| C[(data/cleaned<br/>39列双轨)]
-    C --> CI[clean_index 快照索引]
-    C -->|条文节点| CL[(data/clauses)]
-    C -->|reconcile 桥/漂移| B[(rfn_clean_bridge)]
-    V[北大法宝核验] -->|verify_missing R13三态| ST[(verification_state)] -->|单路传播| AT[(文件归属表)]
-    AT -->|build_base+cluster| BS[(_t*_base/final 底座)]
-    BS -->|match/detail/clause_graph| DT[(明细表 11份 14列)]
-    INT[内部制度 originals] -->|scan+extract OCR| PC[(processed)]
-    PC -->|align + merged 878| MV[(merged_view)]
+    G & M & N & P & S -->|collectors 采集| RAW[(data/raw)]
+    RAW -->|run_clean_pipeline 清洗| C[(data/cleaned<br/>39列双轨)]
+    C -->|clause_index 条文| CL[(data/clauses)]
+    C -->|快照索引| CIDX[clean_index/index.json]
+    V[北大法宝核验] -.->|verify_missing R13三态| ST[(verification_state)]
+    ST -->|consolidate/apply 回写三字段| C
+    C -->|classify 底座链| AT[(归属表/主题表<br/>base/final/明细)]
+    C -->|extract_relations 关系抽取| REL[(relations_index<br/>三类关系)]
+    INT[内部制度 originals] -->|scan/extract OCR| PC[(processed)]
+    PC -->|extract_relations| REL
+    AT -->|reconcile 桥/漂移| BR[(rfn_clean_bridge)]
+    AT -->|merged 878| MV[(merged_view)]
+    PC --> MV
     MV -->|build_draft_clause_view| DK[(draft_clause 条款对照素材)]
-    ST --> G8{22道交付门禁 gates}
-    DT -->|gen_analysis_deliveries| AN[(docs/reports<br/>五级分析交付17项)]
-    PC & MV -->|base publish| PUB[(published 发布件)]
-    PUB -->|sync_wiki_sources| KB[Obsidian vault]
+    C & CL & BR & AT & REL -->|base_publish| PUB[(published 发布件)]
+    AT & MV & REL -->|gen_analysis_deliveries| AN[(docs/reports<br/>五级分析交付17项)]
     INBOX[(data/inbox 投放区)] -->|inbox_scan| WL[(worklist 9类决策项)]
+    PUB -.->|sync_wiki_sources| KB[Obsidian vault]
+    C & CL & AT & REL & MV & PUB -->|22道门禁| G8{gates}
     G8 -->|全绿| OK[交付]
     classDef src fill:#e1d5e7
     classDef store fill:#d5e8d4
+    classDef ext fill:#ede7f6
     class G,M,N,P,S src
-    class C,CL,B,ST,AT,BS,DT,PC,MV,DK,AN,PUB,WL store
+    class RAW,C,CL,CIDX,ST,AT,REL,PC,BR,MV,DK,PUB,AN,WL store
+    class V,INT,INBOX,KB ext
 ```
 单向依赖纪律：scraper → classifier → internal_base → drafter → analysis；跨模块仅经 `interfaces/`；同仓唯一模块互引 = classifier→clean_index（gate_no_cross_module_import 守卫）。
 
