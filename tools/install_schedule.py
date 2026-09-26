@@ -148,8 +148,12 @@ def build_xml(job: dict) -> str:
         command = sys.executable if head != "py" else "py"
         args = " ".join(rest)
     else:
-        command = os.path.join(paths.ROOT, head)
-        args = " ".join(rest)
+        # 2026-09-27 修复：脚本（如 `cli.py`）**以当前解释器显式调用**，不依赖 `.py` 文件关联。
+        # 原实现把 Command 写成 `<仓根>/cli.py`，Windows 按文件关联选择 Python —— 关联可能指向
+        # 另一个缺依赖的解释器，任务静默 rc=3（ENV，doctor deps FAIL）且无输出可查。
+        # 显式 `sys.executable`（安装时所用解释器，依赖已就绪）+ 脚本绝对路径。
+        command = sys.executable
+        args = " ".join([os.path.join(paths.ROOT, head), *rest])
     xml = (
         '<?xml version="1.0" encoding="UTF-16"?>\n'
         '<Task version="1.4" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">\n'
@@ -163,9 +167,17 @@ def build_xml(job: dict) -> str:
         "<RunLevel>LeastPrivilege</RunLevel></Principal></Principals>\n"
         "  <Settings>\n"
         "    <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>\n"
-        "    <DisallowStartIfOnBatteries>true</DisallowStartIfOnBatteries>\n"
-        "    <StopIfGoingOnBatteries>true</StopIfGoingOnBatteries>\n"
+        # 2026-09-27 修复（计划任务从未执行）：原为 true/true —— 笔记本在电池上时任务
+        # **从不启动**（实测 REG_ORCH_refresh Last Run=1999-11-30、Last Result=267011
+        # 「尚未运行」，而 Next Run 恒为计划时刻）。数据管道属"每日必跑"任务，不应受
+        # 电源状态左右；改用 false（电池上照跑、切电池不中断）。
+        "    <DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>\n"
+        "    <StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>\n"
         "    <StartWhenAvailable>true</StartWhenAvailable>\n"
+        # 不因 Windows 网络探测（不可靠，常见误判）跳过；采集类任务缺网时自身有重试/降级。
+        "    <RunOnlyIfNetworkAvailable>false</RunOnlyIfNetworkAvailable>\n"
+        # 唤醒睡眠中的计算机执行（06:00 定时任务；对用户影响最小，保证"每日必跑"）。
+        "    <WakeToRun>true</WakeToRun>\n"
         "    <ExecutionTimeLimit>PT12H</ExecutionTimeLimit>\n"
         "    <Enabled>true</Enabled>\n"
         "  </Settings>\n"
