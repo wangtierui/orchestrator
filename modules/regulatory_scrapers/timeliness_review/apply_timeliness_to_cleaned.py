@@ -46,7 +46,6 @@ csv.field_size_limit(sys.maxsize)
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))   # modules/regulatory_scrapers/
 sys.path.insert(0, os.path.join(ROOT, "std_lib"))
-from config.exitcodes import ExitCode  # noqa: E402
 
 # R4 适配：std_lib 上收 orchestrator 根（scrapers/std_lib 旧仓路径已失效）
 _ORCH_ROOT = os.path.dirname(os.path.dirname(ROOT))
@@ -54,17 +53,20 @@ if _ORCH_ROOT not in sys.path:
     sys.path.insert(0, _ORCH_ROOT)
 sys.path.insert(0, os.path.join(_ORCH_ROOT, "std_lib"))
 
+# 注意（2026-09-26 回归修复）：`from config.exitcodes import ExitCode` 必须在 _ORCH_ROOT
+# 引导**之后**——config 是仓根顶级包，standalone 运行（子进程）时 sys.path 不含仓根，
+# 若放在 _ORCH_ROOT 引导之前会 ModuleNotFoundError: config（第九批收敛脚本曾误插此处）。
 from scraper_std.doc_number import normalize_doc_number  # noqa: E402
+
+from config.exitcodes import ExitCode  # noqa: E402
 
 REVIEW = os.path.join(ROOT, "timeliness_review")
 CLEANED = os.path.join(ROOT, "data", "cleaned")
 BACKUP_ROOT = os.path.join(ROOT, "backups")
 
-# 受控枚举（《三项目状态码值统一规范》v3）——非规范值一律不回写
-TIMELINESS_STATUS = frozenset({
-    "valid", "amended", "repealed", "partially_repealed",
-    "expired", "pending", "uncertain",
-})
+# 受控枚举（唯一事实源 config.enums，禁硬编码副本）——非规范值一律不回写
+from config.enums import TIMELINESS_STATUS  # noqa: E402
+
 TARGET_FIELDS = ("timeliness_status", "replacement_document", "verification_source")
 
 

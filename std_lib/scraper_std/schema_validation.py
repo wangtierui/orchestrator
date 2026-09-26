@@ -25,6 +25,9 @@ LOG = logging.getLogger("scraper_std.schema_validation")
 
 _DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}( \d{2}:\d{2}:\d{2})?$")
 _URL_RE = re.compile(r"^https?://", re.I)
+# 任意 URL scheme（用于区分「协议错误」与「来源标注」）：有 scheme 但非 http(s) → 报错
+# （如 ftp://、file://）；无 scheme 的非 URL 文本 → 来源标注（记 warning，见 validate_record）。
+_SCHEME_RE = re.compile(r"^[a-zA-Z][a-zA-Z0-9+.\-]*://")
 _MONEY_RE = re.compile(r"[¥￥$€\s,，]+")
 _ENUM_TYPES = {"string", "int", "float", "datetime", "url", "enum", "array", "object", "number"}
 
@@ -107,8 +110,20 @@ def validate_record(
             if not norm:
                 errors.append(f"{field}: invalid datetime format")
         if ftype == "url" and isinstance(value, str):
-            if not _URL_RE.match(value.strip()):
-                errors.append(f"{field}: missing http(s) scheme")
+            v = value.strip()
+            if not _URL_RE.match(v):
+                # v2 审查（2026-09-26）：url 字段语义是「来源引用」，http(s) 是格式最佳实践
+                # 而非硬约束。区分两类非 http(s) 值：
+                #   · 带 scheme 但非 http(s)（ftp://、file://…）→ 真协议错误，报 error；
+                #   · 无 scheme 的来源标注（本地文件路径、括号说明，如「本地文件 …」、
+                #     「（gov.cn未公开全文，权威媒体报道）」）→ supp 等本地补充材料源的合法
+                #     来源标注，降级为 warning（保持可审计，不阻断）。
+                if _SCHEME_RE.match(v):
+                    errors.append(f"{field}: missing http(s) scheme")
+                else:
+                    record.setdefault("_metadata", {}).setdefault(
+                        "validation_warnings", []
+                    ).append(f"{field}: non-http source note ({v[:40]})")
         if ftype == "number":
             # 数字字段剔除货币符号
             if isinstance(value, str):

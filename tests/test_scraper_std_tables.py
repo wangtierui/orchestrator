@@ -79,6 +79,25 @@ class TestSchemaValidation:
         r = sv.validate_record({"title": "某通知"}, schema)
         assert isinstance(r, (dict, list, tuple, bool))
 
+    def test_validate_record_url_note_vs_scheme(self):
+        """url 字段：无 scheme 的来源标注（本地路径/括号说明）降级 warning；带 scheme 但非
+        http(s)（ftp://）仍报 error（2026-09-26 审查：supp 等本地补充材料源的合法来源标注）。"""
+        schema = {"source_url": {"type": "url"}}
+        # 1) 本地文件路径 → 非 error，记入 validation_warnings
+        rec1 = {"source_url": "本地文件 /some/local/path/x.pdf"}
+        ok1, errs1 = sv.validate_record(rec1, schema)
+        assert ok1 and not errs1
+        warns1 = (rec1.get("_metadata") or {}).get("validation_warnings", [])
+        assert any("source_url" in w for w in warns1)
+        # 2) 括号说明 → 同上
+        rec2 = {"source_url": "（gov.cn未公开全文，权威媒体报道）"}
+        ok2, errs2 = sv.validate_record(rec2, schema)
+        assert ok2 and not errs2
+        # 3) ftp:// 有 scheme 但非 http(s) → 报 error
+        rec3 = {"source_url": "ftp://x.example/a"}
+        ok3, errs3 = sv.validate_record(rec3, schema)
+        assert not ok3 and any("http(s)" in e for e in errs3)
+
     def test_normalize_datetime(self):
         r = sv.normalize_datetime("2021-05-06")
         assert isinstance(r, (str, type(None)))

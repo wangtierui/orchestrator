@@ -25,7 +25,11 @@ from config.exitcodes import ExitCode  # noqa: E402  (R3：退出码语义化)
 
 OUT_JSON = os.path.join(paths.ROOT, "reports", "_tmp", "doctor.json")
 DISK_MIN_GB = 5.0
-# `run` 前置子集（§3.13.4：①python ②node ④依赖 ⑤Pillow ⑥pymupdf ⑦tesseract ⑩token ⑫治理库 ⑬源码树 ⑮锁）
+# `run` 前置子集（§3.13.4）。
+# 2026-09-26 审查：移除 `token` —— token 是**核验步骤**（timeliness verify，阶段 6.9 触发项）的
+# 依赖，非 run 主链必要条件；`run --no-scrape`（不采集不核验）缺 token 不应被前置自检拒绝
+# （否则统一入口退化为"必须手动 --skip-doctor"，非全流程自动化）。核验步骤自带 R13 降级
+# （token 缺失 → unavailable，不误标）；全量 `cli.py doctor` 仍检查 token 供人工处置。
 QUICK_IDS = (
     "python",
     "node",
@@ -33,7 +37,6 @@ QUICK_IDS = (
     "pillow",
     "pymupdf",
     "tesseract",
-    "token",
     "gov_db",
     "sourcetree",
     "lock",
