@@ -1,0 +1,10 @@
+# .git-blame-ignore-revs —— 让 git blame 忽略纯格式化/机械改造提交（v2 §3.7 G6 / R7，P3-2）
+#
+# 用法（一次性，需在本地手动执行；按仓规不自动改 git config）：
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+#
+# 列入条件：**纯机械、零行为变化**的提交（格式化 / IntEnum 退出码收敛 / 缺失 import 补齐）。
+
+# 61056e2 —— ruff format 自有层（139 文件）+ 裸整数 return→ExitCode（IntEnum 同值）
+#           + from __future__ 补齐 + contextlib.suppress 化 —— 均零运行时语义变化
+61056e2f9976e8e260614c44a7a6ead5e6cc730b
