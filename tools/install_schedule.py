@@ -207,6 +207,13 @@ def _run(argv: list[str]) -> tuple[int, str]:
         return 127, f"{type(e).__name__}: {e}"
 
 
+def schtasks_usable() -> bool:
+    """`schtasks` 是否可用（非 Windows / 无权限 → False；用于"不判定"而非"未安装"）。"""
+    import shutil  # noqa: PLC0415
+
+    return shutil.which(SCHTASKS) is not None
+
+
 def installed_argv(task: str) -> tuple[str, str] | None:
     """读已安装任务的 (Arguments, StartBoundary)；任务不存在/不可查 → None。"""
     rc, out = _run([SCHTASKS, "/query", "/tn", task, "/fo", "LIST", "/v"])
@@ -224,7 +231,20 @@ def installed_argv(task: str) -> tuple[str, str] | None:
 
 
 def verify() -> tuple[bool, dict]:
-    """比对已安装任务与 yaml（`--verify` 与 `cli.py schedule verify`、doctor 共用）。"""
+    """比对已安装任务与 yaml（`--verify` 与 `cli.py schedule verify`、doctor、CI 共用）。
+
+    N-61（2026-09-27）：**先探测 `schtasks` 可用性**——不可用（非 Windows / 无权限）时返回
+    "一致但未实检"（`skipped=True`）。原实现直接逐任务查询，不可用环境下全部 `None`
+    → 全判"未安装" → 在 Linux/CI 产出**假 FAIL**，且真实漂移被淹没（本批实测：
+    `schedule.yaml` 改过 argv 而系统仍是旧版，因 verify **未进 CI** 而无人发现）。
+    """
+    if not schtasks_usable():
+        return True, {
+            "problems": [],
+            "rows": [],
+            "skipped": True,
+            "note": "schtasks 不可用（非 Windows / 无权限）→ 跳过系统侧比对",
+        }
     problems: list[str] = []
     rows: list[dict] = []
     for j in cron_jobs():
@@ -242,10 +262,10 @@ def verify() -> tuple[bool, dict]:
             }
         )
         if got is None:
-            problems.append(f"{tn}: 未安装")
+            problems.append(f"{tn}: 未安装（yaml 期望 {want_args!r}）")
         elif want_args and want_args not in got[0]:
             problems.append(f"{tn}: 参数不匹配（yaml={want_args!r} / 已装={got[0]!r}）")
-    return (not problems), {"problems": problems, "rows": rows}
+    return (not problems), {"problems": problems, "rows": rows, "skipped": False}
 
 
 def main(argv=None) -> int:

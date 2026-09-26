@@ -79,6 +79,11 @@ def _cn_to_int(num: str) -> int:
 # --------------------------------------------------------------------------- #
 # 源侧：offset → 条号
 # --------------------------------------------------------------------------- #
+def article_no_to_int(number: str) -> int:
+    """条号 → 整数（"第一百八十六条" → 186；无法解析 → 0）。供复核/报告判定"条号超范围"。"""
+    return _cn_to_int(norm_article_no(number))
+
+
 def build_article_spans(fulltext: str, articles: list[dict]) -> list[tuple[int, int, str]]:
     """条款在全文中的字符区间 `[(start, end, number)]`（按 `articles` 顺序逐个定位 `number`）。
 
@@ -211,13 +216,20 @@ def load_regulatory_index(
                         brief.append({"no": no, "number": num})
                     if not by_norm:
                         continue
+                    # N-59（2026-09-27）：附 `n_articles`（目标文件条款总数）——供复核判定
+                    # "条号超出总数"（**必错配**的强信号，比"表内无此条"更确定）。
+                    n_arts = rec.get("article_count") or len(brief)
                     dk = (rec.get("dedup_key") or "").strip()
                     if dk:
-                        by_dedup.setdefault(dk, {"by_norm": by_norm, "by_no": by_no})
+                        by_dedup.setdefault(
+                            dk, {"by_norm": by_norm, "by_no": by_no, "n_articles": n_arts}
+                        )
                         articles_by_dk.setdefault(dk, brief)
                     rfn = (rec.get("rfn") or "").strip()
                     if rfn:
-                        by_rfn.setdefault(rfn, {"by_norm": by_norm, "by_no": by_no})
+                        by_rfn.setdefault(
+                            rfn, {"by_norm": by_norm, "by_no": by_no, "n_articles": n_arts}
+                        )
     except Exception:  # noqa: BLE001  定位为增强轨：失败降级为空表（字段留空）
         by_rfn, by_dedup, articles_by_dk = {}, {}, {}
     _INDEX = {"by_rfn": by_rfn, "by_dedup": by_dedup, "articles": articles_by_dk}

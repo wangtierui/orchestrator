@@ -182,11 +182,11 @@ def test_run_step_order_matches_call_sites():
     spec = importlib.util.spec_from_file_location("_rpr_test", fp)
     rpr = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(rpr)
-    # 23（18 → +5）：N-53/N-52（2026-09-27）链外节点入链 ——
-    #   `timeliness:verify` / `inbox:drop` / `internal:update` / `wiki:sync`（触发项入链为
-    #   条件步骤，决策复用 common_lib.triggers）+ `draft:clause`（条款对照素材，原无任何调度）。
+    # 24（23 → +1）：N-63（2026-09-27）`governance:artifacts`（原件注册，阶段 1）入链；
+    #   同时 N-64 将 `governance:sync`（阶段 2）后移至 `internal:update` 之后（取终态内部索引）。
+    #   —— 此前 23 来自 N-53/N-52：4 个触发项入链（条件步骤）+ `draft:clause`。
     # 步骤数变化须在此显式确认（防清单漂移）。
-    assert len(rpr.STEP_ORDER) == 23
+    assert len(rpr.STEP_ORDER) == 24
     # 每个步骤名必须能在本文件中找到**引号字面量**（`"gates"` / `f"clean:{src}"` ⇒ `"clean:{src}"`）
     text = open(fp, encoding="utf-8").read()
     for step in rpr.STEP_ORDER:

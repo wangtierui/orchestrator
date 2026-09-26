@@ -206,6 +206,19 @@ ARTICLE_PLACEMENT: frozenset[str] = frozenset(
         f"{ARTICLE_PLACEMENT_SRC_OFFSET}+{ARTICLE_PLACEMENT_SNIPPET}",
     }
 )
+# 目标条款复核理由（N-59，2026-09-27）：clause_graph 边 `art_check` 的受控值域
+ART_CHECK_VERIFIED = "verified"  # 目标条款表中确有此条
+ART_CHECK_OUT_OF_RANGE = "out_of_range"  # 条号超出目标文件条款总数 → **必错配**（最强信号）
+ART_CHECK_IN_RANGE_UNMATCHED = "in_range_unmatched"  # 范围内但表中无此条（可疑）
+ART_CHECK_NO_TABLE = "no_table"  # 目标无条款表/未登记 RFN（无从判定，不等于错）
+ART_CHECK: frozenset[str] = frozenset(
+    {
+        ART_CHECK_VERIFIED,
+        ART_CHECK_OUT_OF_RANGE,
+        ART_CHECK_IN_RANGE_UNMATCHED,
+        ART_CHECK_NO_TABLE,
+    }
+)
 # 关系目标实体解析方式（**扩展** REF_MATCH_METHOD：关系抽取需处理"精确/包含/未解析"）
 RELATION_MATCH_METHOD: frozenset[str] = frozenset(
     {
@@ -445,6 +458,7 @@ def assert_enum_bindings() -> None:
     # 关系抽取（R-F01）：三类关系共用一套受控值；闭包 + 交叉一致性
     assert len(RELATION_KIND) == 2 and len(RELATION_DOC_KIND) == 2
     assert len(ARTICLE_PLACEMENT) == 4, ARTICLE_PLACEMENT  # N-49 条款定位来源标记闭包
+    assert len(ART_CHECK) == 4, ART_CHECK  # N-59 目标条款复核理由闭包
     assert len(BASIS_TYPE) == 2 and len(REPEAL_ACTION) == 5 and len(REPEAL_SCOPE) == 3
     assert len(RELATION_MATCH_METHOD) == 5, RELATION_MATCH_METHOD
     assert len(RELATION_TARGET_CLASS) == 5, RELATION_TARGET_CLASS

@@ -362,6 +362,7 @@ def ingest(source_root: str, *, enable_ocr: bool = False, dry_run: bool = False,
     ext_map: dict = {}
     aux_carry = _prev_carry_fields(_AUX_CARRY_FIELDS)
     n_state = 0
+    missing: list[str] = []
     for key, rec in sorted(state.items()):
         # 防御（2026-09-12）：版本/元数据键不参与记录汇总（_ 前缀或旧 meta 约定）
         if str(key).startswith("_") or key == "meta":
@@ -369,6 +370,10 @@ def ingest(source_root: str, *, enable_ocr: bool = False, dry_run: bool = False,
         n_state += 1
         r = _load_processed(rec.get("ipn", ""))
         if not r:
+            # N-58（2026-09-27 核验）：state 有条目但 processed 主记录**缺失**——与"同 IPN
+            # 多 sha 去重"是**两回事**。原实现把二者合并进 `deduped_duplicates`，真断裂会被
+            # 误读为正常去重。现分列统计 + 非空告警（索引不完整信号）。实测当前为 0。
+            missing.append(rec.get("ipn", "") or str(key)[:12])
             continue
         # 同 IPN 多 sha（同名同文号同介质的不同内容版本）→ 主索引保留 extracted_at 最新一条
         # （2026-09-12：与 merged/policies 同口径；重复数透明登记于 stat）
@@ -378,12 +383,19 @@ def ingest(source_root: str, *, enable_ocr: bool = False, dry_run: bool = False,
             seen_ipn[ipn].update(aux_carry.get(ipn, {}))   # 防冲（2026-09-13）
             ext_map[ipn] = r.get("extracted_at") or ""
     records = list(seen_ipn.values())
+    if missing:
+        print(
+            f"[index] ⚠ 索引不完整：{len(missing)} 条 state 条目缺 processed 主记录"
+            f"（示例 {missing[:3]}）——建议重跑 `internal index`"
+        )
     index = {
         "schema_version": "1.0",
         "generated_at": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
         "source_root": source_root,
         "stat": {"state_entries": n_state,
-                 "deduped_duplicates": n_state - len(records)},
+                 "deduped_duplicates": n_state - len(records) - len(missing),
+                 "missing_processed": len(missing),
+                 "missing_examples": missing[:5]},
         "records": records,
         "count": len(records),
     }

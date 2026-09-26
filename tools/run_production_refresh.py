@@ -578,11 +578,19 @@ STEP_ORDER: tuple[str, ...] = (
     "classify:all",
     "relations:gen",
     "reconcile",
-    "governance:sync",
     "recall",
     # inbox_drop / internal_update 产出 index/align/processed → 必须在 internal:merged 之前。
     "inbox:drop",
     "internal:update",
+    # N-63 / N-64（2026-09-27）：治理库**投影后移 + 阶段 1 入链**——
+    #   ① N-64：`governance:sync`（阶段 2）投影 `document` 的 internal 侧自内部主索引，
+    #      原位置在其生产者 `internal:update` **之前** → `internal:update` 真正执行的那一轮投影的是
+    #      **上一轮索引**（落后一轮）；现移其后。
+    #   ② N-63：阶段 1（原件注册 `artifact` 表，`tools/governance_register_artifacts.py`）
+    #      **从未入链**（仅 docstring 自述"阶段 1"）→ 原件 sha256/路径集合长期不随原件库变化刷新；
+    #      按其自身分期置于阶段 2 **之前**。
+    "governance:artifacts",
+    "governance:sync",
     "internal:merged",
     "reports:build",
     "reports:theme",
@@ -918,18 +926,11 @@ def _run_chain(args) -> int:
     # 注：阶段 2.55 已提前登记一次（供 relations:gen 解析依赖版本），此处为终态刷新。
     _wm_observations()
 
-    # ---- 阶段 3.5：治理库元数据投影（阶段 2「双写期」；2026-09-18）----
-    # 语义：**文件仍是事实源**（读方不变），本步把四类元数据（归属表/主题表/内部主索引/
-    # 关系产物/时效 state）事务化投影进 governance.db，并在同一命令内做**比对断言**
-    # （库内摘要 vs 由文件重算的摘要）——不一致即"库与文件分叉"，计入失败步骤（不静默）。
-    # 位置纪律：在链内最后一个 attr 写方（stage 3 reconcile）之后，保证投影取到终态。
-    report.append(
-        _run(
-            "governance:sync",
-            [PY, os.path.join(ROOT, "tools", "governance_sync.py"), "--apply"],
-            timeout=900,
-        )
-    )
+    # ---- 阶段 3.5：治理库元数据投影 —— **N-64（2026-09-27）已后移至 `internal:update` 之后** ----
+    # 原位置纪律为"在链内最后一个 attr 写方（reconcile）之后，保证投影取到终态"；但阶段 2
+    # 还投影 `document(internal)` 自 `internal_policy_index.json`，其生产者 `internal:update`
+    # 在链中更靠后 → 原位置使 `internal:update` **真正执行的那一轮**投影到的是**上一轮索引**。
+    # 现统一置于 `internal:update`（及其阶段 1 前置 `governance:artifacts`）之后，见下方。
 
     # ---- 阶段 4：recall ----
     report.append(
@@ -947,6 +948,27 @@ def _run_chain(args) -> int:
     #   （证据：`unindexed_originals` 长期为真、processed 停在 09-20）。
     report.append(_run_conditional("inbox:drop", "inbox_drop"))
     report.append(_run_conditional("internal:update", "internal_update"))
+
+    # ---- 阶段 3.5：治理库**双阶段**投影（N-63 / N-64，2026-09-27）----
+    # 阶段 1 · 原件注册：`原件 → artifact 表（sha256[:16] → path_keys 集合 + inode + 字节数）`。
+    #   原件保持原格式/原路径、不经处理器读盘，故**原件库更新即需重登记**；
+    #   该工具自述"阶段 1"却**从未入链**（N-63 → 登记长期不随原件库变化刷新）。
+    report.append(
+        _run(
+            "governance:artifacts",
+            [PY, os.path.join(ROOT, "tools", "governance_register_artifacts.py")],
+            timeout=3600,
+        )
+    )
+    # 阶段 2 · 元数据四表投影 + 比对断言（**文件仍是事实源**，本步只写库；库/文件摘要不一致
+    #   即"分叉"，计入失败步骤）。位置后移至 `internal:update` 之后 → 取**终态**内部索引（N-64）。
+    report.append(
+        _run(
+            "governance:sync",
+            [PY, os.path.join(ROOT, "tools", "governance_sync.py"), "--apply"],
+            timeout=900,
+        )
+    )
 
     # ---- 阶段 4.2：internal merged（内部制度 × RFN 引用视图；F-O07 编排唯一化）----
     report.append(

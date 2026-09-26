@@ -664,6 +664,11 @@ def _tuple_of_quotes(text: str, marker: str) -> list[str]:
     `marker` 须带赋值特征（如 `STEP_ORDER:`）以避开**注释里的同名提及**——本批实测：
     文件头 `_ARTIFACTS` 注释中出现「现 `STEP_ORDER` 末位」字样，若用裸名查找会命中注释、
     再就近吞掉后面第一个 `(` → 清单解析为空（判据 R 误报"未声明"）。
+
+    N-64 加固（2026-09-27）：循环内**跳过行内注释**——清单项之间常插多行说明，其中若出现
+    半角 `)`（如 `document(internal)`）会被"遇 `)` 结束"误判为清单边界 → **清单被截断**
+    （实测：24 项只解析出 13 项，判据 R 误报 11 项"未登记"）。跳注释即根治（清单项名不含 `#`，
+    且引号已先行配对跳过，故循环内所见 `#` 必不在引号内）。
     """
     i = text.find(marker)
     if i < 0:
@@ -675,6 +680,12 @@ def _tuple_of_quotes(text: str, marker: str) -> list[str]:
     j = i + 1
     while j < len(text):
         ch = text[j]
+        if ch == "#":  # N-64：跳过行内注释（其括号会误判清单边界）
+            nl = text.find("\n", j)
+            if nl < 0:
+                break
+            j = nl + 1
+            continue
         if ch == ")":
             break
         if ch in _QUOTES:

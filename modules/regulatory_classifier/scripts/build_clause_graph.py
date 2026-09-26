@@ -38,6 +38,7 @@ _ORCH_ROOT = os.path.dirname(os.path.dirname(BASE_DIR))
 if _ORCH_ROOT not in sys.path:
     sys.path.insert(0, _ORCH_ROOT)
 from std_lib.common_lib.clause_locator import (  # noqa: E402  N-49 条款复核（共享实现）
+    article_no_to_int,
     load_regulatory_index,
     norm_article_no,
 )
@@ -210,15 +211,17 @@ def main():
                        "target_title": tti, "ctx": ctx}
                 art_refs.append(rec)
                 if ok and th != "UP":
-                    # N-49（2026-09-27）目标条款**查表复核**（三态；见 `_verify_dst_art`）
-                    _ver = _verify_dst_art(trfn, art, clause_idx)
+                    # N-49/N-59（2026-09-27）目标条款**查表复核**（三态 + 受控理由；见 `_verify_dst_art`）
+                    _ver, _chk = _verify_dst_art(trfn, art, clause_idx)
                     edges.append({"src_rfn": rfn, "src_title": title,
                                   "dst_rfn": trfn, "dst_title": tti, "dst_theme": th,
                                   "kind": "article", "art": art, "para": para, "item": item,
-                                  "art_verified": _ver})
+                                  "art_verified": _ver, "art_check": _chk})
                     stat["art_verified" if _ver else "art_unverified"] += 1
                     if _ver is None:
                         stat["art_no_table"] += 1
+                    # N-59：按**理由**分列统计（`out_of_range` = 必错配的最强信号，独立可观测）
+                    stat[f"art_check_{_chk}"] += 1
                 stat["art_total"] += 1
                 stat["art_resolved" if ok else "art_unresolved"] += 1
                 if para: stat["with_para"] += 1
@@ -268,16 +271,34 @@ def _verify_dst_art(rfn: str, art: str, clause_idx: dict):
     """目标条款**查表复核**（N-49，2026-09-27）：`art` 来自纯正则（`《X》…第N条`），
     而标题解析含别名/包含匹配（可能错配）；仅当目标文件条款表**真含**该条号才可信。
 
-    返回三态：True=表中确有此条；False=表存在但无此条（可疑，报告可降权）；
-    None=目标文件无条款表或未登记 RFN（无从判定，**不等于错**）。
+    返回 `(verified, check)`：
+      · `verified` 三态：True=表中确有此条；False=可判定但不匹配；None=无法判定；
+      · `check`（N-59，受控字符串）：
+        - `verified`            表中确有此条；
+        - `out_of_range`        **条号超出目标文件条款总数**（`article_count`）→ **必错配**（最强信号）；
+        - `in_range_unmatched`  在总数范围内但表中无该条号（可疑：可能误抽/或该条在修正案中）；
+        - `no_table`            目标文件无条款表或未登记 RFN（无从判定，**不等于错**）。
     """
     tab = (clause_idx.get("by_rfn") or {}).get(rfn or "")
     if not tab:
-        return None
+        return None, "no_table"
     try:
-        return norm_article_no(art) in (tab.get("by_norm") or {})
+        need = norm_article_no(art)
+        if need in (tab.get("by_norm") or {}):
+            return True, "verified"
+        n = article_no_to_int(art)
+        # N-62（2026-09-27）：**阿拉伯/中文形态互认**兜底——`art` 常为阿拉伯（如 '133'，
+        # 来自《保险法》第133条），而目标条款表键为中文（'一百三十三'）→ 仅比 `by_norm`
+        # 会误判为"表内无此条"（实测 24 条可疑边全属此因）。经 `by_no`（`articles[].no` 整数）
+        # 归一后比对，与 `clause_locator.locate_dst_article` 的兜底口径一致。
+        if n and n in (tab.get("by_no") or {}):
+            return True, "verified"
+        n_arts = tab.get("n_articles") or 0
+        if n and n_arts and n > n_arts:
+            return False, "out_of_range"
+        return False, "in_range_unmatched"
     except Exception:  # noqa: BLE001  复核失败不阻断图构建
-        return None
+        return None, "no_table"
 
 
 def _cluster_of(rfn, n):

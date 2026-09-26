@@ -78,6 +78,10 @@ def main(argv=None) -> int:
             ],
             600,
         ),
+        # N-61（2026-09-27）：计划任务与 `config/schedule.yaml` 的**一致性**入 CI —— 此前
+        # 仅 doctor/status 调用，改 yaml 后系统侧仍跑旧 argv（实测 `--only 6.9` 空跑）而无告警。
+        # 非 Windows / 无 schtasks → 该判据自报 skipped（不判 FAIL）。
+        ("schedule", [PY, os.path.join(ROOT, "cli.py"), "schedule", "verify"], 180),
     ]
     if not a.fast:
         if a.cov:
