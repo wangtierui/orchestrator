@@ -1,0 +1,68 @@
+# config/schedule.yaml —— 调度**唯一事实源**（v2 §3.9 + §3.13.6，P2-2/P2-6）
+#
+# ⚠️ 变更纪律：本文件是唯一源，运行手册的定时表由本文件**反向生成**。
+#    改动后必须执行：`python tools/gen_schedule_doc.py`（写出手册）与
+#    `python cli.py schedule verify`（比对已安装计划任务）。
+#    `gate_config_integrity` 判据 S 会断言「手册定时表 == 本文件渲染结果」，
+#    手改手册会被门禁判 FAIL。
+#
+# 决策 D-12（2026-09-26，口径统一）：实测记录为 01:30 / 06:00–06:37，
+#    原手册手抄为 01:00 / 06:30 —— 取**整点且互不重叠**的一组（01:00/06:00/07:00/08:00），
+#    避免 01:30 与 01:00 任务窗口重叠、06:30 与 06:00 长跑任务重叠。
+version: "1.0"
+
+jobs:
+  # ---- 定时（cron 五段式；Windows 计划任务由 tools/install_schedule.py 生成 XML）----
+  - id: refresh
+    kind: cron
+    when: "0 6 * * *"
+    argv: ["cli.py", "run", "--no-scrape", "--resume"]
+    on_miss: run_at_next_boot
+    desc: "全链刷新（raw 已抓取，仅重清洗 + 全链；当日无 raw 变化时各阶段快跳）"
+  - id: nfra_weekly
+    kind: cron
+    when: "0 1 * * 2"
+    argv: ["cli.py", "run", "--collect", "nfra-weekly"]
+    on_miss: skip
+    desc: "nfra 周报增量链（单实例锁 / 顶部窗口 / 断点续跑）"
+  - id: verify
+    kind: cron
+    when: "0 7 * * 1"
+    argv: ["cli.py", "run", "--only", "6.9"]
+    on_miss: skip
+    desc: "效力核验批次（有 Token 时；断点续跑，配额耗尽自动停）"
+  - id: publish_wiki
+    kind: cron
+    when: "0 8 * * 1"
+    argv: ["cli.py", "run", "--only", "21.5"]
+    on_miss: skip
+    desc: "发布件刷新 + llm_wiki 源同步（SHA256 增量；条件触发 wiki_sync，见 triggers.yaml）"
+  - id: monthly_check
+    kind: cron
+    when: "0 9 1 * *"
+    argv: ["cli.py", "gates"]
+    on_miss: skip
+    desc: "月度巡检：门禁（另需人工跑 `cli.py source diff` / `cli.py timeliness summary` / check_llm_wiki_upstream）"
+
+  # ---- 事件驱动（无 cron；由上游步骤完成后触发，登记于此以保证"定时清单"完整且单一来源）----
+  - id: timeliness_sync
+    kind: event
+    when: ""
+    after: verify
+    argv: ["cli.py", "timeliness", "sync"]
+    on_miss: skip
+    desc: "核验后：台账 → 归属表时效同步（F-C03）；已由 run 主链 6.9 之后的阶段承接"
+  - id: gov_increment
+    kind: event
+    when: ""
+    after: refresh
+    argv: ["cli.py", "run", "--collect", "gov"]
+    on_miss: skip
+    desc: "gov 源增量（含 zhengceku 子源）——**已并入 refresh**，此处仅登记语义，不重复调度"
+
+notify:
+  # 无人值守的必要件（v2 §3.13.6）：现状编排器只有 run_log 与 stdout，失败无人知晓。
+  kind: file            # none | file | webhook
+  on: [failed_step, gate_fail, worklist_aged, doctor_fail]
+  file_dir: reports/_alerts     # 入库可审计（reports 已在门禁排除集，不新增盲区）
+  # webhook 为可选：URL 只从环境变量 `REG_ORCH_NOTIFY_WEBHOOK` 读取，**禁止入库**

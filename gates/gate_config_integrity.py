@@ -26,6 +26,18 @@
        D1 `config/triggers.yaml`（P2-1）D2 `config/schedule.yaml`（P2-2）
        D3 `governance.db.worklist` 表（P1-6）D4 `contract_manifest.json` 一致性（归 gate_contract）
 
+    J7. 待办队列双向闭合（v2 §3.14.3，P1-6/P2-5）
+       代码里 `worklist_add("<kind>")` 的字面量必须已登记；每个登记的 kind 必须有产生方。
+
+    S. 调度事实源一致性（v2 §3.9/§3.13.6，P2-2）
+       S1 文件/生成器存在、S2 作业 schema（kind/when/after/on_miss/argv 目标可达）
+       S3 notify 受控值、S4 运行手册自动段 == yaml 渲染结果（手改手册即 FAIL）
+
+    T. 条件触发配置（v2 §3.5，P2-1）
+       T1 文件/执行器存在、T2 id/条件实现/on_fail 合法性、T3 argv 目标可达 + timeout 上限
+
+    R. 步骤清单一致性（v2 §3.13.3，P2-6，**待接**：`STEP_ORDER` 与 `_run("<step>")` 调用点）
+
     过渡策略（v2 D-8）：D 组为"待落地"，仅出现在 detail.pending 中，不影响 PASS/FAIL。
 """
 from __future__ import annotations
@@ -175,11 +187,10 @@ def _check_tools(manifest: dict) -> tuple[list[str], dict, list[str]]:
 # P2-5 待接的产生方（v2 §3.14.3 已登记 kind，但产生方尚未实装）——只披露、不阻断。
 # 接入后须同步删除本集合（gate 会提示）。
 _PENDING_PRODUCERS = {
-    "rfn_theme_uncertain",    # D1 tools/rfn_backlog.py（v2 §3.14.5 归 P2-5）
-    "internal_unaligned",     # D2 internal_policy_base/align.py（D2 归 P2-5）
-    "relevance_boundary",     # D6 filter_clean_relevance.py（relevance/ 当前"有产出无消费"）
-    "corpus_needs_review",    # §3.12.6 tools/inbox_scan.py（P2-3b）
-    "ingest_quota_blocked",   # 配额阻断显式化（随 P2-1 触发链）
+    # D6 `filter_clean_relevance.py` 的 BOUNDARY 边界案例裁决 —— **P2-5 剩余项**：
+    # 该脚本的 BOUNDARY 分层还需先确定"逐条裁决"的落点（当前为批量分层导出，
+    # 逐条登记需与 `--decisions` 过滤语义对齐），故本批未接（见第四批报告 N-27）。
+    "relevance_boundary",
 }
 
 # ⚠️ 刻意**不用正则、不用任何反斜杠转义**：本仓的编辑/同步链路会把 new_str 里的反斜杠
@@ -365,6 +376,168 @@ def _check_corpus() -> tuple[list[str], dict]:
     return problems, detail
 
 
+# --------------------------------------------------------------------------- #
+# S. 调度事实源一致性（v2 §3.9 / §3.13.6，P2-2）
+#    背景（v2 §3.13.1 M3）：手册定时表为**手抄**，与实测调度记录二义（01:00 vs 01:30、
+#    06:30 vs 06:00–06:37）。现 `config/schedule.yaml` 为唯一源、手册由工具反向生成，
+#    本判据断言两者一致 —— 手改手册即 FAIL。
+# --------------------------------------------------------------------------- #
+_SCHED_YAML = os.path.join(ROOT, "config", "schedule.yaml")
+_SCHED_TOOL = os.path.join(ROOT, "tools", "gen_schedule_doc.py")
+_ON_MISS = ("skip", "run_at_next_boot")
+_NOTIFY_KINDS = ("none", "file", "webhook")
+_NOTIFY_ON = frozenset({"failed_step", "gate_fail", "worklist_aged", "doctor_fail"})
+_PYTHON_ALIASES = ("python", "python.exe", "py", "python3")
+
+
+def _load_module_from_path(name: str, path: str):
+    """按文件路径加载（`tools/` 非包；且不得为此新增 sys.path 注入，见 gate_import_bootstrap）。"""
+    import importlib.util  # noqa: PLC0415
+
+    spec = importlib.util.spec_from_file_location(name, path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def _check_schedule() -> tuple[list[str], dict]:
+    problems: list[str] = []
+    detail: dict = {}
+    if not os.path.exists(_SCHED_YAML):
+        return [f"S1: 缺调度唯一事实源 {os.path.relpath(_SCHED_YAML, ROOT)}"], {}
+    if not os.path.exists(_SCHED_TOOL):
+        return [f"S1: 缺生成器 {os.path.relpath(_SCHED_TOOL, ROOT)}"], {}
+    try:
+        gsd = _load_module_from_path("_gsd_for_gate", _SCHED_TOOL)
+        data = gsd.load_schedule()
+    except Exception as e:  # noqa: BLE001
+        return [f"S1: schedule.yaml 解析失败：{type(e).__name__}: {e}"], {}
+
+    jobs = data.get("jobs") or []
+    ids = [j.get("id", "") for j in jobs]
+    if not jobs or not all(ids) or len(set(ids)) != len(ids):
+        problems.append(f"S2: jobs 为空或 id 缺失/重复：{ids}")
+    for j in jobs:
+        jid = j.get("id", "?")
+        kind = j.get("kind")
+        if kind not in ("cron", "event"):
+            problems.append(f"S2: {jid} kind={kind!r} 非法（cron|event）")
+        if kind == "cron":
+            if len((j.get("when") or "").split()) != 5:
+                problems.append(f"S2: {jid} when={j.get('when')!r} 非 5 段 cron 表达式")
+        elif not j.get("after"):
+            problems.append(f"S2: {jid} 为事件驱动但未写 `after`（触发上游）")
+        if j.get("on_miss") not in _ON_MISS:
+            problems.append(f"S2: {jid} on_miss={j.get('on_miss')!r} 非法（允许 {_ON_MISS}）")
+        argv = j.get("argv") or []
+        if not argv or not all(isinstance(a, str) and a for a in argv):
+            problems.append(f"S2: {jid} argv 须为非空字符串列表")
+            continue
+        if argv[0] in _PYTHON_ALIASES:
+            target = os.path.join(ROOT, argv[1]) if len(argv) > 1 else ""
+        else:
+            target = os.path.join(ROOT, argv[0])
+        if not target or not os.path.exists(target):
+            problems.append(f"S2: {jid} argv[0]={argv[0]!r} 目标不存在"
+                            f"（解析为 {target or '<空>'}）")
+
+    notify = data.get("notify") or {}
+    if notify.get("kind") not in _NOTIFY_KINDS:
+        problems.append(f"S3: notify.kind={notify.get('kind')!r} 非法（允许 {_NOTIFY_KINDS}）")
+    bad_on = sorted(set(notify.get("on") or []) - _NOTIFY_ON)
+    if bad_on:
+        problems.append(f"S3: notify.on 含未登记触发项 {bad_on}（允许 {sorted(_NOTIFY_ON)}）")
+    if notify.get("kind") == "file" and not notify.get("file_dir"):
+        problems.append("S3: notify.kind=file 须给 file_dir")
+
+    manual = gsd.MANUAL
+    if os.path.exists(manual):
+        text = open(manual, encoding="utf-8", errors="replace").read()
+        try:
+            want = gsd._replace_block(text, gsd.TABLE_START, gsd.TABLE_END,
+                                      gsd.render_table(jobs))
+            want = gsd._replace_block(want, gsd.CRON_START, gsd.CRON_END, gsd.render_cron(jobs))
+        except LookupError as e:
+            problems.append(f"S4: 运行手册缺自动段标记对：{e}")
+            want = text
+        if want != text:
+            problems.append("S4: 运行手册定时表与 config/schedule.yaml **不一致**"
+                            "（跑 `python tools/gen_schedule_doc.py` 重写；勿手改手册）")
+        detail["manual"] = os.path.relpath(manual, ROOT)
+    else:
+        detail["manual"] = "（缺运行手册：跳过 S4）"
+    detail["schedule"] = {"jobs": len(jobs), "cron": sum(1 for j in jobs
+                                                         if j.get("kind") == "cron"),
+                          "ids": sorted(ids), "notify": notify.get("kind", "")}
+    return problems, detail
+
+
+# --------------------------------------------------------------------------- #
+# T. 条件触发配置（v2 §3.5，P2-1）
+#    `config/triggers.yaml` 是链外节点的唯一声明；本判据断言：
+#    ① 每个 steps[].argv 的目标存在（防"声明了却指向已删脚本"）；
+#    ② timeout 合法（正数、≤ 现有同类上限 7200）；
+#    ③ on_fail ∈ 受控值（与 std_lib.common_lib.triggers.ON_FAIL 同源）；
+#    ④ stage 形如主链阶段号（可选，缺失不阻断——触发项可早于阶段表存在）。
+# --------------------------------------------------------------------------- #
+_TRIGGERS_YAML = os.path.join(ROOT, "config", "triggers.yaml")
+_TRIGGERS_LIB = os.path.join(ROOT, "std_lib", "common_lib", "triggers.py")
+_MAX_TIMEOUT = 7200
+_PYTHON_ALIASES_T = ("python", "python.exe", "py", "python3")
+
+
+def _check_triggers() -> tuple[list[str], dict]:
+    problems: list[str] = []
+    detail: dict = {}
+    if not os.path.exists(_TRIGGERS_YAML):
+        return [f"T1: 缺 {os.path.relpath(_TRIGGERS_YAML, ROOT)}（条件触发唯一事实源）"], {}
+    if not os.path.exists(_TRIGGERS_LIB):
+        return [f"T1: 缺执行器 {os.path.relpath(_TRIGGERS_LIB, ROOT)}"], {}
+    try:
+        trg = _load_module_from_path("_trg_for_gate", _TRIGGERS_LIB)
+        data = trg.load_triggers()
+    except Exception as e:  # noqa: BLE001
+        return [f"T1: triggers.yaml 解析失败：{type(e).__name__}: {e}"], {}
+
+    items = data.get("triggers") or []
+    ids = [t.get("id", "") for t in items]
+    if not items or not all(ids) or len(set(ids)) != len(ids):
+        problems.append(f"T2: triggers 为空或 id 缺失/重复：{ids}")
+    impls = set(getattr(trg, "CONDITION_IMPLS", {}) or {})
+    n_steps = 0
+    for t in items:
+        tid = t.get("id", "?")
+        cond = t.get("enabled_when") or {}
+        if not cond:
+            problems.append(f"T2: {tid} 未声明 enabled_when（拒绝无判据执行）")
+        for name in cond:
+            if name not in impls:
+                problems.append(f"T2: {tid} 条件 {name!r} 无实现"
+                                f"（须登记进 CONDITION_IMPLS；当前 {sorted(impls)}）")
+        if t.get("on_fail") not in getattr(trg, "ON_FAIL", frozenset()):
+            problems.append(f"T2: {tid} on_fail={t.get('on_fail')!r} 非法")
+        steps = t.get("steps") or []
+        if not steps:
+            problems.append(f"T2: {tid} 无 steps")
+        for s in steps:
+            n_steps += 1
+            argv = s.get("argv") or []
+            if not argv or not all(isinstance(a, str) and a for a in argv):
+                problems.append(f"T3: {tid} steps[].argv 须为非空字符串列表")
+                continue
+            head = argv[0]
+            target = (os.path.join(ROOT, argv[1]) if len(argv) > 1 else "") \
+                if head in _PYTHON_ALIASES_T else os.path.join(ROOT, head)
+            if not target or not os.path.exists(target):
+                problems.append(f"T3: {tid} argv[0]={head!r} 目标不存在（{target or '<空>'}）")
+            to = s.get("timeout")
+            if not isinstance(to, int) or not (0 < to <= _MAX_TIMEOUT):
+                problems.append(f"T3: {tid} timeout={to!r} 非法（1..{_MAX_TIMEOUT} 秒）")
+    detail["triggers"] = {"count": len(items), "steps": n_steps, "ids": sorted(ids),
+                          "conditions": sorted(impls)}
+    return problems, detail
+
+
 def _check_constants() -> tuple[list[str], dict]:
     problems: list[str] = []
     detail: dict = {}
@@ -442,6 +615,14 @@ def run() -> tuple[bool, dict]:
     p3, d3 = _check_worklist()
     problems += p3
     detail.update(d3)
+
+    p4, d4 = _check_schedule()
+    problems += p4
+    detail.update(d4)
+
+    p5, d5 = _check_triggers()
+    problems += p5
+    detail.update(d5)
 
     p4, d4 = _check_corpus()
     problems += p4

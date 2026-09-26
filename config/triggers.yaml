@@ -1,0 +1,74 @@
+# config/triggers.yaml —— 条件触发**唯一事实源**（v2 §3.5，P2-1）
+#
+# 定位：链外节点（不随主链无条件执行）的触发条件、步骤序列、失败与跳过语义的**唯一声明**。
+#   主链编排不再"凭记忆决定该不该跑某步"：`cli.py run` 在对应阶段查询本文件并**给定判据**地决策，
+#   `cli.py triggers --dry-run` 直接打印决策表（含未启用原因）。
+#
+# 纪律（v2 §3.5 的机制修正）：
+#   ① argv 为**列表**、不经 shell（复用 run_production_refresh._run 的形态）；
+#   ② 每个 `steps[].argv` 的目标由 `gate_config_integrity` 判据 T 断言存在；
+#   ③ `enabled_when` 只支持**可机器判定**的条件（见 `std_lib/common_lib/triggers.py` 的
+#      CONDITION_IMPLS）；条件无法判定时一律 **enabled=False**（绝不静默按 True 执行）；
+#   ④ `on_fail: manual_breakpoint` 的触发项失败时**必须写 worklist 队列**
+#      （`gate_config_integrity` 判据 J7 与 `gate_runtime_hygiene` 联动断言）。
+version: "1.0"
+
+triggers:
+  - id: timeliness_verify
+    stage: "6.9"
+    enabled_when: { token_exists: true, days_since: 7 }
+    steps:
+      - { argv: ["cli.py", "timeliness", "verify", "--source", "all"], timeout: 7200 }
+      - { argv: ["python", "modules/regulatory_scrapers/timeliness_review/authority_backfill_verify.py",
+                 "--source", "all"], timeout: 7200 }
+      - { argv: ["python", "modules/regulatory_scrapers/timeliness_review/classifier_pkulaw_verify.py"],
+          timeout: 3600 }
+    resume: "run_timeliness_resume.py"
+    on_fail: stop_on_quota          # 90001 / 连续 15 次认证失败 → 停，下次续跑
+    on_skip: "北大法宝 token 缺失，或距上次核验不足 7 天（规范①：≤90 日可复用）"
+    desc: "效力核验批次（Token 存在且距上次 ≥7 天时执行；断点续跑）"
+
+  - id: internal_update
+    stage: "7.5"
+    enabled_when: { unindexed_originals: true }
+    steps:
+      - { argv: ["python", "tools/normalize_internal_naming.py", "--apply"], timeout: 1800 }
+      - { argv: ["cli.py", "internal", "index", "--only-unindexed"], timeout: 7200 }
+      - { argv: ["cli.py", "internal", "align"], timeout: 1800 }
+      - { argv: ["cli.py", "internal", "reocr"], timeout: 7200 }
+    on_fail: manual_breakpoint      # 失败 → 写 worklist（须人工处置，不得静默跳过）
+    on_skip: "原件库无未索引文件"
+    desc: "内部制度增量摄取（原件库有未索引文件时执行）"
+
+  - id: supp_ingest
+    stage: "0"
+    enabled_when: { explicit_arg: "--supp-batch" }
+    steps:
+      - { argv: ["python", "modules/regulatory_scrapers/collectors/supp_ingest_batch.py",
+                 "--backlog", "{arg}"], timeout: 1800 }
+    on_fail: stop
+    on_skip: "未显式传 --supp-batch（该通道**不假装自动**：supp 为表格类人工批次）"
+    desc: "supp 批量摄取（显式参数触发；诚实标注，非条件自动发现）"
+
+  - id: inbox_drop
+    stage: "7.4"
+    enabled_when: { inbox_has_new: true }
+    steps:
+      - { argv: ["python", "tools/inbox_scan.py", "--apply"], timeout: 900 }
+      - { argv: ["cli.py", "internal", "index", "--only-unindexed"], timeout: 7200 }
+      - { argv: ["cli.py", "internal", "align"], timeout: 1800 }
+    on_fail: manual_breakpoint
+    on_skip: "投放区无新文件（或全部 sha256 命中已归档内容）"
+    desc: "投放区投递（v2 §3.12.6；新文件按 config/inbox_registry.yaml 路由）"
+
+  - id: wiki_sync
+    stage: "21.5"
+    enabled_when: { publish_manifest_changed: true }
+    steps:
+      - { argv: ["python", "tools/sync_wiki_sources.py", "--out", "{vault}", "--scope", "all",
+                 "--prune"], timeout: 600 }
+      - { argv: ["python", "tools/gen_theme_moc.py", "--out", "{vault}/主题索引"], timeout: 600 }
+      - { argv: ["python", "tools/check_llm_wiki_upstream.py"], timeout: 600 }
+    on_fail: skip_and_warn
+    on_skip: "vault 不可达 / 网络异常 / 发布件未变化"
+    desc: "llm_wiki 源同步（发布件（publish_manifest）发生变化时执行）"

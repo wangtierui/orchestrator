@@ -42,7 +42,9 @@ BASELINE: dict[str, int] = {
     "modules": 127,
     "std_lib": 9,
     "tests": 33,
-    "tools": 14,
+    # 14 → 17（2026-09-26，P2-1/2/3b/6）：新增 3 个工具各自带 1 处仓根引导
+    # （gen_schedule_doc / install_schedule / inbox_scan —— 均为"可独立直调"的运维工具）
+    "tools": 17,
 }
 # 硬零层：P0-2 已收口，禁止回退
 HARD_ZERO_GROUPS = ("commands",)

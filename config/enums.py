@@ -249,6 +249,7 @@ WORKLIST_KIND: frozenset[str] = frozenset({
     "relevance_boundary",          # D6 filter_clean_relevance.py：BOUNDARY 边界案例裁决
     "corpus_needs_review",         # §3.12.6 tools/inbox_scan.py：投放区不可识别扩展名
     "ingest_quota_blocked",        # 配额/认证阻断的显式化（E 类断点）
+    "trigger_manual_breakpoint",   # P2-1 std_lib/common_lib/triggers.py：触发链 on_fail=manual_breakpoint
 })
 # 待办状态（`worklist.status`）
 WORKLIST_STATUS: frozenset[str] = frozenset({"open", "resolved", "dismissed"})
@@ -291,8 +292,9 @@ def assert_enum_bindings() -> None:
     # 条款解析（2026-09-20 F6）：解析模式 + 结构单元 level 闭包
     assert len(CLAUSE_PARSE_MODES) == 6, CLAUSE_PARSE_MODES
     assert CLAUSE_STRUCTURE_LEVELS == {"一级", "二级", "条", "项", "目"}, CLAUSE_STRUCTURE_LEVELS
-    # 待办队列（v2 §3.14.3）：8 类 kind 与 3 态 status 闭包
-    assert len(WORKLIST_KIND) == 8, WORKLIST_KIND
+    # 待办队列（v2 §3.14.3）：9 类 kind 与 3 态 status 闭包
+    # （8 → 9：P2-1 增 trigger_manual_breakpoint —— 触发链 on_fail=manual_breakpoint 的落点）
+    assert len(WORKLIST_KIND) == 9, WORKLIST_KIND
     assert WORKLIST_STATUS == {"open", "resolved", "dismissed"}, WORKLIST_STATUS
 
 

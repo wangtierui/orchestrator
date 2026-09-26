@@ -322,11 +322,22 @@ def _exit_semantic(rc: int) -> str:
 
 
 def _run(step: str, argv, cwd=ROOT, timeout: int | None = None) -> dict:
+    global _FROM_HIT
     t0 = time.time()
     rec = {"step": step, "cmd": " ".join(os.path.basename(a) if os.sep in a else a
                                          for a in argv), "rc": -1, "elapsed_s": 0, "tail": "",
            # X4（P1-5）：语义化退出码 + 完整 stderr 长度（tail 只留 2 行，长度反映真实体量）
-           "exit_code": "", "stderr_tail": "", "stderr_tail_len": 0, "stdout_len": 0}
+           "exit_code": "", "stderr_tail": "", "stderr_tail_len": 0, "stdout_len": 0,
+           # P2-6：步骤选择/续跑/试跑的可解释标记（进 run_step 台账与汇总 JSON）
+           "skipped": False, "note": ""}
+    # ---- 步骤选择与续跑（v2 §3.13.3，P2-6）----
+    skip_reason = _skip_reason(step)
+    if skip_reason:
+        rec.update({"rc": 0, "exit_code": "SKIP", "skipped": True, "note": skip_reason,
+                    "elapsed_s": round(time.time() - t0, 1)})
+        _record_step(rec)
+        print(f"\n[step:{step}] SKIP（{skip_reason}）", flush=True)
+        return rec
     print(f"\n[step:{step}] {' '.join(rec['cmd'])}", flush=True)
     try:
         env = dict(os.environ)
@@ -353,7 +364,113 @@ def _run(step: str, argv, cwd=ROOT, timeout: int | None = None) -> dict:
         print("    " + "\n    ".join(rec["tail"].splitlines()), flush=True)
     print(f"    → rc={rec['rc']}({rec['exit_code']}) elapsed={rec['elapsed_s']}s"
           f" stderr={rec['stderr_tail_len']}B", flush=True)
+    _record_step(rec)
     return rec
+
+
+# --------------------------------------------------------------------------- #
+# 步骤选择 / 续跑 / 试跑（v2 §3.13.3，P2-6）
+# --------------------------------------------------------------------------- #
+# 步骤清单（**执行顺序**）：`--from` 的先后判定、`--list-steps` 的输出、`--only` 的合法性
+# 都以此为准；`gate_config_integrity` 判据 R 断言它与本文件实际 `_run("<step>"` 调用点一致
+# （防"清单漂移"——这正是本仓其它清单的既有治理方式）。
+STEP_ORDER: tuple[str, ...] = (
+    "collect:nfra_weekly", "collect:{src}", "supp:ingest_batch", "clean:{src}",
+    "timeliness:consolidate", "apply:{src}", "classify:all", "relations:gen", "reconcile",
+    "governance:sync", "recall", "internal:merged", "reports:build", "base:publish", "gates",
+    "analysis:gen", "watch:baseline",
+)
+# ⚠️ 上表为**执行顺序**（取自本文件 `_run(...)` 调用点出现次序，2026-09-26 实测）。
+#    注意与模块 docstring 的"阶段编号"存在一处**文档漂移**：docstring 写
+#    「6 gates → 6.5 watch:baseline → 6.8 analysis:gen」，而实装顺序是
+#    `gates → analysis:gen → watch:baseline`（见本文件 L643/L652）。此处以**实装为准**，
+#    漂移已在第四批报告中登记（N-29）。
+#    `{src}` 为动态步骤（五源循环），匹配按前缀进行。
+
+
+def _step_index(step: str) -> int:
+    """步骤在 `STEP_ORDER` 中的序号（动态步骤按 `{src}` 前缀匹配）；未登记 → -1。"""
+    for i, pat in enumerate(STEP_ORDER):
+        if "{src}" in pat:
+            head = pat.split("{src}")[0]
+            if step.startswith(head) and step != head:
+                return i
+        elif step == pat:
+            return i
+    return -1
+
+
+def _step_matches(step: str, sel: str) -> bool:
+    """步骤是否被选择器命中（精确、前缀、或对动态步骤的族前缀）。"""
+    if not sel:
+        return False
+    if step == sel or step.startswith(sel):
+        return True
+    for pat in STEP_ORDER:
+        if "{src}" in pat and (sel == pat or sel.rstrip(":{") == pat.split("{src}")[0].rstrip(":")):
+            head = pat.split("{src}")[0]
+            if step.startswith(head):
+                return True
+    return False
+
+_RESUME_SKIP: set[str] = set()   # 续跑可跳过集（判据见 _resume_plan）
+_ONLY_STEPS: tuple[str, ...] = ()
+_FROM_STEP = ""
+_FROM_HIT = False
+_DRY_RUN = False
+
+
+def _skip_reason(step: str) -> str:
+    """该步骤是否跳过（返回原因；空串 = 执行）。"""
+    global _FROM_HIT
+    if _ONLY_STEPS and not any(_step_matches(step, s) for s in _ONLY_STEPS):
+        return f"--only 未选中（{list(_ONLY_STEPS)}）"
+    if _FROM_STEP and not _FROM_HIT:
+        if _step_matches(step, _FROM_STEP):
+            _FROM_HIT = True
+        else:
+            return f"--from {_FROM_STEP} 之前的步骤"
+    if _DRY_RUN:
+        return "--dry-run（只列 argv，不执行）"
+    if step in _RESUME_SKIP:
+        return "--resume：上次 rc=0 且水位无 stale/未登记"
+    return ""
+
+
+def _record_step(rec: dict) -> None:
+    """把步骤结果写入治理库 `run_step`（旁路设施：登记失败不得中断主链）。"""
+    try:
+        from std_lib.common_lib import governance_store as gs  # noqa: PLC0415
+        gs.step_record(rec.get("step", ""), rec.get("rc", -1),
+                       exit_code=rec.get("exit_code", ""),
+                       elapsed_s=rec.get("elapsed_s", 0), skipped=bool(rec.get("skipped")),
+                       note=(rec.get("note") or rec.get("tail", ""))[:200])
+    except Exception:  # noqa: BLE001  旁路设施
+        pass
+
+
+def _resume_plan() -> dict:
+    """计算续跑可跳过集。**跳过判据只与水位同源**（v2 R13：不得自建第二套判据）：
+
+        skip ⟺ 「上次该步骤 rc=0（且非跳过）」**且**「全库水位无 stale/未登记」。
+
+    水位有异常 → 一律全量重跑（宁重跑不跳：重跑的代价是时间，跳错的代价是数据陈旧）。
+    """
+    try:
+        from std_lib.common_lib import governance_store as gs  # noqa: PLC0415
+    except Exception as e:  # noqa: BLE001
+        return {"enabled": False, "reason": f"治理库不可导入：{type(e).__name__}"}
+    if not gs.enabled():
+        return {"enabled": False, "reason": "治理库未启用 → 不跳过任何步骤"}
+    rid, steps = gs.last_run_with_steps()
+    if not rid:
+        return {"enabled": False, "reason": "无历史步骤台账 → 不跳过"}
+    ok, det = gs.check_dependencies()
+    if not ok:
+        return {"enabled": False, "reason": "水位存在 stale/未登记 → 全量重跑",
+                "from_run": rid, "watermark": det}
+    skip = {s["step"] for s in steps if s["rc"] == 0 and not s.get("skipped")}
+    return {"enabled": True, "from_run": rid, "count": len(skip), "steps": sorted(skip)}
 
 
 def _raw_records(data) -> int | None:
@@ -594,6 +711,20 @@ def _run_chain(args) -> int:
     with open(out_p, "w", encoding="utf-8") as fh:
         json.dump(summary, fh, ensure_ascii=False, indent=1)
     print(f"汇总已落盘: {out_p}")
+    # P2-6：失败 → 告警通道（v2 §3.13.6；无人值守下"失败无人知晓"是原设计的硬缺口）
+    if summary["failed"]:
+        try:
+            from std_lib.common_lib import notify as _notify  # noqa: PLC0415
+            _notify.notify(
+                "failed_step", f"生产刷新失败步骤 {len(summary['failed'])} 个",
+                {"summary_json": out_p, "total_elapsed_s": summary["total_elapsed_s"],
+                 "failed": [{k: f.get(k) for k in ("step", "rc", "exit_code", "elapsed_s",
+                                                   "stderr_tail_len", "tail")}
+                            for f in summary["failed"]],
+                 "evidence": [f"{f['step']} rc={f['rc']}({f.get('exit_code', '')})"
+                              f" {f.get('tail', '')}"[:200] for f in summary["failed"]]})
+        except Exception as e:  # noqa: BLE001  告警失败不得改变退出码
+            print(f"[refresh] WARN 告警发送失败（不影响退出码）: {type(e).__name__}: {e}")
     return 0 if not summary["failed"] else 2
 
 
@@ -612,7 +743,36 @@ def main(argv=None) -> int:
     ap.add_argument("--supp-batch", default="",
                     help="supp 批量摄取 backlog JSON（可选；F-O05：本地补全文件显式入链）")
     ap.add_argument("--stop-on-error", action="store_true", help="任一步 rc!=0 即中止（默认继续并汇总）")
+    # ---- v2 §3.13.3（P2-6）：与 `cli.py run` 同语义的四个开关 ----
+    ap.add_argument("--resume", action="store_true",
+                    help="从上次失败/未执行步骤续跑（跳过判据与水位同源：仅跳过 rc=0 且水位无 stale 的步骤）")
+    ap.add_argument("--from", dest="from_step", default="", help="从指定步骤名开始（见 --list-steps）")
+    ap.add_argument("--only", default="", help="只执行指定步骤名（逗号分隔；前缀匹配）")
+    ap.add_argument("--dry-run", action="store_true", help="只打印将执行的 argv 列表，不执行")
+    ap.add_argument("--json-logs", action="store_true",
+                    help="结构化日志（JSON lines；等价 REG_ORCH_JSON_LOGS=1）")
+    ap.add_argument("--list-steps", action="store_true", help="列出步骤名（执行顺序）后退出")
     args = ap.parse_args(argv)
+
+    global _DRY_RUN, _FROM_STEP, _ONLY_STEPS
+    _DRY_RUN = bool(args.dry_run)
+    _ONLY_STEPS = tuple(s.strip() for s in (args.only or "").split(",") if s.strip())
+    _FROM_STEP = (args.from_step or "").strip()
+    if getattr(args, "list_steps", False):
+        for i, s in enumerate(STEP_ORDER, 1):
+            print(f"{i:>2}. {s}" + ("   （动态：每源一步）" if "{src}" in s else ""))
+        return 0
+    if args.json_logs:
+        try:
+            from std_lib.common_lib.logging import setup_cli_logging  # noqa: PLC0415
+            setup_cli_logging("run_production_refresh", json_logs=True)
+        except Exception as e:  # noqa: BLE001  日志设施不可用不得阻断主链
+            print(f"[refresh] WARN 日志初始化失败（退回 stdout）: {type(e).__name__}")
+    if args.resume:
+        plan = _resume_plan()
+        _RESUME_SKIP.update(plan.get("steps") or [])
+        print(f"[refresh] --resume：跳过集 {len(_RESUME_SKIP)} 步"
+              f"（{plan.get('from_run') or plan.get('reason')}）")
 
     # ---- 单实例锁（阶段 0 止血，2026-09-18）----
     # 此前只有各 collector 自带 ProcessLock，**编排本体无锁** → 调度器抖动/人工重入会让
@@ -661,4 +821,8 @@ def main(argv=None) -> int:
 
 
 if __name__ == "__main__":
+    # v2 §3.13.7（P2-6）：本文件保留为**库**（其 `main()` 被 `cli.py run` 调用）；
+    # 直调路径保留一个版本用于回滚/排障，但一律提示改用唯一入口。
+    print("[refresh] DEPRECATED：请改用 `python cli.py run [同参数]`"
+          "（唯一执行入口，v2 §3.13）；本直调路径保留一个版本后移除。", flush=True)
     raise SystemExit(main())

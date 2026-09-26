@@ -1,0 +1,60 @@
+# config/inbox_registry.yaml —— 投放区「域 → 管线」映射**唯一事实源**（v2 §3.12.4，P2-3b）
+#
+# ⚠️ 落点修正（2026-09-26，P2-3b 执行中发现 N-26）：方案原文写 `data/inbox/_registry.yaml`，
+#    但仓根 `.gitignore:11` 为 `data/`（**整目录**排除，且 git 不允许在被排除目录内反选）
+#    → 放在 data/ 下的**声明**无法入库、新克隆会缺该文件。声明必须可版本化，故落 `config/`
+#    （与 schedule.yaml / triggers.yaml 同类）。`tools/inbox_scan.py` 仍接受
+#    `data/inbox/_registry.yaml` 作为**运行期覆盖**（本机特化，不入库）；两者不并存。
+#
+# 定位：人工/外部系统把新文件放进 `data/inbox/<域>/`，本表声明该域**属于哪一层、由哪个管线
+# 消费、可否写入、以及准入策略**。`tools/inbox_scan.py` 是唯一读者，`config/triggers.yaml`
+# 的 `inbox_drop` 触发项按本表路由。
+#
+# 纪律（v2 §3.12 / R10）：
+#   ① `ingress_policy: new_and_unhashed_only` —— 已归档内容（sha256 命中归集本体或
+#      `originals/`）一律记 `duplicate` 并**跳过**，绝不再摄取（防 §3.12.1 的自指环：
+#      经 inode 写穿 `originals/`）；
+#   ② `writable: false` —— 投放区**不是**可写数据层，只作投递入口；归档后由管线搬入
+#      `data/corpus/<域>/` 或 `originals/`；
+#   ③ 扩展名不可识别 → 记 `needs_review` 并登记 worklist（`corpus_needs_review`），
+#      **不静默丢弃**。
+schema_version: "1.0"
+
+domains:
+  dept_policies:
+    layer: corpus
+    source_kind: internal_policy
+    consumer: internal_policy_base
+    inbox: data/inbox/internal
+    writable: false
+    ingress_policy: new_and_unhashed_only   # D-9：已全部摄取 → 仅受理内容不在 originals/ 中的新文件
+    pipeline: ["inbox_scan", "normalize_internal_naming --apply",
+               "internal index --only-unindexed", "internal align", "internal reocr"]
+    desc: "部门制度/内部制度原件（审计层；originals/ 为其归档目标）"
+
+  regulatory_stats:
+    layer: corpus
+    source_kind: regulatory_statistics
+    consumer: regulatory_stats              # 新域（承接内控 4.2「要求/规则来源」）
+    inbox: data/inbox/regulatory_stats
+    writable: false
+    ingress_policy: new_and_unhashed_only
+    pipeline: ["inbox_scan", "ingest_corpus"]
+    supp_eligible_subset:
+      include: ["*/关于修订人身保险公司2024版监管数据标准化规范部分数据项报送口径的通知/*.pdf"]
+      exclude_tops: ["00.报送文档", "核查手册", "立项申请", "需求文档", "邮件宣导", "相关法规"]
+    # 注意：YAML 双引号串内不得直接出现双引号（曾因「"真法规"」导致解析失败）→ 用中文引号
+    desc: "监管统计域语料（数据标准素材；仅「真法规」子集经 build_east_backlog → supp）"
+
+# 识别规则（唯一事实源：扩展名 → 是否可直接入管线）
+recognized_ext:
+  - ".pdf"
+  - ".doc"
+  - ".docx"
+  - ".xlsx"
+  - ".xls"
+  - ".csv"
+  - ".txt"
+  - ".md"
+  - ".json"
+  - ".jsonl"

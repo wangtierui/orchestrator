@@ -197,6 +197,7 @@ def render_md(bl: dict, *, generated_at: str = "") -> str:
     """
     items = bl["items"]
     sure = [i for i in items if i["suggested_theme"] != "uncertain"]
+    _wl_uncertain(items)
     lines = [
         "# RFN 补登候选清单（关系线索驱动）",
         "",
@@ -412,3 +413,31 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
+
+
+def _wl_uncertain(items) -> None:
+    """P2-5（D1，v2 §3.14.3）：主题投票 `uncertain`（无票/票数并列/形态不明）登记待办。
+
+    原状：仅标注 `uncertain` 并"不参与自动登记"，**无处置入口**（翻不回去）。
+    现登记进 worklist，`cli.py worklist resolve` 即处置通道。旁路设施：失败降级。
+    """
+    try:
+        from std_lib.common_lib import governance_store as _gs  # noqa: PLC0415
+        n = 0
+        for it in items:
+            if it.get("suggested_theme") != "uncertain":
+                continue
+            key = str(it.get("document_number") or it.get("title") or "")[:80]
+            if not key:
+                continue
+            _gs.worklist_add(
+                "rfn_theme_uncertain", key, stage="2.7", artifact_key="rfn_backlog",
+                payload={"title": it.get("title", ""), "document_number": it.get("document_number", ""),
+                         "decision": it.get("decision", ""), "theme_src": it.get("theme_src", ""),
+                         "reason": "无票 / 票数并列 / 形态不明"},
+                suggestion="人工裁决后 `cli.py rfn register --theme Tx` 强制登记（或 dismiss）")
+            n += 1
+        if n:
+            print(f"[rfn_backlog] 待办：{n} 条 uncertain 已登记 worklist（cli.py worklist resolve）")
+    except Exception:  # noqa: BLE001  旁路设施：登记失败不得中断生成
+        pass

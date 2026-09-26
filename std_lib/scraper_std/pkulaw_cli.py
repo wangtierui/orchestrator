@@ -496,12 +496,14 @@ def execute_queries(plan: list[dict[str, Any]], cli: list[str], token: str,
                             obj["query_docno"] = it["docno"]
                     if "90001" in obj["message"] or "积分用尽" in obj["message"]:
                         log("[配额] 北大法宝积分用尽(90001)，停止新增查询")
+                        _wl_quota("90001", it)
                         stop = True
                         break
                     if "认证失败" in obj["message"]:
                         consec_auth_fail += 1
                         if consec_auth_fail >= 15:
                             log("[拦截] 连续 %d 次认证失败，暂停续跑（法宝配额耗尽/网关拦截，建议检查控制台）" % consec_auth_fail)
+                            _wl_quota("auth_fail", it)
                             stop = True
                             break
                     else:
@@ -514,3 +516,23 @@ def execute_queries(plan: list[dict[str, Any]], cli: list[str], token: str,
                     if n % 100 == 0:
                         log("  进度 %d/%d" % (n, len(todo)))
     return done
+
+
+def _wl_quota(blocker: str, item: dict) -> None:
+    """P2-5（v2 §3.14.3 E 类断点）：配额/认证阻断的**显式化**。
+
+    原状：`[配额]`/`[拦截]` 只写日志 —— 无人值守下"为什么昨晚没继续核验"无人知晓。
+    现登记 worklist（处置：检查控制台后重跑 `cli.py timeliness verify`，断点续跑）。
+    """
+    try:
+        from std_lib.common_lib import governance_store as _gs  # noqa: PLC0415
+        key = f"{blocker}:{item.get('docno') or item.get('title') or ''}"[:80]
+        _gs.worklist_add(
+            "ingest_quota_blocked", key, stage="6.9", artifact_key="timeliness_verify",
+            payload={"blocker": blocker, "query": item.get("title", ""),
+                     "docno": item.get("docno", ""),
+                     "message": str(item.get("message", ""))[:300]},
+            suggestion="检查北大法宝控制台（积分/鉴权）；恢复后重跑 `cli.py timeliness verify`"
+                       "（断点续跑）；确认已恢复 → resolve")
+    except Exception:  # noqa: BLE001  旁路设施
+        pass

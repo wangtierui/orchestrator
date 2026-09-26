@@ -135,6 +135,7 @@ def align_all() -> dict:
         "count": len(out_records),
         "theme_stat": dict(stat),
     }
+    _wl_unaligned(out_records)
     os.makedirs(_DATA, exist_ok=True)
     tmp = _ALIGN_PATH + ".tmp"
     json.dump(result, open(tmp, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
@@ -157,3 +158,30 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+def _wl_unaligned(records) -> None:
+    """P2-5（D2，v2 §3.14.3）：无对应监管主题（UNALIGNED）的内部制度登记待办。
+
+    原状：只进 `align_result.json` 的 unaligned_bucket（R18：不进主视图），**无处置入口**。
+    现登记进 worklist（处置：补主题关键词或人工指定；确认"确无对应主题"可 dismiss）。
+    """
+    try:
+        from std_lib.common_lib import governance_store as _gs  # noqa: PLC0415
+        n = 0
+        for r in records:
+            if (r.get("primary_theme") or "") != UNALIGNED:
+                continue
+            ipn = str(r.get("ipn", ""))
+            if not ipn:
+                continue
+            _gs.worklist_add(
+                "internal_unaligned", ipn, stage="7.5", artifact_key="internal_align",
+                payload={"ipn": ipn, "title": r.get("title", ""), "method": r.get("align_method", "")},
+                suggestion="补 `internal_policy_base.align.THEME_TITLE_KW` 关键词或人工指定主题；"
+                           "确认确无对应监管主题 → dismiss（保留在 UNALIGNED 桶）")
+            n += 1
+        if n:
+            print(f"[align] 待办：{n} 条 UNALIGNED 已登记 worklist（cli.py worklist resolve）")
+    except Exception:  # noqa: BLE001  旁路设施：登记失败不得中断对齐
+        pass

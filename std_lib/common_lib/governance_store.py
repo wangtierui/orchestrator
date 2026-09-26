@@ -61,12 +61,16 @@ SCHEMA_VERSION = "1.2"
 # 注意：投影表（document/theme_assign/relation/timeliness_history）版本落后时**DROP 重建**；
 #      观测表（run_log/watermark/artifact/audit_log/gate_result/worklist）一律 ALTER 增量迁移
 #      （新增整表由 `_DDL` 的 CREATE TABLE IF NOT EXISTS 完成，无需迁移项）。
-_SCHEMA_INT = 4
+_SCHEMA_INT = 5
 _TZ = timezone(timedelta(hours=8))   # Asia/Shanghai，与 clean_index 时间基准一致
 
 TABLES = ("run_log", "watermark", "artifact", "audit_log", "gate_result",
           # ---- v2 §3.14.3（2026-09-26）待办队列：链外节点的"决策自动化"缺口显式化 ----
           "worklist",
+          # ---- v2 §3.13.3/§3.13.5（2026-09-26，P2-6）步骤级运行台账 ----
+          # 背景：run_log 只有"一次运行"一行，无法回答 `status` 的"本轮哪些步骤失败"，
+          # 也无法支撑 `run --resume` 的"跳过已 rc=0 步骤"（v2 R13：跳过判据不得自建第二套）。
+          "run_step",
           # ---- 阶段 2（2026-09-18）元数据四表：事实源为文件，本库为**事务化投影** ----
           "document", "theme_assign", "relation", "timeliness_history")
 
@@ -192,6 +196,26 @@ CREATE TABLE IF NOT EXISTS worklist(
 CREATE INDEX IF NOT EXISTS ix_wl_status ON worklist(status);
 CREATE INDEX IF NOT EXISTS ix_wl_kind   ON worklist(kind);
 CREATE UNIQUE INDEX IF NOT EXISTS ux_wl_open ON worklist(kind, subject) WHERE status='open';
+
+-- ================= run_step：步骤级运行台账（v2 §3.13.3/§3.13.5，_SCHEMA_INT 5）=================
+-- 设计：`run_log` 记录"一次运行"，本表记录"这次运行里每个步骤的 rc/耗时/是否被续跑跳过"。
+-- 写方 = `tools/run_production_refresh._run`（每步一次 upsert）；读方 = `cli.py status`
+-- （披露本轮失败步骤）、`cli.py run --resume`（跳过已 rc=0 步骤）。
+-- 纪律：① 与水位同源判据（v2 R13：`--resume` 的跳过逻辑不得自建第二套判据）；
+--      ② `skipped=1` 表示"因续跑而跳过"（非失败），rc 沿用上次的 0；
+--      ③ 观测表 → 一律 ALTER/新建迁移，不清表。
+CREATE TABLE IF NOT EXISTS run_step(
+  run_id      TEXT NOT NULL,
+  step        TEXT NOT NULL,
+  rc          INTEGER NOT NULL DEFAULT -1,
+  exit_code   TEXT NOT NULL DEFAULT '',
+  elapsed_s   REAL NOT NULL DEFAULT 0,
+  skipped     INTEGER NOT NULL DEFAULT 0,
+  note        TEXT NOT NULL DEFAULT '',
+  recorded_at TEXT NOT NULL,
+  PRIMARY KEY(run_id, step)
+);
+CREATE INDEX IF NOT EXISTS ix_step_run ON run_step(run_id);
 
 -- ================= 阶段 2：元数据四表（2026-09-18）=================
 -- 纪律：本四表是**事实源文件的投影**（文件仍为权威、读方仍读文件，双写期语义）。
@@ -481,6 +505,65 @@ def run_finish(run_id: str, ok: bool, note: str = "") -> None:
         conn.commit()
     finally:
         conn.close()
+
+
+def step_record(step: str, rc: int, *, exit_code: str = "", elapsed_s: float = 0,
+                skipped: bool = False, note: str = "", run_id: str | None = None) -> None:
+    """登记一个步骤的结果（**幂等 upsert**：同 (run_id, step) 覆盖）。
+
+    由 `tools/run_production_refresh._run` 调用；治理库未启用时静默返回（不中断主链）。
+    """
+    if not enabled() or not step:
+        return
+    rid = run_id if run_id is not None else current_run_id()
+    if not rid:
+        return
+    conn = _ensure()
+    try:
+        conn.execute(
+            "INSERT INTO run_step(run_id,step,rc,exit_code,elapsed_s,skipped,note,recorded_at)"
+            " VALUES(?,?,?,?,?,?,?,?)"
+            " ON CONFLICT(run_id,step) DO UPDATE SET rc=excluded.rc,"
+            " exit_code=excluded.exit_code, elapsed_s=excluded.elapsed_s,"
+            " skipped=excluded.skipped, note=excluded.note, recorded_at=excluded.recorded_at",
+            (rid, step, int(rc), exit_code, float(elapsed_s), 1 if skipped else 0,
+             note, now_iso()))
+        conn.commit()
+    except sqlite3.Error as e:
+        print(f"[run_step] WARN 登记失败（不影响主链）: {type(e).__name__}: {e}")
+    finally:
+        conn.close()
+
+
+def steps_of(run_id: str) -> list[dict]:
+    """某次运行的步骤表（按 step 排序）。表未建（旧库未迁移）→ 空列表（读侧容错）。"""
+    if not enabled() or not run_id:
+        return []
+    try:
+        with connect(readonly=True) as c:
+            return [dict(r) for r in c.execute(
+                "SELECT * FROM run_step WHERE run_id=? ORDER BY step", (run_id,))]
+    except sqlite3.Error as e:
+        # 旧库（_SCHEMA_INT < 5）未迁移 → 读侧不得因此失败（写侧 init_db 会补建表）
+        print(f"[run_step] WARN 步骤表不可读（跑 `cli.py governance init` 迁移）: {e}")
+        return []
+
+
+def last_run_with_steps() -> tuple[str, list[dict]]:
+    """最近一次**有步骤记录**的运行 → (run_id, steps)。无则 ("", [])。"""
+    if not enabled():
+        return "", []
+    try:
+        with connect(readonly=True) as c:
+            row = c.execute("SELECT run_id FROM run_step GROUP BY run_id"
+                            " ORDER BY MAX(recorded_at) DESC LIMIT 1").fetchone()
+            if not row:
+                return "", []
+            rid = row["run_id"]
+    except sqlite3.Error as e:
+        print(f"[run_step] WARN 步骤表不可读（跑 `cli.py governance init` 迁移）: {e}")
+        return "", []
+    return rid, steps_of(rid)
 
 
 def list_runs(limit: int = 20) -> list[dict]:

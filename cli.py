@@ -5,8 +5,9 @@
   - 命令注册表 COMMANDS（映射 commands/<name>.run；业务实现全部在 commands/ 包）；
   - argparse 蓝图 build_parser（帮助文本/子命令参数声明）；
   - 分发 main（UTF-8 强置、-h 处理、未知命令提示）。
-命令实现（13 个）见 commands/：gates/governance/source/internal/classify/timeliness/draft/rfn/
-base/analysis/relations/worklist/ping。
+命令实现（18 个）见 commands/：run/doctor/status/schedule ｜ gates/governance/source/internal/
+classify/timeliness/draft/rfn/base/analysis/relations/worklist/triggers/ping。
+唯一主链入口是 `run`（v2 §3.13）；`tools/run_production_refresh.py` 降级为库 + legacy 直调。
 
 ⚠️ 阶段 0 澄清（2026-09-18）：`build_parser()` **仅用于 `-h/--help` 文本**，
 实际分发走 `COMMANDS` 注册表（`main()` 直接 `handler(argv[1:])`，不经 argparse 校验）。
@@ -24,6 +25,9 @@ import paths
 from commands import analysis as _m_analysis
 from commands import base as _m_base
 from commands import classify as _m_classify
+
+# v2 §3.13（P2-6）：统一执行入口四命令 + 条件触发面（P2-1）
+from commands import doctor as _m_doctor
 from commands import draft as _m_draft
 from commands import gates as _m_gates
 from commands import governance as _m_governance
@@ -31,8 +35,12 @@ from commands import internal as _m_internal
 from commands import ping as _m_ping
 from commands import relations as _m_relations
 from commands import rfn as _m_rfn
+from commands import run as _m_run
+from commands import schedule as _m_schedule
 from commands import source as _m_source
+from commands import status as _m_status
 from commands import timeliness as _m_timeliness
+from commands import triggers as _m_triggers
 from commands import worklist as _m_worklist
 
 COMMANDS = {
@@ -49,6 +57,13 @@ COMMANDS = {
     "relations": _m_relations.run,
     # v2 §3.14.3（P1-6）：待办队列（链外节点决策自动化缺口的处置入口）
     "worklist": _m_worklist.run,
+    # v2 §3.13（P2-6）：统一执行入口 —— run 主链 / doctor 环境自检 / status 状态披露 /
+    # schedule 调度事实源操作面；另加 §3.5（P2-1）的 triggers 条件触发面。
+    "run": _m_run.run,
+    "doctor": _m_doctor.run,
+    "status": _m_status.run,
+    "schedule": _m_schedule.run,
+    "triggers": _m_triggers.run,
     "ping": _m_ping.run,
 }
 
@@ -94,6 +109,13 @@ def build_parser() -> argparse.ArgumentParser:
                       choices=["list", "resolve", "export", "stats"],
                       help="list 列出待办（默认 open，--all 全部）| resolve 处置（--resolution 必填，"
                            "--dismiss 判为无需处置）| export 导出 reports/worklist_<date>.md | stats 统计")
+    # ---- v2 §3.13（P2-6）：统一执行入口；§3.5（P2-1）：条件触发面 ----
+    sub.add_parser("run", help="唯一主链入口（v2 §3.13.3；--resume/--from/--only/--dry-run/"
+                              "--json-logs；参数见 `cli.py run -h`）")
+    sub.add_parser("doctor", help="环境前置自检 18 项（v2 §3.13.4；FAIL 时 rc=3）")
+    sub.add_parser("status", help="状态与待办自披露（v2 §3.13.5；--json/--exit-code）")
+    sub.add_parser("schedule", help="调度事实源操作面（v2 §3.13.6；print/list/install/verify/remove）")
+    sub.add_parser("triggers", help="条件触发链决策表与执行（v2 §3.5；table/list/run）")
     return p
 
 
