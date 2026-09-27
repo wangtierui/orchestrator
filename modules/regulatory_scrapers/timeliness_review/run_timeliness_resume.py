@@ -130,7 +130,7 @@ def run_source(src: str, extra: list, py: str) -> dict:
     if err.strip():
         print("[stderr]", err[-1500:], file=sys.stderr)
 
-    rec = {"source": src, "elapsed_s": el, "exit_code": code, "extra_args": extra}
+    rec: dict = {"source": src, "elapsed_s": el, "exit_code": code, "extra_args": extra}
     m = _STAT.search(out or "")
     if m:
         rec.update(status=m.group("status"), missing=int(m.group("missing")),

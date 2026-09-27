@@ -16,7 +16,7 @@ import sys
 
 import requests
 
-sys.stdout.reconfigure(encoding="utf-8")
+sys.stdout.reconfigure(encoding="utf-8")  # type: ignore[union-attr]
 BASE = os.path.dirname(os.path.abspath(__file__))
 JSON = os.path.join(BASE, "data", "raw", "pbc_laws.json")
 HDR = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0 Safari/537.36",

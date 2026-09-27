@@ -122,7 +122,7 @@ def _count_jsonl(path: str) -> int:
 
 def _companion_docs(cleaned_dir: str, date: str) -> list[str]:
     """收集同源同日的配套文档（数据字典/合规记录/测试报告/表格抽取报告/README）。"""
-    out = []
+    out: list = []
     if not os.path.isdir(cleaned_dir):
         return out
     for name in os.listdir(cleaned_dir):
@@ -188,7 +188,14 @@ def scan_sources(scraper_root: str = SCRAPER_ROOT, *, hash_files: bool = True) -
             stat = os.stat(full)
             size = stat.st_size
             sha = _sha256_file(full) if hash_files else None
-            rec_count = _count_csv(full) if ext == "csv" else _count_jsonl(full)
+            # N-68（2026-09-28）：`_count_csv` 返回 **(记录数, 去重集合)** 元组，而
+            # `_count_jsonl` 返回 int —— 原实现在下面先写入 `record_count: rec_count`
+            # （csv 时写的是**元组**）、随后 csv 分支再**覆盖为 cnt**。运行时最终值侥幸正确，
+            # 但类型不一致（mypy misc："int" object is not iterable）且脆弱。改为**先解包**。
+            if ext == "csv":
+                rec_count, distinct = _count_csv(full)
+            else:
+                rec_count, distinct = _count_jsonl(full), {}
             snap = snapshots.setdefault(date, {
                 "date": date,
                 "files": {},
@@ -204,9 +211,7 @@ def scan_sources(scraper_root: str = SCRAPER_ROOT, *, hash_files: bool = True) -
                 "modified_at": datetime.fromtimestamp(stat.st_mtime, _TZ).strftime("%Y-%m-%dT%H:%M:%S%z"),
             }
             if ext == "csv":
-                cnt, distinct = rec_count  # _count_csv 返回元组
-                snap["files"][ext]["record_count"] = cnt
-                snap["record_count"] = cnt
+                snap["record_count"] = rec_count          # N-68：已在上方解包，此处不再覆盖
                 snap["record_source_values"] = distinct.get("source")
                 snap["timeliness_status_values"] = distinct.get("timeliness_status")
                 snap["doc_type_values"] = distinct.get("doc_type")

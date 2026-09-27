@@ -148,14 +148,14 @@ def build_index(rows, source: str):
             if prev is not None and prev.get("timeliness_status") != st:
                 conflicts.append(("docno", k_no, prev.get("timeliness_status"), st))
             by_no.setdefault(k_no, r)
-        k_ti = _norm(r.get("title"))
+        k_ti = _norm(r.get("title") or "")
         if not k_ti:
             continue
         title_states.setdefault(k_ti, set()).add(st)
         by_title_date.setdefault((k_ti, _date(r.get("publish_date"))), r)
     by_title_unique: dict[str, dict] = {}
     for r in picked:
-        k_ti = _norm(r.get("title"))
+        k_ti = _norm(r.get("title") or "")
         if k_ti and len(title_states.get(k_ti, ())) == 1:
             by_title_unique.setdefault(k_ti, r)
     return by_no, by_title_date, by_title_unique, conflicts
@@ -189,7 +189,7 @@ def writeback_source(source: str, fields_for, *, dry_run: bool = False,
             if line:
                 recs.append(json.loads(line))
 
-    stat = {"source": source, "total": len(recs), "skipped": 0,
+    stat: dict = {"source": source, "total": len(recs), "skipped": 0,
             "written": 0, "unchanged": 0, "status_derived": 0}
     for r in recs:
         fields = fields_for(r)
@@ -271,7 +271,7 @@ def apply_source(source: str, by_no, by_title_date, by_title_unique,
         if k_no and k_no in by_no:
             hits["hit_docno"] += 1
             return by_no[k_no]
-        k_ti = _norm(r.get("title"))
+        k_ti = _norm(r.get("title") or "")
         if k_ti and (k_ti, _date(r.get("publish_date"))) in by_title_date:
             hits["hit_title_date"] += 1
             return by_title_date[(k_ti, _date(r.get("publish_date")))]

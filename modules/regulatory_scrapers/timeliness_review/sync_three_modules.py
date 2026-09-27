@@ -226,7 +226,7 @@ def main() -> int:
     print(f"[sync] 台账 {os.path.basename(ledger)}：变更 {len(changed)} 条 | 源 {args.source}"
           + (" | DRY-RUN" if args.dry_run else ""))
 
-    report = []
+    report: list = []
     a = stage_scrapers(args.source, changed, args.dry_run, report)
     b = stage_classifier(args.source, changed, args.dry_run, report)
     c = stage_internal(changed, args.dry_run, report)

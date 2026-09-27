@@ -61,6 +61,7 @@ def parse_filename(name: str) -> dict:
     m = _DOCNO_RE.search(name)
     docno = m.group("docno").strip() if m else ""
     if docno:
+        assert m is not None   # docno 非空 ⟹ 匹配必命中（供 mypy 收窄；原靠隐含语义）
         # 文号后通常是 _ 分隔标题；兼容"标题（文号）"尾括号形态：
         # 文号后无实质内容（仅"）"等）→ 取文号前段（2026-09-12 实证 4 例）
         after = name[m.end():].lstrip("_").strip("）)（( ")
@@ -499,7 +500,7 @@ def scan_directory(root: str, *, supported: set[str] | None = None,
 if __name__ == "__main__":  # 自检
     import json
     import sys
-    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
     samples = [
         "阳光人寿办发〔2023〕58号_个险客经渠道团队套利处置管理办法.pdf",
         "_个险中心城市渠道营销员考勤管理办法（2023版）.pdf",

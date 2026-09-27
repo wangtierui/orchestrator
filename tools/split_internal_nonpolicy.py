@@ -57,7 +57,9 @@ def _norm(p: str) -> str:
 
 def build_plan() -> dict:
     """只读规划：{move: [(src, dst, kind, dept)], keep: [...], doc_left: [...]}。"""
-    move, keep, doc_left = [], [], []
+    move: list = []
+    keep: list = []
+    doc_left: list = []
     if not os.path.isdir(ORIGINALS):
         return {"move": move, "keep": keep, "doc_left": doc_left}
 
@@ -96,7 +98,7 @@ def build_plan() -> dict:
 def apply_plan(plan: dict, *, backup: bool = True) -> dict:
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     backup_dir = os.path.join(BACKUP_ROOT, f"nonpolicy_{ts}")
-    acts = collections.Counter()
+    acts: collections.Counter = collections.Counter()
     entries = []
     for src, dst, kind, dept in plan["move"]:
         if _norm(src) == _norm(dst):
@@ -156,7 +158,9 @@ def plan_prune() -> dict:
     if not os.path.exists(ip):
         return {"keep": [], "drop": [], "stuck": []}
     recs = json.load(open(ip, encoding="utf-8")).get("records", [])
-    keep, drop, stuck = [], [], []
+    keep: list = []
+    drop: list = []
+    stuck: list = []
     for r in recs:
         rel = (r.get("relative_path") or "").replace("/", os.sep)
         if rel and os.path.exists(os.path.join(ORIGINALS, rel)):

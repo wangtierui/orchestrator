@@ -542,7 +542,7 @@ def run(
     pipeline = RelationPipeline()
     rows: list[dict] = []
     warnings: list[str] = []
-    docs_stat = {"regulatory": {}, "internal": 0}
+    docs_stat: dict = {"regulatory": {}, "internal": 0}
     filtered_generic = 0
 
     for doc in iter_regulatory_docs(cfg_sources, limit=limit):
@@ -819,7 +819,7 @@ def write_report(rows: list[dict], stat: dict) -> str:
 
 def main() -> int:
     try:
-        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
     except Exception:  # noqa: BLE001
         pass
     ap = argparse.ArgumentParser(description="依据/废止关系统一抽取（三类关系产物）")

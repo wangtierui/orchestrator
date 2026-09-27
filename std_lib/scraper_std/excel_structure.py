@@ -780,7 +780,9 @@ def process_workbook_bytes(data: bytes, source_file: str = "") -> dict:
     suffix = os.path.splitext(source_file or "")[1].lower()
     raw_sheets = _read_xls_bytes(data) if suffix == ".xls" else _read_xlsx_bytes(data)
 
-    all_units, sheet_overview, form_summary = [], [], {}
+    all_units: list = []
+    sheet_overview: list = []
+    form_summary: dict = {}
     for sheet_index, (sheet_name, matrix, merged) in enumerate(raw_sheets, start=1):
         if not matrix:
             sheet_overview.append(

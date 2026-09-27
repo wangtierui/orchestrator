@@ -31,8 +31,8 @@ csv.field_size_limit(sys.maxsize)
 # stdout UTF-8：Windows 默认 gbk 编码无法输出 ✓/✗（U+2713/2717）会抛
 # UnicodeEncodeError 使 rc=1（2026-09-09 生产刷新 consolidate 实证，清单已写盘仅汇报崩）。
 try:
-    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
 except (AttributeError, OSError):  # 非 TTY/旧 Python 容错
     pass
 
@@ -137,9 +137,11 @@ class Accumulator:
         self.by_title: dict[str, list[dict]] = {}
 
     def _index(self, rec: dict):
-        d = _norm_docno(rec.get("document_number"))
-        t = norm(rec.get("title"))
-        dt = date10(rec.get("publish_date"))
+        # N-67（2026-09-28）：`dict.get` 返回 `Any | None`，下游 `_norm_docno/norm/date10` 期望 str
+        # → 统一以 `or ""` 收窄（键缺失/None 时语义为"空值"，与原行为一致）。
+        d = _norm_docno(rec.get("document_number") or "")
+        t = norm(rec.get("title") or "")
+        dt = date10(rec.get("publish_date") or "")
         if d:
             self.by_doc[d] = rec
         if t and dt:
@@ -178,7 +180,8 @@ def ledger_date_of(fn: str) -> str:
     return m.group(1) if m else "00000000"
 
 
-def parse_ledgers() -> list[dict]:
+def parse_ledgers() -> tuple[list[dict], list[str]]:
+    # N-67（2026-09-28）：原注解 `-> list[dict]` 与实现不符（实返 `(deltas, files)` 元组）。
     """读全部 变更台账 + 打标台账，归一为 canonical delta。"""
     deltas: list[dict] = []
     patterns = [
@@ -430,7 +433,7 @@ def main() -> int:
     if args.incremental and os.path.exists(manifest_path):
         m = json.load(open(manifest_path, encoding="utf-8"))
         consumed = set(m.get("consumed_ledgers", []))
-        deltas = [d for d in deltas if d["ledger_name"] not in consumed]
+        deltas = [d for d in deltas if d["ledger_name"] not in consumed]  # type: ignore[assignment]
 
     acc = build_seed(baseline_path)
     stats = {"seed": len(acc.records), "added": 0, "applied": 0,
@@ -447,9 +450,10 @@ def main() -> int:
             vs = json.load(open(vs_path, encoding="utf-8"))
             aligned = 0
             for rec in acc.records:
-                d = _norm_docno(rec.get("document_number"))
-                t = norm(rec.get("title"))
-                key = ("doc:" + d) if d else ("title:" + t)
+                # N-67：原用 `d`（与上方 `for d in deltas` 的 dict 同名）→ 改名 `dk`
+                dk = _norm_docno(rec.get("document_number") or "")
+                t = norm(rec.get("title") or "")
+                key = ("doc:" + dk) if dk else ("title:" + t)
                 v = vs.get(key)
                 if not v:
                     continue
@@ -542,7 +546,7 @@ def main() -> int:
                 })
         os.replace(tmp, out_conflict)
     else:
-        out_conflict = None
+        out_conflict = None  # type: ignore[assignment]
 
     # manifest 更新
     if not args.incremental or True:

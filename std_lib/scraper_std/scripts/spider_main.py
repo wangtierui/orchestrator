@@ -25,7 +25,7 @@ import importlib
 import os
 
 
-def run_spider_main(project_root: str, argv: list = None) -> int:
+def run_spider_main(project_root: str, argv: list = None) -> int:  # type: ignore[assignment]
     """启动入口：委托项目根爬虫主程序执行。
 
     project_root: 爬虫项目根目录（含 scraper.py / *_scraper.py 与 scripts/）。

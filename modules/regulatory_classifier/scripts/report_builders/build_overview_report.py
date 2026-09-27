@@ -75,8 +75,8 @@ def build() -> dict:
     src_all = collections.Counter(r[4] for r in rows)
     theme_cnt = collections.Counter(r[6] for r in rows)
     year_cnt = collections.Counter((r[3] or "")[:4] for r in rows if (r[3] or "").strip())
-    theme_eff = collections.defaultdict(collections.Counter)
-    for r in rows:
+    theme_eff: collections.defaultdict = collections.defaultdict(collections.Counter)
+    for r in rows:  # type: ignore[assignment]
         theme_eff[r[6]][r[5]] += 1
     eff_ord = ["valid", "amended", "repealed", "partially_repealed", "expired", "pending", "uncertain"]
 
@@ -143,7 +143,7 @@ def _write(fname: str, md: str) -> None:
 
 if __name__ == "__main__":
     try:
-        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
     except Exception:  # noqa: BLE001  分类/检索容错
         pass
     print(json.dumps(build(), ensure_ascii=False))

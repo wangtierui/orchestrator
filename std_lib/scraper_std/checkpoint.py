@@ -23,7 +23,21 @@ from typing import Any
 
 LOG = logging.getLogger("scraper_std.checkpoint")
 
-_GRACE = object()  # 优雅退出哨兵
+class GracefulExit(BaseException):
+    """优雅退出**哨兵异常**（N-69，2026-09-28）。
+
+    刻意继承 `BaseException`（非 `Exception`）：它是**控制流哨兵**（语义同 `KeyboardInterrupt`
+    /`SystemExit`），不应被业务侧 `except Exception` 吞掉——`__exit__` 以**身份比较**
+    （`exc_val is _GRACE`）识别并放行收尾。
+
+    原实现为 `_GRACE = object()` → `raise _GRACE` 运行时抛
+    `TypeError: exceptions must derive from BaseException`（**真 bug**：SIGINT/SIGTERM
+    触发的"优雅退出"路径一进入即崩溃）。mypy `misc: Exception must be derived from
+    BaseException` 即此项。
+    """
+
+
+_GRACE = GracefulExit()  # 优雅退出哨兵（单例；调用方按身份比较）
 
 
 class Checkpoint:

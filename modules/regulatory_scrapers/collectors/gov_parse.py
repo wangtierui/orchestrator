@@ -96,7 +96,7 @@ except ImportError:  # pragma: no cover
 try:
     from std_lib.scraper_std.doc_number import extract_doc_number as _unified_doc_number
 except ImportError:  # pragma: no cover
-    _unified_doc_number = None
+    _unified_doc_number = None  # type: ignore[assignment]
 
 # 默认请求头（模拟真实浏览器）
 # 通用缓存模块（五源统一抽象层：std_lib/scraper_std/cache_store，2026-09-05）
@@ -331,7 +331,8 @@ def load_resume(out_dir: str, source: str):
     用于 --resume 增量续抓：跳过已存在的列表条目，且对已含 full_text 的条目不再抓详情。"""
     files = [os.path.join(out_dir, "gov_laws.json")] if os.path.exists(
         os.path.join(out_dir, "gov_laws.json")) else []
-    seen, detailed = set(), set()
+    seen: set = set()
+    detailed: set = set()
     if not files:
         return seen, detailed
     try:

@@ -117,7 +117,7 @@ def align_all() -> dict:
     themes = _themes_map()
     index = _load_index()
     out_records = []
-    stat = Counter()
+    stat: Counter = Counter()
     for r in index.get("records", []):
         text = _load_fulltext(r["ipn"])
         a = align_one(r.get("title", ""), text)

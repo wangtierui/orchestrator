@@ -262,7 +262,10 @@ def _norm_date(v: Any) -> tuple[int, int, int]:
         return (0, 0, 0)
     parts = [p for p in str(v).strip().replace("/", ".").replace("-", ".").split(".") if p]
     try:
-        return tuple(int(p) for p in parts[:3]) + (0,) * (3 - len(parts))
+        # N-67：`tuple(...) + (0,) * k` 的长度 mypy 无法固定为 3 → 显式三元组
+        n = [int(p) for p in parts[:3]]
+        n += [0] * (3 - len(n))
+        return n[0], n[1], n[2]
     except ValueError:
         return (0, 0, 0)
 
@@ -431,12 +434,12 @@ def build_query_plan(
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any] | None]]:
     """查询计划：重复标题且文号可区分 → 逐记录查询（key=标题||文号）；
     其余按标题单次查询。返回 (plan, cand2item[候选下标]=项)"""
-    by_title = {}
+    by_title: dict = {}
     for i, c in enumerate(cands):
         by_title.setdefault(c["title"], []).append(i)
     plan = []
     for title, idxs in sorted(by_title.items()):
-        docnos = {}
+        docnos: dict = {}
         for i in idxs:
             dn = norm_docno(cands[i].get("document_number", ""))
             docnos.setdefault(dn, []).append(i)

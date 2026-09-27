@@ -39,7 +39,7 @@ print("[列表] 缓存文件=%d | 可疑/失败=%d | 去重文档=%d | 行累计
 # 2) 详情字段校验（抽样 5 个 + 全量 docClob 存在性）
 dfiles = sorted(glob.glob(os.path.join(CACHE, "SelectByDocId__docId_*.json")))
 print("[详情] 缓存文件=%d" % len(dfiles))
-fields_stat = {}
+fields_stat: dict = {}
 no_clob = 0
 for f in dfiles:
     try:

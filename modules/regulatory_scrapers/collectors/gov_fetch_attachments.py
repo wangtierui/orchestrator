@@ -114,7 +114,7 @@ def fetch_gov_attachments(detail_html, entry_id, entry_title, out_dir, base_url,
     """
     legacy_skipped = 0
     links = scan_attachment_links(detail_html, base_url)
-    records = []
+    records: list = []
     if not links:
         return records, ""
     # 防御：entry_id/entry_title 可能为详情页完整 URL（含 : / ? = 等非法字符），

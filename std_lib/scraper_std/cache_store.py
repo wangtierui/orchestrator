@@ -160,8 +160,8 @@ def default_cache_root() -> str:
 # 支持 env ``SCRAPER_CACHE_ROOT`` / configure_cache_root() 整体覆盖。
 # --------------------------------------------------------------------------- #
 _CACHE_OVERRIDE = ""
-_BOUND: dict[tuple[str, str, str], object] = {}
-_KIND_CLASSES = {}
+_BOUND: dict = {}   # N-67：原值类型 `object` → 无法调用成员（set_offline）；改裸泛型（值 Any）
+_KIND_CLASSES: dict = {}
 
 
 def configure_cache_root(root: str) -> None:

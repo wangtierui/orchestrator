@@ -409,7 +409,7 @@ def _exit_semantic(rc: int) -> str:
 def _run(step: str, argv, cwd=ROOT, timeout: int | None = None) -> dict:
     global _FROM_HIT
     t0 = time.time()
-    rec = {
+    rec: dict = {
         "step": step,
         "cmd": " ".join(os.path.basename(a) if os.sep in a else a for a in argv),
         "rc": -1,
@@ -493,7 +493,7 @@ def _run_conditional(step: str, tid: str) -> dict:
     """
     global _FROM_HIT
     t0 = time.time()
-    rec = {
+    rec: dict = {
         "step": step,
         "cmd": f"triggers:{tid}",
         "rc": -1,
@@ -541,7 +541,7 @@ def _run_conditional(step: str, tid: str) -> dict:
         rec["stdout_len"] = len(rec["tail"])
         print(f"    → rc=0（{len(res.get('steps') or [])} 步）", flush=True)
     else:  # failed / unknown
-        bad = next((s for s in (res.get("steps") or []) if s.get("rc") != 0), {})
+        bad: dict = next((s for s in (res.get("steps") or []) if s.get("rc") != 0), {})
         rc = int(bad.get("rc") or 1)
         tail = str(bad.get("tail") or res.get("note") or "")
         rec.update({
@@ -1080,7 +1080,7 @@ def _run_chain(args) -> int:
     # ④ 门禁失败时其**之前**的产物已落盘（与改动前一致：原顺序下 analysis:gen 也在门禁之后）。
     report.append(_run("gates", [PY, os.path.join(ROOT, "cli.py"), "gates"], timeout=1800))
 
-    summary = {
+    summary: dict = {
         "run_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "total_elapsed_s": round(time.time() - t_start, 1),
         "raw": _raw_size(),
@@ -1160,8 +1160,8 @@ def main(argv=None) -> int:
     # Windows 控制台/重定向下默认 GBK：状态标记含 ✗ 等非 GBK 字符 → UnicodeEncodeError
     # （2026-09-17 已记录该教训：长跑脚本须纯 ASCII + 强置 PYTHONIOENCODING/UTF-8）。
     with contextlib.suppress(Exception):
-        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
     ap = argparse.ArgumentParser(
         description="生产五源全量刷新（抓取→clean→时效→reconcile→recall→gates）"
     )

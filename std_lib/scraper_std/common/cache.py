@@ -172,16 +172,16 @@ class CacheManager:
         all_stems = set(bin_files.keys()) | set(meta_files.keys())
         for stem in all_stems:
             try:
-                removed = self._try_remove_bin_meta(
+                removed_bin: dict | None = self._try_remove_bin_meta(   # N-67：与上方 removed(int) 区分
                     stem, bin_files.get(stem), meta_files.get(stem), now
                 )
             except OSError:
                 result["errors"] += 1
                 continue
-            if removed:
+            if removed_bin:
                 result["entries_removed"] += 1
-                result["files_removed"] += removed["files"]
-                result["bytes_reclaimed"] += removed["bytes"]
+                result["files_removed"] += removed_bin["files"]
+                result["bytes_reclaimed"] += removed_bin["bytes"]
 
         return result
 
@@ -265,7 +265,7 @@ class CacheManager:
         """Determine whether a .bin/.meta entry is expired."""
         ts = None
 
-        if has_meta:
+        if has_meta and meta_path is not None:   # N-67：显式非 None（供 mypy 收窄）
             try:
                 data = json.loads(meta_path.read_text(encoding="utf-8"))
                 ts = data.get("cached_at")

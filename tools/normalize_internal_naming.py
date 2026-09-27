@@ -396,7 +396,7 @@ def build_plan(
         rel = (r.get("relative_path") or "").replace("/", os.sep)
         if rel:
             by_path[_norm(os.path.join(ORIGINALS, rel))] = r
-    by_sha = {}
+    by_sha: dict = {}
     for r in recs:
         if r.get("sha256"):
             by_sha.setdefault(r["sha256"], r)
@@ -405,7 +405,8 @@ def build_plan(
     if limit:
         files = files[:limit]
 
-    items, stats = [], collections.Counter()
+    items: list = []
+    stats: collections.Counter = collections.Counter()
     for p in files:
         rec = by_path.get(_norm(p))
         if rec is None:
@@ -515,7 +516,7 @@ def build_plan(
 
 def resolve_targets(plan: dict) -> dict:
     """确定性冲突消解：同一目标名多文件 → 保留第一个，其余追加 _2/_3…（含与磁盘既有名冲突）。"""
-    taken = {}
+    taken: dict = {}
     for it in plan["items"]:
         if it["already"]:
             taken.setdefault(os.path.normcase(it["target_name"]), it["src"])
@@ -551,7 +552,7 @@ def resolve_targets(plan: dict) -> dict:
 def apply_plan(plan: dict, *, backup: bool = True, update_index: bool = True) -> dict:
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     backup_dir = os.path.join(BACKUP_ROOT, f"naming_{ts}") if backup else ""
-    acts = collections.Counter()
+    acts: collections.Counter = collections.Counter()
     if backup:
         os.makedirs(backup_dir, exist_ok=True)
         for src in (INDEX_PATH, STATE_PATH):
@@ -599,7 +600,12 @@ def apply_plan(plan: dict, *, backup: bool = True, update_index: bool = True) ->
         if it["already"] or not it.get("dst"):
             # 已规范命名：仅做**身份回写**（路径未变），使索引与文件名一致
             acts["skip_already"] += 1
-            if rec is not None and _writeback_identity(it, rec):
+            # N-71 修复（2026-09-28）：原为 `if rec is not None and _writeback_identity(it, rec):`
+            # —— `_writeback_identity` 返回 **None**（只做副作用回写），该条件**恒 False**
+            # → 下方"身份回写"清单条目**永不生成**（mypy `func-returns-value` 抓到）。
+            # 与下方 `skip_same` 分支（L622 的正确写法：先调用、再无条件记清单）对齐。
+            if rec is not None:
+                _writeback_identity(it, rec)
                 manifest.append(
                     {
                         "src_rel": it["src_rel"],

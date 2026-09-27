@@ -181,8 +181,14 @@ def _rotate_clause_history(current_dates: dict[str, str], keep: int = 3) -> None
                             os.path.join(_CLAUSE_HISTORY_DIR, fn))
             except OSError:
                 pass
-        dates = sorted({pat.match(fn).group(1) for fn in os.listdir(_CLAUSE_HISTORY_DIR)
-                        if pat.match(fn)})
+        # N-67（2026-09-28）：原为 `{pat.match(fn).group(1) … if pat.match(fn)}` —— 两次调用
+        # 各自返回 `Match | None`，mypy 无法把"条件命中"传递到表达式 → union-attr。
+        # 改 walrus 一次捕获并作条件（语义不变、少一次匹配）。
+        dates = sorted({
+            m.group(1)
+            for fn in os.listdir(_CLAUSE_HISTORY_DIR)
+            if (m := pat.match(fn))
+        })
         drop = dates[:-keep] if len(dates) > keep else []
         for fn in list(os.listdir(_CLAUSE_HISTORY_DIR)):
             m = pat.match(fn)
@@ -268,7 +274,7 @@ def build_clause_index(rebuild: bool = False) -> dict:
     os.makedirs(CLAUSE_DIR, exist_ok=True)
     ci = get_clean_index()
     state = {} if rebuild else _load_state()
-    out = {}
+    out: dict = {}
     cur_dates: dict[str, str] = {}
     rfn_by_dk, rfn_by_url = _load_rfn_bridge()   # F-D10：条款行 rfn 投影（桥表批量预载）
     # N-48（2026-09-27）：归属表兜底通道（标题唯一命中 + 文号唯一命中），补桥表未锚的存量

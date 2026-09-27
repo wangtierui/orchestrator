@@ -98,7 +98,7 @@ except ImportError:  # pragma: no cover
 try:
     from std_lib.scraper_std.doc_number import extract_doc_number as _unified_doc_number
 except ImportError:  # pragma: no cover
-    _unified_doc_number = None
+    _unified_doc_number = None  # type: ignore[assignment]
 
 # 默认请求头（模拟真实浏览器）
 # 通用缓存模块（五源统一抽象层：std_lib/scraper_std/cache_store，2026-09-05）
@@ -346,7 +346,7 @@ class XzfgkScraper:
             if not a:
                 continue
             title = clean_text(a.get_text())
-            href = a.get("href", "")
+            href = str(a.get("href", "") or "")   # bs4 的 get 可能返回 AttributeValueList → 收窄为 str
             if href and not href.startswith("http"):
                 href = "https://xzfg.moj.gov.cn" + href
             pub = li.select_one(".publish-date")
@@ -455,7 +455,9 @@ class XzfgkScraper:
             page += 1
         return records
 
-    def _fetch_detail(self, url: str) -> dict[str, str]:
+    def _fetch_detail(self, url: str) -> dict:
+        # N-67（2026-09-28）：返回值为**异质**字典（str + list（attachments）+ int（count））
+        # → 原注解 `dict[str, str]` 过窄（下方 `d["attachment_count"] = len(atts)` 等报 dict-item）。
         detail_html = self.client.get_text(url, referer=self.LIST_URL)
         if not detail_html:
             LOG.warning("详情获取失败：%s", url)
@@ -463,7 +465,7 @@ class XzfgkScraper:
                     "issue_organ": "", "effective_date": "",
                     "attachments": [], "attachment_text": "", "attachment_count": 0}
         try:
-            d = self._parse_detail(detail_html)
+            d: dict = self._parse_detail(detail_html)   # N-67：注解置于**首次绑定**处
         except Exception as e:
             LOG.warning("详情解析失败 %s：%s", url, e)
             d = {"full_text": "", "document_number": "",

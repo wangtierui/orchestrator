@@ -183,7 +183,10 @@ def main(argv=None) -> int:
     # 2026-09-26（R7）：删除此处未被使用的 `cols` 字面量副本——cleaned CSV 列契约的
     # 唯一事实源是 `std_lib/scraper_std/unified_schema.CSV_COLUMNS`（39 列，经
     # `interfaces/contract.py` 登记并由 gate_contract 断言），此处再抄一份只会漂移。
-    cnt, layer, conf_cnt, yr = Counter(), Counter(), Counter(), Counter()
+    cnt: Counter = Counter()
+    layer: Counter = Counter()
+    conf_cnt: Counter = Counter()
+    yr: Counter = Counter()
     # 「金融/保险相关」的独立统计：不以 scanner 的 INCLUDE 为限，
     # 另按"泛金融"词表单独计数，供确认筛选口径是否过窄。
     FIN = ("金融", "银行", "保险", "证券", "基金", "信托", "期货", "融资", "信贷", "支付",

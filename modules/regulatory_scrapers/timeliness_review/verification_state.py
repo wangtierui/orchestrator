@@ -72,7 +72,7 @@ try:
     from scraper_std.unified_schema import TIMELINESS_STATUS  # noqa: E402
     STATUS_SET = frozenset(TIMELINESS_STATUS)
 except Exception:  # 独立运行兜底（不破坏既有调用）
-    STATUS_SET = {"valid", "amended", "repealed", "partially_repealed",
+    STATUS_SET = {"valid", "amended", "repealed", "partially_repealed",  # type: ignore[assignment]
                   "expired", "pending", "uncertain"}
 
 

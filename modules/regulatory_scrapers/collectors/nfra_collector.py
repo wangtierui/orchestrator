@@ -250,7 +250,7 @@ def extract_document_no(text):
         dn = _u(text) or ""
     if not dn:
         m = _DOC_NO_RE.search(text)
-        dn = (_n(m.group(0)) if _n else m.group(0)) if m else ""
+        dn = (_n(m.group(0)) if _n is not None else m.group(0)) if m else ""   # N-67：显式非 None（原 `if _n` 恒真）
     if not dn:
         return None
     if _a is not None and _a(text, dn):
@@ -761,8 +761,8 @@ def scrape(args):
                 pass
         if errors:
             f.write("\n## 失败明细\n\n")
-            for e in errors:
-                f.write("- docId=%s %s：%s\n" % (e["doc_id"], e["title"], e["error"]))
+            for err in errors:   # N-67：原用 `e`（与 except 变量同名，mypy misc 告警）
+                f.write("- docId=%s %s：%s\n" % (err["doc_id"], err["title"], err["error"]))
 
     print("\n完成！输出文件：")
     print("  JSON : %s" % json_path)

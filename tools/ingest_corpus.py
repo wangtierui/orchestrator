@@ -133,6 +133,7 @@ def _resync_manifest(domain: str, *, dry_run: bool = False) -> int:
         return ExitCode.FAIL
 
     old_rels = {r.get("rel", "") for r in man.get("files") or []}
+    files: list[dict] = []   # N-67：前置注解（元组解包无法直接带注解），元素为 dict（下方按 rel 排序）
     files, nbytes = [], 0
     for dirpath, _dirnames, filenames in os.walk(body):
         for fn in filenames:

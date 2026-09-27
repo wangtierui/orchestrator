@@ -77,13 +77,13 @@ except ImportError:  # pragma: no cover
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
         "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
     ]
-    def extract_document_text(data, name="", **kw):
+    def extract_document_text(data, name="", **kw):  # type: ignore[misc]
         return {"text": "", "kind": "unknown", "extracted": False,
                 "extract_status": "library_missing", "sha256": "",
                 "needs_ocr": False, "garble_ratio": 0.0, "size_bytes": len(data)}
-    def structured_table_fields(data, name="", *, kind=None):
+    def structured_table_fields(data, name="", *, kind=None):  # type: ignore[misc]
         return {}
-    def rich_object_fields(data, name="", *, image_dir=None, rec_key=""):
+    def rich_object_fields(data, name="", *, image_dir=None, rec_key=""):  # type: ignore[misc]
         return {}
 
 # --------------------------------------------------------------------------- #
@@ -161,7 +161,7 @@ if _SCRAPERS_ROOT not in sys.path:
     sys.path.insert(0, _SCRAPERS_ROOT)
 
 
-_LOCKS = {}   # lock_path -> fs_lock.ProcessLock（release_lock 需释放同一实例）
+_LOCKS: dict = {}   # lock_path -> fs_lock.ProcessLock（release_lock 需释放同一实例）
 
 def _mof_cache_key(method, path, payload):
     """为 _request 生成确定性缓存键 (endpoint, params)。

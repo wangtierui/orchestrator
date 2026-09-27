@@ -108,11 +108,16 @@ indent-style = "space"
 [tool.mypy]
 python_version = "3.13"
 ignore_missing_imports = true
-exclude = ["data/", "cache/", "logs/", "backups/"]
-# v2 §3.7（P9，2026-09-26）收口：mypy 只检查**显式指定的 owned 层**，不跟进历史层
-# （scraper_std / modules）—— 它们是无注解的遗留语料处理代码，`follow_imports=normal`
-# 会把其 ~58 处错误（union-attr / var-annotated / operator …）带进基线、掩盖 owned 层的
-# 真实信号。`silent` 后基线只反映 owned 层（config/interfaces/gates/commands/std_lib/common_lib）。
+# 排除目录与 `gate_no_duplicate_libs.EXCLUDE_DIRS` 口径一致（**唯一事实源**：非源码层不参与检查）：
+# `retired/`（退役隔离层，其"不再被引用"由 gate_config_integrity 判据 J3 保证）、
+# `archive/`（归档层）、`build/`+`dist/`（构建产物）。
+exclude = ["data/", "cache/", "logs/", "backups/", "retired/", "archive/", "build/", "dist/"]
+# N-72（2026-09-28）：历史层 mypy **已全量收敛**（236 → 0，含 5 处真 bug：chinese_numerals 键空间、
+# clean_index 元组当整数、checkpoint `raise object()`、retention `glob.fnmatch`、
+# normalize_internal_naming `and _writeback_identity(...)` 恒假），CI 的 mypy 范围已扩至
+# **全仓**（std_lib / modules / tools / config / interfaces / gates / commands）。
+# `follow_imports="silent"` **保留**：它只影响"未被显式指定"的**间接导入**模块（避免第三方/深层
+# 依赖噪音），不掩盖显式路径——显式列出的路径一律按本配置**完整检查**。
 follow_imports = "silent"
 
 # ---- 覆盖率口径（v2 §3.7 G4/G5，P2-4）----

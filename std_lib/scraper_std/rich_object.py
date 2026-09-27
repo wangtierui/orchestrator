@@ -267,7 +267,7 @@ def _extract_xlsx_rich(data: bytes, converted: bool):
             embed = b.get(
                 "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}embed"
             ) or b.get("embed")
-            tgt = rels.get(embed or "")
+            tgt = rels.get(embed or "")  # type: ignore[assignment]
             if not tgt:
                 continue
             try:
@@ -299,7 +299,7 @@ def _extract_pdf_rich(data: bytes, max_chars: int) -> dict[str, Any]:
     try:
         import pymupdf as fitz  # noqa: PLC0415 PyMuPDF（现代导入名，弃用 fitz 别名）
 
-        doc = fitz.open(stream=data, filetype="pdf")
+        doc: Any = fitz.open(stream=data, filetype="pdf")
     except Exception as e:  # noqa: BLE001
         _log(f"pdf open: {e}")
         return {"objects": [], "images": {}, "text": "", "count": 0, "converted": False}
@@ -360,7 +360,7 @@ def _extract_pdf_rich(data: bytes, max_chars: int) -> dict[str, Any]:
 def _join_text(objects: list[dict[str, Any]]) -> str:
     lines = []
     for o in objects:
-        tag = {"formula": "公式", "diagram": "图", "image": "图"}.get(o.get("kind"), "对象")
+        tag = {"formula": "公式", "diagram": "图", "image": "图"}.get(o.get("kind") or "", "对象")
         lines.append(f"{tag}:{o.get('text', '')}".strip() if o.get("text") else tag)
     return "\n".join(lines)
 

@@ -75,7 +75,7 @@ def _sha256(path: str) -> str:
 
 
 def _walk(d: str) -> list[str]:
-    out = []
+    out: list = []
     for dp, _dn, fn in os.walk(d):
         out.extend(os.path.join(dp, f) for f in fn)
     return out
@@ -118,7 +118,9 @@ def build_plan() -> dict:
         except OSError:
             continue
 
-    move, orphans, keep = [], [], []
+    move: list = []
+    orphans: list = []
+    keep: list = []
     for _sha, paths in by_sha.items():
         if len(paths) == 1:
             keep.extend(paths)

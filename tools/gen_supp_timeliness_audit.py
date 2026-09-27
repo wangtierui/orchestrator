@@ -45,8 +45,8 @@ def main() -> int:
     from collections import Counter
 
     ts = Counter((r.get("timeliness_status") or "").strip() or "(空)" for r in rows)
-    vs_kind = Counter()
-    vs_detail = Counter()
+    vs_kind: Counter = Counter()
+    vs_detail: Counter = Counter()
     for r in rows:
         vs = (r.get("verification_source") or "").strip()
         if not vs:

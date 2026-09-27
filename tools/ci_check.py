@@ -69,14 +69,20 @@ def main(argv=None) -> int:
                 PY,
                 "-m",
                 "mypy",
-                "std_lib/common_lib",
+                # N-72（2026-09-28）：范围由"owned 层"扩至**全仓**（含历史层 std_lib/scraper_std、
+                # modules/*、tools/*）——历史层 236 处 error 已全部收敛（含 5 处真 bug），
+                # 故与 owned 层同口径**阻断**。`pyproject [tool.mypy] follow_imports="silent"`
+                # 保留（只影响"未显式指定"的间接导入，不掩盖显式路径）。
+                "std_lib",
+                "modules",
+                "tools",
                 "config",
                 "interfaces",
                 "gates",
                 "commands",
                 "--no-error-summary",
             ],
-            600,
+            900,
         ),
         # N-61（2026-09-27）：计划任务与 `config/schedule.yaml` 的**一致性**入 CI —— 此前
         # 仅 doctor/status 调用，改 yaml 后系统侧仍跑旧 argv（实测 `--only 6.9` 空跑）而无告警。

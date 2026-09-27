@@ -439,7 +439,7 @@ def _drop_toc_chapters(chapters: list[dict]) -> list[dict]:
     """
     if not chapters:
         return chapters
-    seen_no = {}
+    seen_no: dict = {}
     for i, ch in enumerate(chapters):
         seen_no.setdefault(ch.get("no"), []).append(i)
     dup_no = {no for no, idxs in seen_no.items() if len(idxs) > 1}
@@ -516,7 +516,7 @@ def repair_articles(articles: list[dict]) -> tuple[list[dict], dict]:
         return articles, {"merged": 0, "merged_nos": [], "reasons": []}
     out: list[dict] = []
     seen: set = set()
-    stat = {"merged": 0, "merged_nos": [], "reasons": []}
+    stat: dict = {"merged": 0, "merged_nos": [], "reasons": []}
     for art in articles:
         no = art.get("no")
         content = _article_body(art.get("body") or "")
@@ -570,7 +570,7 @@ def fix_chapter_index(chapters: list[dict], articles: list[dict]) -> tuple[list[
     本项目补充：同时记录**非单调**（后章索引小于前章）——只记录不修改，交由 V005 报出
     （静默改写章节边界会掩盖解析缺陷）。
     """
-    stat = {"clamped": 0, "non_monotonic": []}
+    stat: dict = {"clamped": 0, "non_monotonic": []}
     if not chapters or not articles:
         return chapters, stat
     last = len(articles) - 1
@@ -787,6 +787,7 @@ def _parse_outline(text: str, mode: str) -> dict:
             if mn:
                 item = {"number": mn.group(1), "content": mn.group(2).strip()}
             else:
+                assert mx is not None   # N-67：`mn` 为假且走到此分支 ⟹ `mx` 非 None（供 mypy 收窄）
                 grp = mx.groups()
                 item = (
                     {"number": f"{grp[0]}是", "content": (grp[1] or "").strip()}
@@ -1070,7 +1071,7 @@ def parse_document(text: str) -> dict:
 
     # ② 无条文 → 自动降级：层级体（通知/通报/规划）取分择优
     out_text = segment_outline(text)
-    cands = []
+    cands: list[dict] = []   # N-67：显式 dict 元素（下方按 score/prio 排序与索引）
     for name, prio in _MODES:
         res = _parse_outline(out_text, name)
         if not res["structure"]:
@@ -1080,7 +1081,7 @@ def parse_document(text: str) -> dict:
         cands.append({"mode": name, "res": res, "score": sc, "prio": prio})
     if cands:
         cands.sort(key=lambda x: (-x["score"]["total"], x["prio"]))
-        best = cands[0]
+        best: dict = cands[0]   # N-67：显式 dict 收窄（下方向 `_pack` 传 str/dict）
         if best["score"]["total"] >= _THRESHOLD:
             return _pack(best["mode"], best["res"], best["score"], False)
 

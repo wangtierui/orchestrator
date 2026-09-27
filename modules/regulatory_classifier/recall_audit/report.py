@@ -56,7 +56,7 @@ def tier(rec):
     if any(k in t for k in cautious_kw): return "C需谨慎确认"
     return "B中置信"
 
-L=[]
+L: list = []
 for rec in inc:
     rec["_tier"]=tier(rec)
     rec["_rel"]=related_808(rec)

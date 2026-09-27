@@ -83,11 +83,11 @@ def extract_pdf(path: str) -> str:
             try:
                 import pymupdf  # noqa: PLC0415
             except ImportError:
-                pymupdf = None
+                pymupdf = None  # type: ignore[assignment]
         if pymupdf is not None:
             try:
                 doc = pymupdf.open(path)
-                for pg in doc:
+                for pg in doc:  # type: ignore[attr-defined]
                     t = pg.get_text("text") or ""
                     if t.strip():
                         out.append(t)
@@ -191,7 +191,7 @@ def build(dir_path: str) -> dict:
     attachments = []
     content_parts = []
     table_structs = []
-    er_images = []
+    er_images: list = []
     doc_ext = (
         _load_extract_doc()
         if any(f.lower().endswith(".doc") and not f.lower().endswith(".docx") for f in files)

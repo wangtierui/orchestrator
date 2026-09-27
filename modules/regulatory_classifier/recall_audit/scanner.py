@@ -265,8 +265,11 @@ out_csv=os.path.join(OUTDIR,"scan_records.csv")
 out_json=os.path.join(OUTDIR,"scan_hits_attr.jsonl")
 cols=["source","dedup_key","document_number","title","issue_organ","decision","confidence",
       "a_kws","b_kws","c_kws","x_kws","snippet","avail_text_len","has_full_body","in_attr","matched_rfn"]
-total=0; decision_cnt=collections.Counter(); conf_cnt=collections.Counter()
-src_cnt=collections.Counter(); miss_cnt=collections.Counter()
+total: int = 0
+decision_cnt: collections.Counter = collections.Counter()
+conf_cnt: collections.Counter = collections.Counter()
+src_cnt: collections.Counter = collections.Counter()
+miss_cnt: collections.Counter = collections.Counter()
 
 with open(out_csv,"w",encoding="utf-8-sig",newline="") as fo, \
      open(out_json,"w",encoding="utf-8",newline="") as fj:

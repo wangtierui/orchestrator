@@ -63,7 +63,9 @@ def build_plan() -> dict:
         ipn = os.path.basename(p)[: -len(".json")]
         if ipn not in indexed:
             orphan_ipns.append(ipn)
-    files, nbytes, suffix_counts = [], 0, collections.Counter()
+    files: list = []
+    nbytes: int = 0
+    suffix_counts: collections.Counter = collections.Counter()
     for ipn in orphan_ipns:
         for suf in _SUFFIXES:
             f = os.path.join(PROCESSED, ipn + suf)

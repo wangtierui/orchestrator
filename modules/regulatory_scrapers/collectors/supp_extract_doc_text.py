@@ -227,6 +227,7 @@ def extract(data: bytes) -> str:
         if 0x3400 <= ord(c) <= 0x9FFF or 0x20000 <= ord(c) <= 0x2A6DF:
             # CJK 串
             m = CJK_RUN.match(text, i)
+            assert m is not None   # 首字符已判为 CJK ⟹ 必匹配（供 mypy 收窄）
             run = m.group(0)
             if _keep_cjk_run(run):
                 out.append(run)

@@ -64,10 +64,10 @@ try:
 except ImportError:  # pragma: no cover
     from std_lib.scraper_std.cache_store import OfflineMiss, bind_source_cache
 
-    def structured_table_fields(data, name="", *, kind=None):  # pragma: no cover
+    def structured_table_fields(data, name="", *, kind=None):  # type: ignore[misc]  # pragma: no cover
         return {}
 
-    def rich_object_fields(data, name="", *, image_dir=None, rec_key=""):  # pragma: no cover
+    def rich_object_fields(data, name="", *, image_dir=None, rec_key=""):  # type: ignore[misc]  # pragma: no cover
         return {}
 
 _RESP_TEXT = None  # TextResponseCache 实例；None 表示未启用缓存
@@ -417,7 +417,7 @@ def extract_doc_number(*texts):
             return dn
     m = RE_DOC_NUMBER.search(blob)
     if m:
-        return _n(m.group(0)) if _n else clean_text(m.group(0))
+        return _n(m.group(0)) if _n is not None else clean_text(m.group(0))   # N-67：显式非 None
     return None
 
 def extract_issuing(*texts):

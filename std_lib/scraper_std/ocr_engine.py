@@ -355,7 +355,7 @@ class TesseractEngine(BaseOCREngine):
         if isinstance(img, np.ndarray):
             return Image.fromarray(img)
         if isinstance(img, (str, bytes, bytearray)):
-            return Image.open(img)
+            return Image.open(img)  # type: ignore[arg-type]  # N-67：PIL stub 未含 bytearray
         return Image.open(img)
 
     def recognize(self, img: Any) -> str:
@@ -533,12 +533,12 @@ class UnifiedOCR:
         page_texts: list[str] = []
         ocr_results: list[OCRResult] = []
         try:
-            for page in doc:
+            for page in doc:  # type: ignore[attr-defined]
                 pix = page.get_pixmap(dpi=render_dpi)
                 import numpy as np
                 from PIL import Image
 
-                pil = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+                pil = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
                 arr = np.asarray(pil)
                 res = self.recognize_image(arr)
                 ocr_results.append(res)

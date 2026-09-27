@@ -449,7 +449,7 @@ def _extract_pdf(data: bytes, enable_ocr: bool, ocr_timeout: int) -> dict[str, A
 
         text = ""
         with pdfplumber.open(__import__("io").BytesIO(data)) as pdf:
-            for page in pdf.pages:
+            for page in pdf.pages:  # type: ignore[assignment]
                 try:
                     text += (page.extract_text() or "") + "\n"
                 except Exception:  # noqa: BLE001  旁路设施/缓存降级（主路径不受影响）
@@ -826,7 +826,7 @@ def _ocr_available() -> bool:
     try:
         from .ocr_engine import get_ocr
     except ImportError:  # 兼容独立模块导入（scraper_std 目录在 sys.path）
-        from ocr_engine import get_ocr
+        from ocr_engine import get_ocr  # type: ignore[no-redef]
     try:
         return any(get_ocr().health().values())
     except Exception as e:  # pragma: no cover - 模块缺失
@@ -847,7 +847,7 @@ def _run_ocr(data: bytes, timeout: int) -> str:
     try:
         from .ocr_engine import get_ocr
     except ImportError:  # 兼容独立模块导入（scraper_std 目录在 sys.path）
-        from ocr_engine import get_ocr
+        from ocr_engine import get_ocr  # type: ignore[no-redef]
     import os
     import tempfile
 
@@ -871,7 +871,7 @@ def _run_ocr_detail(data: bytes, timeout: int) -> tuple[str, str]:
     try:
         from .ocr_engine import get_ocr
     except ImportError:  # 兼容独立模块导入（scraper_std 目录在 sys.path）
-        from ocr_engine import get_ocr
+        from ocr_engine import get_ocr  # type: ignore[no-redef]
     import os
     import tempfile
 

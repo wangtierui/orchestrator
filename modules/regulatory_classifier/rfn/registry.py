@@ -295,12 +295,13 @@ def set_theme(rfn: str, theme: str, basis: str = "", *, insert: bool = False,
         inserted = hit is None
         if inserted and not insert:
             raise LookupError(f"RFN {rfn} 不在主题归属表（无此记录）")
-        old_full = "" if inserted else hit.get("主题", "")
+        old_full = "" if inserted else (hit.get("主题", "") if hit else "")
         changed = old_full != full or bool(basis)
         if inserted:
             trows.append({"监管文件编号": rfn, "主题": full,
                           "判定依据": basis or "registry自动登记"})
         elif changed:
+            assert hit is not None   # 非 inserted ⟹ 命中既有行（供 mypy 收窄）
             hit["主题"] = full
             hit["判定依据"] = basis or hit.get("判定依据", "")
         if changed:

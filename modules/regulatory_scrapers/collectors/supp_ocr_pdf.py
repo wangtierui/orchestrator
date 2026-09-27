@@ -56,7 +56,11 @@ _CJK_HALF = re.compile(
 _UNIFIED_OK = False
 _get_ocr = None
 try:
-    from std_lib.scraper_std.ocr_engine import get_ocr as _get_ocr  # noqa: E402
+    # `# type: ignore[assignment]` 须在**语句首行**（ruff 会把多行 import 重排，
+    # mypy 的报错锚点在 `from ... import (` 行，而非 `as` 行）
+    from std_lib.scraper_std.ocr_engine import (  # type: ignore[assignment]
+        get_ocr as _get_ocr,  # noqa: E402
+    )
     _UNIFIED_OK = True
 except Exception as _imp_err:  # pragma: no cover - 共享库缺失时的保险
     import logging
@@ -74,7 +78,7 @@ def _post_process(text: str) -> str:
 # ---------------------------------------------------------------------------
 def extract_text_layer(path: str) -> str:
     """pypdf 文本层提取（纯文本层，不做 OCR）。"""
-    if _UNIFIED_OK:
+    if _UNIFIED_OK and _get_ocr is not None:
         return _get_ocr()._extract_text_layer(path)
     from pypdf import PdfReader
     parts = []
@@ -91,7 +95,7 @@ def ocr_scanned(path: str, *, dpi: int = 220) -> str:
 
     返回整篇文本；全部引擎失败返回空串。
     """
-    if _UNIFIED_OK:
+    if _UNIFIED_OK and _get_ocr is not None:
         res = _get_ocr().extract_pdf(path, force_ocr=True, dpi=dpi)
         return res.text
     # 回退：内联 Tesseract（与历史实现一致）
@@ -103,7 +107,7 @@ def extract_pdf_text(path: str) -> tuple[str, str]:
     文本层含足够中文（≥50 字符且 CJK ≥10）→ 直接采用 mode="text"；
     否则判为扫描件走 OCR 引擎链 → mode="ocr"。
     """
-    if _UNIFIED_OK:
+    if _UNIFIED_OK and _get_ocr is not None:
         res = _get_ocr().extract_pdf(path)
         mode = "text" if res.source == "text_layer" else "ocr"
         return res.text, mode
@@ -133,9 +137,9 @@ def _tesseract_fallback(path: str, *, dpi: int = 220) -> str:
     parts: list[str] = []
     doc = fitz.open(path)
     try:
-        for page in doc:
+        for page in doc:  # type: ignore[attr-defined]
             pix = page.get_pixmap(dpi=dpi)
-            img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+            img = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
             gray = ImageOps.grayscale(img).convert("L")
             gray = ImageOps.autocontrast(gray)
             gray = gray.filter(ImageFilter.MedianFilter(3))

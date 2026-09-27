@@ -432,7 +432,7 @@ _AUX_CARRY_FIELDS = ("drafting_dept", "path_relocated_from", "path_relocated_at"
 
 def _prev_carry_fields(fields) -> dict:
     """读现主索引中指定列 → {ipn: {field: value}}（索引重建防冲，通用实现）。"""
-    out = {}
+    out: dict = {}
     if not os.path.exists(_INDEX_PATH):
         return out
     try:

@@ -67,7 +67,9 @@ def sha256_of(path: str, chunk: int = 1 << 20) -> str:
     return h.hexdigest()
 
 
-def _known_hashes() -> dict[str, str]:
+def _known_hashes() -> tuple[dict[str, str], dict[int, list[str]]]:
+    # N-67（2026-09-28）：原注解 `-> dict[str, str]` 与实现不符（实返 `(known, sizes)` 元组）
+    # → 调用处解包得错类型（`known`/`sizes` 被判为 str），是下方 index/arg-type 报错的**根因**。
     """已知内容哈希 → 来源标签。来源：① `reports/corpus/*.manifest.json`（唯一入库源，
     v2 §3.12.7 F2）；② `data/corpus/**` 与 `originals/**` 的**按大小候选**哈希
     （只对大小能对上的文件算 sha256 —— 全量哈希 2000+ 文件代价不可接受）。"""
@@ -103,7 +105,7 @@ def _known_hashes() -> dict[str, str]:
                         known[rec["sha256"]] = f"corpus:{dom}:{rec.get('rel', '')}"
     _walk(CORPUS_ROOT, "corpus_file")
     _walk(ORIGINALS, "originals")
-    return known, sizes  # type: ignore[return-value]
+    return known, sizes
 
 
 def _hash_candidates(size: int, sizes: dict[int, list[str]]) -> list[str]:
@@ -122,7 +124,7 @@ def scan(apply: bool = False) -> dict:
             d = spec.get("inbox") or ""
             if d:
                 os.makedirs(d if os.path.isabs(d) else os.path.join(paths.ROOT, d), exist_ok=True)
-    known, sizes = _known_hashes()  # type: ignore[misc]
+    known, sizes = _known_hashes()
 
     rows: list[dict] = []
     counters = {"duplicate": 0, "routed": 0, "needs_review": 0}
@@ -268,7 +270,7 @@ def main(argv=None) -> int:
 
 if __name__ == "__main__":
     try:
-        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
     except Exception:  # noqa: BLE001
         pass
     raise SystemExit(main())

@@ -68,7 +68,7 @@ def _sha(path: str) -> str:
 def _latest_cleaned(scrapers_root: str) -> list[dict]:
     """data/cleaned 下每源最新 1 版 csv+jsonl（按日期取最大）。"""
     cleaned_dir = os.path.join(scrapers_root, "data", "cleaned")
-    out = []
+    out: list = []
     if not os.path.isdir(cleaned_dir):
         return out
     by_src: dict[str, dict[str, str]] = {}
@@ -120,7 +120,7 @@ def _latest_timeliness(scrapers_root: str) -> list[dict]:
 
 
 def _classifier_data(classifier_root: str) -> list[dict]:
-    out = []
+    out: list = []
     data_dir = os.path.join(classifier_root, "data")
     if not os.path.isdir(data_dir):
         return out
@@ -147,7 +147,7 @@ def _classifier_data(classifier_root: str) -> list[dict]:
 
 
 def _docs_md(root: str, prefix: str) -> list[dict]:
-    out = []
+    out: list = []
     docs_dir = os.path.join(root, "docs")
     if not os.path.isdir(docs_dir):
         return out

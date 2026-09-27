@@ -80,7 +80,7 @@ CSV_FIELDS = (
 
 
 def _read_jsonl(path: str) -> list[dict]:
-    out = []
+    out: list = []
     if not os.path.exists(path):
         return out
     with open(path, encoding="utf-8") as fh:
@@ -324,7 +324,7 @@ def apply_backlog(bl: dict, *, theme_mode: str = "", fixed_theme: str = "") -> d
         if os.path.exists(p):
             shutil.copy2(p, os.path.join(backup_dir, os.path.basename(p)))
 
-    res = {
+    res: dict = {
         "registered": 0,
         "reused": 0,
         "skipped_theme": 0,
@@ -423,7 +423,7 @@ def sync_timeliness(*, dry_run: bool = False, only_rfns: set[str] | None = None)
 
 def main() -> int:
     try:
-        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
     except Exception:  # noqa: BLE001
         pass
     ap = argparse.ArgumentParser(description="RFN 补登候选（关系线索驱动）")

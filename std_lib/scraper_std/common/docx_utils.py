@@ -51,7 +51,7 @@ def extract_article_number(line: str) -> str:
 def split_into_articles(paragraphs: list) -> list:
     articles = []
     current_num = "题注/前言"
-    current_lines = []
+    current_lines: list = []
     for line in paragraphs:
         line_stripped = line.strip()
         if not line_stripped:

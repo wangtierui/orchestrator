@@ -587,7 +587,8 @@ class ZhengcekuScraper:
                 # 实测 1600 条暂存达 516 MB（均 322 KB/条），全量 1.22 万条约需 5.5 GB，
                 # 内存压力是进程中断的首要嫌疑；且正文已完整的条目无需附件补正文。
                 # 仅当正文不足（正文以附件形式发布）时才做完整抽取，保证正文不缺失。
-                atts, att_text = [], ""
+                atts: list = []
+                att_text: str = ""
                 _skipped[0] += 1
             else:
                 atts, att_text = fetch_attachments(html, url, entry_id=url)

@@ -214,7 +214,7 @@ def main() -> int:
     rel_src_map, rel_dst_map = _load_relation_maps()
     recs = {r.get("ipn"): r for r in view.get("records", [])}
     targets = [a.ipn] if a.ipn else sorted(recs)
-    total = {"done": 0, "articles": 0, "links": 0, "warns": 0, "no_clause": []}
+    total: dict = {"done": 0, "articles": 0, "links": 0, "warns": 0, "no_clause": []}
     for ipn in targets:
         rec = recs.get(ipn)
         if not rec:

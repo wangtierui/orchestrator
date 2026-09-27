@@ -50,7 +50,7 @@ def _theme_names() -> dict:
 
 
 def _load(path: str):
-    out = []
+    out: list = []
     if not os.path.exists(path):
         return out
     with open(path, encoding="utf-8") as fh:
@@ -83,7 +83,7 @@ def main() -> int:
         return m.group(1) if m else (th or "未分类")
 
     names: dict = {}
-    by_theme = defaultdict(lambda: {"ext": [], "int": []})
+    by_theme: defaultdict = defaultdict(lambda: {"ext": [], "int": []})
     for r in ext:
         th = (r.get("theme") or "").strip() or "未分类"
         c = _canon(th)

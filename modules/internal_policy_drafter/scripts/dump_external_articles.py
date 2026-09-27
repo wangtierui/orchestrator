@@ -56,7 +56,7 @@ def _match_article_no(article: str):
 
 def main() -> int:
     try:
-        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
     except Exception:  # noqa: BLE001  容错降级
         pass
     ap = argparse.ArgumentParser(description="外部监管文件条款正文查询（clause_index ②）")

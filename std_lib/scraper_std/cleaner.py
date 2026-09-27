@@ -105,7 +105,7 @@ def normalize_date(value: Any) -> str:
     m = re.search(r"(\d{4})[-/年.](\d{1,2})[-/月.](\d{1,2})", s)
     if m:
         try:
-            dt = _dt.date(int(m.group(1)), int(m.group(2)), int(m.group(3)))
+            dt = _dt.date(int(m.group(1)), int(m.group(2)), int(m.group(3)))  # type: ignore[assignment]
             return dt.strftime("%Y-%m-%d")
         except ValueError:
             pass

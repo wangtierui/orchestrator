@@ -31,7 +31,7 @@ import re
 import sys
 import time
 
-sys.stdout.reconfigure(encoding="utf-8")
+sys.stdout.reconfigure(encoding="utf-8")  # type: ignore[union-attr]
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 BAK = os.path.join(BASE, "backups", "pbc_laws.bak.json")
@@ -44,6 +44,7 @@ SAVE_EVERY = 20
 
 # 复用 backfill_pdfs 的下载/链接提取工具（经验证可用）
 spec = importlib.util.spec_from_file_location("bf", os.path.join(BASE, "pbc_backfill_pdfs.py"))
+assert spec is not None and spec.loader is not None   # 本地文件存在 ⟹ spec/loader 必非空（供 mypy 收窄）
 bf = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(bf)
 

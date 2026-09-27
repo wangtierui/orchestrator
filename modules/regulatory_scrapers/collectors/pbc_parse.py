@@ -58,10 +58,10 @@ try:
 except ImportError:  # pragma: no cover
     from std_lib.scraper_std.cache_store import OfflineMiss
 
-    def structured_table_fields(data, name="", *, kind=None):  # pragma: no cover
+    def structured_table_fields(data, name="", *, kind=None):  # type: ignore[misc]  # pragma: no cover
         return {}
 
-    def rich_object_fields(data, name="", *, image_dir=None, rec_key=""):  # pragma: no cover
+    def rich_object_fields(data, name="", *, image_dir=None, rec_key=""):  # type: ignore[misc]  # pragma: no cover
         return {}
 
 _RESP_TEXT = None  # TextResponseCache 实例；None 表示未启用缓存

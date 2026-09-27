@@ -58,7 +58,7 @@ def extract_pdf(path: str) -> str:
             "supp_fix_raw_factual 无法解析 PDF"
         )
     d = fitz.open(path)
-    txt = "".join(p.get_text() for p in d)
+    txt = "".join(p.get_text() for p in d)  # type: ignore[attr-defined]
     d.close()
     return txt.strip()
 

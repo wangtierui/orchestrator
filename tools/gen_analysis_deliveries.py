@@ -63,7 +63,7 @@ def _load_json(path: str, default=None):
 
 def _load_theme_names() -> dict:
     """主题完整名：归属表『主题』列（含 T{N} 前缀的完整名）。"""
-    out = {}
+    out: dict = {}
     for p in (
         os.path.join(CDATA, "人身保险公司-文件归属表.csv"),
         os.path.join(CDATA, "人身保险公司-主题归属表.csv"),
@@ -227,7 +227,7 @@ def d_211_1(names, finals, details, dry, manifest, outdir) -> None:
         recs = finals.get(tid) or []
         if not recs:
             continue
-        clusters = {}
+        clusters: dict = {}
         for r in recs:
             c = (r.get("cluster") or "（未聚类）").strip() or "（未聚类）"
             clusters.setdefault(c, []).append(r)
@@ -266,7 +266,7 @@ def d_211_2(names, finals, dry, manifest, outdir) -> None:
         recs = finals.get(tid) or []
         if not recs:
             continue
-        by_year = {}
+        by_year: dict = {}
         for r in recs:
             y = _norm_year(r.get("real_year") or r.get("year_reported"))
             if y:
@@ -314,7 +314,7 @@ def d_211_2(names, finals, dry, manifest, outdir) -> None:
 def d_211_3(names, graphs, dry, manifest, outdir) -> None:
     """2.1.1.3 内部关联关系图（含关系性质说明与实证文件）"""
     all_rows = []
-    kind_cnt = {}
+    kind_cnt: dict = {}
     for tid in THEME_ORDER:
         g = graphs.get(tid) or {}
         for e in g.get("edges") or []:
@@ -436,7 +436,7 @@ def d_211_5(names, finals, details, graphs, dry, manifest, outdir) -> None:
         recs = finals.get(tid) or []
         if not recs:
             continue
-        clusters = {}
+        clusters: dict = {}
         for r in recs:
             c = (r.get("cluster") or "（未聚类）").strip() or "（未聚类）"
             clusters[c] = clusters.get(c, 0) + 1
@@ -517,11 +517,11 @@ def d_212_1(names, finals, dry, manifest, outdir) -> None:
             continue
         years = [_norm_year(r.get("real_year") or r.get("year_reported")) for r in recs]
         years = [y for y in years if y]
-        st = {}
+        st: dict = {}
         for r in recs:
             s = (r.get("eff_status") or "unknown").strip() or "unknown"
             st[s] = st.get(s, 0) + 1
-        srcs = {}
+        srcs: dict = {}
         for r in recs:
             s = (r.get("file_src") or "?").strip() or "?"
             srcs[s] = srcs.get(s, 0) + 1
@@ -560,7 +560,8 @@ def d_212_1(names, finals, dry, manifest, outdir) -> None:
 
 def d_212_2(names, graphs, dry, manifest, outdir) -> None:
     """2.1.2.2 主题间关联关系图（含关系性质说明）"""
-    rows, mat = [], {}
+    rows: list = []
+    mat: dict = {}
     for tid in THEME_ORDER:
         g = graphs.get(tid) or {}
         for e in g.get("edges") or []:
@@ -634,7 +635,7 @@ def d_212_3(names, finals, dry, manifest, outdir) -> None:
         recs = finals.get(tid) or []
         if not recs:
             continue
-        years = {}
+        years: dict = {}
         for r in recs:
             y = _norm_year(r.get("real_year") or r.get("year_reported"))
             if y:
@@ -855,7 +856,7 @@ def d_213_1(names, finals, details, graphs, dry, manifest, outdir) -> None:
 
 def d_213_2(names, graphs, dry, manifest, outdir) -> None:
     """2.1.3.2 主题交叉影响全景图（含交叉领域清单与评估）"""
-    pairs = {}
+    pairs: dict = {}
     for tid in THEME_ORDER:
         g = graphs.get(tid) or {}
         for e in g.get("edges") or []:
@@ -904,7 +905,7 @@ def d_213_3(names, finals, details, graphs, dry, manifest, outdir) -> None:
         recs = finals.get(tid) or []
         if not recs:
             continue
-        clusters = {}
+        clusters: dict = {}
         for r in recs:
             c = (r.get("cluster") or "（未聚类）").strip() or "（未聚类）"
             clusters[c] = clusters.get(c, 0) + 1
@@ -1019,7 +1020,7 @@ def d_213_5(names, finals, dry, manifest, outdir) -> None:
         recs = finals.get(tid) or []
         if not recs:
             continue
-        src = {}
+        src: dict = {}
         for r in recs:
             s = (r.get("file_src") or "?").strip() or "?"
             src[s] = src.get(s, 0) + 1
@@ -1131,7 +1132,7 @@ def d_213_7(names, finals, details, graphs, dry, manifest, outdir) -> None:
         recs = finals.get(tid) or []
         if not recs:
             continue
-        clusters = {}
+        clusters: dict = {}
         for r in recs:
             c = (r.get("cluster") or "（未聚类）").strip() or "（未聚类）"
             clusters.setdefault(c, []).append(r)

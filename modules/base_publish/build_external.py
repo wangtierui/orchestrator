@@ -73,7 +73,8 @@ def _write_jsonl(path: str, rows) -> int:
 
 def _load_bridge() -> tuple[dict, dict]:
     """rfn_clean_bridge → ({dedup_key: rfn}, {source_url: rfn})。"""
-    by_dedup, by_url = {}, {}
+    by_dedup: dict = {}
+    by_url: dict = {}
     if not os.path.exists(BRIDGE_CSV):
         return by_dedup, by_url
     with open(BRIDGE_CSV, encoding="utf-8-sig", newline="") as fh:
@@ -96,7 +97,8 @@ def _load_attr_maps() -> tuple[dict, dict]:
     注（2026-09-13 rfn 透传收敛）：归属表"时效状态"列与 cleaned 同源（核验回写链），
     发布件时效以 cleaned 快照为准（与 snapshot_date 对齐）；原 tl 映射未被消费（死代码）已移除。
     """
-    by_docno, theme = {}, {}
+    by_docno: dict = {}
+    theme: dict = {}
     if os.path.exists(ATTR_CSV):
         with open(ATTR_CSV, encoding="utf-8-sig", newline="") as fh:
             for row in csv.DictReader(fh):

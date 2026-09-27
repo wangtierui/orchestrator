@@ -62,7 +62,7 @@ if total != 1050:
 
 if fails:
     print("\n❌ 后验失败:")
-    for f in fails:
+    for f in fails:  # type: ignore[assignment]
         print("   -", f)
     raise SystemExit(1)
 print("\n✅ 独立后验全部通过：40 文件、计数=归属表、主题列对齐、无 seq 残留、cluster 完整。")

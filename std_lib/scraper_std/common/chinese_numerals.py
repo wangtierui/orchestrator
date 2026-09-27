@@ -24,8 +24,12 @@ _CN_NUMBERS: dict[int, str] = {}
 def chinese_to_int(cn: str) -> int:
     if not cn:
         return 0
-    if cn in _CN_NUMBERS:
-        return _CN_NUMBERS[cn]
+    # N-66 修复（2026-09-28）：原为 `_CN_NUMBERS`（**int→str** 的"数字转中文"表）——用 `cn`（str）
+    # 索引它属**键空间错配**：运行时恒 False（str 键 vs int 键）→ 该分支为**死代码**，且若可达
+    # 会返回 `str`（与 `-> int` 冲突）。作者意图为"单字中文数字直查"，正解是 `_CN_NUMERALS`
+    # （str→int）。语义与下方循环解析**等价**（单字走两条路结果相同），保留快路径。
+    if cn in _CN_NUMERALS:
+        return _CN_NUMERALS[cn]
     total = 0
     partial = 0
     for ch in cn:

@@ -25,7 +25,7 @@ def setup_logger(output_root, name: str = "law_crawler") -> logging.Logger:
     if isinstance(output_root, Path):
         log_dir = output_root / "logs"
     else:
-        log_dir = os.path.join(str(output_root), "logs")
+        log_dir = os.path.join(str(output_root), "logs")  # type: ignore[assignment]
     os.makedirs(log_dir, exist_ok=True)
     # setup_logging is idempotent w.r.t. repeated calls within a process.
     setup_logging(str(log_dir), project_name=name, json_lines=False, console=True)

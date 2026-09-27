@@ -73,7 +73,7 @@ def setup_logging(
     if json_lines:
         fmt = JsonFormatter(project_name, task_id)
     else:
-        fmt = logging.Formatter("%(asctime)s %(levelname)s %(name)s %(message)s")
+        fmt = logging.Formatter("%(asctime)s %(levelname)s %(name)s %(message)s")  # type: ignore[assignment]
 
     fh = logging.FileHandler(log_path, encoding="utf-8")
     fh.setFormatter(fmt)
@@ -122,7 +122,7 @@ class LogContext:
             "task_id": task_id,
             "url": url,
         }
-        self._old = {}
+        self._old: dict = {}
         self.snapshot_dir = snapshot_dir
 
     def __enter__(self) -> LogContext:
@@ -131,10 +131,10 @@ class LogContext:
                 continue
             self._old[k] = getattr(logging, "_log_context", {}).get(k)
         if not hasattr(logging, "_log_context"):
-            logging._log_context = {}
+            logging._log_context = {}  # type: ignore[attr-defined]
         for k, v in self._fields.items():
             if v is not None:
-                logging._log_context[k] = v
+                logging._log_context[k] = v  # type: ignore[attr-defined]
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):

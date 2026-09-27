@@ -334,8 +334,8 @@ def main():
     log(f"成功回填(fetched): {stats.get('ok',0)}；失败: {sum(v for k,v in stats.items() if k!='ok')}")
     if failures:
         log("失败样本（前 10）:")
-        for t, r, e in failures[:10]:
-            log(f"  - {t[:30]} | {r} | {str(e)[:80]}")
+        for t, r, exc in failures[:10]:   # N-67：原用 `e`（与 except 变量同名，mypy misc 告警）
+            log(f"  - {t[:30]} | {r} | {str(exc)[:80]}")
     # 写出失败清单便于复核
     if failures:
         with open(os.path.join(ROOT, "data", "reports", "pbc_regulations_scraper", "backfill_failures.json"), "w", encoding="utf-8") as f:

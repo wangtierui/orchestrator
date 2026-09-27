@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import logging
 import re
+from typing import Any
 
 from .cleaner import is_table_block, normalize_ws
 
@@ -76,7 +77,9 @@ def split_long_uncut(text: str) -> dict[str, list[str]]:
     ④ 无标点兜底切分。返回 {"split_sentences": [...], "raw_uncut_text": 原文}
     （原文非空时保留）。
     """
-    out: dict[str, list[str]] = {"split_sentences": [], "raw_uncut_text": ""}
+    # N-67（2026-09-28）：原注解 `dict[str, list[str]]` 与字面量不符（`raw_uncut_text` 是 str）
+    # → 值类型改为 Any（两键值域不同，属"异质小容器"）。
+    out: dict[str, Any] = {"split_sentences": [], "raw_uncut_text": ""}
     stripped = (text or "").strip()
     if not stripped:
         return out
@@ -90,7 +93,9 @@ def split_long_uncut(text: str) -> dict[str, list[str]]:
     return out
 
 
-def repair_text(text: str, *, source: str = "webpage") -> dict[str, object]:
+def repair_text(text: str, *, source: str = "webpage") -> dict[str, Any]:
+    # N-67（2026-09-28）：原返回注解 `dict[str, object]` 使调用方无法直接索引成员
+    # （`r["text"]` → object）；本函数返回**异质**结果（str/bool/list），值域改 Any。
     """
     断句修复总入口。返回结构化结果：
       {
@@ -144,7 +149,7 @@ def acceptance_check(text: str) -> list[str]:
       - 禁止 >30 字符且无任何标点/空格的连续字符串。
     返回违规清单（空 = 通过）。
     """
-    issues = []
+    issues: list = []
     if not text:
         return issues
     for m in _LONG_NO_PUNCT.finditer(text):

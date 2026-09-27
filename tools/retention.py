@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import argparse
 import datetime
+import fnmatch
 import glob
 import json
 import os
@@ -113,7 +114,10 @@ def _plan_dir(spec: dict) -> tuple[list[dict], dict]:
     kept = 0
     for i, p in enumerate(entries):
         name = os.path.basename(p)
-        if inc_glob and glob.fnmatch.fnmatch(name, inc_glob):
+        # N-70（2026-09-28）：原为 `glob.fnmatch.fnmatch(...)` —— `glob` 并无该**公开**属性
+        # （仅因其实现在内部 `import fnmatch` 而偶然可见，属依赖实现细节；若上游改为
+        # `from fnmatch import fnmatch` 即 AttributeError）。改显式导入，健壮且消 mypy attr-defined。
+        if inc_glob and fnmatch.fnmatch(name, inc_glob):
             if inc_days and _age_days(p) <= inc_days:
                 n_incident_kept += 1
                 continue
@@ -263,7 +267,7 @@ def main(argv=None) -> int:
     args = ap.parse_args(argv)
 
     plan = build_plan(include_baks=args.include_baks)
-    res = {"mode": "apply" if args.apply else "dry-run", "plan": plan, "applied": None}
+    res: dict = {"mode": "apply" if args.apply else "dry-run", "plan": plan, "applied": None}
     if args.apply:
         res["applied"] = apply_plan(plan)
     fp = write_ledger(res)
@@ -293,7 +297,7 @@ def main(argv=None) -> int:
 
 if __name__ == "__main__":
     try:
-        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
     except Exception:  # noqa: BLE001
         pass
     raise SystemExit(main())
