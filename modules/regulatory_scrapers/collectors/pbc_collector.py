@@ -410,7 +410,7 @@ def extract_doc_number(*texts):
             from std_lib.scraper_std.doc_number import extract_doc_number as _u
             from std_lib.scraper_std.doc_number import normalize_doc_number as _n
     except Exception:  # pragma: no cover
-        _u = _n = None
+        _u = _n = None  # type: ignore[assignment]
     if _u is not None:
         dn = _u(blob)
         if dn:
@@ -455,7 +455,7 @@ def extract_effective(body_text):
 def scrape_category(cat, fetcher, args, done_urls, existing_map=None):
     name = cat["name"]
     index_url = cat["index_url"]
-    records = []
+    records: list = []
 
     # 1) 抓取首页，探测分页参数
     try:
@@ -641,7 +641,7 @@ def save_outputs(records, out_dir, write_csv=False):
     return json_path, (csv_path if write_csv else "")
 
 def build_report(records):
-    by_cat = {}
+    by_cat: dict = {}
     for r in records:
         c = r["category"]
         by_cat.setdefault(c, {"total": 0, "ok": 0, "attach": 0, "fail": 0})

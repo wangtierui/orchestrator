@@ -192,7 +192,8 @@ def main(argv=None):
 
     # xls/xlsx 附件 → excel_classified_v2 重建
     from std_lib.scraper_std.table_recovery import structured_table_fields  # noqa: PLC0415
-    v2_list, methods = [], set()
+    v2_list: list = []
+    methods: set = set()
     for _f, target, _is_body, kind, _num in plan:
         if kind not in ("xls", "xlsx", "xlsm"):
             continue

@@ -146,7 +146,7 @@ class LogContext:
                 exc_info=(exc_type, exc_val, exc_tb),
             )
         for k in self._fields:
-            logging._log_context.pop(k, None)
+            logging._log_context.pop(k, None)  # type: ignore[attr-defined]
         return False
 
 

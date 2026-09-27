@@ -600,6 +600,9 @@ STEP_ORDER: tuple[str, ...] = (
     "base:publish",
     "analysis:gen",
     "watch:baseline",
+    # N-73b（2026-09-28）：数据生命周期**只读披露**（`tools/retention.py` dry-run + 台账）
+    #   —— 置于链尾（看得见本轮全部备份/日志），`--apply` 仍为人工闸门。
+    "retention:plan",
     # wiki_sync 依赖 published 清单（publish_manifest）→ 在 base:publish 之后、gates 之前。
     "wiki:sync",
     "gates",
@@ -1066,6 +1069,20 @@ def _run_chain(args) -> int:
             "watch:baseline",
             [PY, os.path.join(ROOT, "cli.py"), "source", "diff", "--record"],
             timeout=300,
+        )
+    )
+
+    # ---- 阶段 6.6：数据生命周期披露（retention dry-run；N-73b，2026-09-28）----
+    # `tools/retention.py` 是 v2 §3.10（P2-3）的**数据生命周期节点**，此前仅人工执行 →
+    # 备份/运行日志的超保留量条目**无链内可见性**（台账靠人记得跑）。
+    # 改为链内**只读披露**：默认走 dry-run（**不动文件**），落 `reports/retention_<date>.json`
+    # 台账（入库可审计）；台账自身已纳入 POLICY 自管（`retention_ledgers`，保留 30 份）。
+    # 实际归档仍为人工确认后 `python tools/retention.py --apply`（破坏面保留人工闸门）。
+    report.append(
+        _run(
+            "retention:plan",
+            [PY, os.path.join(ROOT, "tools", "retention.py")],
+            timeout=900,
         )
     )
 

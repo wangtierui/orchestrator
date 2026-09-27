@@ -212,7 +212,7 @@ def build_merged_view() -> dict:
 
 def main():
     try:
-        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
     except Exception:  # noqa: BLE001  解析容错（非关键字段缺失降级）
         pass
     s = build_merged_view()

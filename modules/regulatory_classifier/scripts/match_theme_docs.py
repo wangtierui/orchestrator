@@ -86,7 +86,7 @@ def extract_basis(body):
 
 def analyze_body(body):
     """条款级引用分析：art_refs（条/款/项）+ name_refs_top（书名号 TOP8）。"""
-    art_refs = collections.Counter()
+    art_refs: collections.Counter = collections.Counter()
     for mm in re.finditer(
         r"《([^》]{2,40})》\s*第([一二三四五六七八九十百零〇\d]+)条"
         r"(?:第([一二三四五六七八九十百零〇\d]+)款)?(?:第([一二三四五六七八九十百零〇\d]+)项)?",
@@ -118,7 +118,7 @@ def build_lib_index(lib_config, libs):
         if not path or not os.path.exists(path):
             print(f"  ⚠️ 库 {lib} 路径不存在，跳过: {path}")
             continue
-        idx = {}
+        idx: dict = {}
         with open(path, "rb") as f:
             offset = 0
             for raw in f:

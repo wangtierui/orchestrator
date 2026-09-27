@@ -182,11 +182,13 @@ def test_run_step_order_matches_call_sites():
     spec = importlib.util.spec_from_file_location("_rpr_test", fp)
     rpr = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(rpr)
-    # 24（23 → +1）：N-63（2026-09-27）`governance:artifacts`（原件注册，阶段 1）入链；
-    #   同时 N-64 将 `governance:sync`（阶段 2）后移至 `internal:update` 之后（取终态内部索引）。
-    #   —— 此前 23 来自 N-53/N-52：4 个触发项入链（条件步骤）+ `draft:clause`。
+    # 25（24 → +1）：N-73b（2026-09-28）`retention:plan`（数据生命周期**只读披露**）入链
+    #   —— `tools/retention.py` 为 v2 §3.10 的生命周期节点，原仅人工执行、链内无可见性；
+    #   现以 dry-run 入链（不动文件）+ 台账入库，`--apply` 仍为人工闸门。
+    #   —— 此前 24 来自 N-63/N-64（`governance:artifacts` 入链 + `governance:sync` 后移）与
+    #   N-53/N-52（4 个触发项入链 + `draft:clause`）。
     # 步骤数变化须在此显式确认（防清单漂移）。
-    assert len(rpr.STEP_ORDER) == 24
+    assert len(rpr.STEP_ORDER) == 25
     # 每个步骤名必须能在本文件中找到**引号字面量**（`"gates"` / `f"clean:{src}"` ⇒ `"clean:{src}"`）
     text = open(fp, encoding="utf-8").read()
     for step in rpr.STEP_ORDER:

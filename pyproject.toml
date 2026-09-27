@@ -116,9 +116,14 @@ exclude = ["data/", "cache/", "logs/", "backups/", "retired/", "archive/", "buil
 # clean_index 元组当整数、checkpoint `raise object()`、retention `glob.fnmatch`、
 # normalize_internal_naming `and _writeback_identity(...)` 恒假），CI 的 mypy 范围已扩至
 # **全仓**（std_lib / modules / tools / config / interfaces / gates / commands）。
-# `follow_imports="silent"` **保留**：它只影响"未被显式指定"的**间接导入**模块（避免第三方/深层
-# 依赖噪音），不掩盖显式路径——显式列出的路径一律按本配置**完整检查**。
-follow_imports = "silent"
+#
+# N-73（2026-09-28）· 两项严格化（**本文件为单点事实源**，CI 不再重复传参）：
+#   1) `check_untyped_defs = true` —— 此前**未注解函数体**不参与检查（mypy 默认），是历史层
+#      最后一处盲区（新增 116 error，含 tri-state 赋值/`dict[str,str]` 载体/守卫缺失等）；已全量收敛；
+#   2) `follow_imports = "normal"` —— 原 `silent` 会跳过未显式指定路径的**间接导入**（薄弱面）；
+#      实测切 `normal` 后增量 **0 error**，故免费换得"整棵导入图同口径检查"。
+follow_imports = "normal"
+check_untyped_defs = true
 
 # ---- 覆盖率口径（v2 §3.7 G4/G5，P2-4）----
 # 口径说明：只计"本仓自有的治理/标准/接口/命令/工具层"（modules/** 为历史语料处理代码，

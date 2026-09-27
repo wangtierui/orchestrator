@@ -327,7 +327,7 @@ def _recover_cjk_stream(wd):
     返回以换行连接的文本片段。
     """
     u = wd.decode("utf-16-le", errors="ignore")
-    out = []
+    out: list = []
     cur = ""
     for ch in u:
         o = ord(ch)

@@ -141,7 +141,7 @@ def body_status(body):
 
 
 def extract_refs(body):
-    arts = Counter()
+    arts: Counter = Counter()
     for name, art, para, item in ART_RE.findall(body or ""):
         label = f"《{name}》第{art}条"
         if para:

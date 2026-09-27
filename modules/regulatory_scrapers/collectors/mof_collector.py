@@ -526,7 +526,7 @@ def main():
 
         # —— 载入历史存储（mof_laws.json 本身即为持久化存储）——
         store_path = os.path.join(args.outdir, "mof_laws.json")
-        prev_items = []
+        prev_items: list = []
         if os.path.exists(store_path):
             try:
                 pd = json.load(open(store_path, encoding="utf-8"))

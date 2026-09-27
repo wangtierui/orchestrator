@@ -106,11 +106,11 @@ def load_global_index():
     """归一化标题 -> [(theme, rfn, title, docno)]，覆盖 10 张明细表 + 上位法锚点。"""
     idx = defaultdict(list)
     for fn in sorted(os.listdir(DATA_DIR)):
-        if re.match(r"^T(\d+)_.*逐份.*明细表\.csv$", fn):
-            theme = re.match(r"^T(\d+)_", fn).group(1)
+        if (mt := re.match(r"^T(\d+)_.*逐份.*明细表\.csv$", fn)):   # walrus：一次匹配并收窄
+            theme = mt.group(1)
             with open(os.path.join(DATA_DIR, fn), encoding="utf-8-sig", newline="") as f:
                 for r in csv.DictReader(f):
-                    idx[norm(r.get("标题"))].append(
+                    idx[norm(r.get("标题") or "")].append(
                         (theme, r.get("监管文件编号", ""), r.get("标题", ""), r.get("发文字号", "")))
     up = os.path.join(DATA_DIR, "_upper_laws.json")
     if os.path.exists(up):
@@ -180,7 +180,7 @@ def main():
 
     meta = {r["监管文件编号"]: r for r in base}   # 2026-08-31 重构：键=RFN（无 seq）
     records, edges = [], []
-    stat = Counter()
+    stat: Counter = Counter()
 
     for rfn, mrow in matched.items():
         b = meta.get(rfn, {})

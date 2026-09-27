@@ -136,7 +136,7 @@ def _latest_file_sha(idx, src_id):
 
 def gate_clean():
     """返回 (passed, detail)。detail 含逐源 latest、校验、索引陈旧、scanner 对齐。"""
-    detail = {
+    detail: dict = {
         "index_loaded": False,
         "validate": {"missing": [], "hash_mismatch": [], "ok_count": 0},
         "index_stale": False,
@@ -298,7 +298,7 @@ def gate_clean():
 ACCEPT_SOURCE_PREFIXES = ("北大法宝", "规则判断", "数据层统一清洗", "人工复核")
 
 def gate_validity():
-    detail = {
+    detail: dict = {
         "state_file_exists": False,
         "entries_total": 0,
         "fresh": 0,
@@ -317,7 +317,7 @@ def gate_validity():
     now = _now()
     max_age = timedelta(days=VALIDITY_MAX_AGE_DAYS)
     fresh = stale = 0
-    cat = collections.Counter()
+    cat: collections.Counter = collections.Counter()
     for key, rec in state.items():
         vs = (rec.get("verification_source", "") or "")
         lu = rec.get("last_checked_at", "")
@@ -366,7 +366,7 @@ def gate_validity():
             for _sid in _idx.source_ids():
                 _rec = _idx.latest(_sid) or {}
                 total += int(_rec.get("record_count") or 0)
-            cov = {"state_records": len(state), "source_records": total,
+            cov: dict = {"state_records": len(state), "source_records": total,
                    "uncovered": max(total - len(state), 0)}
             cov["ratio"] = (round(len(state) / total, 4) if total else None)
             detail["coverage"] = cov
@@ -548,7 +548,7 @@ def gate_schema(data_dir=None):
     返回 (passed, detail)。
     """
     base = data_dir or CLASSIFIER_DATA
-    detail = {"import_ok": SCHEMA_OK, "problems": [], "checked": {}}
+    detail: dict = {"import_ok": SCHEMA_OK, "problems": [], "checked": {}}
     if not SCHEMA_OK:
         detail["problems"].append("schema 权威常量导入失败（rfn.registry / build_detail_tables）: " + _schema_import_err)
         return False, detail
@@ -599,10 +599,11 @@ def gate_schema(data_dir=None):
     expect_keys = {"base": _BASE_KEYS, "final": _FINAL_KEYS,
                    "matched": _MATCHED_KEYS, "citerefs": _CITEREFS_KEYS}
     expect_shape = {"base": "list", "final": "list", "matched": "dict", "citerefs": "dict"}
-    per_suf = {s: [] for s in expect_keys}
+    per_suf: dict = {s: [] for s in expect_keys}
     for f in base_files:
-        suf = _BASE_RE.match(f).group(1)
-        per_suf[suf].append(f)
+        _m = _BASE_RE.match(f)
+        assert _m is not None   # base_files 已由 _BASE_RE 过滤（供 mypy 收窄）
+        per_suf[_m.group(1)].append(f)
     if len(base_files) != 40:
         _chk("base_jsons", False, f"数据底座数量 {len(base_files)} ≠ 40（T1–T10 × 4 类）: 缺失见 per_suf")
     bad_base = []
@@ -622,7 +623,9 @@ def gate_schema(data_dir=None):
 
     # 5) matched/citerefs 对 base 覆盖率（F-D04）：缺口可见化（>5% 判异常拦截；
     #    缺口 ≤5% 记录 warning——缺口多为五库未收录文件，见 match_theme_docs *_miss.json 清单）。
-    base_keys, matched_keys, citerefs_keys = set(), set(), set()
+    base_keys: set = set()
+    matched_keys: set = set()
+    citerefs_keys: set = set()
     for f in os.listdir(base):
         fp = os.path.join(base, f)
         if re.match(r"^_t\d+_base\.json$", f):
@@ -730,7 +733,7 @@ def main():
     force = "--force" in sys.argv
     check_only = "--check-only" in sys.argv
 
-    report = {
+    report: dict = {
         "schema_version": "1.0.0",
         "generated_at": _utc8_now(),
         "trigger": "clean_index + verification_state + 链路契约 + schema 预检 四门禁（gate-based，非 cron 轮询语义）",

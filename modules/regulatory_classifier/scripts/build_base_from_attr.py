@@ -67,7 +67,7 @@ def load_attr(path=ATTR_CSV):
     归组键来自主题归属表「主题」列（权威十主题；T0 上位法锚点不入底座，与 THEMES=T1..T10 一致）。
     主题内保持归属表行序（RFN 稳定），连续编号 seq=1..N（幂等：同输入必同输出）。
     """
-    groups = {t: [] for t in THEMES}
+    groups: dict = {t: [] for t in THEMES}
     theme_of = {}
     with open(THEME_CSV, encoding="utf-8-sig", newline="") as fh:
         for tr in csv.DictReader(fh):

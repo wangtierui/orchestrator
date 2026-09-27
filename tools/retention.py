@@ -70,6 +70,16 @@ POLICY: tuple[dict, ...] = (
         "keep": 0,
         "move_to": "reports/_tmp/timeliness_err",
     },
+    {
+        # N-73b（2026-09-28）：**台账自管**。本工具每次运行落 `reports/retention_<date>.json`
+        # （入库、可审计）；自第十三批起其 dry-run 计划**入链**（`retention:plan`），故台账逐日
+        # 累积 → 必须纳入策略自身，否则"生命周期工具制造无主文件"自相矛盾。
+        # 保留最近 30 份（约一个月），更早的按 `--apply` 移入 `archive/`（只移动不删除）。
+        "name": "retention_ledgers",
+        "dir": "reports",
+        "include_glob": "retention_*.json",
+        "keep": 30,
+    },
 )
 
 SKIP_DIR_NAMES = {
@@ -105,6 +115,11 @@ def _plan_dir(spec: dict) -> tuple[list[dict], dict]:
     entries = [e for e in entries if os.path.isfile(e)]
     excluded = set(spec.get("exclude_names") or ())
     entries = [e for e in entries if os.path.basename(e) not in excluded]
+    # N-73b（2026-09-28）：**包含过滤**（本类目只针对匹配名，如 `reports/retention_*.json`）——
+    # 与 `exclude_names`（排除）互补，二者叠加使用；复用已导入的 `fnmatch`（不与 `glob.fnmatch` 混用）。
+    inc_only = spec.get("include_glob", "")
+    if inc_only:
+        entries = [e for e in entries if fnmatch.fnmatch(os.path.basename(e), inc_only)]
     entries.sort(key=lambda p: os.path.getmtime(p), reverse=True)
     keep = int(spec.get("keep", 10))
     inc_glob = spec.get("incident_glob", "")

@@ -233,7 +233,7 @@ def _load_register_doc():
             _REGISTER_DOC = register_doc
         except Exception as _e:
             print(f"[ingest] WARN 无法经 interfaces.rfn_api 取得 register_doc（跳过 RFN 登记）: {_e}")
-            _REGISTER_DOC = False
+            _REGISTER_DOC = False  # type: ignore[assignment]  # 三态：True=未加载/False=加载失败/callable=可用
     return _REGISTER_DOC or None
 
 def register_supplements(records: list) -> dict:

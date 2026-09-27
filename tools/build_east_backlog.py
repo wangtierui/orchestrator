@@ -56,6 +56,7 @@ def _load_extract_doc():
         _ROOT, "modules", "regulatory_scrapers", "collectors", "supp_extract_doc_text.py"
     )
     spec = importlib.util.spec_from_file_location("_ext", p)
+    assert spec is not None and spec.loader is not None   # 仓内文件必存在（供 mypy 收窄）
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod.extract

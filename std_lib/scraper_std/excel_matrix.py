@@ -319,7 +319,7 @@ def split_blocks(matrix, merged):
             inside = False
     if inside:
         spans.append([start, n_rows])
-    merged_spans = []
+    merged_spans: list = []
     for s in spans:
         if merged_spans and s[0] - merged_spans[-1][1] <= 1:
             merged_spans[-1][1] = s[1]
@@ -478,7 +478,8 @@ def _fill_merged_header(matrix, merged, header):
 
 
 def _forward_fill_row(row):
-    out, last = [], None
+    out: list = []
+    last = None
     for v in row:
         if _is_blank(v):
             out.append(last)

@@ -86,10 +86,10 @@ class RFNIndex:
             r["主题"] = tmap.get(r.get("监管文件编号", ""), "")
         # 索引构建
         self._by_rfn = {r["监管文件编号"]: r for r in self._rows}
-        self._by_title = {}
+        self._by_title: dict = {}
         for r in self._rows:
             self._by_title.setdefault(r["主题"], {})[norm_title(r["文件名称"])] = r
-        self._by_docno = {}
+        self._by_docno: dict = {}
         for r in self._rows:
             nd = self._norm_docno(r.get("发文字号", ""))
             if nd:
@@ -140,7 +140,7 @@ class RFNIndex:
         return rng
 
     def _group_by_theme(self):
-        groups = {}
+        groups: dict = {}
         for r in self._rows:
             groups.setdefault(r["主题"], []).append(r)
         return groups

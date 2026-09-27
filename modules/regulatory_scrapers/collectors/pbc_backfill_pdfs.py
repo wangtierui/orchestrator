@@ -208,7 +208,7 @@ def parse_pdf_text(data):
     try:
         doc = fitz.open(stream=data, filetype="pdf")
         parts = []
-        for page in doc:
+        for page in doc:  # type: ignore[attr-defined]
             pix = page.get_pixmap(dpi=OCR_DPI)
             import io as _io
 

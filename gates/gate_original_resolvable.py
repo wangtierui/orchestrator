@@ -57,7 +57,8 @@ def run():
         return False, {"error": f"索引不可读：{e!r}"}
 
     ok = 0
-    unresolvable_policy, non_policy = [], []
+    unresolvable_policy: list = []
+    non_policy: list = []
     for r in records:
         rel = (r.get("relative_path") or "").replace("/", os.sep)
         if rel and os.path.exists(os.path.join(_ORIGINALS, rel)):

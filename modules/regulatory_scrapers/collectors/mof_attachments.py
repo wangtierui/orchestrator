@@ -222,7 +222,7 @@ def _request(method, path, payload=None, *, rate=None, timeout=30,
     if rate is not None:
         rate.wait()
 
-    last_err = None
+    last_err: Exception | None = None
     for attempt in range(1, max_retries + 1):
         try:
             req = urllib.request.Request(
@@ -425,7 +425,7 @@ def download_attachment(att, law_id, outdir, rate, timeout=60, max_retries=6):
                 return _finalize_attachment(att, f.read(), fname, law_id, dest)
         except OSError:
             pass
-    last_err = None
+    last_err: Exception | None = None
     for attempt in range(1, max_retries + 1):
         if rate is not None:
             rate.wait()

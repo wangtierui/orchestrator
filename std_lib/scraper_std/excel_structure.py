@@ -224,7 +224,7 @@ def build_columns(matrix, merged, header):
     n_cols = header.col_end - header.col_start
     columns = []
     for c in range(n_cols):
-        path = []
+        path: list = []
         for r in range(len(h)):
             v = h[r][c]
             if _is_blank(v):
@@ -237,7 +237,7 @@ def build_columns(matrix, merged, header):
         if not path:
             path = [f"col_{c + 1}"]
         columns.append(Column(key=_make_key(path, c), name=path[-1], path=path, col_index=c))
-    seen = {}
+    seen: dict = {}
     for col in columns:
         if col.key in seen:
             seen[col.key] += 1

@@ -172,7 +172,7 @@ def build_all(themes: list[str] | None = None) -> dict:
 
 def main():
     try:
-        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
     except Exception:  # noqa: BLE001  分类/检索容错
         pass
     import argparse  # noqa: PLC0415

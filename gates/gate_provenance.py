@@ -64,7 +64,8 @@ def _check_csv(problems, pattern, what, warn_if_empty=True):
 
 
 def run():
-    problems, warns = [], []
+    problems: list = []
+    warns: list = []
     if not os.path.isdir(_DATA):
         # F-S09：输入缺失不得空跑放行（原 return True 使"全部门禁通过"含未实检门禁）。
         return False, {

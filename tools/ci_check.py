@@ -71,8 +71,9 @@ def main(argv=None) -> int:
                 "mypy",
                 # N-72（2026-09-28）：范围由"owned 层"扩至**全仓**（含历史层 std_lib/scraper_std、
                 # modules/*、tools/*）——历史层 236 处 error 已全部收敛（含 5 处真 bug），
-                # 故与 owned 层同口径**阻断**。`pyproject [tool.mypy] follow_imports="silent"`
-                # 保留（只影响"未显式指定"的间接导入，不掩盖显式路径）。
+                # 故与 owned 层同口径**阻断**。
+                # N-73：严格化参数（`check_untyped_defs` / `follow_imports=normal`）由
+                # `pyproject [tool.mypy]` **单点声明**，此处不再重复传参（避免两处口径漂移）。
                 "std_lib",
                 "modules",
                 "tools",

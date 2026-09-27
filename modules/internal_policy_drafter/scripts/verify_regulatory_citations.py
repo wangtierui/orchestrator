@@ -81,7 +81,7 @@ def load_align_map():
     """解析 对齐表 → {R号: {rfn, name, docno, timeliness}}。
     F-S07：文件缺失返回空 dict（原实现直接 open 抛 FileNotFoundError → 门禁/脚本崩溃）；
     空结果由调用方判定为「未实检」并给出清晰指引。"""
-    out = {}
+    out: dict = {}
     if not os.path.exists(ALIGN):
         return out
     for ln in open(ALIGN, encoding="utf-8"):
@@ -134,7 +134,8 @@ class Verifier:
 
     # ---- 对齐表时效受控校验（规范 v3 P3：时效列必须为 7 值英文枚举，且与 classifier 一致） ----
     def check_timeliness(self):
-        issues, warns = [], []
+        issues: list = []
+        warns: list = []
         for r, row in sorted(self.align.items()):
             cur = row["timeliness"]
             rec = self.idx.by_rfn(row["rfn"])

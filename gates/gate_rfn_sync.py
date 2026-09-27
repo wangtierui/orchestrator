@@ -67,7 +67,8 @@ def _theme_code(row):
 
 
 def run():
-    problems, legacy = [], []
+    problems: list = []
+    legacy: list = []
     idx = get_index(_ATTR)  # rfn 单例：归属表 + 主题归属表合并
     rows = idx.rows()
     all_rfns = set()
@@ -113,6 +114,7 @@ def run():
         problems.append(f"明细表数量 {len(dets)} ≠ 11: {dets}")
     for f in dets:
         m = re.match(r"^T(\d+)_", f)
+        assert m is not None   # dets 已由 `_DET_RE.match` 过滤，同正则必命中（供 mypy 收窄）
         tkey = f"T{m.group(1)}"
         with open(os.path.join(_DATA, f), encoding="utf-8-sig", newline="") as fh:
             drows = list(csv.DictReader(fh))

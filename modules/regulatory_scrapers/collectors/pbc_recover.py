@@ -69,7 +69,7 @@ def build_summary(text):
 
 # ---------- 本地 PDF 标题->路径 映射 ----------
 def build_local_map():
-    m = {}
+    m: dict = {}
     d = os.path.join(BASE, "data", "docs", "pbc_regulations_scraper", "attachments", "规范性文件")
     for p in glob.glob(os.path.join(d, "*.pdf")):
         fn = os.path.basename(p)

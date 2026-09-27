@@ -78,7 +78,7 @@ def load_attr():
 
 def load_old():
     """读入现有 T1-T8 四份 JSON，按 RFN 归并成 bundle。"""
-    old = {t: {} for t in OLD_T}
+    old: dict = {t: {} for t in OLD_T}
     for t in OLD_T:
         base = json.load(open(os.path.join(DATA, f"_t{t}_base.json"), encoding="utf-8"))
         fin = json.load(open(os.path.join(DATA, f"_t{t}_final.json"), encoding="utf-8"))
@@ -102,7 +102,7 @@ def build(attr_rows, old):
     for row in attr_rows:
         groups[row["code"]].append(row)
 
-    out = {k: {"base": [], "final": [], "matched": {}, "citerefs": {}}
+    out: dict = {k: {"base": [], "final": [], "matched": {}, "citerefs": {}}
            for k in NEW_T}
     problems = []
     for code in NEW_T:

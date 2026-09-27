@@ -155,7 +155,7 @@ def load_clean_snapshot(source=None):
     """读五源 latest cleaned（仅取匹配列）→ {source: {doc/title/url 索引}}。"""
     ci = _ci()
     srcs = [source] if source else ("gov", "mof", "nfra", "pbc", "supp")
-    snap = {"sources": {}, "dates": {}}
+    snap: dict = {"sources": {}, "dates": {}}
     for s in srcs:
         p = ci.latest_csv_path(s)
         if not p or not os.path.exists(p):
@@ -164,7 +164,7 @@ def load_clean_snapshot(source=None):
         snap["dates"][s] = m.group(1) if m else ""
         doc_idx = collections.defaultdict(list)
         title_idx = collections.defaultdict(list)
-        url_idx = {}
+        url_idx: dict = {}
         with open(p, encoding="utf-8-sig", newline="") as fh:
             for r in csv.DictReader(fh):
                 row = {"source": s, "title": r.get("title", "") or "",
@@ -245,7 +245,7 @@ def reconcile(source=None, apply_c1=False, dry_run=False, force_clean_title=Fals
     snap = load_clean_snapshot(source)
 
     today = _today()
-    stats = collections.Counter()
+    stats: collections.Counter = collections.Counter()
     c1_list, c2_list, legacy_list, absent_list = [], [], [], []
 
     for row in rows:
@@ -399,7 +399,7 @@ def reconcile(source=None, apply_c1=False, dry_run=False, force_clean_title=Fals
 
 def main():
     try:
-        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
     except Exception:  # noqa: BLE001  分类/检索容错
         pass
     ap = argparse.ArgumentParser(description="RFN↔clean 漂移核验与桥表维护")

@@ -162,7 +162,7 @@ def run():
 
     # 3) 明细表（R16：主题码全覆盖，THEME_MAP 遍历派生）× DETAIL_TABLE_FIELDS 契约列
     dets = sorted(f for f in os.listdir(_DATA) if _DET_RE.match(f))
-    det_codes = {_DET_RE.match(f).group(1) for f in dets}
+    det_codes = {m.group(1) for f in dets if (m := _DET_RE.match(f))}   # walrus：一次匹配并收窄
     missing_codes = set(THEME_MAP) - det_codes
     checked["detail_tables"] = {
         "count": len(dets),
@@ -196,7 +196,9 @@ def run():
     }
     shape = {"base": "list", "final": "list", "matched": "dict", "citerefs": "dict"}
     for f in bfiles:
-        suf = _BASE_RE.match(f).group(1)
+        _m = _BASE_RE.match(f)
+        assert _m is not None   # bfiles 已由 _BASE_RE 过滤（供 mypy 收窄）
+        suf = _m.group(1)
         try:
             st, keys = _json_shape(os.path.join(_DATA, f))
         except Exception as e:  # noqa: BLE001

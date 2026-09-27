@@ -180,7 +180,7 @@ def http_get_json(opener, url, params, timeout=25, max_retries=4):
                 raw = resp.read().decode("utf-8", errors="replace")
             if status != 200:
                 # 限流 / 服务端错误 -> 退避后重试
-                raise urllib.error.HTTPError(full, status, "HTTP %d" % status, None, None)
+                raise urllib.error.HTTPError(full, status, "HTTP %d" % status, None, None)  # type: ignore[arg-type]
             data = json.loads(raw)
             if data.get("rptCode") != 200:
                 raise RuntimeError("接口返回非成功码 rptCode=%s msg=%s"
@@ -244,7 +244,7 @@ def extract_document_no(text):
             from std_lib.scraper_std.doc_number import in_abolish_context as _a
             from std_lib.scraper_std.doc_number import normalize_doc_number as _n
     except Exception:  # pragma: no cover
-        _u = _n = _a = None
+        _u = _n = _a = None  # type: ignore[assignment]
     dn = ""
     if _u is not None:
         dn = _u(text) or ""
@@ -304,7 +304,7 @@ def get_child_items(opener):
 
 def get_list_for_item(opener, item_id, delay_min, delay_max):
     """分页遍历某栏目，返回所有 rows（list 中每项含 docId/docSubtitle/publishDate 等）。"""
-    rows_all = []
+    rows_all: list = []
     page = 1
     while True:
         data = http_get_json(opener, LIST_ENDPOINT,
@@ -664,7 +664,7 @@ def scrape(args):
 
     # 汇总报告
     report_path = os.path.join(out_dir, "README.md")
-    by_cat = {}
+    by_cat: dict = {}
     for r in records:
         by_cat[r["category"]] = by_cat.get(r["category"], 0) + 1
     with open(report_path, "w", encoding="utf-8") as f:

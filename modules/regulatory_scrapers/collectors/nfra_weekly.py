@@ -141,7 +141,7 @@ def refresh_list():
 
     返回 (ok, info)。ok=False 表示刷新降级并已回滚。
     """
-    info = {"step": "refresh_list"}
+    info: dict = {"step": "refresh_list"}
     page1 = sorted(glob.glob(PAGE1_GLOB))
     baseline_ids = _count_docids()
     baseline_totals = _read_totals_from_page1()
@@ -238,7 +238,7 @@ def main():
         print("[weekly] 已有实例在运行（lock 较新），退出以避免重复抓取。")
         sys.exit(0)
     try:
-        summary = {"started_at": time.strftime("%Y-%m-%dT%H:%M:%S")}
+        summary: dict = {"started_at": time.strftime("%Y-%m-%dT%H:%M:%S")}
         if args.no_fetch:
             baseline = _count_docids()
             ts = time.strftime("%Y%m%d_%H%M%S")

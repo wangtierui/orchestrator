@@ -19,6 +19,7 @@ import json
 import os
 import tempfile
 import time
+from typing import IO
 
 
 def atomic_write_text(path, text, encoding="utf-8", overwrite=True):
@@ -182,7 +183,9 @@ class WinFileLock:
 
     def __init__(self, lock_path: str):
         self.lock_path = lock_path
-        self._fh = None
+        # N-73（2026-09-28）：显式可空文件句柄（`acquire()` 前为 None；原裸 `= None`
+        # 使 mypy 把字段定型为 None → 下方 `fileno()` 与赋值双双报错）。
+        self._fh: IO[str] | None = None
 
     def acquire(self):
         import msvcrt

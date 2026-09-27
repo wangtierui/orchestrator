@@ -79,7 +79,7 @@ def stage_scrapers(source, changed, dry_run, report):
     sys.path.insert(0, ROOT)
     sys.path.insert(0, REVIEW)
     import apply_timeliness_to_cleaned as apply_mod  # noqa: PLC0415  统一回写单点（C-12）
-    updates = {}
+    updates: dict = {}
     for c in changed:
         nd = _norm_docno(c.get("document_number"))
         if nd and len(nd) >= 5:

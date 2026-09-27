@@ -111,7 +111,7 @@ def http_get_bytes(url, timeout=30, max_retries=4):
             with urllib.request.urlopen(req, timeout=timeout, context=_SSL_CTX) as resp:
                 status = resp.getcode()
                 if status != 200:
-                    raise urllib.error.HTTPError(url, status, "HTTP %d" % status, None, None)
+                    raise urllib.error.HTTPError(url, status, "HTTP %d" % status, None, None)  # type: ignore[arg-type]
                 return resp.read()
         except (TimeoutError, urllib.error.HTTPError, urllib.error.URLError, ConnectionError) as e:
             last_err = e
@@ -438,7 +438,7 @@ def build_and_write_report(args, docs_total=None, att_total=None,
             ocr_total += m.get("needs_ocr_count", 0)
 
     # 按类型细分（始终从磁盘 manifest + 源文件魔数重算，确保 --report-only 准确）
-    by_type = {}
+    by_type: dict = {}
     for mp in glob.glob(os.path.join(ATT_DIR, "*", "manifest.json")):
         att_root = os.path.dirname(mp)
         try:
