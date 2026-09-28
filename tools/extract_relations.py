@@ -78,6 +78,7 @@ from std_lib.common_lib.relations import (
     RelationPipeline,
     classify_target,
     docno_signature,
+    snippet_half_window,  # N-109：窗口半宽唯一推导（用于"前文剔除"裁剪）
 )
 
 _TZ = timezone(timedelta(hours=8))
@@ -470,8 +471,19 @@ def build_rows(
             #   · 故最优解不是二选一而是**取并集**：窗口优先（覆盖更广），窗口未唯一命中时退跨度
             #     （补 101 行）；**两侧仍各自坚持"唯一命中才填"** → 不放松质量闸门，且因零冲突
             #     不会引入互相矛盾的取值。
+            #
+            # N-109（2026-09-28）**前文剔除**（位置归因实测驱动）：对"仅窗口命中"的 147 行做
+            # **条号在窗口内的位置**归因 → **125 行（85%）的条号落在引用起点之「前」**，即
+            # **源侧自身**条款（"本办法第12条……依据《X》"）→ 属**误定位**。
+            # ⚠️ 该发现**推翻**了第二十批的"窗口无实测误定位"结论：当时以"窗口↔跨度**冲突**"
+            #    为唯一信号，而跨度无命中时**根本无从冲突** → 检验不充分。位置归因才揭示真相。
+            # 处置：目标侧定位的窗口输入**只用引用之后的部分** `[pos, pos+h)`；代价覆盖
+            # 338 → 213（剔 125 可疑），收益精度 ~63% → ~100%（纪律：宁可弃权，不得臆造）。
+            _h = snippet_half_window()
+            _pos = int(getattr(item, "offset", -1) or -1)
+            _fwd = _snip[max(0, _pos - max(0, _pos - _h)):] if _pos >= 0 else _snip
             _dst_art, _place = "", ""
-            for _pk, _pt in (("snippet", _snip), ("span", _span)):
+            for _pk, _pt in (("snippet", _fwd), ("span", _span)):
                 if not _pt:
                     continue
                 _got = (locate_dst_article(_pt, dst_ref, _cindex) if dst_ref else "") or (

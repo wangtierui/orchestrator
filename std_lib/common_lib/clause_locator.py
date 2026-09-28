@@ -242,6 +242,32 @@ def load_regulatory_index(
     return _INDEX
 
 
+def dst_article_candidates(
+    snippet: str, key: str, index: dict | None = None
+) -> list:
+    """→ `[(条号在 snippet 内的**起始下标**, 目标条号)]`（按出现顺序；已按目标条款表命中过滤）。
+
+    **公共抽取原语**（N-109，2026-09-28）：`locate_dst_article` 与本函数**同源**（前者 = 后者
+    取唯一值），从而"抽号→查表"逻辑**只有一份**。诊断类消费方（如基准的位置归因分析）需要
+    **位置**信息 —— 这正是本轮新增的第二个消费方（不重复造轮子）。
+    """
+    if not snippet or not key:
+        return []
+    idx = index if index is not None else load_regulatory_index()
+    tab = (idx.get("by_rfn") or {}).get(key) or (idx.get("by_dedup") or {}).get(key)
+    if not tab:
+        return []
+    out: list = []
+    for m in _ART_IN_SNIPPET.finditer(snippet):
+        hit = tab["by_norm"].get(norm_article_no(m.group(0)))
+        if not hit:
+            no = _cn_to_int(m.group(1))
+            hit = tab["by_no"].get(no) if no else None
+        if hit:
+            out.append((m.start(), hit))
+    return out
+
+
 def locate_dst_article(snippet: str, key: str, index: dict | None = None) -> str:
     """snippet → 目标文件条号；**唯一命中**才返回（多义/未命中 → 空串）。
 
@@ -249,23 +275,7 @@ def locate_dst_article(snippet: str, key: str, index: dict | None = None) -> str
     命中口径（双通道）：中文形态按 `norm_article_no` 比对；阿拉伯形态（如"第 186 条"）
     转 int 后按 `by_no` 比对。snippet 中若出现多个条号，只有恰有一个命中才采用。
     """
-    if not snippet or not key:
-        return ""
-    idx = index if index is not None else load_regulatory_index()
-    tab = (idx.get("by_rfn") or {}).get(key) or (idx.get("by_dedup") or {}).get(key)
-    if not tab:
-        return ""
-    cands = set()
-    for m in _ART_IN_SNIPPET.finditer(snippet):
-        hit = tab["by_norm"].get(norm_article_no(m.group(0)))
-        if hit:
-            cands.add(hit)
-            continue
-        no = _cn_to_int(m.group(1))
-        if no:
-            hit2 = tab["by_no"].get(no)
-            if hit2:
-                cands.add(hit2)
+    cands = {no for _pos, no in dst_article_candidates(snippet, key, index)}
     return next(iter(cands)) if len(cands) == 1 else ""
 
 

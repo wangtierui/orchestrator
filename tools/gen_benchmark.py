@@ -275,12 +275,21 @@ def _q_relations_locate_audit(rows: list[dict]) -> dict:
     """
     out: dict = {"rows": len(rows)}
     try:
-        from std_lib.common_lib.clause_locator import locate_dst_article
+        from std_lib.common_lib.clause_locator import (
+            dst_article_candidates,
+            locate_dst_article,
+        )
+        from std_lib.common_lib.relations import snippet_half_window
     except Exception as e:  # noqa: BLE001  审计失败不得中断基准
         out["error"] = f"{type(e).__name__}: {e}"
         return out
+    # 窗口的**半宽**：`_snippet` 取 `text[max(0,pos-h) : pos+h]` → 窗口内"引用起点"的下标
+    # = `pos - max(0, pos-h)`（即 `h`；仅当 pos<h 时为 pos）。N-109 起**唯一派生**于 relations。
+    _half = snippet_half_window()
 
     n_key = agree = disagree = win_only = span_only = none = 0
+    # N-109：把"仅窗口"按**条号在窗口内的位置**归因（引用前文 / 引用之后 / 两处都有）
+    win_only_before = win_only_after = win_only_both = win_only_unknown = 0
     samples: list[dict] = []
     for r in rows:
         key = str(r.get("dst_ref") or r.get("dst_key") or "")
@@ -305,6 +314,28 @@ def _q_relations_locate_audit(rows: list[dict]) -> dict:
                     )
         elif win:
             win_only += 1
+            # N-109（2026-09-28）**位置归因**：唯一窗口命中的条号，落在**引用起点之前**还是之后？
+            #   · 之前 → 属**源侧前文**（自指/污染嫌疑）→ 构成"误定位"的**可归因**部分；
+            #   · 之后 → 属**引用本身或紧随后文** → 极可能是目标条款（合法）。
+            # 这一步把"无法证伪的上界"拆成"可归因的可疑量 vs 合法量"，**零人工标注**。
+            snip = str(r.get("source_snippet") or "")
+            pos = int(r.get("source_offset") or -1)
+            start_in_win = max(0, pos - max(0, pos - _half)) if pos >= 0 else 0
+            # N-109：**与写入侧同口径** —— 判定候选位置时只看"引用之后"的切片（写入侧已剔除前文，
+            # 诊断若仍用整窗会把"永不可能是 dst_article 的前文条号"计入归因 → 归因失真）。
+            full_hits = dst_article_candidates(snip, key)
+            hits = [p for p, no in full_hits if no == win and p >= start_in_win]
+            before_hits = [p for p, no in full_hits if no == win and p < start_in_win]
+            before = bool(before_hits)
+            after = bool(hits)
+            if before and after:
+                win_only_both += 1
+            elif before:
+                win_only_before += 1
+            elif after:
+                win_only_after += 1
+            else:
+                win_only_unknown += 1
         elif span:
             span_only += 1
         else:
@@ -321,6 +352,10 @@ def _q_relations_locate_audit(rows: list[dict]) -> dict:
             "misalign_upper": disagree + win_only,
             "disagree_ratio": round(disagree / max(n_key, 1), 4),
             "misalign_upper_ratio": round((disagree + win_only) / max(n_key, 1), 4),
+            "win_only_before": win_only_before,
+            "win_only_after": win_only_after,
+            "win_only_both": win_only_both,
+            "win_only_unknown": win_only_unknown,
             "samples": samples,
         }
     )
@@ -534,7 +569,7 @@ def render_quality(q: dict) -> list:
         )
         L.append(f"- 定位来源分布：`{r['placement']}`")
         L.append(
-            f"- 引用跨度披露（N-98 纯增量字段，**不参与定位**）：`source_span` "
+            f"- 引用跨度（N-98 新增 / **N-106 起参与定位**：窗口未唯一命中时的退路）：`source_span` "
             f"{r.get('source_span')}/{r.get('rows')}（{r.get('span_ratio', 0):.1%}）"
         )
         la = r.get("locate_audit") or {}
@@ -548,12 +583,20 @@ def render_quality(q: dict) -> list:
                 f"仅跨度 {la.get('span_only')} ／ 皆无 {la.get('none')}"
             )
             L.append(
+                "- **窗口命中位置归因**（N-109，写入侧已**剔除前文**）："
+                f"引用**之前** {la.get('win_only_before')}（**应为 0**，非 0 即有源侧自指残留）／ "
+                f"引用之后 {la.get('win_only_after')} ／ 两处皆有 {la.get('win_only_both')} ／ "
+                f"定位不到出处 {la.get('win_only_unknown')}"
+            )
+            L.append(
                 f"  → **误定位下界 `{la.get('misalign_lower')}`"
                 f"（{la.get('disagree_ratio', 0):.1%}）**、"
                 f"上界 `{la.get('misalign_upper')}`"
                 f"（{la.get('misalign_upper_ratio', 0):.1%}）"
-                "　※ 下界＝窗口与跨度**冲突**（必有一方错）；"
-                "上界额外计入「仅窗口」（条号可能在引用邻域，无法证伪）"
+                "　※ 下界＝窗口与跨度**冲突**（必有一方错）；上界额外计入「仅窗口」——"
+                "但**前文剔除（N-109）后归因显示「引用之前」已为 0**，即「仅窗口」全部落在"
+                "引用之后（合法位），故上界已**不宜读作「可能的错」**，宜读作"
+                "「**未经跨度互证的量**」"
             )
 
     rc = q["recall"]
