@@ -154,6 +154,23 @@ def probe(name: str) -> dict:
     # 无法被机器校验 → 会出现"装好了依赖、却因未预置模型而在**首次调用时联网下载 GB 级权重**"
     # （既破坏离线可移植性，又使首跑不可预测）。故把预置**收敛为环境变量清单** `offline_env`：
     # 声明了它的工具（会拉取外部权重的）须全部置位，否则 `offline_ready=False` 并给出可读提示。
+    # N-113（2026-09-28）：**服务型连通性三态**。此前服务型工具只探测"客户端库是否安装"，
+    # 于是 `offline_ready=None`（"无需外部权重"）与"**服务未部署**"混为一谈 —— 用户看到
+    # "可用"却连不上服务。此处对 `host:port` 形态的端点做**短超时 TCP 探测**：
+    # True 可连通 / False 不可达 / None 非服务型或端点非 `host:port`（如 DSN）。
+    service_reachable = None
+    if kind == "service" and endpoint:
+        host, sep, port_s = endpoint.rpartition(":")
+        if sep and host and port_s.isdigit():
+            import socket
+
+            try:
+                with socket.create_connection((host, int(port_s)), timeout=0.3):
+                    service_reachable = True
+            except OSError:
+                service_reachable = False
+                detail = f"客户端可用但**服务不可达**（{endpoint}）→ 未部署或未启动"
+
     envs = [str(x) for x in (spec.get("offline_env") or []) if str(x)]
     missing_env = [e for e in envs if not os.environ.get(e)]
     offline_ready = None if not envs else not missing_env
@@ -172,6 +189,8 @@ def probe(name: str) -> dict:
         # N-103：离线预置状态 —— True 已就绪 / False 未就绪 / None 该工具无需外部权重
         "offline_ready": offline_ready,
         "offline_env_missing": missing_env,
+        # N-113：服务型连通性 —— True 可连通 / False 不可达 / None 非服务型（或端点非 host:port）
+        "service_reachable": service_reachable,
     }
 
 
@@ -231,6 +250,96 @@ def fingerprint(names: list[str] | tuple[str, ...] | None = None) -> dict:
     }
 
 
+def license_pending() -> list:
+    """许可**未核**工具名（W5）：登记在 `license_registry.pending`。入库前置为清空。"""
+    reg = load_manifest().get("license_registry") or {}
+    return sorted(str(x) for x in (reg.get("pending") or []))
+
+
+def preflight() -> dict:
+    """P1 语义增强**启用前置自检**（W4，2026-09-28）——五道闸，**机器可查**。
+
+    为什么需要：P1 的"未启用"此前只是一个**口头状态**（写在报告里），无人能机器判定
+    "现在能不能启用"。五道闸把启用条件**可执行化**，避免两类失败：
+      · 抢跑：依赖/离线/许可/v2 取舍尚未就绪就引入，破坏可移植性与合规面；
+      · 遗忘：条件已满足却长期未启用（历史同类：链外产物 N-46 滞后 19 天无人察觉）。
+
+    五道闸（**全过才允许启用**）：
+      1. `deps`    —— P1-3 分句增强层至少有一个后端可用（`available_any("hanlp","ltp")`）；
+      2. `offline` —— 可用后端须**离线就绪**（`offline_ready is not False`），防首用联网拉权重；
+      3. `fp`      —— 指纹可计算且结构完整（启用后产物的 provenance 必须带得动它）；
+      4. `baseline`—— 存在**评测基线**（v2 四条否决线之一："无度量不得上线"）；
+      5. `license` —— 许可 `pending` 已清空（未核许可不得纳入交付面）。
+
+    → 返回 `{"ok": bool, "gates": {名: {"ok": bool, "detail": str}}}`（**不抛异常**：自检本身
+    不得成为失败点）。
+    """
+    import glob
+
+    import paths
+
+    gates: dict = {}
+
+    # ① 依赖
+    try:
+        ok1 = available_any("hanlp", "ltp")
+        gates["deps"] = {
+            "ok": bool(ok1),
+            "detail": "分句增强层可用（hanlp/ltp 任一）" if ok1 else "hanlp / ltp 均未安装",
+        }
+    except Exception as e:  # noqa: BLE001
+        gates["deps"] = {"ok": False, "detail": f"{type(e).__name__}: {e}"}
+
+    # ② 离线就绪（只对"已可用"的后端要求）
+    try:
+        bad = [
+            n
+            for n in ("hanlp", "ltp", "text2vec", "bertopic")
+            if probe(n)["available"] and probe(n).get("offline_ready") is False
+        ]
+        gates["offline"] = {
+            "ok": not bad,
+            "detail": "全部已装后端离线就绪" if not bad else f"已装但未预置离线：{bad}",
+        }
+    except Exception as e:  # noqa: BLE001
+        gates["offline"] = {"ok": False, "detail": f"{type(e).__name__}: {e}"}
+
+    # ③ 指纹可计算
+    try:
+        fp = fingerprint()
+        ok3 = bool(fp.get("schema_version")) and isinstance(fp.get("versions"), dict)
+        gates["fp"] = {"ok": ok3, "detail": f"指纹字段完整（schema {fp.get('schema_version')}）"}
+    except Exception as e:  # noqa: BLE001
+        gates["fp"] = {"ok": False, "detail": f"{type(e).__name__}: {e}"}
+
+    # ④ 评测基线（v2：“无度量不得上线”）
+    try:
+        files = sorted(glob.glob(os.path.join(paths.ROOT, "reports", "评测基线_*.json")))
+        ok4 = bool(files)
+        gates["baseline"] = {
+            "ok": ok4,
+            "detail": (
+                f"{os.path.basename(files[-1])} 存在（启用后须在 §6.1 可评样本上报 P/R）"
+                if ok4
+                else "无评测基线（v2 否决线：无度量不得上线）"
+            ),
+        }
+    except Exception as e:  # noqa: BLE001
+        gates["baseline"] = {"ok": False, "detail": f"{type(e).__name__}: {e}"}
+
+    # ⑤ 许可
+    try:
+        pend = license_pending()
+        gates["license"] = {
+            "ok": not pend,
+            "detail": "许可全部已核" if not pend else f"未核许可 {len(pend)} 项：{pend}",
+        }
+    except Exception as e:  # noqa: BLE001
+        gates["license"] = {"ok": False, "detail": f"{type(e).__name__}: {e}"}
+
+    return {"ok": all(g["ok"] for g in gates.values()), "gates": gates}
+
+
 def summary_line() -> str:
     """单行摘要（供日志/基准表引用）。"""
     ps = probe_all()
@@ -260,7 +369,13 @@ def _main(argv: list[str]) -> int:
     if cmd == "--fingerprint":
         print(json.dumps(fingerprint(), ensure_ascii=False, indent=1, sort_keys=True))
         return int(ExitCode.OK)
-    print(f"用法：{os.path.basename(argv[0])} [--probe|--fingerprint]")
+    if cmd == "--preflight":
+        pf = preflight()
+        print(f"P1 启用前置自检：{'可以启用' if pf['ok'] else '**不可启用**'}")
+        for name, g in pf["gates"].items():
+            print(f"  [{'可' if g['ok'] else '否'}] {name:9} {g['detail']}")
+        return int(ExitCode.OK if pf["ok"] else ExitCode.FAIL)
+    print(f"用法：{os.path.basename(argv[0])} [--probe|--fingerprint|--preflight]")
     return int(ExitCode.USAGE)
 
 

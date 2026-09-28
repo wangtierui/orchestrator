@@ -8,6 +8,23 @@
   "note": "三条硬纪律：① **零硬依赖**——未安装时调用方必须回退既有正则实现，且回退**可观测**（不得静默）；② **降级链**——探测结果驱动分支，不得 try/except 吞掉；③ **指纹**——凡使用任一工具产出的产物，须把 semantic_tools.fingerprint() 写入其 provenance（模型名+版本+权重 sha），否则断点幂等（input_sha）与水位判据会因模型差异而失真。",
   "gate": "增强层模块**禁止**直接 `import hanlp/ltp/text2vec/bertopic/umap/hdbscan` 顶层硬导入；一律经本清单探测后再惰性导入。"
  },
+ "license_registry": {
+  "note": "许可核验登记（W5，2026-09-28）：**每个工具须在此登记**（verified 或 pending），使“还有哪些未核”机器可查，而非散落在各条目的 `license_to_verify` 自由标记里。判据 U 断言两集合之并 == 工具全集。入库前置：pending 清空。",
+  "policy": "入库（把依赖/代码纳入交付面）前，对应工具必须从 pending 移入 verified，并在 verified 值内写明 SPDX 标识与核验日期。",
+  "verified": {},
+  "pending": [
+   "hanlp",
+   "ltp",
+   "text2vec",
+   "bertopic",
+   "umap",
+   "hdbscan",
+   "aprcoie",
+   "signalgraph",
+   "weknora_docreader",
+   "paradedb"
+  ]
+ },
  "tools": {
   "hanlp": {
    "repo": "https://github.com/hankcs/HanLP",

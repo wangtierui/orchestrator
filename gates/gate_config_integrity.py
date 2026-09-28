@@ -1004,6 +1004,22 @@ def _check_semantic_manifest() -> tuple[list[str], dict]:
     if bad_probe:
         problems.append(f"U1: 工具探测异常/结构不完整 {bad_probe}（探测层不得成为新失败点）")
 
+    # ④b 许可登记完整性（W5，2026-09-28）：**每个工具都须在许可登记中**（verified 或 pending），
+    #     使"还有哪些未核"机器可查（原文只有各条目的 `license_to_verify: true` 自由标记，
+    #     既无法回答"还剩几项"，也无法作为启用闸门）。
+    reg = man.get("license_registry") or {}
+    ver = set(reg.get("verified") or {})
+    pend = set(reg.get("pending") or [])
+    all_tools = set(tools)
+    unreg = sorted(all_tools - ver - pend)
+    ghost = sorted((ver | pend) - all_tools)
+    if unreg:
+        problems.append(f"U1: 工具未登记许可状态 {unreg}（须入 verified 或 pending）")
+    if ghost:
+        problems.append(f"U1: 许可登记含未定义工具 {ghost}（疑拼写漂移）")
+    if ver & pend:
+        problems.append(f"U1: 许可状态冲突（同时 verified 与 pending）：{sorted(ver & pend)}")
+
     # ④ extra 交叉核对
     extras: set = set()
     try:
@@ -1019,11 +1035,20 @@ def _check_semantic_manifest() -> tuple[list[str], dict]:
     if missing_extras:
         problems.append(f"U1: 清单声明的 extra 在 pyproject 中不存在 {missing_extras}")
 
+    try:
+        pf = st.preflight()
+        pf_ok, pf_gates = bool(pf.get("ok")), {k: v["ok"] for k, v in (pf.get("gates") or {}).items()}
+    except Exception as e:  # noqa: BLE001  自检失败须可见，但不阻断清单判据
+        pf_ok, pf_gates = False, {"error": f"{type(e).__name__}: {e}"}
     detail["semantic_manifest"] = {
         "tools": len(tools),
         "extras": sorted(extras & {str(s.get("extra")) for s in tools.values()}),
         "policy": {k: pol.get(k) for k in ("hard_dependency", "degradation", "fingerprint")},
         "available": [n for n in sorted(tools) if st.available(n)],
+        # W5：许可未核数（入库前置为 0）；W4：启用前置自检（**披露**，不阻断——未启用是合法状态）
+        "license_pending": len(pend),
+        "preflight_ok": pf_ok,
+        "preflight_gates": pf_gates,
     }
     return problems, detail
 

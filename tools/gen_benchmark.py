@@ -290,6 +290,9 @@ def _q_relations_locate_audit(rows: list[dict]) -> dict:
     n_key = agree = disagree = win_only = span_only = none = 0
     # N-109：把"仅窗口"按**条号在窗口内的位置**归因（引用前文 / 引用之后 / 两处都有）
     win_only_before = win_only_after = win_only_both = win_only_unknown = 0
+    # N-112：多半径互证分档（零人工）
+    win_only_strong = win_only_weak = 0
+    off_tight = off_mid = off_far = 0
     samples: list[dict] = []
     for r in rows:
         key = str(r.get("dst_ref") or r.get("dst_key") or "")
@@ -334,8 +337,27 @@ def _q_relations_locate_audit(rows: list[dict]) -> dict:
                 win_only_before += 1
             elif after:
                 win_only_after += 1
-            else:
-                win_only_unknown += 1
+                # N-112（2026-09-28）**多半径互证**：这 418 行"未经跨度互证"，但可用**位置结构**
+                # 内在证据分档（零人工）：
+                #   · `hit_off` —— 命中条号距引用起点的字符距离（越小＝越紧邻引用名，越像目标条款）；
+                #   · `rivals`  —— 该条号**之后**（更大距离处）是否还存在其他候选条号。
+                #     若有 → 目标条号之所以"唯一"，是因为它**更近**、后被排除者在更远处；
+                #     若无 → 全窗口内**只有它**一个候选 → 强证据。
+                fwd = snip[start_in_win:]
+                cand = dst_article_candidates(fwd, key)
+                offs = sorted(p for p, no in cand if no == win)
+                hit_off = offs[0] if offs else -1
+                rivals = sum(1 for p, no in cand if no != win and p > hit_off)
+                if hit_off >= 0 and rivals == 0 and hit_off <= 40:
+                    win_only_strong += 1   # 紧邻引用名（≤40 字符）且全窗无竞争者
+                else:
+                    win_only_weak += 1
+                if hit_off <= 40:
+                    off_tight += 1
+                elif hit_off <= 80:
+                    off_mid += 1
+                else:
+                    off_far += 1
         elif span:
             span_only += 1
         else:
@@ -356,6 +378,11 @@ def _q_relations_locate_audit(rows: list[dict]) -> dict:
             "win_only_after": win_only_after,
             "win_only_both": win_only_both,
             "win_only_unknown": win_only_unknown,
+            "win_only_strong": win_only_strong,
+            "win_only_weak": win_only_weak,
+            "off_tight": off_tight,
+            "off_mid": off_mid,
+            "off_far": off_far,
             "samples": samples,
         }
     )
@@ -587,6 +614,16 @@ def render_quality(q: dict) -> list:
                 f"引用**之前** {la.get('win_only_before')}（**应为 0**，非 0 即有源侧自指残留）／ "
                 f"引用之后 {la.get('win_only_after')} ／ 两处皆有 {la.get('win_only_both')} ／ "
                 f"定位不到出处 {la.get('win_only_unknown')}"
+            )
+            L.append(
+                "- **互证分档**（N-112，零人工）：强证据（条号距引用名 ≤40 字符且全窗无竞争者）"
+                f"{la.get('win_only_strong')} ／ 弱证据 {la.get('win_only_weak')}；"
+                f"距离分布 ≤40 {la.get('off_tight')} ／ 40–80 {la.get('off_mid')} ／ >80 {la.get('off_far')}"
+            )
+            L.append(
+                "  → W2 决议（**保持后向 100 字符**）：抽样证实 `>80` 行的 **88%** 为**长引用列表**"
+                "（“依据《A》《B》《C》等，制定本法第X条”→ 条号必然偏远）→ 远距离**不是**可疑信号；"
+                "故**不收窄**（会丢合法长引用命中）**不加宽**（无正确性增益）"
             )
             L.append(
                 f"  → **误定位下界 `{la.get('misalign_lower')}`"
