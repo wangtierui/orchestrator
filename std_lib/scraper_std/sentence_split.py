@@ -20,6 +20,8 @@ import logging
 import re
 from typing import Any
 
+from std_lib.common_lib.sentence_boundary import SENT_END_STRICT  # N-90：句读集合 SSOT（下层）
+
 from .cleaner import is_table_block, normalize_ws
 
 LOG = logging.getLogger("scraper_std.sentence_split")
@@ -33,7 +35,12 @@ _END_TAGS = re.compile(r"</(?:div|p|h[1-6]|li|tr|table|section|article|header|fo
 _REMOVE_TAGS = re.compile(r"<[^>]+>")
 
 # ② 中文标点
-_SENT_END = re.compile(r"([。！？!?])")
+#
+# N-90（2026-09-28）：句末标点集合改取**唯一事实源** `std_lib.common_lib.sentence_boundary`
+# （原为本文件与 `common_lib/relations.py` **各自**字面量，且集合不一致 → 口径二重）。
+# 本文件用**严格级**（`SENT_END_STRICT`：句末标点；分号/西文句点只追加空格以保段）；
+# 抽取侧（`relations.split_sentences`）用**句读级**（`SENT_END_LOOSE`）。差异**有意**，但同源。
+_SENT_END = re.compile(f"([{SENT_END_STRICT}])")
 _COMMA = re.compile(r"([，；、,:])")
 # ③ 中英文粘连（中文 与 字母/数字 之间）
 _CN_EN = re.compile(r"([\u4e00-\u9fff])([A-Za-z0-9])")

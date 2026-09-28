@@ -1,0 +1,109 @@
+{
+ "generated_at": "2026-09-28 14:30:35",
+ "generator": "tools/gen_benchmark.py",
+ "schema_version": "1.0",
+ "note": "语义质量基线（现状量化）；供语义增强上线前后逐键比对。",
+ "theme_gold": {
+  "file": "modules\\regulatory_classifier\\data\\人身保险公司-主题归属表.csv",
+  "exists": true,
+  "total": 1162,
+  "themes": {
+   "T0上位法锚点": 89,
+   "T10数据治理与信息披露": 143,
+   "T1销售行为与消费者保护": 196,
+   "T2产品与精算制度": 150,
+   "T3资本与偿付能力监管": 76,
+   "T4公司治理与股权关联交易": 109,
+   "T5资金运用与资产负债管理": 142,
+   "T6养老与健康保险专项": 66,
+   "T7反洗钱与反恐怖融资": 35,
+   "T8机构准入与组织监管": 78,
+   "T9风险处置与案件合规": 78
+  },
+  "basis_class": {
+   "registry自动登记": 103,
+   "上位法锚点": 9,
+   "无正文": 44,
+   "精读裁定": 202,
+   "语义验证": 804
+  },
+  "evaluable": 1015,
+  "evaluable_ratio": 0.8735,
+  "excluded_markers": [
+   "无正文",
+   "registry自动登记"
+  ]
+ },
+ "clause_structure": {
+  "files": 16611,
+  "articles": 108409,
+  "chapters": 12313,
+  "structures": 51536,
+  "law": 2599,
+  "degraded": 14012,
+  "fallback": 4872,
+  "invalid": 94,
+  "warned": 15646,
+  "article_structures": 17425,
+  "item_nodes": 90215,
+  "title_swallow": 0,
+  "tail_contam": 92,
+  "space_contam": 40,
+  "law_items": 439,
+  "degraded_ratio": 0.8435,
+  "fallback_ratio": 0.2933,
+  "consistent": true
+ },
+ "relations": {
+  "file": "modules\\regulatory_classifier\\data\\relations\\relations_index.jsonl",
+  "exists": true,
+  "rows": 4192,
+  "distinct_relation_id": 4192,
+  "id_unique": true,
+  "src_article_located": 2303,
+  "dst_article": 237,
+  "both": 147,
+  "src_ratio": 0.5494,
+  "dst_ratio": 0.0565,
+  "placement": {
+   "": 1799,
+   "snippet": 90,
+   "src_offset": 2156,
+   "src_offset+snippet": 147
+  }
+ },
+ "recall": {
+  "dir": "modules\\regulatory_classifier\\recall_audit\\output",
+  "exists": true,
+  "stats_scalars": {},
+  "stats_top_keys": [
+   "attr_status",
+   "bnd",
+   "expansion",
+   "inc",
+   "no_body",
+   "stats"
+  ],
+  "generated_at": "2026-09-28T13:16:55+0800",
+  "gates": {
+   "clean": true,
+   "validity": true,
+   "contract": true,
+   "schema": true
+  }
+ },
+ "cleaning": {
+  "dir": "modules\\regulatory_scrapers\\data\\cleaned",
+  "sources": {
+   "gov_cleaned_20260928": 13178,
+   "mof_cleaned_20260928": 870,
+   "nfra_cleaned_20260926.quarantine": 5,
+   "nfra_cleaned_20260927.quarantine": 5,
+   "nfra_cleaned_20260928": 1934,
+   "nfra_cleaned_20260928.quarantine": 5,
+   "pbc_cleaned_20260928": 571,
+   "supp_cleaned_20260926.quarantine": 4,
+   "supp_cleaned_20260928": 58
+  }
+ }
+}

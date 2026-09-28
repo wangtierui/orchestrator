@@ -158,6 +158,282 @@ def _read_count(p: str, key: str) -> int:
     return len(x) if isinstance(x, list) else 0
 
 
+# --------------------------------------------------------------------------- #
+# 语义质量基线（N-91 / 优化方案 v2 · P0-2「铸尺」）
+# --------------------------------------------------------------------------- #
+# 背景：本表原有区块量化的是"**体量**"（文件数/行数/门禁数），但**从未量化"语义质量"**——
+# 分句/结构/主题/关系/关联五项语义增强因此**无验收依据**（不知现状多准 → 无法证明引入模型后变好）。
+# 本区块把**既有事实源**聚合为可 diff 的质量基线：**不引入任何新依赖、不新建度量框架**
+# （原方案 v1 提议新建度量框架；v2 评估指出应**增强本生成器**，故折叠于此，零新增脚本/零新增引导）。
+RELATIONS_JSONL = os.path.join(CLS_DATA, "relations", "relations_index.jsonl")
+THEME_CSV = os.path.join(CLS_DATA, "人身保险公司-主题归属表.csv")
+RECALL_OUT = os.path.join(
+    paths.MODULES_DIR, "regulatory_classifier", "recall_audit", "output"
+)
+CLEANED_DIR = os.path.join(paths.MODULES_DIR, "regulatory_scrapers", "data", "cleaned")
+# 「依据来源分层」：把人工裁定的**判定依据**归类，供评测集**剔除低置信样本**（口径固定、可复现）
+_LOW_CONF_MARKERS = ("无正文", "registry自动登记")
+
+
+def _basis_class(basis: str) -> str:
+    b = (basis or "").strip()
+    if not b:
+        return "空"
+    for m in _LOW_CONF_MARKERS:
+        if m in b:
+            return m
+    if "精读" in b or "复核" in b:
+        return "精读裁定"
+    if "语义" in b:
+        return "语义验证"
+    if "上位法" in b:
+        return "上位法锚点"
+    return "其他"
+
+
+def _q_theme_gold() -> dict:
+    """主题判定**金标准**（人工裁定事实源）→ 样本分层与可评集。"""
+    out: dict = {"file": os.path.relpath(THEME_CSV, ROOT), "exists": False}
+    if not os.path.exists(THEME_CSV):
+        return out
+    out["exists"] = True
+    dist: dict = {}
+    basis: dict = {}
+    evaluable = 0
+    rows = list(csv.DictReader(open(THEME_CSV, encoding="utf-8-sig", newline="")))
+    for r in rows:
+        theme = (r.get("主题") or "").strip()
+        cls = _basis_class(r.get("判定依据") or "")
+        dist[theme] = dist.get(theme, 0) + 1
+        basis[cls] = basis.get(cls, 0) + 1
+        if cls not in _LOW_CONF_MARKERS:
+            evaluable += 1
+    out.update(
+        {
+            "total": len(rows),
+            "themes": dict(sorted(dist.items())),
+            "basis_class": dict(sorted(basis.items())),
+            "evaluable": evaluable,
+            "evaluable_ratio": round(evaluable / max(len(rows), 1), 4),
+            "excluded_markers": list(_LOW_CONF_MARKERS),
+        }
+    )
+    return out
+
+
+def _q_clause_structure() -> dict:
+    """条文结构基线（**复用既有** `clause_index.validate_schema`，不另写校验器）。"""
+    try:
+        from config.enums import SOURCE_ORDER
+        from interfaces import clause_index_api as ci
+
+        if not any(ci.latest_clause_path(s) for s in SOURCE_ORDER):
+            return {"skipped": "无条文产物（未跑过 clause_index build）"}
+        v = ci.validate_schema()
+    except Exception as e:  # noqa: BLE001  基线生成：异常须可见但不得中断整表
+        return {"error": f"{type(e).__name__}: {e}"}
+    keep = (
+        "files", "articles", "chapters", "structures", "law",
+        "degraded", "fallback", "invalid", "warned",
+        "article_structures", "item_nodes",
+        "title_swallow", "tail_contam", "space_contam", "law_items",
+    )
+    out: dict = {k: v.get(k) for k in keep if k in v}
+    files = max(int(v.get("files") or 0), 1)
+    out["degraded_ratio"] = round(int(v.get("degraded") or 0) / files, 4)
+    out["fallback_ratio"] = round(int(v.get("fallback") or 0) / files, 4)
+    out["consistent"] = bool(v.get("consistent"))
+    return out
+
+
+def _q_relations() -> dict:
+    """关系抽取基线（含条款级定位覆盖率）。"""
+    out: dict = {"file": os.path.relpath(RELATIONS_JSONL, ROOT), "exists": False}
+    if not os.path.exists(RELATIONS_JSONL):
+        return out
+    out["exists"] = True
+    n = src_ok = dst_ok = both = 0
+    ids: set = set()
+    place: dict = {}
+    with open(RELATIONS_JSONL, encoding="utf-8") as fh:
+        for ln in fh:
+            ln = ln.strip()
+            if not ln:
+                continue
+            r = json.loads(ln)
+            n += 1
+            ids.add(str(r.get("relation_id") or ""))
+            s = bool((r.get("src_article_located") or "").strip())
+            d = bool((r.get("dst_article") or "").strip())
+            src_ok += s
+            dst_ok += d
+            both += s and d
+            k = (r.get("article_placement") or "").strip()
+            place[k] = place.get(k, 0) + 1
+    out.update(
+        {
+            "rows": n,
+            "distinct_relation_id": len(ids),
+            "id_unique": n == len(ids),
+            "src_article_located": src_ok,
+            "dst_article": dst_ok,
+            "both": both,
+            "src_ratio": round(src_ok / max(n, 1), 4),
+            "dst_ratio": round(dst_ok / max(n, 1), 4),
+            "placement": dict(sorted(place.items())),
+        }
+    )
+    return out
+
+
+def _q_recall() -> dict:
+    """召回覆盖基线（**复用** `recall_audit` 既有产物，不重算）。"""
+    out: dict = {"dir": os.path.relpath(RECALL_OUT, ROOT), "exists": os.path.isdir(RECALL_OUT)}
+    sp = os.path.join(RECALL_OUT, "_stats.json")
+    rp = os.path.join(RECALL_OUT, "重跑执行报告.json")
+    if os.path.exists(sp):
+        try:
+            raw = json.load(open(sp, encoding="utf-8"))
+            # 只收**标量**摘要：基线是"可 diff 的尺子"须小而稳定（明细仍在 recall_audit 自身产物里）
+            if isinstance(raw, dict):
+                out["stats_scalars"] = dict(
+                    sorted(
+                        {
+                            k: v
+                            for k, v in raw.items()
+                            if isinstance(v, (int, float, str, bool)) or v is None
+                        }.items()
+                    )[:30]
+                )
+                out["stats_top_keys"] = sorted(raw)[:24]
+            else:
+                out["stats_type"] = type(raw).__name__
+        except (OSError, ValueError) as e:
+            out["stats_error"] = f"{type(e).__name__}: {e}"
+    if os.path.exists(rp):
+        try:
+            d = json.load(open(rp, encoding="utf-8"))
+            out["generated_at"] = d.get("generated_at")
+            out["gates"] = {
+                k: (v.get("passed") if isinstance(v, dict) else v)
+                for k, v in (d.get("gates") or {}).items()
+            }
+        except (OSError, ValueError) as e:
+            out["report_error"] = f"{type(e).__name__}: {e}"
+    return out
+
+
+def _q_cleaning() -> dict:
+    """清洗体量基线（各源 cleaned / 隔离记录条数）。"""
+    out: dict = {"dir": os.path.relpath(CLEANED_DIR, ROOT), "sources": {}}
+    if not os.path.isdir(CLEANED_DIR):
+        return out
+    for fn in sorted(os.listdir(CLEANED_DIR)):
+        if not fn.endswith(".jsonl"):
+            continue
+        p = os.path.join(CLEANED_DIR, fn)
+        n = sum(1 for ln in open(p, encoding="utf-8", errors="replace") if ln.strip())
+        out["sources"][fn.replace("_quarantine.jsonl", "·隔离").replace(".jsonl", "")] = n
+    return out
+
+
+def gather_quality() -> dict:
+    """→ 语义质量基线（供 `BENCHMARK.md` 新区块 + `reports/评测基线_<date>.json`）。"""
+    return {
+        "theme_gold": _q_theme_gold(),
+        "clause_structure": _q_clause_structure(),
+        "relations": _q_relations(),
+        "recall": _q_recall(),
+        "cleaning": _q_cleaning(),
+    }
+
+
+def render_quality(q: dict) -> list:
+    """质量基线 → Markdown 行（供 `render()` 追加为末章）。"""
+    L: list = []
+    L.append("## 6 语义质量基线（铸尺 / 优化方案 v2 · P0-2）\n")
+    L.append(
+        "> 口径：全部取自既有事实源（金标准表 / `clause_index.validate_schema` / "
+        "`relations_index` / `recall_audit`），**不新增模型与依赖**。"
+    )
+    L.append("> 用途：任何语义增强（分句/结构/主题/关系/关联）**上线前后逐键比对**；任一指标劣化即回退。\n")
+
+    t = q["theme_gold"]
+    L.append("### 6.1 主题判定（金标准）")
+    if not t.get("exists"):
+        L.append("\n- ⚠️ 主题归属表缺失")
+    else:
+        L.append(
+            f"\n- 样本总数 **{t['total']}**；可评样本（剔除 `{'/'.join(t['excluded_markers'])}`）"
+            f"**{t['evaluable']}**（{t['evaluable_ratio']:.1%}）"
+        )
+        L.append(f"- 依据来源分层：`{t['basis_class']}`")
+        L.append("")
+        L.append("| 主题 | 条数 |")
+        L.append("|---|---|")
+        for k, v in t["themes"].items():
+            L.append(f"| {k} | {v} |")
+
+    c = q["clause_structure"]
+    L.append("\n### 6.2 条文结构（既有 `validate_schema` 判据）")
+    if "skipped" in c or "error" in c:
+        L.append(f"\n- ⚠️ {c.get('skipped') or c.get('error')}")
+    else:
+        L.append(
+            f"\n- 文件 **{c['files']}** / 条 **{c['articles']}** / 章 **{c['chapters']}**，"
+            f"契约自检 `consistent={c['consistent']}`"
+        )
+        L.append(
+            f"- 降级/兜底比例：`degraded {c['degraded_ratio']:.2%}` / "
+            f"`fallback {c['fallback_ratio']:.2%}`"
+        )
+        L.append(
+            f"- 结构语义指标（「曾被静默放过」的直接堵漏项）：`title_swallow={c.get('title_swallow')}` / "
+            f"`tail_contam={c.get('tail_contam')}` / `space_contam={c.get('space_contam')}` / "
+            f"`law_items={c.get('law_items')}`"
+        )
+
+    r = q["relations"]
+    L.append("\n### 6.3 关系抽取（`relations_index.jsonl`）")
+    if not r.get("exists"):
+        L.append("\n- ⚠️ relations_index 缺失")
+    else:
+        L.append(
+            f"\n- 行数 **{r['rows']}**；`relation_id` 唯一性 `{r['id_unique']}`"
+            f"（distinct {r['distinct_relation_id']}）"
+        )
+        L.append(
+            f"- 源侧条款定位 **{r['src_article_located']}/{r['rows']}**（{r['src_ratio']:.1%}）；"
+            f"目标侧 **{r['dst_article']}**（{r['dst_ratio']:.1%}）；双侧 **{r['both']}**"
+        )
+        L.append(f"- 定位来源分布：`{r['placement']}`")
+
+    rc = q["recall"]
+    L.append("\n### 6.4 召回覆盖（`recall_audit` 既有产物）")
+    L.append(
+        f"\n- 产物目录存在 `{rc.get('exists')}`；报告生成于 {rc.get('generated_at') or '—'}"
+    )
+    if rc.get("gates"):
+        L.append(f"- 四门禁：`{rc['gates']}`")
+
+    cl = q["cleaning"]
+    L.append("\n### 6.5 清洗体量")
+    if cl.get("sources"):
+        L.append("")
+        L.append("| 产物 | 条数 |")
+        L.append("|---|---|")
+        for k, v in cl["sources"].items():
+            L.append(f"| {k} | {v} |")
+    else:
+        L.append("\n- ⚠️ cleaned 目录为空")
+    L.append("")
+    L.append(
+        "**纪律**：主题判定新增任何分类器时，须在 §6.1 的**可评样本**上报告 P/R，"
+        "并**对齐**既有 `判定依据` 的「排名 + margin」留痕格式。"
+    )
+    return L
+
+
 def render(g: dict) -> str:
     L = []
     L.append("# BENCHMARK —— 交付基准登记（回归对照基线）\n")
@@ -243,16 +519,37 @@ def render(g: dict) -> str:
     )
     L.append("3. 任一基线与上表不符且非预期升级 → 先查对应门禁 FAIL 输出，勿静默覆盖。")
     L.append("4. 本表只登记当前仓产物；历史一次性脚本（旧仓）不在此列。")
+    L.append("")
+    L.extend(render_quality(g.get("quality") or gather_quality()))
     return "\n".join(L) + "\n"
 
 
 def main() -> int:
     g = gather()
+    g["quality"] = gather_quality()
     text = render(g)
     out_p = os.path.join(ROOT, "BENCHMARK.md")
     with open(out_p, "w", encoding="utf-8", newline="\n") as fh:
         fh.write(text)
+    # 语义质量基线**另落程序可读副本**（供"上线前后逐键比对"做机器 diff；md 供人读）
+    day = _TODAY[:10].replace("-", "")
+    q_p = os.path.join(ROOT, "reports", f"评测基线_{day}.json")
+    with open(q_p, "w", encoding="utf-8", newline="\n") as fh:
+        json.dump(
+            {
+                "generated_at": _TODAY,
+                "generator": "tools/gen_benchmark.py",
+                "schema_version": "1.0",
+                "note": "语义质量基线（现状量化）；供语义增强上线前后逐键比对。",
+                **g["quality"],
+            },
+            fh,
+            ensure_ascii=False,
+            indent=1,
+        )
+        fh.write("\n")
     print(f"BENCHMARK.md 已写入 {out_p}")
+    print(f"评测基线已写入 {q_p}")
     print(
         f"  gates={len(g['gates'])} tests={len(g['test_files'])} "
         f"attr={g['classifier']['attr_rows']} base={g['classifier']['base_total']} "

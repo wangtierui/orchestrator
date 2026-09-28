@@ -58,7 +58,10 @@ BASELINE: dict[str, int] = {
     # 14 → 17（2026-09-26，P2-1/2/3b/6）：新增 3 个工具各自带 1 处仓根引导
     # （gen_schedule_doc / install_schedule / inbox_scan —— 均为"可独立直调"的运维工具）
     # 17 → 18（同日 P2-3）：+1 = tools/retention.py 的仓根引导（同上，可独立直调）
-    "tools": 18,
+    # N-93（2026-09-28）：tools 18 → 19 —— 新增 `quarantine_triage.py`（隔离记录登记式处置）。
+    # 该工具须 `import paths/config/std_lib` 才能读 cleaned 与治理库，故沿用 tools/ 既有引导形态。
+    # **这是有记录的放宽**：若后续某工具移除注入，须同步下调本数（只减不增）。
+    "tools": 19,
 }
 # 硬零层：P0-2 已收口，禁止回退
 HARD_ZERO_GROUPS = ("commands",)

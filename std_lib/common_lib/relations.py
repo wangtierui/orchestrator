@@ -78,6 +78,8 @@ from config.enums import (
 )
 from std_lib.common_lib.norm import norm_docno, norm_title_strict
 
+from .sentence_boundary import split_by  # N-90：句读集合 SSOT
+
 SCHEMA_VERSION = "1.0"
 # 2026-09-20 → 1.1：relation_id 派生纳入判别字段（article/action/scope/reason/dst_docno/
 # dst_kind/src_key）并在写入前做确定性唯一化——修复"同一 id 命中多行"的既有缺陷。
@@ -278,11 +280,13 @@ def iter_docno_signatures(text: str, *, min_len: int = 6) -> list[str]:
 
 
 def split_sentences(text: str) -> list[str]:
-    """按中文句读切分句子，保留分隔符。"""
-    if not text:
-        return []
-    parts = re.split(r"(?<=[。．.；;！!？?])\s*", text)
-    return [p.strip() for p in parts if p.strip()]
+    """按中文句读切分句子，保留分隔符。
+
+    N-90（2026-09-28）：句读集合改取**唯一事实源** `std_lib.common_lib.sentence_boundary`
+    （原为本地字面量 `[。．.；;！!？?]`，与清洗层各写一份 → 口径二重）。
+    **行为不变**：走同模块 `split_by(text, "loose")`，其字符集与原字面量**逐字符相同**。
+    """
+    return split_by(text, "loose")
 
 
 def extract_docnos(text: str, config: RelationConfig | None = None) -> list[str]:

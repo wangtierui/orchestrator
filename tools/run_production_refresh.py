@@ -604,6 +604,9 @@ STEP_ORDER: tuple[str, ...] = (
     # N-73b（2026-09-28）：数据生命周期**只读披露**（`tools/retention.py` dry-run + 台账）
     #   —— 置于链尾（看得见本轮全部备份/日志），`--apply` 仍为人工闸门。
     "retention:plan",
+    # N-93（2026-09-28）：清洗**隔离记录**分类与处置登记（零回写 → worklist）。
+    #   置于链尾：看得见本轮全部 cleaned 快照与隔离件（含历史残留体检）。
+    "quarantine:triage",
     # wiki_sync 依赖 published 清单（publish_manifest）→ 在 base:publish 之后、gates 之前。
     "wiki:sync",
     "gates",
@@ -1084,6 +1087,19 @@ def _run_chain(args) -> int:
             "retention:plan",
             [PY, os.path.join(ROOT, "tools", "retention.py")],
             timeout=900,
+        )
+    )
+
+    # ---- 阶段 6.6b：清洗隔离记录分类与登记（N-93，2026-09-28）----
+    # `gates/gate_clean_schema` 明文：隔离记录属**数据治理**待办、**需人工清理源数据**、
+    # 只披露不阻断 → 故此处**零回写**：只分类 + `governance_store.worklist_add` 登记
+    # （kind=`clean_quarantine_triage`，处置走 `cli.py worklist resolve`）。
+    # 与 `retention:plan` 同款纪律：链内**只读披露**，破坏面保留人工闸门。
+    report.append(
+        _run(
+            "quarantine:triage",
+            [PY, os.path.join(ROOT, "tools", "quarantine_triage.py")],
+            timeout=600,
         )
     )
 

@@ -470,6 +470,10 @@ WORKLIST_KIND: frozenset[str] = frozenset(
         "corpus_needs_review",  # §3.12.6 tools/inbox_scan.py：投放区不可识别扩展名
         "ingest_quota_blocked",  # 配额/认证阻断的显式化（E 类断点）
         "trigger_manual_breakpoint",  # P2-1 std_lib/common_lib/triggers.py：触发链 on_fail=manual_breakpoint
+        # D7 tools/quarantine_triage.py：清洗隔离记录分类处置（N-93）
+        #   纪律：**零回写**——只分类 + 登记，实际修复走人工/受控变更
+        #   （`gates/gate_clean_schema` 明文"隔离记录属数据治理待办、需人工清理源数据"）
+        "clean_quarantine_triage",
     }
 )
 # 待办状态（`worklist.status`）
@@ -536,7 +540,7 @@ def assert_enum_bindings() -> None:
     assert CLAUSE_STRUCTURE_LEVELS == {"一级", "二级", "条", "项", "目"}, CLAUSE_STRUCTURE_LEVELS
     # 待办队列（v2 §3.14.3）：9 类 kind 与 3 态 status 闭包
     # （8 → 9：P2-1 增 trigger_manual_breakpoint —— 触发链 on_fail=manual_breakpoint 的落点）
-    assert len(WORKLIST_KIND) == 9, WORKLIST_KIND
+    assert len(WORKLIST_KIND) == 10, WORKLIST_KIND  # N-93：+clean_quarantine_triage（D7）
     assert WORKLIST_STATUS == {"open", "resolved", "dismissed"}, WORKLIST_STATUS
 
 
