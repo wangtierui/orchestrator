@@ -447,10 +447,21 @@ def build_rows(
             if i_ref:
                 dst_ref, matched_by, dst_kind, dst_key = i_ref, i_mb, "internal", ""
         # N-49（2026-09-27）：条款级定位（两侧均**唯一命中**才填）
-        _snip = getattr(item, "source_snippet", "")
+        _snip = getattr(item, "source_snippet", "")   # ±100 字符**窗口**（目标侧定位**沿用**）
+        _span = getattr(item, "source_span", "")      # 引用跨度（**仅披露**，不参与定位）
         _src_art = locate_src_article(getattr(item, "offset", -1), _spans) if _spans else ""
         if dst_kind == "regulatory":
             # 目标侧：优先强实体 RFN（dst_ref），退化 cleaned 弱键（dst_key）
+            #
+            # N-98（2026-09-28）**实测否决**：原计划"定位改用**引用跨度**（剔除窗口内源侧
+            # 自身条号的污染）"，但两种跨度口径实测**均显著劣化**目标侧覆盖：
+            #   · 命中文本本身（`m.group(0)`）          → 97 行（2.3%）
+            #   · 命中 + 前向 200 字符（截至句末）      → 106 行（2.5%）
+            #   · 原 ±100 对称**窗口**（保留）          → **237 行（5.7%）**
+            # 根因：引用模式多只匹配到 `《名》`，而目标条号既可能在后（"第186条"），也可能
+            # **在前**（"本办法第12条依据《X》"）；**前向**取会丢前半，**收窄**取会两头都丢。
+            # → 结论：窗口作定位输入**优于**任何跨度；N-98 结案为"**实测否决**"，
+            #   `source_span` 降级为**纯披露字段**（为后续研究留存数据，零行为影响）。
             _dst_art = (locate_dst_article(_snip, dst_ref, _cindex) if dst_ref else "") or (
                 locate_dst_article(_snip, dst_key, _cindex) if dst_key else ""
             )
@@ -501,11 +512,15 @@ def build_rows(
                 "matched_by": matched_by,
                 "confidence": CONFIDENCE.get(matched_by, 0.0),
                 "source_offset": item.offset,
-                "source_snippet": item.source_snippet[:400],
+                # N-98（2026-09-28）：`source_snippet` 语义**保持不变**（±100 字符窗口）——
+                # 因"改用跨度定位"实测劣化（见上方否决注记），故**不做语义变更**；
+                # 引用跨度以**新字段** `source_span` 披露（纯增量，零行为影响）。
+                "source_snippet": _snip[:400],
+                "source_span": _span[:400],
                 # N-49（2026-09-27）：条款级定位（**纯增强字段**——不进 `_relation_id` 判别
                 #   字段，故既有 id 与下游依赖保持稳定，可安全回填）：
                 #   · src_article_located：源侧条款（`source_offset` 在条款区间反查，精确）；
-                #   · dst_article：目标侧条款（snippet 抽『第 M 条』+ 目标条款表命中，唯一）；
+                #   · dst_article：目标侧条款（**窗口**抽『第 M 条』+ 目标条款表命中，唯一）；
                 #   · article_placement：定位来源标记（"" = 未定位，供审计与后续改进统计）。
                 "src_article_located": _src_art,
                 "dst_article": _dst_art,

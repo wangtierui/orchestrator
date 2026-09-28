@@ -7,13 +7,16 @@
    · 内部制度：`processed/<ipn>_clauses.json` 的 `articles[]` + `_fulltext.json` 的全文；
    · 监管文件：clauses 的 `articles[]`（按 `dedup_key` 取）+ **该文档自己的正文**
      （`cleaned` 的 `body_text`，由调用方传入——不重复读盘）。
-② **目标侧**（被引用处）：关系行的 `source_snippet` 中的『第 M 条』→ 目标文件的条款表
-   （监管 clauses；按 `dst_ref`（RFN）**或** `dst_key`（cleaned dedup_key）取）。
+② **目标侧**（被引用处）：关系行的 `source_snippet`（±100 字符**窗口**）中的『第 M 条』→
+   目标文件的条款表（监管 clauses；按 `dst_ref`（RFN）**或** `dst_key`（cleaned dedup_key）取）。
+   ※ N-98（2026-09-28）：曾拟改为用**引用跨度**（`source_span`）定位以剔除窗口内源侧条号的
+   污染，但**实测否决**——跨度口径使目标侧覆盖由 5.7% 降至 2.3%/2.5%（引用模式多只匹配到
+   `《名》`，目标条号可能在前也可能在后）。`source_span` 保留为**纯披露字段**。
 
 动机
 ----
 `relations_index` 现有 `article` 是**源侧且靠文本邻域推断**（实测 4195 行仅 545 行非空
-= 13%），而 `source_snippet` 里的『第 M 条』（如"根据《民法典》第一百八十六条"）**被直接
+= 13%），而引用文本里的『第 M 条』（如"根据《民法典》第一百八十六条"）**被直接
 丢弃**——目标侧原无任何条款字段。两侧条款表已是结构化 `articles[{no, number, body}]`，
 可零猜测地补齐。
 

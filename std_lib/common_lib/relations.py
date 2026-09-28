@@ -83,7 +83,11 @@ from .sentence_boundary import split_by  # N-90：句读集合 SSOT
 SCHEMA_VERSION = "1.0"
 # 2026-09-20 → 1.1：relation_id 派生纳入判别字段（article/action/scope/reason/dst_docno/
 # dst_kind/src_key）并在写入前做确定性唯一化——修复"同一 id 命中多行"的既有缺陷。
-EXTRACTOR_VERSION = "relations-1.1"
+# 1.2（N-98，2026-09-28）：**新增披露字段** `source_span`（引用跨度：命中+紧随尾部）。
+#   `source_snippet` 语义与定位口径**均未变**（曾拟改为以跨度定位，实测使目标侧覆盖由 5.7%
+#   降至 2.3%/2.5% → **否决**，见 `extract_relations` 否决注记）。字段集变化即提升版本
+#   （下游据此判"产物是否由当前抽取器生成"；`gate_relations` 与 `relations_api` 均披露该字段）。
+EXTRACTOR_VERSION = "relations-1.2"
 
 CN_NUM = "一二三四五六七八九十百千零两"
 _CN_NUM_RE = rf"[{CN_NUM}\d]"
@@ -192,6 +196,11 @@ class RelationConfig:
     close_quote: str = "》"
     exclude_window: int = 100
     snippet_window: int = 200
+    # N-98（2026-09-28）：引用跨度的**向后**延伸上限（仅向后，不向前）。
+    # 为何需要：多数引用模式（依据式等）只匹配到 `《名》`，**目标条号紧随其后**
+    # （"根据《民法典》第186条"）→ 只取命中文本会把条号切掉。实测：只取 `m.group(0)`
+    # 使目标侧定位由 5.7% **倒退**至 2.3%；改"命中+向后 40 字符（截至句读）"后方可保住。
+    span_tail_window: int = 40
     # 文号形态（法规库/公文两类；用于"废止关系"的目标文号与目标解析）
     docno_patterns: tuple[str, ...] = (
         r"[\u4e00-\u9fa5]{2,20}(?:〔|\[|【)\s*\d{4}\s*(?:〕|\]|】)\s*第?\s*\d{1,4}\s*号",
@@ -544,6 +553,11 @@ class BasisRelation:
     basis_type: str = BASIS_TYPE_SUBSTANTIVE
     is_explicit: bool = True
     source_snippet: str = ""
+    # N-98（2026-09-28）：**引用跨度**（＝命中的引用文本本身，如 `《X办法》第12条`）。
+    # 与 `source_snippet`（±100 字符**窗口**，含源侧自身上下文的条号）互补：
+    # 窗口用于**人工审计/上下文**，跨度用于**目标侧条款定位**（`locate_dst_article`）——
+    # 用窗口定位会被窗口内"源侧自身条号"污染（误定位或按"唯一命中才填"弃权）。
+    source_span: str = ""
     offset: int = -1
 
     def to_dict(self) -> dict:
@@ -562,6 +576,8 @@ class RepealRelation:
     article: str = ""
     reason: str = ""
     source_snippet: str = ""
+    # N-98（2026-09-28）：引用跨度（见 `BasisRelation.source_span` 注记）
+    source_span: str = ""
     offset: int = -1
 
     def to_dict(self) -> dict:
@@ -714,6 +730,7 @@ class RelationExtractor:
                     BasisRelation(
                         target_name=name.strip(),
                         normalized_name=key[0],
+                        source_span=self._span(text, m),  # N-98：引用跨度（命中+紧随尾部）
                         source_snippet=self._snippet(text, m.start()),
                         offset=m.start(),
                     )
@@ -739,6 +756,7 @@ class RelationExtractor:
                     target_name=name,
                     normalized_name=key[0],
                     article=art,
+                    source_span=self._span(text, m),  # N-98：引用跨度（披露字段）
                     source_snippet=self._snippet(text, m.start()),
                     offset=m.start(),
                 )
@@ -759,6 +777,7 @@ class RelationExtractor:
                     target_name=auth,
                     normalized_name=key[0],
                     basis_type=BASIS_TYPE_PROCEDURAL,
+                    source_span=self._span(text, m),  # N-98：引用跨度（披露字段）
                     source_snippet=self._snippet(text, m.start()),
                     offset=m.start(),
                 )
@@ -781,6 +800,7 @@ class RelationExtractor:
             article: str = "",
             snippet: str,
             offset: int,
+            span: str = "",
         ) -> None:
             action = dict(self._ract_pairs).get(action_cn, REPEAL_ACTION_REPEAL)
             if not name.strip() or self._skip_generic(name):
@@ -799,6 +819,7 @@ class RelationExtractor:
                     article=article,
                     reason=reason,
                     source_snippet=snippet,
+                    source_span=span,
                     offset=offset,
                 )
             )
@@ -816,6 +837,7 @@ class RelationExtractor:
                 number=num,
                 scope=REPEAL_SCOPE_WHOLE,
                 snippet=self._snippet(text, m.start()),
+                span=self._span(text, m),  # N-98：引用跨度（命中+紧随尾部）
                 offset=m.start(),
             )
 
@@ -829,6 +851,7 @@ class RelationExtractor:
                     m.group("action"),
                     scope=REPEAL_SCOPE_WHOLE,
                     snippet=self._snippet(text, m.start()),
+                span=self._span(text, m),  # N-98：引用跨度（命中+紧随尾部）
                     offset=m.start(),
                 )
 
@@ -842,6 +865,7 @@ class RelationExtractor:
                 scope=REPEAL_SCOPE_PARTIAL,
                 article="第" + m.group("article") + "条",
                 snippet=self._snippet(text, m.start()),
+                span=self._span(text, m),  # N-98：引用跨度（命中+紧随尾部）
                 offset=m.start(),
             )
 
@@ -855,6 +879,8 @@ class RelationExtractor:
                     number=it["number"],
                     scope=REPEAL_SCOPE_WHOLE,
                     snippet=it["source"],
+                    # ④ 专项列表：`it["source"]` 本已是**该条目自身文本**（非窗口）→ 直接作跨度
+                    span=it["source"],
                     offset=it["offset"],
                 )
             if not items:
@@ -903,6 +929,22 @@ class RelationExtractor:
         w = self.cfg.exclude_window
         ctx = text[max(0, pos - w) : pos + w]
         return any(k in ctx for k in self.cfg.negations)
+
+    def _span(self, text: str, m: re.Match) -> str:
+        """引用跨度（N-98）：**命中文本 + 紧随向后尾部**（截至句读，上限 `span_tail_window`）。
+
+        ⚠️ **仅披露，不参与定位**（N-98 实测否决，见 `extract_relations` 否决注记）：
+        曾拟以跨度替代窗口作 `locate_dst_article` 的输入，实测目标侧覆盖由 5.7% 降至
+        2.3%（只取命中文本）/ 2.5%（前向 200 字符）→ 保留窗口定位。
+        本字段的价值转为**披露与后续研究**：给出"引用命中的确切文本"，使窗口内条号与
+        引用自身条号可被区分统计（零行为影响）。
+        """
+        seg = text[m.start() : m.end() + self.cfg.span_tail_window]
+        rest = seg[len(m.group(0)) :]
+        for i, ch in enumerate(rest):
+            if ch in "。；！？\n":
+                return seg[: len(m.group(0)) + i]
+        return seg
 
     def _snippet(self, text: str, pos: int) -> str:
         h = self.cfg.snippet_window // 2

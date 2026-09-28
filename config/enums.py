@@ -230,7 +230,11 @@ RELATION_TARGET_CLASS: frozenset[str] = frozenset(
 )
 # 条款定位来源标记（N-49，2026-09-27）："" = 未定位；组合值按 `+` 连接（受控顺序）
 ARTICLE_PLACEMENT_SRC_OFFSET = "src_offset"  # 源侧：字符偏移在条款区间反查（精确）
-ARTICLE_PLACEMENT_SNIPPET = "snippet"  # 目标侧：snippet 抽『第M条』+ 目标条款表唯一命中
+# N-98（2026-09-28）：曾计划将目标侧定位来源更名为 `span`（引用跨度），但**实测否决**
+# （跨度口径使目标侧覆盖由 5.7% 降至 2.3%/2.5%，见 extract_relations 否决注记）→ **维持 `snippet`**。
+# 受控域是"属性全部合法取值"：既不再产出 `span`，它就**不得**留在域内（否则域内含永不出现的值，
+# 使"取值闭包"判据失去意义）。
+ARTICLE_PLACEMENT_SNIPPET = "snippet"  # 目标侧：snippet（±100 **窗口**）抽『第M条』+ 目标条款表唯一命中
 ARTICLE_PLACEMENT: frozenset[str] = frozenset(
     {
         "",

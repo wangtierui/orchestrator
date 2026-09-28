@@ -117,7 +117,7 @@
   "contract_cross_basis_fields": {
    "file": "interfaces/contract.py",
    "symbol": "CROSS_BASIS_FIELDS",
-   "count": 30,
+   "count": 31,
    "consumer": [
     "gates.gate_contract"
    ]
@@ -141,7 +141,7 @@
   "contract_relation_fields": {
    "file": "interfaces/contract.py",
    "symbol": "RELATION_FIELDS",
-   "count": 30,
+   "count": 31,
    "consumer": [
     "gates.gate_contract"
    ]

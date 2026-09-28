@@ -1,6 +1,6 @@
 # BENCHMARK —— 交付基准登记（回归对照基线）
 
-> 自动生成：tools/gen_benchmark.py @ 2026-09-28 16:35:40 | python 3.13.14
+> 自动生成：tools/gen_benchmark.py @ 2026-09-28 17:33:25 | python 3.13.14
 > 用途：数据重建/重构后重跑 `python tools/gen_benchmark.py` 刷新；数值漂移即回归信号。
 
 ## 1 门禁（gates/ALL_GATES）
@@ -38,7 +38,7 @@
 用例文件 33：`test_analysis_deliveries.py`、`test_base_publish.py`、`test_clean_index_portability.py`、`test_cli_facade.py`、`test_common_lib.py`、`test_contract_api.py`、`test_contract_manifest.py`、`test_crawler_extract.py`、`test_dedup_key_uniqueness.py`、`test_document_structure.py`、`test_drafter_pure.py`、`test_e2e_pipeline.py`、`test_excel_crawler_pipeline.py`、`test_gates_matrix.py`、`test_governance_store.py`、`test_governance_watermark.py`、`test_governance_worklist.py`、`test_interfaces_protocols.py`、`test_internal_original_paths.py`、`test_internal_policy_base.py`、`test_ipb_deep.py`、`test_ipb_extract_file.py`、`test_misc_pure.py`、`test_p2_governance_layer.py`、`test_relations.py`、`test_rich_object.py`、`test_scraper_std_core.py`、`test_scraper_std_extra.py`、`test_scraper_std_tables.py`、`test_scrapers_pure.py`、`test_ssot_convergence.py`、`test_std_lib_more.py`、`test_table_structured.py`
 运行：`python -m pytest tests -q`
 
-**覆盖率基线（只升不降）**：TOTAL 44%（采自 `.coverage`；刷新：`python -m coverage run -m pytest tests -q`）
+**覆盖率基线（只升不降）**：TOTAL 43%（采自 `.coverage`；刷新：`python -m coverage run -m pytest tests -q`）
 
 ## 3 数据基线
 
@@ -133,10 +133,11 @@
 - 行数 **4192**；`relation_id` 唯一性 `True`（distinct 4192）
 - 源侧条款定位 **2303/4192**（54.9%）；目标侧 **237**（5.7%）；双侧 **147**
 - 定位来源分布：`{'': 1799, 'snippet': 90, 'src_offset': 2156, 'src_offset+snippet': 147}`
+- 引用跨度披露（N-98 纯增量字段，**不参与定位**）：`source_span` 4192/4192（100.0%）
 
 ### 6.4 召回覆盖（`recall_audit` 既有产物）
 
-- 产物目录存在 `True`；报告生成于 2026-09-28T14:55:03+0800
+- 产物目录存在 `True`；报告生成于 2026-09-28T17:02:06+0800
 - 四门禁：`{'clean': True, 'validity': True, 'contract': True, 'schema': True}`
 
 ### 6.5 清洗体量

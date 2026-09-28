@@ -18,6 +18,7 @@
    "pipeline_ref": "v2 P1-3（分句/结构增强层）",
    "approx_size": "首次使用自动下载约 1.2GB 模型",
    "offline": "须预置模型目录（HANLP_HOME）并置 MTL_HANLP_OFFLINE=1；不得依赖联网首用",
+   "offline_env": ["HANLP_HOME", "MTL_HANLP_OFFLINE"],
    "license_to_verify": true
   },
   "ltp": {
@@ -29,6 +30,7 @@
    "pipeline_ref": "v2 P1-3（分句/结构增强层）",
    "approx_size": "依赖 PyTorch（CPU wheel 约数百 MB）+ 模型文件",
    "offline": "须预置模型目录；与 hanlp 二选一即可（同一增强层）",
+   "offline_env": ["LTP_HOME"],
    "license_to_verify": true
   },
   "text2vec": {
@@ -40,6 +42,7 @@
    "pipeline_ref": "v2 P1-1（主题辅助裁定）、P1-2（关联语义档）",
    "approx_size": "依赖 PyTorch；模型 shibing624/text2vec-base-chinese 约 100MB",
    "offline": "模型须预置到本地目录并传入模型路径；不得首用联网下载",
+   "offline_env": ["SENTENCE_TRANSFORMERS_HOME"],
    "license_to_verify": true
   },
   "bertopic": {

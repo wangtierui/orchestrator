@@ -150,6 +150,16 @@ def probe(name: str) -> dict:
     if not found and not detail:
         detail = f"{'pip 包' if pypi else '模块'} {import_name or '?'} 未安装"
 
+    # N-103（2026-09-28）：**离线预置自查**。清单以 `offline` 自由文本描述预置方式，但自由文本
+    # 无法被机器校验 → 会出现"装好了依赖、却因未预置模型而在**首次调用时联网下载 GB 级权重**"
+    # （既破坏离线可移植性，又使首跑不可预测）。故把预置**收敛为环境变量清单** `offline_env`：
+    # 声明了它的工具（会拉取外部权重的）须全部置位，否则 `offline_ready=False` 并给出可读提示。
+    envs = [str(x) for x in (spec.get("offline_env") or []) if str(x)]
+    missing_env = [e for e in envs if not os.environ.get(e)]
+    offline_ready = None if not envs else not missing_env
+    if found and missing_env:
+        detail = f"已安装但**未见离线预置**：缺 env {missing_env}（首用可能联网下载权重）"
+
     return {
         "name": name,
         "kind": kind,
@@ -159,6 +169,9 @@ def probe(name: str) -> dict:
         "extra": str(spec.get("extra") or ""),
         "pipeline_ref": str(spec.get("pipeline_ref") or ""),
         "endpoint": endpoint,
+        # N-103：离线预置状态 —— True 已就绪 / False 未就绪 / None 该工具无需外部权重
+        "offline_ready": offline_ready,
+        "offline_env_missing": missing_env,
     }
 
 
@@ -237,8 +250,11 @@ def _main(argv: list[str]) -> int:
         for n, p in probe_all().items():
             flag = "可用" if p["available"] else "未装"
             ver = f" v{p['version']}" if p["version"] else ""
+            # N-103：已装但未离线预置 → 显式告警（防首用联网下载）
+            if p["available"] and p.get("offline_ready") is False:
+                flag = "可用·未预置"
             print(f"  [{flag}] {n:20}{ver:14} {p['pipeline_ref']}")
-            if not p["available"]:
+            if not p["available"] or p.get("offline_ready") is False:
                 print(f"          {p['detail']}")
         return int(ExitCode.OK)
     if cmd == "--fingerprint":

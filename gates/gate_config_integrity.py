@@ -985,13 +985,20 @@ def _check_semantic_manifest() -> tuple[list[str], dict]:
         if not str((spec.get("probe") or {}).get("import_name") or "").strip():
             problems.append(f"U1: 工具 {name!r} 缺 probe.import_name（探测层无法判定可用性）")
 
-    # ③ 探测层健壮性
+    # ③ 探测层健壮性 + 离线预置声明合法性（N-103）
     bad_probe: list[str] = []
     for n in sorted(tools):
         try:
             p = st.probe(n)
             if not {"name", "available", "detail", "pipeline_ref"} <= set(p):
                 bad_probe.append(f"{n}(结构缺键)")
+            # N-103：`offline_env` 须为**非空字符串**列表 —— 空串/空列表会让"离线自查"
+            # 变成永真（`all(...)` 为空集合恒 True），即静默失效。
+            oe = tools[n].get("offline_env")
+            if oe is not None and (
+                not isinstance(oe, list) or not all(isinstance(x, str) and x.strip() for x in oe)
+            ):
+                problems.append(f"U1: 工具 {n!r} 的 offline_env 须为非空字符串列表（实为 {oe!r}）")
         except Exception as e:  # noqa: BLE001
             bad_probe.append(f"{n}({type(e).__name__})")
     if bad_probe:

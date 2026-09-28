@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-09-28 16:35:40",
+ "generated_at": "2026-09-28 17:33:25",
  "generator": "tools/gen_benchmark.py",
  "schema_version": "1.0",
  "note": "语义质量基线（现状量化）；供语义增强上线前后逐键比对。",
@@ -74,6 +74,8 @@
   "both": 147,
   "src_ratio": 0.5494,
   "dst_ratio": 0.0565,
+  "source_span": 4192,
+  "span_ratio": 1.0,
   "placement": {
    "": 1799,
    "snippet": 90,
@@ -93,7 +95,7 @@
    "no_body",
    "stats"
   ],
-  "generated_at": "2026-09-28T14:55:03+0800",
+  "generated_at": "2026-09-28T17:02:06+0800",
   "gates": {
    "clean": true,
    "validity": true,

@@ -263,7 +263,7 @@ def _q_relations() -> dict:
     if not os.path.exists(RELATIONS_JSONL):
         return out
     out["exists"] = True
-    n = src_ok = dst_ok = both = 0
+    n = src_ok = dst_ok = both = span_ok = 0
     ids: set = set()
     place: dict = {}
     with open(RELATIONS_JSONL, encoding="utf-8") as fh:
@@ -279,6 +279,10 @@ def _q_relations() -> dict:
             src_ok += s
             dst_ok += d
             both += s and d
+            # N-98（2026-09-28）：引用跨度**披露字段**覆盖率（`source_span` 为纯增量字段，
+            # 不参与定位；此处披露其覆盖，使"字段是否有值"可被机器发现而非靠人工抽查）。
+            if (r.get("source_span") or "").strip():
+                span_ok += 1
             k = (r.get("article_placement") or "").strip()
             place[k] = place.get(k, 0) + 1
     out.update(
@@ -291,6 +295,8 @@ def _q_relations() -> dict:
             "both": both,
             "src_ratio": round(src_ok / max(n, 1), 4),
             "dst_ratio": round(dst_ok / max(n, 1), 4),
+            "source_span": span_ok,
+            "span_ratio": round(span_ok / max(n, 1), 4),
             "placement": dict(sorted(place.items())),
         }
     )
@@ -453,6 +459,10 @@ def render_quality(q: dict) -> list:
             f"目标侧 **{r['dst_article']}**（{r['dst_ratio']:.1%}）；双侧 **{r['both']}**"
         )
         L.append(f"- 定位来源分布：`{r['placement']}`")
+        L.append(
+            f"- 引用跨度披露（N-98 纯增量字段，**不参与定位**）：`source_span` "
+            f"{r.get('source_span')}/{r.get('rows')}（{r.get('span_ratio', 0):.1%}）"
+        )
 
     rc = q["recall"]
     L.append("\n### 6.4 召回覆盖（`recall_audit` 既有产物）")
