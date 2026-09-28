@@ -166,6 +166,28 @@ def run() -> tuple[bool, dict]:
         # 判据不可执行 ≠ 判据通过（与 gate_timeliness_ssot 同口径）
         problems.append(f"条文产物契约自检无法执行：{type(e).__name__}: {e}")
 
+    # N-99（2026-09-28）：**清洗规则注册表**守护（判据并入本门禁，**不**新增第 23 道门禁——
+    # 新增门禁会连带改动 `gates/__init__.py` GATES 清单 / `BENCHMARK.md` / 文档三处口径）。
+    # 背景：`std_lib/scraper_std/clean_rules_registry.py`（N-92）把 7 个清洗模块的 26 条规则
+    # 声明化，但**此前无任何机制**保证"声明的规则仍存在"（改名/删除即静默漂移）。
+    try:
+        from std_lib.scraper_std import clean_rules_registry as _crr
+
+        _rp = _crr.verify()
+        detail["clean_rules_registry"] = {
+            "rules": len(_crr.RULES),
+            "modules": len({r["module"] for r in _crr.RULES}),
+            "stages": len(_crr.STAGE_ORDER),
+            "problems": _rp[:6],
+        }
+        if _rp:
+            problems.append(
+                f"清洗规则注册表漂移（{len(_rp)} 项）：{_rp[:3]}"
+                "（注册表与实现须同步；确属删除请在注册表移除该条）"
+            )
+    except Exception as e:  # noqa: BLE001  判据不可执行 ≠ 判据通过
+        problems.append(f"清洗规则注册表校验无法执行：{type(e).__name__}: {e}")
+
     detail["problems"] = problems
     return (not problems), detail
 
