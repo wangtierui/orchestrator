@@ -35,6 +35,9 @@ import sys
 from datetime import datetime, timedelta, timezone
 
 from std_lib.common_lib.io_atomic import sha256_file
+from std_lib.common_lib.logging import get_logger
+
+LOG = get_logger(__name__)
 
 __all__ = [
     "SCHEMA_VERSION",
@@ -461,7 +464,7 @@ def init_db() -> str:
         conn.execute(f"PRAGMA user_version={_SCHEMA_INT}")
         conn.commit()
         if applied:
-            print(f"[governance] 观测表列级迁移：{', '.join(applied)}")
+            LOG.warning(f"[governance] 观测表列级迁移：{', '.join(applied)}")
     finally:
         conn.close()
     return p
@@ -588,7 +591,7 @@ def step_record(
         )
         conn.commit()
     except sqlite3.Error as e:
-        print(f"[run_step] WARN 登记失败（不影响主链）: {type(e).__name__}: {e}")
+        LOG.warning(f"[run_step] WARN 登记失败（不影响主链）: {type(e).__name__}: {e}")
     finally:
         conn.close()
 
@@ -605,7 +608,7 @@ def steps_of(run_id: str) -> list[dict]:
             ]
     except sqlite3.Error as e:
         # 旧库（_SCHEMA_INT < 5）未迁移 → 读侧不得因此失败（写侧 init_db 会补建表）
-        print(f"[run_step] WARN 步骤表不可读（跑 `cli.py governance init` 迁移）: {e}")
+        LOG.warning(f"[run_step] WARN 步骤表不可读（跑 `cli.py governance init` 迁移）: {e}")
         return []
 
 
@@ -622,7 +625,7 @@ def last_run_with_steps() -> tuple[str, list[dict]]:
                 return "", []
             rid = row["run_id"]
     except sqlite3.Error as e:
-        print(f"[run_step] WARN 步骤表不可读（跑 `cli.py governance init` 迁移）: {e}")
+        LOG.warning(f"[run_step] WARN 步骤表不可读（跑 `cli.py governance init` 迁移）: {e}")
         return "", []
     return rid, steps_of(rid)
 
@@ -672,7 +675,7 @@ def record_watermark(
     if not version:
         return None
     if not str(produced_by or "").strip():
-        print(
+        LOG.warning(
             f"[governance] WARN 拒绝登记 {artifact_key}：produced_by 为空"
             "（水位必须可追溯到唯一产出方）"
         )
@@ -877,7 +880,7 @@ def worklist_add(
         from config.enums import WORKLIST_KIND
 
         if kind not in WORKLIST_KIND:
-            print(f"[worklist] WARN 未登记的 kind={kind!r}（应加入 config.enums.WORKLIST_KIND）")
+            LOG.warning(f"[worklist] WARN 未登记的 kind={kind!r}（应加入 config.enums.WORKLIST_KIND）")
     except Exception:  # noqa: BLE001  非源码树/未注入 sys.path：跳过软校验
         pass
     if not enabled():
@@ -942,7 +945,7 @@ def worklist_add(
         conn.commit()
         return iid
     except sqlite3.Error as e:
-        print(f"[worklist] WARN 登记失败（不影响主链）: {type(e).__name__}: {e}")
+        LOG.warning(f"[worklist] WARN 登记失败（不影响主链）: {type(e).__name__}: {e}")
         return None
     finally:
         conn.close()

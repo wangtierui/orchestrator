@@ -1,51 +1,174 @@
 {
-  "schema_version": "1.0",
-  "version": "1.0.0",
-  "generated_at": null,
-  "owner": "regulatory_compliance_orchestrator",
-  "consumer": "gates.gate_contract._manifest_checks（file/symbol/count 三元断言）",
-  "note": "程序可读契约清单（R24）：实际列头/键集唯一事实由各接口模块持有；本清单登记版本与定位，防文本漂移。v2 §3.4（M1 修复，2026-09-26）：新增顶层 version，并由 gate_contract 断言 file 存在 + symbol 可加载 + len == count；两处历史漂移已修正（detail_table_fields 10→14；base_json_keys 指向不存在的 theme_analysis/node2_rebuild/ 已改为 interfaces/contract.py）。",
-  "contracts": {
-    "cleaned_csv_columns": {
-      "file": "std_lib/scraper_std/unified_schema.py",
-      "symbol": "CSV_COLUMNS",
-      "count": 39,
-      "consumer": ["clean_index", "interfaces.clean_index_api", "gates.gate_contract"]
-    },
-    "registry_csv_fields": {
-      "file": "modules/regulatory_classifier/rfn/registry.py",
-      "symbol": "CSV_FIELDS",
-      "count": 8,
-      "consumer": ["gates.gate_rfn_sync", "recall_audit.run_retrieval_after_checks.gate_schema"]
-    },
-    "registry_theme_fields": {
-      "file": "modules/regulatory_classifier/rfn/registry.py",
-      "symbol": "THEME_FIELDS",
-      "count": 3,
-      "consumer": ["gates.gate_rfn_sync"]
-    },
-    "detail_table_fields": {
-      "file": "modules/regulatory_classifier/scripts/build_detail_tables.py",
-      "symbol": "FIELDS",
-      "count": 14,
-      "consumer": ["gates.gate_contract"],
-      "note": "2026-09-26 修正：原声明 count=10，而 interfaces/contract.py:DETAIL_TABLE_FIELDS 与实测明细表列头均为 14（F-L03 增时效状态/核验来源两列后未同步 → 已是漂移）"
-    },
-    "theme_map": {
-      "file": "modules/regulatory_classifier/rfn/__init__.py",
-      "symbol": "THEME_MAP",
-      "count": 11,
-      "note": "T0上位法锚点 + T1-T10；扩展主题唯一入口（R16）"
-    },
-    "base_json_keys": {
-      "file": "interfaces/contract.py",
-      "symbols": {
-        "BASE_KEYS": 7,
-        "FINAL_KEYS": 10,
-        "MATCHED_KEYS": 6,
-        "CITEREFS_KEYS": 7
-      },
-      "note": "2026-09-26 修正：原 file 指向不存在的 modules/regulatory_classifier/theme_analysis/node2_rebuild/（过期契约指针）。底座键集唯一事实源实为 interfaces/contract.py 的四个集合（由 gate_contract 判据 4 对数据做超集校验，此处只断言清单自身计数）。"
-    }
+ "schema_version": "1.0",
+ "version": "1.0.0",
+ "generated_at": null,
+ "owner": "regulatory_compliance_orchestrator",
+ "consumer": "gates.gate_contract._manifest_checks（file/symbol/count 三元断言）",
+ "note": "程序可读契约清单（R24）：实际列头/键集唯一事实由各接口模块持有；本清单登记版本与定位，防文本漂移。v2 §3.4（M1 修复，2026-09-26）：新增顶层 version，并由 gate_contract 断言 file 存在 + symbol 可加载 + len == count；两处历史漂移已修正（detail_table_fields 10→14；base_json_keys 指向不存在的 theme_analysis/node2_rebuild/ 已改为 interfaces/contract.py）。 N-89（2026-09-28）：`interfaces/contract.py` 的**全部**契约类符号（字段集/键集/映射）已登记在册（原仅 5/21 → 覆盖缺口 16）；`gate_contract` 新增**覆盖完整性判据**：contract.py 新出现的契约类符号若未登记将直接 FAIL（防漏登）。",
+ "contracts": {
+  "cleaned_csv_columns": {
+   "file": "std_lib/scraper_std/unified_schema.py",
+   "symbol": "CSV_COLUMNS",
+   "count": 39,
+   "consumer": [
+    "clean_index",
+    "interfaces.clean_index_api",
+    "gates.gate_contract"
+   ]
+  },
+  "registry_csv_fields": {
+   "file": "modules/regulatory_classifier/rfn/registry.py",
+   "symbol": "CSV_FIELDS",
+   "count": 8,
+   "consumer": [
+    "gates.gate_rfn_sync",
+    "recall_audit.run_retrieval_after_checks.gate_schema"
+   ]
+  },
+  "registry_theme_fields": {
+   "file": "modules/regulatory_classifier/rfn/registry.py",
+   "symbol": "THEME_FIELDS",
+   "count": 3,
+   "consumer": [
+    "gates.gate_rfn_sync"
+   ]
+  },
+  "detail_table_fields": {
+   "file": "modules/regulatory_classifier/scripts/build_detail_tables.py",
+   "symbol": "FIELDS",
+   "count": 14,
+   "consumer": [
+    "gates.gate_contract"
+   ],
+   "note": "2026-09-26 修正：原声明 count=10，而 interfaces/contract.py:DETAIL_TABLE_FIELDS 与实测明细表列头均为 14（F-L03 增时效状态/核验来源两列后未同步 → 已是漂移）"
+  },
+  "theme_map": {
+   "file": "modules/regulatory_classifier/rfn/__init__.py",
+   "symbol": "THEME_MAP",
+   "count": 11,
+   "note": "T0上位法锚点 + T1-T10；扩展主题唯一入口（R16）"
+  },
+  "base_json_keys": {
+   "file": "interfaces/contract.py",
+   "symbols": {
+    "BASE_KEYS": 7,
+    "FINAL_KEYS": 10,
+    "MATCHED_KEYS": 6,
+    "CITEREFS_KEYS": 7
+   },
+   "note": "2026-09-26 修正：原 file 指向不存在的 modules/regulatory_classifier/theme_analysis/node2_rebuild/（过期契约指针）。底座键集唯一事实源实为 interfaces/contract.py 的四个集合（由 gate_contract 判据 4 对数据做超集校验，此处只断言清单自身计数）。"
+  },
+  "contract_attachment_aliases": {
+   "file": "interfaces/contract.py",
+   "symbol": "ATTACHMENT_ALIASES",
+   "count": 7,
+   "consumer": [
+    "gates.gate_contract"
+   ]
+  },
+  "contract_attachment_fields": {
+   "file": "interfaces/contract.py",
+   "symbol": "ATTACHMENT_FIELDS",
+   "count": 7,
+   "consumer": [
+    "gates.gate_contract"
+   ]
+  },
+  "contract_clause_article_fields": {
+   "file": "interfaces/contract.py",
+   "symbol": "CLAUSE_ARTICLE_FIELDS",
+   "count": 3,
+   "consumer": [
+    "gates.gate_contract"
+   ]
+  },
+  "contract_clause_chapter_fields": {
+   "file": "interfaces/contract.py",
+   "symbol": "CLAUSE_CHAPTER_FIELDS",
+   "count": 3,
+   "consumer": [
+    "gates.gate_contract"
+   ]
+  },
+  "contract_clause_line_fields": {
+   "file": "interfaces/contract.py",
+   "symbol": "CLAUSE_LINE_FIELDS",
+   "count": 20,
+   "consumer": [
+    "gates.gate_contract"
+   ]
+  },
+  "contract_clause_structure_fields": {
+   "file": "interfaces/contract.py",
+   "symbol": "CLAUSE_STRUCTURE_FIELDS",
+   "count": 6,
+   "consumer": [
+    "gates.gate_contract"
+   ]
+  },
+  "contract_cn_field_registry": {
+   "file": "interfaces/contract.py",
+   "symbol": "CN_FIELD_REGISTRY",
+   "count": 38,
+   "consumer": [
+    "gates.gate_contract"
+   ]
+  },
+  "contract_cross_basis_fields": {
+   "file": "interfaces/contract.py",
+   "symbol": "CROSS_BASIS_FIELDS",
+   "count": 30,
+   "consumer": [
+    "gates.gate_contract"
+   ]
+  },
+  "contract_field_semantic_equiv": {
+   "file": "interfaces/contract.py",
+   "symbol": "FIELD_SEMANTIC_EQUIV",
+   "count": 8,
+   "consumer": [
+    "gates.gate_contract"
+   ]
+  },
+  "contract_internal_clause_fields": {
+   "file": "interfaces/contract.py",
+   "symbol": "INTERNAL_CLAUSE_FIELDS",
+   "count": 6,
+   "consumer": [
+    "gates.gate_contract"
+   ]
+  },
+  "contract_relation_fields": {
+   "file": "interfaces/contract.py",
+   "symbol": "RELATION_FIELDS",
+   "count": 30,
+   "consumer": [
+    "gates.gate_contract"
+   ]
+  },
+  "contract_rfn_clean_bridge_fields": {
+   "file": "interfaces/contract.py",
+   "symbol": "RFN_CLEAN_BRIDGE_FIELDS",
+   "count": 11,
+   "consumer": [
+    "gates.gate_contract"
+   ]
+  },
+  "contract_rich_object_keys": {
+   "file": "interfaces/contract.py",
+   "symbol": "RICH_OBJECT_KEYS",
+   "count": 3,
+   "consumer": [
+    "gates.gate_contract"
+   ]
+  },
+  "contract_source_alias_equiv": {
+   "file": "interfaces/contract.py",
+   "symbol": "SOURCE_ALIAS_EQUIV",
+   "count": 5,
+   "consumer": [
+    "gates.gate_contract"
+   ]
   }
+ }
 }

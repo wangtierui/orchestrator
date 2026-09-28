@@ -49,7 +49,6 @@ run_retrieval_after_checks.py — 检索流程自动重跑编排器（门禁式�
 from __future__ import annotations
 
 import collections
-import csv
 import json
 import os
 import re
@@ -521,24 +520,32 @@ from interfaces.contract import MATCHED_KEYS as _MATCHED_KEYS
 # citerefs: source_origin/art_refs_str/name_refs_top 之外见上。注：2026-09-01 实测
 # T7 matched 33 条为补齐路径生成、缺 how/url/source_origin（见 Gate4 开发注记），
 # 属生成方信息未补全，列为数据治理项，不作门禁阻断。
-# 数据底座命名：_t{n}_{base|final|matched|citerefs}.json（T1–T10；T0 不生成数据底座）
-_BASE_RE = re.compile(r"^_t\d+_(base|final|matched|citerefs)\.json$")
-
-
-def _csv_header(path):
-    with open(path, encoding="utf-8-sig", newline="") as fh:
-        return next(csv.reader(fh))
-
-
-def _json_shape(path):
-    """返回 (顶层结构, 元素键集)。兼容 list（base/final）与 dict（matched/citerefs，RFN→rec）。"""
-    d = json.load(open(path, encoding="utf-8"))
-    if isinstance(d, list):
-        return "list", (set(d[0].keys()) if d else set())
-    if isinstance(d, dict):
-        v0 = next(iter(d.values()), None)
-        return "dict", (set(v0.keys()) if isinstance(v0, dict) else set())
-    return type(d).__name__, set()
+# 数据底座命名 / 形状校验 / **派生期望值**（N-82，2026-09-28）
+# 原为本文件私有实现（`_BASE_RE` / `_csv_header` / `_json_shape`，与 `gates/gate_contract`
+# 逐行等价），且**期望值硬编码**（明细表 `≠11`、底座 `≠40`、每后缀 `10`）→ 一旦新增主题
+# （如 T11），门禁侧会正确跟随而本侧私有副本静默分叉（报假阳性）。现统一取自共享层
+# `std_lib.common_lib.artifact_shape`（唯一实现 + 唯一派生），本处仅保留旧名作别名。
+from std_lib.common_lib.artifact_shape import (
+    BASE_RE as _BASE_RE,
+)
+from std_lib.common_lib.artifact_shape import (
+    DET_RE as _DET_RE,
+)
+from std_lib.common_lib.artifact_shape import (
+    expect_base_count as _expect_base_count,
+)
+from std_lib.common_lib.artifact_shape import (
+    expect_base_per_suffix as _expect_base_per_suffix,
+)
+from std_lib.common_lib.artifact_shape import (
+    expect_detail_table_count as _expect_det_count,
+)
+from std_lib.common_lib.artifact_shape import (
+    json_shape as _json_shape,
+)
+from std_lib.common_lib.artifact_shape import (
+    read_csv_header as _csv_header,
+)
 
 
 def gate_schema(data_dir=None):
@@ -580,10 +587,10 @@ def gate_schema(data_dir=None):
              "列头与权威一致" if same else f"列头 {head} ≠ 权威 {THEME_FIELDS}")
 
     # 3) 明细表列头（11 份：T0_9 + T1–T10，10 列）
-    dets = sorted(f for f in os.listdir(base)
-                  if re.match(r"^T\d+_\d+逐份条款引用与上位法依据明细表\.csv$", f))
-    if len(dets) != 11:
-        _chk("detail_tables", False, f"明细表数量 {len(dets)} ≠ 11（T0–T10）: {dets}")
+    dets = sorted(f for f in os.listdir(base) if _DET_RE.match(f))
+    _exp_det = _expect_det_count()   # N-82：由 THEME_MAP 派生（原硬编码 11）
+    if len(dets) != _exp_det:
+        _chk("detail_tables", False, f"明细表数量 {len(dets)} ≠ {_exp_det}（T0–T10）: {dets}")
     bad_det = []
     for f in dets:
         head = _csv_header(os.path.join(base, f))
@@ -604,12 +611,15 @@ def gate_schema(data_dir=None):
         _m = _BASE_RE.match(f)
         assert _m is not None   # base_files 已由 _BASE_RE 过滤（供 mypy 收窄）
         per_suf[_m.group(1)].append(f)
-    if len(base_files) != 40:
-        _chk("base_jsons", False, f"数据底座数量 {len(base_files)} ≠ 40（T1–T10 × 4 类）: 缺失见 per_suf")
+    _exp_base = _expect_base_count()          # N-82：由 THEME_MAP 派生（原硬编码 40）
+    _exp_per = _expect_base_per_suffix()      # N-82：同上（原硬编码 10）
+    if len(base_files) != _exp_base:
+        _chk("base_jsons", False,
+             f"数据底座数量 {len(base_files)} ≠ {_exp_base}（T1–T10 × 4 类）: 缺失见 per_suf")
     bad_base = []
     for suf, files in per_suf.items():
-        if len(files) != 10:
-            bad_base.append(f"{suf}: {len(files)} 个（期望 10）")
+        if len(files) != _exp_per:
+            bad_base.append(f"{suf}: {len(files)} 个（期望 {_exp_per}）")
             continue
         for f in files:
             shape, keys = _json_shape(os.path.join(base, f))

@@ -8,7 +8,6 @@ gates/gate_contract — 数据契约门禁（实装：归属表 8 列 / 主题�
 
 from __future__ import annotations
 
-import csv
 import json
 import os
 import re
@@ -25,33 +24,45 @@ _DATA = os.path.join(paths.MODULES_DIR, "regulatory_classifier", "data")
 # 治理层由此不再持有任何 modules 内部导入，本文件也不再需要 sys.path 注入。
 THEME_MAP = _theme_map()
 
-_DET_RE = re.compile(r"^(T\d+)_\d+逐份条款引用与上位法依据明细表\.csv$")
-# 底座命名：{T1..T10}×{base,final,matched,citerefs}（T0 不生成底座）
-_EXPECT_BASE_FILES = sorted(
-    f"_t{int(c[1:])}_{suf}.json"
-    for c in THEME_MAP
-    if c != "T0"
-    for suf in ("base", "final", "matched", "citerefs")
+# N-82（2026-09-28）：形状校验纯函数与**派生期望值**一律取自共享层
+# `std_lib.common_lib.artifact_shape`（原与 `recall_audit.run_retrieval_after_checks`
+# 各持一套逐行等价实现，且该侧期望值**硬编码** → 新增主题即静默分叉）。
+# 本门禁保留旧私有名作**别名**，避免改动大量调用点（语义等价、单一实现）。
+from std_lib.common_lib.artifact_shape import (
+    BASE_RE as _BASE_RE,
 )
-_BASE_RE = re.compile(r"^_t\d+_(base|final|matched|citerefs)\.json$")
-_EXPECT_DETS = len(THEME_MAP)  # 每主题 ≥1 明细（T0–T10 主题码全覆盖）
-_EXPECT_BASE = len(_EXPECT_BASE_FILES)
+from std_lib.common_lib.artifact_shape import (
+    DET_RE as _DET_RE,
+)
+from std_lib.common_lib.artifact_shape import (
+    dotted as _dotted,
+)
+from std_lib.common_lib.artifact_shape import (
+    expect_base_count as _expect_base_count,
+)
+from std_lib.common_lib.artifact_shape import (
+    expect_base_files as _expect_base_files,
+)
+from std_lib.common_lib.artifact_shape import (
+    expect_detail_table_count as _expect_dets,
+)
+from std_lib.common_lib.artifact_shape import (
+    json_shape as _json_shape,
+)
+from std_lib.common_lib.artifact_shape import (
+    read_csv_header as _header,
+)
 
-
-def _header(path):
-    with open(path, encoding="utf-8-sig", newline="") as fh:
-        return next(csv.reader(fh))
-
+_EXPECT_DETS = _expect_dets()          # 每主题 ≥1 明细（T0–T10 主题码全覆盖）
+_EXPECT_BASE_FILES = _expect_base_files()
+_EXPECT_BASE = _expect_base_count()
 
 _MANIFEST = os.path.join(paths.CONFIG_DIR, "schema", "contract_manifest.json")
 
-
-def _dotted(rel: str) -> str:
-    """仓库相对 .py 路径 → 可导入的点号路径（`a/b/__init__.py` → `a.b`）。"""
-    p = rel[:-3] if rel.endswith(".py") else rel
-    if p.endswith("/__init__"):
-        p = p[: -len("/__init__")]
-    return p.replace("/", ".")
+# N-89（2026-09-28）：契约覆盖判据的**显式豁免**（{符号名: 理由}）。当前为空 ——
+# `interfaces/contract.py` 中全部契约类符号（21 个）均已登记在册；若未来确有不属"对外契约"
+# 的纯内部容器，在此登记并写明理由（使"漏登"与"有意不登"可区分）。
+_COVERAGE_EXEMPT: dict[str, str] = {}
 
 
 def _manifest_checks() -> tuple[list[str], dict]:
@@ -106,6 +117,65 @@ def _manifest_checks() -> tuple[list[str], dict]:
                     f"顶层 consumer 指向不可解析符号 {sym_path!r}：{type(e).__name__}: {e}"
                 )
 
+    # N-89（2026-09-28）：**覆盖完整性判据** —— `interfaces/contract.py` 是"数据契约"的
+    # 唯一事实源；凡其中的**契约类符号**（字段集/键集/映射：list/tuple/set/frozenset/dict）
+    # 都必须在册（即使 count 断言另有条目覆盖，也须出现在 `symbol` 或某条目的 `symbols` 键里）。
+    # 背景：原清单只登记 6 项、而 contract.py 实有 21 个契约类符号（**缺口 16**），
+    # 且**无任何机制**发现"新加的字段集没登记" → 契约总册与事实源会持续脱节。
+    # 豁免须显式登记（`_COVERAGE_EXEMPT`，附理由），使"漏登"与"有意不登"可区分。
+    _registered: set[str] = set()
+    _reg_objs: set[int] = set()   # 「同对象别名」：按 `id` 识别（见下）
+    import importlib as _il
+
+    for spec in (man.get("contracts") or {}).values():
+        if spec.get("symbol"):
+            _registered.add(str(spec["symbol"]))
+        _registered.update(str(s) for s in (spec.get("symbols") or {}))
+        # 某些契约在 contract.py 定义、却被**其它模块 re-export**
+        # （如 `registry.py::CSV_FIELDS = contract.REGISTRY_CSV_FIELDS`）→ 清单只登记其中一个名字。
+        # 按**对象身份**判定这类别名，无需人工维护等价表（自动随实现变化）。
+        rel = str(spec.get("file") or "")
+        syms = [str(spec["symbol"])] if spec.get("symbol") else []
+        syms += [str(s) for s in (spec.get("symbols") or {})]
+        try:
+            _mod = _il.import_module(_dotted(rel))
+        except Exception:  # noqa: BLE001  file 不可导入由下方三元断言单独报告
+            continue
+        for s in syms:
+            _o = getattr(_mod, s, None)
+            if _o is not None:
+                _reg_objs.add(id(_o))
+    try:
+        from interfaces import contract as _ct
+
+        _all_syms = {
+            n
+            for n in dir(_ct)
+            if not n.startswith("_")
+            and isinstance(getattr(_ct, n), (list, tuple, set, frozenset, dict))
+        }
+    except Exception as e:  # noqa: BLE001
+        problems.append(f"契约覆盖判据无法执行（interfaces.contract 不可导入）：{type(e).__name__}: {e}")
+        _all_syms = set()
+    _missing = sorted(
+        n
+        for n in _all_syms
+        if n not in _registered
+        and id(getattr(_ct, n, None)) not in _reg_objs
+        and n not in _COVERAGE_EXEMPT
+    )
+    if _missing:
+        problems.append(
+            f"契约清单**覆盖缺口**：interfaces/contract.py 中未登记的契约类符号 {_missing}"
+            "（须补登记 file/symbol/count；确属内部实现细节请登记 `_COVERAGE_EXEMPT` 并写明理由）"
+        )
+    detail["coverage"] = {
+        "contract_symbols": len(_all_syms),
+        "registered": len(_all_syms & _registered),
+        "missing": _missing,
+        "exempt": sorted(_COVERAGE_EXEMPT),
+    }
+
     for name, spec in sorted((man.get("contracts") or {}).items()):
         rel = str(spec.get("file") or "")
         fp = os.path.join(root, rel.replace("/", os.sep))
@@ -153,14 +223,8 @@ def _manifest_checks() -> tuple[list[str], dict]:
     return problems, detail
 
 
-def _json_shape(path):
-    d = json.load(open(path, encoding="utf-8"))
-    if isinstance(d, list):
-        return "list", (set(d[0].keys()) if d else set())
-    if isinstance(d, dict):
-        v0 = next(iter(d.values()), None)
-        return "dict", (set(v0.keys()) if isinstance(v0, dict) else set())
-    return type(d).__name__, set()
+# N-82：`_json_shape` / `_header` / `_dotted` / `_BASE_RE` / `_DET_RE` 及期望值均已上收
+# `std_lib.common_lib.artifact_shape`（本文件顶部别名导入）——本处不再保留私有实现。
 
 
 def run():

@@ -34,6 +34,10 @@ import os
 from collections.abc import Iterator
 from typing import Any
 
+from std_lib.common_lib.logging import get_logger
+
+LOG = get_logger(__name__)
+
 # 五源 raw 文件相对路径（相对**仓库根**；2026-09-18 修正：模块拍平后真实位置）
 RAW_FILES: dict[str, str] = {
     "gov": "modules/regulatory_scrapers/data/raw/gov_laws.json",
@@ -135,7 +139,7 @@ def verify_counts(source: str | None = None, root: str | None = None) -> dict[st
         result[s] = (actual, declared if declared is not None else -1)
     for s, (a, d) in result.items():
         if d >= 0 and a != d:
-            print(f"[raw_loader] ⚠ {s} 记录数 {a} != raw 自带 count {d}（raw 被改写？）")
+            LOG.warning(f"[raw_loader] ⚠ {s} 记录数 {a} != raw 自带 count {d}（raw 被改写？）")
     return result
 
 

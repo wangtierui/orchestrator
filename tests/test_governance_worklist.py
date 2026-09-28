@@ -60,11 +60,19 @@ def test_reject_empty_kind_or_subject(gs):
     assert gs.worklist_list() == []
 
 
-def test_unregistered_kind_is_soft_accepted(gs, capsys):
-    """软校验：未登记 kind 仍写入（治理库与 config 解耦），但打印告警。"""
-    iid = gs.worklist_add("some_new_kind", "s1")
+def test_unregistered_kind_is_soft_accepted(gs, caplog):
+    """软校验：未登记 kind 仍写入（治理库与 config 解耦），但**记告警日志**。
+
+    N-86（2026-09-28）：库层诊断由 `print`（stdout）改为统一日志设施（`get_logger`）→
+    断言通道随之从 `capsys` 改为 `caplog`；**判据语义不变**：告警仍必须可观测
+    （且改走 `logging` 后经 lastResort 落 stderr，比 stdout 更不易与"机器可读载荷"混淆）。
+    """
+    import logging as _logging
+
+    with caplog.at_level(_logging.WARNING, logger="std_lib.common_lib.governance_store"):
+        iid = gs.worklist_add("some_new_kind", "s1")
     assert iid is not None
-    assert "未登记的 kind" in capsys.readouterr().out
+    assert "未登记的 kind" in caplog.text
 
 
 def test_resolve_unknown_id_returns_false(gs):

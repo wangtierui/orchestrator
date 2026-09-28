@@ -3,31 +3,31 @@
  "plan": {
   "plan": [
    {
+    "file": "modules/regulatory_classifier/backups/_upper_laws_20260922_023135.json",
+    "size": 1915912,
+    "age_days": 6.7,
+    "reason": "超出保留量 10（第 11 新）",
+    "category": "classifier_backups",
+    "move_to": "archive/classifier_backups"
+   },
+   {
     "file": "modules/regulatory_classifier/backups/_upper_laws_20260921_205839.json",
     "size": 1915912,
     "age_days": 7.5,
-    "reason": "超出保留量 10（第 11 新）",
+    "reason": "超出保留量 10（第 12 新）",
     "category": "classifier_backups",
     "move_to": "archive/classifier_backups"
    },
    {
     "file": "modules/regulatory_classifier/backups/_upper_laws_20260921_002550.json",
     "size": 1915912,
-    "age_days": 7.6,
-    "reason": "超出保留量 10（第 12 新）",
-    "category": "classifier_backups",
-    "move_to": "archive/classifier_backups"
-   },
-   {
-    "file": "modules/regulatory_classifier/backups/_upper_laws_20260920_210607.json",
-    "size": 1915912,
-    "age_days": 7.6,
+    "age_days": 7.7,
     "reason": "超出保留量 10（第 13 新）",
     "category": "classifier_backups",
     "move_to": "archive/classifier_backups"
    },
    {
-    "file": "modules/regulatory_classifier/backups/_upper_laws_20260920_204422.json",
+    "file": "modules/regulatory_classifier/backups/_upper_laws_20260920_210607.json",
     "size": 1915912,
     "age_days": 7.7,
     "reason": "超出保留量 10（第 14 新）",
@@ -35,18 +35,26 @@
     "move_to": "archive/classifier_backups"
    },
    {
+    "file": "modules/regulatory_classifier/backups/_upper_laws_20260920_204422.json",
+    "size": 1915912,
+    "age_days": 7.7,
+    "reason": "超出保留量 10（第 15 新）",
+    "category": "classifier_backups",
+    "move_to": "archive/classifier_backups"
+   },
+   {
     "file": "modules/regulatory_classifier/backups/_upper_laws_20260920_202106.json",
     "size": 1915904,
-    "age_days": 9.4,
-    "reason": "超出保留量 10（第 15 新）",
+    "age_days": 9.5,
+    "reason": "超出保留量 10（第 16 新）",
     "category": "classifier_backups",
     "move_to": "archive/classifier_backups"
    },
    {
     "file": "modules/regulatory_classifier/backups/_upper_laws_20260919_020858.json",
     "size": 1915904,
-    "age_days": 9.4,
-    "reason": "超出保留量 10（第 16 新）",
+    "age_days": 9.5,
+    "reason": "超出保留量 10（第 17 新）",
     "category": "classifier_backups",
     "move_to": "archive/classifier_backups"
    },
@@ -54,15 +62,15 @@
     "file": "modules/regulatory_classifier/backups/_upper_laws_20260919_014722.json",
     "size": 1915904,
     "age_days": 10.0,
-    "reason": "超出保留量 10（第 17 新）",
+    "reason": "超出保留量 10（第 18 新）",
     "category": "classifier_backups",
     "move_to": "archive/classifier_backups"
    },
    {
     "file": "modules/regulatory_classifier/backups/_upper_laws_20260918_130003.json",
     "size": 1915904,
-    "age_days": 10.3,
-    "reason": "超出保留量 10（第 18 新）",
+    "age_days": 10.4,
+    "reason": "超出保留量 10（第 19 新）",
     "category": "classifier_backups",
     "move_to": "archive/classifier_backups"
    },
@@ -70,7 +78,7 @@
     "file": "modules/regulatory_classifier/backups/_upper_laws_20260918_033730.json",
     "size": 1915904,
     "age_days": 10.4,
-    "reason": "超出保留量 10（第 19 新）",
+    "reason": "超出保留量 10（第 20 新）",
     "category": "classifier_backups",
     "move_to": "archive/classifier_backups"
    },
@@ -85,7 +93,7 @@
    {
     "file": "reports/_tmp/gov_bursts.err.log",
     "size": 0,
-    "age_days": 7.5,
+    "age_days": 7.6,
     "reason": "超过 7 天",
     "category": "reports_tmp",
     "move_to": "archive/reports_tmp"
@@ -93,7 +101,7 @@
    {
     "file": "reports/_tmp/gov_bursts.log",
     "size": 140,
-    "age_days": 7.5,
+    "age_days": 7.6,
     "reason": "超过 7 天",
     "category": "reports_tmp",
     "move_to": "archive/reports_tmp"
@@ -101,7 +109,7 @@
    {
     "file": "reports/_tmp/refresh_fix2_20260920.err",
     "size": 0,
-    "age_days": 7.6,
+    "age_days": 7.7,
     "reason": "超过 7 天",
     "category": "reports_tmp",
     "move_to": "archive/reports_tmp"
@@ -109,7 +117,7 @@
    {
     "file": "reports/_tmp/refresh_fix2_20260920.log",
     "size": 9353,
-    "age_days": 7.6,
+    "age_days": 7.7,
     "reason": "超过 7 天",
     "category": "reports_tmp",
     "move_to": "archive/reports_tmp"
@@ -117,7 +125,7 @@
    {
     "file": "reports/_tmp/refresh_fix3_20260920.err",
     "size": 0,
-    "age_days": 7.6,
+    "age_days": 7.7,
     "reason": "超过 7 天",
     "category": "reports_tmp",
     "move_to": "archive/reports_tmp"
@@ -125,7 +133,7 @@
    {
     "file": "reports/_tmp/refresh_fix3_20260920.log",
     "size": 9351,
-    "age_days": 7.6,
+    "age_days": 7.7,
     "reason": "超过 7 天",
     "category": "reports_tmp",
     "move_to": "archive/reports_tmp"
@@ -141,7 +149,7 @@
    {
     "file": "reports/_tmp/refresh_fix_20260920.log",
     "size": 9354,
-    "age_days": 7.6,
+    "age_days": 7.7,
     "reason": "超过 7 天",
     "category": "reports_tmp",
     "move_to": "archive/reports_tmp"
@@ -165,7 +173,7 @@
    {
     "file": "reports/_tmp/_readme_docstrings.py",
     "size": 2473,
-    "age_days": 8.5,
+    "age_days": 8.6,
     "reason": "超过 7 天",
     "category": "reports_tmp",
     "move_to": "archive/reports_tmp"
@@ -173,7 +181,7 @@
    {
     "file": "reports/_tmp/_readme_facts.py",
     "size": 3610,
-    "age_days": 8.5,
+    "age_days": 8.6,
     "reason": "超过 7 天",
     "category": "reports_tmp",
     "move_to": "archive/reports_tmp"
@@ -181,7 +189,7 @@
    {
     "file": "reports/_tmp/生产刷新汇总_20260920_202913.json",
     "size": 8483,
-    "age_days": 7.6,
+    "age_days": 7.7,
     "reason": "超过 7 天",
     "category": "reports_tmp",
     "move_to": "archive/reports_tmp"
@@ -189,7 +197,7 @@
    {
     "file": "reports/_tmp/生产刷新汇总_20260920_204937.json",
     "size": 8482,
-    "age_days": 7.6,
+    "age_days": 7.7,
     "reason": "超过 7 天",
     "category": "reports_tmp",
     "move_to": "archive/reports_tmp"
@@ -197,7 +205,7 @@
    {
     "file": "reports/_tmp/生产刷新汇总_20260920_211134.json",
     "size": 8481,
-    "age_days": 7.6,
+    "age_days": 7.7,
     "reason": "超过 7 天",
     "category": "reports_tmp",
     "move_to": "archive/reports_tmp"
@@ -214,7 +222,7 @@
   "stats": {
    "classifier_backups": {
     "exists": true,
-    "total": 19,
+    "total": 20,
     "kept": 10,
     "incident_kept": 0
    },
@@ -226,7 +234,7 @@
    },
    "reports_tmp": {
     "exists": true,
-    "total": 63,
+    "total": 66,
     "older_than_days": 7
    },
    "timeliness_err": {
@@ -240,11 +248,11 @@
     "incident_kept": 0
    },
    "repo_baks": {
-    "total": 42,
+    "total": 44,
     "included": false
    }
   },
-  "bytes": 17322038
+  "bytes": 19237950
  },
  "applied": null
 }
