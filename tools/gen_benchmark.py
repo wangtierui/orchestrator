@@ -237,11 +237,22 @@ def _q_clause_structure() -> dict:
         "degraded", "fallback", "invalid", "warned",
         "article_structures", "item_nodes",
         "title_swallow", "tail_contam", "space_contam", "law_items",
+        "parse_modes",
+        # N-94（2026-09-28）：但书计数（度量先行）
+        "proviso", "proviso_strict",
     )
     out: dict = {k: v.get(k) for k in keep if k in v}
     files = max(int(v.get("files") or 0), 1)
-    out["degraded_ratio"] = round(int(v.get("degraded") or 0) / files, 4)
+    # N-101（2026-09-28）**口径纠偏**：原报 `degraded_ratio`（非 law 模式占比）会被读成"84% 质量
+    # 降级"，但 `parse_mode` 是**体裁**（notice/plain/law/bulletin/plan/empty）而非质量等级——
+    # 实测 notice 55.0% + plain 29.2% + empty 0.2%，**非 law 占多数属正常**（多数监管文件不是
+    # 条文式）。故改为报**体裁分布** + 三个真正的质量信号：`empty`（解析为空）/`fallback`（回退
+    # 路径）/`invalid`（契约不合）。`degraded` 仍保留原值供追溯，但不再换算成"比例"以免误读。
+    pm = v.get("parse_modes") or {}
+    out["parse_modes"] = dict(sorted(pm.items()))
+    out["empty_mode"] = int(pm.get("empty") or 0)
     out["fallback_ratio"] = round(int(v.get("fallback") or 0) / files, 4)
+    out["empty_ratio"] = round(out["empty_mode"] / files, 4)
     out["consistent"] = bool(v.get("consistent"))
     return out
 
@@ -345,7 +356,33 @@ def gather_quality() -> dict:
         "relations": _q_relations(),
         "recall": _q_recall(),
         "cleaning": _q_cleaning(),
+        "semantic": _q_semantic_capability(),
     }
+
+
+def _q_semantic_capability() -> dict:
+    """P1 语义增强**能力披露**（N-102）：当前环境具备哪些工具 + 指纹。
+
+    为什么放在基准里：v2 的"降级链"要求**回退可观测**。把能力状态随每轮全链刷进 `BENCHMARK.md`，
+    即可回答"这一轮跑的是增强路径还是正则回退路径"——避免"增强已上线但从未生效"长期无人察觉。
+    """
+    try:
+        from std_lib.common_lib import semantic_tools as st
+
+        return {
+            "summary": st.summary_line(),
+            "fingerprint": st.fingerprint(),
+            "probes": {
+                n: {
+                    "available": p["available"],
+                    "version": p["version"],
+                    "pipeline_ref": p["pipeline_ref"],
+                }
+                for n, p in st.probe_all().items()
+            },
+        }
+    except Exception as e:  # noqa: BLE001  披露失败不得中断基准生成
+        return {"error": f"{type(e).__name__}: {e}"}
 
 
 def render_quality(q: dict) -> list:
@@ -384,13 +421,22 @@ def render_quality(q: dict) -> list:
             f"契约自检 `consistent={c['consistent']}`"
         )
         L.append(
-            f"- 降级/兜底比例：`degraded {c['degraded_ratio']:.2%}` / "
-            f"`fallback {c['fallback_ratio']:.2%}`"
+            f"- 体裁分布（`parse_mode`）：`{c.get('parse_modes')}`"
+            "　※ `degraded` 旧口径＝非 law 体裁计数，**非质量降级**（N-101）"
+        )
+        L.append(
+            f"- 质量信号：`empty {c.get('empty_mode')}（{c.get('empty_ratio', 0):.2%}）` / "
+            f"`fallback {c['fallback_ratio']:.2%}` / `invalid {c.get('invalid')}`"
         )
         L.append(
             f"- 结构语义指标（「曾被静默放过」的直接堵漏项）：`title_swallow={c.get('title_swallow')}` / "
             f"`tail_contam={c.get('tail_contam')}` / `space_contam={c.get('space_contam')}` / "
             f"`law_items={c.get('law_items')}`"
+        )
+        L.append(
+            f"- 但书计数（N-94 度量先行，**只披露不判定**）：宽档 `proviso={c.get('proviso')}` 条 / "
+            f"严档 `proviso_strict={c.get('proviso_strict')}` 条"
+            "　※ 用途：为\"是否值得改解析器切分逻辑\"提供量级证据"
         )
 
     r = q["relations"]
@@ -431,6 +477,29 @@ def render_quality(q: dict) -> list:
         "**纪律**：主题判定新增任何分类器时，须在 §6.1 的**可评样本**上报告 P/R，"
         "并**对齐**既有 `判定依据` 的「排名 + margin」留痕格式。"
     )
+
+    sm = q.get("semantic") or {}
+    L.append("\n### 6.6 P1 语义增强能力（当前环境）")
+    if "error" in sm:
+        L.append(f"\n- ⚠️ 能力披露不可用：{sm['error']}")
+    else:
+        L.append(f"\n- {sm.get('summary', '')}")
+        fp = sm.get("fingerprint") or {}
+        L.append(f"- 指纹：可用 `{fp.get('available')}`；未装 `{len(fp.get('unavailable') or [])}` 项")
+        L.append("")
+        L.append("| 工具 | 状态 | 版本 | 对应方案项 |")
+        L.append("|---|---|---|---|")
+        for n, p in (sm.get("probes") or {}).items():
+            L.append(
+                f"| `{n}` | {'可用' if p['available'] else '未装'} | {p['version'] or '—'} | "
+                f"{p['pipeline_ref']} |"
+            )
+        L.append("")
+        L.append(
+            "> 未装工具不阻断全链：调用方一律经 `std_lib.common_lib.semantic_tools` 探测后惰性导入，"
+            "不可用时回退既有正则实现并**记录回退说明**（`fallback_notice()`）。清单："
+            "`config/schema/semantic_tools.json`；启用：`pip install -e .[semantic]`。"
+        )
     return L
 
 

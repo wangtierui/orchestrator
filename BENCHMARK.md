@@ -1,6 +1,6 @@
 # BENCHMARK —— 交付基准登记（回归对照基线）
 
-> 自动生成：tools/gen_benchmark.py @ 2026-09-28 14:30:35 | python 3.13.14
+> 自动生成：tools/gen_benchmark.py @ 2026-09-28 16:35:40 | python 3.13.14
 > 用途：数据重建/重构后重跑 `python tools/gen_benchmark.py` 刷新；数值漂移即回归信号。
 
 ## 1 门禁（gates/ALL_GATES）
@@ -123,8 +123,10 @@
 ### 6.2 条文结构（既有 `validate_schema` 判据）
 
 - 文件 **16611** / 条 **108409** / 章 **12313**，契约自检 `consistent=True`
-- 降级/兜底比例：`degraded 84.35%` / `fallback 29.33%`
+- 体裁分布（`parse_mode`）：`{'empty': 29, 'law': 2599, 'notice': 9140, 'plain': 4843}`　※ `degraded` 旧口径＝非 law 体裁计数，**非质量降级**（N-101）
+- 质量信号：`empty 29（0.17%）` / `fallback 29.33%` / `invalid 94`
 - 结构语义指标（「曾被静默放过」的直接堵漏项）：`title_swallow=0` / `tail_contam=92` / `space_contam=40` / `law_items=439`
+- 但书计数（N-94 度量先行，**只披露不判定**）：宽档 `proviso=4540` 条 / 严档 `proviso_strict=925` 条　※ 用途：为"是否值得改解析器切分逻辑"提供量级证据
 
 ### 6.3 关系抽取（`relations_index.jsonl`）
 
@@ -134,7 +136,7 @@
 
 ### 6.4 召回覆盖（`recall_audit` 既有产物）
 
-- 产物目录存在 `True`；报告生成于 2026-09-28T13:16:55+0800
+- 产物目录存在 `True`；报告生成于 2026-09-28T14:55:03+0800
 - 四门禁：`{'clean': True, 'validity': True, 'contract': True, 'schema': True}`
 
 ### 6.5 清洗体量
@@ -152,3 +154,23 @@
 | supp_cleaned_20260928 | 58 |
 
 **纪律**：主题判定新增任何分类器时，须在 §6.1 的**可评样本**上报告 P/R，并**对齐**既有 `判定依据` 的「排名 + margin」留痕格式。
+
+### 6.6 P1 语义增强能力（当前环境）
+
+- 语义增强能力：0/10 可用（全部未安装 → 全链走既有正则路径）
+- 指纹：可用 `[]`；未装 `10` 项
+
+| 工具 | 状态 | 版本 | 对应方案项 |
+|---|---|---|---|
+| `aprcoie` | 未装 | — | v2 P3-1（可选，须先评估许可与体积） |
+| `bertopic` | 未装 | — | v2 P1-5（主题内子簇语义化，可选） |
+| `hanlp` | 未装 | — | v2 P1-3（分句/结构增强层） |
+| `hdbscan` | 未装 | — | v2 P1-5（随 BERTopic） |
+| `ltp` | 未装 | — | v2 P1-3（分句/结构增强层） |
+| `paradedb` | 未装 | — | v2 P2-2（**须先做零服务替代评估**；且须同时覆盖 search_internal） |
+| `signalgraph` | 未装 | — | v2 P3-2（可选；须先证明其**确定性**：同输入同输出） |
+| `text2vec` | 未装 | — | v2 P1-1（主题辅助裁定）、P1-2（关联语义档） |
+| `umap` | 未装 | — | v2 P1-5（随 BERTopic，不单独使用） |
+| `weknora_docreader` | 未装 | — | v2 P2-1（只补版面分析；OCR 通路已存在，不重做） |
+
+> 未装工具不阻断全链：调用方一律经 `std_lib.common_lib.semantic_tools` 探测后惰性导入，不可用时回退既有正则实现并**记录回退说明**（`fallback_notice()`）。清单：`config/schema/semantic_tools.json`；启用：`pip install -e .[semantic]`。

@@ -44,6 +44,7 @@ import os
 import re
 import shutil
 import sys
+from typing import Any
 
 csv = __import__("csv")
 
@@ -395,10 +396,18 @@ def validate_schema() -> dict:
     from interfaces import contract
     from std_lib.scraper_std.document_structure import structure_semantics
     problems = []
-    stat = {"files": 0, "articles": 0, "chapters": 0, "structures": 0,
-            "law": 0, "degraded": 0, "fallback": 0, "invalid": 0, "warned": 0,
-            "article_structures": 0, "item_nodes": 0,
-            "title_swallow": 0, "tail_contam": 0, "space_contam": 0, "law_items": 0}
+    # N-101/N-94（2026-09-28）：`stat` 现为**异质容器**（计数 int + 体裁分布 dict）→ 显式注解
+    # `dict[str, Any]`（否则 mypy 由首个值把值域收窄，新增的 dict 成员会使整表退化为 object）。
+    stat: dict[str, Any] = {
+        "files": 0, "articles": 0, "chapters": 0, "structures": 0,
+        "law": 0, "degraded": 0, "fallback": 0, "invalid": 0, "warned": 0,
+        # N-101：体裁分布（`degraded` 的**可解释替代**；见下 `degraded += 1` 处注记）
+        "parse_modes": {},
+        "article_structures": 0, "item_nodes": 0,
+        "title_swallow": 0, "tail_contam": 0, "space_contam": 0, "law_items": 0,
+        # N-94：但书（proviso）计数 —— 度量先行，为"是否改切分逻辑"提供量级证据
+        "proviso": 0, "proviso_strict": 0,
+    }
     line_f = set(contract.CLAUSE_LINE_FIELDS)
     art_f = set(contract.CLAUSE_ARTICLE_FIELDS)
     ch_f = set(contract.CLAUSE_CHAPTER_FIELDS)
@@ -420,6 +429,14 @@ def validate_schema() -> dict:
                 stat["law"] += 1
             else:
                 stat["degraded"] += 1
+            # N-101（2026-09-28）：**键名纠偏**。`stat["degraded"]` 统计的是 `parse_mode != "law"`
+            # 的文件数 —— 即"**非法律条文体裁**"（`CLAUSE_PARSE_MODES` = bulletin/empty/law/
+            # notice/plain/plan 是**体裁**而非质量等级）。实测 16611 文件中 notice 55.0% +
+            # plain 29.2% + empty 0.2% → "degraded 84.35%" 看似告警，**实为正常**（多数监管
+            # 文件本就是通知/公告，不走条文解析）。键名保留仅为兼容既有消费方，**语义以本注为准**；
+            # 真正值得关注的是 `empty`（解析为空）与 `fallback`（走了回退路径）。
+            stat.setdefault("parse_modes", {})
+            stat["parse_modes"][str(mode)] = stat["parse_modes"].get(str(mode), 0) + 1
             if cl.get("is_fallback") is True:
                 stat["fallback"] += 1
             if not isinstance(cl.get("is_fallback"), bool):
@@ -473,6 +490,9 @@ def validate_schema() -> dict:
             stat["tail_contam"] += sem["tail"]
             stat["space_contam"] += sem["space"]
             stat["law_items"] += sem["items"]
+            # N-94（2026-09-28）：但书计数（**只披露**，不参与任何 problems 判定 —— 零行为变更）
+            stat["proviso"] += sem.get("proviso", 0)
+            stat["proviso_strict"] += sem.get("proviso_strict", 0)
             for a in cl.get("articles") or []:
                 stat["articles"] += 1
                 if set(a.keys()) != art_f:

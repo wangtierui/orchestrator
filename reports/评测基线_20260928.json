@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-09-28 14:30:35",
+ "generated_at": "2026-09-28 16:35:40",
  "generator": "tools/gen_benchmark.py",
  "schema_version": "1.0",
  "note": "语义质量基线（现状量化）；供语义增强上线前后逐键比对。",
@@ -50,8 +50,17 @@
   "tail_contam": 92,
   "space_contam": 40,
   "law_items": 439,
-  "degraded_ratio": 0.8435,
+  "parse_modes": {
+   "empty": 29,
+   "law": 2599,
+   "notice": 9140,
+   "plain": 4843
+  },
+  "proviso": 4540,
+  "proviso_strict": 925,
+  "empty_mode": 29,
   "fallback_ratio": 0.2933,
+  "empty_ratio": 0.0017,
   "consistent": true
  },
  "relations": {
@@ -84,7 +93,7 @@
    "no_body",
    "stats"
   ],
-  "generated_at": "2026-09-28T13:16:55+0800",
+  "generated_at": "2026-09-28T14:55:03+0800",
   "gates": {
    "clean": true,
    "validity": true,
@@ -104,6 +113,78 @@
    "pbc_cleaned_20260928": 571,
    "supp_cleaned_20260926.quarantine": 4,
    "supp_cleaned_20260928": 58
+  }
+ },
+ "semantic": {
+  "summary": "语义增强能力：0/10 可用（全部未安装 → 全链走既有正则路径）",
+  "fingerprint": {
+   "available": [],
+   "unavailable": [
+    "aprcoie",
+    "bertopic",
+    "hanlp",
+    "hdbscan",
+    "ltp",
+    "paradedb",
+    "signalgraph",
+    "text2vec",
+    "umap",
+    "weknora_docreader"
+   ],
+   "versions": {},
+   "schema_version": "1.0"
+  },
+  "probes": {
+   "aprcoie": {
+    "available": false,
+    "version": "",
+    "pipeline_ref": "v2 P3-1（可选，须先评估许可与体积）"
+   },
+   "bertopic": {
+    "available": false,
+    "version": "",
+    "pipeline_ref": "v2 P1-5（主题内子簇语义化，可选）"
+   },
+   "hanlp": {
+    "available": false,
+    "version": "",
+    "pipeline_ref": "v2 P1-3（分句/结构增强层）"
+   },
+   "hdbscan": {
+    "available": false,
+    "version": "",
+    "pipeline_ref": "v2 P1-5（随 BERTopic）"
+   },
+   "ltp": {
+    "available": false,
+    "version": "",
+    "pipeline_ref": "v2 P1-3（分句/结构增强层）"
+   },
+   "paradedb": {
+    "available": false,
+    "version": "",
+    "pipeline_ref": "v2 P2-2（**须先做零服务替代评估**；且须同时覆盖 search_internal）"
+   },
+   "signalgraph": {
+    "available": false,
+    "version": "",
+    "pipeline_ref": "v2 P3-2（可选；须先证明其**确定性**：同输入同输出）"
+   },
+   "text2vec": {
+    "available": false,
+    "version": "",
+    "pipeline_ref": "v2 P1-1（主题辅助裁定）、P1-2（关联语义档）"
+   },
+   "umap": {
+    "available": false,
+    "version": "",
+    "pipeline_ref": "v2 P1-5（随 BERTopic，不单独使用）"
+   },
+   "weknora_docreader": {
+    "available": false,
+    "version": "",
+    "pipeline_ref": "v2 P2-1（只补版面分析；OCR 通路已存在，不重做）"
+   }
   }
  }
 }

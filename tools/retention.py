@@ -32,6 +32,7 @@ import fnmatch
 import glob
 import json
 import os
+import re
 import shutil
 import sys
 
@@ -80,6 +81,19 @@ POLICY: tuple[dict, ...] = (
         "include_glob": "retention_*.json",
         "keep": 30,
     },
+    {
+        # N-100（2026-09-28）：清洗**隔离件**同源多份 → 按源**分组**保留最新 1 份。
+        # 背景：`quarantine_triage`（N-93）实测 nfra 残留 09-26/09-27/09-28 三份（字节数相同）、
+        # supp 仅 09-26 一份而 cleaned 已 09-28 → 历史隔离件未随快照轮转，使"当前问题量"被虚增、
+        # 且人工易误读。修复须**分组保留**（全局 keep 会误归档其他源的当前隔离件，见 `_plan_dir`）。
+        # 只移动不删除：超期件进 `archive/`，`--apply` 仍为人工闸门。
+        "name": "clean_quarantine_stale",
+        "dir": "modules/regulatory_scrapers/data/cleaned",
+        "include_glob": "*.quarantine.jsonl",
+        "group_by_regex": "^([a-z]+)_cleaned_",
+        "keep": 1,
+        "move_to": "archive/clean_quarantine",
+    },
 )
 
 SKIP_DIR_NAMES = {
@@ -122,6 +136,20 @@ def _plan_dir(spec: dict) -> tuple[list[dict], dict]:
         entries = [e for e in entries if fnmatch.fnmatch(os.path.basename(e), inc_only)]
     entries.sort(key=lambda p: os.path.getmtime(p), reverse=True)
     keep = int(spec.get("keep", 10))
+    # N-100（2026-09-28）：**分组保留**（`group_by_regex` 捕获组为分组键，`keep` 为**每组**保留量）。
+    # 背景：清洗隔离件形如 `{src}_cleaned_{date}.quarantine.jsonl`，同一源会随快照滚动累积
+    # （实测 nfra 09-26/09-27/09-28 三份、supp 仅 09-26 而 cleaned 已 09-28）。若用**全局** `keep`，
+    # 只有全仓最新的一个文件被保留 → 会**误归档其他源的当前隔离件**（把在用数据移走）。
+    # 故必须先按源分组，再在组内保留最新 `keep` 个。
+    grp_re = spec.get("group_by_regex", "")
+    group_keep: set = set()
+    if grp_re:
+        _by_grp: dict = {}
+        for p in entries:
+            m = re.match(grp_re, os.path.basename(p))
+            _by_grp.setdefault(m.group(1) if m else "", []).append(p)
+        for _ps in _by_grp.values():
+            group_keep.update(_ps[:keep])
     inc_glob = spec.get("incident_glob", "")
     inc_days = int(spec.get("incident_days", 0))
     out: list[dict] = []
@@ -136,6 +164,21 @@ def _plan_dir(spec: dict) -> tuple[list[dict], dict]:
             if inc_days and _age_days(p) <= inc_days:
                 n_incident_kept += 1
                 continue
+        if grp_re:
+            # 分组模式：保留判定完全由 `group_keep`（每组最新 keep 个）决定
+            if p in group_keep:
+                kept += 1
+                continue
+            _gm = re.match(grp_re, name)  # walrus/一次匹配：同时收窄类型并给出组名
+            out.append(
+                {
+                    "file": _rel(p),
+                    "size": os.path.getsize(p),
+                    "age_days": round(_age_days(p), 1),
+                    "reason": f"超出**分组**保留量 {keep}（组 {_gm.group(1) if _gm else '?'}）",
+                }
+            )
+            continue
         if kept < keep:
             kept += 1
             continue

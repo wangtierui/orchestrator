@@ -1106,6 +1106,11 @@ _SPACE_CONTAM_RE = re.compile(
 _ITEM_L2_ANY = re.compile(r"[（(【\[]\s*[%s]{1,6}\s*[）)】\]]" % _CN)
 
 
+# 但书严档形态（N-94 度量先行）：同一句内 `但` 与法定例外用语同现。
+# 例：「……但法律、行政法规另有规定的除外。」「……但本通知另有规定的，不适用本条规定。」
+_PROVISO_STRICT = re.compile(r"但[^。；！？]{0,60}(?:除外|不适用|另有规定)")
+
+
 def structure_semantics(row: dict) -> dict:
     """结构语义体检（2026-09-20 F7）：一次遍历给出四类计数，供 V008–V010 与产物自检共用。
 
@@ -1118,7 +1123,17 @@ def structure_semantics(row: dict) -> dict:
       items    ：**未抽取条内层级**的条文数（body 含 `（X）` 但无对应 `article_structure`
                  节点）——F6 落地后应趋近 0。
     """
-    n = {"swallowed": 0, "tail": 0, "space": 0, "items": 0}
+    n = {
+        "swallowed": 0, "tail": 0, "space": 0, "items": 0,
+        # N-94（2026-09-28）**度量先行**：但书计数（两档，**只计数、不参与任何切分/校验判定**，
+        # 零行为变更）。口径（均以"条"为单位，同一仅计一次）：
+        #   proviso        —— 条 body 内含 `但`（引导转折/例外分句的常见标记，宽档）；
+        #   proviso_strict —— 同一句内 `但` 与法定例外用语（除外 / 不适用 / 另有规定）同现，
+        #                     即但书（proviso）的典型形态（严档）。
+        # 用途：为"是否值得为但书改动 1542 行解析器的切分逻辑"提供**量级证据**——
+        # 无此数则只能凭感觉决策（v2 对 P0-3 的落地方式即"度量先行"）。
+        "proviso": 0, "proviso_strict": 0,
+    }
     astr_nos = {(nd.get("number") or "") for nd in (row.get("article_structure") or [])}
 
     def _scan(text: str) -> None:
@@ -1150,6 +1165,10 @@ def structure_semantics(row: dict) -> dict:
         _scan(body)
         if _ITEM_L2_ANY.search(body) and (a.get("number") or "") not in astr_nos:
             n["items"] += 1
+        if "但" in body:
+            n["proviso"] += 1
+            if _PROVISO_STRICT.search(body):
+                n["proviso_strict"] += 1
     return n
 
 

@@ -53,6 +53,24 @@ ocr = [
 # 说明（2026-09-13）：原 `mcp = ["mcp>=2.0.0"]` 已移除——全仓零 `import mcp`（死 extra）。
 # 北大法宝时效核验的真实依赖在 **Node 侧**：`@pkulaw/mcp-cli` + 托管 Node
 # （经 env PKULAW_NODE_EXE / PKULAW_PKG_DIR 注入，见 README §6.7），与 Python extra 无关。
+#
+# P1 语义增强 extra（N-102，2026-09-28）—— **可选增强层**，与 `ocr` 同款定位：
+#   · 清单唯一事实源：`config/schema/semantic_tools.json`（来源仓库/用途/体积/离线性）；
+#   · 能力探测：`python -m std_lib.common_lib.semantic_tools --probe`（未安装 → 全链走既有正则）；
+#   · 三条硬纪律（见清单 policy）：零硬依赖 / 降级链须**可观测** / 产物须带 `fingerprint()`。
+#   · ⚠️ 版本区间为**保守下界**：上界与具体可用版本须在首次实装冒烟后按实测锁定
+#     （不臆造精确约束；锁定后请在此更新并注明实测日期）。
+#   · 未列入本 extra 的工具（非 pip 安装，须人工/Docker 部署）：
+#     APRCOIE（论文代码库）、SignalGraph（纯 Python 源码库）、WeKnora docreader（gRPC 服务）、
+#     ParadeDB（PostgreSQL 扩展 + Docker）。
+#   · `hdbscan` 不重复声明：新版 `bertopic` 已改用 `sklearn.cluster.HDBSCAN`（sklearn>=1.3）；
+#     `ltp` 与 `hanlp` **二选一**（同一增强层，按中文分句质量择优）。
+semantic = [
+    "hanlp>=2.1",
+    "text2vec>=1.2",
+    "bertopic>=0.16",
+    "umap-learn>=0.5",
+]
 
 [project.scripts]
 orchestrator = "cli:main"

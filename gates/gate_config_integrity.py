@@ -941,6 +941,86 @@ def _check_theme_coverage() -> tuple[list[str], dict]:
     return problems, detail
 
 
+def _check_semantic_manifest() -> tuple[list[str], dict]:
+    """判据 U（N-102，2026-09-28）：**P1 语义工具清单自洽**。
+
+    背景：P1 语义增强的"零硬依赖 / 降级链 / 指纹"三条纪律，若清单本身可缺字段、可指向不存在的
+    extra，纪律就只是文档。本判据把清单变成**机器可校验**的元数据：
+
+      ① 清单可加载，且 `policy` 明确声明 `hard_dependency=False` + `degradation/fingerprint=required`
+         （三条纪律**不得被静默放宽**）；
+      ② 每条工具必备：`repo`（http 链接）、`purpose`、`probe.import_name`、`pipeline_ref`
+         （指向 v2 方案项 → 保证"每个工具都对应一个已论证的落点"，防"先把依赖装上再说"）；
+      ③ `probe()` 对每个工具**不抛异常**且返回结构完整（探测层自身不得成为新失败点）；
+      ④ 清单声明的 `extra`（若为非空）必须真的存在于 `pyproject [project.optional-dependencies]`
+         ——防"清单说有 extra、用户按文档装了却没有"（同 CP-A01 那类"装了等于没装"缺陷）。
+    """
+    problems: list[str] = []
+    detail: dict = {}
+    try:
+        from std_lib.common_lib import semantic_tools as st
+    except Exception as e:  # noqa: BLE001
+        return [f"U1: 语义工具清单判据依赖导入失败：{type(e).__name__}: {e}"], {}
+
+    try:
+        man = st.load_manifest()
+    except RuntimeError as e:
+        return [f"U1: {e}"], {}
+
+    pol = man.get("policy") or {}
+    if pol.get("hard_dependency") is not False:
+        problems.append("U1: policy.hard_dependency 必须显式为 false（零硬依赖是纪律，不得放宽）")
+    for k in ("degradation", "fingerprint"):
+        if pol.get(k) != "required":
+            problems.append(f"U1: policy.{k} 必须为 \"required\"（实为 {pol.get(k)!r}）")
+
+    tools = man.get("tools") or {}
+    need = ("repo", "purpose", "pipeline_ref")
+    for name, spec in sorted(tools.items()):
+        for k in need:
+            if not str(spec.get(k) or "").strip():
+                problems.append(f"U1: 工具 {name!r} 缺 {k}")
+        if not str(spec.get("repo") or "").startswith("http"):
+            problems.append(f"U1: 工具 {name!r} 的 repo 须为 http(s) 链接")
+        if not str((spec.get("probe") or {}).get("import_name") or "").strip():
+            problems.append(f"U1: 工具 {name!r} 缺 probe.import_name（探测层无法判定可用性）")
+
+    # ③ 探测层健壮性
+    bad_probe: list[str] = []
+    for n in sorted(tools):
+        try:
+            p = st.probe(n)
+            if not {"name", "available", "detail", "pipeline_ref"} <= set(p):
+                bad_probe.append(f"{n}(结构缺键)")
+        except Exception as e:  # noqa: BLE001
+            bad_probe.append(f"{n}({type(e).__name__})")
+    if bad_probe:
+        problems.append(f"U1: 工具探测异常/结构不完整 {bad_probe}（探测层不得成为新失败点）")
+
+    # ④ extra 交叉核对
+    extras: set = set()
+    try:
+        import tomllib
+
+        with open(os.path.join(ROOT, "pyproject.toml"), "rb") as fh:
+            extras = set((tomllib.load(fh).get("project") or {}).get("optional-dependencies") or {})
+    except Exception as e:  # noqa: BLE001
+        problems.append(f"U1: 无法读取 pyproject extra 段：{type(e).__name__}: {e}")
+    missing_extras = sorted(
+        {str(s.get("extra")) for s in tools.values() if s.get("extra")} - extras
+    )
+    if missing_extras:
+        problems.append(f"U1: 清单声明的 extra 在 pyproject 中不存在 {missing_extras}")
+
+    detail["semantic_manifest"] = {
+        "tools": len(tools),
+        "extras": sorted(extras & {str(s.get("extra")) for s in tools.values()}),
+        "policy": {k: pol.get(k) for k in ("hard_dependency", "degradation", "fingerprint")},
+        "available": [n for n in sorted(tools) if st.available(n)],
+    }
+    return problems, detail
+
+
 def _check_constants() -> tuple[list[str], dict]:
     problems: list[str] = []
     detail: dict = {}
@@ -1050,6 +1130,11 @@ def run() -> tuple[bool, dict]:
     p9, d9 = _check_theme_coverage()
     problems += p9
     detail.update(d9)
+
+    # 判据 U（N-102）：P1 语义工具清单自洽（零硬依赖/降级链/指纹三条纪律机器化）
+    p10, d10 = _check_semantic_manifest()
+    problems += p10
+    detail.update(d10)
 
     p4, d4 = _check_corpus()
     problems += p4
