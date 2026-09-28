@@ -293,6 +293,8 @@ def _q_relations_locate_audit(rows: list[dict]) -> dict:
     # N-112：多半径互证分档（零人工）
     win_only_strong = win_only_weak = 0
     off_tight = off_mid = off_far = 0
+    # D5：弱证据细分（竞争者距离）
+    weak_nohit = weak_far_only = weak_rival1 = weak_rival_many = 0
     samples: list[dict] = []
     for r in rows:
         key = str(r.get("dst_ref") or r.get("dst_key") or "")
@@ -352,6 +354,18 @@ def _q_relations_locate_audit(rows: list[dict]) -> dict:
                     win_only_strong += 1   # 紧邻引用名（≤40 字符）且全窗无竞争者
                 else:
                     win_only_weak += 1
+                # D5（2026-09-28）**弱者细分**：弱证据此前是一个黑箱。按**竞争者距离**拆开，
+                # 使"该先看哪一批"有据可依：`rivals = 0` 只是位置偏远（条号离引用名远，
+                # 但全窗独一份）→ 可疑度低；`rivals > 0` 则**存在更远的其他候选** → 可疑度高
+                # （目标条号之所以被选中，仅因它比另一个候选更近）。
+                if hit_off < 0:
+                    weak_nohit += 1
+                elif rivals == 0:
+                    weak_far_only += 1
+                elif rivals == 1:
+                    weak_rival1 += 1
+                else:
+                    weak_rival_many += 1
                 if hit_off <= 40:
                     off_tight += 1
                 elif hit_off <= 80:
@@ -383,6 +397,10 @@ def _q_relations_locate_audit(rows: list[dict]) -> dict:
             "off_tight": off_tight,
             "off_mid": off_mid,
             "off_far": off_far,
+            "weak_nohit": weak_nohit,
+            "weak_far_only": weak_far_only,
+            "weak_rival1": weak_rival1,
+            "weak_rival_many": weak_rival_many,
             "samples": samples,
         }
     )
@@ -624,6 +642,18 @@ def render_quality(q: dict) -> list:
                 "  → W2 决议（**保持后向 100 字符**）：抽样证实 `>80` 行的 **88%** 为**长引用列表**"
                 "（“依据《A》《B》《C》等，制定本法第X条”→ 条号必然偏远）→ 远距离**不是**可疑信号；"
                 "故**不收窄**（会丢合法长引用命中）**不加宽**（无正确性增益）"
+            )
+            L.append(
+                "- **唯一性不变式**（D5）：竞争者数 >0 的行 `"
+                f"{la.get('weak_rival1', 0) + la.get('weak_rival_many', 0)}`"
+                "（**应为 0**；>0 即「唯一命中才填」守卫被破坏 → 报警）；"
+                f"弱证据细分（供「该先看哪批」）：全窗独一份仅**位置偏远** {la.get('weak_far_only')}"
+                f"（低可疑）／定位不到出处 {la.get('weak_nohit')}"
+            )
+            L.append(
+                "  → D5 结论：`rivals` **结构上恒为 0**（「唯一命中才填」⇒目标表内本就唯一）"
+                "→ 该维度**无信息量**，故改判为**不变式校验**而非分档依据；"
+                "弱证据的真实分档仍以**距离**（≤40/40–80/>80）为准"
             )
             L.append(
                 f"  → **误定位下界 `{la.get('misalign_lower')}`"

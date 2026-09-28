@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-09-28 21:41:19",
+ "generated_at": "2026-09-29 00:26:25",
  "generator": "tools/gen_benchmark.py",
  "schema_version": "1.0",
  "note": "语义质量基线（现状量化）；供语义增强上线前后逐键比对。",

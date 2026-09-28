@@ -250,6 +250,94 @@ def fingerprint(names: list[str] | tuple[str, ...] | None = None) -> dict:
     }
 
 
+def _http_json(url: str, timeout: float = 8.0):
+    """GET → JSON（失败返回 None，不抛）。**唯一网络入口**（便于审计与替换镜像）。"""
+    import urllib.error
+    import urllib.request
+
+    req = urllib.request.Request(url, headers={"User-Agent": "reg-orchestrator/license-check"})
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            return json.loads(r.read().decode("utf-8", "replace"))
+    except (urllib.error.URLError, ValueError, OSError):
+        return None
+
+
+def _spdx_from_pypi(pypi: str) -> tuple:
+    """PyPI JSON → (SPDX/许可串, 来源)。优先 classifiers 的 `License :: ...` 末段。"""
+    if not pypi:
+        return "", ""
+    d = _http_json(f"https://pypi.org/pypi/{pypi}/json")
+    if not d:
+        return "", ""
+    info = d.get("info") or {}
+    for c in info.get("classifiers") or []:
+        if c.startswith("License :: OSI Approved ::"):
+            name = c.split("::")[-1].strip()
+            return name, f"pypi:classifiers/{pypi}"
+    lic = str(info.get("license") or "").strip()
+    if lic and len(lic) <= 64 and "\n" not in lic:
+        return lic, f"pypi:license/{pypi}"
+    return "", ""
+
+
+def _spdx_from_github(repo: str) -> tuple:
+    """GitHub repo API → (SPDX ID, 来源)。"""
+    m = repo.rstrip("/").split("github.com/")
+    if len(m) < 2:
+        return "", ""
+    slug = m[1]
+    d = _http_json(f"https://api.github.com/repos/{slug}")
+    if not d:
+        return "", ""
+    lic = d.get("license") or {}
+    sid = str(lic.get("spdx_id") or "").strip()
+    if sid and sid != "NOASSERTION":
+        return sid, f"github:license/{slug}"
+    return "", ""
+
+
+def verify_licenses(tools: list | None = None) -> dict:
+    """许可**自动核验**（W5 后续，2026-09-28）：→ `{工具: {"spdx","source","ok"}}`。
+
+    为什么自动化：许可从"人工待办"变为**可重复执行的核验**——`license_registry.verified`
+    若靠人肉登记，会随工具变更而**静默过时**（登记的是旧版本/旧仓库的许可）。
+    本函数每次现查 **PyPI / GitHub 的权威元数据**，并把**来源 URL** 一并落盘以可追溯。
+
+    **仅供人工确认后写入**（`apply_license_verification()`）：核验结果不自动改清单 ——
+    许可结论必须经人过目（自动化只负责"取证"，不负责"拍板"）。
+    """
+    names = list(tools) if tools else tool_names()
+    raw = load_manifest()["tools"]
+    out: dict = {}
+    for n in sorted(names):
+        spec = raw.get(n) or {}
+        spdx, src = "", ""
+        # ① GitHub 仓库（最权威：仓库自带 LICENSE）
+        spdx, src = _spdx_from_github(str(spec.get("repo") or ""))
+        # ② 退回 PyPI classifiers
+        if not spdx:
+            spdx, src = _spdx_from_pypi(str(spec.get("pypi") or ""))
+        out[n] = {"spdx": spdx, "source": src, "ok": bool(spdx)}
+    return out
+
+
+def apply_license_verification(verified_map: dict) -> dict:
+    """把核验结果**写入**清单 `license_registry`（verified ← 命中项；其余留在 pending）。
+
+    → 返回新登记（`{"verified": {...}, "pending": [...]}`）。**幂等**：可重复执行。
+    只登记 `ok=True` 的项；`pending` = 工具全集 − verified（保持"每个工具都在登记中"的封口）。
+    """
+    reg = dict(load_manifest().get("license_registry") or {})
+    cur_v = dict(reg.get("verified") or {})
+    today = __import__("datetime").date.today().isoformat()
+    for name, r in (verified_map or {}).items():
+        if r.get("ok"):
+            cur_v[name] = f"{r['spdx']}（核验日 {today}；来源 {r['source']}）"
+    pend = sorted(set(tool_names()) - set(cur_v))
+    return {"verified": dict(sorted(cur_v.items())), "pending": pend}
+
+
 def license_pending() -> list:
     """许可**未核**工具名（W5）：登记在 `license_registry.pending`。入库前置为清空。"""
     reg = load_manifest().get("license_registry") or {}
@@ -369,12 +457,34 @@ def _main(argv: list[str]) -> int:
     if cmd == "--fingerprint":
         print(json.dumps(fingerprint(), ensure_ascii=False, indent=1, sort_keys=True))
         return int(ExitCode.OK)
-    if cmd == "--preflight":
+    if cmd == "--verify-licenses":
+        # 核验（只读）+ `--apply` 时才写清单（取证与拍板分离）
+        res = verify_licenses()
+        for n, r in res.items():
+            mark = "已核" if r["ok"] else "未取到"
+            print(f"  [{mark}] {n:20} {r['spdx'] or '—':28} {r['source']}")
+        if "--apply" in argv:
+            new = apply_license_verification(res)
+            man = load_manifest()
+            man["license_registry"]["verified"] = new["verified"]
+            man["license_registry"]["pending"] = new["pending"]
+            with open(_manifest_path(), "w", encoding="utf-8") as fh:
+                json.dump(man, fh, ensure_ascii=False, indent=1)
+                fh.write("\n")
+            load_manifest.cache_clear()
+            print(f"  已写入清单：verified {len(new['verified'])} / pending {len(new['pending'])}")
+        return int(ExitCode.OK)
+    if cmd in ("--preflight", "--preflight-report"):
         pf = preflight()
         print(f"P1 启用前置自检：{'可以启用' if pf['ok'] else '**不可启用**'}")
         for name, g in pf["gates"].items():
             print(f"  [{'可' if g['ok'] else '否'}] {name:9} {g['detail']}")
-        return int(ExitCode.OK if pf["ok"] else ExitCode.FAIL)
+        # N-114：两种用途明确分离 ——
+        #   · `--preflight`（判定用）：rc 反映可否启用（供人工/脚本当闸门）；
+        #   · `--preflight-report`（披露用）：**恒 rc=0** —— 供**全链披露步骤**调用。
+        #     理由：P1 **未启用是合法状态**，若披露步骤因"不可启用"而 FAIL，会把
+        #     "尚未启用"误报为"链路故障"（违反"判据不可执行 ≠ 判据不通过"的同款纪律）。
+        return int(ExitCode.OK if (cmd == "--preflight-report" or pf["ok"]) else ExitCode.FAIL)
     print(f"用法：{os.path.basename(argv[0])} [--probe|--fingerprint|--preflight]")
     return int(ExitCode.USAGE)
 

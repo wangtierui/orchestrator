@@ -607,6 +607,8 @@ STEP_ORDER: tuple[str, ...] = (
     # N-93（2026-09-28）：清洗**隔离记录**分类与处置登记（零回写 → worklist）。
     #   置于链尾：看得见本轮全部 cleaned 快照与隔离件（含历史残留体检）。
     "quarantine:triage",
+    # N-114（2026-09-28）：P1 语义增强启用前置**披露**（五道闸逐项；`--preflight-report` 恒 rc=0）
+    "semantic:preflight",
     # wiki_sync 依赖 published 清单（publish_manifest）→ 在 base:publish 之后、gates 之前。
     "wiki:sync",
     "gates",
@@ -1100,6 +1102,18 @@ def _run_chain(args) -> int:
             "quarantine:triage",
             [PY, os.path.join(ROOT, "tools", "quarantine_triage.py")],
             timeout=600,
+        )
+    )
+
+    # ---- 阶段 6.6b：P1 语义增强**启用前置披露**（N-114，2026-09-28）----
+    # `--preflight-report`：五道闸（deps/offline/fp/baseline/license）逐项打印并**恒 rc=0**。
+    # 为何用披露口径而非判定口径：P1 **未启用是合法状态**，若因"不可启用"使步骤 FAIL，
+    # 会把"尚未启用"误报成"链路故障"。判定口径 (`--preflight`) 保留给人工/CI 当闸门。
+    report.append(
+        _run(
+            "semantic:preflight",
+            [PY, "-m", "std_lib.common_lib.semantic_tools", "--preflight-report"],
+            timeout=300,
         )
     )
 

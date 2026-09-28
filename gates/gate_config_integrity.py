@@ -1019,6 +1019,18 @@ def _check_semantic_manifest() -> tuple[list[str], dict]:
         problems.append(f"U1: 许可登记含未定义工具 {ghost}（疑拼写漂移）")
     if ver & pend:
         problems.append(f"U1: 许可状态冲突（同时 verified 与 pending）：{sorted(ver & pend)}")
+    # ⑤ pending 须带**原因**（否则"待核"退化为无人能判的长期悬挂）；risk_notes 须指向已定义工具
+    reason = reg.get("pending_reason") or {}
+    no_reason = sorted(pend - set(reason))
+    if no_reason:
+        problems.append(f"U1: pending 工具缺 pending_reason {no_reason}（须写明为何未核）")
+    stray_reason = sorted(set(reason) - pend)
+    if stray_reason:
+        problems.append(f"U1: pending_reason 指向非 pending 项 {stray_reason}（状态已变须清理）")
+    risk = reg.get("risk_notes") or {}
+    stray_risk = sorted(set(risk) - all_tools)
+    if stray_risk:
+        problems.append(f"U1: risk_notes 含未定义工具 {stray_risk}")
 
     # ④ extra 交叉核对
     extras: set = set()

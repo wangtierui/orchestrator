@@ -10,19 +10,27 @@
  },
  "license_registry": {
   "note": "许可核验登记（W5，2026-09-28）：**每个工具须在此登记**（verified 或 pending），使“还有哪些未核”机器可查，而非散落在各条目的 `license_to_verify` 自由标记里。判据 U 断言两集合之并 == 工具全集。入库前置：pending 清空。",
-  "policy": "入库（把依赖/代码纳入交付面）前，对应工具必须从 pending 移入 verified，并在 verified 值内写明 SPDX 标识与核验日期。",
-  "verified": {},
+  "policy": "入库（把依赖/代码纳入交付面）前，对应工具必须从 pending 移入 verified，并在 verified 值内写明 SPDX 标识与核验日期。核验由 `semantic_tools --verify-licenses` 现查 PyPI/GitHub 权威元数据**取证**（可重复执行，防人工登记随版本静默过时），人工确认后 `--apply` 写入。",
+  "pending_reason": {
+   "ltp": "GitHub API 返回 license=null —— 仓库**未声明许可**（非限流，`_http_json` 成功返回）；纳入交付面存在法律不确定性 → 保持 pending。注：本仓以 hanlp 作分句后端，ltp 属二选一备选，不影响启用决策。",
+   "weknora_docreader": "GitHub API 返回 NOASSERTION / \"Other\" —— 使用**自定义许可**，须人工阅读 LICENSE 原文后方可判定 → 保持 pending。"
+  },
+  "risk_notes": {
+   "paradedb": "⚠️ **AGPL-3.0**（强 copyleft，含网络服务条款）→ 除与「单机零服务依赖 / 克隆可移植性」冲突外，还带**许可传染**风险；若纳入交付面须法务评估。当前定位为可选外部后端（P2-2），**不建议随仓分发**。"
+  },
+  "verified": {
+   "aprcoie": "MIT（核验日 2026-09-28；来源 github:license/jialin666/APRCOIE_v1）",
+   "bertopic": "MIT（核验日 2026-09-28；来源 github:license/MaartenGr/BERTopic）",
+   "hanlp": "Apache-2.0（核验日 2026-09-28；来源 github:license/hankcs/HanLP）",
+   "hdbscan": "BSD-3-Clause（核验日 2026-09-28；来源 github:license/scikit-learn-contrib/hdbscan）",
+   "paradedb": "AGPL-3.0（核验日 2026-09-28；来源 github:license/paradedb/paradedb）",
+   "signalgraph": "MIT（核验日 2026-09-28；来源 github:license/zhiliscope/SignalGraph）",
+   "text2vec": "Apache-2.0（核验日 2026-09-28；来源 github:license/shibing624/text2vec）",
+   "umap": "BSD-3-Clause（核验日 2026-09-28；来源 github:license/lmcinnes/umap）"
+  },
   "pending": [
-   "hanlp",
    "ltp",
-   "text2vec",
-   "bertopic",
-   "umap",
-   "hdbscan",
-   "aprcoie",
-   "signalgraph",
-   "weknora_docreader",
-   "paradedb"
+   "weknora_docreader"
   ]
  },
  "tools": {
@@ -31,11 +39,17 @@
    "purpose": "中文分词、分句、依存句法分析",
    "extra": "semantic",
    "pypi": "hanlp",
-   "probe": {"kind": "module", "import_name": "hanlp"},
+   "probe": {
+    "kind": "module",
+    "import_name": "hanlp"
+   },
    "pipeline_ref": "v2 P1-3（分句/结构增强层）",
    "approx_size": "首次使用自动下载约 1.2GB 模型",
    "offline": "须预置模型目录（HANLP_HOME）并置 MTL_HANLP_OFFLINE=1；不得依赖联网首用",
-   "offline_env": ["HANLP_HOME", "MTL_HANLP_OFFLINE"],
+   "offline_env": [
+    "HANLP_HOME",
+    "MTL_HANLP_OFFLINE"
+   ],
    "license_to_verify": true
   },
   "ltp": {
@@ -43,11 +57,16 @@
    "purpose": "中文分句与依存句法分析（sent_split 专用接口）",
    "extra": "semantic",
    "pypi": "ltp",
-   "probe": {"kind": "module", "import_name": "ltp"},
+   "probe": {
+    "kind": "module",
+    "import_name": "ltp"
+   },
    "pipeline_ref": "v2 P1-3（分句/结构增强层）",
    "approx_size": "依赖 PyTorch（CPU wheel 约数百 MB）+ 模型文件",
    "offline": "须预置模型目录；与 hanlp 二选一即可（同一增强层）",
-   "offline_env": ["LTP_HOME"],
+   "offline_env": [
+    "LTP_HOME"
+   ],
    "license_to_verify": true
   },
   "text2vec": {
@@ -55,11 +74,16 @@
    "purpose": "中文语义向量化（Sentence-BERT / CoSENT）",
    "extra": "semantic",
    "pypi": "text2vec",
-   "probe": {"kind": "module", "import_name": "text2vec"},
+   "probe": {
+    "kind": "module",
+    "import_name": "text2vec"
+   },
    "pipeline_ref": "v2 P1-1（主题辅助裁定）、P1-2（关联语义档）",
    "approx_size": "依赖 PyTorch；模型 shibing624/text2vec-base-chinese 约 100MB",
    "offline": "模型须预置到本地目录并传入模型路径；不得首用联网下载",
-   "offline_env": ["SENTENCE_TRANSFORMERS_HOME"],
+   "offline_env": [
+    "SENTENCE_TRANSFORMERS_HOME"
+   ],
    "license_to_verify": true
   },
   "bertopic": {
@@ -67,7 +91,10 @@
    "purpose": "无监督主题聚类（Transformer + c-TF-IDF）",
    "extra": "semantic",
    "pypi": "bertopic",
-   "probe": {"kind": "module", "import_name": "bertopic"},
+   "probe": {
+    "kind": "module",
+    "import_name": "bertopic"
+   },
    "pipeline_ref": "v2 P1-5（主题内子簇语义化，可选）",
    "approx_size": "依赖 umap/hdbscan/scikit-learn + Transformer 权重",
    "offline": "同 text2vec：模型须预置；聚类结果**不写主题归属表**（上游事实源）",
@@ -78,7 +105,10 @@
    "purpose": "非线性降维（BERTopic 依赖）",
    "extra": "semantic",
    "pypi": "umap-learn",
-   "probe": {"kind": "module", "import_name": "umap"},
+   "probe": {
+    "kind": "module",
+    "import_name": "umap"
+   },
    "pipeline_ref": "v2 P1-5（随 BERTopic，不单独使用）",
    "approx_size": "依赖 numba（首次编译有耗时）",
    "offline": "无外部模型；离线可用",
@@ -89,7 +119,10 @@
    "purpose": "层次密度聚类（发现变密度簇）",
    "extra": "semantic",
    "pypi": "hdbscan",
-   "probe": {"kind": "module", "import_name": "hdbscan"},
+   "probe": {
+    "kind": "module",
+    "import_name": "hdbscan"
+   },
    "pipeline_ref": "v2 P1-5（随 BERTopic）",
    "approx_size": "需编译工具链；**注意**新版 bertopic 已改用 sklearn.cluster.HDBSCAN（sklearn>=1.3），本包可能非必需",
    "offline": "无外部模型；离线可用",
@@ -100,7 +133,10 @@
    "purpose": "中文开放信息抽取（自动生成抽取模式）",
    "extra": "",
    "pypi": "",
-   "probe": {"kind": "manual", "import_name": "aprcoie"},
+   "probe": {
+    "kind": "manual",
+    "import_name": "aprcoie"
+   },
    "pipeline_ref": "v2 P3-1（可选，须先评估许可与体积）",
    "approx_size": "论文代码库，无发行包；须人工获取",
    "offline": "须随仓外置（不得入库）；依赖前置句法分析结果",
@@ -111,7 +147,10 @@
    "purpose": "零 Token 确定性图构建",
    "extra": "semantic",
    "pypi": "",
-   "probe": {"kind": "module", "import_name": "signalgraph"},
+   "probe": {
+    "kind": "module",
+    "import_name": "signalgraph"
+   },
    "pipeline_ref": "v2 P3-2（可选；须先证明其**确定性**：同输入同输出）",
    "approx_size": "纯 Python，无外部 AI 依赖",
    "offline": "离线可用",
@@ -122,7 +161,13 @@
    "purpose": "文档解析（PDF/DOCX/Excel/EPUB 等 25+ 格式 + 页面渲染），docreader 可解耦为独立 gRPC 服务",
    "extra": "",
    "pypi": "",
-   "probe": {"kind": "service", "import_name": "grpc", "client_module": "grpc", "endpoint_env": "DOCREADER_ENDPOINT", "default_endpoint": "localhost:50051"},
+   "probe": {
+    "kind": "service",
+    "import_name": "grpc",
+    "client_module": "grpc",
+    "endpoint_env": "DOCREADER_ENDPOINT",
+    "default_endpoint": "localhost:50051"
+   },
    "pipeline_ref": "v2 P2-1（只补版面分析；OCR 通路已存在，不重做）",
    "approx_size": "Docker 服务（须独立部署）",
    "offline": "服务不可达时**必须**回退 crawler_common.extract_document_text（复用既有 6 态，不新增状态）",
@@ -133,7 +178,13 @@
    "purpose": "向量检索 + BM25 + 混合检索（基于 PostgreSQL 扩展）",
    "extra": "",
    "pypi": "psycopg",
-   "probe": {"kind": "service", "import_name": "psycopg", "client_module": "psycopg", "endpoint_env": "PARADEDB_DSN", "default_endpoint": ""},
+   "probe": {
+    "kind": "service",
+    "import_name": "psycopg",
+    "client_module": "psycopg",
+    "endpoint_env": "PARADEDB_DSN",
+    "default_endpoint": ""
+   },
    "pipeline_ref": "v2 P2-2（**须先做零服务替代评估**；且须同时覆盖 search_internal）",
    "approx_size": "Docker：paradedb/paradedb:v0.22.2-pg17",
    "offline": "与\"单机零服务依赖 / 克隆可移植性\"冲突 → 仅作可选后端，SQLite FTS5 保留为降级路径",
