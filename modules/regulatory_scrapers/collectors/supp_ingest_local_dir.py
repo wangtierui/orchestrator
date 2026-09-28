@@ -128,7 +128,7 @@ def main(argv=None):
     ap.add_argument("--dry-run", action="store_true", help="仅预览，不复制/不写盘")
     args = ap.parse_args(argv)
 
-    from std_lib.scraper_std.cache_store import docs_root  # noqa: PLC0415
+    from std_lib.scraper_std.cache_store import docs_root
     docs_dir = docs_root("supp")
     os.makedirs(docs_dir, exist_ok=True)
 
@@ -191,7 +191,7 @@ def main(argv=None):
         rec["downloaded_doc_path"] = body_path
 
     # xls/xlsx 附件 → excel_classified_v2 重建
-    from std_lib.scraper_std.table_recovery import structured_table_fields  # noqa: PLC0415
+    from std_lib.scraper_std.table_recovery import structured_table_fields
     v2_list: list = []
     methods: set = set()
     for _f, target, _is_body, kind, _num in plan:

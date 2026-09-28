@@ -40,12 +40,12 @@ for _p in (UTILS, PROJECT_ROOT):
 try:
     # 2026-09-26（v2 §3.7 G2）：原为顶层无保护导入——"只装 .[dev]"（无 [ocr]）时
     # 任何 import 本模块即 `ModuleNotFoundError`。改为模块可导入、调用期显式失败。
-    import pymupdf as fitz  # noqa: E402
+    import pymupdf as fitz
 except ImportError:  # pragma: no cover - 依赖缺失环境
     fitz = None  # type: ignore[assignment]
 
-from config.exitcodes import ExitCode  # noqa: E402
-from std_lib.scraper_std.naming import standard_filename  # noqa: E402
+from config.exitcodes import ExitCode
+from std_lib.scraper_std.naming import standard_filename
 
 RAW = os.path.join(PROJECT_ROOT, "data", "raw", "supplementary_regulations.json")
 DOCS = os.path.join(PROJECT_ROOT, "downloaded_docs")

@@ -58,8 +58,8 @@ if _ORCH_ROOT not in sys.path:
 R_PAT = re.compile(r"\bR-(\d{2})\b")
 # R-F01 收敛（2026-09-14）：文号核心形态 / 书名号标题 / 监管机关词表上收
 # std_lib.common_lib.relations（原为本文件字面量，与 clause_graph、detail_tables 三份重复）。
-from config.exitcodes import ExitCode  # noqa: E402
-from std_lib.common_lib.relations import ORGAN_WORDS, docno_core_re, quote_title_re  # noqa: E402
+from config.exitcodes import ExitCode
+from std_lib.common_lib.relations import ORGAN_WORDS, docno_core_re, quote_title_re
 
 # 发文字号核心：〔20xx〕N号 / [20xx]N号 / （20xx）N号 / 令20xx年第N号 / 国务院令第N号
 DOCNO_CORE_PAT = docno_core_re()
@@ -94,13 +94,13 @@ def load_align_map():
 
 
 # 时效状态受控枚举（规范 v3：7 值英文；对齐表时效列必须属于该集合）
-TIMELINESS_SET = frozenset({"valid", "amended", "repealed", "partially_repealed",
-                            "expired", "pending", "uncertain"})
+# N-77（2026-09-28）：原为本地字面量副本 → 改为**直取 SSOT**（本文件已在文件头引导仓根）。
+from config.enums import TIMELINESS_STATUS as TIMELINESS_SET
 
 
 class Verifier:
     def __init__(self):
-        from interfaces.rfn_api import get_index  # noqa: PLC0415  延迟加载（见 P7 引导注）
+        from interfaces.rfn_api import get_index
         self.idx = get_index()
         self.align = load_align_map()
 

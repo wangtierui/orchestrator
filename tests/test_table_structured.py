@@ -21,8 +21,8 @@ if os.path.join(ROOT, "std_lib") not in sys.path:
 
 openpyxl = pytest.importorskip("openpyxl")
 
-from std_lib.scraper_std import unified_schema  # noqa: E402
-from std_lib.scraper_std.table_recovery import structured_table_fields  # noqa: E402
+from std_lib.scraper_std import unified_schema
+from std_lib.scraper_std.table_recovery import structured_table_fields
 
 
 def _xlsx_bytes() -> bytes:

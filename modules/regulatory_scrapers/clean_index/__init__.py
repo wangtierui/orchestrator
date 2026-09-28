@@ -405,7 +405,7 @@ class CleanIndex:
         返回该源最新快照 csv 绝对路径（无则 None）。"""
         return self.latest_csv_path(source_id)
 
-    def __repr__(self) -> str:  # noqa: D401
+    def __repr__(self) -> str:
         return f"<CleanIndex sources={self.summary.get('source_count')} snapshots={self.summary.get('snapshot_count')} records={self.summary.get('total_record_count')}>"
 
 

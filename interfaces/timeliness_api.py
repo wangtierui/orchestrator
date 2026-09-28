@@ -24,7 +24,7 @@ _ROOT = os.path.dirname(_HERE)
 if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
-import paths  # noqa: E402
+import paths
 
 REVIEW_DIR = os.path.join(paths.MODULES_DIR, "regulatory_scrapers", "timeliness_review")
 STATE_PATH = os.path.join(REVIEW_DIR, "verification_state.json")
@@ -33,7 +33,7 @@ if REVIEW_DIR not in sys.path:
 
 
 def _impl():
-    import verification_state as _vs  # noqa: PLC0415
+    import verification_state as _vs
 
     return _vs
 
@@ -44,7 +44,7 @@ def state_path() -> str:
 
 def load_state() -> dict:
     """全量状态（键 → 记录）。文件缺失返回 {}。"""
-    import json  # noqa: PLC0415
+    import json
 
     if not os.path.exists(STATE_PATH):
         return {}
@@ -81,8 +81,8 @@ def sync_to_classifier(changed_records, dry_run: bool = False):
 
 def latest_summary() -> dict | None:
     """最新 `verify_summary_*.json`（无则 None）。"""
-    import glob  # noqa: PLC0415
-    import json  # noqa: PLC0415
+    import glob
+    import json
 
     files = sorted(glob.glob(os.path.join(REVIEW_DIR, "verify_summary_*.json")))
     if not files:

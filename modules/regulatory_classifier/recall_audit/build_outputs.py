@@ -25,7 +25,9 @@ THEME = os.path.join(CLASS, "人身保险公司-主题归属表.csv")
 SCAN = os.path.join(OUTDIR, "scan_records.csv")
 
 # 主题单一事实源：一律取 rfn.THEME_MAP（禁止本地副本）。
-from rfn import THEME_MAP  # noqa: E402
+from rfn import THEME_MAP
+
+from config.enums import SOURCE_ORDER
 
 
 # norm-specialization: 报告内部复合键（与 scanner 同族）
@@ -173,10 +175,10 @@ try:
     # 阶段 3（2026-09-18）：经 interfaces 唯一入口（原跨模块裸 import 已移除）
     from interfaces.clean_index_api import get_clean_index
     _ci=get_clean_index()
-    for _s in ("gov","mof","nfra","pbc","supp"):
+    for _s in SOURCE_ORDER:
         _m=re.search(r"cleaned_(\d{8})",_ci.latest_csv_path(_s) or "")
         if _m: SRC_SNAPSHOT[_s]=_m.group(1)
-except Exception as _e:
+except Exception as _e:  # noqa: BLE001
     print("[warn] 快照日期获取失败（报告中该项将省略）:",_e)
 
 # ---------- 汇总统计 ----------

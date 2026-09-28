@@ -57,7 +57,7 @@ def run():
     fp = os.path.join(_RFN, "文件指纹.csv")
     if os.path.exists(fp):
         try:
-            from rfn.registry import FP_FIELDS  # noqa: PLC0415
+            from rfn.registry import FP_FIELDS
         except Exception:  # noqa: BLE001
             FP_FIELDS = []
         if FP_FIELDS and _head(fp) != FP_FIELDS:

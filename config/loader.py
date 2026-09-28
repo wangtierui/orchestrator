@@ -15,10 +15,10 @@ from typing import Any
 
 try:
     import yaml
-except Exception:  # pragma: no cover
+except Exception:  # pragma: no cover  # noqa: BLE001
     yaml = None
 
-import paths  # noqa: E402  (根 paths 唯一入口，R4)
+import paths
 
 # --------------------------------------------------------------------------- #
 # 占位符展开：${NAME} 与 ${NAME:-default}（shell 风格默认值）

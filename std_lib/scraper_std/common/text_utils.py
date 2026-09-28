@@ -42,7 +42,7 @@ def decode_filename_from_url(url: str) -> str | None:
     filename = match.group(1)
     try:
         filename = unquote(unquote(filename))
-    except Exception:
+    except Exception:  # noqa: BLE001
         filename = unquote(filename)
     return sanitize_filename(filename)
 

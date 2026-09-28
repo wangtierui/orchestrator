@@ -19,22 +19,22 @@ from config.exitcodes import ExitCode
 
 
 def _api():
-    from bootstrap import bootstrap  # noqa: PLC0415
+    from bootstrap import bootstrap
 
     bootstrap()
-    from interfaces import relations_api  # noqa: PLC0415
+    from interfaces import relations_api
 
     return relations_api
 
 
 def _gen(argv) -> int:
     """全量抽取（透传到 tools/extract_relations.py，保持单一实现）。"""
-    from bootstrap import bootstrap  # noqa: PLC0415
+    from bootstrap import bootstrap
 
     bootstrap(include_tools=True)
-    import argparse  # noqa: PLC0415
+    import argparse
 
-    from extract_relations import run  # noqa: PLC0415
+    from extract_relations import run
 
     ap = argparse.ArgumentParser(prog="orchestrator relations gen")
     ap.add_argument("--source", action="append", default=None)

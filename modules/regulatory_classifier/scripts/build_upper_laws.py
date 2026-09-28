@@ -47,6 +47,13 @@ UPPER_LAW_TAGS = {"T0上位法锚点"}
 
 # 文件来源(明细表) / 五源 source -> 键前缀
 SRC_PREFIX_MAP = {
+    # N-78：五源取**恒等映射**（形态与 `config.enums.SOURCE_ORDER` 一致）。
+    # ⚠️ 此处**不能**改为 `{s: s for s in SOURCE_ORDER}`：本文件为**独立子进程**脚本
+    # （`classify.py` 以 subprocess 调用），且其仓内导入一律走**函数内**引导（见 `_load_index`
+    # 附近的 `sys.path.insert`）→ 模块级 `from config.enums import ...` 会 `ModuleNotFoundError`；
+    # 而新增一条顶层引导又会顶破 `gate_import_bootstrap` 的"只减不增"注入基线。
+    # 两个门禁口径冲突时，本处选择保留字面量并**登记进 `gate_enum_values._BASELINE`**（附带理由）
+    # —— 使"放宽"成为一条有记录的决策，而非静默漂移。
     "gov": "gov", "nfra": "nfra", "pbc": "pbc", "mof": "mof", "supp": "supp",
     "官方发布": "gov", "桌面已有": "local", "local": "local", "": "ext",
 }

@@ -98,7 +98,17 @@ extend-exclude = ["data", "cache", "logs", "backups", "venv", "reports/_tmp", "_
 "std_lib/**/*.py" = ["E741", "E701", "E702"]
 
 [tool.ruff.lint]
-select = ["E", "F", "W", "I", "UP", "B"]
+# N-74（2026-09-28）：`BLE` + `RUF100` 入 select —— 让"宽泛捕获须声明意图"从**约定**变**机器强制**。
+#   · 背景：全仓 120+ 处 `except Exception:` 以 `# noqa: BLE001` 作意图声明（`gate_runtime_hygiene`
+#     判据②要求 except 行含 `#`），但 `BLE` 此前**未 select** → 该 noqa **是死抑制**：既不禁用任何
+#     检查，也不被 RUF100 校验 → 可静默堆积、可写错码、可贴在不会报错的行上而无人察觉。
+#   · `BLE` 启用后：这些 noqa 成为**真抑制**（声明与机制合一），未声明的裸 `except Exception` 直接报错。
+#   · `RUF100` 启用后：**死抑制永久防复发**（本轮已清理 443 处 E402/PLC0415 死码——`E402` 在下方
+#     ignore 中、`PL` 前缀从未 select，二者均不参与检查）。
+#   · 纪律：RUF100 的修复**必须**走配置口径（裸 `ruff check --fix`）；**禁止**用
+#     `ruff check --select RUF100 --fix` —— CLI 的 `--select` 会覆盖配置的规则集，使 ruff 把
+#     "配置内有效但不在 CLI 集合内"的 noqa 全部误判为未使用并删除（本批实测误删 323 条有效抑制）。
+select = ["E", "F", "W", "I", "UP", "B", "BLE", "RUF100"]
 ignore = ["E501", "UP009", "UP031", "E402"]
 
 [tool.ruff.format]

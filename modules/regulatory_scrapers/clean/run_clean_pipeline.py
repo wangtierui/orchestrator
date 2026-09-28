@@ -31,8 +31,8 @@ for _p in (_REPO,):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from config.exitcodes import ExitCode  # noqa: E402
-from std_lib.scraper_std.pipeline import run_pipeline  # noqa: E402
+from config.exitcodes import ExitCode
+from std_lib.scraper_std.pipeline import run_pipeline
 
 # v2 §3.4 V1（2026-09-26）：校验失败率阈值。
 # 定档依据：改造前校验失败记录**照常交付**（假成功），无任何阈值；首次启用取 2%
@@ -57,7 +57,7 @@ def _yaml_projects() -> list[str]:
     yaml 不可用（PyYAML 未装）时回退 RAW_MASTER_NAMES 键。"""
     try:
         sys.path.insert(0, _REPO)
-        from config.loader import active_source_ids  # noqa: PLC0415
+        from config.loader import active_source_ids
         ids = active_source_ids()
         if ids:
             return sorted(ids)
@@ -144,7 +144,7 @@ def main(argv=None) -> int:
     _jl0 = (summary.get("outputs") or {}).get("jsonl", "")
     if _jl0 and os.path.exists(_jl0):
         try:
-            from std_lib.scraper_std.schema_validation import (  # noqa: PLC0415
+            from std_lib.scraper_std.schema_validation import (
                 check_unique_dedup_keys as _cdk,
             )
             _recs = [json.loads(ln) for ln in open(_jl0, encoding="utf-8") if ln.strip()]
@@ -201,7 +201,7 @@ def main(argv=None) -> int:
     #    hash_files=False 使 index.json sha=null → validate 跳过哈希 → "同日改写"全链
     #    隐身；生产重建一律带 sha（成本亚秒级，换取内容级变更可感）。
     try:
-        from modules.regulatory_scrapers.clean_index import (  # noqa: PLC0415
+        from modules.regulatory_scrapers.clean_index import (
             SCRAPER_ROOT as _ci_root,
         )
         from modules.regulatory_scrapers.clean_index import (
@@ -220,7 +220,7 @@ def main(argv=None) -> int:
     # 仅对 clean 快照新于既有产物的源抽取，幂等）。
     if not args.no_clauses:
         try:
-            from modules.regulatory_scrapers.clause_index import build_clause_index  # noqa: PLC0415
+            from modules.regulatory_scrapers.clause_index import build_clause_index
             res = build_clause_index()
             print("[clauses] 条文固定节点: "
                   + "; ".join(f"{k}={v.get('built', v.get('error', 'skip'))}"

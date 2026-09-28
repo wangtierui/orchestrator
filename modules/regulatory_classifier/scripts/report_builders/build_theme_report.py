@@ -33,7 +33,9 @@ for _p in (_MOD_CLASS, _ORCH_ROOT):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from rfn import THEME_MAP  # noqa: E402  主题单一事实源（R16）
+from rfn import THEME_MAP
+
+from config.enums import SOURCE_ORDER
 
 _DATA = os.path.join(_MOD_CLASS, "data")
 _DOCS_REPORTS = os.path.join(_MOD_CLASS, "docs", "reports")
@@ -53,10 +55,10 @@ _clause_map: dict[str, int] | None = None
 
 def _load_clause_map() -> dict[str, int]:
     # 阶段 3（2026-09-18）：条文产物经 interfaces 唯一入口（原跨模块引导已移除）
-    from interfaces import clause_index_api as _ci  # noqa: PLC0415
-    from std_lib.common_lib.norm import norm_docno  # noqa: PLC0415
+    from interfaces import clause_index_api as _ci
+    from std_lib.common_lib.norm import norm_docno
     m: dict[str, int] = {}
-    for src in ("gov", "mof", "nfra", "pbc", "supp"):
+    for src in SOURCE_ORDER:
         try:
             for cl in _ci.iter_file_clauses(src):
                 if cl.get("article_count", 0) <= 0:
@@ -70,7 +72,7 @@ def _load_clause_map() -> dict[str, int]:
                 if sig:
                     m.setdefault(sig, 0)
                     m[sig] += cl["article_count"]
-        except Exception:
+        except Exception:  # noqa: BLE001
             continue
     return m
 
@@ -108,9 +110,9 @@ def _theme_report(theme: str) -> tuple[str, str]:
     )
     lines.append("")
     # 时效统计
-    from collections import Counter  # noqa: PLC0415
+    from collections import Counter
 
-    from std_lib.common_lib.norm import norm_docno  # noqa: PLC0415
+    from std_lib.common_lib.norm import norm_docno
     st_cnt: Counter = Counter()
     src_cnt: Counter = Counter()
     rows = []
@@ -175,7 +177,7 @@ def main():
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
     except Exception:  # noqa: BLE001  分类/检索容错
         pass
-    import argparse  # noqa: PLC0415
+    import argparse
     ap = argparse.ArgumentParser(description="主题监管文件视图报告生成")
     ap.add_argument("--theme", default=None, help="单主题（默认全部 T0-T10）")
     args = ap.parse_args()

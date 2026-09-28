@@ -28,7 +28,9 @@ import re
 import paths
 
 ROOT = paths.ROOT
-_SOURCES = ("gov", "mof", "nfra", "pbc", "supp")
+from config.enums import SOURCE_ORDER
+
+_SOURCES = SOURCE_ORDER
 _SNAP_RE = re.compile(r"cleaned_(\d{8})\.jsonl$")
 
 
@@ -68,7 +70,7 @@ def run() -> tuple[bool, dict]:
 
     # 阈值取自生产实现（唯一事实源，避免两处各写一个数）
     try:
-        from modules.regulatory_scrapers.clean.run_clean_pipeline import (  # noqa: PLC0415
+        from modules.regulatory_scrapers.clean.run_clean_pipeline import (
             SCHEMA_FAIL_RATE_MAX,
         )
     except Exception:  # noqa: BLE001  无源码树/导入失败时退回默认
@@ -132,6 +134,37 @@ def run() -> tuple[bool, dict]:
             "note": "无 cleaned 快照（未跑过 clean）——本判据跳过；"
             "跑一次 `python cli.py run` 后自动生效",
         }
+
+    # N-79（2026-09-28）：**条文产物契约自检接入门禁**。
+    # 背景：`clause_index.validate_schema()`（产物字段集/条号形态/解析适配枚举/结构语义指标）
+    # 早已实现，但**生产链与门禁零调用**（唯一调用点曾是 `tests/test_e2e_pipeline.py`）→
+    # 五源 16k+ 条文产物在全链 22 道门禁中**无任何覆盖**。此处经
+    # `interfaces.clause_index_api` 唯一入口复用既有实现（不另写校验器）。
+    # 无产物 → 跳过（与上方"未跑过 clean"同款语义，不误判为通过）。
+    try:
+        from interfaces import clause_index_api as _clause_api
+
+        if any(_clause_api.latest_clause_path(s) for s in _SOURCES):
+            _cv = _clause_api.validate_schema()
+            _cprob = list(_cv.get("problems") or [])
+            # 返回是**扁平**结构（计数 + 结构语义指标 + consistent + problems）：
+            # 除两枚判据键外**全部**作为 stat 入 detail（含 title_swallow / tail_contam /
+            # space_contam / law_items 等"曾被静默放过"的语义指标 → 使其在门禁详情中可见）。
+            _cstat = {k: v for k, v in _cv.items() if k not in ("consistent", "problems")}
+            detail["clause_schema"] = {
+                "consistent": bool(_cv.get("consistent")),
+                "problems": _cprob[:8],
+                **{k: _cstat[k] for k in sorted(_cstat)[:16]},
+            }
+            if not _cv.get("consistent"):
+                problems.append(
+                    f"条文产物契约自检未通过（{len(_cprob)} 项，前 3）：{_cprob[:3]}"
+                )
+        else:
+            detail["clause_schema"] = {"skipped": "无条文产物（未跑过 clause_index build）"}
+    except Exception as e:  # noqa: BLE001
+        # 判据不可执行 ≠ 判据通过（与 gate_timeliness_ssot 同口径）
+        problems.append(f"条文产物契约自检无法执行：{type(e).__name__}: {e}")
 
     detail["problems"] = problems
     return (not problems), detail

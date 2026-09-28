@@ -26,13 +26,13 @@ for _p in (_ORCH_ROOT, os.path.join(_ORCH_ROOT, "std_lib")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from std_lib.scraper_std.crawler_common import (  # noqa: E402
+from std_lib.scraper_std.crawler_common import (
     cjk_count,  # 有效汉字数（扫描件判定共用，见 _is_scan_pdf）
     extract_document_text,
     has_extraction_gap,  # 缺字信号（空引号对）——reocr 首次提质触发用
 )
 from std_lib.scraper_std.text_reflow import (
-    reflow_chinese,  # noqa: E402  共享行重排（⑪，供五源 future 复用）
+    reflow_chinese,
 )
 
 _CTRL_RE = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f\u200b\u200e\u200f\ufeff]")
@@ -182,7 +182,7 @@ def build_clause_payload(ipn: str, text: str, title: str = "") -> tuple[dict, st
     此前得空结构，现由 `structure` 承载并经 `render_markdown` 落进 `_clauses.md`。
     字段契约 SSOT = `interfaces.contract.INTERNAL_CLAUSE_FIELDS`。
     """
-    from std_lib.scraper_std.document_structure import (  # noqa: PLC0415
+    from std_lib.scraper_std.document_structure import (
         parse_document,
         render_markdown,
     )
@@ -268,7 +268,7 @@ def renormalize_processed() -> dict:
             p = os.path.join(proc_dir, fn)
             try:
                 obj = _json.load(open(p, encoding="utf-8"))
-            except Exception:
+            except Exception:  # noqa: BLE001
                 continue
             new_t = normalize_text(obj.get("text", ""))
             if new_t != obj.get("text", ""):
@@ -307,7 +307,7 @@ def _is_scan_pdf(path: str, *, min_cjk: int = 30, pages: int = 5) -> bool:
     改判据：取前 `pages` 页**有效汉字**计数，`< min_cjk` 才视为扫描件。
     """
     try:
-        import pymupdf  # noqa: PLC0415
+        import pymupdf
         with pymupdf.open(path) as d:
             if d.page_count == 0:
                 return False
@@ -333,8 +333,8 @@ def reocr_backfill(limit: int | None = None, min_cjk: int = 20, force: bool = Fa
       确需在引擎升级后重跑时用 `retry=True`（CLI `--retry`）。
     - 断点：逐文件落盘；返回统计（含明细）。
     """
-    import glob as _glob  # noqa: PLC0415
-    import json as _json  # noqa: PLC0415
+    import glob as _glob
+    import json as _json
 
     # data_dir 可注入（2026-09-13）：便于单测隔离（默认仍为本模块 data/，行为不变）
     data_dir = data_dir or os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")

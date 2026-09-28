@@ -24,8 +24,8 @@ import sys
 import xml.sax.saxutils as sx
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import paths  # noqa: E402
-from config.exitcodes import ExitCode  # noqa: E402
+import paths
+from config.exitcodes import ExitCode
 
 PREFIX = "REG_ORCH_"
 SCHTASKS = "schtasks"
@@ -33,7 +33,7 @@ SCHTASKS = "schtasks"
 
 def _gsd():
     """按文件路径加载 `tools/gen_schedule_doc.py`（tools 非包；避免新增 sys.path 注入）。"""
-    import importlib.util  # noqa: PLC0415
+    import importlib.util
 
     fp = os.path.join(paths.ROOT, "tools", "gen_schedule_doc.py")
     spec = importlib.util.spec_from_file_location("_gsd_sched", fp)
@@ -210,7 +210,7 @@ def _run(argv: list[str]) -> tuple[int, str]:
 
 def schtasks_usable() -> bool:
     """`schtasks` 是否可用（非 Windows / 无权限 → False；用于"不判定"而非"未安装"）。"""
-    import shutil  # noqa: PLC0415
+    import shutil
 
     return shutil.which(SCHTASKS) is not None
 

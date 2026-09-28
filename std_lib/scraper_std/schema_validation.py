@@ -228,7 +228,7 @@ class NullThresholdMonitor:
             if self.on_alarm:
                 try:
                     self.on_alarm(over, rates)
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001
                     LOG.error("空值率告警回调失败：%s", e)
         return allow, rates
 

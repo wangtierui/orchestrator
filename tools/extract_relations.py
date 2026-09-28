@@ -55,20 +55,20 @@ for _p in (
 ):
     if _p not in sys.path:
         sys.path.insert(0, _p)
-from config.enums import (  # noqa: E402
+from config.enums import (
     RELATION_KIND,
     RELATION_MATCH_METHOD,
 )
-from config.exitcodes import ExitCode  # noqa: E402
-from std_lib.common_lib.clause_locator import (  # noqa: E402  N-49 条款级定位（共享实现）
+from config.exitcodes import ExitCode
+from std_lib.common_lib.clause_locator import (
     load_internal_spans,
     load_regulatory_index,
     load_regulatory_spans,
     locate_dst_article,
     locate_src_article,
 )
-from std_lib.common_lib.norm import norm_docno, norm_title_strict  # noqa: E402
-from std_lib.common_lib.relations import (  # noqa: E402
+from std_lib.common_lib.norm import norm_docno, norm_title_strict
+from std_lib.common_lib.relations import (
     EXTRACTOR_VERSION,
     SCHEMA_VERSION,
     TARGET_CLASSES,
@@ -108,7 +108,8 @@ MIN_SIG_LEN = 6  # 文号签名最短长度（四位年 + 至少两位序号）
 # 规则：**状态/进度/告警行 → LOG**；**机器可读载荷（json.dumps）/多列表格行 → 保留 print**
 # （后者是 stdout 契约，加日志前缀会破坏编排器 tail 与下游解析）。
 # 判据：`gate_runtime_hygiene` 判据④断言本文件的 LOG 使用下限与 print 上限。
-from std_lib.common_lib.logging import get_logger  # noqa: E402
+from config.enums import SOURCE_ORDER
+from std_lib.common_lib.logging import get_logger
 
 LOG = get_logger("relations")
 
@@ -150,7 +151,7 @@ def _add_entity(ix: dict, *, ref: str, name: str, docno: str, extra: dict | None
 
 def build_regulatory_index() -> dict:
     """监管域索引：归属表（RFN 事实源）→ by_sig / by_docno / by_title。"""
-    from rfn import get_index  # noqa: PLC0415
+    from rfn import get_index
 
     ix = _empty_index()
     for r in get_index().rows():
@@ -530,7 +531,7 @@ def run(
     with_attachments: bool = False,
     report: bool = False,
 ) -> dict:
-    cfg_sources = sources or ["gov", "mof", "nfra", "pbc", "supp"]
+    cfg_sources = sources or list(SOURCE_ORDER)
     generated_at = datetime.now(_TZ).strftime("%Y-%m-%d %H:%M:%S")
     reg_ix, int_ix = build_regulatory_index(), build_internal_index()
     n_weak = add_cleaned_weak_index(reg_ix, cfg_sources)

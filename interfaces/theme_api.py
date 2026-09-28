@@ -38,7 +38,7 @@ class ThemeAPI:
           （提示 classify 底座链需重建）。
         返回 {rfn, from_theme, to_theme, changed, inserted}。
         """
-        from rfn.registry import set_theme as _set  # noqa: PLC0415
+        from rfn.registry import set_theme as _set
 
         return _set(rfn, theme, basis, sync_pending=True)
 
@@ -59,10 +59,10 @@ class ThemeAPI:
         `theme_hint` 给定时只做**一致性回报**（`hint_match`），不改变算法结果。
         返回 {ipn, title, primary, secondary[], method, hint?, hint_match?}。
         """
-        from interfaces.internal_policy_api import get_internal_policy_api  # noqa: PLC0415
+        from interfaces.internal_policy_api import get_internal_policy_api
 
         try:
-            from internal_policy_base.align import align_one  # noqa: PLC0415
+            from internal_policy_base.align import align_one
         except ModuleNotFoundError as e:  # pragma: no cover - 引导缺失时的明确提示
             raise ModuleNotFoundError(
                 "internal_policy_base 不可导入：请先 `from bootstrap import bootstrap; "

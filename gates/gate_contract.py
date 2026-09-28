@@ -9,7 +9,6 @@ gates/gate_contract — 数据契约门禁（实装：归属表 8 列 / 主题�
 from __future__ import annotations
 
 import csv
-import importlib
 import json
 import os
 import re
@@ -78,6 +77,34 @@ def _manifest_checks() -> tuple[list[str], dict]:
     detail["version"] = man.get("version", "")
     if not str(man.get("version") or "").strip():
         problems.append("契约清单缺顶层 version（v2 §3.4：加 version 以便格式演进判别）")
+
+    # N-81（2026-09-28）：**顶层 `consumer` 自述须可解析**。原值写着
+    # `gates.gate_contract._check_manifest（file/symbol/count 三元断言）`，而实际函数名是
+    # `_manifest_checks` —— 即元数据**指向不存在的符号**（自述失真），却无任何机制发现
+    # （本判据此前只校验 contracts 内的 file/symbol/count，不校验顶层 consumer）。
+    # 现断言 consumer 形如 `<模块>.<符号>`（可带全角/半角括号说明）时该符号确实可解析。
+    cons = str(man.get("consumer") or "").strip()
+    detail["consumer"] = cons
+    if not cons:
+        problems.append("契约清单缺顶层 consumer（元数据须自述其消费方）")
+    else:
+        sym_path = re.split(r"[（(]", cons, maxsplit=1)[0].strip()
+        mod, _, attr = sym_path.rpartition(".")
+        if not (mod and attr):
+            problems.append(f"顶层 consumer 须为 `<模块>.<符号>` 形态，实为 {cons!r}")
+        else:
+            import importlib
+
+            try:
+                target = importlib.import_module(mod)
+                for part in attr.split("."):
+                    target = getattr(target, part)
+                detail["consumer_resolved"] = True
+            except Exception as e:  # noqa: BLE001
+                detail["consumer_resolved"] = False
+                problems.append(
+                    f"顶层 consumer 指向不可解析符号 {sym_path!r}：{type(e).__name__}: {e}"
+                )
 
     for name, spec in sorted((man.get("contracts") or {}).items()):
         rel = str(spec.get("file") or "")

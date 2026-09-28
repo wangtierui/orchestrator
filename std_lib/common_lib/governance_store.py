@@ -359,7 +359,7 @@ CREATE INDEX IF NOT EXISTS ix_th_key ON timeliness_history(state_key);
 def repo_root() -> str:
     """仓库根：优先 `paths.ROOT`（唯一路径事实源），退化时按本文件上溯三级。"""
     try:
-        import paths  # noqa: PLC0415
+        import paths
 
         return paths.ROOT
     except Exception:  # noqa: BLE001  非源码树/未注入 sys.path 时的保守回退
@@ -376,7 +376,7 @@ def db_path() -> str:
     if env:
         return os.path.abspath(env)
     try:
-        import paths  # noqa: PLC0415
+        import paths
 
         return os.path.join(paths.DATA_DIR, "governance.db")
     except Exception:  # noqa: BLE001
@@ -874,7 +874,7 @@ def worklist_add(
     if not kind or not subject:
         return None
     try:
-        from config.enums import WORKLIST_KIND  # noqa: PLC0415
+        from config.enums import WORKLIST_KIND
 
         if kind not in WORKLIST_KIND:
             print(f"[worklist] WARN 未登记的 kind={kind!r}（应加入 config.enums.WORKLIST_KIND）")
@@ -1436,7 +1436,7 @@ def export_snapshot(out_dir: str, *, tables=None) -> dict:
         for r in rows:
             buf.append(",".join(_csv_cell(r.get(c)) for c in cols))
         # 经 fs_lock 原子写（与全仓原子写纪律一致）
-        from std_lib.common_lib.fs_lock import atomic_write_text  # noqa: PLC0415
+        from std_lib.common_lib.fs_lock import atomic_write_text
 
         atomic_write_text(p, "\n".join(buf) + "\n", encoding="utf-8-sig")
         try:
@@ -1463,7 +1463,7 @@ def export_snapshot(out_dir: str, *, tables=None) -> dict:
         "items": items,
     }
     mp = os.path.join(out_dir, "manifest.json")
-    from std_lib.common_lib.fs_lock import atomic_write_json  # noqa: PLC0415
+    from std_lib.common_lib.fs_lock import atomic_write_json
 
     atomic_write_json(mp, man)
     return {"enabled": True, "out_dir": out_dir, "manifest": mp, "items": items}

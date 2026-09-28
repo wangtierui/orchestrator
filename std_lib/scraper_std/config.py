@@ -94,13 +94,13 @@ def load_settings(path: str | None = None, *, project_root: str | None = None) -
         return copy.deepcopy(DEFAULTS)
     try:
         import yaml  # 惰性
-    except Exception:
+    except Exception:  # noqa: BLE001
         return copy.deepcopy(DEFAULTS)
     try:
         with open(path, encoding="utf-8") as f:
             raw = yaml.safe_load(f) or {}
         return _deep_merge(DEFAULTS, raw)
-    except Exception:
+    except Exception:  # noqa: BLE001
         return copy.deepcopy(DEFAULTS)
 
 

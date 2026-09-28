@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "generated_at": null,
   "owner": "regulatory_compliance_orchestrator",
-  "consumer": "gates.gate_contract._check_manifest（file/symbol/count 三元断言）",
+  "consumer": "gates.gate_contract._manifest_checks（file/symbol/count 三元断言）",
   "note": "程序可读契约清单（R24）：实际列头/键集唯一事实由各接口模块持有；本清单登记版本与定位，防文本漂移。v2 §3.4（M1 修复，2026-09-26）：新增顶层 version，并由 gate_contract 断言 file 存在 + symbol 可加载 + len == count；两处历史漂移已修正（detail_table_fields 10→14；base_json_keys 指向不存在的 theme_analysis/node2_rebuild/ 已改为 interfaces/contract.py）。",
   "contracts": {
     "cleaned_csv_columns": {

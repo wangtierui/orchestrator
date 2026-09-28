@@ -15,6 +15,8 @@ import sys
 
 import pytest
 
+from config.enums import SOURCE_ORDER
+
 # 用例分层（2026-09-13 · CP-E03）：本文件按设计断言"新仓**现行产物**"（cleaned 五源快照、
 # 归属表、40 底座/明细、merged_view、发布件），**必须**本机数据就绪。
 # 无数据环境（刚克隆、无备份 CI）请执行 `pytest tests -m "not data"` 排除本文件，
@@ -38,9 +40,9 @@ IBP = os.path.join(ROOT, "modules", "internal_policy_base")
 
 # ---------------- 层0：clean_index 五源最新快照 ----------------
 def test_clean_index_five_sources_latest():
-    from clean_index import get_clean_index  # noqa: PLC0415
+    from clean_index import get_clean_index
     idx = get_clean_index()
-    live = [s for s in ("gov", "mof", "nfra", "pbc", "supp")
+    live = [s for s in SOURCE_ORDER
             if idx.latest_csv_path(s) and os.path.exists(idx.latest_csv_path(s))]
     assert len(live) == 5, f"五源快照缺失: {live}"
 
@@ -52,26 +54,26 @@ def test_attr_and_index_count():
         rows = list(csv.DictReader(f))
     assert len(rows) >= 1000, f"归属表过少: {len(rows)}"
     assert all(len(r.get("监管文件编号", "")) == 20 for r in rows[:10])  # RFN-<16hex>
-    from rfn import get_index  # noqa: PLC0415
+    from rfn import get_index
     idx = get_index()
     assert len(idx.all_rfns()) == len(rows)
 
 
 # ---------------- 层2：底座/明细契约 ----------------
 def test_base_and_detail_contract():
-    from gates.gate_contract import run  # noqa: PLC0415
+    from gates.gate_contract import run
     ok, detail = run()
     assert ok, detail.get("problems", [])[:5]
     # T3（P2-4）：原为字面量 `== 40` / `== 11`（主题数一变即误报）→ 改为**派生**：
     #   底座 = {T1..Tn} × {base,final,matched,citerefs}；明细表 = 每主题 1 张（T0–Tn 全覆盖）
-    from interfaces.rfn_api import theme_map  # noqa: PLC0415
+    from interfaces.rfn_api import theme_map
     n_theme = len(theme_map())
     assert detail["checked"]["base_files"]["count"] == (n_theme - 1) * 4
     assert detail["checked"]["detail_tables"]["count"] == n_theme
 
 
 def test_rfn_sync_consistency():
-    from gates.gate_rfn_sync import run  # noqa: PLC0415
+    from gates.gate_rfn_sync import run
     ok, detail = run()
     assert ok, detail.get("problems", [])[:5]
 
@@ -106,8 +108,8 @@ def test_internal_clauses_md_generated():
 
 # ---------------- 层2b：clause_index 条文产物（② 固定节点） ----------------
 def test_clause_index_schema():
-    from clause_index import latest_clause_path, validate_schema  # noqa: PLC0415
-    for s in ("gov", "mof", "nfra", "pbc", "supp"):
+    from clause_index import latest_clause_path, validate_schema
+    for s in SOURCE_ORDER:
         assert latest_clause_path(s), f"{s} clause 产物缺失（先跑 clean 管道固定节点）"
     r = validate_schema()
     assert r["consistent"], r["problems"][:5]
@@ -140,14 +142,14 @@ def test_reconcile_bridge_and_state():
 
 # ---------------- 层5：时效单源传播（SSOT 断言） ----------------
 def test_timeliness_ssot():
-    from gates.gate_timeliness_ssot import run  # noqa: PLC0415
+    from gates.gate_timeliness_ssot import run
     ok, detail = run()
     assert ok, detail.get("problems", [])[:5]
 
 
 # ---------------- 层6：交付门禁全绿 ----------------
 def test_all_gates_pass():
-    from gates import GatesRunner  # noqa: PLC0415
+    from gates import GatesRunner
     ok, results = GatesRunner().run()
     failed = [r["desc"] for r in results if not r["passed"]]
     assert ok, f"门禁未全绿: {failed}"

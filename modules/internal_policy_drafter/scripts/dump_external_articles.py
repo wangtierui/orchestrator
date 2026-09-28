@@ -28,8 +28,8 @@ for _p in (_ORCH, _MODS, os.path.join(_ORCH, "std_lib")):
         sys.path.insert(0, _p)
 
 # 阶段 3（2026-09-18）：条文产物经 interfaces 唯一入口（原插 scrapers 目录已移除）
-from config.exitcodes import ExitCode  # noqa: E402
-from interfaces import clause_index_api as clause_index  # noqa: E402
+from config.exitcodes import ExitCode
+from interfaces import clause_index_api as clause_index
 
 
 def _strip_art_head(body: str) -> str:

@@ -35,7 +35,7 @@ def run() -> tuple[bool, dict]:
     if root not in sys.path:
         sys.path.insert(0, root)
 
-    from std_lib.common_lib import governance_store as gs  # noqa: PLC0415
+    from std_lib.common_lib import governance_store as gs
 
     db = gs.db_path()
     if not gs.enabled():

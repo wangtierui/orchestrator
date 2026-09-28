@@ -23,7 +23,9 @@ import paths
 _MOD_CLASS = os.path.join(paths.MODULES_DIR, "regulatory_classifier")
 _SCRAPERS_MOD = os.path.join(paths.MODULES_DIR, "regulatory_scrapers")
 _STATE = os.path.join(_MOD_CLASS, "data", "rfn_drift_state.json")
-_SOURCES = ("gov", "mof", "nfra", "pbc", "supp")
+from config.enums import SOURCE_ORDER
+
+_SOURCES = SOURCE_ORDER
 for _p in (_SCRAPERS_MOD, paths.ROOT):
     if _p not in sys.path:
         sys.path.insert(0, _p)
@@ -31,7 +33,7 @@ for _p in (_SCRAPERS_MOD, paths.ROOT):
 
 def _current_clean_dates():
     try:
-        from interfaces.clean_index_api import get_clean_index  # noqa: PLC0415
+        from interfaces.clean_index_api import get_clean_index
 
         ci = get_clean_index()
     except Exception:  # noqa: BLE001
@@ -47,7 +49,7 @@ def _current_clean_dates():
 def _wm_status(key: str):
     """产物水位状态（阶段 4：判据切换共用入口）。"""
     try:
-        from interfaces.governance_api import wm_status  # noqa: PLC0415
+        from interfaces.governance_api import wm_status
 
         return wm_status(key)
     except Exception as e:  # noqa: BLE001

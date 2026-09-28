@@ -13,11 +13,11 @@ def run(argv):
     - query   [--rfn/--docno/--theme/--source] [--internal] [--json]：精确查询
     - search  <text> [--kind records|clauses|policies] [--internal] [--limit N] [--json]
     """
-    import argparse as _ap  # noqa: PLC0415
-    import json as _json  # noqa: PLC0415
+    import argparse as _ap
+    import json as _json
 
     # P0-2（v2 §3.1.2）：sys.path 引导统一走 bootstrap（原 3 处自注入收口）
-    from bootstrap import bootstrap  # noqa: PLC0415
+    from bootstrap import bootstrap
 
     bootstrap("all")
     ap = _ap.ArgumentParser(prog="orchestrator base")
@@ -50,9 +50,9 @@ def run(argv):
     args = ap.parse_args(argv)
 
     if args.action == "publish":
-        from base_publish import build_external as _be  # noqa: PLC0415
-        from base_publish import build_fts as _bf  # noqa: PLC0415
-        from base_publish import build_internal as _bi  # noqa: PLC0415
+        from base_publish import build_external as _be
+        from base_publish import build_fts as _bf
+        from base_publish import build_internal as _bi
 
         out = {}
         if args.base in ("external", "all"):
@@ -67,7 +67,7 @@ def run(argv):
         print(_json.dumps(out, ensure_ascii=False, indent=1))
         return ExitCode.OK
 
-    from base_api import (  # noqa: PLC0415
+    from base_api import (
         query_external,
         query_internal,
         search_external,
@@ -76,11 +76,11 @@ def run(argv):
 
     if args.action == "query":
         if args.chain:
-            from base_api import version_chain  # noqa: PLC0415
+            from base_api import version_chain
 
             rows = version_chain(args.chain, limit=args.limit)
         elif args.view == "active":
-            from base_api import view_active  # noqa: PLC0415
+            from base_api import view_active
 
             rows = view_active(limit=args.limit)
         elif args.internal:

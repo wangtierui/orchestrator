@@ -49,13 +49,14 @@ PY = sys.executable
 # v2 §3.1.3 I-2（判据 D）：兄弟模块根**不再拼字面量**——经 `paths.module_dir()` 派生
 # （§3.1.1 结构清单 SSOT）。引导前提与下方 `from std_lib...` 相同：本脚本始终在
 # 「仓根可导入」的环境下运行（编排器注入/仓根 cwd），故此处不新增 sys.path 注入。
-from paths import module_dir  # noqa: E402
+from paths import module_dir
 
 CLASSIFIER = module_dir("regulatory_classifier")
 INTERNAL = module_dir("internal_policy_drafter")
 
 
-from config.exitcodes import ExitCode  # noqa: E402
+from config.enums import TIMELINESS_UNVERIFIED  # N-77：缺状态归"未核验"（禁止臆造 valid）
+from config.exitcodes import ExitCode
 from std_lib.common_lib.norm import norm_docno as _norm_docno  # A-10：SSOT 收敛（标准层）
 
 
@@ -78,7 +79,7 @@ def stage_scrapers(source, changed, dry_run, report):
     """① 数据层回写 + 索引重建 + 门禁（C-12：回写一律经统一单点 writeback_source）。"""
     sys.path.insert(0, ROOT)
     sys.path.insert(0, REVIEW)
-    import apply_timeliness_to_cleaned as apply_mod  # noqa: PLC0415  统一回写单点（C-12）
+    import apply_timeliness_to_cleaned as apply_mod
     updates: dict = {}
     for c in changed:
         nd = _norm_docno(c.get("document_number"))
@@ -138,7 +139,7 @@ def stage_classifier(source, changed, dry_run, report):
             _ra = os.path.join(CLASSIFIER, "recall_audit")
             if _ra not in sys.path:
                 sys.path.insert(0, _ra)
-            from verification_state_mirror import refresh as _mirror_refresh  # noqa: PLC0415
+            from verification_state_mirror import refresh as _mirror_refresh
             _mp = _mirror_refresh()
             print(f"     N-5 镜像刷新完成（{_mp}）")
         except Exception as _e:  # noqa: BLE001
@@ -169,7 +170,7 @@ def stage_classifier(source, changed, dry_run, report):
 def _propagate_final():
     """归属表时效 → final.json eff_status（末尾再跑，避免中间态）。"""
     # v2 §3.1.3 I-2：归属表路径经 interfaces 唯一入口（原 os.path.join(CLASSIFIER, "data", …)）
-    from interfaces.rfn_api import registry_paths  # noqa: PLC0415
+    from interfaces.rfn_api import registry_paths
     attr_csv = registry_paths()["attr_csv"]
     attr = {r["监管文件编号"]: (r.get("时效状态") or "").strip()
             for r in csv.DictReader(open(attr_csv, encoding="utf-8-sig"))}
@@ -182,7 +183,10 @@ def _propagate_final():
         d = json.load(open(p, encoding="utf-8"))
         n = 0
         for r in d:
-            new = attr.get(r.get("监管文件编号"), "") or "valid"
+            # N-77（2026-09-28）：原为 `or "valid"` —— 把归属表中**缺失/空**的时效状态**臆造**为
+            # "现行有效"，使"未核验"在 final.json 中不可见（下游覆盖率/未核验量指标被永久掩盖）。
+            # 改为归入规范取值"未核验"（`config.enums.TIMELINESS_UNVERIFIED`）。
+            new = attr.get(r.get("监管文件编号"), "") or TIMELINESS_UNVERIFIED
             if (r.get("eff_status") or "").strip() != new:
                 r["eff_status"] = new
                 n += 1

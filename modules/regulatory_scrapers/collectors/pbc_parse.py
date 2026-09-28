@@ -75,7 +75,7 @@ SRC_DIR = os.path.dirname(os.path.abspath(__file__))
 
 REPO_ROOT = os.path.dirname(SRC_DIR)  # regulatory_scrapers（统一数据根）
 
-from std_lib.scraper_std.cache_store import docs_root  # noqa: E402
+from std_lib.scraper_std.cache_store import docs_root
 
 ATTACHMENTS_DIR = docs_root("pbc", "attachments")
 
@@ -134,7 +134,7 @@ RE_WS = re.compile(r'\s+')
 
 ATTACH_EXT = (".doc", ".docx", ".pdf", ".xls", ".xlsx", ".wps", ".ceb", ".rtf")
 
-from std_lib.scraper_std.doc_convert import (  # noqa: E402 五源共享 doc→docx（2026-09-08）
+from std_lib.scraper_std.doc_convert import (
     find_libreoffice,
 )
 
@@ -185,7 +185,7 @@ def detect_libreoffice():
 
 def convert_with_libreoffice(doc_path):
     """兼容别名：委托共享 doc_to_docx（.doc/.wps/.rtf/.ceb → .docx，headless）。不可用返回 None。"""
-    from std_lib.scraper_std.doc_convert import doc_to_docx  # noqa: PLC0415
+    from std_lib.scraper_std.doc_convert import doc_to_docx
     return doc_to_docx(doc_path)
 
 
@@ -230,7 +230,7 @@ def extract_xls_text(data):
                 if cells:
                     out.append(" | ".join(cells))
         return "\n".join(out).strip()
-    except Exception:
+    except Exception:  # noqa: BLE001
         return None
 
 
@@ -275,13 +275,13 @@ def extract_docx_text(data):
     """尝试用 python-docx 提取 .docx 文本；不可用则返回 None。"""
     try:
         from docx import Document
-    except Exception:
+    except Exception:  # noqa: BLE001
         return None
     import io
     try:
         doc = Document(io.BytesIO(data))
         return "\n".join(p.text for p in doc.paragraphs if p.text).strip()
-    except Exception:
+    except Exception:  # noqa: BLE001
         return None
 
 

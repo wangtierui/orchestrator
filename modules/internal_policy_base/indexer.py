@@ -33,25 +33,25 @@ for _p in (_ORCH_ROOT, _MODULES):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from internal_policy_base.extract import (  # noqa: E402
+from internal_policy_base.extract import (
     build_clause_payload,
     copy_original,
     extract_file,
 )
-from internal_policy_base.scan import (  # noqa: E402
+from internal_policy_base.scan import (
     clean_title_noise,
     ipn_of,
     parse_content_identity,
-    scan_directory,  # noqa: E402
+    scan_directory,
 )
 
-from config.exitcodes import ExitCode  # noqa: E402
+from config.exitcodes import ExitCode
 
 # R21：条文结构解析（章-条），供 merged_view/drafter 条款对照。
 # 2026-09-19 收敛：解析/渲染统一经 `extract.build_clause_payload`（唯一实现，三写入点共用），
 # 本模块不再直接依赖 std_lib.scraper_std.document_structure。
 # 富内容(图形/公式)轨：流程图/SmartArt/公式 OMML 抽取与图片落盘（2026-09-09）
-from std_lib.scraper_std.rich_object import rich_object_fields  # noqa: E402
+from std_lib.scraper_std.rich_object import rich_object_fields
 
 _DATA = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
 _ORIGINALS = os.path.join(_DATA, "originals")
@@ -94,7 +94,7 @@ def _load_state() -> dict:
             if isinstance(d, dict):
                 d.pop("_meta", None)
             return d
-        except Exception:
+        except Exception:  # noqa: BLE001
             return {}
     return {}
 
@@ -103,7 +103,7 @@ def _save_state(state: dict) -> None:
     # F-D14（H-01）：状态文件版本锚点（读侧剥离；_ingest_state 键空间为 sha256，_meta 独立键位）
     # 修复（2026-09-12）：版本键经**副本**写入——原就地注入会污染调用方对象，
     # 后续"主索引汇总"遍历 state 时 _meta 条目触发 KeyError: 'ipn'（本日摄取实证）。
-    import time as _t  # noqa: PLC0415
+    import time as _t
     payload = dict(state)
     payload["_meta"] = {"schema_version": "1.0", "written_by": "internal_policy_base.indexer",
                         "written_at": _t.strftime("%Y-%m-%d %H:%M:%S")}
@@ -209,7 +209,7 @@ def _sha_match(a: str, b: str) -> bool:
 
 def _content_sha256(path: str) -> str:
     """文件内容 sha256（与 `_ingest_state` 键、`scan_directory` 的 sha256 同口径）。"""
-    import hashlib as _hl  # noqa: PLC0415
+    import hashlib as _hl
 
     hh = _hl.sha256()
     with open(path, "rb") as fh:
@@ -416,7 +416,7 @@ def _load_processed(ipn: str) -> dict | None:
         return None
     try:
         return json.load(open(p, encoding="utf-8"))
-    except Exception:
+    except Exception:  # noqa: BLE001
         return None
 
 
@@ -497,7 +497,7 @@ def refine_identity_backfill(limit: int | None = None) -> dict:
       并同步 `_ingest_state`（sha→ipn）；
     - 幂等断点：重复运行无变化即全 skip；返回统计（含 conflicts 明细）。
     """
-    import glob as _glob  # noqa: PLC0415
+    import glob as _glob
 
     proc_dir = _PROCESSED
     state = _load_state()
@@ -546,7 +546,7 @@ def refine_identity_backfill(limit: int | None = None) -> dict:
             # v2 §3.14.3（D5）：IPN 身份冲突是"需人工裁决但系统不告诉人"的典型——
             # 原先只进 stats，翻不出来。现登记进待办队列（处置：cli.py worklist resolve）。
             try:
-                from std_lib.common_lib import governance_store as _gs  # noqa: PLC0415
+                from std_lib.common_lib import governance_store as _gs
                 _gs.worklist_add(
                     "internal_identity_conflict", ipn_old,
                     stage="internal-index", artifact_key="internal_index",

@@ -30,7 +30,7 @@ if _ORCH_ROOT not in sys.path:
 _STD_LIB_ROOT = os.path.join(_ORCH_ROOT, "std_lib")
 if _STD_LIB_ROOT not in sys.path:
     sys.path.insert(0, _STD_LIB_ROOT)
-from config.enums import (  # noqa: E402,F401
+from config.enums import (  # noqa: F401
     ADMIN_REGULATION,
     AUTHORITY_RANK,
     AUTONOMOUS_REGULATION,

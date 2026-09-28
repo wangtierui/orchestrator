@@ -28,7 +28,7 @@ from typing import Any
 _ORCH_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if _ORCH_ROOT not in sys.path:
     sys.path.insert(0, _ORCH_ROOT)
-from config.enums import (  # noqa: E402,F401
+from config.enums import (
     BODY_SOURCE,
     SOURCE_ALIASES,
     SOURCE_SET,

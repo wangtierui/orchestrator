@@ -20,7 +20,7 @@ _ROOT = os.path.dirname(_HERE)
 if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
-import paths  # noqa: E402
+import paths
 
 _SCRAPERS = os.path.join(paths.MODULES_DIR, "regulatory_scrapers")
 if _SCRAPERS not in sys.path:
@@ -30,7 +30,7 @@ CLAUSE_DIR = os.path.join(_SCRAPERS, "data", "clauses")
 
 
 def _impl():
-    import clause_index as _ci  # noqa: PLC0415
+    import clause_index as _ci
 
     return _ci
 
@@ -58,3 +58,15 @@ def find_clauses(docno: str = "", title: str = "", src: str = ""):
 def build_clause_index(*, rebuild: bool = False) -> dict:
     """重建条文索引（写方语义；供运维/管线调用）。"""
     return _impl().build_clause_index(rebuild=rebuild)
+
+
+def validate_schema() -> dict:
+    """条文产物**契约自检**（读方语义；N-79，2026-09-28 补入口）。
+
+    返回 `{"consistent": bool, "problems": [...], "stat": {...}}`（见 clause_index 实现）。
+    此前该函数**已实现但无任何生产消费方**（唯一调用点是 `tests/test_e2e_pipeline.py`）→
+    条文产物（`{src}_clauses_*.jsonl`，五源 16k+ 文件）在全链门禁中**零覆盖**：产物字段集/
+    条号形态/结构语义指标只在单测里被断言。补此入口后由 `gates/gate_clean_schema` 判据调用，
+    使其成为**门禁级**断言（既有实现复用，不另写校验器）。
+    """
+    return _impl().validate_schema()

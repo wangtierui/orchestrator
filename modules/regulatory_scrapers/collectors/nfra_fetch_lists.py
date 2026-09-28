@@ -25,7 +25,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import nfra_collector as m
 
-from std_lib.scraper_std.cache_store import source_cache_root  # noqa: E402
+from std_lib.scraper_std.cache_store import source_cache_root
 
 CACHE = source_cache_root("nfra")  # 单一物理缓存根（modules/regulatory_scrapers/cache/nfra）
 m.set_cache_dir(CACHE)
@@ -68,7 +68,7 @@ def fetch_list_page(item_id, page, delay=1.5):
                     time.sleep(delay)
                     return d
             print("  [retry %d] 928 p%d first=%r" % (attempt, page, out[:40]))
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print("  [err] 928 p%d %s" % (page, e))
         time.sleep(2 ** attempt)
     print("  [FAIL] 928 p%d" % page)

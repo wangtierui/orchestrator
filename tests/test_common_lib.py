@@ -18,10 +18,10 @@ import pytest
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from std_lib.common_lib import (
-    fs_lock,  # noqa: E402
-    index_store,  # noqa: E402
-    io_atomic,  # noqa: E402
-    norm,  # noqa: E402
+    fs_lock,
+    index_store,
+    io_atomic,
+    norm,
 )
 
 

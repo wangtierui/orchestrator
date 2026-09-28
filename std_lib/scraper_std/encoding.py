@@ -30,7 +30,7 @@ def _chardet_detect(data: bytes) -> str | None:
     """惰性导入 chardet；缺失返回 None（不抛异常）。"""
     try:
         import chardet  # type: ignore
-    except Exception:
+    except Exception:  # noqa: BLE001
         return None
     try:
         res = chardet.detect(data)
@@ -45,7 +45,7 @@ def _confidence(data: bytes, enc: str) -> float:
     """基于 chardet 的置信度；库缺失时为 0.0（走降级链）。"""
     try:
         import chardet  # type: ignore
-    except Exception:
+    except Exception:  # noqa: BLE001
         return 0.0
     try:
         res = chardet.detect(data)

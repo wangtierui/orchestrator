@@ -20,9 +20,9 @@ for p in (ROOT, os.path.join(ROOT, "std_lib"),
     if p not in sys.path:
         sys.path.insert(0, p)
 
-from scraper_std import cleaner, crawler_common  # noqa: E402
+from scraper_std import cleaner, crawler_common
 
-from interfaces import contract  # noqa: E402
+from interfaces import contract
 
 
 class TestClauseLineContract:
@@ -32,7 +32,7 @@ class TestClauseLineContract:
             assert k in fields, k
 
     def test_rfn_bridge_load_readonly(self):
-        import clause_index  # noqa: PLC0415
+        import clause_index
         by_dk, by_url = clause_index._load_rfn_bridge()
         assert isinstance(by_dk, dict) and isinstance(by_url, dict)
 
@@ -86,7 +86,7 @@ class TestDateLayeringAndNorm:
         assert crawler_common.normalize_date("无日期文本") == ""
 
     def test_norm_docno_ssot_baseline(self):
-        from common_lib.norm import norm_docno  # noqa: PLC0415
+        from common_lib.norm import norm_docno
         assert norm_docno("银保监办发〔2019〕19号") == "银保监办发201919"
         assert norm_docno("N/A") == ""
 
@@ -96,11 +96,11 @@ class TestCrossSourceNoAbsorb:
     → 视为未匹配走新增（多源条目并存），不再把本源核验结论吸附到他源条目。"""
 
     def _load(self):
-        import sys as _s  # noqa: PLC0415
+        import sys as _s
         p = os.path.join(ROOT, "modules", "regulatory_scrapers", "timeliness_review")
         if p not in _s.path:
             _s.path.insert(0, p)
-        import consolidate_timeliness as ct  # noqa: PLC0415
+        import consolidate_timeliness as ct
         return ct
 
     def _delta(self, source):

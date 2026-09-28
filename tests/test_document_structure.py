@@ -17,7 +17,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 
-from std_lib.scraper_std.document_structure import (  # noqa: E402
+from std_lib.scraper_std.document_structure import (
     extract_structure,
     parse_document,
     render_markdown,
@@ -373,7 +373,7 @@ def test_f7_validator_structure_rules():
 
 def test_f7_structure_semantics_counts_uncovered_items():
     """F7 指标：`items` 统计**未抽取层级**的条文数（F6 落地应为 0）。"""
-    from std_lib.scraper_std.document_structure import structure_semantics  # noqa: PLC0415
+    from std_lib.scraper_std.document_structure import structure_semantics
     body = ("第二十九条 复议机关作出决定：（一）认定事实清楚的，决定维持。"
             "（二）事实不清的，决定撤销。")
     res = parse_document(body)

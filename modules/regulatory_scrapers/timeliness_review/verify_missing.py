@@ -53,14 +53,16 @@ if _ORCH_ROOT not in sys.path:
     sys.path.insert(0, _ORCH_ROOT)
 sys.path.insert(0, os.path.join(_ORCH_ROOT, "std_lib"))
 
-import verification_state as vstate  # noqa: E402
-from clean_index import get_clean_index  # noqa: E402
-from scraper_std import pkulaw_cli as pk  # noqa: E402
+import verification_state as vstate
+from clean_index import get_clean_index
+from scraper_std import pkulaw_cli as pk
 
 OUT_DIR = os.path.join(ROOT, "timeliness_review")
 # P2（2026-09-08）：supp 纳入效力缺失核验范围（原四源）。supp cleaned 清洗后空时效
 # 记录进北大法宝核验；无同名命中自动登记 pending 占位（不污染），行业文本记录可安心跳过。
-ALL_SOURCES = ["gov", "mof", "pbc", "nfra", "supp"]     # supp 置末（补充库，通常空时效待核少）
+from config.enums import SOURCE_ORDER
+
+ALL_SOURCES = list(SOURCE_ORDER)     # supp 置末（补充库，通常空时效待核少）
 
 # R13 三态（2026-09-08）：success 全部核验完成 / partial 部分完成可续跑 / unavailable 外部不可用降级
 S_SUCCESS, S_PARTIAL, S_UNAVAILABLE = "success", "partial", "unavailable"

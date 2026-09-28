@@ -33,7 +33,7 @@ _ROOT = os.path.dirname(_HERE)  # orchestrator 根
 if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
-from std_lib.common_lib import governance_store as _gs  # noqa: E402
+from std_lib.common_lib import governance_store as _gs
 
 __all__ = [
     "enabled",

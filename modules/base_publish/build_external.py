@@ -31,14 +31,15 @@ for _p in (_ROOT, _MODULES, os.path.join(_ROOT, "std_lib")):
 # 阶段 3（2026-09-18）：发布层读取双底座产物一律经 interfaces（原插入兄弟模块
 # 目录以 import clean_index/clause_index 的引导已移除）。
 
-from base_publish import SCHEMA_VERSION  # noqa: E402
+from base_publish import SCHEMA_VERSION
 
-from config.exitcodes import ExitCode  # noqa: E402
-from interfaces.clause_index_api import clauses_dir as _clauses_dir  # noqa: E402
-from interfaces.clean_index_api import published_dir as _published_dir  # noqa: E402
-from interfaces.contract import attachment_view  # noqa: E402  (F-D07 附件字段契约归一)
-from interfaces.rfn_api import registry_paths as _registry_paths  # noqa: E402
-from std_lib.common_lib.norm import norm_docno  # noqa: E402
+from config.enums import SOURCE_ORDER
+from config.exitcodes import ExitCode
+from interfaces.clause_index_api import clauses_dir as _clauses_dir
+from interfaces.clean_index_api import published_dir as _published_dir
+from interfaces.contract import attachment_view
+from interfaces.rfn_api import registry_paths as _registry_paths
+from std_lib.common_lib.norm import norm_docno
 
 # v2 §3.1.3 I-3（2026-09-26）：原三处「拼兄弟模块目录字符串」（scrapers/published、
 # scrapers/data/clauses、classifier/data + 三个表）改经 interfaces 访问器
@@ -119,7 +120,7 @@ def _load_attr_maps() -> tuple[dict, dict]:
 
 def _iter_cleaned_records():
     """遍历五源 latest JSONL（clean_index 唯一入口）。"""
-    from interfaces.clean_index_api import get_clean_index  # noqa: PLC0415
+    from interfaces.clean_index_api import get_clean_index
     idx = get_clean_index()
     for sid in idx.source_ids():
         p = idx.latest_jsonl_path(sid)
@@ -139,8 +140,8 @@ def _iter_cleaned_records():
 
 def _iter_clause_records():
     """遍历五源最新 clauses JSONL（clause_index 公开接口取 latest，无硬编码快照日期）。"""
-    from interfaces.clause_index_api import latest_clause_path  # noqa: PLC0415
-    for sid in ("gov", "mof", "nfra", "pbc", "supp"):
+    from interfaces.clause_index_api import latest_clause_path
+    for sid in SOURCE_ORDER:
         cp = latest_clause_path(sid)
         if not cp or not os.path.exists(cp):
             continue
@@ -284,7 +285,7 @@ def build() -> dict:
     def _relations():
         # F-L04（2026-09-12）：条款级/书名号引用关系（clause_graph 10 主题 edges 汇聚）——
         # 关系图/影响面分析的发布数据面（原 clause_graph 产物无统一消费入口）。
-        import glob as _glob  # noqa: PLC0415
+        import glob as _glob
         for p in sorted(_glob.glob(os.path.join(CLASSIFIER_DATA, "_t*_clause_graph.json"))):
             try:
                 d = json.load(open(p, encoding="utf-8"))
@@ -303,7 +304,7 @@ def build() -> dict:
     n_rel = _write_jsonl(os.path.join(PUBLISH_DIR, "external_relations.jsonl"), _relations())
 
     # snapshot_date：五源 latest date 最大值
-    from interfaces.clean_index_api import get_clean_index  # noqa: PLC0415
+    from interfaces.clean_index_api import get_clean_index
     idx = get_clean_index()
     snap = max((idx.latest(s) or {}).get("date") or "" for s in idx.source_ids()) or ""
     manifest = {

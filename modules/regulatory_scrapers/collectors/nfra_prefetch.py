@@ -29,7 +29,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import nfra_collector as m  # 复用 _cache_path / 缓存命名
 
-from std_lib.scraper_std.cache_store import source_cache_root  # noqa: E402
+from std_lib.scraper_std.cache_store import source_cache_root
 
 CACHE = source_cache_root("nfra")  # 单一物理缓存根（modules/regulatory_scrapers/cache/nfra）
 m.set_cache_dir(CACHE)
@@ -78,7 +78,7 @@ def fetch_curl(url, params, label, delay=2.0):
                 return True
             print("  [retry %d] %s rc=%s first=%r" % (attempt, label, r.returncode,
                                                       out[:40] if out else out))
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print("  [err] %s %s" % (label, e))
         time.sleep(2 ** attempt)
     print("  [FAIL] %s" % label)

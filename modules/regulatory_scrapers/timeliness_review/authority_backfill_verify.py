@@ -48,12 +48,14 @@ if _ORCH_ROOT not in sys.path:
     sys.path.insert(0, _ORCH_ROOT)
 sys.path.insert(0, os.path.join(_ORCH_ROOT, "std_lib"))
 
-import verification_state as vstate  # noqa: E402
-from clean_index import get_clean_index  # noqa: E402
-from scraper_std import pkulaw_cli as pk  # noqa: E402
+import verification_state as vstate
+from clean_index import get_clean_index
+from scraper_std import pkulaw_cli as pk
 
 OUT_DIR = os.path.join(ROOT, "timeliness_review")
-ALL_SOURCES = ("gov", "mof", "nfra", "pbc", "supp")
+from config.enums import SOURCE_ORDER
+
+ALL_SOURCES = SOURCE_ORDER
 AUTHORITY_MARK = "北大法宝"
 
 S_SUCCESS, S_PARTIAL, S_UNAVAILABLE = "success", "partial", "unavailable"

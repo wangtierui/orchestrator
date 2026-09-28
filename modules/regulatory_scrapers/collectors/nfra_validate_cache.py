@@ -13,7 +13,7 @@ import glob
 import json
 import os
 
-from std_lib.scraper_std.cache_store import source_cache_root  # noqa: E402
+from std_lib.scraper_std.cache_store import source_cache_root
 
 CACHE = source_cache_root("nfra")  # 单一物理缓存根（modules/regulatory_scrapers/cache/nfra）
 
@@ -23,7 +23,7 @@ tot, grand, bad = set(), 0, 0
 for f in files:
     try:
         d = json.load(open(f, encoding="utf-8"))
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         print("PARSE FAIL", f, e); bad += 1; continue
     data = d.get("data", {})
     if not isinstance(data, dict) or "rows" not in data:
@@ -44,7 +44,7 @@ no_clob = 0
 for f in dfiles:
     try:
         d = json.load(open(f, encoding="utf-8"))
-    except Exception:
+    except Exception:  # noqa: BLE001
         no_clob += 1; continue
     data = d.get("data", d)
     if not isinstance(data, dict):

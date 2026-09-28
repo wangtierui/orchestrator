@@ -51,7 +51,7 @@ def _wl_boundary(items: list[dict]) -> None:
     登记失败一律降级（旁路设施纪律：不得中断相关性筛选）。
     """
     try:
-        from std_lib.common_lib import governance_store as _gs  # noqa: PLC0415
+        from std_lib.common_lib import governance_store as _gs
         n = 0
         for it in items[: _MAX_BOUNDARY_WL]:
             key = str(it.get("document_number") or it.get("title") or "")[:80]
@@ -102,7 +102,7 @@ def load_scanner():
                          "——请复核后更新本函数，勿直接 import（会触发全量扫描）。")
     head = src.split(marker)[0]
     ns: dict = {"__name__": "_relevance_scanner_head", "__file__": p}
-    exec(compile(head, p, "exec"), ns)      # noqa: S102 - 受限执行：仅判定器段，无扫描副作用
+    exec(compile(head, p, "exec"), ns)
     if "classify" not in ns:
         raise SystemExit("[ERR] 判定器段未导出 classify()，请复核 scanner.py 结构。")
     # 用 SimpleNamespace 而非 type()：后者会把 classify 变成未绑定的方法（需显式 self）。
@@ -121,7 +121,7 @@ def latest_cleaned(source: str, kind: str = "csv") -> str:
     # 注：ROOT 为**本仓根**（非兄弟模块目录），注入属合法引导（gate_no_cross_module_import 不拦）。
     if ROOT not in sys.path:
         sys.path.insert(0, ROOT)
-    from interfaces import clean_index_api as ci  # type: ignore  # noqa: PLC0415
+    from interfaces import clean_index_api as ci  # type: ignore
 
     def _get(o, k, d=None):
         if isinstance(o, dict):

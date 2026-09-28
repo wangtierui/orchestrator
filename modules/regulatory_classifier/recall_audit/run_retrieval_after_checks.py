@@ -87,20 +87,20 @@ CLEAN_INDEX_OK = True
 VERIFICATION_OK = True
 LINT_OK = True
 try:
-    from interfaces.clean_index_api import get_clean_index, scan_sources  # noqa: E402
-except Exception as e:  # pragma: no cover
+    from interfaces.clean_index_api import get_clean_index, scan_sources
+except Exception as e:  # pragma: no cover  # noqa: BLE001
     CLEAN_INDEX_OK = False
     _import_err_clean = repr(e)
 try:
-    from verification_state_mirror import MIRROR_PATH, load_mirror  # noqa: E402  (N-5 本地镜像)
-except Exception as e:  # pragma: no cover
+    from verification_state_mirror import MIRROR_PATH, load_mirror
+except Exception as e:  # pragma: no cover  # noqa: BLE001
     VERIFICATION_OK = False
     _import_err_ver = repr(e)
 try:
     # F-S02 接线修复：旧顶层模块 lint_hardcoded_snapshots 已迁移为 gates 包内实现
     # （gates.gate_hardcoded_snapshots.lint_hardcoded），原导入路径恒 ModuleNotFoundError。
-    from gates.gate_hardcoded_snapshots import lint_hardcoded  # noqa: E402  (N-3 门禁复用)
-except Exception as e:  # pragma: no cover
+    from gates.gate_hardcoded_snapshots import lint_hardcoded
+except Exception as e:  # pragma: no cover  # noqa: BLE001
     LINT_OK = False
     _import_err_lint = repr(e)
 
@@ -151,7 +151,7 @@ def gate_clean():
 
     try:
         idx = get_clean_index()
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         detail["error"], detail["index_loaded"] = "get_clean_index 失败: " + repr(e), False
         return False, detail
     detail["index_loaded"] = True
@@ -170,7 +170,7 @@ def gate_clean():
     # 2) 索引 vs 磁盘实时扫描（只读，不写）是否陈旧
     try:
         live = scan_sources(hash_files=False)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         detail["error"] = "scan_sources 失败: " + repr(e)
         return False, detail
     for src_id in idx.source_ids():
@@ -228,7 +228,7 @@ def gate_clean():
                     or r["index_record_count"] != r["live_record_count"]
                 ]
                 return False, detail
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             detail["index_rebuilt"] = False
             detail["index_stale"] = True
             detail["error"] = "clean_index 自动重建失败: " + repr(e)
@@ -413,7 +413,7 @@ def load_checkpoint():
     if os.path.exists(CHECKPOINT_PATH):
         try:
             return json.load(open(CHECKPOINT_PATH, encoding="utf-8"))
-        except Exception:
+        except Exception:  # noqa: BLE001
             return {}
     return {}
 
@@ -467,7 +467,7 @@ def gate_contract(scripts_dir=None):
             continue
         try:
             src = open(path, encoding="utf-8").read()
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             violations.append({"script": name, "issue": "源码读取失败", "detail": repr(e)})
             continue
         if (_ATTR_MARKER in src
@@ -499,10 +499,10 @@ def gate_contract(scripts_dir=None):
 #   注：计数校验（T1 339 等）由 scripts/_verify_written.py 门禁负责，本门禁不重复。
 SCHEMA_OK = True
 try:
-    from rfn.registry import CSV_FIELDS, THEME_FIELDS  # noqa: E402
+    from rfn.registry import CSV_FIELDS, THEME_FIELDS
     sys.path.insert(0, os.path.join(ROOT, "scripts"))
-    from build_detail_tables import FIELDS as DETAIL_FIELDS  # noqa: E402
-except Exception as _e:  # pragma: no cover
+    from build_detail_tables import FIELDS as DETAIL_FIELDS
+except Exception as _e:  # pragma: no cover  # noqa: BLE001
     SCHEMA_OK = False
     _schema_import_err = repr(_e)
     CSV_FIELDS = THEME_FIELDS = DETAIL_FIELDS = []
@@ -512,10 +512,10 @@ except Exception as _e:  # pragma: no cover
 # 记录生成）写「核心键」，扫描路径（scanner 命中五源）额外写富字段 how/url/source_origin。
 # 故必选键定义为**核心键**（两种路径均保证），富字段为条件字段不纳入必选，避免误报。
 # F-D11 单源化（2026-09-12）：键集唯一事实源 = interfaces/contract.py（原字面量副本改 re-export）
-from interfaces.contract import BASE_KEYS as _BASE_KEYS  # noqa: E402
-from interfaces.contract import CITEREFS_KEYS as _CITEREFS_KEYS  # noqa: E402
-from interfaces.contract import FINAL_KEYS as _FINAL_KEYS  # noqa: E402
-from interfaces.contract import MATCHED_KEYS as _MATCHED_KEYS  # noqa: E402
+from interfaces.contract import BASE_KEYS as _BASE_KEYS
+from interfaces.contract import CITEREFS_KEYS as _CITEREFS_KEYS
+from interfaces.contract import FINAL_KEYS as _FINAL_KEYS
+from interfaces.contract import MATCHED_KEYS as _MATCHED_KEYS
 
 # 富字段（扫描路径条件字段，不纳入必选）：matched: how/url/source_origin；
 # citerefs: source_origin/art_refs_str/name_refs_top 之外见上。注：2026-09-01 实测
@@ -679,7 +679,7 @@ def run_stage(script_name):
     except subprocess.TimeoutExpired:
         return {"name": script_name, "status": "failed", "returncode": -2,
                 "error": "超时（>1200s）", "tail": ""}
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         return {"name": script_name, "status": "failed", "returncode": -3,
                 "error": repr(e), "tail": ""}
     return {
@@ -714,7 +714,7 @@ def load_stats():
     if os.path.exists(p):
         try:
             return json.load(open(p, encoding="utf-8")).get("stats", {})
-        except Exception:
+        except Exception:  # noqa: BLE001
             return {}
     return {}
 

@@ -52,7 +52,7 @@ for _p in (
 ):
     if _p not in sys.path:
         sys.path.insert(0, _p)
-from config.exitcodes import ExitCode  # noqa: E402
+from config.exitcodes import ExitCode
 
 CLS_DATA = os.path.join(ROOT, "modules", "regulatory_classifier", "data")
 CLEANED = os.path.join(ROOT, "modules", "regulatory_scrapers", "data", "cleaned")
@@ -62,7 +62,9 @@ OUT_CSV = os.path.join(REL_DIR, "rfn_backlog.csv")
 OUT_MD = os.path.join(ROOT, "docs", "reports", "RFN补登候选清单.md")
 BACKUP_ROOT = os.path.join(ROOT, "modules", "regulatory_classifier", "backups")
 
-LEGAL_SOURCES = ("gov", "mof", "nfra", "pbc", "supp")
+from config.enums import SOURCE_ORDER
+
+LEGAL_SOURCES = SOURCE_ORDER
 CSV_FIELDS = (
     "dedup_key",
     "title",
@@ -100,7 +102,7 @@ _LAW_SHAPE_RE = None
 
 
 def _law_shape(title: str) -> bool:
-    import re  # noqa: PLC0415
+    import re
 
     t = (title or "").strip()
     global _LAW_SHAPE_RE
@@ -116,7 +118,7 @@ def _law_shape(title: str) -> bool:
 def load_theme_map() -> dict[str, str]:
     """`监管文件编号 → 主题`：经 **rfn 索引**（`rows()` 已把主题归属表合并进行内）——唯一事实源。"""
     try:
-        from rfn import get_index  # noqa: PLC0415
+        from rfn import get_index
 
         return {
             r.get("监管文件编号", ""): (r.get("主题") or "")
@@ -311,7 +313,7 @@ def write_outputs(bl: dict) -> dict:
 
 def apply_backlog(bl: dict, *, theme_mode: str = "", fixed_theme: str = "") -> dict:
     """批量登记（经 `rfn.register_doc` 唯一写口；幂等 + 备份）。"""
-    from rfn import registry  # noqa: PLC0415
+    from rfn import registry
 
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     backup_dir = os.path.join(BACKUP_ROOT, f"rfn_backlog_{ts}")
@@ -382,8 +384,8 @@ def sync_timeliness(*, dry_run: bool = False, only_rfns: set[str] | None = None)
     `state_key(发文字号, 文件名称)` 精确查 SSOT——命不中即不改（保持 `pending`，门禁会跳过）。
     """
     try:
-        from rfn import registry  # noqa: PLC0415
-        from timeliness_review.verification_state import load_state, state_key  # noqa: PLC0415
+        from rfn import registry
+        from timeliness_review.verification_state import load_state, state_key
     except Exception as e:  # noqa: BLE001
         print(f"[backlog] 时效同步跳过（导入失败: {e!r}）")
         return {"changed": 0, "scanned": 0}
@@ -494,7 +496,7 @@ def _wl_uncertain(items) -> None:
     现登记进 worklist，`cli.py worklist resolve` 即处置通道。旁路设施：失败降级。
     """
     try:
-        from std_lib.common_lib import governance_store as _gs  # noqa: PLC0415
+        from std_lib.common_lib import governance_store as _gs
 
         n = 0
         for it in items:

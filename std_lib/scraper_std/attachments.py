@@ -185,7 +185,7 @@ def download_and_extract(
             status = rec["extract_status"]
             rec["attachment_content"] = f"[附件解析失败: {status}]"
             LOG.warning("附件文本提取为空 %s（%s）", final_name, status)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         rec["extract_status"] = "error"
         rec["attachment_content"] = f"[附件解析失败: {type(e).__name__}: {e}]"
         LOG.error("附件解析异常 %s：%s", final_name, e)

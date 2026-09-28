@@ -22,8 +22,8 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
-import paths  # noqa: E402
-from config.exitcodes import ExitCode  # noqa: E402
+import paths
+from config.exitcodes import ExitCode
 
 _TODAY = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -32,19 +32,11 @@ INT_DATA = os.path.join(paths.MODULES_DIR, "internal_policy_base", "data")
 STATE_JSON = os.path.join(
     paths.MODULES_DIR, "regulatory_scrapers", "timeliness_review", "verification_state.json"
 )
-CLS_MAP = {
-    "T0": "上位法锚点",
-    "T1": "销售行为与消费者保护",
-    "T2": "偿付能力",
-    "T3": "产品条款费率",
-    "T4": "资金运用",
-    "T5": "公司治理",
-    "T6": "数据与信息管理",
-    "T7": "风险处置",
-    "T8": "机构管理",
-    "T9": "机构设置与撤销/再保险",
-    "T10": "市场行为",
-}  # 近似名；权威=THEME_MAP
+# N-75（2026-09-28）：**删除本地主题名副本 `CLS_MAP`**。它自称"近似名"、注释指向权威
+# `THEME_MAP`，实测已与权威**漂移 9/11 项**（且 T2/T3 语义错位：本地 T2"偿付能力" vs 权威
+# T2"产品与精算制度"；本地 T3"产品条款费率" vs 权威 T3"资本与偿付能力监管"），
+# 且**全仓零引用**（纯死副本 → 只误导读者、无任何收益）。
+# 主题名一律经 `interfaces.theme_api`（→ `rfn.THEME_MAP`）取用；禁止再建本地副本。
 
 
 def _csv_len(p: str) -> int:

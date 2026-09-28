@@ -189,7 +189,7 @@ def version_chain(docno: str, limit: int = 50) -> list[dict]:
     的宽表）后在 Python 端逐行 `norm_docno` 过滤（方案 §2.2 G7）。现依赖发布库新增的
     `docno_norm` 列 + 索引直接命中；**旧库（未重建）自动回退**旧路径，行为不变。
     """
-    from std_lib.common_lib.norm import norm_docno  # noqa: PLC0415
+    from std_lib.common_lib.norm import norm_docno
 
     nd = norm_docno(docno)
     if not nd:

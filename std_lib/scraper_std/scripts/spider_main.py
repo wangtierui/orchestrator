@@ -55,6 +55,6 @@ def run_spider_main(project_root: str, argv: list = None) -> int:  # type: ignor
             return fn() if argv is None else fn(argv)
         print(f"[spider_main] {mod} 无 main()/run()，仅导入成功（委托目标）")
         return 0
-    except Exception as e:  # 根模块依赖（playwright 等）缺失时给出明确指引
+    except Exception as e:  # 根模块依赖（playwright 等）缺失时给出明确指引  # noqa: BLE001
         print(f"[spider_main] 委托 {mod} 失败：{type(e).__name__}: {e}")
         return 2

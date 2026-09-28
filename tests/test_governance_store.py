@@ -24,7 +24,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 
-from std_lib.common_lib import governance_store as gs  # noqa: E402
+from std_lib.common_lib import governance_store as gs
 
 
 @pytest.fixture

@@ -610,7 +610,7 @@ def _wl_quota(blocker: str, item: dict) -> None:
     现登记 worklist（处置：检查控制台后重跑 `cli.py timeliness verify`，断点续跑）。
     """
     try:
-        from std_lib.common_lib import governance_store as _gs  # noqa: PLC0415
+        from std_lib.common_lib import governance_store as _gs
 
         key = f"{blocker}:{item.get('docno') or item.get('title') or ''}"[:80]
         _gs.worklist_add(

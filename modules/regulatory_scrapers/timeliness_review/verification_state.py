@@ -57,23 +57,23 @@ def classifier_csv() -> str:
     ——`gate_no_cross_module_import` 判据 D 会断言这一点。
     """
     try:
-        from interfaces.rfn_api import registry_paths  # noqa: PLC0415
+        from interfaces.rfn_api import registry_paths
         return registry_paths()["attr_csv"]
     except Exception:  # noqa: BLE001  接口不可用时回退（仓根已在 sys.path，见上方引导）
-        from paths import module_dir  # noqa: PLC0415
+        from paths import module_dir
         return os.path.join(module_dir("regulatory_classifier"), "data",
                             "人身保险公司-文件归属表.csv")
 
 
 CLASSIFIER_CSV = os.path.abspath(classifier_csv())
 
-# 效力状态合法值（与 unified_schema 共享常量对齐，规范 v3：7 值含 partially_repealed）
-try:
-    from scraper_std.unified_schema import TIMELINESS_STATUS  # noqa: E402
-    STATUS_SET = frozenset(TIMELINESS_STATUS)
-except Exception:  # 独立运行兜底（不破坏既有调用）
-    STATUS_SET = {"valid", "amended", "repealed", "partially_repealed",  # type: ignore[assignment]
-                  "expired", "pending", "uncertain"}
+# 效力状态合法值（规范 v3：7 值含 partially_repealed）
+# N-77（2026-09-28）：原经 `scraper_std.unified_schema` **转一手**，且导入失败退**私有字面量副本**
+# （→ 静默分叉：副本一旦与 SSOT 漂移，本模块的"合法性判定"会放行/拒绝错误的取值）。
+# 本文件已在文件头引导仓根（R4 适配修复），故**直取 SSOT**并去掉兜底副本。
+from config.enums import TIMELINESS_STATUS as _TIMELINESS_STATUS
+
+STATUS_SET: frozenset = frozenset(_TIMELINESS_STATUS)
 
 
 from std_lib.common_lib.norm import norm_docno as _norm_docno  # A-10：SSOT 收敛（标准层）
@@ -113,7 +113,7 @@ def save_state(state):
     os.makedirs(TASK_DIR, exist_ok=True)
     # F-D14（H-01）：版本锚点（**副本**写入——不污染调用方对象，防"保存后继续遍历"踩 _meta；
     # load 侧剥离，消费方零改动）
-    import time as _t  # noqa: PLC0415
+    import time as _t
     payload = {k: v for k, v in state.items() if k != "_meta"}
     payload["_meta"] = {"schema_version": "1.0", "written_by": "verification_state",
                         "written_at": _t.strftime("%Y-%m-%d %H:%M:%S")}

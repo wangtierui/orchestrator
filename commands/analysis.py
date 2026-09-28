@@ -14,16 +14,16 @@ def run(argv):
                                    （15 项 + 2026-09-14 追加的关系类 2 项：2.1.2.4/2.1.2.5）
     - status                  ：列交付库现状（manifest 概览 + 文件缺失检查）
     """
-    import json as _json  # noqa: PLC0415
-    import os as _os  # noqa: PLC0415
+    import json as _json
+    import os as _os
 
-    from bootstrap import bootstrap  # noqa: PLC0415
+    from bootstrap import bootstrap
 
     action = argv[0] if argv else ""
     outdir = _os.path.join(paths.ROOT, "docs", "reports")
     if action == "gen":
         bootstrap(include_tools=True)
-        from gen_analysis_deliveries import main as _gen  # noqa: PLC0415
+        from gen_analysis_deliveries import main as _gen
 
         return _gen(argv[1:])
     if action == "status":

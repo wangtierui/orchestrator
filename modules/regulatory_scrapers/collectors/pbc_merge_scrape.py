@@ -67,7 +67,7 @@ def main():
     if os.path.exists(MAIN):
         try:
             main_data = json.load(open(MAIN, encoding="utf-8"))
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(f"[!] 主库读取失败：{e}")
             sys.exit(3)
     stage_data = json.load(open(STAGE, encoding="utf-8"))

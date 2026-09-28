@@ -88,7 +88,7 @@ def load_ua_pool(path: str | None = None) -> dict[str, Any]:
                 pool["mobile"] = mb
             if data.get("default"):
                 pool["default"] = str(data["default"])
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             LOG.warning("UA 池文件解析失败 %s：%s", p, e)
         break  # 仅尝试第一个可用路径
     _UA_POOL_CACHE[key] = pool

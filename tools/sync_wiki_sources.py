@@ -32,7 +32,7 @@ for _p in (
 ):
     if _p not in sys.path:
         sys.path.insert(0, _p)
-from config.exitcodes import ExitCode  # noqa: E402
+from config.exitcodes import ExitCode
 
 DEFAULT_OUT = os.path.join(_ROOT, "reports", "_wiki_sources")
 MANIFEST_NAME = ".wiki_sync_manifest.json"

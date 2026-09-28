@@ -56,16 +56,16 @@ sys.path.insert(0, os.path.join(_ORCH_ROOT, "std_lib"))
 # 注意（2026-09-26 回归修复）：`from config.exitcodes import ExitCode` 必须在 _ORCH_ROOT
 # 引导**之后**——config 是仓根顶级包，standalone 运行（子进程）时 sys.path 不含仓根，
 # 若放在 _ORCH_ROOT 引导之前会 ModuleNotFoundError: config（第九批收敛脚本曾误插此处）。
-from scraper_std.doc_number import normalize_doc_number  # noqa: E402
+from scraper_std.doc_number import normalize_doc_number
 
-from config.exitcodes import ExitCode  # noqa: E402
+from config.exitcodes import ExitCode
 
 REVIEW = os.path.join(ROOT, "timeliness_review")
 CLEANED = os.path.join(ROOT, "data", "cleaned")
 BACKUP_ROOT = os.path.join(ROOT, "backups")
 
 # 受控枚举（唯一事实源 config.enums，禁硬编码副本）——非规范值一律不回写
-from config.enums import TIMELINESS_STATUS  # noqa: E402
+from config.enums import TIMELINESS_STATUS
 
 TARGET_FIELDS = ("timeliness_status", "replacement_document", "verification_source")
 
@@ -75,7 +75,8 @@ TARGET_FIELDS = ("timeliness_status", "replacement_document", "verification_sour
 # 规则：**状态/进度/告警行 → LOG**；**机器可读载荷（json.dumps）/多列表格行 → 保留 print**
 # （后者是 stdout 契约，加日志前缀会破坏编排器 tail 与下游解析）。
 # 判据：`gate_runtime_hygiene` 判据④断言本文件的 LOG 使用下限与 print 上限。
-from std_lib.common_lib.logging import get_logger  # noqa: E402
+from config.enums import SOURCE_ORDER
+from std_lib.common_lib.logging import get_logger
 
 LOG = get_logger("timeliness_apply")
 def _norm(s: str) -> str:
@@ -171,7 +172,7 @@ def writeback_source(source: str, fields_for, *, dry_run: bool = False,
     禁止各自实现（原三份分叉：字段集/双轨性/原子性/备份各不同——审查 C-12/C-10）。
     """
     sys.path.insert(0, ROOT)
-    from clean_index import get_clean_index  # noqa: PLC0415
+    from clean_index import get_clean_index
     idx = get_clean_index()
     jf = idx.latest_jsonl_path(source)
     if not jf:
@@ -306,7 +307,7 @@ def main() -> int:
 
     rows = load_ledger(ledger)
     LOG.info("清单条数: %d" % len(rows))
-    sources = [args.source] if args.source else ["nfra", "mof", "pbc", "gov", "supp"]
+    sources = [args.source] if args.source else list(SOURCE_ORDER)
 
     stats = []
     for s in sources:
@@ -349,7 +350,7 @@ def main() -> int:
             try:
                 if ROOT not in sys.path:
                     sys.path.insert(0, ROOT)
-                from clean_index import get_clean_index  # noqa: PLC0415
+                from clean_index import get_clean_index
                 get_clean_index(rebuild=True)
                 LOG.info("[apply] clean_index 已重建（index.json 刷新，纳入最新内容）")
             except Exception as e:  # noqa: BLE001
@@ -363,7 +364,7 @@ def main() -> int:
             try:
                 if ROOT not in sys.path:
                     sys.path.insert(0, ROOT)
-                from clause_index import build_clause_index  # noqa: PLC0415
+                from clause_index import build_clause_index
                 _cr = build_clause_index()
                 _built = [k for k, v in _cr.items()
                           if isinstance(v, dict) and v.get("built")]

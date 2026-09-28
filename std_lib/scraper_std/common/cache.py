@@ -44,7 +44,7 @@ class CacheManager:
             if time.time() - data.get("_cached_at", 0) > max_age:
                 return None
             return data.get("payload")
-        except Exception:
+        except Exception:  # noqa: BLE001
             return None
 
     def set(self, key: str, payload: dict) -> None:
@@ -70,7 +70,7 @@ class CacheManager:
             if time.time() - meta.get("cached_at", 0) > max_age:
                 return None
             return path.read_bytes()
-        except Exception:
+        except Exception:  # noqa: BLE001
             return None
 
     def set_file(self, key: str, data: bytes) -> None:

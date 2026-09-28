@@ -23,13 +23,13 @@ for _p in (_ROOT, _MODULES, os.path.join(_ROOT, "std_lib")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from base_publish import SCHEMA_VERSION  # noqa: E402
+from base_publish import SCHEMA_VERSION
 
-from config.exitcodes import ExitCode  # noqa: E402
+from config.exitcodes import ExitCode
 
 # v2 §3.1.3 I-3（2026-09-26）：内部制度数据/发布件目录改经 interfaces 访问器（判据 D）
-from interfaces.internal_policy_api import data_dir as _ipb_data_dir  # noqa: E402
-from interfaces.internal_policy_api import published_dir as _ipb_published_dir  # noqa: E402
+from interfaces.internal_policy_api import data_dir as _ipb_data_dir
+from interfaces.internal_policy_api import published_dir as _ipb_published_dir
 
 IPB_DATA = _ipb_data_dir()
 PUBLISH_DIR = _ipb_published_dir()

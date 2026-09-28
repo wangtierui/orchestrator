@@ -15,10 +15,10 @@ for p in (ROOT, os.path.join(ROOT, "std_lib")):
     if p not in sys.path:
         sys.path.insert(0, p)
 
-from scraper_std import cache_store as cs  # noqa: E402
+from scraper_std import cache_store as cs
 from scraper_std import checkpoint as ck
 from scraper_std import circuit_breaker as cb
-from scraper_std import unified_schema as us  # noqa: E402
+from scraper_std import unified_schema as us
 
 _MIN = {"title": "关于X的通知", "document_number": "保监发〔2020〕1号",
         "publish_date": "2020-05-06", "body_text": "正文内容", "source_url": "http://x/1"}
@@ -102,7 +102,7 @@ class TestBlobCache:
         try:
             bc.load(3, "nope.bin")
             ok = False
-        except Exception:
+        except Exception:  # noqa: BLE001
             ok = True
         assert ok
 
@@ -127,7 +127,7 @@ class TestResponseCache:
         try:
             rc.fetch("ep", {"q": "miss"}, fetcher=lambda p: {"v": 1})
             ok = False
-        except Exception:
+        except Exception:  # noqa: BLE001
             ok = True
         assert ok
 

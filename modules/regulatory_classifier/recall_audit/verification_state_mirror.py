@@ -30,7 +30,7 @@ MIRROR_PATH = os.path.join(_THIS, "output", _MIRROR_PATH_NAME)   # 兼容导出�
 
 def _state_path() -> str:
     """时效 SSOT 路径（经 interfaces 唯一入口）。"""
-    from interfaces.timeliness_api import state_path  # noqa: PLC0415
+    from interfaces.timeliness_api import state_path
     return state_path()
 
 

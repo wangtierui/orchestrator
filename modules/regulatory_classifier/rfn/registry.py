@@ -44,12 +44,12 @@ for _p in (_ORCH_ROOT, _MOD_ROOT):
         sys.path.insert(0, _p)
 
 # 单一事实源：现行主题映射（来自 rfn/__init__.py，禁止本地重复定义）。
-from rfn import THEME_MAP  # noqa: E402
+from rfn import THEME_MAP
 
 # 共享件收口（P4）：原子写 / 指纹 / 归一化 由 std_lib.common_lib 提供（专项三）。
-from std_lib.common_lib.fs_lock import WinFileLock, atomic_write_json  # noqa: E402
+from std_lib.common_lib.fs_lock import WinFileLock, atomic_write_json
 from std_lib.common_lib.io_atomic import (
-    fingerprint as _fp_fingerprint,  # noqa: E402  (模块尾兼容导出)
+    fingerprint as _fp_fingerprint,
 )
 
 _PKG_DIR = os.path.dirname(os.path.abspath(__file__))          # regulatory_classifier/rfn/
@@ -57,7 +57,9 @@ ROOT = os.path.dirname(_PKG_DIR)                                # regulatory_cla
 _DEFAULT_CSV = os.path.join(ROOT, "data", "人身保险公司-文件归属表.csv")
 _DEFAULT_THEME_CSV = os.path.join(ROOT, "data", "人身保险公司-主题归属表.csv")
 
-LEGAL_SOURCES = {"gov", "mof", "nfra", "pbc", "supp"}
+from config.enums import SOURCE_ORDER
+
+LEGAL_SOURCES = set(SOURCE_ORDER)
 # 严格文号正则：机构名 + (年份) + (第)序号 + 号（2026-08-31 重构，替代 len>=5 宽松判定）
 DOC_RE = re.compile(r"^[\u4e00-\u9fa5]{2,20}(?:[〔\[（(]\d{4}[〕\]）)]|年)?\s*第?\d{1,4}\s*号$")
 
@@ -82,15 +84,15 @@ LOCK_FILE = os.path.join(_PKG_DIR, ".registry.lock")            # 防并发锁
 # 文件归属表 8 列（2026-08-31 重构：无主题/同文件主编号，新增判定日期）
 # F-D11 单源化（2026-09-12）：归属表/主题表列契约唯一事实源 = interfaces/contract.py
 # （原本地字面量副本改为 re-export；gate_contract 同读 contract，防字面漂移）。
-from interfaces.contract import REGISTRY_CSV_FIELDS as CSV_FIELDS  # noqa: E402
-from interfaces.contract import THEME_FIELDS  # noqa: E402
+from interfaces.contract import REGISTRY_CSV_FIELDS as CSV_FIELDS
+from interfaces.contract import THEME_FIELDS
 
 # 层级同步顺序（规范要求）
 SYNC_LAYERS = ["数据底座", "文件归属表", "横向整合分析报告", "纵向深化分析报告", "全景分析报告"]
 
 
 # 归一化收口（P4）：文号归一由 std_lib.common_lib.norm 提供（语义逐字一致：去括号空白 + 去尾号）。
-from std_lib.common_lib.norm import norm_docno as _norm_docno_shared  # noqa: E402
+from std_lib.common_lib.norm import norm_docno as _norm_docno_shared
 
 norm_docno = _norm_docno_shared  # 保留公共符号（旧 import 兼容）；真实实现单一来源
 

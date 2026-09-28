@@ -16,7 +16,7 @@ for p in (ROOT, os.path.join(ROOT, "std_lib")):
     if p not in sys.path:
         sys.path.insert(0, p)
 
-from scraper_std import crawler_common as cc  # noqa: E402
+from scraper_std import crawler_common as cc
 from scraper_std import excel_structure as ex
 
 

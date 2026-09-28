@@ -34,7 +34,7 @@ for _p in (_MOD_CLASS, paths.ROOT):
 def _wm_status(key: str):
     """产物水位状态（阶段 4：判据切换共用入口 `interfaces.governance_api.wm_status`）。"""
     try:
-        from interfaces.governance_api import wm_status  # noqa: PLC0415
+        from interfaces.governance_api import wm_status
 
         return wm_status(key)
     except Exception as e:  # noqa: BLE001  水位不可用 → unknown（调用方退回指纹判据）
@@ -64,9 +64,9 @@ def run():
         _ipb = os.path.join(paths.MODULES_DIR, "internal_policy_base")
         if _ipb not in sys.path:
             sys.path.insert(0, _ipb)
-        import merged as _merged  # noqa: PLC0415
+        import merged as _merged
 
-        from interfaces.rfn_api import registry_paths as _registry_paths  # noqa: PLC0415
+        from interfaces.rfn_api import registry_paths as _registry_paths
 
         _rp = _registry_paths()
         cur = {
@@ -104,7 +104,7 @@ def run():
             }
         fingerprint_note = f"inputs 指纹复核不可执行（{e!r}），但水位判据为 ok"
     try:
-        from rfn import get_index  # noqa: PLC0415
+        from rfn import get_index
 
         idx = get_index()
     except Exception as e:  # noqa: BLE001

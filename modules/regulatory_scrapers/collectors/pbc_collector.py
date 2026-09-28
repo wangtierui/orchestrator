@@ -127,7 +127,7 @@ BASE = "https://www.pbc.gov.cn"
 # 产物目录统一（Plan B 阶段 2b + 2026-09-08 docs_root 统一根）
 SRC_DIR = os.path.dirname(os.path.abspath(__file__))
 REPO_ROOT = os.path.dirname(SRC_DIR)  # regulatory_scrapers（统一数据根）
-from std_lib.scraper_std.cache_store import docs_root  # noqa: E402
+from std_lib.scraper_std.cache_store import docs_root
 
 ATTACHMENTS_DIR = docs_root("pbc", "attachments")
 CATEGORIES = [
@@ -182,7 +182,7 @@ ATTACH_EXT = (".doc", ".docx", ".pdf", ".xls", ".xlsx", ".wps", ".ceb", ".rtf")
 # ----------------------------------------------------------------------------------
 
 
-from std_lib.scraper_std.doc_convert import (  # noqa: E402 五源共享 doc→docx（2026-09-08）
+from std_lib.scraper_std.doc_convert import (
     find_libreoffice,
 )
 
@@ -274,7 +274,7 @@ class Fetcher:
                     if attempt < self.retries:
                         time.sleep(wait)
                     continue
-            except (urllib.error.URLError, ConnectionError, TimeoutError, Exception) as e:
+            except (urllib.error.URLError, ConnectionError, TimeoutError, Exception) as e:  # noqa: BLE001
                 last_err = f"{type(e).__name__}: {e}"
             # 通用退避：2^(attempt) 秒
             if attempt < self.retries:
@@ -409,7 +409,7 @@ def extract_doc_number(*texts):
         except ImportError:
             from std_lib.scraper_std.doc_number import extract_doc_number as _u
             from std_lib.scraper_std.doc_number import normalize_doc_number as _n
-    except Exception:  # pragma: no cover
+    except Exception:  # pragma: no cover  # noqa: BLE001
         _u = _n = None  # type: ignore[assignment]
     if _u is not None:
         dn = _u(blob)
@@ -537,7 +537,7 @@ def scrape_category(cat, fetcher, args, done_urls, existing_map=None):
                         "title", "publish_date", "document_number",
                         "issuing_authority", "effective_date", "content")})
                     rec["fetch_status"] = "ok"
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001
                     rec["fetch_status"] = "parse_error"
                     rec["error"] = f"{type(e).__name__}: {e}"
             else:
@@ -596,7 +596,7 @@ def scrape_category(cat, fetcher, args, done_urls, existing_map=None):
                                 rec_key=f"{name}_{ft}"))
                         except Exception:  # noqa: BLE001
                             pass
-                    except Exception as e:
+                    except Exception as e:  # noqa: BLE001
                         rec["error"] = ("附件正文解析异常：%s: %s；已保存原始文件供下载"
                                         % (type(e).__name__, e))
                         parsed = None
@@ -665,7 +665,7 @@ def build_report(records):
     return "\n".join(lines)
 
 # —— 运行锁统一实现（N-8）：判定逻辑收敛到 regulatory_scrapers/fs_lock.py，四源共用 ——
-import atexit  # noqa: E402
+import atexit
 
 _SCRAPERS_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _SCRAPERS_ROOT not in sys.path:

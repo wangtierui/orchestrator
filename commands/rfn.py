@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import paths
+from config.enums import SOURCE_ORDER
 from config.exitcodes import ExitCode
 
 
@@ -18,11 +19,11 @@ def run(argv):
       orchestrator rfn lookup --docno 文号 | --title 标题
     退出码：0=成功/命中；1=失败/未命中/参数错误。
     """
-    import argparse as _ap  # noqa: PLC0415
-    import json as _json  # noqa: PLC0415
-    import os as _os  # noqa: PLC0415
+    import argparse as _ap
+    import json as _json
+    import os as _os
 
-    from bootstrap import bootstrap  # noqa: PLC0415
+    from bootstrap import bootstrap
 
     bootstrap("regulatory_classifier")
     cls_root = _os.path.join(paths.ROOT, "modules", "regulatory_classifier")
@@ -33,7 +34,7 @@ def run(argv):
     pr.add_argument("--title", required=True, help="文件名称（全称）")
     pr.add_argument("--docno", default="", help="发文字号")
     pr.add_argument("--pub-date", default="", dest="pub_date", help="发布日期 YYYY-MM-DD")
-    pr.add_argument("--source", default="supp", choices=["gov", "mof", "nfra", "pbc", "supp"])
+    pr.add_argument("--source", default="supp", choices=list(SOURCE_ORDER))
     pr.add_argument("--fingerprint", default="", help="内容指纹（防重复摄入，可空）")
     pl = sub.add_parser("lookup", help="按去重键查已有登记")
     pl.add_argument("--docno", default="")
@@ -42,7 +43,7 @@ def run(argv):
     pl.add_argument("--pub-date", default="", dest="pub_date")
     args = ap.parse_args(argv)
     try:
-        from rfn import registry  # noqa: PLC0415
+        from rfn import registry
     except Exception as e:  # noqa: BLE001
         print(f"[rfn] rfn.registry 不可用: {e!r}")
         return ExitCode.FAIL
@@ -72,7 +73,7 @@ def run(argv):
         return ExitCode.OK
     # 部分键回退：全键未命中时按给到的键模糊扫描归属表（查询体验；不做登记）
     if args.docno or args.title:
-        import csv as _csv  # noqa: PLC0415
+        import csv as _csv
 
         attr = _os.path.join(cls_root, "data", "人身保险公司-文件归属表.csv")
         if _os.path.exists(attr):

@@ -21,7 +21,7 @@ from gates import gate_config_integrity
 
 
 def _gsd():
-    import importlib.util  # noqa: PLC0415
+    import importlib.util
 
     fp = os.path.join(paths.ROOT, "tools", "gen_schedule_doc.py")
     spec = importlib.util.spec_from_file_location("_gsd_test", fp)
@@ -115,7 +115,7 @@ def test_all_worklist_kinds_wired_or_pending():
 
 
 def test_inbox_registry_and_empty_scan():
-    import importlib.util  # noqa: PLC0415
+    import importlib.util
 
     fp = os.path.join(paths.ROOT, "tools", "inbox_scan.py")
     spec = importlib.util.spec_from_file_location("_inbox_test", fp)
@@ -131,7 +131,7 @@ def test_inbox_registry_and_empty_scan():
 
 def test_inbox_unrecognized_ext_needs_review():
     """§3.12.6：不可识别扩展名 → needs_review（**不静默丢弃**）。"""
-    import importlib.util  # noqa: PLC0415
+    import importlib.util
 
     fp = os.path.join(paths.ROOT, "tools", "inbox_scan.py")
     spec = importlib.util.spec_from_file_location("_inbox_neg", fp)
@@ -176,7 +176,7 @@ def test_run_step_order_matches_call_sites():
 
     这是 `gate_config_integrity` 判据 R 的**前置断言**（该判据待接；此测试先守住一致性）。
     """
-    import importlib.util  # noqa: PLC0415
+    import importlib.util
 
     fp = os.path.join(paths.ROOT, "tools", "run_production_refresh.py")
     spec = importlib.util.spec_from_file_location("_rpr_test", fp)

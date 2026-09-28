@@ -27,7 +27,7 @@ class RFNAPI:
     def register_doc(
         self, theme, title, docno=None, pub_date="", source="", fingerprint="", source_mark=""
     ):
-        from rfn.registry import register_doc  # noqa: PLC0415
+        from rfn.registry import register_doc
 
         return register_doc(
             theme=theme,
@@ -42,7 +42,7 @@ class RFNAPI:
     def query_or_register(
         self, theme, title, docno=None, pub_date="", source="", fingerprint="", force_register=False
     ):
-        from rfn.query_or_register import query_or_register  # noqa: PLC0415
+        from rfn.query_or_register import query_or_register
 
         return query_or_register(
             theme=theme,
@@ -55,14 +55,14 @@ class RFNAPI:
         )
 
     def rebuild_index(self):
-        from rfn.registry import rebuild_index  # noqa: PLC0415
+        from rfn.registry import rebuild_index
 
         return rebuild_index()
 
     # ---- 溯源桥（Q1=A / R7：写者=reconcile 后处理；读取口=本接口）----
     def bridge_upsert(self, rfn, source, source_url, dedup_key, title, docno):
         """按 RFN 幂等 upsert 桥记录（保留既有锚；供 reconcile 后处理调用）。"""
-        from rfn.bridge import upsert  # noqa: PLC0415
+        from rfn.bridge import upsert
 
         row = {
             "rfn": rfn,
@@ -75,20 +75,20 @@ class RFNAPI:
         return upsert(row)
 
     def bridge_lookup(self, source_url=None, dedup_key=None):
-        from rfn.bridge import lookup  # noqa: PLC0415
+        from rfn.bridge import lookup
 
         return lookup(source_url=source_url, dedup_key=dedup_key)
 
     # ---- 只读访问面（阶段 3，2026-09-18）：供 ipb / drafter / scrapers 消费，替代跨模块直连 ----
     def theme_map(self) -> dict:
         """主题码 → 全名（唯一源 = classifier.rfn.THEME_MAP）。"""
-        from rfn import THEME_MAP  # noqa: PLC0415
+        from rfn import THEME_MAP
 
         return dict(THEME_MAP)
 
     def get_index(self):
         """RFN 索引单例（`RFNIndex`：by_rfn/by_title/by_docno/by_theme/is_valid…）。"""
-        from rfn import get_index  # noqa: PLC0415
+        from rfn import get_index
 
         return get_index()
 
@@ -101,7 +101,7 @@ class RFNAPI:
         `_norm_title` 的 `norm-specialization` 注释）。凡与归属表标题比对（rfn 投影、
         主体解析）**必须**经本入口取同口径，否则索引漂移。
         """
-        from rfn import norm_title as _nt  # noqa: PLC0415
+        from rfn import norm_title as _nt
 
         return _nt(title or "")
 
@@ -111,7 +111,7 @@ class RFNAPI:
         ⚠️ 路径函数名以 `rfn/registry.py` 实际符号为准（`_csv_path`/`_theme_csv_path`/
         `_fp_path`/`_sync_path`）；索引 CSV 与 registry.rebuild_index 同口径（env 可覆盖）。
         """
-        from rfn import registry as _reg  # noqa: PLC0415
+        from rfn import registry as _reg
 
         return {
             "attr_csv": _reg._csv_path(),
@@ -129,19 +129,19 @@ class RFNAPI:
 
     def load_attr_rows(self) -> list[dict]:
         """归属表全量行（8 列中文列名，见 contract.REGISTRY_CSV_FIELDS）。"""
-        from rfn import registry as _reg  # noqa: PLC0415
+        from rfn import registry as _reg
 
         return _reg._load_rows()
 
     def load_theme_rows(self) -> list[dict]:
         """主题归属表全量行（3 列）。"""
-        from rfn import registry as _reg  # noqa: PLC0415
+        from rfn import registry as _reg
 
         return _reg._load_theme_rows()
 
     def bridge_rows(self) -> list[dict]:
         """RFN↔clean 溯源桥全量行（唯一写口 = reconcile 后处理）。"""
-        from rfn.bridge import load_bridge  # noqa: PLC0415
+        from rfn.bridge import load_bridge
 
         return load_bridge()
 
@@ -151,7 +151,7 @@ class RFNAPI:
         ⚠️ 方法名刻意**不叫** `norm_title` —— `gate_no_duplicate_libs` 会对
         非 std_lib 文件中出现的 `def norm_title` 判 FAIL（SSOT 唯一实现纪律）。
         """
-        from rfn import _norm_title  # noqa: PLC0415
+        from rfn import _norm_title
 
         return _norm_title(text)
 

@@ -42,10 +42,10 @@ def run(argv):
         # 阶段 2：事实源 → 治理库元数据投影（唯一实现 tools/governance_sync.py）。
         # `verify` = `sync --check`；`sync` 默认也**只比对**（写库须显式 --apply），
         # 避免误手执行把库推成与文件不一致的状态。
-        from bootstrap import bootstrap  # noqa: PLC0415
+        from bootstrap import bootstrap
 
         bootstrap(include_tools=True)
-        import governance_sync as _sync  # noqa: PLC0415
+        import governance_sync as _sync
 
         argv2 = list(argv[1:])
         if sub == "verify" and "--check" not in argv2 and "--apply" not in argv2:

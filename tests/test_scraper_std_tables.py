@@ -14,7 +14,7 @@ for p in (ROOT, os.path.join(ROOT, "std_lib")):
     if p not in sys.path:
         sys.path.insert(0, p)
 
-from scraper_std import excel_structure as ex  # noqa: E402
+from scraper_std import excel_structure as ex
 from scraper_std import ocr_correction as oc
 from scraper_std import schema_validation as sv
 

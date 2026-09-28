@@ -80,7 +80,7 @@ def load_confusion_map(path: str) -> dict[str, str]:
     try:
         with open(path, encoding="utf-8") as f:
             raw = json.load(f)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         LOG.warning("混淆映射加载失败 %s：%s", path, e)
         return builtin
     out: dict[str, str] = {}
@@ -154,7 +154,7 @@ class JiebaDict:
             for w, n in self.high_freq.items():
                 jieba.add_word(w, freq=n)
             self._loaded = True
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             LOG.warning("jieba 不可用：%s", e)
             self._jieba = None
             self._loaded = True
@@ -166,7 +166,7 @@ class JiebaDict:
         try:
             with open(path, encoding="utf-8") as f:
                 lines = f.readlines()
-        except Exception:
+        except Exception:  # noqa: BLE001
             return path
         cleaned = [ln for ln in lines if ln.strip() and not ln.lstrip().startswith("#")]
         if len(cleaned) == len(lines):
@@ -178,7 +178,7 @@ class JiebaDict:
             with os.fdopen(fd, "w", encoding="utf-8") as f:
                 f.writelines(cleaned)
             return tmp
-        except Exception:
+        except Exception:  # noqa: BLE001
             return path
 
     def tokens(self, text: str) -> list[str]:
@@ -187,7 +187,7 @@ class JiebaDict:
             return []
         try:
             return [w for w in self._jieba.cut(text) if w.strip()]
-        except Exception:
+        except Exception:  # noqa: BLE001
             return []
 
     def check_and_fix(self, text: str) -> tuple[str, int]:
@@ -337,7 +337,7 @@ def _export_uncertain(
         data.append(entry)
         with open(path, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=1)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         LOG.warning("存疑样本导出失败：%s", e)
 
 

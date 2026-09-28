@@ -47,7 +47,7 @@ _idxfac = None
 def _idx():
     global _idxfac
     if _idxfac is None:
-        from interfaces.rfn_api import get_index  # noqa: PLC0415
+        from interfaces.rfn_api import get_index
         _idxfac = get_index()
     return _idxfac
 
@@ -62,7 +62,7 @@ def _load_text(ipn: str) -> str:
     if os.path.exists(p):
         try:
             return (json.load(open(p, encoding="utf-8")) or {}).get("text", "")
-        except Exception:
+        except Exception:  # noqa: BLE001
             return ""
     return ""
 
@@ -115,7 +115,7 @@ def extract_rfns(text: str) -> list[dict]:
 
 
 def _sha_file(p: str) -> str:
-    import hashlib  # noqa: PLC0415
+    import hashlib
     h = hashlib.sha256()
     try:
         with open(p, "rb") as fh:
@@ -136,7 +136,7 @@ def _processed_signature() -> str:
     （merged_view 只读 `_fulltext.json` 文本）——旧实现按 `os.listdir` 全量统计（目录
     mtime 亦入哈希）→ 图片重写即改签名（gate_citations 已注"touch 即变、误报率高"）。
     """
-    import hashlib  # noqa: PLC0415
+    import hashlib
     h = hashlib.sha256()
     if os.path.isdir(_PROCESSED):
         for fn in sorted(os.listdir(_PROCESSED)):
@@ -181,7 +181,7 @@ def build_merged_view() -> dict:
             ext_map[ipn] = rec.get("extracted_at") or ""
     merged = list(merged_map.values())
     n_with_rfn = sum(1 for m in merged if m.get("associated_rfns"))
-    from interfaces.rfn_api import registry_paths as _registry_paths  # noqa: PLC0415
+    from interfaces.rfn_api import registry_paths as _registry_paths
     _rp = _registry_paths()
     inputs = {
         "attr_sha": _sha_file(_rp["attr_csv"]),

@@ -9,14 +9,14 @@ from config.exitcodes import ExitCode
 def run(argv):
     """classify --theme T3|--all [--steps base,cluster,detail,...] [--dry-run]
     主题底座强序重建（R8：base→cluster→match→detail→upper→clause_graph，hash 断点幂等）。"""
-    import argparse  # noqa: PLC0415
+    import argparse
 
     # P0-2（v2 §3.1.2）：sys.path 引导统一走 bootstrap（scripts/ 为非包目录，经 extra 注入）
-    from bootstrap import bootstrap  # noqa: PLC0415
+    from bootstrap import bootstrap
 
     bootstrap("regulatory_classifier", extra=("modules/regulatory_classifier/scripts",))
 
-    from modules.regulatory_classifier.scripts import classify as _cl  # noqa: PLC0415
+    from modules.regulatory_classifier.scripts import classify as _cl
 
     ap = argparse.ArgumentParser(description="主题底座强序重建（R8）")
     ap.add_argument("--theme", default="", help="单主题 T0..T10（默认 T1–T10）")
@@ -46,7 +46,7 @@ def run(argv):
     if not a.dry_run and not a.no_analysis:
         try:
             bootstrap(include_tools=True)
-            from gen_analysis_deliveries import main as _gen  # noqa: PLC0415
+            from gen_analysis_deliveries import main as _gen
 
             _rc = _gen([])
             print(f"[classify] 分析交付库已自动刷新（rc={_rc}；--no-analysis 可跳过）")

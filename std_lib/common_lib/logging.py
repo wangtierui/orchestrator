@@ -38,7 +38,7 @@ import sys
 # `ModuleNotFoundError: No module named 'scraper_std'`（实测 governance_sync --help 暴露）。
 # 改为**相对导入**（scraper_std 是 std_lib 的兄弟子包）：只要仓根在 sys.path、`std_lib`
 # 以包形态加载即可解析，不新增任何 sys.path 注入。
-from ..scraper_std.logging_setup import (  # noqa: F401
+from ..scraper_std.logging_setup import (
     JsonFormatter,
     LogContext,
     setup_logging,

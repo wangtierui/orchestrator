@@ -42,15 +42,15 @@ for _p in (_PROJECT_ROOT, os.path.join(_PROJECT_ROOT, "utils")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from std_lib.scraper_std.attachments import (  # noqa: E402
+from std_lib.scraper_std.attachments import (
     download_and_extract,
     is_attachment_url,
     pick_body_doc,
 )
 
 # 阶段 1 收敛：文件名安全化 / 摘要 复用共享库（与四源 supp_downloader.py 同款）
-from std_lib.scraper_std.crawler_common import safe_filename, sha256_of  # noqa: E402
-from std_lib.scraper_std.http import AdaptiveHttpClient  # noqa: E402
+from std_lib.scraper_std.crawler_common import safe_filename, sha256_of
+from std_lib.scraper_std.http import AdaptiveHttpClient
 
 # 二进制附件缓存委托通用 BlobCache（与四源统一抽象层；落盘于 cache/supp/attachments/）
 try:

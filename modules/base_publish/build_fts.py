@@ -24,9 +24,9 @@ for _p in (_ROOT, _MODULES):
         sys.path.insert(0, _p)
 
 # v2 §3.1.3 I-3（2026-09-26）：发布件目录改经 interfaces 访问器（判据 D）
-from config.exitcodes import ExitCode  # noqa: E402
-from interfaces.clean_index_api import published_dir as _ext_published_dir  # noqa: E402
-from interfaces.internal_policy_api import published_dir as _ipb_published_dir  # noqa: E402
+from config.exitcodes import ExitCode
+from interfaces.clean_index_api import published_dir as _ext_published_dir
+from interfaces.internal_policy_api import published_dir as _ipb_published_dir
 
 EXT_DIR = _ext_published_dir()
 INT_DIR = _ipb_published_dir()
@@ -138,7 +138,7 @@ def build_external() -> dict:
         raise FileNotFoundError("发布件缺失（先运行 base publish --base external）: " + rec_p)
     conn, tmp = _open_build_db(db_p, _EXT_SCHEMA)
     n_rec = 0
-    from std_lib.common_lib.norm import norm_docno as _nd  # noqa: PLC0415  归一化 SSOT
+    from std_lib.common_lib.norm import norm_docno as _nd
     for r in _iter_jsonl(rec_p):
         conn.execute(
             "INSERT INTO records(record_id,rfn,title,document_number,issue_organ,publish_date,"

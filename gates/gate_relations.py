@@ -85,7 +85,7 @@ _INPUT_TOLERANCE_S = 2.0  # 容忍秒级写盘先后差（防毫秒抖动误报�
 
 def _data_inputs() -> list[tuple[float, str]]:
     """关系抽取的数据面输入 → [(mtime, 标签)]（不存在的输入自动跳过）。"""
-    import glob  # noqa: PLC0415
+    import glob
 
     scrapers = os.path.join(paths.MODULES_DIR, "regulatory_scrapers")
     ipb = os.path.join(paths.MODULES_DIR, "internal_policy_base", "data")
@@ -121,7 +121,7 @@ def _stale_inputs(prod_mtime: float) -> list[str]:
 def _wm_status(key: str):
     """产物水位状态（阶段 4：判据切换的共用入口 `interfaces.governance_api.wm_status`）。"""
     try:
-        from interfaces.governance_api import wm_status  # noqa: PLC0415
+        from interfaces.governance_api import wm_status
 
         return wm_status(key)
     except Exception as e:  # noqa: BLE001  水位不可用 → unknown（调用方退回 mtime 判据）
@@ -137,10 +137,10 @@ def run():
     try:
         rows = _load_jsonl(_INDEX)
         stat = json.load(open(_STAT, encoding="utf-8")) if os.path.exists(_STAT) else {}
-    except (OSError, ValueError) as e:  # noqa: BLE001
+    except (OSError, ValueError) as e:
         return False, {"error": f"产物不可读：{e!r}"}
 
-    from interfaces.contract import RELATION_FIELDS  # noqa: PLC0415
+    from interfaces.contract import RELATION_FIELDS
 
     required = set(RELATION_FIELDS) - _RESERVED_KEYS
     problems: list[str] = []
@@ -180,12 +180,12 @@ def run():
     if refs:
         rfns, ipns = set(), set()
         try:
-            import sys  # noqa: PLC0415
+            import sys
 
             for p in (paths.MODULES_DIR, os.path.join(paths.MODULES_DIR, "regulatory_classifier")):
                 if p not in sys.path:
                     sys.path.insert(0, p)
-            from rfn import get_index  # noqa: PLC0415
+            from rfn import get_index
 
             rfns = set(get_index().all_rfns())
         except Exception as e:  # noqa: BLE001

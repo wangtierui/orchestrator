@@ -122,7 +122,7 @@ def parse_pdf_bytes(data):
         if not res.success:
             return "", "ocr_fail:" + str(res.error or "no engine available")[:120]
         return "", "empty"
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         return "", "ocr_fail:" + str(e)[:120]
     return "", "empty"
 
@@ -303,7 +303,7 @@ def main():
                             stats["fail"] += 1
                             failures.append((title, "no_content", rec["error"]))
                             log(f"[{i}/{len(targets)}] NO_CONTENT | {title[:28]}")
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             rec["error"] = f"未预期异常:{type(e).__name__}:{e}"[:200]
             stats["fail"] += 1
             failures.append((title, "exception", rec["error"]))

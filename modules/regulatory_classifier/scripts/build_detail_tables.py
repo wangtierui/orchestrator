@@ -43,7 +43,7 @@ csv.field_size_limit(10 ** 9)  # cleaned body_text 超默认字段上限
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))   # modules/regulatory_classifier/
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
-from rfn import THEME_MAP  # noqa: E402  单一事实源：主题码->完整主题名
+from rfn import THEME_MAP
 
 _ORCH_ROOT = os.path.dirname(os.path.dirname(ROOT))  # 仓库根（供 std_lib / interfaces）
 if _ORCH_ROOT not in sys.path:
@@ -51,9 +51,9 @@ if _ORCH_ROOT not in sys.path:
 
 # 阶段 3（2026-09-18）：五源 cleaned 索引经 interfaces 唯一入口，
 # 不再把兄弟模块目录插进 sys.path（原 SCRAPERS_ROOT 引导已移除）。
-from config.exitcodes import ExitCode  # noqa: E402
-from interfaces.clean_index_api import get_clean_index  # noqa: E402
-from std_lib.common_lib import fs_lock  # noqa: E402  (旧 `import fs_lock` 语义收口至共享库)
+from config.exitcodes import ExitCode
+from interfaces.clean_index_api import get_clean_index
+from std_lib.common_lib import fs_lock
 
 ATTR_CSV = os.path.join(ROOT, "data", "人身保险公司-文件归属表.csv")
 DATA = os.path.join(ROOT, "data")
@@ -67,10 +67,11 @@ BODY_ENUM = {BODY_FULL, BODY_SUMMARY, BODY_CORE, BODY_NONE}
 # 2026-08-31 schema 变更：删除「来源标记」「来源类型」两列（0 消费端 + 与 文件来源/正文状态 冗余）
 # R10 provenance（2026-09-08）：明细展示态追加 generated_by/generated_at 血缘列。
 # 列契约唯一事实源 = interfaces/contract.DETAIL_TABLE_FIELDS（gate_contract 同读，防字面漂移）
-from interfaces.contract import DETAIL_TABLE_FIELDS  # noqa: E402
+from interfaces.contract import DETAIL_TABLE_FIELDS
 
 FIELDS: list[str] = DETAIL_TABLE_FIELDS
 
+from config.enums import SOURCE_ORDER
 from std_lib.common_lib.norm import norm_docno as _norm_docno  # A-10：SSOT 收敛（标准层）
 from std_lib.common_lib.norm import norm_title_strict as _norm_title  # A-10：SSOT 收敛（保守层）
 
@@ -109,7 +110,7 @@ def load_cleaned():
     """(source, docno|title) -> row（clean_index 最新快照，SSOT，无硬编码日期）。"""
     idx = get_clean_index()
     cleaned = {}
-    for src in ("gov", "mof", "nfra", "pbc", "supp"):
+    for src in SOURCE_ORDER:
         p = idx.latest_csv_path(src)
         if not p or not os.path.exists(p):
             continue

@@ -14,9 +14,9 @@ for p in (ROOT, os.path.join(ROOT, "std_lib")):
     if p not in sys.path:
         sys.path.insert(0, p)
 
-from scraper_std.category_classifier import analyze_agency, classify_category  # noqa: E402
-from scraper_std.doc_type_cleaner import extract_doc_type, normalize_doc_type  # noqa: E402
-from scraper_std.unified_schema import (  # noqa: E402
+from scraper_std.category_classifier import analyze_agency, classify_category
+from scraper_std.doc_type_cleaner import extract_doc_type, normalize_doc_type
+from scraper_std.unified_schema import (
     build_dedup_key,
     canonical_body_source,
     canonical_source,

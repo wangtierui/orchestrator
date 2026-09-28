@@ -60,7 +60,7 @@ def module_dir(name: str) -> str:
     `name` 接受**模块包名**（如 `regulatory_scrapers`）或**短键**（如 `scrapers`）；
     白名单唯一来源 = `config.constants.MODULE_SPECS`（含 `base_publish`）。
     """
-    import config.constants as _c  # noqa: PLC0415  局部导入：避免 config 包初始化顺序耦合
+    import config.constants as _c
 
     try:
         spec = _c.module_by_pkg(name)

@@ -103,7 +103,7 @@ except ImportError:  # pragma: no cover
 # gov xzfgk 列表/详情页均为服务端渲染 HTML → 委托 TextResponseCache（存储 HTML 文本）；
 # 命中读盘跳过网络、离线缺失抛 OfflineMiss、仅成功响应（非空）落盘，不缓存错误/拦截页。
 try:
-    from std_lib.scraper_std.cache_store import OfflineMiss, bind_source_cache  # noqa: E402, F401
+    from std_lib.scraper_std.cache_store import OfflineMiss, bind_source_cache  # noqa: F401
 except ImportError:  # pragma: no cover
     from std_lib.scraper_std.cache_store import OfflineMiss
 
@@ -343,7 +343,7 @@ def load_resume(out_dir: str, source: str):
                 detailed.add(r.get("detail_url", ""))
         LOG.info("【resume】已从 %s 加载 %d 条已抓条目（其中 %d 条已有正文）",
                  os.path.basename(files[-1]), len(seen), len(detailed))
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         LOG.warning("【resume】读取历史输出失败，将全新抓取：%s", e)
     return seen, detailed
 
@@ -418,7 +418,7 @@ def merge_with_master(new_records: list[dict[str, Any]], out_dir: str) -> list[d
         with open(master_path, encoding="utf-8") as fh:
             data = json.load(fh)
         old = data.get("records") or []
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         LOG.warning("【merge】读取现主库失败，仅写本次抓取结果：%s", e)
         return new_records
     merged: dict[str, dict[str, Any]] = {}

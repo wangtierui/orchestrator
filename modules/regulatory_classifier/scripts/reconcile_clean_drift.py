@@ -53,9 +53,9 @@ for _p in (_MOD_CLASS, _ORCH_ROOT):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from rfn.bridge import load_bridge, rfn_of, upsert  # noqa: E402
+from rfn.bridge import load_bridge, rfn_of, upsert
 
-import paths  # noqa: E402
+import paths
 
 
 def _wl_add(rfn: str, cr: dict, matched: str, reason: str) -> None:
@@ -68,7 +68,7 @@ def _wl_add(rfn: str, cr: dict, matched: str, reason: str) -> None:
     旁路设施纪律：任何异常一律降级，reconcile 的既有语义不因队列写入而改变。
     """
     try:
-        from std_lib.common_lib import governance_store as _gs  # noqa: PLC0415
+        from std_lib.common_lib import governance_store as _gs
         _gs.worklist_add(
             "rfn_clean_drift_c2", rfn,
             stage="3", artifact_key="reconcile:drift",
@@ -86,7 +86,7 @@ _clean_index = None
 def _ci():
     global _clean_index
     if _clean_index is None:
-        from interfaces.clean_index_api import get_clean_index  # noqa: PLC0415
+        from interfaces.clean_index_api import get_clean_index
         _clean_index = get_clean_index()
     return _clean_index
 
@@ -101,6 +101,7 @@ def _norm_docno(d):
     return re.sub(r"[第年号]", "", re.sub(r"[〔\[\]（）()〕\s]", "", d or ""))
 
 
+from config.enums import SOURCE_ORDER
 from std_lib.common_lib.norm import norm_title_strict as _norm_title  # A-10：SSOT 收敛（保守层）
 
 # 发文机关称谓同义集（官网标题常带机关前缀，归属表多为精炼名；判核心标题时先剥离前缀）
@@ -154,7 +155,7 @@ def _save_json(path, obj):
 def load_clean_snapshot(source=None):
     """读五源 latest cleaned（仅取匹配列）→ {source: {doc/title/url 索引}}。"""
     ci = _ci()
-    srcs = [source] if source else ("gov", "mof", "nfra", "pbc", "supp")
+    srcs = [source] if source else SOURCE_ORDER
     snap: dict = {"sources": {}, "dates": {}}
     for s in srcs:
         p = ci.latest_csv_path(s)
@@ -342,7 +343,7 @@ def reconcile(source=None, apply_c1=False, dry_run=False, force_clean_title=Fals
             if changed:
                 _write_attr_rows(rows)
                 try:
-                    from rfn.registry import rebuild_index  # noqa: PLC0415
+                    from rfn.registry import rebuild_index
                     rebuild_index()
                 except Exception as e:  # noqa: BLE001
                     print(f"[reconcile] WARN 索引重建失败: {e!r}")

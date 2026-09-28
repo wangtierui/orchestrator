@@ -45,7 +45,7 @@ from datetime import datetime
 # ---------- 配置 ----------
 # 2026-09-08 docs_root 统一根：修正原 BASE=collectors 落点（曾指 collectors/data/… 分叉）
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # modules/regulatory_scrapers
-from std_lib.scraper_std.cache_store import docs_root  # noqa: E402
+from std_lib.scraper_std.cache_store import docs_root
 
 ATTACHMENTS_DIR = docs_root("pbc", "attachments")
 DEFAULT_JSON = os.path.join(ROOT, "data", "raw", "pbc_laws.json")
@@ -105,7 +105,7 @@ def http_get(url, referer=None, binary=False, timeout=30, max_retry=3):
             if e.code in (404, 403, 410):
                 return e.code, None
             time.sleep(min(2 ** attempt, 8) + random.random())
-        except Exception as e:  # 网络异常 / 超时
+        except Exception as e:  # 网络异常 / 超时  # noqa: BLE001
             last_err = f"{type(e).__name__}: {e}"
             time.sleep(min(2 ** attempt, 8) + random.random())
     if last_err:
@@ -153,7 +153,7 @@ def tesseract_available():
             return False
         _OCR_AVAIL = True
         return True
-    except Exception:
+    except Exception:  # noqa: BLE001
         _OCR_AVAIL = False
         return False
 
@@ -187,7 +187,7 @@ def parse_pdf_text(data):
         # 文本层足够且含中文 → 直接采用
         if len(text) >= TEXT_FALLBACK_THRESHOLD and cjk >= 10:
             return text, "text", f"pdfplumber 提取 {len(pages)} 页"
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         return "", "empty", f"pdfplumber 失败: {e}"
 
     # 2) OCR 回退（扫描件 / 文本层缺失）—— 统一 OCR 模块（PaddleOCR 默认 + Tesseract 降级）
@@ -197,13 +197,13 @@ def parse_pdf_text(data):
             sys.path.insert(0, repo_root)
         from std_lib.scraper_std.ocr_engine import get_ocr
         _ocr_ok = any(get_ocr().health().values())
-    except Exception:
+    except Exception:  # noqa: BLE001
         _ocr_ok = False
     if not _ocr_ok:
         return "", "empty", "OCR 引擎(PaddleOCR/Tesseract)均不可用"
     try:
         import pymupdf as fitz  # PyMuPDF（现代导入名）
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         return "", "empty", f"PDF 渲染库不可用: {e}"
     try:
         doc = fitz.open(stream=data, filetype="pdf")
@@ -221,7 +221,7 @@ def parse_pdf_text(data):
         if text:
             return text, "ocr", f"OCR 识别 {len(doc)} 页"
         return "", "empty", "OCR 未识别到文字"
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         return "", "empty", f"OCR 执行失败: {e}"
 
 def build_summary(text):
@@ -311,7 +311,7 @@ def main():
     for i, rec in enumerate(targets, 1):
         try:
             result, method = process_record(rec, args)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             result, method = "exception", None
             rec["error"] = f"未预期异常: {type(e).__name__}: {e}"
         stats[result] = stats.get(result, 0) + 1

@@ -86,7 +86,7 @@ def _pid_alive(pid):
         os.kill(pid, 0)
     except OSError:
         return False
-    except Exception:
+    except Exception:  # noqa: BLE001
         return False
     return True
 

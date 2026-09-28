@@ -14,8 +14,8 @@ for p in (ROOT, os.path.join(ROOT, "modules", "internal_policy_base")):
     if p not in sys.path:
         sys.path.insert(0, p)
 
-import extract as ex  # noqa: E402
-import scan as sc  # noqa: E402
+import extract as ex
+import scan as sc
 
 
 class TestNormalizeTextDeep:

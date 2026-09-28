@@ -47,7 +47,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 for _p in (ROOT, os.path.join(ROOT, "modules")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
-from config.exitcodes import ExitCode  # noqa: E402
+from config.exitcodes import ExitCode
 
 IPB = os.path.join(ROOT, "modules", "internal_policy_base")
 DATA = os.path.join(IPB, "data")
@@ -63,7 +63,7 @@ _ILLEGAL = re.compile(r'[\\/:*?"<>|\r\n\t]')
 
 # 单一事实源：文号归一与内部文号校验统一取自 internal_policy_base.scan
 # （用户规则 2026-09-13：文号只在标题处、须以"阳光人寿/阳光保险"开头）
-from internal_policy_base.scan import (  # noqa: E402
+from internal_policy_base.scan import (
     is_internal_docno as _is_internal_docno,
 )
 from internal_policy_base.scan import (
@@ -274,7 +274,7 @@ def load_registry(path: str = REGISTRY_XLSX) -> list[dict]:
     if not os.path.exists(path):
         return []
     try:
-        import openpyxl  # noqa: PLC0415
+        import openpyxl
     except ImportError:
         print("[naming] 警告：未安装 openpyxl，制度清单兜底不可用（仅用内容解析）")
         return []
@@ -437,7 +437,7 @@ def build_plan(
                     text = ""
         if not text and extract_missing:
             try:
-                from internal_policy_base.extract import extract_file  # noqa: PLC0415
+                from internal_policy_base.extract import extract_file
 
                 text = extract_file(p, name=base).get("text") or ""
                 text_src = "extract" if text else "none"

@@ -61,7 +61,7 @@ def _has_top_level_guide(text: str) -> bool:
     return False
 # ② 静默异常（2026-09-26 P8 **收窄语义**）：只统计「宽泛吞异常且**无意图声明**」。
 #   宽泛 = `except Exception/BaseException`（吞掉所有异常，含 Bug 型）；无声明 = except 行
-#   不含 `#`（即未加 `# noqa: BLE001 …` 意图注释）。特定异常容错（`except OSError: pass`）
+#   不含 `#`（即未加 `
 #   是正当防御式编程，**不计数**——它已声明了容错范围。原 PAT_BARE_PASS（全部裸 pass）
 #   因此被下面这个更精准的正则取代。
 PAT_BARE_WIDE_PASS = re.compile(

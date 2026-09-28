@@ -18,7 +18,7 @@ import json
 import os
 
 import paths
-from config.exitcodes import ExitCode  # noqa: E402  (R3：退出码语义化)
+from config.exitcodes import ExitCode
 from std_lib.common_lib import governance_store as gs
 
 DOCTOR_JSON = os.path.join(paths.ROOT, "reports", "_tmp", "doctor.json")
@@ -92,10 +92,10 @@ def _doctor_summary() -> dict:
 
 def _schedule_summary() -> dict:
     try:
-        from bootstrap import bootstrap  # noqa: PLC0415
+        from bootstrap import bootstrap
 
         bootstrap("all", include_tools=True)  # commands/ 禁自行注入（gate_import_bootstrap 硬零层）
-        import install_schedule  # noqa: PLC0415
+        import install_schedule
 
         jobs = install_schedule.cron_jobs()
         return {
@@ -181,7 +181,7 @@ def _exit_code(res: dict) -> int:
 
 
 def main(argv=None) -> int:
-    import argparse  # noqa: PLC0415
+    import argparse
 
     ap = argparse.ArgumentParser(description="状态与待办自披露（v2 §3.13.5）")
     ap.add_argument("--json", action="store_true", help="输出 JSON（供脚本消费）")

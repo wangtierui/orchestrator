@@ -57,9 +57,9 @@ import urllib.parse
 import urllib.request
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-from std_lib.scraper_std.cache_store import docs_root, source_cache_root  # noqa: E402
-from std_lib.scraper_std.rich_object import rich_object_fields  # noqa: E402
-from std_lib.scraper_std.table_recovery import structured_table_fields  # noqa: E402
+from std_lib.scraper_std.cache_store import docs_root, source_cache_root
+from std_lib.scraper_std.rich_object import rich_object_fields
+from std_lib.scraper_std.table_recovery import structured_table_fields
 
 CACHE = source_cache_root("nfra")  # 列表/详情请求缓存根（modules/regulatory_scrapers/cache/nfra）
 ATT_DIR = docs_root("nfra", "attachments")  # 附件产物根（统一 data/docs）
@@ -261,7 +261,7 @@ def process_attachment(doc_id, att, att_root, args, cooldown_state, ex=None):
                 ocr_status = "ocr_done"
                 flags = [f for f in flags if "possible_scan" not in f]
                 flags.append("ocr_recovered")
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 ocr_status = "engine_unavailable"
                 flags.append("ocr_failed:%s" % type(e).__name__)
         elif needs_ocr:
@@ -293,7 +293,7 @@ def process_attachment(doc_id, att, att_root, args, cooldown_state, ex=None):
             pass  # 富内容失败不影响文本/落盘/续跑
         cooldown_state["consecutive"] = 0
         return entry, True
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         cooldown_state["consecutive"] += 1
         entry.update({
             "extracted": False,
@@ -319,7 +319,7 @@ def process_doc(doc_id, data, args):
         try:
             existing = {e["attachment_name"]: e for e in
                         json.load(open(manifest_path, encoding="utf-8")).get("attachments", [])}
-        except Exception:
+        except Exception:  # noqa: BLE001
             existing = {}
 
     cooldown_state = {"consecutive": 0}
@@ -430,7 +430,7 @@ def build_and_write_report(args, docs_total=None, att_total=None,
         for mp in glob.glob(os.path.join(ATT_DIR, "*", "manifest.json")):
             try:
                 m = json.load(open(mp, encoding="utf-8"))
-            except Exception:
+            except Exception:  # noqa: BLE001
                 continue
             docs_total += 1
             att_total += m.get("attachment_count", 0)
@@ -443,7 +443,7 @@ def build_and_write_report(args, docs_total=None, att_total=None,
         att_root = os.path.dirname(mp)
         try:
             m = json.load(open(mp, encoding="utf-8"))
-        except Exception:
+        except Exception:  # noqa: BLE001
             continue
         for e in m.get("attachments", []):
             cat, _ext = classify_entry(e, att_root)
@@ -522,7 +522,7 @@ def refresh_stats():
         att_root = os.path.dirname(mp)
         try:
             m = json.load(open(mp, encoding="utf-8"))
-        except Exception:
+        except Exception:  # noqa: BLE001
             continue
         changed = False
         for e in m.get("attachments", []):
@@ -535,7 +535,7 @@ def refresh_stats():
             try:
                 with open(src, "rb") as fh:
                     data = fh.read()
-            except Exception:
+            except Exception:  # noqa: BLE001
                 continue
             kind = sniff_kind(data, name)
             if kind == "pdf":
@@ -572,7 +572,7 @@ def retry_doc_legacy_offline():
         att_root = os.path.dirname(mp)
         try:
             m = json.load(open(mp, encoding="utf-8"))
-        except Exception:
+        except Exception:  # noqa: BLE001
             continue
         changed = False
         for e in m.get("attachments", []):
@@ -589,7 +589,7 @@ def retry_doc_legacy_offline():
             try:
                 with open(src, "rb") as fh:
                     data = fh.read()
-            except Exception:
+            except Exception:  # noqa: BLE001
                 continue
             t, ok, _reason = extract_doc_ole(data)
             if not ok:
@@ -672,7 +672,7 @@ def main():
     for f in files:
         try:
             d = json.load(open(f, encoding="utf-8")).get("data") or {}
-        except Exception:
+        except Exception:  # noqa: BLE001
             continue
         doc_id = d.get("docId")
         if not doc_id:
@@ -682,7 +682,7 @@ def main():
         total_docs += 1
         try:
             _m, summ = process_doc(doc_id, d, args)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             failed_docs.append({"doc_id": doc_id, "error": str(e)})
             print("      [att ERR] docId=%s: %s" % (doc_id, e), flush=True)
             continue

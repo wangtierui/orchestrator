@@ -23,8 +23,8 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import paths  # noqa: E402
-from config.exitcodes import ExitCode  # noqa: E402
+import paths
+from config.exitcodes import ExitCode
 
 INBOX = paths.INBOX_DIR
 # ⚠️ 落点修正（2026-09-26，P2-3b 执行中发现 N-26）：方案 §3.12.4 写 `data/inbox/_registry.yaml`，
@@ -53,7 +53,7 @@ def registry_path() -> str:
 
 
 def load_registry() -> dict:
-    import yaml  # noqa: PLC0415
+    import yaml
 
     with open(registry_path(), encoding="utf-8") as fh:
         return yaml.safe_load(fh) or {}
@@ -217,7 +217,7 @@ def scan(apply: bool = False) -> dict:
             json.dump(result, fh, ensure_ascii=False, indent=1)
         # needs_review → worklist（v2 §3.12.6：不静默丢弃；处置入口 = cli.py worklist resolve）
         try:
-            from std_lib.common_lib import governance_store as gs  # noqa: PLC0415
+            from std_lib.common_lib import governance_store as gs
 
             for r in rows:
                 if r["decision"] == "needs_review":

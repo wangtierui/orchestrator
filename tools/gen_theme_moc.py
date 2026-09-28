@@ -23,7 +23,7 @@ _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 for _p in (_ROOT, os.path.join(_ROOT, "modules"), os.path.join(_ROOT, "interfaces")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
-from config.exitcodes import ExitCode  # noqa: E402
+from config.exitcodes import ExitCode
 
 EXT_PUB = os.path.join(
     _ROOT, "modules", "regulatory_scrapers", "published", "external_records.jsonl"

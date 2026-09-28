@@ -52,10 +52,10 @@ if _GUIDE_ROOT not in _sys.path:
 del _GUIDE_ROOT, _os, _sys
 from typing import Any
 
-from supp_normalize import normalize_raw  # noqa: E402  字段一致化（I3/I4/I5/I6/I7）
+from supp_normalize import normalize_raw
 
 from std_lib.scraper_std.unified_schema import (
-    map_supp as _canonical_map_supp,  # noqa: E402  统一映射（五源通用）
+    map_supp as _canonical_map_supp,
 )
 
 

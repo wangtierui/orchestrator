@@ -13,7 +13,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 
-import cli  # noqa: E402
+import cli
 
 
 class TestCommandRegistry:
@@ -58,7 +58,7 @@ class TestClassifyEscapeHatch:
         """
         import inspect
 
-        from commands import classify as _cl  # noqa: PLC0415
+        from commands import classify as _cl
 
         src = inspect.getsource(_cl.run)
         assert "--no-analysis" in src

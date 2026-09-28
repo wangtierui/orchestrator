@@ -216,7 +216,7 @@ def extract_tables_from_doc(
                 "removed_header_rows": 0,
                 "notes": [f"unsupported kind {kind}"],
             }
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         LOG.warning("表格提取异常 %s: %s", name, e)
         return {
             "tables": [],
@@ -321,7 +321,7 @@ def structured_table_fields(
     if not low.endswith(_DOCX_CONVERT_EXT):
         return {}
     try:
-        from std_lib.scraper_std.doc_convert import doc_bytes_to_docx  # noqa: PLC0415
+        from std_lib.scraper_std.doc_convert import doc_bytes_to_docx
 
         conv = doc_bytes_to_docx(data, low)
     except Exception:  # noqa: BLE001
@@ -353,7 +353,7 @@ def _tables_from_pdf(data: bytes) -> tuple[list[list[list[str]]], list[str]]:
         for pno, page in enumerate(pdf.pages, 1):
             try:
                 found = page.extract_tables()
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 notes.append(f"p{pno}: extract_tables error {e}")
                 continue
             for tb in found or []:

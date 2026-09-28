@@ -14,13 +14,13 @@ scraper_std 的成熟实现，本模块仅做再导出，保证与既有爬虫�
 
 from __future__ import annotations
 
-from ..attachments import (  # noqa: F401
+from ..attachments import (
     download_and_extract,
     is_attachment_url,
     pick_body_doc,
 )
-from ..crawler_common import safe_filename, sha256_of, sniff_kind  # noqa: F401
-from ..http import AdaptiveHttpClient  # noqa: F401
+from ..crawler_common import safe_filename, sha256_of, sniff_kind
+from ..http import AdaptiveHttpClient
 
 
 def download_file(client: AdaptiveHttpClient, url: str, dest_path: str, **kw) -> tuple:

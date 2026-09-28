@@ -208,7 +208,7 @@ def _check_tools(manifest: dict) -> tuple[list[str], dict, list[str]]:
                 f"J6: 仓根存在未跟踪且未忽略的文件 {sorted(untracked)}"
                 "（三选一：入库 / 写进 .gitignore / 删除；勿堆在仓根）"
             )
-    except (OSError, subprocess.SubprocessError) as e:  # noqa: BLE001
+    except (OSError, subprocess.SubprocessError) as e:
         # git 不可用（tarball/无 git 环境）→ 只告警，不 FAIL（判据不可执行 ≠ 判据通过）
         warnings.append(f"J6: 未跟踪文件检查跳过（{type(e).__name__}）")
 
@@ -262,7 +262,7 @@ def _check_worklist() -> tuple[list[str], dict]:
     """
     problems: list[str] = []
     detail: dict = {}
-    from config.enums import WORKLIST_KIND  # noqa: PLC0415
+    from config.enums import WORKLIST_KIND
 
     used: dict[str, list[str]] = {}
     for dirpath, dirnames, filenames in os.walk(ROOT):
@@ -446,7 +446,7 @@ _PYTHON_ALIASES = ("python", "python.exe", "py", "python3")
 
 def _load_module_from_path(name: str, path: str):
     """按文件路径加载（`tools/` 非包；且不得为此新增 sys.path 注入，见 gate_import_bootstrap）。"""
-    import importlib.util  # noqa: PLC0415
+    import importlib.util
 
     spec = importlib.util.spec_from_file_location(name, path)
     assert spec is not None, f"spec_from_file_location 返回 None: {path}"
@@ -864,12 +864,12 @@ def _check_domains() -> tuple[list[str], dict]:
     if not os.path.exists(fp):
         return [f"V1: 缺 {os.path.relpath(fp, ROOT)}"], {}
     try:
-        import yaml  # noqa: PLC0415
+        import yaml
 
         data = yaml.safe_load(open(fp, encoding="utf-8")) or {}
     except Exception as e:  # noqa: BLE001
         return [f"V1: inbox_registry.yaml 解析失败：{type(e).__name__}: {e}"], {}
-    from config.constants import MODULE_PKG_SET  # noqa: PLC0415
+    from config.constants import MODULE_PKG_SET
 
     rows: dict[str, dict] = {}
     pending: list[str] = []
@@ -899,29 +899,71 @@ def _check_domains() -> tuple[list[str], dict]:
     return problems, detail
 
 
+def _check_theme_coverage() -> tuple[list[str], dict]:
+    """判据 T（N-76，2026-09-28）：**主题关键词表须覆盖 THEME_MAP 全部主题**。
+
+    背景：`internal_policy_base.align.THEME_TITLE_KW` 是"内部制度 → 主题"对齐的**唯一**关键词表
+    （`score_text` / `align_one` 均遍历它）。原表覆盖 T1/T2/T4–T10 而**独缺 T3**（资本与偿付能力
+    监管）→ 该类内部制度**永远无法**对齐到 T3（静默落到其他主题或 UNALIGNED），且**无任何门禁**
+    可发现（属"覆盖缺口"类缺陷：不报错、不缺失、只是永远不命中）。
+
+    判据：`THEME_TITLE_KW` 的键集 ⊇ `THEME_MAP` − `THEME_TITLE_KW_EXEMPT`（豁免须显式登记，
+    使"漏写"与"有意不写"可区分）；且不得出现不在 THEME_MAP 的主题码（防拼写漂移）。
+    """
+    problems: list[str] = []
+    detail: dict = {}
+    try:
+        from interfaces.theme_api import THEME_MAP_P0 as _themes
+        from modules.internal_policy_base.align import (
+            THEME_TITLE_KW,
+            THEME_TITLE_KW_EXEMPT,
+        )
+    except Exception as e:  # noqa: BLE001
+        return [f"T1: 主题覆盖判据依赖导入失败：{type(e).__name__}: {e}"], {}
+    covered = set(THEME_TITLE_KW)
+    known = set(_themes)
+    missing = sorted((known - set(THEME_TITLE_KW_EXEMPT)) - covered)
+    unknown = sorted(covered - known)
+    if missing:
+        problems.append(
+            f"T1: THEME_TITLE_KW 未覆盖主题 {missing}"
+            "（须补关键词；确属不应覆盖者登记 `THEME_TITLE_KW_EXEMPT` 并注明理由）"
+        )
+    if unknown:
+        problems.append(f"T1: THEME_TITLE_KW 含未登记主题码 {unknown}（不在 THEME_MAP，疑拼写漂移）")
+    detail["theme_coverage"] = {
+        "themes": len(known),
+        "covered": sorted(covered),
+        "exempt": sorted(THEME_TITLE_KW_EXEMPT),
+        "missing": missing,
+        "unknown": unknown,
+    }
+    return problems, detail
+
+
 def _check_constants() -> tuple[list[str], dict]:
     problems: list[str] = []
     detail: dict = {}
     # 引导：本模块顶层 `import paths` 已要求仓根在 sys.path（由 cli.py/GatesRunner 保证），
     # 不再自行注入（P0-6 纪律：注入只经 bootstrap.py）。
 
-    from config import constants as C  # noqa: PLC0415
+    from config import constants as C
 
     try:
         C.assert_registry_consistent()
-    except AssertionError as e:  # noqa: BLE001
+    except AssertionError as e:
         problems.append(f"B1: config.constants 自检失败：{e}")
 
     # B2 派生点一致性
-    import paths as _p  # noqa: PLC0415
+    import paths as _p
 
     try:
         for pkg in C.MODULE_PKGS:
             assert os.path.isdir(_p.module_dir(pkg)), pkg
-    except AssertionError as e:  # noqa: BLE001
+    except AssertionError as e:
         problems.append(f"B2: paths.module_dir 无法解析模块 {e}")
 
-    from gates import gate_flat_layout, gate_no_cross_module_import  # noqa: PLC0415
+    from gates import gate_flat_layout, gate_no_cross_module_import
 
     if set(gate_no_cross_module_import.MODULES) != set(C.MODULE_PKGS):
         problems.append(
@@ -948,7 +990,7 @@ def _check_constants() -> tuple[list[str], dict]:
     detail["modules"] = list(C.MODULE_PKGS)
 
     # C1 退出码
-    from config.exitcodes import ExitCode  # noqa: PLC0415
+    from config.exitcodes import ExitCode
 
     assert int(ExitCode.OK) == 0 and int(ExitCode.FAIL) == 1 and int(ExitCode.DATA) == 2
     assert int(ExitCode.ENV) == 3 and int(ExitCode.NOT_SOURCE_TREE) == 4
@@ -1003,6 +1045,11 @@ def run() -> tuple[bool, dict]:
     p8, d8 = _check_domains()
     problems += p8
     detail.update(d8)
+
+    # 判据 T（N-76）：主题关键词表覆盖完整性
+    p9, d9 = _check_theme_coverage()
+    problems += p9
+    detail.update(d9)
 
     p4, d4 = _check_corpus()
     problems += p4

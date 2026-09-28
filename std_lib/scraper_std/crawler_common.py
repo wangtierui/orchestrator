@@ -217,7 +217,7 @@ def _is_office_openxml(data: bytes) -> bool:
         with zipfile.ZipFile(__import__("io").BytesIO(data[: min(len(data), 5_000_000)])) as z:
             names = z.namelist()
         return "[Content_Types].xml" in names
-    except Exception:
+    except Exception:  # noqa: BLE001
         return "docProps" in data[: min(len(data), 200_000)].decode("latin-1", "ignore")
 
 
@@ -311,7 +311,7 @@ def extract_document_text(
             return _merge(rec, _extract_xlsx(data))
         if kind == "ole2":
             return _merge(rec, _extract_ole2(data))
-    except Exception as e:  # 抽取异常不崩溃，透明标记
+    except Exception as e:  # 抽取异常不崩溃，透明标记  # noqa: BLE001
         rec["extract_status"] = "corrupt"
         rec["text"] = ""
         LOG.warning("抽取 %s(%s) 异常：%s", name, kind, e)
@@ -483,7 +483,7 @@ def _extract_pdf(data: bytes, enable_ocr: bool, ocr_timeout: int) -> dict[str, A
                     "needs_ocr": True,
                     "ocr_engine": ocr_engine,
                 }
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             LOG.warning("PDF OCR 失败：%s", e)
     if best.strip():
         # 文本层残量不足（多为页眉水印），保留但显式标记 needs_ocr（不再伪装 ok）
@@ -679,7 +679,7 @@ def _extract_doc_via_wps(data: bytes, timeout: float = 45.0) -> str | None:
             raw = out.stdout
             try:
                 text = raw.decode("gbk", errors="replace")
-            except Exception:
+            except Exception:  # noqa: BLE001
                 text = raw.decode("utf-8", errors="replace")
             pids = set()
             for line in text.strip().splitlines():
@@ -689,7 +689,7 @@ def _extract_doc_via_wps(data: bytes, timeout: float = 45.0) -> str | None:
                 if len(parts) > 1:
                     pids.add(parts[1].strip('"'))
             return pids
-        except Exception:
+        except Exception:  # noqa: BLE001
             return set()
 
     tmp = ""
@@ -751,7 +751,7 @@ def _extract_doc_via_wps(data: bytes, timeout: float = 45.0) -> str | None:
         text = text.strip()
         result["text"] = text or None
         return result["text"]
-    except Exception:
+    except Exception:  # noqa: BLE001
         return None
     finally:
         result["done"] = True
@@ -813,7 +813,7 @@ def _extract_ole2(data: bytes) -> dict[str, Any]:
         return {"text": "", "extracted": False, "extract_status": "empty"}
     except ImportError:
         return {"text": "", "extracted": False, "extract_status": "library_missing"}
-    except Exception:
+    except Exception:  # noqa: BLE001
         return {"text": "", "extracted": False, "extract_status": "corrupt"}
 
 
@@ -829,7 +829,7 @@ def _ocr_available() -> bool:
         from ocr_engine import get_ocr  # type: ignore[no-redef]
     try:
         return any(get_ocr().health().values())
-    except Exception as e:  # pragma: no cover - 模块缺失
+    except Exception as e:  # pragma: no cover - 模块缺失  # noqa: BLE001
         LOG.warning("统一 OCR 模块不可用：%s", e)
         return False
 

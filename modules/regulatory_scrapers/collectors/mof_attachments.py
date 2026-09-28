@@ -110,7 +110,7 @@ SRC_DIR = os.path.dirname(os.path.abspath(__file__))
 
 REPO_ROOT = os.path.dirname(SRC_DIR)  # regulatory_scrapers（统一数据根）
 
-from std_lib.scraper_std.cache_store import docs_root  # noqa: E402
+from std_lib.scraper_std.cache_store import docs_root
 
 ATTACHMENTS_DIR = docs_root("mof", "attachments")
 
@@ -283,7 +283,7 @@ def normalize_date(v):
     if isinstance(v, list) and len(v) >= 3:
         try:
             return f"{int(v[0]):04d}-{int(v[1]):02d}-{int(v[2]):02d}"
-        except Exception:
+        except Exception:  # noqa: BLE001
             return None
     if isinstance(v, str):
         v = v.strip()
@@ -365,7 +365,7 @@ def fetch_attachments(law_id, rate, file_types=("0", "90"), timeout=20):
                     "extension": (it.get("extension") or "").lower(),
                     "file_url": full,
                 })
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.warning("附件清单获取失败 id=%s fileType=%s：%s", law_id, ft, e)
     return items
 
@@ -395,7 +395,7 @@ def _finalize_attachment(att, data, fname, law_id, dest):
                                           rec_key=str(law_id)))
         except Exception:  # noqa: BLE001  采集容错（字段/附件缺失不阻断采集）
             pass
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.warning("附件文本抽取异常 %s：%s", att.get("file_url"), e)
         att["extracted"] = False
         att["extract_status"] = "extract_error"

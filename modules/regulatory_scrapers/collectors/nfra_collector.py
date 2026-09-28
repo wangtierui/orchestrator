@@ -211,7 +211,7 @@ def html_to_text(html):
         for bad in doc.xpath("//script | //style"):
             bad.getparent().remove(bad)
         text = doc.text_content()
-    except Exception:
+    except Exception:  # noqa: BLE001
         text = re.sub(r"<[^>]+>", "\n", html)
     # 折叠多余空行与首尾空白
     lines = [ln.strip() for ln in text.splitlines()]
@@ -243,7 +243,7 @@ def extract_document_no(text):
             from std_lib.scraper_std.doc_number import extract_doc_number as _u
             from std_lib.scraper_std.doc_number import in_abolish_context as _a
             from std_lib.scraper_std.doc_number import normalize_doc_number as _n
-    except Exception:  # pragma: no cover
+    except Exception:  # pragma: no cover  # noqa: BLE001
         _u = _n = _a = None  # type: ignore[assignment]
     dn = ""
     if _u is not None:
@@ -370,7 +370,7 @@ def load_attachments(doc_id):
         return []
     try:
         m = json.load(open(mp, encoding="utf-8"))
-    except Exception:
+    except Exception:  # noqa: BLE001
         return []
     out = []
     for e in m.get("attachments", []):
@@ -404,7 +404,7 @@ def load_attachments(doc_id):
                     with open(p, encoding="utf-8") as fh:
                         text = fh.read()
                     break
-                except Exception:
+                except Exception:  # noqa: BLE001
                     text = ""
         item["text"] = text
         # 表格结构化透传（2026-09-08 仿 supp 打通）：manifest entry 表键 → 附件 item
@@ -479,7 +479,7 @@ def scrape(args):
         print("      >> 开始抓取栏目 %s(%s)" % (c["item_name"], c["item_id"]), flush=True)
         try:
             rows = get_list_for_item(opener, c["item_id"], args.delay_min, args.delay_max)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print("      [WARN] 栏目 %s 列表抓取失败: %s" % (c["item_name"], e), flush=True)
             rows = []
         for r in rows:
@@ -521,7 +521,7 @@ def scrape(args):
             for _mr in (_md.get("records") or []):
                 if _mr.get("doc_id") is not None:
                     _master_map[str(_mr["doc_id"])] = _mr
-        except Exception as _e:
+        except Exception as _e:  # noqa: BLE001
             print("      [WARN] 现有主库并集保护读取失败: %s" % _e, flush=True)
     _merged_n = 0
     for _did in sorted(set(_master_map) - {str(d) for d in ordered_ids}):
@@ -594,7 +594,7 @@ def scrape(args):
                     "doc_file_url": base["doc_file_url"], "pdf_file_url": base["pdf_file_url"],
                 }
                 print("      [offline] docId=%s 详情未缓存，仅列表面板" % did, flush=True)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 errors.append({"doc_id": did, "title": base["title"], "error": str(e)})
                 print("      [ERR] docId=%s 详情失败: %s" % (did, e), flush=True)
         if rec:

@@ -30,11 +30,11 @@ for _p in (_PROJECT_ROOT, os.path.join(_PROJECT_ROOT, "utils")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from supp_ocr_pdf import ocr_scanned  # noqa: E402
+from supp_ocr_pdf import ocr_scanned
 
-from std_lib.scraper_std.cleaner import clean_text, is_table_block, normalize_ws  # noqa: E402
-from std_lib.scraper_std.sentence_split import repair_text  # noqa: E402
-from std_lib.scraper_std.table_recovery import extract_tables_from_doc  # noqa: E402
+from std_lib.scraper_std.cleaner import clean_text, is_table_block, normalize_ws
+from std_lib.scraper_std.sentence_split import repair_text
+from std_lib.scraper_std.table_recovery import extract_tables_from_doc
 
 
 def extract_document_text(data: bytes, name: str = "", *, enable_ocr: bool = True) -> dict:
@@ -63,7 +63,7 @@ def extract_document_text(data: bytes, name: str = "", *, enable_ocr: bool = Tru
                     pass
             return {"text": text, "method": "ocr"}
         return {"text": "", "method": "none"}
-    except Exception as e:  # 非 PDF 或解析失败：不阻断，返回空
+    except Exception as e:  # 非 PDF 或解析失败：不阻断，返回空  # noqa: BLE001
         return {"text": "", "method": f"error:{type(e).__name__}"}
 
 def parse_document(data: bytes, name: str = "", *, enable_ocr: bool = True) -> dict:

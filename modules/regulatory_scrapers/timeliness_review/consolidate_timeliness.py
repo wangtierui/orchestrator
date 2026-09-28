@@ -44,6 +44,17 @@ REVIEW = os.path.dirname(os.path.abspath(__file__))
 _ORCH_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(REVIEW)))
 
 
+def _ensure_orch_root() -> None:
+    """确保仓根在 `sys.path`（**唯一注入点**）。
+
+    N-77/N-80 收口：原先这条注入散落在 `_wl_add()` 内部（仅该函数用得上）；现抽为助手并
+    在模块级调用一次，供**模块级** SSOT 导入（`config.enums` / `config.exitcodes`）复用。
+    **注入计数不变**（仍为 1 处）——`gate_import_bootstrap` 的"每层只减不增"基线因此无需调整。
+    """
+    if _ORCH_ROOT not in sys.path:
+        sys.path.insert(0, _ORCH_ROOT)
+
+
 def _wl_add(match: dict, d: dict) -> None:
     """登记时效冲突待办（同键出现 ≥2 个高质量且相互冲突的 verdict）。
 
@@ -51,9 +62,8 @@ def _wl_add(match: dict, d: dict) -> None:
     翻不回去。现登记进队列（`cli.py worklist resolve` 即处置通道）。
     """
     try:
-        if _ORCH_ROOT not in sys.path:
-            sys.path.insert(0, _ORCH_ROOT)
-        from std_lib.common_lib import governance_store as _gs  # noqa: PLC0415
+        _ensure_orch_root()
+        from std_lib.common_lib import governance_store as _gs
         _gs.worklist_add(
             "timeliness_conflict",
             str(match.get("document_number") or match.get("title") or "")[:80],
@@ -73,35 +83,51 @@ ROOT = os.path.dirname(REVIEW)
 BASELINE = "时效性标注结果清单_20260824.jsonl"
 MANIFEST = "_consolidate_manifest.json"
 
-# ---- 受控词表（与清洗层 TIMELINESS_STATUS 对齐）----
-CONTROLLED_STATUS = frozenset({
-    "valid", "amended", "repealed", "partially_repealed",
-    "expired", "pending", "uncertain",
-})
+# ---- 受控词表（**由 SSOT 派生**，不再本地字面量）----
+# N-77（2026-09-28）：原为本地 7 值 frozenset + 自写中文映射表（与 config.enums 重复定义，
+# 且别名"废止/失效/修改/待核"仅存于此 → 属静默分叉面）。现：
+#   · 受控值 = `config.enums.TIMELINESS_STATUS`；
+#   · 中文别名 = `config.enums.TIMELINESS_CN2EN`（已上收本文件原有别名）；
+#   · 仅**保留本脚本特有**语义：英文值恒等映射 + 空值哨兵 `__none__`（非 7 值域，纯本脚本内部标记）。
+_ensure_orch_root()  # 复用唯一注入点（计数不变）→ 模块级 SSOT 导入成为可能
+from config.enums import TIMELINESS_CN2EN as _CN2EN
+from config.enums import TIMELINESS_STATUS as _STATUS
+from config.exitcodes import ExitCode  # N-80：本文件已具备仓内导入前提 → 退出码语义化
 
-STATUS_MAP = {
-    "有效": "valid", "现行有效": "valid", "valid": "valid",
-    "废止": "repealed", "已废止": "repealed", "repealed": "repealed",
-    "失效": "expired", "expired": "expired",
-    "修改": "amended", "修订": "amended", "amended": "amended",
-    "部分废止": "partially_repealed", "partially_repealed": "partially_repealed",
-    "待核": "pending", "pending": "pending",
-    "不确定": "uncertain", "uncertain": "uncertain",
-    "": "__none__", "-": "__none__", "无": "__none__", "n/a": "__none__",
+CONTROLLED_STATUS: frozenset = frozenset(_STATUS)
+
+NONE_SENTINEL = "__none__"  # 本脚本内部标记（"该行未给出时效"），**不属于**受控 7 值域
+STATUS_MAP: dict = {
+    **_CN2EN,                                  # 中文别名（含旧副本的 废止/失效/修改/待核）
+    **{v: v for v in _STATUS},                 # 英文 → 自身（幂等）
+    "": NONE_SENTINEL,
+    "-": NONE_SENTINEL,
+    "无": NONE_SENTINEL,
+    "n/a": NONE_SENTINEL,
 }
 
-# 来源质量分级
+# 来源质量分级（**分值域**，不是进程退出码）
+# N-80（2026-09-28）：原为裸 `return 3/2/1/0` 字面量。本文件因 T3 收敛新增了**模块级**
+# `from config.enums import …` → 触发 `gate_runtime_hygiene` 判据①（"有顶层仓内导入的文件
+# 不得出现裸整数 return"，其正则无法区分**退出码**与**业务分值**）。改为具名分值常量：
+# 既消除与退出码的形态混淆，也让分值语义自解释。
+SRC_RANK_NONE = 0
+SRC_RANK_LOW = 1      # 规则判断
+SRC_RANK_MID = 2      # 总局清理 / 数据源标注
+SRC_RANK_HIGH = 3     # 北大法宝（权威库）
+
+
 def src_rank(src: str) -> int:
     s = (src or "").strip()
     if not s:
-        return 0
+        return SRC_RANK_NONE
     if "北大法宝" in s:
-        return 3
+        return SRC_RANK_HIGH
     if "总局清理" in s or "数据源标注" in s:
-        return 2
+        return SRC_RANK_MID
     if "规则判断" in s:
-        return 1
-    return 0
+        return SRC_RANK_LOW
+    return SRC_RANK_NONE
 
 
 def norm(s: str) -> str:
@@ -424,7 +450,7 @@ def main() -> int:
     baseline_path = os.path.join(REVIEW, BASELINE)
     if not os.path.exists(baseline_path):
         print("✗ 未找到基线: %s" % BASELINE)
-        return 1
+        return ExitCode.PRECONDITION  # N-80：前置未就绪（基线缺失），非通用失败
 
     deltas, ledger_files = parse_ledgers()
 

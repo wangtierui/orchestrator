@@ -53,7 +53,7 @@ def run():
     try:
         with open(_INDEX, encoding="utf-8") as fh:
             records = json.load(fh).get("records", [])
-    except (OSError, ValueError) as e:  # noqa: BLE001
+    except (OSError, ValueError) as e:
         return False, {"error": f"索引不可读：{e!r}"}
 
     ok = 0

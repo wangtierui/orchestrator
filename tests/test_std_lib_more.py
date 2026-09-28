@@ -14,8 +14,8 @@ for p in (ROOT, os.path.join(ROOT, "std_lib")):
     if p not in sys.path:
         sys.path.insert(0, p)
 
-from common_lib import fs_lock, io_atomic  # noqa: E402
-from scraper_std import cleaner, doc_number  # noqa: E402
+from common_lib import fs_lock, io_atomic
+from scraper_std import cleaner, doc_number
 from scraper_std import schema_validation as sv
 
 

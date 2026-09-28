@@ -51,7 +51,7 @@ _PKULAW_TOKEN = os.path.join(paths.ROOT, ".pkulaw_token")
 
 def load_triggers() -> dict:
     """读 `config/triggers.yaml`（无 PyYAML 或文件缺失 → 抛错，不静默兜底）。"""
-    import yaml  # noqa: PLC0415
+    import yaml
 
     with open(TRIGGERS_YAML, encoding="utf-8") as fh:
         return yaml.safe_load(fh) or {}
@@ -112,7 +112,7 @@ def _c_unindexed_originals(want: bool, _ctx: dict) -> tuple[bool, str]:
             }
         except (OSError, ValueError):
             handled = set()
-    import hashlib as _hl  # noqa: PLC0415
+    import hashlib as _hl
 
     n = 0
     for dp, _dn, fn in os.walk(originals):
@@ -149,7 +149,7 @@ def _c_publish_manifest_changed(want: bool, _ctx: dict) -> tuple[bool, str]:
     if not os.path.exists(_PUBLISH_MANIFEST):
         return False, "publish_manifest.json 不存在 → 不判定"
     try:
-        from common_lib import governance_store as gs  # noqa: PLC0415
+        from common_lib import governance_store as gs
 
         if not gs.enabled():
             return False, "治理库未启用 → 无基线可比（不判定）"
@@ -365,7 +365,7 @@ def run_trigger(tid: str, ctx: dict | None = None, *, dry_run: bool = False, wor
 def _worklist(tid: str, results: list[dict], note: str) -> None:
     """`on_fail: manual_breakpoint` → 失败必须进 worklist（v2 §3.5 纪律④）。"""
     try:
-        from common_lib import governance_store as gs  # noqa: PLC0415
+        from common_lib import governance_store as gs
 
         bad = next((r for r in results if r.get("rc") != 0), {})
         gs.worklist_add(

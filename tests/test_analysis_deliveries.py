@@ -17,7 +17,7 @@ import pytest
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 
-import gen_analysis_deliveries as g  # noqa: E402
+import gen_analysis_deliveries as g
 
 _TS_RE = re.compile(r"生成于 \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}")
 

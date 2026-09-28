@@ -38,7 +38,7 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv=None) -> int:
     args = build_parser().parse_args(argv)
     bootstrap("all", include_tools=True)
-    import install_schedule  # noqa: PLC0415
+    import install_schedule
 
     if args.action == "install":
         return install_schedule.main(["--install"])

@@ -33,8 +33,8 @@ _THIS = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(_THIS)
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
-from config.exitcodes import ExitCode  # noqa: E402
-from std_lib.common_lib import governance_store as gs  # noqa: E402
+from config.exitcodes import ExitCode
+from std_lib.common_lib import governance_store as gs
 
 IPB_ORIGINALS = os.path.join(ROOT, "modules", "internal_policy_base", "data", "originals")
 EXT_ATTACHMENTS = os.path.join(

@@ -66,9 +66,10 @@ DOCS_REPORTS = os.path.join(ROOT, "docs", "reports")
 # 需显式补仓根才能 import std_lib（阶段 0/1 治理库接线）。
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
-from config.exitcodes import ExitCode  # noqa: E402
+from config.enums import SOURCE_ORDER
+from config.exitcodes import ExitCode
 
-SOURCES = ["gov", "mof", "nfra", "pbc", "supp"]
+SOURCES = list(SOURCE_ORDER)
 # 各源采集命令（全量语义）。supp 无网站增量 → 由 clean 刷新即可。
 COLLECT_CMD = {
     # gov 含两个子源：xzfgk（行政法规库）+ zhengceku（国务院政策文件库·部门文件，2026-09-15 纳入）。
@@ -244,7 +245,7 @@ def _clean_idx():
     try:
         if SCRAPERS not in sys.path:
             sys.path.insert(0, SCRAPERS)
-        from clean_index import get_clean_index  # noqa: PLC0415
+        from clean_index import get_clean_index
 
         return get_clean_index()
     except Exception as e:  # noqa: BLE001
@@ -335,7 +336,7 @@ def _wm(
     if rc != 0:
         return
     try:
-        from std_lib.common_lib import governance_store as gs  # noqa: PLC0415
+        from std_lib.common_lib import governance_store as gs
 
         if not gs.enabled():
             return
@@ -376,7 +377,7 @@ def _wm(
 def _wm_observations() -> None:
     """登记**观察型**产物（链外写方，只记录当前版本供下游引用/审计）。"""
     try:
-        from std_lib.common_lib import governance_store as gs  # noqa: PLC0415
+        from std_lib.common_lib import governance_store as gs
 
         if not gs.enabled():
             return
@@ -520,7 +521,7 @@ def _run_conditional(step: str, tid: str) -> dict:
         return rec
     print(f"\n[step:{step}] triggers:{tid}", flush=True)
     try:
-        from std_lib.common_lib import triggers as trg  # noqa: PLC0415
+        from std_lib.common_lib import triggers as trg
 
         res = trg.run_trigger(tid, {"argv": list(sys.argv)})
     except Exception as e:  # noqa: BLE001  触发链异常不拖垮主链（但须显式记录）
@@ -668,7 +669,7 @@ def _skip_reason(step: str) -> str:
 def _record_step(rec: dict) -> None:
     """把步骤结果写入治理库 `run_step`（旁路设施：登记失败不得中断主链）。"""
     try:
-        from std_lib.common_lib import governance_store as gs  # noqa: PLC0415
+        from std_lib.common_lib import governance_store as gs
 
         gs.step_record(
             rec.get("step", ""),
@@ -690,7 +691,7 @@ def _resume_plan() -> dict:
     水位有异常 → 一律全量重跑（宁重跑不跳：重跑的代价是时间，跳错的代价是数据陈旧）。
     """
     try:
-        from std_lib.common_lib import governance_store as gs  # noqa: PLC0415
+        from std_lib.common_lib import governance_store as gs
     except Exception as e:  # noqa: BLE001
         return {"enabled": False, "reason": f"治理库不可导入：{type(e).__name__}"}
     if not gs.enabled():
@@ -840,7 +841,7 @@ def _run_chain(args) -> int:
     )
     report.append(r1)
     # 找 consolidate 最新全量清单
-    import glob  # noqa: PLC0415
+    import glob
 
     cands = sorted(glob.glob(os.path.join(REVIEW, "时效性标注结果清单_全量_*.jsonl")))
     if cands:
@@ -1137,7 +1138,7 @@ def _run_chain(args) -> int:
     # P2-6：失败 → 告警通道（v2 §3.13.6；无人值守下"失败无人知晓"是原设计的硬缺口）
     if summary["failed"]:
         try:
-            from std_lib.common_lib import notify as _notify  # noqa: PLC0415
+            from std_lib.common_lib import notify as _notify
 
             _notify.notify(
                 "failed_step",
@@ -1221,7 +1222,7 @@ def main(argv=None) -> int:
         return ExitCode.OK
     if args.json_logs:
         try:
-            from std_lib.common_lib.logging import setup_cli_logging  # noqa: PLC0415
+            from std_lib.common_lib.logging import setup_cli_logging
 
             setup_cli_logging("run_production_refresh", json_logs=True)
         except Exception as e:  # noqa: BLE001  日志设施不可用不得阻断主链
@@ -1238,7 +1239,7 @@ def main(argv=None) -> int:
     # 此前只有各 collector 自带 ProcessLock，**编排本体无锁** → 调度器抖动/人工重入会让
     # 两条链同时改写 cleaned / 归属表 / published（无锁临界区）。max_age 取 48h：
     # 采集阶段本身可达 30 小时（zhengceku 全量），超龄抢占阈值须大于该量级。
-    from std_lib.common_lib.fs_lock import ProcessLock  # noqa: PLC0415
+    from std_lib.common_lib.fs_lock import ProcessLock
 
     lock = ProcessLock(
         os.path.join(ROOT, "data", "run_production_refresh.lock"), max_age_sec=48 * 3600
@@ -1252,7 +1253,7 @@ def main(argv=None) -> int:
     gs = None
     run_id = ""
     try:
-        from std_lib.common_lib import governance_store as _gs  # noqa: PLC0415
+        from std_lib.common_lib import governance_store as _gs
 
         _gs.init_db()  # 幂等；治理库仅放元数据/水位/审计（方案 §4.1）
         run_id = _gs.run_start(

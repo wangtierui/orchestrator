@@ -38,7 +38,7 @@ if _ROOT not in sys.path:
 # 附件统一落盘 docs_root("gov","attachments")
 SRC_DIR = os.path.dirname(os.path.abspath(__file__))
 REPO_ROOT = os.path.dirname(SRC_DIR)  # regulatory_scrapers（统一数据根）
-from std_lib.scraper_std.cache_store import docs_root  # noqa: E402
+from std_lib.scraper_std.cache_store import docs_root
 
 ATTACHMENTS_DIR = docs_root("gov", "attachments")
 
@@ -50,8 +50,8 @@ from std_lib.scraper_std.crawler_common import (
     safe_filename,
     sniff_kind,
 )
-from std_lib.scraper_std.rich_object import rich_object_fields  # noqa: E402
-from std_lib.scraper_std.table_recovery import structured_table_fields  # noqa: E402
+from std_lib.scraper_std.rich_object import rich_object_fields
+from std_lib.scraper_std.table_recovery import structured_table_fields
 
 LOG = logging.getLogger("gov_attachments")
 
@@ -147,7 +147,7 @@ def fetch_gov_attachments(detail_html, entry_id, entry_title, out_dir, base_url,
         try:
             with open(dest, "wb") as fh:
                 fh.write(data)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             LOG.warning("附件落盘失败 %s：%s", url, e)
             continue
         local_rel = os.path.relpath(dest, REPO_ROOT).replace("\\", "/")

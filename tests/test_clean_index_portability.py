@@ -30,7 +30,7 @@ for _p in (ROOT, os.path.join(ROOT, "modules", "regulatory_scrapers")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-import clean_index as ci  # noqa: E402
+import clean_index as ci
 
 SNAP_DATE = "20260912"
 

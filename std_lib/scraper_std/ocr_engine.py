@@ -140,12 +140,12 @@ class OCRConfig:
         """
         kwargs: dict = {}
         try:
-            import sys as _sys  # noqa: PLC0415
+            import sys as _sys
 
             _root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
             if _root not in _sys.path:
                 _sys.path.insert(0, _root)
-            from config.loader import load_ocr  # noqa: PLC0415
+            from config.loader import load_ocr
 
             ocr = (load_ocr() or {}).get("ocr") or {}
             if ocr.get("tesseract_bin"):
@@ -243,7 +243,7 @@ class PaddleOCREngine(BaseOCREngine):
             import paddleocr  # noqa: F401
 
             return True
-        except Exception as e:  # pragma: no cover - 依赖缺失
+        except Exception as e:  # pragma: no cover - 依赖缺失  # noqa: BLE001
             self._import_error = f"import paddleocr failed: {e}"
             LOG.warning("PaddleOCR 不可用：%s", self._import_error)
             return False
@@ -330,7 +330,7 @@ class TesseractEngine(BaseOCREngine):
             import pytesseract  # noqa: F401
 
             return True
-        except Exception as e:  # pragma: no cover
+        except Exception as e:  # pragma: no cover  # noqa: BLE001
             self._import_error = f"import pytesseract failed: {e}"
             LOG.warning("pytesseract 不可用：%s", self._import_error)
             return False
@@ -438,7 +438,7 @@ class UnifiedOCR:
                 # 引擎返回空：视作该引擎未识别到，尝试下一引擎
                 attempts.append((engine.name, False, "empty_result"))
                 last_err = f"{engine.name}: empty_result"
-            except Exception as e:  # 异常 → 降级下一引擎
+            except Exception as e:  # 异常 → 降级下一引擎  # noqa: BLE001
                 attempts.append((engine.name, False, str(e)))
                 last_err = f"{engine.name}: {e}"
                 LOG.warning("OCR 引擎 %s 失败，尝试降级：%s", engine.name, e)
@@ -466,7 +466,7 @@ class UnifiedOCR:
     def _correct(self, text: str) -> str:
         try:
             from .ocr_correction import correct_ocr_text
-        except Exception as e:  # pragma: no cover
+        except Exception as e:  # pragma: no cover  # noqa: BLE001
             LOG.warning("ocr_correction 不可用：%s", e)
             return text
         try:
@@ -478,7 +478,7 @@ class UnifiedOCR:
                 uncertain_export_dir=self.config.correction_uncertain_dir,
             )
             return r.get("text", text)
-        except Exception as e:  # pragma: no cover
+        except Exception as e:  # pragma: no cover  # noqa: BLE001
             LOG.warning("OCR 后处理异常，返回原文：%s", e)
             return text
 
@@ -520,7 +520,7 @@ class UnifiedOCR:
         # 2) 扫描件 → 逐页 OCR（引擎链 + 降级）
         try:
             import pymupdf as fitz
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             return PDFExtractResult(
                 text="",
                 source="ocr",
@@ -572,7 +572,7 @@ class UnifiedOCR:
 
             with fitz.open(path) as d:
                 return d.page_count
-        except Exception:
+        except Exception:  # noqa: BLE001
             return 0
 
     @staticmethod
@@ -585,10 +585,10 @@ class UnifiedOCR:
             for page in reader.pages:
                 try:
                     parts.append(page.extract_text() or "")
-                except Exception:
+                except Exception:  # noqa: BLE001
                     parts.append("")
             return "\n".join(parts).strip()
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             LOG.warning("pypdf 文本层提取失败：%s", e)
             return ""
 

@@ -14,8 +14,8 @@ def run(argv):
     - verify [--source ...]：效力缺失核验（R13 三态 exit：0/2/3）
     - sync [--dry-run]：核验变更台账 → 归属表时效同步（F-C03 显式入口）
     - summary：读最新 verify_summary_*.json（F-K07 告警接点消费）"""
-    import os  # noqa: PLC0415
-    import subprocess  # noqa: PLC0415
+    import os
+    import subprocess
 
     if not argv:
         print("用法: orchestrator timeliness verify|sync|summary ...")
@@ -23,13 +23,13 @@ def run(argv):
     _rev = os.path.join(paths.ROOT, "modules", "regulatory_scrapers", "timeliness_review")
     if argv[0] == "sync":
         # F-C03：state/台账 → 归属表"时效状态"列同步（sync_to_classifier 唯一实现）唯一 CLI 入口。
-        import csv as _csv  # noqa: PLC0415
-        import glob as _glob  # noqa: PLC0415
+        import csv as _csv
+        import glob as _glob
 
-        from bootstrap import bootstrap  # noqa: PLC0415
+        from bootstrap import bootstrap
 
         bootstrap("regulatory_scrapers", extra=("modules/regulatory_scrapers/timeliness_review",))
-        import verification_state as _vstate  # noqa: PLC0415
+        import verification_state as _vstate
 
         ledgers = sorted(_glob.glob(os.path.join(_rev, "时效核验_*变更台账_*.csv")))
         if not ledgers:
@@ -48,8 +48,8 @@ def run(argv):
         )
         return ExitCode.OK
     if argv[0] == "summary":
-        import glob as _glob  # noqa: PLC0415
-        import json as _json  # noqa: PLC0415
+        import glob as _glob
+        import json as _json
 
         files = sorted(_glob.glob(os.path.join(_rev, "verify_summary_*.json")))
         if not files:

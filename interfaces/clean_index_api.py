@@ -26,7 +26,7 @@ _ROOT = os.path.dirname(_HERE)  # orchestrator 根
 if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
-import paths  # noqa: E402
+import paths
 
 _SCRAPERS = os.path.join(paths.MODULES_DIR, "regulatory_scrapers")
 if _SCRAPERS not in sys.path:
@@ -37,7 +37,7 @@ INDEX_PATH = os.path.join(_SCRAPERS, "clean_index", "index.json")
 
 def _impl():
     """真实实现模块（`modules/regulatory_scrapers/clean_index`）。"""
-    import clean_index as _ci  # noqa: PLC0415
+    import clean_index as _ci
 
     return _ci
 

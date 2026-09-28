@@ -30,13 +30,13 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))      # regulatory_scrapers/
 sys.path.insert(0, ROOT)                                                # clean_index 包（五源 cleaned 索引事实源）
-from config.exitcodes import ExitCode  # noqa: E402
+from config.exitcodes import ExitCode
 
 sys.path.insert(0, os.path.join(ROOT, "std_lib"))
 sys.path.insert(0, os.path.join(ROOT, "timeliness_review"))
-import verification_state as vstate  # noqa: E402
-from clean_index import get_clean_index  # noqa: E402
-from scraper_std import pkulaw_cli as pk  # noqa: E402
+import verification_state as vstate
+from clean_index import get_clean_index
+from scraper_std import pkulaw_cli as pk
 
 OUT_DIR = os.path.join(ROOT, "timeliness_review")
 CHECKPOINT = os.path.join(OUT_DIR, "classifier_pkulaw_checkpoint.jsonl")
@@ -61,6 +61,7 @@ def _latest_supp_jsonl():
     return cand[-1] if cand else None
 
 
+from config.enums import SOURCE_ORDER
 from std_lib.common_lib.norm import norm_docno as _norm_docno  # A-10：SSOT 收敛（标准层）
 
 
@@ -229,7 +230,7 @@ def main():
     # 三库一致：同步五源 cleaned 三字段（C-12：经统一回写单点 writeback_source 逐源回写，
     # 原本地实现无原子/无 CSV 轨/备份口径不同——三份分叉已收敛）
     sys.path.insert(0, OUT_DIR)
-    import apply_timeliness_to_cleaned as apply_mod  # noqa: PLC0415  统一回写单点（C-12）
+    import apply_timeliness_to_cleaned as apply_mod
     updates = {}
     for ch in changed:
         nd = _norm_docno(ch["document_number"])
@@ -245,7 +246,7 @@ def main():
         return updates.get(_norm_docno(r.get("document_number", "")))
 
     synced = 0
-    for src_id in ("gov", "mof", "nfra", "pbc", "supp"):
+    for src_id in SOURCE_ORDER:
         st = apply_mod.writeback_source(src_id, fields_for, dry_run=False, backup_tag="classifier_pkulaw")
         if "reason" in st:
             continue

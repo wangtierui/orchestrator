@@ -25,19 +25,19 @@ import sys
 _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
-from config.exitcodes import ExitCode  # noqa: E402
+from config.exitcodes import ExitCode
 
 # R4：禁盘符字面量——EAST 素材目录（绝对路径）经 --dir 命令行传入
 MAX_XLSX_ROWS = 4000  # 单 sheet 行上限（防超大表爆内存）
 MAX_CONTENT_CHARS = 800_000  # attachment_content 合并上限
 
-from std_lib.scraper_std.cache_store import docs_root  # noqa: E402
+from std_lib.scraper_std.cache_store import docs_root
 
 
 def _save_er_diagram(src: str, fname: str) -> str:
     """E-R 图（jpg）落盘统一富内容根：docs_root("supp")/diagrams/EAST-20250410/<fname>。
     返回相对 docs_root("supp") 的 image_path（与 rich_object_fields 同语义）。"""
-    import shutil  # noqa: PLC0415
+    import shutil
 
     try:
         dest_dir = os.path.join(docs_root("supp"), "diagrams", "EAST-20250410")
@@ -65,7 +65,7 @@ def _load_extract_doc():
 def extract_pdf(path: str) -> str:
     out = []
     try:  # 轨1：pypdf
-        from pypdf import PdfReader  # noqa: PLC0415
+        from pypdf import PdfReader
 
         r = PdfReader(path)
         for pg in r.pages:
@@ -79,10 +79,10 @@ def extract_pdf(path: str) -> str:
         return f"[pdf 提取失败: {e}]"
     if not out:  # 轨2：pymupdf/fitz（覆盖 pypdf 取空文本层情形）
         try:
-            import pymupdf  # noqa: PLC0415
-        except ImportError:  # noqa: PLC0415
+            import pymupdf
+        except ImportError:
             try:
-                import pymupdf  # noqa: PLC0415
+                import pymupdf
             except ImportError:
                 pymupdf = None  # type: ignore[assignment]
         if pymupdf is not None:
@@ -100,7 +100,7 @@ def extract_pdf(path: str) -> str:
 
 
 def extract_docx(path: str) -> str:
-    from docx import Document  # noqa: PLC0415
+    from docx import Document
 
     out = []
     try:
@@ -119,7 +119,7 @@ def extract_docx(path: str) -> str:
 
 def extract_xlsx(path: str) -> tuple[str, list]:
     """返回 (attachment_content 文本, table_structured 结构)。结构：[{file, sheet, head, rows 前N}]"""
-    from openpyxl import load_workbook  # noqa: PLC0415
+    from openpyxl import load_workbook
 
     lines, struct = [], []
     try:

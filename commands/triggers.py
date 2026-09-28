@@ -19,7 +19,7 @@ import json
 import sys
 
 from bootstrap import bootstrap
-from config.exitcodes import ExitCode  # noqa: E402  (R3：退出码语义化)
+from config.exitcodes import ExitCode
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -58,7 +58,7 @@ def _ctx(args) -> dict:
 def main(argv=None) -> int:
     args = build_parser().parse_args(argv)
     bootstrap("all")
-    from std_lib.common_lib import triggers as trg  # noqa: PLC0415
+    from std_lib.common_lib import triggers as trg
 
     ctx = _ctx(args)
 

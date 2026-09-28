@@ -14,8 +14,8 @@ for p in (ROOT, os.path.join(ROOT, "modules", "internal_policy_base")):
     if p not in sys.path:
         sys.path.insert(0, p)
 
-from extract import normalize_text  # noqa: E402
-from scan import clean_title_noise, ipn_of, parse_filename  # noqa: E402
+from extract import normalize_text
+from scan import clean_title_noise, ipn_of, parse_filename
 
 
 class TestParseFilename:

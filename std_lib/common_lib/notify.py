@@ -39,7 +39,7 @@ def _load_cfg() -> dict:
     """从 `config/schedule.yaml` 的 `notify` 段读取配置（缺文件/缺段 → 默认 file）。"""
     path = os.path.join(paths.CONFIG_DIR, "schedule.yaml")
     try:
-        import yaml  # noqa: PLC0415
+        import yaml
 
         with open(path, encoding="utf-8") as fh:
             return ((yaml.safe_load(fh) or {}).get("notify") or {}) or {"kind": "file"}
@@ -117,13 +117,13 @@ def _webhook(event: str, title: str, payload: dict) -> str | None:
         print(f"[notify] WARN notify.kind=webhook 但 {WEBHOOK_ENV} 未设置 → 降级为不发送")
         return None
     try:
-        import urllib.request  # noqa: PLC0415
+        import urllib.request
 
         body = json.dumps(
             {"event": event, "title": title, "payload": payload}, ensure_ascii=False
         ).encode("utf-8")
         req = urllib.request.Request(url, data=body, headers={"Content-Type": "application/json"})
-        with urllib.request.urlopen(req, timeout=10) as r:  # noqa: S310  受控 URL（env 提供）
+        with urllib.request.urlopen(req, timeout=10) as r:
             return f"webhook rc={getattr(r, 'status', '?')}"
     except Exception as e:  # noqa: BLE001  发送失败不得中断主链
         print(f"[notify] WARN webhook 发送失败: {type(e).__name__}: {e}")

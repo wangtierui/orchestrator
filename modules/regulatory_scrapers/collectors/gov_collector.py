@@ -105,7 +105,7 @@ except ImportError:  # pragma: no cover
 # gov xzfgk 列表/详情页均为服务端渲染 HTML → 委托 TextResponseCache（存储 HTML 文本）；
 # 命中读盘跳过网络、离线缺失抛 OfflineMiss、仅成功响应（非空）落盘，不缓存错误/拦截页。
 try:
-    from std_lib.scraper_std.cache_store import OfflineMiss, bind_source_cache  # noqa: E402
+    from std_lib.scraper_std.cache_store import OfflineMiss, bind_source_cache
 except ImportError:  # pragma: no cover
     from std_lib.scraper_std.cache_store import OfflineMiss, bind_source_cache
 
@@ -264,7 +264,7 @@ class RobustSession:
                     return result
                 LOG.warning("GET %s -> HTTP %s (尝试 %d)",
                             url, resp.status_code, attempt)
-            except Exception as e:  # 网络异常 / 超时
+            except Exception as e:  # 网络异常 / 超时  # noqa: BLE001
                 LOG.warning("GET %s 异常：%s (尝试 %d)", url, e, attempt)
             # 指数退避
             time.sleep(min(2 ** attempt, 30))
@@ -288,7 +288,7 @@ class RobustSession:
                     return resp.json()
                 LOG.warning("POST %s -> HTTP %s (尝试 %d)",
                             url, resp.status_code, attempt)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 LOG.warning("POST %s 异常：%s (尝试 %d)", url, e, attempt)
             time.sleep(min(2 ** attempt, 30))
         LOG.error("POST %s 多次重试失败，放弃", url)
@@ -466,7 +466,7 @@ class XzfgkScraper:
                     "attachments": [], "attachment_text": "", "attachment_count": 0}
         try:
             d: dict = self._parse_detail(detail_html)   # N-67：注解置于**首次绑定**处
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             LOG.warning("详情解析失败 %s：%s", url, e)
             d = {"full_text": "", "document_number": "",
                  "issue_organ": "", "effective_date": ""}
@@ -494,7 +494,7 @@ class XzfgkScraper:
                 _rtext = [a.get("rich_text") for a in atts if a.get("rich_text")]
                 if _rtext:
                     d["rich_text"] = "\n".join(_rtext)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             LOG.warning("附件抓取异常 %s：%s", url, e)
             d.setdefault("attachments", [])
             d["attachment_text"] = ""
@@ -520,12 +520,12 @@ CSV_COLUMNS = [
 
 
 # —— 运行锁统一实现（N-8）：判定逻辑收敛到 regulatory_scrapers/fs_lock.py，四源共用 ——
-import atexit  # noqa: E402
+import atexit
 
 _SCRAPERS_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _SCRAPERS_ROOT not in sys.path:
     sys.path.insert(0, _SCRAPERS_ROOT)
-from config.exitcodes import ExitCode  # noqa: E402
+from config.exitcodes import ExitCode
 from std_lib.common_lib import fs_lock
 
 
@@ -602,7 +602,7 @@ def main(argv=None) -> int:
     # —— 多子源分发（2026-09-15 纳入 zhengceku）——
     # 原实现硬编码 XzfgkScraper；现按 cfg.source 分发，支持 --source all 依次抓取
     # 两个子源并**合并进同一 gov 主库** gov_laws.json（按 detail_url 去重，新优先）。
-    from gov_zhengceku import ZhengcekuScraper  # noqa: E402  （同目录子采集器）
+    from gov_zhengceku import ZhengcekuScraper
 
     if args.source == "all":
         want = list(SOURCES)
@@ -636,7 +636,7 @@ def main(argv=None) -> int:
                 recs = XzfgkScraper(scfg, client).run()
             else:
                 recs = ZhengcekuScraper(scfg, client, seen_urls).run()
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             LOG.exception("子源 %s 抓取过程发生致命错误：%s", s, e)
             failed.append(s)
             continue

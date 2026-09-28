@@ -63,7 +63,7 @@ _STD_LIB = os.path.join(_ROOT, "std_lib")
 if _STD_LIB not in sys.path:
     sys.path.insert(0, _STD_LIB)
 
-from config.enums import (  # noqa: E402
+from config.enums import (
     BASIS_TYPE_PROCEDURAL,
     BASIS_TYPE_SUBSTANTIVE,
     RELATION_DOC_KIND,
@@ -76,7 +76,7 @@ from config.enums import (  # noqa: E402
     REPEAL_SCOPE_PARTIAL,
     REPEAL_SCOPE_WHOLE,
 )
-from std_lib.common_lib.norm import norm_docno, norm_title_strict  # noqa: E402
+from std_lib.common_lib.norm import norm_docno, norm_title_strict
 
 SCHEMA_VERSION = "1.0"
 # 2026-09-20 → 1.1：relation_id 派生纳入判别字段（article/action/scope/reason/dst_docno/

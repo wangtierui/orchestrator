@@ -23,7 +23,7 @@ def run() -> tuple[bool, dict]:
         if p not in sys.path:
             sys.path.insert(0, p)
 
-    from scraper_std.secret_scan import scan_directory  # noqa: PLC0415
+    from scraper_std.secret_scan import scan_directory
 
     findings = scan_directory(
         root, include_ext=[".py", ".yaml", ".yml", ".json", ".toml", ".ini", ".cfg", ".env"]

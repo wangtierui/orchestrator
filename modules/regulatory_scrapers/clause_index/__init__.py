@@ -56,10 +56,10 @@ for _p in (_SCRAPERS, _ORCH_ROOT, os.path.join(_ORCH_ROOT, "std_lib")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from clean_index import get_clean_index  # noqa: E402   clean 快照单一事实源
+from clean_index import get_clean_index
 
-from std_lib.common_lib.norm import norm_docno  # noqa: E402
-from std_lib.scraper_std.document_structure import (  # noqa: E402 共享条文抽取/渲染
+from std_lib.common_lib.norm import norm_docno
+from std_lib.scraper_std.document_structure import (
     CN_NUM_CHARS,
     extract_structure,  # noqa: F401  （保留导出：历史调用方）
     parse_document,
@@ -72,12 +72,14 @@ from std_lib.scraper_std.document_structure import (  # noqa: E402 共享条文�
 CLAUSE_DIR = os.path.join(_SCRAPERS, "data", "clauses")
 _CLAUSE_HISTORY_DIR = os.path.join(CLAUSE_DIR, "history")   # clauses 历史版本归档（单版化，2026-09-10）
 _STATE_PATH = os.path.join(CLAUSE_DIR, "clause_index_state.json")
-_SOURCES = ("gov", "mof", "nfra", "pbc", "supp")
+from config.enums import SOURCE_ORDER
+
+_SOURCES = SOURCE_ORDER
 
 # F-D10（2026-09-13 SSOT 专项）：RFN 桥表（classifier 唯一登记源）——条款行内联 rfn 投影。
 # v2 §3.1.3 I-3（2026-09-26）：路径改经 `interfaces.rfn_api.registry_paths()` 唯一入口
 # （原为拼兄弟模块目录字符串，`gate_no_cross_module_import` 判据 D 已断言该纪律）。
-from interfaces.rfn_api import registry_paths as _registry_paths  # noqa: E402
+from interfaces.rfn_api import registry_paths as _registry_paths
 
 _RFN_BRIDGE = _registry_paths()["bridge_csv"]
 
@@ -119,8 +121,8 @@ def _load_rfn_title_index() -> dict:
     by_title: dict = {}
     dup: set = set()
     try:
-        from interfaces.rfn_api import get_index as _get_index  # noqa: PLC0415
-        from interfaces.rfn_api import registry_title_key as _rfn_title  # noqa: PLC0415
+        from interfaces.rfn_api import get_index as _get_index
+        from interfaces.rfn_api import registry_title_key as _rfn_title
 
         for r in _get_index().records():
             rfn = (r.get("监管文件编号") or "").strip()
@@ -143,7 +145,7 @@ def _make_rfn_title_lookup(by_title: dict):
     if not by_title:
         return lambda _t: ""
     try:
-        from interfaces.rfn_api import registry_title_key as _nt  # noqa: PLC0415
+        from interfaces.rfn_api import registry_title_key as _nt
     except Exception:  # noqa: BLE001
         return lambda _t: ""
     return lambda t: by_title.get(_nt(t or ""), "")
@@ -155,7 +157,7 @@ def _rfn_by_docno_fallback(docno: str) -> str:
     if not docno:
         return ""
     try:
-        from interfaces.rfn_api import get_index as _get_index  # noqa: PLC0415
+        from interfaces.rfn_api import get_index as _get_index
 
         rfns = {
             (r.get("监管文件编号") or "").strip() for r in _get_index().by_docno(docno)
@@ -208,14 +210,14 @@ def _load_state():
         if isinstance(d, dict):
             d.pop("_meta", None)
         return d
-    except Exception:
+    except Exception:  # noqa: BLE001
         return {}
 
 
 def _save_state(state):
     os.makedirs(CLAUSE_DIR, exist_ok=True)
     # F-D14（H-01）：版本锚点——**副本**写入（不污染调用方对象；load 侧剥离）
-    import time as _t  # noqa: PLC0415
+    import time as _t
     payload = dict(state)
     payload["_meta"] = {"schema_version": "1.0", "written_by": "clause_index",
                         "written_at": _t.strftime("%Y-%m-%d %H:%M:%S")}
@@ -250,7 +252,7 @@ def iter_file_clauses(src: str, path: str = ""):
                 continue
             try:
                 yield json.loads(ln)
-            except Exception:
+            except Exception:  # noqa: BLE001
                 continue
 
 
@@ -306,7 +308,7 @@ def build_clause_index(rebuild: bool = False) -> dict:
                     continue
                 try:
                     rec = json.loads(ln)
-                except Exception:
+                except Exception:  # noqa: BLE001
                     continue
                 body_text = rec.get("body_text") or ""
                 # 2026-09-18：`parse_document` = 自动降级解析（law 主模式 + 通知/通报/规划层级体 +
@@ -385,13 +387,13 @@ def validate_schema() -> dict:
     `structure` 节点 level 闭包，以及**结构语义计数**（title_swallow / tail_contam /
     space_contam / law_items）——后者是"问题一曾被静默放过"的直接堵漏（e2e 断言指标上限）。
     """
-    from config.enums import (  # noqa: PLC0415
+    from config.enums import (
         CLAUSE_ISSUE_SEVERITY,
         CLAUSE_PARSE_MODES,
         CLAUSE_STRUCTURE_LEVELS,
     )
-    from interfaces import contract  # noqa: PLC0415
-    from std_lib.scraper_std.document_structure import structure_semantics  # noqa: PLC0415
+    from interfaces import contract
+    from std_lib.scraper_std.document_structure import structure_semantics
     problems = []
     stat = {"files": 0, "articles": 0, "chapters": 0, "structures": 0,
             "law": 0, "degraded": 0, "fallback": 0, "invalid": 0, "warned": 0,

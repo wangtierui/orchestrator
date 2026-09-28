@@ -32,7 +32,7 @@ MAX_ITERS = 400
 def remaining():
     try:
         d = json.load(open(JSON, encoding="utf-8"))
-    except Exception:
+    except Exception:  # noqa: BLE001
         return -1
     return sum(1 for r in d
                if r.get("category") == "规范性文件"

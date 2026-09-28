@@ -25,8 +25,8 @@ import sys
 
 _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, _ROOT)
-import paths  # noqa: E402  路径唯一事实源（P2-3a：语料本体落点统一）
-from config.exitcodes import ExitCode  # noqa: E402
+import paths
+from config.exitcodes import ExitCode
 
 # v2 §3.12（决策 D-9 / P2-3a，2026-09-26）：语料归集本体统一到**仓根 `data/corpus/<domain>/`**。
 #   改造前落 `modules/regulatory_scrapers/data/corpus/`——归属不当：该层同时服务 classifier 的

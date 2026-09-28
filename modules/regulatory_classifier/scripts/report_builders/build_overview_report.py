@@ -24,7 +24,9 @@ _MOD_CLASS = os.path.dirname(_SCRIPTS)                        # modules/regulato
 for _p in (_MOD_CLASS, os.path.dirname(os.path.dirname(_MOD_CLASS))):
     if _p not in sys.path:
         sys.path.insert(0, _p)
-from rfn import THEME_MAP  # noqa: E402
+from rfn import THEME_MAP
+
+from config.enums import TIMELINESS_DISPLAY_ORDER  # N-78：时效列序取自 SSOT
 
 _DATA = os.path.join(_MOD_CLASS, "data")
 _DOCS = os.path.join(_MOD_CLASS, "docs", "reports")
@@ -60,7 +62,7 @@ def build() -> dict:
         if os.path.exists(p):
             try:
                 final_cnt[c] = len(json.load(open(p, encoding="utf-8")))
-            except Exception:
+            except Exception:  # noqa: BLE001
                 final_cnt[c] = 0
 
     rows = []
@@ -78,7 +80,7 @@ def build() -> dict:
     theme_eff: collections.defaultdict = collections.defaultdict(collections.Counter)
     for r in rows:  # type: ignore[assignment]
         theme_eff[r[6]][r[5]] += 1
-    eff_ord = ["valid", "amended", "repealed", "partially_repealed", "expired", "pending", "uncertain"]
+    eff_ord = list(TIMELINESS_DISPLAY_ORDER)  # N-78：列序取自 SSOT（原为本地 7 值字面量副本）
 
     def _eff_str(cnt: collections.Counter) -> str:
         return "；".join(f"{k}={cnt.get(k, 0)}" for k in eff_ord if cnt.get(k))

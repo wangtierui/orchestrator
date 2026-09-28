@@ -47,11 +47,11 @@ _THIS = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(_THIS)
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
-from config.exitcodes import ExitCode  # noqa: E402
-from std_lib.common_lib import governance_store as gs  # noqa: E402
+from config.exitcodes import ExitCode
+from std_lib.common_lib import governance_store as gs
 
 # 归一化 SSOT（gate_no_duplicate_libs：业务仓禁止本地 def 归一化）
-from std_lib.common_lib.norm import norm_docno  # noqa: E402
+from std_lib.common_lib.norm import norm_docno
 
 CLS_DATA = os.path.join(ROOT, "modules", "regulatory_classifier", "data")
 IPB_DATA = os.path.join(ROOT, "modules", "internal_policy_base", "data")
@@ -73,7 +73,7 @@ _C_NOTE = "编号备注"
 # 规则：**状态/进度/告警行 → LOG**；**机器可读载荷（json.dumps）/多列表格行 → 保留 print**
 # （后者是 stdout 契约，加日志前缀会破坏编排器 tail 与下游解析）。
 # 判据：`gate_runtime_hygiene` 判据④断言本文件的 LOG 使用下限与 print 上限。
-from std_lib.common_lib.logging import get_logger  # noqa: E402
+from std_lib.common_lib.logging import get_logger
 
 LOG = get_logger("governance_sync")
 

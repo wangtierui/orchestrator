@@ -142,7 +142,7 @@ BASE = "/dev"  # 接口基础路径：/dev/lawFile/list 等
 # 产物目录统一（Plan B 阶段 2b + 5b 收敛 + 2026-09-08 docs_root 统一根）
 SRC_DIR = os.path.dirname(os.path.abspath(__file__))
 REPO_ROOT = os.path.dirname(SRC_DIR)  # regulatory_scrapers（统一数据根）
-from std_lib.scraper_std.cache_store import docs_root  # noqa: E402
+from std_lib.scraper_std.cache_store import docs_root
 
 ATTACHMENTS_DIR = docs_root("mof", "attachments")
 
@@ -230,7 +230,7 @@ def fetch_detail(law_id, rate):
         resp = _request("GET", f"{BASE}/lawFile/get/{law_id}", rate=rate)
         if resp.get("code") == 200 and resp.get("data"):
             return resp["data"]
-    except Exception as e:  # 单条失败不影响整体
+    except Exception as e:  # 单条失败不影响整体  # noqa: BLE001
         logger.warning("详情获取失败 id=%s：%s", law_id, e)
     return None
 
@@ -534,7 +534,7 @@ def main():
                     prev_items = pd.get("items", []) or []
                 elif isinstance(pd, list):
                     prev_items = pd
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 logger.warning("历史存储读取失败，本次将作为全量新增处理：%s", e)
                 prev_items = []
         # 键统一为 str（与 `_canon_law_id` 呼应）：主库为 int、列表接口现返回 str，

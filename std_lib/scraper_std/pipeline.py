@@ -68,7 +68,7 @@ def build_high_freq_dict(
     counter: Counter = Counter()
     try:
         import jieba
-    except Exception:
+    except Exception:  # noqa: BLE001
         return {}
     for rec in records:
         text = " ".join(

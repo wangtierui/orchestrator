@@ -37,8 +37,8 @@ for _p in (_PKG, _PARENT):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from registry import norm_docno, register_doc, unique_key  # noqa: E402
-from rfn import THEME_MAP, get_index, norm_title  # noqa: E402
+from registry import norm_docno, register_doc, unique_key
+from rfn import THEME_MAP, get_index, norm_title
 
 LEVEL_DOCNO = "L1_docno"        # 文号归一化精确
 LEVEL_TITLE = "L2_title"        # 标题归一化精确

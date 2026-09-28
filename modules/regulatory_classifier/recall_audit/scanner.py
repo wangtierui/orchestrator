@@ -35,7 +35,7 @@ for _p in (_MOD_CLASS, _ORCH_ROOT):
         sys.path.insert(0, _p)
 # 阶段 3（2026-09-18）：五源 cleaned 索引一律经 interfaces 唯一入口，
 # 不再自行把兄弟模块目录插进 sys.path（跨模块直连收口，方案 §6 阶段 3）。
-from interfaces.clean_index_api import get_clean_index, scan_sources  # noqa: E402
+from interfaces.clean_index_api import get_clean_index, scan_sources
 
 CLASS = os.path.join(_MOD_CLASS, "data")
 ATTR = os.path.join(CLASS, "人身保险公司-文件归属表.csv")
@@ -60,7 +60,7 @@ def _load_fresh_index():
         return bad
     try:
         live = scan_sources(hash_files=False)
-    except Exception:
+    except Exception:  # noqa: BLE001
         return idx  # 实时扫描失败时退化为直接使用既有索引，不阻断
     stale = _stale(idx.source_ids(), live)
     if stale:
@@ -75,7 +75,9 @@ def _load_fresh_index():
 
 _idx = _load_fresh_index()
 CLEANED = {}
-for _src in ("gov", "mof", "nfra", "pbc", "supp"):
+from config.enums import SOURCE_ORDER
+
+for _src in SOURCE_ORDER:
     _p = _idx.latest_csv_path(_src)
     if not _p or not os.path.exists(_p):
         raise RuntimeError(

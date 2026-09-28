@@ -129,7 +129,7 @@ class Fuse:
         if self.on_trip:
             try:
                 self.on_trip(path)
-            except Exception as e:  # 告警回调失败不阻断主流程
+            except Exception as e:  # 告警回调失败不阻断主流程  # noqa: BLE001
                 LOG.error("熔断告警回调失败：%s", e)
         raise RuntimeError(
             f"circuit_breaker tripped after {self.miss_count} misses; "

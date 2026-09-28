@@ -59,10 +59,10 @@ try:
     # `# type: ignore[assignment]` 须在**语句首行**（ruff 会把多行 import 重排，
     # mypy 的报错锚点在 `from ... import (` 行，而非 `as` 行）
     from std_lib.scraper_std.ocr_engine import (  # type: ignore[assignment]
-        get_ocr as _get_ocr,  # noqa: E402
+        get_ocr as _get_ocr,
     )
     _UNIFIED_OK = True
-except Exception as _imp_err:  # pragma: no cover - 共享库缺失时的保险
+except Exception as _imp_err:  # pragma: no cover - 共享库缺失时的保险  # noqa: BLE001
     import logging
     logging.getLogger("ocr_pdf").warning("统一 OCR 模块不可用，回退内联 Tesseract：%s", _imp_err)
 
@@ -86,7 +86,7 @@ def extract_text_layer(path: str) -> str:
     for page in reader.pages:
         try:
             parts.append(page.extract_text() or "")
-        except Exception:
+        except Exception:  # noqa: BLE001
             parts.append("")
     return "\n".join(parts).strip()
 

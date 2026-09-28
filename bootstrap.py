@@ -43,7 +43,7 @@ def bootstrap(*modules: str, include_tools: bool = False, extra=()) -> None:
               `modules/regulatory_scrapers/timeliness_review`、`collectors`），
               这类目录历史上由各调用方自行 `sys.path.insert`。
     """
-    from config.constants import (  # noqa: PLC0415
+    from config.constants import (
         MODULE_KEYS,
         MODULE_PKGS,
         module_by_key,

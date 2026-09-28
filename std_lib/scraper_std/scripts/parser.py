@@ -13,16 +13,16 @@ parser —— 解析/清洗模块再导出（单一事实源，对应四源 scri
 
 from __future__ import annotations
 
-from ..cleaner import clean_text, is_table_block, normalize_ws  # noqa: F401
-from ..crawler_common import (  # noqa: F401
+from ..cleaner import clean_text, is_table_block, normalize_ws
+from ..crawler_common import (
     extract_document_text,
     garble_ratio,
     normalize_date,
     normalize_digits,
     sniff_kind,
 )
-from ..sentence_split import repair_text  # noqa: F401
-from ..table_recovery import extract_tables_from_doc  # noqa: F401
+from ..sentence_split import repair_text
+from ..table_recovery import extract_tables_from_doc
 
 
 def parse_document(data: bytes, name: str = "", *, enable_ocr: bool = True) -> dict:

@@ -74,7 +74,7 @@ class Checkpoint:
                     loaded = json.load(f)
                 if isinstance(loaded, dict):
                     self.data.update({k: v for k, v in loaded.items() if k in self.data})
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 LOG.warning("断点文件解析失败，从零开始：%s", e)
 
     def save(self) -> None:
@@ -151,7 +151,7 @@ class GracefulRunner:
             if self.on_interrupt:
                 try:
                     self.on_interrupt()
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001
                     LOG.error("中断回调失败：%s", e)
 
         for sig in (signal.SIGINT, getattr(signal, "SIGTERM", signal.SIGINT)):

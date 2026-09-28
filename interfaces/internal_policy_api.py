@@ -34,7 +34,7 @@ def _load(path: str) -> dict:
 class InternalPolicyAPI:
     # ---- 注册 / 版本链（indexer 摄取即注册；D-03 IPN-hex）----
     def register(self, title, version, file_type, status="draft", source_path=""):
-        from internal_policy_base.scan import ipn_of, parse_filename  # noqa: PLC0415
+        from internal_policy_base.scan import ipn_of, parse_filename
 
         parsed = (
             parse_filename(os.path.basename(source_path))

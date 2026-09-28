@@ -88,7 +88,7 @@ for r in targets:
             print(f"  OK  {title[:24]} | {len(text)} chars | saved {fn}")
         else:
             r["error"] = "UTF-16 抽取为空"; print("  EMPTY", title)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         r["error"] = f"异常:{type(e).__name__}:{e}"[:160]; print("  EXC", title, r["error"])
 
 json.dump(data, open(JSON, "w", encoding="utf-8"), ensure_ascii=False, indent=1)

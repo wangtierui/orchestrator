@@ -19,7 +19,7 @@ import sys
 # 使 rfn 包可导入（仓库根 = 本脚本上级）
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from rfn import THEME_MAP, get_index, theme_key  # noqa: E402
+from rfn import THEME_MAP, get_index, theme_key
 
 
 def show(r, idx=None):

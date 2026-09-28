@@ -44,7 +44,7 @@ import sys
 import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-from std_lib.scraper_std.cache_store import source_cache_root  # noqa: E402
+from std_lib.scraper_std.cache_store import source_cache_root
 
 CACHE = source_cache_root("nfra")  # 单一物理缓存根（modules/regulatory_scrapers/cache/nfra）
 LOCK = os.path.join(HERE, "weekly_refresh.lock")
@@ -63,7 +63,7 @@ def _count_docids():
     for f in glob.glob(LIST_GLOB):
         try:
             d = json.load(open(f, encoding="utf-8"))
-        except Exception:
+        except Exception:  # noqa: BLE001
             continue
         rows = (d.get("data", {}) or {}).get("rows") or []
         for r in rows:
@@ -120,7 +120,7 @@ def _read_totals_from_page1():
     for f in glob.glob(PAGE1_GLOB):
         try:
             d = json.load(open(f, encoding="utf-8"))
-        except Exception:
+        except Exception:  # noqa: BLE001
             continue
         data = d.get("data") or {}
         m = re.search(r"itemId_(\d+)", os.path.basename(f))
@@ -160,7 +160,7 @@ def refresh_list():
     try:
         subprocess.run([PY, "nfra_fetch_lists.py"], cwd=HERE, check=False,
                        stdout=sys.stdout, stderr=sys.stderr, timeout=1200)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         info["fetch_err"] = str(e)
 
     new_totals = _read_totals_from_page1()
@@ -188,7 +188,7 @@ def refresh_list():
             try:
                 subprocess.run([PY, "nfra_fetch_lists.py"], cwd=HERE, check=False,
                                stdout=sys.stdout, stderr=sys.stderr, timeout=1200)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 info.setdefault("fetch_err", str(e))
 
     new_ids = _count_docids()
@@ -279,7 +279,7 @@ def main():
         except subprocess.TimeoutExpired:
             att_ok = False
             print("[weekly][WARN] 附件抽取超出安全时长被终止，cache 已落盘，下一周自动续跑。")
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             att_ok = False
             print("[weekly][WARN] 附件抽取异常: %s（不影响重建）" % e)
 

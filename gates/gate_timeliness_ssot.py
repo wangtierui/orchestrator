@@ -42,15 +42,19 @@ for _p in (_MOD_CLASS, _MOD_SCRAPERS, paths.ROOT):
         sys.path.insert(0, _p)
 
 try:
-    from config.enums import TIMELINESS_STATUS  # noqa: E402
+    from config.enums import TIMELINESS_STATUS
 
     _ENUM = frozenset(TIMELINESS_STATUS)
-except Exception:
-    _ENUM = frozenset(
-        {"valid", "amended", "repealed", "partially_repealed", "expired", "pending", "uncertain"}
-    )
+    _ENUM_ERR = ""
+except Exception as e:  # noqa: BLE001
+    # N-77（2026-09-28）：**删除静默兜底字面量**。原实现对导入失败退回一份**私有 7 值副本** →
+    # 门禁会用一个"可能已漂移的副本"去判定全仓 SSOT 一致性（判据本身失真，且失败无从发现）。
+    # 现改为 `run()` 中直接 FAIL（口径：判据不可执行 ≠ 判据通过）。
+    _ENUM = frozenset()
+    _ENUM_ERR = f"{type(e).__name__}: {e}"
 
 
+from config.enums import SOURCE_ORDER
 from std_lib.common_lib.norm import norm_docno as _norm_docno  # A-10：SSOT 收敛（标准层）
 from std_lib.common_lib.norm import norm_title_strict as _norm_title  # A-10：SSOT 收敛（保守层）
 
@@ -63,7 +67,7 @@ def _load_attr_rows():
 def _is_fresh_rec(rec):
     """state 记录核验是否 ≤ 90 日（fresh 才作为 SSOT 断言依据；陈旧由下次 verify 刷新，不阻断）。"""
     try:
-        from datetime import datetime, timedelta  # noqa: PLC0415
+        from datetime import datetime, timedelta
 
         last = datetime.strptime(rec.get("last_checked_at", ""), "%Y-%m-%d %H:%M:%S")
         return (datetime.now() - last) <= timedelta(days=90)
@@ -74,6 +78,13 @@ def _is_fresh_rec(rec):
 def run():
     problems = []
     warn = []
+    if _ENUM_ERR:
+        # N-77（2026-09-28）：受控值 SSOT 不可加载 → **判据不可执行**（原实现退私有字面量副本
+        # 继续判定 = 用可能已漂移的副本当尺子量 SSOT，属"失真放行"）。此处直接 FAIL。
+        return False, {
+            "error": f"无法加载受控值 SSOT config.enums.TIMELINESS_STATUS：{_ENUM_ERR}",
+            "note": "SSOT 一致性未实检，不得视为通过",
+        }
     if not os.path.exists(_STATE_JSON):
         # F-S09：输入缺失不得空跑放行（原 return True 使"全部门禁通过"含未实检门禁）。
         return False, {
@@ -162,13 +173,13 @@ def run():
                     url2rfn[u] = b.get("rfn", "") or b.get("监管文件编号", "")
         ci = None
         try:
-            from clean_index import get_clean_index  # noqa: PLC0415
+            from clean_index import get_clean_index
 
             ci = get_clean_index()
         except Exception:  # noqa: BLE001
             ci = None
         if ci:
-            for src in ("gov", "mof", "nfra", "pbc", "supp"):
+            for src in SOURCE_ORDER:
                 cp = ci.latest_csv_path(src)
                 if not cp or not os.path.exists(cp):
                     continue

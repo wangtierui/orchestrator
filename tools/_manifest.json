@@ -32,7 +32,7 @@
   {"file": "prune_orphan_processed.py", "category": "tool", "entry": "清理孤儿 processed 记录（dry-run / --apply）"},
   {"file": "reconcile_original_paths.py", "category": "tool", "entry": "主索引路径 ↔ 原件库对账（gate_original_resolvable 指定的处置入口）"},
   {"file": "rfn_backlog.py", "category": "tool", "entry": "RFN 补登候选（关系线索 + 引用者主题投票）"},
-  {"file": "run_production_refresh.py", "category": "pipeline", "entry": "主链编排（14 阶段 / 22 步）；v2 起由 cli.py run 调用（库形态）"},
+  {"file": "run_production_refresh.py", "category": "pipeline", "entry": "主链编排（25 步（原 22 步；N-46/N-52/N-53/N-63/N-73b 陆续入链））；v2 起由 cli.py run 调用（库形态）"},
   {"file": "split_internal_nonpolicy.py", "category": "tool", "entry": "非制度正文件隔离归置（misc/ ledgers/）"},
   {"file": "sync_wiki_sources.py", "category": "tool", "entry": "发布件 → vault Markdown（SHA256 增量 + --prune）"},
   {"file": "retired/flatten_collectors.py", "category": "retired", "since": "2026-09-13", "note": "collectors 物理拍平（一次性）；替代物：无（映射保留在本文件）"},

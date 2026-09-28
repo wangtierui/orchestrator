@@ -128,7 +128,7 @@ def load_internal_spans(ipn: str) -> list[tuple[int, int, str]]:
     if not ipn:
         return []
     try:
-        from interfaces import internal_policy_api as ipa  # noqa: PLC0415
+        from interfaces import internal_policy_api as ipa
 
         api = ipa.get_internal_policy_api()
         arts = (api.load_processed(ipn, suffix="_clauses.json") or {}).get("articles") or []
@@ -161,7 +161,7 @@ _INDEX: dict | None = None
 
 
 def load_regulatory_index(
-    sources: tuple[str, ...] = ("gov", "mof", "nfra", "pbc", "supp")
+    sources: tuple[str, ...] | None = None,
 ) -> dict:
     """五源 clauses 的**一次性**索引（进程内单例）：
 
@@ -184,9 +184,12 @@ def load_regulatory_index(
     by_dedup: dict = {}
     articles_by_dk: dict = {}
     try:
-        from interfaces import clause_index_api as ci  # noqa: PLC0415
+        # N-78（2026-09-28）：来源顺序取自 SSOT（原为本地 5 元组字面量）；本模块一贯
+        # 采用**函数内懒引导**（与 `interfaces.*` 同处一个 try），故此处同步入。
+        from config.enums import SOURCE_ORDER
+        from interfaces import clause_index_api as ci
 
-        for src in sources:
+        for src in (sources or SOURCE_ORDER):
             p = ci.latest_clause_path(src)
             if not p or not os.path.exists(p):
                 continue

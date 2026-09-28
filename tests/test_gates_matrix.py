@@ -76,7 +76,7 @@ def test_doctor_group_covered(group):
                                  "monthly_check", "timeliness_sync", "gov_increment"])
 def test_schedule_job_declared_and_target_exists(job):
     """每个调度作业：argv 非空，且 argv[0] 的目标在仓内存在（§3.9 判据 S2 的最小化正例）。"""
-    import importlib.util  # noqa: PLC0415
+    import importlib.util
 
     fp = os.path.join(paths.ROOT, "tools", "gen_schedule_doc.py")
     spec = importlib.util.spec_from_file_location("_gsd_matrix", fp)

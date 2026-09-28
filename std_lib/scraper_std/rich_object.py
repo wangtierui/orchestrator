@@ -35,7 +35,7 @@ CONVERT_EXT = (".doc", ".wps", ".rtf", ".ceb")
 
 
 def _log(msg: str) -> None:
-    import logging  # noqa: PLC0415
+    import logging
 
     logging.getLogger("rich_object").warning("%s %s", _LOG_PREFIX, msg)
 
@@ -133,7 +133,7 @@ def extract_rich_objects(data: bytes, name: str = "", *, max_chars: int = 60000)
         return _extract_pdf_rich(data, max_chars)
     if low.endswith(CONVERT_EXT):
         try:
-            from std_lib.scraper_std.doc_convert import doc_bytes_to_docx  # noqa: PLC0415
+            from std_lib.scraper_std.doc_convert import doc_bytes_to_docx
 
             conv = doc_bytes_to_docx(data, low)
             if conv:
@@ -165,7 +165,7 @@ def _extract_docx_rich(data: bytes, max_chars: int):
         return None, {}, z
     try:
         root = ET.fromstring(doc)
-    except ET.ParseError as e:  # noqa: BLE001
+    except ET.ParseError as e:
         _log(f"docx xml parse error: {e}")
         return [], {}, z
     objects: list[dict[str, Any]] = []
@@ -297,7 +297,7 @@ def _extract_pdf_rich(data: bytes, max_chars: int) -> dict[str, Any]:
     objects: list[dict[str, Any]] = []
     images: dict[str, bytes] = {}
     try:
-        import pymupdf as fitz  # noqa: PLC0415 PyMuPDF（现代导入名，弃用 fitz 别名）
+        import pymupdf as fitz
 
         doc: Any = fitz.open(stream=data, filetype="pdf")
     except Exception as e:  # noqa: BLE001
@@ -332,7 +332,7 @@ def _extract_pdf_rich(data: bytes, max_chars: int) -> dict[str, Any]:
                 continue
             ocr = ""
             try:
-                from std_lib.scraper_std.ocr_engine import get_ocr  # noqa: PLC0415
+                from std_lib.scraper_std.ocr_engine import get_ocr
 
                 res = get_ocr().recognize_image(png)
                 ocr = (getattr(res, "text", "") or "").strip()

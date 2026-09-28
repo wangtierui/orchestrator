@@ -36,8 +36,8 @@ import shutil
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import paths  # noqa: E402
-from config.exitcodes import ExitCode  # noqa: E402
+import paths
+from config.exitcodes import ExitCode
 
 ARCHIVE_ROOT = os.path.join(paths.ROOT, "archive")
 LEDGER_DIR = os.path.join(paths.ROOT, "reports")

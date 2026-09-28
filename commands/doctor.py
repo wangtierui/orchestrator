@@ -21,7 +21,7 @@ import subprocess
 import sys
 
 import paths
-from config.exitcodes import ExitCode  # noqa: E402  (R3：退出码语义化)
+from config.exitcodes import ExitCode
 
 OUT_JSON = os.path.join(paths.ROOT, "reports", "_tmp", "doctor.json")
 DISK_MIN_GB = 5.0
@@ -70,7 +70,7 @@ def _c_node() -> tuple[str, str, str]:
 
 def _c_pkulaw_pkg() -> tuple[str, str, str]:
     try:
-        from scraper_std import pkulaw_cli  # noqa: PLC0415
+        from scraper_std import pkulaw_cli
 
         cli = pkulaw_cli.find_cli()
         return ("ok" if cli else "warn"), f"pkulaw cli={cli or '(未找到)'}", "北大法宝官方 CLI 目录"
@@ -115,7 +115,7 @@ def _c_pymupdf() -> tuple[str, str, str]:
 
 def _c_tesseract() -> tuple[str, str, str]:
     try:
-        from config.loader import load_ocr  # noqa: PLC0415
+        from config.loader import load_ocr
 
         exe = (load_ocr().get("ocr") or {}).get("tesseract_bin", "")
     except Exception as e:  # noqa: BLE001
@@ -141,7 +141,7 @@ def _c_tessdata() -> tuple[str, str, str]:
 
 def _c_paddle() -> tuple[str, str, str]:
     try:
-        from config.loader import load_ocr  # noqa: PLC0415
+        from config.loader import load_ocr
 
         cfg = load_ocr().get("ocr") or {}
         d = cfg.get("paddle_model_dir") or cfg.get("paddleocr_dir") or ""
@@ -168,7 +168,7 @@ def _c_token_fresh() -> tuple[str, str, str]:
     p = os.path.join(paths.ROOT, ".pkulaw_token")
     if not os.path.exists(p):
         return "warn", "无 token，跳过时效探测", ""
-    import datetime  # noqa: PLC0415
+    import datetime
 
     days = (datetime.datetime.now() - datetime.datetime.fromtimestamp(os.path.getmtime(p))).days
     return "warn", f"token 最后更新 {days} 天前（**无法本地判定有效性**，以首次核验为准）", ""
@@ -176,9 +176,9 @@ def _c_token_fresh() -> tuple[str, str, str]:
 
 def _c_gov_db() -> tuple[str, str, str]:
     try:
-        import sqlite3  # noqa: PLC0415
+        import sqlite3
 
-        from std_lib.common_lib import governance_store as gs  # noqa: PLC0415
+        from std_lib.common_lib import governance_store as gs
 
         p = gs.db_path()
         if not os.path.exists(p):
@@ -227,7 +227,7 @@ def _c_lock() -> tuple[str, str, str]:
     p = os.path.join(paths.ROOT, "data", "run_production_refresh.lock")
     if not os.path.exists(p):
         return "ok", "无锁文件（未在运行）", ""
-    import datetime  # noqa: PLC0415
+    import datetime
 
     age_h = (datetime.datetime.now().timestamp() - os.path.getmtime(p)) / 3600
     if age_h < 48:
@@ -241,10 +241,10 @@ def _c_lock() -> tuple[str, str, str]:
 
 def _c_schedule() -> tuple[str, str, str]:
     try:
-        from bootstrap import bootstrap  # noqa: PLC0415
+        from bootstrap import bootstrap
 
         bootstrap("all", include_tools=True)  # commands/ 禁自行注入（gate_import_bootstrap 硬零层）
-        import install_schedule  # noqa: PLC0415
+        import install_schedule
 
         ok, det = install_schedule.verify()
         return (
@@ -262,7 +262,7 @@ def _c_schedule() -> tuple[str, str, str]:
 
 def _c_triggers() -> tuple[str, str, str]:
     try:
-        from std_lib.common_lib import triggers as trg  # noqa: PLC0415
+        from std_lib.common_lib import triggers as trg
 
         rows = trg.decide({"argv": []})
         return ("ok" if rows else "fail"), f"{len(rows)} 个触发项可判定", "config/triggers.yaml"
@@ -272,7 +272,7 @@ def _c_triggers() -> tuple[str, str, str]:
 
 def _c_disk() -> tuple[str, str, str]:
     try:
-        import shutil as _sh  # noqa: PLC0415
+        import shutil as _sh
 
         total, used, free = _sh.disk_usage(paths.ROOT)
         free_gb = free / (1024**3)
@@ -341,7 +341,7 @@ def write_report(res: dict) -> str:
 
 
 def main(argv=None) -> int:
-    import argparse  # noqa: PLC0415
+    import argparse
 
     ap = argparse.ArgumentParser(description="环境前置自检（v2 §3.13.4；18 项机器判定）")
     ap.add_argument("--quick", action="store_true", help="只跑 run 前置子集")

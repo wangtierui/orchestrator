@@ -28,15 +28,40 @@ TIMELINESS_STATUS: frozenset[str] = frozenset(
         "uncertain",  # 不确定（占位 N/A 归并，表示未完成核验）
     }
 )
+# 未核验的规范取值（N-77，2026-09-28）：凡"时效状态缺失/查无"一律归此为 **uncertain**；
+# **禁止**以 `valid` 兜底 —— 那等于把"没核验过"写成"现行有效"，属臆造事实（数据治理红线），
+# 且会使"覆盖率/未核验量"类指标永久失真（分母被伪造成 0）。
+TIMELINESS_UNVERIFIED: str = "uncertain"
+
+# 时效状态**展示顺序**（N-78）：`TIMELINESS_STATUS` 是无序 frozenset，无法用于报告/清单的
+# 稳定列序（原先 `build_overview_report` 自写一份 7 值列表 → 副本）。语义：由"现行"到"未知"，
+# 反映读者关心度递减（现行有效 → 修订 → 部分废止 → 废止 → 失效 → 尚未施行 → 不确定）。
+TIMELINESS_DISPLAY_ORDER: tuple[str, ...] = (
+    "valid",
+    "amended",
+    "partially_repealed",
+    "repealed",
+    "expired",
+    "pending",
+    "uncertain",
+)
+
 # 中文 → 英文兼容映射（仅读旧台账/旧脚本时使用；新数据禁止写入中文值）
+# N-77（2026-09-28）：把散落在 `timeliness_review.consolidate_timeliness.STATUS_MAP` 的**等价别名**
+# （"废止"/"失效"/"修改"/"待核"）上收本表 —— 原先它们只存在于本地副本，属"同一事实两处定义"；
+# 上收后下游一律 `dict(TIMELINESS_CN2EN)` 派生，不再各写一份。
 TIMELINESS_CN2EN: dict[str, str] = {
     "已废止": "repealed",
+    "废止": "repealed",
     "已失效": "expired",
+    "失效": "expired",
     "现行有效": "valid",
     "有效": "valid",
     "修订": "amended",
+    "修改": "amended",
     "部分废止": "partially_repealed",
     "待定": "pending",
+    "待核": "pending",
     "尚未施行": "pending",
     "不确定": "uncertain",
     "未核验": "uncertain",
@@ -71,6 +96,14 @@ CLAUSE_STRUCTURE_LEVELS: frozenset[str] = frozenset({"一级", "二级", "条", 
 
 # F4 source（数据源标识，5 值）——注意：新增源须同步 config/sources.yaml 并重跑断言
 SOURCE_SET: frozenset[str] = frozenset({"nfra", "pbc", "mof", "gov", "supp"})
+
+# 数据源**规范顺序**（N-78，2026-09-28）：`SOURCE_SET` 是无序集合，无法表达"主链遍历序/
+# 优先级序"——而全仓有 20+ 处各自写 `("gov","mof","nfra","pbc","supp")` 字面量（新增第 6 源
+# 需改遍全仓，且漏改处会**静默跳过**新源）。此处登记规范顺序为唯一事实源：
+#   · 主链遍历/清单生成 → `SOURCE_ORDER`；
+#   · 补充库置末的优先级（如时效核验）→ `SOURCE_PRIORITY`（等价于 SOURCE_ORDER，语义命名区分）。
+SOURCE_ORDER: tuple[str, ...] = ("gov", "mof", "nfra", "pbc", "supp")
+SOURCE_PRIORITY: tuple[str, ...] = SOURCE_ORDER
 # 子源/域名 → 五源标识归并表（v3 3.5）
 SOURCE_ALIASES: dict[str, str] = {
     "xzfgk": "gov",
@@ -458,6 +491,12 @@ def assert_enum_bindings() -> None:
     # 关系抽取（R-F01）：三类关系共用一套受控值；闭包 + 交叉一致性
     assert len(RELATION_KIND) == 2 and len(RELATION_DOC_KIND) == 2
     assert len(ARTICLE_PLACEMENT) == 4, ARTICLE_PLACEMENT  # N-49 条款定位来源标记闭包
+    # N-78：规范顺序必须与来源集合**同元素**（防两处各自增删导致漂移）
+    assert set(SOURCE_ORDER) == SOURCE_SET, (SOURCE_ORDER, SOURCE_SET)
+    assert len(SOURCE_ORDER) == len(SOURCE_SET), SOURCE_ORDER  # 无重复项
+    # N-78：展示顺序必须恰好覆盖受控域（防漏值/多重值导致报告列缺失或重复）
+    assert set(TIMELINESS_DISPLAY_ORDER) == TIMELINESS_STATUS, TIMELINESS_DISPLAY_ORDER
+    assert len(TIMELINESS_DISPLAY_ORDER) == len(TIMELINESS_STATUS), TIMELINESS_DISPLAY_ORDER
     assert len(ART_CHECK) == 4, ART_CHECK  # N-59 目标条款复核理由闭包
     assert len(BASIS_TYPE) == 2 and len(REPEAL_ACTION) == 5 and len(REPEAL_SCOPE) == 3
     assert len(RELATION_MATCH_METHOD) == 5, RELATION_MATCH_METHOD

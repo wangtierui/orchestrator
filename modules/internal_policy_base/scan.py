@@ -427,7 +427,7 @@ def inherit_docno_by_containment(items: list, *, min_snippet: int = 40,
     items：`[{"text": str, "docno": str}, ...]`；返回 `{下标: 继承到的文号}`（仅含无文号且命中者）。
     复杂度 O(总字数)（`str.find` + 二分定位归属），878 份文档实测 < 1s。
     """
-    import bisect  # noqa: PLC0415
+    import bisect
     blob, starts, owners, pos = [], [], [], 0
     for it in items:
         d = normalize_docno(it.get("docno") or "")

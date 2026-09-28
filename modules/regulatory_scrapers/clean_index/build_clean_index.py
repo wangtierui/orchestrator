@@ -26,7 +26,7 @@ _PARENT = os.path.dirname(_HERE)
 if _PARENT not in sys.path:
     sys.path.insert(0, _PARENT)
 
-from clean_index import (  # noqa: E402
+from clean_index import (
     SCRAPER_ROOT,
     _write_index,
     build_index_dict,

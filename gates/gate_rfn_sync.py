@@ -36,7 +36,7 @@ for _p in (_ORCH_ROOT, _MOD_CLASS):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from rfn import RFN_PAT, get_index  # noqa: E402
+from rfn import RFN_PAT, get_index
 
 # 历史治理接受白名单（归属表↔明细表/final 发文字号失同步，透明报告不计失败）
 KNOWN_LEGACY_RFNS = {

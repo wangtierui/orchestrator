@@ -14,7 +14,7 @@ import hashlib
 import json
 import os
 
-from std_lib.common_lib.fs_lock import (  # noqa: F401
+from std_lib.common_lib.fs_lock import (
     atomic_write_csv_dict,
     atomic_write_json,
     atomic_write_text,

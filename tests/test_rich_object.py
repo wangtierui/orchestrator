@@ -11,7 +11,7 @@ if ROOT not in sys.path:
 if os.path.join(ROOT, "std_lib") not in sys.path:
     sys.path.insert(0, os.path.join(ROOT, "std_lib"))
 
-from std_lib.scraper_std.rich_object import extract_rich_objects, rich_object_fields  # noqa: E402
+from std_lib.scraper_std.rich_object import extract_rich_objects, rich_object_fields
 
 _W = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
 _M = "http://schemas.openxmlformats.org/officeDocument/2006/math"

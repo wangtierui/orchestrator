@@ -53,7 +53,7 @@ import struct
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-from std_lib.scraper_std.cache_store import docs_root, source_cache_root  # noqa: E402
+from std_lib.scraper_std.cache_store import docs_root, source_cache_root
 
 CACHE = source_cache_root("nfra")  # 列表/详情请求缓存根（modules/regulatory_scrapers/cache/nfra）
 ATT_DIR = docs_root("nfra", "attachments")  # 附件产物根（统一 data/docs）
@@ -138,7 +138,7 @@ def extract_pdf_text(data):
     for p in reader.pages:
         try:
             t = p.extract_text() or ""
-        except Exception:
+        except Exception:  # noqa: BLE001
             t = ""
         page_texts.append(t)
     full = "\n".join(page_texts)
@@ -369,7 +369,7 @@ def extract_doc_ole(data):
     import olefile
     try:
         ole = olefile.OleFileIO(data)
-    except Exception:
+    except Exception:  # noqa: BLE001
         return "", False, "ole_open"
     try:
         # 关键坑：ole.listdir() 返回的是「列表的列表」(每条是 ['WordDocument'])，
@@ -378,7 +378,7 @@ def extract_doc_ole(data):
         if "WordDocument" not in names:
             return "", False, "no_WordDocument_stream"
         wd = ole.openstream("WordDocument").read()
-    except Exception:
+    except Exception:  # noqa: BLE001
         return "", False, "stream"
     if len(wd) < 0x200:
         return "", False, "wd_too_small"
@@ -392,7 +392,7 @@ def extract_doc_ole(data):
     try:
         if tbl_name in names:
             tbl = ole.openstream(tbl_name).read()
-    except Exception:
+    except Exception:  # noqa: BLE001
         tbl = None
 
     def _clean(t):
@@ -404,7 +404,7 @@ def extract_doc_ole(data):
     if fcMin + ccpText * 2 <= len(wd) and ccpText > 0:
         try:
             simple_text = wd[fcMin: fcMin + ccpText * 2].decode("utf-16-le", errors="ignore")
-        except Exception:
+        except Exception:  # noqa: BLE001
             simple_text = ""
 
     # 件表抽取（仅 complex）
@@ -437,7 +437,7 @@ def _is_ole2_word(src_path):
         with olefile.OleFileIO(src_path) as ole:
             names = [s[-1] if isinstance(s, (list, tuple)) else s for s in ole.listdir()]
         return "WordDocument" in names
-    except Exception:
+    except Exception:  # noqa: BLE001
         return False
 
 
@@ -477,13 +477,13 @@ def extract_any(data, name):
         try:
             t, pc, pl, nor = extract_pdf_text(data)
             return t, pc, len(t), nor, True, None
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             return "", None, 0, False, False, "pdf_error:%s" % type(e).__name__
     if kind == "docx":
         try:
             t = extract_docx(data)
             return t, None, len(t), False, True, None
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             if "BadZip" in type(e).__name__:
                 return _handle_ole2(data)   # 实为 OLE2（扩展名误标）
             return "", None, 0, False, False, "docx_error:%s" % type(e).__name__
@@ -491,7 +491,7 @@ def extract_any(data, name):
         try:
             t = extract_xlsx(data)
             return t, None, len(t), False, True, None
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             if "BadZip" in type(e).__name__:
                 return _handle_ole2(data)
             return "", None, 0, False, False, "xlsx_error:%s" % type(e).__name__

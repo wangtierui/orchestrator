@@ -44,10 +44,17 @@ _ALIGN_PATH = os.path.join(_DATA, "align_result.json")
 UNALIGNED = "UNALIGNED"
 
 # 主题 → 标题/正文关键词（从 THEME_MAP 语义提炼；不重复定义主题全名）
+#
+# N-76（2026-09-28）：**补回缺失的 T3**。原表覆盖 T1/T2/T4–T10 而**独缺 T3**（资本与偿付能力
+# 监管）→ 凡是资本/偿付能力类内部制度**永远无法**对齐到 T3（只能落到别的主题或 UNALIGNED），
+# 属静默的覆盖缺口。同时在 `gate_config_integrity` 增判据 T（本表须覆盖 THEME_MAP 全部主题，
+# 豁免项须显式登记）以防再次静默遗漏。
 THEME_TITLE_KW = {
     "T1": ["营销员", "销售", "代理人", "消费者", "销售误导", "佣金", "考勤", "展业", "基本法",
            "录音录像", "双录", "品质管理", "执业登记", "品质", "宣传", "互联网营销", "增员"],
     "T2": ["产品", "精算", "费率", "保险条款", "条款", "定价", "产品闭环"],
+    "T3": ["偿付能力", "最低资本", "实际资本", "风险综合评级", "SARMRA", "保险保障基金",
+           "资本补充", "次级债", "资本保证金", "责任准备金", "准备金", "资本"],
     "T4": ["公司治理", "关联交易", "合规", "授权", "印章", "董事", "股权", "治理", "合同", "签约"],
     "T5": ["资金运用", "投资", "资产负债", "资产管理"],
     "T6": ["养老", "健康", "年金", "长期护理"],
@@ -57,13 +64,16 @@ THEME_TITLE_KW = {
            "投诉", "回溯", "回访"],
     "T10": ["数据", "信息", "披露", "保密", "敏感信息", "客户信息", "个人信息", "隐私", "名单"],
 }
+# 豁免登记（gate_config_integrity 判据 T 消费）：T0 为"上位法锚点"伪主题（承载监管文件而非
+# 内部制度主题），内部制度**不应**归入 → 显式豁免，避免"漏写"与"有意不写"无法区分。
+THEME_TITLE_KW_EXEMPT: frozenset = frozenset({"T0"})
 
 
 def _themes_map() -> dict:
     try:
-        from interfaces.rfn_api import theme_map  # noqa: PLC0415
+        from interfaces.rfn_api import theme_map
         return dict(theme_map())
-    except Exception:
+    except Exception:  # noqa: BLE001
         return {}
 
 
@@ -77,7 +87,7 @@ def _load_fulltext(ipn: str) -> str:
     if os.path.exists(p):
         try:
             return (json.load(open(p, encoding="utf-8")) or {}).get("text", "")
-        except Exception:
+        except Exception:  # noqa: BLE001
             return ""
     return ""
 
@@ -167,7 +177,7 @@ def _wl_unaligned(records) -> None:
     现登记进 worklist（处置：补主题关键词或人工指定；确认"确无对应主题"可 dismiss）。
     """
     try:
-        from std_lib.common_lib import governance_store as _gs  # noqa: PLC0415
+        from std_lib.common_lib import governance_store as _gs
         n = 0
         for r in records:
             if (r.get("primary_theme") or "") != UNALIGNED:

@@ -23,10 +23,10 @@ from config.exitcodes import ExitCode
 
 def _api():
     """治理库接口（唯一写/读实现 = std_lib/common_lib/governance_store.py）。"""
-    from bootstrap import bootstrap  # noqa: PLC0415
+    from bootstrap import bootstrap
 
     bootstrap()
-    from std_lib.common_lib import governance_store as gs  # noqa: PLC0415
+    from std_lib.common_lib import governance_store as gs
 
     return gs
 
@@ -59,10 +59,10 @@ def _resolve(argv) -> int:
 
 
 def _export(argv) -> int:
-    import datetime as _dt  # noqa: PLC0415
-    import os  # noqa: PLC0415
+    import datetime as _dt
+    import os
 
-    import paths  # noqa: PLC0415
+    import paths
 
     gs = _api()
     rows = gs.worklist_list(status="")

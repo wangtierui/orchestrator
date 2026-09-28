@@ -13,8 +13,8 @@ def run(argv):
     """draft [--ipn IPN-xxx] —— 条款级对照素材端到端编排（P8 收口）。
     输入 merged_view + internal processed（R21 clauses）；输出 drafter/data/draft_clause/。
     供六件套之「条款对照表/立法依据」起草打底；退出码 0=成功 1=数据缺（merged 未生成）。"""
-    import os  # noqa: PLC0415
-    import subprocess  # noqa: PLC0415
+    import os
+    import subprocess
 
     script = os.path.join(
         paths.ROOT, "modules", "internal_policy_drafter", "scripts", "build_draft_clause_view.py"

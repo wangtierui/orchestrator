@@ -19,8 +19,8 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import paths  # noqa: E402
-from config.exitcodes import ExitCode  # noqa: E402
+import paths
+from config.exitcodes import ExitCode
 
 SCHEDULE_YAML = os.path.join(paths.CONFIG_DIR, "schedule.yaml")
 MANUAL = os.path.join(paths.ROOT, "reports", "运行手册_编排与定时_20260912.md")
@@ -32,7 +32,7 @@ _WEEK = {"0": "日", "1": "一", "2": "二", "3": "三", "4": "四", "5": "五",
 
 def load_schedule() -> dict:
     """读 `config/schedule.yaml`（无 PyYAML 或文件缺失 → 抛错，不做静默兜底）。"""
-    import yaml  # noqa: PLC0415  仅在需要时导入（与 config.loader 同惯例）
+    import yaml
 
     with open(SCHEDULE_YAML, encoding="utf-8") as fh:
         return yaml.safe_load(fh) or {}

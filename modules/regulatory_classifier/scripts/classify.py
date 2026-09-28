@@ -29,11 +29,11 @@ _CLASS = os.path.dirname(_THIS)                          # modules/regulatory_cl
 for _p in (_CLASS, os.path.dirname(_CLASS), os.path.dirname(os.path.dirname(_CLASS))):
     if _p not in sys.path:
         sys.path.insert(0, _p)
-from rfn import THEME_MAP  # noqa: E402
+from rfn import THEME_MAP
 
 # v2 §3.1.3 I-3（2026-09-26）：clean_index 索引路径经 interfaces 唯一入口
 # （原为拼兄弟模块目录字符串，判据 D 断言该纪律）
-from interfaces.clean_index_api import index_path as _clean_index_path  # noqa: E402
+from interfaces.clean_index_api import index_path as _clean_index_path
 
 _SCRIPTS = _THIS
 _DATA = os.path.join(_CLASS, "data")
@@ -124,7 +124,7 @@ def run(theme: str = "", themes: list[str] | None = None, only_steps: set[str] |
             # F-D14：读侧剥离版本键（写侧注入 _meta；消费逻辑零感知）
             if isinstance(state, dict):
                 state.pop("_meta", None)
-        except Exception:
+        except Exception:  # noqa: BLE001
             state = {}
     state.setdefault("themes", {})
     themes = themes or ([theme] if theme else _BODY_THEMES)
@@ -213,7 +213,7 @@ if __name__ == "__main__":
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
     except Exception:  # noqa: BLE001  分类/检索容错
         pass
-    import argparse  # noqa: PLC0415
+    import argparse
     ap = argparse.ArgumentParser(description="主题底座强序重建编排器（R8）")
     ap.add_argument("--theme", default="", help="单主题 T0..T10（默认全部 T1–T10）")
     ap.add_argument("--all", action="store_true", help="全部主题（含 T0 明细）")

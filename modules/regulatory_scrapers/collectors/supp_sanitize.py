@@ -45,8 +45,8 @@ for _p in (HERE,):
 
 # 复用 supp_normalize 的归一逻辑，保证字段级规则单一来源
 try:
-    from supp_normalize import _flatten_text as _flatten  # noqa: E402
-except Exception:  # pragma: no cover - 退化实现
+    from supp_normalize import _flatten_text as _flatten
+except Exception:  # pragma: no cover - 退化实现  # noqa: BLE001
     import re
 
     def _flatten(v):

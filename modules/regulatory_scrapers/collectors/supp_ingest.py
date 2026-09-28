@@ -65,15 +65,15 @@ for _p in (HERE, SCRAPERS_ROOT):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from config.exitcodes import ExitCode  # noqa: E402
-from std_lib.scraper_std.naming import standard_filename  # noqa: E402
+from config.exitcodes import ExitCode
+from std_lib.scraper_std.naming import standard_filename
 
 REPO_ROOT = SCRAPERS_ROOT  # 数据根 = modules/regulatory_scrapers（拍平后单层上溯一次即到）
 # 5b 补全（2026-09-04）：supp ingest 收敛至统一 data/（此前写 per-source data/raw 与统一副本分裂；
 # _sources 源文本随迁统一 data/raw/_sources；content_ref / OCR 缓存引用在统一后相对 REPO_ROOT 解析一致）
 SRC_DIR = os.path.join(REPO_ROOT, "data", "raw", "_sources")
 RAW_OUT = os.path.join(REPO_ROOT, "data", "raw", "supplementary_regulations.json")
-from std_lib.scraper_std.cache_store import docs_root  # noqa: E402
+from std_lib.scraper_std.cache_store import docs_root
 
 DOCS_DIR = docs_root("supp")
 STATE_DIR = os.path.join(REPO_ROOT, "data", "state")
@@ -229,9 +229,9 @@ def _load_register_doc():
     global _REGISTER_DOC
     if _REGISTER_DOC is None:
         try:
-            from interfaces.rfn_api import register_doc  # noqa: F401  # noqa: PLC0415
+            from interfaces.rfn_api import register_doc
             _REGISTER_DOC = register_doc
-        except Exception as _e:
+        except Exception as _e:  # noqa: BLE001
             print(f"[ingest] WARN 无法经 interfaces.rfn_api 取得 register_doc（跳过 RFN 登记）: {_e}")
             _REGISTER_DOC = False  # type: ignore[assignment]  # 三态：True=未加载/False=加载失败/callable=可用
     return _REGISTER_DOC or None
@@ -260,7 +260,7 @@ def register_supplements(records: list) -> dict:
             res = reg(theme=theme, title=r["title"], docno=r.get("document_number") or "",
                       pub_date=r.get("publish_date") or "",
                       source="supp", source_mark="补充", fingerprint=fp)
-        except Exception as _e:
+        except Exception as _e:  # noqa: BLE001
             print(f"[ingest] ERROR 登记失败 {r.get('document_number','')} {r['title'][:20]}: {_e}")
             stat["failed"] += 1
             continue
@@ -523,7 +523,7 @@ def main() -> int:
         try:
             with open(RAW_OUT, encoding="utf-8") as f:
                 existing = json.load(f)
-        except Exception:
+        except Exception:  # noqa: BLE001
             existing = []
         keys = {(r.get("document_number", ""), r.get("title", "")) for r in existing}
         merged = list(existing)
@@ -544,7 +544,7 @@ def main() -> int:
         rstat = register_supplements(records)
         print(f"[ingest] RFN 登记：registered={rstat['registered']} "
               f"reused={rstat['reused']} created={rstat['created']} skipped={rstat['skipped']}")
-    except Exception as _e:
+    except Exception as _e:  # noqa: BLE001
         print(f"[ingest] WARN RFN 登记环节异常（不影响 raw 输出）: {_e}")
 
     # 摄取台账（state/ingest.last.json）——task_index 缺失（历史手工/工具追加批次）时以 document_number 为 key

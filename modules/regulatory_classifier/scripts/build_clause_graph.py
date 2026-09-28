@@ -37,12 +37,12 @@ DATA_DIR = os.path.join(BASE_DIR, "data")
 _ORCH_ROOT = os.path.dirname(os.path.dirname(BASE_DIR))
 if _ORCH_ROOT not in sys.path:
     sys.path.insert(0, _ORCH_ROOT)
-from std_lib.common_lib.clause_locator import (  # noqa: E402  N-49 条款复核（共享实现）
+from std_lib.common_lib.clause_locator import (
     article_no_to_int,
     load_regulatory_index,
     norm_article_no,
 )
-from std_lib.common_lib.relations import (  # noqa: E402
+from std_lib.common_lib.relations import (
     ARTICLE_CHAIN,
     ARTICLE_CHAIN_CAPTURE,
     ARTICLE_NUM,

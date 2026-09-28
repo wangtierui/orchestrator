@@ -23,7 +23,7 @@ import argparse
 import sys
 
 from bootstrap import bootstrap
-from config.exitcodes import ExitCode  # noqa: E402  (R3：退出码语义化)
+from config.exitcodes import ExitCode
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -76,7 +76,7 @@ def main(argv=None) -> int:
     args = build_parser().parse_args(argv)
 
     if not args.skip_doctor and not args.list_steps:
-        from commands import doctor as _doctor  # noqa: PLC0415
+        from commands import doctor as _doctor
 
         res = _doctor.run_checks(quick=True)
         _doctor.write_report(res)
@@ -89,12 +89,12 @@ def main(argv=None) -> int:
         print(f"[run] 前置自检通过（{res['checked']} 项，warn={res['warn']}）")
 
     bootstrap("all", include_tools=True)
-    from run_production_refresh import main as _chain_main  # noqa: PLC0415
+    from run_production_refresh import main as _chain_main
 
     rc = _chain_main(_argv_for_chain(args))
 
     if args.triggers and rc == 0 and not args.dry_run:
-        from std_lib.common_lib import triggers as trg  # noqa: PLC0415
+        from std_lib.common_lib import triggers as trg
 
         rep = trg.run_all({"argv": list(argv or [])})
         print(f"[run] 条件触发：执行 {rep['ran']} / 跳过 {rep['skipped']} / 失败 {rep['failed']}")

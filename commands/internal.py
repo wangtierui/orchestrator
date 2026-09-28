@@ -31,7 +31,7 @@ def _require_ipb_index(sub: str) -> bool:
 def run(argv):
     """internal index|align|merged|backfill|reocr|refine-identity — 内部制度摄取/对齐/词表（P6）。"""
     # P0-2：引导统一走 bootstrap；保留 `modules/` 以便 `from internal_policy_base.x import y`
-    from bootstrap import bootstrap  # noqa: PLC0415
+    from bootstrap import bootstrap
 
     bootstrap("all", extra=("modules",))
     if not argv:
@@ -43,7 +43,7 @@ def run(argv):
         return _index_main_internal(argv[1:])
     if sub == "reocr":
         # OCR 存量回填（2026-09-12）：对 text_chars==0 的扫描件重提取（质量闸门把关）
-        import argparse as _ap  # noqa: PLC0415
+        import argparse as _ap
 
         ap = _ap.ArgumentParser(prog="orchestrator internal reocr")
         ap.add_argument("--limit", type=int, default=0, help="最多处理 N 个（0=全部）")
@@ -63,12 +63,12 @@ def run(argv):
             "--retry", action="store_true", help="连同已提质尝试过者一并重跑（OCR 引擎升级后使用）"
         )
         a = ap.parse_args(argv[1:])
-        from internal_policy_base.extract import reocr_backfill  # noqa: PLC0415
+        from internal_policy_base.extract import reocr_backfill
 
         st = reocr_backfill(
             limit=(a.limit or None), min_cjk=a.min_cjk, force=a.force, retry=a.retry
         )
-        import json as _json  # noqa: PLC0415
+        import json as _json
 
         print(
             _json.dumps(
@@ -80,15 +80,15 @@ def run(argv):
         return ExitCode.OK
     if sub == "refine-identity":
         # 存量制度身份纠正（2026-09-12）：文号/标题以正文为准（内容权威）
-        import argparse as _ap  # noqa: PLC0415
+        import argparse as _ap
 
         ap = _ap.ArgumentParser(prog="orchestrator internal refine-identity")
         ap.add_argument("--limit", type=int, default=0, help="最多处理 N 个（0=全部）")
         a = ap.parse_args(argv[1:])
-        from internal_policy_base.indexer import refine_identity_backfill  # noqa: PLC0415
+        from internal_policy_base.indexer import refine_identity_backfill
 
         st = refine_identity_backfill(limit=(a.limit or None))
-        import json as _json  # noqa: PLC0415
+        import json as _json
 
         print(
             _json.dumps(

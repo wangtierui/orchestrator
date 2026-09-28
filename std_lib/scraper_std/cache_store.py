@@ -305,7 +305,7 @@ class ResponseCache:
         try:
             with open(p, encoding="utf-8") as fh:
                 return json.load(fh)
-        except Exception:
+        except Exception:  # noqa: BLE001
             # 缓存损坏 → 视为未命中（由调用方重新请求）
             return None
 
@@ -397,7 +397,7 @@ class TextResponseCache:
         try:
             with open(p, encoding="utf-8") as fh:
                 return fh.read()
-        except Exception:
+        except Exception:  # noqa: BLE001
             # 缓存损坏 → 视为未命中（由调用方重新请求）
             return None
 

@@ -72,7 +72,7 @@ def _read_jsonl(path: str) -> list[dict]:
 def _db_rows(where: str = "", args=(), limit: int = 0) -> list[dict] | None:
     """经治理库取关系行（`row_json` 还原原行）；不可用返回 None（调用方回退文件）。"""
     try:
-        from std_lib.common_lib import governance_store as gs  # noqa: PLC0415
+        from std_lib.common_lib import governance_store as gs
 
         if not gs.enabled() or gs.table_count("relation") == 0:
             return None

@@ -17,14 +17,14 @@ def run(argv):
         # F-O02（2026-09-12）：快照变更监听——对比"监听基线"（data/watch_baseline.jsonl，
         # 编排每次运行经 --record 追加）与当前 clean_index 快照的记录数/内容 sha 差异。
         # 磁盘不保留历史快照（clean 覆盖式），故基线由本命令留痕（同日改写可见）。
-        import datetime as _dt  # noqa: PLC0415
-        import json as _json  # noqa: PLC0415
-        import os as _os  # noqa: PLC0415
+        import datetime as _dt
+        import json as _json
+        import os as _os
 
-        from bootstrap import bootstrap  # noqa: PLC0415
+        from bootstrap import bootstrap
 
         bootstrap("regulatory_scrapers")
-        from clean_index import get_clean_index  # noqa: PLC0415
+        from clean_index import get_clean_index
 
         idx = get_clean_index()
         base_p = _os.path.join(
@@ -82,17 +82,17 @@ def run(argv):
         return ExitCode.OK
     if action == "list":
         try:
-            from config.loader import (  # noqa: PLC0415
+            from config.loader import (
                 active_source_ids,
                 collector_module,
                 collector_path,
                 load_sources,
             )
-        except Exception as e:  # pragma: no cover
+        except Exception as e:  # pragma: no cover  # noqa: BLE001
             print(f"[source] config.loader 不可用（PyYAML 未装？）: {e}")
             return ExitCode.DATA
         srcs = load_sources(refresh=True)
-        from config.enums import SOURCE_SET  # noqa: PLC0415
+        from config.enums import SOURCE_SET
 
         for sid, cfg in srcs.items():
             enabled = cfg.get("enabled", True)
@@ -106,7 +106,7 @@ def run(argv):
         print(f"  [..] enums.SOURCE_SET={sorted(SOURCE_SET)} | yaml active={active_source_ids()}")
         return ExitCode.OK
     if action == "add":
-        import argparse  # noqa: PLC0415
+        import argparse
 
         ap = argparse.ArgumentParser(description="source add checklist（R15 新增源步骤）")
         ap.add_argument("--id", required=True, help="新源标识（如 flk）")

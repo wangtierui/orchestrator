@@ -40,14 +40,16 @@ for _p in (_MOD_CLASS, _ORCH_ROOT):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 # 阶段 3（2026-09-18）：跨模块访问收口 interfaces
-from interfaces.clean_index_api import get_clean_index  # noqa: E402
+from interfaces.clean_index_api import get_clean_index
 
 _idx = get_clean_index()
-DEFAULT_LIBS = {src: _idx.latest_jsonl_path(src) for src in ("nfra", "pbc", "mof", "gov", "supp")}
+from config.enums import SOURCE_ORDER
+
+DEFAULT_LIBS = {src: _idx.latest_jsonl_path(src) for src in SOURCE_ORDER}
 
 
 # 标题归一（与 rfn 唯一实现同语义：去括号尾注/书名号/空白）。不做本地 def（专项三）
-from rfn import _norm_title as norm_title  # noqa: E402
+from rfn import _norm_title as norm_title
 
 
 def norm_doc(d):
@@ -126,7 +128,7 @@ def build_lib_index(lib_config, libs):
                 if raw.strip():
                     try:
                         rec = json.loads(raw)
-                    except Exception:
+                    except Exception:  # noqa: BLE001
                         rec = None
                     if rec is not None:
                         nt = norm_title(rec.get("title", "") or "")

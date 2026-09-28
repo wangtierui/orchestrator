@@ -29,7 +29,8 @@ import json
 import os
 import sys
 
-from config.exitcodes import ExitCode  # noqa: E402  (经 cli.py 引导后导入；本模块非独立入口)
+from config.enums import SOURCE_ORDER  # N-78：来源规范顺序取自 SSOT
+from config.exitcodes import ExitCode
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CDATA = os.path.join(ROOT, "modules", "regulatory_classifier", "data")
@@ -1014,7 +1015,8 @@ def d_213_4(names, upper, details, dry, manifest, outdir) -> None:
 def d_213_5(names, finals, dry, manifest, outdir) -> None:
     """2.1.3.5 行业外监管接口矩阵（通用监管与专属监管的衔接）"""
     # 通用=gov/mof/pbc/supp（政府/财政/央行/补充）；专属=nfra（金融监管总局）
-    univ = ("gov", "mof", "pbc", "supp")
+    # N-78：由 SSOT 派生（原为本地 4 元组字面量 → 新增源时会**静默漏算**）
+    univ = tuple(s for s in SOURCE_ORDER if s != "nfra")
     rows = []
     for tid in THEME_ORDER:
         recs = finals.get(tid) or []
