@@ -450,6 +450,7 @@ def build_rows(
         _snip = getattr(item, "source_snippet", "")   # ±100 字符**窗口**（目标侧定位**沿用**）
         _span = getattr(item, "source_span", "")      # 引用跨度（**仅披露**，不参与定位）
         _src_art = locate_src_article(getattr(item, "offset", -1), _spans) if _spans else ""
+        _place = ""  # N-106：目标侧定位来源标记（非 regulatory 分支保持空）
         if dst_kind == "regulatory":
             # 目标侧：优先强实体 RFN（dst_ref），退化 cleaned 弱键（dst_key）
             #
@@ -462,9 +463,23 @@ def build_rows(
             # **在前**（"本办法第12条依据《X》"）；**前向**取会丢前半，**收窄**取会两头都丢。
             # → 结论：窗口作定位输入**优于**任何跨度；N-98 结案为"**实测否决**"，
             #   `source_span` 降级为**纯披露字段**（为后续研究留存数据，零行为影响）。
-            _dst_art = (locate_dst_article(_snip, dst_ref, _cindex) if dst_ref else "") or (
-                locate_dst_article(_snip, dst_key, _cindex) if dst_key else ""
-            )
+            #
+            # N-106（2026-09-28）**并集定位**：N-98 的度量给出决定性事实 ——
+            #   · 窗口 vs 跨度在 1733 个有目标键的行上**零冲突**（"窗口含源侧条号致误定位"的
+            #     原假设**无实测证据**）；但**仅跨度能定位的有 101 行**（窗口弃权）→ 真短板是"**漏**"。
+            #   · 故最优解不是二选一而是**取并集**：窗口优先（覆盖更广），窗口未唯一命中时退跨度
+            #     （补 101 行）；**两侧仍各自坚持"唯一命中才填"** → 不放松质量闸门，且因零冲突
+            #     不会引入互相矛盾的取值。
+            _dst_art, _place = "", ""
+            for _pk, _pt in (("snippet", _snip), ("span", _span)):
+                if not _pt:
+                    continue
+                _got = (locate_dst_article(_pt, dst_ref, _cindex) if dst_ref else "") or (
+                    locate_dst_article(_pt, dst_key, _cindex) if dst_key else ""
+                )
+                if _got:
+                    _dst_art, _place = _got, _pk
+                    break
         else:
             _dst_art = ""
         rows.append(
@@ -525,7 +540,7 @@ def build_rows(
                 "src_article_located": _src_art,
                 "dst_article": _dst_art,
                 "article_placement": (
-                    ("src_offset" if _src_art else "") + ("+snippet" if _dst_art else "")
+                    ("src_offset" if _src_art else "") + (f"+{_place}" if _place else "")
                 ).lstrip("+"),
                 "generated_by": GENERATED_BY,
                 "generated_at": generated_at,

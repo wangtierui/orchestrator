@@ -235,12 +235,19 @@ ARTICLE_PLACEMENT_SRC_OFFSET = "src_offset"  # 源侧：字符偏移在条款区
 # 受控域是"属性全部合法取值"：既不再产出 `span`，它就**不得**留在域内（否则域内含永不出现的值，
 # 使"取值闭包"判据失去意义）。
 ARTICLE_PLACEMENT_SNIPPET = "snippet"  # 目标侧：snippet（±100 **窗口**）抽『第M条』+ 目标条款表唯一命中
+# N-106（2026-09-28）：**并集定位**引入第二来源 —— 窗口未唯一命中时退**引用跨度**
+# （`source_span`）。实测依据：窗口与跨度在 1733 个有目标键行上**零冲突**，而"仅跨度可定位"
+# 有 **101 行**（窗口弃权）→ 退路不引入矛盾取值，纯补漏。
+# 域随之扩到 6 值（**每个值都真的会被产出**；不产出者不得留域内 —— 见上方 N-98 注记）。
+ARTICLE_PLACEMENT_SPAN = "span"  # 目标侧：引用跨度抽『第M条』+ 目标条款表唯一命中（窗口未命中时的退路）
 ARTICLE_PLACEMENT: frozenset[str] = frozenset(
     {
         "",
         ARTICLE_PLACEMENT_SRC_OFFSET,
         ARTICLE_PLACEMENT_SNIPPET,
+        ARTICLE_PLACEMENT_SPAN,
         f"{ARTICLE_PLACEMENT_SRC_OFFSET}+{ARTICLE_PLACEMENT_SNIPPET}",
+        f"{ARTICLE_PLACEMENT_SRC_OFFSET}+{ARTICLE_PLACEMENT_SPAN}",
     }
 )
 # 目标条款复核理由（N-59，2026-09-27）：clause_graph 边 `art_check` 的受控值域
@@ -498,7 +505,8 @@ def assert_enum_bindings() -> None:
     assert len(BRIDGE_RELATION) == 3, BRIDGE_RELATION
     # 关系抽取（R-F01）：三类关系共用一套受控值；闭包 + 交叉一致性
     assert len(RELATION_KIND) == 2 and len(RELATION_DOC_KIND) == 2
-    assert len(ARTICLE_PLACEMENT) == 4, ARTICLE_PLACEMENT  # N-49 条款定位来源标记闭包
+    # N-106（2026-09-28）：4 → 6（并集定位引入 `span` 与 `src_offset+span` 两个**会被产出**的值）
+    assert len(ARTICLE_PLACEMENT) == 6, ARTICLE_PLACEMENT  # N-49 条款定位来源标记闭包
     # N-78：规范顺序必须与来源集合**同元素**（防两处各自增删导致漂移）
     assert set(SOURCE_ORDER) == SOURCE_SET, (SOURCE_ORDER, SOURCE_SET)
     assert len(SOURCE_ORDER) == len(SOURCE_SET), SOURCE_ORDER  # 无重复项

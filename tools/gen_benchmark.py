@@ -257,6 +257,76 @@ def _q_clause_structure() -> dict:
     return out
 
 
+def _q_relations_locate_audit(rows: list[dict]) -> dict:
+    """目标侧定位**正确性上界/下界**估计（N-106，2026-09-28）——**纯只读，不改任何产物**。
+
+    问题：N-95/N-98 只测得**覆盖率**（窗口定位 237/4192 = 5.7%），但"命中的**对不对**"无从判断
+    （缺金标）。N-98 新增的 `source_span`（引用跨度，引用自身文本）为此提供了**低成本锚点**：
+    同一行用**同一函数**（`locate_dst_article`，不另写抽取逻辑）分别以**窗口**与**跨度**为输入，
+    两者**冲突**即证明至少一方错 —— 无需人工标注即可给出量化边界：
+
+      · `disagree`  —— 窗口与跨度给出**不同**条号 → **误定位下界**（确定存在错，且必有一方错）；
+      · `win_only`  —— 仅窗口抽到（跨度无）→ "可能的错"上限增量（条号可能在引用**邻域**而非引用内）；
+      · `span_only` —— 仅跨度抽到（窗口无）→ 窗口**漏定位**（弃权）证据；
+      · `agree` / `none` —— 一致 / 两侧皆无。
+
+    → **误定位下界 = disagree**；**上界 = disagree + win_only**。
+    纪律：仅统计，**不参与**任何判定、不写产物、不改门禁（避免"用可疑信号反向改数据"）。
+    """
+    out: dict = {"rows": len(rows)}
+    try:
+        from std_lib.common_lib.clause_locator import locate_dst_article
+    except Exception as e:  # noqa: BLE001  审计失败不得中断基准
+        out["error"] = f"{type(e).__name__}: {e}"
+        return out
+
+    n_key = agree = disagree = win_only = span_only = none = 0
+    samples: list[dict] = []
+    for r in rows:
+        key = str(r.get("dst_ref") or r.get("dst_key") or "")
+        if not key:
+            continue
+        n_key += 1
+        win = str(r.get("dst_article") or "")
+        span = locate_dst_article(str(r.get("source_span") or ""), key)
+        if win and span:
+            if win == span:
+                agree += 1
+            else:
+                disagree += 1
+                if len(samples) < 5:
+                    samples.append(
+                        {
+                            "relation_id": r.get("relation_id"),
+                            "window": win,
+                            "span": span,
+                            "dst_name": str(r.get("dst_name") or "")[:24],
+                        }
+                    )
+        elif win:
+            win_only += 1
+        elif span:
+            span_only += 1
+        else:
+            none += 1
+    out.update(
+        {
+            "with_target_key": n_key,
+            "agree": agree,
+            "disagree": disagree,
+            "win_only": win_only,
+            "span_only": span_only,
+            "none": none,
+            "misalign_lower": disagree,
+            "misalign_upper": disagree + win_only,
+            "disagree_ratio": round(disagree / max(n_key, 1), 4),
+            "misalign_upper_ratio": round((disagree + win_only) / max(n_key, 1), 4),
+            "samples": samples,
+        }
+    )
+    return out
+
+
 def _q_relations() -> dict:
     """关系抽取基线（含条款级定位覆盖率）。"""
     out: dict = {"file": os.path.relpath(RELATIONS_JSONL, ROOT), "exists": False}
@@ -266,6 +336,7 @@ def _q_relations() -> dict:
     n = src_ok = dst_ok = both = span_ok = 0
     ids: set = set()
     place: dict = {}
+    rows: list[dict] = []   # N-106：留存行供定位正确性差异分析（4192 行，内存可忽略）
     with open(RELATIONS_JSONL, encoding="utf-8") as fh:
         for ln in fh:
             ln = ln.strip()
@@ -273,6 +344,7 @@ def _q_relations() -> dict:
                 continue
             r = json.loads(ln)
             n += 1
+            rows.append(r)
             ids.add(str(r.get("relation_id") or ""))
             s = bool((r.get("src_article_located") or "").strip())
             d = bool((r.get("dst_article") or "").strip())
@@ -298,6 +370,8 @@ def _q_relations() -> dict:
             "source_span": span_ok,
             "span_ratio": round(span_ok / max(n, 1), 4),
             "placement": dict(sorted(place.items())),
+            # N-106：以引用跨度（`source_span`）为**锚**估目标侧定位的**正确性边界**
+            "locate_audit": _q_relations_locate_audit(rows),
         }
     )
     return out
@@ -463,6 +537,24 @@ def render_quality(q: dict) -> list:
             f"- 引用跨度披露（N-98 纯增量字段，**不参与定位**）：`source_span` "
             f"{r.get('source_span')}/{r.get('rows')}（{r.get('span_ratio', 0):.1%}）"
         )
+        la = r.get("locate_audit") or {}
+        if la.get("error"):
+            L.append(f"- 定位正确性审计不可用：`{la['error']}`")
+        elif la:
+            L.append(
+                "- **定位正确性边界**（N-106，以跨度为锚；有目标键 "
+                f"{la.get('with_target_key')} 行）：一致 {la.get('agree')} ／ "
+                f"**冲突 {la.get('disagree')}** ／ 仅窗口 {la.get('win_only')} ／ "
+                f"仅跨度 {la.get('span_only')} ／ 皆无 {la.get('none')}"
+            )
+            L.append(
+                f"  → **误定位下界 `{la.get('misalign_lower')}`"
+                f"（{la.get('disagree_ratio', 0):.1%}）**、"
+                f"上界 `{la.get('misalign_upper')}`"
+                f"（{la.get('misalign_upper_ratio', 0):.1%}）"
+                "　※ 下界＝窗口与跨度**冲突**（必有一方错）；"
+                "上界额外计入「仅窗口」（条号可能在引用邻域，无法证伪）"
+            )
 
     rc = q["recall"]
     L.append("\n### 6.4 召回覆盖（`recall_audit` 既有产物）")
