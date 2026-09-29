@@ -1,6 +1,6 @@
 # BENCHMARK —— 交付基准登记（回归对照基线）
 
-> 自动生成：tools/gen_benchmark.py @ 2026-09-29 17:20:20 | python 3.13.14
+> 自动生成：tools/gen_benchmark.py @ 2026-09-29 17:53:24 | python 3.13.14
 > 用途：数据重建/重构后重跑 `python tools/gen_benchmark.py` 刷新；数值漂移即回归信号。
 
 ## 1 门禁（gates/ALL_GATES）
@@ -144,7 +144,7 @@
 
 ### 6.4 召回覆盖（`recall_audit` 既有产物）
 
-- 产物目录存在 `True`；报告生成于 2026-09-29T12:58:08+0800
+- 产物目录存在 `True`；报告生成于 2026-09-29T17:46:18+0800
 - 四门禁：`{'clean': True, 'validity': True, 'contract': True, 'schema': True}`
 
 ### 6.5 清洗体量

@@ -190,7 +190,8 @@ def test_run_step_order_matches_call_sites():
     # 步骤数变化须在此显式确认（防清单漂移）。
     # 26（25 → +1）：N-93（2026-09-28）`quarantine:triage`（清洗隔离记录**登记式**处置，
     #   零回写 → worklist）入链；与 `retention:plan` 同款"链内只读披露 + 人工闸门"纪律。
-    assert len(rpr.STEP_ORDER) == 27
+    # 28（27 → +1）：`pg:health`（向量存储只读健康检查，P2-2 接入；恒 rc=0 的披露步骤）
+    assert len(rpr.STEP_ORDER) == 28
     # 每个步骤名必须能在本文件中找到**引号字面量**（`"gates"` / `f"clean:{src}"` ⇒ `"clean:{src}"`）
     text = open(fp, encoding="utf-8").read()
     for step in rpr.STEP_ORDER:

@@ -609,6 +609,8 @@ STEP_ORDER: tuple[str, ...] = (
     "quarantine:triage",
     # N-114（2026-09-28）：P1 语义增强启用前置**披露**（五道闸逐项；`--preflight-report` 恒 rc=0）
     "semantic:preflight",
+    # P2-2 接入（2026-09-29）：向量存储**只读**健康检查（pgvector / sqlite_vec 降级链披露）
+    "pg:health",
     # wiki_sync 依赖 published 清单（publish_manifest）→ 在 base:publish 之后、gates 之前。
     "wiki:sync",
     "gates",
@@ -1113,6 +1115,19 @@ def _run_chain(args) -> int:
         _run(
             "semantic:preflight",
             [PY, "-m", "std_lib.common_lib.semantic_tools", "--preflight-report"],
+            timeout=300,
+        )
+    )
+
+    # ---- 阶段 6.6c：向量存储**只读**健康检查（P2-2 接入，2026-09-29）----
+    # `std_lib/common_lib/vector_store.py --health`：披露后端（pgvector / sqlite_vec / none）、
+    # DSN 目标（**已脱敏**，口令不回显）、扩展版本、当前用户是否非超管、`vec` schema 是否可用。
+    # 纪律与 `retention:plan` / `semantic:preflight` 同款：**只读披露、恒 rc=0、不动数据**
+    # （后端不可用是**合法状态**，不得把披露误报成链路故障）。
+    report.append(
+        _run(
+            "pg:health",
+            [PY, "-m", "std_lib.common_lib.vector_store", "--health"],
             timeout=300,
         )
     )
