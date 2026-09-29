@@ -1,6 +1,6 @@
 # BENCHMARK —— 交付基准登记（回归对照基线）
 
-> 自动生成：tools/gen_benchmark.py @ 2026-09-29 15:09:16 | python 3.13.14
+> 自动生成：tools/gen_benchmark.py @ 2026-09-29 16:17:43 | python 3.13.14
 > 用途：数据重建/重构后重跑 `python tools/gen_benchmark.py` 刷新；数值漂移即回归信号。
 
 ## 1 门禁（gates/ALL_GATES）
@@ -166,8 +166,8 @@
 
 ### 6.6 P1 语义增强能力（当前环境）
 
-- 语义增强能力：7/13 可用（bertopic, hanlp, hdbscan, sqlite_vec, text2vec, umap, youtu_embedding）
-- 指纹：可用 `['bertopic', 'hanlp', 'hdbscan', 'sqlite_vec', 'text2vec', 'umap', 'youtu_embedding']`；未装 `6` 项
+- 语义增强能力：9/13 可用（bertopic, hanlp, hdbscan, paradedb, pgvector, sqlite_vec, text2vec, umap, youtu_embedding）
+- 指纹：可用 `['bertopic', 'hanlp', 'hdbscan', 'paradedb', 'pgvector', 'sqlite_vec', 'text2vec', 'umap', 'youtu_embedding']`；未装 `4` 项
 
 | 工具 | 状态 | 版本 | 对应方案项 |
 |---|---|---|---|
@@ -176,8 +176,8 @@
 | `hanlp` | 可用 | 2.1.5 | v2 P1-3（分句/结构增强层） |
 | `hdbscan` | 可用 | 0.8.44 | v2 P1-5（随 BERTopic） |
 | `ltp` | 未装 | — | v2 P1-3（分句/结构增强层） |
-| `paradedb` | 未装 | — | v2 P2-2（**须先做零服务替代评估**；且须同时覆盖 search_internal） |
-| `pgvector` | 未装 | — | v2 P2-2（检索语义化；替换 ParadeDB） |
+| `paradedb` | 可用 | 3.3.6 | v2 P2-2（**须先做零服务替代评估**；且须同时覆盖 search_internal） |
+| `pgvector` | 可用 | 0.5.0 | v2 P2-2（检索语义化；替换 ParadeDB） |
 | `signalgraph` | 未装 | — | v2 P3-2（可选；须先证明其**确定性**：同输入同输出） |
 | `sqlite_vec` | 可用 | 0.1.9 | v2 P2-2（检索语义化；与 SQLite FTS5 **同库共存**） |
 | `text2vec` | 可用 | 1.3.8 | v2 P1-1（主题辅助裁定）、P1-2（关联语义档） |
