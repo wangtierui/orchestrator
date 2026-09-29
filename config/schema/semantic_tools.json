@@ -7,7 +7,7 @@
   "fingerprint": "required",
   "note": "三条硬纪律：① **零硬依赖**——未安装时调用方必须回退既有正则实现，且回退**可观测**（不得静默）；② **降级链**——探测结果驱动分支，不得 try/except 吞掉；③ **指纹**——凡使用任一工具产出的产物，须把 semantic_tools.fingerprint() 写入其 provenance（模型名+版本+权重 sha），否则断点幂等（input_sha）与水位判据会因模型差异而失真。",
   "gate": "增强层模块**禁止**直接 `import hanlp/ltp/text2vec/bertopic/umap/hdbscan` 顶层硬导入；一律经本清单探测后再惰性导入。",
-  "network_policy": "2026-09-29 实测：本环境网络为**白名单式** —— 仅 `pypi.org` 与 `github.com`（含 api.github.com）可达；**模型托管站全部不可达**（huggingface.co / hf-mirror.com / modelscope.cn / file.hankcs.com 均 ConnectTimeout 或 URLError）。**由此得两条明确边界**：① **代码级依赖可部署**（pip 全通，已实测 6/11 可用）；② **模型权重不可获取**（无任何可达镜像）→ `preflight.offline` 在**本环境**不可能通过，权重须在**有模型站访问权的环境**预置后再迁入（HF_HOME / HANLP_HOME 指向本地目录）。**不得**据此判定"增强层不可用"——库与权重是两件事。"
+  "network_policy": "2026-09-29 实测：本环境网络为**白名单式** —— 仅 `pypi.org` 与 `github.com`（含 api.github.com）可达；**模型托管站全部不可达**（huggingface.co / hf-mirror.com / modelscope.cn / file.hankcs.com 均 ConnectTimeout 或 URLError）。**由此得两条明确边界**：① **代码级依赖可部署**（pip 全通，已实测 6/11 可用）；② **模型权重不可获取**（无任何可达镜像）→ `preflight.offline` 在**本环境**不可能通过，权重须在**有模型站访问权的环境**预置后再迁入（HF_HOME / HANLP_HOME 指向本地目录）。**不得**据此判定「增强层不可用」——库与权重是两件事。"
  },
  "license_registry": {
   "note": "许可核验登记（W5，2026-09-28）：**每个工具须在此登记**（verified 或 pending），使“还有哪些未核”机器可查，而非散落在各条目的 `license_to_verify` 自由标记里。判据 U 断言两集合之并 == 工具全集。入库前置：pending 清空。",
@@ -20,6 +20,7 @@
    "residual": "`pending_reason` 与 `risk_notes` **继续保留并披露**（尤其 paradedb=AGPL-3.0 的传染性）——决策改变的是『是否阻断』，不是『是否记录』。"
   },
   "pending_reason": {
+   "pgvector": "GitHub API 返回 NOASSERTION（仓库未按 SPDX 声明）；pgvector 实际采用 **PostgreSQL License**（宽松、无 copyleft）——但须读其 LICENSE 原文确认后方可登记 → 保持 pending。**注**：该工具在本环境本就不可部署（无 PG 宿主，见 tools.pgvector.feasibility），故其许可状态**不构成启用障碍**。",
    "ltp": "GitHub API 返回 license=null —— 仓库**未声明许可**（非限流，`_http_json` 成功返回）；纳入交付面存在法律不确定性 → 保持 pending。注：本仓以 hanlp 作分句后端，ltp 属二选一备选，不影响启用决策。",
    "weknora_docreader": "GitHub API 返回 NOASSERTION / \"Other\" —— 使用**自定义许可**，须人工阅读 LICENSE 原文后方可判定 → 保持 pending。",
    "youtu_embedding": "GitHub API 返回 NOASSERTION（LICENSE 文件格式非标准）；**README 徽章明示 MIT**（https://img.shields.io/badge/License-MIT-yellow.svg），但 LICENSE 文件须人工确认后方可登记 → 保持 pending。⚠️ 注：**不得**回退取其 pypi（=transformers）的许可 —— 那是**加载库**的许可，非本工具（N-121 已修）。"
@@ -34,11 +35,13 @@
    "hdbscan": "BSD-3-Clause（核验日 2026-09-29；来源 github:license/scikit-learn-contrib/hdbscan）",
    "paradedb": "AGPL-3.0（核验日 2026-09-29；来源 github:license/paradedb/paradedb）",
    "signalgraph": "MIT（核验日 2026-09-29；来源 github:license/zhiliscope/SignalGraph）",
+   "sqlite_vec": "Apache-2.0（核验日 2026-09-29；来源 github:license/asg017/sqlite-vec）",
    "text2vec": "Apache-2.0（核验日 2026-09-29；来源 github:license/shibing624/text2vec）",
    "umap": "BSD-3-Clause（核验日 2026-09-29；来源 github:license/lmcinnes/umap）"
   },
   "pending": [
    "ltp",
+   "pgvector",
    "weknora_docreader",
    "youtu_embedding"
   ]
@@ -79,6 +82,45 @@
    ],
    "license_to_verify": true
   },
+  "pgvector": {
+   "repo": "https://github.com/pgvector/pgvector",
+   "purpose": "向量相似检索（PostgreSQL 扩展）—— 作为 **ParadeDB 的替代**（免 AGPL、PG 生态原生）",
+   "extra": "",
+   "pypi": "pgvector",
+   "probe": {
+    "kind": "service",
+    "import_name": "psycopg",
+    "client_module": "psycopg",
+    "endpoint_env": "PGVECTOR_DSN",
+    "default_endpoint": ""
+   },
+   "pipeline_ref": "v2 P2-2（检索语义化；替换 ParadeDB）",
+   "approx_size": "PG 扩展（需 PostgreSQL 宿主）",
+   "offline": "须本地 PG 实例；不可达时**必须**回退既有 SQLite FTS5",
+   "license_to_verify": true,
+   "feasibility": {
+    "verdict": "**方向可行、本环境不可部署**（2026-09-29 实测）",
+    "tech_ok": "✓ 替代方向正确：ParadeDB 的向量能力在 PG 生态中 pgvector 更轻（无额外服务层、23k★、活跃维护 2026-09-28）；且**免 AGPL 传染**（替代了原 ParadeDB 的主要合规风险）。",
+    "blocked_by": "✗ 三个**宿主级**前置全缺：① **PostgreSQL 未安装**（pg_config/psql/postgres 均无）—— pgvector 是 PG 扩展，**无宿主即无从编译**；② **Docker daemon 无法启动**（CLI 29.8.1 已装，但 `Docker Desktop is unable to start`）；③ 即使 daemon 可用，**容器镜像站 registry-1.docker.io 不可达**（白名单网络）→ 拉不到 `pgvector/pgvector` 镜像。",
+    "since": "2026-09-29",
+    "substitute": "sqlite_vec（本清单已登记，**已实际部署**）：与仓内既有 **SQLite FTS5 降级路径同源**（同一 SQLite 文件库同时承载全文与向量，**零服务依赖**），且契合 v2 P2-2 原文『**须先做零服务替代评估**』的纪律。"
+   }
+  },
+  "sqlite_vec": {
+   "repo": "https://github.com/asg017/sqlite-vec",
+   "purpose": "SQLite 向量检索扩展 —— **pgvector/ParadeDB 在本环境的可部署替代**",
+   "extra": "",
+   "pypi": "sqlite-vec",
+   "probe": {
+    "kind": "module",
+    "import_name": "sqlite_vec"
+   },
+   "pipeline_ref": "v2 P2-2（检索语义化；与 SQLite FTS5 **同库共存**）",
+   "approx_size": "≈0.3MB（纯扩展，无服务、无外部模型）",
+   "offline": "无外部依赖；离线可用（不拉权重、不连服务）",
+   "license_to_verify": true,
+   "note": "2026-09-29 部署：`pip install sqlite-vec` → **0.1.9 已装**（win_amd64 wheel 292KB）。选它的理由：① **pypi 可达**（本环境白名单内）；② **零服务依赖**，与既有 SQLite FTS5 同一库文件，避免引入第二个存储引擎；③ 使向量能力**不依赖任何可达性受限的资源**（模型站/镜像站）——**检索索引的构建**仍可用离线预置的 embedding 权重，两者解耦。"
+  },
   "youtu_embedding": {
    "repo": "https://github.com/TencentCloudADP/youtu-embedding",
    "purpose": "中文语义向量化（腾讯优图，CMTEB 77.58 SOTA）——**替代 text2vec**",
@@ -97,7 +139,8 @@
     "TRANSFORMERS_OFFLINE"
    ],
    "license_to_verify": true,
-   "note": "2026-09-29 评估：**可替代 text2vec** —— ① 功能对口（同为基础文本表示/向量化）；② 接入面一致（均为 transformers+torch 惰性加载，本仓已有 `hf_model` 探测口径）；③ 性能更优（CMTEB 77.58 vs text2vec-base-chinese）；④ 许可 MIT（README 徽章明示；GitHub API 报 NOASSERTION 系 LICENSE 文件格式非标准）；⑤ 无 PyPI 包 → 以 **HuggingFace 模型 id** 接入（故新增 `hf_model` 探测类型，含**本地缓存离线判定**）。"
+   "note": "2026-09-29 评估：**可替代 text2vec** —— ① 功能对口（同为基础文本表示/向量化）；② 接入面一致（均为 transformers+torch 惰性加载，本仓已有 `hf_model` 探测口径）；③ 性能更优（CMTEB 77.58 vs text2vec-base-chinese）；④ 许可 MIT（README 徽章明示；GitHub API 报 NOASSERTION 系 LICENSE 文件格式非标准）；⑤ 无 PyPI 包 → 以 **HuggingFace 模型 id** 接入（故新增 `hf_model` 探测类型，含**本地缓存离线判定**）。",
+   "license_evidence": "2026-09-29 读 LICENSE 原文（18 行）：『Tencent is pleased to support the open source community by making Youtu-Embedding available. Copyright (C) 2025 Tencent. All rights reserved. Youtu-Embedding is licensed under the **License Terms of Youtu-Embedding**』——**Tencent 自定义条款，非标准 SPDX**。README 徽章标称 MIT 与原文不一致 → 以原文为准。"
   },
   "text2vec": {
    "repo": "https://github.com/shibing624/text2vec",
@@ -197,16 +240,17 @@
     "import_name": "grpc",
     "client_module": "grpc",
     "endpoint_env": "DOCREADER_ENDPOINT",
-    "default_endpoint": "localhost:50051"
+    "default_endpoint": "localhost:50051",
+    "note": "端点探测（TCP 三态）已就绪；本环境服务未部署，故 service_reachable 恒为 False（非缺陷）。"
    },
    "pipeline_ref": "v2 P2-1（只补版面分析；OCR 通路已存在，不重做）",
    "approx_size": "Docker 服务（须独立部署）",
    "offline": "服务不可达时**必须**回退 crawler_common.extract_document_text（复用既有 6 态，不新增状态）",
    "license_to_verify": true,
    "deploy_blocked": {
-    "reason": "2026-09-29 实测：本环境 **未安装 Docker / docker-compose / Go 工具链** —— WeKnora 官方以 Docker Compose 部署 docreader（Go 服务），无容器运行时则**无官方部署路径**。",
-    "unblock": "① 安装 Docker Desktop 后按其 compose 起 docreader；② 或有 Go 工具链时源码构建其 cmd 入口。",
-    "substitute": "仓库**已有**版面/正文抽取能力（`std_lib/scraper_std` + pypdf/pdfplumber/PyMuPDF，含 6 态抽取）——docreader 的增量价值是 25+ 格式与版面渲染，**非当前瓶颈**（v2 亦把它列为 P2-1）。"
+    "reason": "2026-09-29 复核（用户称 docker 已装）：**Docker CLI 29.8.1 确已安装**，但① **daemon 无法启动**（`docker info` → `Error response from daemon: Docker Desktop is unable to start`）；② 即便 daemon 可用，**容器镜像站不可达** （`registry-1.docker.io/v2/` ConnectTimeout；白名单网络仅放通 pypi + github）→ 拉不到 WeKnora 镜像。**双重阻塞，非配置问题**。",
+    "unblock": "① 修复 Docker Desktop 启动；② 使镜像站可达（或导入离线镜像 tar 后 `docker load`）。两者齐备后按其 compose 起 docreader。",
+    "substitute": "仓内**已有**版面/正文抽取（`std_lib/scraper_std` + pypdf/pdfplumber/PyMuPDF，6 态）——docreader 的增量价值（25+ 格式 / 版面渲染）非当前瓶颈（v2 列为 P2-1）。"
    }
   },
   "paradedb": {

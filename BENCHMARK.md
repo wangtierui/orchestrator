@@ -1,6 +1,6 @@
 # BENCHMARK —— 交付基准登记（回归对照基线）
 
-> 自动生成：tools/gen_benchmark.py @ 2026-09-29 11:36:18 | python 3.13.14
+> 自动生成：tools/gen_benchmark.py @ 2026-09-29 15:09:16 | python 3.13.14
 > 用途：数据重建/重构后重跑 `python tools/gen_benchmark.py` 刷新；数值漂移即回归信号。
 
 ## 1 门禁（gates/ALL_GATES）
@@ -144,7 +144,7 @@
 
 ### 6.4 召回覆盖（`recall_audit` 既有产物）
 
-- 产物目录存在 `True`；报告生成于 2026-09-29T01:52:48+0800
+- 产物目录存在 `True`；报告生成于 2026-09-29T12:58:08+0800
 - 四门禁：`{'clean': True, 'validity': True, 'contract': True, 'schema': True}`
 
 ### 6.5 清洗体量
@@ -166,21 +166,23 @@
 
 ### 6.6 P1 语义增强能力（当前环境）
 
-- 语义增强能力：2/11 可用（hdbscan, umap）
-- 指纹：可用 `['hdbscan', 'umap']`；未装 `9` 项
+- 语义增强能力：7/13 可用（bertopic, hanlp, hdbscan, sqlite_vec, text2vec, umap, youtu_embedding）
+- 指纹：可用 `['bertopic', 'hanlp', 'hdbscan', 'sqlite_vec', 'text2vec', 'umap', 'youtu_embedding']`；未装 `6` 项
 
 | 工具 | 状态 | 版本 | 对应方案项 |
 |---|---|---|---|
 | `aprcoie` | 未装 | — | v2 P3-1（可选，须先评估许可与体积） |
-| `bertopic` | 未装 | — | v2 P1-5（主题内子簇语义化，可选） |
-| `hanlp` | 未装 | — | v2 P1-3（分句/结构增强层） |
+| `bertopic` | 可用 | 0.17.4 | v2 P1-5（主题内子簇语义化，可选） |
+| `hanlp` | 可用 | 2.1.5 | v2 P1-3（分句/结构增强层） |
 | `hdbscan` | 可用 | 0.8.44 | v2 P1-5（随 BERTopic） |
 | `ltp` | 未装 | — | v2 P1-3（分句/结构增强层） |
 | `paradedb` | 未装 | — | v2 P2-2（**须先做零服务替代评估**；且须同时覆盖 search_internal） |
+| `pgvector` | 未装 | — | v2 P2-2（检索语义化；替换 ParadeDB） |
 | `signalgraph` | 未装 | — | v2 P3-2（可选；须先证明其**确定性**：同输入同输出） |
-| `text2vec` | 未装 | — | v2 P1-1（主题辅助裁定）、P1-2（关联语义档） |
+| `sqlite_vec` | 可用 | 0.1.9 | v2 P2-2（检索语义化；与 SQLite FTS5 **同库共存**） |
+| `text2vec` | 可用 | 1.3.8 | v2 P1-1（主题辅助裁定）、P1-2（关联语义档） |
 | `umap` | 可用 | 0.5.12 | v2 P1-5（随 BERTopic，不单独使用） |
 | `weknora_docreader` | 未装 | — | v2 P2-1（只补版面分析；OCR 通路已存在，不重做） |
-| `youtu_embedding` | 未装 | — | v2 P1-1（主题辅助裁定）、P1-2（关联语义档） |
+| `youtu_embedding` | 可用 | 5.17.0 | v2 P1-1（主题辅助裁定）、P1-2（关联语义档） |
 
 > 未装工具不阻断全链：调用方一律经 `std_lib.common_lib.semantic_tools` 探测后惰性导入，不可用时回退既有正则实现并**记录回退说明**（`fallback_notice()`）。清单：`config/schema/semantic_tools.json`；启用：`pip install -e .[semantic]`。
