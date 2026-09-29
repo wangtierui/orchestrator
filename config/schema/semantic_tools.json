@@ -103,7 +103,16 @@
     "how": "本机 PostgreSQL **18.6** 已在运行（service `postgresql-x64-18`，**端口 7777**）。pgvector 官方**无 Windows 预编译**、本机**无任何编译器**（nmake/cl/cmake/make/gcc 全无）→ 无法本地编译；故取 **GitHub Release 的第三方 Windows 预编译**（`andreiramani/pgvector_pgsql_windows` → `vector.v0.8.6-pg18.zip`，165.8KB，**与 pg18 精确匹配**）→ 解压后安装 **47 个文件**至 `lib/vector.dll` + `share/extension/vector--*.sql` + `include/.../vector/*.h`。",
     "verified": "`CREATE EXTENSION vector` → **vector 0.8.6**；端到端冒烟：建表 vector(3) + 插 3 行 + `ORDER BY emb <-> '[1,0,0]'` → 返回 `1,3,2`；距离 `0.1414` = √(0.01+0.01) **精确吻合**。",
     "auth_note": "PG 认证为 `scram-sha-256` 且口令未知 → 部署时采用**最小可逆**手段：备份 `pg_hba.conf` → 仅将**回环两行**（127.0.0.1/32、::1/128）临时改 `trust` → `pg_ctl reload` → 建扩展 → **立即还原备份并 reload**。复核：哈希与备份**一致**、`trust` 行数 **0**、无口令连接 **rc=2**（认证已恢复）✓",
-    "endpoint": "127.0.0.1:7777（**注意非默认 5432**）；DSN 经 env `PGVECTOR_DSN` 注入",
+    "endpoint": "127.0.0.1:7777（**注意非默认 5432**）；库 `orchestrator`；用户 `postgres`；**口令仅经 env `PGVECTOR_DSN` 注入，不入库**（`gate_secret_scan` 守护）。探测：`service_reachable=True`（N-134 起支持 URI 形态 DSN）",
+   "db_config": {
+    "host": "127.0.0.1",
+    "port": 7777,
+    "database": "orchestrator",
+    "user": "postgres",
+    "secret": "口令经用户级环境变量 PGVECTOR_DSN 注入（setx 配置于机器侧）；**明文绝不入库**",
+    "extension": "vector 0.8.6（已于本库 CREATE EXTENSION）",
+    "verified": "端到端冒烟通过：vector(4) 表 + HNSW + IVFFlat 索引可建；L2 与余弦最近邻序均 `1,3,2`；距离 0.1414 精确"
+   },
     "since": "2026-09-29"
    },
    "substitute": "sqlite_vec（**保留**为无服务依赖的备选/降级路径，与既有 FTS5 同库同源）"

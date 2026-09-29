@@ -36,6 +36,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import os
+import re
 from functools import lru_cache
 
 
@@ -160,7 +161,17 @@ def probe(name: str) -> dict:
     # True 可连通 / False 不可达 / None 非服务型或端点非 `host:port`（如 DSN）。
     service_reachable = None
     if kind == "service" and endpoint:
-        host, sep, port_s = endpoint.rpartition(":")
+        # N-134（2026-09-29）：**支持 URI 形态 DSN**。此前只认 `host:port`，于是
+        # `postgresql://` 开头的 **URI 连接串**（真实生产形态）落入 `None`（"非 host:port"）
+        # → 连通性探测**静默失效**（用户看到 endpoint 已配却不知服务是否可达）。
+        # 现先从 URI 析出 host/port，再统一探测。
+        # ⚠️ 注：本注释**刻意不写带凭据的 URI 示例** —— 那样会被 `gate_secret_scan` 判为
+        #    "数据库连接串明文口令"（实测命中过一次）。示例一律以占位词描述。
+        host_port = endpoint
+        m = re.match(r"^[a-z][a-z0-9+.\-]*://(?:[^@/]*@)?([^:/?#]+)(?::(\d+))?", endpoint, re.I)
+        if m:
+            host_port = f"{m.group(1)}:{m.group(2) or ''}"
+        host, sep, port_s = host_port.rpartition(":")
         if sep and host and port_s.isdigit():
             import socket
 
@@ -169,7 +180,9 @@ def probe(name: str) -> dict:
                     service_reachable = True
             except OSError:
                 service_reachable = False
-                detail = f"客户端可用但**服务不可达**（{endpoint}）→ 未部署或未启动"
+                detail = f"客户端可用但**服务不可达**（{host_port}）→ 未部署或未启动"
+        else:
+            detail = f"端点非 host:port 形态，未能探测连通性（{endpoint[:24]}…）"
 
     # N-120（2026-09-29）：**`hf_model` 探测类型**（新增）。适用"无 pip 包、以 HuggingFace 模型 id
     # 接入"的工具（如 `tencent/Youtu-Embedding`）：可用性 = 加载库（transformers）可导入 **且**
