@@ -23,6 +23,12 @@ import os
 import subprocess
 import sys
 import time
+
+# R-2（2026-09-30）拾取节流/冷却**具名常量**（原为裸字面量）：裸数值无法区分
+#   『限速』『预热』『重试退避』三者。此处均为**预热与冷却**，非速率控制 ——
+#   速率控制由各 fetch 函数的 `delay=` 形参负责（已参数化）。数值不变，零行为变更。
+_WARMUP_COOLDOWN_S = 1.0
+
 import urllib.parse
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -54,7 +60,7 @@ def _warmup():
                        capture_output=True, timeout=40)
     except Exception:  # noqa: BLE001  采集容错（字段/附件缺失不阻断采集）
         pass
-    time.sleep(1.0)
+    time.sleep(_WARMUP_COOLDOWN_S)
 
 def fetch_curl(url, params, label, delay=2.0):
     full = url + "?" + urllib.parse.urlencode(params)

@@ -12,4 +12,25 @@
 """
 from __future__ import annotations
 
+import json
+import os
+
 SCHEMA_VERSION = "1.0.0"
+
+
+def write_jsonl(path: str, rows) -> int:
+    """按行写 JSONL（**原子替换**：先写 `.tmp` 再 `os.replace`）→ 返回行数。
+
+    R-1（2026-09-30）**唯一实现**：`build_external._write_jsonl` 与 `build_internal._write_jsonl`
+    曾**逐字重复**（同包两处）。风险不是"多 8 行"，而是**改一处漏一处** ——
+    原子替换是**交付安全属性**（中断写不得留半截发布件），只改一处会让另一个底座
+    在中断时留下**半截文件**，而两处代码**看起来一样**，审查极易放过。
+    """
+    tmp = path + ".tmp"
+    n = 0
+    with open(tmp, "w", encoding="utf-8") as fh:
+        for r in rows:
+            fh.write(json.dumps(r, ensure_ascii=False) + "\n")
+            n += 1
+    os.replace(tmp, path)
+    return n

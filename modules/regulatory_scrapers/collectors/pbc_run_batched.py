@@ -22,6 +22,12 @@ import subprocess
 import sys
 import time
 
+# R-2（2026-09-30）拾取节流/冷却**具名常量**（原为裸字面量）：裸数值无法区分
+#   『限速』『预热』『重试退避』三者。此处均为**预热与冷却**，非速率控制 ——
+#   速率控制由各 fetch 函数的 `delay=` 形参负责（已参数化）。数值不变，零行为变更。
+_JSON_RETRY_COOLDOWN_S = 5
+_BATCH_COOLDOWN_S = 1
+
 ROOT = os.path.dirname(os.path.abspath(__file__))
 PY = sys.executable
 JSON = os.path.join(ROOT, "data", "raw", "pbc_laws.json")
@@ -61,7 +67,7 @@ def main():
             return
         if rem < 0:
             log("无法读取 JSON，重试。")
-            time.sleep(5)
+            time.sleep(_JSON_RETRY_COOLDOWN_S)
             continue
         this_batch = min(BATCH, rem)
         log(f"第 {it} 批：剩余 {rem} 条，本批处理 {this_batch} 条")
@@ -81,7 +87,7 @@ def main():
         else:
             stuck = 0
         prev = rem2
-        time.sleep(1)
+        time.sleep(_BATCH_COOLDOWN_S)
     log("达到最大批次数，停止。")
 
 if __name__ == "__main__":

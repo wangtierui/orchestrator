@@ -65,7 +65,7 @@ regulatory_compliance_orchestrator/
 ├── std_lib/                  # 【共享库单副本】scraper_std（doc_type/category/unified_schema/ocr_engine…）
 │   └── common_lib/           #   fs_lock / io_atomic / governance_store / logging / notify / triggers /
 │                             #   retention / relations / norm（原子写、审计、日志、触发、保留策略、关系抽取）
-├── gates/                    # 【常规流程·门禁】ALL_GATES 22 道交付门禁（gates/__init__.py 为准）
+├── gates/                    # 【常规流程·门禁】ALL_GATES 23 道交付门禁（gates/__init__.py 为准）
 ├── data/                     # 【环境】仓根运行数据（治理库 governance.db / inbox 投放区 / archive 归档；git 忽略）
 ├── exports/                  # 【环境】治理库文本快照（governance export 产出；git 忽略，派生只读层）
 ├── tests/                    # 【常规流程·验收】pytest：487 用例（33 文件；`@data` 依赖本机产物）
@@ -114,7 +114,7 @@ regulatory_compliance_orchestrator/
 | `std_lib/common_lib/triggers.py` | 文件 | **常规流程** | 条件触发执行器（TriggerRunner，读 triggers.yaml） | 被 `cli triggers`/`cli run --triggers` 调用 |
 | `std_lib/common_lib/retention.py` | 文件 | **常规流程** | 数据保留策略（P2-3；归档规则 + 到期清理） | 被 `tools/retention.py` 调用 |
 | `std_lib/common_lib/relations.py` | 文件 | **常规流程** | 依据/废止关系统一抽取（唯一实现，七层结构 + 词表外置） | 被 `extract_relations`/`merged`/`build_detail_tables` 消费 |
-| `gates/` | 目录 | **常规流程（质量门禁）** | **22 道**门禁实现（gate_*.py）；数量/实装以 `ALL_GATES` 为准 | `python cli.py gates`；提交/交付前必过 |
+| `gates/` | 目录 | **常规流程（质量门禁）** | **23 道**门禁实现（gate_*.py）；数量/实装以 `ALL_GATES` 为准 | `python cli.py gates`；提交/交付前必过 |
 | `gates/gate_runtime_hygiene.py` | 文件 | **常规流程（门禁）** | 运行时卫生**五判据全阻断**：①裸整数退出码 ②宽泛吞异常 ③接口空壳 ④生产脚本日志化 ⑤owned 层卫生 | `cli gates` 子项 |
 | `gates/gate_config_integrity.py` | 文件 | **常规流程（门禁）** | 配置完整性（判据 S 调度 / T 触发 / J7 worklist 双向 / R 步骤清单 / 结构清单派生一致） | `cli gates` 子项 |
 | `tests/` | 目录 | **常规流程（验收）** | pytest：**487 用例**（33 文件；含 `@data` 数据依赖） | `python -m pytest tests -q`（无数据环境加 `-m "not data"`） |
@@ -253,7 +253,7 @@ flowchart LR
 | **Analysis 交付库** | final × 明细 × 图 × 关系产物 | `docs/reports/`（**17 项 + _manifest**） | 五级分析结构产出（全数据驱动）；关系类复用单源渲染 | `cli.py analysis gen` | **常规流程** |
 | **Knowledge 同步** | 发布件 | `<Obsidian vault>\监管法规库` | frontmatter 溯源 + 截断声明 + `--prune` | `tools/sync_wiki_sources.py` | 特殊工具 |
 | **Ingest 投放区** | data/inbox | worklist 决策项 | inbox_scan 按 inbox_registry.yaml 归类 → worklist | `tools/inbox_scan.py` | 常规流程 |
-| **Validate 门禁** | 全仓数据/代码 | gates 报告 | **22 道** ALL_GATES（契约/枚举/漂移/时效 SSOT/血缘/水位/跨模块/运行时卫生/调度触发一致性…） | `cli.py gates` | 常规流程（阻断） |
+| **Validate 门禁** | 全仓数据/代码 | gates 报告 | **23 道** ALL_GATES（契约/枚举/漂移/时效 SSOT/血缘/水位/跨模块/运行时卫生/调度触发一致性…） | `cli.py gates` | 常规流程（阻断） |
 
 > **门禁事实源**：可运行门禁的**唯一注册表** = `gates/__init__.py:ALL_GATES`（`GatesRunner` 只跑注册表内项）。
 > 注册表与磁盘 `gates/gate_*.py` **数量与名称必须一致**（`tools/audit_health.py` 会核验"写了不跑/跑了不存在"）。
@@ -302,7 +302,7 @@ flowchart LR
   - `pytest tests -q`（**487 用例**；无数据环境 `pytest tests -m "not data"` 跑代码级回归）。
   - `cli.py gates` 全绿。
   - `coverage` ≥ 20%（当前 **45%**，只升不降）。
-- **数据门禁（写入/交付拦截，ALL_GATES 22 道）**：
+- **数据门禁（写入/交付拦截，ALL_GATES 23 道）**：
   - 数据契约（gate_contract 逐列比对）、受控枚举（gate_enum_values）、中文列名注册（gate_field_aliases）。
   - 时效单源（gate_timeliness_ssot）、RFN 一致（gate_rfn_sync）、漂移（gate_rfn_drift）、血缘（gate_provenance）。
   - 制度引用（gate_citations）、原件可解析（gate_original_resolvable）、关系产物（gate_relations）、产物水位（gate_watermark）。

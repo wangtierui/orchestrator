@@ -18,6 +18,15 @@ import sys
 
 # 门禁注册表（键 = 模块名于 gates/ 下；order 决定执行顺序）
 ALL_GATES: list[dict] = [
+    {
+        # N-152（2026-09-30）：**运行台账完整性** —— 事故：`clean:gov` 超时被杀、产物仍落盘
+        # 被下游采用，而 `gates` 报"全部通过"（失败被无感吞掉）。本门禁读
+        # `data/run_state/last_run_steps.json`，对失败步骤判定"其产物是否正由该步产生"
+        # → 危险组合则 FAIL（可经 `acknowledged.json` 人工确认后降级为告警）。
+        "module": "gates.gate_run_steps",
+        "desc": "运行台账完整性（失败步骤的产物是否已被下游采用）",
+        "require_impl": True,
+    },
     {"module": "gates.gate_hardcoded_paths", "desc": "盘符字面量扫描（R4）", "require_impl": True},
     {"module": "gates.gate_enum_values", "desc": "受控枚举一致性（v3）", "require_impl": True},
     {

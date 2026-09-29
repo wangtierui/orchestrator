@@ -425,6 +425,11 @@ def _run(step: str, argv, cwd=ROOT, timeout: int | None = None) -> dict:
         # P2-6：步骤选择/续跑/试跑的可解释标记（进 run_step 台账与汇总 JSON）
         "skipped": False,
         "note": "",
+        # N-152（2026-09-30）：步骤**时间窗**（epoch 秒）。为何需要：`clean:gov` 超时被强杀后
+        #   产物仍落盘、被下游采用而门禁无从判断 —— 有了时间窗，门禁即可判定
+        #   "某失败步骤的产物是否正是由该步产生（mtime 落在窗内）"，即**危险组合**。
+        "started_at": 0.0,
+        "ended_at": 0.0,
     }
     # ---- 步骤选择与续跑（v2 §3.13.3，P2-6）----
     skip_reason = _skip_reason(step)
@@ -436,6 +441,8 @@ def _run(step: str, argv, cwd=ROOT, timeout: int | None = None) -> dict:
                 "skipped": True,
                 "note": skip_reason,
                 "elapsed_s": round(time.time() - t0, 1),
+                "started_at": round(t0, 3),
+                "ended_at": round(time.time(), 3),
             }
         )
         _record_step(rec)
@@ -461,16 +468,31 @@ def _run(step: str, argv, cwd=ROOT, timeout: int | None = None) -> dict:
         rec["stderr_tail"] = "\n".join((r.stderr or "").strip().splitlines()[-2:])
         rec["stderr_tail_len"] = len(r.stderr or "")
         rec["stdout_len"] = len(r.stdout or "")
-    except subprocess.TimeoutExpired:
-        rec["tail"] = "timeout"
+    except subprocess.TimeoutExpired as e:
+        # N-151（2026-09-30）**超时也要采集部分输出**。为何：`clean:gov` 超时那次 `stdout_len=0`
+        # → 子进程明明有进度打印（`[gov] 原始数据：…`），却因父进程未从异常里取回而**全丢**，
+        # 致使"超时不可诊断"（只能看到"timeout"三个字）。`TimeoutExpired` 携带已捕获的
+        # `stdout`/`stderr`（因 `capture_output=True`），此处取回并保留尾部 —— 让下次超时
+        # 一眼能看出**卡在哪个阶段**。
+        _o_raw = e.stdout if e.stdout is not None else ""
+        _e_raw = e.stderr if e.stderr is not None else ""
+        # 逐项收窄（mypy：`TimeoutExpired.stdout` 为 `bytes | str | None`，不可对联合类型直接 decode）
+        _out = _o_raw.decode("utf-8", "replace") if isinstance(_o_raw, bytes) else _o_raw
+        _err = _e_raw.decode("utf-8", "replace") if isinstance(_e_raw, bytes) else _e_raw
+        tail_lines = _out.strip().splitlines()
+        rec["tail"] = "\n".join(tail_lines[-5:]) if tail_lines else "timeout（子进程无已捕获输出）"
         rec["exit_code"] = "TIMEOUT"
-        rec["stderr_tail"] = f"timeout {timeout}s"
-        rec["stderr_tail_len"] = len(rec["stderr_tail"])
+        rec["stderr_tail"] = "\n".join((_err.strip().splitlines() or [f"timeout {timeout}s"])[-3:])
+        rec["stderr_tail_len"] = len(_err)
+        rec["stdout_len"] = len(_out)  # N-151：披露真实输出体量（原恒为 0）
     except Exception as e:  # noqa: BLE001
         rec["exit_code"] = f"EXC:{type(e).__name__}"
         rec["stderr_tail"] = f"{type(e).__name__}: {e}"
         rec["stderr_tail_len"] = len(rec["stderr_tail"])
     rec["elapsed_s"] = round(time.time() - t0, 1)
+    # N-152：填时间窗（门禁据此判定"失败步骤的产物是否由该步产生"）
+    rec["started_at"] = round(t0, 3)
+    rec["ended_at"] = round(t0 + rec["elapsed_s"], 3)
     if rec["tail"]:
         print("    " + "\n    ".join(rec["tail"].splitlines()), flush=True)
     print(
@@ -1200,6 +1222,21 @@ def _run_chain(args) -> int:
     with open(out_p, "w", encoding="utf-8") as fh:
         json.dump(summary, fh, ensure_ascii=False, indent=1)
     print(f"汇总已落盘: {out_p}")
+
+    # N-152（2026-09-30）：**稳定运行台账**（固定路径，供门禁读取）。
+    #   为何不能只靠上面的带时间戳汇总：① 门禁无从"找最新"；② `reports/_tmp` 会被轮转清理。
+    #   事故背景：`clean:gov` 超时被杀，而**产物仍落盘并被 apply/classify 采用**，
+    #   最终 `gates` 仍报"全部门禁通过" —— 失败被**无感吞掉**（端到端可审计性缺口）。
+    #   本台账把"哪一步失败、何时开始/结束"固化下来，由 `gate_run_steps` 判定危险组合。
+    try:
+        _rs_dir = os.path.join(paths.DATA_DIR, "run_state")
+        os.makedirs(_rs_dir, exist_ok=True)
+        _rs_p = os.path.join(_rs_dir, "last_run_steps.json")
+        with open(_rs_p, "w", encoding="utf-8") as fh:
+            json.dump(summary, fh, ensure_ascii=False, indent=1)
+        print(f"[run_state] 稳定运行台账已更新: {_rs_p}")
+    except Exception as _e:  # noqa: BLE001  台账落盘失败不得中断主链，但必须可见
+        print(f"[run_state] WARN 运行台账落盘失败（门禁将无法判定失败步骤）: {type(_e).__name__}: {_e}")
     # P2-6：失败 → 告警通道（v2 §3.13.6；无人值守下"失败无人知晓"是原设计的硬缺口）
     if summary["failed"]:
         try:

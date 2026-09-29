@@ -63,8 +63,13 @@ class TestBuildInternalHelpers:
         # 仅存续断言（导入需 modules 路径注入，测试环境外置；调用留待集成层）
         p = os.path.join(ROOT, "modules", "base_publish", "build_internal.py")
         src = open(p, encoding="utf-8").read()
-        for fn in ("_sha256_file", "_write_jsonl", "_load", "build"):
+        for fn in ("_sha256_file", "_load", "build"):
             assert f"def {fn}(" in src
+        # R-1（2026-09-30）：_write_jsonl 已归并为**包级唯一实现**
+        #   → 断言"**引用共用实现**"，而非"本地有定义"。
+        #   静态断言本地存在 def 会把**重复**固化进测试（改一处漏一处时测试全绿）。
+        #   断言"**引用共用实现**"而非"本地有定义"；**格式无关**（ruff 会把导入并入多行括号块）。
+        assert "write_jsonl as _write_jsonl" in src
 
 
 class TestLoggerConstruct:

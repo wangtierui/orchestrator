@@ -43,15 +43,9 @@ def _sha256_file(path: str) -> str:
     return h.hexdigest()
 
 
-def _write_jsonl(path: str, rows) -> int:
-    tmp = path + ".tmp"
-    n = 0
-    with open(tmp, "w", encoding="utf-8") as fh:
-        for r in rows:
-            fh.write(json.dumps(r, ensure_ascii=False) + "\n")
-            n += 1
-    os.replace(tmp, path)
-    return n
+from modules.base_publish import (
+    write_jsonl as _write_jsonl,  # R-1：唯一实现（原与 build_external 逐字重复）
+)
 
 
 def _load(name: str, default):

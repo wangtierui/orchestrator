@@ -1,6 +1,6 @@
 {
  "schema_version": "1.0",
- "generated_at": "2026-09-29",
+ "generated_at": "2026-09-30",
  "note": "tools/ 脚本语义分区清单（v2 §3.2 D-1 / §3.15.5）。category=retired 的文件必须位于 tools/retired/；本清单由 gates/gate_config_integrity.py 断言（J1–J5）。新增脚本必须登记，禁止遗漏。",
  "root_py_allowlist": [
   "bootstrap.py",
@@ -12,32 +12,44 @@
   {
    "file": "audit_health.py",
    "category": "tool",
-   "entry": "全链路健康审计（统一入口自动化/流程断点/门禁失效/数据源不唯一/数据阻塞/冗余/重复/硬编码）"
+   "entry": "全链路健康审计（统一入口自动化/流程断点/门禁失效/数据源不唯一/数据阻塞/冗余/重复/硬编码）",
+   "independent": true,
+   "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
   },
   {
    "file": "build_east_backlog.py",
    "category": "tool",
-   "entry": "EAST2.0 表格类监管文件 → supp backlog（§3.12.5 的 supp 通道）"
+   "entry": "EAST2.0 表格类监管文件 → supp backlog（§3.12.5 的 supp 通道）",
+   "independent": true,
+   "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
   },
   {
    "file": "build_migration_manifest.py",
    "category": "tool",
-   "entry": "生成 data_migration_manifest.json（R22）；gate_hardcoded_paths 保留其 basename 豁免"
+   "entry": "生成 data_migration_manifest.json（R22）；gate_hardcoded_paths 保留其 basename 豁免",
+   "independent": true,
+   "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
   },
   {
    "file": "check_llm_wiki_upstream.py",
    "category": "tool",
-   "entry": "llm_wiki 上游 Releases 监测（网络失败 rc=2）"
+   "entry": "llm_wiki 上游 Releases 监测（网络失败 rc=2）",
+   "independent": true,
+   "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
   },
   {
    "file": "ci_check.py",
    "category": "tool",
-   "entry": "本地 CI 等价物：ruff → pytest → gates（+可选 coverage）"
+   "entry": "本地 CI 等价物：ruff → pytest → gates（+可选 coverage）",
+   "independent": true,
+   "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
   },
   {
    "file": "dedupe_original_storage.py",
    "category": "tool",
-   "entry": "原件库冗余处置 + 跨层硬链接（A 侧只读）"
+   "entry": "原件库冗余处置 + 跨层硬链接（A 侧只读）",
+   "independent": true,
+   "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
   },
   {
    "file": "extract_relations.py",
@@ -50,6 +62,13 @@
    "entry": "阶段 6.8 五级分析交付库（17 项）"
   },
   {
+   "file": "gen_audit_ledger.py",
+   "category": "tool",
+   "entry": "审计发现判定台账生成（R-3/R-4/R-5 处置）",
+   "independent": true,
+   "independent_why": "刻意独立：按需人工执行，非 STEP_ORDER 链路节点"
+  },
+  {
    "file": "gen_benchmark.py",
    "category": "tool",
    "entry": "BENCHMARK.md 回归对照基线生成"
@@ -57,22 +76,30 @@
   {
    "file": "gen_flow_map.py",
    "category": "tool",
-   "entry": "全链数据流总图生成（从 STEP_ORDER + 源码调用点派生，含降级与权重缺失标记）"
+   "entry": "全链数据流总图生成（从 STEP_ORDER + 源码调用点派生，含降级与权重缺失标记）",
+   "independent": true,
+   "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
   },
   {
    "file": "gen_schedule_doc.py",
    "category": "tool",
-   "entry": "由 config/schedule.yaml 反向生成运行手册定时表与 crontab 片段（v2 §3.9，P2-2；--check 供门禁判据 S）"
+   "entry": "由 config/schedule.yaml 反向生成运行手册定时表与 crontab 片段（v2 §3.9，P2-2；--check 供门禁判据 S）",
+   "independent": true,
+   "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
   },
   {
    "file": "gen_supp_timeliness_audit.py",
    "category": "tool",
-   "entry": "supp 时效标注口径审计（只读）"
+   "entry": "supp 时效标注口径审计（只读）",
+   "independent": true,
+   "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
   },
   {
    "file": "gen_theme_moc.py",
    "category": "tool",
-   "entry": "vault 主题 MOC 生成（--out 必填）"
+   "entry": "vault 主题 MOC 生成（--out 必填）",
+   "independent": true,
+   "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
   },
   {
    "file": "governance_register_artifacts.py",
@@ -87,37 +114,51 @@
   {
    "file": "graphify_offline_html.py",
    "category": "tool",
-   "entry": "graph.html 的 vis-network 依赖本地化（被 graphify_sync 调用）"
+   "entry": "graph.html 的 vis-network 依赖本地化（被 graphify_sync 调用）",
+   "independent": true,
+   "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
   },
   {
    "file": "graphify_sync.py",
    "category": "tool",
-   "entry": "graphify 产物随提交同步（CODEBUDDY.md 指向）"
+   "entry": "graphify 产物随提交同步（CODEBUDDY.md 指向）",
+   "independent": true,
+   "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
   },
   {
    "file": "inbox_scan.py",
    "category": "tool",
-   "entry": "投放区扫描与路由（v2 §3.12.6，P2-3b；按 config/inbox_registry.yaml 路由，落 _inbox_manifest.json）"
+   "entry": "投放区扫描与路由（v2 §3.12.6，P2-3b；按 config/inbox_registry.yaml 路由，落 _inbox_manifest.json）",
+   "independent": true,
+   "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
   },
   {
    "file": "ingest_corpus.py",
    "category": "tool",
-   "entry": "外部语料归集（F-L05；§3.12 的归集入口）"
+   "entry": "外部语料归集（F-L05；§3.12 的归集入口）",
+   "independent": true,
+   "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
   },
   {
    "file": "install_schedule.py",
    "category": "tool",
-   "entry": "由 config/schedule.yaml 生成/安装/校验 Windows 计划任务与 crontab（v2 §3.13.6，P2-6）"
+   "entry": "由 config/schedule.yaml 生成/安装/校验 Windows 计划任务与 crontab（v2 §3.13.6，P2-6）",
+   "independent": true,
+   "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
   },
   {
    "file": "normalize_internal_naming.py",
    "category": "tool",
-   "entry": "内部制度规范命名与归集（dry-run 前置 + 备份）"
+   "entry": "内部制度规范命名与归集（dry-run 前置 + 备份）",
+   "independent": true,
+   "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
   },
   {
    "file": "prune_orphan_processed.py",
    "category": "tool",
-   "entry": "清理孤儿 processed 记录（dry-run / --apply）"
+   "entry": "清理孤儿 processed 记录（dry-run / --apply）",
+   "independent": true,
+   "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
   },
   {
    "file": "quarantine_triage.py",
@@ -127,7 +168,9 @@
   {
    "file": "reconcile_original_paths.py",
    "category": "tool",
-   "entry": "主索引路径 ↔ 原件库对账（gate_original_resolvable 指定的处置入口）"
+   "entry": "主索引路径 ↔ 原件库对账（gate_original_resolvable 指定的处置入口）",
+   "independent": true,
+   "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
   },
   {
    "file": "retention.py",
@@ -149,7 +192,9 @@
   {
    "file": "rfn_backlog.py",
    "category": "tool",
-   "entry": "RFN 补登候选（关系线索 + 引用者主题投票）"
+   "entry": "RFN 补登候选（关系线索 + 引用者主题投票）",
+   "independent": true,
+   "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
   },
   {
    "file": "run_production_refresh.py",
@@ -159,12 +204,16 @@
   {
    "file": "split_internal_nonpolicy.py",
    "category": "tool",
-   "entry": "非制度正文件隔离归置（misc/ ledgers/）"
+   "entry": "非制度正文件隔离归置（misc/ ledgers/）",
+   "independent": true,
+   "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
   },
   {
    "file": "sync_wiki_sources.py",
    "category": "tool",
-   "entry": "发布件 → vault Markdown（SHA256 增量 + --prune）"
+   "entry": "发布件 → vault Markdown（SHA256 增量 + --prune）",
+   "independent": true,
+   "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
   }
  ]
 }

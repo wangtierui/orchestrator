@@ -107,12 +107,26 @@ def check_entry() -> list:
         )
 
     # (b) tools/ 下脚本是否被入口消费（未入链 = 需人工执行 → 自动化不全）
+    #  ⚠️ 口径（2026-09-30，R-5）：**须读 `tools/_manifest.json` 的 `independent` 声明**。
+    #  该检查的价值在发现**漂移**（如 N-53："触发项声明完备却从未执行"）；若把"未入链"一律
+    #  当缺陷，运维/开发类独立工具的噪音会淹没真信号；若一律忽略，真漂移会漏。
+    #  故以 manifest 的**显式意图**为准：声明 independent → 刻意独立，不报；未声明 → 报。
     order_txt = " ".join(order) + src
+    indep: set = set()
+    try:
+        man = json.loads(
+            _read(os.path.join(ROOT, "tools", "_manifest.json")) or "{}"
+        ).get("entries") or []
+        indep = {str(e.get("file")) for e in man if e.get("independent")}
+    except Exception:  # noqa: BLE001  清单不可读 → 退回"全部报"（宁多报不漏报）
+        indep = set()
     standalone: list = []
     for fn in sorted(os.listdir(os.path.join(ROOT, "tools"))):
         if not fn.endswith(".py"):
             continue
         if fn.startswith("_") or fn in ("__init__.py",):
+            continue
+        if fn in indep:
             continue
         if fn in order_txt or fn.replace(".py", "") in order_txt:
             continue
@@ -132,11 +146,28 @@ def check_entry() -> list:
         import yaml
 
         tr = yaml.safe_load(_read(os.path.join(ROOT, "config", "triggers.yaml"))) or {}
-        names = set()
-        for k, v in (tr.get("triggers") or {}).items():
-            names.add(k)
+        # 结构兼容：`triggers` 既可能是**映射**（name → 定义），也可能是**列表**（元素含 name/steps）。
+        # 初版只按映射处理 → 实测报 `'list' object has no attribute 'items'`（误报提示）。
+        names: set = set()
+        _trig = tr.get("triggers") if isinstance(tr, dict) else None
+        _items = _trig.items() if isinstance(_trig, dict) else enumerate(_trig or [])
+        for k, v in _items:
+            if isinstance(v, dict) and v.get("name"):
+                names.add(str(v["name"]))
+            elif isinstance(k, str):
+                names.add(k)
             if isinstance(v, dict) and v.get("steps"):
-                names.update(str(x) for x in v["steps"])
+                # ⚠️ steps 元素是 **dict**（{argv:[...], timeout:N}）→ 初版 str(x) 会把
+                #   整个 dict 当名字（实测输出 "{'argv': [...], 'timeout': 1800}" 这类噪音）。
+                #   只取有意义的标识：优先 `name` 字段，否则取 argv 里首个非解释器元素。
+                for x in v["steps"] or []:
+                    if isinstance(x, dict):
+                        if x.get("name"):
+                            names.add(str(x["name"]))
+                        # 不再从 argv 反推步骤名（实测会捞出 --apply/python/{arg} 等噪音）；
+                        # 步骤名以 STEP_ORDER 为准，本检查只看 triggers 里**显式声明**的 name。
+                    else:
+                        names.add(str(x))
         only_tr = sorted(n for n in names if n not in order and not n.startswith("_"))
         if only_tr:
             f.append(
