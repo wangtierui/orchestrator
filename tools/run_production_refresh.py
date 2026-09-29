@@ -811,7 +811,26 @@ def _run_chain(args) -> int:
         )
 
     # ---- 阶段 1：clean（尾部自动 clause）----
+    # N-150（2026-09-29）**超时按源体量配置**（原为固定 `timeout=1800`）。
+    # 为何必须改：真实运行（含抓取）暴露 `clean:gov` **必然超时** ——
+    #   · gov raw **1.01GB**；`clean:nfra` 的 raw 仅 **117MB 却已耗 1570.3s**（≈13.4 s/MB）；
+    #   · 线性外推 gov 需 **≈13500s（3.7h）** ≫ 1800s → **最大的源永远跑不完**（端到端阻断）；
+    #   · 且超时被强杀时**产物已落盘**（`gov_cleaned_*.jsonl` mtime 恰为超时时刻）→
+    #     未走完流程的中间产物被 `apply`/`classify` 下游采用，而**门禁仍 rc=0**（见 N-152）。
+    # 口径：`max(1800, 体量MB × 15)`，上限 21600s（6h）—— 既给足大源，又不无限挂死；
+    #   15 s/MB 由 nfra 实测（13.4）留 ~12% 余量；体量取**实际 raw 文件大小**（缺文件则退回下限）。
+    _RAW_MB_PER_S = 15.0
     for src in SOURCES:
+        try:
+            _raw_mb = os.path.getsize(os.path.join(RAW_DIR, RAW_JSON[src])) / (1024 * 1024)
+        except OSError:
+            _raw_mb = 0.0
+        _clean_timeout = int(min(max(1800.0, _raw_mb * _RAW_MB_PER_S), 21600.0))
+        print(
+            f"[clean] {src}: raw {_raw_mb:.0f}MB → 超时 {_clean_timeout}s"
+            "（N-150 按体量配置；原固定 1800s）",
+            flush=True,
+        )
         report.append(
             _run(
                 f"clean:{src}",
@@ -823,7 +842,7 @@ def _run_chain(args) -> int:
                     "--raw",
                     os.path.join(RAW_DIR, RAW_JSON[src]),
                 ],
-                timeout=1800,
+                timeout=_clean_timeout,
             )
         )
         if args.stop_on_error and report[-1]["rc"]:
