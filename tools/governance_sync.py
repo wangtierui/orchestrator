@@ -47,6 +47,7 @@ _THIS = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(_THIS)
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
+import paths
 from config.exitcodes import ExitCode
 from std_lib.common_lib import governance_store as gs
 
@@ -60,7 +61,7 @@ REVIEW = os.path.join(ROOT, "modules", "regulatory_scrapers", "timeliness_review
 ATTR_CSV = os.path.join(CLS_DATA, "人身保险公司-文件归属表.csv")
 THEME_CSV = os.path.join(CLS_DATA, "人身保险公司-主题归属表.csv")
 IPB_INDEX = os.path.join(IPB_DATA, "internal_policy_index.json")
-REL_INDEX = os.path.join(CLS_DATA, "relations", "relations_index.jsonl")
+REL_INDEX = paths.relations_index()
 TL_STATE = os.path.join(REVIEW, "verification_state.json")
 
 # 归属表列名（中文列，契约见 interfaces/contract.REGISTRY_CSV_FIELDS）

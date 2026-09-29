@@ -66,6 +66,7 @@ DOCS_REPORTS = os.path.join(ROOT, "docs", "reports")
 # 需显式补仓根才能 import std_lib（阶段 0/1 治理库接线）。
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
+import paths
 from config.enums import SOURCE_ORDER
 from config.exitcodes import ExitCode
 
@@ -915,7 +916,7 @@ def _run_chain(args) -> int:
     _wm(
         "relations_index",
         rc=_rc_of(report, "relations:gen"),
-        paths=[os.path.join(CLS_DATA, "relations", "relations_index.jsonl")],
+        paths=[paths.relations_index()],
     )
 
     # ---- 阶段 3：reconcile ----

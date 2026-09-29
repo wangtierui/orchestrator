@@ -69,6 +69,22 @@ def module_dir(name: str) -> str:
     return os.path.join(MODULES_DIR, spec.pkg)
 
 
+
+def relations_dir() -> str:
+    """关系产物目录（**唯一出口**）。"""
+    return os.path.join(module_dir("regulatory_classifier"), "data", "relations")
+
+
+def relations_index() -> str:
+    """关系事实源 `relations_index.jsonl` 路径（**唯一出口**，2026-09-29 收敛）。
+
+    收敛理由（`tools/audit_health.py`「数据源不唯一」）：此前 **8 个文件各自**用
+    `os.path.join(<同名目录>, "relations_index.jsonl")` 构造同一路径 —— 真正的风险不是
+    冗余本身，而是**目录一旦调整会漏改**，导致写入方与读取方**静默分叉**（两侧都"正常"，
+    只是读的是旧位置）。所有消费方一律经本函数取路径。
+    """
+    return os.path.join(relations_dir(), "relations_index.jsonl")
+
 def ensure_dirs() -> None:
     """确保骨架目录存在（幂等）。P0 后保留供安装/测试调用。"""
     for d in (CONFIG_DIR, INTERFACES_DIR, GATES_DIR, STD_LIB_DIR,

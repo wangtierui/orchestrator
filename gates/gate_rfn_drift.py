@@ -46,14 +46,8 @@ def _current_clean_dates():
     return out
 
 
-def _wm_status(key: str):
-    """产物水位状态（阶段 4：判据切换共用入口）。"""
-    try:
-        from interfaces.governance_api import wm_status
-
-        return wm_status(key)
-    except Exception as e:  # noqa: BLE001
-        return "unknown", {"reason": f"{type(e).__name__}: {e}"}
+# 水位查询**唯一实现**在 `gates/_wm.py`（2026-09-29 抽出，消除三处重复）
+from gates._wm import wm_status as _wm_status
 
 
 def _date_compare(state) -> list[str]:

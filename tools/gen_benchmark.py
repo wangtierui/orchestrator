@@ -165,7 +165,7 @@ def _read_count(p: str, key: str) -> int:
 # 分句/结构/主题/关系/关联五项语义增强因此**无验收依据**（不知现状多准 → 无法证明引入模型后变好）。
 # 本区块把**既有事实源**聚合为可 diff 的质量基线：**不引入任何新依赖、不新建度量框架**
 # （原方案 v1 提议新建度量框架；v2 评估指出应**增强本生成器**，故折叠于此，零新增脚本/零新增引导）。
-RELATIONS_JSONL = os.path.join(CLS_DATA, "relations", "relations_index.jsonl")
+RELATIONS_JSONL = paths.relations_index()
 THEME_CSV = os.path.join(CLS_DATA, "人身保险公司-主题归属表.csv")
 RECALL_OUT = os.path.join(
     paths.MODULES_DIR, "regulatory_classifier", "recall_audit", "output"

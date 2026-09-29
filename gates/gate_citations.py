@@ -31,14 +31,10 @@ for _p in (_MOD_CLASS, paths.ROOT):
         sys.path.insert(0, _p)
 
 
-def _wm_status(key: str):
-    """产物水位状态（阶段 4：判据切换共用入口 `interfaces.governance_api.wm_status`）。"""
-    try:
-        from interfaces.governance_api import wm_status
-
-        return wm_status(key)
-    except Exception as e:  # noqa: BLE001  水位不可用 → unknown（调用方退回指纹判据）
-        return "unknown", {"reason": f"{type(e).__name__}: {e}"}
+# 水位查询**唯一实现**在 `gates/_wm.py`（2026-09-29 抽出：原 `gate_citations`/`gate_relations`/
+# `gate_rfn_drift` 三处逐字重复；重复风险是"改一处漏两处"→ 同一产物的水位语义在不同门禁下
+# 不一致，属**隐蔽型门禁失效**）。此处仅别名导入，保持调用点不变。
+from gates._wm import wm_status as _wm_status
 
 
 def run():

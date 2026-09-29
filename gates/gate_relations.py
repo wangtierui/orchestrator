@@ -50,7 +50,7 @@ from config.enums import (
 )
 
 _REL_DIR = os.path.join(paths.MODULES_DIR, "regulatory_classifier", "data", "relations")
-_INDEX = os.path.join(_REL_DIR, "relations_index.jsonl")
+_INDEX = paths.relations_index()
 _STAT = os.path.join(_REL_DIR, "relations_stat.json")
 
 _RESERVED_KEYS = {"relation_id"}
@@ -118,14 +118,8 @@ def _stale_inputs(prod_mtime: float) -> list[str]:
     return [lbl for _t, lbl in sorted(stale, key=lambda kv: -kv[0])]
 
 
-def _wm_status(key: str):
-    """产物水位状态（阶段 4：判据切换的共用入口 `interfaces.governance_api.wm_status`）。"""
-    try:
-        from interfaces.governance_api import wm_status
-
-        return wm_status(key)
-    except Exception as e:  # noqa: BLE001  水位不可用 → unknown（调用方退回 mtime 判据）
-        return "unknown", {"reason": f"{type(e).__name__}: {e}"}
+# 水位查询**唯一实现**在 `gates/_wm.py`（2026-09-29 抽出，消除三处重复）
+from gates._wm import wm_status as _wm_status
 
 
 def run():

@@ -29,6 +29,7 @@ import json
 import os
 import sys
 
+import paths
 from config.enums import SOURCE_ORDER  # N-78：来源规范顺序取自 SSOT
 from config.exitcodes import ExitCode
 
@@ -692,7 +693,7 @@ def d_212_3(names, finals, dry, manifest, outdir) -> None:
 #      或另一写入方写回旧名导致分叉；
 #   4. **数据源缺失即跳过并告警**：不写占位、不登记——避免用占位内容覆盖既有好报告。
 REL_DIR = os.path.join(CDATA, "relations")
-REL_INDEX = os.path.join(REL_DIR, "relations_index.jsonl")
+REL_INDEX = paths.relations_index()
 REL_STAT = os.path.join(REL_DIR, "relations_stat.json")
 
 

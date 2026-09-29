@@ -55,6 +55,7 @@ for _p in (
 ):
     if _p not in sys.path:
         sys.path.insert(0, _p)
+import paths
 from config.enums import (
     RELATION_KIND,
     RELATION_MATCH_METHOD,
@@ -728,7 +729,7 @@ def _build_stat(
 def write_products(rows: list[dict], stat: dict) -> dict:
     """落盘：SSOT（relations_index.jsonl）+ 派生视图（cross_basis.jsonl）+ 统计。"""
     os.makedirs(OUT_DIR, exist_ok=True)
-    index_p = os.path.join(OUT_DIR, "relations_index.jsonl")
+    index_p = paths.relations_index()
     cross_p = os.path.join(OUT_DIR, "cross_basis.jsonl")
     stat_p = os.path.join(OUT_DIR, "relations_stat.json")
 

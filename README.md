@@ -255,6 +255,20 @@ flowchart LR
 | **Ingest 投放区** | data/inbox | worklist 决策项 | inbox_scan 按 inbox_registry.yaml 归类 → worklist | `tools/inbox_scan.py` | 常规流程 |
 | **Validate 门禁** | 全仓数据/代码 | gates 报告 | **22 道** ALL_GATES（契约/枚举/漂移/时效 SSOT/血缘/水位/跨模块/运行时卫生/调度触发一致性…） | `cli.py gates` | 常规流程（阻断） |
 
+> **门禁事实源**：可运行门禁的**唯一注册表** = `gates/__init__.py:ALL_GATES`（`GatesRunner` 只跑注册表内项）。
+> 注册表与磁盘 `gates/gate_*.py` **数量与名称必须一致**（`tools/audit_health.py` 会核验"写了不跑/跑了不存在"）。
+
+### 4.3 链路事实源与自检（**机器生成，勿手改**）
+
+上两节（4.1 图 / 4.2 表）为**人工维护的概览**；**精确的链路事实源**是下列机器产物 ——
+二者如有出入，**以机器产物为准**（这正是"代码与文档一致"的落地方式：不靠人抄，靠生成）：
+
+| 产物 | 生成方式 | 内容 | 纪律 |
+| :--- | :--- | :--- | :--- |
+| `docs/全链数据流总图.md` | `python -m tools.gen_flow_map` | 顺序（←`STEP_ORDER`）、逐步骤命令（←源码 `_run` 调用点）、降级/失败语义、**每个接入模型的链路节点定位**（含**未启用**者与未取得权重者标记） | **勿手改**；改链路请改源码后重跑 |
+| `BENCHMARK.md` | `python tools/gen_benchmark.py` | 语义质量基线（含 §6.3 关系定位正确性边界、§6.6 语义增强能力与指纹） | 每轮全链刷新 |
+| `tools/audit_health.py` | `python -m tools.audit_health` | **全链路健康审计**：统一入口自动化 / 流程断点 / 门禁失效 / 数据源不唯一 / 数据阻塞 / 代码冗余 / 实现重复 / 硬编码（九类，可复跑、只读） | 发现分 HIGH/MED/LOW；**审计器自身也会自纠**（见其内注释） |
+
 ---
 
 ## 5. 自动化任务节点与门禁设置 (Automation & Guardrails)
@@ -323,6 +337,9 @@ flowchart LR
 | 数据 | 活跃数据在 `modules/*/data`，**不入 git**：按 `data_migration_manifest.json` 恢复，或按 §6.5 重建 | `cli.py gates` 有 7 道数据门禁 FAIL（属预期，非代码缺陷） |
 | 时效核验（可选） | env `PKULAW_NODE_EXE` + `PKULAW_PKG_DIR` + token 文件 | R13 三态降级为 `unavailable`（不误标） |
 | 采集外网 | gov/mof/nfra/pbc 官网可达；mof 附件主机为内网地址 | mof 全量采集长时间空转 |
+| **P1 语义增强（可选）** | `pip install -e ".[semantic]"`；清单 = `config/schema/semantic_tools.json`；**启用前置** `python -m std_lib.common_lib.semantic_tools --preflight`（五道闸） | 全链走既有**确定性正则**路径（`deps` 闸否）；**模型权重**另需离线预置（见下） |
+| **模型权重离线预置** | 会拉权重的工具须置 `offline_env`（`HANLP_HOME`/`MTL_HANLP_OFFLINE`、`HF_HOME`/`TRANSFORMERS_OFFLINE`、`SENTENCE_TRANSFORMERS_HOME`、`LTP_HOME`） | 探测 `offline_ready=False` → **首次调用会联网下载 GB 级权重**（破坏离线性；`probe` 会显式告警） |
+| **向量检索（可选）** | PostgreSQL + `vector` 扩展 + env `PGVECTOR_DSN`（**口令仅经 env，不入库**）；业务用最小权限角色（`vec` schema） | 探测 `service_reachable=False` → 接入层降级 `sqlite_vec`（与既有 SQLite FTS5 同库同源）→ 再退全文 |
 
 **无数据环境的验收口径**（代码级回归）：
 

@@ -52,12 +52,13 @@ for _p in (
 ):
     if _p not in sys.path:
         sys.path.insert(0, _p)
+import paths
 from config.exitcodes import ExitCode
 
 CLS_DATA = os.path.join(ROOT, "modules", "regulatory_classifier", "data")
 CLEANED = os.path.join(ROOT, "modules", "regulatory_scrapers", "data", "cleaned")
 REL_DIR = os.path.join(CLS_DATA, "relations")
-REL_INDEX = os.path.join(REL_DIR, "relations_index.jsonl")
+REL_INDEX = paths.relations_index()
 OUT_CSV = os.path.join(REL_DIR, "rfn_backlog.csv")
 OUT_MD = os.path.join(ROOT, "docs", "reports", "RFN补登候选清单.md")
 BACKUP_ROOT = os.path.join(ROOT, "modules", "regulatory_classifier", "backups")

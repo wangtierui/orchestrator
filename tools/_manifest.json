@@ -10,6 +10,11 @@
  ],
  "entries": [
   {
+   "file": "audit_health.py",
+   "category": "tool",
+   "entry": "全链路健康审计（统一入口自动化/流程断点/门禁失效/数据源不唯一/数据阻塞/冗余/重复/硬编码）"
+  },
+  {
    "file": "build_east_backlog.py",
    "category": "tool",
    "entry": "EAST2.0 表格类监管文件 → supp backlog（§3.12.5 的 supp 通道）"

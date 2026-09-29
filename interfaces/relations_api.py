@@ -35,8 +35,10 @@ _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
+import paths
+
 RELATIONS_DIR = os.path.join(_ROOT, "modules", "regulatory_classifier", "data", "relations")
-INDEX_PATH = os.path.join(RELATIONS_DIR, "relations_index.jsonl")
+INDEX_PATH = paths.relations_index()
 CROSS_PATH = os.path.join(RELATIONS_DIR, "cross_basis.jsonl")
 STAT_PATH = os.path.join(RELATIONS_DIR, "relations_stat.json")
 

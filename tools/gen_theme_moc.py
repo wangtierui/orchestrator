@@ -8,7 +8,10 @@
   - 主题名：rfn.registry.THEME_MAP（若 registry 不可用则用 T{n}）
 
 用法：
-  python tools/gen_theme_moc.py --out "D:\\DeMon KB\\监管法规库\\主题索引"
+  python tools/gen_theme_moc.py --out "<vault 目录>/监管法规库/主题索引"
+
+  注：`--out` 为**调用方本地绝对/相对路径**，须经命令行传入 ——
+  仓库内**不得硬编码**任何个人目录（`tools/audit_health.py` 的「硬编码」检查会拦截）。
 """
 
 from __future__ import annotations
