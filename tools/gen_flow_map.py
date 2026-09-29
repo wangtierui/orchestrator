@@ -86,6 +86,111 @@ def _purpose(step: str) -> str:
     return "**（未登记作用：请在 `gen_flow_map.PURPOSE` 补登）**"
 
 
+# 模型 → **链路节点绑定**（唯一事实源；图与表均由它派生）
+#   step  ：挂接的链路步骤（须存在于 `STEP_ORDER`，或 `OND` 表示"按需节点、无链步骤"）
+#   stage ：所属阶段（用于 Mermaid 连线到阶段节点）
+#   role  ：在该节点做什么（一句话）
+#   down  ：不可用时的降级措施（**必须显式**，不写"无"）
+MODEL_BINDINGS: dict = {
+    "hanlp": {
+        "step": "clauses", "stage": "阶段1",
+        "role": "条文**分句/结构增强**（ML 分句替代正则切分）",
+        "down": "回退 `std_lib/scraper_std` 的规则分句（既有 SSOT，零依赖）",
+    },
+    "ltp": {
+        "step": "clauses", "stage": "阶段1",
+        "role": "条文分句（**hanlp 的二选一备选**，按质量择优）",
+        "down": "同 hanlp；两者皆不可用即用规则分句",
+    },
+    "weknora_docreader": {
+        "step": "clean", "stage": "阶段1",
+        "role": "文档**版面分析**（25+ 格式渲染，补正文抽取）",
+        "down": "回退 `crawler_common.extract_document_text`（既有 6 态）",
+    },
+    "youtu_embedding": {
+        "step": "classify:all", "stage": "阶段2",
+        "role": "**主题辅助裁定**（语义向量近邻投票，P1-1）",
+        "down": "回退关键词/规则判定（既有主题分类器）",
+    },
+    "text2vec": {
+        "step": "classify:all", "stage": "阶段2",
+        "role": "同上（**已被 youtu_embedding 取代**，保留为备选）",
+        "down": "优先 youtu_embedding；再退关键词规则",
+    },
+    "bertopic": {
+        "step": "classify:all", "stage": "阶段2",
+        "role": "**主题内子簇语义化**（P1-5，仅产出分析视图）",
+        "down": "不做子簇（仅影响分析视图，不产事实源）",
+    },
+    "umap": {
+        "step": "classify:all", "stage": "阶段2",
+        "role": "bertopic 的降维依赖（**不单独使用**）",
+        "down": "随 bertopic 一并跳过",
+    },
+    "hdbscan": {
+        "step": "classify:all", "stage": "阶段2",
+        "role": "bertopic 的聚类依赖（**不单独使用**）",
+        "down": "随 bertopic 一并跳过",
+    },
+    "youtu_embedding@relations": {
+        "step": "relations:gen", "stage": "阶段2",
+        "role": "**关联语义档**（P1-2：依据/废止关系的语义近似判定）",
+        "down": "回退正则关系抽取（既有 `common_lib/relations`）",
+    },
+    "aprcoie": {
+        "step": "relations:gen", "stage": "阶段2",
+        "role": "中文**开放信息抽取**（自动生成抽取模式，P3-1）",
+        "down": "回退正则关系抽取（P3 可选，未启用不影响主链）",
+    },
+    "signalgraph": {
+        "step": "relations:gen", "stage": "阶段2",
+        "role": "**零 Token 确定性图构建**（P3-2）",
+        "down": "回退关系三元组 → 既有图构件",
+    },
+    "pgvector": {
+        "step": "OND", "stage": "阶段4",
+        "role": "**向量检索**后端（P2-2；`vec` schema，最小权限角色）",
+        "down": "降级 `sqlite_vec`（同库同源）→ 再退 SQLite FTS5 全文",
+    },
+    "sqlite_vec": {
+        "step": "OND", "stage": "阶段4",
+        "role": "向量检索**降级后端**（与既有 SQLite FTS5 同库同源）",
+        "down": "回退 SQLite FTS5 全文检索（零服务依赖）",
+    },
+    "paradedb": {
+        "step": "OND", "stage": "阶段4",
+        "role": "向量+BM25 混合检索（**已被 pgvector 替代**，可选外部后端）",
+        "down": "使用 pgvector / sqlite_vec（**不建议随仓分发**：AGPL-3.0）",
+    },
+}
+# 同一工具可挂多个节点（如 youtu_embedding 同时用于主题与关系）→ 以 `<tool>@<用途>` 区分
+_OND = "**按需节点**（无独立链步骤；由 `pg:health` 披露、业务按需调用）"
+# 阶段 → Mermaid 阶段节点 ID（**必须用节点 ID**，不能取中文首字 —— 实测曾误取为"阶"）
+STAGE_NODE = {"阶段1": "A", "阶段2": "B", "阶段3": "C", "阶段4": "D", "阶段5": "E", "阶段6": "F"}
+
+
+def _model_status(name: str, p: dict) -> tuple:
+    """模型状态 → `(标签, 原因, 是否已启用)`。**未启用也必须给出原因**（不静默）。"""
+    if not p["available"]:
+        cfg = MODEL_BINDINGS.get(name) or {}
+        extra = ""
+        if cfg.get("step") == "OND":
+            extra = "（可选外部后端）"
+        return "未装 · 未启用", f"依赖未安装{extra}", False
+    if p.get("offline_ready") is False:
+        return "已接入 · **未启用**", "**模型权重未取得**（白名单网络不含模型站）→ 启用前须预置", False
+    if p.get("service_reachable") is False:
+        return "已接入 · **未启用**", "客户端可用但**服务不可达**（未部署/未启动）", False
+    # 服务型工具：端点未配置（`service_reachable is None` 且 kind=service）→ **未启用**
+    # （此前会落入"已启用"分支 —— 实测 `paradedb` 因 psycopg 偶然可用而被误判为已启用，
+    #  而其**服务从未部署**。客户端库在 ≠ 服务在，这正是 N-113 三态要区分的事实。）
+    if p.get("kind") == "service" and p.get("service_reachable") is None:
+        return "已接入 · **未启用**", "**服务未部署 / 端点未配置**", False
+    if (name or "").startswith("text2vec"):
+        return "已接入 · 备选", "已被 youtu_embedding 取代（保留为二选一备选）", False
+    return "**已启用**", "依赖与权重均就绪，可被调用", True
+
+
 def _steps() -> list:
     import importlib
 
@@ -126,17 +231,13 @@ def _commands() -> dict:
 
 
 def _tool_states() -> dict:
-    """工具 -> (available, offline_ready, pipeline_ref)；用于标记权重未取得的环节。"""
+    """工具 → **完整探测结果**（含 offline_ready / service_reachable / pipeline_ref）。
+
+    供"模型节点入图"判定状态：**未启用也要给出原因**（权重未取得 / 服务未部署 / 未安装）。
+    """
     from std_lib.common_lib import semantic_tools as st
 
-    res: dict = {}
-    for n, p in st.probe_all().items():
-        res[n] = {
-            "available": p["available"],
-            "offline_ready": p.get("offline_ready"),
-            "pipeline_ref": p.get("pipeline_ref") or "",
-        }
-    return res
+    return {n: dict(p) for n, p in st.probe_all().items()}
 
 
 def build() -> str:
@@ -157,7 +258,13 @@ def build() -> str:
     )
     L.append(f">\n> 步骤数：**{len(steps)}**；工具：**{len(tools)}**（可用 "
              f"{len(tools) - len(unavail)}，未装 {len(unavail)}）\n")
-    L.append("## 一、链路总览（Mermaid）")
+    L.append("## 一、链路总览（Mermaid：**含全部接入模型节点**）")
+    L.append("")
+    L.append(
+        "> 图中**每个接入模型都作为一个节点**挂在它所属阶段的链路节点上（虚线=挂接关系，"
+        "边标签为**具体步骤**）；**无论是否启用均已入图**，并以样式区分："
+        "**实线绿=已启用**、**虚线灰=未启用**。"
+    )
     L.append("")
     L.append("```mermaid")
     L.append("flowchart TD")
@@ -168,9 +275,37 @@ def build() -> str:
     L.append('  D --> E["阶段5 只读披露<br/>retention:plan / semantic:preflight / pg:health"]')
     L.append('  E --> F["阶段6 条件步骤<br/>wiki:sync"]')
     L.append('  F --> G["链尾 门禁 gates（阻断）"]')
-    L.append('  E -.->|"后端不可用属合法状态"| E')
-    L.append('  D -.->|"P2-2 向量检索（按需）"| V[("pgvector / sqlite_vec")]')
+    L.append("")
+    # —— 模型节点：按绑定挂到阶段节点；**未启用同样入图** ——
+    on_names: list[str] = []
+    off_names: list[str] = []
+    for name in sorted(MODEL_BINDINGS):
+        tool = name.split("@")[0]
+        p = tools.get(tool)
+        if p is None:
+            continue
+        label, _reason, enabled = _model_status(tool, p)
+        cfg = MODEL_BINDINGS[name]
+        node = "M_" + re.sub(r"\W+", "_", name)
+        clean_label = label.replace("**", "").replace(" · ", "·")
+        L.append(
+            f'  {STAGE_NODE.get(cfg["stage"], "A")} -.->|"{cfg["step"]}"| '
+            f'{node}["{tool}<br/>{clean_label}"]'
+        )
+        (on_names if enabled else off_names).append(node)
+    L.append("")
+    L.append("  classDef on fill:#d7f2df,stroke:#2e7d32,stroke-width:1px")
+    L.append("  classDef off fill:#f2f2f2,stroke:#8a8a8a,stroke-dasharray:4 2")
+    if on_names:
+        L.append("  class " + ",".join(on_names) + " on")
+    if off_names:
+        L.append("  class " + ",".join(off_names) + " off")
     L.append("```")
+    L.append("")
+    L.append(
+        f"图例：**已启用 {len(on_names)} 个**（实线绿）／**未启用 {len(off_names)} 个**（虚线灰，"
+        "原因见 §三）—— **未启用模型同样作为节点存在**，便于在链路上定位其将来挂接的位置。"
+    )
     L.append("")
     L.append("## 二、逐步骤表（顺序 = `STEP_ORDER`；命令自源码抽取）")
     L.append("")
@@ -195,27 +330,71 @@ def build() -> str:
             degr = "**阻断**（失败即停）"
         L.append(f"| {i} | `{s}` | {purpose} | `{cmd}` | {degr} |")
     L.append("")
-    L.append("## 三、⚠️ 未取得模型权重的环节（**单独标记**）")
+    L.append("## 三、模型 ↔ 链路节点定位表（**全部接入模型，含未启用**）")
+    L.append("")
+    L.append(
+        "> 纪律：**每个接入模型都必须在此表定位到链路节点**；未启用者须给出**原因**与**降级措施**"
+        "（不得留空、不得写「无」）。绑定事实源：`gen_flow_map.MODEL_BINDINGS`。"
+    )
+    L.append("")
+    unbound = sorted(set(tools) - {k.split("@")[0] for k in MODEL_BINDINGS})
+    if unbound:
+        L.append(f"> ⚠️ **未绑定模型的工具**（须在 `MODEL_BINDINGS` 补登）：`{unbound}`")
+        L.append("")
+    L.append("| 模型 | 挂接链路节点 | 阶段 | 在该节点做什么 | 状态 | 未启用原因 | 降级措施 |")
+    L.append("|---|---|---|---|---|---|---|")
+    n_on = n_off = 0
+    for name in sorted(MODEL_BINDINGS):
+        tool = name.split("@")[0]
+        p = tools.get(tool)
+        if p is None:
+            continue
+        label, reason, enabled = _model_status(tool, p)
+        cfg = MODEL_BINDINGS[name]
+        step = cfg["step"]
+        node = _OND if step == "OND" else f"`{step}`"
+        if not enabled:
+            n_off += 1
+        else:
+            n_on += 1
+        mark = "⚠️ " if p.get("offline_ready") is False else ""
+        extra = "" if name == tool else "（`@`：同工具的第二用途）"
+        L.append(
+            f"| `{name}`{extra} | {node} | {cfg['stage']} | {cfg['role']} | "
+            f"{mark}{label} | {reason} | {cfg['down']} |"
+        )
+    L.append("")
+    L.append(
+        f"合计 **{n_on + n_off}** 个模型节点（**已启用 {n_on}** ／ **未启用 {n_off}**）—— "
+        "两者**均已入图**（§一），未启用者标注了将来挂接的确切位置。"
+    )
+    L.append("")
+    L.append("### 3.1 ⚠️ 未取得模型权重的环节（**单独标记**）")
     L.append("")
     if weight_pending:
         L.append(
-            "以下工具**依赖代码已就绪、但权重未取得**（网络白名单不含模型站；"
-            "`offline_ready=False`）→ **相关环节在权重落地前不得启用**："
+            "以下工具**代码依赖已就绪、但权重未取得**（网络白名单不含模型站；`offline_ready=False`）"
+            "→ **相关环节在权重落地前不得启用**："
         )
         L.append("")
-        L.append("| 工具 | 方案项 | 状态 | 说明 |")
+        L.append("| 工具 | 挂接节点 | 方案项 | 预置方式 |")
         L.append("|---|---|---|---|")
-        for n in sorted(weight_pending):
+        for name in sorted(MODEL_BINDINGS):
+            tool = name.split("@")[0]
+            if tool not in weight_pending:
+                continue
+            cfg = MODEL_BINDINGS[name]
+            node = _OND if cfg["step"] == "OND" else f"`{cfg['step']}`"
             L.append(
-                f"| `{n}` | {tools[n]['pipeline_ref']} | ⚠️ **权重未取得** | "
-                "须在可达环境预置后迁入（`HF_HOME` / `HANLP_HOME`） |"
+                f"| `{name}` | {node} | {tools[tool]['pipeline_ref']} | "
+                "在可达环境预置后迁入（`HF_HOME` / `HANLP_HOME`） |"
             )
     else:
-        L.append("（当前无需外部权重的工具已全部就绪；或全部未装。）")
+        L.append("（当前无「已装但权重未取得」的工具。）")
     L.append("")
-    L.append("**受影响的链路环节**：`semantic:preflight` 的 `offline` 闸（本轮唯一未过闸）；")
+    L.append("**受影响的链路环节**：`semantic:preflight` 的 `offline` 闸（当前唯一未过闸）；")
     L.append("**不受影响**：主链（采集→清洗→条文→关系→报告→门禁）**不依赖任何模型权重**，")
-    L.append("全部走确定性正则/规则路径；P1 增强层为**可选叠加**。")
+    L.append("全部走确定性正则/规则路径；上表全部模型均为**可选叠加**，缺失即按「降级措施」列回退。")
     L.append("")
     L.append("## 四、向量检索接入（P2-2，按需）")
     L.append("")

@@ -183,6 +183,7 @@
    "pipeline_ref": "v2 P1-5（主题内子簇语义化，可选）",
    "approx_size": "依赖 umap/hdbscan/scikit-learn + Transformer 权重",
    "offline": "同 text2vec：模型须预置；聚类结果**不写主题归属表**（上游事实源）",
+   "offline_env": ["HF_HOME", "TRANSFORMERS_OFFLINE"],
    "license_to_verify": true
   },
   "umap": {
