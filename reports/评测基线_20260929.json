@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-09-29 00:26:25",
+ "generated_at": "2026-09-29 11:36:18",
  "generator": "tools/gen_benchmark.py",
  "schema_version": "1.0",
  "note": "语义质量基线（现状量化）；供语义增强上线前后逐键比对。",
@@ -124,7 +124,7 @@
    "no_body",
    "stats"
   ],
-  "generated_at": "2026-09-28T20:47:00+0800",
+  "generated_at": "2026-09-29T01:52:48+0800",
   "gates": {
    "clean": true,
    "validity": true,
@@ -135,19 +135,20 @@
  "cleaning": {
   "dir": "modules\\regulatory_scrapers\\data\\cleaned",
   "sources": {
-   "gov_cleaned_20260928": 13178,
-   "mof_cleaned_20260928": 870,
+   "gov_cleaned_20260929": 13178,
+   "mof_cleaned_20260929": 870,
    "nfra_cleaned_20260926.quarantine": 5,
    "nfra_cleaned_20260927.quarantine": 5,
-   "nfra_cleaned_20260928": 1934,
    "nfra_cleaned_20260928.quarantine": 5,
-   "pbc_cleaned_20260928": 571,
+   "nfra_cleaned_20260929": 1934,
+   "nfra_cleaned_20260929.quarantine": 5,
+   "pbc_cleaned_20260929": 571,
    "supp_cleaned_20260926.quarantine": 4,
-   "supp_cleaned_20260928": 58
+   "supp_cleaned_20260929": 58
   }
  },
  "semantic": {
-  "summary": "语义增强能力：2/10 可用（hdbscan, umap）",
+  "summary": "语义增强能力：2/11 可用（hdbscan, umap）",
   "fingerprint": {
    "available": [
     "hdbscan",
@@ -161,7 +162,8 @@
     "paradedb",
     "signalgraph",
     "text2vec",
-    "weknora_docreader"
+    "weknora_docreader",
+    "youtu_embedding"
    ],
    "versions": {
     "hdbscan": "0.8.44",
@@ -219,6 +221,11 @@
     "available": false,
     "version": "",
     "pipeline_ref": "v2 P2-1（只补版面分析；OCR 通路已存在，不重做）"
+   },
+   "youtu_embedding": {
+    "available": false,
+    "version": "",
+    "pipeline_ref": "v2 P1-1（主题辅助裁定）、P1-2（关联语义档）"
    }
   }
  }

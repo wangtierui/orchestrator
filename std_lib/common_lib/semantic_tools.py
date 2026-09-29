@@ -171,6 +171,20 @@ def probe(name: str) -> dict:
                 service_reachable = False
                 detail = f"客户端可用但**服务不可达**（{endpoint}）→ 未部署或未启动"
 
+    # N-120（2026-09-29）：**`hf_model` 探测类型**（新增）。适用"无 pip 包、以 HuggingFace 模型 id
+    # 接入"的工具（如 `tencent/Youtu-Embedding`）：可用性 = 加载库（transformers）可导入 **且**
+    # 权重已在**本地 HF 缓存**中 —— 后者是离线纪律的硬要求（否则首用会联网拉数百 MB 权重）。
+    model_cached = None
+    if kind == "hf_model":
+        mid = str(pspec.get("hf_model") or "")
+        if mid:
+            root = os.environ.get("HF_HOME") or os.path.join(
+                os.path.expanduser("~"), ".cache", "huggingface"
+            )
+            model_cached = os.path.isdir(os.path.join(root, "hub", "models--" + mid.replace("/", "--")))
+            if found and not model_cached:
+                detail = f"加载库可用但**权重未本地缓存**（{mid}）→ 首用将联网下载"
+
     envs = [str(x) for x in (spec.get("offline_env") or []) if str(x)]
     missing_env = [e for e in envs if not os.environ.get(e)]
     offline_ready = None if not envs else not missing_env
@@ -191,6 +205,8 @@ def probe(name: str) -> dict:
         "offline_env_missing": missing_env,
         # N-113：服务型连通性 —— True 可连通 / False 不可达 / None 非服务型（或端点非 host:port）
         "service_reachable": service_reachable,
+        # N-120：HF 权重本地缓存 —— True 已缓存 / False 未缓存（首用会联网）/ None 非 hf_model
+        "model_cached": model_cached,
     }
 
 
@@ -315,8 +331,12 @@ def verify_licenses(tools: list | None = None) -> dict:
         spdx, src = "", ""
         # ① GitHub 仓库（最权威：仓库自带 LICENSE）
         spdx, src = _spdx_from_github(str(spec.get("repo") or ""))
-        # ② 退回 PyPI classifiers
-        if not spdx:
+        # ② 退回 PyPI —— ⚠️ **仅当该 pypi 就是工具自身**（`kind == "module"`）时可用。
+        #    N-121（2026-09-29）**修元数据串线**：`hf_model`/`service` 型工具的 `pypi` 字段表示
+        #    **加载库/客户端库**（如 youtu_embedding 的 `transformers`），拿它核验**本工具**的许可
+        #    会把库的许可**错误归因**给工具（实测曾把 youtu_embedding 记为 "Apache-2.0 ← transformers"）。
+        #    故非 module 型**不得**回退 PyPI；取不到就如实挂 pending。
+        if not spdx and str((spec.get("probe") or {}).get("kind") or "module") == "module":
             spdx, src = _spdx_from_pypi(str(spec.get("pypi") or ""))
         out[n] = {"spdx": spdx, "source": src, "ok": bool(spdx)}
     return out
@@ -368,12 +388,17 @@ def preflight() -> dict:
 
     gates: dict = {}
 
-    # ① 依赖
+    # ① 依赖（**任一 P1 后端可用**即可开始；逐项后端在各自 pipeline 内按需）
     try:
-        ok1 = available_any("hanlp", "ltp")
+        backends = ["hanlp", "ltp", "youtu_embedding", "text2vec", "bertopic"]
+        ok1 = available_any(*backends)
         gates["deps"] = {
             "ok": bool(ok1),
-            "detail": "分句增强层可用（hanlp/ltp 任一）" if ok1 else "hanlp / ltp 均未安装",
+            "detail": (
+                f"P1 后端可用：{[b for b in backends if available(b)]}"
+                if ok1
+                else f"{backends} 均未安装"
+            ),
         }
     except Exception as e:  # noqa: BLE001
         gates["deps"] = {"ok": False, "detail": f"{type(e).__name__}: {e}"}
@@ -382,7 +407,7 @@ def preflight() -> dict:
     try:
         bad = [
             n
-            for n in ("hanlp", "ltp", "text2vec", "bertopic")
+            for n in ("hanlp", "ltp", "youtu_embedding", "text2vec", "bertopic")
             if probe(n)["available"] and probe(n).get("offline_ready") is False
         ]
         gates["offline"] = {
@@ -415,13 +440,27 @@ def preflight() -> dict:
     except Exception as e:  # noqa: BLE001
         gates["baseline"] = {"ok": False, "detail": f"{type(e).__name__}: {e}"}
 
-    # ⑤ 许可
+    # ⑤ 许可（**策略驱动**：`license_policy.enforced` 决定是否阻断 —— 机制不变，口径可配）
     try:
         pend = license_pending()
-        gates["license"] = {
-            "ok": not pend,
-            "detail": "许可全部已核" if not pend else f"未核许可 {len(pend)} 项：{pend}",
-        }
+        reg = load_manifest().get("license_registry") or {}
+        pol = reg.get("license_policy") or {}
+        enforced = pol.get("enforced", True)
+        risk = sorted(reg.get("risk_notes") or {})
+        if not pend:
+            gates["license"] = {"ok": True, "detail": "许可全部已核"}
+        elif enforced:
+            gates["license"] = {"ok": False, "detail": f"未核许可 {len(pend)} 项：{pend}"}
+        else:
+            # 决策：**不阻断但必须披露**（含风险注记），故 ok=True 而 detail 保留全部事实
+            gates["license"] = {
+                "ok": True,
+                "detail": (
+                    f"**按业务决策不阻断**（{pol.get('decided_at')}：{pol.get('scope', '')}）；"
+                    f"仍披露：未核 {len(pend)} 项 {pend}"
+                    + (f"；风险注记 {risk}" if risk else "")
+                ),
+            }
     except Exception as e:  # noqa: BLE001
         gates["license"] = {"ok": False, "detail": f"{type(e).__name__}: {e}"}
 

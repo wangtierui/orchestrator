@@ -6,31 +6,41 @@
   "degradation": "required",
   "fingerprint": "required",
   "note": "三条硬纪律：① **零硬依赖**——未安装时调用方必须回退既有正则实现，且回退**可观测**（不得静默）；② **降级链**——探测结果驱动分支，不得 try/except 吞掉；③ **指纹**——凡使用任一工具产出的产物，须把 semantic_tools.fingerprint() 写入其 provenance（模型名+版本+权重 sha），否则断点幂等（input_sha）与水位判据会因模型差异而失真。",
-  "gate": "增强层模块**禁止**直接 `import hanlp/ltp/text2vec/bertopic/umap/hdbscan` 顶层硬导入；一律经本清单探测后再惰性导入。"
+  "gate": "增强层模块**禁止**直接 `import hanlp/ltp/text2vec/bertopic/umap/hdbscan` 顶层硬导入；一律经本清单探测后再惰性导入。",
+  "network_policy": "2026-09-29 实测：本环境网络为**白名单式** —— 仅 `pypi.org` 与 `github.com`（含 api.github.com）可达；**模型托管站全部不可达**（huggingface.co / hf-mirror.com / modelscope.cn / file.hankcs.com 均 ConnectTimeout 或 URLError）。**由此得两条明确边界**：① **代码级依赖可部署**（pip 全通，已实测 6/11 可用）；② **模型权重不可获取**（无任何可达镜像）→ `preflight.offline` 在**本环境**不可能通过，权重须在**有模型站访问权的环境**预置后再迁入（HF_HOME / HANLP_HOME 指向本地目录）。**不得**据此判定"增强层不可用"——库与权重是两件事。"
  },
  "license_registry": {
   "note": "许可核验登记（W5，2026-09-28）：**每个工具须在此登记**（verified 或 pending），使“还有哪些未核”机器可查，而非散落在各条目的 `license_to_verify` 自由标记里。判据 U 断言两集合之并 == 工具全集。入库前置：pending 清空。",
   "policy": "入库（把依赖/代码纳入交付面）前，对应工具必须从 pending 移入 verified，并在 verified 值内写明 SPDX 标识与核验日期。核验由 `semantic_tools --verify-licenses` 现查 PyPI/GitHub 权威元数据**取证**（可重复执行，防人工登记随版本静默过时），人工确认后 `--apply` 写入。",
+  "license_policy": {
+   "enforced": false,
+   "decision": "**业务决策（2026-09-29，用户明示）**：许可核验结果**不作为部署闸门** —— 本仓为**自用部署、不对外分发**，许可风险由使用方承担。`preflight` 的 license 闸据此**降为披露项**（仍打印未核清单与风险注记，但不阻断）。",
+   "decided_at": "2026-09-29",
+   "scope": "自用部署（不分发）；若未来对外分发或纳入交付面，须把 enforced 改回 true 并清空 pending。",
+   "residual": "`pending_reason` 与 `risk_notes` **继续保留并披露**（尤其 paradedb=AGPL-3.0 的传染性）——决策改变的是『是否阻断』，不是『是否记录』。"
+  },
   "pending_reason": {
    "ltp": "GitHub API 返回 license=null —— 仓库**未声明许可**（非限流，`_http_json` 成功返回）；纳入交付面存在法律不确定性 → 保持 pending。注：本仓以 hanlp 作分句后端，ltp 属二选一备选，不影响启用决策。",
-   "weknora_docreader": "GitHub API 返回 NOASSERTION / \"Other\" —— 使用**自定义许可**，须人工阅读 LICENSE 原文后方可判定 → 保持 pending。"
+   "weknora_docreader": "GitHub API 返回 NOASSERTION / \"Other\" —— 使用**自定义许可**，须人工阅读 LICENSE 原文后方可判定 → 保持 pending。",
+   "youtu_embedding": "GitHub API 返回 NOASSERTION（LICENSE 文件格式非标准）；**README 徽章明示 MIT**（https://img.shields.io/badge/License-MIT-yellow.svg），但 LICENSE 文件须人工确认后方可登记 → 保持 pending。⚠️ 注：**不得**回退取其 pypi（=transformers）的许可 —— 那是**加载库**的许可，非本工具（N-121 已修）。"
   },
   "risk_notes": {
    "paradedb": "⚠️ **AGPL-3.0**（强 copyleft，含网络服务条款）→ 除与「单机零服务依赖 / 克隆可移植性」冲突外，还带**许可传染**风险；若纳入交付面须法务评估。当前定位为可选外部后端（P2-2），**不建议随仓分发**。"
   },
   "verified": {
-   "aprcoie": "MIT（核验日 2026-09-28；来源 github:license/jialin666/APRCOIE_v1）",
-   "bertopic": "MIT（核验日 2026-09-28；来源 github:license/MaartenGr/BERTopic）",
-   "hanlp": "Apache-2.0（核验日 2026-09-28；来源 github:license/hankcs/HanLP）",
-   "hdbscan": "BSD-3-Clause（核验日 2026-09-28；来源 github:license/scikit-learn-contrib/hdbscan）",
-   "paradedb": "AGPL-3.0（核验日 2026-09-28；来源 github:license/paradedb/paradedb）",
-   "signalgraph": "MIT（核验日 2026-09-28；来源 github:license/zhiliscope/SignalGraph）",
-   "text2vec": "Apache-2.0（核验日 2026-09-28；来源 github:license/shibing624/text2vec）",
-   "umap": "BSD-3-Clause（核验日 2026-09-28；来源 github:license/lmcinnes/umap）"
+   "aprcoie": "MIT（核验日 2026-09-29；来源 github:license/jialin666/APRCOIE_v1）",
+   "bertopic": "MIT（核验日 2026-09-29；来源 github:license/MaartenGr/BERTopic）",
+   "hanlp": "Apache-2.0（核验日 2026-09-29；来源 github:license/hankcs/HanLP）",
+   "hdbscan": "BSD-3-Clause（核验日 2026-09-29；来源 github:license/scikit-learn-contrib/hdbscan）",
+   "paradedb": "AGPL-3.0（核验日 2026-09-29；来源 github:license/paradedb/paradedb）",
+   "signalgraph": "MIT（核验日 2026-09-29；来源 github:license/zhiliscope/SignalGraph）",
+   "text2vec": "Apache-2.0（核验日 2026-09-29；来源 github:license/shibing624/text2vec）",
+   "umap": "BSD-3-Clause（核验日 2026-09-29；来源 github:license/lmcinnes/umap）"
   },
   "pending": [
    "ltp",
-   "weknora_docreader"
+   "weknora_docreader",
+   "youtu_embedding"
   ]
  },
  "tools": {
@@ -69,8 +79,29 @@
    ],
    "license_to_verify": true
   },
+  "youtu_embedding": {
+   "repo": "https://github.com/TencentCloudADP/youtu-embedding",
+   "purpose": "中文语义向量化（腾讯优图，CMTEB 77.58 SOTA）——**替代 text2vec**",
+   "extra": "semantic",
+   "pypi": "transformers",
+   "probe": {
+    "kind": "hf_model",
+    "import_name": "transformers",
+    "hf_model": "tencent/Youtu-Embedding"
+   },
+   "pipeline_ref": "v2 P1-1（主题辅助裁定）、P1-2（关联语义档）",
+   "approx_size": "权重约数百 MB（HF 仓库 tencent/Youtu-Embedding）",
+   "offline": "权重须预置到 HF 缓存（HF_HOME 指向本地目录）并置 TRANSFORMERS_OFFLINE=1；不得首用联网下载",
+   "offline_env": [
+    "HF_HOME",
+    "TRANSFORMERS_OFFLINE"
+   ],
+   "license_to_verify": true,
+   "note": "2026-09-29 评估：**可替代 text2vec** —— ① 功能对口（同为基础文本表示/向量化）；② 接入面一致（均为 transformers+torch 惰性加载，本仓已有 `hf_model` 探测口径）；③ 性能更优（CMTEB 77.58 vs text2vec-base-chinese）；④ 许可 MIT（README 徽章明示；GitHub API 报 NOASSERTION 系 LICENSE 文件格式非标准）；⑤ 无 PyPI 包 → 以 **HuggingFace 模型 id** 接入（故新增 `hf_model` 探测类型，含**本地缓存离线判定**）。"
+  },
   "text2vec": {
    "repo": "https://github.com/shibing624/text2vec",
+   "superseded_by": "youtu_embedding（2026-09-29：功能更优、接入面一致；本条目**保留为备选**，不再作为 P1-1/P1-2 首选）",
    "purpose": "中文语义向量化（Sentence-BERT / CoSENT）",
    "extra": "semantic",
    "pypi": "text2vec",
@@ -171,7 +202,12 @@
    "pipeline_ref": "v2 P2-1（只补版面分析；OCR 通路已存在，不重做）",
    "approx_size": "Docker 服务（须独立部署）",
    "offline": "服务不可达时**必须**回退 crawler_common.extract_document_text（复用既有 6 态，不新增状态）",
-   "license_to_verify": true
+   "license_to_verify": true,
+   "deploy_blocked": {
+    "reason": "2026-09-29 实测：本环境 **未安装 Docker / docker-compose / Go 工具链** —— WeKnora 官方以 Docker Compose 部署 docreader（Go 服务），无容器运行时则**无官方部署路径**。",
+    "unblock": "① 安装 Docker Desktop 后按其 compose 起 docreader；② 或有 Go 工具链时源码构建其 cmd 入口。",
+    "substitute": "仓库**已有**版面/正文抽取能力（`std_lib/scraper_std` + pypdf/pdfplumber/PyMuPDF，含 6 态抽取）——docreader 的增量价值是 25+ 格式与版面渲染，**非当前瓶颈**（v2 亦把它列为 P2-1）。"
+   }
   },
   "paradedb": {
    "repo": "https://github.com/paradedb/paradedb",
@@ -188,7 +224,12 @@
    "pipeline_ref": "v2 P2-2（**须先做零服务替代评估**；且须同时覆盖 search_internal）",
    "approx_size": "Docker：paradedb/paradedb:v0.22.2-pg17",
    "offline": "与\"单机零服务依赖 / 克隆可移植性\"冲突 → 仅作可选后端，SQLite FTS5 保留为降级路径",
-   "license_to_verify": true
+   "license_to_verify": true,
+   "deploy_blocked": {
+    "reason": "2026-09-29 实测：本环境 **未安装 Docker / PostgreSQL（pg_config、psql 均无）** —— ParadeDB 是 **PostgreSQL 扩展**（需 `paradedb/paradedb` 镜像或对 PG 源码编译），且**无 Windows 原生发行**；无 PG + 无容器运行时则**无部署路径**（非配置问题，属平台不支持）。",
+    "unblock": "在 Linux/容器环境部署后，以 `PARADEDB_DSN` 接入（本仓已留端点探测与 6 态降级）。",
+    "substitute": "**SQLite FTS5 保留为降级路径**（v2 P2-2 已定：须先做零服务替代评估），当前检索能力不因缺 ParadeDB 而缺失。"
+   }
   }
  }
 }

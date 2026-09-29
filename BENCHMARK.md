@@ -1,6 +1,6 @@
 # BENCHMARK —— 交付基准登记（回归对照基线）
 
-> 自动生成：tools/gen_benchmark.py @ 2026-09-29 00:26:25 | python 3.13.14
+> 自动生成：tools/gen_benchmark.py @ 2026-09-29 11:36:18 | python 3.13.14
 > 用途：数据重建/重构后重跑 `python tools/gen_benchmark.py` 刷新；数值漂移即回归信号。
 
 ## 1 门禁（gates/ALL_GATES）
@@ -46,11 +46,11 @@
 
 | 源 | 快照日期 | 备注 |
 |---|---|---|
-| gov | 20260928 | 最新 cleaned |
-| mof | 20260928 | 最新 cleaned |
-| nfra | 20260928 | 最新 cleaned |
-| pbc | 20260928 | 最新 cleaned |
-| supp | 20260928 | 最新 cleaned |
+| gov | 20260929 | 最新 cleaned |
+| mof | 20260929 | 最新 cleaned |
+| nfra | 20260929 | 最新 cleaned |
+| pbc | 20260929 | 最新 cleaned |
+| supp | 20260929 | 最新 cleaned |
 | 合计 | — | 索引记录 16611 |
 
 ### 3.2 classifier 底座/明细/桥（数据血缘 R10 已注入 generated_*）
@@ -144,29 +144,30 @@
 
 ### 6.4 召回覆盖（`recall_audit` 既有产物）
 
-- 产物目录存在 `True`；报告生成于 2026-09-28T20:47:00+0800
+- 产物目录存在 `True`；报告生成于 2026-09-29T01:52:48+0800
 - 四门禁：`{'clean': True, 'validity': True, 'contract': True, 'schema': True}`
 
 ### 6.5 清洗体量
 
 | 产物 | 条数 |
 |---|---|
-| gov_cleaned_20260928 | 13178 |
-| mof_cleaned_20260928 | 870 |
+| gov_cleaned_20260929 | 13178 |
+| mof_cleaned_20260929 | 870 |
 | nfra_cleaned_20260926.quarantine | 5 |
 | nfra_cleaned_20260927.quarantine | 5 |
-| nfra_cleaned_20260928 | 1934 |
 | nfra_cleaned_20260928.quarantine | 5 |
-| pbc_cleaned_20260928 | 571 |
+| nfra_cleaned_20260929 | 1934 |
+| nfra_cleaned_20260929.quarantine | 5 |
+| pbc_cleaned_20260929 | 571 |
 | supp_cleaned_20260926.quarantine | 4 |
-| supp_cleaned_20260928 | 58 |
+| supp_cleaned_20260929 | 58 |
 
 **纪律**：主题判定新增任何分类器时，须在 §6.1 的**可评样本**上报告 P/R，并**对齐**既有 `判定依据` 的「排名 + margin」留痕格式。
 
 ### 6.6 P1 语义增强能力（当前环境）
 
-- 语义增强能力：2/10 可用（hdbscan, umap）
-- 指纹：可用 `['hdbscan', 'umap']`；未装 `8` 项
+- 语义增强能力：2/11 可用（hdbscan, umap）
+- 指纹：可用 `['hdbscan', 'umap']`；未装 `9` 项
 
 | 工具 | 状态 | 版本 | 对应方案项 |
 |---|---|---|---|
@@ -180,5 +181,6 @@
 | `text2vec` | 未装 | — | v2 P1-1（主题辅助裁定）、P1-2（关联语义档） |
 | `umap` | 可用 | 0.5.12 | v2 P1-5（随 BERTopic，不单独使用） |
 | `weknora_docreader` | 未装 | — | v2 P2-1（只补版面分析；OCR 通路已存在，不重做） |
+| `youtu_embedding` | 未装 | — | v2 P1-1（主题辅助裁定）、P1-2（关联语义档） |
 
 > 未装工具不阻断全链：调用方一律经 `std_lib.common_lib.semantic_tools` 探测后惰性导入，不可用时回退既有正则实现并**记录回退说明**（`fallback_notice()`）。清单：`config/schema/semantic_tools.json`；启用：`pip install -e .[semantic]`。
