@@ -78,8 +78,6 @@ from config.enums import (
 )
 from std_lib.common_lib.norm import norm_docno, norm_title_strict
 
-from .sentence_boundary import split_by  # N-90：句读集合 SSOT
-
 SCHEMA_VERSION = "1.0"
 # 2026-09-20 → 1.1：relation_id 派生纳入判别字段（article/action/scope/reason/dst_docno/
 # dst_kind/src_key）并在写入前做确定性唯一化——修复"同一 id 命中多行"的既有缺陷。
@@ -303,8 +301,16 @@ def split_sentences(text: str) -> list[str]:
     N-90（2026-09-28）：句读集合改取**唯一事实源** `std_lib.common_lib.sentence_boundary`
     （原为本地字面量 `[。．.；;！!？?]`，与清洗层各写一份 → 口径二重）。
     **行为不变**：走同模块 `split_by(text, "loose")`，其字符集与原字面量**逐字符相同**。
+
+    N-162（2026-09-30）：**接线 P1 分句增强**（`P1-3 分句/结构增强层`，挂接节点 `relations:gen`）。
+    调用链改为经**执行门面** `semantic_enhance.split_sentences(text, level="loose")`：
+      · **默认（ML 关）** → 仍走 `sentence_boundary.split_by(text,"loose")` ⇒ **逐字节对等，零回归**；
+      · 置 `REG_ORCH_SEMANTIC_SPLIT=1` → 走 LTP 分词锚切句（**增强**），失败**自动回退**并留痕。
+    启用 ML 前须在**可评样本**上量出 P/R（v2 纪律：无度量不得上线）—— 故默认关闭。
     """
-    return split_by(text, "loose")
+    from std_lib.common_lib import semantic_enhance as _se
+
+    return _se.split_sentences(text, level="loose").sentences
 
 
 def extract_docnos(text: str, config: RelationConfig | None = None) -> list[str]:

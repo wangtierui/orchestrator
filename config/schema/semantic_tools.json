@@ -341,5 +341,40 @@
     "substitute": "**SQLite FTS5 保留为降级路径**（v2 P2-2 已定：须先做零服务替代评估），当前检索能力不因缺 ParadeDB 而缺失。"
    }
   }
+ },
+ "selection_policy": {
+  "note": "P1 语义增强**模型选型策略**（唯一事实源）。消费方：std_lib/common_lib/semantic_enhance。纪律：本块只声明**优先级链**，不重复工具元数据（元数据在 tools/）；链中每一项都必须先过 semantic_tools.probe（available + model_ok）。",
+  "by_user": "2026-09-30（用户明示）：全量场景优先 bge_base_zh、text2vec 降级备用；增量或特别指定场景用 youtu。",
+  "modes": {
+   "full": {
+    "primary": "bge_base_zh",
+    "fallback": [
+     "text2vec"
+    ],
+    "when": "全量批处理（17k+ 制度/条文级向量化）——bge 768 维、CPU ~0.06s/句",
+    "why": "bge-base-zh-v1.5 体积小（410MB）、中文检索表现稳、速度快；text2vec 为同维（768）等价备份"
+   },
+   "incremental": {
+    "primary": "youtu_embedding",
+    "fallback": [
+     "bge_base_zh",
+     "text2vec"
+    ],
+    "when": "增量/小批量或**显式指定**（如小规模语义裁定、需要更高表示质量时）",
+    "why": "Youtu-Embedding 2B/2048 维表示更强，但 CPU ~3.5s/句 → 仅适合小批量"
+   }
+  },
+  "override": "embed(model=\"…\") 显式指定优先级最高（覆盖 mode）；仅接受 tools/ 中已登记且就绪的模型名。",
+  "strictness": "strict=False（默认）链耗尽则回退确定性路径并**留痕**；strict=True 抛 EnhanceUnavailable。",
+  "split_policy": {
+   "ml_default_off": true,
+   "env": "REG_ORCH_SEMANTIC_SPLIT=1",
+   "why": "分句口径变更会改变条文/关系产物，须先在**可评样本**量出 P/R 再启用（v2：无度量不得上线）；默认走 std_lib/common_lib/sentence_boundary.split_by（受控 SSOT），零回归。",
+   "backends": {
+    "strict": "ltp",
+    "fallback": "deterministic:sentence_boundary.split_by"
+   }
+  },
+  "provenance": "任何成功路径都须把 semantic_enhance.fingerprint() 写入产物 provenance（模型名 + 依赖版本 + 权重结构指纹）。"
  }
 }
