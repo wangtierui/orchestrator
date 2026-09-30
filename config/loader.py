@@ -128,6 +128,36 @@ def collector_source_map(refresh: bool = False) -> dict[str, str]:
 # --------------------------------------------------------------------------- #
 # ocr.yaml → ocr 配置
 # --------------------------------------------------------------------------- #
+# --------------------------------------------------------------------------- #
+# N-166（2026-09-30）：门禁 `gate_config_integrity` 的**路径与策略**单源化
+# --------------------------------------------------------------------------- #
+# 为何放在 loader：该门禁原**自定路径常量**（`_SCHED_YAML` / `_TRIGGERS_YAML`）并直接
+# `yaml.safe_load(open(...))` —— 那是**第二条读取路径**（本模块是 R24 声明的"程序可读配置
+# 唯一读取口"）。路径若变更，loader 与门禁会各自漂移 → 门禁校验的可能是**旧文件**。
+# 现统一由本模块导出路径常量 + 策略加载函数。
+SCHEDULE_YAML = os.path.join(os.path.dirname(os.path.abspath(__file__)), "schedule.yaml")
+TRIGGERS_YAML = os.path.join(os.path.dirname(os.path.abspath(__file__)), "triggers.yaml")
+INTEGRITY_POLICY_YAML = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "integrity_policy.yaml"
+)
+
+_POLICY_CFG: dict | None = None
+
+
+def load_integrity_policy(refresh: bool = False) -> dict:
+    """门禁 `gate_config_integrity` 的**策略清单**（唯一事实源 = `config/integrity_policy.yaml`）。
+
+    纪律：调用方**必须**处理键缺失 —— 本函数不吞缺失（原实现把策略写死在代码里，缺失无从发生；
+    外置后若静默取默认值，就会把"配置漏写"变成"判据悄悄放宽"）。
+    """
+    global _POLICY_CFG
+    if _POLICY_CFG is not None and not refresh:
+        return _POLICY_CFG
+    with open(INTEGRITY_POLICY_YAML, encoding="utf-8") as fh:
+        _POLICY_CFG = yaml.safe_load(fh) or {}
+    return _POLICY_CFG
+
+
 _OCR_CFG: dict | None = None
 
 

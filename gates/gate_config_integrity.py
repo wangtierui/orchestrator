@@ -50,6 +50,11 @@ import subprocess
 
 import paths
 
+# N-166（2026-09-30）：`config.loader` 是**程序可读配置的唯一读取口（R24）**；
+# 本门禁原自定 `_SCHED_YAML`/`_TRIGGERS_YAML` 路径并自行 `yaml.safe_load` —— 那是**第二条
+# 读取路径**（路径变更时 loader 与门禁各自漂移 → 门禁可能在校验**旧文件**）。现统一取自此处。
+from config import loader as _loader
+
 ROOT = paths.ROOT
 _TOOLS = paths.TOOLS_DIR
 _MANIFEST = os.path.join(_TOOLS, "_manifest.json")
@@ -436,12 +441,26 @@ def _check_corpus() -> tuple[list[str], dict]:
 #    06:30 vs 06:00–06:37）。现 `config/schedule.yaml` 为唯一源、手册由工具反向生成，
 #    本判据断言两者一致 —— 手改手册即 FAIL。
 # --------------------------------------------------------------------------- #
-_SCHED_YAML = os.path.join(ROOT, "config", "schedule.yaml")
+def _policy(section: str | None, key: str, default=None):
+    """取策略值（**缺失即 FAIL 方向**：返回 None → 调用方判据会报问题，不静默放宽）。
+
+    `section=None` ⇒ 读**顶层共用键**（如 `python_aliases`：schedule 与 triggers 两条判据共用）。
+    """
+    scope = _POLICY if section is None else (_POLICY.get(section) or {})
+    return scope.get(key, default)
+
+
+_SCHED_YAML = _loader.SCHEDULE_YAML  # N-166：路径取自唯一读取口（原为自定常量）
 _SCHED_TOOL = os.path.join(ROOT, "tools", "gen_schedule_doc.py")
-_ON_MISS = ("skip", "run_at_next_boot")
-_NOTIFY_KINDS = ("none", "file", "webhook")
-_NOTIFY_ON = frozenset({"failed_step", "gate_fail", "worklist_aged", "doctor_fail"})
-_PYTHON_ALIASES = ("python", "python.exe", "py", "python3")
+# N-166：**策略清单已外置** → `config/integrity_policy.yaml`（经 `config.loader` 读取）。
+# 为什么外置：这些是**可调策略**（值域/上限/别名），与判据逻辑无关 —— 原来「改策略」必须改
+# 门禁源码（高风险动作），且 `_PYTHON_ALIASES` 在文件内**逐字重复两份**（改一漏一 → 同一
+# 语义在两条判据下不一致）。判据**逻辑**仍在代码（YAML 无法表达读文件/AST/跨文件比对）。
+_POLICY: dict = _loader.load_integrity_policy()
+_ON_MISS = tuple(_policy("schedule", "on_miss") or ())
+_NOTIFY_KINDS = tuple(_policy("schedule", "notify_kinds") or ())
+_NOTIFY_ON = frozenset(_policy("schedule", "notify_on") or ())
+_PYTHON_ALIASES = tuple(_policy(None, "python_aliases") or ())  # 顶层共用键（原重复两份）
 
 
 def _load_module_from_path(name: str, path: str):
@@ -541,10 +560,11 @@ def _check_schedule() -> tuple[list[str], dict]:
 #    ③ on_fail ∈ 受控值（与 std_lib.common_lib.triggers.ON_FAIL 同源）；
 #    ④ stage 形如主链阶段号（可选，缺失不阻断——触发项可早于阶段表存在）。
 # --------------------------------------------------------------------------- #
-_TRIGGERS_YAML = os.path.join(ROOT, "config", "triggers.yaml")
+_TRIGGERS_YAML = _loader.TRIGGERS_YAML  # N-166：路径取自唯一读取口
 _TRIGGERS_LIB = os.path.join(ROOT, "std_lib", "common_lib", "triggers.py")
-_MAX_TIMEOUT = 7200
-_PYTHON_ALIASES_T = ("python", "python.exe", "py", "python3")
+_MAX_TIMEOUT = int(_policy("triggers", "max_timeout") or 0)  # N-166：策略外置
+# N-166：原 `_PYTHON_ALIASES_T` 与上方 `_PYTHON_ALIASES` **逐字重复**（同一语义两份定义）
+# → 合并为**单一来源**（策略表 `triggers.python_aliases`）。
 
 
 def _check_triggers() -> tuple[list[str], dict]:
@@ -591,7 +611,7 @@ def _check_triggers() -> tuple[list[str], dict]:
             head = argv[0]
             target = (
                 (os.path.join(ROOT, argv[1]) if len(argv) > 1 else "")
-                if head in _PYTHON_ALIASES_T
+                if head in _PYTHON_ALIASES
                 else os.path.join(ROOT, head)
             )
             if not target or not os.path.exists(target):

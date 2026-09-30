@@ -688,7 +688,40 @@ def check_remote_sync() -> list:
     return f
 
 
+def check_layering() -> list:
+    """**分层纪律**（R-2，2026-09-30）：不得**静态**导入 `tools.*`。
+
+    为什么（实测踩中）：`tools/` 既是"脚本目录"又被 mypy 作为**包路径**扫描；一旦某个被扫描
+    模块写出 `from tools.X import …`，同一文件就会同时以 `X` 与 `tools.X` 两个模块名被解析 →
+    mypy 报 `Source file found twice under different module names`（**阻断 CI**）。
+    正确做法：**可复用实现下沉 `std_lib/`，`tools/` 只放 CLI 薄壳**；
+    若确需从 tools 取常量（如 `STEP_ORDER`），用 `importlib.import_module("tools.X")`（运行时，mypy 不跟进）。
+    """
+    f: list = []
+    pat = re.compile(r"^\s*(?:from\s+tools[.\s]|import\s+tools\b)", re.M)
+    # ⚠️ 判据修正（2026-09-30）：**只查 CI 的 mypy 范围内**的目录（`std_lib/modules/tools/
+    # config/interfaces/gates/commands`）。`tests/` **不在 mypy 范围**（见 `tools/ci_check.py`
+    # 的 mypy 实参）→ 测试里 `from tools.X import …` 不会触发双名解析（实测 8 处命中全在
+    # `tests/test_internal_original_paths.py`，属**误报**；审计器误报会让人去"修"不存在的问题）。
+    for p in _pyfiles(with_tests=False):
+        src = _read(p)
+        for m in pat.finditer(src):
+            line = src[: m.start()].count("\n") + 1
+            f.append(
+                {
+                    "cat": "分层纪律",
+                    "sev": "MED",
+                    "where": f"{_rel(p)}:{line}",
+                    "detail": "静态导入 `tools.*`（该目录在 mypy 扫描范围内）→ mypy 会把同一文件"
+                    "解析为两个模块名（`X` 与 `tools.X`）并**阻断 CI**；改用"
+                    "「实现下沉 `std_lib/`」或 `importlib.import_module(\"tools.X\")`（运行时）",
+                }
+            )
+    return f
+
+
 CHECKS = [
+    ("分层纪律", check_layering),
     ("远程同步", check_remote_sync),
     ("README 一致性", check_readme_consistency),
     ("统一入口", check_entry),

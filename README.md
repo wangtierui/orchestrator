@@ -287,6 +287,7 @@ flowchart LR
 | 数据 | 活跃数据在 `modules/*/data`，**不入 git**：按 `data_migration_manifest.json` 恢复或按 §6.5 重建 | `cli.py gates` 有数据门禁 FAIL（**属预期，非代码缺陷**） |
 | 时效核验（可选） | env `PKULAW_NODE_EXE` + `PKULAW_PKG_DIR` + token 文件 `.pkulaw_token` | R13 三态降级为 `unavailable`（**不误标**） |
 | 采集外网 | gov/mof/nfra/pbc 官网可达；mof 附件主机为内网地址 | mof 全量采集长时间空转 |
+| **P1 取值口径（⚠️ R-4 未闭合）** | 需先定：近邻阈值、是否写主题归属表、以及**是否改动主题事实源** | **未定口径前不得启用**：`bge_base_zh`/`youtu_embedding` 仅可产出**分析视图**，**不得**直接改 `_t*_base`/`_t*_final` 事实源（改口径会重写主题归属 → 须先在可评样本量出 P/R） |
 | **P1 语义增强（可选）** | `pip install -e ".[semantic]"`；清单 = `config/schema/semantic_tools.json`；**启用前置** `python -m std_lib.common_lib.semantic_tools --preflight`（五闸） | 全链走既有**确定性正则**路径（`deps` 闸否）；**模型权重**另见下行 |
 | **模型权重（已随仓预置）** | 4 项权重在 `external/models/`（**git 忽略，不入库**）：`bge-base-zh-v1.5` / `text2vec-base-chinese` / `Youtu-Embedding`（嵌入）+ `LTPbase`（分词·词性）。清单以 `local_dir` 声明、`probe` **实检目录**；加载层强制 `local_files_only` + `HF_HUB_OFFLINE=1` | 缺目录 → `offline_ready=False`；`python -m tools.smoke_semantic_models` 复核真实加载与调用 |
 | **向量检索（可选）** | PostgreSQL + `vector` 扩展 + env `PGVECTOR_DSN`（**口令仅经 env**）；业务用最小权限角色（`vec` schema） | 探测 `service_reachable=False` → 降级 `sqlite_vec`（与既有 FTS5 同库同源）→ 再退全文 |
@@ -380,7 +381,7 @@ s = se.split_sentences(text, level="strict")   # level ∈ {strict, loose}（受
 2. **依赖关系链**：描述文件用途时**必须带"被谁调用"**——本仓的跨层纪律（`scraper→classifier→…` 单向、
    跨模块仅经 `interfaces/`）靠此显式化，README 中每行都标了 Caller。
 3. **事实源优先于叙述**：链路/门禁/能力等**易漂移事实**一律**指向机器生成物**
-   （**本文档 §8**、`BENCHMARK.md`、`ALL_GATES`）；**人工概览与机器产物冲突时，以机器产物为准**。
+   （**本文档 §8**、`BENCHMARK.md`、`ALL_GATES`；⚠️ **R-3**：`reports/` 下的**历史批次报告**是当时事实的快照，其中若有引用旧路径 `docs/全链数据流总图.md`，一律以**本文档 §8** 为准）；**人工概览与机器产物冲突时，以机器产物为准**。
 4. **门禁数/步骤数等数字**由 `tools/audit_health.py` 的「README 一致性」检查**机器核验**
    （声明值与 `len(ALL_GATES)`/`STEP_ORDER` 不符即 FAIL）——改代码后**必须同步本文件**。
 5. **Mermaid** 在 GitHub/GitLab **原生渲染**，无需额外工具。
@@ -563,4 +564,5 @@ flowchart TD
 显式 `model="…"` **覆盖 mode**（优先级最高）；分句增强由 env `REG_ORCH_SEMANTIC_SPLIT=1` 控制（**默认关**，见 §8.6 第 2 条）。
 
 <!-- END GENERATED: 全链数据流总图 -->
+
 

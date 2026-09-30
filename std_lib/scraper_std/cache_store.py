@@ -346,6 +346,22 @@ class ResponseCache:
         return data
 
 
+def url_endpoint_key(url: str) -> str:
+    """缓存键：以「完整 URL 的 sha1」作为**裸端点名**（契约允许 endpoint 为裸端点名）。
+
+    ⚠️ **不可直接把 URL 交给 `TextResponseCache`**：其命名算法取 URL **末段**作 ep
+    （与 nfra 原 `_cache_path` 一致，保证历史缓存可复用）；当 `params` 为空且多个
+    URL 末段同名时（典型如 pbc 栏目页/详情页均以 `index.html` 结尾）会撞进同一
+    缓存文件 → 读到错误正文。此处改用 URL 级唯一键（sha1 前 16 位），
+    `params` 仍参与命名，故同一 URL 的不同参数组合依旧各自独立。
+
+    N-167（2026-09-30）：本函数原在 `gov_collector` 与 `pbc_collector` **各写一份**
+    （逐字相同）—— "改一处漏两处"会让两个源的缓存键算法分叉，且分叉**不会报错**，
+    只会让缓存静默失效/串用。现为**唯一实现**，跨源共用。
+    """
+    return hashlib.sha1(url.encode("utf-8")).hexdigest()[:16]
+
+
 class TextResponseCache:
     """文本/HTML 响应缓存：与 ``ResponseCache`` 同款确定性命名（``<ep>__<sorted_params 编码>``），
 

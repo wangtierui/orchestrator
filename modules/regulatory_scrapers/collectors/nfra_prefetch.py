@@ -35,6 +35,11 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import nfra_collector as m  # 复用 _cache_path / 缓存命名
 
+from modules.regulatory_scrapers.collectors import nfra_common
+
+# N-167：`warmup` 的**唯一实现**在 `nfra_common`（原两脚本各写一份逐字相同的
+# `_warmup()` 与四个同值常量 —— 预热行为分叉**不会报错**，只会让其中一条链路
+# 以旧握手访问站点，属难排查型缺陷）。
 from std_lib.scraper_std.cache_store import source_cache_root
 
 CACHE = source_cache_root("nfra")  # 单一物理缓存根（modules/regulatory_scrapers/cache/nfra）
@@ -52,15 +57,6 @@ REF = (BASE + "/cn/view/pages/ItemList.html?itemPId=923&itemId=926"
        "&itemUrl=ItemListRightMore.html&itemName=%E6%94%BF%E7%AD%96%E6%B3%95%E8%A7%84")
 COOKIE_JAR = os.path.join(HERE, "config", "cookies.txt")
 
-def _warmup():
-    """首页预热：拿到会话 cookie，模拟真实浏览器，降低被 WAF 限流概率。"""
-    try:
-        subprocess.run(["curl", "-s", "-L", "-A", UA, "-c", COOKIE_JAR,
-                        "--max-time", "30", BASE + "/cn/view/pages/index/index.html"],
-                       capture_output=True, timeout=40)
-    except Exception:  # noqa: BLE001  采集容错（字段/附件缺失不阻断采集）
-        pass
-    time.sleep(_WARMUP_COOLDOWN_S)
 
 def fetch_curl(url, params, label, delay=2.0):
     full = url + "?" + urllib.parse.urlencode(params)
@@ -91,7 +87,7 @@ def fetch_curl(url, params, label, delay=2.0):
     return False
 
 def main():
-    _warmup()
+    nfra_common.warmup(COOKIE_JAR)
     # 1) 栏目结构
     fetch_curl(CHILD, {"itemId": 926, "pageSize": 50}, "child(926)", delay=1.0)
     ch = json.load(open(m._cache_path(CHILD, {"itemId": 926, "pageSize": 50}),

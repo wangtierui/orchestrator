@@ -38,6 +38,7 @@ from bootstrap import bootstrap
 bootstrap("all")
 
 import paths
+from config.exitcodes import ExitCode
 
 README = os.path.join(paths.ROOT, "README.md")
 LEGACY_OUT = os.path.join(paths.ROOT, "docs", "全链数据流总图.md")  # N-165 起废弃
@@ -704,7 +705,49 @@ def inject_into_readme(text: str) -> tuple:
     return True, f"已注入 README 受管块（{n_lines} 行 / {len(text)} 字节）"
 
 
-def main() -> int:
+def _norm(s: str) -> str:
+    """换行归一（R-5 关键）：README 工作副本在本机 `core.autocrlf=true` 下是 **CRLF**，
+    而生成文本用 `\\n` → 不作归一会产生"永远不一致"的**假 FAIL**。"""
+    return s.replace("\r\n", "\n").replace("\r", "\n").strip("\n")
+
+
+def check() -> int:
+    """核验 README §8 受管块与**当前源码派生结果**是否一致（R-5：入 CI，防生成物漂移）。
+
+    为什么必须入 CI：§8 是**机器生成物**，而"文档漂移不会报错"——链路改了却忘了重跑，
+    读者会按**过期**的链路操作。此判据把"忘了重跑"变成**红灯**。
+    """
+    text = build()
+    if not os.path.exists(README):
+        print(f"[FAIL] README 不存在：{README}")
+        return int(ExitCode.FAIL)
+    cur = open(README, encoding="utf-8").read()
+    if BEGIN not in cur or END not in cur:
+        print("[FAIL] README 缺少 §8 受管块标记 → 运行 `python -m tools.gen_flow_map`")
+        return int(ExitCode.FAIL)
+    have = cur.split(BEGIN, 1)[1].split(END, 1)[0]
+    if _norm(have) != _norm(text):
+        have_l = _norm(have).splitlines()
+        want_l = _norm(text).splitlines()
+        diff = next(
+            (i for i, (a, b) in enumerate(zip(have_l, want_l, strict=False), 1) if a != b),
+            min(len(have_l), len(want_l)) + 1,
+        )
+        print(
+            f"[FAIL] README §8 与源码派生结果**不一致**（行数 {len(have_l)} vs {len(want_l)}；"
+            f"首个差异在第 {diff} 行）→ 运行 `python -m tools.gen_flow_map` 重生成后提交"
+        )
+        for i in range(max(0, diff - 2), min(len(want_l), diff + 1)):
+            print(f"    期望: {want_l[i][:110]}")
+        return int(ExitCode.FAIL)
+    print(f"[OK] README §8 受管块与源码一致（{len(_norm(text).splitlines())} 行）")
+    return int(ExitCode.OK)
+
+
+def main(argv=None) -> int:
+    argv = list(argv if argv is not None else sys.argv[1:])
+    if "--check" in argv:
+        return check()
     text = build()
     changed, msg = inject_into_readme(text)
     print(f"[gen_flow_map] {msg}")

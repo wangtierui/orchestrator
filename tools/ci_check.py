@@ -89,6 +89,10 @@ def main(argv=None) -> int:
         # 仅 doctor/status 调用，改 yaml 后系统侧仍跑旧 argv（实测 `--only 6.9` 空跑）而无告警。
         # 非 Windows / 无 schtasks → 该判据自报 skipped（不判 FAIL）。
         ("schedule", [PY, os.path.join(ROOT, "cli.py"), "schedule", "verify"], 180),
+        # R-5（2026-09-30）：README §8（**机器生成的链路总图**）与源码派生结果一致性入 CI ——
+        # 此前"重跑后应无差异"仅是人工步骤 → 链路改了却忘重跑，读者会按**过期链路**操作
+        # （文档漂移不会报错，只会误导）。判据：`gen_flow_map --check`（只读，不写盘）。
+        ("flowmap", [PY, "-m", "tools.gen_flow_map", "--check"], 180),
     ]
     if not a.fast:
         if a.cov:

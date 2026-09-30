@@ -42,7 +42,6 @@ if _GUIDE_ROOT not in _sys.path:
     _sys.path.insert(0, _GUIDE_ROOT)
 del _GUIDE_ROOT, _os, _sys
 import argparse
-import hashlib
 import json
 import logging
 import os
@@ -149,16 +148,10 @@ def set_offline(flag):
     if _RESP_TEXT is not None:
         _RESP_TEXT.set_offline(flag)
 
-def _cache_ep(url: str) -> str:
-    """缓存键：以「完整 URL 的 sha1」作为**裸端点名**（契约允许 endpoint 为裸端点名）。
-
-    ⚠️ **不可直接把 URL 交给 TextResponseCache**：其命名算法取 URL **末段**作 ep
-    （与 nfra 原 `_cache_path` 一致，保证历史缓存可复用）；当 `params` 为空且多个
-    URL 末段同名时（典型如 pbc 栏目页/详情页均以 `index.html` 结尾）会撞进同一
-    缓存文件 → 读到错误正文。此处改用 URL 级唯一键（sha1 前 16 位），
-    `params` 仍参与命名，故同一 URL 的不同参数组合依旧各自独立。
-    """
-    return hashlib.sha1(url.encode("utf-8")).hexdigest()[:16]
+# N-167：`_cache_ep` 的**唯一实现**在 `std_lib/scraper_std/cache_store.py`
+# （原 gov/pbc 两源各写一份逐字相同的实现 → 改一漏一即缓存键算法分叉，且**不会报错**）。
+# 别名导入保持全部调用点不变。
+from std_lib.scraper_std.cache_store import url_endpoint_key as _cache_ep
 
 DEFAULT_HEADERS = {
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,"

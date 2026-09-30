@@ -285,6 +285,29 @@ def _c_disk() -> tuple[str, str, str]:
         return "warn", f"{type(e).__name__}", ""
 
 
+def _c_git_hooks() -> tuple[str, str, str]:
+    """R-1（2026-09-30）：**版本化 git 钩子就绪度**。
+
+    为何入 doctor：本仓"提交后自动同步远程"依赖钩子，而 `.git/hooks/**` **不入库** →
+    新克隆/新机器上"自动提交"**根本不跑**（实测事故 N-163：8 批提交从未推送成功）。
+    自 N-164 起钩子已**版本化**（`.githooks/` + `core.hooksPath`），但"设一次 config"这一步
+    仍需有人做 —— 此处把它变成**环境自检项**，使遗漏**当场可见**（而非下次排查才发现）。
+    """
+    try:
+        from std_lib.common_lib import git_hooks as _gh
+
+        problems = _gh.check()
+        if problems:
+            return (
+                "warn",
+                f"未就绪（{len(problems)} 项）：{problems[0]}",
+                "处置：python -m tools.install_git_hooks",
+            )
+        return "ok", "版本化钩子就绪（core.hooksPath=.githooks）", "自动推送 + 图同步"
+    except Exception as e:  # noqa: BLE001
+        return "warn", f"{type(e).__name__}: {e}", ""
+
+
 # (id, 组, 函数)
 CHECKS: tuple[tuple[str, str, object], ...] = (
     ("python", "运行时", _c_python),
@@ -304,6 +327,7 @@ CHECKS: tuple[tuple[str, str, object], ...] = (
     ("lock", "数据", _c_lock),
     ("schedule", "调度", _c_schedule),
     ("triggers", "调度", _c_triggers),
+    ("git_hooks", "版本控制", _c_git_hooks),
     ("disk", "磁盘", _c_disk),
 )
 
