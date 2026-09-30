@@ -7,7 +7,7 @@
   "fingerprint": "required",
   "note": "三条硬纪律：① **零硬依赖**——未安装时调用方必须回退既有正则实现，且回退**可观测**（不得静默）；② **降级链**——探测结果驱动分支，不得 try/except 吞掉；③ **指纹**——凡使用任一工具产出的产物，须把 semantic_tools.fingerprint() 写入其 provenance（模型名+版本+权重 sha），否则断点幂等（input_sha）与水位判据会因模型差异而失真。",
   "gate": "增强层模块**禁止**直接 `import hanlp/ltp/text2vec/bertopic/umap/hdbscan` 顶层硬导入；一律经本清单探测后再惰性导入。",
-  "network_policy": "2026-09-29 实测：本环境网络为**白名单式** —— 仅 `pypi.org` 与 `github.com`（含 api.github.com）可达；**模型托管站全部不可达**（huggingface.co / hf-mirror.com / modelscope.cn / file.hankcs.com 均 ConnectTimeout 或 URLError）。**由此得两条明确边界**：① **代码级依赖可部署**（pip 全通，已实测 6/11 可用）；② **模型权重不可获取**（无任何可达镜像）→ `preflight.offline` 在**本环境**不可能通过，权重须在**有模型站访问权的环境**预置后再迁入（HF_HOME / HANLP_HOME 指向本地目录）。**不得**据此判定「增强层不可用」——库与权重是两件事。"
+  "network_policy": "2026-09-29 实测：本环境网络为**白名单式** —— 仅 `pypi.org` 与 `github.com`（含 api.github.com）可达；**模型托管站全部不可达**（huggingface.co / hf-mirror.com / modelscope.cn / file.hankcs.com）。**2026-09-30 更新**：模型权重已由**人工下载并随仓预置**到 `external/models/`（bge-base-zh-v1.5 / LTPbase / text2vec-base-chinese / Youtu-Embedding，共约 12.2GB），以 `local_dir` 形态登记、由加载层强制离线读取 → **`preflight.offline` 现已可过**。故：① **代码级依赖**走 pip（pypi 可达）；② **权重**走仓内预置（不依赖任何模型站）；③ 新增权重仍须在**可达环境**下载后迁入。**不得**据网络白名单判定「增强层不可用」。"
  },
  "license_registry": {
   "note": "许可核验登记（W5，2026-09-28）：**每个工具须在此登记**（verified 或 pending），使“还有哪些未核”机器可查，而非散落在各条目的 `license_to_verify` 自由标记里。判据 U 断言两集合之并 == 工具全集。入库前置：pending 清空。",
@@ -23,7 +23,8 @@
    "pgvector": "GitHub API 返回 NOASSERTION（仓库未按 SPDX 声明）；pgvector 实际采用 **PostgreSQL License**（宽松、无 copyleft）——但须读其 LICENSE 原文确认后方可登记 → 保持 pending。**注**：该工具在本环境本就不可部署（无 PG 宿主，见 tools.pgvector.feasibility），故其许可状态**不构成启用障碍**。",
    "ltp": "GitHub API 返回 license=null —— 仓库**未声明许可**（非限流，`_http_json` 成功返回）；纳入交付面存在法律不确定性 → 保持 pending。注：本仓以 hanlp 作分句后端，ltp 属二选一备选，不影响启用决策。",
    "weknora_docreader": "GitHub API 返回 NOASSERTION / \"Other\" —— 使用**自定义许可**，须人工阅读 LICENSE 原文后方可判定 → 保持 pending。",
-   "youtu_embedding": "GitHub API 返回 NOASSERTION（LICENSE 文件格式非标准）；**README 徽章明示 MIT**（https://img.shields.io/badge/License-MIT-yellow.svg），但 LICENSE 文件须人工确认后方可登记 → 保持 pending。⚠️ 注：**不得**回退取其 pypi（=transformers）的许可 —— 那是**加载库**的许可，非本工具（N-121 已修）。"
+   "youtu_embedding": "GitHub API 返回 NOASSERTION（LICENSE 文件格式非标准）；**README 徽章明示 MIT**（https://img.shields.io/badge/License-MIT-yellow.svg），但 LICENSE 文件须人工确认后方可登记 → 保持 pending。⚠️ 注：**不得**回退取其 pypi（=transformers）的许可 —— 那是**加载库**的许可，非本工具（N-121 已修）。",
+   "bge_base_zh": "BAAI 系列通常为 MIT，但须读 HF 模型仓 LICENSE 原文/模型卡取证后方可登记 → 保持 pending。注：`license_policy.enforced=false`（自用不分发，用户明示）→ **不阻断启用**。"
   },
   "risk_notes": {
    "paradedb": "⚠️ **AGPL-3.0**（强 copyleft，含网络服务条款）→ 除与「单机零服务依赖 / 克隆可移植性」冲突外，还带**许可传染**风险；若纳入交付面须法务评估。当前定位为可选外部后端（P2-2），**不建议随仓分发**。"
@@ -40,6 +41,7 @@
    "umap": "BSD-3-Clause（核验日 2026-09-29；来源 github:license/lmcinnes/umap）"
   },
   "pending": [
+   "bge_base_zh",
    "ltp",
    "pgvector",
    "weknora_docreader",
@@ -58,10 +60,10 @@
    },
    "pipeline_ref": "v2 P1-3（分句/结构增强层）",
    "approx_size": "首次使用自动下载约 1.2GB 模型",
-   "offline": "须预置模型目录（HANLP_HOME）并置 MTL_HANLP_OFFLINE=1；不得依赖联网首用",
+   "offline": "权重目录由 HANLP_HOME 指定（HanLP 官方认可该变量：模型主目录），并置 HANLP_OFFLINE=1 禁网。⚠️ 2026-09-30 更正：原登记 `MTL_HANLP_OFFLINE` 在 HanLP 官方资料中**不存在** → 设了也是假绿灯。",
    "offline_env": [
     "HANLP_HOME",
-    "MTL_HANLP_OFFLINE"
+    "HANLP_OFFLINE"
    ],
    "license_to_verify": true
   },
@@ -71,16 +73,25 @@
    "extra": "semantic",
    "pypi": "ltp",
    "probe": {
-    "kind": "module",
-    "import_name": "ltp"
+    "kind": "local_model",
+    "import_name": "ltp",
+    "local_dir": "external/models/LTPbase",
+    "expect_files": [
+     "config.json"
+    ]
    },
    "pipeline_ref": "v2 P1-3（分句/结构增强层）",
    "approx_size": "依赖 PyTorch（CPU wheel 约数百 MB）+ 模型文件",
-   "offline": "须预置模型目录；与 hanlp 二选一即可（同一增强层）",
-   "offline_env": [
-    "LTP_HOME"
-   ],
-   "license_to_verify": true
+   "offline": "权重已随仓外置于 `external/models/LTPbase`（`external/` 被 .gitignore 忽略，不入库）；加载层 `std_lib.common_lib.semantic_models` 强制 `local_files_only=True` 并置 `HF_HUB_OFFLINE=1/TRANSFORMERS_OFFLINE=1`，**不可能**首用联网下载。",
+   "offline_env": [],
+   "license_to_verify": true,
+   "weights_fingerprint": "见 semantic_tools.local_dir_fingerprint(model_path)（结构指纹：文件集/体积/权重首尾 1MB）",
+   "enabled": true,
+   "verified_at": "2026-09-30",
+   "verified": "冒烟通过：分词 30 词 / 词性 30 项 / 切句 3 句（加载 21.0s）",
+   "loader": "semantic_models.load_segmenter('ltp')（→ .cws()/.pos()/.split()）",
+   "capability_note": "⚠️ **能力边界更正**：LTP **4.x 无分句 API**（全包含 `legacy.py` 均无 `sent_split`/`split_sentence`；`supported_tasks` 仅 cws/pos/ner/dep/sdp/srl/sdpg）。原 `purpose` 写的『sent_split 专用接口』对 4.x **不成立**。`.split()` 的实现是『**LTP 分词 + 句末标点聚合**』，并以 `basis_split` 显式标注**非原生分句**；若需 ML 分句须用 hanlp（其权重尚未预置）。",
+   "runtime_note": "⚠️ 需垫片：ltp 4.2.x 调 `batch_encode_plus`（transformers 5 已移除）→ 加载层等价补齐，实测可用（**原版本直接 AttributeError**）。"
   },
   "pgvector": {
    "repo": "https://github.com/pgvector/pgvector",
@@ -104,15 +115,15 @@
     "verified": "`CREATE EXTENSION vector` → **vector 0.8.6**；端到端冒烟：建表 vector(3) + 插 3 行 + `ORDER BY emb <-> '[1,0,0]'` → 返回 `1,3,2`；距离 `0.1414` = √(0.01+0.01) **精确吻合**。",
     "auth_note": "PG 认证为 `scram-sha-256` 且口令未知 → 部署时采用**最小可逆**手段：备份 `pg_hba.conf` → 仅将**回环两行**（127.0.0.1/32、::1/128）临时改 `trust` → `pg_ctl reload` → 建扩展 → **立即还原备份并 reload**。复核：哈希与备份**一致**、`trust` 行数 **0**、无口令连接 **rc=2**（认证已恢复）✓",
     "endpoint": "127.0.0.1:7777（**注意非默认 5432**）；库 `orchestrator`；用户 `postgres`；**口令仅经 env `PGVECTOR_DSN` 注入，不入库**（`gate_secret_scan` 守护）。探测：`service_reachable=True`（N-134 起支持 URI 形态 DSN）",
-   "db_config": {
-    "host": "127.0.0.1",
-    "port": 7777,
-    "database": "orchestrator",
-    "user": "postgres",
-    "secret": "口令经用户级环境变量 PGVECTOR_DSN 注入（setx 配置于机器侧）；**明文绝不入库**",
-    "extension": "vector 0.8.6（已于本库 CREATE EXTENSION）",
-    "verified": "端到端冒烟通过：vector(4) 表 + HNSW + IVFFlat 索引可建；L2 与余弦最近邻序均 `1,3,2`；距离 0.1414 精确"
-   },
+    "db_config": {
+     "host": "127.0.0.1",
+     "port": 7777,
+     "database": "orchestrator",
+     "user": "postgres",
+     "secret": "口令经用户级环境变量 PGVECTOR_DSN 注入（setx 配置于机器侧）；**明文绝不入库**",
+     "extension": "vector 0.8.6（已于本库 CREATE EXTENSION）",
+     "verified": "端到端冒烟通过：vector(4) 表 + HNSW + IVFFlat 索引可建；L2 与余弦最近邻序均 `1,3,2`；距离 0.1414 精确"
+    },
     "since": "2026-09-29"
    },
    "substitute": "sqlite_vec（**保留**为无服务依赖的备选/降级路径，与既有 FTS5 同库同源）"
@@ -138,20 +149,29 @@
    "extra": "semantic",
    "pypi": "transformers",
    "probe": {
-    "kind": "hf_model",
+    "kind": "local_model",
     "import_name": "transformers",
-    "hf_model": "tencent/Youtu-Embedding"
+    "hf_model": "tencent/Youtu-Embedding",
+    "local_dir": "external/models/Youtu-Embedding",
+    "expect_files": [
+     "config.json",
+     "config_sentence_transformers.json"
+    ]
    },
    "pipeline_ref": "v2 P1-1（主题辅助裁定）、P1-2（关联语义档）",
    "approx_size": "权重约数百 MB（HF 仓库 tencent/Youtu-Embedding）",
-   "offline": "权重须预置到 HF 缓存（HF_HOME 指向本地目录）并置 TRANSFORMERS_OFFLINE=1；不得首用联网下载",
-   "offline_env": [
-    "HF_HOME",
-    "TRANSFORMERS_OFFLINE"
-   ],
+   "offline": "权重已随仓外置于 `external/models/Youtu-Embedding`（`external/` 被 .gitignore 忽略，不入库）；加载层 `std_lib.common_lib.semantic_models` 强制 `local_files_only=True` 并置 `HF_HUB_OFFLINE=1/TRANSFORMERS_OFFLINE=1`，**不可能**首用联网下载。",
+   "offline_env": [],
    "license_to_verify": true,
    "note": "2026-09-29 评估：**可替代 text2vec** —— ① 功能对口（同为基础文本表示/向量化）；② 接入面一致（均为 transformers+torch 惰性加载，本仓已有 `hf_model` 探测口径）；③ 性能更优（CMTEB 77.58 vs text2vec-base-chinese）；④ 许可 MIT（README 徽章明示；GitHub API 报 NOASSERTION 系 LICENSE 文件格式非标准）；⑤ 无 PyPI 包 → 以 **HuggingFace 模型 id** 接入（故新增 `hf_model` 探测类型，含**本地缓存离线判定**）。",
-   "license_evidence": "2026-09-29 读 LICENSE 原文（18 行）：『Tencent is pleased to support the open source community by making Youtu-Embedding available. Copyright (C) 2025 Tencent. All rights reserved. Youtu-Embedding is licensed under the **License Terms of Youtu-Embedding**』——**Tencent 自定义条款，非标准 SPDX**。README 徽章标称 MIT 与原文不一致 → 以原文为准。"
+   "license_evidence": "2026-09-29 读 LICENSE 原文（18 行）：『Tencent is pleased to support the open source community by making Youtu-Embedding available. Copyright (C) 2025 Tencent. All rights reserved. Youtu-Embedding is licensed under the **License Terms of Youtu-Embedding**』——**Tencent 自定义条款，非标准 SPDX**。README 徽章标称 MIT 与原文不一致 → 以原文为准。",
+   "weights_fingerprint": "见 semantic_tools.local_dir_fingerprint(model_path)（结构指纹：文件集/体积/权重首尾 1MB）",
+   "enabled": true,
+   "verified_at": "2026-09-30",
+   "verified": "冒烟通过：加载 114.2s / 编码 7.08s / 维度 2048 / 余弦 +0.3343",
+   "loader": "semantic_models.load_embedder('youtu_embedding')（**裸 transformers + 均值池化**）",
+   "runtime_note": "⚠️ **需兼容垫片**：其 `modeling_youtu.py` 按 transformers **4.x** 编写，而本环境为 **5.17**（sentence-transformers 6.1 硬性要求 `transformers>=5,<6`，**不可降级**）。加载层 `_patch_transformers_compat()` 实测仅缺 **4** 个符号并逐一等价补齐：`BertTokenizer.batch_encode_plus`、`transformers.utils.LossKwargs`、`ROPE_INIT_FUNCTIONS['default']`、`PretrainedConfig.pruned_heads`（含 setter）。**已全项实测通过**；若未来 transformers 再破坏这些接口，冒烟工具会立刻暴露（非静默）。",
+   "perf_note": "2B 参数，**CPU 编码约 3.5s/句** → 适合小批量语义裁定，**不适合**全量（17k+ 制度）批处理；全量场景建议 bge_base_zh/text2vec。"
   },
   "text2vec": {
    "repo": "https://github.com/shibing624/text2vec",
@@ -160,16 +180,50 @@
    "extra": "semantic",
    "pypi": "text2vec",
    "probe": {
-    "kind": "module",
-    "import_name": "text2vec"
+    "kind": "local_model",
+    "import_name": "text2vec",
+    "local_dir": "external/models/text2vec-base-chinese",
+    "expect_files": [
+     "config.json",
+     "modules.json"
+    ]
    },
    "pipeline_ref": "v2 P1-1（主题辅助裁定）、P1-2（关联语义档）",
    "approx_size": "依赖 PyTorch；模型 shibing624/text2vec-base-chinese 约 100MB",
-   "offline": "模型须预置到本地目录并传入模型路径；不得首用联网下载",
-   "offline_env": [
-    "SENTENCE_TRANSFORMERS_HOME"
-   ],
-   "license_to_verify": true
+   "offline": "权重已随仓外置于 `external/models/text2vec-base-chinese`（`external/` 被 .gitignore 忽略，不入库）；加载层 `std_lib.common_lib.semantic_models` 强制 `local_files_only=True` 并置 `HF_HUB_OFFLINE=1/TRANSFORMERS_OFFLINE=1`，**不可能**首用联网下载。",
+   "offline_env": [],
+   "license_to_verify": true,
+   "weights_fingerprint": "见 semantic_tools.local_dir_fingerprint(model_path)（结构指纹：文件集/体积/权重首尾 1MB）",
+   "enabled": true,
+   "verified_at": "2026-09-30",
+   "verified": "冒烟通过：维度 768 / 余弦 +0.4132",
+   "loader": "semantic_models.load_embedder('text2vec')（sentence-transformers，均值池化）"
+  },
+  "bge_base_zh": {
+   "repo": "https://github.com/FlagOpen/FlagEmbedding",
+   "purpose": "中文语义向量化（BAAI bge-base-zh-v1.5；检索/相似度强基线）",
+   "extra": "semantic",
+   "pypi": "sentence-transformers",
+   "probe": {
+    "kind": "local_model",
+    "import_name": "sentence_transformers",
+    "local_dir": "external/models/bge-base-zh-v1.5",
+    "expect_files": [
+     "config.json",
+     "modules.json"
+    ]
+   },
+   "pipeline_ref": "v2 P1-1（主题辅助裁定）、P1-2（关联语义档）",
+   "approx_size": "约 400MB（fp32 + 1_Pooling）",
+   "offline": "权重已随仓外置于 `external/models/bge-base-zh-v1.5`；加载层强制 local_files_only，不可能首用联网。",
+   "offline_env": [],
+   "weights_fingerprint": "见 semantic_tools.local_dir_fingerprint(model_path)",
+   "license_to_verify": true,
+   "note": "2026-09-30 新增：与 youtu_embedding/text2vec 同为**嵌入后端**（P1-1/P1-2 三选一，按评测择优）。BGE base zh v1.5 体积小（400MB）、中文检索表现稳，适合作为默认/回退嵌入。",
+   "enabled": true,
+   "verified_at": "2026-09-30",
+   "verified": "冒烟通过：加载 22.2s / 编码 0.12s / 维度 768 / 余弦 +0.6036",
+   "loader": "semantic_models.load_embedder('bge_base_zh')（sentence-transformers，CLS 池化）"
   },
   "bertopic": {
    "repo": "https://github.com/MaartenGr/BERTopic",
@@ -182,8 +236,8 @@
    },
    "pipeline_ref": "v2 P1-5（主题内子簇语义化，可选）",
    "approx_size": "依赖 umap/hdbscan/scikit-learn + Transformer 权重",
-   "offline": "同 text2vec：模型须预置；聚类结果**不写主题归属表**（上游事实源）",
-   "offline_env": ["HF_HOME", "TRANSFORMERS_OFFLINE"],
+   "offline": "本身无权重（算法库）；其嵌入后端复用已本地预置的 `bge_base_zh`/`youtu_embedding`/`text2vec`（三选一），降维 umap / 聚类 hdbscan **无外部模型**。",
+   "offline_env": [],
    "license_to_verify": true
   },
   "umap": {

@@ -33,6 +33,7 @@ ML 输出受 **模型版本 / 权重 / 依赖版本** 影响 → 同一输入可
 
 from __future__ import annotations
 
+import hashlib
 import importlib.util
 import json
 import os
@@ -100,6 +101,45 @@ def _module_version(import_name: str) -> str:
     except Exception:  # noqa: BLE001  导入失败 = 未安装/不可用（由 available 统一表达）
         return ""
     return str(getattr(mod, "__version__", "") or "")
+
+
+_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+
+def local_dir_fingerprint(path: str) -> str:
+    """本地权重目录的**结构指纹**（快速、确定性、离线）→ 16 位 hex。
+
+    口径（**诚实说明强度**）：对目录内全部文件按 `relpath:size` 排序后 sha256，
+    再对**权重文件**（`*.safetensors`/`*.bin`）补入**首尾各 1MB 的内容摘要**。
+      · 覆盖：文件集合、体积、以及权重**首尾字节**（换模型/换量化/换分片必变）；
+      · 不覆盖：权重**中间段**的细微改动（那需要全量 sha256，对 9.6GB 权重代价过高）。
+    用途：写进产物 provenance，使"同一输入 + 不同权重"可被区分（v2 指纹纪律）。
+    若需**全量内容 sha**，见 `--weights-sha`（按需、慢）。
+    """
+    if not os.path.isdir(path):
+        return ""
+    items = []
+    for root, _d, fs in os.walk(path):
+        for fn in fs:
+            p = os.path.join(root, fn)
+            try:
+                items.append((os.path.relpath(p, path).replace("\\", "/"), os.path.getsize(p), p))
+            except OSError:
+                continue
+    items.sort(key=lambda x: x[0])
+    h = hashlib.sha256()
+    for rel, size, p in items:
+        h.update(f"{rel}:{size}\n".encode())
+        if rel.endswith((".safetensors", ".bin", ".pt", ".pth")):
+            try:
+                with open(p, "rb") as fh:
+                    h.update(fh.read(1 << 20))
+                    if size > (1 << 21):
+                        fh.seek(-(1 << 20), os.SEEK_END)
+                        h.update(fh.read(1 << 20))
+            except OSError:
+                continue
+    return h.hexdigest()[:16]
 
 
 def probe(name: str) -> dict:
@@ -198,11 +238,45 @@ def probe(name: str) -> dict:
             if found and not model_cached:
                 detail = f"加载库可用但**权重未本地缓存**（{mid}）→ 首用将联网下载"
 
+    # N-155（2026-09-30）：**`local_dir` 探测类型 —— 本地权重目录"实检"**。
+    # 背景：本仓 P1 权重以**人工下载的 HF `local_dir` 形态**（`config.json` + 权重 + tokenizer，
+    #   可能还有 sentence-transformers 的 `modules.json`/`1_Pooling`）预置在 git 已忽略的
+    #   `external/models/<name>/`，**并非** HF 的 `hub/models--<org>--<name>` 缓存布局。
+    #   若沿用 `hf_model` 那套"缓存布局假设"，权重明明在项目里也会被判为"未预置"（假阴性）。
+    # 判据：可用性 = 加载库可导入 **且** 目录存在 **且** `expect_files`（默认 `config.json`）齐备。
+    #   `offline_ready` 也随之**以目录实检为准**（env 缺位仅作告警）——因为"防首用联网"由
+    #   加载层强制 `local_files_only` 保证（见 `semantic_models`），比"设了某个 env"更硬。
+    model_path = ""
+    model_ok = None
+    local_fp = ""
+    if kind == "local_model" or pspec.get("local_dir"):
+        rel = str(pspec.get("local_dir") or "")
+        if rel:
+            model_path = rel if os.path.isabs(rel) else os.path.join(_ROOT, rel)
+            need = [str(x) for x in (pspec.get("expect_files") or ["config.json"])]
+            lacking = [x for x in need if not os.path.exists(os.path.join(model_path, x))]
+            model_ok = os.path.isdir(model_path) and not lacking
+            if not model_ok:
+                detail = (
+                    f"权重目录不完整（{rel}）：缺 {lacking or '目录本身'} "
+                    "→ 未预置；调用会失败或退化为联网下载"
+                )
+            else:
+                local_fp = local_dir_fingerprint(model_path)
+                if found and not detail:
+                    detail = f"本地权重就绪（{rel}；指纹 {local_fp[:12]}）"
+
     envs = [str(x) for x in (spec.get("offline_env") or []) if str(x)]
     missing_env = [e for e in envs if not os.environ.get(e)]
-    offline_ready = None if not envs else not missing_env
-    if found and missing_env:
-        detail = f"已安装但**未见离线预置**：缺 env {missing_env}（首用可能联网下载权重）"
+    offline_ready: bool | None = None  # 显式注解：两分支分别给 bool 与 bool|None，否则 mypy 收窄为 bool
+    if model_ok is not None:
+        offline_ready = model_ok
+        if found and model_ok and missing_env:
+            detail = f"本地权重就绪；可选 env 未置 {missing_env}（加载层已强制 local_files_only）"
+    else:
+        offline_ready = None if not envs else not missing_env
+        if found and missing_env:
+            detail = f"已安装但**未见离线预置**：缺 env {missing_env}（首用可能联网下载权重）"
 
     return {
         "name": name,
@@ -220,6 +294,11 @@ def probe(name: str) -> dict:
         "service_reachable": service_reachable,
         # N-120：HF 权重本地缓存 —— True 已缓存 / False 未缓存（首用会联网）/ None 非 hf_model
         "model_cached": model_cached,
+        # N-155：本地权重目录（**绝对路径**，供加载层直接使用；空 = 未声明/未预置）
+        "model_path": model_path if model_ok else "",
+        "model_ok": model_ok,
+        # N-155：权重**结构指纹**（见 `local_dir_fingerprint` 的口径与强度说明）
+        "local_fingerprint": local_fp,
     }
 
 
@@ -416,16 +495,32 @@ def preflight() -> dict:
     except Exception as e:  # noqa: BLE001
         gates["deps"] = {"ok": False, "detail": f"{type(e).__name__}: {e}"}
 
-    # ② 离线就绪（只对"已可用"的后端要求）
+    # ② 离线就绪 —— **按清单声明的"择一"语义分组**（N-157，2026-09-30 修正）
+    #   ⚠️ 原实现要求"**所有已装后端**都离线就绪" → 与清单自身声明**矛盾**：
+    #     `ltp` 条目明写"与 hanlp **二选一**即可（同一增强层）"，而原闸会把"选了 ltp、
+    #     未预置 hanlp"判为**不可启用**（把合法选型当缺陷）。
+    #   现按**职责分组**，每组"至少一个就绪"即可（与清单语义一致）：
+    #     · 嵌入后端（P1-1/P1-2）：`bge_base_zh` / `text2vec` / `youtu_embedding` 三选一
+    #     · 分句后端（P1-3）：`hanlp` / `ltp` 二选一
+    #     · `bertopic`（P1-5）：不单独要求——它复用上述嵌入后端，且本身无权重
     try:
-        bad = [
-            n
-            for n in ("hanlp", "ltp", "youtu_embedding", "text2vec", "bertopic")
-            if probe(n)["available"] and probe(n).get("offline_ready") is False
-        ]
+        GROUPS = {
+            "嵌入（P1-1/P1-2 三选一）": ("bge_base_zh", "text2vec", "youtu_embedding"),
+            "分句（P1-3 二选一）": ("hanlp", "ltp"),
+        }
+        missing: list = []
+        ready_detail: list = []
+        for gname, members in GROUPS.items():
+            avail = [n for n in members if probe(n)["available"]]
+            ready = [n for n in avail if probe(n).get("offline_ready") is not False]
+            ready_detail.append(f"{gname}→{ready or '（无）'}")
+            if not ready:
+                missing.append(f"{gname} 无离线就绪后端（已装 {avail or '无'}）")
         gates["offline"] = {
-            "ok": not bad,
-            "detail": "全部已装后端离线就绪" if not bad else f"已装但未预置离线：{bad}",
+            "ok": not missing,
+            "detail": (
+                "；".join(ready_detail) if not missing else f"{missing}｜现状：{'；'.join(ready_detail)}"
+            ),
         }
     except Exception as e:  # noqa: BLE001
         gates["offline"] = {"ok": False, "detail": f"{type(e).__name__}: {e}"}

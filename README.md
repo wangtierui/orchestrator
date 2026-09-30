@@ -338,7 +338,12 @@ flowchart LR
 | 时效核验（可选） | env `PKULAW_NODE_EXE` + `PKULAW_PKG_DIR` + token 文件 | R13 三态降级为 `unavailable`（不误标） |
 | 采集外网 | gov/mof/nfra/pbc 官网可达；mof 附件主机为内网地址 | mof 全量采集长时间空转 |
 | **P1 语义增强（可选）** | `pip install -e ".[semantic]"`；清单 = `config/schema/semantic_tools.json`；**启用前置** `python -m std_lib.common_lib.semantic_tools --preflight`（五道闸） | 全链走既有**确定性正则**路径（`deps` 闸否）；**模型权重**另需离线预置（见下） |
-| **模型权重离线预置** | 会拉权重的工具须置 `offline_env`（`HANLP_HOME`/`MTL_HANLP_OFFLINE`、`HF_HOME`/`TRANSFORMERS_OFFLINE`、`SENTENCE_TRANSFORMERS_HOME`、`LTP_HOME`） | 探测 `offline_ready=False` → **首次调用会联网下载 GB 级权重**（破坏离线性；`probe` 会显式告警） |
+| **模型权重（已随仓预置）** | 4 项权重在 `external/models/`（**`.gitignore` 已忽略，不入库**）：`bge-base-zh-v1.5` / `text2vec-base-chinese` / `Youtu-Embedding`（嵌入）+ `LTPbase`（分词·词性）。清单以 `local_dir` 声明、**`probe` 实检目录**；加载层 `std_lib.common_lib.semantic_models` 强制 `local_files_only` + `HF_HUB_OFFLINE=1`（**不可能**首用联网） | 缺目录 → `offline_ready=False`；`python -m tools.smoke_semantic_models` 可复核真实加载与调用 |
+> **P1 语义模型加载（唯一入口）**：`from std_lib.common_lib import semantic_models as sm` →
+> `sm.load_embedder('bge_base_zh'|'text2vec'|'youtu_embedding')`（`.encode(list[str])`）、
+> `sm.load_segmenter('ltp')`（`.cws/.pos/.split`）。**禁止**业务代码直接 `import transformers/ltp`；
+> 探测归 `semantic_tools`（唯一事实源 = `config/schema/semantic_tools.json`），加载归 `semantic_models`。
+
 | **向量检索（可选）** | PostgreSQL + `vector` 扩展 + env `PGVECTOR_DSN`（**口令仅经 env，不入库**）；业务用最小权限角色（`vec` schema） | 探测 `service_reachable=False` → 接入层降级 `sqlite_vec`（与既有 SQLite FTS5 同库同源）→ 再退全文 |
 
 **无数据环境的验收口径**（代码级回归）：

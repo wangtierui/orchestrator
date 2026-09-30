@@ -202,6 +202,13 @@
    "entry": "主链编排（25 步（原 22 步；N-46/N-52/N-53/N-63/N-73b 陆续入链））；v2 起由 cli.py run 调用（库形态）"
   },
   {
+   "file": "smoke_semantic_models.py",
+   "category": "tool",
+   "entry": "P1 语义模型冒烟自检（真实初始化 + 真实调用）",
+   "independent": true,
+   "independent_why": "刻意独立：按需人工执行（模型加载耗时），非 STEP_ORDER 链路节点"
+  },
+  {
    "file": "split_internal_nonpolicy.py",
    "category": "tool",
    "entry": "非制度正文件隔离归置（misc/ ledgers/）",
