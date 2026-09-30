@@ -1,0 +1,18 @@
+{
+ "generated_at": "2026-09-30 19:17:05",
+ "source": "pbc",
+ "limit": 5,
+ "mode": "full",
+ "status": "dry_run",
+ "note": "dry-run：将用 10 个主题原型对 cleaned 抽样做最近邻裁定",
+ "policy_enabled": true,
+ "records": 0,
+ "themes": 10,
+ "agreement": null,
+ "margin": {},
+ "distribution": {},
+ "disagreements": [],
+ "fingerprint": {},
+ "embedder_notice": "",
+ "dry_run": true
+}

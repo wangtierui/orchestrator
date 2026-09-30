@@ -782,15 +782,18 @@ def check_p1_policy() -> list:
                 "分析视图，不得改写主题事实源（`_t*_base`/`_t*_final`）",
             }
         )
-    nb = up.get("neighbor") or {}
-    if up.get("enabled") is True and nb.get("min_similarity") is None:
+    # ⚠️ 判据修正（N-179）：阈值规则应作用于**采信（`adoption`）** —— 即"据建议改判主题归属"，
+    # 而不是"产出分析视图"。后者是**只读、可回退**的（写 reports/、不碰事实源），
+    # 前者才会改判归属。二者混为一处，会把"安全启用"误判为"未度量即上线"（实测误报 1 项 HIGH）。
+    ad = up.get("adoption") or {}
+    if bool(ad.get("enabled")) and ad.get("min_similarity") is None:
         f.append(
             {
                 "cat": "P1 口径",
                 "sev": "HIGH",
-                "where": f"{_rel(p)}:usage_policy",
-                "detail": "`enabled=true` 但 `neighbor.min_similarity` 仍为空 —— 阈值须先由可评样本的 "
-                "P/R 定出（无度量不得上线）",
+                "where": f"{_rel(p)}:usage_policy.adoption",
+                "detail": "`adoption.enabled=true` 但 `min_similarity` 仍为空 —— **采信（改判）** 须先由"
+                "可评样本的 P/R 定出阈值（无度量不得上线）；仅产出分析视图不受此限",
             }
         )
     # 语义增强模块不得写事实源文件（形态扫描：写调用与事实源名同现于一行）

@@ -1,0 +1,59 @@
+# config/mirrors.yaml — 镜像源配置（**权重与依赖下载的优先访问源**）
+#
+# 为什么要有这个文件
+# ------------------
+# 本机实测：**官方权重站 `huggingface.co` 不可达**（超时），**官方 PyPI 可达但慢**；
+# 而 **国内镜像可用**。若把镜像地址散落在各脚本/临时命令里，会出现三类问题：
+#   ① 环境变量忘了设 → 首次调用才联网下载（**破坏离线性**，且失败点远离配置处）；
+#   ② 同一镜像多处硬编码 → 改一处漏一处；
+#   ③ 子进程（链路各步）**不继承**镜像设置 → 主进程能下、子进程不能下（隐蔽且难查）。
+# 故：**本文件是镜像配置的唯一事实源**，经 `config/loader`（R24 程序可读配置唯一读取口）读取，
+# 由 `bootstrap()` **单点应用到进程环境**（`setdefault`，显式 env 优先），并随 `os.environ`
+# 被子进程继承 —— 覆盖链路全部步骤。
+#
+# 实测证据（2026-09-30，`tools/check_mirrors.py` 可复跑复验）
+# ---------------------------------------------------------
+#   · `pip download six -i <tuna pypi>` → **rc=0，实际取回 wheel** ✓
+#   · `https://hf-mirror.com/bert-base-chinese/resolve/main/vocab.txt` → **HTTP 200，109540B** ✓
+#   · `huggingface.co` → **超时不可达**（故必须经镜像）✗
+#   · `https://mirrors.tuna.tsinghua.edu.cn/` → **可达**，但 ⚠️ **浏览器 UA 会被 WAF 拒（403
+#     「您目前无法访问此页面」）**，非浏览器 UA（如 `curl/x.y`）**200 通过**（实测）。
+#     → 影响：**不要**用浏览器 UA 去抓/tuna；pip 自身 UA（`pip/x.y`）可用 ✓
+
+schema_version: "1"
+verified_at: "2026-09-30"
+
+# Python 依赖：优先走 tuna 镜像，官方 PyPI 作**兜底**（镜像故障时不至于全断）
+pypi:
+  index_url: "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple/"
+  fallback_index_url: "https://pypi.org/simple/"
+  # tuna 走 https 且证书正常 → 无需 trusted-host；如改用 http 端点再填
+  trusted_host: ""
+  # 依赖安装纪律：装前先 `pip download` 抽验（见 tools/check_mirrors.py），避免"装到一半才发现不通"
+  verified_package: "six"
+
+# 权重/模型：优先走 hf-mirror（HuggingFace 镜像），官方作兜底
+huggingface:
+  endpoint: "https://hf-mirror.com"
+  fallback_endpoint: "https://huggingface.co"
+  # 该镜像站点**可用**（2026-09-30 实测），此前"连接被强制关闭"的旧结论已作废
+  probe_repo: "bert-base-chinese"
+  probe_file: "vocab.txt"
+
+# 下载 UA 纪律（实测得出的**硬约束**，勿删）
+ua_policy:
+  note: >-
+    镜像站 WAF 对**浏览器 UA** 会返回 403（实测 tuna）；而 pip/hf_hub/curl 的**非浏览器 UA** 正常。
+    故：脚本内**不要**把浏览器 UA 用于镜像站索引/权重下载（仅站点抓取才需要浏览器 UA）。
+  browser_ua_blocked_on: ["mirrors.tuna.tsinghua.edu.cn"]
+  safe_ua_examples: ["curl/8.4.0", "pip/26.2", "python-urllib/3.13"]
+
+# 应用方式（供 `config/loader.apply_mirror_env()` 与核验判据读取）
+apply:
+  mode: "setdefault"        # 显式用户 env 优先，不被覆盖
+  env_map:
+    HF_ENDPOINT: "huggingface.endpoint"
+    PIP_INDEX_URL: "pypi.index_url"
+    PIP_EXTRA_INDEX_URL: "pypi.fallback_index_url"
+  # 说明：HF_ENDPOINT 被 huggingface_hub / transformers / sentence_transformers / modelscope 共同尊重
+  consumers: ["huggingface_hub", "transformers", "sentence_transformers", "datasets"]

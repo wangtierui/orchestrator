@@ -1,0 +1,260 @@
+{
+ "generated_at": "2026-09-30 19:13:57",
+ "generator": "tools/gen_benchmark.py",
+ "schema_version": "1.0",
+ "note": "语义质量基线（现状量化）；供语义增强上线前后逐键比对。",
+ "theme_gold": {
+  "file": "modules\\regulatory_classifier\\data\\人身保险公司-主题归属表.csv",
+  "exists": true,
+  "total": 1162,
+  "themes": {
+   "T0上位法锚点": 89,
+   "T10数据治理与信息披露": 143,
+   "T1销售行为与消费者保护": 196,
+   "T2产品与精算制度": 150,
+   "T3资本与偿付能力监管": 76,
+   "T4公司治理与股权关联交易": 109,
+   "T5资金运用与资产负债管理": 142,
+   "T6养老与健康保险专项": 66,
+   "T7反洗钱与反恐怖融资": 35,
+   "T8机构准入与组织监管": 78,
+   "T9风险处置与案件合规": 78
+  },
+  "basis_class": {
+   "registry自动登记": 103,
+   "上位法锚点": 9,
+   "无正文": 44,
+   "精读裁定": 202,
+   "语义验证": 804
+  },
+  "evaluable": 1015,
+  "evaluable_ratio": 0.8735,
+  "excluded_markers": [
+   "无正文",
+   "registry自动登记"
+  ]
+ },
+ "clause_structure": {
+  "files": 16611,
+  "articles": 108409,
+  "chapters": 12313,
+  "structures": 51536,
+  "law": 2599,
+  "degraded": 14012,
+  "fallback": 4872,
+  "invalid": 94,
+  "warned": 15647,
+  "article_structures": 17425,
+  "item_nodes": 90215,
+  "title_swallow": 0,
+  "tail_contam": 92,
+  "space_contam": 40,
+  "law_items": 439,
+  "parse_modes": {
+   "empty": 29,
+   "law": 2599,
+   "notice": 9140,
+   "plain": 4843
+  },
+  "proviso": 4540,
+  "proviso_strict": 925,
+  "empty_mode": 29,
+  "fallback_ratio": 0.2933,
+  "empty_ratio": 0.0017,
+  "consistent": true
+ },
+ "relations": {
+  "file": "modules\\regulatory_classifier\\data\\relations\\relations_index.jsonl",
+  "exists": true,
+  "rows": 4192,
+  "distinct_relation_id": 4192,
+  "id_unique": true,
+  "src_article_located": 2303,
+  "dst_article": 609,
+  "both": 489,
+  "src_ratio": 0.5494,
+  "dst_ratio": 0.1453,
+  "source_span": 4192,
+  "span_ratio": 1.0,
+  "placement": {
+   "": 1769,
+   "snippet": 108,
+   "span": 12,
+   "src_offset": 1814,
+   "src_offset+snippet": 445,
+   "src_offset+span": 44
+  },
+  "locate_audit": {
+   "rows": 4192,
+   "with_target_key": 1733,
+   "agree": 191,
+   "disagree": 0,
+   "win_only": 418,
+   "span_only": 0,
+   "none": 1124,
+   "misalign_lower": 0,
+   "misalign_upper": 418,
+   "disagree_ratio": 0.0,
+   "misalign_upper_ratio": 0.2412,
+   "win_only_before": 0,
+   "win_only_after": 418,
+   "win_only_both": 0,
+   "win_only_unknown": 0,
+   "win_only_strong": 84,
+   "win_only_weak": 334,
+   "off_tight": 84,
+   "off_mid": 285,
+   "off_far": 49,
+   "weak_nohit": 0,
+   "weak_far_only": 418,
+   "weak_rival1": 0,
+   "weak_rival_many": 0,
+   "samples": []
+  }
+ },
+ "recall": {
+  "dir": "modules\\regulatory_classifier\\recall_audit\\output",
+  "exists": true,
+  "stats_scalars": {},
+  "stats_top_keys": [
+   "attr_status",
+   "bnd",
+   "expansion",
+   "inc",
+   "no_body",
+   "stats"
+  ],
+  "generated_at": "2026-09-29T22:03:57+0800",
+  "gates": {
+   "clean": true,
+   "validity": true,
+   "contract": true,
+   "schema": true
+  }
+ },
+ "cleaning": {
+  "dir": "modules\\regulatory_scrapers\\data\\cleaned",
+  "sources": {
+   "gov_cleaned_20260929": 13178,
+   "mof_cleaned_20260929": 870,
+   "nfra_cleaned_20260926.quarantine": 5,
+   "nfra_cleaned_20260927.quarantine": 5,
+   "nfra_cleaned_20260928.quarantine": 5,
+   "nfra_cleaned_20260929": 1934,
+   "nfra_cleaned_20260929.quarantine": 5,
+   "pbc_cleaned_20260929": 571,
+   "supp_cleaned_20260926.quarantine": 4,
+   "supp_cleaned_20260929": 58
+  }
+ },
+ "semantic": {
+  "summary": "语义增强能力：12/14 可用（bertopic, bge_base_zh, deepke, hanlp, hdbscan, ltp, paradedb, pgvector, sqlite_vec, text2vec, umap, youtu_embedding）",
+  "fingerprint": {
+   "available": [
+    "bertopic",
+    "bge_base_zh",
+    "deepke",
+    "hanlp",
+    "hdbscan",
+    "ltp",
+    "paradedb",
+    "pgvector",
+    "sqlite_vec",
+    "text2vec",
+    "umap",
+    "youtu_embedding"
+   ],
+   "unavailable": [
+    "signalgraph",
+    "weknora_docreader"
+   ],
+   "versions": {
+    "bertopic": "0.17.4",
+    "bge_base_zh": "6.1.0",
+    "deepke": "",
+    "hanlp": "2.1.5",
+    "hdbscan": "0.8.44",
+    "ltp": "4.2.14",
+    "paradedb": "3.3.6",
+    "pgvector": "0.5.0",
+    "sqlite_vec": "0.1.9",
+    "text2vec": "1.3.8",
+    "umap": "0.5.12",
+    "youtu_embedding": "5.17.0"
+   },
+   "schema_version": "1.0"
+  },
+  "probes": {
+   "bertopic": {
+    "available": true,
+    "version": "0.17.4",
+    "pipeline_ref": "v2 P1-5（主题内子簇语义化，可选）"
+   },
+   "bge_base_zh": {
+    "available": true,
+    "version": "6.1.0",
+    "pipeline_ref": "v2 P1-1（主题辅助裁定）、P1-2（关联语义档）"
+   },
+   "deepke": {
+    "available": true,
+    "version": "",
+    "pipeline_ref": "v2 P3-1（原 aprcoie 位；N-176：aprcoie 不再保留为降级方案）"
+   },
+   "hanlp": {
+    "available": true,
+    "version": "2.1.5",
+    "pipeline_ref": "v2 P1-3（分句/结构增强层）"
+   },
+   "hdbscan": {
+    "available": true,
+    "version": "0.8.44",
+    "pipeline_ref": "v2 P1-5（随 BERTopic）"
+   },
+   "ltp": {
+    "available": true,
+    "version": "4.2.14",
+    "pipeline_ref": "v2 P1-3（分句/结构增强层）"
+   },
+   "paradedb": {
+    "available": true,
+    "version": "3.3.6",
+    "pipeline_ref": "v2 P2-2（**须先做零服务替代评估**；且须同时覆盖 search_internal）"
+   },
+   "pgvector": {
+    "available": true,
+    "version": "0.5.0",
+    "pipeline_ref": "v2 P2-2（检索语义化；替换 ParadeDB）"
+   },
+   "signalgraph": {
+    "available": false,
+    "version": "",
+    "pipeline_ref": "v2 P3-2（可选；须先证明其**确定性**：同输入同输出）"
+   },
+   "sqlite_vec": {
+    "available": true,
+    "version": "0.1.9",
+    "pipeline_ref": "v2 P2-2（检索语义化；与 SQLite FTS5 **同库共存**）"
+   },
+   "text2vec": {
+    "available": true,
+    "version": "1.3.8",
+    "pipeline_ref": "v2 P1-1（主题辅助裁定）、P1-2（关联语义档）"
+   },
+   "umap": {
+    "available": true,
+    "version": "0.5.12",
+    "pipeline_ref": "v2 P1-5（随 BERTopic，不单独使用）"
+   },
+   "weknora_docreader": {
+    "available": false,
+    "version": "",
+    "pipeline_ref": "v2 P2-1（只补版面分析；OCR 通路已存在，不重做）"
+   },
+   "youtu_embedding": {
+    "available": true,
+    "version": "5.17.0",
+    "pipeline_ref": "v2 P1-1（主题辅助裁定）、P1-2（关联语义档）"
+   }
+  }
+ }
+}

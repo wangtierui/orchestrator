@@ -10,6 +10,13 @@
  ],
  "entries": [
   {
+   "file": "artifact_snapshot.py",
+   "category": "tool",
+   "entry": "产物快照与启用前后差异对比（snapshot/diff；供「接入模型后产物变化」可复算）",
+   "independent": true,
+   "independent_why": "刻意独立：环境/一致性核验类工具，按需人工或 CI 执行，非 STEP_ORDER 链路节点"
+  },
+  {
    "file": "audit_health.py",
    "category": "tool",
    "entry": "全链路健康审计（统一入口自动化/流程断点/门禁失效/数据源不唯一/数据阻塞/冗余/重复/硬编码）",
@@ -36,6 +43,13 @@
    "entry": "llm_wiki 上游 Releases 监测（网络失败 rc=2）",
    "independent": true,
    "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
+  },
+  {
+   "file": "check_mirrors.py",
+   "category": "tool",
+   "entry": "镜像源核验与实测（--probe 真实拉包/取权重文件；核验逻辑在 std_lib.common_lib.mirrors）",
+   "independent": true,
+   "independent_why": "刻意独立：环境/一致性核验类工具，按需人工或 CI 执行，非 STEP_ORDER 链路节点"
   },
   {
    "file": "ci_check.py",
@@ -207,6 +221,13 @@
    "file": "run_production_refresh.py",
    "category": "pipeline",
    "entry": "主链编排（25 步（原 22 步；N-46/N-52/N-53/N-63/N-73b 陆续入链））；v2 起由 cli.py run 调用（库形态）"
+  },
+  {
+   "file": "semantic_assist.py",
+   "category": "tool",
+   "entry": "P1 语义增强**入链调用点**（嵌入→主题辅助裁定；只产分析视图，不写事实源）",
+   "independent": false,
+   "step": "semantic:assist"
   },
   {
    "file": "smoke_semantic_models.py",

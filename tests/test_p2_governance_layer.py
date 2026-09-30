@@ -191,7 +191,13 @@ def test_run_step_order_matches_call_sites():
     # 26（25 → +1）：N-93（2026-09-28）`quarantine:triage`（清洗隔离记录**登记式**处置，
     #   零回写 → worklist）入链；与 `retention:plan` 同款"链内只读披露 + 人工闸门"纪律。
     # 28（27 → +1）：`pg:health`（向量存储只读健康检查，P2-2 接入；恒 rc=0 的披露步骤）
-    assert len(rpr.STEP_ORDER) == 28
+    # 29（28 → +1）：N-177（2026-09-30）`semantic:assist`（P1 语义增强的**入链调用点**）——
+    #   动因：嵌入模型（bge_base_zh/text2vec/youtu_embedding）**权重与依赖全就绪**且 preflight
+    #   五道闸全过，但主链**没有任何调用点**（"模型就绪却未入链"）；且原绑定指向 `classify:all`
+    #   —— 该节点**并无嵌入调用点**（纸面接线）。新步骤为**只读分析视图**（`reports/semantic/`），
+    #   **不写事实源**（`usage_policy.write_fact_source=false`，由 audit_health「P1 口径」机器守护）；
+    #   未启用/嵌入不可用均为**合法状态**（工具披露且 rc=0，不阻断主链）。
+    assert len(rpr.STEP_ORDER) == 29
     # 每个步骤名必须能在本文件中找到**引号字面量**（`"gates"` / `f"clean:{src}"` ⇒ `"clean:{src}"`）
     text = open(fp, encoding="utf-8").read()
     for step in rpr.STEP_ORDER:

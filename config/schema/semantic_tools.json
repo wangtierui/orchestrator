@@ -7,7 +7,7 @@
   "fingerprint": "required",
   "note": "三条硬纪律：① **零硬依赖**——未安装时调用方必须回退既有正则实现，且回退**可观测**（不得静默）；② **降级链**——探测结果驱动分支，不得 try/except 吞掉；③ **指纹**——凡使用任一工具产出的产物，须把 semantic_tools.fingerprint() 写入其 provenance（模型名+版本+权重 sha），否则断点幂等（input_sha）与水位判据会因模型差异而失真。",
   "gate": "增强层模块**禁止**直接 `import hanlp/ltp/text2vec/bertopic/umap/hdbscan` 顶层硬导入；一律经本清单探测后再惰性导入。",
-  "network_policy": "2026-09-29 实测：本环境网络为**白名单式** —— 仅 `pypi.org` 与 `github.com`（含 api.github.com）可达；**模型托管站全部不可达**（huggingface.co / hf-mirror.com / modelscope.cn / file.hankcs.com）。**2026-09-30 更新**：模型权重已由**人工下载并随仓预置**到 `external/models/`（bge-base-zh-v1.5 / LTPbase / text2vec-base-chinese / Youtu-Embedding，共约 12.2GB），以 `local_dir` 形态登记、由加载层强制离线读取 → **`preflight.offline` 现已可过**。故：① **代码级依赖**走 pip（pypi 可达）；② **权重**走仓内预置（不依赖任何模型站）；③ 新增权重仍须在**可达环境**下载后迁入。**不得**据网络白名单判定「增强层不可用」。"
+  "network_policy": "2026-09-30 实测（`tools/check_mirrors.py --probe` 可复跑）：① **可达**：`pypi.org`、清华镜像 `mirrors.tuna.tsinghua.edu.cn`（⚠️ 该站 WAF 对**浏览器 UA** 返 403，工具型 UA 通过）、`github.com`（含 api/raw/codeload）、`hf-mirror.com` 的**元数据与普通文件**；② **阻断**：`huggingface.co`（超时）、**HF 的 LFS 权重通道**（302 → `cas-bridge.xethub.hf.co`，TCP 可达但 **TLS 被 SNI 层重置**）、`modelscope.cn`/`wisemodel.cn`/`aliendao.cn`/`gitee.com`/`file.hankcs.com`（连接重置）、Docker registry（超时）。③ 故：**代码级依赖**走 pip（tuna 优先，官方兜底）；**权重**只有两条路 —— **仓内已预置**（`external/models/`，约 12.5GB，`local_dir` 形态）或**在可达环境下载后离线迁入**。**不得**据网络状况把「增强层」整体判为不可用。"
  },
  "license_registry": {
   "note": "许可核验登记（W5，2026-09-28）：**每个工具须在此登记**（verified 或 pending），使“还有哪些未核”机器可查，而非散落在各条目的 `license_to_verify` 自由标记里。判据 U 断言两集合之并 == 工具全集。入库前置：pending 清空。",
@@ -30,7 +30,6 @@
    "paradedb": "⚠️ **AGPL-3.0**（强 copyleft，含网络服务条款）→ 除与「单机零服务依赖 / 克隆可移植性」冲突外，还带**许可传染**风险；若纳入交付面须法务评估。当前定位为可选外部后端（P2-2），**不建议随仓分发**。"
   },
   "verified": {
-   "aprcoie": "MIT（核验日 2026-09-29；来源 github:license/jialin666/APRCOIE_v1）",
    "bertopic": "MIT（核验日 2026-09-29；来源 github:license/MaartenGr/BERTopic）",
    "hanlp": "Apache-2.0（核验日 2026-09-29；来源 github:license/hankcs/HanLP）",
    "hdbscan": "BSD-3-Clause（核验日 2026-09-29；来源 github:license/scikit-learn-contrib/hdbscan）",
@@ -38,7 +37,8 @@
    "signalgraph": "MIT（核验日 2026-09-29；来源 github:license/zhiliscope/SignalGraph）",
    "sqlite_vec": "Apache-2.0（核验日 2026-09-29；来源 github:license/asg017/sqlite-vec）",
    "text2vec": "Apache-2.0（核验日 2026-09-29；来源 github:license/shibing624/text2vec）",
-   "umap": "BSD-3-Clause（核验日 2026-09-29；来源 github:license/lmcinnes/umap）"
+   "umap": "BSD-3-Clause（核验日 2026-09-29；来源 github:license/lmcinnes/umap）",
+   "deepke": "MIT（核验日 2026-09-30；来源 external/upstream/DeepKE/LICENSE）"
   },
   "pending": [
    "bge_base_zh",
@@ -60,12 +60,22 @@
    },
    "pipeline_ref": "v2 P1-3（分句/结构增强层）",
    "approx_size": "首次使用自动下载约 1.2GB 模型",
-   "offline": "权重目录由 HANLP_HOME 指定（HanLP 官方认可该变量：模型主目录），并置 HANLP_OFFLINE=1 禁网。⚠️ 2026-09-30 更正：原登记 `MTL_HANLP_OFFLINE` 在 HanLP 官方资料中**不存在** → 设了也是假绿灯。",
+   "offline": "**权重未预置**（官方 `file.hankcs.com` 在本环境**连接被重置**，实测 2026-09-30）。本仓以 `HANLP_HOME` 指向权重主目录 + `HANLP_OFFLINE=1` 禁网；⚠️ 2026-09-30 更正：原登记 `MTL_HANLP_OFFLINE` 在 HanLP 官方资料中**不存在** → 设了也是假绿灯。",
    "offline_env": [
     "HANLP_HOME",
     "HANLP_OFFLINE"
    ],
-   "license_to_verify": true
+   "license_to_verify": true,
+   "weights": {
+    "status": "unobtainable_in_this_env",
+    "official_host": "https://file.hankcs.com（连接重置 ✗）",
+    "hf_availability": "HF 上**无 HanLP 官方模型仓**（`/api/models?author=hankcs` 返回空）；仅有第三方镜像 `SingHA/HanLP`（56 文件，含 pos_ctb / ctb9_dep / ctb9_con / msra_ner / cpb3 / semeval16_sdp / electra_base_zh 等**分任务模型**）—— 但它们是 **LFS 文件** → 见 blocked_reason。",
+    "blocked_reason": "2026-09-30 实测：hf-mirror 仅代理**元数据与非 LFS 文件**；LFS 权重 302 → `cas-bridge.xethub.hf.co`，该主机 **TCP 可达但 TLS 被 SNI 层重置**（curl/urllib 一致复现）。官方 huggingface.co 超时；modelscope/wisemodel/aliendao/gitee/ai.gitee/atomgit 连接重置；gitcode 418（WAF）。→ 本环境**无可用权重下载通道**。",
+    "unblock": "在**可达环境**执行 `python -c \"import hanlp; hanlp.load('MTL')\"`（或 `hanlp.pretrained.mtl.*`）下载后，将权重目录整体迁入，并置 `HANLP_HOME=<目录>` + `HANLP_OFFLINE=1`；随后以 `local_dir` 形态登记以便机器实检。",
+    "substitute_in_place": "分句/结构增强**当前由 `ltp` 承担**（`ltp` 已就绪：`external/models/LTPbase`，`basis_split=ltp_cws` 显式标注非原生分句）→ HanLP 缺失**不阻断**该环节。"
+   },
+   "verified_at": "2026-09-30",
+   "verified": "包就位（hanlp 2.1.5 可导入，probe 实测 available=true）；**权重未预置**（offline_ready=false，如实表达）；官方权重站不可达（实测）"
   },
   "ltp": {
    "repo": "https://github.com/HIT-SCIR/ltp",
@@ -268,20 +278,6 @@
    "offline": "无外部模型；离线可用",
    "license_to_verify": true
   },
-  "aprcoie": {
-   "repo": "https://github.com/jialin666/APRCOIE_v1",
-   "purpose": "中文开放信息抽取（自动生成抽取模式）",
-   "extra": "",
-   "pypi": "",
-   "probe": {
-    "kind": "manual",
-    "import_name": "aprcoie"
-   },
-   "pipeline_ref": "v2 P3-1（可选，须先评估许可与体积）",
-   "approx_size": "论文代码库，无发行包；须人工获取",
-   "offline": "须随仓外置（不得入库）；依赖前置句法分析结果",
-   "license_to_verify": true
-  },
   "signalgraph": {
    "repo": "https://github.com/zhiliscope/SignalGraph",
    "purpose": "零 Token 确定性图构建",
@@ -340,6 +336,47 @@
     "unblock": "在 Linux/容器环境部署后，以 `PARADEDB_DSN` 接入（本仓已留端点探测与 6 态降级）。",
     "substitute": "**SQLite FTS5 保留为降级路径**（v2 P2-2 已定：须先做零服务替代评估），当前检索能力不因缺 ParadeDB 而缺失。"
    }
+  },
+  "deepke": {
+   "repo": "https://github.com/zjunlp/DeepKE",
+   "purpose": "知识抽取框架（NER / 关系抽取 / 属性抽取）；本仓挂 `relations:gen` 作关系抽取增强，**替代原 aprcoie**",
+   "extra": "",
+   "pypi": "",
+   "probe": {
+    "kind": "source_tree",
+    "local_dir": "external/upstream/DeepKE",
+    "expect_files": [
+     "LICENSE",
+     "example/re",
+     "requirements.txt"
+    ],
+    "runtime_imports": [
+     "torch",
+     "transformers"
+    ]
+   },
+   "pipeline_ref": "v2 P3-1（原 aprcoie 位；N-176：aprcoie 不再保留为降级方案）",
+   "approx_size": "源码 42MB（已 clone）；基线编码器**复用仓内已预置**的 external/models/（bge-base-zh-v1.5 / text2vec-base-chinese）",
+   "offline": "框架**已就位**（源码树，`source_tree` 实检通过）；微调权重不可得（见 weights）。加载层以本地编码器 + `local_files_only` 运行 → **不会**因权重缺失而联网。",
+   "weights": {
+    "status": "unobtainable_in_this_env",
+    "candidates": [
+     "zjunlp/OneKE（双语基于 schema 的开放信息抽取；分片权重 + all.md5）",
+     "zjunlp/KnowPrompt（关系抽取，f1=0.90.ckpt）",
+     "zjunlp/mt5-ie（mT5 信息抽取）"
+    ],
+    "blocked_reason": "2026-09-30 实测：hf-mirror 仅代理**元数据与非 LFS 文件**（vocab.txt 109KB ✓）；LFS 权重 302 → `cas-bridge.xethub.hf.co`，该主机 **TCP 可达但 TLS 被 SNI 层重置**（curl 与 urllib 一致复现）。官方 huggingface.co 超时；modelscope / wisemodel / aliendao / gitee / ai.gitee / atomgit HTTPS 连接重置；gitcode 418（WAF）；file.hankcs.com 重置；Docker registry 超时/401。→ 本环境**无可用权重下载通道**。",
+    "unblock": "在**可达环境**下载（`huggingface-cli download <repo>`）后离线迁入 `external/models/DeepKE-<name>/`，并按 `local_dir` 形态登记",
+    "base_encoder_local": [
+     "external/models/bge-base-zh-v1.5",
+     "external/models/text2vec-base-chinese"
+    ]
+   },
+   "runtime_note": "⚠️ DeepKE `requirements.txt` 钉死 torch<=1.11 / transformers==4.26 / numpy==1.21 / scikit-learn==0.24 → 与**主栈**（torch 2.14 / transformers 5.17）冲突；`pip install -r` 会**摧毁现有语义栈**。故框架按源码树就位，运行须**独立 venv** 或仅取最小推理子集。",
+   "license_to_verify": false,
+   "license": "MIT（核验日 2026-09-30；来源 external/upstream/DeepKE/LICENSE）",
+   "verified_at": "2026-09-30",
+   "verified": "源码树就位（LICENSE/example/re/requirements.txt 齐备）+ 运行时依赖 torch/transformers 可导入（probe 实测）"
   }
  },
  "selection_policy": {
@@ -386,7 +423,7 @@
    "_t*_base*",
    "_t*_final*"
   ],
-  "enabled": false,
+  "enabled": true,
   "enable_preconditions": [
    "① 在**可评样本**上量出 P/R（及置信区间）→ 填入 neighbor.min_similarity/min_margin；",
    "② semantic:preflight 的 offline 闸按**职责分组**全过（嵌入三选一 / 分句二选一）；",
@@ -403,6 +440,29 @@
    "env_gate": "REG_ORCH_SEMANTIC_SPLIT",
    "default": "off",
    "why": "开启会改变条文/关系产物口径 → 与关闭时**逐字节对等**是启用前提。"
-  }
+  },
+  "enabled_at": "2026-09-30",
+  "enabled_by": "N-177（用户明示接入主链并正式启用）",
+  "enable_evidence": "`semantic_tools --preflight` **五道闸全过**（deps/offline/fp/baseline/license → 可启用）；嵌入三选一就绪（bge_base_zh/text2vec/youtu_embedding，权重随仓预置）；分句二选一就绪（ltp）。",
+  "assist": {
+   "step": "semantic:assist",
+   "tool": "tools/semantic_assist.py",
+   "entry": "python -m tools.semantic_assist --source all --limit 200",
+   "outputs": [
+    "reports/semantic/semantic_assist_<date>.json",
+    "reports/semantic/semantic_assist_<date>.md"
+   ],
+   "blocking": false,
+   "why_non_blocking": "增强层零硬依赖：未启用/嵌入不可用均为合法状态（工具披露且 rc=0）",
+   "limit_env": "REG_ORCH_SEMANTIC_ASSIST_LIMIT（默认 200/源）"
+  },
+  "adoption": {
+   "enabled": false,
+   "note": "**采信（据建议改判主题归属）** 需先定阈值；当前只产出**分析视图**（建议 + 相似度 + margin），**不自动改判**、不写事实源。故 `enabled=true`（产出视图）与 `adoption.enabled=false`（未采信）是**两件事**，前者安全、后者须度量。",
+   "min_similarity": null,
+   "min_margin": null,
+   "why_null": "阈值**刻意留空**：定值必须来自可评样本的 P/R 与置信区间，拍脑袋填值会让「辅助裁定」变成**未经度量的判决**（v2 纪律：无度量不得上线）。"
+  },
+  "enabled_scope": "analysis_view_only"
  }
 }

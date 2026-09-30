@@ -1,11 +1,11 @@
 # BENCHMARK —— 交付基准登记（回归对照基线）
 
-> 自动生成：tools/gen_benchmark.py @ 2026-09-29 18:48:19 | python 3.13.14
+> 自动生成：tools/gen_benchmark.py @ 2026-09-30 19:13:57 | python 3.13.14
 > 用途：数据重建/重构后重跑 `python tools/gen_benchmark.py` 刷新；数值漂移即回归信号。
 
 ## 1 门禁（gates/ALL_GATES）
 
-实装 22 道（gates/gate_*.py）：
+实装 23 道（gates/gate_*.py）：
 ```
   gate_citations.py
   gate_clean_schema.py
@@ -24,6 +24,7 @@
   gate_relations.py
   gate_rfn_drift.py
   gate_rfn_sync.py
+  gate_run_steps.py
   gate_runtime_hygiene.py
   gate_secret_scan.py
   gate_sources_config.py
@@ -35,10 +36,10 @@
 
 ## 2 自动化验收测试（pytest）
 
-用例文件 33：`test_analysis_deliveries.py`、`test_base_publish.py`、`test_clean_index_portability.py`、`test_cli_facade.py`、`test_common_lib.py`、`test_contract_api.py`、`test_contract_manifest.py`、`test_crawler_extract.py`、`test_dedup_key_uniqueness.py`、`test_document_structure.py`、`test_drafter_pure.py`、`test_e2e_pipeline.py`、`test_excel_crawler_pipeline.py`、`test_gates_matrix.py`、`test_governance_store.py`、`test_governance_watermark.py`、`test_governance_worklist.py`、`test_interfaces_protocols.py`、`test_internal_original_paths.py`、`test_internal_policy_base.py`、`test_ipb_deep.py`、`test_ipb_extract_file.py`、`test_misc_pure.py`、`test_p2_governance_layer.py`、`test_relations.py`、`test_rich_object.py`、`test_scraper_std_core.py`、`test_scraper_std_extra.py`、`test_scraper_std_tables.py`、`test_scrapers_pure.py`、`test_ssot_convergence.py`、`test_std_lib_more.py`、`test_table_structured.py`
+用例文件 34：`test_analysis_deliveries.py`、`test_base_publish.py`、`test_clean_index_portability.py`、`test_cli_facade.py`、`test_common_lib.py`、`test_contract_api.py`、`test_contract_manifest.py`、`test_crawler_extract.py`、`test_dedup_key_uniqueness.py`、`test_document_structure.py`、`test_drafter_pure.py`、`test_e2e_pipeline.py`、`test_excel_crawler_pipeline.py`、`test_gates_matrix.py`、`test_governance_store.py`、`test_governance_watermark.py`、`test_governance_worklist.py`、`test_interfaces_protocols.py`、`test_internal_original_paths.py`、`test_internal_policy_base.py`、`test_ipb_deep.py`、`test_ipb_extract_file.py`、`test_misc_pure.py`、`test_p2_governance_layer.py`、`test_relations.py`、`test_rich_object.py`、`test_scraper_std_core.py`、`test_scraper_std_extra.py`、`test_scraper_std_tables.py`、`test_scrapers_pure.py`、`test_semantic_enhance.py`、`test_ssot_convergence.py`、`test_std_lib_more.py`、`test_table_structured.py`
 运行：`python -m pytest tests -q`
 
-**覆盖率基线（只升不降）**：TOTAL 44%（采自 `.coverage`；刷新：`python -m coverage run -m pytest tests -q`）
+**覆盖率基线（只升不降）**：TOTAL 40%（采自 `.coverage`；刷新：`python -m coverage run -m pytest tests -q`）
 
 ## 3 数据基线
 
@@ -80,7 +81,7 @@
 
 | 命令 | 职责 |
 |---|---|
-| `python cli.py gates` | 22 道交付门禁（以 ALL_GATES 为准） |
+| `python cli.py gates` | 23 道交付门禁（以 ALL_GATES 为准） |
 | `python cli.py classify --all --steps base,cluster,match,detail,upper,clause_graph` | 底座强序重建（R8 幂等断点） |
 | `python cli.py source list / add --id` | 源目录路由（R15） |
 | `python cli.py internal index/align/merged` | 内部制度链路 |
@@ -144,7 +145,7 @@
 
 ### 6.4 召回覆盖（`recall_audit` 既有产物）
 
-- 产物目录存在 `True`；报告生成于 2026-09-29T17:46:18+0800
+- 产物目录存在 `True`；报告生成于 2026-09-29T22:03:57+0800
 - 四门禁：`{'clean': True, 'validity': True, 'contract': True, 'schema': True}`
 
 ### 6.5 清洗体量
@@ -166,16 +167,17 @@
 
 ### 6.6 P1 语义增强能力（当前环境）
 
-- 语义增强能力：9/13 可用（bertopic, hanlp, hdbscan, paradedb, pgvector, sqlite_vec, text2vec, umap, youtu_embedding）
-- 指纹：可用 `['bertopic', 'hanlp', 'hdbscan', 'paradedb', 'pgvector', 'sqlite_vec', 'text2vec', 'umap', 'youtu_embedding']`；未装 `4` 项
+- 语义增强能力：12/14 可用（bertopic, bge_base_zh, deepke, hanlp, hdbscan, ltp, paradedb, pgvector, sqlite_vec, text2vec, umap, youtu_embedding）
+- 指纹：可用 `['bertopic', 'bge_base_zh', 'deepke', 'hanlp', 'hdbscan', 'ltp', 'paradedb', 'pgvector', 'sqlite_vec', 'text2vec', 'umap', 'youtu_embedding']`；未装 `2` 项
 
 | 工具 | 状态 | 版本 | 对应方案项 |
 |---|---|---|---|
-| `aprcoie` | 未装 | — | v2 P3-1（可选，须先评估许可与体积） |
 | `bertopic` | 可用 | 0.17.4 | v2 P1-5（主题内子簇语义化，可选） |
+| `bge_base_zh` | 可用 | 6.1.0 | v2 P1-1（主题辅助裁定）、P1-2（关联语义档） |
+| `deepke` | 可用 | — | v2 P3-1（原 aprcoie 位；N-176：aprcoie 不再保留为降级方案） |
 | `hanlp` | 可用 | 2.1.5 | v2 P1-3（分句/结构增强层） |
 | `hdbscan` | 可用 | 0.8.44 | v2 P1-5（随 BERTopic） |
-| `ltp` | 未装 | — | v2 P1-3（分句/结构增强层） |
+| `ltp` | 可用 | 4.2.14 | v2 P1-3（分句/结构增强层） |
 | `paradedb` | 可用 | 3.3.6 | v2 P2-2（**须先做零服务替代评估**；且须同时覆盖 search_internal） |
 | `pgvector` | 可用 | 0.5.0 | v2 P2-2（检索语义化；替换 ParadeDB） |
 | `signalgraph` | 未装 | — | v2 P3-2（可选；须先证明其**确定性**：同输入同输出） |

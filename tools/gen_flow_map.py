@@ -194,22 +194,28 @@ DEGRADE_CHAINS: list = [
 #   · `wired=True`  + `gate` ⇒ 已接线但**默认关**（env 打开）。
 MODEL_BINDINGS: dict = {
     "bge_base_zh": {
-        "step": "classify:all", "stage": "阶段2", "wired": False,
+        # N-177：绑定**改指真实调用点** —— 原绑 `classify:all` 而该节点**并无嵌入调用点**
+        # （绑定指向不存在的调用点 = 纸面接线）。真实调用点在 `semantic:assist`。
+        "step": "semantic:assist", "stage": "阶段2", "wired": True,
+        "gate": "`usage_policy.enabled=true`（配置开关）",
         "role": "**全量首选嵌入**（P1-1 主题辅助裁定；`mode=full` 首选）",
         "down": "降级 `text2vec`；再退关键词/规则判定（既有主题分类器）",
     },
     "bge_base_zh@relations": {
+        # ⚠️ 关系语义档**尚无调用点**（本轮只落地了主题辅助裁定）→ 如实标未接线，不虚报
         "step": "relations:gen", "stage": "阶段2", "wired": False,
         "role": "**关联语义档**（P1-2；`mode=full` 首选嵌入）",
         "down": "降级 `text2vec`；再退既有正则关系抽取",
     },
     "youtu_embedding": {
-        "step": "classify:all", "stage": "阶段2", "wired": False,
+        "step": "semantic:assist", "stage": "阶段2", "wired": True,
+        "gate": "`usage_policy.enabled=true` + `--mode incremental`",
         "role": "**增量/指定场景嵌入**（`mode=incremental` 首选；2B/2048 维）",
         "down": "降级 `bge_base_zh` → `text2vec`；再退关键词/规则判定",
     },
     "text2vec": {
-        "step": "classify:all", "stage": "阶段2", "wired": False,
+        "step": "semantic:assist", "stage": "阶段2", "wired": True,
+        "gate": "`usage_policy.enabled=true`（配置开关）",
         "role": "嵌入**降级备选**（768 维，与 bge 同维等价备份）",
         "down": "优先 `bge_base_zh`（全量）/`youtu_embedding`（增量）；再退关键词规则",
     },
@@ -249,10 +255,10 @@ MODEL_BINDINGS: dict = {
         "role": "**关联语义档**（P1-2：依据/废止关系的语义近似判定）",
         "down": "降级 `bge_base_zh` → `text2vec`；再退正则关系抽取",
     },
-    "aprcoie": {
+    "deepke": {
         "step": "relations:gen", "stage": "阶段2", "wired": False,
-        "role": "中文**开放信息抽取**（自动生成抽取模式，P3-1）",
-        "down": "回退正则关系抽取（P3 可选，未启用不影响主链）",
+        "role": "**知识抽取框架**（NER/关系抽取/属性抽取；P3-1，**替代原 aprcoie**）",
+        "down": "回退正则关系抽取（框架已就位但**微调权重未得**，见清单 `weights`；P3 可选，未启用不影响主链）",
     },
     "signalgraph": {
         "step": "relations:gen", "stage": "阶段2", "wired": False,

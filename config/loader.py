@@ -129,6 +129,54 @@ def collector_source_map(refresh: bool = False) -> dict[str, str]:
 # ocr.yaml → ocr 配置
 # --------------------------------------------------------------------------- #
 # --------------------------------------------------------------------------- #
+# N-175（2026-09-30）：镜像源（**权重与依赖下载的优先访问源**）
+# --------------------------------------------------------------------------- #
+MIRRORS_YAML = os.path.join(os.path.dirname(os.path.abspath(__file__)), "mirrors.yaml")
+
+_MIRRORS_CFG: dict | None = None
+
+
+def load_mirrors(refresh: bool = False) -> dict:
+    """镜像配置（唯一事实源 = `config/mirrors.yaml`）。见该文件头部：为什么集中 + 实测证据。"""
+    global _MIRRORS_CFG
+    if _MIRRORS_CFG is not None and not refresh:
+        return _MIRRORS_CFG
+    with open(MIRRORS_YAML, encoding="utf-8") as fh:
+        _MIRRORS_CFG = yaml.safe_load(fh) or {}
+    return _MIRRORS_CFG
+
+
+def mirror_env(refresh: bool = False) -> dict:
+    """→ 应施加到环境的镜像变量（`{ENV_NAME: 值}`），按 `mirrors.yaml:apply.env_map` 解析。
+
+    **不做副作用**（纯函数），便于：① 单测；② 传 `subprocess` 的 `env=`；③ doctor 核验。
+    """
+    cfg = load_mirrors(refresh)
+    out: dict = {}
+    for env_name, dotted in ((cfg.get("apply") or {}).get("env_map") or {}).items():
+        node: Any = cfg
+        for part in str(dotted).split("."):
+            node = (node or {}).get(part) if isinstance(node, dict) else None
+        if node:
+            out[str(env_name)] = str(node)
+    return out
+
+
+def apply_mirror_env(refresh: bool = False) -> list:
+    """把镜像变量**施加到本进程环境**（`setdefault`：显式 env 优先，不被覆盖）→ 实际设置的项。
+
+    为何在 `bootstrap()` 里单点调用：镜像变量必须**早于任何 HF/pip 相关导入生效**，
+    且要被**子进程继承**（链路各步都是子进程）—— 散在各脚本里必然漏设。
+    """
+    applied: list = []
+    for k, v in mirror_env(refresh).items():
+        if not os.environ.get(k):
+            os.environ[k] = v
+            applied.append(k)
+    return applied
+
+
+# --------------------------------------------------------------------------- #
 # N-166（2026-09-30）：门禁 `gate_config_integrity` 的**路径与策略**单源化
 # --------------------------------------------------------------------------- #
 # 为何放在 loader：该门禁原**自定路径常量**（`_SCHED_YAML` / `_TRIGGERS_YAML`）并直接

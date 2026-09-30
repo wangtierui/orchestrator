@@ -601,6 +601,10 @@ STEP_ORDER: tuple[str, ...] = (
     "apply:{src}",
     "classify:all",
     "relations:gen",
+    # N-177（2026-09-30）：P1 语义增强的**入链调用点**（`semantic:assist`）。
+    # 位置：消费 cleaned（阶段 1/2 已写）与主题关键词 SSOT，产出**分析视图**（reports/semantic/），
+    # **不写事实源** → 可在 relations:gen 之后、下游消费者之前安全插入（不影响任何事实源版本）。
+    "semantic:assist",
     "reconcile",
     "recall",
     # inbox_drop / internal_update 产出 index/align/processed → 必须在 internal:merged 之前。
@@ -958,6 +962,30 @@ def _run_chain(args) -> int:
         "relations_index",
         rc=_rc_of(report, "relations:gen"),
         paths=[paths.relations_index()],
+    )
+
+    # ---- 阶段 2.7：P1 语义增强**入链**（`semantic:assist`，N-177）----
+    # 动因（用户 2026-09-30 指出）：`bge_base_zh`/`text2vec`/`youtu_embedding` 的**权重与依赖早已就绪**
+    #   （external/models 预置、preflight 五道闸全过），但主链**没有任何调用点** →
+    #   即「模型就绪却未入链」；且 MODEL_BINDINGS 曾把它们绑在 `classify:all` 上，
+    #   而该节点**并无嵌入调用点**（绑定指向不存在的调用点 = 纸面接线）。
+    # 纪律：**非阻断** —— 增强层零硬依赖：未启用（usage_policy.enabled=false）或嵌入链不可用
+    #   均为**合法状态**，由工具自身显式披露并 rc=0；是否启用由 `usage_policy` + `semantic:preflight` 决定。
+    # 产物：`reports/semantic/semantic_assist_<date>.{json,md}`（**分析视图**，绝不写事实源）。
+    report.append(
+        _run(
+            "semantic:assist",
+            [
+                PY,
+                "-m",
+                "tools.semantic_assist",
+                "--source",
+                "all",
+                "--limit",
+                os.environ.get("REG_ORCH_SEMANTIC_ASSIST_LIMIT", "200"),
+            ],
+            timeout=1800,
+        )
     )
 
     # ---- 阶段 3：reconcile ----

@@ -990,7 +990,17 @@ def _check_semantic_manifest() -> tuple[list[str], dict]:
                 problems.append(f"U1: 工具 {name!r} 缺 {k}")
         if not str(spec.get("repo") or "").startswith("http"):
             problems.append(f"U1: 工具 {name!r} 的 repo 须为 http(s) 链接")
-        if not str((spec.get("probe") or {}).get("import_name") or "").strip():
+        # N-179（2026-09-30）：**`source_tree`/`local_dir` 型工具不要求 `import_name`** ——
+        # 它们的可用性由**本地产物实检**判定（见 `semantic_tools.probe()` 的 N-176 `source_tree`
+        # 与 N-155 `local_model` 分支），而非某个 pip 模块。原判据一律要求 `import_name`，
+        # 会把"源码树部署的框架"（如 DeepKE）判为登记不合规 —— 属**假阳性**（会逼人用
+        # `import_name=torch` 之类**借位**把"运行时在"混当"工具在"，反而更失真）。
+        _pspec = spec.get("probe") or {}
+        _self_describing = (
+            str(_pspec.get("kind") or "") in ("source_tree", "local_model")
+            and bool(_pspec.get("local_dir"))
+        )
+        if not _self_describing and not str(_pspec.get("import_name") or "").strip():
             problems.append(f"U1: 工具 {name!r} 缺 probe.import_name（探测层无法判定可用性）")
 
     # ③ 探测层健壮性 + 离线预置声明合法性（N-103）

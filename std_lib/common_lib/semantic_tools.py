@@ -246,10 +246,27 @@ def probe(name: str) -> dict:
     # 判据：可用性 = 加载库可导入 **且** 目录存在 **且** `expect_files`（默认 `config.json`）齐备。
     #   `offline_ready` 也随之**以目录实检为准**（env 缺位仅作告警）——因为"防首用联网"由
     #   加载层强制 `local_files_only` 保证（见 `semantic_models`），比"设了某个 env"更硬。
+    # N-176（2026-09-30）：**`source_tree` 探测类型**（新增）。适用「无 pip 发行包、以**源码树**
+    # 部署的框架」（本仓实例：DeepKE）。为何要单列一类：
+    #   · `module` 依赖 `import_name` 有发行包 → 源码树框架**没有**；
+    #   · `manual` 只说"须人工获取"，**无法表达"已部署"**；
+    #   · `local_model` 会承诺"权重就绪"→ 而源码树框架**不承诺权重**。
+    # 若不单列，就会出现两类失真：① 框架明明已 clone 却报"未装"；② 或用 `import_name=torch`
+    # 之类的**借位**把"运行时依赖在"混当"框架在"。故可用性 = **源码树就位 + 关键文件齐备 +
+    # 运行时依赖可导入**；**权重可得性另由清单 `weights` 元数据如实记载**（框架/权重**分开表达**）。
+    runtime_missing: list = []
+    if kind == "source_tree":
+        for m in pspec.get("runtime_imports") or []:
+            try:
+                if importlib.util.find_spec(str(m)) is None:
+                    runtime_missing.append(str(m))
+            except (ImportError, ValueError):
+                runtime_missing.append(str(m))
+
     model_path = ""
     model_ok = None
     local_fp = ""
-    if kind == "local_model" or pspec.get("local_dir"):
+    if kind in ("local_model", "source_tree") or pspec.get("local_dir"):
         rel = str(pspec.get("local_dir") or "")
         if rel:
             model_path = rel if os.path.isabs(rel) else os.path.join(_ROOT, rel)
@@ -263,7 +280,14 @@ def probe(name: str) -> dict:
                 )
             else:
                 local_fp = local_dir_fingerprint(model_path)
-                if found and not detail:
+                if kind == "source_tree":
+                    # 源码树：**就位**即可用；运行时依赖缺失必须显式说出（不静默）
+                    detail = (
+                        f"源码树就位（{rel}；指纹 {local_fp[:12]}）"
+                        if not runtime_missing
+                        else f"源码树就位（{rel}）但**运行时依赖缺失**：{runtime_missing}"
+                    )
+                elif found and not detail:
                     detail = f"本地权重就绪（{rel}；指纹 {local_fp[:12]}）"
 
     envs = [str(x) for x in (spec.get("offline_env") or []) if str(x)]
@@ -281,9 +305,15 @@ def probe(name: str) -> dict:
     return {
         "name": name,
         "kind": kind,
-        "available": bool(found),
+        # N-176：`source_tree` 的可用性**不依赖 import_name**（源码树框架无发行包）——
+        # 判据 = 源码树就位（含 expect_files）+ 运行时依赖可导入；其余类型仍以 import_name 为准。
+        "available": (bool(model_ok) and not runtime_missing)
+        if kind == "source_tree"
+        else bool(found),
         "version": ver,
         "detail": detail,
+        # N-176：源码树运行时依赖缺失清单（空 = 齐备；非 source_tree 恒空）
+        "runtime_missing": runtime_missing,
         "extra": str(spec.get("extra") or ""),
         "pipeline_ref": str(spec.get("pipeline_ref") or ""),
         "endpoint": endpoint,

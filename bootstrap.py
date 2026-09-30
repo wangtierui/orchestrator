@@ -84,6 +84,20 @@ def bootstrap(*modules: str, include_tools: bool = False, extra=()) -> None:
         pp = Path(p)
         _add(pp if pp.is_absolute() else ROOT / pp)
 
+    # --------------------------------------------------------------------- #
+    # N-175（2026-09-30）：**镜像源单点应用**
+    # --------------------------------------------------------------------- #
+    # 权重/依赖的优先访问源必须在**任何 HF/pip 相关导入之前**写入环境，且要被**子进程继承**
+    # （链路每一步都是子进程）——散在各脚本里必然漏设（实测症状：主进程能下、子进程不能下）。
+    # 故在**仓库唯一引导点**统一施加。配置唯一事实源 = `config/mirrors.yaml`（经 `config.loader`）。
+    # 失败**不阻断**（引导层不应因配置缺失让所有入口挂掉），但会被 `doctor` 的 mirrors 项发现。
+    try:
+        from config.loader import apply_mirror_env
+
+        apply_mirror_env()
+    except Exception:  # noqa: BLE001  引导层不做强依赖
+        pass
+
 
 def injected() -> tuple[str, ...]:
     """已注入路径快照（供诊断/门禁断言）。"""

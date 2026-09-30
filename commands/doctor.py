@@ -319,6 +319,27 @@ def _c_git_hooks() -> tuple[str, str, str]:
         return "warn", f"{type(e).__name__}: {e}", ""
 
 
+def _c_mirrors() -> tuple[str, str, str]:
+    """镜像源就绪度（N-175）—— 权重/依赖的**优先访问源**。
+
+    为何入 doctor：官方权重站 `huggingface.co` 在本机**不可达**，若镜像未生效，
+    症状是"**首次调用才联网下载并失败**"（远离配置处、且破坏离线性）。
+    本项做**离线级**核验（配置 + 环境变量一致性）；**实测级**（真拉包/真取权重文件）
+    由 `python -m tools.check_mirrors --probe` 提供（避免 doctor 每次都联网）。
+    """
+    try:
+        # 实现下沉在 `std_lib/common_lib/mirrors.py`（**不得** `from tools.…` 静态导入：
+        # 那会让 mypy 把同一文件解析为两个模块名 → 阻断 CI；见 N-175 与本仓『分层纪律』判据）。
+        from std_lib.common_lib.mirrors import check_env, summary
+
+        problems = check_env()
+    except Exception as e:  # noqa: BLE001
+        return "warn", f"镜像核验不可用：{type(e).__name__}", ""
+    if problems:
+        return "warn", f"未就绪（{len(problems)} 项）：{problems[0][:110]}", "处置：python -m tools.check_mirrors"
+    return "ok", summary(), "实测：python -m tools.check_mirrors --probe"
+
+
 # (id, 组, 函数)
 CHECKS: tuple[tuple[str, str, object], ...] = (
     ("python", "运行时", _c_python),
@@ -339,6 +360,7 @@ CHECKS: tuple[tuple[str, str, object], ...] = (
     ("schedule", "调度", _c_schedule),
     ("triggers", "调度", _c_triggers),
     ("git_hooks", "版本控制", _c_git_hooks),
+    ("mirrors", "依赖", _c_mirrors),
     ("disk", "磁盘", _c_disk),
 )
 

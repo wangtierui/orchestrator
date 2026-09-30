@@ -37,6 +37,12 @@ def run() -> tuple[bool, dict]:
         os.sep + "_tmp" + os.sep,
         "secret_scan.py",  # 扫描器自身（自检夹具动态拼接）
         "gate_secret_scan.py",
+        # N-179（2026-09-30）：`external/` 为**第三方上游源码与权重**（本仓 `.gitignore` 已忽略，
+        # **永不随仓分发**）。实测：clone 的 WeKnora 内 `docker-compose*.yml` 的
+        # `postgresql://$DU:$DP@…` **占位串**与 searxng `secret_key: "ultrasecretkey"` 会命中本门禁规则
+        # → 属**上游样例文件**（既非本仓凭据，也无泄露面）。若不排除，则"引入第三方源码"这一
+        # 正常动作**必然伴随门禁红灯**，噪声会淹没真信号（这正是本仓"判据不得制造假阳性"的纪律）。
+        os.sep + "external" + os.sep,
     )  # 本门禁（描述文本含规则名，防自命中）
     kept = [f for f in findings if not any(s in (f.file or "") for s in skip_frag)]
     crit = [f for f in kept if f.level == "CRITICAL"]
