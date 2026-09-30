@@ -42,7 +42,34 @@ import subprocess
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # repo root
-HOOK_DIR = os.path.join(ROOT, ".git", "hooks")
+
+
+def hooks_dir() -> str:
+    """**有效钩子目录**（唯一事实源 = `git config core.hooksPath`，未设则 `.git/hooks`）。
+
+    N-164（2026-09-30）：原为硬编码 `.git/hooks` —— 而 `.git/hooks/**` **不入库**
+    （git 安全设计），于是"钩子随 clone 缺失、且各机版本漂移"。现本仓改用
+    **`.githooks/` 入库 + `core.hooksPath=.githooks`**：钩子内容随 `git pull` 自动更新，
+    只需设一次 config（由 `tools/install_git_hooks.py` 工具化并机器核验）。
+
+    本函数让受管块的写入位置**跟随实际生效目录** —— 否则在 hooksPath 模式下，
+    `--install-hooks` 会往 `.git/hooks` 写（**一个 git 根本不会执行的目录**）：
+    命令报 "OK"，而钩子**实际不生效**（典型"装了等于没装"）。
+    """
+    try:
+        r = subprocess.run(
+            ["git", "config", "--get", "core.hooksPath"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        p = (r.stdout or "").strip()
+        if p:
+            return p if os.path.isabs(p) else os.path.join(ROOT, p)
+    except Exception:  # noqa: BLE001  git 不可用 → 退回默认目录
+        pass
+    return os.path.join(ROOT, ".git", "hooks")
 GRAPH_DIR = os.path.join(ROOT, "graphify-out")
 SYNC_LOG = os.path.join(GRAPH_DIR, "sync.log")
 PATCH_TOOL = os.path.join(ROOT, "tools", "graphify_offline_html.py")
@@ -156,12 +183,12 @@ def hook_block() -> str:
 
 
 def install_hooks() -> int:
-    if not os.path.isdir(HOOK_DIR):
-        print("[FAIL] 未找到 %s —— 请先 git init / 在仓库内执行" % HOOK_DIR)
+    if not os.path.isdir(hooks_dir()):
+        print("[FAIL] 未找到 %s —— 请先 git init / 在仓库内执行" % hooks_dir())
         return 1
     block = hook_block()
     for name in HOOKS:
-        path = os.path.join(HOOK_DIR, name)
+        path = os.path.join(hooks_dir(), name)
         text = ""
         if os.path.isfile(path):
             with open(path, encoding="utf-8", errors="replace") as fh:
@@ -180,7 +207,7 @@ def install_hooks() -> int:
 
 def uninstall_hooks() -> int:
     for name in HOOKS:
-        path = os.path.join(HOOK_DIR, name)
+        path = os.path.join(hooks_dir(), name)
         if not os.path.isfile(path):
             continue
         with open(path, encoding="utf-8", errors="replace") as fh:
@@ -200,7 +227,7 @@ def uninstall_hooks() -> int:
 def show_status() -> int:
     print("graphify 可执行文件: %s" % (find_graphify() or "(未找到)"))
     for name in HOOKS:
-        path = os.path.join(HOOK_DIR, name)
+        path = os.path.join(hooks_dir(), name)
         if not os.path.isfile(path):
             print("%-15s: 无" % name)
             continue

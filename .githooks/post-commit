@@ -1,0 +1,62 @@
+#!/bin/sh
+# ============================================================================
+# post-commit —— **版本化钩子**（入库于 `.githooks/`，随 clone 生效）
+#
+# 安装（克隆后一次性；本仓已设）：
+#     git config core.hooksPath .githooks
+# 核验：`python -m tools.install_git_hooks --check`（rc=0 即已就绪）
+#
+# 为什么用 `core.hooksPath` 而不是复制到 `.git/hooks/`：
+#   `.git/hooks/**` **不入库**（git 的安全设计），因此"复制法"有两个后果 ——
+#     ① 每台机器/每次重克隆都要手工复制（**极易漏**）；
+#     ② 钩子升级后各副本**版本不一致**（改了仓库里的，本机仍跑旧的）。
+#   `.githooks/` 入库 + `core.hooksPath` 指过来后：**钩子内容随 `git pull` 自动更新**，
+#   只剩"设一次 config"这一件事（已由 `tools/install_git_hooks.py` 工具化 + 机器核验）。
+#
+# 本文件含两个受管/半受管块：
+#   ① **autopush 块**（本项目自有）：提交后自动 `git push origin main`；
+#   ② **graphify 块**（由 `tools/graphify_sync.py` 管理，勿手改该块）。
+# ============================================================================
+
+# ---------------------------------------------------------------------------
+# ① 提交后自动同步到远程（用户约定 2026-09-08；本地唯一演进点，普通 push fast-forward 语义）
+#
+# N-163（2026-09-30）**修复"自动提交未完成却无人察觉"**：
+#   病灶：原实现 `git push ... >/dev/null 2>&1` 把**失败完全吞掉**，只留一句含糊的
+#         "push skipped/failed"。后果：**第二十六批起 8 批提交从未推送成功**（远程分叉 →
+#         non-fast-forward，被静默），直至人工排查才发现。
+#   现改为四条（仍**不阻断提交**：commit 成败与 push 解耦）：
+#     ① **留痕**：结果写 `logs/git-autopush.log`（时间 / HEAD / 领先数 / 真实错误）；
+#     ② **可见**：失败时回显**真实原因**与**处置命令**（不再丢弃输出）；
+#     ③ **漂移可见**：每次回显"本地领先远程 N 个提交"；
+#     ④ **纪律对齐**：同步失败属**降级**，必须可观测（与仓内"降级链须可观测"同款口径）。
+# ---------------------------------------------------------------------------
+ROOT="D:/WorkBuddy/regulatory_compliance_orchestrator"
+LOG="$ROOT/logs/git-autopush.log"
+mkdir -p "$ROOT/logs" 2>/dev/null
+
+HEAD_SHA=$(git rev-parse --short HEAD 2>/dev/null)
+TS=$(date '+%Y-%m-%d %H:%M:%S')
+
+if OUT=$(git push origin main 2>&1); then
+    AHEAD=$(git rev-list --count origin/main..HEAD 2>/dev/null)
+    echo "[post-commit] pushed origin/main (HEAD=$HEAD_SHA；未推送=$AHEAD)"
+    printf '%s OK   HEAD=%s ahead=%s | %s\n' \
+        "$TS" "$HEAD_SHA" "$AHEAD" "$(printf '%s' "$OUT" | tail -n 1)" >> "$LOG"
+else
+    AHEAD=$(git rev-list --count origin/main..HEAD 2>/dev/null)
+    echo "[post-commit] WARN push 失败（HEAD=$HEAD_SHA；本地领先远程 ${AHEAD} 个提交）"
+    printf '%s\n' "$OUT" | sed 's/^/[post-commit]   /' | head -n 8
+    echo "[post-commit]   处置：git pull --rebase origin main（整合远程后）再 git push origin main"
+    echo "[post-commit]   日志：$LOG"
+    printf '%s FAIL HEAD=%s ahead=%s\n---\n%s\n' "$TS" "$HEAD_SHA" "$AHEAD" "$OUT" >> "$LOG"
+fi
+
+# >>> graphify-sync (managed by tools/graphify_sync.py) >>>
+# 提交/检出后后台刷新 graphify 派生产物（图跟 HEAD 走；日志 graphify-out/sync.log）
+export PATH="$HOME/.local/bin:$PATH"
+# 日志固定 UTF-8（否则 Git Bash 下 python stdout 走 GBK，中文状态行变乱码）
+export PYTHONIOENCODING=utf-8
+mkdir -p "D:/WorkBuddy/regulatory_compliance_orchestrator/graphify-out"
+"C:/Users/wangtierui-lhl/.workbuddy/binaries/python/versions/3.13.12/python.exe" "D:/WorkBuddy/regulatory_compliance_orchestrator/tools/graphify_sync.py" --quiet >> "D:/WorkBuddy/regulatory_compliance_orchestrator/graphify-out/sync.log" 2>&1 &
+# <<< graphify-sync <<<

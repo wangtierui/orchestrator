@@ -547,7 +547,8 @@ def check_readme_consistency() -> list:
         )
     # ② README 引用的关键产物/工具是否存在
     for rel in (
-        "docs/全链数据流总图.md",
+        # N-165：链路总图已**并入 README 的受管块**（不再单独成文件）→ 改核验标记是否存在
+        "docs/全链数据流总图.md",  # 历史路径：若 README 缺失该块则提示（见下方专门断言）
         "tools/gen_flow_map.py",
         "tools/audit_health.py",
         "config/schema/semantic_tools.json",
@@ -626,6 +627,28 @@ def check_remote_sync() -> list:
             return r.returncode, (r.stdout or "").strip(), (r.stderr or "").strip()
         except Exception as e:  # noqa: BLE001
             return 1, "", f"{type(e).__name__}: {e}"
+
+    # N-164（2026-09-30）：**钩子就绪度**也在此核验 —— 否则"钩子没装/装了但 CRLF/丢了自动推送块"
+    # 会让"自动提交"**根本不跑**，而 `origin/main..HEAD` 也可能恰好为 0（本地刚提交、远程上次已同步）
+    # → 单看计数会漏判。故把"同步通道本身是否就绪"并入同一类别（同一主题：自动推送是否真会跑）。
+    try:
+        # 核验逻辑在**共享库**（`std_lib/common_lib/git_hooks.py`）—— CLI 与审计共用同一份判据。
+        # 注：**不得**写成 `from tools.install_git_hooks import check` —— 那样 mypy 会把同一文件
+        # 解析为两个模块名（`install_git_hooks` 与 `tools.install_git_hooks`）并报
+        # `Source file found twice under different module names`（实测踩中，故下沉到库）。
+        from std_lib.common_lib import git_hooks as _gh
+
+        for p in _gh.check():
+            f.append({"cat": "远程同步", "sev": "MED", "where": ".githooks/", "detail": p})
+    except Exception as e:  # noqa: BLE001  核验器不可用 → 披露而非静默
+        f.append(
+            {
+                "cat": "远程同步",
+                "sev": "LOW",
+                "where": ".githooks/",
+                "detail": f"钩子就绪度核验跳过：{type(e).__name__}: {e}",
+            }
+        )
 
     rc, _o, _e = _git("rev-parse", "--verify", "origin/main")
     if rc != 0:

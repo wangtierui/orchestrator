@@ -15,6 +15,14 @@
 *.bat text eol=crlf
 *.cmd text eol=crlf
 
+# N-164（2026-09-30）：**git 钩子必须为 LF**。
+#   `.githooks/**` 是**入库的版本化钩子**（配合 `core.hooksPath=.githooks`）；它们由 sh 执行，
+#   而本机 `core.autocrlf=true` → 若不加此规则，**检出时会被写成 CRLF**，Git Bash 下
+#   报 `$'\r': command not found` 之类的错，**钩子静默失效**（正是本轮要修的那类"装了等于没装"）。
+#   本规则**窄范围**（只 .githooks/*），不触碰既有 246 个 CRLF 文件 —— 与上方
+#   "刻意不强制 `* eol=lf`" 的理由不冲突（那是全仓级改写，此处是钩子专用）。
+.githooks/* text eol=lf
+
 # 二进制：禁止文本转换与行级差异
 *.pdf   binary
 *.doc   binary

@@ -1,26 +1,33 @@
 # -*- coding: utf-8 -*-
-"""tools/gen_flow_map — **全链数据流总图**生成器（2026-09-29）
+"""tools/gen_flow_map — **全链数据流总图**生成器（2026-09-29 建；2026-09-30 重写 N-165）
 
-为什么"生成"而不是"手写"
+为什么「生成」而不是"手写"
 ------------------------
 手写的链路图会**随时间必然失准**（步骤增删、命令改参、降级链变化）。本工具从**既有事实源**
 派生，改代码即改图：
 
-  · **顺序**：`tools/run_production_refresh.STEP_ORDER`（链路唯一顺序声明）；
-  · **命令**：同文件内 `_run(...)` / `_run_conditional(...)` 调用点（正则抽取，与实装同源）；
-  · **降级措施**：由调用形态派生 —— `_run_conditional` ⇒ 条件步骤（可跳过）；只读披露类
-    （`retention:plan` / `semantic:preflight` / `pg:health`）⇒ "恒 rc=0，不可用为合法状态"；
-  · **工具与离线状态**：`config/schema/semantic_tools.json` + `semantic_tools.probe_all()`；
-  · **未取得模型权重的环节**：清单中声明了 `offline_env`（需外部权重）的工具 ⇒ **单独标记 ⚠️**。
+  · **顺序**：`tools.run_production_refresh.STEP_ORDER`（链路唯一顺序声明）；
+  · **命令**：同文件内 `_run(...)` / `_run_conditional(...)` 调用点 —— **AST 抽取**（非正则），
+    故能正确处理 **f-string 步骤名**（`f"clean:{src}"` 在循环中生成）与**多行参数列表**；
+  · **降级 / 失败语义**：本模块 `STEP_FAILURE`（**逐步声明**）+ `DEGRADE_CHAINS`（**降级链总表**）；
+  · **工具与就绪度**：`config/schema/semantic_tools.json` + `semantic_tools.probe_all()`；
+  · **模型选型**：清单 `selection_policy`（**唯一事实源**，本模块不重复定义优先级）。
 
-输出：`docs/全链数据流总图.md`（Mermaid 流程图 + 逐步骤表 + 降级/风险分区）。
+输出（N-165）
+------------
+**直接注入 `README.md` 的受管块**（`<!-- BEGIN/END GENERATED: 全链数据流总图 -->`），
+**不再单独生成 `docs/全链数据流总图.md`**（用户要求：并入 README，不单独成文件）。
+
+为什么用「受管块」而不是把整篇 README 交给生成器：README 还有大量**人工叙述**（概述/环境/纪律），
+若全篇生成，人工内容会被覆盖；受管块让「机器事实」与"人工叙述"**各归其位**，
+且**改链路 → 重跑本工具 → README 自动同步**（这正是「代码与文档一致」的落地方式）。
 """
 
 from __future__ import annotations
 
+import ast
 import io
 import os
-import re
 import sys
 
 # 引导：**必须经 `bootstrap`（唯一引导点，v2 §3.1.2）** —— `gate_import_bootstrap` 断言
@@ -32,12 +39,17 @@ bootstrap("all")
 
 import paths
 
-OUT = os.path.join(paths.ROOT, "docs", "全链数据流总图.md")
+README = os.path.join(paths.ROOT, "README.md")
+LEGACY_OUT = os.path.join(paths.ROOT, "docs", "全链数据流总图.md")  # N-165 起废弃
 RUNNER = os.path.join(paths.ROOT, "tools", "run_production_refresh.py")
 
-# 已知的"只读披露"步骤（**恒 rc=0**：后端不可用属合法状态，不应误报为链路故障）
+BEGIN = "<!-- BEGIN GENERATED: 全链数据流总图（由 tools/gen_flow_map.py 生成，勿手改） -->"
+END = "<!-- END GENERATED: 全链数据流总图 -->"
+
+# 已知的「只读披露」步骤（**恒 rc=0**：后端不可用属合法状态，不应误报为链路故障）
 READONLY_DISCLOSURE = {"retention:plan", "semantic:preflight", "pg:health"}
-# 步骤 → 作用（**唯一事实源在此**；键与 `STEP_ORDER` 实际值一致，支持"前缀兜底"）
+
+# 步骤 → 作用（**唯一事实源在此**；键与 `STEP_ORDER` 实际值一致，支持「前缀兜底」）
 PURPOSE: dict = {
     # —— 阶段 1 采集/清洗/条文 ——
     "collect:nfra_weekly": "nfra 周报采集（按周触发）",
@@ -75,6 +87,198 @@ PURPOSE: dict = {
     "gates": "全部门禁（**阻断**；置于链尾以终态产物为准）",
 }
 
+# 步骤 → **降级 / 失败语义**（N-165：原实现把非披露步骤一律写作"阻断（失败即停）" ——
+# 这与实装不符：采集/清洗在 `--no-scrape` 或「无 raw 变化」时会**快跳**（SKIP 且 rc=0），
+# 时效核验无 token 时**降级为 unavailable**，条件步骤**未触发即跳过**。此表为逐步声明的事实源。）
+COLLECT_STEPS = {"collect:nfra_weekly", "collect", "supp:ingest_batch"}
+CLEAN_STEPS = {"clean", "apply"}
+STEP_FAILURE: dict = {
+    "collect": "**阻断**（失败即停）；`--no-scrape` → **SKIP**（rc=0，不采集）",
+    "collect:nfra_weekly": "**阻断**；未到周度触发 → **SKIP**（rc=0）",
+    "supp:ingest_batch": "**阻断**；backlog 为空 → **SKIP**（rc=0）",
+    "clean": "**阻断**；**超时按源体量配置**（`max(1800, raw_MB×15)`，上限 6h，N-150）；"
+             "无 raw 变化 → **SKIP**（rc=0）",
+    "apply": "**阻断**；无核验结果可回写 → **SKIP**（rc=0）",
+    "timeliness:verify": "**降级**：无 token / 工具缺失 → `verification_state=unavailable`"
+                         "（**不误标**）；配额耗尽自动停（断点续跑）",
+    "timeliness:consolidate": "**阻断**；无核验输入 → 空汇总（rc=0）",
+    "recall": "**阻断**（四门禁不过即 FAIL，留人工）",
+    "retention:plan": "**只读披露 · 恒 rc=0**（无待归档为合法状态；`--apply` 才是人工闸门）",
+    "quarantine:triage": "**只读产出**（零回写；结果入 worklist，rc=0）",
+    "semantic:preflight": "**只读披露 · 恒 rc=0**（增强未启用为合法状态；"
+                          "真正的启用判定用 `semantic_tools --preflight` 的 rc）",
+    "pg:health": "**只读披露 · 恒 rc=0**（后端不可用为合法状态；实际读写按 `vector_store` 降级链）",
+    "wiki:sync": "**条件步骤**（`triggers.yaml` 判定）：未触发 → **SKIP**（rc=0）",
+    "gates": "**阻断**（失败即停；链尾以终态产物为准）",
+}
+# 未在 STEP_FAILURE 单列的步骤 → 默认语义
+DEFAULT_FAILURE = "**阻断**（失败即停；`--resume` 可从该步续跑）"
+
+# 降级链总表（**N-165 新增**：用户要求「补充降级链的完整表述」）。
+# 每条链的事实源（SSOT）在括号中注明；此处只做**汇总披露**，不重复定义。
+DEGRADE_CHAINS: list = [
+    (
+        "**嵌入模型选型链**（SSOT：清单 `selection_policy`）",
+        "`full`（全量，默认）：`bge_base_zh` → `text2vec`；"
+        "`incremental`（增量/显式指定）：`youtu_embedding` → `bge_base_zh` → `text2vec`；"
+        "`model=\"…\"` 显式指定**优先级最高**。链中每一项都须先过 `probe`（`available` 且 `model_ok` 实检）。",
+        "候选链**逐个尝试**；成功即返回**实际模型名 + 指纹**；链耗尽时 "
+        "`strict=False`（默认）返回 `ok=False` 并打印 `fallback_notice`（**可观测**），"
+        "`strict=True` 抛 `EnhanceUnavailable`（含每个候选的失败原因）。**任何路径都不吞错。**",
+    ),
+    (
+        "**分句链**（SSOT：`sentence_boundary` + `semantic_enhance`）",
+        "ML 增强（`ltp` 分词锚切句，env `REG_ORCH_SEMANTIC_SPLIT=1`）→ "
+        "确定性 `sentence_boundary.split_by(text, level)`（受控 SSOT）。",
+        "**默认关闭 ML**（改分句口径会改变条文/关系产物 → 须先在可评样本量出 P/R，"
+        "v2 纪律「无度量不得上线」）。关闭时与既有实现**逐字节对等**（零回归）；"
+        "开启后 LTP 失败**自动回退**并留痕。",
+    ),
+    (
+        "**向量检索链**（SSOT：`std_lib/common_lib/vector_store.py`）",
+        "`pgvector`（`vec` schema，最小权限角色）→ `sqlite_vec`（与既有 SQLite FTS5 同库同源）"
+        "→ 既有**全文/正则**。",
+        "`VectorStoreUnavailable` 供调用方降级；`search_or_fallback()` 失败返回 `None`（**不抛**）。"
+        "连接仅经 env `PGVECTOR_DSN`（口令不入库，`gate_secret_scan` 守护）。"
+        "**主链不调用其读写**，`pg:health` 仅只读披露。",
+    ),
+    (
+        "**OCR / 文档解析链**（SSOT：`config/ocr.yaml`）",
+        "Engine `auto`：`paddleocr` → `tesseract`（`auto_fallback: true`）；"
+        "PDF **有文本层先走 `pdfplumber`**，扫描件才走 OCR。",
+        "引擎不可用即降级到下一档；两者皆不可用 → 该文件正文抽取为空并**显式告警**"
+        "（不静默产出空正文）。",
+    ),
+    (
+        "**版面分析链**（P2-1，未装）",
+        "`weknora_docreader`（25+ 格式渲染）→ `crawler_common.extract_document_text`（既有 6 态）。",
+        "未装即走既有 6 态抽取；**不重做** OCR/正文通路。",
+    ),
+    (
+        "**时效核验链**（SSOT：`timeliness_review`）",
+        "北大法宝 CLI 核验（需 `PKULAW_NODE_EXE` + `PKULAW_PKG_DIR` + token）→ "
+        "R13 **三态**（`valid`/`invalid`/`unavailable`）。",
+        "无 token / 工具缺失 → `unavailable`（**降级不误标**）；配额耗尽自动停并断点续跑。",
+    ),
+    (
+        "**关系抽取链**（SSOT：`std_lib/common_lib/relations.py`）",
+        "条款级定位：**窗口优先（±100 字符 `source_snippet`）→ 跨度退路**；"
+        "语义档（P1-2，`youtu_embedding@relations`，未接线）→ **既有正则抽取**。",
+        "`article_placement` 记录定位来源（`src_offset`/`snippet`/两者）；未定位即留空并计入基线。"
+        "`source_span` 为**纯披露字段**（N-98：收窄会劣化定位，故不参与定位）。",
+    ),
+    (
+        "**披露步骤统一口径**（`retention:plan` / `semantic:preflight` / `pg:health`）",
+        "**只读**：不写业务事实源。",
+        "**「未就绪」是合法状态**（未启用增强、无待归档、后端未部署）→ 三者**恒 rc=0**；"
+        "真正需要阻断的判定保留给各自的人工/CI 口径。",
+    ),
+    (
+        "**门禁判定不可执行时**（`cli.py gates`）",
+        "判据因缺输入无法执行（如克隆无数据、水位不可用）。",
+        "**显式披露**「判据不可执行 ≠ 判据通过」；运行台账 `gate_run_steps` 对"
+        "「失败步骤的产物落在该步时间窗内」判 **FAIL**（可经 `acknowledged.json` 人工确认降级为告警）。",
+    ),
+    (
+        "**编排层降级**（`tools/run_production_refresh`）",
+        "`--resume` 续跑（按上次步骤结果 + 全库水位）；`--only`/`--no-scrape` 步骤选择。",
+        "步骤被跳过时记 **SKIP（rc=0）并写入 `note`（原因）**，不伪装为执行成功；"
+        "失败步骤写**稳定运行台账** `data/run_state/last_run_steps.json`（含时间窗），"
+        "并触发通知通道。",
+    ),
+]
+
+# 模型 → 链路节点绑定（**唯一事实源**）。`wired`/`gate` 描述**链路接线状态**（与就绪度分开）：
+#   · `wired=False` ⇒ 门面/库已就绪但**主链未调用**（「可选叠加」）；
+#   · `wired=True`  + `gate` ⇒ 已接线但**默认关**（env 打开）。
+MODEL_BINDINGS: dict = {
+    "bge_base_zh": {
+        "step": "classify:all", "stage": "阶段2", "wired": False,
+        "role": "**全量首选嵌入**（P1-1 主题辅助裁定；`mode=full` 首选）",
+        "down": "降级 `text2vec`；再退关键词/规则判定（既有主题分类器）",
+    },
+    "bge_base_zh@relations": {
+        "step": "relations:gen", "stage": "阶段2", "wired": False,
+        "role": "**关联语义档**（P1-2；`mode=full` 首选嵌入）",
+        "down": "降级 `text2vec`；再退既有正则关系抽取",
+    },
+    "youtu_embedding": {
+        "step": "classify:all", "stage": "阶段2", "wired": False,
+        "role": "**增量/指定场景嵌入**（`mode=incremental` 首选；2B/2048 维）",
+        "down": "降级 `bge_base_zh` → `text2vec`；再退关键词/规则判定",
+    },
+    "text2vec": {
+        "step": "classify:all", "stage": "阶段2", "wired": False,
+        "role": "嵌入**降级备选**（768 维，与 bge 同维等价备份）",
+        "down": "优先 `bge_base_zh`（全量）/`youtu_embedding`（增量）；再退关键词规则",
+    },
+    "bertopic": {
+        "step": "classify:all", "stage": "阶段2", "wired": False,
+        "role": "**主题内子簇语义化**（P1-5，仅产出分析视图）",
+        "down": "不做子簇（仅影响分析视图，不产事实源）",
+    },
+    "umap": {
+        "step": "classify:all", "stage": "阶段2", "wired": False,
+        "role": "bertopic 的降维依赖（**不单独使用**，无权重）",
+        "down": "随 bertopic 一并跳过",
+    },
+    "hdbscan": {
+        "step": "classify:all", "stage": "阶段2", "wired": False,
+        "role": "bertopic 的聚类依赖（**不单独使用**，无权重）",
+        "down": "随 bertopic 一并跳过",
+    },
+    "ltp": {
+        "step": "clauses", "stage": "阶段1", "wired": True,
+        "gate": "`REG_ORCH_SEMANTIC_SPLIT=1`（**默认关**）",
+        "role": "条文**分句增强**（分词锚切句；LTP 4.x 无原生分句 API，`basis_split=ltp_cws`）",
+        "down": "回退 `sentence_boundary.split_by`（受控 SSOT，**逐字节对等**，零依赖）",
+    },
+    "hanlp": {
+        "step": "clauses", "stage": "阶段1", "wired": False,
+        "role": "条文分句（**ltp 的二选一备选**；含 ML 原生分句能力）",
+        "down": "用 `ltp`；两者皆不可用即用规则分句",
+    },
+    "weknora_docreader": {
+        "step": "clean", "stage": "阶段1", "wired": False,
+        "role": "文档**版面分析**（25+ 格式渲染，补正文抽取）",
+        "down": "回退 `crawler_common.extract_document_text`（既有 6 态）",
+    },
+    "youtu_embedding@relations": {
+        "step": "relations:gen", "stage": "阶段2", "wired": False,
+        "role": "**关联语义档**（P1-2：依据/废止关系的语义近似判定）",
+        "down": "降级 `bge_base_zh` → `text2vec`；再退正则关系抽取",
+    },
+    "aprcoie": {
+        "step": "relations:gen", "stage": "阶段2", "wired": False,
+        "role": "中文**开放信息抽取**（自动生成抽取模式，P3-1）",
+        "down": "回退正则关系抽取（P3 可选，未启用不影响主链）",
+    },
+    "signalgraph": {
+        "step": "relations:gen", "stage": "阶段2", "wired": False,
+        "role": "**零 Token 确定性图构建**（P3-2）",
+        "down": "回退关系三元组 → 既有图构件",
+    },
+    "pgvector": {
+        "step": "OND", "stage": "阶段4", "wired": False,
+        "role": "**向量检索**后端（P2-2；`vec` schema，最小权限角色）",
+        "down": "降级 `sqlite_vec`（同库同源）→ 再退 SQLite FTS5 全文",
+    },
+    "sqlite_vec": {
+        "step": "OND", "stage": "阶段4", "wired": False,
+        "role": "向量检索**降级后端**（与既有 SQLite FTS5 同库同源）",
+        "down": "回退 SQLite FTS5 全文检索（零服务依赖）",
+    },
+    "paradedb": {
+        "step": "OND", "stage": "阶段4", "wired": False,
+        "role": "向量+BM25 混合检索（**已被 pgvector 替代**，可选外部后端）",
+        "down": "使用 pgvector / sqlite_vec（**不建议随仓分发**：AGPL-3.0）",
+    },
+}
+# 同一工具可挂多个节点（如 youtu_embedding 同时用于主题与关系）→ 以 `<tool>@<用途>` 区分
+_OND = "**按需节点**（无独立链步骤；由 `pg:health` 披露、业务按需调用）"
+# 阶段 → Mermaid 阶段节点 ID（**必须用节点 ID**，不能取中文首字 —— 实测曾误取为「阶」）
+STAGE_NODE = {"阶段1": "A", "阶段2": "B", "阶段3": "C", "阶段4": "D", "阶段5": "E", "阶段6": "F"}
+
 
 def _purpose(step: str) -> str:
     """作用查表：精确 → 前缀（`clean:gov`→`clean`）→ 未登记告警（**不静默**）。"""
@@ -82,113 +286,141 @@ def _purpose(step: str) -> str:
         return PURPOSE[step]
     head = step.split(":")[0]
     if head in PURPOSE:
-        return f"{PURPOSE[head]}（本步：`{step}`）"
-    return "**（未登记作用：请在 `gen_flow_map.PURPOSE` 补登）**"
+        return PURPOSE[head]
+    return f"⚠️ **未登记作用**（请在 `gen_flow_map.PURPOSE` 补登 `{step}`）"
 
 
-# 模型 → **链路节点绑定**（唯一事实源；图与表均由它派生）
-#   step  ：挂接的链路步骤（须存在于 `STEP_ORDER`，或 `OND` 表示"按需节点、无链步骤"）
-#   stage ：所属阶段（用于 Mermaid 连线到阶段节点）
-#   role  ：在该节点做什么（一句话）
-#   down  ：不可用时的降级措施（**必须显式**，不写"无"）
-MODEL_BINDINGS: dict = {
-    "hanlp": {
-        "step": "clauses", "stage": "阶段1",
-        "role": "条文**分句/结构增强**（ML 分句替代正则切分）",
-        "down": "回退 `std_lib/scraper_std` 的规则分句（既有 SSOT，零依赖）",
-    },
-    "ltp": {
-        "step": "clauses", "stage": "阶段1",
-        "role": "条文分句（**hanlp 的二选一备选**，按质量择优）",
-        "down": "同 hanlp；两者皆不可用即用规则分句",
-    },
-    "weknora_docreader": {
-        "step": "clean", "stage": "阶段1",
-        "role": "文档**版面分析**（25+ 格式渲染，补正文抽取）",
-        "down": "回退 `crawler_common.extract_document_text`（既有 6 态）",
-    },
-    "youtu_embedding": {
-        "step": "classify:all", "stage": "阶段2",
-        "role": "**主题辅助裁定**（语义向量近邻投票，P1-1）",
-        "down": "回退关键词/规则判定（既有主题分类器）",
-    },
-    "text2vec": {
-        "step": "classify:all", "stage": "阶段2",
-        "role": "同上（**已被 youtu_embedding 取代**，保留为备选）",
-        "down": "优先 youtu_embedding；再退关键词规则",
-    },
-    "bertopic": {
-        "step": "classify:all", "stage": "阶段2",
-        "role": "**主题内子簇语义化**（P1-5，仅产出分析视图）",
-        "down": "不做子簇（仅影响分析视图，不产事实源）",
-    },
-    "umap": {
-        "step": "classify:all", "stage": "阶段2",
-        "role": "bertopic 的降维依赖（**不单独使用**）",
-        "down": "随 bertopic 一并跳过",
-    },
-    "hdbscan": {
-        "step": "classify:all", "stage": "阶段2",
-        "role": "bertopic 的聚类依赖（**不单独使用**）",
-        "down": "随 bertopic 一并跳过",
-    },
-    "youtu_embedding@relations": {
-        "step": "relations:gen", "stage": "阶段2",
-        "role": "**关联语义档**（P1-2：依据/废止关系的语义近似判定）",
-        "down": "回退正则关系抽取（既有 `common_lib/relations`）",
-    },
-    "aprcoie": {
-        "step": "relations:gen", "stage": "阶段2",
-        "role": "中文**开放信息抽取**（自动生成抽取模式，P3-1）",
-        "down": "回退正则关系抽取（P3 可选，未启用不影响主链）",
-    },
-    "signalgraph": {
-        "step": "relations:gen", "stage": "阶段2",
-        "role": "**零 Token 确定性图构建**（P3-2）",
-        "down": "回退关系三元组 → 既有图构件",
-    },
-    "pgvector": {
-        "step": "OND", "stage": "阶段4",
-        "role": "**向量检索**后端（P2-2；`vec` schema，最小权限角色）",
-        "down": "降级 `sqlite_vec`（同库同源）→ 再退 SQLite FTS5 全文",
-    },
-    "sqlite_vec": {
-        "step": "OND", "stage": "阶段4",
-        "role": "向量检索**降级后端**（与既有 SQLite FTS5 同库同源）",
-        "down": "回退 SQLite FTS5 全文检索（零服务依赖）",
-    },
-    "paradedb": {
-        "step": "OND", "stage": "阶段4",
-        "role": "向量+BM25 混合检索（**已被 pgvector 替代**，可选外部后端）",
-        "down": "使用 pgvector / sqlite_vec（**不建议随仓分发**：AGPL-3.0）",
-    },
-}
-# 同一工具可挂多个节点（如 youtu_embedding 同时用于主题与关系）→ 以 `<tool>@<用途>` 区分
-_OND = "**按需节点**（无独立链步骤；由 `pg:health` 披露、业务按需调用）"
-# 阶段 → Mermaid 阶段节点 ID（**必须用节点 ID**，不能取中文首字 —— 实测曾误取为"阶"）
-STAGE_NODE = {"阶段1": "A", "阶段2": "B", "阶段3": "C", "阶段4": "D", "阶段5": "E", "阶段6": "F"}
+# --------------------------------------------------------------------------
+# 命令抽取（AST）
+# --------------------------------------------------------------------------
+def _fstr(node) -> str:
+    """把 `ast.Constant` / `ast.JoinedStr`（f-string）还原为可读字符串（保留 `{占位}`）。"""
+    if isinstance(node, ast.Constant) and isinstance(node.value, str):
+        return node.value
+    if isinstance(node, ast.JoinedStr):
+        out = []
+        for v in node.values:
+            if isinstance(v, ast.Constant):
+                out.append(str(v.value))
+            elif isinstance(v, ast.FormattedValue):
+                try:
+                    out.append("{" + ast.unparse(v.value) + "}")
+                except Exception:  # noqa: BLE001  极端表达式 → 占位
+                    out.append("{…}")
+        return "".join(out)
+    return ""
 
 
-def _model_status(name: str, p: dict) -> tuple:
-    """模型状态 → `(标签, 原因, 是否已启用)`。**未启用也必须给出原因**（不静默）。"""
+def _argv_parts(argv) -> list:
+    """从 `_run` 的 argv 实参抽取**可读片段**（本列用途＝快速定位脚本，非完整参数）。
+
+    归一化规则（N-165）：
+      · 跳过**解释器**实参（`PY`）—— 它对"定位脚本"没有信息量；
+      · `os.path.join(A, 'x.py')` 这类**路径表达式** → 取其**最后一个字符串常量**的 basename
+        （原来整串 `os.path.join(COLLECTORS, 'nfra_weekly.py')` 直接进表，噪音过大）；
+      · 变量实参 → `<NAME>`（保留"此处由变量决定"的真相，不猜值）。
+    """
+    if not isinstance(argv, (ast.List, ast.Tuple)):
+        return ["（argv 由变量构造，完整形态见源码）"]
+    parts: list = []
+    for el in argv.elts:
+        s = _fstr(el)
+        if s:
+            base = os.path.basename(s.replace("\\", "/").rstrip("/")) or s
+            parts.append(base)
+            continue
+        if isinstance(el, ast.Name):
+            if el.id in ("PY", "PYTHON", "SYS_EXECUTABLE"):
+                continue  # 解释器：无信息量
+            parts.append(f"<{el.id}>")
+            continue
+        # 路径构造表达式（os.path.join(...) 等）→ 取最后一个字符串常量做 basename
+        consts = [
+            n.value
+            for n in ast.walk(el)
+            if isinstance(n, ast.Constant) and isinstance(n.value, str)
+        ]
+        if consts:
+            base = os.path.basename(consts[-1].replace("\\", "/").rstrip("/")) or consts[-1]
+            parts.append(base)
+        else:
+            try:
+                parts.append(f"<{ast.unparse(el)}>")
+            except Exception:  # noqa: BLE001
+                parts.append("<…>")
+    return parts
+
+
+def _commands() -> dict:
+    """从源码 **AST** 抽取每个步骤的命令（与实装同源）。
+
+    N-165：原实现用正则 `_run\\(\\s*"([^"]+)"` + 逐行找右括号 —— 两个真实缺陷：
+      ① **不匹配 f-string 步骤名** → `collect:{src}`/`clean:{src}`/`apply:{src}`（循环生成）
+         全部退化为「（条件调用或未见字面量）」；
+      ② 边界靠缩进/右括号猜测 → 实测把**相邻调用的片段**串进来
+         （如 `gates` 行的命令成了 `cli.py run_at %Y-%m-%d %H:%M:%S total_elapsed_s raw`）。
+    AST 一次解决两者：调用边界由语法树确定，f-string 原样还原为 `{src}`。
+    """
+    tree = ast.parse(open(RUNNER, encoding="utf-8").read())
+    out: dict = {}
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        fn = node.func
+        if not isinstance(fn, ast.Name) or fn.id not in ("_run", "_run_conditional"):
+            continue
+        if not node.args:
+            continue
+        name = _fstr(node.args[0])
+        if not name:
+            continue
+        if fn.id == "_run_conditional":
+            tid = _fstr(node.args[1]) if len(node.args) > 1 else ""
+            out[name] = f"（条件步骤；触发项 `{tid}`，判据见 `config/triggers.yaml`）"
+            continue
+        argv = node.args[1] if len(node.args) > 1 else None
+        out[name] = " ".join(_argv_parts(argv))
+    return out
+
+
+def _tool_states() -> dict:
+    """工具 → **完整探测结果**（含 offline_ready / service_reachable / pipeline_ref）。
+
+    供「模型节点入图」判定状态：**未就绪也要给出原因**（权重未预置 / 服务未部署 / 未安装）。
+    """
+    from std_lib.common_lib import semantic_tools as st
+
+    return {n: dict(p) for n, p in st.probe_all().items()}
+
+
+def _dep_state(name: str, p: dict) -> tuple:
+    """**依赖/权重就绪度** → `(标签, 等级)`；等级 ∈ {`ready`,`warn`,`missing`}。"""
     if not p["available"]:
         cfg = MODEL_BINDINGS.get(name) or {}
-        extra = ""
-        if cfg.get("step") == "OND":
-            extra = "（可选外部后端）"
-        return "未装 · 未启用", f"依赖未安装{extra}", False
+        extra = "（可选外部后端）" if cfg.get("step") == "OND" else ""
+        return f"未装{extra}", "missing"
     if p.get("offline_ready") is False:
-        return "已接入 · **未启用**", "**模型权重未取得**（白名单网络不含模型站）→ 启用前须预置", False
-    if p.get("service_reachable") is False:
-        return "已接入 · **未启用**", "客户端可用但**服务不可达**（未部署/未启动）", False
-    # 服务型工具：端点未配置（`service_reachable is None` 且 kind=service）→ **未启用**
-    # （此前会落入"已启用"分支 —— 实测 `paradedb` 因 psycopg 偶然可用而被误判为已启用，
-    #  而其**服务从未部署**。客户端库在 ≠ 服务在，这正是 N-113 三态要区分的事实。）
-    if p.get("kind") == "service" and p.get("service_reachable") is None:
-        return "已接入 · **未启用**", "**服务未部署 / 端点未配置**", False
-    if (name or "").startswith("text2vec"):
-        return "已接入 · 备选", "已被 youtu_embedding 取代（保留为二选一备选）", False
-    return "**已启用**", "依赖与权重均就绪，可被调用", True
+        return "**权重未预置**", "warn"
+    if p.get("service_reachable") is False or (p.get("kind") == "service" and p.get("service_reachable") is None):
+        return "**服务未部署**", "warn"
+    if p.get("offline_ready") is True:
+        return "就绪（依赖 + 权重实检通过）", "ready"
+    return "就绪（依赖可用；无需外部权重）", "ready"
+
+
+def _wire_state(name: str) -> tuple:
+    """**链路接线状态** → `(标签, 类别)`；类别 ∈ {`on`,`gated`,`off`,`na`}。
+
+    与就绪度**分开表述**（旧版把两者混为「已启用/未启用」，实测会让人误以为
+    「依赖装好」就等于「链路在用」——例如 `pgvector` 从未被主链调用却被标「已启用」）。
+    """
+    cfg = MODEL_BINDINGS.get(name) or {}
+    if cfg.get("step") == "OND":
+        return "不适用（按需节点：无独立链步骤，由 `pg:health` 披露）", "na"
+    if cfg.get("wired"):
+        gate = cfg.get("gate") or ""
+        return f"**已接线**（{gate}）" if gate else "**已接线**", "gated" if gate else "on"
+    return "未接线（执行门面已就绪，待业务节点接入）", "off"
 
 
 def _steps() -> list:
@@ -198,72 +430,33 @@ def _steps() -> list:
     return list(m.STEP_ORDER)
 
 
-def _commands() -> dict:
-    """从源码抽取每个步骤的命令（与实装同源，避免手工维护第二份）。
-
-    **行式 + 括号深度**解析（非正则跨行贪婪匹配）：正则 `.*?` 会跨到**下一步骤**的 `_run`，
-    导致命令串行（实测出现过）→ 改用深度计数，值取到本调用的匹配右括号为止。
-    """
-    src = open(RUNNER, encoding="utf-8").read()
-    out: dict = {}
-    # 关键：**有界**取体 —— 从步骤名之后截到**本调用结束**（首个 `\n        )`），
-    # 避免 `.*?` 跨到下一步骤（实测曾把 5 个步骤的命令串成一行）。
-    for m in re.finditer(r'_run(?:_conditional)?\(\s*\n?\s*"([^"]+)"', src):
-        name = m.group(1)
-        tail = src[m.end() : m.end() + 900]
-        # 按下标**逐行**前进，遇到"整行只有右括号（可带逗号）"即判定本调用结束
-        # （比缩进阈值稳健：不同 `_run` 调用的缩进层级并不一致）。
-        body = tail
-        pos = 0
-        for seg in tail.splitlines(keepends=True):
-            if pos and seg.strip() in (")", "),"):
-                body = tail[:pos]
-                break
-            pos += len(seg)
-        cmds = [
-            c
-            for c in re.findall(r'"([^"]{3,60})"', body)
-            if c != name and "://" not in c and not c.startswith("--")
-        ]
-        if cmds:
-            out.setdefault(name, " ".join(cmds[:5]))
-    return out
-
-
-def _tool_states() -> dict:
-    """工具 → **完整探测结果**（含 offline_ready / service_reachable / pipeline_ref）。
-
-    供"模型节点入图"判定状态：**未启用也要给出原因**（权重未取得 / 服务未部署 / 未安装）。
-    """
-    from std_lib.common_lib import semantic_tools as st
-
-    return {n: dict(p) for n, p in st.probe_all().items()}
-
-
 def build() -> str:
     steps = _steps()
     cmds = _commands()
     tools = _tool_states()
-    weight_pending = [
-        n for n, t in tools.items() if t["available"] and t["offline_ready"] is False
-    ]
-    unavail = [n for n, t in tools.items() if not t["available"]]
+    from std_lib.common_lib import semantic_tools as st
+
+    policy = (st.load_manifest().get("selection_policy") or {}).get("modes") or {}
 
     L: list = []
-    L.append("# 全链数据流总图（`cli.py run`）")
+    L.append("## 8. 全链数据流总图（`cli.py run`）")
     L.append("")
     L.append(
-        "> **本文件由 `tools/gen_flow_map.py` 机器生成**（事实源：`STEP_ORDER` + `_run` 调用点 + "
-        "`config/schema/semantic_tools.json`）。**请勿手工编辑** —— 改链路请改源码后重跑本工具。"
+        "> **本节由 `tools/gen_flow_map.py` 机器生成并注入本 README**（受管块；"
+        "事实源：`STEP_ORDER` + `_run` 调用点（AST）+ `config/schema/semantic_tools.json`）。"
+        "**请勿手工编辑本节** —— 改链路请改源码后重跑 `python -m tools.gen_flow_map`。"
     )
-    L.append(f">\n> 步骤数：**{len(steps)}**；工具：**{len(tools)}**（可用 "
-             f"{len(tools) - len(unavail)}，未装 {len(unavail)}）\n")
-    L.append("## 一、链路总览（Mermaid：**含全部接入模型节点**）")
+    L.append(
+        f">\n> 步骤数：**{len(steps)}**；语义工具：**{len(tools)}**（可用 "
+        f"{sum(1 for t in tools.values() if t['available'])}，未装 "
+        f"{sum(1 for t in tools.values() if not t['available'])}）\n"
+    )
+    L.append("### 8.1 链路总览（Mermaid：**含全部接入模型节点**）")
     L.append("")
     L.append(
-        "> 图中**每个接入模型都作为一个节点**挂在它所属阶段的链路节点上（虚线=挂接关系，"
-        "边标签为**具体步骤**）；**无论是否启用均已入图**，并以样式区分："
-        "**实线绿=已启用**、**虚线灰=未启用**。"
+        "> 图中**每个接入模型都作为节点**挂在所属阶段（虚线=挂接关系，边标签为**具体步骤**）；"
+        "**无论就绪与否均已入图**，样式区分：**实线绿=已接线**、**蓝色=已接线·默认关（env 开启）**、"
+        "**虚线灰=未接线**（门面就绪，待业务节点接入）、**橙色=依赖或权重未就绪**。"
     )
     L.append("")
     L.append("```mermaid")
@@ -276,158 +469,252 @@ def build() -> str:
     L.append('  E --> F["阶段6 条件步骤<br/>wiki:sync"]')
     L.append('  F --> G["链尾 门禁 gates（阻断）"]')
     L.append("")
-    # —— 模型节点：按绑定挂到阶段节点；**未启用同样入图** ——
-    on_names: list[str] = []
-    off_names: list[str] = []
+    buckets: dict = {"on": [], "gated": [], "off": [], "na": [], "warn": [], "missing": []}
     for name in sorted(MODEL_BINDINGS):
         tool = name.split("@")[0]
         p = tools.get(tool)
         if p is None:
             continue
-        label, _reason, enabled = _model_status(tool, p)
+        dep, dep_lv = _dep_state(tool, p)
+        _wire, wire_lv = _wire_state(name)
         cfg = MODEL_BINDINGS[name]
-        node = "M_" + re.sub(r"\W+", "_", name)
-        clean_label = label.replace("**", "").replace(" · ", "·")
+        node = "M_" + "".join(ch if ch.isalnum() else "_" for ch in name)
+        # 图上标签：**就绪度**优先（未就绪必须一眼可见），否则示接线态
+        short = "未装" if dep_lv == "missing" else ("未就绪" if dep_lv == "warn" else
+                                                    {"on": "已接线", "gated": "已接线·默认关",
+                                                     "off": "未接线", "na": "按需节点"}[wire_lv])
         L.append(
             f'  {STAGE_NODE.get(cfg["stage"], "A")} -.->|"{cfg["step"]}"| '
-            f'{node}["{tool}<br/>{clean_label}"]'
+            f'{node}["{tool}<br/>{short}"]'
         )
-        (on_names if enabled else off_names).append(node)
+        key = dep_lv if dep_lv != "ready" else wire_lv
+        buckets[key].append(node)
     L.append("")
     L.append("  classDef on fill:#d7f2df,stroke:#2e7d32,stroke-width:1px")
+    L.append("  classDef gated fill:#dbe9ff,stroke:#1565c0,stroke-width:1px")
     L.append("  classDef off fill:#f2f2f2,stroke:#8a8a8a,stroke-dasharray:4 2")
-    if on_names:
-        L.append("  class " + ",".join(on_names) + " on")
-    if off_names:
-        L.append("  class " + ",".join(off_names) + " off")
+    L.append("  classDef notready fill:#ffe8cc,stroke:#e65100,stroke-width:1px")
+    for key, cls in (("on", "on"), ("gated", "gated"), ("off", "off"), ("na", "off"),
+                     ("warn", "notready"), ("missing", "notready")):
+        if buckets[key]:
+            L.append(f"  class {','.join(buckets[key])} {cls}")
     L.append("```")
     L.append("")
     L.append(
-        f"图例：**已启用 {len(on_names)} 个**（实线绿）／**未启用 {len(off_names)} 个**（虚线灰，"
-        "原因见 §三）—— **未启用模型同样作为节点存在**，便于在链路上定位其将来挂接的位置。"
+        f"图例：**已接线 {len(buckets['on'])}** ／ **已接线·默认关 {len(buckets['gated'])}** ／ "
+        f"**未接线 {len(buckets['off']) + len(buckets['na'])}** ／ "
+        f"**未就绪（权重未预置或未装）{len(buckets['warn']) + len(buckets['missing'])}**"
+        " —— **未接线/未就绪的模型同样作为节点存在**，便于在链路上定位其将来挂接的位置（原因见 §8.3）。"
     )
     L.append("")
-    L.append("## 二、逐步骤表（顺序 = `STEP_ORDER`；命令自源码抽取）")
+    L.append("### 8.2 逐步骤表（顺序 = `STEP_ORDER`；命令由 **AST** 自源码抽取）")
     L.append("")
     L.append(
-        "> 说明：**命令列为节选**（自源码 `_run` 调用点抽取）。少数行的调用形态较复杂"
-        "（多行列表 / 相邻调用紧邻），抽取结果可能含**相邻片段** —— 该列的用途是"
-        "**快速定位脚本**，精确参数请以源码为准。"
+        "> 说明：命令列取自源码 `_run(...)` 的 `argv` **字面量**（f-string 保留为 `{src}` 占位；"
+        "`<NAME>` 表示由变量构造的实参）。完整参数以源码为准。"
+        "「降级 / 失败语义」为**逐步声明**（事实源：`gen_flow_map.STEP_FAILURE`）。"
+        "另见 §8.2.1「编排层通性」与 §六「降级链总表」。"
     )
     L.append("")
-    L.append("| # | 步骤 | 作用 | 脚本/命令（节选） | 降级 / 失败语义 |")
+    L.append("| # | 步骤 | 作用 | 脚本/命令（AST 抽取） | 降级 / 失败语义 |")
     L.append("|---|---|---|---|---|")
     for i, s in enumerate(steps, 1):
         purpose = _purpose(s)
-        cmd = cmds.get(s, "（条件调用或未见字面量）")
+        cmd = cmds.get(s, "（未见字面量调用；见源码）")
         if s in READONLY_DISCLOSURE:
-            degr = "**只读披露 · 恒 rc=0**（后端不可用为合法状态）"
-        elif "conditional" in cmd or s == "wiki:sync":
-            degr = "条件步骤（未触发即跳过）"
-        elif s == "doctor":
-            degr = "可 `--skip-doctor` 跳过"
+            degr = STEP_FAILURE.get(s, "**只读披露 · 恒 rc=0**")
         else:
-            degr = "**阻断**（失败即停）"
-        L.append(f"| {i} | `{s}` | {purpose} | `{cmd}` | {degr} |")
+            degr = STEP_FAILURE.get(s, DEFAULT_FAILURE)
+        # 命令单元格：**含反引号时不加外层反引号**（否则表格里的内联代码会串行、渲染错乱）
+        cell = cmd if "`" in cmd else f"`{cmd}`"
+        L.append(f"| {i} | `{s}` | {purpose} | {cell} | {degr} |")
     L.append("")
-    L.append("## 三、模型 ↔ 链路节点定位表（**全部接入模型，含未启用**）")
+    L.append("#### 8.2.1 编排层通性（**对所有步骤生效**）")
     L.append("")
     L.append(
-        "> 纪律：**每个接入模型都必须在此表定位到链路节点**；未启用者须给出**原因**与**降级措施**"
-        "（不得留空、不得写「无」）。绑定事实源：`gen_flow_map.MODEL_BINDINGS`。"
+        "- **步骤选择**：`--only <步骤>` / `--no-scrape`（跳过采集）→ 未选中步骤记 **SKIP（rc=0）"
+        "并写入原因**（`note`），**不伪装为执行成功**。\n"
+        "- **续跑**：`--resume` 依据「上次该步 rc=0（且非跳过）」**且**「全库水位无 stale/未登记」"
+        "决定跳过；水位有异常即**全量重跑**（宁重跑不跳：重跑的代价是时间，跳错的代价是数据陈旧）。\n"
+        "- **超时**：采集与清洗均在编排器侧设超时；**清洗超时按源体量配置**"
+        "（`max(1800, raw_MB × 15)`，上限 21600s，N-150）—— 原固定 1800s 使最大源必然超时。\n"
+        "- **失败留痕**：每步结果写入**稳定运行台账** `data/run_state/last_run_steps.json`"
+        "（含 `started_at`/`ended_at` 时间窗），并由 `gate_run_steps` 判定"
+        "「失败步骤的产物是否已落盘并被下游采用」（危险组合 → FAIL，可人工确认降级）。\n"
+        "- **通知**：存在失败步骤时触发通知通道（无人值守下「失败无人知晓」是原设计的硬缺口）。"
+    )
+    L.append("")
+    L.append("### 8.3 模型 ↔ 链路节点定位表（**全部接入模型，含未就绪/未接线**）")
+    L.append("")
+    L.append(
+        "> 纪律：**每个接入模型都必须在此表定位到链路节点**；未就绪者须给出**原因**，"
+        "未接线者须给出**降级措施**（不得留空、不得写「无」）。"
+        "绑定事实源：`gen_flow_map.MODEL_BINDINGS`。"
+        "**就绪度与接线状态分开表述** —— 「依赖装好」不等于「链路在用」。"
     )
     L.append("")
     unbound = sorted(set(tools) - {k.split("@")[0] for k in MODEL_BINDINGS})
     if unbound:
         L.append(f"> ⚠️ **未绑定模型的工具**（须在 `MODEL_BINDINGS` 补登）：`{unbound}`")
         L.append("")
-    L.append("| 模型 | 挂接链路节点 | 阶段 | 在该节点做什么 | 状态 | 未启用原因 | 降级措施 |")
+    L.append("| 模型 | 挂接链路节点 | 阶段 | 在该节点做什么 | 依赖/权重就绪度 | 链路接线 | 降级措施 |")
     L.append("|---|---|---|---|---|---|---|")
-    n_on = n_off = 0
+    n_ready = n_gated = n_off = n_bad = 0
     for name in sorted(MODEL_BINDINGS):
         tool = name.split("@")[0]
         p = tools.get(tool)
         if p is None:
             continue
-        label, reason, enabled = _model_status(tool, p)
-        cfg = MODEL_BINDINGS[name]
-        step = cfg["step"]
-        node = _OND if step == "OND" else f"`{step}`"
-        if not enabled:
-            n_off += 1
+        dep, dep_lv = _dep_state(tool, p)
+        wire, wire_lv = _wire_state(name)
+        if dep_lv != "ready":
+            n_bad += 1
+        elif wire_lv == "gated":
+            n_gated += 1
+        elif wire_lv == "on":
+            n_ready += 1
         else:
-            n_on += 1
-        mark = "⚠️ " if p.get("offline_ready") is False else ""
+            n_off += 1
+        cfg = MODEL_BINDINGS[name]
+        node = _OND if cfg["step"] == "OND" else f"`{cfg['step']}`"
         extra = "" if name == tool else "（`@`：同工具的第二用途）"
         L.append(
-            f"| `{name}`{extra} | {node} | {cfg['stage']} | {cfg['role']} | "
-            f"{mark}{label} | {reason} | {cfg['down']} |"
+            f"| `{name}`{extra} | {node} | {cfg['stage']} | {cfg['role']} | {dep} | {wire} | {cfg['down']} |"
         )
+    total = n_ready + n_gated + n_off + n_bad
     L.append("")
     L.append(
-        f"合计 **{n_on + n_off}** 个模型节点（**已启用 {n_on}** ／ **未启用 {n_off}**）—— "
-        "两者**均已入图**（§一），未启用者标注了将来挂接的确切位置。"
+        f"合计 **{total}** 个模型节点（**已接线 {n_ready}** ／ **已接线·默认关 {n_gated}** ／ "
+        f"**未接线 {n_off}** ／ **未就绪 {n_bad}**）—— 均已入图（§8.1）。"
     )
     L.append("")
-    L.append("### 3.1 ⚠️ 未取得模型权重的环节（**单独标记**）")
+    L.append("#### 8.3.1 ⚠️ 未就绪环节（**依赖或权重缺失，单独标记**）")
     L.append("")
-    if weight_pending:
-        L.append(
-            "以下工具**代码依赖已就绪、但权重未取得**（网络白名单不含模型站；`offline_ready=False`）"
-            "→ **相关环节在权重落地前不得启用**："
+    L.append(
+        "以下工具**未就绪**：或依赖未装，或依赖已装但**权重未预置**（`offline_ready=False`）"
+        "→ **相关环节在其就绪前不得接线启用**："
+    )
+    L.append("")
+    L.append("| 工具 | 挂接节点 | 方案项 | 就绪度 | 处置 |")
+    L.append("|---|---|---|---|---|")
+    shown = False
+    for name in sorted(MODEL_BINDINGS):
+        tool = name.split("@")[0]
+        p = tools.get(tool)
+        if p is None:
+            continue
+        dep, dep_lv = _dep_state(tool, p)
+        if dep_lv == "ready":
+            continue
+        shown = True
+        cfg = MODEL_BINDINGS[name]
+        node = _OND if cfg["step"] == "OND" else f"`{cfg['step']}`"
+        fix = (
+            "在**可达环境**下载权重后**迁入** `external/models/`（清单以 `local_dir` 声明，"
+            "`probe` **实检目录**）；`HF_HOME`/`HANLP_HOME` 为可选覆盖"
+            if dep_lv == "warn" and p.get("available")
+            else "按清单 `pypi`/`extra` 安装依赖（`pip install -e \".[semantic]\"`）"
         )
-        L.append("")
-        L.append("| 工具 | 挂接节点 | 方案项 | 预置方式 |")
-        L.append("|---|---|---|---|")
-        for name in sorted(MODEL_BINDINGS):
-            tool = name.split("@")[0]
-            if tool not in weight_pending:
-                continue
-            cfg = MODEL_BINDINGS[name]
-            node = _OND if cfg["step"] == "OND" else f"`{cfg['step']}`"
-            L.append(
-                f"| `{name}` | {node} | {tools[tool]['pipeline_ref']} | "
-                "在可达环境预置后迁入（`HF_HOME` / `HANLP_HOME`） |"
-            )
-    else:
-        L.append("（当前无「已装但权重未取得」的工具。）")
+        L.append(f"| `{name}` | {node} | {p.get('pipeline_ref') or '—'} | {dep} | {fix} |")
+    if not shown:
+        L.append("| — | — | — | 全部就绪 | — |")
     L.append("")
-    L.append("**受影响的链路环节**：`semantic:preflight` 的 `offline` 闸（当前唯一未过闸）；")
-    L.append("**不受影响**：主链（采集→清洗→条文→关系→报告→门禁）**不依赖任何模型权重**，")
-    L.append("全部走确定性正则/规则路径；上表全部模型均为**可选叠加**，缺失即按「降级措施」列回退。")
+    L.append(
+        "- **受影响的链路环节**：`semantic:preflight` 的 `offline` 闸（**只对「已接线/已装」的后端**"
+        "按**职责分组**判定：嵌入三选一、分句二选一——**不是**要求全部就绪）。\n"
+        "- **不受影响**：主链（采集→清洗→条文→关系→报告→门禁）**不依赖任何模型权重**，"
+        "全部走确定性正则/规则路径；本表全部模型均为**可选叠加**，缺失即按「降级措施」列回退。"
+    )
     L.append("")
-    L.append("## 四、向量检索接入（P2-2，按需）")
+    L.append("### 8.4 向量检索接入（P2-2，按需）")
     L.append("")
     L.append(
         "- **接入层**：`std_lib/common_lib/vector_store.py`（`*_store` 家族；与 `governance_store` 同级）\n"
         "- **降级链**：`pgvector`（`vec` schema，最小权限角色）→ `sqlite_vec`（与既有 SQLite FTS5 "
-        "同库同源）→ `none`（走既有全文/正则）\n"
+        "同库同源）→ **既有全文/正则**（见 §8.6 第 3 条）\n"
         "- **连接**：env `PGVECTOR_DSN`（口令**仅经 env**，不入库；`gate_secret_scan` 守护）\n"
         "- **异常语义**：`VectorStoreUnavailable` 供调用方降级；`search_or_fallback()` 失败返回 "
         "`None`（**不抛**）\n"
         "- **不影响主链**：主链**不调用**其读写；`pg:health` 仅做只读披露"
     )
     L.append("")
-    L.append("## 五、披露步骤的失败语义（统一口径）")
+    L.append("### 8.5 披露步骤的失败语义（统一口径）")
     L.append("")
     L.append(
-        "`retention:plan` / `semantic:preflight` / `pg:health` 三者同为**只读披露**，统一口径：\n\n"
+        "`retention:plan` / `semantic:preflight` / `pg:health` 三者同为**只读披露**，统一口径："
+    )
+    L.append("")
+    L.append(
         "> **「未就绪」是合法状态** —— 未启用增强、无待归档、后端未部署，都不是链路故障。"
         "故披露步骤**恒 rc=0**；真正需要阻断的判定保留给各自的人工/CI 口径"
-        "（如 `semantic_tools --preflight` 的 rc 反映可否启用）。"
+        "（如 `semantic_tools --preflight` 的 rc 反映**可否启用**）。"
     )
+    L.append("")
+    L.append("### 8.6 降级链总表（**完整表述**）")
+    L.append("")
+    L.append(
+        "> 本仓的降级原则：**任何增强能力可缺失，但不可静默**（零硬依赖 + 降级可观测）。"
+        "下表汇总**全部降级链**；每条链的事实源（SSOT）在首列注明，此处只做披露、不重复定义。"
+    )
+    L.append("")
+    L.append("| # | 链路（SSOT） | 正常路径 → 降级路径 | 失败/回退语义 |")
+    L.append("|---|---|---|---|")
+    for i, (name, path, sem) in enumerate(DEGRADE_CHAINS, 1):
+        L.append(f"| {i} | {name} | {path} | {sem} |")
+    L.append("")
+    L.append("#### 8.6.1 模型选型（**当前生效**，读自清单 `selection_policy`）")
+    L.append("")
+    L.append("| 场景 `mode` | 首选 | 降级链 | 适用 |")
+    L.append("|---|---|---|---|")
+    for mode in ("full", "incremental"):
+        m = policy.get(mode) or {}
+        if not m:
+            continue
+        chain = " → ".join([str(m.get("primary") or "")] + [str(x) for x in (m.get("fallback") or [])])
+        label = "`full`（**默认**）" if mode == "full" else "`incremental`"
+        L.append(f"| {label} | `{m.get('primary')}` | {chain} | {m.get('when') or ''} |")
+    L.append(
+        "\n显式 `model=\"…\"` **覆盖 mode**（优先级最高）；分句增强由 env "
+        "`REG_ORCH_SEMANTIC_SPLIT=1` 控制（**默认关**，见 §8.6 第 2 条）。"
+    )
+    L.append("")
     return "\n".join(L) + "\n"
 
 
-def main() -> int:
-    from config.exitcodes import ExitCode
+def inject_into_readme(text: str) -> tuple:
+    """把生成块注入 README 的**受管标记**之间 → `(是否变更, 说明)`。
 
+    首次运行时标记不存在 → 追加到 README 末尾并建立标记（保持 README 人工叙述不受影响）。
+    """
+    body = f"{BEGIN}\n\n{text}{END}\n"
+    if not os.path.exists(README):
+        return False, f"README 不存在：{README}"
+    cur = open(README, encoding="utf-8").read()
+    if BEGIN in cur and END in cur:
+        head = cur.split(BEGIN)[0]
+        tail = cur.split(END, 1)[1]
+        new = head + body + tail
+    else:
+        new = cur.rstrip("\n") + "\n\n---\n\n" + body
+    if new == cur:
+        return False, "内容无变化（README 已是最新）"
+    with open(README, "w", encoding="utf-8", newline="\n") as fh:
+        fh.write(new)
+    n_lines = text.count("\n")
+    return True, f"已注入 README 受管块（{n_lines} 行 / {len(text)} 字节）"
+
+
+def main() -> int:
     text = build()
-    os.makedirs(os.path.dirname(OUT), exist_ok=True)
-    with open(OUT, "w", encoding="utf-8") as fh:
-        fh.write(text)
-    print(f"全链数据流总图已写入 {os.path.relpath(OUT, paths.ROOT)}（{len(text)} 字节）")
-    return int(ExitCode.OK)
+    changed, msg = inject_into_readme(text)
+    print(f"[gen_flow_map] {msg}")
+    # N-165：**不再单独生成 docs/全链数据流总图.md**；若历史文件仍在，提示删除（避免「两处事实源」）
+    if os.path.exists(LEGACY_OUT):
+        print(
+            f"[gen_flow_map] ⚠️ 检测到历史独立文件 `{os.path.relpath(LEGACY_OUT, paths.ROOT)}`"
+            " —— 自 N-165 起内容已并入 README，该文件应删除（避免两处事实源漂移）。"
+        )
+    return 0 if changed or "已是最新" in msg else 1
 
 
 if __name__ == "__main__":

@@ -76,7 +76,7 @@
   {
    "file": "gen_flow_map.py",
    "category": "tool",
-   "entry": "全链数据流总图生成（从 STEP_ORDER + 源码调用点派生，含降级与权重缺失标记）",
+   "entry": "全链数据流总图生成并注入 README §8 受管块（AST 自源码抽命令；含降级链总表与模型就绪/接线状态）",
    "independent": true,
    "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
   },
@@ -138,6 +138,13 @@
    "entry": "外部语料归集（F-L05；§3.12 的归集入口）",
    "independent": true,
    "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
+  },
+  {
+   "file": "install_git_hooks.py",
+   "category": "tool",
+   "entry": "版本化 git 钩子安装与核验（--check 供 CI/审计）",
+   "independent": true,
+   "independent_why": "刻意独立：环境初始化/核验类，按需人工或 CI 执行，非 STEP_ORDER 链路节点"
   },
   {
    "file": "install_schedule.py",
