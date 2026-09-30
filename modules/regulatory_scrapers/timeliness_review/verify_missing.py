@@ -120,7 +120,7 @@ def run_source(source: str, args) -> dict:
                                nomatch=0, fail=0, degraded=0, changed=0, dry_run=True)
 
     cli = pk.find_cli()
-    token = pk.load_token(args.token_file) or pk.load_token(os.path.join(OUT_DIR, ".pkulaw_token"))
+    token = pk.load_token(args.token_file) or pk.load_token_any()[0]  # N-169：兜底路径改用 pkulaw_cli 的**唯一解析**（env → 仓根 → timeliness_review）
     if not token:
         print("[verify_missing] 未找到 Token：请提供 --token-file 或 timeliness_review/.pkulaw_token")
         # 外部不可用：不写判定，候选留空待下次核验（R13 降级不误标）

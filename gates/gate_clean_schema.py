@@ -193,10 +193,7 @@ def run() -> tuple[bool, dict]:
 
 
 if __name__ == "__main__":
-    passed, det = run()
-    print(
-        "[clean_schema]",
-        "PASS" if passed else "FAIL",
-        json.dumps(det, ensure_ascii=False, indent=1),
-    )
-    raise SystemExit(0 if passed else 1)
+    # N-172：单跑入口**统一实现**（原 8 处各自复制同一段）
+    from gates import run_cli
+
+    raise SystemExit(run_cli("clean_schema", run))

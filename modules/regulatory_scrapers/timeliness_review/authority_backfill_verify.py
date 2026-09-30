@@ -132,7 +132,7 @@ def run_source(source: str, args) -> dict:
     # judge-only（R13 降级）**不依赖 CLI/Token**：外部不可用时仍应能零配额补齐已查结果
     cli = None if args.judge_only else pk.find_cli()
     token = "" if args.judge_only else (
-        pk.load_token(args.token_file) or pk.load_token(os.path.join(OUT_DIR, ".pkulaw_token")))
+        pk.load_token(args.token_file) or pk.load_token_any()[0])  # N-169：唯一解析（同 verify_missing）
     if not args.judge_only and not token:
         print("[authority] 未找到 Token：请提供 --token-file 或 timeliness_review/.pkulaw_token")
         return _summary_record(source, S_UNAVAILABLE, reason="no_token", pending=len(cands),

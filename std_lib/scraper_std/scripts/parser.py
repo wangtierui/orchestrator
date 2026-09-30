@@ -25,9 +25,19 @@ from ..sentence_split import repair_text
 from ..table_recovery import extract_tables_from_doc
 
 
-def parse_document(data: bytes, name: str = "", *, enable_ocr: bool = True) -> dict:
-    """文档字节 → 结构化解析结果（正文 + 表格 + 基础清洗）。"""
-    ex = extract_document_text(data, name, enable_ocr=enable_ocr)
+def parse_document(
+    data: bytes, name: str = "", *, enable_ocr: bool = True, extract=None
+) -> dict:
+    """文档字节 → 结构化解析结果（正文 + 表格 + 基础清洗）。
+
+    N-170（2026-09-30）：**抽取器可注入**（`extract=`）。本模块的默认抽取器基于
+    `crawler_common`；而 `collectors/supp_parser.py` 的 supp 链路用 **pypdf 文本层 +
+    Tesseract OCR 回退**（同一函数名、**不同实现**）。原两处 `parse_document` 逐字相同
+    却各自绑定不同抽取器 → **不能直接合并**（合并会改变 supp 的抽取路径）。
+    故 canonical 只拥有「正文 → 清洗 → 断句修复 → 表格」这段**真正相同**的流水线，
+    抽取器由调用方注入（默认=`crawler_common` 版），差异被**显式参数化**而非复制。
+    """
+    ex = (extract or extract_document_text)(data, name, enable_ocr=enable_ocr)
     text = (ex.get("text") or "").strip()
     out = dict(ex)
     if text:

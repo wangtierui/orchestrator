@@ -153,14 +153,25 @@ def _c_paddle() -> tuple[str, str, str]:
 
 
 def _c_token() -> tuple[str, str, str]:
-    p = os.path.join(paths.ROOT, ".pkulaw_token")
-    if not os.path.exists(p):
-        return "fail", "缺 .pkulaw_token", "效力核验（阶段 6.9 触发项）依赖"
+    """token 就绪度 —— 经 `pkulaw_cli.load_token_any()`（**唯一事实源**，N-169）。
+
+    修正前的缺陷（实测）：本项**只查仓根** `.pkulaw_token`，而三个核验脚本读的是
+    `timeliness_review/.pkulaw_token`（**token 实际在此**）→ token 明明可用、脚本真跑成功，
+    **doctor 却报 FAIL**（假 FAIL）。现与脚本共用同一解析 → 自检与真实能力一致。
+    """
     try:
-        val = open(p, encoding="utf-8", errors="replace").read().strip()
-    except OSError as e:
-        return "fail", f"不可读：{type(e).__name__}", ""
-    return ("ok" if val else "fail"), (f"长度 {len(val)}" if val else "内容为空"), ""
+        from std_lib.scraper_std import pkulaw_cli as _pk
+
+        tok, src = _pk.load_token_any()
+    except Exception as e:  # noqa: BLE001
+        return "warn", f"token 解析不可用：{type(e).__name__}", ""
+    if not tok:
+        return (
+            "fail",
+            "缺 token（候选：仓根 `.pkulaw_token` / `timeliness_review/.pkulaw_token` / env）",
+            "效力核验（阶段 6.9 触发项）依赖",
+        )
+    return "ok", f"长度 {len(tok)}（来源：{src or 'env'}）", ""
 
 
 def _c_token_fresh() -> tuple[str, str, str]:

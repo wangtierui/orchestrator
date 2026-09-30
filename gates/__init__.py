@@ -179,6 +179,36 @@ class GatesRunner:
         return ok, results
 
 
+def run_cli(name: str, run_fn, *, indent: int = 1) -> int:
+    """**门禁单跑入口**（N-172，2026-09-30）：`python -m gates.gate_x` 的统一实现。
+
+    为何收口：此前 **8 个门禁各自复制**同一段 `__main__`（逐字相同，仅门禁名字符串不同）——
+    属"要改就改 8 处"的重复（且实测已出现 `indent=1` 与不缩进两种分叉）。
+    统一后新增门禁只需三行：
+
+        if __name__ == "__main__":
+            from gates import run_cli
+
+            raise SystemExit(run_cli("x", run))
+
+    **行为不变**：仍打印 `[name] PASS/FAIL <detail json>`，仍以 0/1 退出。
+    ⚠️ 用 `python -m gates.gate_x`（**不是** `python gates/gate_x.py`）—— 后者 sys.path[0] 是
+    `gates/`，连既有的 `import paths` 都会失败（该形态此前即不可用，本次不构成回归）。
+    """
+    import contextlib
+    import json
+
+    with contextlib.suppress(Exception):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
+    passed, detail = run_fn()
+    try:
+        payload = json.dumps(detail, ensure_ascii=False, indent=indent)
+    except Exception:  # noqa: BLE001  极端不可序列化 → 降级为 str（不因打印失败而掩盖判定）
+        payload = str(detail)
+    print(f"[{name}]", "PASS" if passed else "FAIL", payload)
+    return 0 if passed else 1
+
+
 def main(argv=None) -> int:
     with contextlib.suppress(Exception):
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]

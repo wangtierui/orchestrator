@@ -61,14 +61,16 @@ _MANIFEST = os.path.join(_TOOLS, "_manifest.json")
 _RETIRED_DIR = "retired"
 _RETIRED_README = os.path.join(_TOOLS, _RETIRED_DIR, "README.md")
 
+# N-173（2026-09-30）：**扫描排除集的公共基集** —— `.git`/`__pycache__`/`.pytest_cache` 是
+# 三处扫描（J3 引用 / J8 语料 / U 常量）**共同**要排除的；其余项**各检查语义不同**，
+# 仍各自追加（**不可强行合一**：J3 跳 `tools`（由本门禁与 README 覆盖），
+# 语料/U 跳 `data`/`reports` 等 —— 语义不同，合并会让某检查漏扫或多扫）。
+# 统一基集是**拆分本门禁的前置**（否则拆后各检查会各自维护一份排除集 → 制造新重复）。
+_SCAN_BASE_SKIP = frozenset({".git", "__pycache__", ".pytest_cache"})
+
 # J3：引用扫描的扩展名（文档 .md 允许提及，但须带"已退役"字样，由人工维护）
 _REF_EXTS = (".py", ".yaml", ".yml", ".toml", ".bat", ".cfg", ".ini", ".ps1")
-_REF_SKIP_DIRS = {
-    ".git",
-    "__pycache__",
-    ".pytest_cache",
-    "tools",
-}  # tools 由本门禁自身与 README 覆盖
+_REF_SKIP_DIRS = set(_SCAN_BASE_SKIP) | {"tools"}  # tools 由本门禁自身与 README 覆盖
 
 
 def _load_manifest() -> dict:
@@ -278,20 +280,9 @@ def _check_worklist() -> tuple[list[str], dict]:
             d
             for d in dirnames
             if d
-            not in {
-                ".git",
-                "__pycache__",
-                ".pytest_cache",
-                "data",
-                "reports",
-                "graphify-out",
-                "external",
-                "backups",
-                ".ruff_cache",
-                ".codebuddy",
-                "retired",
-                "tests",
-            }
+            not in (_SCAN_BASE_SKIP
+                    | {"data", "reports", "graphify-out", "external", "backups",
+                       ".ruff_cache", ".codebuddy", "retired", "tests"})
         ]
         for fn in filenames:
             if not fn.endswith(".py"):
@@ -777,10 +768,7 @@ _INPUT_MARKS = (
     "read_text(",
     "json.load(",
 )
-_U_SCAN_SKIP = {
-    ".git",
-    "__pycache__",
-    ".pytest_cache",
+_U_SCAN_SKIP = set(_SCAN_BASE_SKIP) | {
     "data",
     "reports",
     "archive",
@@ -1212,10 +1200,7 @@ def run() -> tuple[bool, dict]:
 
 
 if __name__ == "__main__":
-    passed, detail = run()
-    print(
-        "[config_integrity]",
-        "PASS" if passed else "FAIL",
-        json.dumps(detail, ensure_ascii=False, indent=1),
-    )
-    raise SystemExit(0 if passed else 1)
+    # N-172：单跑入口**统一实现**（原 8 处各自复制同一段）
+    from gates import run_cli
+
+    raise SystemExit(run_cli("config_integrity", run))

@@ -287,7 +287,7 @@ flowchart LR
 | 数据 | 活跃数据在 `modules/*/data`，**不入 git**：按 `data_migration_manifest.json` 恢复或按 §6.5 重建 | `cli.py gates` 有数据门禁 FAIL（**属预期，非代码缺陷**） |
 | 时效核验（可选） | env `PKULAW_NODE_EXE` + `PKULAW_PKG_DIR` + token 文件 `.pkulaw_token` | R13 三态降级为 `unavailable`（**不误标**） |
 | 采集外网 | gov/mof/nfra/pbc 官网可达；mof 附件主机为内网地址 | mof 全量采集长时间空转 |
-| **P1 取值口径（⚠️ R-4 未闭合）** | 需先定：近邻阈值、是否写主题归属表、以及**是否改动主题事实源** | **未定口径前不得启用**：`bge_base_zh`/`youtu_embedding` 仅可产出**分析视图**，**不得**直接改 `_t*_base`/`_t*_final` 事实源（改口径会重写主题归属 → 须先在可评样本量出 P/R） |
+| **P1 取值口径（✅ 已定案，N-171）** | 唯一事实源 = `config/schema/semantic_tools.json` 的 `usage_policy`（`output_scope=analysis_view`、`write_fact_source=false`、`enabled=false`） | **只产分析视图，不得改写 `_t*_base`/`_t*_final` 事实源**；近邻阈值**刻意留空**（须先在可评样本量出 P/R 再填）；审计「P1 口径」判据机器核验（口径缺失/未定即启用/写事实源 → 报警） |
 | **P1 语义增强（可选）** | `pip install -e ".[semantic]"`；清单 = `config/schema/semantic_tools.json`；**启用前置** `python -m std_lib.common_lib.semantic_tools --preflight`（五闸） | 全链走既有**确定性正则**路径（`deps` 闸否）；**模型权重**另见下行 |
 | **模型权重（已随仓预置）** | 4 项权重在 `external/models/`（**git 忽略，不入库**）：`bge-base-zh-v1.5` / `text2vec-base-chinese` / `Youtu-Embedding`（嵌入）+ `LTPbase`（分词·词性）。清单以 `local_dir` 声明、`probe` **实检目录**；加载层强制 `local_files_only` + `HF_HUB_OFFLINE=1` | 缺目录 → `offline_ready=False`；`python -m tools.smoke_semantic_models` 复核真实加载与调用 |
 | **向量检索（可选）** | PostgreSQL + `vector` 扩展 + env `PGVECTOR_DSN`（**口令仅经 env**）；业务用最小权限角色（`vec` schema） | 探测 `service_reachable=False` → 降级 `sqlite_vec`（与既有 FTS5 同库同源）→ 再退全文 |

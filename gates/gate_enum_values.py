@@ -183,8 +183,7 @@ def run():
 
 
 if __name__ == "__main__":
-    import json
+    # N-172：单跑入口**统一实现**（原 8 处各自复制同一段）
+    from gates import run_cli
 
-    ok, det = run()
-    print("[enum_values]", "PASS" if ok else "FAIL", json.dumps(det, ensure_ascii=False, indent=1))
-    raise SystemExit(0 if ok else 1)
+    raise SystemExit(run_cli("enum_values", run))

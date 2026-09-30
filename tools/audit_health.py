@@ -747,7 +747,76 @@ def check_layering() -> list:
     return f
 
 
+def check_p1_policy() -> list:
+    """**P1 语义增强取值口径**（R-4/R-7，N-171 定案）：配置是否声明、是否违规启用、是否写事实源。
+
+    为何要机器核验：口径此前**只写在 README 的一段话里**（靠人读）；而「未定口径却启用」
+    或「启用了却写主题事实源」都是**不会报错**的行为 —— 只会让主题归属被悄悄改写。
+    唯一事实源 = `config/schema/semantic_tools.json` 的 `usage_policy`。
+    """
+    f: list = []
+    p = os.path.join(ROOT, "config", "schema", "semantic_tools.json")
+    try:
+        cfg = json.loads(_read(p))
+    except Exception as e:  # noqa: BLE001
+        return [
+            {"cat": "P1 口径", "sev": "MED", "where": _rel(p), "detail": f"清单不可读：{type(e).__name__}"}
+        ]
+    up = cfg.get("usage_policy")
+    if not isinstance(up, dict):
+        return [
+            {
+                "cat": "P1 口径",
+                "sev": "HIGH",
+                "where": f"{_rel(p)}:usage_policy",
+                "detail": "**未声明取值口径** —— 口径须机器可读，否则「未定口径即启用」无法被机器发现",
+            }
+        ]
+    if up.get("write_fact_source") is not False:
+        f.append(
+            {
+                "cat": "P1 口径",
+                "sev": "HIGH",
+                "where": f"{_rel(p)}:usage_policy.write_fact_source",
+                "detail": f"`write_fact_source={up.get('write_fact_source')!r}` —— P1 增强只可产"
+                "分析视图，不得改写主题事实源（`_t*_base`/`_t*_final`）",
+            }
+        )
+    nb = up.get("neighbor") or {}
+    if up.get("enabled") is True and nb.get("min_similarity") is None:
+        f.append(
+            {
+                "cat": "P1 口径",
+                "sev": "HIGH",
+                "where": f"{_rel(p)}:usage_policy",
+                "detail": "`enabled=true` 但 `neighbor.min_similarity` 仍为空 —— 阈值须先由可评样本的 "
+                "P/R 定出（无度量不得上线）",
+            }
+        )
+    # 语义增强模块不得写事实源文件（形态扫描：写调用与事实源名同现于一行）
+    fact = [g.replace("*", "") for g in (up.get("fact_source_globs") or ()) if g]
+    write_marks = ("open(", "write_text(", "to_csv(", "json.dump(", "to_parquet(")
+    for q in _pyfiles():
+        r = _rel(q)
+        if "semantic" not in r and "embed" not in r:
+            continue
+        src = _read(q)
+        for i, ln in enumerate(src.splitlines(), 1):
+            if fact and any(k in ln for k in write_marks) and any(m in ln for m in fact):
+                f.append(
+                    {
+                        "cat": "P1 口径",
+                        "sev": "HIGH",
+                        "where": f"{r}:{i}",
+                        "detail": "语义增强模块疑似写入主题事实源（违反 usage_policy 的 "
+                        "`write_fact_source=false`）",
+                    }
+                )
+    return f
+
+
 CHECKS = [
+    ("P1 口径", check_p1_policy),
     ("分层纪律", check_layering),
     ("远程同步", check_remote_sync),
     ("README 一致性", check_readme_consistency),

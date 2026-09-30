@@ -376,5 +376,33 @@
    }
   },
   "provenance": "任何成功路径都须把 semantic_enhance.fingerprint() 写入产物 provenance（模型名 + 依赖版本 + 权重结构指纹）。"
+ },
+ "usage_policy": {
+  "note": "P1 语义增强**取值口径**（N-171，2026-09-30 定案；承接 R-4/R-7）。本块是**唯一事实源**：消费方（semantic_enhance 及 cli/classify 等）不得各自定义口径。纪律：**未定口径前不得启用**；启用须先满足 enable_preconditions。",
+  "by": "2026-09-30（用户明示：先定口径、不得改主题事实源）",
+  "output_scope": "analysis_view",
+  "write_fact_source": false,
+  "fact_source_globs": [
+   "_t*_base*",
+   "_t*_final*"
+  ],
+  "enabled": false,
+  "enable_preconditions": [
+   "① 在**可评样本**上量出 P/R（及置信区间）→ 填入 neighbor.min_similarity/min_margin；",
+   "② semantic:preflight 的 offline 闸按**职责分组**全过（嵌入三选一 / 分句二选一）；",
+   "③ 产出落**分析视图**（analysis_view），**不得**写入主题事实源（_t*_base/_t*_final）；",
+   "④ 启用须可回退（保留既有确定性路径开关，默认关）。"
+  ],
+  "neighbor": {
+   "metric": "cosine",
+   "min_similarity": null,
+   "min_margin": null,
+   "why_null": "阈值**刻意留空**：定值必须来自可评样本的 P/R 与置信区间，拍脑袋填值会让「辅助裁定」变成**未经度量的判决**（v2 纪律：无度量不得上线）。"
+  },
+  "sentence_split": {
+   "env_gate": "REG_ORCH_SEMANTIC_SPLIT",
+   "default": "off",
+   "why": "开启会改变条文/关系产物口径 → 与关闭时**逐字节对等**是启用前提。"
+  }
  }
 }

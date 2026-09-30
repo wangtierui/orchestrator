@@ -138,6 +138,43 @@ def _clean_token(t: str) -> str:
     return t
 
 
+_REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+
+def token_paths(orch_root: str | None = None) -> list[str]:
+    """token 文件**候选路径**（顺序即优先级）—— **唯一事实源**（N-169，2026-09-30）。
+
+    为何需要它：此前存在**两处不同的约定** ——
+      · 三个核验脚本读 `modules/regulatory_scrapers/timeliness_review/.pkulaw_token`（**token 实际在此**）；
+      · `commands/doctor.py` 只查**仓根** `.pkulaw_token`。
+    后果：token 明明可用（脚本真跑成功），**doctor 却报 FAIL**（假 FAIL）；且"同一事实两处路径"
+    正是**数据源不唯一**的典型形态（改一处漏一处 → 环境自检与真实能力长期不一致）。
+    """
+    root = orch_root or _REPO_ROOT
+    return [
+        os.path.join(root, ".pkulaw_token"),
+        os.path.join(
+            root, "modules", "regulatory_scrapers", "timeliness_review", ".pkulaw_token"
+        ),
+    ]
+
+
+def load_token_any(orch_root: str | None = None) -> tuple[str, str]:
+    """→ `(token, 命中来源)`：按 **env → `token_paths()` 顺序** 取第一个非空者。
+
+    未命中返回 `("", "")`（调用方据此走"降级 unavailable"，**不得**误标为无效）。
+    """
+    tok = load_token(None)  # env PKULAW_TOKEN 优先
+    if tok:
+        return tok, "env:PKULAW_TOKEN"
+    for p in token_paths(orch_root):
+        if os.path.exists(p):
+            t = load_token(p)
+            if t:
+                return t, p
+    return "", ""
+
+
 def load_token(token_file: str | None = None) -> str:
     """Token 优先级：环境变量 PKULAW_TOKEN > 指定文件。仅内存使用，绝不写日志/输出。"""
     tok = os.environ.get("PKULAW_TOKEN", "").strip()

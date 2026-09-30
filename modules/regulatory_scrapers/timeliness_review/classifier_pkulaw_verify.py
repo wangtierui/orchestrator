@@ -30,13 +30,28 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))      # regulatory_scrapers/
 sys.path.insert(0, ROOT)                                                # clean_index 包（五源 cleaned 索引事实源）
+# N-169（2026-09-30）：**补仓根上溯** —— `config` 包在**仓根**，而 `ROOT` 只到
+# `modules/regulatory_scrapers`。缺此段时，以**路径方式**调用会
+# `ModuleNotFoundError: No module named 'config'`：
+#   · `config/triggers.yaml:24` 的链路步骤正是 `python modules/.../classifier_pkulaw_verify.py`
+#     → **第 3 步必然失败**（实测复现）；
+#   · 编排器 `run_production_refresh._run` 只设 `PYTHONIOENCODING`、**不设 PYTHONPATH** → 无兜底。
+# 写法与同目录的 `verify_missing.py:50-54` **一致**（此前仅本文件漏了这一段）。
+_ORCH_ROOT = os.path.dirname(os.path.dirname(ROOT))
+if _ORCH_ROOT not in sys.path:
+    sys.path.insert(0, _ORCH_ROOT)
 from config.exitcodes import ExitCode
 
-sys.path.insert(0, os.path.join(ROOT, "std_lib"))
+# N-169：原 `sys.path.insert(0, ROOT/"std_lib")` 指向
+# `modules/regulatory_scrapers/std_lib`（**已不存在**，R4 起共享库单副本在仓根）
+# → **删除该插入**，改以 `std_lib.<pkg>` 全路径导入（`_ORCH_ROOT` 已在 path 上）。
+# 纪律：本文件属 `modules/`，其 `sys.path` 引导数受 `gate_import_bootstrap` **基线冻结**
+# （「只减不增」）→ 故此次**以删换增、净额不变**（实测超基线会直接 FAIL）。
 sys.path.insert(0, os.path.join(ROOT, "timeliness_review"))
 import verification_state as vstate
 from clean_index import get_clean_index
-from scraper_std import pkulaw_cli as pk
+
+from std_lib.scraper_std import pkulaw_cli as pk
 
 OUT_DIR = os.path.join(ROOT, "timeliness_review")
 CHECKPOINT = os.path.join(OUT_DIR, "classifier_pkulaw_checkpoint.jsonl")
@@ -157,7 +172,7 @@ def main():
     cli = pk.find_cli()
     token = pk.load_token(args.token_file)
     if not token:
-        token = pk.load_token(os.path.join(OUT_DIR, ".pkulaw_token"))
+        token = pk.load_token_any()[0]  # N-169：唯一解析（原硬编码 OUT_DIR/.pkulaw_token）
     if not token:
         print("[verify] 未找到 Token：请设置 PKULAW_TOKEN 环境变量或提供 --token-file")
         return ExitCode.FAIL

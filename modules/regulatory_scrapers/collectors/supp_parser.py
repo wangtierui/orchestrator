@@ -67,15 +67,15 @@ def extract_document_text(data: bytes, name: str = "", *, enable_ocr: bool = Tru
         return {"text": "", "method": f"error:{type(e).__name__}"}
 
 def parse_document(data: bytes, name: str = "", *, enable_ocr: bool = True) -> dict:
-    """文档字节 → 结构化解析结果（正文 + 表格 + 基础清洗）。"""
-    ex = extract_document_text(data, name, enable_ocr=enable_ocr)
-    text = (ex.get("text") or "").strip()
-    out = dict(ex)
-    if text:
-        out["text_cleaned"] = clean_text(text)
-        out["repaired"] = repair_text(out["text_cleaned"], source="document")
-    out["tables"] = extract_tables_from_doc(data, name)
-    return out
+    """文档字节 → 结构化解析结果（正文 + 表格 + 基础清洗）。
+
+    N-170（2026-09-30）：**不再复制实现** —— 「正文 → 清洗 → 断句修复 → 表格」这一
+    **真正相同**的流水线由 `std_lib/scraper_std/scripts/parser.py`（自述"单一事实源"）
+    拥有；本文件的差异只是**抽取器**（pypdf 文本层 + OCR 回退）→ 以 `extract=` 注入。
+    """
+    from std_lib.scraper_std.scripts.parser import parse_document as _canonical
+
+    return _canonical(data, name, enable_ocr=enable_ocr, extract=extract_document_text)
 
 __all__ = [
     "extract_document_text", "clean_text", "normalize_ws", "is_table_block",

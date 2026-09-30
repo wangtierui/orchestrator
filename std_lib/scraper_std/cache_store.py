@@ -122,6 +122,22 @@ __all__ = [
 _VALID = re.compile(r"[^A-Za-z0-9_.-]")
 
 
+class _RootedCache:
+    """带 `root` 的缓存基类：**共用初始化**（N-170，2026-09-30）。
+
+    为何抽出：`ResponseCache` 与 `TextResponseCache` 的 `__init__` 原为**逐字相同 11 行**
+    （`root`/`offline`/`ttl` 三字段 + `os.makedirs`）。"改一处漏一处"会让两个缓存类的
+    目录创建/离线/过期语义分叉，而**分叉不会报错**（只会让其中一个静默行为不一致）。
+    子类**不再各自实现 `__init__`**（构造签名与行为保持不变）。
+    """
+
+    def __init__(self, root: str, *, offline: bool = False, ttl: int | None = None) -> None:
+        self.root = root
+        self.offline = offline
+        self.ttl = ttl
+        os.makedirs(root, exist_ok=True)
+
+
 class OfflineMiss(Exception):
     """离线模式下缓存未命中时抛出，由调用方决定跳过而非联网。"""
 
@@ -261,23 +277,11 @@ def _endpoint_key(endpoint: str) -> str:
     return endpoint
 
 
-class ResponseCache:
+class ResponseCache(_RootedCache):
     """JSON 响应缓存：确定性文件名 = ``<ep>__<sorted_params 编码>``。
 
     与 nfra 原 ``_cache_path`` 算法逐字一致，保证历史缓存可直接迁移复用。
     """
-
-    def __init__(
-        self,
-        root: str,
-        *,
-        offline: bool = False,
-        ttl: int | None = None,
-    ) -> None:
-        self.root = root
-        self.offline = offline
-        self.ttl = ttl
-        os.makedirs(root, exist_ok=True)
 
     # —— 寻址 ——
     def path(self, endpoint: str, params: dict) -> str:
@@ -362,7 +366,7 @@ def url_endpoint_key(url: str) -> str:
     return hashlib.sha1(url.encode("utf-8")).hexdigest()[:16]
 
 
-class TextResponseCache:
+class TextResponseCache(_RootedCache):
     """文本/HTML 响应缓存：与 ``ResponseCache`` 同款确定性命名（``<ep>__<sorted_params 编码>``），
 
     但落盘为 UTF-8 **文本**（扩展名 ``.txt``），用于缓存 gov / pbc 等返回 HTML 的源。
@@ -374,18 +378,6 @@ class TextResponseCache:
       * 仅在「成功响应」后 ``put``（调用方负责仅在有效内容时写盘，不缓存错误/拦截页）；
       * 原子写（tempfile + os.replace）。
     """
-
-    def __init__(
-        self,
-        root: str,
-        *,
-        offline: bool = False,
-        ttl: int | None = None,
-    ) -> None:
-        self.root = root
-        self.offline = offline
-        self.ttl = ttl
-        os.makedirs(root, exist_ok=True)
 
     # —— 寻址（与 ResponseCache 同算法，扩展名 .txt）——
     def path(self, endpoint: str, params: dict) -> str:
