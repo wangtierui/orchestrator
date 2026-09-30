@@ -66,6 +66,20 @@
    "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
   },
   {
+   "file": "docreader_extract.py",
+   "category": "tool",
+   "entry": "docreader 入链调用点（链步骤 docreader:extract；分析视图 + 与既有 6 态抽取的增量度量）",
+   "independent": false,
+   "step": "docreader:extract"
+  },
+  {
+   "file": "docreader_parse_driver.py",
+   "category": "tool",
+   "entry": "docreader 解析驱动（**由 venv 解释器执行**，仅标准库；跨解释器边界的执行体）",
+   "independent": true,
+   "independent_why": "刻意独立：由 venv 解释器执行的一次性驱动，非 STEP_ORDER 节点且不被主环境 import"
+  },
+  {
    "file": "extract_relations.py",
    "category": "pipeline",
    "entry": "阶段 2.6 关系全量重抽（cli.py relations gen 的被调实现）"

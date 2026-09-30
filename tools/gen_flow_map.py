@@ -81,6 +81,9 @@ PURPOSE: dict = {
     # —— 阶段 5 只读披露（恒 rc=0）——
     "retention:plan": "数据生命周期**只读披露**（dry-run + 台账；`--apply` 为人工闸门）",
     "quarantine:triage": "清洗隔离件分类与处置登记（零回写 → worklist）",
+    # —— 阶段 2 的**只读分析视图**步骤（不写事实源）——
+    "semantic:assist": "P1 语义增强**入链调用点**（嵌入→主题辅助裁定；**只产分析视图**）",
+    "docreader:extract": "docreader **入链调用点**（版面解析 + 段落级定位；**只产分析视图**）",
     "semantic:preflight": "P1 语义增强**启用前置披露**（五道闸逐项）",
     "pg:health": "向量存储**只读**健康检查（pgvector / sqlite_vec 降级链披露）",
     # —— 阶段 6 条件步骤 / 链尾 ——
@@ -108,6 +111,10 @@ STEP_FAILURE: dict = {
     "quarantine:triage": "**只读产出**（零回写；结果入 worklist，rc=0）",
     "semantic:preflight": "**只读披露 · 恒 rc=0**（增强未启用为合法状态；"
                           "真正的启用判定用 `semantic_tools --preflight` 的 rc）",
+    "semantic:assist": "**只读分析视图**（增强层零硬依赖）：未启用（`usage_policy.enabled=false`）"
+                       "或嵌入链不可用均为合法状态 → **rc=0**；**绝不写事实源**",
+    "docreader:extract": "**只读分析视图**：docreader 不可用/自检不过 → **显式 SKIP（rc=0）**，"
+                         "回退既有 6 态抽取；**不替换**抽取事实源（替换须先度量）",
     "pg:health": "**只读披露 · 恒 rc=0**（后端不可用为合法状态；实际读写按 `vector_store` 降级链）",
     "wiki:sync": "**条件步骤**（`triggers.yaml` 判定）：未触发 → **SKIP**（rc=0）",
     "gates": "**阻断**（失败即停；链尾以终态产物为准）",
@@ -151,9 +158,12 @@ DEGRADE_CHAINS: list = [
         "（不静默产出空正文）。",
     ),
     (
-        "**版面分析链**（P2-1，未装）",
-        "`weknora_docreader`（25+ 格式渲染）→ `crawler_common.extract_document_text`（既有 6 态）。",
-        "未装即走既有 6 态抽取；**不重做** OCR/正文通路。",
+        "**版面分析链**（P2-1，N-180 **已部署**：源码模式 + 独立 venv）",
+        "`weknora_docreader`（25+ 格式渲染 + **段落级定位**）→ `crawler_common.extract_document_text`"
+        "（既有 6 态，**仍是事实源**）。",
+        "docreader 不可用/自检不过 → **显式 SKIP**（rc=0）并回退既有 6 态；"
+        "**不重做** OCR/正文通路（docreader 自身不做 OCR）。"
+        "其产物为分析视图 → 既不影响事实源，也不阻断主链。",
     ),
     (
         "**时效核验链**（SSOT：`timeliness_review`）",
@@ -246,9 +256,12 @@ MODEL_BINDINGS: dict = {
         "down": "用 `ltp`；两者皆不可用即用规则分句",
     },
     "weknora_docreader": {
-        "step": "clean", "stage": "阶段1", "wired": False,
-        "role": "文档**版面分析**（25+ 格式渲染，补正文抽取）",
-        "down": "回退 `crawler_common.extract_document_text`（既有 6 态）",
+        # N-180：**绑定改指真实调用点** —— 原绑 `clean`（阶段1）而该节点**没有 docreader 调用点**
+        # （纸面接线）；真实调用点在新增链步骤 `docreader:extract`（部署形态＝源码模式 + 独立 venv）。
+        "step": "docreader:extract", "stage": "阶段2", "wired": True,
+        "gate": "`docreader_bridge.self_test()` 通过（venv 解释器实跑；不可用则显式 SKIP）",
+        "role": "文档**版面分析 + 段落级定位**（25+ 格式渲染；补正文抽取的**定位增量**）",
+        "down": "回退 `crawler_common.extract_document_text`（既有 6 态，**仍是事实源**）",
     },
     "youtu_embedding@relations": {
         "step": "relations:gen", "stage": "阶段2", "wired": False,

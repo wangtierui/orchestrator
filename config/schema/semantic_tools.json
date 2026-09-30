@@ -22,7 +22,6 @@
   "pending_reason": {
    "pgvector": "GitHub API 返回 NOASSERTION（仓库未按 SPDX 声明）；pgvector 实际采用 **PostgreSQL License**（宽松、无 copyleft）——但须读其 LICENSE 原文确认后方可登记 → 保持 pending。**注**：该工具在本环境本就不可部署（无 PG 宿主，见 tools.pgvector.feasibility），故其许可状态**不构成启用障碍**。",
    "ltp": "GitHub API 返回 license=null —— 仓库**未声明许可**（非限流，`_http_json` 成功返回）；纳入交付面存在法律不确定性 → 保持 pending。注：本仓以 hanlp 作分句后端，ltp 属二选一备选，不影响启用决策。",
-   "weknora_docreader": "GitHub API 返回 NOASSERTION / \"Other\" —— 使用**自定义许可**，须人工阅读 LICENSE 原文后方可判定 → 保持 pending。",
    "youtu_embedding": "GitHub API 返回 NOASSERTION（LICENSE 文件格式非标准）；**README 徽章明示 MIT**（https://img.shields.io/badge/License-MIT-yellow.svg），但 LICENSE 文件须人工确认后方可登记 → 保持 pending。⚠️ 注：**不得**回退取其 pypi（=transformers）的许可 —— 那是**加载库**的许可，非本工具（N-121 已修）。",
    "bge_base_zh": "BAAI 系列通常为 MIT，但须读 HF 模型仓 LICENSE 原文/模型卡取证后方可登记 → 保持 pending。注：`license_policy.enforced=false`（自用不分发，用户明示）→ **不阻断启用**。"
   },
@@ -38,13 +37,13 @@
    "sqlite_vec": "Apache-2.0（核验日 2026-09-29；来源 github:license/asg017/sqlite-vec）",
    "text2vec": "Apache-2.0（核验日 2026-09-29；来源 github:license/shibing624/text2vec）",
    "umap": "BSD-3-Clause（核验日 2026-09-29；来源 github:license/lmcinnes/umap）",
-   "deepke": "MIT（核验日 2026-09-30；来源 external/upstream/DeepKE/LICENSE）"
+   "deepke": "MIT（核验日 2026-09-30；来源 external/upstream/DeepKE/LICENSE）",
+   "weknora_docreader": "WeKnora 仓库许可（核验日 2026-09-30；来源 external/upstream/WeKnora/LICENSE）"
   },
   "pending": [
    "bge_base_zh",
    "ltp",
    "pgvector",
-   "weknora_docreader",
    "youtu_embedding"
   ]
  },
@@ -294,25 +293,58 @@
   },
   "weknora_docreader": {
    "repo": "https://github.com/Tencent/WeKnora",
-   "purpose": "文档解析（PDF/DOCX/Excel/EPUB 等 25+ 格式 + 页面渲染），docreader 可解耦为独立 gRPC 服务",
+   "purpose": "文档解析（PDF/DOCX/Excel/PPTX/EPUB/HTML 等 25+ 格式 + 页面渲染 + **段落级定位 source_blocks**）；docreader 本身**不做 OCR/VLM**（扫描页仅渲染为图，交下游）",
    "extra": "",
    "pypi": "",
    "probe": {
-    "kind": "service",
-    "import_name": "grpc",
-    "client_module": "grpc",
-    "endpoint_env": "DOCREADER_ENDPOINT",
-    "default_endpoint": "localhost:50051",
-    "note": "端点探测（TCP 三态）已就绪；本环境服务未部署，故 service_reachable 恒为 False（非缺陷）。"
+    "kind": "source_tree",
+    "local_dir": "external/upstream/WeKnora/docreader",
+    "expect_files": [
+     "pyproject.toml",
+     "main.py",
+     ".venv-docreader/Scripts/python.exe"
+    ],
+    "runtime_imports": [],
+    "note": "跨解释器：docreader 在**独立 venv（3.11.9）**中（其 numpy/pandas pin 与主环境 torch/hanlp 冲突，且 `textract==1.5.0` 只有 sdist）→ 主环境**无法** import，故 `runtime_imports` 留空，运行期能力由 `docreader_bridge.self_test()`（真实跑 venv 解释器）证明。"
    },
    "pipeline_ref": "v2 P2-1（只补版面分析；OCR 通路已存在，不重做）",
-   "approx_size": "Docker 服务（须独立部署）",
-   "offline": "服务不可达时**必须**回退 crawler_common.extract_document_text（复用既有 6 态，不新增状态）",
-   "license_to_verify": true,
-   "deploy_blocked": {
-    "reason": "2026-09-29 **重试（daemon 已可启动：client=29.8.1 server=29.8.1 linux）**：① 镜像**blob CDN 不可达** —— `docker pull …/library/alpine` 在 blob 阶段 `EOF`（`image-mirror.r2.daocloud.vip`）；② 换 WeKnora 镜像被**白名单明确拒绝**——『这镜像不在白名单』（DaoCloud 公共镜像局限）。→ **daemon 已修复，但镜像源侧双重受限**，**仍不可部署**（非本机配置问题）。",
-    "unblock": "① 使镜像 blob CDN 可达；② 或对 WeKnora 镜像在所用镜像服务**加入白名单**；③ 或在他处 `docker save` 导出 tar 后本机 `docker load`（**离线导入**，不依赖 registry）。",
-    "substitute": "仓内**已有**版面/正文抽取（`std_lib/scraper_std` + pypdf/pdfplumber/PyMuPDF，6 态）；docreader 增量价值（25+ 格式 / 版面渲染）非当前瓶颈（v2 列 P2-1）。"
+   "approx_size": "源码 4.7k 文件（已 clone）+ **独立 venv**（22 个直接依赖；含 pandas/pillow/playwright/opendataloader-pdf/onnxruntime 等，实装约数百 MB）",
+   "offline": "**离线可移植**：依赖已装进仓内 venv（`external/` 被 .gitignore 忽略、不入库）；运行期**不联网**（本地文件解析；URL 模式须另装 playwright 浏览器）。",
+   "license_to_verify": false,
+   "bridge": {
+    "venv_python": "external/upstream/WeKnora/docreader/.venv-docreader/Scripts/python.exe",
+    "source_root": "external/upstream/WeKnora",
+    "driver": "tools/docreader_parse_driver.py",
+    "call_site": "tools/docreader_extract.py（链步骤 `docreader:extract`）",
+    "lib": "std_lib/common_lib/docreader_bridge.py"
+   },
+   "weights": {
+    "status": "not_required",
+    "evidence": "**无需任何模型权重**：全仓 grep `from_pretrained|snapshot_download|hf_hub_download|huggingface|modelscope` = **0 命中**；唯一 ONNX（magika 文件类型识别）**随 PyPI wheel 分发**（2.9MB）。→ HF LFS 通道阻断**对本工具无影响**。"
+   },
+   "deploy": {
+    "status": "deployed_source_mode",
+    "at": "2026-09-30",
+    "how": "**源码模式**（非 Docker）：`python 3.11.9 -m venv .venv-docreader` → `pip install -i <tuna> -r <22 项依赖>` → 以 `PYTHONPATH=<WeKnora 根>` + 子进程驱动调用。",
+    "why_not_install": "⚠️ **上游包不可安装（真实缺陷）**：`docreader/pyproject.toml` **无 `[build-system]` / `[tool.setuptools]`**，而包目录是 **flat-layout 多顶层包**（`proto/client/models/parser/splitter/testdata`）→ `pip install -e .` 在 *Getting requirements to build editable* 阶段**必然失败**（实测：`Multiple top-level packages discovered in a flat-layout`）。上游正规用法即 **`PYTHONPATH=<WeKnora 根>` 直接 `python -m docreader.*`**（其 Dockerfile 亦如此）。",
+    "fixes_applied": [
+     "grpcio 系列下限由上游 `>=1.78.0` **抬高到 `>=1.80.0`** —— 已提交的 stub 硬编码 `GRPC_GENERATED_VERSION='1.80.0'`（`proto/docreader_pb2_grpc.py:8`），否则 import 期 RuntimeError。",
+     "`textract==1.5.0`（sdist-only，2016 年）在 **3.11.9** 上**构建成功**（实测 wheel 21802B）→ 无需降级或 import 兜底。"
+    ]
+   },
+   "runtime_constraints": {
+    "java": "**缺 Java 11+**（`java` 不在 PATH）→ `opendataloader` 引擎不可用（不影响默认 `builtin`）",
+    "playwright": "未执行 `playwright install webkit` → **URL 模式**不可用（本地文件解析正常）",
+    "concurrency": "pypdfium2 非线程安全（`pdf_parser.py` 全局锁）→ 并发 PDF 实际串行；批量宜分批",
+    "env_names": "⚠️ WeKnora 实际用 `DOCREADER_ADDR`（默认 `docreader:50051`）+ `DOCREADER_TRANSPORT`（见 docker-compose.yml / internal/container/container.go）；本仓原登记的 `DOCREADER_ENDPOINT` 是**自有别名**（服务模式未采用时不需要它）。"
+   },
+   "fallback": "docreader 不可用时**必须**回退 `crawler_common.extract_document_text`（复用既有 6 态，**不新增状态**）——回退由调用方显式披露（`docreader_bridge` 返回 `ok=False` + `notice`，不抛异常）。",
+   "license": "WeKnora 仓库许可（核验日 2026-09-30；来源 external/upstream/WeKnora/LICENSE）",
+   "verified_at": "2026-09-30",
+   "verified": "源码模式部署成功：venv 3.11.9 建成、22 项依赖装齐（含 textract 构建）、`import docreader.parser` + grpcio≥1.80 自检通过；真实文档解析见 reports/docreader/ 分析视图",
+   "docker_route_blocked": {
+    "status": "blocked（与本次部署无关：已改用源码模式）",
+    "reason": "Docker 引擎未运行（`npipe:////./pipe/dockerDesktopLinuxEngine` 连不上）+ `registry-1.docker.io` 超时 / `docker.m.daocloud.io` 401 → 镜像既拉不到也 build 不了（Dockerfile FROM `python:3.10.18-bookworm` 同样拉不到）。"
    }
   },
   "paradedb": {

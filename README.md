@@ -394,7 +394,7 @@ s = se.split_sentences(text, level="strict")   # level ∈ {strict, loose}（受
 
 > **本节由 `tools/gen_flow_map.py` 机器生成并注入本 README**（受管块；事实源：`STEP_ORDER` + `_run` 调用点（AST）+ `config/schema/semantic_tools.json`）。**请勿手工编辑本节** —— 改链路请改源码后重跑 `python -m tools.gen_flow_map`。
 >
-> 步骤数：**29**；语义工具：**14**（可用 12，未装 2）
+> 步骤数：**30**；语义工具：**14**（可用 13，未装 1）
 
 ### 8.1 链路总览（Mermaid：**含全部接入模型节点**）
 
@@ -423,7 +423,7 @@ flowchart TD
   D -.->|"OND"| M_sqlite_vec["sqlite_vec<br/>按需节点"]
   B -.->|"semantic:assist"| M_text2vec["text2vec<br/>已接线·默认关"]
   B -.->|"classify:all"| M_umap["umap<br/>未接线"]
-  A -.->|"clean"| M_weknora_docreader["weknora_docreader<br/>未装"]
+  B -.->|"docreader:extract"| M_weknora_docreader["weknora_docreader<br/>已接线·默认关"]
   B -.->|"semantic:assist"| M_youtu_embedding["youtu_embedding<br/>已接线·默认关"]
   B -.->|"relations:gen"| M_youtu_embedding_relations["youtu_embedding<br/>未接线"]
 
@@ -431,14 +431,14 @@ flowchart TD
   classDef gated fill:#dbe9ff,stroke:#1565c0,stroke-width:1px
   classDef off fill:#f2f2f2,stroke:#8a8a8a,stroke-dasharray:4 2
   classDef notready fill:#ffe8cc,stroke:#e65100,stroke-width:1px
-  class M_bge_base_zh,M_ltp,M_text2vec,M_youtu_embedding gated
+  class M_bge_base_zh,M_ltp,M_text2vec,M_weknora_docreader,M_youtu_embedding gated
   class M_bertopic,M_bge_base_zh_relations,M_deepke,M_hdbscan,M_umap,M_youtu_embedding_relations off
   class M_pgvector,M_sqlite_vec off
   class M_hanlp,M_paradedb notready
-  class M_signalgraph,M_weknora_docreader notready
+  class M_signalgraph notready
 ```
 
-图例：**已接线 0** ／ **已接线·默认关 4** ／ **未接线 8** ／ **未就绪（权重未预置或未装）4** —— **未接线/未就绪的模型同样作为节点存在**，便于在链路上定位其将来挂接的位置（原因见 §8.3）。
+图例：**已接线 0** ／ **已接线·默认关 5** ／ **未接线 8** ／ **未就绪（权重未预置或未装）3** —— **未接线/未就绪的模型同样作为节点存在**，便于在链路上定位其将来挂接的位置（原因见 §8.3）。
 
 ### 8.2 逐步骤表（顺序 = `STEP_ORDER`；命令由 **AST** 自源码抽取）
 
@@ -455,26 +455,27 @@ flowchart TD
 | 7 | `apply:{src}` | 时效核验结果回写清洗产物 | `（argv 由变量构造，完整形态见源码）` | **阻断**（失败即停；`--resume` 可从该步续跑） |
 | 8 | `classify:all` | 主题分类（_t*_base / _t*_final 派生） | `cli.py classify --all` | **阻断**（失败即停；`--resume` 可从该步续跑） |
 | 9 | `relations:gen` | 关系抽取（含条款级定位：**窗口优先 + 跨度退路**） | `cli.py relations gen` | **阻断**（失败即停；`--resume` 可从该步续跑） |
-| 10 | `semantic:assist` | ⚠️ **未登记作用**（请在 `gen_flow_map.PURPOSE` 补登 `semantic:assist`） | `-m tools.semantic_assist --source all --limit 200` | **阻断**（失败即停；`--resume` 可从该步续跑） |
-| 11 | `reconcile` | 清洗漂移对账（clean_drift） | `reconcile_clean_drift.py` | **阻断**（失败即停；`--resume` 可从该步续跑） |
-| 12 | `recall` | 召回复核与四门禁（clean/validity/contract/schema） | `run_retrieval_after_checks.py` | **阻断**（四门禁不过即 FAIL，留人工） |
-| 13 | `inbox:drop` | 收件箱投放（人工投递的制度文件入库） | （条件步骤；触发项 `inbox_drop`，判据见 `config/triggers.yaml`） | **阻断**（失败即停；`--resume` 可从该步续跑） |
-| 14 | `internal:update` | 内部制度索引更新（原件同步） | （条件步骤；触发项 `internal_update`，判据见 `config/triggers.yaml`） | **阻断**（失败即停；`--resume` 可从该步续跑） |
-| 15 | `governance:artifacts` | 原件注册（治理库 artifact 表） | `governance_register_artifacts.py` | **阻断**（失败即停；`--resume` 可从该步续跑） |
-| 16 | `governance:sync` | 治理库同步（run_log / gate_result / relation 等，**全量替换**） | `governance_sync.py --apply` | **阻断**（失败即停；`--resume` 可从该步续跑） |
-| 17 | `internal:merged` | 内部制度**合并视图**（供条款对照与检索） | `cli.py internal merged` | **阻断**（失败即停；`--resume` 可从该步续跑） |
-| 18 | `reports:build` | 总览报告生成 | `build_overview_report.py` | **阻断**（失败即停；`--resume` 可从该步续跑） |
-| 19 | `reports:theme` | 主题报告生成 | `build_theme_report.py` | **阻断**（失败即停；`--resume` 可从该步续跑） |
-| 20 | `draft:clause` | 条款对照素材（drafter 视图） | `cli.py draft` | **阻断**（失败即停；`--resume` 可从该步续跑） |
-| 21 | `base:publish` | 底座发布（发布清单 publish_manifest） | `cli.py base publish` | **阻断**（失败即停；`--resume` 可从该步续跑） |
-| 22 | `analysis:gen` | 分析交付物（docs/reports，含 17 项 manifest sha） | `cli.py analysis gen` | **阻断**（失败即停；`--resume` 可从该步续跑） |
-| 23 | `watch:baseline` | 观测基线快照 | `cli.py source diff --record` | **阻断**（失败即停；`--resume` 可从该步续跑） |
-| 24 | `retention:plan` | 数据生命周期**只读披露**（dry-run + 台账；`--apply` 为人工闸门） | `retention.py` | **只读披露 · 恒 rc=0**（无待归档为合法状态；`--apply` 才是人工闸门） |
-| 25 | `quarantine:triage` | 清洗隔离件分类与处置登记（零回写 → worklist） | `quarantine_triage.py` | **只读产出**（零回写；结果入 worklist，rc=0） |
-| 26 | `semantic:preflight` | P1 语义增强**启用前置披露**（五道闸逐项） | `-m std_lib.common_lib.semantic_tools --preflight-report` | **只读披露 · 恒 rc=0**（增强未启用为合法状态；真正的启用判定用 `semantic_tools --preflight` 的 rc） |
-| 27 | `pg:health` | 向量存储**只读**健康检查（pgvector / sqlite_vec 降级链披露） | `-m std_lib.common_lib.vector_store --health` | **只读披露 · 恒 rc=0**（后端不可用为合法状态；实际读写按 `vector_store` 降级链） |
-| 28 | `wiki:sync` | llm_wiki 源同步（条件步骤，未触发即跳过） | （条件步骤；触发项 `wiki_sync`，判据见 `config/triggers.yaml`） | **条件步骤**（`triggers.yaml` 判定）：未触发 → **SKIP**（rc=0） |
-| 29 | `gates` | 全部门禁（**阻断**；置于链尾以终态产物为准） | `cli.py gates` | **阻断**（失败即停；链尾以终态产物为准） |
+| 10 | `semantic:assist` | P1 语义增强**入链调用点**（嵌入→主题辅助裁定；**只产分析视图**） | `-m tools.semantic_assist --source all --limit 200` | **只读分析视图**（增强层零硬依赖）：未启用（`usage_policy.enabled=false`）或嵌入链不可用均为合法状态 → **rc=0**；**绝不写事实源** |
+| 11 | `docreader:extract` | docreader **入链调用点**（版面解析 + 段落级定位；**只产分析视图**） | `-m tools.docreader_extract --limit 20` | **只读分析视图**：docreader 不可用/自检不过 → **显式 SKIP（rc=0）**，回退既有 6 态抽取；**不替换**抽取事实源（替换须先度量） |
+| 12 | `reconcile` | 清洗漂移对账（clean_drift） | `reconcile_clean_drift.py` | **阻断**（失败即停；`--resume` 可从该步续跑） |
+| 13 | `recall` | 召回复核与四门禁（clean/validity/contract/schema） | `run_retrieval_after_checks.py` | **阻断**（四门禁不过即 FAIL，留人工） |
+| 14 | `inbox:drop` | 收件箱投放（人工投递的制度文件入库） | （条件步骤；触发项 `inbox_drop`，判据见 `config/triggers.yaml`） | **阻断**（失败即停；`--resume` 可从该步续跑） |
+| 15 | `internal:update` | 内部制度索引更新（原件同步） | （条件步骤；触发项 `internal_update`，判据见 `config/triggers.yaml`） | **阻断**（失败即停；`--resume` 可从该步续跑） |
+| 16 | `governance:artifacts` | 原件注册（治理库 artifact 表） | `governance_register_artifacts.py` | **阻断**（失败即停；`--resume` 可从该步续跑） |
+| 17 | `governance:sync` | 治理库同步（run_log / gate_result / relation 等，**全量替换**） | `governance_sync.py --apply` | **阻断**（失败即停；`--resume` 可从该步续跑） |
+| 18 | `internal:merged` | 内部制度**合并视图**（供条款对照与检索） | `cli.py internal merged` | **阻断**（失败即停；`--resume` 可从该步续跑） |
+| 19 | `reports:build` | 总览报告生成 | `build_overview_report.py` | **阻断**（失败即停；`--resume` 可从该步续跑） |
+| 20 | `reports:theme` | 主题报告生成 | `build_theme_report.py` | **阻断**（失败即停；`--resume` 可从该步续跑） |
+| 21 | `draft:clause` | 条款对照素材（drafter 视图） | `cli.py draft` | **阻断**（失败即停；`--resume` 可从该步续跑） |
+| 22 | `base:publish` | 底座发布（发布清单 publish_manifest） | `cli.py base publish` | **阻断**（失败即停；`--resume` 可从该步续跑） |
+| 23 | `analysis:gen` | 分析交付物（docs/reports，含 17 项 manifest sha） | `cli.py analysis gen` | **阻断**（失败即停；`--resume` 可从该步续跑） |
+| 24 | `watch:baseline` | 观测基线快照 | `cli.py source diff --record` | **阻断**（失败即停；`--resume` 可从该步续跑） |
+| 25 | `retention:plan` | 数据生命周期**只读披露**（dry-run + 台账；`--apply` 为人工闸门） | `retention.py` | **只读披露 · 恒 rc=0**（无待归档为合法状态；`--apply` 才是人工闸门） |
+| 26 | `quarantine:triage` | 清洗隔离件分类与处置登记（零回写 → worklist） | `quarantine_triage.py` | **只读产出**（零回写；结果入 worklist，rc=0） |
+| 27 | `semantic:preflight` | P1 语义增强**启用前置披露**（五道闸逐项） | `-m std_lib.common_lib.semantic_tools --preflight-report` | **只读披露 · 恒 rc=0**（增强未启用为合法状态；真正的启用判定用 `semantic_tools --preflight` 的 rc） |
+| 28 | `pg:health` | 向量存储**只读**健康检查（pgvector / sqlite_vec 降级链披露） | `-m std_lib.common_lib.vector_store --health` | **只读披露 · 恒 rc=0**（后端不可用为合法状态；实际读写按 `vector_store` 降级链） |
+| 29 | `wiki:sync` | llm_wiki 源同步（条件步骤，未触发即跳过） | （条件步骤；触发项 `wiki_sync`，判据见 `config/triggers.yaml`） | **条件步骤**（`triggers.yaml` 判定）：未触发 → **SKIP**（rc=0） |
+| 30 | `gates` | 全部门禁（**阻断**；置于链尾以终态产物为准） | `cli.py gates` | **阻断**（失败即停；链尾以终态产物为准） |
 
 #### 8.2.1 编排层通性（**对所有步骤生效**）
 
@@ -503,11 +504,11 @@ flowchart TD
 | `sqlite_vec` | **按需节点**（无独立链步骤；由 `pg:health` 披露、业务按需调用） | 阶段4 | 向量检索**降级后端**（与既有 SQLite FTS5 同库同源） | 就绪（依赖可用；无需外部权重） | 不适用（按需节点：无独立链步骤，由 `pg:health` 披露） | 回退 SQLite FTS5 全文检索（零服务依赖） |
 | `text2vec` | `semantic:assist` | 阶段2 | 嵌入**降级备选**（768 维，与 bge 同维等价备份） | 就绪（依赖 + 权重实检通过） | **已接线**（`usage_policy.enabled=true`（配置开关）） | 优先 `bge_base_zh`（全量）/`youtu_embedding`（增量）；再退关键词规则 |
 | `umap` | `classify:all` | 阶段2 | bertopic 的降维依赖（**不单独使用**，无权重） | 就绪（依赖可用；无需外部权重） | 未接线（执行门面已就绪，待业务节点接入） | 随 bertopic 一并跳过 |
-| `weknora_docreader` | `clean` | 阶段1 | 文档**版面分析**（25+ 格式渲染，补正文抽取） | 未装 | 未接线（执行门面已就绪，待业务节点接入） | 回退 `crawler_common.extract_document_text`（既有 6 态） |
+| `weknora_docreader` | `docreader:extract` | 阶段2 | 文档**版面分析 + 段落级定位**（25+ 格式渲染；补正文抽取的**定位增量**） | 就绪（依赖 + 权重实检通过） | **已接线**（`docreader_bridge.self_test()` 通过（venv 解释器实跑；不可用则显式 SKIP）） | 回退 `crawler_common.extract_document_text`（既有 6 态，**仍是事实源**） |
 | `youtu_embedding` | `semantic:assist` | 阶段2 | **增量/指定场景嵌入**（`mode=incremental` 首选；2B/2048 维） | 就绪（依赖 + 权重实检通过） | **已接线**（`usage_policy.enabled=true` + `--mode incremental`） | 降级 `bge_base_zh` → `text2vec`；再退关键词/规则判定 |
 | `youtu_embedding@relations`（`@`：同工具的第二用途） | `relations:gen` | 阶段2 | **关联语义档**（P1-2：依据/废止关系的语义近似判定） | 就绪（依赖 + 权重实检通过） | 未接线（执行门面已就绪，待业务节点接入） | 降级 `bge_base_zh` → `text2vec`；再退正则关系抽取 |
 
-合计 **16** 个模型节点（**已接线 0** ／ **已接线·默认关 4** ／ **未接线 8** ／ **未就绪 4**）—— 均已入图（§8.1）。
+合计 **16** 个模型节点（**已接线 0** ／ **已接线·默认关 5** ／ **未接线 8** ／ **未就绪 3**）—— 均已入图（§8.1）。
 
 #### 8.3.1 ⚠️ 未就绪环节（**依赖或权重缺失，单独标记**）
 
@@ -518,7 +519,6 @@ flowchart TD
 | `hanlp` | `clauses` | v2 P1-3（分句/结构增强层） | **权重未预置** | 在**可达环境**下载权重后**迁入** `external/models/`（清单以 `local_dir` 声明，`probe` **实检目录**）；`HF_HOME`/`HANLP_HOME` 为可选覆盖 |
 | `paradedb` | **按需节点**（无独立链步骤；由 `pg:health` 披露、业务按需调用） | v2 P2-2（**须先做零服务替代评估**；且须同时覆盖 search_internal） | **服务未部署** | 在**可达环境**下载权重后**迁入** `external/models/`（清单以 `local_dir` 声明，`probe` **实检目录**）；`HF_HOME`/`HANLP_HOME` 为可选覆盖 |
 | `signalgraph` | `relations:gen` | v2 P3-2（可选；须先证明其**确定性**：同输入同输出） | 未装 | 按清单 `pypi`/`extra` 安装依赖（`pip install -e ".[semantic]"`） |
-| `weknora_docreader` | `clean` | v2 P2-1（只补版面分析；OCR 通路已存在，不重做） | 未装 | 按清单 `pypi`/`extra` 安装依赖（`pip install -e ".[semantic]"`） |
 
 - **受影响的链路环节**：`semantic:preflight` 的 `offline` 闸（**只对「已接线/已装」的后端**按**职责分组**判定：嵌入三选一、分句二选一——**不是**要求全部就绪）。
 - **不受影响**：主链（采集→清洗→条文→关系→报告→门禁）**不依赖任何模型权重**，全部走确定性正则/规则路径；本表全部模型均为**可选叠加**，缺失即按「降级措施」列回退。
@@ -547,7 +547,7 @@ flowchart TD
 | 2 | **分句链**（SSOT：`sentence_boundary` + `semantic_enhance`） | ML 增强（`ltp` 分词锚切句，env `REG_ORCH_SEMANTIC_SPLIT=1`）→ 确定性 `sentence_boundary.split_by(text, level)`（受控 SSOT）。 | **默认关闭 ML**（改分句口径会改变条文/关系产物 → 须先在可评样本量出 P/R，v2 纪律「无度量不得上线」）。关闭时与既有实现**逐字节对等**（零回归）；开启后 LTP 失败**自动回退**并留痕。 |
 | 3 | **向量检索链**（SSOT：`std_lib/common_lib/vector_store.py`） | `pgvector`（`vec` schema，最小权限角色）→ `sqlite_vec`（与既有 SQLite FTS5 同库同源）→ 既有**全文/正则**。 | `VectorStoreUnavailable` 供调用方降级；`search_or_fallback()` 失败返回 `None`（**不抛**）。连接仅经 env `PGVECTOR_DSN`（口令不入库，`gate_secret_scan` 守护）。**主链不调用其读写**，`pg:health` 仅只读披露。 |
 | 4 | **OCR / 文档解析链**（SSOT：`config/ocr.yaml`） | Engine `auto`：`paddleocr` → `tesseract`（`auto_fallback: true`）；PDF **有文本层先走 `pdfplumber`**，扫描件才走 OCR。 | 引擎不可用即降级到下一档；两者皆不可用 → 该文件正文抽取为空并**显式告警**（不静默产出空正文）。 |
-| 5 | **版面分析链**（P2-1，未装） | `weknora_docreader`（25+ 格式渲染）→ `crawler_common.extract_document_text`（既有 6 态）。 | 未装即走既有 6 态抽取；**不重做** OCR/正文通路。 |
+| 5 | **版面分析链**（P2-1，N-180 **已部署**：源码模式 + 独立 venv） | `weknora_docreader`（25+ 格式渲染 + **段落级定位**）→ `crawler_common.extract_document_text`（既有 6 态，**仍是事实源**）。 | docreader 不可用/自检不过 → **显式 SKIP**（rc=0）并回退既有 6 态；**不重做** OCR/正文通路（docreader 自身不做 OCR）。其产物为分析视图 → 既不影响事实源，也不阻断主链。 |
 | 6 | **时效核验链**（SSOT：`timeliness_review`） | 北大法宝 CLI 核验（需 `PKULAW_NODE_EXE` + `PKULAW_PKG_DIR` + token）→ R13 **三态**（`valid`/`invalid`/`unavailable`）。 | 无 token / 工具缺失 → `unavailable`（**降级不误标**）；配额耗尽自动停并断点续跑。 |
 | 7 | **关系抽取链**（SSOT：`std_lib/common_lib/relations.py`） | 条款级定位：**窗口优先（±100 字符 `source_snippet`）→ 跨度退路**；语义档（P1-2，`youtu_embedding@relations`，未接线）→ **既有正则抽取**。 | `article_placement` 记录定位来源（`src_offset`/`snippet`/两者）；未定位即留空并计入基线。`source_span` 为**纯披露字段**（N-98：收窄会劣化定位，故不参与定位）。 |
 | 8 | **披露步骤统一口径**（`retention:plan` / `semantic:preflight` / `pg:health`） | **只读**：不写业务事实源。 | **「未就绪」是合法状态**（未启用增强、无待归档、后端未部署）→ 三者**恒 rc=0**；真正需要阻断的判定保留给各自的人工/CI 口径。 |
@@ -564,6 +564,7 @@ flowchart TD
 显式 `model="…"` **覆盖 mode**（优先级最高）；分句增强由 env `REG_ORCH_SEMANTIC_SPLIT=1` 控制（**默认关**，见 §8.6 第 2 条）。
 
 <!-- END GENERATED: 全链数据流总图 -->
+
 
 
 

@@ -605,6 +605,11 @@ STEP_ORDER: tuple[str, ...] = (
     # 位置：消费 cleaned（阶段 1/2 已写）与主题关键词 SSOT，产出**分析视图**（reports/semantic/），
     # **不写事实源** → 可在 relations:gen 之后、下游消费者之前安全插入（不影响任何事实源版本）。
     "semantic:assist",
+    # N-180（2026-09-30）：**docreader 的入链调用点**（`docreader:extract`）。
+    # 部署形态＝源码模式 + 独立 venv（3.11）→ 子进程调用（见 `std_lib/common_lib/docreader_bridge.py`）。
+    # 同 `semantic:assist`：只产出**分析视图**（`reports/docreader/`，含与既有 6 态抽取的**增量度量**），
+    # **不写事实源**（替换既有抽取须先度量）；不可用时显式 SKIP 且 rc=0（增强层零硬依赖）。
+    "docreader:extract",
     "reconcile",
     "recall",
     # inbox_drop / internal_update 产出 index/align/processed → 必须在 internal:merged 之前。
@@ -983,6 +988,26 @@ def _run_chain(args) -> int:
                 "all",
                 "--limit",
                 os.environ.get("REG_ORCH_SEMANTIC_ASSIST_LIMIT", "200"),
+            ],
+            timeout=1800,
+        )
+    )
+
+    # ---- 阶段 2.8：docreader 入链（`docreader:extract`，N-180）----
+    # 动因：`weknora_docreader`（v2 P2-1）长期"未装/未接线"；本轮**源码级部署**完成后给出**真实调用点**
+    #   —— 否则仍属纸面状态（本仓纪律：绑定必须指向真实调用点）。
+    # 形态：**跨解释器子进程**调 venv 中的 docreader（无端口、无长驻、异常即非零退出）。
+    # 纪律：**非阻断** —— 不可用/自检不过均为合法状态（工具显式披露且 rc=0）；
+    #   产物为**分析视图**（`reports/docreader/`，含与既有 6 态抽取的增量度量），**不写事实源**。
+    report.append(
+        _run(
+            "docreader:extract",
+            [
+                PY,
+                "-m",
+                "tools.docreader_extract",
+                "--limit",
+                os.environ.get("REG_ORCH_DOCREADER_LIMIT", "20"),
             ],
             timeout=1800,
         )

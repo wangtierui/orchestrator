@@ -197,7 +197,12 @@ def test_run_step_order_matches_call_sites():
     #   —— 该节点**并无嵌入调用点**（纸面接线）。新步骤为**只读分析视图**（`reports/semantic/`），
     #   **不写事实源**（`usage_policy.write_fact_source=false`，由 audit_health「P1 口径」机器守护）；
     #   未启用/嵌入不可用均为**合法状态**（工具披露且 rc=0，不阻断主链）。
-    assert len(rpr.STEP_ORDER) == 29
+    # 30（29 → +1）：N-180（2026-09-30）`docreader:extract`（**docreader 的入链调用点**）——
+    #   动因：`weknora_docreader`（v2 P2-1）长期"未装/未接线"；本轮**源码级部署**（独立 venv 3.11.9 +
+    #   22 项依赖）完成后给出**真实调用点**（原绑定指向 `clean`，而该节点**没有** docreader 调用点
+    #   = 纸面接线）。形态：**跨解释器子进程**（`std_lib/common_lib/docreader_bridge.py`），无端口无长驻；
+    #   产物为**分析视图**（`reports/docreader/`，含与既有 6 态抽取的**增量度量**）；不可用即显式 SKIP（rc=0）。
+    assert len(rpr.STEP_ORDER) == 30
     # 每个步骤名必须能在本文件中找到**引号字面量**（`"gates"` / `f"clean:{src}"` ⇒ `"clean:{src}"`）
     text = open(fp, encoding="utf-8").read()
     for step in rpr.STEP_ORDER:
