@@ -603,7 +603,70 @@ def check_readme_consistency() -> list:
     return f
 
 
+def check_remote_sync() -> list:
+    """**远程同步状态**（N-163，2026-09-30）。
+
+    事故：`post-commit` 钩子用 `git push ... >/dev/null 2>&1` **吞掉推送失败**，导致
+    「第二十六批起 8 批提交从未推送成功」长期无人察觉（远程分叉 → non-fast-forward）。
+    教训：**同步失败属"降级"，必须可观测** —— 与仓内"降级链须可观测"同款纪律。
+
+    判据（只读）：
+      ① 本地领先远程的提交数 > 0 → 未推送（MED）；
+      ② `logs/git-autopush.log` 末尾为 FAIL 且**晚于**最后一次 OK → 钩子正在失败（MED，含真实原因）；
+      ③ 无 origin / 无远程跟踪引用 → **跳过并披露**（克隆环境尚未配置远程，不阻断）。
+    """
+    f: list = []
+    import subprocess
+
+    def _git(*args):
+        try:
+            r = subprocess.run(
+                ["git", *args], cwd=ROOT, capture_output=True, text=True, timeout=20
+            )
+            return r.returncode, (r.stdout or "").strip(), (r.stderr or "").strip()
+        except Exception as e:  # noqa: BLE001
+            return 1, "", f"{type(e).__name__}: {e}"
+
+    rc, _o, _e = _git("rev-parse", "--verify", "origin/main")
+    if rc != 0:
+        f.append(
+            {
+                "cat": "远程同步",
+                "sev": "LOW",
+                "where": "git",
+                "detail": "无 `origin/main` 跟踪引用（未配置远程或未 fetch）→ 同步状态无法判定，跳过",
+            }
+        )
+        return f
+
+    rc, out, _e = _git("rev-list", "--count", "origin/main..HEAD")
+    ahead = int(out) if rc == 0 and out.isdigit() else -1
+    log_p = os.path.join(ROOT, "logs", "git-autopush.log")
+    log_tail = ""
+    if os.path.exists(log_p):
+        lines = [x for x in _read(log_p).splitlines() if x.strip()]
+        log_tail = lines[-1] if lines else ""
+    if ahead > 0:
+        # 区分"钩子最近失败"与"仅本地领先"（后者可能刚提交、钩子尚未跑或已禁用）
+        fail_newest = (not os.path.exists(log_p)) or log_tail.startswith(("FAIL", "20")) and "FAIL" in log_tail
+        f.append(
+            {
+                "cat": "远程同步",
+                "sev": "MED",
+                "where": "git:origin/main..HEAD",
+                "detail": (
+                    f"**本地领先远程 {ahead} 个提交（未推送）**"
+                    + ("；且自动推送日志末尾为 **FAIL**" if fail_newest else "")
+                    + f"。钩子日志：{os.path.relpath(log_p, ROOT) if os.path.exists(log_p) else '（无）'}。"
+                    "处置：`git pull --rebase origin main` 后 `git push origin main`"
+                ),
+            }
+        )
+    return f
+
+
 CHECKS = [
+    ("远程同步", check_remote_sync),
     ("README 一致性", check_readme_consistency),
     ("统一入口", check_entry),
     ("门禁失效", check_gates),

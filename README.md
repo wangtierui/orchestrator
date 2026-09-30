@@ -260,6 +260,13 @@ flowchart LR
   / 盘符硬编码 / 密钥扫描（`gate_secret_scan`）…
 - **发布门禁**：**人工闸门**保留在三处破坏性动作 —— `retention --apply`（归档）、`governance_sync --apply`
   （写治理库）、`acknowledged.json`（失败步骤知悉登记）；其余一律**机器判定**。
+- **提交后自动推送**：`.git/hooks/post-commit` 在每次提交后自动 `git push origin main`
+  （**不阻断提交**：commit 成败与 push 解耦）。钩子版本化在 `tools/git_hooks/post-commit`
+  （克隆后 `cp tools/git_hooks/post-commit .git/hooks/` 安装）。
+  **同步失败不再静默**：结果写入 `logs/git-autopush.log`，失败时回显真实原因与处置命令，
+  并由 `tools/audit_health.py` 的「**远程同步**」检查核验「本地领先远程 N 个提交」。
+  > 事故注记（N-163）：原钩子以 `>/dev/null 2>&1` 吞掉失败，导致「第二十六批起 8 批提交
+  > 从未推送成功」长期无人察觉 —— 故本条纪律：**同步失败属"降级"，必须可观测**。
 - **门禁不可执行 ≠ 通过**：判据因缺输入无法执行时（如克隆无数据），**显式披露**而非静默放行。
 
 ---
