@@ -162,6 +162,17 @@ def probe(name: str) -> dict:
         }
     spec = tools[name]
     pspec = spec.get("probe") or {}
+    # N-181（2026-09-30）：**声明式环境变量**（`probe.env`）—— 必须**先于任何导入/指纹计算**设置。
+    # 为什么"先设"是硬要求（实测 hanlp 2.1.5）：该类库把路径**在导入时绑成函数默认参数** ——
+    #   `hanlp.utils.io_util.download(url, save_dir=hanlp_home(), …)`、
+    #   `get_resource(path, save_dir=hanlp_home(), …)`
+    # → 若"先 import 再设 `HANLP_HOME`"，库内默认值仍指向**旧目录**（默认 `~/AppData/…/hanlp`），
+    #   于是"权重明明已预置"也**命不中**，直接去**联网下载**（本环境必失败并重试 → 拖慢整条 CI，
+    #   实测把 pytest 推到 600s 超时）。`probe` 是最早接触这些库的**公共入口**（flow-map/preflight/
+    #   测试都经它），故在此设默认值；`setdefault` 保留用户显式覆盖的余地。
+    for _k, _v in (pspec.get("env") or {}).items():
+        _p = str(_v)
+        os.environ.setdefault(str(_k), _p if os.path.isabs(_p) else os.path.join(_ROOT, _p))
     kind = str(pspec.get("kind") or "module")
     import_name = str(pspec.get("import_name") or "")
     pypi = str(spec.get("pypi") or "")

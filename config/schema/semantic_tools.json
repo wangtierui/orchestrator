@@ -55,26 +55,65 @@
    "pypi": "hanlp",
    "probe": {
     "kind": "module",
-    "import_name": "hanlp"
+    "import_name": "hanlp",
+    "local_dir": "external/models/hanlp",
+    "runtime_imports": [
+     "hanlp"
+    ],
+    "note": "权重目录 = `HANLP_HOME`（HanLP 官方唯一开关，`hanlp.utils.io_util.hanlp_home()` 读它）；`probe` 据此核验目录完整性 → `offline_ready`。",
+    "expect_files": [
+     "mtl/close_tok_pos_ner_srl_dep_sdp_con_electra_small_20220626_175100/config.json",
+     "mtl/close_tok_pos_ner_srl_dep_sdp_con_electra_small_20220626_175100/model.pt",
+     "transformers/electra_zh_small_20210706_125427/config.json",
+     "transformers/electra_zh_small_20210706_125427/vocab.txt"
+    ],
+    "env": {
+     "HANLP_HOME": "external/models/hanlp"
+    },
+    "env_note": "**必须在导入 hanlp 之前设置**：该库把权重根绑为**导入时**的函数默认参数（`download(url, save_dir=hanlp_home())` / `get_resource(path, save_dir=hanlp_home())`）→ 先 import 再设 env 会让库内默认值指向旧目录，命不中已预置权重而去**联网下载**（实测拖到 CI pytest 600s 超时）。`probe` 是最早接触该库的公共入口，故在此设默认值。"
    },
    "pipeline_ref": "v2 P1-3（分句/结构增强层）",
    "approx_size": "首次使用自动下载约 1.2GB 模型",
-   "offline": "**权重未预置**（官方 `file.hankcs.com` 在本环境**连接被重置**，实测 2026-09-30）。本仓以 `HANLP_HOME` 指向权重主目录 + `HANLP_OFFLINE=1` 禁网；⚠️ 2026-09-30 更正：原登记 `MTL_HANLP_OFFLINE` 在 HanLP 官方资料中**不存在** → 设了也是假绿灯。",
+   "offline": "**权重已预置**（`external/models/hanlp/`，97.8MB 三级 zip）；加载全程离线（实测 'Using local' 分支）",
    "offline_env": [
     "HANLP_HOME",
     "HANLP_OFFLINE"
    ],
    "license_to_verify": true,
    "weights": {
-    "status": "unobtainable_in_this_env",
-    "official_host": "https://file.hankcs.com（连接重置 ✗）",
-    "hf_availability": "HF 上**无 HanLP 官方模型仓**（`/api/models?author=hankcs` 返回空）；仅有第三方镜像 `SingHA/HanLP`（56 文件，含 pos_ctb / ctb9_dep / ctb9_con / msra_ner / cpb3 / semeval16_sdp / electra_base_zh 等**分任务模型**）—— 但它们是 **LFS 文件** → 见 blocked_reason。",
-    "blocked_reason": "2026-09-30 实测：hf-mirror 仅代理**元数据与非 LFS 文件**；LFS 权重 302 → `cas-bridge.xethub.hf.co`，该主机 **TCP 可达但 TLS 被 SNI 层重置**（curl/urllib 一致复现）。官方 huggingface.co 超时；modelscope/wisemodel/aliendao/gitee/ai.gitee/atomgit 连接重置；gitcode 418（WAF）。→ 本环境**无可用权重下载通道**。",
-    "unblock": "在**可达环境**执行 `python -c \"import hanlp; hanlp.load('MTL')\"`（或 `hanlp.pretrained.mtl.*`）下载后，将权重目录整体迁入，并置 `HANLP_HOME=<目录>` + `HANLP_OFFLINE=1`；随后以 `local_dir` 形态登记以便机器实检。",
-    "substitute_in_place": "分句/结构增强**当前由 `ltp` 承担**（`ltp` 已就绪：`external/models/LTPbase`，`basis_split=ltp_cws` 显式标注非原生分句）→ HanLP 缺失**不阻断**该环节。"
+    "status": "available",
+    "alias": "CLOSE_TOK_POS_NER_SRL_UDEP_SDP_CON_ELECTRA_SMALL_ZH",
+    "local_dir": "external/models/hanlp",
+    "mirror": "https://ftp.hankcs.com/hanlp/（**官方 `file.hankcs.com` 本环境 TLS 被重置**，镜像可达）",
+    "files": [
+     {
+      "path": "mtl/close_tok_pos_ner_srl_dep_sdp_con_electra_small_20220626_175100.zip",
+      "size_mb": 100.8,
+      "role": "MTL 权重（tok/pos/ner/srl/dep/sdp/con 多头；含 model.pt）"
+     },
+     {
+      "path": "transformers/electra_zh_small_20210706_125427.zip",
+      "size_mb": 0.04,
+      "role": "ELECTRA 骨干的 tokenizer/config（**不含权重大小**；权重在 MTL zip 的 model.pt 内）"
+     },
+     {
+      "path": "utils/char_table_20210602_202632.json.zip",
+      "size_mb": 0.03,
+      "role": "`NormalizeCharacter` 变换的字表（**加载期必需**，缺则加载失败）"
+     }
+    ],
+    "install": "**分段并行下载**（镜像单连接被限速 ≈23KB/s，实测 16 段并发 ≈285KB/s）：落盘路径须严格复刻 HanLP `path_from_url`（官方前缀 URL → `HANLP_HOME/<去掉 hanlp/ 的相对路径>`；非该前缀 → `HANLP_HOME/thirdparty/<域名>/…`），这样 `hanlp.load(<别名>)` 会命中本地分支、**不联网**。",
+    "excluded": "⚠️ 另有一个 `CLOSE_TOK_POS_NER_SRL_DEP_SDP_CON_ELECTRA_SMALL_ZH`（20210111 壳）**不可用**：其 `config.json.load_path` 指向 `mtl/close_tok_pos_ner_srl_dep_sdp_con_electra_small_zh_20201222_130611.zip`，该文件在镜像上 **404**；且其 `transform.mapper` 指向 `corpus/char_table.json.zip`（镜像亦 404）。→ 改用 20220626 变体（同为官方注册别名，**自包含**：仅需 char_table）。",
+    "verified_at": "2026-09-30"
    },
    "verified_at": "2026-09-30",
-   "verified": "包就位（hanlp 2.1.5 可导入，probe 实测 available=true）；**权重未预置**（offline_ready=false，如实表达）；官方权重站不可达（实测）"
+   "verified": "**权重已预置且真实加载成功**：`load_segmenter('hanlp')` → `hanlp.load(CLOSE_TOK_POS_NER_SRL_UDEP_SDP_CON_ELECTRA_SMALL_ZH)` 17.7s 成功（MTL 多头）；真实法规文本分词/词性/依存/切句见报告",
+   "runtime_constraints": {
+    "setuptools": "**必须 `setuptools<81`**：hanlp 2.1.5 顶层依赖 `pkg_resources`（`hanlp/utils/component_util.py:137`、`hanlp/utils/io_util.py:707`），而 setuptools ≥81 已移除它 → 实测报 `ModuleNotFoundError: pkg_resources`（本机原为 84.0.0）。已装 80.10.2（官方提示即 'pin to Setuptools<81'）。",
+    "torch": "需 torch（实测 2.14.0+cpu）；CPU 推理即可，无需 GPU",
+    "mtl_keys": "**输出形态**（实测）：返回 `Document`，键为任务头 —— `tok/coarse`/`tok/fine`/`pos/863`/`pos/ctb`/`pos/pku`/`ner/*`/`dep`/`sdp`/`srl`/`con`；**批量时每任务为按句列表**，**单句 str 时为扁平值**（适配器已做形状归一）。本仓取 `tok/fine`（与 LTP cws 同粒度）+ `pos/ctb`。",
+    "no_offline_env": "⚠️ HanLP 2.1.5 **没有**离线环境变量（本仓曾登记 `MTL_HANLP_OFFLINE`，已更正为不存在）——「离线」由**权重已预置**保证：`download()` 先 `os.path.isfile(save_path)`，命中即 `Using local … ignore …`，**根本不发起请求**。"
+   }
   },
   "ltp": {
    "repo": "https://github.com/HIT-SCIR/ltp",

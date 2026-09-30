@@ -261,6 +261,40 @@ def _load_embedder_transformers(name: str, path: str) -> _Embedder:
 # --------------------------------------------------------------------------
 # 分句（segmenter）
 # --------------------------------------------------------------------------
+def _split_by_token_anchor(text: str, toks: list, ends: str = "。；！？\n") -> list:
+    """**以分词为锚**按句末标点聚合切句 → `list[str]`（`ltp` 与 `hanlp` 两后端**共用**）。
+
+    为什么抽出来（N-181）：两后端此前各写一份**逐字相同**的实现 —— 审计以
+    「实现重复」命中（`semantic_models.py:split × 2`）。共用一份不是"为复用而复用"，
+    而是**同口径的唯一实现**：分句口径一旦两处漂移，切换后端会**静默改变**条文/关系产物
+    （本仓对"口径"类逻辑的一贯纪律：受控 SSOT + 单一实现）。
+
+    实现要点：**不丢字符**（标点归属其所在句）；入参异常由调用方处理（本函数不吞错）。
+
+    ⚠️ **同算法 ≠ 逐字相同**（实测 2026-09-30）：本函数只做"按标点聚合"，**空白字符取决于
+    分词器** —— LTP 会把空格作为 token 输出（`第一条 为规范…`），HanLP 不输出空格
+    （`第一条为规范…`）。故**切换后端会改变输出文本的空白**（属后端固有差异，不是本函数的
+    缺陷）。这也是"启用 ML 分句须先在可评样本量 P/R"的另一理由（见 `semantic_enhance`）。
+    """
+    if not text or not text.strip():
+        return []
+    if not toks or not toks[0]:
+        return [text.strip()]
+    sents: list = []
+    buf: list = []
+    for t in toks[0]:
+        buf.append(t)
+        if t and t[-1] in ends:
+            s = "".join(buf).strip()
+            if s:
+                sents.append(s)
+            buf = []
+    tail = "".join(buf).strip()
+    if tail:
+        sents.append(tail)
+    return sents
+
+
 class _LTPSegmenter:
     """LTP 后端封装（**如实标注能力边界**）。
 
@@ -298,30 +332,11 @@ class _LTPSegmenter:
         return [list(x) for x in (getattr(out, "pos", None) or [])]
 
     def split(self, text: str) -> list:
-        """切句：以 LTP 分词为锚，按句末标点（。；！？及换行）聚合 → `list[str]`。
+        """切句：以 LTP 分词为锚 → 委托 `_split_by_token_anchor`（与 hanlp 侧**同一实现**）。
 
-        实现要点：**不丢字符**（标点归属其所在句）。LTP 分词抛错则**原样抛出**，
-        由调用方回退（不静默降级）。
+        LTP 分词抛错则**原样抛出**，由调用方回退（不静默降级）。
         """
-        if not text or not text.strip():
-            return []
-        toks = self.cws([text])
-        if not toks or not toks[0]:
-            return [text.strip()]
-        ends = "。；！？\n"
-        sents: list = []
-        buf: list = []
-        for t in toks[0]:
-            buf.append(t)
-            if t and t[-1] in ends:
-                s = "".join(buf).strip()
-                if s:
-                    sents.append(s)
-                buf = []
-        tail = "".join(buf).strip()
-        if tail:
-            sents.append(tail)
-        return sents
+        return _split_by_token_anchor(text, self.cws([text]))
 
 
 def _patch_transformers_compat() -> list:
@@ -411,10 +426,141 @@ def _patch_transformers_compat() -> list:
     return injected
 
 
+class _HanLPSegmenter:
+    """HanLP 后端封装（**如实标注能力边界**，与 `_LTPSegmenter` 同接口）。
+
+    ⚠️ 与 LTP 的差别（实测 2026-09-30，hanlp 2.1.5）：
+      · HanLP **有**原生分句工具，但那是**规则法**（`hanlp.utils.rules.split_sentence`），不在本
+        MTL 组件里；本类的 `split()` 与 LTP 侧**同口径**：以 `tok`（分词）为锚按句末标点聚合，
+        并由 `basis_split` **显式标注非原生 ML 分句** —— 两个后端口径一致，切换不引入语义断层。
+      · 本组件为 **MTL 多任务**（tok/pos/ner/srl/dep/sdp/con 一次前向），故 `pos()` 与 `cws()`
+        共享同一次调用（LTP 侧需显式列 tasks）。
+    """
+
+    #: 切句依据（供调用方与审计判断"这是不是原生 ML 分句"）
+    basis_split = "hanlp_tok（MTL 分词+标点聚合；原生分句 API 为规则法，不在本组件内）"
+
+    #: 任务键（**实测** 2026-09-30，HanLP 2.1.5 MTL）：MTL 是**多任务**组件，`tok` 有
+    #  `tok/coarse`（粗粒度，如「商业银行」为一个词）与 `tok/fine`（细粒度，如「商业/银行」）
+    #  两个头；本仓取 **`tok/fine`**（与 LTP 的 `cws` 同粒度，切换后端不改变下游 token 尺度）。
+    TOK_KEY = "tok/fine"
+    #: 词性键：`pos` 有三个头（863/ctb/pku）；取 **`pos/ctb`**（HanLP 默认简写 `pos` 即它）。
+    POS_KEY = "pos/ctb"
+
+    def __init__(self, name: str, model: Any, path: str, alias: str) -> None:
+        self.name = name
+        self.model = model
+        self.path = path
+        self.alias = alias
+
+    def _task_rows(self, key: str, texts, n: int) -> list:
+        """取某任务头的结果并**归一为按句列表** `list[list]`。
+
+        ⚠️ 实测歧义（HanLP 2.1.5）：`model(str)` 返回**单句扁平值**（`['商业','银行']`），
+        而 `model(list[str])` 返回**按句嵌套**（`[['商业',…], ['本','办法',…]]`）——两者形状相似
+        （都是 list）。判别规则：**批量时首元素是 `list`**（tok/fine 的句 = list；dep 的句 = list
+        of tuple），单句时首元素是 `str`（tok）或 `tuple`（dep）。此规则对 tok/pos/dep 三种头都成立。
+        """
+        doc = self.model(list(texts))
+        val = doc.get(key) if hasattr(doc, "get") else None
+        if not val:
+            return [[] for _ in range(n)]
+        first = val[0]
+        batched = isinstance(first, list) and not (n == 1 and isinstance(first, str))
+        rows = [list(x) for x in val] if batched else [list(val)]
+        if len(rows) < n:  # 防御：形状意外时按句数补齐（**不静默截断**）
+            rows += [[] for _ in range(n - len(rows))]
+        return rows[:n]
+
+    def cws(self, texts) -> list:
+        """分词（**真实 HanLP MTL `tok/fine` 调用**）→ `list[list[str]]`。"""
+        if isinstance(texts, str):
+            texts = [texts]
+        texts = list(texts)
+        return self._task_rows(self.TOK_KEY, texts, len(texts))
+
+    def pos(self, texts) -> list:
+        """词性（同一次 MTL 前向的 `pos/ctb` 头）→ `list[list[str]]`（与 `cws` 对齐）。"""
+        if isinstance(texts, str):
+            texts = [texts]
+        texts = list(texts)
+        return self._task_rows(self.POS_KEY, texts, len(texts))
+
+    def dep(self, texts) -> list:
+        """依存（MTL 的 `dep` 头）→ `list[list]`（对齐 `cws`；供结构增强按需使用）。"""
+        if isinstance(texts, str):
+            texts = [texts]
+        texts = list(texts)
+        return self._task_rows("dep", texts, len(texts))
+
+    def split(self, text: str) -> list:
+        """切句：以 HanLP 分词为锚 → 委托 `_split_by_token_anchor`（与 ltp 侧**同一实现**）。
+
+        抛错则**原样抛出**，由调用方回退（不静默降级）。
+        """
+        return _split_by_token_anchor(text, self.cws([text]))
+
+
+def _hanlp_alias() -> str:
+    """HanLP 预训练**别名**（唯一事实源 = 清单 `tools.hanlp.weights.alias`）。
+
+    为何不硬编码：别名变更（换模型/换变体）是**配置事实**；写进代码会让"改配置"必须改源码
+    （且两处易漂移）。清单缺失即抛 `ModelUnavailable`（**fail-closed**，不猜默认值）。
+    """
+    spec = (_st.load_manifest().get("tools") or {}).get("hanlp") or {}
+    alias = str(((spec.get("weights") or {}).get("alias")) or "").strip()
+    if not alias:
+        raise ModelUnavailable(
+            "hanlp",
+            "清单未声明 `weights.alias`（无法确定要加载哪个预训练模型）",
+            "在 config/schema/semantic_tools.json 的 tools.hanlp.weights.alias 声明别名",
+        )
+    return alias
+
+
 def load_segmenter(name: str = "ltp"):
-    """加载分句器（本地路径 + 强制离线）。目前支持 `ltp`（`hanlp` 权重未预置）。"""
+    """加载分句器（本地路径 + 强制离线）。支持 `ltp` 与 `hanlp`（后者需权重已预置）。"""
     path, _p = _resolve(name)
     _force_offline()
+    if name == "hanlp":
+        # 权重目录 = `HANLP_HOME`（HanLP 官方唯一开关：`io_util.hanlp_home()` 读它）。
+        # ⚠️ **不设**任何"离线开关"——HanLP 2.1.5 **没有**这类环境变量（本仓已更正过
+        #   `MTL_HANLP_OFFLINE` 的假绿灯）；"离线"由**权重已预置**保证：`download()` 会先
+        #   `os.path.isfile(save_path)` → 命中即"Using local … ignore …"，**根本不发起请求**。
+        os.environ["HANLP_HOME"] = path
+        alias = _hanlp_alias()
+        try:
+            import hanlp
+            import hanlp.utils.io_util as _iu
+        except Exception as e:
+            raise ModelUnavailable(name, f"hanlp 不可用：{type(e).__name__}: {e}", "pip install hanlp") from e
+        # ⚠️ **导入序守卫**（N-181）：hanlp 把权重根在**导入时**绑为函数默认参数
+        # （`download(url, save_dir=hanlp_home(), …)` / `get_resource(path, save_dir=hanlp_home(), …)`）。
+        # 若本进程**先** import 了 hanlp（例如先调用了别处的 probe 而未设 env）、**后**才设
+        # `HANLP_HOME`，库内默认值仍指向旧目录 → `hanlp.load()` 会**去联网下载**（本环境必失败并
+        # 重试数分钟，实测把 CI 的 pytest 顶到 600s 超时）。此处**显式拦下**并给出可执行指引，
+        # 把"静默联网重试"变成**快速、可解释的失败**（fail-closed，符合本仓降级可观测纪律）。
+        _baked = [
+            x for x in (_iu.download.__defaults__ or ()) if isinstance(x, str) and os.path.isabs(x)
+        ]
+        if _baked and os.path.abspath(_baked[0]) != os.path.abspath(path):
+            raise ModelUnavailable(
+                name,
+                f"hanlp 的权重根**已在导入时绑定**为 {_baked[0]}（期望 {path}）→ 继续加载会去联网下载",
+                "确保 `HANLP_HOME` 在**导入 hanlp 之前**生效：先经 `semantic_tools.probe('hanlp')`"
+                "（其 `probe.env` 会先设 env）或先设环境变量再 import",
+            )
+        try:
+            m = hanlp.load(alias)
+        except Exception as e:
+            raise ModelUnavailable(
+                name,
+                f"hanlp.load({alias}) 失败：{type(e).__name__}: {e}",
+                "核对 HANLP_HOME 下权重完整性（含 load_path 所指权重 zip）；"
+                "另一常见原因：setuptools>=81 已移除 `pkg_resources`（hanlp 2.1.5 仍用它）"
+                "→ `pip install 'setuptools<81'`",
+            ) from e
+        return _HanLPSegmenter(name, m, path, alias)
     if name == "ltp":
         try:
             from ltp import LTP
@@ -432,7 +578,12 @@ def load_segmenter(name: str = "ltp"):
         if patched:
             print(f"[semantic_models] 已注入 transformers 兼容垫片：{patched}")
         return _LTPSegmenter(name, m, path)
-    raise ModelUnavailable(name, f"分句后端 {name} 未实装加载适配", "目前支持 ltp；hanlp 待权重预置后再接")
+    # 目前实装：`ltp`（默认，`split_sentences(prefer="ltp")`）与 `hanlp`（N-181 已接：权重已预置）。
+    raise ModelUnavailable(
+        name,
+        f"分句后端 {name} 未实装加载适配",
+        "实装的后端：`ltp`（默认）与 `hanlp`；其它后端须先在 config/schema/semantic_tools.json 登记并补适配",
+    )
 
 
 # --------------------------------------------------------------------------

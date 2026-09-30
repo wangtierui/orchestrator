@@ -414,7 +414,7 @@ flowchart TD
   B -.->|"semantic:assist"| M_bge_base_zh["bge_base_zh<br/>已接线·默认关"]
   B -.->|"relations:gen"| M_bge_base_zh_relations["bge_base_zh<br/>未接线"]
   B -.->|"relations:gen"| M_deepke["deepke<br/>未接线"]
-  A -.->|"clauses"| M_hanlp["hanlp<br/>未就绪"]
+  B -.->|"relations:gen"| M_hanlp["hanlp<br/>已接线·默认关"]
   B -.->|"classify:all"| M_hdbscan["hdbscan<br/>未接线"]
   A -.->|"clauses"| M_ltp["ltp<br/>已接线·默认关"]
   D -.->|"OND"| M_paradedb["paradedb<br/>未就绪"]
@@ -431,14 +431,14 @@ flowchart TD
   classDef gated fill:#dbe9ff,stroke:#1565c0,stroke-width:1px
   classDef off fill:#f2f2f2,stroke:#8a8a8a,stroke-dasharray:4 2
   classDef notready fill:#ffe8cc,stroke:#e65100,stroke-width:1px
-  class M_bge_base_zh,M_ltp,M_text2vec,M_weknora_docreader,M_youtu_embedding gated
+  class M_bge_base_zh,M_hanlp,M_ltp,M_text2vec,M_weknora_docreader,M_youtu_embedding gated
   class M_bertopic,M_bge_base_zh_relations,M_deepke,M_hdbscan,M_umap,M_youtu_embedding_relations off
   class M_pgvector,M_sqlite_vec off
-  class M_hanlp,M_paradedb notready
+  class M_paradedb notready
   class M_signalgraph notready
 ```
 
-图例：**已接线 0** ／ **已接线·默认关 5** ／ **未接线 8** ／ **未就绪（权重未预置或未装）3** —— **未接线/未就绪的模型同样作为节点存在**，便于在链路上定位其将来挂接的位置（原因见 §8.3）。
+图例：**已接线 0** ／ **已接线·默认关 6** ／ **未接线 8** ／ **未就绪（权重未预置或未装）2** —— **未接线/未就绪的模型同样作为节点存在**，便于在链路上定位其将来挂接的位置（原因见 §8.3）。
 
 ### 8.2 逐步骤表（顺序 = `STEP_ORDER`；命令由 **AST** 自源码抽取）
 
@@ -495,7 +495,7 @@ flowchart TD
 | `bge_base_zh` | `semantic:assist` | 阶段2 | **全量首选嵌入**（P1-1 主题辅助裁定；`mode=full` 首选） | 就绪（依赖 + 权重实检通过） | **已接线**（`usage_policy.enabled=true`（配置开关）） | 降级 `text2vec`；再退关键词/规则判定（既有主题分类器） |
 | `bge_base_zh@relations`（`@`：同工具的第二用途） | `relations:gen` | 阶段2 | **关联语义档**（P1-2；`mode=full` 首选嵌入） | 就绪（依赖 + 权重实检通过） | 未接线（执行门面已就绪，待业务节点接入） | 降级 `text2vec`；再退既有正则关系抽取 |
 | `deepke` | `relations:gen` | 阶段2 | **知识抽取框架**（NER/关系抽取/属性抽取；P3-1，**替代原 aprcoie**） | 就绪（依赖 + 权重实检通过） | 未接线（执行门面已就绪，待业务节点接入） | 回退正则关系抽取（框架已就位但**微调权重未得**，见清单 `weights`；P3 可选，未启用不影响主链） |
-| `hanlp` | `clauses` | 阶段1 | 条文分句（**ltp 的二选一备选**；含 ML 原生分句能力） | **权重未预置** | 未接线（执行门面已就绪，待业务节点接入） | 用 `ltp`；两者皆不可用即用规则分句 |
+| `hanlp` | `relations:gen` | 阶段2 | 条文分句（P1-3 二选一后端之一；`split_sentences` 的 `prefer` **默认 `ltp`**） | 就绪（依赖 + 权重实检通过） | **已接线**（ML 分句**默认关闭**（`REG_ORCH_SEMANTIC_SPLIT=1` 才开）—— 改分句口径会改变条文/关系产物，须先在**可评样本**上量出 P/R（v2 纪律：无度量不上线）） | 用 `ltp`（默认）；两者皆不可用即回退确定性 `sentence_boundary.split_by` |
 | `hdbscan` | `classify:all` | 阶段2 | bertopic 的聚类依赖（**不单独使用**，无权重） | 就绪（依赖可用；无需外部权重） | 未接线（执行门面已就绪，待业务节点接入） | 随 bertopic 一并跳过 |
 | `ltp` | `clauses` | 阶段1 | 条文**分句增强**（分词锚切句；LTP 4.x 无原生分句 API，`basis_split=ltp_cws`） | 就绪（依赖 + 权重实检通过） | **已接线**（`REG_ORCH_SEMANTIC_SPLIT=1`（**默认关**）） | 回退 `sentence_boundary.split_by`（受控 SSOT，**逐字节对等**，零依赖） |
 | `paradedb` | **按需节点**（无独立链步骤；由 `pg:health` 披露、业务按需调用） | 阶段4 | 向量+BM25 混合检索（**已被 pgvector 替代**，可选外部后端） | **服务未部署** | 不适用（按需节点：无独立链步骤，由 `pg:health` 披露） | 使用 pgvector / sqlite_vec（**不建议随仓分发**：AGPL-3.0） |
@@ -508,7 +508,7 @@ flowchart TD
 | `youtu_embedding` | `semantic:assist` | 阶段2 | **增量/指定场景嵌入**（`mode=incremental` 首选；2B/2048 维） | 就绪（依赖 + 权重实检通过） | **已接线**（`usage_policy.enabled=true` + `--mode incremental`） | 降级 `bge_base_zh` → `text2vec`；再退关键词/规则判定 |
 | `youtu_embedding@relations`（`@`：同工具的第二用途） | `relations:gen` | 阶段2 | **关联语义档**（P1-2：依据/废止关系的语义近似判定） | 就绪（依赖 + 权重实检通过） | 未接线（执行门面已就绪，待业务节点接入） | 降级 `bge_base_zh` → `text2vec`；再退正则关系抽取 |
 
-合计 **16** 个模型节点（**已接线 0** ／ **已接线·默认关 5** ／ **未接线 8** ／ **未就绪 3**）—— 均已入图（§8.1）。
+合计 **16** 个模型节点（**已接线 0** ／ **已接线·默认关 6** ／ **未接线 8** ／ **未就绪 2**）—— 均已入图（§8.1）。
 
 #### 8.3.1 ⚠️ 未就绪环节（**依赖或权重缺失，单独标记**）
 
@@ -516,7 +516,6 @@ flowchart TD
 
 | 工具 | 挂接节点 | 方案项 | 就绪度 | 处置 |
 |---|---|---|---|---|
-| `hanlp` | `clauses` | v2 P1-3（分句/结构增强层） | **权重未预置** | 在**可达环境**下载权重后**迁入** `external/models/`（清单以 `local_dir` 声明，`probe` **实检目录**）；`HF_HOME`/`HANLP_HOME` 为可选覆盖 |
 | `paradedb` | **按需节点**（无独立链步骤；由 `pg:health` 披露、业务按需调用） | v2 P2-2（**须先做零服务替代评估**；且须同时覆盖 search_internal） | **服务未部署** | 在**可达环境**下载权重后**迁入** `external/models/`（清单以 `local_dir` 声明，`probe` **实检目录**）；`HF_HOME`/`HANLP_HOME` 为可选覆盖 |
 | `signalgraph` | `relations:gen` | v2 P3-2（可选；须先证明其**确定性**：同输入同输出） | 未装 | 按清单 `pypi`/`extra` 安装依赖（`pip install -e ".[semantic]"`） |
 
@@ -564,6 +563,7 @@ flowchart TD
 显式 `model="…"` **覆盖 mode**（优先级最高）；分句增强由 env `REG_ORCH_SEMANTIC_SPLIT=1` 控制（**默认关**，见 §8.6 第 2 条）。
 
 <!-- END GENERATED: 全链数据流总图 -->
+
 
 
 

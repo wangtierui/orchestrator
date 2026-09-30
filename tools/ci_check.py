@@ -118,7 +118,13 @@ def main(argv=None) -> int:
                 )
             )
         else:
-            plan.append(("pytest", [PY, "-m", "pytest", "tests", "--color=no", "-q"], 600))
+            # N-181（2026-09-30）：超时 **600 → 900**（与上方 `--cov` 分支一致）。
+            # 依据（实测）：全量 pytest **冷缓存 ≈ 684s**、热缓存 ≈ 460~470s（基线 457s）。
+            # 600s 会让**冷启动**（新克隆/久未跑/FS 缓存被冲掉）出现 rc=124 —— 而 rc=124 与
+            # "真实失败"在结果里**长得一样**，属**假红**：会诱导人去"修"并不存在的问题。
+            # ⚠️ 放宽的只是**时间预算**，pytest 仍是**阻断项**（rc 必须为 0）；用例集合与
+            # 覆盖率门槛（`fail_under`）均未放宽。
+            plan.append(("pytest", [PY, "-m", "pytest", "tests", "--color=no", "-q"], 900))
     plan.append(("gates", [PY, os.path.join(ROOT, "cli.py"), "gates"], 600))
     if a.cov and not a.fast:
         plan.append(("coverage", [PY, "-m", "coverage", "report"], 120))

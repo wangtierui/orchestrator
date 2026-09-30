@@ -1,28 +1,30 @@
 {
- "generated_at": "2026-09-30 19:22:24",
- "source": "supp",
- "limit": 40,
+ "generated_at": "2026-09-30 23:39:00",
+ "source": "all",
+ "limit": 200,
  "mode": "full",
  "status": "ok",
- "note": "最近邻裁定完成：40 条 × 10 主题；嵌入模型 = bge_base_zh（策略链 []）",
+ "note": "最近邻裁定完成：858 条 × 10 主题；嵌入模型 = bge_base_zh（策略链 []）",
  "policy_enabled": true,
- "records": 40,
+ "records": 858,
  "themes": 10,
  "agreement": null,
  "margin": {
-  "min": 0.0002,
-  "median": 0.0448,
+  "min": 0.0001,
+  "median": 0.0268,
   "max": 0.193
  },
  "distribution": {
-  "T9": 11,
-  "T1": 9,
-  "T6": 6,
-  "T7": 4,
-  "T5": 4,
-  "T10": 2,
-  "T2": 2,
-  "T4": 2
+  "T5": 236,
+  "T1": 150,
+  "T9": 148,
+  "T2": 88,
+  "T10": 84,
+  "T8": 63,
+  "T6": 42,
+  "T4": 29,
+  "T7": 15,
+  "T3": 3
  },
  "disagreements": [],
  "fingerprint": {
@@ -35,164 +37,164 @@
  "agreement_n": 0,
  "samples": [
   {
-   "source": "supp",
-   "key": "b48e708cc202e00469e8c07a85e52df84b2b958e5adb554edc1f5099adaf658e",
-   "title": "中国保监会关于落实《保险销售行为可回溯管理暂行办法》有关事项的通知",
+   "source": "gov",
+   "key": "65fe9876821229767472cdbe8c1ca4d3a77e6bdb837a30fa2d30a5ab0c3b7cda",
+   "title": "住房公积金管理条例",
+   "suggested": "T1",
+   "similarity": 0.4154,
+   "margin": 0.0023
+  },
+  {
+   "source": "gov",
+   "key": "84dbc587790f27da4e8bf56f738b307550276c5af02ffa86e780dbdd4db974c2",
+   "title": "消耗臭氧层物质管理条例",
+   "suggested": "T1",
+   "similarity": 0.3268,
+   "margin": 0.0049
+  },
+  {
+   "source": "gov",
+   "key": "a52c1cc13f4febca8f1492ffbc66972515013eeff6a69c66b9029ca311783e7b",
+   "title": "碳排放权交易管理暂行条例",
+   "suggested": "T4",
+   "similarity": 0.4442,
+   "margin": 0.0573
+  },
+  {
+   "source": "gov",
+   "key": "6922e636f087542372bc35dbe8c5659329040284ac1f9edff831c84c52e3ee56",
+   "title": "民用建筑节能条例",
+   "suggested": "T5",
+   "similarity": 0.3502,
+   "margin": 0.0182
+  },
+  {
+   "source": "gov",
+   "key": "1e63a39140c0dea9c104c0e9ef4916f81cdcbced8025ea306619974556424105",
+   "title": "城镇排水与污水处理条例",
+   "suggested": "T5",
+   "similarity": 0.3165,
+   "margin": 0.0119
+  },
+  {
+   "source": "gov",
+   "key": "f6fc35d2c83763fc055a46601936edd6f8579ddbb6190f4654700684ccb25a3f",
+   "title": "生态环境监测条例",
    "suggested": "T9",
-   "similarity": 0.5259,
-   "margin": 0.0356
+   "similarity": 0.3642,
+   "margin": 0.0056
   },
   {
-   "source": "supp",
-   "key": "6b09179eaacf8ce8181b9823a761741acdee4b99f9ab5b467d67765102f89954",
-   "title": "中国银保监会办公厅关于进一步加强消费投诉处理工作的通知",
-   "suggested": "T9",
-   "similarity": 0.5245,
-   "margin": 0.047
-  },
-  {
-   "source": "supp",
-   "key": "f39d857b6dd4088aad6637b7bd3c561b07a0b26ccbaeec93784c4c02e0f0be4b",
-   "title": "关于规范人身保险公司银行代理渠道业务有关事项的通知",
-   "suggested": "T9",
-   "similarity": 0.4905,
-   "margin": 0.0007
-  },
-  {
-   "source": "supp",
-   "key": "fdea923b5a6888b6442c658f85bbfac6d084e57f157f77b6c775dfed02f76a95",
-   "title": "国家金融监督管理总局办公厅关于进一步加强金融机构营销行为管理的通知",
+   "source": "gov",
+   "key": "1aa10abd4c9b8389af367fe30266eb866277d2bcf4b0ccad581256171c803815",
+   "title": "中华人民共和国进出口商品检验法实施条例",
    "suggested": "T1",
-   "similarity": 0.5312,
-   "margin": 0.0483
+   "similarity": 0.4348,
+   "margin": 0.0574
   },
   {
-   "source": "supp",
-   "key": "4b853233fb3ba8dddda2c4572c8990e1b78049c9066188c69da27b40b4f03dbe",
-   "title": "中国保监会关于保险中介从业人员管理有关问题的通知",
-   "suggested": "T1",
-   "similarity": 0.5336,
-   "margin": 0.061
+   "source": "gov",
+   "key": "d886d498e21ed3c7ffb194cbc796da38ab10142f8b1be114891f340314dfdaf7",
+   "title": "地下水管理条例",
+   "suggested": "T5",
+   "similarity": 0.3767,
+   "margin": 0.0244
   },
   {
-   "source": "supp",
-   "key": "29ca59ba43f4165b2995ad64bc1640e71088ac789420849434ddb6627ead8ae0",
-   "title": "关于加强保险公司中介业务管理的通知",
-   "suggested": "T1",
-   "similarity": 0.4944,
-   "margin": 0.0215
+   "source": "gov",
+   "key": "594461e945008905f90a990455fc04120a945bfcde5257c5c41a494379e5e76a",
+   "title": "南水北调工程供用水管理条例",
+   "suggested": "T5",
+   "similarity": 0.3883,
+   "margin": 0.0213
   },
   {
-   "source": "supp",
-   "key": "d3cd89909f907249f95a9e8709b9b70df379358e09ca26fc0f82c903d66a328c",
-   "title": "中国银行保险监督管理委员会关于加强自媒体保险营销宣传行为管理的通知",
-   "suggested": "T1",
-   "similarity": 0.4882,
-   "margin": 0.0411
-  },
-  {
-   "source": "supp",
-   "key": "a74ab800838ab6f3b6d472c7e36b86588cf764a7986115374ecf2b2ca3133d05",
-   "title": "中国银保监会办公厅关于坚决杜绝保险机构及从业人员违规销售非保险金融产品的通知",
-   "suggested": "T1",
-   "similarity": 0.4748,
-   "margin": 0.0079
-  },
-  {
-   "source": "supp",
-   "key": "93917ceb7f97e72871cbce74d7b2b0803a1d92594b7b7afb77648de2121b7c97",
-   "title": "中国银保监会办公厅关于开展保险公司销售从业人员执业登记数据清核工作的通知",
-   "suggested": "T1",
-   "similarity": 0.5584,
-   "margin": 0.0451
-  },
-  {
-   "source": "supp",
-   "key": "47c563b5d514e2bcf6aeabd4e914661992171346b3d2d262961154c8b5d89c55",
-   "title": "中国银保监会办公厅关于发展独立个人保险代理人有关事项的通知",
-   "suggested": "T1",
-   "similarity": 0.4584,
-   "margin": 0.0136
-  },
-  {
-   "source": "supp",
-   "key": "f960fe628856665968738d89713fe24ea3804bb76cd48974e8e00131cdc70943",
-   "title": "中国银保监会办公厅关于做好短期健康保险业务客户服务工作的通知",
-   "suggested": "T6",
-   "similarity": 0.4889,
-   "margin": 0.0552
-  },
-  {
-   "source": "supp",
-   "key": "691a2b976fe063d6bf11f701477e3e8bfab6e09c0c75080589e77bba85061049",
-   "title": "中国银保监会办公厅关于深入开展人身保险市场乱象治理专项工作的通知",
-   "suggested": "T9",
-   "similarity": 0.5211,
-   "margin": 0.0777
-  },
-  {
-   "source": "supp",
-   "key": "8b5a3c74f85abe27372464cf4e9e3132c84fbc53ba5f5db26061bffedb520a78",
-   "title": "中国银保监会办公厅关于开展银行保险机构侵害个人信息权益乱象专项整治工作的通知",
+   "source": "gov",
+   "key": "328d1c2d99555e24b24f7dea4b31f703ba7b6020c6d94460fd4f56c395d91830",
+   "title": "病原微生物实验室生物安全管理条例",
    "suggested": "T10",
-   "similarity": 0.5781,
-   "margin": 0.0465
+   "similarity": 0.3328,
+   "margin": 0.0169
   },
   {
-   "source": "supp",
-   "key": "f533077ef26ede969909b9ab4d996d2055352c18f150ad0508dbd504168c6882",
-   "title": "中国银保监会办公厅关于推广人身保险电子化回访工作的通知",
+   "source": "gov",
+   "key": "965328b4d04168feb3fae2b031aff6e0d8e8db28b643e4b2abf21821a1e5944d",
+   "title": "黄河水量调度条例",
    "suggested": "T9",
-   "similarity": 0.5547,
-   "margin": 0.0709
+   "similarity": 0.3344,
+   "margin": 0.0102
   },
   {
-   "source": "supp",
-   "key": "f460c6b11d539c34014c3b82acad59b8d5781337c0496fdb9293e4aedf59e9cd",
-   "title": "关于银保产品管理有关事宜的通知",
+   "source": "gov",
+   "key": "1985a6da58d090a6622bfb5b99f5599f879fc060074c6a15bc7097d99df0baa9",
+   "title": "快递暂行条例",
+   "suggested": "T1",
+   "similarity": 0.369,
+   "margin": 0.0212
+  },
+  {
+   "source": "gov",
+   "key": "4ced5e1afb74f3eb4817865a92ce01938de0eb9fd184bd23b2917875e1b50614",
+   "title": "全国污染源普查条例",
+   "suggested": "T10",
+   "similarity": 0.3623,
+   "margin": 0.0045
+  },
+  {
+   "source": "gov",
+   "key": "eb165caa95e69ff259f2f857295fc814a32705e0204811006160faa3549a5013",
+   "title": "集成电路布图设计保护条例",
    "suggested": "T2",
-   "similarity": 0.5411,
-   "margin": 0.0235
+   "similarity": 0.3744,
+   "margin": 0.0429
   },
   {
-   "source": "supp",
-   "key": "b98fbbfe4cf33bc821d11f20689b72107102a22bea06a376efdde43279f6ff11",
-   "title": "关于强化管理促进人身险业务平稳健康发展的通知",
-   "suggested": "T6",
-   "similarity": 0.5031,
-   "margin": 0.0057
-  },
-  {
-   "source": "supp",
-   "key": "2cd30fef6a75a33450c4be99f521beb5dced0ef7dee18f3773f201c9e4c38b0e",
-   "title": "中国保险监督管理委员会关于单位能否为员工投保个人保险产品的复函",
-   "suggested": "T9",
-   "similarity": 0.4905,
+   "source": "gov",
+   "key": "bb29802cae81f5f06f0120eaf58c326ea946aa37e68232d36696920449fd2d27",
+   "title": "国务院关于出境入境管理的规定",
+   "suggested": "T1",
+   "similarity": 0.3719,
    "margin": 0.0218
   },
   {
-   "source": "supp",
-   "key": "7d5f7141e08c350eebab9353c5471748e94de9d5da6732fb07b9cf1356497c8c",
-   "title": "中国保险监督管理委员会关于意外险出单管理有关问题的复函",
+   "source": "gov",
+   "key": "4cef1fb22a1c9a89e2a1d46a53eea361f0b85b5e32824089806edbc30977b5e0",
+   "title": "退役军人就业创业促进条例",
+   "suggested": "T1",
+   "similarity": 0.4624,
+   "margin": 0.0827
+  },
+  {
+   "source": "gov",
+   "key": "8297174cc42b0e21f780f8b4842868ecc0789f5586ac814b4dfcda966506c3f4",
+   "title": "行政法规制定程序条例",
    "suggested": "T9",
-   "similarity": 0.5299,
-   "margin": 0.0995
+   "similarity": 0.4633,
+   "margin": 0.0308
   },
   {
-   "source": "supp",
-   "key": "c1200ad67904ea534e0ba5ff1d0da5ea2ac01cc33ab1b7ce45e229bc02aed2bc",
-   "title": "中国银保监会办公厅关于进一步做好银行业保险业反洗钱和反恐怖融资工作的通知",
-   "suggested": "T7",
-   "similarity": 0.6459,
-   "margin": 0.193
+   "source": "gov",
+   "key": "ee92d13ac57e78e49b35630a7881760eb5d750cb50272a19bb5adbf23fe1f85e",
+   "title": "中华人民共和国矿产资源法实施条例",
+   "suggested": "T5",
+   "similarity": 0.3937,
+   "margin": 0.0408
   },
   {
-   "source": "supp",
-   "key": "2b38461e402949e28ce9fc23a7808b333143e503aeed27129de622b4d0dbbd50",
-   "title": "中国银保监会关于印发保险公司关联交易管理办法的通知",
-   "suggested": "T4",
-   "similarity": 0.56,
-   "margin": 0.05
+   "source": "gov",
+   "key": "9381d4492eed0977f280938cbc91fcef470499c1acb2ebd61547e766b940d23d",
+   "title": "国务院关于对外投资的规定",
+   "suggested": "T5",
+   "similarity": 0.4576,
+   "margin": 0.1026
+  },
+  {
+   "source": "gov",
+   "key": "d4b6480d80ae3af32e991fff5eec97786594818dc00f969ebc5d8c8d90492c6c",
+   "title": "中华人民共和国行政复议法实施条例",
+   "suggested": "T9",
+   "similarity": 0.4159,
+   "margin": 0.0049
   }
  ]
 }

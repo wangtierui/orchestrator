@@ -251,9 +251,14 @@ MODEL_BINDINGS: dict = {
         "down": "回退 `sentence_boundary.split_by`（受控 SSOT，**逐字节对等**，零依赖）",
     },
     "hanlp": {
-        "step": "clauses", "stage": "阶段1", "wired": False,
-        "role": "条文分句（**ltp 的二选一备选**；含 ML 原生分句能力）",
-        "down": "用 `ltp`；两者皆不可用即用规则分句",
+        # N-181：**绑定改指真实调用点** —— 原绑 `clauses`，而 `STEP_ORDER` **无此节点**
+        # （纸面绑定）。真实路径：`relations:gen` → `relations.py` →
+        # `semantic_enhance.split_sentences(prefer=…)` → `semantic_models.load_segmenter(prefer)`。
+        "step": "relations:gen", "stage": "阶段2", "wired": True,
+        "gate": "ML 分句**默认关闭**（`REG_ORCH_SEMANTIC_SPLIT=1` 才开）—— 改分句口径会改变"
+                "条文/关系产物，须先在**可评样本**上量出 P/R（v2 纪律：无度量不上线）",
+        "role": "条文分句（P1-3 二选一后端之一；`split_sentences` 的 `prefer` **默认 `ltp`**）",
+        "down": "用 `ltp`（默认）；两者皆不可用即回退确定性 `sentence_boundary.split_by`",
     },
     "weknora_docreader": {
         # N-180：**绑定改指真实调用点** —— 原绑 `clean`（阶段1）而该节点**没有 docreader 调用点**
