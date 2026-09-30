@@ -66,6 +66,9 @@ def lint_hardcoded(root: str = ROOT) -> list[tuple[str, int, str]]:
 def run():
     findings = lint_hardcoded()
     return (not findings), {
+        # N-168：统一 detail 契约（追加 `problems`；既有键保留）
+        "problems": [f"{f}:{line_no}: {text}" for f, line_no, text in findings[:30]],
+        "warnings": [],
         "count": len(findings),
         "examples": [f"{f}:{line_no}: {text}" for f, line_no, text in findings[:10]],
     }

@@ -97,7 +97,11 @@ ALL_GATES: list[dict] = [
     # 口径修正（v2 §3.8 表 A/B 的门禁计数不一致）：原计划"新增 6 道"，
     # 其中 `gate_module_registry` 与 `gate_cross_module_data` 实际以**判据**形式
     # 落在 `gate_config_integrity`（B2）与 `gate_no_cross_module_import`（判据 D，P1-3）中，
-    # 不单独计数；因此本次新增 **4 道**，总数为 22。
+    # 不单独计数；因此本次新增 **4 道**（当时总数 22）。
+    #
+    # ⚠️ **门禁总数以 `ALL_GATES` 长度为准（唯一事实源），此处不重复维护计数** ——
+    #    实测曾因「新增门禁未更新本注释」留下 **22 vs 实际 23** 的文档漂移
+    #    （`tools/audit_health.py`「门禁失效」判据会机器核验「注释里写的总数」，勿再写死）。
     {
         "module": "gates.gate_config_integrity",
         "desc": "配置与清单一致性（tools 清单 J1–J6/结构清单/退出码）",

@@ -231,6 +231,28 @@ def check_gates() -> list:
                 "detail": f"**注册表指向不存在模块** {ghost}（运行即 ImportError 或静默跳过）",
             }
         )
+    # N-168（2026-09-30）**声明计数核验**：门禁总数以 `ALL_GATES` 长度为准（唯一事实源）。
+    # 实测曾留下「注释写"总数为 22"、实际 23」的**文档漂移**（由独立侦察发现，非本审计发现）——
+    # 该类漂移**不会报错**，只会让人按错的数量理解覆盖范围。故凡注释里写死总数，一律与 SSOT 比对。
+    init_txt = _read(os.path.join(ROOT, "gates", "__init__.py"))
+    try:
+        n_live = len(ALL_GATES)
+    except Exception:  # noqa: BLE001  ALL_GATES 不可用已在上方披露
+        n_live = -1
+    if n_live >= 0:
+        for m in re.finditer(r"总数为\s*(\d+)", init_txt):
+            declared = int(m.group(1))
+            if declared != n_live:
+                line = init_txt[: m.start()].count("\n") + 1
+                f.append(
+                    {
+                        "cat": "门禁失效",
+                        "sev": "HIGH",
+                        "where": f"gates/__init__.py:{line}",
+                        "detail": f"注释声明的门禁总数 {declared} ≠ 实际 ALL_GATES={n_live}"
+                        "（文档漂移；总数应**指向 ALL_GATES** 而非写死）",
+                    }
+                )
 
     # 静默吞错：`except ...: pass` 且函数体只有 pass → 该判据永不报错
     for p in _pyfiles():
@@ -554,7 +576,12 @@ def check_readme_consistency() -> list:
         "config/schema/semantic_tools.json",
         "interfaces/contract.py",
     ):
-        if rel in txt and not os.path.exists(os.path.join(ROOT, rel)):
+        #  ⚠️ 判据修正（N-168）：**含「废弃/历史/旧路径」标记的行不报** —— 否则"说明某路径
+        #  已废弃、以 §8 为准"的**必要注记**会被判成"文档指向空气"（实测误报 1 项；把正确做法
+        #  判成错误 → 会逼人删掉那条注记，反而让读者失去迁移指引）。
+        _DEPRECATED_MARKS = ("已废弃", "已删除", "历史", "旧路径", "以本文档 §8 为准", "不单独成文件")
+        _live = [ln for ln in txt.splitlines() if rel in ln and not any(k in ln for k in _DEPRECATED_MARKS)]
+        if _live and not os.path.exists(os.path.join(ROOT, rel)):
             f.append(
                 {
                     "cat": "README 一致性",

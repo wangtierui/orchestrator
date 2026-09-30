@@ -157,6 +157,10 @@ def run():
     py_hits = sum(1 for f in findings if f[0].endswith(".py"))
     passed = not findings
     detail = {
+        # N-168：统一 detail 契约 —— 各门禁**至少含 `problems` 键**（本判据原用
+        # `count/py_count/...`，跨消费方需各自容错）。**追加**而非替换：既有键全部保留。
+        "problems": [f"{f}:{line_no}: {text}" for f, line_no, text in findings[:30]],
+        "warnings": [],
         "count": len(findings),
         "py_count": py_hits,
         "non_py_count": len(findings) - py_hits,

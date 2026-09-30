@@ -196,6 +196,9 @@ def run():
     new = [f for f in findings if f["key"] not in BASELINE]
     stale = sorted(set(BASELINE) - {f["key"] for f in findings})
     detail = {
+        # N-168：统一 detail 契约（追加 `problems`；既有键保留）
+        "problems": [f"{f['key']} [{f['pattern']}] {f['text']}" for f in new][:30],
+        "warnings": [],
         "checked_modules": list(MODULES),
         "findings": len(findings),
         "new": [f"{f['key']} [{f['pattern']}] {f['text']}" for f in new][:20],
