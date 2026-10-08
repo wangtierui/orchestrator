@@ -37,34 +37,51 @@ def flatten_text(v):
 
 
 def sanitize_csv(path: str) -> int:
-    """消除 CSV 所有字段值内部换行；保持 UTF-8 BOM 与列结构。返回数据行数。"""
-    with open(path, encoding="utf-8-sig", newline="") as f:
-        rows = list(csv.reader(f))
-    if not rows:
+    """消除 CSV 所有字段值内部换行；保持 UTF-8 BOM 与列结构。返回数据行数。
+
+    N-199（2026-10-09）**改流式 + 原子写**（原实现两处缺陷）：
+      ① **内存**：`rows = list(csv.reader(f))` 把整表载入（gov cleaned CSV 588MB，对象膨胀后远超）；
+         本函数在 `run_clean_pipeline` 里是**无条件执行**（交付展示态的硬保证）⇒ 属热路径 ✓
+         现改为「逐行读 → 归一 → 逐行写 .tmp」，峰值与语料体积解耦。
+      ② **原子性**：原实现**就地覆写**同一文件 —— 中途被中断即**损坏交付产物**（且 clean 步无备份）；
+         现写 `.tmp` 后 `os.replace` 原子替换（与仓内其它产物一致）。
+    """
+    tmp = path + ".tmp"
+    n = 0
+    with open(path, encoding="utf-8-sig", newline="") as f, \
+            open(tmp, "w", encoding="utf-8-sig", newline="") as out:
+        rd = csv.reader(f)
+        w = csv.writer(out, lineterminator="\r\n")
+        wrote_header = False
+        for i, row in enumerate(rd):
+            if i == 0:
+                w.writerow(row)
+                wrote_header = True
+                continue
+            w.writerow([flatten_text(c) for c in row])
+            n += 1
+    if not wrote_header:          # 空文件：不替换（保持原行为：不产生空覆盖）
+        try:
+            os.remove(tmp)
+        except OSError:
+            pass
         return 0
-    header, data = rows[0], rows[1:]
-    out = [header]
-    for row in data:
-        out.append([flatten_text(c) for c in row])
-    with open(path, "w", encoding="utf-8-sig", newline="") as f:
-        w = csv.writer(f, lineterminator="\r\n")
-        w.writerows(out)
-    return len(data)
+    os.replace(tmp, path)
+    return n
 
 
 def sanitize_jsonl(path: str) -> int:
-    """（可选）消除 JSONL 所有字符串值内部换行。返回记录数。"""
-    recs = []
-    with open(path, encoding="utf-8") as f:
+    """（可选）消除 JSONL 所有字符串值内部换行。返回记录数（N-199：流式 + 原子写）。"""
+    tmp = path + ".tmp"
+    n = 0
+    with open(path, encoding="utf-8") as f, open(tmp, "w", encoding="utf-8") as out:
         for line in f:
-            line = line.strip()
-            if line:
-                recs.append(json.loads(line))
-    recs = [flatten_text(r) for r in recs]
-    with open(path, "w", encoding="utf-8") as f:
-        for r in recs:
-            f.write(json.dumps(r, ensure_ascii=False) + "\n")
-    return len(recs)
+            if not line.strip():
+                continue
+            out.write(json.dumps(flatten_text(json.loads(line)), ensure_ascii=False) + "\n")
+            n += 1
+    os.replace(tmp, path)
+    return n
 
 
 def main(argv=None) -> int:

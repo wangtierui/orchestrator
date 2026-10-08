@@ -147,8 +147,17 @@ def main(argv=None) -> int:
             from std_lib.scraper_std.schema_validation import (
                 check_unique_dedup_keys as _cdk,
             )
-            _recs = [json.loads(ln) for ln in open(_jl0, encoding="utf-8") if ln.strip()]
-            _ok, _dups = _cdk(_recs)
+            # N-199（2026-10-09）：**改流式**——原实现 `[json.loads(ln) for ln in open(_jl0)]`
+            # 把整份 cleaned jsonl 载入内存（gov 1.13GB ≈ 2.4GB 常驻）**只为统计 `dedup_key` 重复**；
+            # `check_unique_dedup_keys` 实际只用 `rec["dedup_key"]` 与序号 ⇒ 逐行产出**最小记录**即可，
+            # 峰值与语料体积解耦（仅保留计数字典与重复项的序号列表）。
+            def _iter_dedup_keys(path: str):
+                with open(path, encoding="utf-8") as _fh:
+                    for _line in _fh:
+                        if _line.strip():
+                            yield {"dedup_key": (json.loads(_line).get("dedup_key") or "")}
+
+            _ok, _dups = _cdk(_iter_dedup_keys(_jl0))
             if _dups:
                 _d0 = _dups[0]
                 _msg = (f"dedup 唯一性：{len(_dups)} 组重复键"

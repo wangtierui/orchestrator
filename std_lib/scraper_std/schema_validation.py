@@ -19,6 +19,7 @@ from __future__ import annotations
 import datetime as _dt
 import logging
 import re
+from collections.abc import Iterable
 from typing import Any
 
 LOG = logging.getLogger("scraper_std.schema_validation")
@@ -233,7 +234,7 @@ class NullThresholdMonitor:
         return allow, rates
 
 
-def check_unique_dedup_keys(records: list[dict]) -> tuple[bool, list[dict]]:
+def check_unique_dedup_keys(records: Iterable[dict]) -> tuple[bool, list[dict]]:
     """批量唯一性校验：`dedup_key` 是**唯一业务主键**（SSOT，v2 §2.3.2 曾标记"无唯一性校验"）。
 
     同一批次内重复 → 返回 (False, duplicates)，供 clean 管道/门禁据以告警或隔离。

@@ -64,6 +64,61 @@ REVIEW = os.path.join(ROOT, "timeliness_review")
 CLEANED = os.path.join(ROOT, "data", "cleaned")
 BACKUP_ROOT = os.path.join(ROOT, "backups")
 
+#: 备份快照**每组（tag, 源）保留份数**（N-197，2026-10-09）。
+#: 为何必须有上限：本步每次回写都落一份**全量快照**（gov 单份 ≈1.68GB jsonl + 588MB csv）
+#: —— 实测 09-20~10-08 累积 **20.71GB / 100 目录**；而 `tools/retention.py` 的 `_plan_dir`
+#: 只处理**文件**（`os.path.isfile`）⇒ **目录型快照从未被任何策略回收**（长期静默增长）。
+#: 保留数 **1**：与同仓 N-100「分组保留 1 份」口径一致（`retention.py` 的 `clean_quarantine_stale`）
+#: —— "回滚点"只需"最近一次写回之前的状态"，更早的已被后续快照覆盖，无独立价值。
+BACKUP_KEEP = 1
+
+
+def _snapshot_source(d: str) -> str:
+    """取快照目录所属**源**（目录内文件名形如 `{src}_cleaned_<date>.jsonl/.csv`）。"""
+    try:
+        for f in os.listdir(d):
+            m = re.match(r"([a-z]+)_cleaned_", f)
+            if m:
+                return m.group(1)
+    except OSError:
+        pass
+    return "?"
+
+
+def _cleanup_backups(keep: int = BACKUP_KEEP) -> list[str]:
+    """按 **(tag, 源)** 保留最新 `keep` 份快照，其余删除（返回被删目录名供审计）。
+
+    ⚠️ 分组口径的两次修正（均由 dry-run 实测暴露，务必保留注释）：
+      ① 不能**按目录全局计数**：一次链式回写对**5 个源各建一个目录**（各自时间戳，跨度 10~20 分钟）
+         ⇒ "保留最新 N 个目录"会在**同一次运行内**把本批最先建的 gov 快照（≈1.68GB）当场删掉；
+      ② 也不能只按 tag 的**时间簇**：同日多次运行（如 09-30 三次）间隔仅 1~2 分钟，与
+         "一次运行内各源之间的间隔"不可区分 ⇒ 会被并成一批。
+      最终口径：**按 (tag, 源) 分组、组内按时间保留最新 `keep` 份**——回滚需求本就是"按源回滚"，
+      分组与需求同构，且对运行次数/间隔不敏感（无歧义）。
+    容错：任何删除失败只忽略（备份清理**不得**阻断回写主流程）。
+    """
+    groups: dict[tuple[str, str], list[tuple[float, str]]] = {}
+    for d in glob.glob(os.path.join(BACKUP_ROOT, "cleaned_before_*")):
+        if not os.path.isdir(d):
+            continue
+        m = re.match(r"cleaned_before_(.+)_(\d{8}_\d{6})$", os.path.basename(d))
+        key = (m.group(1) if m else os.path.basename(d), _snapshot_source(d))
+        try:
+            ts = datetime.datetime.strptime(m.group(2), "%Y%m%d_%H%M%S").timestamp() if m else os.path.getmtime(d)
+        except (ValueError, OSError):
+            ts = os.path.getmtime(d)
+        groups.setdefault(key, []).append((ts, d))
+    removed: list[str] = []
+    for items in groups.values():
+        items.sort(reverse=True)                      # 新 → 旧
+        for _ts, old in items[keep:]:
+            try:
+                shutil.rmtree(old, ignore_errors=True)
+                removed.append(os.path.basename(old))
+            except OSError:
+                continue
+    return removed
+
 # 受控枚举（唯一事实源 config.enums，禁硬编码副本）——非规范值一律不回写
 from config.enums import TIMELINESS_STATUS
 
@@ -183,16 +238,11 @@ def writeback_source(source: str, fields_for, *, dry_run: bool = False,
     if not os.path.exists(jf):
         return {"source": source, "reason": "无 cleaned 产物"}
 
-    recs = []
-    with open(jf, encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if line:
-                recs.append(json.loads(line))
-
-    stat: dict = {"source": source, "total": len(recs), "skipped": 0,
+    stat: dict = {"source": source, "total": 0, "skipped": 0,
             "written": 0, "unchanged": 0, "status_derived": 0}
-    for r in recs:
+
+    def _apply_one(r: dict) -> None:
+        """就地应用单条（原逐条逻辑不变；抽出以便**流式**复用）。"""
         fields = fields_for(r)
         if not fields:
             # H-07 全量派生：status 恒等于 timeliness_status（未核验时同为空——不再是假判据；
@@ -202,7 +252,7 @@ def writeback_source(source: str, fields_for, *, dry_run: bool = False,
                 r["status"] = _ns
                 stat["status_derived"] += 1
             stat["skipped"] += 1
-            continue                       # 无核验结果 / 状态歧义 → 三字段保持原值（空）
+            return                         # 无核验结果 / 状态歧义 → 三字段保持原值（空）
         before = tuple(r.get(k, "") for k in TARGET_FIELDS) + (r.get("status", ""),)
         for k in TARGET_FIELDS:
             r[k] = fields.get(k, "") or ""
@@ -214,9 +264,28 @@ def writeback_source(source: str, fields_for, *, dry_run: bool = False,
         else:
             stat["unchanged"] += 1
 
+    # —— N-198（2026-10-09）**改流式**：原实现把 jsonl（gov 1.13GB）与 csv（gov 588MB）**各全量载入**
+    #    （`recs` 列表 + `rows = list(rd)`）——实测 `apply:gov` **峰值 RSS 2.65GB**（13k 条 × ~90KB 正文）。
+    #    现改为「逐行读 → 就地改 → 逐行写 .tmp」：峰值与语料体积**解耦**（只与单条大小相关），
+    #    并使低内存机器/swap 压力显著下降。**口径与顺序保持逐字等价**（备份仍取"改动前"的 jf）。
+    tmp = jf + ".tmp"
     if dry_run:
+        with open(jf, encoding="utf-8") as f:
+            for line in f:
+                if line.strip():
+                    stat["total"] += 1
+                    _apply_one(json.loads(line))
         stat["dry_run"] = True
         return stat
+
+    with open(jf, encoding="utf-8") as f, open(tmp, "w", encoding="utf-8") as out:
+        for line in f:
+            if not line.strip():
+                continue
+            stat["total"] += 1
+            r = json.loads(line)
+            _apply_one(r)
+            out.write(json.dumps(r, ensure_ascii=False) + "\n")
 
     # 备份
     if not no_backup:
@@ -228,37 +297,50 @@ def writeback_source(source: str, fields_for, *, dry_run: bool = False,
             if os.path.exists(p):
                 shutil.copy2(p, os.path.join(bdir, os.path.basename(p)))
         stat["backup"] = bdir
+        # N-197：快照保留上限（每组 BACKUP_KEEP 份）——防"每步 2GB × 无上限"静默涨满磁盘
+        _pruned = _cleanup_backups()
+        if _pruned:
+            stat["backup_pruned"] = _pruned
+            LOG.info("备份快照超出保留上限（每组 %d 份）→ 清理 %d 个：%s",
+                     BACKUP_KEEP, len(_pruned), ", ".join(_pruned[:6]))
 
-    # 写 jsonl（原子）
-    tmp = jf + ".tmp"
-    with open(tmp, "w", encoding="utf-8") as f:
-        for r in recs:
-            f.write(json.dumps(r, ensure_ascii=False) + "\n")
+    # 写 jsonl（原子）：tmp 已在上面**流式**写完，此处只做替换
     os.replace(tmp, jf)
 
-    # 写 csv（按行号与 jsonl 对齐，保持列序与 BOM）
+    # 写 csv（**流式双读**：按行号与 jsonl 对齐，保持列序与 BOM）
+    # N-198：原实现在此 `rows = list(rd)` 把 588MB 的 CSV 整表载入（与 recs 叠加成峰值主因之一）；
+    # 现与已写好的 jsonl **同步逐行读**：第 i 行 CSV ↔ 第 i 条 jsonl（两轨同源同序，索引对齐不变），
+    # 逐行改写后写入 .tmp；行数不一致时**丢弃 .tmp 并保留原 CSV**（与原语义一致）。
     if os.path.exists(cf):
-        with open(cf, encoding="utf-8-sig", newline="") as f:
-            rd = csv.DictReader(f)
-            fields = rd.fieldnames or []
-            rows = list(rd)
-        if len(rows) != len(recs):
-            stat["csv_warn"] = "行数不一致(%d vs %d)，跳过 CSV" % (len(rows), len(recs))
+        ctmp = cf + ".tmp"
+        n_csv = 0
+        with open(cf, encoding="utf-8-sig", newline="") as fin, \
+                open(jf, encoding="utf-8") as fj, \
+                open(ctmp, "w", encoding="utf-8-sig", newline="") as fout:
+            rd = csv.DictReader(fin)
+            cfields = rd.fieldnames or []
+            w = csv.DictWriter(fout, fieldnames=cfields, extrasaction="ignore")
+            w.writeheader()
+            for row in rd:
+                n_csv += 1
+                line = fj.readline()
+                if line.strip():
+                    r = json.loads(line)
+                    for k in TARGET_FIELDS:
+                        if k in cfields:
+                            row[k] = r.get(k, "")
+                    # H-07：status 派生同步（CSV 轨，与 jsonl 一致）
+                    if "status" in cfields:
+                        row["status"] = r.get("status", "")
+                w.writerow(row)
+        if n_csv != stat["total"]:
+            stat["csv_warn"] = "行数不一致(%d vs %d)，跳过 CSV" % (n_csv, stat["total"])
+            try:
+                os.remove(ctmp)
+            except OSError:
+                pass
         else:
-            for i, r in enumerate(recs):
-                for k in TARGET_FIELDS:
-                    if k in fields:
-                        rows[i][k] = r.get(k, "")
-                # H-07：status 派生同步（CSV 轨，与 jsonl 一致）
-                if "status" in fields:
-                    rows[i]["status"] = r.get("status", "")
-            tmp = cf + ".tmp"
-            with open(tmp, "w", encoding="utf-8-sig", newline="") as f:
-                w = csv.DictWriter(f, fieldnames=fields, extrasaction="ignore")
-                w.writeheader()
-                for row in rows:
-                    w.writerow(row)
-            os.replace(tmp, cf)
+            os.replace(ctmp, cf)
     return stat
 
 

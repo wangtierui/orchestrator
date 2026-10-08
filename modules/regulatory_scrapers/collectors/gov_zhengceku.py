@@ -562,6 +562,24 @@ class ZhengcekuScraper:
         budget = float(getattr(cfg, "max_seconds", 0.0) or 0.0)
         if backfill:
             LOG.info("【backfill】历史存量补全模式：不早停，将扫完全部列表页")
+            # R-C 处置（2026-10-09）：**待补为 0 时直接短路**——补全模式的唯一目的是补正文，
+            # 而"待补集"在**离线**即可由主库判定（known_urls − seen_urls，二者均来自旁路索引/主库）。
+            # 实测（批 45）：主库 13178 条**全部已有正文** ⇒ 原实现仍会空扫 629 页（约 25 分钟/次）。
+            # 注意：仅在 `known_urls` 非空（即由调用方传入）时短路——否则无从判断，保持原行为。
+            _pending_possible = self.known_urls - self.seen_urls if self.known_urls else None
+            if self.known_urls and not _pending_possible:
+                LOG.info("【backfill】主库 %d 条**均已有正文**（待补 0 条）→ 不翻页直接结束"
+                         "（stopped_reason=nothing_to_backfill）", len(self.known_urls))
+                self.stats = {
+                    "sub_source": SUB_SOURCE, "list_pages_fetched": 0, "list_pages_without_new": 0,
+                    "list_items_seen": 0, "new_items": 0, "pending_details": 0,
+                    "details_fetched": 0, "details_failed": 0, "details_skipped_master": 0,
+                    "elapsed_list_s": 0.0, "elapsed_detail_s": 0.0,
+                    "stopped_reason": "nothing_to_backfill", "backfill": True, "budget_s": budget,
+                    "list_pages_total": None, "list_pages_planned": None,
+                    "master_known": len(self.known_urls), "master_detailed": len(self.seen_urls),
+                }
+                return []
 
         first = fetch(self._list_url(0))
         n_pages = total_pages(first)

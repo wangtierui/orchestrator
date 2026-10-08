@@ -115,6 +115,7 @@ _OfflineMiss = OfflineMiss  # 兼容别名
 # ---- 拆分（2026-09-13，P3）：下列符号迁 gov_parse，re-export 保持外部调用兼容 ----
 from gov_parse import (  # noqa: F401  拆分 re-export（显式；规避 F405）
     SOURCES,  # 子源登记表唯一事实源在 gov_parse（2026-09-15 收敛，勿在别处重复定义）
+    MasterView,
     ScrapeConfig,
     _is_https_scheme_upgrade,
     _longest_text_block,
@@ -321,9 +322,11 @@ class XzfgkScraper:
     LIST_URL = "https://xzfg.moj.gov.cn/search2.html"
     DETAIL_URL = "https://xzfg.moj.gov.cn/front/law/detail"
 
-    def __init__(self, cfg: ScrapeConfig, client: RobustSession):
+    def __init__(self, cfg: ScrapeConfig, client: RobustSession, master_view=None):
         self.cfg = cfg
         self.client = client
+        #: N-200：主库只读视图（由调用方共享；None 时自建——保证**全进程只解析一次**主库）
+        self.master_view = master_view
         #: N-190：本次运行的采集统计（与 zhengceku 同口径字段名，便于统一落盘与比较）
         self.stats: dict = {}
 
@@ -407,9 +410,12 @@ class XzfgkScraper:
         page = 1
         seen_urls = set()
         if self.cfg.resume:
-            resumed, _ = load_resume(self.cfg.out_dir, self.cfg.source)
+            # N-200：走调用方共享的 MasterView（索引优先、全进程只解析一次）；未传入则自建
+            _mv = self.master_view if self.master_view is not None else MasterView(self.cfg.out_dir)
+            resumed, _ = _mv.keys()
             seen_urls = set(k[1] for k in resumed if k[1])
-            LOG.info("【xzfgk resume】将跳过 %d 条已抓条目", len(seen_urls))
+            LOG.info("【xzfgk resume】将跳过 %d 条已抓条目（来源：%s）",
+                     len(seen_urls), "旁路索引" if _mv.from_index else "全量解析")
         # —— N-190 采集统计（字段名与 zhengceku 同口径，便于统一落盘与跨子源比较）——
         pages_fetched = 0
         pages_without_new = 0
@@ -686,13 +692,17 @@ def main(argv=None) -> int:
     seen_urls = set()
     # N-190：主库**全部** detail_url —— 增量早停的判据（"新条目" = 不在主库者）。
     known_urls = set()
+    master_view: MasterView | None = None
     if cfg.resume:
-        _seen, detailed = load_resume(cfg.out_dir, "gov")
+        # N-200：主库**只读视图**（旁路索引优先；需要正文时才全量解析，且**全进程只解析一次**）
+        master_view = MasterView(cfg.out_dir)
+        _seen, detailed = master_view.keys()
         seen_urls = set(detailed)
         known_urls = set(k[1] for k in _seen if k[1])
         LOG.info("【增量判据】主库 %d 条（已有正文 %d 条）：不在主库者=**新条目**（驱动翻页），"
-                 "在主库而无正文者=**待补详情**（下次续跑补齐）",
-                 len(known_urls), len(seen_urls))
+                 "在主库而无正文者=**待补详情**（下次续跑补齐）；来源=%s",
+                 len(known_urls), len(seen_urls),
+                 "旁路索引（未解析正文）" if master_view.from_index else "全量解析")
 
     records: list[dict[str, Any]] = []
     failed: list[str] = []
@@ -708,7 +718,7 @@ def main(argv=None) -> int:
         scraper: Any = None
         try:
             if s == "xzfgk":
-                scraper = XzfgkScraper(scfg, client)
+                scraper = XzfgkScraper(scfg, client, master_view)
             else:
                 scraper = ZhengcekuScraper(scfg, client, seen_urls, known_urls)
             recs = scraper.run()
@@ -741,6 +751,10 @@ def main(argv=None) -> int:
                     "backfill": bool(getattr(args, "backfill", False)),
                     "max_seconds": float(getattr(args, "max_seconds", 0.0) or 0.0),
                     "new_records": None,       # 由各子源 stats.new_items 表达（口径不重复）
+                    # R-F 处置（2026-10-09）：把"怎么读这个指标"写进数据本身，避免误读。
+                    "metric_note": ("空转占比 = list_pages_without_new / list_pages_fetched；"
+                                    "list_pages_fetched 很小时（如 1 页）该比例无独立意义，"
+                                    "须结合**绝对量**（页数 × 单页耗时）评估无效时长"),
                     "stats": _st,
                 },
             )
@@ -765,9 +779,11 @@ def main(argv=None) -> int:
         _emit_stats()
         return ExitCode.OK
 
-    if cfg.resume:
-        # 增量续抓：本次 records 仅含新发现条目 → 与现主库合并后覆盖写，防丢历史
-        records = merge_with_master(records, cfg.out_dir)
+    if cfg.resume and master_view is not None:
+        # 增量续抓：本次 records 仅含新发现条目 → 与现主库合并后覆盖写，防丢历史。
+        # N-200：复用同一 `MasterView` —— 若上面因索引缺失已全量解析过，这里**不再重复解析**
+        # （原实现两次解析 1GB 主库 ⇒ 两轮 6GB 级瞬时峰值，实测触顶）。
+        records = merge_with_master(records, cfg.out_dir, master_records=master_view.records())
 
     # 信封 source/category：单子源沿用其自身标识；all 时标为 gov 汇总。
     # R-C/N-190：`--env-source/--env-category` 可**显式覆盖** —— 子源拆分后"单子源单跑"成为常态，
