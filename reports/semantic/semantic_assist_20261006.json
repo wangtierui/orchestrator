@@ -1,0 +1,653 @@
+{
+ "generated_at": "2026-10-06 01:55:43",
+ "source": "all",
+ "limit": 200,
+ "mode": "full",
+ "status": "ok",
+ "note": "最近邻裁定完成：858 条 × 10 主题；嵌入模型 = bge_base_zh（策略链 []）",
+ "policy_enabled": true,
+ "records": 858,
+ "themes": 10,
+ "agreement": 0.5739,
+ "margin": {
+  "min": 0.0001,
+  "median": 0.0268,
+  "max": 0.193
+ },
+ "distribution": {
+  "T5": 236,
+  "T1": 150,
+  "T9": 148,
+  "T2": 88,
+  "T10": 84,
+  "T8": 63,
+  "T6": 42,
+  "T4": 29,
+  "T7": 15,
+  "T3": 3
+ },
+ "disagreements": [
+  {
+   "source": "gov",
+   "key": "47735e5a15f6dbc3e823d7816cc8afc8ad954ed3d3631aa6dac9e9c707f8544b",
+   "title": "森林草原防灭火条例",
+   "baseline": "T9",
+   "suggested": "T1",
+   "similarity": 0.3217,
+   "margin": 0.0005
+  },
+  {
+   "source": "gov",
+   "key": "659712bdf16c66447a39a26926731ee38f9e51ae5138b59c0ce2072368f27f96",
+   "title": "中华人民共和国外资保险公司管理条例",
+   "baseline": "T8",
+   "suggested": "T2",
+   "similarity": 0.4041,
+   "margin": 0.011
+  },
+  {
+   "source": "mof",
+   "key": "950c02a05da7ef94b42e931b29857cdc67dcd7d5e3cf5b46c828d78c781ca710",
+   "title": "关于增值税法施行后增值税优惠政策衔接事项的公告",
+   "baseline": "T10",
+   "suggested": "T2",
+   "similarity": 0.4343,
+   "margin": 0.0215
+  },
+  {
+   "source": "mof",
+   "key": "19e84eb26495de56f99ad5caf2cc7b66cc4c3e23d116c570368b08a425913eff",
+   "title": "关于增值税征税具体范围有关事项的公告",
+   "baseline": "T2",
+   "suggested": "T8",
+   "similarity": 0.424,
+   "margin": 0.0048
+  },
+  {
+   "source": "mof",
+   "key": "abe0cbcde20bfb61d6449cd0a95b4c13c0b6a174de58ca7364a2bfec5e0d3c7d",
+   "title": "关于进一步贯彻落实新保险合同会计准则的通知",
+   "baseline": "T10",
+   "suggested": "T2",
+   "similarity": 0.5053,
+   "margin": 0.0902
+  },
+  {
+   "source": "nfra",
+   "key": "2b1b822cab49e83fac920677b1d4443ae7bd2d04668a5c9f90c41c7b5d8370e0",
+   "title": "中华人民共和国外资保险公司管理条例",
+   "baseline": "T8",
+   "suggested": "T2",
+   "similarity": 0.4041,
+   "margin": 0.011
+  },
+  {
+   "source": "nfra",
+   "key": "cbfd891b8b4c5db9397912f817312ce32152da6cb3105127576b5ff263ab339c",
+   "title": "国家金融监督管理总局关于部分规范性文件废止和宣布失效的通知",
+   "baseline": "T10",
+   "suggested": "T9",
+   "similarity": 0.4716,
+   "margin": 0.0511
+  },
+  {
+   "source": "nfra",
+   "key": "7ab26ca43e18be3da0f255942aefb82220e2cae4f437029509ae6c3054b2a8d6",
+   "title": "银行保险机构资产管理产品信息披露管理办法",
+   "baseline": "T10",
+   "suggested": "T5",
+   "similarity": 0.5518,
+   "margin": 0.0247
+  },
+  {
+   "source": "nfra",
+   "key": "fb4b6bf66994258d92bec4162614adfeb237261d12e4ad0424e688519cdf45aa",
+   "title": "国家金融监督管理总局关于调整保险公司相关业务风险因子的通知",
+   "baseline": "T3",
+   "suggested": "T9",
+   "similarity": 0.4835,
+   "margin": 0.0164
+  },
+  {
+   "source": "nfra",
+   "key": "ef117d7446b3210f7537689f281f96c1bac5808f52e5c9e3d3e6231d21d2e7b3",
+   "title": "国家金融监督管理总局关于部分规范性文件废止和宣布失效的通知",
+   "baseline": "T10",
+   "suggested": "T9",
+   "similarity": 0.4716,
+   "margin": 0.0511
+  },
+  {
+   "source": "nfra",
+   "key": "5228ead552b23cd8f5e7eab5b89c2a9fd1dfc2791dc02a6862b89ad78b5cb83c",
+   "title": "国家金融监督管理总局关于做好《中国人身保险业经验生命表（2025）》发布使用有关事项的通知",
+   "baseline": "T2",
+   "suggested": "T6",
+   "similarity": 0.4957,
+   "margin": 0.0374
+  },
+  {
+   "source": "nfra",
+   "key": "4fbd02faa1985c5283fb9492601c914f2cef1d317add2d9957ba2d58856fd8ed",
+   "title": "国家金融监督管理总局关于印发《保险公司资本保证金管理办法》的通知",
+   "baseline": "T3",
+   "suggested": "T5",
+   "similarity": 0.5037,
+   "margin": 0.0363
+  },
+  {
+   "source": "nfra",
+   "key": "367c72a4f24540a03f6c09acef997b37935022970e781c2c356f67ffe50fe2a6",
+   "title": "国家金融监督管理总局关于部分规范性文件废止和宣布失效的通知",
+   "baseline": "T10",
+   "suggested": "T9",
+   "similarity": 0.4716,
+   "margin": 0.0511
+  },
+  {
+   "source": "nfra",
+   "key": "bd3a6c63d611783b2117b2d85ee09771020f471cfa94ac4b6b558e5779bab3c6",
+   "title": "金融机构产品适当性管理办法",
+   "baseline": "T1",
+   "suggested": "T5",
+   "similarity": 0.5118,
+   "margin": 0.0205
+  },
+  {
+   "source": "nfra",
+   "key": "85b2549fc715432de188e93ec47ccd7826578f4b856169a02b470877ee8e2713",
+   "title": "国家金融监督管理总局关于修改部分规章的决定",
+   "baseline": "T4",
+   "suggested": "T9",
+   "similarity": 0.4602,
+   "margin": 0.0222
+  },
+  {
+   "source": "nfra",
+   "key": "f0e9edc89b1cc4be282087128f5cb47999c0f70fb874208fbbca4158224e2620",
+   "title": "银行卡清算机构管理办法",
+   "baseline": "T3",
+   "suggested": "T8",
+   "similarity": 0.5153,
+   "margin": 0.0883
+  },
+  {
+   "source": "nfra",
+   "key": "99376b480a40301720b377ebd53fc9756a8b506192caad61a8a6de2f94b5da2d",
+   "title": "国家金融监督管理总局关于加强万能型人身保险监管有关事项的通知",
+   "baseline": "T2",
+   "suggested": "T9",
+   "similarity": 0.4761,
+   "margin": 0.0137
+  },
+  {
+   "source": "nfra",
+   "key": "2117e30e368e8e637dd3a7f9bc232e71f7306796ced57798548493778755537e",
+   "title": "国家金融监督管理总局关于印发《保险集团并表监督管理办法》的通知",
+   "baseline": "T4",
+   "suggested": "T2",
+   "similarity": 0.4755,
+   "margin": 0.0257
+  },
+  {
+   "source": "nfra",
+   "key": "0ee6962d2e4eae3d62a09be240b439346e72fe5d20b07a20d8e12515689c689d",
+   "title": "国家金融监督管理总局关于保险资金未上市企业重大股权投资有关事项的通知",
+   "baseline": "T5",
+   "suggested": "T9",
+   "similarity": 0.4527,
+   "margin": 0.015
+  },
+  {
+   "source": "nfra",
+   "key": "df30baa1a6cbffceefdddc76b5f6fe70f6d08b834de0d4efd0c09ad33edc4f94",
+   "title": "国家金融监督管理总局办公厅 中国人民银行办公厅关于印发《银行业保险业绿色金融高质量发展实施方案》的通知",
+   "baseline": "T10",
+   "suggested": "T5",
+   "similarity": 0.4552,
+   "margin": 0.0082
+  },
+  {
+   "source": "nfra",
+   "key": "539382ecd9334b43b2fee1dd3e03a0cc6859af95d8a240721892b6928c8ae323",
+   "title": "国家金融监督管理总局关于香港、澳门金融机构入股保险公司有关事项的通知",
+   "baseline": "T4",
+   "suggested": "T8",
+   "similarity": 0.4621,
+   "margin": 0.018
+  },
+  {
+   "source": "nfra",
+   "key": "9bec157ce36490b7caa9027b0aecc753c56484ca5d9bb982ef2e6a9e15d14d63",
+   "title": "国家金融监督管理总局办公厅关于印发《保险集团集中度风险监管指引》的通知",
+   "baseline": "T4",
+   "suggested": "T9",
+   "similarity": 0.4885,
+   "margin": 0.0146
+  },
+  {
+   "source": "nfra",
+   "key": "af11fe4e6f5c04b2ac436ef887dee9b5bbff18b34de0ee23fe5b073bc32a2a85",
+   "title": "国家金融监督管理总局关于延长保险公司偿付能力监管规则（Ⅱ）实施过渡期有关事项的通知",
+   "baseline": "T3",
+   "suggested": "T6",
+   "similarity": 0.4784,
+   "margin": 0.0151
+  },
+  {
+   "source": "nfra",
+   "key": "44c32a999ffe17bc6b21c4341746682df3aef7939b2b71576801a113e975886a",
+   "title": "国家金融监督管理总局关于进一步提升金融服务适老化水平的指导意见",
+   "baseline": "T1",
+   "suggested": "T6",
+   "similarity": 0.4946,
+   "margin": 0.0911
+  },
+  {
+   "source": "nfra",
+   "key": "882adbc8b221b86a26a5a7c29c145bfbe0a704b15e635fd40f371f42c7ae5ea4",
+   "title": "国家金融监督管理总局办公厅关于加强银行业保险业移动互联网应用程序管理的通知",
+   "baseline": "T10",
+   "suggested": "T8",
+   "similarity": 0.4725,
+   "margin": 0.0093
+  },
+  {
+   "source": "nfra",
+   "key": "859ca3c4da4a9fd495576eb1a6f20fb0f44423a7114ddd290c381110318dcf71",
+   "title": "国家金融监督管理总局办公厅关于印发保险公司县域机构统计制度的通知",
+   "baseline": "T10",
+   "suggested": "T8",
+   "similarity": 0.497,
+   "margin": 0.0412
+  },
+  {
+   "source": "nfra",
+   "key": "75b2c7128f736e2cf66728eb8a100bd1b67b98ca4449f8a69ba14e83daaea3a1",
+   "title": "国家金融监督管理总局关于推进普惠保险高质量发展的指导意见",
+   "baseline": "T1",
+   "suggested": "T6",
+   "similarity": 0.4503,
+   "margin": 0.0109
+  },
+  {
+   "source": "nfra",
+   "key": "6af90cf3e019d8ff33fcf253486aa2a99178a48f60eca03fc6e9444d1a067f08",
+   "title": "国家金融监督管理总局关于银行业保险业做好金融“五篇大文章”的指导意见",
+   "baseline": "T10",
+   "suggested": "T6",
+   "similarity": 0.4611,
+   "margin": 0.0067
+  },
+  {
+   "source": "nfra",
+   "key": "4cb45b19d079d56ddd80639ace6fca6b07878804c884a128b4880bea3282cccf",
+   "title": "国家金融监督管理总局关于推动绿色保险高质量发展的指导意见",
+   "baseline": "T4",
+   "suggested": "T6",
+   "similarity": 0.445,
+   "margin": 0.0112
+  },
+  {
+   "source": "nfra",
+   "key": "1d6fb920f0efad5aac367e2eaf5bbea7f6b5b803ec73f433eb02949a3021a310",
+   "title": "国家金融监督管理总局关于加强科技型企业全生命周期金融服务的通知",
+   "baseline": "T10",
+   "suggested": "T6",
+   "similarity": 0.4746,
+   "margin": 0.0239
+  },
+  {
+   "source": "nfra",
+   "key": "2f05f328c8001e57133304a6379ecb574b6edb77f2f6b45c6381db601466c96f",
+   "title": "银行保险机构操作风险管理办法",
+   "baseline": "T4",
+   "suggested": "T9",
+   "similarity": 0.4909,
+   "margin": 0.0194
+  },
+  {
+   "source": "nfra",
+   "key": "93ba8f4ef0dd657cf1d74468af676fbc465395a2933c7431e6ee8fdbb7a99212",
+   "title": "中国人民银行 国家金融监督管理总局关于印发《系统重要性保险公司评估办法》的通知",
+   "baseline": "T4",
+   "suggested": "T8",
+   "similarity": 0.465,
+   "margin": 0.0171
+  },
+  {
+   "source": "nfra",
+   "key": "ba58350730cc449e0daa78414b7851be4d4fae9e07d958885d8cfdc59e397a0e",
+   "title": "国家金融监督管理总局 人力资源社会保障部关于印发精算师职业资格规定和精算师职业资格考试实施办法的通知",
+   "baseline": "T2",
+   "suggested": "T1",
+   "similarity": 0.5326,
+   "margin": 0.0337
+  },
+  {
+   "source": "pbc",
+   "key": "49d402162a9a7c45e4ea23fa79acd27a7d0df8e34c68f5e5824248e72fb8d2c8",
+   "title": "中华人民共和国证券法",
+   "baseline": "T5",
+   "suggested": "T1",
+   "similarity": 0.3944,
+   "margin": 0.0116
+  },
+  {
+   "source": "pbc",
+   "key": "1e42d5da8d414201dae6b791058d493f492af14da9a39411540c28146096fc75",
+   "title": "中国人民银行 国家金融监督管理总局 中国证券监督管理委员会令〔2025〕第11号（金融机构客户尽职调查和客户身份资料及交易记录保存管理办法）",
+   "baseline": "T7",
+   "suggested": "T10",
+   "similarity": 0.5731,
+   "margin": 0.0433
+  },
+  {
+   "source": "pbc",
+   "key": "7e080b0ee2120daf17fa68690b973321458f777dc0b61dbcb654e601f2ece162",
+   "title": "中国人民银行令〔2025〕第10号（中国人民银行关于修改和废止部分规章的决定）",
+   "baseline": "T7",
+   "suggested": "T9",
+   "similarity": 0.4198,
+   "margin": 0.0082
+  },
+  {
+   "source": "pbc",
+   "key": "e12998cbbf41738228da76ecc3933025c58b5a5309b26170ab4b4c7b77b5aafd",
+   "title": "中国人民银行 中国银行保险监督管理委员会 中国证券监督管理委员会令〔2022〕第1号（金融机构客户尽职调查和客户身份资料及交易记录保存管理办法）",
+   "baseline": "T7",
+   "suggested": "T10",
+   "similarity": 0.5809,
+   "margin": 0.0505
+  },
+  {
+   "source": "pbc",
+   "key": "b605896d27ae307c588067c2c309cf5a6cd8287eabb34549f8c7305ca8c44904",
+   "title": "中国人民银行令〔2020〕第4号（金融控股公司监督管理试行办法）",
+   "baseline": "T4",
+   "suggested": "T5",
+   "similarity": 0.4844,
+   "margin": 0.026
+  },
+  {
+   "source": "pbc",
+   "key": "bd0b1775edd947e035e98a291a5210d5174e525b82454f289c4761ecee1b3a9c",
+   "title": "中国人民银行 国家金融监督管理总局关于印发《系统重要性保险公司评估办法》的通知（银发〔2023〕208号）",
+   "baseline": "T4",
+   "suggested": "T10",
+   "similarity": 0.4697,
+   "margin": 0.0014
+  },
+  {
+   "source": "supp",
+   "key": "6b09179eaacf8ce8181b9823a761741acdee4b99f9ab5b467d67765102f89954",
+   "title": "中国银保监会办公厅关于进一步加强消费投诉处理工作的通知",
+   "baseline": "T1",
+   "suggested": "T9",
+   "similarity": 0.5245,
+   "margin": 0.047
+  },
+  {
+   "source": "supp",
+   "key": "f39d857b6dd4088aad6637b7bd3c561b07a0b26ccbaeec93784c4c02e0f0be4b",
+   "title": "关于规范人身保险公司银行代理渠道业务有关事项的通知",
+   "baseline": "T1",
+   "suggested": "T9",
+   "similarity": 0.4905,
+   "margin": 0.0007
+  },
+  {
+   "source": "supp",
+   "key": "8b5a3c74f85abe27372464cf4e9e3132c84fbc53ba5f5db26061bffedb520a78",
+   "title": "中国银保监会办公厅关于开展银行保险机构侵害个人信息权益乱象专项整治工作的通知",
+   "baseline": "T1",
+   "suggested": "T10",
+   "similarity": 0.5781,
+   "margin": 0.0465
+  },
+  {
+   "source": "supp",
+   "key": "f533077ef26ede969909b9ab4d996d2055352c18f150ad0508dbd504168c6882",
+   "title": "中国银保监会办公厅关于推广人身保险电子化回访工作的通知",
+   "baseline": "T1",
+   "suggested": "T9",
+   "similarity": 0.5547,
+   "margin": 0.0709
+  },
+  {
+   "source": "supp",
+   "key": "f460c6b11d539c34014c3b82acad59b8d5781337c0496fdb9293e4aedf59e9cd",
+   "title": "关于银保产品管理有关事宜的通知",
+   "baseline": "T1",
+   "suggested": "T2",
+   "similarity": 0.5411,
+   "margin": 0.0235
+  },
+  {
+   "source": "supp",
+   "key": "b98fbbfe4cf33bc821d11f20689b72107102a22bea06a376efdde43279f6ff11",
+   "title": "关于强化管理促进人身险业务平稳健康发展的通知",
+   "baseline": "T1",
+   "suggested": "T6",
+   "similarity": 0.5031,
+   "margin": 0.0057
+  },
+  {
+   "source": "supp",
+   "key": "9c1cd5934785276ea5410791d1e66c772590e86b9dda714b68d949e29e66dbc6",
+   "title": "中国保监会 国家外汇管理局关于规范保险机构开展内保外贷业务有关事项的通知",
+   "baseline": "T5",
+   "suggested": "T9",
+   "similarity": 0.4594,
+   "margin": 0.0174
+  },
+  {
+   "source": "supp",
+   "key": "57a0c565dc7a627c2126befc7ee5d0736a54c61c5394c3f8fdaf3416474832d0",
+   "title": "保险统计管理规定",
+   "baseline": "T10",
+   "suggested": "T2",
+   "similarity": 0.5126,
+   "margin": 0.0304
+  },
+  {
+   "source": "supp",
+   "key": "94a403e423d3d1015de44a91308ab558313a82cb613443e1ad3c43aec6bbdc7a",
+   "title": "金融业经营者集中申报营业额计算办法",
+   "baseline": "T9",
+   "suggested": "T8",
+   "similarity": 0.4971,
+   "margin": 0.0072
+  },
+  {
+   "source": "supp",
+   "key": "c412c37541b16a04bdc15a2f2ff5db1447436df479ba97f3e1923ea6de9aeb58",
+   "title": "关于规范银行代理渠道保险产品的通知",
+   "baseline": "T1",
+   "suggested": "T2",
+   "similarity": 0.5193,
+   "margin": 0.0404
+  }
+ ],
+ "fingerprint": {
+  "model": "bge_base_zh",
+  "dep_version": "6.1.0",
+  "weights": "971cc2b8ddcb4eec",
+  "ready": true
+ },
+ "embedder_notice": "",
+ "baseline": {
+  "sources": [
+   "cleaned.theme_name",
+   "classifier:_t{N}_final.json"
+  ],
+  "classifier_entries": 2142
+ },
+ "agreement_n": 115,
+ "baseline_source_counts": {
+  "classifier": 115
+ },
+ "baseline_coverage": 0.134,
+ "samples": [
+  {
+   "source": "gov",
+   "key": "65fe9876821229767472cdbe8c1ca4d3a77e6bdb837a30fa2d30a5ab0c3b7cda",
+   "title": "住房公积金管理条例",
+   "suggested": "T1",
+   "similarity": 0.4154,
+   "margin": 0.0023
+  },
+  {
+   "source": "gov",
+   "key": "84dbc587790f27da4e8bf56f738b307550276c5af02ffa86e780dbdd4db974c2",
+   "title": "消耗臭氧层物质管理条例",
+   "suggested": "T1",
+   "similarity": 0.3268,
+   "margin": 0.0049
+  },
+  {
+   "source": "gov",
+   "key": "a52c1cc13f4febca8f1492ffbc66972515013eeff6a69c66b9029ca311783e7b",
+   "title": "碳排放权交易管理暂行条例",
+   "suggested": "T4",
+   "similarity": 0.4442,
+   "margin": 0.0573
+  },
+  {
+   "source": "gov",
+   "key": "6922e636f087542372bc35dbe8c5659329040284ac1f9edff831c84c52e3ee56",
+   "title": "民用建筑节能条例",
+   "suggested": "T5",
+   "similarity": 0.3502,
+   "margin": 0.0182
+  },
+  {
+   "source": "gov",
+   "key": "1e63a39140c0dea9c104c0e9ef4916f81cdcbced8025ea306619974556424105",
+   "title": "城镇排水与污水处理条例",
+   "suggested": "T5",
+   "similarity": 0.3165,
+   "margin": 0.0119
+  },
+  {
+   "source": "gov",
+   "key": "f6fc35d2c83763fc055a46601936edd6f8579ddbb6190f4654700684ccb25a3f",
+   "title": "生态环境监测条例",
+   "suggested": "T9",
+   "similarity": 0.3642,
+   "margin": 0.0056
+  },
+  {
+   "source": "gov",
+   "key": "1aa10abd4c9b8389af367fe30266eb866277d2bcf4b0ccad581256171c803815",
+   "title": "中华人民共和国进出口商品检验法实施条例",
+   "suggested": "T1",
+   "similarity": 0.4348,
+   "margin": 0.0574
+  },
+  {
+   "source": "gov",
+   "key": "d886d498e21ed3c7ffb194cbc796da38ab10142f8b1be114891f340314dfdaf7",
+   "title": "地下水管理条例",
+   "suggested": "T5",
+   "similarity": 0.3767,
+   "margin": 0.0244
+  },
+  {
+   "source": "gov",
+   "key": "594461e945008905f90a990455fc04120a945bfcde5257c5c41a494379e5e76a",
+   "title": "南水北调工程供用水管理条例",
+   "suggested": "T5",
+   "similarity": 0.3883,
+   "margin": 0.0213
+  },
+  {
+   "source": "gov",
+   "key": "328d1c2d99555e24b24f7dea4b31f703ba7b6020c6d94460fd4f56c395d91830",
+   "title": "病原微生物实验室生物安全管理条例",
+   "suggested": "T10",
+   "similarity": 0.3328,
+   "margin": 0.0169
+  },
+  {
+   "source": "gov",
+   "key": "965328b4d04168feb3fae2b031aff6e0d8e8db28b643e4b2abf21821a1e5944d",
+   "title": "黄河水量调度条例",
+   "suggested": "T9",
+   "similarity": 0.3344,
+   "margin": 0.0102
+  },
+  {
+   "source": "gov",
+   "key": "1985a6da58d090a6622bfb5b99f5599f879fc060074c6a15bc7097d99df0baa9",
+   "title": "快递暂行条例",
+   "suggested": "T1",
+   "similarity": 0.369,
+   "margin": 0.0212
+  },
+  {
+   "source": "gov",
+   "key": "4ced5e1afb74f3eb4817865a92ce01938de0eb9fd184bd23b2917875e1b50614",
+   "title": "全国污染源普查条例",
+   "suggested": "T10",
+   "similarity": 0.3623,
+   "margin": 0.0045
+  },
+  {
+   "source": "gov",
+   "key": "eb165caa95e69ff259f2f857295fc814a32705e0204811006160faa3549a5013",
+   "title": "集成电路布图设计保护条例",
+   "suggested": "T2",
+   "similarity": 0.3744,
+   "margin": 0.0429
+  },
+  {
+   "source": "gov",
+   "key": "bb29802cae81f5f06f0120eaf58c326ea946aa37e68232d36696920449fd2d27",
+   "title": "国务院关于出境入境管理的规定",
+   "suggested": "T1",
+   "similarity": 0.3719,
+   "margin": 0.0218
+  },
+  {
+   "source": "gov",
+   "key": "4cef1fb22a1c9a89e2a1d46a53eea361f0b85b5e32824089806edbc30977b5e0",
+   "title": "退役军人就业创业促进条例",
+   "suggested": "T1",
+   "similarity": 0.4624,
+   "margin": 0.0827
+  },
+  {
+   "source": "gov",
+   "key": "8297174cc42b0e21f780f8b4842868ecc0789f5586ac814b4dfcda966506c3f4",
+   "title": "行政法规制定程序条例",
+   "suggested": "T9",
+   "similarity": 0.4633,
+   "margin": 0.0308
+  },
+  {
+   "source": "gov",
+   "key": "ee92d13ac57e78e49b35630a7881760eb5d750cb50272a19bb5adbf23fe1f85e",
+   "title": "中华人民共和国矿产资源法实施条例",
+   "suggested": "T5",
+   "similarity": 0.3937,
+   "margin": 0.0408
+  },
+  {
+   "source": "gov",
+   "key": "9381d4492eed0977f280938cbc91fcef470499c1acb2ebd61547e766b940d23d",
+   "title": "国务院关于对外投资的规定",
+   "suggested": "T5",
+   "similarity": 0.4576,
+   "margin": 0.1026
+  },
+  {
+   "source": "gov",
+   "key": "d4b6480d80ae3af32e991fff5eec97786594818dc00f969ebc5d8c8d90492c6c",
+   "title": "中华人民共和国行政复议法实施条例",
+   "suggested": "T9",
+   "similarity": 0.4159,
+   "margin": 0.0049
+  }
+ ]
+}

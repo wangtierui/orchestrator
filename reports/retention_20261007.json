@@ -1,0 +1,1384 @@
+{
+ "mode": "dry-run",
+ "plan": {
+  "plan": [
+   {
+    "file": "modules/regulatory_classifier/backups/_upper_laws_20260928_185949.json",
+    "size": 1959111,
+    "age_days": 8.5,
+    "reason": "超出保留量 10（第 11 新）",
+    "category": "classifier_backups",
+    "move_to": "archive/classifier_backups"
+   },
+   {
+    "file": "modules/regulatory_classifier/backups/_upper_laws_20260928_175405.json",
+    "size": 1959111,
+    "age_days": 8.6,
+    "reason": "超出保留量 10（第 12 新）",
+    "category": "classifier_backups",
+    "move_to": "archive/classifier_backups"
+   },
+   {
+    "file": "modules/regulatory_classifier/backups/_upper_laws_20260928_165918.json",
+    "size": 1959111,
+    "age_days": 8.6,
+    "reason": "超出保留量 10（第 13 新）",
+    "category": "classifier_backups",
+    "move_to": "archive/classifier_backups"
+   },
+   {
+    "file": "modules/regulatory_classifier/backups/_upper_laws_20260928_145208.json",
+    "size": 1959111,
+    "age_days": 8.7,
+    "reason": "超出保留量 10（第 14 新）",
+    "category": "classifier_backups",
+    "move_to": "archive/classifier_backups"
+   },
+   {
+    "file": "modules/regulatory_classifier/backups/_upper_laws_20260928_131421.json",
+    "size": 1959111,
+    "age_days": 8.8,
+    "reason": "超出保留量 10（第 15 新）",
+    "category": "classifier_backups",
+    "move_to": "archive/classifier_backups"
+   },
+   {
+    "file": "modules/regulatory_classifier/backups/_upper_laws_20260928_115137.json",
+    "size": 1959111,
+    "age_days": 8.8,
+    "reason": "超出保留量 10（第 16 新）",
+    "category": "classifier_backups",
+    "move_to": "archive/classifier_backups"
+   },
+   {
+    "file": "modules/regulatory_classifier/backups/_upper_laws_20260928_113448.json",
+    "size": 1959111,
+    "age_days": 9.1,
+    "reason": "超出保留量 10（第 17 新）",
+    "category": "classifier_backups",
+    "move_to": "archive/classifier_backups"
+   },
+   {
+    "file": "modules/regulatory_classifier/backups/_upper_laws_20260928_041911.json",
+    "size": 1959111,
+    "age_days": 9.1,
+    "reason": "超出保留量 10（第 18 新）",
+    "category": "classifier_backups",
+    "move_to": "archive/classifier_backups"
+   },
+   {
+    "file": "modules/regulatory_classifier/backups/_upper_laws_20260928_033609.json",
+    "size": 1959111,
+    "age_days": 10.0,
+    "reason": "超出保留量 10（第 19 新）",
+    "category": "classifier_backups",
+    "move_to": "archive/classifier_backups"
+   },
+   {
+    "file": "modules/regulatory_classifier/backups/_upper_laws_20260927_052710.json",
+    "size": 1959111,
+    "age_days": 10.1,
+    "reason": "超出保留量 10（第 20 新）",
+    "category": "classifier_backups",
+    "move_to": "archive/classifier_backups"
+   },
+   {
+    "file": "modules/regulatory_classifier/backups/_upper_laws_20260927_044806.json",
+    "size": 1959111,
+    "age_days": 10.1,
+    "reason": "超出保留量 10（第 21 新）",
+    "category": "classifier_backups",
+    "move_to": "archive/classifier_backups"
+   },
+   {
+    "file": "modules/regulatory_classifier/backups/_upper_laws_20260927_031747.json",
+    "size": 1959111,
+    "age_days": 10.2,
+    "reason": "超出保留量 10（第 22 新）",
+    "category": "classifier_backups",
+    "move_to": "archive/classifier_backups"
+   },
+   {
+    "file": "modules/regulatory_classifier/backups/_upper_laws_20260927_002534.json",
+    "size": 1958626,
+    "age_days": 10.5,
+    "reason": "超出保留量 10（第 23 新）",
+    "category": "classifier_backups",
+    "move_to": "archive/classifier_backups"
+   },
+   {
+    "file": "modules/regulatory_classifier/backups/_upper_laws_20260926_173726.json",
+    "size": 1959111,
+    "age_days": 15.2,
+    "reason": "超出保留量 10（第 24 新）",
+    "category": "classifier_backups",
+    "move_to": "archive/classifier_backups"
+   },
+   {
+    "file": "modules/regulatory_classifier/backups/_upper_laws_20260922_023135.json",
+    "size": 1915912,
+    "age_days": 15.4,
+    "reason": "超出保留量 10（第 25 新）",
+    "category": "classifier_backups",
+    "move_to": "archive/classifier_backups"
+   },
+   {
+    "file": "modules/regulatory_classifier/backups/_upper_laws_20260921_205839.json",
+    "size": 1915912,
+    "age_days": 16.2,
+    "reason": "超出保留量 10（第 26 新）",
+    "category": "classifier_backups",
+    "move_to": "archive/classifier_backups"
+   },
+   {
+    "file": "modules/regulatory_classifier/backups/_upper_laws_20260921_002550.json",
+    "size": 1915912,
+    "age_days": 16.4,
+    "reason": "超出保留量 10（第 27 新）",
+    "category": "classifier_backups",
+    "move_to": "archive/classifier_backups"
+   },
+   {
+    "file": "modules/regulatory_classifier/backups/_upper_laws_20260920_210607.json",
+    "size": 1915912,
+    "age_days": 16.4,
+    "reason": "超出保留量 10（第 28 新）",
+    "category": "classifier_backups",
+    "move_to": "archive/classifier_backups"
+   },
+   {
+    "file": "modules/regulatory_classifier/backups/_upper_laws_20260920_204422.json",
+    "size": 1915912,
+    "age_days": 16.4,
+    "reason": "超出保留量 10（第 29 新）",
+    "category": "classifier_backups",
+    "move_to": "archive/classifier_backups"
+   },
+   {
+    "file": "modules/regulatory_classifier/backups/_upper_laws_20260920_202106.json",
+    "size": 1915904,
+    "age_days": 18.2,
+    "reason": "超出保留量 10（第 30 新）",
+    "category": "classifier_backups",
+    "move_to": "archive/classifier_backups"
+   },
+   {
+    "file": "modules/regulatory_classifier/backups/_upper_laws_20260919_020858.json",
+    "size": 1915904,
+    "age_days": 18.2,
+    "reason": "超出保留量 10（第 31 新）",
+    "category": "classifier_backups",
+    "move_to": "archive/classifier_backups"
+   },
+   {
+    "file": "modules/regulatory_classifier/backups/_upper_laws_20260919_014722.json",
+    "size": 1915904,
+    "age_days": 18.7,
+    "reason": "超出保留量 10（第 32 新）",
+    "category": "classifier_backups",
+    "move_to": "archive/classifier_backups"
+   },
+   {
+    "file": "modules/regulatory_classifier/backups/_upper_laws_20260918_130003.json",
+    "size": 1915904,
+    "age_days": 19.1,
+    "reason": "超出保留量 10（第 33 新）",
+    "category": "classifier_backups",
+    "move_to": "archive/classifier_backups"
+   },
+   {
+    "file": "modules/regulatory_classifier/backups/_upper_laws_20260918_033730.json",
+    "size": 1915904,
+    "age_days": 19.1,
+    "reason": "超出保留量 10（第 34 新）",
+    "category": "classifier_backups",
+    "move_to": "archive/classifier_backups"
+   },
+   {
+    "file": "reports/_tmp/commit_t1b.txt",
+    "size": 1308,
+    "age_days": 16.2,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/commit_t1c.txt",
+    "size": 1210,
+    "age_days": 15.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/gov_bursts.err.log",
+    "size": 0,
+    "age_days": 16.3,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/gov_bursts.log",
+    "size": 140,
+    "age_days": 16.3,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/pg_hba.conf.bak",
+    "size": 5649,
+    "age_days": 7.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/refresh_fix2_20260920.err",
+    "size": 0,
+    "age_days": 16.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/refresh_fix2_20260920.log",
+    "size": 9353,
+    "age_days": 16.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/refresh_fix3_20260920.err",
+    "size": 0,
+    "age_days": 16.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/refresh_fix3_20260920.log",
+    "size": 9351,
+    "age_days": 16.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/refresh_fix_20260920.err",
+    "size": 0,
+    "age_days": 16.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/refresh_fix_20260920.log",
+    "size": 9354,
+    "age_days": 16.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/refresh_t1b.err.log",
+    "size": 0,
+    "age_days": 16.3,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/refresh_t1b.log",
+    "size": 9353,
+    "age_days": 16.2,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/refresh_t1c.err.log",
+    "size": 0,
+    "age_days": 15.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/refresh_t1c.log",
+    "size": 9354,
+    "age_days": 15.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/resume_loop.err.log",
+    "size": 0,
+    "age_days": 15.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/resume_loop.log",
+    "size": 567,
+    "age_days": 15.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/vector.v0.8.6-pg18.zip",
+    "size": 169785,
+    "age_days": 7.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/_a1_nitems.py",
+    "size": 2624,
+    "age_days": 8.8,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/_cat.py",
+    "size": 788,
+    "age_days": 7.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/_chk_order.py",
+    "size": 1053,
+    "age_days": 7.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/_cm.txt",
+    "size": 4361,
+    "age_days": 7.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/_cm3.txt",
+    "size": 4473,
+    "age_days": 7.1,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/_detail.py",
+    "size": 1177,
+    "age_days": 7.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/_diag_missing.py",
+    "size": 1458,
+    "age_days": 11.0,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/_fix_order.py",
+    "size": 1963,
+    "age_days": 7.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/_fix_sleep.py",
+    "size": 2836,
+    "age_days": 7.2,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/_fix_sleep2.py",
+    "size": 1824,
+    "age_days": 7.2,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/_fullC.err",
+    "size": 0,
+    "age_days": 7.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/_fullC.txt",
+    "size": 17624,
+    "age_days": 7.3,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/_fullG.err",
+    "size": 0,
+    "age_days": 7.8,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/_fullG.txt",
+    "size": 13984,
+    "age_days": 7.7,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/_fullH.err",
+    "size": 0,
+    "age_days": 7.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/_fullH.txt",
+    "size": 14088,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/_mark_indep.py",
+    "size": 2035,
+    "age_days": 7.2,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/_migrate_rel.py",
+    "size": 4512,
+    "age_days": 7.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/_net_src.py",
+    "size": 934,
+    "age_days": 7.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/_only69.txt",
+    "size": 3148,
+    "age_days": 10.1,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/_probe_rel.py",
+    "size": 1652,
+    "age_days": 7.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/_readme_docstrings.py",
+    "size": 2473,
+    "age_days": 17.3,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/_readme_facts.py",
+    "size": 3610,
+    "age_days": 17.3,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/_reg2.py",
+    "size": 992,
+    "age_days": 7.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/_show_high.py",
+    "size": 736,
+    "age_days": 7.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/_t1_ble.py",
+    "size": 1603,
+    "age_days": 8.8,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/_t1_noqa.py",
+    "size": 3682,
+    "age_days": 8.8,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/_test_gate.py",
+    "size": 4139,
+    "age_days": 7.2,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/_triage.py",
+    "size": 1703,
+    "age_days": 7.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/_verify_corpus.py",
+    "size": 1985,
+    "age_days": 11.0,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/生产刷新汇总_20260920_202913.json",
+    "size": 8483,
+    "age_days": 16.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/生产刷新汇总_20260920_204937.json",
+    "size": 8482,
+    "age_days": 16.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/生产刷新汇总_20260920_211134.json",
+    "size": 8481,
+    "age_days": 16.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/生产刷新汇总_20260921_003403.json",
+    "size": 8482,
+    "age_days": 16.2,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/生产刷新汇总_20260921_210524.json",
+    "size": 8483,
+    "age_days": 15.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/生产刷新汇总_20260922_023816.json",
+    "size": 8483,
+    "age_days": 15.2,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/生产刷新汇总_20260926_134722.json",
+    "size": 7760,
+    "age_days": 10.7,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/生产刷新汇总_20260926_151945.json",
+    "size": 9417,
+    "age_days": 10.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/生产刷新汇总_20260926_172955.json",
+    "size": 7883,
+    "age_days": 10.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/生产刷新汇总_20260926_174621.json",
+    "size": 13247,
+    "age_days": 10.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/生产刷新汇总_20260926_182601.json",
+    "size": 9879,
+    "age_days": 10.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/生产刷新汇总_20260927_003416.json",
+    "size": 11798,
+    "age_days": 10.2,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/生产刷新汇总_20260927_022042.json",
+    "size": 8185,
+    "age_days": 10.2,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/生产刷新汇总_20260927_024930.json",
+    "size": 7860,
+    "age_days": 10.1,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/生产刷新汇总_20260927_032535.json",
+    "size": 15741,
+    "age_days": 10.1,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/生产刷新汇总_20260927_032737.json",
+    "size": 10259,
+    "age_days": 10.1,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/生产刷新汇总_20260927_032920.json",
+    "size": 10255,
+    "age_days": 10.1,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/生产刷新汇总_20260927_045601.json",
+    "size": 14504,
+    "age_days": 10.1,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/生产刷新汇总_20260927_053537.json",
+    "size": 15048,
+    "age_days": 10.0,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/生产刷新汇总_20260927_060033.json",
+    "size": 10547,
+    "age_days": 10.0,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/生产刷新汇总_20260928_034652.json",
+    "size": 15050,
+    "age_days": 9.1,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/生产刷新汇总_20260928_042739.json",
+    "size": 15495,
+    "age_days": 9.1,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/生产刷新汇总_20260928_060045.json",
+    "size": 10859,
+    "age_days": 9.0,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/生产刷新汇总_20260928_070031.json",
+    "size": 11730,
+    "age_days": 9.0,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/生产刷新汇总_20260928_080026.json",
+    "size": 11415,
+    "age_days": 8.9,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/生产刷新汇总_20260928_113139.json",
+    "size": 16138,
+    "age_days": 8.8,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/生产刷新汇总_20260928_120243.json",
+    "size": 15498,
+    "age_days": 8.8,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/生产刷新汇总_20260928_132313.json",
+    "size": 15497,
+    "age_days": 8.7,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/生产刷新汇总_20260928_150210.json",
+    "size": 16066,
+    "age_days": 8.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/生产刷新汇总_20260928_171038.json",
+    "size": 16066,
+    "age_days": 8.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/生产刷新汇总_20260928_180335.json",
+    "size": 16065,
+    "age_days": 8.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/生产刷新汇总_20260928_191223.json",
+    "size": 16068,
+    "age_days": 8.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/生产刷新汇总_20260928_200052.json",
+    "size": 16066,
+    "age_days": 8.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/生产刷新汇总_20260928_205318.json",
+    "size": 16066,
+    "age_days": 8.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/生产刷新汇总_20260929_005141.json",
+    "size": 16666,
+    "age_days": 8.2,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/生产刷新汇总_20260929_015847.json",
+    "size": 17289,
+    "age_days": 8.2,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/生产刷新汇总_20260929_060038.json",
+    "size": 11539,
+    "age_days": 8.0,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/生产刷新汇总_20260929_130512.json",
+    "size": 18248,
+    "age_days": 7.7,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/生产刷新汇总_20260929_175702.json",
+    "size": 17760,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/生产刷新汇总_20260929_221418.json",
+    "size": 20451,
+    "age_days": 7.3,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/pgv_unzip/readme.txt",
+    "size": 892,
+    "age_days": 7.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/pgv_unzip/include/server/extension/vector/halfvec.h",
+    "size": 2205,
+    "age_days": 7.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/pgv_unzip/include/server/extension/vector/sparsevec.h",
+    "size": 1423,
+    "age_days": 7.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/pgv_unzip/include/server/extension/vector/vector.h",
+    "size": 999,
+    "age_days": 7.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/pgv_unzip/lib/vector.dll",
+    "size": 280064,
+    "age_days": 7.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/pgv_unzip/share/extension/vector--0.1.0--0.1.1.sql",
+    "size": 2047,
+    "age_days": 7.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/pgv_unzip/share/extension/vector--0.1.1--0.1.3.sql",
+    "size": 153,
+    "age_days": 7.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/pgv_unzip/share/extension/vector--0.1.3--0.1.4.sql",
+    "size": 153,
+    "age_days": 7.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/pgv_unzip/share/extension/vector--0.1.4--0.1.5.sql",
+    "size": 153,
+    "age_days": 7.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/pgv_unzip/share/extension/vector--0.1.5--0.1.6.sql",
+    "size": 153,
+    "age_days": 7.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/pgv_unzip/share/extension/vector--0.1.6--0.1.7.sql",
+    "size": 403,
+    "age_days": 7.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/pgv_unzip/share/extension/vector--0.1.7--0.1.8.sql",
+    "size": 396,
+    "age_days": 7.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/pgv_unzip/share/extension/vector--0.1.8--0.2.0.sql",
+    "size": 153,
+    "age_days": 7.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/pgv_unzip/share/extension/vector--0.2.0--0.2.1.sql",
+    "size": 744,
+    "age_days": 7.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/pgv_unzip/share/extension/vector--0.2.1--0.2.2.sql",
+    "size": 153,
+    "age_days": 7.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/pgv_unzip/share/extension/vector--0.2.2--0.2.3.sql",
+    "size": 153,
+    "age_days": 7.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/pgv_unzip/share/extension/vector--0.2.3--0.2.4.sql",
+    "size": 153,
+    "age_days": 7.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/pgv_unzip/share/extension/vector--0.2.4--0.2.5.sql",
+    "size": 153,
+    "age_days": 7.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/pgv_unzip/share/extension/vector--0.2.5--0.2.6.sql",
+    "size": 153,
+    "age_days": 7.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/pgv_unzip/share/extension/vector--0.2.6--0.2.7.sql",
+    "size": 153,
+    "age_days": 7.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/pgv_unzip/share/extension/vector--0.2.7--0.3.0.sql",
+    "size": 153,
+    "age_days": 7.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/pgv_unzip/share/extension/vector--0.3.0--0.3.1.sql",
+    "size": 153,
+    "age_days": 7.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/pgv_unzip/share/extension/vector--0.3.1--0.3.2.sql",
+    "size": 153,
+    "age_days": 7.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/pgv_unzip/share/extension/vector--0.3.2--0.4.0.sql",
+    "size": 864,
+    "age_days": 7.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/pgv_unzip/share/extension/vector--0.4.0--0.4.1.sql",
+    "size": 153,
+    "age_days": 7.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/pgv_unzip/share/extension/vector--0.4.1--0.4.2.sql",
+    "size": 153,
+    "age_days": 7.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/pgv_unzip/share/extension/vector--0.4.2--0.4.3.sql",
+    "size": 153,
+    "age_days": 7.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/pgv_unzip/share/extension/vector--0.4.3--0.4.4.sql",
+    "size": 153,
+    "age_days": 7.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/pgv_unzip/share/extension/vector--0.4.4--0.5.0.sql",
+    "size": 1426,
+    "age_days": 7.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/pgv_unzip/share/extension/vector--0.5.0--0.5.1.sql",
+    "size": 153,
+    "age_days": 7.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/pgv_unzip/share/extension/vector--0.5.1--0.6.0.sql",
+    "size": 243,
+    "age_days": 7.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/pgv_unzip/share/extension/vector--0.6.0--0.6.1.sql",
+    "size": 459,
+    "age_days": 7.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/pgv_unzip/share/extension/vector--0.6.1--0.6.2.sql",
+    "size": 153,
+    "age_days": 7.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/pgv_unzip/share/extension/vector--0.6.2--0.7.0.sql",
+    "size": 20375,
+    "age_days": 7.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/pgv_unzip/share/extension/vector--0.7.0--0.7.1.sql",
+    "size": 153,
+    "age_days": 7.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/pgv_unzip/share/extension/vector--0.7.1--0.7.2.sql",
+    "size": 153,
+    "age_days": 7.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/pgv_unzip/share/extension/vector--0.7.2--0.7.3.sql",
+    "size": 153,
+    "age_days": 7.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/pgv_unzip/share/extension/vector--0.7.3--0.7.4.sql",
+    "size": 153,
+    "age_days": 7.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/pgv_unzip/share/extension/vector--0.7.4--0.8.0.sql",
+    "size": 1227,
+    "age_days": 7.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/pgv_unzip/share/extension/vector--0.8.0--0.8.1.sql",
+    "size": 153,
+    "age_days": 7.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/pgv_unzip/share/extension/vector--0.8.1--0.8.2.sql",
+    "size": 153,
+    "age_days": 7.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/pgv_unzip/share/extension/vector--0.8.2--0.8.3.sql",
+    "size": 153,
+    "age_days": 7.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/pgv_unzip/share/extension/vector--0.8.3--0.8.4.sql",
+    "size": 153,
+    "age_days": 7.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/pgv_unzip/share/extension/vector--0.8.4--0.8.5.sql",
+    "size": 153,
+    "age_days": 7.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/pgv_unzip/share/extension/vector--0.8.5--0.8.6.sql",
+    "size": 153,
+    "age_days": 7.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/pgv_unzip/share/extension/vector--0.8.6.sql",
+    "size": 31171,
+    "age_days": 7.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/pgv_unzip/share/extension/vector.control",
+    "size": 145,
+    "age_days": 7.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/pgv_unzip/share/extension/vector.sql",
+    "size": 31171,
+    "age_days": 7.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/__pycache__/_resume_loop.cpython-313.pyc",
+    "size": 6389,
+    "age_days": 15.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "modules/regulatory_scrapers/data/cleaned/nfra_cleaned_20261006.quarantine.jsonl",
+    "size": 58827,
+    "age_days": 1.2,
+    "reason": "超出**分组**保留量 1（组 nfra）",
+    "category": "clean_quarantine_stale",
+    "move_to": "archive/clean_quarantine"
+   },
+   {
+    "file": "modules/regulatory_scrapers/data/cleaned/nfra_cleaned_20261004.quarantine.jsonl",
+    "size": 58827,
+    "age_days": 3.0,
+    "reason": "超出**分组**保留量 1（组 nfra）",
+    "category": "clean_quarantine_stale",
+    "move_to": "archive/clean_quarantine"
+   },
+   {
+    "file": "modules/regulatory_scrapers/data/cleaned/nfra_cleaned_20260929.quarantine.jsonl",
+    "size": 58827,
+    "age_days": 7.4,
+    "reason": "超出**分组**保留量 1（组 nfra）",
+    "category": "clean_quarantine_stale",
+    "move_to": "archive/clean_quarantine"
+   },
+   {
+    "file": "modules/regulatory_scrapers/data/cleaned/nfra_cleaned_20260928.quarantine.jsonl",
+    "size": 58827,
+    "age_days": 8.4,
+    "reason": "超出**分组**保留量 1（组 nfra）",
+    "category": "clean_quarantine_stale",
+    "move_to": "archive/clean_quarantine"
+   },
+   {
+    "file": "modules/regulatory_scrapers/data/cleaned/nfra_cleaned_20260927.quarantine.jsonl",
+    "size": 58827,
+    "age_days": 10.0,
+    "reason": "超出**分组**保留量 1（组 nfra）",
+    "category": "clean_quarantine_stale",
+    "move_to": "archive/clean_quarantine"
+   },
+   {
+    "file": "modules/regulatory_scrapers/data/cleaned/nfra_cleaned_20260926.quarantine.jsonl",
+    "size": 58827,
+    "age_days": 10.5,
+    "reason": "超出**分组**保留量 1（组 nfra）",
+    "category": "clean_quarantine_stale",
+    "move_to": "archive/clean_quarantine"
+   }
+  ],
+  "stats": {
+   "classifier_backups": {
+    "exists": true,
+    "total": 34,
+    "kept": 10,
+    "incident_kept": 0
+   },
+   "ipb_backups": {
+    "exists": true,
+    "total": 1,
+    "kept": 1,
+    "incident_kept": 0
+   },
+   "reports_tmp": {
+    "exists": true,
+    "total": 206,
+    "older_than_days": 7
+   },
+   "timeliness_err": {
+    "exists": true,
+    "total": 0
+   },
+   "retention_ledgers": {
+    "exists": true,
+    "total": 5,
+    "kept": 5,
+    "incident_kept": 0
+   },
+   "clean_quarantine_stale": {
+    "exists": true,
+    "total": 8,
+    "kept": 2,
+    "incident_kept": 0
+   },
+   "repo_baks": {
+    "total": 64,
+    "included": false
+   }
+  },
+  "bytes": 48166534
+ },
+ "applied": null
+}

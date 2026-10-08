@@ -125,12 +125,14 @@ class _Embedder:
         return f"<Embedder {self.name} dim={self.dim} path={os.path.basename(self.path)}>"
 
 
-def load_embedder(name: str) -> _Embedder:
+def _load_embedder_uncached(name: str) -> _Embedder:
     """加载嵌入模型（**本地路径 + 强制离线**）。支持 `bge_base_zh`/`text2vec`/`youtu_embedding`。
 
     `sentence-transformers` 路径优先（三者均为 ST 格式：含 `modules.json`/`1_Pooling`）；
     **带自定义建模代码者例外**（`youtu_embedding` 的 `configuration_youtu.py`）→ 直走
     "裸 transformers + **按 `1_Pooling` 声明池化**"（见 `_needs_remote_code` 的实测依据）。
+
+    ⚠️ 外部请调用 `load_embedder()`（带**进程级缓存**）；本函数每次都会真正加载模型。
     """
     path, p = _resolve(name)
     _force_offline()
@@ -518,8 +520,11 @@ def _hanlp_alias() -> str:
     return alias
 
 
-def load_segmenter(name: str = "ltp"):
-    """加载分句器（本地路径 + 强制离线）。支持 `ltp` 与 `hanlp`（后者需权重已预置）。"""
+def _load_segmenter_uncached(name: str = "ltp"):
+    """加载分句器（本地路径 + 强制离线）。支持 `ltp` 与 `hanlp`（后者需权重已预置）。
+
+    ⚠️ 外部请调用 `load_segmenter()`（带**进程级缓存**）；本函数每次都会真正加载模型。
+    """
     path, _p = _resolve(name)
     _force_offline()
     if name == "hanlp":
@@ -586,9 +591,57 @@ def load_segmenter(name: str = "ltp"):
     )
 
 
+#: 分句器**进程级缓存**（key = `(后端名, 权重路径)`）。见 `load_segmenter` 的 N-183 说明。
+_SEGMENTER_CACHE: dict = {}
+
+
+def load_segmenter(name: str = "ltp"):
+    """加载分句器（**进程级缓存**：同 `(name, 权重路径)` 复用同一实例）。
+
+    ⚠️ N-183（2026-10-01）：原实现**无缓存**，而 `semantic_enhance.split_sentences` **每次调用**
+    都会 `load_segmenter(prefer)` → **逐文档重复加载模型**（LTP / HanLP 加载 20~40s）。实测后果：
+      ① 200 条正文的分句 A/B 因逐条重载而**无法在合理时间内完成**（本轮实测卡住 20 分钟无输出）；
+      ② 若 `relations:gen` 启用 ML 分句（`REG_ORCH_SEMANTIC_SPLIT=1`），按 gov 13178 条计需
+         **数天**（13178 × ~30s ≈ 4.6 天）⇒ 该路径**实际不可用**（"能跑"与"跑得完"是两件事）。
+
+    缓存语义（**不降低判据强度**）：`_resolve()` 仍**每次**执行 —— 权重缺失 / 就绪度变化照旧抛
+    `ModelUnavailable`；缓存只复用"已成功加载的实例"。若需强制重载，调用方清空
+    `_SEGMENTER_CACHE`（测试用）。
+    """
+    key = (str(name), str(_resolve(name)[0]))
+    hit = _SEGMENTER_CACHE.get(key)
+    if hit is not None:
+        return hit
+    obj = _load_segmenter_uncached(name)
+    _SEGMENTER_CACHE[key] = obj
+    return obj
+
+
 # --------------------------------------------------------------------------
 # 指纹（provenance 用）
 # --------------------------------------------------------------------------
+#: 嵌入器**进程级缓存**（key = `(模型名, 权重路径)`）。见 `load_embedder` 的 N-183 说明。
+_EMBEDDER_CACHE: dict = {}
+
+
+def load_embedder(name: str):
+    """加载嵌入模型（**进程级缓存**：同 `(name, 权重路径)` 复用同一实例）。
+
+    ⚠️ N-183（2026-10-01）：与 `load_segmenter` **同源缺陷** —— 原实现无缓存，而
+    `semantic_enhance.embed_documents`（`semantic_enhance.py:193`）**每次调用**都
+    `load_embedder(name)` → 逐批重复加载嵌入模型（数百 MB 权重 + ST 初始化，单次数十秒）
+    ⇒ 在大批量上不可用。缓存语义与 `load_segmenter` 一致：`_resolve()` 仍每次执行
+    （就绪度/权重缺失照旧 fail-closed），只复用**已成功加载的实例**。
+    """
+    key = (str(name), str(_resolve(name)[0]))
+    hit = _EMBEDDER_CACHE.get(key)
+    if hit is not None:
+        return hit
+    obj = _load_embedder_uncached(name)
+    _EMBEDDER_CACHE[key] = obj
+    return obj
+
+
 def embedder_fingerprint(name: str) -> dict:
     """→ `{model, dep_version, weights, ready}`（**键序稳定**，可落盘后逐键 diff）。
 

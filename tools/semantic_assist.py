@@ -52,6 +52,11 @@ import paths
 from config.enums import SOURCE_ORDER
 from config.exitcodes import ExitCode
 
+# 标题归一**唯一实现**（SSOT）：归类器产物 ↔ cleaned 的**精确匹配**用保守层
+# （`norm_title_strict`：仅去尾注 + 去《》引号空白）。不得在本文件另写副本
+# （`gate_no_duplicate_libs` 会把"私有归一重复"判 FAIL）。
+from std_lib.common_lib.norm import norm_title_strict
+
 OUT_DIR = os.path.join(paths.ROOT, "reports", "semantic")
 #: 主题关键词 SSOT 的字段名（`internal_policy_base.align.THEME_TITLE_KW`）
 _TEXT_FIELDS = ("title", "summary")
@@ -63,34 +68,84 @@ def _policy() -> dict:
     return (st.load_manifest().get("usage_policy") or {})
 
 
-def _load_records(src: str, limit: int) -> list:
-    """读某源 cleaned 的**限量抽样**（只取裁定所需字段，不载全文 —— 控制内存与耗时）。"""
+def _load_records(src: str, limit: int, *, prefer: set | None = None) -> tuple:
+    """读某源 cleaned 的**限量抽样** → `(rows, scanned)`（只取裁定所需字段，不载全文）。
+
+    ⚠️ N-184b（2026-10-01）：`prefer` = 已知**有确定性基线**的归一标题集合（来自分类器归属）。
+    抽样**优先取有基线的记录**，否则一致性指标会因"样本里几乎没有基线"而失真 ——
+    实测不偏向时覆盖率仅 **13.5%**（116/858），`agreement` 只代表极小子集。
+    扫描仍**限量**（`scan_cap`）以保证耗时可控；未命中的记录继续作为一般样本填充。
+    """
     from clean_index import get_clean_index
 
     p = get_clean_index().latest_csv_path(src)
     if not p or not os.path.exists(p):
-        return []
-    rows: list = []
+        return [], 0
+    hit: list = []
+    other: list = []
+    scanned = 0
+    scan_cap = max(limit * 20, 2000)
     # 大字段（body_text/attachment_content）可能极长 → 提高字段上限，但只取所需列
     csv.field_size_limit(sys.maxsize)
     with open(p, encoding="utf-8", errors="replace") as fh:
         rd = csv.DictReader(fh)
         for r in rd:
-            if len(rows) >= limit:
+            if scanned >= scan_cap or (len(hit) >= limit and len(other) >= limit):
                 break
+            scanned += 1
             title = (r.get("title") or "").strip()
             if not title:
                 continue
-            rows.append(
-                {
-                    "source": src,
-                    "title": title,
-                    "theme_name": (r.get("theme_name") or "").strip(),
-                    "document_number": (r.get("document_number") or "").strip(),
-                    "key": (r.get("dedup_key") or r.get("source_url") or title)[:120],
-                }
-            )
-    return rows
+            rec = {
+                "source": src,
+                "title": title,
+                "theme_name": (r.get("theme_name") or "").strip(),
+                "document_number": (r.get("document_number") or "").strip(),
+                "key": (r.get("dedup_key") or r.get("source_url") or title)[:120],
+            }
+            if prefer and norm_title_strict(title) in prefer:
+                hit.append(rec)
+            else:
+                other.append(rec)
+    rows = hit[:limit]
+    if len(rows) < limit:
+        rows += other[: limit - len(rows)]
+    return rows, scanned
+
+
+def _load_baseline() -> dict:
+    """确定性主题归属**基线映射** `{(源, 归一标题): 主题号}`（唯一事实源 = 分类器产物）。
+
+    ⚠️ N-184（2026-10-01）：原实现只取 `cleaned.theme_name` 作基线，而该字段在**五源 100% 存在
+    却 100% 为空**（`unified_schema` 的默认值，链上无回填）→ `agreement` **恒为 None** ——
+    即"ML 建议 vs 确定性归属"的差异**在生产中不可测**，而这恰是本仓"启用增强层前须先量 P/R"
+    纪律所依赖的指标。现从 `classify:all` 的真实产物 `_t{N}_final.json` 读基线；
+    `baseline_n` 如实披露覆盖率（**未命中即不计入一致性**，不静默按 0 计）。
+    """
+    out: dict = {}
+    base_dir = os.path.join(paths.MODULES_DIR, "regulatory_classifier", "data")
+    if not os.path.isdir(base_dir):
+        return out
+    for tid in range(1, 11):
+        p = os.path.join(base_dir, f"_t{tid}_final.json")
+        if not os.path.exists(p):
+            continue
+        try:
+            with open(p, encoding="utf-8") as fh:
+                items = json.load(fh)
+        except (OSError, ValueError):
+            continue
+        if not isinstance(items, list):
+            continue
+        for it in items:
+            if not isinstance(it, dict):
+                continue
+            src = str(it.get("file_src") or "").strip()
+            title = norm_title_strict(str(it.get("title") or ""))
+            if title:
+                out[(src or "*", title)] = f"T{tid}"
+                out.setdefault(("*", title), f"T{tid}")
+    return out
 
 
 def _theme_prototypes() -> dict:
@@ -162,12 +217,30 @@ def run(source: str = "all", limit: int = 200, mode: str = "full", dry_run: bool
         _write(res, dry_run)
         return res
 
-    # ③ 加载记录
+    # ⑤ 确定性基线（N-184）：优先记录内 `theme_name`，否则回落到**分类器产物**（真实归属源）。
+    #    **必须先加载**：抽样要优先取"有基线"的记录（N-184b），否则一致性指标会因样本缺基线而失真。
+    base_map = _load_baseline()
+    res["baseline"] = {
+        "sources": ["cleaned.theme_name", "classifier:_t{N}_final.json"],
+        "classifier_entries": len(base_map),
+    }
+
+    # ③ 加载记录（优先有基线者 → 一致性指标有代表性；覆盖度仍如实披露）
     srcs = list(SOURCE_ORDER) if source == "all" else [source]
     rows: list = []
+    scanned = 0
+    _prefer = {t for (_s, t) in base_map}
     for s in srcs:
-        rows += _load_records(s, limit)
+        _rows, _sc = _load_records(s, limit, prefer=_prefer)
+        rows += _rows
+        scanned += _sc
     res["records"] = len(rows)
+    res["sample_policy"] = {
+        "prefer_baseline": True,
+        "scan_cap_per_source": max(limit * 20, 2000),
+        "scanned": scanned,
+        "why": "优先取有确定性基线的记录，使 agreement 具代表性（N-184b）；其余记录仅计入分布/边距",
+    }
     if not rows:
         res["status"] = "degraded"
         res["note"] = "无可用 cleaned 记录（各源 cleaned 缺失或标题为空）"
@@ -195,6 +268,7 @@ def run(source: str = "all", limit: int = 200, mode: str = "full", dry_run: bool
     # ⑤ 最近邻裁定（cosine；报 top1/top2 与 margin）
     dist: dict = {}
     ag_hit = ag_tot = 0
+    base_src_count: dict = {}  # 基线来源计数（N-184：如实披露"基线从哪来"）
     margins: list = []
     for r, vec in zip(rows, rr.vectors, strict=False):
         sims = sorted(((t, _cosine(vec, pv)) for t, pv in zip(theme_names, pr.vectors, strict=False)),
@@ -207,6 +281,13 @@ def run(source: str = "all", limit: int = 200, mode: str = "full", dry_run: bool
         dist[top1] = dist.get(top1, 0) + 1
         margins.append(r["margin"])
         base = r.get("theme_name") or ""
+        _base_src = "cleaned.theme_name" if base else ""
+        if not base:
+            _nt = norm_title_strict(r["title"])
+            base = base_map.get((r["source"], _nt)) or base_map.get(("*", _nt), "")
+            _base_src = "classifier" if base else ""
+        if base:
+            base_src_count[_base_src] = base_src_count.get(_base_src, 0) + 1
         if base:  # 有确定性基线才计一致性（否则如实计 n/a）
             ag_tot += 1
             if base == top1:
@@ -219,6 +300,9 @@ def run(source: str = "all", limit: int = 200, mode: str = "full", dry_run: bool
                 )
     res["agreement"] = (round(ag_hit / ag_tot, 4) if ag_tot else None)
     res["agreement_n"] = ag_tot
+    # N-184：覆盖度与来源——`agreement` 为 None 时必须能看出**为什么**（是"无基线"还是"没算"）
+    res["baseline_source_counts"] = dict(sorted(base_src_count.items()))
+    res["baseline_coverage"] = round(ag_tot / len(rows), 4) if rows else None
     res["margin"] = {
         "min": round(min(margins), 4) if margins else None,
         "median": round(sorted(margins)[len(margins) // 2], 4) if margins else None,
@@ -267,13 +351,27 @@ def _write(res: dict, dry_run: bool) -> None:
     ]
     if res.get("embedder_notice"):
         lines.append(f"- ⚠️ 嵌入降级披露：{res['embedder_notice']}")
+    _bs = res.get("baseline") or {}
+    _bsc = res.get("baseline_source_counts") or {}
+    _sp = res.get("sample_policy") or {}
+    if _sp.get("prefer_baseline"):
+        lines.append(
+            f"- 抽样策略：**优先取有确定性基线的记录**（扫描上限 {_sp.get('scan_cap_per_source')}/源，"
+            f"实扫 {_sp.get('scanned')}）→ 一致性在有基线子集上度量"
+        )
     if res.get("agreement") is not None:
         lines.append(
             f"- **与确定性主题归属的一致性**：{res['agreement']:.1%}"
-            f"（{res.get('agreement_n')} 条有基线；基线为空者计入分布/边距但**不计**一致性）"
+            f"（{res.get('agreement_n')} 条有基线 / 覆盖 {res.get('baseline_coverage')}；"
+            f"来源 {_bsc or {'—': 0}}；基线为空者计入分布/边距但**不计**一致性）"
         )
     else:
-        lines.append("- 一致性：**n/a**（样本内无确定性基线 `theme_name`）")
+        lines.append(
+            "- 一致性：**n/a**（样本内**无确定性基线**）—— 基线来源："
+            f"`{', '.join(_bs.get('sources') or [])}`；分类器条目 {_bs.get('classifier_entries', 0)}。"
+            "⚠️ 若分类器条目为 0，说明 `classify:all` 尚未产出 `_t{N}_final.json`（基线不可得，"
+            "而非一致性为 0）。"
+        )
     m = res.get("margin") or {}
     if m.get("median") is not None:
         lines.append(f"- **margin（top1−top2）**：中位 {m['median']}，min {m['min']}，max {m['max']}")

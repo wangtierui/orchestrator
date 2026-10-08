@@ -22,6 +22,7 @@ import json
 import logging
 import os
 import re
+from collections import Counter
 from typing import Any
 
 LOG = logging.getLogger("scraper_std.ocr_correction")
@@ -127,13 +128,65 @@ def replace_confusions(text: str, cmap: dict[str, str]) -> tuple[str, int]:
 
 
 class JiebaDict:
-    """② 词典校验：加载 custom_dict.txt，分词 + 编辑距离修正。"""
+    """② 词典校验：加载 custom_dict.txt，分词 + 编辑距离修正。
+
+    ⚠️ **性能与可复现性（N-182，2026-10-01 修复）**
+    ---------------------------------------------------------------------------
+    原 `check_and_fix` 形如::
+
+        vocab = set(self.high_freq.keys())        # 每次调用重建（每条记录一次）
+        for tok in self.tokens(text):
+            if tok in vocab or len(tok) <= 1:
+                continue
+            for w in vocab:                        # ← O(tokens × vocab)
+                if abs(len(w) - len(tok)) > 2:
+                    continue
+                d = difflib.SequenceMatcher(None, tok, w).ratio()
+
+    三重问题（**实测**：profiler 显示单条 5.8KB 正文触发 ~1.3 万次比对，占 94% 耗时）：
+
+      ① **二次复杂度**：对每个未命中 token **全表扫描** + `SequenceMatcher`（其内部为
+         Ratcliff-Obershelp）；`vocab` 上限 2000（`build_high_freq_dict(max_words=2000)`）。
+      ② **"休眠后被依赖激活"的性能地雷**：`build_high_freq_dict` 在 `import jieba` 失败时
+         **返回 `{}`**（其 except 分支）→ `checker=None` → 本循环**根本不执行**。
+         历史 clean 因此很快（实测 0.14~0.19 s/MB）。**2026-09-29 11:36 装入 jieba 后循环被激活**
+         → gov 全量（13178 条 / 正文 ~77MB / 词表 2000）实测 **15 s/MB**，单源 clean 由 ~160s
+         涨到 **>15526s**（撞满 N-150 的 15510s 上限并 TIMEOUT）。
+         ⇒ 教训：**复杂度地雷不能靠"抬高超时预算"兜底**（N-150 只是把"必然超时"变成"勉强超时"）。
+      ③ **同分不确定**：`vocab` 是 `set`，迭代序受 `PYTHONHASHSEED`（str 哈希随机化）影响 →
+         多词 `ratio` 并列（严格 `>` 比较下）时，**同一输入在不同进程可能得到不同替换**；
+         clean 产物是事实源，这属**可复现性缺陷**。
+
+    本实现：**结果逐字节等价**（并列顺序被显式确定化），做法——
+
+      · **候选剪枝（数学必要条件，不丢任何 ratio ≥ 0.85 的词）**：
+        `ratio = 2M/(la+lb) ≥ 0.85` ⟺ `M ≥ ceil(17·(la+lb)/40)`（整数运算，无浮点误差；
+        base 用 `M ≤ |字符多重集交集|` 作上界）。
+      · **长度窗不可行即剔除**：若 `ceil(17·(la+L)/40) > min(la, L)`，则该长度**无任何词可达标**
+        → 直接移出候选（例如 2 字 token 与 3 字词：`ceil(2.125)=3 > 2` ⇒ 不可能）。
+      · **短 token 走稀有字倒排**：当窗内每个 L 都要求 `M == la`（即"必须包含 token 的全部字符"，
+        实测覆盖 la ≤ 8，即绝大多数中文词）→ 取 token 中**在窗内词表出现最少**的字符做倒排索引
+        + 多重集包含校验，把候选从 ~2000 降到个位数量级。
+      · **逐调用缓存**（带上限）`token → 最佳候选`：同一正文/跨记录重复 token 直接复用。
+      · **词表序确定化**：`(-频次, 词形)` → 跨进程可复现。
+    """
+
+    #: 候选缓存上限（超出即清空；防止超长语料下无界增长）
+    _CACHE_MAX = 200_000
 
     def __init__(self, dict_path: str | None = None, high_freq: dict[str, int] | None = None):
         self.dict_path = dict_path
         self.high_freq = dict(high_freq or {})  # {词: 频次}
         self._jieba = None
         self._loaded = False
+        # N-182：索引与缓存（惰性构建；词表规模变化即重建）
+        self._vocab: list[str] = []
+        self._vocab_set: set[str] = set()
+        self._vocab_sig = -1
+        self._by_len: dict[int, list[int]] = {}
+        self._by_rarelen: dict[tuple[str, int], list[int]] = {}
+        self._wc: list[Counter] = []
+        self._best_cache: dict[str, str | None] = {}
 
     def _ensure(self) -> None:
         if self._loaded:
@@ -190,34 +243,109 @@ class JiebaDict:
         except Exception:  # noqa: BLE001
             return []
 
+    # ---- N-182：词表索引（惰性；词表规模变化即重建） ----
+    def _ensure_index(self) -> None:
+        if self._vocab_sig == len(self.high_freq):
+            return
+        # **确定性词表序**（频次降序、同频按词形）→ 跨进程可复现（原为 set 哈希序）
+        words = sorted(self.high_freq, key=lambda w: (-int(self.high_freq.get(w, 0)), w))
+        self._vocab = words
+        self._vocab_set = set(words)
+        self._by_len = {}
+        self._by_rarelen = {}
+        self._wc = []
+        for i, w in enumerate(words):
+            self._by_len.setdefault(len(w), []).append(i)
+            self._wc.append(Counter(w))
+            for c in set(w):
+                self._by_rarelen.setdefault((c, len(w)), []).append(i)
+        self._vocab_sig = len(self.high_freq)
+        self._best_cache = {}
+
+    @staticmethod
+    def _min_common(la: int, lb: int) -> int:
+        """`ratio = 2M/(la+lb) ≥ 0.85` 所需的**最少公共字符数**（整数上取整，无浮点误差）。"""
+        return -(-(17 * (la + lb)) // 40)
+
+    def _candidates(self, tok: str, ctr: Counter) -> list[int]:
+        """按**确定性词表序**返回"必须做 ratio 判定"的候选下标（**不丢任何 ≥0.85 的词**）。
+
+        剪枝依据（全为**必要条件**，故等价）：
+          ① 原实现硬过滤 `abs(len(w)-len(tok)) <= 2` → 长度窗 `[la-2, la+2]`；
+          ② `M ≤ min(la, L)`，故 `ceil(17(la+L)/40) > min(la,L)` 的长度**不可能**达标 → 剔除
+             （例：2 字 token vs 3 字词 → `ceil(2.125)=3 > 2`）；
+          ③ 若窗内每个 L 都要求 `M ≥ la`（即"必须包含 token 全部字符"），则用**稀有字倒排**
+             + 多重集包含校验（缺任一字符即不可能达标）—— 实测覆盖 la ≤ 8，即绝大多数中文词；
+          ④ 其余（长 token）用"多重集交集上界"廉价拒绝后再精算。
+        """
+        la = len(tok)
+        lens = [L for L in range(max(1, la - 2), la + 3) if L in self._by_len]
+        lens = [L for L in lens if self._min_common(la, L) <= min(la, L)]
+        if not lens:
+            return []
+        if all(self._min_common(la, L) >= la for L in lens):
+            def _cnt(c: str) -> int:
+                return sum(len(self._by_rarelen.get((c, L), ())) for L in lens)
+
+            rare = min(set(tok), key=_cnt)
+            idxs: list[int] = []
+            for L in lens:
+                idxs.extend(self._by_rarelen.get((rare, L), ()))
+            idxs = [i for i in idxs if not (ctr - self._wc[i])]  # ⊇ 校验（Counter 语义）
+            idxs.sort()
+            return idxs
+        out: list[int] = []
+        for L in lens:
+            for i in self._by_len[L]:
+                common = sum((ctr & self._wc[i]).values())
+                if 2 * common >= 0.85 * (la + L):  # 必要条件；未过者 ratio 必 < 0.85
+                    out.append(i)
+        out.sort()
+        return out
+
+    def _best_for(self, tok: str, ctr: Counter) -> str | None:
+        """`tok` 的最佳替换词（无则 `None`）；带缓存（跨记录复用同一判定）。"""
+        if tok in self._best_cache:
+            return self._best_cache[tok]
+        best: str | None = None
+        best_d = 99.0
+        for i in self._candidates(tok, ctr):
+            w = self._vocab[i]
+            d = difflib.SequenceMatcher(None, tok, w).ratio()
+            if d >= 0.85 and d > best_d:
+                best_d, best = d, w
+        if best is not None and best_d >= 1.0:
+            best = None  # 与原实现一致：ratio 恰为 1.0 **不替换**
+        if len(self._best_cache) >= self._CACHE_MAX:
+            self._best_cache.clear()
+        self._best_cache[tok] = best
+        return best
+
     def check_and_fix(self, text: str) -> tuple[str, int]:
         """
-        分词结果中，若某词不在词典且编辑距离 ≤ 2 与高频词匹配 → 替换。
-        返回 (文本, 修正次数)。
+        分词结果中，若某词不在词典且与高频词 `ratio ≥ 0.85` → 替换。
+        返回 `(文本, 修正次数)`。
+
+        **等价不变量**（N-182 加速不得改变结果）：
+          · 遍历 `self.tokens(text)` 的**原始分词序**；`tok ∈ vocab` 或长度 ≤ 1 跳过；
+          · 候选按**确定性词表序**扫描，`d >= 0.85` 且**严格大于**当前最优才替换 → 并列取序首；
+          · `ratio == 1.0` **不替换**（对应原实现 `best_d < 1.0` 判据）；
+          · 替换用 `str.replace`（**全局替换**），`out` 逐次演进 → 后续 token 看到先前替换结果。
         """
         if not self.high_freq or not text:
             return text, 0
         self._ensure()
         if not self._jieba:
             return text, 0
-        vocab = set(self.high_freq.keys())
+        self._ensure_index()
+        vocab = self._vocab_set
         fixed = 0
         out = text
         for tok in self.tokens(text):
             if tok in vocab or len(tok) <= 1:
                 continue
-            # 编辑距离 ≤ 2 且长度相近
-            best = None
-            best_d = 99
-            for w in vocab:
-                if abs(len(w) - len(tok)) > 2:
-                    continue
-                d = difflib.SequenceMatcher(None, tok, w).ratio()
-                # 用 ratio 反推编辑距离近似：ratio>=0.85 视为 ≤2
-                if d >= 0.85 and d > best_d:
-                    best_d = d
-                    best = w
-            if best and best_d < 1.0:
+            best = self._best_for(tok, Counter(tok))
+            if best and best != tok:
                 out = out.replace(tok, best)
                 fixed += 1
                 LOG.info("[OCR校正] %s → %s", tok, best)
