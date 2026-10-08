@@ -190,6 +190,18 @@ class ScrapeConfig:
     # 详情阶段断点落盘间隔（条；0=不落暂存）。供长时子源（zhengceku，全量约 30 小时）
     # 在中断后可续跑——主库只在全部结束后写一次，中途中断必须靠暂存文件兜底。
     checkpoint_every: int = 200
+    # ---- N-190（2026-10-08）**增量治理**参数（两子源共用；判据见 gov_zhengceku.should_stop_paging）----
+    #: 连续 N 页无「新条目」（detail_url 不在主库）即停止翻页（**仅 zhengceku**；xzfgk 早有等价逻辑）。
+    #: 为何需要：zhengceku 列表 629 页、原实现**恒扫全部页**，实测单轮 ~20+ 分钟纯空转
+    #: （页面全是主库既有条目）。列表按发布日期倒序 ⇒ 首页起后续只会更旧。
+    stop_after_empty_pages: int = 1
+    #: 历史存量补全模式：**忽略早停**、扫完全部列表页（月度作业用；不进周度增量）。
+    #: 保留原"持续补全 zhengceku 历史正文"的意图，但把它与"追新"**分离**，各自独立排程与计时。
+    backfill: bool = False
+    #: 详情阶段**软预算**（秒；0=不限）——到达即停止取新详情并**正常落盘退出**（rc=0，
+    #: `stopped_reason=budget`）。为何要软预算：撞上层 7200s **硬超时**会被强杀，
+    #: 而"未走完流程的产物"仍会落盘并被下游采用（N-152 的教训）。
+    max_seconds: float = 0.0
 
 
 def clean_text(s: Any) -> str:
@@ -384,6 +396,46 @@ def write_outputs(records: list[dict[str, Any]], cfg: ScrapeConfig,
     return {"json": json_path, "csv": csv_path if write_csv else ""}
 
 
+#: 采集统计落点（相对仓库根）；每源**只保留最新一份**（覆盖写）
+_COLLECT_STATS_REL = ("data", "run_state", "collect_stats")
+
+
+def collect_stats_path(label: str) -> str:
+    """采集统计文件路径：`<repo>/data/run_state/collect_stats/<label>.json`（N-190）。
+
+    为何放这里（不是 reports/ 也不是 raw/）：
+      · `data/run_state/` 是**既有运行状态目录**（`last_run_steps.json` 同处），且**未纳入 git**
+        ⇒ 每次采集更新统计**不产生提交噪声**，同时给"无效时长"留下可比的历史基线；
+      · **不写进 `data/raw/`**：该目录是**事实源**，统计属旁路观测，不得混入（本仓一贯纪律）。
+
+    根路径用 `os.pardir` 拼（零转义写法）：本文件在 `collectors/`，上溯三级即仓库根。
+    """
+    here = os.path.dirname(os.path.abspath(__file__))
+    repo_root = os.path.normpath(os.path.join(here, os.pardir, os.pardir, os.pardir))
+    return os.path.join(repo_root, *_COLLECT_STATS_REL, "%s.json" % label)
+
+
+def write_collect_stats(label: str, stats: dict) -> str:
+    """原子写采集统计（旁路观测；写失败**不得中断采集**）。返回路径（失败返回空串）。
+
+    指标口径（供"无效时长"评估，字段含义见 `gov_zhengceku.should_stop_paging` 与批 45 报告）：
+      `list_pages_fetched` / `list_pages_without_new` → **空转页占比** = 后者/前者；
+      `details_skipped_master` → 因"主库已有正文"而**未发请求**的条目（省下的详情请求数）；
+      `elapsed_list_s` / `elapsed_detail_s` → 时长按阶段归因。
+    """
+    p = collect_stats_path(label)
+    try:
+        os.makedirs(os.path.dirname(p), exist_ok=True)
+        tmp = p + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(stats, f, ensure_ascii=False, indent=2)
+        os.replace(tmp, p)
+        return p
+    except Exception as e:  # noqa: BLE001  旁路观测：失败只告警
+        LOG.warning("【collect-stats】统计落盘失败（不影响采集）：%s", e)
+        return ""
+
+
 def build_config(args) -> ScrapeConfig:
     base, category = SOURCES[args.source]
     return ScrapeConfig(
@@ -402,6 +454,10 @@ def build_config(args) -> ScrapeConfig:
         retries=args.retries,
         summary_len=args.summary_len,
         checkpoint_every=getattr(args, "checkpoint_every", 200),
+        # N-190：增量治理参数（老调用方无这些属性时退回默认，保持向后兼容）
+        stop_after_empty_pages=int(getattr(args, "stop_after_empty_pages", 1) or 1),
+        backfill=bool(getattr(args, "backfill", False)),
+        max_seconds=float(getattr(args, "max_seconds", 0.0) or 0.0),
     )
 
 
@@ -431,4 +487,6 @@ def merge_with_master(new_records: list[dict[str, Any]], out_dir: str) -> list[d
     return list(merged.values())
 
 
-__all__ = ["ScrapeConfig", "_is_https_scheme_upgrade", "_longest_text_block", "build_config", "clean_text", "decode_html", "extract_date", "extract_doc_number", "extract_issue_organ", "load_resume", "make_summary", "merge_with_master", "write_outputs"]
+__all__ = ["ScrapeConfig", "_is_https_scheme_upgrade", "_longest_text_block", "build_config", "clean_text",
+           "collect_stats_path", "write_collect_stats", "decode_html", "extract_date", "extract_doc_number",
+           "extract_issue_organ", "load_resume", "make_summary", "merge_with_master", "write_outputs"]

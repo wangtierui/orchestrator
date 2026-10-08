@@ -54,7 +54,7 @@ READONLY_DISCLOSURE = {"retention:plan", "semantic:preflight", "pg:health"}
 PURPOSE: dict = {
     # —— 阶段 1 采集/清洗/条文 ——
     "collect:nfra_weekly": "nfra 周报采集（按周触发）",
-    "collect": "各源原始采集（gov/mof/nfra/pbc/supp）",
+    "collect": "各源原始采集（gov **按子源拆为 xzfgk/zhengceku 两独立步骤**、mof/nfra/pbc/supp）",
     "supp:ingest_batch": "补充库批量摄取（backlog 驱动）",
     "clean": "原始 → 清洗（6 态抽取 + 校验隔离）",
     "timeliness:verify": "时效核验（北大法宝；Node 侧 MCP）",

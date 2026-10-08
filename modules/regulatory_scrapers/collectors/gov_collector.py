@@ -127,6 +127,7 @@ from gov_parse import (  # noqa: F401  拆分 re-export（显式；规避 F405�
     load_resume,
     make_summary,
     merge_with_master,
+    write_collect_stats,
     write_outputs,
 )
 
@@ -323,6 +324,8 @@ class XzfgkScraper:
     def __init__(self, cfg: ScrapeConfig, client: RobustSession):
         self.cfg = cfg
         self.client = client
+        #: N-190：本次运行的采集统计（与 zhengceku 同口径字段名，便于统一落盘与比较）
+        self.stats: dict = {}
 
     def _list_page(self, page_index: int) -> str | None:
         # 默认页即展示全部现行有效行政法规；分页参数 PageIndex 从 1 开始
@@ -407,45 +410,98 @@ class XzfgkScraper:
             resumed, _ = load_resume(self.cfg.out_dir, self.cfg.source)
             seen_urls = set(k[1] for k in resumed if k[1])
             LOG.info("【xzfgk resume】将跳过 %d 条已抓条目", len(seen_urls))
+        # —— N-190 采集统计（字段名与 zhengceku 同口径，便于统一落盘与跨子源比较）——
+        pages_fetched = 0
+        pages_without_new = 0
+        items_seen = 0
+        new_items = 0
+        details_fetched = 0
+        detail_seconds = 0.0
+        stopped_reason = "end"
+        budget = float(getattr(self.cfg, "max_seconds", 0.0) or 0.0)
+        t0 = time.time()
+
+        def _mk_stats() -> dict:
+            total = time.time() - t0
+            return {
+                "sub_source": "xzfgk",
+                "list_pages_fetched": pages_fetched,
+                "list_pages_without_new": pages_without_new,
+                "list_items_seen": items_seen,
+                "new_items": new_items,
+                # xzfgk 的详情是**逐条随列表抓**（非"先收集再抓"）⇒ 待抓数即新条目数（口径与 zhengceku 对齐）
+                "pending_details": new_items,
+                "details_fetched": details_fetched,
+                "details_failed": 0,
+                # xzfgk 的跳过发生在**条目级**（resume 集含 (title,url)），无"已知待补正文"概念 → 0
+                "details_skipped_master": 0,
+                # 阶段归因：详情耗时**实测累加**，列表时长 = 总时长 − 详情时长（不含 sleep，如实标注）
+                "elapsed_list_s": round(max(0.0, total - detail_seconds), 1),
+                "elapsed_detail_s": round(detail_seconds, 1),
+                "stopped_reason": stopped_reason,
+                "backfill": False,
+                "budget_s": budget,
+            }
+
         while True:
             if self.cfg.max_pages and page > self.cfg.max_pages:
                 LOG.info("已达 max_pages=%d，停止翻页", self.cfg.max_pages)
+                stopped_reason = "max_pages"
+                break
+            if budget and (time.time() - t0) >= budget:
+                stopped_reason = "budget"
+                LOG.warning("已达 --max-seconds=%s 预算 → 停止翻页（已抓 %d 条正常落盘）",
+                            budget, len(records))
                 break
             LOG.info("【xzfgk】抓取列表第 %d 页", page)
             html = self._list_page(page)
             if not html:
                 LOG.warning("第 %d 页获取失败，停止", page)
+                stopped_reason = "list_fetch_failed"
                 break
             items = self._parse_list(html)
             if not items:
                 LOG.info("第 %d 页无条目，视为末页，停止", page)
+                stopped_reason = "no_items"
                 break
+            pages_fetched += 1
+            items_seen += len(items)
             new_in_page = 0
             for it in items:
                 if it["detail_url"] in seen_urls:
                     continue
                 seen_urls.add(it["detail_url"])
                 new_in_page += 1
+                new_items += 1
                 rec = dict(it)
                 rec["category"] = self.cfg.category
                 rec["source"] = "xzfgk"
                 if (self.cfg.fetch_details and it["detail_url"]
                         and (self.cfg.details_limit == 0
                              or len(records) < self.cfg.details_limit)):
+                    _t_d = time.time()
                     d = self._fetch_detail(it["detail_url"])
+                    detail_seconds += time.time() - _t_d
                     rec.update(d)
+                    if d:
+                        details_fetched += 1
                 rec["summary"] = make_summary(
                     rec.get("full_text", ""), self.cfg.summary_len)
                 records.append(rec)
                 if self.cfg.max_items and len(records) >= self.cfg.max_items:
                     LOG.info("已达 max_items=%d，停止", self.cfg.max_items)
+                    stopped_reason = "max_items"
+                    self.stats = _mk_stats()
                     return records
             if new_in_page == 0:
+                pages_without_new += 1
                 # 2026-09-04 修复：xzfgk 列表接口分页失效时每页返回同批条目 →
                 # 整页全为已见即终止（曾致无限翻页，60 分钟空跑 61+ 页）
                 LOG.info("第 %d 页无新增条目（全部已抓或分页失效），停止翻页", page)
+                stopped_reason = "no_new_items"
                 break
             page += 1
+        self.stats = _mk_stats()
         return records
 
     def _fetch_detail(self, url: str) -> dict:
@@ -564,6 +620,20 @@ def main(argv=None) -> int:
     parser.add_argument("--checkpoint-every", type=int, default=200,
                         help="详情阶段断点落盘间隔（条；0=不落暂存）。zhengceku 全量约 30 小时，"
                              "主库仅在全部结束后写一次，中断必须靠暂存文件续跑（默认 200）")
+    # ---- N-190 / R-C（2026-10-08）：增量治理与**子源拆分**参数 ----
+    parser.add_argument("--stop-after-empty-pages", type=int, default=1,
+                        help="（仅 zhengceku）连续 N 页无**新条目**即停止翻页（默认 1）。"
+                             "列表按发布日期倒序 ⇒ 其后各页只会更旧，继续翻页是纯空转（N-190）")
+    parser.add_argument("--backfill", action="store_true",
+                        help="（仅 zhengceku）历史存量补全：**不早停**、扫完全部列表页，"
+                             "补齐\"在主库但尚无正文\"的历史条目（月度作业用，不进周度增量）")
+    parser.add_argument("--max-seconds", type=float, default=0.0,
+                        help="详情阶段**软预算**（秒；0=不限）。到时停止取新详情并**正常落盘退出**"
+                             "（rc=0，stopped_reason=budget）——避免撞上层硬超时被强杀（N-152 教训）")
+    parser.add_argument("--env-source", default="",
+                        help="覆盖写主库信封 source（子源拆分后保持 gov 信封稳定，见 R-C）")
+    parser.add_argument("--env-category", default="",
+                        help="覆盖写主库信封 category（同上）")
     parser.add_argument("--log-file", default="",
                         help="日志文件路径（默认输出到控制台与 out-dir/scraper.log）")
     args = parser.parse_args(argv)
@@ -614,46 +684,105 @@ def main(argv=None) -> int:
 
     # resume：只跳过「已有正文」的 detail_url（无正文的历史记录仍需重抓补全）
     seen_urls = set()
+    # N-190：主库**全部** detail_url —— 增量早停的判据（"新条目" = 不在主库者）。
+    known_urls = set()
     if cfg.resume:
         _seen, detailed = load_resume(cfg.out_dir, "gov")
         seen_urls = set(detailed)
+        known_urls = set(k[1] for k in _seen if k[1])
+        LOG.info("【增量判据】主库 %d 条（已有正文 %d 条）：不在主库者=**新条目**（驱动翻页），"
+                 "在主库而无正文者=**待补详情**（下次续跑补齐）",
+                 len(known_urls), len(seen_urls))
 
-    records, failed = [], []
+    records: list[dict[str, Any]] = []
+    failed: list[str] = []
+    sub_stats: dict[str, dict] = {}
+    scrapers: dict[str, Any] = {}
     for s in want:
         sub = argparse.Namespace(**vars(args))
         sub.source = s
         scfg = build_config(sub)
         LOG.info("开始抓取子源：%s（%s）", scfg.source, scfg.category)
+        # 显式 `Any`：两个子源采集器类型不同（XzfgkScraper / ZhengcekuScraper），
+        # 且仅在 try 内构造 ⇒ 用 Any 让 mypy 可推断下游 `recs`/`records`（否则 var-annotate 报错）
+        scraper: Any = None
         try:
             if s == "xzfgk":
-                recs = XzfgkScraper(scfg, client).run()
+                scraper = XzfgkScraper(scfg, client)
             else:
-                recs = ZhengcekuScraper(scfg, client, seen_urls).run()
+                scraper = ZhengcekuScraper(scfg, client, seen_urls, known_urls)
+            recs = scraper.run()
         except Exception as e:
             LOG.exception("子源 %s 抓取过程发生致命错误：%s", s, e)
             failed.append(s)
             continue
+        sub_stats[s] = dict(getattr(scraper, "stats", {}) or {})
+        scrapers[s] = scraper
         LOG.info("子源 %s 抓取到 %d 条", s, len(recs))
         records.extend(recs)
         for r in recs:
             if r.get("full_text"):
                 seen_urls.add(r.get("detail_url", ""))
 
+    # —— N-190：采集统计落盘（**每子源一份**；旁路观测，失败不影响采集）——
+    # ⚠️ 必须在**所有返回路径**上都执行：本批实测发现"无新条目"是最常见情形（周度空跑），
+    #    而它恰是评估"无效时长"最需要的样本 —— 若只在写库后统计，就会**永远看不到**这类样本。
+    def _emit_stats() -> None:
+        _run_at = time.strftime("%Y-%m-%dT%H:%M:%S")
+        for _s, _st in sub_stats.items():
+            _p = write_collect_stats(
+                "gov_%s" % _s,
+                {
+                    "source": "gov",
+                    "sub_source": _s,
+                    "run_at": _run_at,
+                    "out_dir": cfg.out_dir,
+                    "resume": cfg.resume,
+                    "backfill": bool(getattr(args, "backfill", False)),
+                    "max_seconds": float(getattr(args, "max_seconds", 0.0) or 0.0),
+                    "new_records": None,       # 由各子源 stats.new_items 表达（口径不重复）
+                    "stats": _st,
+                },
+            )
+            _pf = int(_st.get("list_pages_fetched") or 0)
+            _pw = int(_st.get("list_pages_without_new") or 0)
+            LOG.info(
+                "[collect-stats] gov_%s：翻页 %d（无新页 %d，**空转占比 %s**），新条目 %s，"
+                "待抓详情 %s（已抓 %s/失败 %s，跳过主库既有 %s），用时 list=%ss detail=%ss，"
+                "停止原因=%s → %s",
+                _s, _pf, _pw, ("%.0f%%" % (100.0 * _pw / _pf) if _pf else "n/a"),
+                _st.get("new_items"), _st.get("pending_details"), _st.get("details_fetched"),
+                _st.get("details_failed"), _st.get("details_skipped_master"),
+                _st.get("elapsed_list_s"), _st.get("elapsed_detail_s"),
+                _st.get("stopped_reason"), _p or "(落盘失败)",
+            )
+
     if failed and args.stop_on_error:
+        _emit_stats()
         return ExitCode.FAIL
     if not records:
         LOG.warning("未抓取到任何条目（失败子源：%s）。", failed or "无")
+        _emit_stats()
         return ExitCode.OK
 
     if cfg.resume:
         # 增量续抓：本次 records 仅含新发现条目 → 与现主库合并后覆盖写，防丢历史
         records = merge_with_master(records, cfg.out_dir)
 
-    # 信封 source/category：单子源沿用其自身标识；all 时标为 gov 汇总
-    env_source = cfg.source if len(want) == 1 else "gov"
-    env_cat = cfg.category if len(want) == 1 else "行政法规+部门文件"
+    # 信封 source/category：单子源沿用其自身标识；all 时标为 gov 汇总。
+    # R-C/N-190：`--env-source/--env-category` 可**显式覆盖** —— 子源拆分后"单子源单跑"成为常态，
+    #   若不做覆盖，最后一次子源的标识会写进主库信封（下游按 source 判别时不一致）。
+    env_source = args.env_source or (cfg.source if len(want) == 1 else "gov")
+    env_cat = args.env_category or (cfg.category if len(want) == 1 else "行政法规+部门文件")
     cfg.source, cfg.category = env_source, env_cat
     paths = write_outputs(records, cfg, source_label=env_source, write_csv=args.csv)
+    # N-192（2026-10-08）：主库**已原子落盘** → 清理子源的续跑暂存（其记录已并入主库）。
+    # 不清的代价（实测）：每轮增量白付"载入 899.7MB / 12573 条 + 全量合并 ~10 分钟"且产出零变化。
+    # 反例保护：若上一步写库失败/进程被杀，此处不会执行 ⇒ 暂存保留，下次仍可续跑。
+    for _sc in scrapers.values():
+        if hasattr(_sc, "clear_partial"):
+            _sc.clear_partial()
+    _emit_stats()
     LOG.info("成功抓取 %d 条（子源：%s；失败：%s）。文件：%s",
              len(records), ",".join(want), ",".join(failed) or "无", paths)
     return ExitCode.OK

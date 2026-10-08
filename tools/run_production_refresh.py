@@ -73,12 +73,37 @@ from config.exitcodes import ExitCode
 SOURCES = list(SOURCE_ORDER)
 # 各源采集命令（全量语义）。supp 无网站增量 → 由 clean 刷新即可。
 COLLECT_CMD = {
-    # gov 含两个子源：xzfgk（行政法规库）+ zhengceku（国务院政策文件库·部门文件，2026-09-15 纳入）。
-    # 去掉历史 `--full`：gov resume 默认开（基于 detail_url 跳过已抓、与主库合并），
-    # 既可持续补全 zhengceku 的历史存量（约 629 页 / 1.7 万条，全量约需 30 小时，
-    # 由每日增量反复调用逐步收敛），又能跟进两个子源的新增条目。
-    # 需要一次性全量重抓时手工执行：gov_collector.py --source all --full
-    "gov": [PY, os.path.join(COLLECTORS, "gov_collector.py"), "--source", "all"],
+    # —— R-C 子源拆分（2026-10-08）——
+    # 原 gov 是**单条步骤**内含两个子源（xzfgk 行政法规库 / zhengceku 国务院政策文件库·部门文件），
+    # 但二者在**体量、耗时结构、增量语义**上完全不同：
+    #   · xzfgk   约 600 条；已有"整页无新增即停" ⇒ 通常秒级~分钟级；
+    #   · zhengceku 629 页 / 1.7 万条；原实现 `for i in range(n_pages)` **恒扫全部页**
+    #     ⇒ 周度空转 20+ 分钟（实测单轮 collect:gov 2394.9s，其中绝大部分是"已知页"翻页）。
+    # 故拆为**独立步骤**，各自 argv / 超时 / 步骤日志 / 采集统计 / 失败隔离（互不拖累），
+    # 且均可**单独调用与排程**（`--collect gov_xzfgk` / `--collect gov_zhengceku`）⇒ 单独维护与扩展。
+    # **整体流程一致性**的落点：两者写**同一主库** `gov_laws.json`（`--resume` 合并、detail_url 去重、
+    #   新优先）⇒ 下游 clean/apply/classify/… **零改动**；并用 `--env-source/--env-category`
+    #   固定信封为 gov（否则"最后一个子源"会覆盖主库信封的 source/category 标识）。
+    # `--max-seconds`（**软预算**，N-190）＝ 硬超时 − **收尾余量**（载入主库 + 合并 + 1GB 原子写，
+    # 实测 ≈3~4 分钟）⇒ 到达预算即"停止取新详情并正常落盘退出"（rc=0），而不是被硬超时**强杀**
+    # （强杀会让未走完的产物落盘并被下游采用 —— N-152 的教训）。
+    "gov_xzfgk": [
+        PY, os.path.join(COLLECTORS, "gov_collector.py"),
+        "--source", "xzfgk", "--max-seconds", "1500",           # 硬 1800 − 300
+        "--env-source", "gov", "--env-category", "行政法规+部门文件",
+    ],
+    "gov_zhengceku": [
+        PY, os.path.join(COLLECTORS, "gov_collector.py"),
+        "--source", "zhengceku", "--max-seconds", "5100",       # 硬 5400 − 300
+        "--env-source", "gov", "--env-category", "行政法规+部门文件",
+    ],
+    # 历史存量补全（**月度独立排程**）：不早停、扫完 629 页，补齐"在主库但尚无正文"的历史条目。
+    # 原设计意图（持续补全历史存量）保留，但与周度"追新"**分离** ⇒ 代价显式化、各自计时。
+    "gov_zhengceku_backfill": [
+        PY, os.path.join(COLLECTORS, "gov_collector.py"),
+        "--source", "zhengceku", "--backfill", "--max-seconds", "21000",   # 硬 21600 − 600
+        "--env-source", "gov", "--env-category", "行政法规+部门文件",
+    ],
     # mof 附件主机 10.1.60.36:8888 曾实测 100% HTTP 502：默认全量会空转数十小时，
     # 可用环境 MOF_COLLECT_ARGS="--no-attachments" 追加逃生参数（仍会抓详情正文）。
     "mof": [PY, os.path.join(COLLECTORS, "mof_collector.py")],
@@ -89,6 +114,20 @@ COLLECT_CMD = {
 # 各源 collector 输出目录参数名不一致（历史遗留），必须按源传参（2026-09-09 接线修复）。
 # gov/nfra: --out-dir | mof: --outdir | pbc: --out
 OUT_FLAG = {"gov": "--out-dir", "mof": "--outdir", "nfra": "--out-dir", "pbc": "--out"}
+# 采集**别名**（R-C，2026-10-08）：`--collect gov`（以及 `all`）展开为两个子源步骤 ——
+# 使既有排程 `incremental_weekly` 的 argv（`gov,mof,pbc`）与人工命令**逐字不变**，
+# 而步骤粒度已按子源拆分（步骤名 `collect:gov_xzfgk` / `collect:gov_zhengceku`）。
+COLLECT_ALIAS = {"gov": ["gov_xzfgk", "gov_zhengceku"]}
+# 采集步骤超时（秒）：**按实测分档**，替代原"一律 7200s"（一刀切会让小源失败也等 2 小时才报）。
+COLLECT_TIMEOUT = {
+    "gov_xzfgk": 1800,                 # 约 600 条 + 详情；实测秒级~分钟级
+    "gov_zhengceku": 5400,             # 增量：早停后仅顶部数页 + 新增详情（N-190）
+    "gov_zhengceku_backfill": 21600,   # 补全：须扫全 629 页（月度、离线时段）
+    "nfra": 7200,
+    "nfra-weekly": 7200,
+    "mof": 7200,
+    "pbc": 3600,
+}
 RAW_JSON = {
     "gov": "gov_laws.json",
     "mof": "mof_laws.json",
@@ -799,29 +838,46 @@ def _rc_of(report: list[dict], step: str):
     return None
 
 
+def collect_targets(collect: str) -> list[str]:
+    """`--collect` → **采集目标序列**（别名展开、去重保序；R-C，2026-10-08）。
+
+    与 `SOURCES`（**事实源**口径：gov/mof/nfra/pbc/supp，供 clean/apply/… 使用）**解耦**：
+      · `gov` → `["gov_xzfgk", "gov_zhengceku"]` —— 子源级步骤（各自 argv / 超时 / 步骤日志 /
+        采集统计 / 失败隔离），可单独调用与排程；
+      · `all` → 各事实源依次展开（gov 仍展开为两个子源）；
+      · 其余键（mof/nfra/pbc/`nfra-weekly`/`gov_zhengceku_backfill`）原样透传；
+      · 未登记键也透传，由调用方按 `COLLECT_CMD` 判定"无网络采集 → 跳过"（保持既有语义）。
+    """
+    _sel = [x.strip() for x in (collect or "").replace("，", ",").split(",") if x.strip()]
+    pick = list(SOURCES) if collect == "all" else _sel
+    out: list[str] = []
+    for s in pick:
+        for t in COLLECT_ALIAS.get(s, [s]):
+            if t not in out:
+                out.append(t)
+    return out
+
+
 def _run_chain(args) -> int:
     report: list[dict] = []
     t_start = time.time()
     # ---- 阶段 0：抓取 ----
     if not args.no_scrape:
-        want = [
-            s
-            for s in SOURCES
-            if s
-            in (args.collect == "all" and SOURCES or args.collect.replace("，", ",").split(","))
-        ]
+        # R-C（2026-10-08）：采集目标序列（子源级步骤）由 `collect_targets` 统一派生。
+        _sel = [x.strip() for x in args.collect.replace("，", ",").split(",") if x.strip()]
+        targets = collect_targets(args.collect)
         # F-O04（2026-09-12）：nfra 周度增量链（nfra_weekly.py，原零消费）——周刷链已含
         # 列表顶部窗口刷新 + 详情续跑 + 离线重建，替代全量 collector，避免重复抓取。
-        if "nfra-weekly" in args.collect.replace("，", ",").split(","):
+        if "nfra-weekly" in _sel:
             report.append(
                 _run(
                     "collect:nfra_weekly",
                     [PY, os.path.join(COLLECTORS, "nfra_weekly.py")],
-                    timeout=7200,
+                    timeout=COLLECT_TIMEOUT.get("nfra-weekly", 7200),
                 )
             )
-            want = [s for s in want if s != "nfra"]
-        for src in want:
+            targets = [t for t in targets if t != "nfra"]
+        for src in targets:
             cmd = COLLECT_CMD.get(src)
             if not cmd:
                 print(f"[collect] {src} 无网络采集（本地摄取/清洗刷新）→ 跳过")
@@ -831,7 +887,7 @@ def _run_chain(args) -> int:
                 cmd = cmd + shlex.split(os.environ.get("MOF_COLLECT_ARGS", ""))
             argv = cmd + [OUT_FLAG.get(src, "--out-dir"), RAW_DIR]
             print(f"[collect] {src} argv={argv}", flush=True)
-            report.append(_run(f"collect:{src}", argv, timeout=7200))
+            report.append(_run(f"collect:{src}", argv, timeout=COLLECT_TIMEOUT.get(src, 7200)))
             if args.stop_on_error and report[-1]["rc"]:
                 break
     # A-12（2026-09-12）：删除假步骤（原 python -c pass 产生 rc=0 的"快照"行，汇总含假成功）；

@@ -8,9 +8,14 @@
   2. 解析列表页提取条目名称、详情/附件链接；
   3. 对每条目请求详情页（HTML 正文页）或直接下载附件（.doc/.docx 等），
      提取 标题、发布日期、发文字号、发文机关、生效日期、正文全文、内容摘要；
-  4. 以结构化 JSON + CSV 输出，并生成抓取统计报告。
+  4. 以结构化 JSON + CSV 输出（**不再生成报告文件**，见下）。
 
 设计要点（对齐数据治理严谨性要求）：
+
+> ⚠️ **产出边界（N-191，2026-10-08 删除）**：本采集器**只写 JSON/CSV 事实源**，**不再写** `report.md`
+> （原实现写到 `os.path.dirname(--out)/reports/report.md` ⇒ `--out` 指向沙箱时会落到**仓外相对位置**，
+> 属 R-F 缺陷；按用户决定**改为删除该产出**而非改路径）。统计报告由**编排链汇总**统一产出
+> （`reports/_tmp/生产刷新汇总_*.json` + docs/reports），采集器侧不再重复造报告。
   - 依赖：标准库 + python-docx / pdfplumber / openpyxl（附件解析）；LibreOffice(headless)
     可选，启用后可将 .doc/.wps/.rtf/.ceb 转 docx 提取正文，否则该格式降级为保真下载；
   - 分页机制自适应：从列表页隐藏字段 `article_paging_list_hidden` 动态提取
@@ -50,7 +55,6 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
-from datetime import datetime
 
 # 通用缓存模块（五源统一抽象层：std_lib/scraper_std/cache_store，2026-09-05）
 # pbc 列表/详情页均为静态 HTML → 委托 TextResponseCache（存储 HTML 文本）；
@@ -633,30 +637,6 @@ def save_outputs(records, out_dir, write_csv=False):
                 w.writerow(r)
     return json_path, (csv_path if write_csv else "")
 
-def build_report(records):
-    by_cat: dict = {}
-    for r in records:
-        c = r["category"]
-        by_cat.setdefault(c, {"total": 0, "ok": 0, "attach": 0, "fail": 0})
-        by_cat[c]["total"] += 1
-        if r["fetch_status"] == "ok":
-            by_cat[c]["ok"] += 1
-        elif r["fetch_status"] in ("attachment_link_only", "attachment_no_text", "attachment_skipped", "attachment_saved"):
-            by_cat[c]["attach"] += 1
-        elif r["fetch_status"] in ("fetch_failed", "parse_error"):
-            by_cat[c]["fail"] += 1
-    lines = ["# 抓取统计报告", f"生成时间：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
-             f"总条目数：{len(records)}", ""]
-    for c, s in by_cat.items():
-        lines.append(f"- {c}：共 {s['total']} 条，正文提取成功 {s['ok']}，附件保真 {s['attach']}，失败 {s['fail']}")
-    fail_list = [r for r in records if r["fetch_status"] in ("fetch_failed", "parse_error")]
-    if fail_list:
-        lines.append("")
-        lines.append("## 失败条目")
-        for r in fail_list:
-            lines.append(f"  - [{r['category']}] {r['title']} -> {r['detail_url']} ({r['error']})")
-    return "\n".join(lines)
-
 # —— 运行锁统一实现（N-8）：判定逻辑收敛到 regulatory_scrapers/fs_lock.py，四源共用 ——
 import atexit
 
@@ -731,13 +711,7 @@ def main():
         all_records = all_records[:args.max_items]
 
     json_path, csv_path = save_outputs(all_records, args.out, write_csv=args.csv)
-    report = build_report(all_records)
-    report_path = os.path.join(os.path.dirname(args.out), "reports", "report.md")
-    with open(report_path, "w", encoding="utf-8") as f:
-        f.write(report)
-
-    print("\n" + report)
-    print(f"\n[✓] 完成。JSON: {json_path}\n    CSV : {csv_path}\n    报告: {report_path}")
+    print(f"\n[✓] 完成。JSON: {json_path}\n    CSV : {csv_path}")
 
 if __name__ == "__main__":
     main()

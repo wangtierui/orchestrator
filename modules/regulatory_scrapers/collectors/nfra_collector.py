@@ -27,7 +27,7 @@
   * 随机请求间隔，控制抓取频率，规避反爬
   * 分页遍历每个子栏目直到取尽，按 docId 去重保证完整
   * 正文 HTML -> 纯文本；发文字号 / 施行日期正则抽取；摘要自动生成
-  * 结构化输出 JSON + CSV + 汇总报告
+  * 结构化输出 JSON + CSV（**不写 `README.md`**：该产出已于 N-191（2026-10-08）按用户决定删除）
 
 合规与礼貌原则:
   * 仅抓取公开发布的政策法规数据，不做登录/越权
@@ -662,115 +662,12 @@ def scrape(args):
                     (a.get("text") or "").replace("\n", " ") for a in atts)
                 w.writerow(row)
 
-    # 汇总报告
-    report_path = os.path.join(out_dir, "README.md")
-    by_cat: dict = {}
-    for r in records:
-        by_cat[r["category"]] = by_cat.get(r["category"], 0) + 1
-    with open(report_path, "w", encoding="utf-8") as f:
-        f.write("# 国家金融监督管理总局 · 政策法规抓取结果\n\n")
-        f.write("- 数据源: %s\n" % BASE)
-        f.write("- 抓取时间: %s\n" % datetime.now().isoformat(timespec="seconds"))
-        f.write("- 成功记录: %d 篇\n" % len(records))
-        f.write("- 失败记录: %d 篇\n" % len(errors))
-        f.write("\n## 分类统计\n\n")
-        for k, v in by_cat.items():
-            f.write("- %s：%d 篇\n" % (k, v))
-        f.write("\n## 字段说明（口径）\n\n")
-        f.write("| 字段 | 口径/来源 |\n")
-        f.write("|------|----------|\n")
-        f.write("| title | 标题（docSubtitle/docTitle） |\n")
-        f.write("| category | 所属子栏目（法律法规 / 政策规章规范性文件） |\n")
-        f.write("| publish_date | 发布日期（publishDate 截取日期） |\n")
-        f.write("| build_date | 成文日期（builddate） |\n")
-        f.write("| document_no | 发文字号（documentNo 字段；缺失时从正文抽取，"
-                "命中废止/引用他文语境则留空，可能为空） |\n")
-        f.write("| effective_date | 施行/生效日期（优先正文'自X起施行'，否则回退成文日期） |\n")
-        f.write("| issuing_authority | 发文机关（docSource/agencyTypeName） |\n")
-        f.write("| index_no | 索引号（indexNo） |\n")
-        f.write("| summary | 内容摘要（docSummary 缺失时由正文自动生成） |\n")
-        f.write("| detail_url | 站内详情页链接 |\n")
-        f.write("| content | 正文全文（HTML 清洗后的纯文本，仅存于 JSON） |\n")
-        f.write("| attachments | 附件清单（标题/URL/页数/字数/sha256/抽取状态/质量标志/正文），仅存于 JSON |\n")
-        f.write("| attachment_count / attachment_total_pages / attachment_total_chars / attachment_text | 附件聚合指标与正文拼接，存于 CSV |\n")
-
-        # 附件数据质量章节（对齐 DAMA / ISO 8000）
-        qr_path = os.path.join(_ATT_DIR, "_quality_report.json")
-        if os.path.exists(qr_path):
-            try:
-                qr = json.load(open(qr_path, encoding="utf-8"))
-                f.write("\n## 附件数据质量（DAMA / ISO 8000 维度）\n\n")
-                f.write("- 含附件文档数：%d 篇\n" % qr.get("docs_with_attachments", 0))
-                f.write("- 附件总数：%d 个\n" % qr.get("total_attachments", 0))
-                f.write("- 抽取成功：%d 个（抽取率 %.1f%%）\n"
-                         % (qr.get("extracted", 0), (qr.get("extraction_rate", 0) or 0) * 100))
-                f.write("- 疑似扫描件（需 OCR）：%d 个\n" % qr.get("needs_ocr", 0))
-                f.write("- OCR 是否启用：%s\n" % ("是" if qr.get("ocr_enabled") else "否（仅标记，未抽取）"))
-                if qr.get("failed_docs"):
-                    f.write("- 处理失败文档：%d 篇（见 quality_report 明细）\n" % len(qr["failed_docs"]))
-                by_type = qr.get("by_type") or {}
-                if by_type:
-                    f.write("\n### 按真实类型细分（魔数校验，已纠正扩展名误标）\n\n")
-                    f.write("| 类型 | 说明 | 附件数 | 已抽取 | 源文件留存 | 抽取字数 |\n")
-                    f.write("|------|------|-------:|-------:|-----------:|---------:|\n")
-                    type_label = {
-                        "pdf": "PDF（文本型）",
-                        "docx": "Word(.docx OOXML)",
-                        "xlsx": "Excel(.xlsx OOXML)",
-                        "xls_legacy": "Excel(.xls 旧版 OLE2，xlrd 抽取)",
-                        "doc_legacy": "Word(.doc 旧版 OLE2，需外部转换)",
-                        "archive": "压缩包(.rar/未知)",
-                        "pdf_corrupt": "PDF 解析失败(损坏/加密)",
-                        "docx_error": "docx 抽取异常",
-                        "xlsx_error": "xlsx 抽取异常",
-                        "download_failed": "下载失败",
-                        "other_extracted": "其他已抽取",
-                        "other_unextracted": "其他未抽取",
-                    }
-                    for k, v in sorted(by_type.items()):
-                        f.write("| %s | %s | %d | %d | %d | %d |\n" % (
-                            k, type_label.get(k, k), v["total"], v["extracted"],
-                            v["source_preserved"], v["char_total"]))
-                f.write("\n### 治理维度映射\n\n")
-                f.write("- **完整性**：全量扫描含附件文档，按附件清单覆盖；缓存落盘支持断点续跑。\n")
-                f.write("- **有效性**：仅对 PDF 抽取；非 PDF 类型标记 `unsupported_type` 不丢元数据。\n")
-                f.write("- **准确性**：逐页统计空页/低文本密度/乱码，输出质量标志供人工复核。\n")
-                f.write("- **唯一性**：附件文件名即内容哈希，天然去重；另记内容 sha256。\n")
-                f.write("- **可追溯**：每附件记录绝对下载 URL + 来源 docId，可回源核验。\n")
-                f.write("\n### 局限性声明（数据质量边界）\n\n")
-                f.write("- %s\n" % qr.get("ocr_note", "未发现需 OCR 的扫描件。"))
-                f.write("- 本环境 tesseract 二进制缺失、paddleocr 模型未就绪，故图像型 PDF 暂以"
-                        "`ocr_status=engine_unavailable` 标记，待部署 OCR 引擎后重跑即可补录，"
-                        "不影响既有文本型附件的完整性与可用性。\n")
-                rem = qr.get("remediation") or {}
-                if rem:
-                    f.write("\n### 整改路径（不可抽取附件，源文件均已留存）\n\n")
-                    if rem.get("doc_legacy"):
-                        f.write("- **旧版 .doc（%d 个）**：%s\n"
-                                % (by_type.get("doc_legacy", {}).get("total", 0), rem["doc_legacy"]))
-                    if rem.get("archive"):
-                        f.write("- **压缩包（%d 个）**：%s\n"
-                                % (by_type.get("archive", {}).get("total", 0), rem["archive"]))
-                    if rem.get("pdf_corrupt"):
-                        f.write("- **损坏 PDF（%d 个）**：%s\n"
-                                % (by_type.get("pdf_corrupt", {}).get("total", 0), rem["pdf_corrupt"]))
-                    if rem.get("xls_legacy"):
-                        f.write("- **旧版 .xls（%d 个）**：%s\n"
-                                % (by_type.get("xls_legacy", {}).get("total", 0), rem["xls_legacy"]))
-            except Exception:  # noqa: BLE001  采集容错（字段/附件缺失不阻断采集）
-                pass
-        if errors:
-            f.write("\n## 失败明细\n\n")
-            for err in errors:   # N-67：原用 `e`（与 except 变量同名，mypy misc 告警）
-                f.write("- docId=%s %s：%s\n" % (err["doc_id"], err["title"], err["error"]))
-
     print("\n完成！输出文件：")
     print("  JSON : %s" % json_path)
     if csv_path:
         print("  CSV  : %s" % csv_path)
-    print("  报告 : %s" % report_path)
     print("成功 %d 篇，失败 %d 篇" % (len(records), len(errors)))
-    return json_path, csv_path, report_path
+    return json_path, csv_path
 
 def main():
     ap = argparse.ArgumentParser(description="国家金融监督管理总局 政策法规 全量抓取")

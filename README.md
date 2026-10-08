@@ -244,7 +244,8 @@ flowchart LR
 | 频率 | cron | 命令 | 说明 |
 | :--- | :--- | :--- | :--- |
 <!-- SCHED:AUTO -->
-| **每周三 01:00** | `0 1 * * 3` | `cli.py run --collect gov,mof,pbc` | gov/mof/pbc 周度增量采集 + 全链（含报告）；supp 走投放区（inbox_drop 触发） |
+| **每月 3 日 01:00** | `0 1 3 * *` | `cli.py run --collect gov_zhengceku_backfill --only collect:gov_zhengceku_backfill,clean:gov,apply:gov` | zhengceku 历史存量补全（月度；扫全 629 页，仅跑 clean/apply:gov） |
+| **每周三 01:00** | `0 1 * * 3` | `cli.py run --collect gov,mof,pbc` | 周度增量：gov（**已拆为 xzfgk/zhengceku 两个独立步骤**）+ mof + pbc，随后全链出报告；supp 走投放区（inbox_drop 触发） |
 | **每周二 01:00** | `0 1 * * 2` | `cli.py run --collect nfra-weekly` | nfra 周报增量链（单实例锁 / 顶部窗口 / 断点续跑） |
 | **每日 06:00** | `0 6 * * *` | `cli.py run --no-scrape --resume` | 全链刷新（raw 已抓取，仅重清洗 + 全链；当日无 raw 变化时各阶段快跳）（漏跑策略：run_at_next_boot） |
 | **每周一 07:00** | `0 7 * * 1` | `cli.py run --only timeliness:verify` | 效力核验批次（有 Token 时；断点续跑，配额耗尽自动停） |
@@ -456,7 +457,7 @@ flowchart TD
 | # | 步骤 | 作用 | 脚本/命令（AST 抽取） | 降级 / 失败语义 |
 |---|---|---|---|---|
 | 1 | `collect:nfra_weekly` | nfra 周报采集（按周触发） | `nfra_weekly.py` | **阻断**；未到周度触发 → **SKIP**（rc=0） |
-| 2 | `collect:{src}` | 各源原始采集（gov/mof/nfra/pbc/supp） | `（argv 由变量构造，完整形态见源码）` | **阻断**（失败即停；`--resume` 可从该步续跑） |
+| 2 | `collect:{src}` | 各源原始采集（gov **按子源拆为 xzfgk/zhengceku 两独立步骤**、mof/nfra/pbc/supp） | `（argv 由变量构造，完整形态见源码）` | **阻断**（失败即停；`--resume` 可从该步续跑） |
 | 3 | `supp:ingest_batch` | 补充库批量摄取（backlog 驱动） | `supp_ingest_batch.py --backlog <args.supp_batch>` | **阻断**；backlog 为空 → **SKIP**（rc=0） |
 | 4 | `clean:{src}` | 原始 → 清洗（6 态抽取 + 校验隔离） | `run_clean_pipeline.py --project <src> --raw <os.path.join(RAW_DIR, RAW_JSON[src])>` | **阻断**（失败即停；`--resume` 可从该步续跑） |
 | 5 | `timeliness:verify` | 时效核验（北大法宝；Node 侧 MCP） | （条件步骤；触发项 `timeliness_verify`，判据见 `config/triggers.yaml`） | **降级**：无 token / 工具缺失 → `verification_state=unavailable`（**不误标**）；配额耗尽自动停（断点续跑） |
@@ -572,6 +573,7 @@ flowchart TD
 显式 `model="…"` **覆盖 mode**（优先级最高）；分句增强由 env `REG_ORCH_SEMANTIC_SPLIT=1` 控制（**默认关**，见 §8.6 第 2 条）。
 
 <!-- END GENERATED: 全链数据流总图 -->
+
 
 
 
