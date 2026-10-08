@@ -72,7 +72,7 @@ def test_doctor_group_covered(group):
     assert any(c[1] == group for c in doctor.CHECKS), f"分组 {group} 无用例"
 
 
-@pytest.mark.parametrize("job", ["refresh", "nfra_weekly", "verify", "publish_wiki",
+@pytest.mark.parametrize("job", ["refresh", "nfra_weekly", "incremental_weekly", "verify", "publish_wiki",
                                  "monthly_check", "timeliness_sync", "gov_increment"])
 def test_schedule_job_declared_and_target_exists(job):
     """每个调度作业：argv 非空，且 argv[0] 的目标在仓内存在（§3.9 判据 S2 的最小化正例）。"""

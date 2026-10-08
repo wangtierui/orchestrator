@@ -297,6 +297,55 @@ def _split_by_token_anchor(text: str, toks: list, ends: str = "。；！？\n") 
     return sents
 
 
+#: 单次送入**分词模型**的最大字符数（N-187，2026-10-08 **实测标定**，非拍脑袋）
+_SEG_CHUNK_CHARS = 500
+
+
+def _chunk_text(text: str, max_chars: int = _SEG_CHUNK_CHARS, ends: str = "。；！？\n") -> list:
+    """把长文本切成 ≤ `max_chars` 的块，**优先在句末标点处断开**（不把句子切两半）。
+
+    为什么必须分块（N-187，实测 2026-10-08）——两个后端**都会在长文本上失真**，只是方式不同：
+
+      · **LTP 4.x：静默失真**（最危险）。输入 > ~550 字时只处理前 ~276 token，**其余整段被当成
+        单个 token 返回**：实测同一段正文 —— 400 字 → 201 token / 最长 token 7 字（正常）；
+        600 字 → 276 token / 最长 68 字；**2000 字 → 仍 276 token、最长 1468 字**。
+        下游是"以分词为锚切句"，于是长正文 **~85% 内容不切句**（实测 3417 字正文只切出 2 句，
+        确定性切分为 47 句）。**不报错、不告警**，只给出错的产物 —— 故必须在**调用侧**兜住。
+      · **HanLP MTL：直接爆炸**。其配置 `encoder.truncate_long_sequences: false`（**不截断**）
+        ⇒ 长文本走**全序列**前向，复杂度爆炸（实测 13.8K 字单条 **>34 分钟未完成**）。
+
+    分块对两者都是正解：既避开长度上限/爆炸，又**不丢字符**。
+
+    ⚠️ 如实标注（不掩盖边界效应）：分块后的分词在**块边界**处与"假想的无限长单次调用"可能不同
+    （LTP 本就无法正确处理长文本，故这不是"变差"，而是"从错误变正确"）；块内仍可能残留极少数
+    超长 token（如无标点的长串被硬切）——见 `tests` 中的守卫断言。
+    """
+    if len(text) <= max_chars:
+        return [text]
+    segs: list = []
+    buf = ""
+    for ch in text:
+        buf += ch
+        if ch in ends:
+            segs.append(buf)
+            buf = ""
+    if buf:
+        segs.append(buf)
+    chunks: list = []
+    cur = ""
+    for s in segs:
+        if cur and len(cur) + len(s) > max_chars:
+            chunks.append(cur)
+            cur = ""
+        while len(s) > max_chars:  # 单段超长（无标点长串）→ 硬切（不丢字符）
+            chunks.append(s[:max_chars])
+            s = s[max_chars:]
+        cur += s
+    if cur:
+        chunks.append(cur)
+    return chunks
+
+
 class _LTPSegmenter:
     """LTP 后端封装（**如实标注能力边界**）。
 
@@ -320,18 +369,42 @@ class _LTPSegmenter:
         return self.model.pipeline(list(texts), tasks=list(tasks))
 
     def cws(self, texts) -> list:
-        """分词（**真实 LTP 调用**）→ `list[list[str]]`。"""
+        """分词（**真实 LTP 调用**）→ `list[list[str]]`。
+
+        N-187：长文本**按 `_chunk_text` 分块后逐块调用**（原实现一次送全文 → LTP 静默截断、
+        尾部被合并为单 token ⇒ 下游切句几乎失效）。短文本（≤ `_SEG_CHUNK_CHARS`）仍走**单次调用**
+        ⇒ 与既有行为**逐字节一致**。
+        """
         if isinstance(texts, str):
             texts = [texts]
-        out = self._pipeline(texts, ["cws"])
-        return [list(x) for x in (getattr(out, "cws", None) or [])]
+        out: list = []
+        for t in texts:
+            toks: list = []
+            for ck in _chunk_text(t):
+                r = self._pipeline([ck], ["cws"])
+                rows = [list(x) for x in (getattr(r, "cws", None) or [])]
+                if rows:
+                    toks += rows[0]
+            out.append(toks)
+        return out
 
     def pos(self, texts) -> list:
-        """词性（**真实 LTP 调用**）→ `list[list[str]]`（与 `cws` 对齐）。"""
+        """词性（**真实 LTP 调用**）→ `list[list[str]]`（与 `cws` 对齐）。
+
+        N-187：与 `cws` **用同一分块** ⇒ 两者 token 序列严格对齐（否则 pos 与 cws 错位）。
+        """
         if isinstance(texts, str):
             texts = [texts]
-        out = self._pipeline(texts, ["cws", "pos"])
-        return [list(x) for x in (getattr(out, "pos", None) or [])]
+        out: list = []
+        for t in texts:
+            tags: list = []
+            for ck in _chunk_text(t):
+                r = self._pipeline([ck], ["cws", "pos"])
+                rows = [list(x) for x in (getattr(r, "pos", None) or [])]
+                if rows:
+                    tags += rows[0]
+            out.append(tags)
+        return out
 
     def split(self, text: str) -> list:
         """切句：以 LTP 分词为锚 → 委托 `_split_by_token_anchor`（与 hanlp 侧**同一实现**）。
@@ -474,26 +547,38 @@ class _HanLPSegmenter:
             rows += [[] for _ in range(n - len(rows))]
         return rows[:n]
 
-    def cws(self, texts) -> list:
-        """分词（**真实 HanLP MTL `tok/fine` 调用**）→ `list[list[str]]`。"""
+    def _task_rows_chunked(self, key: str, texts) -> list:
+        """**逐块**取任务头并拼接 → `list[list]`（N-187）。
+
+        为什么 HanLP 也必须分块（实测 2026-10-08）：其 MTL 配置
+        `encoder.truncate_long_sequences: false`（**不截断**）⇒ 长文本走**全序列**前向、
+        复杂度爆炸：实测 209 字 129.8s、827 字 30.6s、1644 字 57.2s，而 **13.8K 字单条 >34 分钟
+        未完成** ⇒ 外推 gov 全量（13178 条）约 **110~220 小时**，路径实际不可用。
+        分块后每块 ≤ `_SEG_CHUNK_CHARS` ⇒ 单条耗时可控，且**不丢字符**。
+
+        与 `cws`/`pos`/`dep` **共用同一分块**（三个头必须同块同序，否则 token 与标签错位）。
+        """
         if isinstance(texts, str):
             texts = [texts]
-        texts = list(texts)
-        return self._task_rows(self.TOK_KEY, texts, len(texts))
+        out: list = []
+        for t in texts:
+            rows: list = []
+            for ck in _chunk_text(t):
+                rows += self._task_rows(key, [ck], 1)
+            out.append(rows[0] if rows else [])
+        return out
+
+    def cws(self, texts) -> list:
+        """分词（**真实 HanLP MTL `tok/fine` 调用**）→ `list[list[str]]`（N-187 分块）。"""
+        return self._task_rows_chunked(self.TOK_KEY, texts)
 
     def pos(self, texts) -> list:
-        """词性（同一次 MTL 前向的 `pos/ctb` 头）→ `list[list[str]]`（与 `cws` 对齐）。"""
-        if isinstance(texts, str):
-            texts = [texts]
-        texts = list(texts)
-        return self._task_rows(self.POS_KEY, texts, len(texts))
+        """词性（同一次 MTL 前向的 `pos/ctb` 头）→ `list[list[str]]`（与 `cws` 对齐；N-187 分块）。"""
+        return self._task_rows_chunked(self.POS_KEY, texts)
 
     def dep(self, texts) -> list:
-        """依存（MTL 的 `dep` 头）→ `list[list]`（对齐 `cws`；供结构增强按需使用）。"""
-        if isinstance(texts, str):
-            texts = [texts]
-        texts = list(texts)
-        return self._task_rows("dep", texts, len(texts))
+        """依存（MTL 的 `dep` 头）→ `list[list]`（对齐 `cws`；N-187 分块）。"""
+        return self._task_rows_chunked("dep", texts)
 
     def split(self, text: str) -> list:
         """切句：以 HanLP 分词为锚 → 委托 `_split_by_token_anchor`（与 ltp 侧**同一实现**）。

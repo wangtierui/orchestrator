@@ -449,46 +449,64 @@ def _run(step: str, argv, cwd=ROOT, timeout: int | None = None) -> dict:
         print(f"\n[step:{step}] SKIP（{skip_reason}）", flush=True)
         return rec
     print(f"\n[step:{step}] {' '.join(rec['cmd'])}", flush=True)
+    # N-189（2026-10-08）：**步骤日志落盘**（原 `capture_output=True` ⇒ 长步骤在运行中**完全不可观测**）。
+    #   本批实测：`collect:gov`（zhengceku 629 页列表窗口）跑了 12+ 分钟，链日志里只有**一行步骤名**，
+    #   既无法判断"在推进"还是"卡死"，也无法按需 tail（这是运维盲区，不是风格偏好）。
+    # 改法：stdout/stderr **重定向到文件** ——
+    #   · 运行中可 `Get-Content -Wait <log>` 实时观察（并可事后审计完整输出）；
+    #   · 台账字段（`tail`/`stderr_tail`/两处长度）**语义不变**，只是改从文件尾部读取；
+    #   · N-151「超时也要保留部分输出」因此**天然成立**（文件已在盘上，不再依赖异常携带）。
+    log_dir = os.path.join(ROOT, "reports", "_tmp", "step_logs")
+    os.makedirs(log_dir, exist_ok=True)
+    _safe = re.sub(r"[^0-9A-Za-z_.-]", "_", step)
+    out_path = os.path.join(log_dir, f"{_safe}_{int(t0)}.out.log")
+    err_path = os.path.join(log_dir, f"{_safe}_{int(t0)}.err.log")
+
+    def _tail(path: str, n: int) -> str:
+        try:
+            with open(path, encoding="utf-8", errors="replace") as fh:
+                lines = fh.read().strip().splitlines()
+        except OSError:
+            return ""
+        return "\n".join(lines[-n:])
+
+    def _size(path: str) -> int:
+        try:
+            return os.path.getsize(path)
+        except OSError:
+            return 0
+
     try:
         env = dict(os.environ)
         env["PYTHONIOENCODING"] = "utf-8"  # 子脚本 ✓/✗ 输出避免 Windows gbk 崩溃
-        r = subprocess.run(
-            argv,
-            cwd=cwd,
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-            timeout=timeout,
-            env=env,
-        )
+        with (
+            open(out_path, "w", encoding="utf-8", newline="\n") as _fo,
+            open(err_path, "w", encoding="utf-8", newline="\n") as _fe,
+        ):
+            r = subprocess.run(argv, cwd=cwd, stdout=_fo, stderr=_fe, timeout=timeout, env=env)
         rec["rc"] = r.returncode
         rec["exit_code"] = _exit_semantic(r.returncode)
-        rec["tail"] = "\n".join((r.stdout or "").strip().splitlines()[-3:])
-        rec["stderr_tail"] = "\n".join((r.stderr or "").strip().splitlines()[-2:])
-        rec["stderr_tail_len"] = len(r.stderr or "")
-        rec["stdout_len"] = len(r.stdout or "")
-    except subprocess.TimeoutExpired as e:
+        rec["tail"] = _tail(out_path, 3)
+        rec["stderr_tail"] = _tail(err_path, 2)
+        rec["stderr_tail_len"] = _size(err_path)
+        rec["stdout_len"] = _size(out_path)
+    except subprocess.TimeoutExpired:
         # N-151（2026-09-30）**超时也要采集部分输出**。为何：`clean:gov` 超时那次 `stdout_len=0`
         # → 子进程明明有进度打印（`[gov] 原始数据：…`），却因父进程未从异常里取回而**全丢**，
-        # 致使"超时不可诊断"（只能看到"timeout"三个字）。`TimeoutExpired` 携带已捕获的
-        # `stdout`/`stderr`（因 `capture_output=True`），此处取回并保留尾部 —— 让下次超时
-        # 一眼能看出**卡在哪个阶段**。
-        _o_raw = e.stdout if e.stdout is not None else ""
-        _e_raw = e.stderr if e.stderr is not None else ""
-        # 逐项收窄（mypy：`TimeoutExpired.stdout` 为 `bytes | str | None`，不可对联合类型直接 decode）
-        _out = _o_raw.decode("utf-8", "replace") if isinstance(_o_raw, bytes) else _o_raw
-        _err = _e_raw.decode("utf-8", "replace") if isinstance(_e_raw, bytes) else _e_raw
-        tail_lines = _out.strip().splitlines()
-        rec["tail"] = "\n".join(tail_lines[-5:]) if tail_lines else "timeout（子进程无已捕获输出）"
+        # 致使"超时不可诊断"（只能看到"timeout"三个字）。
+        # N-189 起输出**始终在盘上** ⇒ 这里直接读文件尾部即可（比依赖异常更稳）。
         rec["exit_code"] = "TIMEOUT"
-        rec["stderr_tail"] = "\n".join((_err.strip().splitlines() or [f"timeout {timeout}s"])[-3:])
-        rec["stderr_tail_len"] = len(_err)
-        rec["stdout_len"] = len(_out)  # N-151：披露真实输出体量（原恒为 0）
+        rec["tail"] = _tail(out_path, 5) or "timeout（子进程无已捕获输出）"
+        rec["stderr_tail"] = _tail(err_path, 3) or f"timeout {timeout}s"
+        rec["stderr_tail_len"] = _size(err_path)
+        rec["stdout_len"] = _size(out_path)  # 披露真实输出体量（原恒为 0）
     except Exception as e:  # noqa: BLE001
         rec["exit_code"] = f"EXC:{type(e).__name__}"
         rec["stderr_tail"] = f"{type(e).__name__}: {e}"
         rec["stderr_tail_len"] = len(rec["stderr_tail"])
+    # N-189：完整步骤日志路径（可 tail / 可审计；`reports/_tmp` 已在门禁排除集内）
+    rec["log_path"] = os.path.relpath(out_path, ROOT)
+    rec["err_log_path"] = os.path.relpath(err_path, ROOT)
     rec["elapsed_s"] = round(time.time() - t0, 1)
     # N-152：填时间窗（门禁据此判定"失败步骤的产物是否由该步产生"）
     rec["started_at"] = round(t0, 3)
@@ -842,15 +860,20 @@ def _run_chain(args) -> int:
         )
 
     # ---- 阶段 1：clean（尾部自动 clause）----
-    # N-150（2026-09-29）**超时按源体量配置**（原为固定 `timeout=1800`）。
-    # 为何必须改：真实运行（含抓取）暴露 `clean:gov` **必然超时** ——
-    #   · gov raw **1.01GB**；`clean:nfra` 的 raw 仅 **117MB 却已耗 1570.3s**（≈13.4 s/MB）；
-    #   · 线性外推 gov 需 **≈13500s（3.7h）** ≫ 1800s → **最大的源永远跑不完**（端到端阻断）；
-    #   · 且超时被强杀时**产物已落盘**（`gov_cleaned_*.jsonl` mtime 恰为超时时刻）→
-    #     未走完流程的中间产物被 `apply`/`classify` 下游采用，而**门禁仍 rc=0**（见 N-152）。
-    # 口径：`max(1800, 体量MB × 15)`，上限 21600s（6h）—— 既给足大源，又不无限挂死；
-    #   15 s/MB 由 nfra 实测（13.4）留 ~12% 余量；体量取**实际 raw 文件大小**（缺文件则退回下限）。
-    _RAW_MB_PER_S = 15.0
+    # N-150（2026-09-29，**N-188 于 2026-10-08 重标定**）**超时按源体量配置**（原为固定 `timeout=1800`）。
+    # 背景：真实运行暴露 `clean:gov` **必然超时** —— 原固定 1800s 使**最大的源永远跑不完**（端到端阻断）；
+    #   且超时被强杀时产物可能已落盘、被 `apply`/`classify` 下游采用而门禁 rc=0（见 N-152 的时间窗判据）。
+    # ⚠️ **为何必须重标定**：N-150 当时的 `15 s/MB` 是**在被缺陷污染的数据上标定的** ——
+    #   彼时 `clean:nfra` 实测 13.4 s/MB、`clean:gov` 撞满 4.3h，其根因是
+    #   `ocr_correction.JiebaDict.check_and_fix` 的 **O(tokens×vocab)** 全表模糊匹配被新装的
+    #   jieba **激活**（N-182；同一份数据在该缺陷休眠时仅 **0.14~0.19 s/MB**）。
+    #   ⇒ 15 s/MB 把"**缺陷耗时**"误当"**体量成本**"，系数虚高约 **60×**，副作用是：
+    #   **真实的挂死要等 6h 才被发现**（告警太晚）。
+    # 重标定依据（N-182 修复后的**生产实测**，2026-10-05/06/07 调度链）：
+    #   `clean:gov` **246 / 259 / 290s** ÷ 1035MB = **0.24~0.28 s/MB**；mof/nfra 为 0.29~0.41 s/MB。
+    # 口径：`max(1800, 体量MB × 2)`，上限 21600s（6h）—— 对最大源留 **~7× 余量**，
+    #   同时把"挂死"的**发现时间从 4.3h 压到 ~35 分钟**；体量取**实际 raw 文件大小**（缺失则退回下限）。
+    _RAW_MB_PER_S = 2.0
     for src in SOURCES:
         try:
             _raw_mb = os.path.getsize(os.path.join(RAW_DIR, RAW_JSON[src])) / (1024 * 1024)

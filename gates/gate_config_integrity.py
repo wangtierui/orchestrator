@@ -534,6 +534,25 @@ def _check_schedule() -> tuple[list[str], dict]:
         detail["manual"] = os.path.relpath(manual, ROOT)
     else:
         detail["manual"] = "（缺运行手册：跳过 S4）"
+    # N-186（2026-10-08）：README §5.2 是**同一张定时表**的另一处呈现，此前 S4 只守手册
+    #   ⇒ README 静默漂移（实测：缺新增作业、且仍是 N-51 之前的 `--only 6.9 / 21.5` 旧 argv 形态）。
+    #   读者据 README 会误判"哪个源没有采集"，故纳入**同一判据**（与手册同渲染源、同阻断口径）。
+    readme = gsd.README
+    if os.path.exists(readme):
+        rtext = open(readme, encoding="utf-8", errors="replace").read()
+        try:
+            rwant = gsd._replace_block(rtext, gsd.TABLE_START, gsd.TABLE_END, gsd.render_table(jobs))
+        except LookupError as e:
+            problems.append(f"S4: README 定时表缺自动段标记对：{e}")
+            rwant = rtext
+        if rwant != rtext:
+            problems.append(
+                "S4: README 定时表与 config/schedule.yaml **不一致**"
+                "（跑 `python tools/gen_schedule_doc.py` 重写；勿手改 README 该段）"
+            )
+        detail["readme"] = os.path.relpath(readme, ROOT)
+    else:
+        detail["readme"] = "（缺 README：跳过）"
     detail["schedule"] = {
         "jobs": len(jobs),
         "cron": sum(1 for j in jobs if j.get("kind") == "cron"),

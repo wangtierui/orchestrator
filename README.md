@@ -237,16 +237,25 @@ flowchart LR
 
 ### 5.2 定时与事件驱动任务清单（**唯一事实源 = `config/schedule.yaml` + `config/triggers.yaml`**）
 
-| 任务名称 | 触发方式 | 执行动作 | 脚本分类 | 失败处理 |
-| :--- | :--- | :--- | :--- | :--- |
-| `REG_ORCH_refresh` | Cron 每日 06:00 | `cli.py run --no-scrape --resume`（全链刷新；无 raw 变化快跳） | **常规流程（定时批）** | 门禁 FAIL 留人工；**通知通道**告警 |
-| `REG_ORCH_nfra_weekly` | Cron 每周二 01:00 | `cli.py run --collect nfra-weekly` | **常规流程（定时）** | 同上 |
-| `REG_ORCH_verify` | Cron 每周一 07:00 | `cli.py run --only 6.9`（效力缺失核验，断点续跑） | **常规流程（需 token）** | 配额自动停，断点续跑 |
-| `REG_ORCH_publish_wiki` | Cron 每周一 08:00 | `cli.py run --only 21.5`（发布件刷新 + wiki 同步） | **常规流程** | 同上 |
-| `REG_ORCH_monthly_check` | Cron 每月 1 日 09:00 | `cli.py gates` + `source diff` + `timeliness summary` + wiki 巡检 | **常规流程（月度巡检）** | 同上 |
+> 下表与运行手册**同源**：均由 `tools/gen_schedule_doc.py` 从 `schedule.yaml` **反向生成**
+> （**勿手改**；漂移由 `gate_config_integrity` 判据 **S4** 阻断）。含「脚本分类 / 失败处理」
+> 的完整视图见 `reports/运行手册_编排与定时_*.md`。
+
+| 频率 | cron | 命令 | 说明 |
+| :--- | :--- | :--- | :--- |
+<!-- SCHED:AUTO -->
+| **每周三 01:00** | `0 1 * * 3` | `cli.py run --collect gov,mof,pbc` | gov/mof/pbc 周度增量采集 + 全链（含报告）；supp 走投放区（inbox_drop 触发） |
+| **每周二 01:00** | `0 1 * * 2` | `cli.py run --collect nfra-weekly` | nfra 周报增量链（单实例锁 / 顶部窗口 / 断点续跑） |
+| **每日 06:00** | `0 6 * * *` | `cli.py run --no-scrape --resume` | 全链刷新（raw 已抓取，仅重清洗 + 全链；当日无 raw 变化时各阶段快跳）（漏跑策略：run_at_next_boot） |
+| **每周一 07:00** | `0 7 * * 1` | `cli.py run --only timeliness:verify` | 效力核验批次（有 Token 时；断点续跑，配额耗尽自动停） |
+| **每周一 08:00** | `0 8 * * 1` | `cli.py run --only wiki:sync` | 发布件刷新 + llm_wiki 源同步（SHA256 增量；条件触发 wiki_sync，见 triggers.yaml） |
+| **每月 1 日 09:00** | `0 9 1 * *` | `cli.py gates` | 月度巡检：门禁（另需人工跑 `cli.py source diff` / `cli.py timeliness summary` / check_llm_wiki_upstream） |
+| **事件驱动（after: incremental_weekly）** | — | `cli.py run --collect gov` | gov 源增量（含 zhengceku 子源）——由 `incremental_weekly`（周三 01:00）承接；此处仅登记语义，不重复调度 |
+| **事件驱动（after: verify）** | — | `cli.py timeliness sync` | 核验后：台账 → 归属表时效同步（F-C03）；已由 run 主链 6.9 之后的阶段承接 |
+<!-- SCHED:END -->
 
 > **调度纪律**：定时表由 `tools/gen_schedule_doc.py` **反向生成**（**勿手改**）；`cli.py schedule install/verify`
-> 负责安装与比对；判据 S 断言"手册自动段 == yaml 渲染"。**条件触发**唯一事实源 = `triggers.yaml`（判据 T 断言）。
+> 负责安装与比对；判据 S 断言"手册/README 自动段 == yaml 渲染"。**条件触发**唯一事实源 = `triggers.yaml`（判据 T 断言）。
 
 ### 5.3 代码与数据质量门禁 (Quality Gates)
 
@@ -481,7 +490,7 @@ flowchart TD
 
 - **步骤选择**：`--only <步骤>` / `--no-scrape`（跳过采集）→ 未选中步骤记 **SKIP（rc=0）并写入原因**（`note`），**不伪装为执行成功**。
 - **续跑**：`--resume` 依据「上次该步 rc=0（且非跳过）」**且**「全库水位无 stale/未登记」决定跳过；水位有异常即**全量重跑**（宁重跑不跳：重跑的代价是时间，跳错的代价是数据陈旧）。
-- **超时**：采集与清洗均在编排器侧设超时；**清洗超时按源体量配置**（`max(1800, raw_MB × 15)`，上限 21600s，N-150）—— 原固定 1800s 使最大源必然超时。
+- **超时**：采集与清洗均在编排器侧设超时；**清洗超时按源体量配置**（`max(1800, raw_MB × 2)`，上限 21600s，N-150；**系数由 N-188 重标定**）——原固定 1800s 使最大源必然超时；而 N-150 最初的 `15 s/MB` 标定于**被 N-182 缺陷污染**的数据（同数据在缺陷休眠时仅 0.14~0.19 s/MB）⇒ 虚高约 60×，使真实挂死要 6h 才被发现。
 - **失败留痕**：每步结果写入**稳定运行台账** `data/run_state/last_run_steps.json`（含 `started_at`/`ended_at` 时间窗），并由 `gate_run_steps` 判定「失败步骤的产物是否已落盘并被下游采用」（危险组合 → FAIL，可人工确认降级）。
 - **通知**：存在失败步骤时触发通知通道（无人值守下「失败无人知晓」是原设计的硬缺口）。
 
@@ -563,6 +572,7 @@ flowchart TD
 显式 `model="…"` **覆盖 mode**（优先级最高）；分句增强由 env `REG_ORCH_SEMANTIC_SPLIT=1` 控制（**默认关**，见 §8.6 第 2 条）。
 
 <!-- END GENERATED: 全链数据流总图 -->
+
 
 
 

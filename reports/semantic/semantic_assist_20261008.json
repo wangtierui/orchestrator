@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-10-08 10:02:44",
+ "generated_at": "2026-10-08 14:00:08",
  "source": "all",
  "limit": 200,
  "mode": "full",
@@ -1390,7 +1390,59 @@
    "cleaned.theme_name",
    "classifier:_t{N}_final.json"
   ],
-  "classifier_entries": 2138
+  "classifier_entries": 2138,
+  "files": [
+   {
+    "file": "_t1_final.json",
+    "mtime": "2026-09-21T20:55:30",
+    "entries": 196
+   },
+   {
+    "file": "_t2_final.json",
+    "mtime": "2026-09-21T20:55:51",
+    "entries": 150
+   },
+   {
+    "file": "_t3_final.json",
+    "mtime": "2026-09-21T20:56:11",
+    "entries": 76
+   },
+   {
+    "file": "_t4_final.json",
+    "mtime": "2026-09-21T20:56:30",
+    "entries": 109
+   },
+   {
+    "file": "_t5_final.json",
+    "mtime": "2026-09-21T20:56:48",
+    "entries": 142
+   },
+   {
+    "file": "_t6_final.json",
+    "mtime": "2026-09-21T20:57:08",
+    "entries": 66
+   },
+   {
+    "file": "_t7_final.json",
+    "mtime": "2026-09-21T20:57:25",
+    "entries": 35
+   },
+   {
+    "file": "_t8_final.json",
+    "mtime": "2026-09-21T20:57:43",
+    "entries": 78
+   },
+   {
+    "file": "_t9_final.json",
+    "mtime": "2026-09-21T20:58:01",
+    "entries": 78
+   },
+   {
+    "file": "_t10_final.json",
+    "mtime": "2026-09-21T20:58:19",
+    "entries": 143
+   }
+  ]
  },
  "sample_policy": {
   "prefer_baseline": true,

@@ -113,19 +113,25 @@ def _load_records(src: str, limit: int, *, prefer: set | None = None) -> tuple:
     return rows, scanned
 
 
-def _load_baseline() -> dict:
-    """确定性主题归属**基线映射** `{(源, 归一标题): 主题号}`（唯一事实源 = 分类器产物）。
+def _load_baseline() -> tuple:
+    """确定性主题归属**基线映射** `{(源, 归一标题): 主题号}` + **指纹**（唯一源＝分类器产物）。
 
     ⚠️ N-184（2026-10-01）：原实现只取 `cleaned.theme_name` 作基线，而该字段在**五源 100% 存在
     却 100% 为空**（`unified_schema` 的默认值，链上无回填）→ `agreement` **恒为 None** ——
     即"ML 建议 vs 确定性归属"的差异**在生产中不可测**，而这恰是本仓"启用增强层前须先量 P/R"
     纪律所依赖的指标。现从 `classify:all` 的真实产物 `_t{N}_final.json` 读基线；
     `baseline_n` 如实披露覆盖率（**未命中即不计入一致性**，不静默按 0 计）。
+
+    ⚠️ N-188（2026-10-08）：额外返回**基线指纹**（每文件 mtime + 条目数）。为什么需要：
+    该依赖**未登记水位边**（分类器更新后 `semantic_assist` 可能静默沿用旧基线 → 一致性数字
+    失去时效性）。指纹让读者**自证新鲜度**，也是后续登记依赖边时的现成凭据。
+    返回 `(map, files)`；`files` 为 `[{file, mtime, entries}, …]`（mtime 为 ISO8601）。
     """
     out: dict = {}
+    files: list = []
     base_dir = os.path.join(paths.MODULES_DIR, "regulatory_classifier", "data")
     if not os.path.isdir(base_dir):
-        return out
+        return out, files
     for tid in range(1, 11):
         p = os.path.join(base_dir, f"_t{tid}_final.json")
         if not os.path.exists(p):
@@ -137,6 +143,7 @@ def _load_baseline() -> dict:
             continue
         if not isinstance(items, list):
             continue
+        n = 0
         for it in items:
             if not isinstance(it, dict):
                 continue
@@ -145,7 +152,13 @@ def _load_baseline() -> dict:
             if title:
                 out[(src or "*", title)] = f"T{tid}"
                 out.setdefault(("*", title), f"T{tid}")
-    return out
+                n += 1
+        try:
+            mt = datetime.datetime.fromtimestamp(os.path.getmtime(p)).strftime("%Y-%m-%dT%H:%M:%S")
+        except OSError:
+            mt = ""
+        files.append({"file": os.path.basename(p), "mtime": mt, "entries": n})
+    return out, files
 
 
 def _theme_prototypes() -> dict:
@@ -219,10 +232,12 @@ def run(source: str = "all", limit: int = 200, mode: str = "full", dry_run: bool
 
     # ⑤ 确定性基线（N-184）：优先记录内 `theme_name`，否则回落到**分类器产物**（真实归属源）。
     #    **必须先加载**：抽样要优先取"有基线"的记录（N-184b），否则一致性指标会因样本缺基线而失真。
-    base_map = _load_baseline()
+    base_map, base_files = _load_baseline()
     res["baseline"] = {
         "sources": ["cleaned.theme_name", "classifier:_t{N}_final.json"],
         "classifier_entries": len(base_map),
+        # N-188：基线指纹（自证新鲜度；该依赖尚未登记水位边，见 docstring）
+        "files": base_files,
     }
 
     # ③ 加载记录（优先有基线者 → 一致性指标有代表性；覆盖度仍如实披露）

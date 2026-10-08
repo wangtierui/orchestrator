@@ -24,6 +24,12 @@ from config.exitcodes import ExitCode
 
 SCHEDULE_YAML = os.path.join(paths.CONFIG_DIR, "schedule.yaml")
 MANUAL = os.path.join(paths.ROOT, "reports", "运行手册_编排与定时_20260912.md")
+# N-186（2026-10-08）：README §5.2 是**同一张定时表**，但此前**无人渲染**（本工具只写手册）
+#   ⇒ 手工副本必然漂移（实测：缺新作业，且仍是 N-51 之前的 `--only 6.9 / --only 21.5` 旧形态），
+#   而它**没有门禁守护**（判据 S4 只守手册）→ 读者据 README 会误判"哪个源没有采集"。
+#   现把 README 的该段纳入**同一渲染源**（行由 `render_table` 生成、表头静态固定），
+#   并把 S4 扩展到 README ⇒ 漂移即 CI FAIL。
+README = os.path.join(paths.ROOT, "README.md")
 TABLE_START, TABLE_END = "<!-- SCHED:AUTO -->", "<!-- SCHED:END -->"
 CRON_START, CRON_END = "<!-- CRON:AUTO -->", "<!-- CRON:END -->"
 
@@ -131,6 +137,29 @@ def write_manual(check: bool = False) -> tuple[bool, str]:
     return True, f"手册自动段已重写：{os.path.relpath(MANUAL, paths.ROOT)}"
 
 
+def write_readme(check: bool = False) -> tuple[bool, str]:
+    """写/比对 README 定时表自动段（N-186：与手册**同一渲染源**，消灭手工副本）。"""
+    table, _cron, _data = build_blocks()
+    if not os.path.exists(README):
+        return True, "（缺 README：跳过）"
+    with open(README, encoding="utf-8") as fh:
+        text = fh.read()
+    try:
+        new = _replace_block(text, TABLE_START, TABLE_END, table)
+    except LookupError as e:
+        return False, f"README 定时表缺自动段标记对：{e}"
+    if new == text:
+        return True, "README 定时表与 schedule.yaml 一致（无漂移）"
+    if check:
+        return False, (
+            "README 定时表与 config/schedule.yaml **不一致**：请运行 "
+            "`python tools/gen_schedule_doc.py` 重写（勿手改 README 该段）"
+        )
+    with open(README, "w", encoding="utf-8", newline="") as fh:
+        fh.write(new)
+    return True, f"README 定时表已重写：{os.path.relpath(README, paths.ROOT)}"
+
+
 def main(argv=None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
     if "--print" in argv:
@@ -139,8 +168,10 @@ def main(argv=None) -> int:
         print()
         print(cron)
         return ExitCode.OK
-    ok, msg = write_manual(check="--check" in argv)
-    print(f"[schedule-doc] {'OK' if ok else 'FAIL'} {msg}")
+    ok1, msg1 = write_manual(check="--check" in argv)
+    ok2, msg2 = write_readme(check="--check" in argv)
+    ok = ok1 and ok2
+    print(f"[schedule-doc] {'OK' if ok else 'FAIL'} {msg1}；{msg2}")
     return ExitCode.OK if ok else ExitCode.FAIL
 
 
