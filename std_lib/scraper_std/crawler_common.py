@@ -570,6 +570,60 @@ XLSX_MAX_EMPTY_ROWS = 60
 XLSX_MAX_ROWS = 200_000
 
 
+def iter_ws_text_rows(ws, *, max_rows: int = XLSX_MAX_ROWS,
+                      max_empty_rows: int = XLSX_MAX_EMPTY_ROWS):
+    """**单个工作表**的文本行迭代（批 52/W-L：xlsx 逐行读取的**唯一共享原语**）。
+
+    行为：右裁空单元格（N-208 爆量主因）→ 连续空行达阈值视为表尾（前 2 个空行仍产出 `[]`
+    以保留块间分隔）→ 累计行数受 `max_rows` 约束（产出即计数）。
+    在用户（**不重复造轮子**）：`iter_xlsx_text_rows`（五源文本轨）、
+    `table_recovery._tables_from_xlsx`（矩阵轨/⑮）、`tools/build_east_backlog.extract_xlsx`、
+    `internal_policy_drafter/scripts/dump_related_systems.dump`。
+    """
+    emitted = 0
+    empty_streak = 0
+    for r in ws.iter_rows(values_only=True):
+        if emitted >= max_rows:
+            return
+        cells = ["" if c is None else str(c) for c in r]
+        while cells and cells[-1] == "":
+            cells.pop()
+        if not cells:
+            empty_streak += 1
+            if empty_streak >= max_empty_rows:
+                return
+            if empty_streak <= 2:
+                yield []
+                emitted += 1
+            continue
+        empty_streak = 0
+        emitted += 1
+        yield cells
+
+
+def count_xlsx_formula_cells(data: bytes) -> int:
+    """xlsx 内**公式单元格计数**（批 52/W-N⑧）：经 zip 内工作表 XML 的 `<f` 标签计数（有界扫描）。
+
+    用途：`data_only=True` 取值**依赖缓存值**——公式无缓存值时读到 None 而无从分辨 ⇒ 本计数落
+    `table_structured[].meta.formula_cells` + `formula_values="cached"`，把"静默丢"变**可审计**。
+    """
+    import re as _re
+    import zipfile
+
+    n = 0
+    try:
+        with zipfile.ZipFile(__import__("io").BytesIO(data)) as z:
+            for nm in z.namelist()[:512]:
+                if not _re.match(r"xl/worksheets/sheet\d+[.]xml$", nm):
+                    continue
+                with z.open(nm) as fh:
+                    blob = fh.read(64 * 1024 * 1024)
+                n += blob.count(b"<f")
+    except Exception:  # noqa: BLE001  非 OOXML/损坏包：计数为 0（不阻断）
+        return 0
+    return n
+
+
 def iter_xlsx_text_rows(data: bytes):
     """**共享原语**（批 49/50）：逐行产出 xlsx 的**已右裁空单元格**行（`list[str]`）。
 
@@ -587,26 +641,8 @@ def iter_xlsx_text_rows(data: bytes):
     import openpyxl
 
     wb = openpyxl.load_workbook(__import__("io").BytesIO(data), data_only=True, read_only=True)
-    emitted = 0
     for ws in wb.worksheets:
-        empty_streak = 0
-        for r in ws.iter_rows(values_only=True):
-            if emitted >= XLSX_MAX_ROWS:
-                return
-            cells = ["" if c is None else str(c) for c in r]
-            while cells and cells[-1] == "":          # ① 右裁空列（爆量主因）
-                cells.pop()
-            if not cells:
-                empty_streak += 1
-                if empty_streak >= XLSX_MAX_EMPTY_ROWS:   # ② 连续空行 ⇒ 视为表尾
-                    break
-                if empty_streak <= 2:                     # 保留最多 2 个空行（块间分隔仍可辨）
-                    yield []
-                    emitted += 1
-                continue
-            empty_streak = 0
-            emitted += 1
-            yield cells
+        yield from iter_ws_text_rows(ws)
 
 
 def cap_xlsx_text(text: str, limit: int = XLSX_MAX_CHARS) -> str:

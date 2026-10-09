@@ -51,9 +51,11 @@ def dump(path, max_lines=400):
             print("-" * 70)
             print("SHEET:", ws.title, "max_row:", ws.max_row, "max_col:", ws.max_column)
             n = 0
-            for row in ws.iter_rows(values_only=True):
-                cells = ["" if c is None else str(c) for c in row]
-                line = " | ".join(cells).rstrip(" |")
+            # 批 52/W-L：逐行读取统一走**共享原语**（右裁空值 + 连续空行视为表尾 + 行上限）
+            from std_lib.scraper_std.crawler_common import iter_ws_text_rows
+
+            for row in iter_ws_text_rows(ws, max_rows=max(max_lines * 4, 1000)):
+                line = " | ".join(row).rstrip(" |")
                 if line.strip() == "":
                     continue
                 print(line[:300])

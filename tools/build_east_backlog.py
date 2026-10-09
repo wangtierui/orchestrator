@@ -125,17 +125,19 @@ def extract_xlsx(path: str) -> tuple[str, list]:
     try:
         wb = load_workbook(path, read_only=True, data_only=True)
         for ws in wb.worksheets:
-            head = []
+            head: list[str] = []
             rows = []
-            for i, row in enumerate(ws.iter_rows(values_only=True)):
-                vals = [("" if v is None else str(v)).replace("\n", " ").strip() for v in row]
+            # 批 52/W-L：逐行读取统一走**共享原语**（右裁空值 + 连续空行视为表尾 + 行上限），
+            # 不再按工作表**声明维度**展开（原实现在超宽声明网格上会付出 16000 列/行的构造开销）
+            from std_lib.scraper_std.crawler_common import iter_ws_text_rows
+
+            for row in iter_ws_text_rows(ws, max_rows=MAX_XLSX_ROWS):
+                vals = [str(v).replace("\n", " ").strip() for v in row]
                 if not any(vals):
                     continue
-                if i == 0:
+                if not head:
                     head = vals
                 rows.append(vals)
-                if i >= MAX_XLSX_ROWS:
-                    break
             lines.append(f"【表:{ws.title}】")
             for rv in ([head] + rows[:200]) if head else rows[:200]:
                 lines.append(" | ".join(rv))
