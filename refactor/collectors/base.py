@@ -12,9 +12,8 @@ import json
 import logging
 import os
 import sys
-from datetime import UTC, datetime
-
-UTC = UTC
+from datetime import datetime, timezone
+UTC = timezone.utc
 from typing import Protocol, runtime_checkable
 
 logger = logging.getLogger("refactor.collectors")

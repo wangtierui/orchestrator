@@ -241,14 +241,25 @@ def _serialize_for_csv(value: Any) -> str:
     return str(value)
 
 
+#: T-A（批 48，2026-10-09）：**单条超大记录**的观测阈值（**按字符数**近似，避免 encode 复制——
+#: 语料中最大单条为 279M 字符，encode 会再复制一份）。
+#: 为何要它：单条 279MB 记录会**按快照/历史/备份多份复制**，并让任何"触碰该源"的步骤付出
+#: GB 级瞬时峰值（批 46 实测）。内存侧放大已由 N-198~N-206 的流式化解除；
+#: 此处**只观测并登记**（不截断、不改契约），使"数据层治理"成为**可见的产品决策**。
+OVERSIZED_RECORD_CHARS = 32 * 1024 * 1024
+
+
 def write_cleaned(
     out_dir: str,
     project: str,
     records: list[dict[str, Any]],
     *,
     date_tag: str = "",
-) -> dict[str, str]:
-    """双轨输出：CSV(UTF-8 BOM) + JSONL。返回 {csv: path, jsonl: path}。"""
+) -> dict[str, Any]:
+    """双轨输出：CSV(UTF-8 BOM) + JSONL。返回 {csv: path, jsonl: path, oversized: {...}}。
+
+    T-A（批 48）：新增 `oversized` 子字典（**只观测不干预**）⇒ 返回类型放宽为 `dict[str, Any]`。
+    """
     os.makedirs(out_dir, exist_ok=True)
     date_tag = date_tag or _dt.date.today().strftime("%Y%m%d")
     csv_path = os.path.join(out_dir, f"{project}_cleaned_{date_tag}.csv")
@@ -274,18 +285,33 @@ def write_cleaned(
                 row = {k: _serialize_for_csv(rec.get(k)) for k in CSV_COLUMNS}
                 writer.writerow(row)
 
-    # JSONL（无损保留类型）
+    # JSONL（无损保留类型）—— T-A：**顺带度量单条体积**（零额外开销：此处本就要 dumps）
     jsonl_tmp = os.path.join(out_dir, f".tmp_{project}_cleaned_{date_tag}.jsonl")
+    oversize: dict[str, Any] = {"threshold_chars": OVERSIZED_RECORD_CHARS, "count": 0,
+                                "max_chars": 0, "samples": []}
     with open(jsonl_tmp, "w", encoding="utf-8") as f:
         for rec in records:
-            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+            line = json.dumps(rec, ensure_ascii=False)
+            f.write(line + "\n")
+            n_chars = len(line)                     # 按字符数近似（避免 encode 再复制一份）
+            if n_chars > oversize["max_chars"]:
+                oversize["max_chars"] = n_chars
+            if n_chars > OVERSIZED_RECORD_CHARS:
+                oversize["count"] += 1
+                oversize["samples"].append({
+                    "title": str(rec.get("title") or "")[:60],
+                    "dedup_key": str(rec.get("dedup_key") or "")[:40],
+                    "chars": n_chars,
+                })
+                oversize["samples"].sort(key=lambda s: -s["chars"])
+                del oversize["samples"][3:]         # 只留最大 3 条（登记用，防自身膨胀）
     try:
         os.replace(jsonl_tmp, jsonl_path)
     except OSError:
         with open(jsonl_path, "w", encoding="utf-8") as f:
             for rec in records:
                 f.write(json.dumps(rec, ensure_ascii=False) + "\n")
-    return {"csv": csv_path, "jsonl": jsonl_path}
+    return {"csv": csv_path, "jsonl": jsonl_path, "oversized": oversize}
 
 
 def rotate_history(
@@ -511,6 +537,37 @@ def run_pipeline(
         os.path.join(project_root, "data", "cleaned") if project_root else "data/cleaned"
     )
     outputs = write_cleaned(out_dir, project, cleaned_final)
+
+    # 8.1) T-A（批 48）：**超大单条记录的可见性守卫**——只观测与登记，**不截断数据、不改契约**。
+    #      动因（批 46/47 实测）：gov 有单条 279MB 记录（占该源语料 24.6%），会被快照/历史/备份
+    #      多份复制，并让任何触碰该源的步骤付出 GB 级瞬时峰值；内存侧已由流式化解除，
+    #      数据侧治理（阈值+外置）需产品决策 ⇒ 故先让它**每次清洗都可见**。
+    _osz: dict[str, Any] = outputs.get("oversized") or {}
+    if _osz.get("count"):
+        _mb = _osz["max_chars"] / 1048576.0
+        _s0 = (_osz["samples"] or [{}])[0]
+        LOG.warning("[%s] 超大单条记录 %d 条（最大 %.1fMB 字符）：%s",
+                    project, _osz["count"], _mb, str(_s0.get("title") or "")[:50])
+        # 机器可读载荷（stdout 契约，见仓内日志纪律：状态行→LOG，载荷→print）
+        print("[%s] OVERSIZED_RECORDS=%d MAX_MB=%.1f SAMPLE_KEY=%s"
+              % (project, _osz["count"], _mb, str(_s0.get("dedup_key") or "")[:32]))
+        # 登记待办（**幂等**：同 (kind, subject) 的 open 项唯一 ⇒ 不会每轮灌爆队列；失败不影响清洗）
+        try:
+            from std_lib.common_lib import governance_store as _gs
+
+            _gs.worklist_add(
+                "trigger_manual_breakpoint",
+                "oversized_record/%s/%s" % (project, str(_s0.get("dedup_key") or "?")[:32]),
+                stage="阶段1",
+                artifact_key=outputs.get("jsonl", ""),
+                payload={"source": project, "count": _osz["count"], "max_chars": _osz["max_chars"],
+                         "threshold_chars": _osz["threshold_chars"], "samples": _osz["samples"],
+                         "note": "内存侧已由流式化解除放大；数据侧（记录级附件聚合字段阈值+外置）待产品决策"},
+                suggestion="评估把附件级既有机制（>200K 字 → .txt + path + md5）扩展到记录级聚合字段。",
+                confidence=0.75,
+            )
+        except Exception as _e:  # noqa: BLE001  治理库不可用不得影响清洗
+            LOG.debug("[%s] 超大记录待办登记跳过（%s）", project, type(_e).__name__)
 
     # 8.5) 校验失败记录隔离落盘（v2 §3.4 V1）：不进交付，但**不静默丢弃**——
     #      落 {src}_cleaned_{date}.quarantine.jsonl，供定位与修复后重跑。

@@ -103,7 +103,12 @@ line-length = 100
 target-version = "py313"
 extend-exclude = ["data", "cache", "logs", "backups", "venv", "reports/_tmp", "_tmp_smoke",
                   # 2026-09-26（v2 §3.15.3 A4）：退役脚本隔离层不再维护风格
-                  "tools/retired"]
+                  "tools/retired",
+                  # 2026-10-09（批 48）：`refactor/` **属其他用户**（采集器抽取重构 WIP），
+                  # 本机**不得修改其任何文件**，视为**独立模块** ⇒ 不纳入本仓风格检查。
+                  # ⚠️ 注意：这不等于"它没有 lint 问题"——批 47 曾误代为修正（已回滚）；
+                  # 其真实问题（含 2 项 F821 未导入 json 的真 bug）改由**转交登记**处理。
+                  "refactor"]
 
 # 迁移既有代码豁免：collectors / classifier 复制代码保留其紧凑风格（单行/短变量名），
 # 与旧仓 ruff 配置同口径；语义修复（F821 等）已在迁移时完成，风格项逐步清理。
@@ -140,7 +145,10 @@ ignore_missing_imports = true
 # 排除目录与 `gate_no_duplicate_libs.EXCLUDE_DIRS` 口径一致（**唯一事实源**：非源码层不参与检查）：
 # `retired/`（退役隔离层，其"不再被引用"由 gate_config_integrity 判据 J3 保证）、
 # `archive/`（归档层）、`build/`+`dist/`（构建产物）。
-exclude = ["data/", "cache/", "logs/", "backups/", "retired/", "archive/", "build/", "dist/"]
+exclude = ["data/", "cache/", "logs/", "backups/", "retired/", "archive/", "build/", "dist/",
+           # 2026-10-09（批 48）：`refactor/` 属**其他用户**的独立模块（本机不得修改）
+           # ⇒ 不纳入本仓类型检查（其 14 项既有类型错误已随报告披露并转交）。
+           "refactor/"]
 # N-72（2026-09-28）：历史层 mypy **已全量收敛**（236 → 0，含 5 处真 bug：chinese_numerals 键空间、
 # clean_index 元组当整数、checkpoint `raise object()`、retention `glob.fnmatch`、
 # normalize_internal_naming `and _writeback_identity(...)` 恒假），CI 的 mypy 范围已扩至

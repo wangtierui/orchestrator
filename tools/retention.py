@@ -92,6 +92,19 @@ POLICY: tuple[dict, ...] = (
         "delete": True,
     },
     {
+        # T-E（2026-10-09）：采集器**回写前快照**（目录型）。历史：`_plan_dir` 只处理文件 ⇒
+        # 这些目录 2026-09-20~10-08 从未被任何策略覆盖，累积 **20.71GB/100 目录**（批 46 由写入侧
+        # 上限 N-197 + 一次性回收处置为 4.16GB）。本条为**工具侧第二道防线**，与写入侧**同口径**：
+        # 按 **(tag, 源)** 分组、每组保留最新 1 份（回滚只需"最近一次写回之前"的状态）。
+        # 幂等：写入侧已合规时本条目计划为空。
+        "name": "scrapers_backups",
+        "dir": "modules/regulatory_scrapers/backups",
+        "dirs": True,
+        "include_glob": "cleaned_before_*",
+        "keep": 1,
+        "delete": True,
+    },
+    {
         # N-100（2026-09-28）：清洗**隔离件**同源多份 → 按源**分组**保留最新 1 份。
         # 背景：`quarantine_triage`（N-93）实测 nfra 残留 09-26/09-27/09-28 三份（字节数相同）、
         # supp 仅 09-26 一份而 cleaned 已 09-28 → 历史隔离件未随快照轮转，使"当前问题量"被虚增、
@@ -251,6 +264,71 @@ def _plan_glob(spec: dict) -> tuple[list[dict], dict]:
     return out, {"exists": True, "total": len(hits)}
 
 
+def _snapshot_group_key(name: str, d: str) -> tuple[str, str]:
+    """快照目录的分组键 **(tag, 源)**（T-E，2026-10-09）。
+
+    为何需要**二级**分组（而非只按名字里的 tag）：
+      · 目录名形如 `cleaned_before_<tag>_<YYYYmmdd_HHMMSS>` ⇒ 名字只含 **tag**（`timeliness` /
+        `classifier_pkulaw` 等，表示"哪一步的回写前快照"）；
+      · 但一次链式回写会为**每个源各建一个目录**（gov 1.68GB / nfra 193MB / mof 177MB / pbc 30MB /
+        supp 20MB，时间戳各不同）⇒ **"源"这一维只存在于目录内容**（文件名 `{src}_cleaned_*`）。
+      · 若只按 tag 分组保留 N 份，会在同一次运行内**误删本批先建的 gov 快照**（批 46 两次 dry-run
+        实测暴露的同一陷阱）⇒ 必须按 (tag, 源) 分组，与**写入侧** `apply_timeliness_to_cleaned.
+        _cleanup_backups` 的口径**同构**（该处以 `_snapshot_source()` 取源）。
+    """
+    m = re.match(r"cleaned_before_(.+)_\d{8}_\d{6}$", name)
+    tag = m.group(1) if m else name
+    src = "?"
+    try:
+        for f in os.listdir(d):
+            fm = re.match(r"([a-z]+)_cleaned_", f)
+            if fm:
+                src = fm.group(1)
+                break
+    except OSError:
+        pass
+    return tag, src
+
+
+def _plan_snapshot_dirs(spec: dict) -> tuple[list[dict], dict]:
+    """**目录型**快照的保留计划（`dirs: true`；按 (tag, 源) 分组，组内保留最新 `keep` 份）。
+
+    T-E 处置：`_plan_dir` 只处理**文件**（`os.path.isfile`）⇒ 目录型快照（`cleaned_before_*/`）
+    在 2026-09-20~10-08 期间**从未被任何策略覆盖**（累积 20.71GB，批 46 由写入侧上限 + 一次性回收处置）。
+    本函数补上工具侧能力，与写入侧同口径（**幂等**：写入侧已合规时本函数计划为空）。
+    """
+    base = os.path.join(paths.ROOT, spec["dir"])
+    if not os.path.isdir(base):
+        return [], {"exists": False}
+    inc = spec.get("include_glob", "*")
+    keep = int(spec.get("keep", 1))
+    dirs = [os.path.join(base, n) for n in os.listdir(base)
+            if os.path.isdir(os.path.join(base, n)) and fnmatch.fnmatch(n, inc)]
+    by_grp: dict[tuple[str, str], list[str]] = {}
+    for d in dirs:
+        by_grp.setdefault(_snapshot_group_key(os.path.basename(d), d), []).append(d)
+    out: list[dict] = []
+    kept = 0
+    for grp, ps in by_grp.items():
+        ps.sort(key=os.path.getmtime, reverse=True)          # 新 → 旧
+        kept += min(keep, len(ps))
+        for d in ps[keep:]:
+            size = 0
+            for dp, _dn, fn in os.walk(d):
+                for f in fn:
+                    try:
+                        size += os.path.getsize(os.path.join(dp, f))
+                    except OSError:
+                        pass
+            out.append({
+                "file": _rel(d),
+                "size": size,
+                "age_days": round(_age_days(d), 1),
+                "reason": f"超出**分组**保留量 {keep}（组 {grp[0]}/{grp[1]}，目录型快照）",
+            })
+    return out, {"exists": True, "total": len(dirs), "groups": len(by_grp), "kept": kept}
+
+
 def _plan_repo_baks(include: bool) -> tuple[list[dict], dict]:
     out: list[dict] = []
     total = 0
@@ -276,7 +354,9 @@ def build_plan(*, include_baks: bool = False) -> dict:
     plan: list[dict] = []
     stats: dict = {}
     for spec in POLICY:
-        if "keep_days" in spec:
+        if spec.get("dirs"):
+            rows, st = _plan_snapshot_dirs(spec)      # T-E：**目录型**快照（按 (tag, 源) 二级分组）
+        elif "keep_days" in spec:
             rows, st = _plan_age(spec)
         elif "glob" in spec:
             rows, st = _plan_glob(spec)
@@ -312,7 +392,11 @@ def apply_plan(plan: dict) -> dict:
         src = os.path.join(paths.ROOT, row["file"].replace("/", os.sep))
         if row.get("delete"):
             try:
-                os.remove(src)
+                # T-E：目录型快照（`dirs: true`）须 `rmtree`（`os.remove` 对目录会 IsADirectoryError）
+                if os.path.isdir(src):
+                    shutil.rmtree(src)
+                else:
+                    os.remove(src)
                 dests[row["file"]] = "(deleted)"
                 deleted += 1
             except OSError as e:

@@ -17,6 +17,7 @@ import glob
 import json
 import os
 import subprocess
+import sys
 import time
 
 # R-2（2026-09-30）拾取节流/冷却**具名常量**（数值不变，零行为变更）。
@@ -27,6 +28,7 @@ import urllib.parse
 # 复用主采集器 + 共用件（包内绝对导入，脚本/模块双兼容）
 from refactor.collectors.nfra import collector as m
 from refactor.collectors.nfra.common import warmup
+
 from std_lib.scraper_std.cache_store import source_cache_root
 
 HERE = os.path.dirname(os.path.abspath(__file__))

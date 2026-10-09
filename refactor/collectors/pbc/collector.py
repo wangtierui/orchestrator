@@ -6,17 +6,16 @@
 仅落盘改为 atomic_write（崩溃安全），运行锁与原实现一致（fs_lock + atexit）。
 """
 import argparse
-import atexit
 import csv
 import io
 import json
 import os
 import sys
+import atexit
 
-from std_lib.common_lib import fs_lock
-
-from ..base import REPO_ROOT, atomic_write
+from ..base import REPO_ROOT, SourceCollector, atomic_write
 from . import net, parse
+from std_lib.common_lib import fs_lock
 
 # 原 collector 的 regulatory_scrapers 根：用于默认 out 与 local_path 相对基址（字节一致）。
 SCRAPERS_ROOT = os.path.join(REPO_ROOT, "modules", "regulatory_scrapers")

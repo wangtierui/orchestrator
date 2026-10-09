@@ -1,32 +1,24 @@
 # -*- coding: utf-8 -*-
-"""
-raw_loader.py —— 五源 data/raw 统一只读入口（探查/清洗解耦架构 L0）
+"""raw_loader —— **已退役**（2026-10-09，批 48 / T-D）。
 
-设计铁律（《doc_type/category 清洗方案》最终版）：
-  - data/raw 为唯一不可变分析对象与清洗输入，本模块只读，绝不写入；
-  - 探查层（probe_doc_type_category）与清洗层（clean_doc_type_category）
-    均经本模块读取 raw，保证「分析对象恒为原始抓取结果」；
-  - 完整性断言：raw 顶层 meta.count / count 与记录数不一致即告警。
+退役理由（先证后迁）：
+  ① **零仓内引用**：全仓 grep（`.py/.yaml/.toml/.md`）无任何 `import raw_loader` / `raw_loader.` 调用；
+     本模块此前唯一的潜在用途（共享 raw 读取）已由 **`std_lib/scraper_std/pipeline.load_raw_records`**
+     承接 —— 后者是**五源 clean 的唯一载入点**，且已支持 `.jsonl` 与 `.json` **双格式流式**（N-206/S-A）。
+  ② **避免双实现分叉**：保留两份"读 raw"的实现（本模块 + pipeline）会随 raw 形态演进各自漂移
+     （本仓已有同类教训：collector 缓存样板 N-83、校验双套实现 N-82）。
+  ③ 保留而非删除：其"按源名 → 路径 → 逐条迭代"的封装对**未来**新增读取面仍有参考价值，
+     且迁移成本为零（文件级移动）。
 
-结构识别（实测 2026-08-28）：
-  - nfra: {meta:{...}, records:[...]}
-  - pbc:  list[...]
-  - mof:  {source, count, items:[...]}
-  - gov:  {source, category, count, records:[...]}
-  - supp: list[...]
+⚠️ 为何不在 `tools/retired/`：J1~J4 退役判据覆盖的是 **`tools/` 层**（`tools/_manifest.json` 双向相等），
+本文件属 **共享库层** ⇒ 置于 `std_lib/scraper_std/retired/`。该目录名被 ruff / mypy 的 `retired/`
+排除规则**按名覆盖**（自动生效），但**不**受 J3「零引用」门禁保护 —— 已登记待办，供后续
+决定是否建立**库层退役判据**。
 
-阶段 0 止血（2026-09-18）—— 本文件此前**两处失效**，均已修正：
-  1) `RAW_FILES` 仍指向旧仓扁平形态（`nfra_regulations_scraper/data/raw/...`），
-     而 2026-09 模块拍平后实际路径为 `modules/regulatory_scrapers/data/raw/...`
-     → 调用即 FileNotFoundError（本模块当时**零消费方**，故未暴露）；
-  2) `EXPECTED_COUNTS` 冻结 2026-08-28 基线（gov 预期 30271，实际已 13177），
-     属"文本写死基准值"漂移源 → 改为**与 raw 文件自带 count/meta.count 自校验**，
-     不再维护外部冻结常量（与 R23「数量以事实源为准，禁止文本写死」同口径）。
-
-  兼容性：模块级 `EXPECTED_COUNTS` 符号保留（空 dict 语义），避免历史调用点
-  `from raw_loader import EXPECTED_COUNTS` 直接 ImportError；新代码勿依赖。
+原实现（迁移前）保留在 git 历史：`git log --follow std_lib/scraper_std/retired/raw_loader.py`。
 """
 
+# -*- 以下为退役时的原样代码（不再维护；如需复用请先核对其与 pipeline 的口径差异） -*-
 from __future__ import annotations
 
 import json
@@ -189,20 +181,3 @@ def verify_counts(source: str | None = None, root: str | None = None) -> dict[st
         if d >= 0 and a != d:
             LOG.warning(f"[raw_loader] ⚠ {s} 记录数 {a} != raw 自带 count {d}（raw 被改写？）")
     return result
-
-
-def agency_of(rec: dict[str, Any]) -> str:
-    """归一化发文机关（各源字段名不同）。"""
-    for k in AGENCY_ALIASES:
-        v = rec.get(k)
-        if v:
-            return str(v).strip()
-    return ""
-
-
-if __name__ == "__main__":
-    miss = missing_sources()
-    if miss:
-        print(f"[raw_loader] ⚠ 缺失源 raw: {miss}（数据不入 git，异机需先恢复/抓取）")
-    for s, (a, d) in verify_counts().items():
-        print(f"  {s:<6} {a:>6} 条 (raw 自带 count={d if d >= 0 else '—'})")

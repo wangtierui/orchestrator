@@ -165,6 +165,59 @@ def test_backup_prune_grouped_by_tag_and_source(tmp_path, monkeypatch) -> None:
 
 
 # --------------------------------------------------------------------------- #
+# T-A（批 48）超大单条记录：只观测与登记，**不截断数据**
+# --------------------------------------------------------------------------- #
+def test_oversized_record_guard_reports_without_truncating(tmp_path, monkeypatch) -> None:
+    """阈值可配（便于测试）；超阈记录被计入 `oversized`，但**落盘内容与输入逐字段一致**。"""
+    from std_lib.scraper_std import pipeline as pipe
+
+    monkeypatch.setattr(pipe, "OVERSIZED_RECORD_CHARS", 200)
+    recs = [{"title": "小", "dedup_key": "k1", "body": "x" * 50},
+            {"title": "大", "dedup_key": "k2", "body": "y" * 5000}]
+    out = pipe.write_cleaned(str(tmp_path), "gov", recs)
+    osz = out["oversized"]
+    assert osz["count"] == 1, "只应命中超阈的那一条"
+    assert osz["samples"][0]["title"] == "大" and osz["samples"][0]["chars"] > 200
+    assert osz["max_chars"] == max(len(json.dumps(r, ensure_ascii=False)) for r in recs)
+    back = [json.loads(line) for line in open(out["jsonl"], encoding="utf-8") if line.strip()]
+    assert back == recs, "**数据不得被截断或改写**（T-A 只观测）"
+
+
+# --------------------------------------------------------------------------- #
+# T-E（批 48）retention：目录型快照按 (tag, 源) **二级**分组
+# --------------------------------------------------------------------------- #
+def test_snapshot_dirs_grouped_by_tag_and_source(tmp_path, monkeypatch) -> None:
+    """目录型快照须按 **(tag, 源)** 分组：**同 tag 下 gov 的最新一份不得被 nfra/mof 顶掉**。
+
+    这是批 46 两次 dry-run 实测暴露的陷阱（按 tag 单级分组会在同一次运行内误删本批先建的 gov 快照，
+    因为"源"只存在于**目录内容**而不在目录名里）。
+    """
+    ret = _load(os.path.join("tools", "retention.py"), "_ret_dirs")
+    base = tmp_path / "modules" / "x" / "backups"
+    for name, src in (("cleaned_before_timeliness_20261008_010101", "gov"),
+                      ("cleaned_before_timeliness_20261008_020202", "gov"),
+                      ("cleaned_before_timeliness_20261008_030303", "nfra")):
+        d = base / name
+        d.mkdir(parents=True)
+        (d / ("%s_cleaned_fixture.jsonl" % src)).write_text("x", encoding="utf-8")
+    monkeypatch.setattr(ret.paths, "ROOT", str(tmp_path))
+    rows, st = ret._plan_snapshot_dirs({"dir": "modules/x/backups", "dirs": True,
+                                       "include_glob": "cleaned_before_*", "keep": 1})
+    assert st["groups"] == 2, "应按 (tag, 源) 分成 gov / nfra 两组"
+    assert st["kept"] == 2
+    assert len(rows) == 1 and rows[0]["file"].endswith("20261008_010101"), "只应淘汰同组内较旧者"
+    assert ret._snapshot_group_key("cleaned_before_timeliness_20261008_010101", str(base / "cleaned_before_timeliness_20261008_010101")) == ("timeliness", "gov")
+
+
+def test_snapshot_dirs_policy_entry_is_write_side_consistent() -> None:
+    """POLICY 的目录型条目必须与**写入侧**同口径（keep=1、按 (tag,源)、delete 真删）。"""
+    ret = _load(os.path.join("tools", "retention.py"), "_ret_dirs2")
+    spec = next(s for s in ret.POLICY if s.get("name") == "scrapers_backups")
+    assert spec["dirs"] is True and spec["keep"] == 1 and spec["delete"] is True
+    assert spec["dir"] == "modules/regulatory_scrapers/backups"
+
+
+# --------------------------------------------------------------------------- #
 # N-199 sanitize 流式 + 原子
 # --------------------------------------------------------------------------- #
 def test_sanitize_csv_streaming_and_atomic(tmp_path) -> None:

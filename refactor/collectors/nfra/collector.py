@@ -30,7 +30,7 @@ import urllib.parse
 import urllib.request
 from datetime import datetime
 
-from ..base import REPO_ROOT
+from ..base import REPO_ROOT, SourceCollector
 
 # 附件 local_path / 下载原文 relpath 的相对基址固定为 regulatory_scrapers（与旧 collectors/ 位置一致）。
 SCRAPERS_ROOT = os.path.join(REPO_ROOT, "modules", "regulatory_scrapers")

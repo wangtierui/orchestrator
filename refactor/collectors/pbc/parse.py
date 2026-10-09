@@ -17,14 +17,12 @@ if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 del _ROOT
 
-from std_lib.scraper_std.doc_convert import find_libreoffice
-
 from .net import (
     ATTACH_EXT,
     ISSUING_AUTHORITIES,
-    RE_ARTICLE_TITLE_META,
     RE_DOC_NUMBER,
     RE_EFFECTIVE,
+    RE_ARTICLE_TITLE_META,
     RE_P,
     RE_SHIJIAN,
     RE_TAG,
@@ -32,6 +30,8 @@ from .net import (
     RE_WS,
     RE_ZOOM,
 )
+
+from std_lib.scraper_std.doc_convert import find_libreoffice
 
 LO_PATH = find_libreoffice()
 LO_AVAILABLE = LO_PATH is not None
