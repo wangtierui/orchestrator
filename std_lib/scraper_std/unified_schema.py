@@ -203,7 +203,9 @@ def map_gov(rec: dict[str, Any], clean_version: str, captured_at: str = "") -> d
         "keyword": "",
         "attachments": rec.get("attachments") or [],
         "attachment_content": empty_str(
-            rec.get("attachment_content") or rec.get("attachment_text") or ""
+            rec.get("attachment_content") or rec.get("attachment_text")
+            or "\n\n".join(str(a.get("text") or "") for a in (rec.get("attachments") or [])
+                              if isinstance(a, dict) and a.get("text"))
         ),
         "attachment_count": int(rec.get("attachment_count") or 0),
         "table_structured": rec.get("table_structured") or [],
@@ -269,7 +271,10 @@ def map_mof(rec: dict[str, Any], clean_version: str, captured_at: str = "") -> d
         "verification_source": "",
         "keyword": "",
         "attachments": rec.get("attachments") or [],
-        "attachment_content": empty_str(rec.get("attachment_content")),
+        # 批 51/W-A：raw 不再写记录级聚合副本 ⇒ 此处按**真附件**派生（口径同原 "\n\n".join 聚合）
+        "attachment_content": empty_str(rec.get("attachment_content")
+            or "\n\n".join(str(a.get("text") or "") for a in (rec.get("attachments") or [])
+                                  if isinstance(a, dict) and a.get("text"))),
         "attachment_count": int(rec.get("attachment_count") or rec.get("file_count") or 0),
         "table_structured": rec.get("table_structured") or [],
         "table_raw_text": empty_str(rec.get("table_raw_text")),

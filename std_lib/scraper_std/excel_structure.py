@@ -566,8 +566,8 @@ def _build_stat_unit(block, sheet_name, sheet_index):
     #    消除海量 null（1178105 实证：3379 行名录 + 21 列全空 → null 71k → 0）。
     metric_value_rows = [r for r in rows if _has_metric(r)] if metric_all else []
     any_metric = len(metric_value_rows) >= max(2, int(0.01 * len(rows)))
-    if any_metric:
-        rows = metric_value_rows
+    # 批 51/靶心⑤：**不再裁剪行**——无指标值的行（名录/分类标题/小计行）本身携带维度与层级信息，
+    # 原实现静默丢弃（meta 无计数）。体积由下方「紧凑投影（省略空值键）」控制 ⇒ 完整性优先。
     # ② 列级：剔除稀疏/空指标列（幽灵列只在**超宽表**出现；小表数据完整性优先不裁）。
     #    大表阈值 clamp(3%×行数, 3, 20)；裁剪后若为空则回退保留有值列（防全丢）。
     kept_metric_cols, dropped_count, dropped_sample = [], 0, []
@@ -609,15 +609,31 @@ def _build_stat_unit(block, sheet_name, sheet_index):
     if any_metric:
         kept_keys = dim_cols + [c.key for c in kept_metric_cols]
     else:
+        # 批 51/靶心⑥：无指标回退时**保留一切有值列**（原为 fill≥2 ⇒ fill==1 的列值静默丢失）
         kept_keys = [
             c.key
             for c in columns
-            if c.key in dim_cols or sum(1 for r in rows if not _is_blank(r.get(c.key))) >= 2
+            if c.key in dim_cols or sum(1 for r in rows if not _is_blank(r.get(c.key))) >= 1
         ]
-    projection = [{k: r.get(k) for k in kept_keys} for r in rows]
+    # 批 51/靶心⑤④⑥：**紧凑投影**（省略空值键）——保留全部行且不产生海量 null（原靠裁行消 null）；
+    # 被裁的稀疏指标列其**有值单元格**另行留痕 `meta.sparse_metric_values`（列 → {行序: 值}，不丢值）。
+    projection = []
+    sparse_values: dict = {}
+    for _ri, _row in enumerate(rows):
+        projection.append({k: _row.get(k) for k in kept_keys if not _is_blank(_row.get(k))})
+    if dropped_count:
+        _kept_set = {c.key for c in kept_metric_cols}
+        for _c in [c for c in columns if c.key in metric_all and c.key not in _kept_set]:
+            _vals = {str(_i): _r.get(_c.key) for _i, _r in enumerate(rows)
+                     if not _is_blank(_r.get(_c.key))}
+            if _vals:
+                sparse_values[_c.key] = _vals
 
     meta = dict(block.meta)
     meta["row_count"] = len(rows)
+    meta["metric_row_count"] = len(metric_value_rows)   # 批 51：行数/指标行数双计（可审计）
+    if sparse_values:
+        meta["sparse_metric_values"] = sparse_values   # 被裁稀疏列的有值单元格（列 → {行序: 值}）
     if not any_metric:
         meta["no_metric_data"] = True
         meta["declared_metric_columns"] = [c.name for c in columns if c.key in metric_all]

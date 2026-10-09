@@ -211,6 +211,10 @@ def main(argv=None):
             v2_list.extend(ts)
             methods.add(res.get("table_recovery_method") or "")
     if v2_list:
+        # 批 51/靶心⑩：**合并**既有表结构（原实现直接覆盖 ⇒ 原始采集已抽到的表可能被抹掉）
+        _prev = rec.get("table_structured")
+        if isinstance(_prev, list) and _prev:
+            v2_list = list(_prev) + v2_list
         rec["table_structured"] = v2_list
         rec["table_recovery_method"] = "excel_classified_v2（本地目录收录重建：%s）" % "+".join(sorted(m for m in methods if m))
     rf = dict(rec.get("_raw_fields") or {})

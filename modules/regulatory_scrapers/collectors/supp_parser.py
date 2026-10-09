@@ -30,7 +30,10 @@ for _p in (_PROJECT_ROOT, os.path.join(_PROJECT_ROOT, "utils")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from supp_ocr_pdf import ocr_scanned
+try:
+    from supp_ocr_pdf import ocr_scanned  # 脚本式导入（collectors/ 在 sys.path）
+except ImportError:  # 批 51：**包式导入**（`modules...collectors.supp_parser`）下兄弟模块需相对导入
+    from .supp_ocr_pdf import ocr_scanned
 
 from std_lib.scraper_std.cleaner import clean_text, is_table_block, normalize_ws
 from std_lib.scraper_std.sentence_split import repair_text
@@ -63,7 +66,18 @@ def extract_document_text(data: bytes, name: str = "", *, enable_ocr: bool = Tru
                     pass
             return {"text": text, "method": "ocr"}
         return {"text": "", "method": "none"}
-    except Exception as e:  # 非 PDF 或解析失败：不阻断，返回空  # noqa: BLE001
+    except Exception:  # noqa: BLE001  非 PDF 或 PDF 解析失败 ⇒ 落到共享多格式抽取器（批 51/W-I）
+        pass
+    # 批 51/W-I：**多格式抽取**。原实现为 PDF-only（非 PDF 一律空文本），导致 supp 附件
+    # （docx/xlsx/xlsm/xls/doc/ole2/wps/rtf/ceb…）内容丢失。此处委托共享抽取器
+    # `crawler_common.extract_document_text`（含 N-208 修复后的 XLSX 剪裁与上限、docx/xlrd/OLE2 分派）。
+    try:
+        from std_lib.scraper_std.crawler_common import extract_document_text as _shared_extract
+
+        _res = _shared_extract(data, name, enable_ocr=enable_ocr)
+        return {"text": _res.get("text") or "",
+                "method": "shared:%s" % (_res.get("extract_status") or _res.get("kind") or "?")}
+    except Exception as e:  # noqa: BLE001  共享抽取器不可用：不阻断采集/清洗
         return {"text": "", "method": f"error:{type(e).__name__}"}
 
 def parse_document(data: bytes, name: str = "", *, enable_ocr: bool = True) -> dict:

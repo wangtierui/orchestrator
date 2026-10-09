@@ -395,6 +395,36 @@ def download_and_extract(
     return rec
 
 
+def sidecar_record_content(
+    rec: dict,
+    content_dir: str,
+    *,
+    threshold: int = 200_000,
+) -> dict:
+    """**记录级**超大附件文本外置（批 51/W-B：把超大即外置机制接入交付链）。
+
+    交付记录（cleaned）中 `attachment_content` 超阈值时：全文写 `content_dir/<内容寻址名>.txt`，
+    主数据置 `attachment_content=""` + `attachment_content_path` + `attachment_content_md5`，并在
+    `_metadata` 记录 `attachment_content_sha256` 与 `attachment_content_sidecar=True`（可审计）。
+    """
+    text = rec.get("attachment_content")
+    if not isinstance(text, str) or len(text) <= threshold:
+        return rec
+    _sha = hashlib.sha256(text.encode("utf-8")).hexdigest()
+    os.makedirs(content_dir, exist_ok=True)
+    _path = os.path.join(content_dir, _sha[:16] + ".txt")
+    if not os.path.exists(_path):
+        with open(_path, "w", encoding="utf-8") as _f:
+            _f.write(text)
+    rec["attachment_content"] = ""
+    rec["attachment_content_path"] = _path.replace(os.sep, "/")
+    rec["attachment_content_md5"] = _sha     # 与既有实现一致：该列存 sha256（算法明示于 _metadata）
+    _meta = rec.setdefault("_metadata", {})
+    _meta["attachment_content_sha256"] = _sha
+    _meta["attachment_content_sidecar"] = True
+    return rec
+
+
 def write_large_content_sidecar(
     attachment: dict[str, Any],
     content_dir: str,

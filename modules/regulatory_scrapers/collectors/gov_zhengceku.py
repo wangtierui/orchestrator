@@ -759,7 +759,7 @@ class ZhengcekuScraper:
             "source": SUB_SOURCE,
             "full_text": body,
             "attachments": atts,
-            "attachment_text": att_text,
+            # 批 51/W-A：记录级聚合副本不再写（见 gov_collector 同注）
             "attachment_count": len(atts),
             "summary": make_summary(body),
         }

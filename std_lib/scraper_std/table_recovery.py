@@ -405,12 +405,30 @@ def _tables_from_xlsx(data: bytes) -> tuple[list[list[list[str]]], list[str]]:
     """Excel 表格：openpyxl 读取所有 Sheet，二维数组输出（逐 sheet 紧凑化）。"""
     import openpyxl
 
+    from std_lib.scraper_std.crawler_common import XLSX_MAX_EMPTY_ROWS, XLSX_MAX_ROWS
+
+    # 批 51/靶心⑮：**按内容裁剪 + 上限兜底**（原实现按工作表**声明维度**逐行展开且无上限 ——
+    # 与 N-208 同型：超宽空网格会撑出百万级空单元格）。语义不变（仍有值即保留、空行不产出）。
     wb = openpyxl.load_workbook(io.BytesIO(data), data_only=True, read_only=True)
     tables: list[list[list[str]]] = []
     for ws in wb.worksheets:
-        rows = []
+        rows: list[list[str]] = []
+        empty_streak = 0
         for r in ws.iter_rows(values_only=True):
-            rows.append(["" if c is None else str(c) for c in r])
+            if len(rows) >= XLSX_MAX_ROWS:
+                LOG.warning("[table_recovery] 表 %r 行数达上限 %d，截断（批 51/⑮）",
+                            ws.title, XLSX_MAX_ROWS)
+                break
+            cells = ["" if c is None else str(c) for c in r]
+            while cells and cells[-1] == "":
+                cells.pop()
+            if not cells:
+                empty_streak += 1
+                if empty_streak >= XLSX_MAX_EMPTY_ROWS:
+                    break
+                continue
+            empty_streak = 0
+            rows.append(cells)
         if rows and any(any(str(c).strip() for c in r) for r in rows):
             tables.append(_compact_table(rows))
     wb.close()

@@ -85,17 +85,33 @@ class RangeHTTPRequestHandler(SimpleHTTPRequestHandler):
     def translate_path(self, path):
         # 完全自管解析，不走父类（避免双重解码/前缀逻辑差异）
         r = resolve_safe(path)
-        # 批 49/T1：raw 已统一 JSONL ⇒ 预览页 `fetch('pbc_laws.json')` 需要 .json 视图；
-        # 此处**按需生成**只读视图（JSONL 仍是唯一权威事实源；生成失败则照常 404）。
-        if r is not None and not os.path.exists(r) and r.endswith(".json"):
-            _jl = r[:-5] + ".jsonl"
+        return r if r is not None else os.path.join(ROOT, "__NOPE__")
+
+    def send_head(self):
+        """批 51/W-D：`pbc_laws.json` 视图**内存响应、零落盘**。
+
+        raw 已统一 JSONL（唯一权威事实源）；预览页 `fetch(\'pbc_laws.json\')` 命中缺失的 .json 时，
+        由同目录 .jsonl 现读现渲染进响应体（**不在预览目录落盘**非事实源文件）。
+        """
+        _p = self.path.split("?", 1)[0].split("#", 1)[0]
+        _r = resolve_safe(_p)
+        if _r is not None and not os.path.exists(_r) and _r.endswith(".json"):
+            _jl = _r[:-5] + ".jsonl"
             if os.path.exists(_jl):
                 try:
-                    with open(r, "w", encoding="utf-8") as _f:
-                        json.dump(read_raw_records(_jl), _f, ensure_ascii=False, indent=2)
-                except Exception:  # noqa: BLE001  预览降级：生成失败即维持 404
-                    pass
-        return r if r is not None else os.path.join(ROOT, "__NOPE__")
+                    import io as _io
+
+                    _body = json.dumps(read_raw_records(_jl), ensure_ascii=False,
+                                       indent=2).encode("utf-8")
+                except Exception:  # noqa: BLE001  预览降级：渲染失败即维持 404
+                    _body = None
+                if _body is not None:
+                    self.send_response(200)
+                    self.send_header("Content-Type", "application/json; charset=utf-8")
+                    self.send_header("Content-Length", str(len(_body)))
+                    self.end_headers()
+                    return _io.BytesIO(_body)
+        return super().send_head()
 
     def guess_type(self, path):
         ext = os.path.splitext(path)[1].lower()

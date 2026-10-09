@@ -532,7 +532,8 @@ class XzfgkScraper:
                 detail_html, entry_id=url, entry_title=d.get("title", ""),
                 out_dir=self.cfg.out_dir, base_url=url)
             d["attachments"] = atts
-            d["attachment_text"] = att_text
+            # 批 51/W-A：**不再写记录级聚合副本**（`attachments[].text` 为唯一权威；
+            # cleaned 侧由统一映射按真附件派生 attachment_content，交付口径不变）
             d["attachment_count"] = len(atts)
             # 批 50：`attachments` 只保留**真实附件**；详情页的正文载体（「下载Word/PDF」等，其文本已由
             # full_text 承载）移入 `body_docs`，避免把正文当附件重复录入

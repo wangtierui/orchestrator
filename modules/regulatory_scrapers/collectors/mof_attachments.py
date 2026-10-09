@@ -550,9 +550,7 @@ def build_entry(rec, detail, category_id, category_name, fetch_detail_enabled, a
         "fetch_time": datetime.now(UTC).isoformat(),
         "attachments": attachments or [],
         "attachment_count": len(attachments or []),
-        "attachment_content": "\n\n".join(
-            a.get("text") for a in (attachments or []) if a.get("text")
-        ),
+        # 批 51/W-A：记录级聚合副本不再写（attachments[].text 为唯一权威；cleaned 侧派生）
         "table_structured": [t for a in (attachments or [])
                              for t in (a.get("table_structured") or [])] or [],
         "table_raw_text": "\n\n".join(

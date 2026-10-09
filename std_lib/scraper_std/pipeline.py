@@ -480,6 +480,14 @@ def run_pipeline(
         if _rt:
             _base = _m.get("attachment_content") or ""
             _m["attachment_content"] = ((_base + "\n") if _base else "") + "[富内容] " + _rt
+    # 批 51/W-B：**超大 attachment_content 外置**（原 `write_large_content_sidecar` 为死代码 ⇒ 现接入
+    # 交付链：超阈值时全文落 `data/docs/shared/attachment_text/`（内容寻址文件名），主数据留路径+hash）
+    from .attachments import sidecar_record_content as _sidecar
+    from .cache_store import docs_root as _docs_root
+
+    _side_dir = _docs_root("shared", "attachment_text")
+    for _m in mapped:
+        _sidecar(_m, _side_dir)
     metrics.inc("success", len(mapped))
 
     # 2.5) 日期标准化（7.1）+ 主文档标准重命名文件名（7.4）
