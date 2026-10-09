@@ -6,14 +6,6 @@
 附件产物根继续走 docs_root（绝对路径，字节一致）。
 """
 
-# ---- 仓库引导（使 std_lib/config 可导入）----
-import os as _os
-import sys as _sys
-
-_GUIDE_ROOT = _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "..", ".."))
-if _GUIDE_ROOT not in _sys.path:
-    _sys.path.insert(0, _GUIDE_ROOT)
-del _GUIDE_ROOT, _os, _sys
 import argparse
 import glob
 import json
@@ -26,9 +18,9 @@ import urllib.parse
 import urllib.request
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-from std_lib.scraper_std.cache_store import docs_root, source_cache_root
-from std_lib.scraper_std.rich_object import rich_object_fields
-from std_lib.scraper_std.table_recovery import structured_table_fields
+from ..lib.cache import docs_root, source_cache_root
+from ..lib.rich_object import rich_object_fields
+from ..lib.table_recovery import structured_table_fields
 
 CACHE = source_cache_root("nfra")
 ATT_DIR = docs_root("nfra", "attachments")
@@ -48,8 +40,8 @@ DEFAULT_HEADERS = {
     "Referer": BASE + "/cn/view/pages/ItemDetail.html",
 }
 
-# ---- 拆分 re-export：附件抽取链在 .attachments_extract（包内绝对导入，脚本/模块双兼容） ----
-from refactor.collectors.nfra.attachments_extract import (  # noqa: F401
+# ---- 拆分 re-export：附件抽取链在 .attachments_extract（包内相对导入） ----
+from .attachments_extract import (  # noqa: F401
     _flush_run,
     _handle_ole2,
     _is_ole2_word,

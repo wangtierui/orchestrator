@@ -3,45 +3,37 @@
 gov 法规详情页附件下载 + 文本抽取（修复：此前 gov 完全不抓附件）。
 
 原 modules/regulatory_scrapers/collectors/gov_fetch_attachments.py 迁出，逻辑逐函数等价。
-仅 import 路径改为相对导入；local_path 的相对基址仍固定为 regulatory_scrapers（字节一致）。
+import 全部收口到 refactor/collectors 内部（自包含，不依赖外部 std_lib/config/modules）。
 """
 
-# ---- 仓库引导（使 std_lib/config 可导入）----
-import os as _os
-import sys as _sys
-
-_GUIDE_ROOT = _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "..", ".."))
-if _GUIDE_ROOT not in _sys.path:
-    _sys.path.insert(0, _GUIDE_ROOT)
-del _GUIDE_ROOT, _os, _sys
 import logging
 import os
 import re
 import sys
 from urllib.parse import urljoin
 
-from ..base import REPO_ROOT as _ORCH_ROOT  # orchestrator 根（仓库根已在上文第 13-15 行插入 sys.path）
+from ..base import REPO_ROOT as _ORCH_ROOT  # refactor 项目根（自包含，不指向外部）
 
-# ⚠️ local_path 相对基址固定为 regulatory_scrapers（与旧 collectors/ 位置一致，字节兼容）。
-SCRAPERS_ROOT = os.path.join(_ORCH_ROOT, "modules", "regulatory_scrapers")
+# local_path 相对基址收口到 refactor/data/raw（自包含）。
+SCRAPERS_ROOT = os.path.join(_ORCH_ROOT, "data", "raw")
 
 # 产物目录统一：附件统一落盘 docs_root("gov","attachments")
 SRC_DIR = os.path.dirname(os.path.abspath(__file__))
 REPO_ROOT = SCRAPERS_ROOT  # 供 local_path 相对计算
-from std_lib.scraper_std.cache_store import docs_root
+from ..lib.cache import docs_root
 
 ATTACHMENTS_DIR = docs_root("gov", "attachments")
 
-from std_lib.scraper_std.crawler_common import (
+from ..lib.http import robust_get
+from ..lib.text_utils import (
     build_attachment_record,
     extract_document_text,
     is_attachment_url,
-    robust_get,
     safe_filename,
     sniff_kind,
 )
-from std_lib.scraper_std.rich_object import rich_object_fields
-from std_lib.scraper_std.table_recovery import structured_table_fields
+from ..lib.rich_object import rich_object_fields
+from ..lib.table_recovery import structured_table_fields
 
 LOG = logging.getLogger("gov_attachments")
 

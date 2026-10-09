@@ -2,8 +2,7 @@
 """mof 财政部法规库爬虫（重构版）：实现 SourceCollector。
 
 站点：fgk.mof.gov.cn（layui SPA，直连 REST 接口）。
-产物：data/raw/mof_laws.json，结构 {source, captured_at, count, items}，
-与下游 clean 的既有输入契约字节级兼容（文件名/结构均不变）。
+产物：data/raw/mof_laws.json，结构 {source, captured_at, count, items}（与重构前一致）。
 """
 import argparse
 import json
@@ -26,8 +25,8 @@ from .attachments import collect_attachments
 
 logger = logging.getLogger("mof_scraper")
 
-# 默认 out 与历史路径口径：regulatory_scrapers/data/raw（与旧 collectors/ 位置一致，字节兼容）。
-SCRAPERS_ROOT = os.path.join(REPO_ROOT, "modules", "regulatory_scrapers")
+# 默认落盘收口在 refactor/data/raw（自包含，不指向外部 modules/）。产物文件名与结构保持重构前一致。
+DATA_RAW = os.path.join(REPO_ROOT, "data", "raw")
 
 DEFAULT_CATEGORIES = {
     "1000000000000300000": "财政法律法规（财政部规章）",
@@ -341,7 +340,7 @@ class MofCollector:
 def main():
     ap = argparse.ArgumentParser(description="财政部法规数据库自动抓取（重构版·增量 diff）")
     ap.add_argument("--categories", nargs="*", default=list(DEFAULT_CATEGORIES.keys()))
-    ap.add_argument("--outdir", default=os.path.join(SCRAPERS_ROOT, "data", "raw"))
+    ap.add_argument("--outdir", default=DATA_RAW)
     ap.add_argument("--size", type=int, default=50, help="列表每页条数（默认50）")
     ap.add_argument("--delay-min", type=float, default=0.3, help="请求最小间隔(秒)")
     ap.add_argument("--delay-max", type=float, default=0.7, help="请求最大间隔(秒)")

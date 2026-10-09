@@ -1,0 +1,69 @@
+# -*- coding: utf-8 -*-
+# refactor/ —— 五源监管采集器（pbc/gov/nfra/mof）的可独立运行子项目。
+#
+# 与仓库根 orchestrator 工程的边界：
+#   · 本目录自包含（不依赖根工程的 std_lib / modules / config，也不做 sys.path 注入）；
+#   · 共享件收口在 refactor/collectors/lib/；
+#   · 数据/缓存/附件产物统一落在 refactor/data/{raw,cache,out}/ 下。
+#
+# 安装（可编辑）：  pip install -e ./refactor
+# 运行示例：        python -m collectors.pbc.collector --help
+#                   python -m collectors.nfra.fetch_lists
+# 测试：            pytest  （见 [tool.pytest.ini_options]）
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "regulatory-collectors-refactor"
+version = "0.1.0"
+description = "五源监管采集器（pbc/gov/nfra/mof）抽取重构版：自包含、零外部 std_lib 依赖"
+requires-python = ">=3.13"
+dependencies = [
+    # HTTP 客户端 + HTML 解析
+    "requests>=2.25.0",
+    "beautifulsoup4>=4.10.0",
+    "lxml>=4.9",
+    # 多格式文档文本抽取（PDF/docx/xlsx/ole2）
+    "pypdf>=4.0",
+    "python-docx>=1.0",
+    "openpyxl>=3.1",
+]
+
+[project.optional-dependencies]
+# OCR 兜底（按需安装；缺失时 extract_document_text / ocr_pdf 自动降级为 library_missing）
+ocr = [
+    "numpy>=1.24",
+    "pytesseract>=0.3.10",
+    "paddleocr>=3.0,<4",
+]
+dev = [
+    "pytest>=7.0.0",
+    "ruff>=0.6",
+]
+
+[tool.setuptools.packages.find]
+include = ["collectors*"]
+exclude = ["collectors/tests*", "data*", "cache*", "out*"]
+
+[tool.setuptools.exclude-package-data]
+"*" = ["data/**", "cache/**", "out/**"]
+
+[tool.pytest.ini_options]
+# 仅覆盖本子项目自身测试；与根工程 tests/ 互不干扰。
+testpaths = ["collectors/tests"]
+addopts = "-q"
+pythonpath = ["."]
+markers = [
+    "data: 依赖本机数据产物（cache/raw）的用例；无数据环境用 -m \"not data\" 排除",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+extend-exclude = ["data", "cache", "out"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "BLE", "RUF100"]
+ignore = ["E501", "UP009", "UP031", "E402", "F401"]

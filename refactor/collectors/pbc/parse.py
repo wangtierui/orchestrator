@@ -7,15 +7,8 @@
 import html
 import os
 import re
-import sys
 import urllib.parse
 import urllib.request
-
-# ---- 仓库引导：使 std_lib 可导入（orchestrator 根）----
-_ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", ".."))
-if _ROOT not in sys.path:
-    sys.path.insert(0, _ROOT)
-del _ROOT
 
 from .net import (
     ATTACH_EXT,
@@ -31,7 +24,7 @@ from .net import (
     RE_ZOOM,
 )
 
-from std_lib.scraper_std.doc_convert import find_libreoffice
+from ..lib.doc_convert import find_libreoffice
 
 LO_PATH = find_libreoffice()
 LO_AVAILABLE = LO_PATH is not None
@@ -43,10 +36,7 @@ def safe_filename(title, ext, url):
     核心逻辑（去非法字符 / 限长 / URL 哈希前缀）委托 crawler_common.safe_filename，
     本函数仅补扩展名；保留 pbc 原有"限长 60"，签名与返回结构不变。
     """
-    repo_root = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", ".."))
-    if repo_root not in sys.path:
-        sys.path.insert(0, repo_root)
-    from std_lib.scraper_std.crawler_common import safe_filename as _cc_safe_filename
+    from ..lib.text_utils import safe_filename as _cc_safe_filename
     base = _cc_safe_filename(title, url, 60)
     ext = (ext or "bin").lower()
     return f"{base}.{ext}"
@@ -72,17 +62,14 @@ def detect_libreoffice():
 
 def convert_with_libreoffice(doc_path):
     """兼容别名：委托共享 doc_to_docx（.doc/.wps/.rtf/.ceb → .docx，headless）。不可用返回 None。"""
-    from std_lib.scraper_std.doc_convert import doc_to_docx
+    from ..lib.doc_convert import doc_to_docx
     return doc_to_docx(doc_path)
 
 
 def extract_pdf_text(data):
     """用统一 OCR 模块抽取 PDF 文本（文本层优先，扫描件走 OCR 引擎链）。"""
     import tempfile
-    repo_root = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", ".."))
-    if repo_root not in sys.path:
-        sys.path.insert(0, repo_root)
-    from std_lib.scraper_std.ocr_engine import get_ocr
+    from ..lib.ocr import get_ocr
     fd, tmp = tempfile.mkstemp(suffix=".pdf", prefix="pbc_main_ocr_")
     try:
         with os.fdopen(fd, "wb") as f:
@@ -239,15 +226,7 @@ def extract_doc_number(*texts):
     blob = "\n".join(t for t in texts if t)
     # 委托五源统一模块 doc_number（15+ 优先级正则 + 规范化）；
     # 模块不可用/未命中时回退原 RE_DOC_NUMBER，并同样做规范化输出。
-    try:
-        try:
-            from std_lib.scraper_std.doc_number import extract_doc_number as _u
-            from std_lib.scraper_std.doc_number import normalize_doc_number as _n
-        except ImportError:
-            from std_lib.scraper_std.doc_number import extract_doc_number as _u
-            from std_lib.scraper_std.doc_number import normalize_doc_number as _n
-    except Exception:  # pragma: no cover  # noqa: BLE001
-        _u = _n = None  # type: ignore[assignment]
+    from ..lib.doc_number import extract_doc_number as _u, normalize_doc_number as _n
     if _u is not None:
         dn = _u(blob)
         if dn:

@@ -22,18 +22,9 @@ import sys
 import time
 from urllib.parse import urljoin
 
-# ---- 仓库引导：使 std_lib/config 可导入（orchestrator 根）----
-_GUIDE_ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", ".."))
-if _GUIDE_ROOT not in sys.path:
-    sys.path.insert(0, _GUIDE_ROOT)
-_REPO_ROOT = _GUIDE_ROOT  # 仓库根（含 std_lib）
-from ..base import REPO_ROOT as _ORCH  # orchestrator 根
-# ⚠️ 附件 local_path 相对基址固定为 regulatory_scrapers（字节兼容）。
-SCRAPERS_ROOT = os.path.join(_ORCH, "modules", "regulatory_scrapers")
-_SRC_ROOT = SCRAPERS_ROOT
-for _p in (_SRC_ROOT, _REPO_ROOT):
-    if _p not in sys.path:
-        sys.path.insert(0, _p)
+from ..base import REPO_ROOT as _ORCH  # refactor 项目根（自包含，不指向外部）
+# local_path 相对基址收口到 refactor/data/raw（自包含）。
+SCRAPERS_ROOT = os.path.join(_ORCH, "data", "raw")
 
 LOG = logging.getLogger("gov_zhengceku")
 
@@ -106,11 +97,9 @@ def _to_text(maybe) -> str:
 
 
 def fetch(url: str, binary: bool = False, referer: str | None = None, timeout: int = 35):
-    """HTTP GET。优先 crawler_common.robust_get，失败回退 urllib。"""
+    """HTTP GET。优先 lib.http.robust_get，失败回退 urllib。"""
     try:
-        if _REPO_ROOT not in sys.path:
-            sys.path.insert(0, _REPO_ROOT)
-        from std_lib.scraper_std.crawler_common import robust_get  # type: ignore
+        from ..lib.http import robust_get  # type: ignore
         st, data = robust_get(url, binary=True, referer=referer or LIST_BASE, timeout=timeout)
         if st == 200 and data:
             if binary:

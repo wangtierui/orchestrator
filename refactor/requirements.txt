@@ -1,0 +1,16 @@
+# refactor/ 子项目运行时依赖（与根 orchestrator 工程版本对齐，避免冲突）。
+# 安装：  pip install -r refactor/requirements.txt
+# 或：    pip install -e ./refactor
+
+# —— 核心依赖 ——
+requests>=2.25.0
+beautifulsoup4>=4.10.0
+lxml>=4.9
+pypdf>=4.0
+python-docx>=1.0
+openpyxl>=3.1
+
+# —— 可选：OCR 兜底（缺失时自动降级，非硬依赖）——
+# numpy>=1.24
+# pytesseract>=0.3.10
+# paddleocr>=3.0,<4

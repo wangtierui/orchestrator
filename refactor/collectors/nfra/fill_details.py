@@ -4,14 +4,6 @@
 仅抓取 cache/ 中缺失详情的文件（跳过已缓存，天然可续跑）；命中 WAF 拦截页时指数退避重试，
 连续失败达阈值则冷却长睡。单进程、低速率。
 """
-# ---- 仓库引导（使 std_lib/config 可导入）----
-import os as _os
-import sys as _sys
-
-_GUIDE_ROOT = _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "..", ".."))
-if _GUIDE_ROOT not in _sys.path:
-    _sys.path.insert(0, _GUIDE_ROOT)
-del _GUIDE_ROOT, _os, _sys
 import argparse
 import glob
 import json
@@ -26,10 +18,10 @@ _WARMUP_COOLDOWN_S = 1.0
 import urllib.parse
 
 # 复用主采集器 + 共用件（包内绝对导入，脚本/模块双兼容）
-from refactor.collectors.nfra import collector as m
-from refactor.collectors.nfra.common import warmup
+from . import collector as m
+from .common import warmup
 
-from std_lib.scraper_std.cache_store import source_cache_root
+from ..lib.cache import source_cache_root
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 CACHE = source_cache_root("nfra")  # 单一物理缓存根

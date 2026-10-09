@@ -3,19 +3,11 @@
 """国家金融监督管理总局 —— 政策法规全量抓取脚本（refactor 迁入版）。
 
 原 modules/regulatory_scrapers/collectors/nfra_collector.py 迁出，逻辑逐函数等价。
-仅 import 路径改为相对/绝对导入；`download_original_doc` 的 local_path 基址仍固定为
-regulatory_scrapers（字节一致）；缓存/附件产物继续走 docs_root / source_cache_root 绝对路径。
+import 全部收口到 refactor/collectors 内部（自包含，不依赖外部 std_lib/config/modules）；
+附件 local_path / 缓存 / 附件产物统一走 refactor/data 下的 docs_root / source_cache_root。
 实现 SourceCollector：NfraCollector.collect(out_dir) 为被 COLLECT_CMD 调用的入口。
 """
 
-# ---- 仓库引导（使 std_lib/config 可导入）----
-import os as _os
-import sys as _sys
-
-_GUIDE_ROOT = _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "..", ".."))
-if _GUIDE_ROOT not in _sys.path:
-    _sys.path.insert(0, _GUIDE_ROOT)
-del _GUIDE_ROOT, _os, _sys
 import argparse
 import csv
 import json
@@ -32,21 +24,11 @@ from datetime import datetime
 
 from ..base import REPO_ROOT, SourceCollector
 
-# 附件 local_path / 下载原文 relpath 的相对基址固定为 regulatory_scrapers（与旧 collectors/ 位置一致）。
-SCRAPERS_ROOT = os.path.join(REPO_ROOT, "modules", "regulatory_scrapers")
+# 附件 local_path / 下载原文 relpath 的相对基址收口到 refactor/data/raw（自包含）。
+SCRAPERS_ROOT = os.path.join(REPO_ROOT, "data", "raw")
 
-# 确保项目根（含 std_lib 包）在 sys.path，使 `from std_lib.scraper_std.crawler_common import` 可达
-if SCRAPERS_ROOT not in sys.path:
-    sys.path.insert(0, SCRAPERS_ROOT)
-
-# 共享 UA 池（反爬轮换）；缺模块时回退单 UA，避免启动失败
-try:
-    from std_lib.scraper_std.crawler_common import USER_AGENTS
-except ImportError:  # pragma: no cover
-    USER_AGENTS = [
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-        "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
-    ]
+# 共享 UA 池（反爬轮换）
+from ..lib.http import USER_AGENTS
 
 import faulthandler
 
@@ -84,7 +66,7 @@ DEFAULT_HEADERS = {
 _SSL_CTX = ssl.create_default_context()
 
 # 缓存目录（由 --cache-dir 设置）。命中缓存则跳过网络，便于断网/续跑/复现。
-from std_lib.scraper_std.cache_store import OfflineMiss, bind_source_cache, docs_root
+from ..lib.cache import OfflineMiss, bind_source_cache, docs_root
 
 _RESP = None  # ResponseCache 实例；None 表示未启用缓存
 _OfflineMiss = OfflineMiss
@@ -187,17 +169,7 @@ def extract_document_no(text):
     """从正文中抽取发文字号。"""
     if not text:
         return None
-    try:
-        try:
-            from std_lib.scraper_std.doc_number import extract_doc_number as _u
-            from std_lib.scraper_std.doc_number import in_abolish_context as _a
-            from std_lib.scraper_std.doc_number import normalize_doc_number as _n
-        except ImportError:
-            from std_lib.scraper_std.doc_number import extract_doc_number as _u
-            from std_lib.scraper_std.doc_number import in_abolish_context as _a
-            from std_lib.scraper_std.doc_number import normalize_doc_number as _n
-    except Exception:  # pragma: no cover  # noqa: BLE001
-        _u = _n = _a = None  # type: ignore[assignment]
+    from ..lib.doc_number import extract_doc_number as _u, in_abolish_context as _a, normalize_doc_number as _n
     dn = ""
     if _u is not None:
         dn = _u(text) or ""

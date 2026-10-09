@@ -7,14 +7,6 @@ resume 续跑、write_outputs（原子写 gov_laws.json）、merge_with_master�
 """
 from __future__ import annotations
 
-# ---- 仓库引导（使 std_lib/config 可导入）----
-import os as _os
-import sys as _sys
-
-_GUIDE_ROOT = _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "..", ".."))
-if _GUIDE_ROOT not in _sys.path:
-    _sys.path.insert(0, _GUIDE_ROOT)
-del _GUIDE_ROOT, _os, _sys
 import csv
 import json
 import logging
@@ -50,26 +42,13 @@ LOG = logging.getLogger("gov_scraper")
 # --------------------------------------------------------------------------- #
 # 配置
 # --------------------------------------------------------------------------- #
-try:
-    from std_lib.scraper_std.crawler_common import USER_AGENTS
-except ImportError:  # pragma: no cover
-    USER_AGENTS = [
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-        "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-    ]
+from ..lib.http import USER_AGENTS
 
-# 统一文号提取器（2026-09-05 五源共享：doc_number 模块，15+ 优先级正则 + 规范化）
-try:
-    from std_lib.scraper_std.doc_number import extract_doc_number as _unified_doc_number
-except ImportError:  # pragma: no cover
-    _unified_doc_number = None  # type: ignore[assignment]
+# 统一文号提取器（2026-09-05 五源共享：doc_number 模块）
+from ..lib.doc_number import extract_doc_number as _unified_doc_number
 
-# 默认请求头（模拟真实浏览器）
-# 通用缓存模块（五源统一抽象层：std_lib/scraper_std/cache_store，2026-09-05）
-try:
-    from std_lib.scraper_std.cache_store import OfflineMiss, bind_source_cache  # noqa: F401
-except ImportError:  # pragma: no cover
-    from std_lib.scraper_std.cache_store import OfflineMiss
+# 通用缓存模块（五源统一抽象层，自包含 lib.cache）
+from ..lib.cache import OfflineMiss, bind_source_cache  # noqa: F401
 
 _RESP_TEXT = None  # TextResponseCache 实例；None 表示未启用缓存
 _OfflineMiss = OfflineMiss  # 兼容别名
@@ -118,11 +97,6 @@ SOURCES = {
     "zhengceku": ("https://www.gov.cn/zhengce/zhengceku/bmwj/home.htm", "部门文件"),
 }
 # ⚠️ 本 dict 为 gov 源子源登记表的**唯一事实源**；gov_collector.py 从此处导入。
-
-_SCRAPERS_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
-if _SCRAPERS_ROOT not in sys.path:
-    sys.path.insert(0, _SCRAPERS_ROOT)
 
 
 @dataclass

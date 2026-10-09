@@ -11,16 +11,17 @@
 import json
 import logging
 import os
-import sys
 from datetime import datetime, timezone
 UTC = timezone.utc
 from typing import Protocol, runtime_checkable
 
+from .lib.lock import ProcessLock
+
 logger = logging.getLogger("refactor.collectors")
 
-# orchestrator 仓库根（base.py 位于 refactor/collectors/，上两级即仓库根）。
-# 各源包据此解析 std_lib 导入引导与默认 data/raw 路径。
-REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+# refactor 项目根（base.py 位于 refactor/collectors/，上一级即 refactor/ 自身）。
+# 所有默认落盘（data/raw、data/cache、data/docs）均收口在 refactor/ 内，不触碰仓库其它目录。
+REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
 
 @runtime_checkable
@@ -53,25 +54,11 @@ def write_master_json(path: str, source: str, items: list) -> None:
     }, ensure_ascii=False, indent=2))
 
 
-def _load_fs_lock():
-    root = REPO_ROOT
-    if root not in sys.path:
-        sys.path.insert(0, root)
-    try:
-        from std_lib.common_lib import fs_lock
-        return fs_lock
-    except ImportError:
-        return None
-
-
 _LOCKS = {}
 
 
 def acquire_lock(lock_path, max_age_sec=3 * 3600):
-    fs_lock = _load_fs_lock()
-    if fs_lock is None:
-        return True  # 无锁库时退化为不锁（重构期容错）
-    lk = fs_lock.ProcessLock(lock_path, max_age_sec=max_age_sec)
+    lk = ProcessLock(lock_path, max_age_sec=max_age_sec)
     if lk.acquire():
         _LOCKS[lock_path] = lk
         return True

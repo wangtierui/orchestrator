@@ -7,36 +7,23 @@
 import os
 import random
 import re
-import sys
 import time
 import urllib.error
 import urllib.parse
 import urllib.request
 
-# ---- 仓库引导：使 std_lib 可导入（orchestrator 根）----
-_ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", ".."))
-if _ROOT not in sys.path:
-    sys.path.insert(0, _ROOT)
-del _ROOT
-
-try:
-    from std_lib.scraper_std.cache_store import OfflineMiss, bind_source_cache
-    from std_lib.scraper_std.rich_object import rich_object_fields
-    from std_lib.scraper_std.table_recovery import structured_table_fields
-except ImportError:  # pragma: no cover
-    def structured_table_fields(data, name="", *, kind=None):  # type: ignore[misc]  # pragma: no cover
-        return {}
-
-    def rich_object_fields(data, name="", *, image_dir=None, rec_key=""):  # type: ignore[misc]  # pragma: no cover
-        return {}
+from ..lib.cache import (
+    OfflineMiss,
+    bind_source_cache,
+    docs_root,
+    url_endpoint_key as _cache_ep,
+)
+from ..lib.rich_object import rich_object_fields
+from ..lib.table_recovery import structured_table_fields
+from ..lib.doc_convert import find_libreoffice
 
 _RESP_TEXT = None  # TextResponseCache 实例；None 表示未启用缓存
 _OfflineMiss = OfflineMiss  # 兼容别名
-
-# N-167：`_cache_ep` 的唯一实现在 std_lib/scraper_std/cache_store.py；别名导入保持调用点不变。
-from std_lib.scraper_std.cache_store import url_endpoint_key as _cache_ep
-from std_lib.scraper_std.cache_store import docs_root
-from std_lib.scraper_std.doc_convert import find_libreoffice
 
 LO_PATH = find_libreoffice()
 LO_AVAILABLE = LO_PATH is not None

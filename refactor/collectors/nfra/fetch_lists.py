@@ -5,14 +5,6 @@
 分页抓取 927(法律法规) 与 928(政策规章规范性文件) 的全部列表页，写入 collector 的缓存目录。
 仅抓列表，不含详情。WAF 弹性：cookie 预热 + 重试 + 退避 + 间隔。
 """
-# ---- 仓库引导（使 std_lib/config 可导入）----
-import os as _os
-import sys as _sys
-
-_GUIDE_ROOT = _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "..", ".."))
-if _GUIDE_ROOT not in _sys.path:
-    _sys.path.insert(0, _GUIDE_ROOT)
-del _GUIDE_ROOT, _os, _sys
 import json
 import os
 import subprocess
@@ -24,9 +16,9 @@ _WARMUP_COOLDOWN_S = 1.0
 _LIST_RETRY_COOLDOWN_S = 6
 
 # 复用主采集器（包内绝对导入，脚本/模块双兼容）
-from refactor.collectors.nfra import collector as m
+from . import collector as m
 
-from std_lib.scraper_std.cache_store import source_cache_root
+from ..lib.cache import source_cache_root
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 CACHE = source_cache_root("nfra")  # 单一物理缓存根

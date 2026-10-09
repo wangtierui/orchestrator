@@ -5,14 +5,6 @@
 纯抽取函数集合（PDF/docx/xlsx/旧版 .doc(OLE2)/.xls(OLE2) + 魔数纠正 + OCR 兜底 + 质量闸门）。
 被 nfra_fetch_attachments.py 经包内相对导入复用。
 """
-# ---- 仓库引导（使 std_lib/config 可导入）----
-import os as _os
-import sys as _sys
-
-_GUIDE_ROOT = _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "..", ".."))
-if _GUIDE_ROOT not in _sys.path:
-    _sys.path.insert(0, _GUIDE_ROOT)
-del _GUIDE_ROOT, _os, _sys
 import hashlib
 import os
 import re
@@ -21,7 +13,7 @@ import struct
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-from std_lib.scraper_std.cache_store import docs_root, source_cache_root
+from ..lib.cache import docs_root, source_cache_root
 
 CACHE = source_cache_root("nfra")
 ATT_DIR = docs_root("nfra", "attachments")
@@ -64,11 +56,8 @@ def is_pdf(att):
 
 
 def ocr_pdf(path):
-    """OCR 兜底（受控）。委托统一 OCR 模块。"""
-    repo_root = os.path.join(HERE, "..")
-    if repo_root not in sys.path:
-        sys.path.insert(0, repo_root)
-    from std_lib.scraper_std.ocr_engine import get_ocr
+    """OCR 兜底（受控）。委托本地统一 OCR 模块。"""
+    from ..lib.ocr import get_ocr
     res = get_ocr().extract_pdf(path, force_ocr=True)
     if not res.success:
         raise RuntimeError(
@@ -96,7 +85,7 @@ def extract_pdf_text(data):
             t = ""
         page_texts.append(t)
     full = "\n".join(page_texts)
-    from std_lib.scraper_std.crawler_common import clean_pdf_text
+    from ..lib.text_utils import clean_pdf_text
     full = clean_pdf_text(full)
     needs_ocr = (page_count > 0) and (len(full.strip()) < max(50, 30 * page_count))
     return full, page_count, [len(t) for t in page_texts], needs_ocr

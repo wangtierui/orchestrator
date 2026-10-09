@@ -43,8 +43,8 @@ from .attachments import fetch_gov_attachments
 from .zhengceku import ZhengcekuScraper
 
 #: regulatory_scrapers 根（默认 out 与历史路径口径，字节兼容）。
-SCRAPERS_ROOT = os.path.join(REPO_ROOT, "modules", "regulatory_scrapers")
-DEFAULT_OUT = os.path.join(SCRAPERS_ROOT, "data", "raw")
+SCRAPERS_ROOT = os.path.join(REPO_ROOT, "data", "raw")
+DEFAULT_OUT = SCRAPERS_ROOT
 
 # 本地 strip_tags（原 gov_collector 引用但未导出；此处就近定义，行为一致）。
 def strip_tags(s):
@@ -58,8 +58,13 @@ except ImportError:  # pragma: no cover
 
 LOG = logging.getLogger("gov_scraper")
 
-from config.exitcodes import ExitCode  # noqa: E402
-from std_lib.common_lib import fs_lock  # noqa: E402
+class ExitCode:
+    """本地退出码（原 config.exitcodes.ExitCode，去外部依赖）。"""
+    OK = 0
+    FAIL = 1
+
+
+from ..lib import lock as fs_lock  # noqa: E402
 
 
 # --------------------------------------------------------------------------- #

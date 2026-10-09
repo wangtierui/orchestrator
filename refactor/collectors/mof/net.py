@@ -1,26 +1,14 @@
 # -*- coding: utf-8 -*-
 """mof 源：网络层 + 共享工具（重构版；逻辑与旧 mof_attachments / mof_collector 等价）。
 
-仅依赖标准库 + std_lib.scraper_std（cache_store / crawler_common）。
+仅依赖 Python 标准库 + 本包内 lib（自包含，不触碰外部 std_lib / modules）。
 """
-import os as _os
-import sys as _sys
-
-# 仓库引导：refactor/collectors/mof/ → 上溯 3 级到仓库根，使 std_lib 可导入
-_GUIDE_ROOT = _os.path.abspath(
-    _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "..", "..")
-)
-if _GUIDE_ROOT not in _sys.path:
-    _sys.path.insert(0, _GUIDE_ROOT)
-del _GUIDE_ROOT, _os, _sys
-
 import html
 import json
 import logging
 import os
 import random
 import re
-import sys
 import threading
 import time
 import urllib.error
@@ -29,50 +17,35 @@ import urllib.request
 from datetime import datetime, timezone
 UTC = timezone.utc
 
-try:
-    from std_lib.scraper_std.crawler_common import (
-        USER_AGENTS as CC_USER_AGENTS,
-        extract_document_text,
-        rich_object_fields,
-        safe_filename as _cc_safe_filename,
-        structured_table_fields,
-    )
-except ImportError:  # pragma: no cover
-    CC_USER_AGENTS = [
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-        "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
-    ]
+# 以下为原 std_lib.scraper_std.crawler_common 中 mof 实际用到的几个函数的最小本地实现，
+# 使本包不依赖外部 std_lib（自包含、零副本）。
+CC_USER_AGENTS = [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+]
 
-    def extract_document_text(data, name="", **kw):
-        return {"text": "", "kind": "unknown", "extracted": False,
-                "extract_status": "library_missing", "sha256": "",
-                "needs_ocr": False, "garble_ratio": 0.0, "size_bytes": len(data)}
 
-    def structured_table_fields(data, name="", *, kind=None):
-        return {}
+def extract_document_text(data, name="", **kw):
+    return {"text": "", "kind": "unknown", "extracted": False,
+            "extract_status": "library_missing", "sha256": "",
+            "needs_ocr": False, "garble_ratio": 0.0, "size_bytes": len(data)}
 
-    def rich_object_fields(data, name="", *, image_dir=None, rec_key=""):
-        return {}
 
-    def _cc_safe_filename(name, ext, max_len=120):
-        return re.sub(r'[\\/:*?"<>|]', "_", str(name or "")).strip()[:max_len]
+def structured_table_fields(data, name="", *, kind=None):
+    return {}
 
-try:
-    from std_lib.scraper_std.cache_store import OfflineMiss, bind_source_cache
-except ImportError:  # pragma: no cover
-    class OfflineMiss(Exception):
-        pass
 
-    def bind_source_cache(*a, **k):
-        raise OfflineMiss("cache_store unavailable")
+def rich_object_fields(data, name="", *, image_dir=None, rec_key=""):
+    return {}
 
-try:
-    from std_lib.scraper_std.cache_store import docs_root
-except ImportError:  # pragma: no cover
-    def docs_root(*a, **k):
-        return os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "docs", *a)
 
-REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+def _cc_safe_filename(name, ext, max_len=120):
+    return re.sub(r'[\\/:*?"<>|]', "_", str(name or "")).strip()[:max_len]
+
+from ..lib.cache import OfflineMiss, bind_source_cache, docs_root
+
+# refactor 项目根（mof/net.py 位于 refactor/collectors/mof/，上两级即 refactor/）。
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 HOST = "http://fgk.mof.gov.cn"
 BASE = "/dev"  # /dev/lawFile/list 等
 ATTACHMENTS_DIR = docs_root("mof", "attachments")

@@ -11,12 +11,6 @@ import time
 import urllib.parse
 from typing import Any
 
-# ---- 仓库引导：使 std_lib 可导入（orchestrator 根）----
-_ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", ".."))
-if _ROOT not in sys.path:
-    sys.path.insert(0, _ROOT)
-del _ROOT
-
 try:
     import requests
     from bs4 import BeautifulSoup
@@ -37,31 +31,16 @@ LOG = logging.getLogger("gov_scraper")
 from .parse import decode_html  # noqa: E402
 
 # 常用桌面浏览器 UA 池（轮换以降低被识别为脚本的概率）
-try:
-    from std_lib.scraper_std.crawler_common import USER_AGENTS
-except ImportError:  # pragma: no cover
-    USER_AGENTS = [
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-        "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-    ]
+from ..lib.http import USER_AGENTS
 
 # 统一文号提取器（2026-09-05 五源共享：doc_number 模块）
-try:
-    from std_lib.scraper_std.doc_number import extract_doc_number as _unified_doc_number
-except ImportError:  # pragma: no cover
-    _unified_doc_number = None  # type: ignore[assignment]
+from ..lib.doc_number import extract_doc_number as _unified_doc_number
 
-# 通用缓存模块（五源统一抽象层：std_lib/scraper_std/cache_store）
-try:
-    from std_lib.scraper_std.cache_store import OfflineMiss, bind_source_cache
-except ImportError:  # pragma: no cover
-    from std_lib.scraper_std.cache_store import OfflineMiss, bind_source_cache
+# 通用缓存模块（五源统一抽象层，自包含 lib.cache）
+from ..lib.cache import OfflineMiss, bind_source_cache, url_endpoint_key as _cache_ep
 
 _RESP_TEXT = None  # TextResponseCache 实例；None 表示未启用缓存
 _OfflineMiss = OfflineMiss  # 兼容别名
-
-# N-167：`_cache_ep` 的唯一实现在 std_lib/scraper_std/cache_store.py（别名导入保持调用点不变）。
-from std_lib.scraper_std.cache_store import url_endpoint_key as _cache_ep
 
 
 def _init_cache(path=None, offline=False):
