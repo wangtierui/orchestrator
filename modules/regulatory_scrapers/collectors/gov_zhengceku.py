@@ -763,7 +763,10 @@ class ZhengcekuScraper:
             "attachment_count": len(atts),
             "summary": make_summary(body),
         }
-        rec.update(_table_top_level(atts))
+        # 批 50：`attachments` 只保留**真实附件**；正文载体（「下载Word/PDF」等）移入 `body_docs`
+        from std_lib.scraper_std.attachments import split_record_body_docs
+        split_record_body_docs(rec)
+        rec.update(_table_top_level(list(rec["attachments"]) + list(rec.get("body_docs") or [])))
         return rec
 
 

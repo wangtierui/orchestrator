@@ -169,6 +169,7 @@ def main(argv=None):
 
     # 复制 + 计算摘要
     atts = []
+    body_docs = []   # 批 50：正文载体（role=body）单独存放，不进 attachments
     body_path = None
     for f, target, is_body, kind, num in plan:
         src = os.path.join(args.src_dir, f)
@@ -181,12 +182,18 @@ def main(argv=None):
         if num:
             item["attachment_no"] = num
         if is_body:
+            # 批 50：正文文件（_classify 判为 body 者）**不是公告附件**而是正文载体；
+            # 正文内容已由 body_text/downloaded_doc_path 承载 ⇒ 条目移入 body_docs 仅作溯源
             body_path = rel
             item["role"] = "body"
+            body_docs.append(item)
+            continue
         atts.append(item)
 
     rec["attachments"] = atts
     rec["attachment_count"] = str(len(atts))
+    if body_docs:
+        rec["body_docs"] = body_docs
     if body_path:
         rec["downloaded_doc_path"] = body_path
 

@@ -534,6 +534,11 @@ class XzfgkScraper:
             d["attachments"] = atts
             d["attachment_text"] = att_text
             d["attachment_count"] = len(atts)
+            # 批 50：`attachments` 只保留**真实附件**；详情页的正文载体（「下载Word/PDF」等，其文本已由
+            # full_text 承载）移入 `body_docs`，避免把正文当附件重复录入
+            from std_lib.scraper_std.attachments import split_record_body_docs
+            split_record_body_docs(d)
+            atts = list(d.get("attachments") or []) + list(d.get("body_docs") or [])
             # 表格结构化聚合到条目顶层（附件 rec 表字段 → 顶层表键，map_gov 透传 cleaned）
             _tbls = [t for a in atts for t in (a.get("table_structured") or [])]
             if _tbls:

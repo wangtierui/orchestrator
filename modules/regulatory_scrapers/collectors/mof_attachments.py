@@ -376,6 +376,10 @@ def _finalize_attachment(att, data, fname, law_id, dest):
         f.write(data)
     att["local_path"] = os.path.relpath(dest, REPO_ROOT).replace("\\", "/")
     att["size_bytes"] = len(data)
+    # 批 50：记住 fetch 阶段写入的**角色**（fileType 0=相关附件 / 90=下载文字版）——下方
+    # `structured_table_fields`/`rich_object_fields` 会把 kind/file_type 覆盖成文件类型，须还原
+    _role_kind = str(att.get("kind") or "")
+    _role_ftype = str(att.get("file_type") or "")
     try:
         ext = extract_document_text(data, fname)
         att["text"] = ext.get("text", "")
@@ -395,6 +399,10 @@ def _finalize_attachment(att, data, fname, law_id, dest):
                                           rec_key=str(law_id)))
         except Exception:  # noqa: BLE001  采集容错（字段/附件缺失不阻断采集）
             pass
+        # 批 50：还原**角色**语义（表格/富内容字段不得覆盖）⇒ 写入侧据此把正文载体分流到 body_docs
+        att["kind"] = _role_kind or "attachment"
+        att["file_type"] = _role_ftype
+        att["role"] = "text_version" if (_role_ftype == "90" or _role_kind == "text_version") else "attachment"
     except Exception as e:  # noqa: BLE001
         logger.warning("附件文本抽取异常 %s：%s", att.get("file_url"), e)
         att["extracted"] = False
@@ -519,7 +527,7 @@ def build_entry(rec, detail, category_id, category_name, fetch_detail_enabled, a
 
     law_id = rec.get("id") or (detail or {}).get("id")
 
-    return {
+    rec_out = {
         "id": law_id,
         "title": rec.get("title"),
         "category_id": category_id,
@@ -560,7 +568,21 @@ def build_entry(rec, detail, category_id, category_name, fetch_detail_enabled, a
         "attachment_names": "; ".join(
             (a.get("file_name") or "") for a in (attachments or [])
         ),
-    }
+        }
+    # 批 50：`attachments` 只保留**真实附件**；正文载体（fileType=90「下载文字版」/ 站点生成的
+    # 「HTML 冒充 .doc」文字版）移入 `body_docs`；其文本若未被正文覆盖则**并入正文字段**（不丢内容）
+    from std_lib.scraper_std.attachments import split_record_body_docs
+    split_record_body_docs(rec_out)
+    _all_atts = list(rec_out.get("attachments") or []) + list(rec_out.get("body_docs") or [])
+    rec_out["table_structured"] = [t for a in _all_atts
+                                   for t in (a.get("table_structured") or [])] or []
+    rec_out["table_raw_text"] = "\n""\n".join(
+        a.get("table_raw_text") for a in _all_atts if a.get("table_raw_text"))
+    rec_out["table_recovery_method"] = "structured" if any(
+        a.get("table_structured") for a in _all_atts) else ""
+    rec_out["rich_structured"] = [o for a in _all_atts
+                                  for o in (a.get("rich_structured") or [])] or []
+    return rec_out
 
 
 def fetch_category_records(lfgcc, category_name, *, size=50, rate, max_items=None):

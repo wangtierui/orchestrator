@@ -218,18 +218,17 @@ def extract_pdf_text(data):
 
 
 def extract_xls_text(data):
+    # 批 50：统一到共享原语（按内容右裁空列 + 连续空行视为表尾 + 上限截断显式标注）。
+    # 原实现虽靠 `is not None` 过滤避免了分隔符爆量，但仍按**声明维度**迭代 71M+ 格（CPU 浪费）
+    # 且**无上限** ⇒ 改为共享实现，与 gov/mof/nfra 同口径。
     try:
-        import io
-
-        from openpyxl import load_workbook
-        wb = load_workbook(io.BytesIO(data), data_only=True, read_only=True)
+        from std_lib.scraper_std.crawler_common import cap_xlsx_text, iter_xlsx_text_rows
         out = []
-        for ws in wb.worksheets:
-            for row in ws.iter_rows(values_only=True):
-                cells = [str(c) for c in row if c is not None]
-                if cells:
-                    out.append(" | ".join(cells))
-        return "\n".join(out).strip()
+        for cells in iter_xlsx_text_rows(data):
+            cells = [c for c in cells if c]
+            if cells:
+                out.append(" | ".join(cells))
+        return cap_xlsx_text("\n".join(out)).strip()
     except Exception:  # noqa: BLE001
         return None
 

@@ -167,15 +167,14 @@ def extract_docx(data):
 def extract_xlsx(data):
     """从 .xlsx（OOXML，ZIP 包）抽取单元格文本：**行式制表符**（保留行列结构，2026-09-10
     修复「每单元格一行」扁平化丢结构问题），供 text 可读；结构化二维另由 structured_table_fields 回填。"""
+    # 批 50：**统一到共享原语**（crawler_common.iter_xlsx_text_rows / cap_xlsx_text）。
+    # 原实现按工作表**声明维度**逐行展开（与 N-208 同型缺陷：某 17KB xlsx 声明 4374×16384 格、
+    # 有值仅 10,923 ⇒ 抽出 71,769,545 字符），且**无上限**。
     import io
     try:
-        import openpyxl
-        wb = openpyxl.load_workbook(io.BytesIO(data), data_only=True, read_only=True)
-        rows = []
-        for ws in wb.worksheets:
-            for r in ws.iter_rows(values_only=True):
-                rows.append("\t".join("" if c is None else str(c) for c in r))
-        return "\n".join(rows)
+        from std_lib.scraper_std.crawler_common import cap_xlsx_text, iter_xlsx_text_rows
+        rows = ["\t".join(cells) for cells in iter_xlsx_text_rows(data)]
+        return cap_xlsx_text("\n".join(rows))
     except Exception:  # noqa: BLE001  采集容错（字段/附件缺失不阻断采集）
         pass
     # 回退：共享字符串拼接（无 openpyxl 时）
@@ -200,7 +199,10 @@ def extract_xlsx(data):
                             cells.append(shared[idx] if idx < len(shared) else "")
                         else:
                             cells.append(v.text)
-    return "\n".join(cells)
+    from std_lib.scraper_std.crawler_common import (
+        cap_xlsx_text as _cap,  # 批 50：回退路径同样受上限约束
+    )
+    return _cap("\n".join(cells))
 
 
 def attachment_kind(att):

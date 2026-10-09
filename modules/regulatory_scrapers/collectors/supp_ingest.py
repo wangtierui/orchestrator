@@ -157,12 +157,32 @@ def enrich_attachments(records: list) -> list:
     脚本读取对应 _sources 文本写入 attachment_content / attachments，
     保证 '附件（如续保表述要求）' 等内容被真正提取，而非占位。
     """
+    def _att_key(a):
+        """附件条目去重键（批 50）：同名同类型同来源 ⇒ 视为同一条附件。"""
+        if not isinstance(a, dict):
+            return ("", "", str(a))
+        return (str(a.get("name") or ""), str(a.get("kind") or ""),
+                str(a.get("content_ref") or a.get("local_path") or ""))
     for r in records:
-        attaches = list(r.get("attachments") or [])
+        # 批 50：**入库即去重**——历史实测同一条记录出现 9 个完全相同的附件条目
+        # （多次摄取对同一 _attachment_files 反复 append 所致）
+        attaches = []
+        _seen_att = set()
+        for _a in list(r.get("attachments") or []):
+            _k = _att_key(_a)
+            if _k in _seen_att:
+                continue
+            _seen_att.add(_k)
+            attaches.append(_a)
         for spec in (r.get("_attachment_files") or []):
             fn = spec.get("file")
             p = os.path.join(SRC_DIR, fn) if fn else ""
+            _spec = {"name": spec.get("name", fn), "kind": spec.get("kind", "本地文本/留存文档"),
+                     "content_ref": f"data/raw/_sources/{fn}"}
+            if _att_key(_spec) in _seen_att:      # 批 50：同名同来源不重复 append
+                continue
             if p and os.path.exists(p) and os.path.getsize(p) > 0:
+                _seen_att.add(_att_key(_spec))
                 with open(p, encoding="utf-8") as f:
                     content = f.read().strip()
                 attaches.append({

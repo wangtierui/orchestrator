@@ -570,37 +570,68 @@ XLSX_MAX_EMPTY_ROWS = 60
 XLSX_MAX_ROWS = 200_000
 
 
+def iter_xlsx_text_rows(data: bytes):
+    """**共享原语**（批 49/50）：逐行产出 xlsx 的**已右裁空单元格**行（`list[str]`）。
+
+    为何必须共享：N-208 根因是"按工作表**声明维度**展开空网格"（实测某 17KB xlsx 声明
+    4374×16384 格、有值仅 10,923 ⇒ 抽出 71,769,545 字符）。其中
+      · `crawler_common._extract_xlsx`（gov/mof/supp 走此）与
+      · `excel_matrix._read_xlsx_bytes`（表格结构化）
+    已在批 49 修复；批 50 复核发现 **nfra `nfra_attachments_extract.extract_xlsx` 与
+    pbc `pbc_parse.extract_xls_text` 是自建实现、未走本修复**（前者**同型缺陷**）⇒ 统一到本原语，
+    确保"写入阶段不再产生同类爆量"。
+
+    行为：跨工作表连续产出；每行右裁空单元格后为空 ⇒ 记为一次"连续空行"（前 2 个空行仍产出空列表，
+    以保留块间分隔），连续空行达 `XLSX_MAX_EMPTY_ROWS` 即视为表尾；总行数受 `XLSX_MAX_ROWS` 约束。
+    """
+    import openpyxl
+
+    wb = openpyxl.load_workbook(__import__("io").BytesIO(data), data_only=True, read_only=True)
+    emitted = 0
+    for ws in wb.worksheets:
+        empty_streak = 0
+        for r in ws.iter_rows(values_only=True):
+            if emitted >= XLSX_MAX_ROWS:
+                return
+            cells = ["" if c is None else str(c) for c in r]
+            while cells and cells[-1] == "":          # ① 右裁空列（爆量主因）
+                cells.pop()
+            if not cells:
+                empty_streak += 1
+                if empty_streak >= XLSX_MAX_EMPTY_ROWS:   # ② 连续空行 ⇒ 视为表尾
+                    break
+                if empty_streak <= 2:                     # 保留最多 2 个空行（块间分隔仍可辨）
+                    yield []
+                    emitted += 1
+                continue
+            empty_streak = 0
+            emitted += 1
+            yield cells
+
+
+def cap_xlsx_text(text: str, limit: int = XLSX_MAX_CHARS) -> str:
+    """**共享上限**：超限即截断并**显式标注**（可审计，不静默丢）。"""
+    if len(text) <= limit:
+        return text
+    return text[:limit] + chr(10) + "[表格超限：已按上限 %d 字符截断]" % limit
+
+
 def _extract_xlsx(data: bytes) -> dict[str, Any]:
     try:
-        import openpyxl
-
-        wb = openpyxl.load_workbook(__import__("io").BytesIO(data), data_only=True, read_only=True)
         rows: list[str] = []
         total = 0
         truncated = False
-        for ws in wb.worksheets:
-            empty_streak = 0
-            for ri, r in enumerate(ws.iter_rows(values_only=True), 1):
-                if ri > XLSX_MAX_ROWS or total >= XLSX_MAX_CHARS:
-                    truncated = True
-                    break
-                cells = ["" if c is None else str(c) for c in r]
-                while cells and cells[-1] == "":          # ① 右裁空列（本 bug 主因）
-                    cells.pop()
-                if not cells:
-                    empty_streak += 1
-                    if empty_streak >= XLSX_MAX_EMPTY_ROWS:  # ② 视为表尾
-                        break
-                    if empty_streak <= 2:                  # 保留最多 2 个空行（块间分隔仍可辨）
-                        rows.append("")
-                    continue
-                empty_streak = 0
-                line = "\t".join(cells)
-                rows.append(line)
-                total += len(line) + 1
-        text = "\n".join(rows)
-        if truncated:
-            text += "\n[表格超限：已按上限 %d 字符截断]" % XLSX_MAX_CHARS
+        for cells in iter_xlsx_text_rows(data):
+            if total >= XLSX_MAX_CHARS:
+                truncated = True
+                break
+            line = "\t".join(cells)
+            rows.append(line)
+            total += len(line) + 1
+        text = cap_xlsx_text((chr(10)).join(rows))
+        if truncated and "表格超限" not in text:      # 主动 break（未达上限长度）时**同样显式标注**
+            text += chr(10) + "[表格超限：已按上限 %d 字符截断]" % XLSX_MAX_CHARS
+        text = text.rstrip()
         if text.strip():
             return {"text": text.strip(), "extracted": True, "extract_status": "ok"}
     except ImportError:

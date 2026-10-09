@@ -25,6 +25,209 @@ from .naming import standard_filename
 
 LOG = logging.getLogger("scraper_std.attachments")
 
+# --------------------------------------------------------------------------- #
+# 正文载体 vs 真实附件（批 50）：写入侧统一口径
+#
+# 命题（用户 2026-10-09）：五源写入 raw 时，`attachments` 里混入了**大量并非公告实际附件**的条目
+# —— 它们是「正文以 doc/pdf/word 形式发布」时的**正文载体**（例：gov 政策文件库的「下载Word/下载PDF」
+# 按钮、mof 接口 fileType=90「下载文字版」、supp 收录时 role=body 的正文 PDF）。
+# 实测（批 50 数据实测）：gov 2907 个附件条目中 **1632 条（文本 43.1M 字符，占附件文本 59%）**
+# 其文本已包含在正文里；mof 有 **478 条 html_disguised_doc（14.4M 字符）**（≈每记录一份「文字版」）。
+#
+# 统一口径：`attachments` 只保留**真实附件**；正文载体移入 `body_docs`（保留 URL/本地路径/校验和
+# 等**溯源元数据**，其文本在正文已覆盖时不再重复携带，未覆盖时**并入正文**以保证内容完整）。
+# 判据只用两档、皆可解释：① 条目**来源角色**（采集器已知的 role/fileType）② **内容判据**
+# （附件文本头部出现在正文中）。二者都不命中 ⇒ 视为真实附件。
+# --------------------------------------------------------------------------- #
+
+#: 载体角色标记（`body_version_role` 返回值域；`html_disguised_doc` 为「HTML 冒充 .doc」的站点
+#: 生成「文字版」，mof 实测 ≈ 每记录一份 ⇒ 计入载体标记）。
+BODY_VERSION_ROLE = "body_version"
+_BODY_ROLE_MARKERS = ("body_version", "body", "text_version", "90", "html_disguised_doc")
+
+#: 内容判据参数：归一化后取附件文本**头部** `_MATCH_HEAD` 字符，长度 ≥ `_MATCH_MIN` 才判定。
+_MATCH_HEAD = 200
+_MATCH_MIN = 60
+_MATCH_LIMIT = 400_000
+#: 归一化时剔除的标点（**不含反斜杠字符**：遵守"零转义原语"约定，避免编辑链路二次转义）
+_PUNCT_CHARS = "()<>[]{}.,;:'\"!?-/|_+=*&^%$#@~`\u3000\u3001\u3002\uff0c\uff1b\uff1a\uff1f\uff01\u201c\u201d\u2018\u2019\u2014\u2026\u00b7\uff08\uff09\u3010\u3011\u300a\u300b"
+_NL = chr(10)
+_SEP = _NL + _NL
+
+
+def match_norm(s: str, limit: int = _MATCH_LIMIT) -> str:
+    """匹配用归一化：去空白/常见标点、转小写（零依赖；`isspace()` 判空白，避免转义字面量）。"""
+    out = []
+    for ch in str(s or "")[:limit]:
+        if ch.isspace() or ch in _PUNCT_CHARS:
+            continue
+        out.append(ch.lower())
+    return "".join(out)
+
+
+def body_version_role(entry: Any) -> str:
+    """条目自带的**来源角色**线索（采集器已知信息：`role` / `file_type=90` 等）；无则空串。"""
+    if not isinstance(entry, dict):
+        return ""
+    for k in ("role", "attachment_kind", "kind", "file_type"):
+        v = str(entry.get(k) or "").strip().lower()
+        if v in _BODY_ROLE_MARKERS:
+            return v
+    return ""
+
+
+def is_body_version(entry: Any, body_text: str) -> bool:
+    """**内容判据**：附件文本（归一化头部）已包含在正文中 ⇒ 该条目是正文的另一种格式。"""
+    if not isinstance(entry, dict) or not body_text:
+        return False
+    head = match_norm(str(entry.get("text") or ""), _MATCH_HEAD)
+    if len(head) < _MATCH_MIN:
+        return False
+    return head in match_norm(body_text)
+
+
+def covered_by_body(text: str, body_norm: str, k: int = 10) -> bool:
+    """文本是否**整体**已被正文覆盖（取 k 段 + 末段的分段头部逐一在正文中查得）。
+
+    为何不用"只看头部"：载体可能是"正文 + 附录/附注"（头部命中而尾部是增量）
+    ⇒ 只看头部就丢弃全文会**丢内容**。本函数用于二选一：整体覆盖 ⇒ 仅留溯源元数据；
+    否则 ⇒ **并入正文**（内容完整不丢）。
+    """
+    if not text or not body_norm:
+        return False
+    n = len(text)
+    step = max(1, n // k)
+    for i in range(k):
+        head = match_norm(text[i * step:(i + 1) * step + _MATCH_HEAD], _MATCH_HEAD)
+        if len(head) >= _MATCH_MIN and head not in body_norm:
+            return False
+    tail = match_norm(text[-_MATCH_HEAD:], _MATCH_HEAD)
+    return not (len(tail) >= _MATCH_MIN and tail not in body_norm)
+
+
+def dedupe_attachments(atts: Any) -> tuple[list, int]:
+    """**同一条记录内完全重复**的附件条目去重（返回 `(去重后列表, 去除条数)`）。
+
+    键＝名称 + URL + 本地路径 + sha256 + 文本 sha256 的组合 ⇒ 只有**完全相同**的条目才合并
+    （保守：名称不同者即使文本相同也保留，避免误合并真实存在的同名同文附件）。
+    起因（批 50 实测）：supp 一条记录出现 **9 个完全相同条目**（`supp_ingest.enrich_attachments`
+    多次摄取反复 append；写入侧已加去重，此处兜底并用于历史数据处置）。
+    """
+    out: list = []
+    seen: set = set()
+    dup = 0
+    for a in (atts or []):
+        if not isinstance(a, dict):
+            out.append(a)
+            continue
+        text = a.get("text")
+        key = (str(a.get("file_name") or a.get("name") or a.get("title") or ""),
+               str(a.get("file_url") or a.get("url") or ""),
+               str(a.get("local_path") or ""),
+               str(a.get("sha256") or ""),
+               hashlib.sha256(str(text).encode("utf-8", "replace")).hexdigest() if text else "")
+        if key in seen:
+            dup += 1
+            continue
+        seen.add(key)
+        out.append(a)
+    return out, dup
+
+
+def partition_attachments(atts: Any, body_text: str) -> tuple[list, list]:
+    """把附件条目分流为 `(真实附件, 正文载体)`（判据见模块头注释）。非 dict 条目按真实附件保留。"""
+    real: list = []
+    carriers: list = []
+    for a in (atts or []):
+        if not isinstance(a, dict):
+            real.append(a)
+            continue
+        if body_version_role(a) or is_body_version(a, body_text):
+            carriers.append(a)
+        else:
+            real.append(a)
+    return real, carriers
+
+
+def split_record_body_docs(rec: dict, *, body_keys: tuple = ("full_text", "content_text",
+                                                             "content", "body_text"),
+                           carrier_field: str = "body_docs",
+                           rejoin_keys: tuple = ("attachment_text", "attachment_content")) -> dict:
+    """**记录级**分流（五源通用，写入侧与历史数据处置共用同一判据 ⇒ 结果一致）。
+
+    行为：
+      · `attachments` → 只留真实附件；正文载体移入 `carrier_field`（默认 `body_docs`，**幂等合并**）；
+      · 载体文本若**未**被正文覆盖（如 mof 的「文字版」），**并入正文**（内容完整不丢）；
+      · 载体文本已被正文覆盖（gov 的「下载Word/PDF」）⇒ 条目只留**溯源元数据**，不再重复携带全文；
+      · 重算 `attachment_count` 与记录级聚合（`attachment_text` / `attachment_content`，按**真附件**）。
+
+    返回统计 `{"kept": n, "moved": m, "body_filled": bool}`（便于调用方与处置脚本核对）。
+    """
+    atts = rec.get("attachments")
+    if not isinstance(atts, list) or not atts:
+        return {"kept": 0, "moved": 0, "body_filled": False}
+    body_key = ""
+    body = ""
+    for k in body_keys:
+        v = rec.get(k)
+        if isinstance(v, str) and v.strip():
+            body_key, body = k, v
+            break
+    real, carriers = partition_attachments(atts, body)
+    real, n_dup = dedupe_attachments(real)        # 完全重复条目（如 supp 的 9 条同款）先归并
+    if not carriers and not n_dup:
+        return {"kept": len(real), "moved": 0, "body_filled": False, "deduped": 0}
+    body_filled = False
+    body_norm = match_norm(body) if body else ""
+    text_in = sum(len(str(a.get("text") or "")) for a in real if isinstance(a, dict))
+    text_kept = text_in
+    text_to_body = 0
+    text_dropped = 0
+    for c in carriers:
+        txt = str(c.get("text") or "")
+        text_in += len(txt)
+        if txt and body_key:
+            if covered_by_body(txt, body_norm):
+                text_dropped += len(txt)              # 整体已被正文覆盖 ⇒ 条目只留溯源元数据
+            else:                                     # 正文未覆盖（或仅部分覆盖）⇒ 并入正文，不丢内容
+                body = (body + _SEP + txt).strip() if body else txt
+                body_norm = body_norm + match_norm(txt)   # 增量维护（正文尾部追加）
+                text_to_body += len(txt)
+                body_filled = True
+        # 正文已（或已并入）覆盖 ⇒ 载体条目仅留溯源元数据，避免同一正文在记录里存两份
+        c.pop("text", None)
+        c.pop("attachment_content", None)
+    if body_key:
+        rec[body_key] = body
+    prev = rec.get(carrier_field)
+    merged = list(prev) if isinstance(prev, list) else []
+    seen = {match_norm(str(x.get("file_name") or x.get("name") or "") + str(x.get("file_url")
+                                                                         or x.get("url") or x.get("local_path") or ""))
+            for x in merged if isinstance(x, dict)}
+    for c in carriers:
+        key = match_norm(str(c.get("file_name") or c.get("name") or "") + str(c.get("file_url")
+                                                                              or c.get("url") or c.get("local_path") or ""))
+        if key and key in seen:
+            continue
+        merged.append(c)
+        seen.add(key)
+    rec["attachments"] = real
+    if merged:
+        rec[carrier_field] = merged
+    rec["attachment_count"] = len(real)
+    for k in rejoin_keys:
+        if k in rec:
+            texts = [str(a.get("text") or "") for a in real
+                     if isinstance(a, dict) and a.get("text")]
+            rec[k] = _SEP.join(texts) if texts else ""
+    assert text_in == text_kept + text_to_body + text_dropped, "内容守恒台账不平（附件文本账）"
+    LOG.info("[附件分流] 真附件 %d / 正文载体 %d（正文并入=%s；文本 %d = 保留 %d + 并入 %d + 已覆盖 %d）",
+             len(real), len(carriers), body_filled, text_in, text_kept, text_to_body, text_dropped)
+    return {"kept": len(real), "moved": len(carriers), "body_filled": body_filled,
+            "deduped": n_dup,
+            "text_in": text_in, "text_kept": text_kept, "text_to_body": text_to_body,
+            "text_dropped": text_dropped}
+
 # 正文文档优先级（6.2 ①）
 _DOC_PRIORITY = [".docx", ".doc", ".pdf", ".ofd", ".ceb", ".wps", ".rtf"]
 _ATTACH_EXTS = {
