@@ -103,7 +103,8 @@ def test_substep_argv_pins_envelope_and_source(rpr) -> None:
 
 def test_substeps_share_single_master_and_have_timeouts(rpr) -> None:
     """拆分后**仍写同一主库**（下游零改动）；每步有分档超时（不是一刀切 7200）。"""
-    assert rpr.RAW_JSON["gov"] == "gov_laws.json"
+    # S-A（N-206）后主库为 **JSONL**（`gov_laws.jsonl`，首行 _meta）——详见 tests/test_raw_jsonl.py
+    assert rpr.RAW_JSON["gov"] == "gov_laws.jsonl"
     assert "gov_xzfgk" not in rpr.RAW_JSON and "gov_zhengceku" not in rpr.RAW_JSON, (
         "子源不得进 RAW_JSON（那是事实源口径，clean 的体量超时按它取大小）"
     )

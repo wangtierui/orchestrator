@@ -92,7 +92,7 @@ def _latest_raw_master(scrapers_root: str) -> list[dict]:
     """data/raw 定长主库 json（gov_laws/mof_laws/nfra_regulations/pbc_laws/supplementary_regulations.json）。"""
     raw_dir = os.path.join(scrapers_root, "data", "raw")
     names = [
-        "gov_laws.json",
+        "gov_laws.jsonl",        # S-A（N-206）：gov 主库改 JSONL
         "mof_laws.json",
         "nfra_regulations.json",
         "pbc_laws.json",

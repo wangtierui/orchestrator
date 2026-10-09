@@ -10,12 +10,12 @@ import json
 import logging
 import os
 import sys
-from datetime import datetime, timezone
-UTC = timezone.utc
+from datetime import UTC, datetime
+
+UTC = UTC
 
 from ..base import (
     REPO_ROOT,
-    SourceCollector,
     acquire_lock,
     atomic_write,
     release_lock,
@@ -324,7 +324,7 @@ class MofCollector:
             logger.info("✅ 增量更新完成：新增 %d / 更新 %d / 移除 %d / 未变 %d；活跃 %d 条。",
                         added, updated, removed, unchanged, active_count)
             logger.info("   JSON : %s", store_path)
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             # —— 异常状态处理：记录错误，保留上一次成功结果（不覆盖）——
             status["last_error"] = f"{type(e).__name__}: {e}"
             status["last_error_time"] = datetime.now(UTC).isoformat()

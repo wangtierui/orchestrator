@@ -3,6 +3,7 @@
 
 逻辑逐函数等价；仅 import 路径改为相对导入，仓库引导与 pbc 同口径。
 """
+import json  # 修复（2026-10-09）：原缺失 —— 下方缓存读/写用 json.loads/json.dumps
 import os
 import random
 import re
@@ -19,7 +20,10 @@ del _ROOT
 
 try:
     import requests
-    from bs4 import BeautifulSoup
+
+    # 意图声明：本导入是**依赖可用性探测**（缺 beautifulsoup4 时给出安装指引并退出），
+    # 不参与运行时调用 —— 故显式声明忽略 F401（非死代码）。
+    from bs4 import BeautifulSoup  # noqa: F401
     from requests.adapters import HTTPAdapter
     from urllib3.util.retry import Retry
 except ImportError as e:  # pragma: no cover
@@ -30,11 +34,12 @@ except ImportError as e:  # pragma: no cover
     )
     sys.exit(2)
 
-import logging  # noqa: E402
+import logging
+
 LOG = logging.getLogger("gov_scraper")
 
 # decode_html 的权威实现在 .parse（与 gov 主链同口径），此处就近复用避免分叉。
-from .parse import decode_html  # noqa: E402
+from .parse import decode_html
 
 # 常用桌面浏览器 UA 池（轮换以降低被识别为脚本的概率）
 try:

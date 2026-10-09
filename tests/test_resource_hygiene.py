@@ -47,11 +47,13 @@ def gp():
 # N-200 主库旁路索引
 # --------------------------------------------------------------------------- #
 def _mk_master(tmp_path, records):
+    """夹具主库：**JSONL 形态**（N-206/S-A 后的规范形态；首行 `_meta`）。"""
     out = tmp_path / "raw"
     out.mkdir(exist_ok=True)
-    (out / "gov_laws.json").write_text(
-        json.dumps({"source": "gov", "count": len(records), "records": records}, ensure_ascii=False),
-        encoding="utf-8")
+    with open(out / "gov_laws.jsonl", "w", encoding="utf-8") as f:
+        f.write(json.dumps({"_meta": {"source": "gov", "format": "jsonl/1"}}, ensure_ascii=False) + "\n")
+        for r in records:
+            f.write(json.dumps(r, ensure_ascii=False) + "\n")
     return str(out)
 
 
@@ -88,10 +90,9 @@ def test_stale_index_triggers_rebuild(gp, tmp_path) -> None:
     """主库变更（size/mtime 不符）⇒ 索引失效 ⇒ **自动流式重建**（语义仍正确）。"""
     out = _mk_master(tmp_path, RECS)
     gp.build_master_index_streaming(out)
-    mp = gp.master_path(out)
-    data = json.load(open(mp, encoding="utf-8"))
-    data["records"].append({"detail_url": "u9", "title": "D", "full_text": "新"})
-    open(mp, "w", encoding="utf-8").write(json.dumps(data, ensure_ascii=False))
+    mp = gp._find_master(out)                     # N-206：主库可能是 JSONL（迁移期亦支持旧 .json）
+    with open(mp, "a", encoding="utf-8") as f:    # 追加一条 → size/mtime 变化 ⇒ 索引失效
+        f.write(json.dumps({"detail_url": "u9", "title": "D", "full_text": "新"}, ensure_ascii=False) + "\n")
     mv = gp.MasterView(out)
     seen, detailed = mv.keys()
     assert mv.from_index is True and ("D", "u9") in seen and "u9" in detailed
@@ -104,7 +105,9 @@ def test_missing_index_is_built_without_full_parse(gp, tmp_path, monkeypatch) ->
     real_load = json.load
 
     def _spy(fp, *a, **k):
-        if getattr(fp, "name", "").endswith("gov_laws.json"):
+        # N-206：主库现为 `gov_laws.jsonl`（旧 `.json` 仅迁移期存在）⇒ 两种名都要盯
+        name = getattr(fp, "name", "")
+        if name.endswith("gov_laws.jsonl") or name.endswith("gov_laws.json"):
             calls["n"] += 1
         return real_load(fp, *a, **k)
 

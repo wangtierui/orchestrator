@@ -21,7 +21,7 @@ gov_regulations_scraper.py
   - 完善的异常捕获与运行日志，单条失败不影响整体。
 
 用法示例：
-  # 完整抓取行政法规库（含全部详情正文），输出 gov_laws.json/.csv（覆盖更新）
+  # 完整抓取行政法规库（含全部详情正文），输出 gov_laws.jsonl/.csv（覆盖更新；N-206/S-A 起为 JSONL）
   python scraper.py
 
   # 快速验证（前 2 页、5 条详情）
@@ -127,6 +127,7 @@ from gov_parse import (  # noqa: F401  拆分 re-export（显式；规避 F405�
     extract_issue_organ,
     load_resume,
     make_summary,
+    merge_and_write,
     merge_with_master,
     write_collect_stats,
     write_outputs,
@@ -779,19 +780,24 @@ def main(argv=None) -> int:
         _emit_stats()
         return ExitCode.OK
 
-    if cfg.resume and master_view is not None:
-        # 增量续抓：本次 records 仅含新发现条目 → 与现主库合并后覆盖写，防丢历史。
-        # N-200：复用同一 `MasterView` —— 若上面因索引缺失已全量解析过，这里**不再重复解析**
-        # （原实现两次解析 1GB 主库 ⇒ 两轮 6GB 级瞬时峰值，实测触顶）。
-        records = merge_with_master(records, cfg.out_dir, master_records=master_view.records())
-
     # 信封 source/category：单子源沿用其自身标识；all 时标为 gov 汇总。
     # R-C/N-190：`--env-source/--env-category` 可**显式覆盖** —— 子源拆分后"单子源单跑"成为常态，
     #   若不做覆盖，最后一次子源的标识会写进主库信封（下游按 source 判别时不一致）。
     env_source = args.env_source or (cfg.source if len(want) == 1 else "gov")
     env_cat = args.env_category or (cfg.category if len(want) == 1 else "行政法规+部门文件")
     cfg.source, cfg.category = env_source, env_cat
-    paths = write_outputs(records, cfg, source_label=env_source, write_csv=args.csv)
+
+    merge_stat: dict | None = None
+    if cfg.resume and master_view is not None:
+        # 增量续抓：本次 records 仅含新发现条目 → 与现主库合并后落盘，防丢历史。
+        # S-B（N-206，2026-10-09）：改走 **`merge_and_write` 流式合并** —— 旧主库**逐条读**、
+        #   命中同键用新记录覆盖、**逐条写** `.tmp`（峰值＝新记录+键集，与主库体积解耦）。
+        #   原路径 `merge_with_master(...)` 需把整表（1GB 级）读进内存 ⇒ 与 clean 同源的
+        #   6× 瞬时峰值（实测 clean 侧 5.24~6.13GB）。
+        merge_stat = merge_and_write(records, cfg, source_label=env_source, write_csv=args.csv)
+        paths = {"json": merge_stat["json"], "csv": merge_stat["csv"]}
+    else:
+        paths = write_outputs(records, cfg, source_label=env_source, write_csv=args.csv)
     # N-192（2026-10-08）：主库**已原子落盘** → 清理子源的续跑暂存（其记录已并入主库）。
     # 不清的代价（实测）：每轮增量白付"载入 899.7MB / 12573 条 + 全量合并 ~10 分钟"且产出零变化。
     # 反例保护：若上一步写库失败/进程被杀，此处不会执行 ⇒ 暂存保留，下次仍可续跑。

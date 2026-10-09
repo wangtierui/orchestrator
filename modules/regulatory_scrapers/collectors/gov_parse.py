@@ -21,7 +21,7 @@ gov_regulations_scraper.py
   - 完善的异常捕获与运行日志，单条失败不影响整体。
 
 用法示例：
-  # 完整抓取行政法规库（含全部详情正文），输出 gov_laws.json/.csv（覆盖更新）
+  # 完整抓取行政法规库（含全部详情正文），输出 gov_laws.jsonl/.csv（覆盖更新；N-206/S-A 起为 JSONL）
   python scraper.py
 
   # 快速验证（前 2 页、5 条详情）
@@ -47,6 +47,7 @@ import logging
 import os
 import re
 import sys
+from collections.abc import Iterator
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
@@ -338,9 +339,92 @@ def _is_https_scheme_upgrade(html: str) -> bool:
     return bool(_SCHEME_UPGRADE_RE.search(html or ""))
 
 
+#: 主库文件名（N-206 / S-A，2026-10-09）：**改为 JSONL**（`gov_laws.jsonl`）。
+#: 为何换格式：`.json` 单数组解析 1GB 主库实测峰值 **5.24~6.13GB**（≈6× 体积：JSON 文本→对象膨胀
+#: + 内部全量副本）；JSONL 可**逐行流式**读写 ⇒ 峰值与语料体积解耦（实测流式遍历同体量语料仅 37MB）。
+#: 兼容：迁移期若 JSONL 缺失而旧 `gov_laws.json` 仍在，读取侧按其**旧格式流式**解析（见 `_iter_master_records`）。
+MASTER_NAME = "gov_laws.jsonl"
+MASTER_NAME_LEGACY = "gov_laws.json"
+
+
 def master_path(out_dir: str) -> str:
-    """gov 主库路径（两子源合并落点，唯一事实源）。"""
-    return os.path.join(out_dir, "gov_laws.json")
+    """gov 主库**写入**路径（JSONL，两子源合并落点、唯一事实源）。"""
+    return os.path.join(out_dir, MASTER_NAME)
+
+
+def _find_master(out_dir: str) -> str:
+    """实际存在的主库文件（JSONL 优先，回退旧 `.json`；都不存在 → 返回 JSONL 路径）。"""
+    p = master_path(out_dir)
+    if os.path.exists(p):
+        return p
+    legacy = os.path.join(out_dir, MASTER_NAME_LEGACY)
+    return legacy if os.path.exists(legacy) else p
+
+
+def _iter_master_records(out_dir: str) -> Iterator[dict[str, Any]]:
+    """**流式**迭代主库记录（JSONL 逐行 / 旧 `.json` 用 `raw_decode` 逐条）——峰值与单条同阶。
+
+    统一入口：`MasterView.records()` 与 `build_master_index_streaming()` 都经此迭代，
+    避免"两处各写一套读法"（本仓一贯的 SSOT 纪律）。
+    """
+    p = _find_master(out_dir)
+    if not os.path.exists(p):
+        return
+    if p.endswith(".jsonl"):
+        with open(p, encoding="utf-8") as f:
+            for line in f:
+                if not line.strip():
+                    continue
+                rec = json.loads(line)
+                if isinstance(rec, dict) and len(rec) == 1 and "_meta" in rec:
+                    continue                      # 信封行
+                yield rec
+        return
+    yield from _iter_json_array_records(p)
+
+
+def _iter_json_array_records(path: str) -> Iterator[dict[str, Any]]:
+    """旧 `.json` 主库的**流式**逐条迭代（`raw_decode`；不构造整表副本）。"""
+    dec = json.JSONDecoder()
+    with open(path, encoding="utf-8") as f:
+        buf = ""
+        start = -1
+        while start < 0:
+            chunk = f.read(1 << 20)
+            if not chunk:
+                return
+            buf += chunk
+            start = buf.find('"records"')
+            if start >= 0:
+                b = buf.find("[", start + 9)
+                if b >= 0:
+                    buf = buf[b + 1:]
+                    break
+                start = -1
+        while True:
+            buf = buf.lstrip()
+            if buf.startswith(","):
+                buf = buf[1:]
+                continue
+            if buf.startswith("]"):
+                return
+            if not buf:
+                chunk = f.read(1 << 22)
+                if not chunk:
+                    return
+                buf += chunk
+                continue
+            try:
+                rec, end = dec.raw_decode(buf)
+            except ValueError:
+                chunk = f.read(1 << 22)
+                if not chunk:
+                    return
+                buf += chunk
+                continue
+            if isinstance(rec, dict):
+                yield rec
+            buf = buf[end:]
 
 
 def master_index_path(out_dir: str) -> str:
@@ -382,55 +466,17 @@ def build_master_index_streaming(out_dir: str) -> str:
     """**流式**扫描主库并重建旁路索引（峰值 ≈ 单条记录，与语料体积解耦）。
 
     为何必需（N-200b，2026-10-09）：索引缺失时若走 `json.load` 全量解析，会再次触发**实测 6.2GB**
-    的瞬时峰值（1GB 文件 ≈6× 对象膨胀）。本函数用 `json.JSONDecoder.raw_decode` 逐条扫描
-    `records` 数组元素（**不构造整表**），只保留 `[detail_url, title, has_full_text]` ⇒ 峰值与
-    单条记录（≤1MB）同阶。返回索引路径（主库不存在 → 空串）。
+    的瞬时峰值（1GB 文件 ≈6× 对象膨胀）。本函数经 `_iter_master_records` 逐条迭代
+    （JSONL 逐行 / 旧 `.json` 用 `raw_decode`）⇒ 峰值与单条记录（≤1MB）同阶。
+    返回索引路径（主库不存在 → 空串）。
     """
-    mp = master_path(out_dir)
+    mp = _find_master(out_dir)
     if not os.path.exists(mp):
         return ""
-    dec = json.JSONDecoder()
     entries: list[list] = []
-    with open(mp, encoding="utf-8") as f:
-        buf = ""
-        started = False
-        while not started:
-            chunk = f.read(1 << 20)
-            if not chunk:
-                break
-            buf += chunk
-            m = buf.find('"records"')
-            if m >= 0:
-                b = buf.find("[", m)
-                if b >= 0:
-                    buf = buf[b + 1:]
-                    started = True
-        if started:
-            while True:
-                buf = buf.lstrip()
-                if buf.startswith(","):
-                    buf = buf[1:]
-                    continue
-                if buf.startswith("]"):
-                    break
-                if not buf:
-                    chunk = f.read(1 << 22)
-                    if not chunk:
-                        break
-                    buf += chunk
-                    continue
-                try:
-                    rec, end = dec.raw_decode(buf)
-                except ValueError:
-                    chunk = f.read(1 << 22)
-                    if not chunk:
-                        break
-                    buf += chunk
-                    continue
-                if isinstance(rec, dict):
-                    entries.append([rec.get("detail_url") or "", rec.get("title") or "",
-                                    1 if rec.get("full_text") else 0])
-                buf = buf[end:]
+    for rec in _iter_master_records(out_dir):
+        entries.append([rec.get("detail_url") or "", rec.get("title") or "",
+                        1 if rec.get("full_text") else 0])
     st = os.stat(mp)
     payload = {
         "master": os.path.basename(mp),
@@ -464,7 +510,9 @@ class MasterView:
         self._detailed: set | None = None
 
     def _read_index(self) -> dict | None:
-        ip, mp = master_index_path(self.out_dir), master_path(self.out_dir)
+        # N-206：主库可能仍是旧 `.json`（迁移期）⇒ 用 `_find_master` 定位实际文件，
+        # 保证索引的 size/mtime 校验对准**真实读取对象**（否则恒判失效 → 每次重建，白付开销）。
+        ip, mp = master_index_path(self.out_dir), _find_master(self.out_dir)
         if not os.path.exists(mp):
             return None
         if not os.path.exists(ip):
@@ -528,16 +576,17 @@ class MasterView:
         return seen, detailed
 
     def records(self) -> list[dict[str, Any]]:
-        """全量记录（按需解析并**缓存复用**；主库缺失/损坏 → 空表，由调用方按现状处理）。"""
+        """全量记录（**流式**读取并缓存复用；主库缺失/损坏 → 空表，由调用方按现状处理）。
+
+        N-206：改用 `_iter_master_records`（JSONL 逐行 / 旧 `.json` 逐条 raw_decode）——
+        原实现 `json.load` 对 1GB 主库有 6× 瞬时峰值；现峰值与**单条记录**同阶。
+        """
         if self._records is None:
-            mp = master_path(self.out_dir)
-            if not os.path.exists(mp):
+            if not os.path.exists(_find_master(self.out_dir)):
                 self._records = []
             else:
                 try:
-                    with open(mp, encoding="utf-8") as fh:
-                        data = json.load(fh)
-                    self._records = data.get("records") or []
+                    self._records = list(_iter_master_records(self.out_dir))
                 except Exception as e:  # noqa: BLE001
                     LOG.warning("【merge】读取现主库失败，按空表处理：%s", e)
                     self._records = []
@@ -557,31 +606,32 @@ def load_resume(out_dir: str, source: str):
 def write_outputs(records: list[dict[str, Any]], cfg: ScrapeConfig,
                   source_label: str | None = None,
                   write_csv: bool = False) -> dict[str, str]:
+    """落盘主库（**JSONL**，N-206 / S-A）与可选 CSV。
+
+    格式（`gov_laws.jsonl`）：**首行 `_meta` 信封**（source/category/captured_at/format），
+    其后**每行一条记录**（`json.dumps` 会把字符串内换行转义 ⇒ 严格一行一记录）。
+    ⚠️ **记录数不入 `_meta`**：单遍流式写入无法先知总数；计数由**旁路索引** `gov_laws.index.json`
+    的 `count` 承载（与主库同批原子写），需要时读索引即可（2MB 级，毫秒）。
+    """
     os.makedirs(cfg.out_dir, exist_ok=True)
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    json_path = os.path.join(cfg.out_dir, "gov_laws.json")
+    jsonl_path = master_path(cfg.out_dir)
     csv_path = os.path.join(cfg.out_dir, "gov_laws.csv")
 
-    # JSON：保留全文与原始字段
-    _payload = {
-        "source": cfg.source,
-        "category": cfg.category,
-        "captured_at": stamp,
-        "count": len(records),
-        "records": records,
-    }
-    _tmp = json_path + ".tmp"
+    _tmp = jsonl_path + ".tmp"
     with open(_tmp, "w", encoding="utf-8") as f:
-        json.dump(_payload, f, ensure_ascii=False, indent=2)
-    os.replace(_tmp, json_path)
+        f.write(_meta_line(cfg.source, cfg.category, stamp))
+        for r in records:
+            f.write(json.dumps(r, ensure_ascii=False) + "\n")
+    os.replace(_tmp, jsonl_path)
     # N-200：与主库**同批**写旁路索引（供下次增量免解析正文）。索引是**加速器**：
-    # 写入失败只告警，不影响主库正确性（下次自动回退全量解析）。
+    # 写入失败只告警，不影响主库正确性（下次自动回退流式重建）。
     try:
         write_master_index(cfg.out_dir, records)
     except Exception as e:  # noqa: BLE001
-        LOG.warning("【resume】旁路索引写入失败（不影响主库；下次将回退全量解析）：%s", e)
+        LOG.warning("【resume】旁路索引写入失败（不影响主库；下次将流式重建）：%s", e)
 
-    # CSV：仅 --csv 显式开启时输出表格视图（默认仅 JSON 主库，2026-09-09 规范）
+    # CSV：仅 --csv 显式开启时输出表格视图（默认仅 JSONL 主库，2026-09-09 规范）
     if write_csv:
         _tmpc = csv_path + ".tmp"
         with open(_tmpc, "w", encoding="utf-8-sig", newline="") as f:
@@ -591,9 +641,72 @@ def write_outputs(records: list[dict[str, Any]], cfg: ScrapeConfig,
                 writer.writerow({k: r.get(k, "") for k in CSV_COLUMNS})
         os.replace(_tmpc, csv_path)
 
-    LOG.info("输出完成：\n  JSON: %s%s", json_path,
-             ("\n  CSV : %s" % csv_path) if write_csv else "")
-    return {"json": json_path, "csv": csv_path if write_csv else ""}
+    LOG.info("输出完成：\n  JSONL: %s%s", jsonl_path,
+             ("\n  CSV  : %s" % csv_path) if write_csv else "")
+    return {"json": jsonl_path, "csv": csv_path if write_csv else ""}
+
+
+def _meta_line(source: str, category: str, stamp: str) -> str:
+    """JSONL 首行信封（单键 `_meta`，读取侧按此跳过）。"""
+    return json.dumps(
+        {"_meta": {"source": source, "category": category, "captured_at": stamp,
+                   "format": "jsonl/1"}},
+        ensure_ascii=False,
+    ) + "\n"
+
+
+def merge_and_write(new_records: list[dict[str, Any]], cfg: ScrapeConfig, *,
+                    source_label: str | None = None, write_csv: bool = False) -> dict[str, Any]:
+    """增量合并**流式**落盘（N-206 / **S-B**）——替代"整表合并 + 整表落盘"。
+
+    为何必需（实测）：原 `merge_with_master` 把旧主库**全量读进内存**再与新记录合并
+    （1GB 级 ⇒ 与 clean 同源的 6× 瞬时峰值）。本函数：
+      ① 旧主库经 `_iter_master_records` **逐条**读（JSONL 逐行 / 旧 `.json` raw_decode）；
+      ② 命中同键（`detail_url` 优先、退化标题）者**用新记录替换**（新优先，语义与原实现一致）；
+      ③ 逐条写 `.tmp` ⇒ **峰值 = 新记录 + 键集**，与旧主库体积解耦；④ 原子替换 + 重建索引。
+    返回 `{"json", "csv", "merged", "replaced", "csv_path"}`（供调用方日志与统计）。
+    """
+    os.makedirs(cfg.out_dir, exist_ok=True)
+    stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    out_path = master_path(cfg.out_dir)
+    csv_path = os.path.join(cfg.out_dir, "gov_laws.csv")
+
+    pending: dict[str, dict[str, Any]] = {}
+    for r in new_records:
+        pending[str(r.get("detail_url") or r.get("title") or "")] = r
+    merged = replaced = 0
+    tmp = out_path + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as out:
+        out.write(_meta_line(cfg.source, cfg.category, stamp))
+        for old in _iter_master_records(cfg.out_dir):
+            k = str(old.get("detail_url") or old.get("title") or "")
+            if k in pending:
+                out.write(json.dumps(pending.pop(k), ensure_ascii=False) + "\n")
+                replaced += 1
+            else:
+                out.write(json.dumps(old, ensure_ascii=False) + "\n")
+            merged += 1
+        for r in pending.values():                    # 旧库中不存在的新条目
+            out.write(json.dumps(r, ensure_ascii=False) + "\n")
+            merged += 1
+    os.replace(tmp, out_path)
+    # 索引：从**刚落盘的主库**流式重建（与主库保证同批一致；失败只告警）
+    try:
+        build_master_index_streaming(cfg.out_dir)
+    except Exception as e:  # noqa: BLE001
+        LOG.warning("【resume】旁路索引重建失败（下次将自动重建）：%s", e)
+    if write_csv:
+        _tmpc = csv_path + ".tmp"
+        with open(_tmpc, "w", encoding="utf-8-sig", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=CSV_COLUMNS, extrasaction="ignore")
+            writer.writeheader()
+            for r in _iter_master_records(cfg.out_dir):
+                writer.writerow({k: r.get(k, "") for k in CSV_COLUMNS})
+        os.replace(_tmpc, csv_path)
+    LOG.info("【merge】流式合并完成：%d 条（其中**新覆盖** %d 条，新发现 %d 条）→ %s",
+             merged, replaced, len(new_records) - replaced, os.path.basename(out_path))
+    return {"json": out_path, "csv": csv_path if write_csv else "", "merged": merged,
+            "replaced": replaced}
 
 
 #: 采集统计落点（相对仓库根）；每源**只保留最新一份**（覆盖写）
@@ -723,4 +836,4 @@ def merge_with_master(new_records: list[dict[str, Any]], out_dir: str,
 __all__ = ["ScrapeConfig", "_is_https_scheme_upgrade", "_longest_text_block", "build_config", "clean_text",
            "collect_stats_path", "write_collect_stats", "decode_html", "extract_date", "extract_doc_number",
            "extract_issue_organ", "load_resume", "make_summary", "master_index_path", "master_path",
-           "merge_with_master", "write_master_index", "write_outputs", "MasterView"]
+           "merge_and_write", "merge_with_master", "write_master_index", "write_outputs", "MasterView"]

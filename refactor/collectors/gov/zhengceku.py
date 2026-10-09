@@ -28,6 +28,7 @@ if _GUIDE_ROOT not in sys.path:
     sys.path.insert(0, _GUIDE_ROOT)
 _REPO_ROOT = _GUIDE_ROOT  # 仓库根（含 std_lib）
 from ..base import REPO_ROOT as _ORCH  # orchestrator 根
+
 # ⚠️ 附件 local_path 相对基址固定为 regulatory_scrapers（字节兼容）。
 SCRAPERS_ROOT = os.path.join(_ORCH, "modules", "regulatory_scrapers")
 _SRC_ROOT = SCRAPERS_ROOT

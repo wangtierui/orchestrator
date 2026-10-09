@@ -7,39 +7,32 @@ XzfgkScraper / RobustSession / 多子源分发 / 增量合并均保留；仅 imp
 （与下游 clean 既有输入契约一致）。
 """
 import argparse
+import atexit
 import logging
 import os
 import re
 import sys
-import atexit
 
-from ..base import REPO_ROOT, SourceCollector
+from ..base import REPO_ROOT
+from .attachments import fetch_gov_attachments
+from .net import (
+    RobustSession,
+    _init_cache,
+)
 from .parse import (
     SOURCES,
     ScrapeConfig,
-    _is_https_scheme_upgrade,
-    _longest_text_block,
     build_config,
     clean_text,
-    decode_html,
     extract_date,
     extract_doc_number,
     extract_issue_organ,
     load_resume,
     make_summary,
     merge_with_master,
-    write_outputs,
     write_collect_stats,
+    write_outputs,
 )
-from .net import (
-    DEFAULT_HEADERS,
-    RobustSession,
-    _cache_ep,
-    _init_cache,
-    _OfflineMiss,
-    _RESP_TEXT,
-)
-from .attachments import fetch_gov_attachments
 from .zhengceku import ZhengcekuScraper
 
 #: regulatory_scrapers 根（默认 out 与历史路径口径，字节兼容）。
@@ -58,8 +51,8 @@ except ImportError:  # pragma: no cover
 
 LOG = logging.getLogger("gov_scraper")
 
-from config.exitcodes import ExitCode  # noqa: E402
-from std_lib.common_lib import fs_lock  # noqa: E402
+from config.exitcodes import ExitCode
+from std_lib.common_lib import fs_lock
 
 
 # --------------------------------------------------------------------------- #
@@ -296,7 +289,7 @@ class XzfgkScraper:
 # --------------------------------------------------------------------------- #
 # 主流程（由 main() / GovCollector.collect() 共用）
 # --------------------------------------------------------------------------- #
-import time  # noqa: E402
+import time
 
 
 def _run(args) -> int:

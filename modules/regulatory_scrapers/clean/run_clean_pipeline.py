@@ -41,9 +41,11 @@ from std_lib.scraper_std.pipeline import run_pipeline
 # --schema-fail-rate-max 临时放宽），不得直接删检查。
 SCHEMA_FAIL_RATE_MAX = 0.02
 
-# 五源 raw 主库 json 文件名（与 data_migration_manifest / 旧仓 data/raw 一致）
+# 五源 raw 主库文件名（gov 自 N-206/S-A 起为 **JSONL**；其余仍为 .json）。
+# ⚠️ 与 `data_migration_manifest`（历史迁移记录）不再逐字一致 —— 该清单描述**迁移当时**的形态，
+#    不改写历史；链侧事实源口径以 `tools/run_production_refresh.RAW_JSON` 为准。
 RAW_MASTER_NAMES: dict[str, str] = {
-    "gov": "gov_laws.json",
+    "gov": "gov_laws.jsonl",
     "mof": "mof_laws.json",
     "nfra": "nfra_regulations.json",
     "pbc": "pbc_laws.json",

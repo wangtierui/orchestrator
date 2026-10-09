@@ -39,8 +39,11 @@ from std_lib.common_lib.logging import get_logger
 LOG = get_logger(__name__)
 
 # 五源 raw 文件相对路径（相对**仓库根**；2026-09-18 修正：模块拍平后真实位置）
+# ⚠️ N-206（2026-10-09，S-A）：gov 主库已改为 **JSONL**（`gov_laws.jsonl`，首行 `_meta` 信封）。
+# 本模块随之支持双格式（`.jsonl` 逐行 / `.json` 逐条 raw_decode），并**不再整表 `json.load`**。
+# 另注：本模块当前**全仓无调用方**（已登记待办核对是否退役），但语义仍保持正确。
 RAW_FILES: dict[str, str] = {
-    "gov": "modules/regulatory_scrapers/data/raw/gov_laws.json",
+    "gov": "modules/regulatory_scrapers/data/raw/gov_laws.jsonl",
     "mof": "modules/regulatory_scrapers/data/raw/mof_laws.json",
     "nfra": "modules/regulatory_scrapers/data/raw/nfra_regulations.json",
     "pbc": "modules/regulatory_scrapers/data/raw/pbc_laws.json",
@@ -102,18 +105,50 @@ def _declared_count(doc: Any) -> int | None:
 
 
 def load_doc(source: str, root: str | None = None) -> Any:
-    """读单源 raw 原始结构（只读）。"""
-    with open(raw_path(source, root), encoding="utf-8") as fh:
+    """读单源 raw 原始结构（只读；**仅 `.json` 形态**）。
+
+    N-206：`gov` 已是 **JSONL**（无单一"文档"结构）⇒ 对本模块用 `iter_records()` 逐条读；
+    误用本函数会得到 `RawLoaderError`（显式指引，而非静默给错结构）。
+    """
+    p = raw_path(source, root)
+    if p.endswith(".jsonl"):
+        raise RawLoaderError(
+            f"{source} 已为 JSONL（{os.path.basename(p)}）：请用 iter_records()/count_records()，"
+            "不要 load_doc()")
+    with open(p, encoding="utf-8") as fh:
         return json.load(fh)
+
+
+def _iter_source_records(path: str) -> Iterator[dict[str, Any]]:
+    """**流式**迭代单源 raw 记录（JSONL 逐行跳过 `_meta`；`.json` 交给 pipeline 的流式实现）。"""
+    if path.endswith(".jsonl"):
+        with open(path, encoding="utf-8") as f:
+            for line in f:
+                if not line.strip():
+                    continue
+                rec = json.loads(line)
+                if isinstance(rec, dict) and len(rec) == 1 and "_meta" in rec:
+                    continue
+                if isinstance(rec, dict):
+                    yield rec
+        return
+    from std_lib.scraper_std.pipeline import load_raw_records  # 复用**唯一**流式载入实现
+
+    yield from load_raw_records(path)
+
+
+def count_records(source: str, root: str | None = None) -> int:
+    """**流式**统计单源记录数（不整表载入；JSONL 亦适用）。"""
+    return sum(1 for _ in _iter_source_records(raw_path(source, root)))
 
 
 def iter_records(
     source: str | None = None, root: str | None = None
 ) -> Iterator[tuple[str, dict[str, Any]]]:
-    """按源迭代 (source, record)。source=None 时遍历五源。只读。"""
+    """按源迭代 (source, record)。source=None 时遍历五源。只读、**流式**。"""
     sources = [source] if source else list(RAW_FILES)
     for s in sources:
-        for rec in _records_of(load_doc(s, root)):
+        for rec in _iter_source_records(raw_path(s, root)):
             yield s, rec
 
 
@@ -124,18 +159,31 @@ def load_all(
     return list(iter_records(source, root))
 
 
+def _jsonl_index_count(source: str, root: str | None = None) -> int | None:
+    """JSONL 主库的**旁路索引** `count`（等价于旧信封的 `count`；缺失 → None）。"""
+    p = raw_path(source, root).replace(".jsonl", ".index.json")
+    if not os.path.exists(p):
+        return None
+    try:
+        with open(p, encoding="utf-8") as f:
+            v = json.load(f).get("count")
+        return int(v) if isinstance(v, int) else None
+    except (OSError, ValueError, TypeError):
+        return None
+
+
 def verify_counts(source: str | None = None, root: str | None = None) -> dict[str, tuple[int, int]]:
     """完整性自校验：返回 {source: (实际记录数, raw 自带声明数)}。
 
-    判据来自 **raw 文件自身**（count / meta.count），不依赖外部冻结基线；
-    声明数缺失记为 -1（不判）。不一致即打印告警（不抛）。
+    判据来自 **raw 文件自身**（`.json`：count / meta.count；`.jsonl`：**旁路索引 count**，见 N-200/N-206），
+    不依赖外部冻结基线；声明数缺失记为 -1（不判）。不一致即打印告警（不抛）。
     """
     sources = [source] if source else list(RAW_FILES)
     result: dict[str, tuple[int, int]] = {}
     for s in sources:
-        doc = load_doc(s, root)
-        actual = len(_records_of(doc))
-        declared = _declared_count(doc)
+        p = raw_path(s, root)
+        actual = count_records(s, root)
+        declared = _jsonl_index_count(s, root) if p.endswith(".jsonl") else _declared_count(load_doc(s, root))
         result[s] = (actual, declared if declared is not None else -1)
     for s, (a, d) in result.items():
         if d >= 0 and a != d:

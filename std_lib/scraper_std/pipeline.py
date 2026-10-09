@@ -42,16 +42,88 @@ LOG = logging.getLogger("scraper_std.pipeline")
 
 
 def load_raw_records(path: str) -> list[dict[str, Any]]:
-    """读取原始 JSON（支持 list 或 {records/items: [...]} 封装）。"""
+    """读取原始数据（**.jsonl 与 .json 双格式；均流式解析**）。
+
+    N-206（2026-10-09，S-A）：**为何改流式**——原实现 `json.load(f)` 对 1GB 的 gov 主库实测
+    峰值 **RSS 5.24~6.13GB**（≈6× 体积：JSON 文本→对象膨胀 + 内部全量副本）。本函数是
+    **五源 clean 的唯一载入点** ⇒ 修在此处，五源（含 mof/nfra 各 117MB）同时降峰值。
+
+    支持形态（与旧实现语义一致）：
+      · `.jsonl`（S-A 新形态）：**首行 `_meta` 信封自动跳过**，其余每行一条记录；
+      · `.json`：数组，或 `{"records|items|data|results": [...]}` 封装 —— 用 `raw_decode`
+        **逐条**解析数组元素，不再构造整表副本。
+    """
+    if path.endswith(".jsonl"):
+        out: list[dict[str, Any]] = []
+        with open(path, encoding="utf-8") as f:
+            for line in f:
+                if not line.strip():
+                    continue
+                rec = json.loads(line)
+                if isinstance(rec, dict) and len(rec) == 1 and "_meta" in rec:
+                    continue                      # 信封行（单键 _meta）不算记录
+                out.append(rec)
+        return out
+    return _load_json_records_streaming(path)
+
+
+def _find_array_start(buf: str) -> int:
+    """在缓冲区中定位**记录数组**的 `[` 下标（-1 = 尚未出现）。
+
+    优先按信封键（records/items/data/results）定位 —— 直接取首个 `[` 会被**前面字符串值里的
+    方括号**误导（如 category 文案含 `[`）；裸数组（文件以 `[` 开头）才退化为首字符判定。
+    """
+    head = buf.lstrip()
+    if head.startswith("["):
+        return buf.index("[")
+    for key in ('"records"', '"items"', '"data"', '"results"'):
+        k = buf.find(key)
+        if k >= 0:
+            b = buf.find("[", k + len(key))
+            if b >= 0:
+                return b
+    return -1
+
+
+def _load_json_records_streaming(path: str) -> list[dict[str, Any]]:
+    """`.json` 原始数据的**流式**载入（数组/封装对象均支持；峰值与单条记录同阶）。"""
+    dec = json.JSONDecoder()
+    records: list[dict[str, Any]] = []
     with open(path, encoding="utf-8") as f:
-        data = json.load(f)
-    if isinstance(data, list):
-        return data
-    if isinstance(data, dict):
-        for k in ("records", "items", "data", "results"):
-            if isinstance(data.get(k), list):
-                return data[k]
-    raise ValueError(f"无法识别的原始数据格式：{path}")
+        buf = ""
+        start = -1
+        while start < 0:
+            chunk = f.read(1 << 20)
+            if not chunk:
+                raise ValueError(f"无法识别的原始数据格式：{path}")
+            buf += chunk
+            start = _find_array_start(buf)
+        buf = buf[start + 1:]
+        while True:
+            buf = buf.lstrip()
+            if buf.startswith(","):
+                buf = buf[1:]
+                continue
+            if buf.startswith("]"):
+                break
+            if not buf:
+                chunk = f.read(1 << 22)
+                if not chunk:
+                    break
+                buf += chunk
+                continue
+            try:
+                rec, end = dec.raw_decode(buf)
+            except ValueError:                     # 记录被分块截断 → 续读再解
+                chunk = f.read(1 << 22)
+                if not chunk:
+                    break
+                buf += chunk
+                continue
+            if isinstance(rec, dict):
+                records.append(rec)
+            buf = buf[end:]
+    return records
 
 
 def build_high_freq_dict(

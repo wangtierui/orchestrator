@@ -82,6 +82,16 @@ POLICY: tuple[dict, ...] = (
         "keep": 30,
     },
     {
+        # S-D（2026-10-09）：**logs 无上限**（实测 643.5MB / 580 文件；其中 4 个 27 天前的
+        # 巨型索引日志 `p2_idx.log`(276.7MB) / `z_idx.log` / `p2_idx2.log` / `f_idx.log`(各117.1MB)
+        # 合计 628MB = **97.6%**）。日志类**移动不释放磁盘** ⇒ 本条目 `delete: true` **真删**。
+        # 保留 14 天（对齐仓内 `reports/_tmp` 7 天与快照策略之间的折中；实测可捕获上述巨型日志）。
+        "name": "logs_stale",
+        "dir": "logs",
+        "keep_days": 14,
+        "delete": True,
+    },
+    {
         # N-100（2026-09-28）：清洗**隔离件**同源多份 → 按源**分组**保留最新 1 份。
         # 背景：`quarantine_triage`（N-93）实测 nfra 残留 09-26/09-27/09-28 三份（字节数相同）、
         # supp 仅 09-26 一份而 cleaned 已 09-28 → 历史隔离件未随快照轮转，使"当前问题量"被虚增、
@@ -274,13 +284,19 @@ def build_plan(*, include_baks: bool = False) -> dict:
             rows, st = _plan_dir(spec)
         stats[spec["name"]] = st
         for r in rows:
-            plan.append(
-                {
-                    **r,
-                    "category": spec["name"],
-                    "move_to": spec.get("move_to") or f"archive/{spec['name']}",
-                }
-            )
+            row = {
+                **r,
+                "category": spec["name"],
+                "move_to": spec.get("move_to") or f"archive/{spec['name']}",
+            }
+            # S-D（2026-10-09）：**显式删除**类别。原工具语义一律"移动到 archive"
+            # ——对**日志/快照**这类"移动不释放磁盘"的类别等于没治理（实测 logs 643.5MB 中
+            # 97.6% 是 4 个 27 天前的巨型索引日志）。故支持 `"delete": true`：
+            # 仍先入计划（可 dry-run 审阅、逐条写台账），`--apply` 时**真删**。
+            if spec.get("delete"):
+                row["delete"] = True
+                row.pop("move_to", None)
+            plan.append(row)
     rows, st = _plan_repo_baks(include_baks)
     stats["repo_baks"] = st
     for r in rows:
@@ -289,10 +305,19 @@ def build_plan(*, include_baks: bool = False) -> dict:
 
 
 def apply_plan(plan: dict) -> dict:
-    """执行归档（**移动**，不删除）。返回 {moved, failed, dests}。"""
+    """执行计划：默认**移动**到 archive；`delete: true` 的条目**删除**。返回 {moved, deleted, failed, dests}。"""
     moved, failed, dests = 0, [], {}
+    deleted = 0
     for row in plan["plan"]:
         src = os.path.join(paths.ROOT, row["file"].replace("/", os.sep))
+        if row.get("delete"):
+            try:
+                os.remove(src)
+                dests[row["file"]] = "(deleted)"
+                deleted += 1
+            except OSError as e:
+                failed.append({"file": row["file"], "error": f"{type(e).__name__}: {e}"})
+            continue
         dest_dir = row["move_to"]
         dest_dir = dest_dir if os.path.isabs(dest_dir) else os.path.join(paths.ROOT, dest_dir)
         try:
@@ -306,7 +331,7 @@ def apply_plan(plan: dict) -> dict:
             moved += 1
         except OSError as e:
             failed.append({"file": row["file"], "error": f"{type(e).__name__}: {e}"})
-    return {"moved": moved, "failed": failed, "dests": dests}
+    return {"moved": moved, "deleted": deleted, "failed": failed, "dests": dests}
 
 
 def write_ledger(res: dict) -> str:
@@ -345,10 +370,12 @@ def main(argv=None) -> int:
         if res["applied"]:
             print(
                 f"[retention] 已归档 {res['applied']['moved']} 项 → archive/；"
+                f"**已删除 {res['applied'].get('deleted', 0)} 项**（delete 类别）；"
                 f"失败 {len(res['applied']['failed'])}"
             )
         else:
-            print("[retention] 未动文件（默认 dry-run）；确认后加 --apply（**只移动不删除**）")
+            print("[retention] 未动文件（默认 dry-run）；确认后加 --apply"
+                  "（普通类别**只移动**到 archive/，`delete: true` 类别**真删**）")
         print(f"[retention] 台账：{_rel(fp)}")
     return ExitCode.OK
 

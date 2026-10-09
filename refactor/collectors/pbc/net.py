@@ -34,8 +34,8 @@ _RESP_TEXT = None  # TextResponseCache 实例；None 表示未启用缓存
 _OfflineMiss = OfflineMiss  # 兼容别名
 
 # N-167：`_cache_ep` 的唯一实现在 std_lib/scraper_std/cache_store.py；别名导入保持调用点不变。
-from std_lib.scraper_std.cache_store import url_endpoint_key as _cache_ep
 from std_lib.scraper_std.cache_store import docs_root
+from std_lib.scraper_std.cache_store import url_endpoint_key as _cache_ep
 from std_lib.scraper_std.doc_convert import find_libreoffice
 
 LO_PATH = find_libreoffice()

@@ -70,6 +70,15 @@ BACKUP_ROOT = os.path.join(ROOT, "backups")
 #: 只处理**文件**（`os.path.isfile`）⇒ **目录型快照从未被任何策略回收**（长期静默增长）。
 #: 保留数 **1**：与同仓 N-100「分组保留 1 份」口径一致（`retention.py` 的 `clean_quarantine_stale`）
 #: —— "回滚点"只需"最近一次写回之前的状态"，更早的已被后续快照覆盖，无独立价值。
+#: **S-E 处置（2026-10-09）**：保留数可经环境变量 `SCRAPERS_BACKUP_KEEP` 覆盖（默认 1）——
+#: 连续多轮异常回写场景下可临时调到 2（代价 ≈2GB/组），无需改代码重发。
+def _backup_keep() -> int:
+    try:
+        return max(1, int(os.environ.get("SCRAPERS_BACKUP_KEEP", BACKUP_KEEP) or BACKUP_KEEP))
+    except ValueError:
+        return BACKUP_KEEP
+
+
 BACKUP_KEEP = 1
 
 
@@ -85,7 +94,7 @@ def _snapshot_source(d: str) -> str:
     return "?"
 
 
-def _cleanup_backups(keep: int = BACKUP_KEEP) -> list[str]:
+def _cleanup_backups(keep: int | None = None) -> list[str]:
     """按 **(tag, 源)** 保留最新 `keep` 份快照，其余删除（返回被删目录名供审计）。
 
     ⚠️ 分组口径的两次修正（均由 dry-run 实测暴露，务必保留注释）：
@@ -96,7 +105,9 @@ def _cleanup_backups(keep: int = BACKUP_KEEP) -> list[str]:
       最终口径：**按 (tag, 源) 分组、组内按时间保留最新 `keep` 份**——回滚需求本就是"按源回滚"，
       分组与需求同构，且对运行次数/间隔不敏感（无歧义）。
     容错：任何删除失败只忽略（备份清理**不得**阻断回写主流程）。
+    `keep=None` 时取 `_backup_keep()`（默认 1，可经环境变量 `SCRAPERS_BACKUP_KEEP` 覆盖 —— S-E 处置）。
     """
+    keep = _backup_keep() if keep is None else keep
     groups: dict[tuple[str, str], list[tuple[float, str]]] = {}
     for d in glob.glob(os.path.join(BACKUP_ROOT, "cleaned_before_*")):
         if not os.path.isdir(d):
@@ -301,8 +312,8 @@ def writeback_source(source: str, fields_for, *, dry_run: bool = False,
         _pruned = _cleanup_backups()
         if _pruned:
             stat["backup_pruned"] = _pruned
-            LOG.info("备份快照超出保留上限（每组 %d 份）→ 清理 %d 个：%s",
-                     BACKUP_KEEP, len(_pruned), ", ".join(_pruned[:6]))
+            LOG.info("备份快照超出保留上限（每组 %d 份，可经 SCRAPERS_BACKUP_KEEP 覆盖）→ 清理 %d 个：%s",
+                     _backup_keep(), len(_pruned), ", ".join(_pruned[:6]))
 
     # 写 jsonl（原子）：tmp 已在上面**流式**写完，此处只做替换
     os.replace(tmp, jf)

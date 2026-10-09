@@ -17,10 +17,11 @@ del _GUIDE_ROOT, _os, _sys
 import logging
 import os
 import re
-import sys
 from urllib.parse import urljoin
 
-from ..base import REPO_ROOT as _ORCH_ROOT  # orchestrator 根（仓库根已在上文第 13-15 行插入 sys.path）
+from ..base import (
+    REPO_ROOT as _ORCH_ROOT,  # orchestrator 根（仓库根已在上文第 13-15 行插入 sys.path）
+)
 
 # ⚠️ local_path 相对基址固定为 regulatory_scrapers（与旧 collectors/ 位置一致，字节兼容）。
 SCRAPERS_ROOT = os.path.join(_ORCH_ROOT, "modules", "regulatory_scrapers")

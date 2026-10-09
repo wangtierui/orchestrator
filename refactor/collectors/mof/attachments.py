@@ -7,6 +7,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+
 from . import net
 
 logger = logging.getLogger("mof_scraper")

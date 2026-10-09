@@ -7,7 +7,7 @@
   `https://www.gov.cn/zhengce/zhengceku/`（列表 `bmwj/home.htm`，629 页 × 28 条）从未纳入采集**，
   导致该栏目下的规范性文件在 gov 源完全缺采；且该栏目详情页正文常以附件（.doc/.pdf）形式发布，
   页面正文为空或仅一个文件名，不抓附件则正文仅数十字，无法支撑条款级引用核验。
-  本模块把该栏目补齐为 gov 源的第 2 个子源，产物并入 gov 主库 `gov_laws.json`，
+  本模块把该栏目补齐为 gov 源的第 2 个子源，产物并入 gov 主库 `gov_laws.jsonl`（N-206/S-A 起为 JSONL），
   由统一清洗管道 `clean/run_clean_pipeline.py --project gov` 正常消费。
 
 【与 gov 主链的契约一致性（务必遵守）】

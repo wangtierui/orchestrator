@@ -81,7 +81,7 @@ COLLECT_CMD = {
     #     ⇒ 周度空转 20+ 分钟（实测单轮 collect:gov 2394.9s，其中绝大部分是"已知页"翻页）。
     # 故拆为**独立步骤**，各自 argv / 超时 / 步骤日志 / 采集统计 / 失败隔离（互不拖累），
     # 且均可**单独调用与排程**（`--collect gov_xzfgk` / `--collect gov_zhengceku`）⇒ 单独维护与扩展。
-    # **整体流程一致性**的落点：两者写**同一主库** `gov_laws.json`（`--resume` 合并、detail_url 去重、
+    # **整体流程一致性**的落点：两者写**同一主库** `gov_laws.jsonl`（`--resume` 合并、detail_url 去重、
     #   新优先）⇒ 下游 clean/apply/classify/… **零改动**；并用 `--env-source/--env-category`
     #   固定信封为 gov（否则"最后一个子源"会覆盖主库信封的 source/category 标识）。
     # `--max-seconds`（**软预算**，N-190）＝ 硬超时 − **收尾余量**（载入主库 + 合并 + 1GB 原子写，
@@ -129,7 +129,10 @@ COLLECT_TIMEOUT = {
     "pbc": 3600,
 }
 RAW_JSON = {
-    "gov": "gov_laws.json",
+    # S-A（N-206，2026-10-09）：gov 主库**改为 JSONL**（`gov_laws.jsonl`，首行 `_meta` 信封）。
+    # 动因：`.json` 单数组解析 1GB 主库实测峰值 **5.24~6.13GB**（≈6× 体积）；JSONL 读写均可**流式**
+    # ⇒ 峰值与语料体积解耦（`load_raw_records` 与 `MasterView` 均已支持双格式，迁移期不中断）。
+    "gov": "gov_laws.jsonl",
     "mof": "mof_laws.json",
     "nfra": "nfra_regulations.json",
     "pbc": "pbc_laws.json",

@@ -20,22 +20,26 @@ import logging
 import os
 import random
 import re
-import sys
 import threading
 import time
 import urllib.error
 import urllib.parse
 import urllib.request
-from datetime import datetime, timezone
-UTC = timezone.utc
+from datetime import UTC
+
+UTC = UTC
 
 try:
     from std_lib.scraper_std.crawler_common import (
         USER_AGENTS as CC_USER_AGENTS,
+    )
+    from std_lib.scraper_std.crawler_common import (
         extract_document_text,
         rich_object_fields,
-        safe_filename as _cc_safe_filename,
         structured_table_fields,
+    )
+    from std_lib.scraper_std.crawler_common import (
+        safe_filename as _cc_safe_filename,
     )
 except ImportError:  # pragma: no cover
     CC_USER_AGENTS = [
