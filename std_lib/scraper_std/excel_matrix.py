@@ -43,6 +43,7 @@ from __future__ import annotations
 
 import datetime
 import io
+import logging
 import re
 from dataclasses import dataclass
 
@@ -197,14 +198,54 @@ def _cell_to_value(v):
     return v
 
 
+#: 表格矩阵的**内容边界**与硬上限（N-208，2026-10-09，批 49）。
+#:
+#: 为何必需（实测同一 xlsx 的根因）：`"药品儿童专用"规则对应知识药品代码` 表
+#: **声明 `4374×16384 = 71,665,278 格`**，而**有值单元格仅 10,923**（非空率 0.015%）。
+#: 原实现按声明维度逐格 `ws.cell()` 建满二维矩阵 ⇒ 内存与耗时双爆（同源问题在
+#: `crawler_common._extract_xlsx` 已致单条 cleaned 记录 279MB）。
+#: 现按**有值单元格**求真实边界，并保留硬上限兜底（超限记 WARNING，不静默改语义）。
+MATRIX_MAX_ROWS = 200_000
+MATRIX_MAX_COLS = 1_024
+
+LOG = logging.getLogger(__name__)
+
+
+def _content_bounds(ws) -> tuple[int, int]:
+    """工作表**有值单元格**的真实边界 `(max_row, max_col)`。
+
+    ⚠️ 不能只看"存在的单元格"边界：本仓实测文件在第 **16384** 列存在**空但带样式**的单元格
+    ⇒ 键的边界**不紧致**（会再次退化为满网格展开）。故必须按 `value is not None` 判定。
+    私有属性 `_cells` 带 `getattr` 兜底：拿不到即退回声明维度（再由上限二次约束）。
+    """
+    cells = getattr(ws, "_cells", None)
+    if isinstance(cells, dict) and cells:
+        rr = cc = 0
+        for (r, c), cell in cells.items():
+            if getattr(cell, "value", None) is not None:
+                if r > rr:
+                    rr = r
+                if c > cc:
+                    cc = c
+        if rr and cc:
+            return rr, cc
+    return ws.max_row or 0, ws.max_column or 0
+
+
 def _read_xlsx_bytes(data: bytes):
     wb = openpyxl.load_workbook(io.BytesIO(data), data_only=True, read_only=False)
     out = []
     for ws in wb.worksheets:
-        max_row, max_col = ws.max_row or 0, ws.max_column or 0
+        r_max, c_max = _content_bounds(ws)
+        if r_max > MATRIX_MAX_ROWS or c_max > MATRIX_MAX_COLS:
+            LOG.warning("[excel] 表 %r 内容边界 %d×%d 超上限，按 %d×%d 截断（N-208）",
+                        ws.title, r_max, c_max, min(r_max, MATRIX_MAX_ROWS),
+                        min(c_max, MATRIX_MAX_COLS))
+            r_max = min(r_max, MATRIX_MAX_ROWS)
+            c_max = min(c_max, MATRIX_MAX_COLS)
         matrix = [
-            [_cell_to_value(ws.cell(row=r, column=c).value) for c in range(1, max_col + 1)]
-            for r in range(1, max_row + 1)
+            [_cell_to_value(v) for v in row]
+            for row in ws.iter_rows(min_row=1, max_row=r_max, max_col=c_max, values_only=True)
         ]
         merged = [
             MergedRegion(mc.min_row - 1, mc.min_col - 1, mc.max_row - 1, mc.max_col - 1)
@@ -220,9 +261,12 @@ def _read_xls_bytes(data: bytes):
     out = []
     for si in range(book.nsheets):
         sh = book.sheet_by_index(si)
-        matrix = [
-            [_cell_to_value(sh.cell_value(r, c)) for c in range(sh.ncols)] for r in range(sh.nrows)
-        ]
+        nrows = min(sh.nrows, MATRIX_MAX_ROWS)          # N-208：同样的硬上限兜底
+        ncols = min(sh.ncols, MATRIX_MAX_COLS)
+        if nrows != sh.nrows or ncols != sh.ncols:
+            LOG.warning("[excel] 表 %r 声明 %d×%d 超上限，按 %d×%d 截断（N-208）",
+                        sh.name, sh.nrows, sh.ncols, nrows, ncols)
+        matrix = [[_cell_to_value(sh.cell_value(r, c)) for c in range(ncols)] for r in range(nrows)]
         merged = [
             MergedRegion(rlo, clo, rhi - 1, chi - 1) for (rlo, rhi, clo, chi) in sh.merged_cells
         ]

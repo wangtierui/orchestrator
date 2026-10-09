@@ -157,9 +157,107 @@ def test_master_view_accepts_legacy_json(gp, tmp_path) -> None:
 
 
 # --------------------------------------------------------------------------- #
+# ⑤ 批 49（T1）：四源 raw 统一 JSONL 的**读写助手**
+# --------------------------------------------------------------------------- #
+def test_resolve_raw_path_dual(tmp_path) -> None:
+    """历史 `.json` 名 → 实际存在的 `.jsonl`；反向亦成立；两者都不存在则原样返回。"""
+    from std_lib.scraper_std import pipeline as pipe
+
+    jl = tmp_path / "mof_laws.jsonl"
+    jl.write_text('{"_meta": {"source": "mof"}}\n', encoding="utf-8")
+    assert pipe.resolve_raw_path(str(tmp_path / "mof_laws.json")).endswith("mof_laws.jsonl")
+    assert pipe.resolve_raw_path(str(jl)).endswith(".jsonl")
+    js = tmp_path / "only.json"
+    js.write_text("[]", encoding="utf-8")
+    assert pipe.resolve_raw_path(str(js)).endswith("only.json"), "旧 .json 仍在时应原样命中"
+    assert pipe.resolve_raw_path(str(tmp_path / "none.json")).endswith("none.json")
+
+
+def test_write_and_read_raw_jsonl_roundtrip(tmp_path) -> None:
+    """`write_raw_jsonl`：首行 `_meta` 信封 + 一行一记录 + 原子（无 .tmp 残留）；读回等价。"""
+    from std_lib.scraper_std import pipeline as pipe
+
+    recs = [{"a": 1, "title": "甲"}, {"b": [1, 2], "title": "乙"}]
+    p = pipe.write_raw_jsonl(str(tmp_path / "mof_laws.json"), recs, source="mof",
+                             meta={"count": 2, "errors": []})
+    assert p.endswith("mof_laws.jsonl") and not os.path.exists(p + ".tmp")
+    head = json.loads(open(p, encoding="utf-8").readline())
+    assert head["_meta"]["source"] == "mof" and head["_meta"]["count"] == 2 \
+        and head["_meta"]["errors"] == [] and head["_meta"]["format"] == "jsonl/1"
+    assert pipe.read_raw_records(str(tmp_path / "mof_laws.json")) == recs, \
+        "按历史 .json 名也应读到（助手内部解析）"
+
+
+def test_read_raw_records_supports_bare_array_and_items(tmp_path) -> None:
+    """兼容历史形态：裸数组（pbc/supp 旧态）与 `items` 封装（mof 旧态）。"""
+    from std_lib.scraper_std import pipeline as pipe
+
+    bare = tmp_path / "pbc_laws.jsonl"
+    bare.write_text('{"_meta": {}}\n{"t": 1}\n{"t": 2}\n', encoding="utf-8")
+    assert [r["t"] for r in pipe.read_raw_records(str(bare))] == [1, 2]
+    wrapped = tmp_path / "old.json"
+    wrapped.write_text(json.dumps({"count": 2, "items": [{"t": 3}, {"t": 4}]}), encoding="utf-8")
+    assert [r["t"] for r in pipe.read_raw_records(str(wrapped))] == [3, 4]
+
+
+# --------------------------------------------------------------------------- #
+# ⑥ 批 49（N-208）：XLSX 抽取**按内容裁剪 + 上限**（防"声明维度空网格"爆量）
+# --------------------------------------------------------------------------- #
+def _mk_xlsx(tmp_path, *, far_cell: bool, rows: int = 3):
+    """造一个 xlsx；`far_cell=True` 时在远端列放一个单元格以**抬高声明维度**（复现真实缺陷）。"""
+    import openpyxl
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws["A1"] = "序号"
+    ws["B1"] = "名称"
+    for r in range(2, rows + 1):
+        ws.cell(row=r, column=1, value=r - 1)
+        ws.cell(row=r, column=2, value="药品%s" % (r - 1))
+    if far_cell:
+        ws.cell(row=rows + 1, column=600, value="")   # 空值但存在 ⇒ 声明维度被抬到 600 列
+    p = tmp_path / ("far.xlsx" if far_cell else "plain.xlsx")
+    wb.save(p)
+    return str(p)
+
+
+def test_xlsx_extract_trims_declared_dimension(tmp_path) -> None:
+    """**回归守卫**：声明维度被抬高（600 列）时，抽取文本仍只含**有值内容**（不得按声明展开）。"""
+    from std_lib.scraper_std.crawler_common import extract_document_text
+
+    plain = extract_document_text(open(_mk_xlsx(tmp_path, far_cell=False), "rb").read(), "a.xlsx")
+    far = extract_document_text(open(_mk_xlsx(tmp_path, far_cell=True), "rb").read(), "b.xlsx")
+    t_far = far.get("text") or ""
+    assert far.get("extracted") and "药品1" in t_far
+    assert len(t_far) < 200, "远端空单元格不得把文本撑大（实测真实文件曾抽出 71,769,545 字符）"
+    assert abs(len(t_far) - len(plain.get("text") or "")) < 40, "与无远端单元格时基本等长"
+
+
+def test_xlsx_extract_has_char_cap(tmp_path, monkeypatch) -> None:
+    """上限生效且**显式标注**（不静默丢）。"""
+    from std_lib.scraper_std import crawler_common as cc
+
+    monkeypatch.setattr(cc, "XLSX_MAX_CHARS", 80)
+    p = _mk_xlsx(tmp_path, far_cell=False, rows=40)
+    ex = cc.extract_document_text(open(p, "rb").read(), "c.xlsx")
+    t = ex.get("text") or ""
+    assert "表格超限" in t and len(t) < 400, "应截断并带标注"
+
+
+# --------------------------------------------------------------------------- #
 # ④ 契约：RAW_JSON 指向 JSONL
 # --------------------------------------------------------------------------- #
 def test_raw_json_points_to_jsonl() -> None:
-    """链侧事实源口径必须指向 JSONL（否则 `_raw_size`/clean 超时按旧文件取大小）。"""
+    """链侧事实源口径必须指向 JSONL（否则 `_raw_size`/clean 超时按旧文件取大小）。
+
+    批 49（T1）：**五源全部**统一为 JSONL（gov 批 47 已迁；mof/nfra/pbc/supp 本批迁移）。
+    """
+    from config.enums import SOURCE_ORDER  # 受控枚举：不得在测试里写源集合字面量（门禁 v3）
+
     rpr = _load(os.path.join("tools", "run_production_refresh.py"), "_rpr_jsonl")
-    assert rpr.RAW_JSON["gov"] == "gov_laws.jsonl"
+    for src in SOURCE_ORDER:
+        assert rpr.RAW_JSON[src].endswith(".jsonl"), src
+    clean = _load(os.path.join("modules", "regulatory_scrapers", "clean",
+                               "run_clean_pipeline.py"), "_clean_jsonl")
+    for src in SOURCE_ORDER:
+        assert clean.RAW_MASTER_NAMES[src].endswith(".jsonl"), src

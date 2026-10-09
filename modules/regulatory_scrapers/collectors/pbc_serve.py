@@ -32,11 +32,16 @@ if _GUIDE_ROOT not in _sys.path:
     _sys.path.insert(0, _GUIDE_ROOT)
 del _GUIDE_ROOT, _os, _sys
 import argparse
+import json
 import os
 import re
 import urllib.parse
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
+
+from std_lib.scraper_std.pipeline import (  # 批 49/T1：raw 统一 JSONL 读写助手
+    read_raw_records,
+)
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "raw")
 
@@ -80,6 +85,16 @@ class RangeHTTPRequestHandler(SimpleHTTPRequestHandler):
     def translate_path(self, path):
         # 完全自管解析，不走父类（避免双重解码/前缀逻辑差异）
         r = resolve_safe(path)
+        # 批 49/T1：raw 已统一 JSONL ⇒ 预览页 `fetch('pbc_laws.json')` 需要 .json 视图；
+        # 此处**按需生成**只读视图（JSONL 仍是唯一权威事实源；生成失败则照常 404）。
+        if r is not None and not os.path.exists(r) and r.endswith(".json"):
+            _jl = r[:-5] + ".jsonl"
+            if os.path.exists(_jl):
+                try:
+                    with open(r, "w", encoding="utf-8") as _f:
+                        json.dump(read_raw_records(_jl), _f, ensure_ascii=False, indent=2)
+                except Exception:  # noqa: BLE001  预览降级：生成失败即维持 404
+                    pass
         return r if r is not None else os.path.join(ROOT, "__NOPE__")
 
     def guess_type(self, path):

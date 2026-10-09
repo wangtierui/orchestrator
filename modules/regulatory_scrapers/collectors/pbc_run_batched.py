@@ -16,11 +16,14 @@ _GUIDE_ROOT = _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(_
 if _GUIDE_ROOT not in _sys.path:
     _sys.path.insert(0, _GUIDE_ROOT)
 del _GUIDE_ROOT, _os, _sys
-import json
 import os
 import subprocess
 import sys
 import time
+
+from std_lib.scraper_std.pipeline import (  # 批 49/T1：raw 统一 JSONL 读写助手
+    read_raw_records,
+)
 
 # R-2（2026-09-30）拾取节流/冷却**具名常量**（原为裸字面量）：裸数值无法区分
 #   『限速』『预热』『重试退避』三者。此处均为**预热与冷却**，非速率控制 ——
@@ -37,7 +40,7 @@ MAX_ITERS = 400
 
 def remaining():
     try:
-        d = json.load(open(JSON, encoding="utf-8"))
+        d = read_raw_records(JSON)
     except Exception:  # noqa: BLE001
         return -1
     return sum(1 for r in d

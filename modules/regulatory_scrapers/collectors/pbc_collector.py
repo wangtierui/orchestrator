@@ -46,7 +46,6 @@ if _GUIDE_ROOT not in _sys.path:
 del _GUIDE_ROOT, _os, _sys
 import argparse
 import csv
-import json
 import os
 import random
 import re
@@ -55,6 +54,12 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+
+from std_lib.scraper_std.pipeline import (  # 批 49/T1：raw 统一 JSONL 读写助手
+    read_raw_records,
+    resolve_raw_path,
+    write_raw_jsonl,
+)
 
 # 通用缓存模块（五源统一抽象层：std_lib/scraper_std/cache_store，2026-09-05）
 # pbc 列表/详情页均为静态 HTML → 委托 TextResponseCache（存储 HTML 文本）；
@@ -622,10 +627,9 @@ def scrape_category(cat, fetcher, args, done_urls, existing_map=None):
 
 def save_outputs(records, out_dir, write_csv=False):
     os.makedirs(out_dir, exist_ok=True)
-    json_path = os.path.join(out_dir, "pbc_laws.json")
     csv_path = os.path.join(out_dir, "pbc_laws.csv")
-    with open(json_path, "w", encoding="utf-8") as f:
-        json.dump(records, f, ensure_ascii=False, indent=2)
+    # 批 49/T1：raw 统一 JSONL（流式 + 首行 `_meta`；原为**裸数组**整表 json.dump）
+    json_path = write_raw_jsonl(os.path.join(out_dir, "pbc_laws.json"), records, source="pbc")
     if write_csv:                                 # 默认仅 JSON 主库（2026-09-09 规范）
         fields = ["category", "title", "detail_url", "link_type", "file_type", "local_path",
                   "publish_date", "document_number", "issuing_authority",
@@ -681,10 +685,9 @@ def main():
     done_urls = set()
     existing_map = {}
     out_json = os.path.join(args.out, "pbc_laws.json")
-    if os.path.exists(out_json):
+    if os.path.exists(resolve_raw_path(out_json)):
         try:
-            with open(out_json, encoding="utf-8") as f:
-                existing = json.load(f)
+            existing = read_raw_records(out_json)   # 批 49/T1：双格式（JSONL 优先）
             for r in existing:
                 if r.get("fetch_status") == "ok":
                     done_urls.add(r["detail_url"])

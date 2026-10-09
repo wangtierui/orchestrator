@@ -93,10 +93,10 @@ def _latest_raw_master(scrapers_root: str) -> list[dict]:
     raw_dir = os.path.join(scrapers_root, "data", "raw")
     names = [
         "gov_laws.jsonl",        # S-A（N-206）：gov 主库改 JSONL
-        "mof_laws.json",
-        "nfra_regulations.json",
-        "pbc_laws.json",
-        "supplementary_regulations.json",
+        "mof_laws.jsonl",
+        "nfra_regulations.jsonl",
+        "pbc_laws.jsonl",
+        "supplementary_regulations.jsonl",
     ]
     out = []
     for n in names:

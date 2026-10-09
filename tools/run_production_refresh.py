@@ -133,10 +133,10 @@ RAW_JSON = {
     # 动因：`.json` 单数组解析 1GB 主库实测峰值 **5.24~6.13GB**（≈6× 体积）；JSONL 读写均可**流式**
     # ⇒ 峰值与语料体积解耦（`load_raw_records` 与 `MasterView` 均已支持双格式，迁移期不中断）。
     "gov": "gov_laws.jsonl",
-    "mof": "mof_laws.json",
-    "nfra": "nfra_regulations.json",
-    "pbc": "pbc_laws.json",
-    "supp": "supplementary_regulations.json",
+    "mof": "mof_laws.jsonl",
+    "nfra": "nfra_regulations.jsonl",
+    "pbc": "pbc_laws.jsonl",
+    "supp": "supplementary_regulations.jsonl",
 }
 RAW_DIR = os.path.join(SCRAPERS, "data", "raw")
 CLS_DATA = os.path.join(CLASSIFIER, "data")

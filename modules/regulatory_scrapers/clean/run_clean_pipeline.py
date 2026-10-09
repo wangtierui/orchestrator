@@ -46,10 +46,10 @@ SCHEMA_FAIL_RATE_MAX = 0.02
 #    不改写历史；链侧事实源口径以 `tools/run_production_refresh.RAW_JSON` 为准。
 RAW_MASTER_NAMES: dict[str, str] = {
     "gov": "gov_laws.jsonl",
-    "mof": "mof_laws.json",
-    "nfra": "nfra_regulations.json",
-    "pbc": "pbc_laws.json",
-    "supp": "supplementary_regulations.json",
+    "mof": "mof_laws.jsonl",
+    "nfra": "nfra_regulations.jsonl",
+    "pbc": "pbc_laws.jsonl",
+    "supp": "supplementary_regulations.jsonl",
 }
 LEGAL_PROJECTS = set(RAW_MASTER_NAMES)
 

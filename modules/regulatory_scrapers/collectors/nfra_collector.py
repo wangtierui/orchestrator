@@ -59,6 +59,12 @@ import urllib.parse
 import urllib.request
 from datetime import datetime
 
+from std_lib.scraper_std.pipeline import (  # 批 49/T1：raw 统一 JSONL 读写助手
+    read_raw_records,
+    resolve_raw_path,
+    write_raw_jsonl,
+)
+
 # 确保项目根（含 std_lib 包）在 sys.path，使 `from std_lib.scraper_std.crawler_common import` 可达
 _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _ROOT not in sys.path:
@@ -514,11 +520,10 @@ def scrape(args):
     # 读现有主库（out_dir/nfra_regulations.json）并入缺失 doc_id，记录整体复用保留正文。
     _master_path = os.path.join(out_dir, "nfra_regulations.json")
     _master_map = {}
-    if os.path.exists(_master_path):
+    if os.path.exists(resolve_raw_path(_master_path)):
         try:
-            with open(_master_path, encoding="utf-8") as _fh:
-                _md = json.load(_fh)
-            for _mr in (_md.get("records") or []):
+            # 批 49/T1：raw 已统一 JSONL —— 双格式读取（原为整表 json.load）
+            for _mr in read_raw_records(_master_path):
                 if _mr.get("doc_id") is not None:
                     _master_map[str(_mr["doc_id"])] = _mr
         except Exception as _e:  # noqa: BLE001
@@ -626,19 +631,16 @@ def scrape(args):
         sleep_between(args.delay_min, args.delay_max)
 
     print("[4/4] 写出结构化结果 ...", flush=True)
-    json_path = os.path.join(out_dir, "nfra_regulations.json")
-    with open(json_path, "w", encoding="utf-8") as f:
-        json.dump({
-            "meta": {
-                "source": BASE,
-                "parent_item": PARENT_ITEM_ID,
-                "captured_at": datetime.now().isoformat(timespec="seconds"),
-                "total_records": len(records),
-                "error_count": len(errors),
-            },
-            "records": records,
+    # 批 49/T1：raw 统一 JSONL（首行 `_meta` 信封）；原信封 meta 与 errors 全量保进信封，不丢信息
+    json_path = write_raw_jsonl(
+        os.path.join(out_dir, "nfra_regulations.json"), records, source=BASE,
+        meta={
+            "parent_item": PARENT_ITEM_ID,
+            "captured_at": datetime.now().isoformat(timespec="seconds"),
+            "total_records": len(records),
+            "error_count": len(errors),
             "errors": errors,
-        }, f, ensure_ascii=False, indent=2)
+        })
 
     csv_path = ""  # 默认仅 JSON 主库（2026-09-09 规范）；--csv 时输出 CSV
     if getattr(args, "csv", False):

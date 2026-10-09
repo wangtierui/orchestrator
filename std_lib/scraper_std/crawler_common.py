@@ -553,17 +553,54 @@ def _docx_lib_available() -> bool:
         return False
 
 
+#: XLSX 文本抽取的**内容边界与上限**（N-208，2026-10-09，批 49）。
+#:
+#: 为何必需（实测根因）：某公告 xlsx 的第 2 张表**声明 `max_col=16384`**（实际仅 6 列有值，
+#: 全表声明 4374×16384 = **71,665,278 格**而**非空仅 10,923**，非空率 **0.015%**）。
+#: 原实现 `for r in ws.iter_rows(values_only=True)` **按声明维度展开**（openpyxl 会为每行补齐到
+#: 声明列宽）⇒ 抽出 **71,769,545 字符**（其中 **99.2% 是单元格分隔制表符**）⇒ 单条 cleaned 记录被撑到
+#: **279MB**（占 gov 语料 **24.6%**），并让任何触碰该源的步骤付出 GB 级瞬时内存与 8 倍快照/备份复制。
+#:
+#: 修法（**按内容裁剪 + 显式上限**，不改语义）：
+#:   ① 每行**右裁空单元格**——本 bug 的主因（16384 列声明 vs 6 列有值）；
+#:   ② **连续空行**达 `XLSX_MAX_EMPTY_ROWS` 即视为表尾（防声明行数虚高；内部空行仍保留最多 2 行以便分块）；
+#:   ③ 单附件文本上限 `XLSX_MAX_CHARS`，超出**截断并在文本尾部显式标注**（可审计，不静默丢）。
+XLSX_MAX_CHARS = 2_000_000
+XLSX_MAX_EMPTY_ROWS = 60
+XLSX_MAX_ROWS = 200_000
+
+
 def _extract_xlsx(data: bytes) -> dict[str, Any]:
     try:
         import openpyxl
 
         wb = openpyxl.load_workbook(__import__("io").BytesIO(data), data_only=True, read_only=True)
-        rows = []
+        rows: list[str] = []
+        total = 0
+        truncated = False
         for ws in wb.worksheets:
-            for r in ws.iter_rows(values_only=True):
+            empty_streak = 0
+            for ri, r in enumerate(ws.iter_rows(values_only=True), 1):
+                if ri > XLSX_MAX_ROWS or total >= XLSX_MAX_CHARS:
+                    truncated = True
+                    break
                 cells = ["" if c is None else str(c) for c in r]
-                rows.append("\t".join(cells))
+                while cells and cells[-1] == "":          # ① 右裁空列（本 bug 主因）
+                    cells.pop()
+                if not cells:
+                    empty_streak += 1
+                    if empty_streak >= XLSX_MAX_EMPTY_ROWS:  # ② 视为表尾
+                        break
+                    if empty_streak <= 2:                  # 保留最多 2 个空行（块间分隔仍可辨）
+                        rows.append("")
+                    continue
+                empty_streak = 0
+                line = "\t".join(cells)
+                rows.append(line)
+                total += len(line) + 1
         text = "\n".join(rows)
+        if truncated:
+            text += "\n[表格超限：已按上限 %d 字符截断]" % XLSX_MAX_CHARS
         if text.strip():
             return {"text": text.strip(), "extracted": True, "extract_status": "ok"}
     except ImportError:
@@ -577,6 +614,9 @@ def _extract_xlsx(data: bytes) -> dict[str, Any]:
             if "xl/sharedStrings.xml" in names:
                 xml = z.read("xl/sharedStrings.xml").decode("utf-8", "replace")
                 strings = re.findall(r"<t[^>]*>(.*?)</t>", xml, re.S)
+                # N-208：零依赖回退路径同样**受上限约束**（共享串表也可能被异常文件撑爆）
+                while sum(len(s) for s in strings) > XLSX_MAX_CHARS and strings:
+                    strings = strings[: int(len(strings) * 0.9)] or strings[:-1]
                 text = "\n".join(strings)
                 if text.strip():
                     return {

@@ -25,10 +25,15 @@ if _GUIDE_ROOT not in _sys.path:
     _sys.path.insert(0, _GUIDE_ROOT)
 del _GUIDE_ROOT, _os, _sys
 import datetime as _dt
-import json
 import os
 import shutil
 import sys
+
+from std_lib.scraper_std.pipeline import (  # 批 49/T1：raw 统一 JSONL 读写助手
+    read_raw_records,
+    resolve_raw_path,
+    write_raw_jsonl,
+)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(HERE)
@@ -69,7 +74,7 @@ def main() -> int:
     shutil.copy2(RAW, bak)
     print(f"[fix] 备份 raw → {bak}")
 
-    data = json.load(open(RAW, encoding="utf-8"))
+    data = read_raw_records(RAW)
 
     def find(title_kw):
         for r in data:
@@ -106,7 +111,7 @@ def main() -> int:
     r = find("财产再保险比例及非比例合同范本")
     prop_pdf = os.path.join(TMP, "prop.pdf")
     nonprop_pdf = os.path.join(TMP, "nonprop.pdf")
-    if not (os.path.exists(prop_pdf) and os.path.exists(nonprop_pdf)):
+    if not (os.path.exists(resolve_raw_path(prop_pdf)) and os.path.exists(resolve_raw_path(nonprop_pdf))):
         print("[fix] I2 错误：tmp/iachina 下未找到已下载的 PDF，请先下载", file=sys.stderr)
         return ExitCode.FAIL
     prop_txt = extract_pdf(prop_pdf)
@@ -144,7 +149,7 @@ def main() -> int:
     r.setdefault("_raw_fields", {})["官方核验说明"] = "正文由 iachina.cn 两份 PDF 抽取回填（比例/非比例合同范本）"
     print(f"[fix] I2 再保险合同范本：body_text 回填 {len(combined)} 字；PDF 落盘 {prop_name} / {non_name}")
 
-    json.dump(data, open(RAW, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
+    write_raw_jsonl(RAW, data)
     print(f"[fix] 已写回 raw：{RAW}（{len(data)} 条）")
     return ExitCode.OK
 

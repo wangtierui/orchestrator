@@ -42,6 +42,11 @@ import urllib.parse
 import urllib.request
 from datetime import datetime
 
+from std_lib.scraper_std.pipeline import (  # 批 49/T1：raw 统一 JSONL 读写助手
+    read_raw_records,
+    write_raw_jsonl,
+)
+
 # ---------- 配置 ----------
 # 2026-09-08 docs_root 统一根：修正原 BASE=collectors 落点（曾指 collectors/data/… 分叉）
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # modules/regulatory_scrapers
@@ -294,7 +299,7 @@ def main():
     ap.add_argument("--save-every", type=int, default=10, help="每处理 N 条增量写盘")
     args = ap.parse_args()
 
-    data = json.load(open(args.json, encoding="utf-8"))
+    data = read_raw_records(args.json)
     targets = [r for r in data
                if r.get("category") == TARGET_CATEGORY
                and not r.get("file_type")
@@ -323,19 +328,19 @@ def main():
             log(f"[{i}/{len(targets)}] {result.upper()} | {title} | {rec.get('error')}")
         # 增量写盘
         if i % args.save_every == 0:
-            json.dump(data, open(args.json, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+            write_raw_jsonl(args.json, data)
             log(f"  已增量保存（至第 {i} 条）")
         time.sleep(random.uniform(args.delay, args.delay * 2))
 
     # 最终写盘
-    json.dump(data, open(args.json, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+    write_raw_jsonl(args.json, data)
     log("=" * 50)
     log(f"完成。统计: {stats}")
     log(f"成功回填(fetched): {stats.get('ok',0)}；失败: {sum(v for k,v in stats.items() if k!='ok')}")
     if failures:
         log("失败样本（前 10）:")
         for t, r, exc in failures[:10]:   # N-67：原用 `e`（与 except 变量同名，mypy misc 告警）
-            log(f"  - {t[:30]} | {r} | {str(exc)[:80]}")
+            log(f"  - {str(t)[:30]} | {r} | {str(exc)[:80]}")   # 批 49：t 可能为 None ⇒ str() 收窄（mypy index）
     # 写出失败清单便于复核
     if failures:
         with open(os.path.join(ROOT, "data", "reports", "pbc_regulations_scraper", "backfill_failures.json"), "w", encoding="utf-8") as f:

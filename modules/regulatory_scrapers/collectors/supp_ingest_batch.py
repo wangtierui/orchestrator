@@ -33,6 +33,12 @@ import os
 import subprocess
 import sys
 
+from std_lib.scraper_std.pipeline import (  # 批 49/T1：raw 统一 JSONL 读写助手
+    read_raw_records,
+    resolve_raw_path,
+    write_raw_jsonl,
+)
+
 HERE = os.path.dirname(os.path.abspath(__file__))            # modules/regulatory_scrapers/collectors
 SCRAPERS_ROOT = os.path.dirname(HERE)                          # modules/regulatory_scrapers
 for _p in (HERE, SCRAPERS_ROOT):
@@ -53,10 +59,10 @@ def _norm_date(s: str) -> str:
     return s
 
 def load_existing():
-    if os.path.exists(RAW_PATH):
+    # 批 49/T1：raw 已统一 JSONL —— `read_raw_records` 双格式（.jsonl 逐行 / 旧 .json 逐条）
+    if os.path.exists(resolve_raw_path(RAW_PATH)):
         try:
-            with open(RAW_PATH, encoding="utf-8") as f:
-                data = json.load(f)
+            data = read_raw_records(RAW_PATH)
             if isinstance(data, list):
                 return data
         except Exception:  # noqa: BLE001  采集容错（字段/附件缺失不阻断采集）
@@ -112,9 +118,9 @@ def main(argv=None):
         return 0
 
     os.makedirs(os.path.dirname(RAW_PATH), exist_ok=True)
-    with open(RAW_PATH, "w", encoding="utf-8") as f:
-        json.dump(merged, f, ensure_ascii=False, indent=2)
-    print(f"[batch] 已写 raw: {RAW_PATH} ({len(merged)} 条)")
+    # 批 49/T1：raw 统一 JSONL（流式 + 首行 `_meta`；原为**裸数组**整表 json.dump）
+    _raw_written = write_raw_jsonl(RAW_PATH, merged, source="supp")
+    print(f"[batch] 已写 raw: {_raw_written} ({len(merged)} 条)")
 
     # 调用统一清洗管道（modules/regulatory_scrapers/clean/run_clean_pipeline.py）
     py = sys.executable

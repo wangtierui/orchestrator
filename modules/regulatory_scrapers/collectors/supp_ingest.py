@@ -59,6 +59,11 @@ import re
 import shutil
 import sys
 
+from std_lib.scraper_std.pipeline import (  # 批 49/T1：raw 统一 JSONL 读写助手
+    read_raw_records,
+    write_raw_jsonl,
+)
+
 HERE = os.path.dirname(os.path.abspath(__file__))          # modules/regulatory_scrapers/collectors
 SCRAPERS_ROOT = os.path.dirname(HERE)                        # modules/regulatory_scrapers（统一数据根）
 for _p in (HERE, SCRAPERS_ROOT):
@@ -521,8 +526,8 @@ def main() -> int:
     # 避免全量覆盖丢失既有记录（如 T1 五库补充 seq61/62/67/100/116/149/150/177/199/208/255/273/276/286 等）。
     if os.path.exists(RAW_OUT):
         try:
-            with open(RAW_OUT, encoding="utf-8") as f:
-                existing = json.load(f)
+            # 批 49/T1：raw 已统一 JSONL —— 双格式读取（原为整表 json.load）
+            existing = read_raw_records(RAW_OUT)
         except Exception:  # noqa: BLE001
             existing = []
         keys = {(r.get("document_number", ""), r.get("title", "")) for r in existing}
@@ -536,8 +541,8 @@ def main() -> int:
         # 占位/缺失正文回填（读取 _sources/<key>_body.txt）+ 附件回填
         records, enriched = enrich_placeholder_records(records)
         records = enrich_attachments(records)
-    with open(RAW_OUT, "w", encoding="utf-8") as f:
-        json.dump(records, f, ensure_ascii=False, indent=2)
+    # 批 49/T1：raw 统一 JSONL（流式 + 首行 `_meta`；原为**裸数组**整表 json.dump）
+    write_raw_jsonl(RAW_OUT, records, source="supp")
 
     # 4.1b：摄入后按唯一键接入 classifier register_doc（防并发；异常不阻断 raw 输出）
     try:

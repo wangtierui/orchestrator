@@ -126,6 +126,69 @@ def _load_json_records_streaming(path: str) -> list[dict[str, Any]]:
     return records
 
 
+#: raw 信封键（JSONL 首行）。五源统一：`{"_meta": {...}}` + 一行一记录。
+RAW_META_KEY = "_meta"
+
+
+def resolve_raw_path(path: str) -> str:
+    """把"历史 `.json` 名"解析为**实际存在**的 raw 文件（JSONL 优先、旧 `.json` 回退）。
+
+    用途（批 49 / T1：四源 raw 统一 JSONL）：仓库内仍有多处按历史名（`mof_laws.json` 等）拼路径；
+    经本函数即可**零语义变更**地指到新文件；未迁移的源（仍 `.json`）亦照常命中 ⇒ 双向兼容。
+    """
+    if os.path.exists(path):
+        return path
+    if path.endswith(".json"):
+        cand = path[:-5] + ".jsonl"
+    elif path.endswith(".jsonl"):
+        cand = path[:-6] + ".json"
+    else:
+        cand = path + ".jsonl"
+    return cand if os.path.exists(cand) else path
+
+
+def read_raw_records(path: str) -> list[dict[str, Any]]:
+    """读 raw 记录（**双格式**：`.jsonl` 逐行 / `.json` 逐条 raw_decode；自动解析历史名）。"""
+    return load_raw_records(resolve_raw_path(path))
+
+
+def write_raw_jsonl(path: str, records: list[dict[str, Any]], *, source: str = "",
+                    category: str = "", meta: dict[str, Any] | None = None) -> str:
+    """把 raw 记录写成 **JSONL**（首行 `_meta` 信封 + 一行一记录；流式 + 原子）。返回落盘路径。
+
+    为何统一 JSONL（批 49，T1）：`.json` 单数组解析 1GB 级主库实测峰值 ≈6× 体积
+    （gov 实测 5.24~6.13GB）；JSONL 逐行流式 ⇒ 峰值与语料体积**解耦**（批 47 已在 gov 验证，
+    本批把 mof/nfra/pbc/supp 一并统一）。传入的 `.json` 名会被规范化为 `.jsonl`。
+    `meta` 中的键（如 nfra 的 `errors` 列表）原样保留在信封里，**不丢信息**。
+    """
+    p = path
+    if p.endswith(".json"):
+        p = p[:-5] + ".jsonl"
+    elif not p.endswith(".jsonl"):
+        p = p + ".jsonl"
+    d = os.path.dirname(os.path.abspath(p))
+    if d:
+        os.makedirs(d, exist_ok=True)
+    env: dict[str, Any] = {
+        "source": source or "",
+        "category": category or "",
+        "format": "jsonl/1",
+        "captured_at": _dt.datetime.now().strftime("%Y%m%d_%H%M%S"),
+    }
+    if meta:
+        env.update(meta)
+    tmp = p + ".tmp"
+    n = 0
+    with open(tmp, "w", encoding="utf-8") as f:
+        f.write(json.dumps({RAW_META_KEY: env}, ensure_ascii=False) + "\n")
+        for r in records:
+            f.write(json.dumps(r, ensure_ascii=False) + "\n")
+            n += 1
+    os.replace(tmp, p)
+    LOG.info("raw JSONL 落盘：%s（%d 条）", os.path.basename(p), n)
+    return p
+
+
 def build_high_freq_dict(
     records: list[dict[str, Any]],
     *,

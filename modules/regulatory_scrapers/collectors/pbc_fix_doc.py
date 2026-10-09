@@ -9,12 +9,16 @@ _GUIDE_ROOT = _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(_
 if _GUIDE_ROOT not in _sys.path:
     _sys.path.insert(0, _GUIDE_ROOT)
 del _GUIDE_ROOT, _os, _sys
-import json
 import os
 import re
 import sys
 
 import requests
+
+from std_lib.scraper_std.pipeline import (  # 批 49/T1：raw 统一 JSONL 读写助手
+    read_raw_records,
+    write_raw_jsonl,
+)
 
 sys.stdout.reconfigure(encoding="utf-8")  # type: ignore[union-attr]
 BASE = os.path.dirname(os.path.abspath(__file__))
@@ -59,7 +63,7 @@ def extract_doc_text(b):
 def build_summary(text, n=200):
     return text[:n].replace("\n", " ").strip()
 
-data = json.load(open(JSON, encoding="utf-8"))
+data = read_raw_records(JSON)
 targets = [r for r in data if r.get("category") == "国家法律"
            and (r.get("detail_url") or "").lower().endswith(".doc")
            and not has_body(r)]
@@ -91,5 +95,5 @@ for r in targets:
     except Exception as e:  # noqa: BLE001
         r["error"] = f"异常:{type(e).__name__}:{e}"[:160]; print("  EXC", title, r["error"])
 
-json.dump(data, open(JSON, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+write_raw_jsonl(JSON, data)
 print(f"完成：修复 {fixed}/{len(targets)} 条；已整份写盘（{len(data)} 条）")

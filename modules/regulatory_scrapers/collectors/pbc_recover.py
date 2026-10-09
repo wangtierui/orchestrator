@@ -31,6 +31,12 @@ import re
 import sys
 import time
 
+from config.exitcodes import ExitCode  # 批 49：本文件已纳严格判据（有仓内导入）⇒ 退出码语义化
+from std_lib.scraper_std.pipeline import (  # 批 49/T1：raw 统一 JSONL 读写助手
+    read_raw_records,
+    write_raw_jsonl,
+)
+
 sys.stdout.reconfigure(encoding="utf-8")  # type: ignore[union-attr]
 
 BASE = os.path.dirname(os.path.abspath(__file__))
@@ -175,8 +181,8 @@ def main():
     if not os.path.exists(BAK):
         print(f"[!] 备份文件不存在：{BAK}\n     backups/ 目录可能已被清理。恢复功能需先存在备份，"
               f"请运行 pbc_merge_scrape.py 重新生成，或从旧备份恢复后重试。")
-        return 1
-    data = json.load(open(BAK, encoding="utf-8"))
+        return ExitCode.FAIL
+    data = read_raw_records(BAK)
     log(f"已载入备份：{len(data)} 条")
     lmap = build_local_map()
     log(f"本地 PDF 索引：{len(lmap)} 个")
@@ -207,7 +213,7 @@ def main():
                     rec["local_path"] = os.path.relpath(lp, BASE).replace("\\", "/")
                     stats["local_text" if method == "text" else "local_ocr"] += 1
                     log(f"[{i}/{len(targets)}] 本地PDF/{method} | {title[:28]}")
-                    json.dump(data, open(JSON_OUT, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+                    write_raw_jsonl(JSON_OUT, data)
                     continue
                 else:
                     rec["error"] = f"本地PDF解析空({method})"
@@ -230,7 +236,7 @@ def main():
                         rec["fetch_status"] = "fetched"
                         stats["doc"] += 1
                         log(f"[{i}/{len(targets)}] DOC/{method} | {title[:28]}")
-                        json.dump(data, open(JSON_OUT, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+                        write_raw_jsonl(JSON_OUT, data)
                         continue
                     else:
                         rec["error"] = "DOC 无法解析（需 antiword/libreoffice）"
@@ -279,7 +285,7 @@ def main():
                                 rec["error"] = "部分PDF失败:" + "; ".join(errs[:2])
                             stats["download_pdf"] += 1
                             log(f"[{i}/{len(targets)}] 下载PDF/{method} | {title[:28]}")
-                            json.dump(data, open(JSON_OUT, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+                            write_raw_jsonl(JSON_OUT, data)
                             continue
                         else:
                             rec["error"] = "PDF均解析空 | " + "; ".join(errs[:2])
@@ -296,7 +302,7 @@ def main():
                             rec["fetch_status"] = "fetched"
                             stats["html_body"] += 1
                             log(f"[{i}/{len(targets)}] HTML_BODY | {title[:28]}")
-                            json.dump(data, open(JSON_OUT, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+                            write_raw_jsonl(JSON_OUT, data)
                             continue
                         else:
                             rec["error"] = "详情页无PDF链接且无正文"
@@ -311,11 +317,11 @@ def main():
 
         # 增量落盘（每 SAVE_EVERY 条）
         if i % SAVE_EVERY == 0:
-            json.dump(data, open(JSON_OUT, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+            write_raw_jsonl(JSON_OUT, data)
             log(f"  >> 已增量保存（至第 {i} 条）")
 
     # 最终落盘（整份 568 条）
-    json.dump(data, open(JSON_OUT, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+    write_raw_jsonl(JSON_OUT, data)
     log("=" * 60)
     log(f"恢复完成。回填统计: {stats}")
     log(f"成功: {sum(v for k,v in stats.items() if k not in ('empty','fail'))}；失败: {stats['fail']}")

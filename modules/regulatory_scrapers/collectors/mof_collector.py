@@ -67,6 +67,12 @@ import threading
 import time
 from datetime import UTC, datetime
 
+from std_lib.scraper_std.pipeline import (  # 批 49/T1：raw 统一 JSONL 读写助手
+    read_raw_records,
+    resolve_raw_path,
+    write_raw_jsonl,
+)
+
 # 共享加固工具层（UA 池、文档文本抽取、魔数纠正命名、表格结构化）
 try:
     from std_lib.scraper_std.crawler_common import USER_AGENTS as CC_USER_AGENTS
@@ -533,13 +539,10 @@ def main():
         # —— 载入历史存储（mof_laws.json 本身即为持久化存储）——
         store_path = os.path.join(args.outdir, "mof_laws.json")
         prev_items: list = []
-        if os.path.exists(store_path):
+        if os.path.exists(resolve_raw_path(store_path)):
             try:
-                pd = json.load(open(store_path, encoding="utf-8"))
-                if isinstance(pd, dict):
-                    prev_items = pd.get("items", []) or []
-                elif isinstance(pd, list):
-                    prev_items = pd
+                # 批 49/T1：raw 已统一 JSONL —— `read_raw_records` 双格式（.jsonl 逐行 / 旧 .json 逐条）
+                prev_items = read_raw_records(store_path)
             except Exception as e:  # noqa: BLE001
                 logger.warning("历史存储读取失败，本次将作为全量新增处理：%s", e)
                 prev_items = []
@@ -626,7 +629,8 @@ def main():
         json_path = store_path
         csv_path = os.path.join(args.outdir, "mof_laws.csv")
         html_path = os.path.join(os.path.dirname(args.outdir), "reports", "mof_laws_report.html")
-        save_json(new_store, json_path)
+        # 批 49/T1：改**流式 JSONL** 落盘（原 `save_json` 整表 json.dumps：115MB 主库会多一份整表字符串）
+        json_path = write_raw_jsonl(store_path, new_store, source=HOST)
         if getattr(args, "csv", False):            # 默认仅 JSON 主库（2026-09-09 规范）
             save_csv(new_store, csv_path)
         save_html_report(new_store, html_path)

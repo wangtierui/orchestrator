@@ -22,11 +22,16 @@ _GUIDE_ROOT = _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(_
 if _GUIDE_ROOT not in _sys.path:
     _sys.path.insert(0, _GUIDE_ROOT)
 del _GUIDE_ROOT, _os, _sys
-import json
 import os
 import shutil
 import sys
 import time
+
+from std_lib.scraper_std.pipeline import (  # 批 49/T1：raw 统一 JSONL 读写助手
+    read_raw_records,
+    resolve_raw_path,
+    write_raw_jsonl,
+)
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 REPO_ROOT = os.path.dirname(BASE)  # regulatory_scrapers（统一数据根）
@@ -60,17 +65,17 @@ def better_content(existing, stage):
             existing.get("fetch_status"))
 
 def main():
-    if not os.path.exists(STAGE):
+    if not os.path.exists(resolve_raw_path(STAGE)):
         print(f"[!] 暂存文件不存在：{STAGE}，请先运行 pbc_collector.py --out scrape_staging")
         sys.exit(2)
     main_data = []
-    if os.path.exists(MAIN):
+    if os.path.exists(resolve_raw_path(MAIN)):
         try:
-            main_data = json.load(open(MAIN, encoding="utf-8"))
+            main_data = read_raw_records(MAIN)
         except Exception as e:  # noqa: BLE001
             print(f"[!] 主库读取失败：{e}")
             sys.exit(3)
-    stage_data = json.load(open(STAGE, encoding="utf-8"))
+    stage_data = read_raw_records(STAGE)
 
     main_map = {r.get("detail_url"): r for r in main_data if r.get("detail_url")}
     stage_map = {r.get("detail_url"): r for r in stage_data if r.get("detail_url")}
@@ -111,9 +116,9 @@ def main():
     bak_dir = os.path.join(BASE, "backups")
     os.makedirs(bak_dir, exist_ok=True)
     bak = os.path.join(bak_dir, f"pbc_laws.bak_{ts}.json")
-    if os.path.exists(MAIN):
+    if os.path.exists(resolve_raw_path(MAIN)):
         shutil.copy2(MAIN, bak)
-    json.dump(result, open(MAIN, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+    write_raw_jsonl(MAIN, result)
     print(f"[✓] 合并完成：主库 {len(main_data)} → 合并后 {len(result)} 条")
     print(f"    新增 {added} 条；更新元数据 {updated} 条；正文受保护(未降级) {content_kept} 条")
     print(f"    主库已备份：{bak}")
