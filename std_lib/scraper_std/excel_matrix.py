@@ -222,6 +222,17 @@ def pop_read_notes() -> list:
     return notes
 
 
+#: 批 53/W-R：最近一次读取中**表头上限**触发的备注（表头 4 行 / 注释行 2 行为上限）。
+_HEADER_NOTES: list = []
+
+
+def pop_header_notes() -> list:
+    """取走并清空表头上限备注（由 structured_table_fields 写入 meta.header_capped）。"""
+    notes = list(_HEADER_NOTES)
+    _HEADER_NOTES.clear()
+    return notes
+
+
 def _content_bounds(ws) -> tuple[int, int]:
     """工作表**有值单元格**的真实边界 `(max_row, max_col)`。
 
@@ -245,6 +256,7 @@ def _content_bounds(ws) -> tuple[int, int]:
 
 def _read_xlsx_bytes(data: bytes):
     _READ_NOTES.clear()   # 批 52/W-N③：每次读取起始清空备注（无残留）
+    _HEADER_NOTES.clear()  # 批 53/W-R：表头备注同按工作簿读取作用域清空
     wb = openpyxl.load_workbook(io.BytesIO(data), data_only=True, read_only=False)
     out = []
     for ws in wb.worksheets:
@@ -488,6 +500,9 @@ def detect_header(matrix, merged):
     last = first
     for i, r in enumerate(range(first + 1, max_scan), start=1):
         if i > 3:  # 多级表头至多 4 行（含列号辅助行）
+            # 批 53/W-R：达到 4 行上限且仍有可扫描行 ⇒ 登记备注（把"可能被上限截断"变可审计）
+            if r < max_scan:
+                _HEADER_NOTES.append({"reason": "header_rows_cap", "header_rows": last - first + 1})
             break
         if (
             r in merged_rows
@@ -511,6 +526,9 @@ def detect_header(matrix, merged):
         last = r
         r += 1
         ext += 1
+    # 批 53/W-R：注释行达 2 行上限且其后仍为注释行 ⇒ 登记备注
+    if ext >= 2 and r < n_rows and _is_header_annotation_row(matrix[r]):
+        _HEADER_NOTES.append({"reason": "annotation_rows_cap", "annotation_rows": ext})
     return Region(first, last + 1, 0, n_cols)
 
 
