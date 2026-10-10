@@ -149,6 +149,16 @@ ATTACH_PATH = "/file/f/get"  # GET ?infoId=<id>&fileType=0(相关附件)/90(文�
 
 _ATTACH_KIND = {"0": "attachment", "90": "text_version"}
 
+#: 批 55/F1：旧二进制格式（OLE2 系）是否执行表格/富内容轨 —— **默认 False，与 gov 对齐**
+#: （LibreOffice 转换约 6.5s/附件、多数产出为空 ⇒ 采集步耗时主因之一）；置 True 恢复完整能力。
+ENRICH_LEGACY = False
+
+#: 旧二进制 kind 集合（**单一事实源在共享库**；此处按需导入，避免重复定义）
+try:
+    from std_lib.scraper_std.crawler_common import LEGACY_KINDS
+except Exception:  # noqa: BLE001  采集容错：常量缺失时退化为"不跳过"
+    LEGACY_KINDS = frozenset()
+
 _ATT_502_STREAK = 0
 
 _ATT_CIRCUIT_OPEN = False
@@ -386,13 +396,22 @@ def _finalize_attachment(att, data, fname, law_id, dest):
         att["extracted"] = ext.get("extracted", False)
         att["extract_status"] = ext.get("extract_status", "unsupported")
         att["attachment_kind"] = ext.get("kind", "unknown")
+        # 批 55/W-W2：sniff 二次判定证据入库（见 gov 同注）
+        if ext.get("sniff"):
+            att["attachment_sniff"] = ext["sniff"]
         att["sha256"] = ext.get("sha256", "")
         att["needs_ocr"] = ext.get("needs_ocr", False)
         att["garble_ratio"] = ext.get("garble_ratio", 0.0)
-        try:
-            att.update(structured_table_fields(data, fname))
-        except Exception:  # noqa: BLE001  采集容错（字段/附件缺失不阻断采集）
-            pass
+        # 批 55/F1：**对齐 gov 口径** —— 旧二进制格式（.doc/.xls 等 OLE2）默认**跳过**表格/富内容轨
+        # （gov 早已如此；mof 原实现未对齐，与 2026-10-10 实测 `collect:mof` 用尽 7200s 超时上限被强杀相关）
+        if ENRICH_LEGACY or str(att.get("attachment_kind") or "") not in LEGACY_KINDS:
+            try:
+                att.update(structured_table_fields(data, fname))
+            except Exception:  # noqa: BLE001  采集容错（字段/附件缺失不阻断采集）
+                pass
+        else:
+            att.setdefault("table_recovery_method", "legacy_skipped")
+            logger.info("跳过旧格式附件的表格轨（legacy_skipped）：%s", att.get("file_name"))
         try:
             att.update(rich_object_fields(data, fname,
                                           image_dir=docs_root("mof", "diagrams"),

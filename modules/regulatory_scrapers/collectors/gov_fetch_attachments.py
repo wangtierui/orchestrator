@@ -98,7 +98,8 @@ def _strip_ext(name: str) -> str:
 # 旧二进制格式（OLE2 系）：表格/富内容轨对其须先经 doc_convert（LibreOffice doc→docx）
 # 才能解析，实测每次附件**两次启动 soffice 合计约 6.5 秒**，且多数 .doc 附件并无结构化
 # 表格（产出为空）。批量采集时该开销占比极高 → 默认不对旧格式做 table/rich。
-LEGACY_KINDS = frozenset({"ole2", "doc", "xls", "wps", "rtf", "ceb", "bin", "unknown"})
+# 批 55：LEGACY_KINDS 已收敛为共享唯一事实源（crawler_common）——本文件在使用处**函数内**引用，
+# 避免模块级导入依赖仓根引导（该路径为脚本式独立运行，见 memory「导入位置」教训）。
 
 
 def fetch_gov_attachments(detail_html, entry_id, entry_title, out_dir, base_url,
@@ -159,11 +160,17 @@ def fetch_gov_attachments(detail_html, entry_id, entry_title, out_dir, base_url,
             extract_status=ext_rec.get("extract_status", "unsupported"),
             needs_ocr=ext_rec.get("needs_ocr", False))
         rec["link_text"] = text
+        # 批 55/W-W2：**content-type/sniff 二次判定证据入库**（declared_ext/sniffed_kind/
+        # unmasked/outer_head/inner_head/inner_kind）——伪装附件（MIME 封装、HTML 冒充 .doc 等）
+        # 可审计、可追溯；同一采集路径共两处（单条/批量）须同时接入。
+        if ext_rec.get("sniff"):
+            rec["attachment_sniff"] = ext_rec["sniff"]
         rec["attachment_kind"] = ext_rec.get("kind", kind)
         # 表格结构化（2026-09-08 仿 supp 打通）+ 富内容轨（2026-09-09 rich_object）
         # ⚠️ 旧二进制格式需先 doc_convert（LibreOffice），实测每附件两次合计约 6.5 秒
         # 且绝大多数产出为空 → 默认跳过（enrich_legacy=True 可恢复完整能力）。
         _kind = ext_rec.get("kind", kind)
+        from std_lib.scraper_std.crawler_common import LEGACY_KINDS  # 批 55：SSOT
         if enrich_legacy or _kind not in LEGACY_KINDS:
             rec.update(structured_table_fields(data, fname, kind=kind))
             try:

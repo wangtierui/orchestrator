@@ -672,6 +672,11 @@ XLSX_MAX_CHARS = 2_000_000
 XLSX_MAX_EMPTY_ROWS = 60
 XLSX_MAX_ROWS = 200_000
 
+#: 批 55：**旧二进制/不可解析 kind 的唯一事实源**（表格/富内容轨默认跳过这些 kind：
+#: LibreOffice 转换约 6.5s/附件且多数产出为空）。gov/mof 等采集侧一律引用此处，禁止各自定义。
+LEGACY_KINDS: frozenset[str] = frozenset({"ole2", "doc", "xls", "wps", "rtf", "ceb", "bin",
+                                           "unknown"})
+
 
 def iter_ws_text_rows(ws, *, max_rows: int = XLSX_MAX_ROWS,
                       max_empty_rows: int = XLSX_MAX_EMPTY_ROWS):
