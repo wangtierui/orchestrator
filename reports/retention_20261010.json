@@ -1,0 +1,75 @@
+{
+ "mode": "dry-run",
+ "plan": {
+  "plan": [
+   {
+    "file": "modules/regulatory_classifier/backups/_upper_laws_20260929_004113.json",
+    "size": 1959111,
+    "age_days": 11.3,
+    "reason": "超出保留量 10（第 11 新）",
+    "category": "classifier_backups",
+    "move_to": "archive/classifier_backups"
+   },
+   {
+    "file": "modules/regulatory_scrapers/data/cleaned/nfra_cleaned_20261009.quarantine.jsonl",
+    "size": 58827,
+    "age_days": 0.3,
+    "reason": "超出**分组**保留量 1（组 nfra）",
+    "category": "clean_quarantine_stale",
+    "move_to": "archive/clean_quarantine"
+   }
+  ],
+  "stats": {
+   "classifier_backups": {
+    "exists": true,
+    "total": 11,
+    "kept": 10,
+    "incident_kept": 0
+   },
+   "ipb_backups": {
+    "exists": true,
+    "total": 1,
+    "kept": 1,
+    "incident_kept": 0
+   },
+   "reports_tmp": {
+    "exists": true,
+    "total": 202,
+    "older_than_days": 7
+   },
+   "timeliness_err": {
+    "exists": true,
+    "total": 0
+   },
+   "retention_ledgers": {
+    "exists": true,
+    "total": 8,
+    "kept": 8,
+    "incident_kept": 0
+   },
+   "logs_stale": {
+    "exists": true,
+    "total": 27,
+    "older_than_days": 14
+   },
+   "scrapers_backups": {
+    "exists": true,
+    "total": 10,
+    "groups": 10,
+    "kept": 10
+   },
+   "clean_quarantine_stale": {
+    "exists": true,
+    "total": 3,
+    "kept": 2,
+    "incident_kept": 0
+   },
+   "repo_baks": {
+    "total": 64,
+    "included": false
+   }
+  },
+  "bytes": 2017938
+ },
+ "applied": null
+}
