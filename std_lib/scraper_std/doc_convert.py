@@ -176,29 +176,43 @@ def doc_to_docx(doc_path: str, *, bin: str | None = None, timeout: int = 120) ->
 
     需要时置 `RCO_ALLOW_LO_CONVERT=1` 放行（会在日志中警示剪贴板影响）。
     """
-    if os.environ.get("RCO_ALLOW_LO_CONVERT", "0").strip() not in ("1", "true", "True"):
-        LOG.info("[doc_convert] 默认跳过 LibreOffice 转换（每次转换会清空系统剪贴板）: %s",
+    if os.environ.get("RCO_DISABLE_LO_CONVERT", "").strip() in ("1", "true", "True"):
+        LOG.info("[doc_convert] RCO_DISABLE_LO_CONVERT=1 ⇒ 跳过 LibreOffice 转换: %s",
                  os.path.basename(doc_path))
         return None
-    LOG.warning("[doc_convert] RCO_ALLOW_LO_CONVERT=1 ⇒ 执行转换（**将清空系统剪贴板**）: %s",
-                os.path.basename(doc_path))
     lo = find_libreoffice(bin)
     if not lo or not os.path.exists(doc_path):
+        return None
+    # 批 61（W-AH 根治）：**在独立窗口站内执行转换** —— Windows 的剪贴板按窗口站隔离，
+    # 私有站内的 EmptyClipboard/SetClipboardData 只作用于该站 ⇒ 用户 WinSta0 剪贴板不受影响 ✓。
+    # 无法隔离时**放弃转换**（fail-safe：宁可少解析 legacy 表格，也绝不清空用户剪贴板）。
+    from std_lib.scraper_std import win_station
+
+    if not win_station.station_available():
+        LOG.info("[doc_convert] 无窗口站隔离能力 ⇒ 放弃转换（不裸跑）: %s", os.path.basename(doc_path))
         return None
     out_dir = os.path.dirname(os.path.abspath(doc_path))
     # 批 56：**隔离 profile + 全静默旗标**（不挂用户会话、不弹恢复/默认文档对话框、不抢焦点与剪贴板）
     _profile_url = _isolated_profile_url()
     _before = _pids_by_profile(_profile_url)   # 只认我方 profile（不触碰用户会话）
+    # 批 61 第二道机制：**剪贴板保全护栏**。实证：LO 自身会重新挂回 WinSta0（窗口站不足以约束它 ✗），
+    # 故在转换外层快照用户剪贴板（文本/文件列表）并在转换后**原样恢复** ⇒ 用户内容永不丢失 ✓；
+    # 未被保全的格式会在日志明示（不静默丢）。置 `RCO_DISABLE_CLIPBOARD_GUARD=1` 可关闭护栏。
+    from std_lib.scraper_std import clipboard_guard
+
+    _snap = clipboard_guard.snapshot()
+    LOG.info("[doc_convert] 转换前剪贴板快照：%s", clipboard_guard.describe(_snap))
+    _seq0 = win_station.global_clipboard_seq()  # 生产侧自审计：转换前后全局剪贴板序列号
     try:
-        subprocess.run(
+        rc, _out, _err, _info = win_station.isolated_run(
             [lo, "--headless", "--norestore", "--nodefault", "--nologo", "--nolockcheck",
              "-env:UserInstallation=" + _profile_url,
              "--convert-to", "docx", "--outdir", out_dir, doc_path],
-            check=False,
-            capture_output=True,
-            timeout=timeout,
-        )
-    except (OSError, subprocess.TimeoutExpired):
+            timeout=timeout)
+    except Exception as e:  # noqa: BLE001  隔离执行异常：fail-safe 放弃
+        LOG.warning("[doc_convert] 隔离执行异常，放弃转换: %s", e)
+        _gr0 = clipboard_guard.restore(_snap)   # 异常路径同样恢复（护栏必须闭环 ✓）
+        LOG.info("[doc_convert] 护栏恢复（异常路径）：%s", _gr0)
         return None
     finally:
         # 批 57：**只清理命令行含我方隔离 profile 的进程**（精确归属）——
@@ -207,6 +221,17 @@ def doc_to_docx(doc_path: str, *, bin: str | None = None, timeout: int = 120) ->
         if _leaked:
             _n = _kill_pids(_leaked)
             LOG.info("清理我方遗留 soffice %d 个（隔离 profile 精确归属）", _n)
+        _gr = clipboard_guard.restore(_snap)   # 批 61：**原样恢复**用户剪贴板内容（保住用户数据 ✓）
+        LOG.info("[doc_convert] 护栏恢复：%s", _gr)
+        _delta = win_station.global_clipboard_seq() - _seq0
+        if _delta:
+            LOG.info("[doc_convert] 转换期间全局剪贴板被改写 Δ=%d（已知：LO 会挂回 WinSta0）⇒ **已由护栏原样恢复**", _delta)
+    if rc == win_station.RC_NO_ISOLATION:
+        LOG.info("[doc_convert] 窗口站隔离未建立 ⇒ 放弃转换: %s", _info.get("note", ""))
+        return None
+    if rc != 0:
+        LOG.info("[doc_convert] 转换返回码 %d（winsta=%s）", rc, _info.get("winsta", ""))
+        return None
     base = os.path.splitext(os.path.basename(doc_path))[0]
     conv = os.path.join(out_dir, base + ".docx")
     return conv if os.path.exists(conv) else None
