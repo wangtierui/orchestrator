@@ -200,10 +200,21 @@ def cron_jobs() -> list[dict]:
 
 def _run(argv: list[str]) -> tuple[int, str]:
     try:
-        r = subprocess.run(
-            argv, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60
-        )
-        return r.returncode, (r.stdout or "") + (r.stderr or "")
+        r = subprocess.run(argv, capture_output=True, timeout=60)
+        # 批 60：**逐编码严格解码**。原按 `utf-8` 解码而 zh-CN 下 `schtasks` 输出为 **GBK** ⇒ 乱码 ⇒
+        # `installed_argv` 的中文标签（"要运行的任务"）匹配失败 ⇒ 参数读成空 ⇒ **verify 全量假 FAIL** ✗
+        # （实测：`schtasks /query /tn REG_ORCH_monthly_check /fo LIST /v` 参数实为 `cli.py gates` ✓）。
+        raw = (r.stdout or b"") + (r.stderr or b"")
+        text = ""
+        for _enc in ("utf-8", "gbk", "cp936"):
+            try:
+                text = raw.decode(_enc)
+                break
+            except UnicodeDecodeError:
+                continue
+        else:
+            text = raw.decode("utf-8", "replace")
+        return r.returncode, text
     except Exception as e:  # noqa: BLE001  schtasks 不可用（非 Windows/权限）→ 明确返回
         return 127, f"{type(e).__name__}: {e}"
 
