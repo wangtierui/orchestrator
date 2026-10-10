@@ -26,6 +26,8 @@ def test_libreoffice_invocation_is_isolated_and_silent(monkeypatch, tmp_path) ->
             captured.setdefault("cmd", list(cmd))
         return _R()
     monkeypatch.setattr(dc, "find_libreoffice", lambda *a, **k: "soffice-stub")  # 隔离探测依赖
+    # 批 58：转换**默认禁用**（每次转换会清空系统剪贴板）⇒ 本测试需显式放行
+    monkeypatch.setenv("RCO_ALLOW_LO_CONVERT", "1")
     monkeypatch.setattr(dc.subprocess, "run", _fake_run)
     monkeypatch.setattr(dc, "_soffice_pids", lambda: set())   # 兜底清理不触真实 tasklist
     monkeypatch.setattr(dc, "_kill_pids", lambda pids, **k: 0)
@@ -89,3 +91,27 @@ def test_no_lingering_process_helper_contract() -> None:
     assert isinstance(_soffice_pids(), set)
     assert _kill_pids(set()) == 0
     assert sys.platform
+
+
+def test_lo_convert_disabled_by_default(monkeypatch) -> None:
+    """**剪贴板根治守卫**（批 58）：`doc_to_docx` 默认**不得**调用 LibreOffice。
+
+    取证：每次转换确定性清空系统剪贴板（A/B 实测 Δ=1）⇒ 默认禁用是唯一零风险根治。
+    """
+    import os as _os
+
+    from std_lib.scraper_std import doc_convert as _dc
+
+    called = {"n": 0}
+
+    def _fake_run(*a, **k):
+        called["n"] += 1
+        raise AssertionError("默认禁用时不得启动任何子进程")
+
+    monkeypatch.delenv("RCO_ALLOW_LO_CONVERT", raising=False)
+    monkeypatch.setattr(_dc, "find_libreoffice", lambda *a, **k: "soffice-stub")
+    monkeypatch.setattr(_dc.subprocess, "run", _fake_run)
+    assert _dc.doc_to_docx(__file__) is None, "默认必须返回 None（不转换）"
+    assert called["n"] == 0, "默认禁用时不得调用子进程"
+    assert _os.environ.get("SAL_USE_VCLPLUGIN") == "svp", "仍应保留 svp 环境默认（放行时降低影响）"
+

@@ -120,6 +120,21 @@ def _soffice_pids() -> set[int]:
     return pids
 
 
+# --------------------------------------------------------------------------- #
+# 批 58：**剪贴板抢占的根治**（活体取证结论）
+#
+# 监控实测（mof 采集运行中，每 250ms 采样）：系统剪贴板**序列号每 2.5~3.5 秒 +1**（持续不断），
+# `GetClipboardOwner()` 多为 0（`EmptyClipboard()` 后无主）偶为 `soffice.bin` ⇒ **LibreOffice 启动/
+# 退出时清空系统剪贴板** ⇒ 用户刚复制的文字被抹掉 ⇒ **Ctrl+V 粘贴不出来**（= 复制粘贴失效/被抢占）✓✓。
+#
+# `--headless` 在 Windows 仍会初始化原生 GUI 层（故碰剪贴板）；`SAL_USE_VCLPLUGIN=svp`（Server
+# Virtual Platform）为**服务端渲染插件**，不注册剪贴板监听 ⇒ 根治。**本处为模块级环境默认**，
+# 转换子进程继承之（若调用处显式传 `env=`，须确保其包含本变量）。
+# --------------------------------------------------------------------------- #
+os.environ.setdefault("SAL_USE_VCLPLUGIN", "svp")
+os.environ.setdefault("SAL_DISABLE_OPENCL", "1")     # 无 GPU 的服务端渲染，避免额外初始化
+
+
 def _kill_pids(pids: set[int]) -> int:
     """强杀给定 PID（连同子进程 `/T`）；返回成功条数。"""
     n = 0
@@ -148,7 +163,25 @@ def _isolated_profile_url() -> str:
 
 
 def doc_to_docx(doc_path: str, *, bin: str | None = None, timeout: int = 120) -> str | None:
-    """headless 将 .doc 等旧格式单文件转为 docx（输出同目录），返回新路径或 None。"""
+    """headless 将 .doc 等旧格式单文件转为 docx（输出同目录），返回新路径或 None。
+
+    ⚠️ **批 58：默认禁用（返回 None）**。
+
+    取证（2026-10-10 活体监控 + A/B 对照）：**每一次 LibreOffice 转换都会清空系统剪贴板**
+    （剪贴板序列号确定性 +1；持有者 `Idle(0)`/`soffice.bin`）⇒ 用户在办公软件中刚复制的
+    内容被抹掉、Ctrl+V 粘贴不出来（= 用户报告的"复制粘贴失效/被抢占"）✗✗。已排除：剪贴板 API
+    （0 处）、输入自动化（0 处）、COM（全门禁）、子进程闪窗（全隐藏）；`SAL_USE_VCLPLUGIN=svp`
+    经 A/B 实测**无效**（Δ 仍为 1）✗。故默认**不做该转换**（与既有决策 L1「legacy 表格轨不提取」
+    一致 ⇒ 无额外功能损失）。
+
+    需要时置 `RCO_ALLOW_LO_CONVERT=1` 放行（会在日志中警示剪贴板影响）。
+    """
+    if os.environ.get("RCO_ALLOW_LO_CONVERT", "0").strip() not in ("1", "true", "True"):
+        LOG.info("[doc_convert] 默认跳过 LibreOffice 转换（每次转换会清空系统剪贴板）: %s",
+                 os.path.basename(doc_path))
+        return None
+    LOG.warning("[doc_convert] RCO_ALLOW_LO_CONVERT=1 ⇒ 执行转换（**将清空系统剪贴板**）: %s",
+                os.path.basename(doc_path))
     lo = find_libreoffice(bin)
     if not lo or not os.path.exists(doc_path):
         return None

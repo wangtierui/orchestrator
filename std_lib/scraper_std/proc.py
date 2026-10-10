@@ -23,6 +23,8 @@
 """
 from __future__ import annotations
 
+import ctypes
+import os
 import subprocess
 import sys
 from typing import Any
@@ -94,3 +96,40 @@ if __name__ == "__main__":  # 离线自检（不联网）
     assert isinstance(hidden_kwargs(), dict)
     assert callable(run) and callable(popen) and callable(install_global_defaults)
     print("proc.py 自检通过（IS_WIN=%s, CREATE_NO_WINDOW=0x%08X）" % (IS_WIN, CREATE_NO_WINDOW))
+
+#: `BELOW_NORMAL_PRIORITY_CLASS`：低于常规优先级（子进程及其后代**继承**收敛）
+BELOW_NORMAL_PRIORITY_CLASS = 0x00004000
+#: `PROCESS_MODE_BACKGROUND_BEGIN`：Windows"后台模式"（CPU 与 **I/O** 优先级同时降到最低）
+PROCESS_MODE_BACKGROUND_BEGIN = 0x00100000
+
+
+def _polite_default() -> bool:
+    """让路策略默认开启，可用 `RCO_YIELD_TO_USER=0` 关闭（批 58/W-AD 处置）。"""
+    return os.environ.get("RCO_YIELD_TO_USER", "1").strip() not in ("0", "false", "False")
+
+
+def child_kwargs(*, polite: bool | None = None) -> dict[str, Any]:
+    """**子进程启动参数**：隐藏窗口 +（默认）**让路优先级**。
+
+    取证：全仓 0 处剪贴板 API、0 处输入自动化 ⇒ 用户"复制粘贴被抢占"的可解释机制只剩
+    **资源饱和导致办公软件卡顿**；故重活子进程默认**低于常规优先级**（整棵子进程树继承）⇒
+    用户前台应用优先获得 CPU。可用 `RCO_YIELD_TO_USER=0` 关闭让路。
+    """
+    kw = hidden_kwargs()
+    if IS_WIN and (polite if polite is not None else _polite_default()):
+        kw["creationflags"] = int(kw.get("creationflags", 0)) | BELOW_NORMAL_PRIORITY_CLASS
+    return kw
+
+
+def set_self_background() -> bool:
+    """把**本进程**切到 Windows 后台模式（CPU+I/O 双低优先级）。返回是否成功。
+
+    供长时重活（采集/清洗）显式调用；只影响本进程与后代，**不动用户进程**。
+    """
+    if not IS_WIN:
+        return False
+    try:
+        return bool(ctypes.windll.kernel32.SetPriorityClass(
+            ctypes.windll.kernel32.GetCurrentProcess(), PROCESS_MODE_BACKGROUND_BEGIN))
+    except Exception:  # noqa: BLE001
+        return False

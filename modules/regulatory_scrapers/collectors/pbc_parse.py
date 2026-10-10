@@ -218,6 +218,12 @@ def extract_pdf_text(data):
 
 
 def extract_xls_text(data):
+    # 批 58/W-AE：**收敛到共享抽取器**（伪装/损坏包先由共享链「拆封 + 重嗅」，W-W）——
+    # 非本格式内层直接返回共享结果；确为本格式时仍走下方**共享原语**（N-208 已受控）。
+    from std_lib.scraper_std.crawler_common import extract_document_text, sniff_kind
+
+    if sniff_kind(data, "") not in ("xlsx", "ole2"):
+        return extract_document_text(data, "", enable_ocr=False).get("text") or ""
     # 批 50：统一到共享原语（按内容右裁空列 + 连续空行视为表尾 + 上限截断显式标注）。
     # 原实现虽靠 `is not None` 过滤避免了分隔符爆量，但仍按**声明维度**迭代 71M+ 格（CPU 浪费）
     # 且**无上限** ⇒ 改为共享实现，与 gov/mof/nfra 同口径。

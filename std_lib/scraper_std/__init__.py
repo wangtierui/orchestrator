@@ -49,3 +49,25 @@ _ORCH_ROOT = os.path.dirname(_ROOT)  # regulatory_compliance_orchestrator/
 for _p in (_ORCH_ROOT, _ROOT):
     if _p not in sys.path:
         sys.path.insert(0, _p)
+
+# --------------------------------------------------------------------------- #
+# 批 58：**包级隐藏子进程默认**（`bootstrap.py` 之外的第二处安装点）
+#
+# 取证：采集器（`modules/regulatory_scrapers/collectors/*`）走各自的 `sys.path.insert`，
+# **不导入 `bootstrap.py`** ⇒ 批 57 的全局隐藏默认对其**未生效** ✗。本包是所有采集器的
+# 公共依赖 ⇒ 在此安装（幂等；`install_global_defaults` 亦幂等）⇒ 覆盖面闭合。
+# --------------------------------------------------------------------------- #
+def _install_hidden_defaults() -> bool:
+    import os as _os
+
+    if _os.environ.get("RCO_ALLOW_VISIBLE_SUBPROCESS", "").strip() in ("1", "true", "True"):
+        return False
+    try:
+        from scraper_std.proc import install_global_defaults as _install
+
+        return bool(_install())
+    except Exception:  # noqa: BLE001  引导期失败不阻断
+        return False
+
+
+_install_hidden_defaults()

@@ -528,7 +528,14 @@ def _run(step: str, argv, cwd=ROOT, timeout: int | None = None) -> dict:
             open(out_path, "w", encoding="utf-8", newline="\n") as _fo,
             open(err_path, "w", encoding="utf-8", newline="\n") as _fe,
         ):
-            r = subprocess.run(argv, cwd=cwd, stdout=_fo, stderr=_fe, timeout=timeout, env=env)
+            # 批 58：**隐藏窗口 + 让路优先级**（子进程及其后代继承 BELOW_NORMAL）＋ **强制无缓冲**。
+            # 前者防闪窗抢焦点；后者修"日志假死"（此前子进程 stdout 重定向到文件时块缓冲 ⇒ 长时间不刷新，
+            # 被误判为"采集停滞" ✗）。让路可用 `RCO_YIELD_TO_USER=0` 关闭。
+            env = dict(env or {})
+            env.setdefault("PYTHONUNBUFFERED", "1")
+            from std_lib.scraper_std.proc import child_kwargs as _child_kwargs
+            r = subprocess.run(argv, cwd=cwd, stdout=_fo, stderr=_fe, timeout=timeout, env=env,
+                               **_child_kwargs())
         rec["rc"] = r.returncode
         rec["exit_code"] = _exit_semantic(r.returncode)
         rec["tail"] = _tail(out_path, 3)
