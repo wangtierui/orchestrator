@@ -79,7 +79,7 @@ regulatory_compliance_orchestrator/
 | `modules/base_publish/` | 目录 | **常规流程（交付层）** | 双底座发布件 + FTS5 索引（`write_jsonl` 为**包级唯一实现**） | 被 `cli.py base publish` 调用 |
 | `std_lib/scraper_std/` | 目录 | **常规流程（共享库）** | 采集/清洗通用能力（`crawler_common` / `unified_schema` / `sentence_split` / `attachments` …） | 被 `modules/regulatory_scrapers` 引用 |
 | `std_lib/common_lib/` | 目录 | **常规流程（共享库）** | 跨模块公共能力：`relations`（关系抽取）/ `sentence_boundary`（**句读 SSOT**）/ `semantic_tools`（探测）/ `semantic_models`（加载）/ **`semantic_enhance`（执行门面）** / `governance_store` / `vector_store` … | 被 `modules/`、`tools/`、`gates/` 引用 |
-| `tools/run_production_refresh.py` | 文件 | **常规流程（编排）** | **全链编排器**：`STEP_ORDER` **28 项**、按源展开执行、`--resume` 续跑、稳定运行台账 | 被 `cli.py run` / 计划任务调用 |
+| `tools/run_production_refresh.py` | 文件 | **常规流程（编排）** | **全链编排器**：`STEP_ORDER` **30 项**、按源展开执行、`--resume` 续跑、稳定运行台账 | 被 `cli.py run` / 计划任务调用 |
 | `tools/ci_check.py` | 文件 | **常规流程（CI）** | 六项阻断检查：ruff / mypy / schedule / pytest / gates / coverage | 被人工/CI 调用 |
 | `tools/smoke_semantic_models.py` | 文件 | **特殊工具** | P1 模型**真实初始化 + 真实调用**冒烟自检 | 按需人工执行 |
 | `tools/audit_health.py` | 文件 | **特殊工具** | **九类缺陷机器化审计**（统一入口/断点/门禁/数据源/阻塞/冗余/重复/硬编码/README 一致性） | 按需人工执行 |
@@ -271,7 +271,7 @@ flowchart LR
 - **发布门禁**：**人工闸门**保留在三处破坏性动作 —— `retention --apply`（归档）、`governance_sync --apply`
   （写治理库）、`acknowledged.json`（失败步骤知悉登记）；其余一律**机器判定**。
 - **提交后自动推送**：`.git/hooks/post-commit` 在每次提交后自动 `git push origin main`
-  （**不阻断提交**：commit 成败与 push 解耦）。钩子版本化在 `tools/git_hooks/post-commit`
+钩子版本化在 **`.githooks/post-commit`**（克隆后执行 `python -m tools.install_git_hooks` 安装：它把 `core.hooksPath` 指向 `.githooks`，**不是** `cp` 到 `.git/hooks/`）。
   （克隆后 `cp tools/git_hooks/post-commit .git/hooks/` 安装）。
   **同步失败不再静默**：结果写入 `logs/git-autopush.log`，失败时回显真实原因与处置命令，
   并由 `tools/audit_health.py` 的「**远程同步**」检查核验「本地领先远程 N 个提交」。

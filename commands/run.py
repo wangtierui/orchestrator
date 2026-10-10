@@ -38,6 +38,9 @@ def build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--json-logs", action="store_true", help="结构化日志（JSON lines）")
     ap.add_argument("--dry-run", action="store_true", help="只打印将执行的 argv，不执行")
     ap.add_argument("--list-steps", action="store_true", help="列出步骤名后退出")
+    # 批 59（W-AP）：⚠️ 链内已由 `_run_conditional` 执行 timeliness_verify / inbox_drop /
+    # internal_update / wiki_sync（run_production_refresh.py:976/1140/1141/1318）⇒ 本开关会对
+    # **已入链**触发项**再跑一遍**（双写风险）。生产 argv 未带本开关；语义待明确定义。
     ap.add_argument(
         "--triggers",
         action="store_true",
