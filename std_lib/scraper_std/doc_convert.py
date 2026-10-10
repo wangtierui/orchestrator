@@ -65,21 +65,80 @@ def find_libreoffice(bin: str | None = None) -> str | None:
     return None
 
 
+def _soffice_pids() -> set[int]:
+    """当前 soffice/soffice.bin 进程 PID 集合（批 56：用于兜底清理，避免遗留进程与用户会话纠缠）。"""
+    pids: set[int] = set()
+    if os.name != "nt":
+        return pids
+    try:
+        out = subprocess.run(["tasklist", "/FI", "IMAGENAME eq soffice.exe", "/FO", "CSV", "/NH"],
+                             capture_output=True, text=True, encoding="utf-8",
+                             errors="replace", timeout=20).stdout or ""
+        out += subprocess.run(["tasklist", "/FI", "IMAGENAME eq soffice.bin", "/FO", "CSV", "/NH"],
+                              capture_output=True, text=True, encoding="utf-8",
+                              errors="replace", timeout=20).stdout or ""
+        for ln in out.splitlines():
+            parts = [x.strip('"') for x in ln.split(",")]
+            if len(parts) > 1 and parts[1].isdigit():
+                pids.add(int(parts[1]))
+    except Exception:  # noqa: BLE001  查询失败不阻断
+        pass
+    return pids
+
+
+def _kill_pids(pids: set[int]) -> int:
+    """强杀给定 PID（连同子进程 `/T`）；返回成功条数。"""
+    n = 0
+    for pid in sorted(pids):
+        try:
+            subprocess.run(["taskkill", "/PID", str(pid), "/T", "/F"], capture_output=True,
+                           text=True, encoding="utf-8", errors="replace", timeout=20)
+            n += 1
+        except Exception:  # noqa: BLE001  杀进程失败不阻断
+            pass
+    return n
+
+
+def _isolated_profile_url() -> str:
+    """**隔离的 LibreOffice 用户配置目录**（批 56 核心修复）。
+
+    为何必须：`--headless` 在**未指定 `-env:UserInstallation`** 时会挂到**用户既有 LibreOffice
+    环境/会话**（实测本仓 doc_convert 的调用即如此）⇒ 抢占桌面焦点与剪贴板、并与用户正在使用的
+    LibreOffice 互相干扰；隔离后转换在独立 profile 内完成，**不触碰用户会话**。
+    """
+    from pathlib import Path
+
+    base = os.path.join(tempfile.gettempdir(), "rco_lo_profile")
+    os.makedirs(base, exist_ok=True)
+    return Path(base).as_uri()
+
+
 def doc_to_docx(doc_path: str, *, bin: str | None = None, timeout: int = 120) -> str | None:
     """headless 将 .doc 等旧格式单文件转为 docx（输出同目录），返回新路径或 None。"""
     lo = find_libreoffice(bin)
     if not lo or not os.path.exists(doc_path):
         return None
     out_dir = os.path.dirname(os.path.abspath(doc_path))
+    # 批 56：**隔离 profile + 全静默旗标**（不挂用户会话、不弹恢复/默认文档对话框、不抢焦点与剪贴板）
+    _before = _soffice_pids()
     try:
         subprocess.run(
-            [lo, "--headless", "--convert-to", "docx", "--outdir", out_dir, doc_path],
+            [lo, "--headless", "--norestore", "--nodefault", "--nologo", "--nolockcheck",
+             "-env:UserInstallation=" + _isolated_profile_url(),
+             "--convert-to", "docx", "--outdir", out_dir, doc_path],
             check=False,
             capture_output=True,
             timeout=timeout,
         )
     except (OSError, subprocess.TimeoutExpired):
         return None
+    finally:
+        # 兜底：清理本次转换**新产生**且仍存活的 soffice（历史实测会遗留并常驻用户会话）
+        _leaked = _soffice_pids() - _before
+        if _leaked:
+            _n = _kill_pids(_leaked)
+            __import__("logging").getLogger(__name__).info(
+                "清理遗留 soffice 进程 %d 个（批 56：隔离 profile 后不应再有，防御性兜底）", _n)
     base = os.path.splitext(os.path.basename(doc_path))[0]
     conv = os.path.join(out_dir, base + ".docx")
     return conv if os.path.exists(conv) else None

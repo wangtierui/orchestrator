@@ -937,6 +937,10 @@ def _extract_doc_via_wps(data: bytes, timeout: float = 45.0) -> str | None:
         # 只首次 Dispatch 成功，第二次起即快速失败；主线程连续调用稳定。
         import win32com.client
 
+        if os.environ.get("RCO_ALLOW_OFFICE_COM", "").strip() not in ("1", "true", "True"):
+            # 批 56：**默认禁用 Office/WPS COM**（COM 实例与用户桌面会话交互，实测导致剪贴板/焦点被抢占；隐藏窗口下安全对话框还会永久阻塞）
+            # ⇒ 需要时显式置 RCO_ALLOW_OFFICE_COM=1 开启
+            return None
         app = win32com.client.Dispatch("KWPS.Application")
         try:
             app.Visible = False
