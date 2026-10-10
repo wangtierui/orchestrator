@@ -147,6 +147,18 @@ def render(res: dict) -> str:
         by_kind = " | ".join(f"{a} {b}" for a, b in (k.get("by_kind") or {}).items())
         lines.append(f"待办 : {k.get('open', 0)} open  ({by_kind or '无'})")
         if k.get("oldest"):
+            # 批 61：补齐 `notify.on` 的 `worklist_aged` 发送者（此前无人外发 ✗）；仅在**确有**超阈值项时发。
+            if k.get("aged"):
+                try:
+                    from std_lib.common_lib import notify as _notify_w
+
+                    _notify_w.notify(
+                        "worklist_aged",
+                        f"worklist 最旧未决项滞留超阈值（{k.get('aged_threshold_days', '')} 天）",
+                        {"oldest": k.get("oldest", ""), "open": k.get("open", 0)},
+                    )
+                except Exception as e:  # noqa: BLE001  告警失败不得影响 status 输出
+                    print(f"[status] WARN 告警发送失败: {type(e).__name__}: {e}")
             flag = " ⚠️ 超阈值" if k.get("aged") else ""
             lines.append(
                 f"       └ 最长滞留: {k['oldest']} {k.get('oldest_open_days', 0)}d"

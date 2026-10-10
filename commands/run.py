@@ -99,7 +99,12 @@ def main(argv=None) -> int:
     if args.triggers and rc == 0 and not args.dry_run:
         from std_lib.common_lib import triggers as trg
 
-        rep = trg.run_all({"argv": list(argv or [])})
+        # 批 61（W-AP）：**只跑链外触发项** —— 链内 4 项已由 `_run_conditional` 承接，
+        # 重复执行会双写 ✗（SSOT = triggers.CHAIN_TRIGGER_IDS）。
+        _chain_ids: frozenset = frozenset(getattr(trg, "CHAIN_TRIGGER_IDS", frozenset()))
+        _only = [t["id"] for t in trg.decide({}) if t["id"] not in _chain_ids]
+        rep = trg.run_all({"argv": list(argv or [])}, only=_only)
+        print(f"[run] 条件触发（链外 {len(_only)} 项）：执行 {rep['ran']} / 跳过 {rep['skipped']} / 失败 {rep['failed']}")
         print(f"[run] 条件触发：执行 {rep['ran']} / 跳过 {rep['skipped']} / 失败 {rep['failed']}")
         if rep["failed"]:
             return ExitCode.DATA

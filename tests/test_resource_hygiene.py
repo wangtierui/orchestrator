@@ -158,7 +158,7 @@ def test_backup_prune_grouped_by_tag_and_source(tmp_path, monkeypatch) -> None:
         d.mkdir()
         (d / fname).write_text("x", encoding="utf-8")
     monkeypatch.setattr(mod, "BACKUP_ROOT", str(root))
-    removed = mod._cleanup_backups()
+    removed = mod._cleanup_backups(keep=1)   # 批 61（W-V）：**显式固定策略**，与 env `SCRAPERS_BACKUP_KEEP` 解耦（否则本机设为 ≥2 时该断言偶发失败 ✗）
     assert removed == ["cleaned_before_timeliness_20261007_010101"]
     assert (root / "cleaned_before_timeliness_20261008_010101").exists()
     assert (root / "cleaned_before_timeliness_20261008_020202").exists(), "他源快照不得被牵连"
