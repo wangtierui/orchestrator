@@ -266,6 +266,72 @@ def garble_ratio(text: str) -> float:
     return text.count("\ufffd") / max(1, len(text))
 
 
+_HTML_HEAD_RE = re.compile(rb"<(?:!doctype\s+html|html|body|table|div|p)\b", re.I)
+_MIME_HEAD_RE = re.compile(
+    rb"^(?:MIME-Version|Content-Type|Content-Transfer-Encoding|Content-Disposition)\s*:", re.I | re.M)
+_HTTP_HEAD_RE = re.compile(rb"^HTTP/\d\.\d\s+\d{3}|^(?:Server|Date|Content-Length)\s*:", re.I | re.M)
+
+
+def _strip_leading_headers(data: bytes) -> tuple[bytes, str]:
+    """剥离**前导文本头**（MIME/HTTP 头）：返回 `(载荷, 证据)`；无分隔空行则不剥离。"""
+    head = data[: min(len(data), 65536)]
+    if not (_MIME_HEAD_RE.search(head) or _HTTP_HEAD_RE.search(head)):
+        return data, ""
+    for sep in (b"\r\n\r\n", b"\n\n", b"\r\r"):
+        i = head.find(sep)
+        if i >= 0:
+            return data[i + len(sep):], "headers"
+    return data, ""
+
+
+def unmask_payload(data: bytes) -> tuple[bytes, dict]:
+    """**拆封**（批 54/W-W）：识别并解开"外壳非内容"的伪装，返回 `(内层载荷, 证据)`。
+
+    覆盖：① 前导 MIME/HTTP 头（实测 `83896.doc` 内容以 `MIME-Ver…` 开头 ⇒ xlrd/OLE2 解析全败）
+    ② MIME multipart（取最大有效部分）③ BOM/空白等前缀噪声。
+    仅在**确实拆封**时返回非空证据（`{unmasked, outer_head, inner_head}`），否则原字节 + `{}`。
+    """
+    ev: dict[str, Any] = {}
+    # ① **MIME 容器优先**（整封含 MIME-Version/Content-Type + boundary）——须在剥离前判定，
+    #    否则头部被剥离后 email 解析器无从识别 multipart。
+    head = data[: min(len(data), 65536)]
+    if _MIME_HEAD_RE.search(head[:4096]) and b"boundary=" in head[:4096].lower():
+        try:
+            import email
+
+            msg = email.message_from_bytes(data)
+            best: bytes = b""
+            for part in msg.walk():
+                payload = bytes(part.get_payload(decode=True) or b"")
+                if len(payload) > len(best):
+                    best = payload
+            # 阈值 16B（批 54 实测：`EmailMessage` 小附件 <64B 会被漏拆；真实载荷均 ≥16B）
+            if len(best) >= 16:
+                ev = {"unmasked": "mime_multipart",
+                      "outer_head": data[:24].decode("utf-8", "replace")}
+                data = best
+        except Exception:  # noqa: BLE001  拆封失败不阻断（保持原字节）
+            pass
+    # ② 前导 MIME/HTTP 头（外壳头 + 载荷）——仅在非 MIME 容器时适用
+    if not ev:
+        inner, why = _strip_leading_headers(data)
+        if why:
+            ev = {"unmasked": why, "outer_head": data[:24].decode("utf-8", "replace")}
+            data = inner
+    if not ev:
+        return data, {}
+    ev["inner_head"] = data[:12].decode("utf-8", "replace")
+    return data, ev
+
+
+def html_to_text(payload: bytes) -> str:
+    """HTML → 可见文本（批 54/W-W：`html` 伪装轨；去 script/style 与标签）。"""
+    s = payload.decode("utf-8", "replace")
+    s = re.sub(r"(?is)<(script|style)\b.*?</\1>", " ", s)
+    s = re.sub(r"(?s)<[^>]+>", " ", s)
+    return re.sub(r"[ \t\r\f\v]+", " ", s).strip()
+
+
 def extract_document_text(
     data: bytes,
     name: str = "",
@@ -286,7 +352,44 @@ def extract_document_text(
     """
     kind = sniff_kind(data, name)
     sha = sha256_of(data)
+    # 批 54/W-W：**content-type/sniff 二次判定** —— 扩展名与魔数均不可信时（MIME 封装、前导
+    # MIME/HTTP 头、HTML 冒充 .doc 等）先**拆封**再重新嗅探，全过程**留证据** `sniff`（可审计）。
+    _sniff: dict[str, Any] = {"declared_ext": os.path.splitext(name or "")[1].lower(),
+                              "sniffed_kind": kind}
+    _inner, _ev = unmask_payload(data)
+    if _ev:
+        _sniff.update(_ev)
+        data = _inner
+        # 拆封后**不得再用（可能误导的）扩展名兜底** —— 扩展名正是伪装来源本身
+        kind = sniff_kind(_inner, "")
+        if kind == "unknown":
+            try:
+                if _inner.decode("utf-8").strip():
+                    kind = "text"   # 外壳包裹的纯文本（实测 83896.doc 同类：MIME 头 + 文本载荷）
+            except UnicodeDecodeError:
+                pass
+        _sniff["inner_kind"] = kind
+        LOG.info("[sniff2] %s：%s → %s（%s）", name, _sniff["sniffed_kind"], kind,
+                 _ev.get("unmasked"))
+    if kind == "text":   # 批 54：拆封得到的纯文本（不做二进制解析）
+        _txt = data.decode("utf-8", "replace")
+        LOG.info("[sniff2] %s：按纯文本处理（%d 字符）", name, len(_txt))
+        return {"text": _txt, "kind": "text", "extracted": bool(_txt.strip()),
+                "extract_status": "ok" if _txt.strip() else "empty", "sha256": sha,
+                "needs_ocr": False, "garble_ratio": 0.0, "size_bytes": len(data),
+                "sniff": _sniff}
+    _head_probe = data[:256].lstrip(b"\xef\xbb\xbf \t\r\n")
+    if _HTML_HEAD_RE.match(_head_probe):
+        _txt = html_to_text(data)
+        kind = "html"
+        _sniff["inner_kind"] = "html"
+        LOG.info("[sniff2] %s：按 HTML 伪装处理（%d 字符可见文本）", name, len(_txt))
+        return {"text": _txt, "kind": "html", "extracted": bool(_txt),
+                "extract_status": "ok" if _txt else "empty", "sha256": sha,
+                "needs_ocr": False, "garble_ratio": 0.0, "size_bytes": len(data),
+                "sniff": _sniff}
     rec: dict[str, Any] = {
+        "sniff": _sniff,
         "text": "",
         "kind": kind,
         "extracted": False,
