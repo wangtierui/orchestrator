@@ -409,7 +409,10 @@ def extract_document_text(
         if kind == "pdf":
             return _merge(rec, _extract_pdf(data, enable_ocr, ocr_timeout))
         if kind == "docx":
-            return _merge(rec, _extract_docx(data))
+            _dr = _extract_docx(data)
+            if not (_dr.get("text") or "").strip():      # 批 57/W-Z：**容忍缺失附属部件**
+                _dr = _merge(_dr, _extract_docx_lenient(data))
+            return _merge(rec, _dr)
         if kind == "xlsx":
             return _merge(rec, _extract_xlsx(data))
         if kind == "ole2":
@@ -613,6 +616,33 @@ def _pdf_lib_available() -> bool:
         return True
     except ImportError:
         return False
+
+
+def _extract_docx_lenient(data: bytes) -> dict[str, Any]:
+    """**容忍缺失附属部件**的 docx 文本抽取（批 57/W-Z）。
+
+    实证：大量《道路机动车辆生产企业及产品》.docx 因缺 `userCustomization/customUI.xml` 等
+    **附属部件**被 python-docx 整体拒绝（`no item named ...`）⇒ 正文可取却全丢 ✗。
+    本函数只依赖 OOXML 最小要件：直读 zip 内 `word/document.xml`，按段落提取 `<w:t>` 文本。
+    """
+    import re as _re
+    import zipfile
+
+    try:
+        with zipfile.ZipFile(__import__("io").BytesIO(data)) as z:
+            if "word/document.xml" not in z.namelist():
+                return {"text": "", "extracted": False, "extract_status": "unsupported"}
+            xml = z.read("word/document.xml").decode("utf-8", "replace")
+    except Exception:  # noqa: BLE001  非 zip/损坏：交上层降级
+        return {"text": "", "extracted": False, "extract_status": "corrupt"}
+    out = []
+    for p in _re.split(r"</w:p>", xml):
+        txt = "".join(_re.findall(r"<w:t[^>]*>([^<]*)</w:t>", p))
+        if txt.strip():
+            out.append(txt)
+    text = "\\n".join(out).strip()
+    return {"text": text, "extracted": bool(text),
+            "extract_status": "ok" if text else "empty"}
 
 
 def _extract_docx(data: bytes) -> dict[str, Any]:

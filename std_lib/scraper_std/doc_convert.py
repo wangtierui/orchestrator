@@ -65,6 +65,40 @@ def find_libreoffice(bin: str | None = None) -> str | None:
     return None
 
 
+
+#: 批 57/W-AB：正式模块 logger。**不以 `import logging` 语句引入**（本文件历史上无该导入，中途插入会触发 E402 "module level import not at top"）⇒ 用 `__import__` 取得同一对象。
+LOG = __import__("logging").getLogger(__name__)
+
+
+def _pids_by_profile(profile_url: str) -> set[int]:
+    """**仅**返回命令行含本仓隔离 profile 标记的 soffice PID ⇒ **精确归属，绝不误杀用户 LibreOffice**。
+
+    批 57 教训：批 56 用"前后 PID 差集"清理遗留进程 ✗ —— 若用户此刻打开/正在使用 LibreOffice 会被
+    **误杀**；而**剪贴板内容由源进程持有**，进程被杀即表现为"复制粘贴失效" ✗✗。故改为按
+    `rco_lo_profile`（本仓专属标记）在命令行里精确匹配。
+    """
+    pids: set[int] = set()
+    if os.name != "nt":
+        return pids
+    try:
+        from std_lib.scraper_std.proc import run as _run
+    except Exception:  # noqa: BLE001  引导期兜底
+        def _run(argv, **kw):          # 包装函数（避免 mypy 对重载函数赋值报错）
+            return subprocess.run(argv, **kw)
+    cmd = ("Get-CimInstance Win32_Process | Where-Object { $_.Name -match \'^soffice\' -and "
+           "$_.CommandLine -like \'*rco_lo_profile*\' } | ForEach-Object { $_.ProcessId }")
+    try:
+        out = _run(["powershell", "-NoProfile", "-NonInteractive", "-Command", cmd],
+                   capture_output=True, text=True, encoding="utf-8",
+                   errors="replace", timeout=30).stdout or ""
+        for ln in out.splitlines():
+            if ln.strip().isdigit():
+                pids.add(int(ln.strip()))
+    except Exception:  # noqa: BLE001  查询失败不阻断
+        pass
+    return pids
+
+
 def _soffice_pids() -> set[int]:
     """当前 soffice/soffice.bin 进程 PID 集合（批 56：用于兜底清理，避免遗留进程与用户会话纠缠）。"""
     pids: set[int] = set()
@@ -120,11 +154,12 @@ def doc_to_docx(doc_path: str, *, bin: str | None = None, timeout: int = 120) ->
         return None
     out_dir = os.path.dirname(os.path.abspath(doc_path))
     # 批 56：**隔离 profile + 全静默旗标**（不挂用户会话、不弹恢复/默认文档对话框、不抢焦点与剪贴板）
-    _before = _soffice_pids()
+    _profile_url = _isolated_profile_url()
+    _before = _pids_by_profile(_profile_url)   # 只认我方 profile（不触碰用户会话）
     try:
         subprocess.run(
             [lo, "--headless", "--norestore", "--nodefault", "--nologo", "--nolockcheck",
-             "-env:UserInstallation=" + _isolated_profile_url(),
+             "-env:UserInstallation=" + _profile_url,
              "--convert-to", "docx", "--outdir", out_dir, doc_path],
             check=False,
             capture_output=True,
@@ -133,12 +168,12 @@ def doc_to_docx(doc_path: str, *, bin: str | None = None, timeout: int = 120) ->
     except (OSError, subprocess.TimeoutExpired):
         return None
     finally:
-        # 兜底：清理本次转换**新产生**且仍存活的 soffice（历史实测会遗留并常驻用户会话）
-        _leaked = _soffice_pids() - _before
+        # 批 57：**只清理命令行含我方隔离 profile 的进程**（精确归属）——
+        # 绝不使用 PID 差集：那会误杀用户自己的 LibreOffice，并使其剪贴板内容失效。
+        _leaked = _pids_by_profile(_profile_url) - _before
         if _leaked:
             _n = _kill_pids(_leaked)
-            __import__("logging").getLogger(__name__).info(
-                "清理遗留 soffice 进程 %d 个（批 56：隔离 profile 后不应再有，防御性兜底）", _n)
+            LOG.info("清理我方遗留 soffice %d 个（隔离 profile 精确归属）", _n)
     base = os.path.splitext(os.path.basename(doc_path))[0]
     conv = os.path.join(out_dir, base + ".docx")
     return conv if os.path.exists(conv) else None

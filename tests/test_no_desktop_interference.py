@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 """批 56 守卫：后台任务**不得干扰用户桌面**（剪贴板/焦点/浏览器抢占）——回归防线。
-
 背景（用户实测症状）：任务运行中，其他办公软件里**复制粘贴失效或被抢占**。
 取证结论：`doc_convert.doc_to_docx` 调用 LibreOffice 时**未指定 `-env:UserInstallation`**
 ⇒ `--headless` 挂到**用户既有 LibreOffice 会话/默认 profile**，抢占焦点与剪贴板，且历史实测会
@@ -17,18 +16,15 @@ import sys
 def test_libreoffice_invocation_is_isolated_and_silent(monkeypatch, tmp_path) -> None:
     """**行为守卫**：doc_convert 的 soffice 调用必须带隔离 profile 与全静默旗标。"""
     from std_lib.scraper_std import doc_convert as dc
-
     captured: dict = {}
-
     class _R:
         returncode = 0
         stdout = ""
         stderr = ""
-
     def _fake_run(cmd, *a, **kw):
-        captured.setdefault("cmd", list(cmd))
+        if "--convert-to" in cmd:   # 只捕获转换调用（另有 tasklist/powershell）
+            captured.setdefault("cmd", list(cmd))
         return _R()
-
     monkeypatch.setattr(dc, "find_libreoffice", lambda *a, **k: "soffice-stub")  # 隔离探测依赖
     monkeypatch.setattr(dc.subprocess, "run", _fake_run)
     monkeypatch.setattr(dc, "_soffice_pids", lambda: set())   # 兜底清理不触真实 tasklist
@@ -43,17 +39,12 @@ def test_libreoffice_invocation_is_isolated_and_silent(monkeypatch, tmp_path) ->
         "缺少隔离 profile（会挂到用户 LibreOffice 会话并抢占焦点/剪贴板）"
     assert "--norestore" in cmd and "--nodefault" in cmd, "缺少静默/无对话框旗标"
     assert any("file://" in x for x in cmd), "隔离 profile 须为 file URL"
-
-
 def test_isolated_profile_is_repo_owned_temp_dir() -> None:
     """隔离 profile 落在**本仓自有临时目录**（不触碰用户 LibreOffice 配置）。"""
     from std_lib.scraper_std.doc_convert import _isolated_profile_url
-
     url = _isolated_profile_url()
     assert url.startswith("file://") and "rco_lo_profile" in url
     assert os.path.isdir(os.path.join(__import__("tempfile").gettempdir(), "rco_lo_profile"))
-
-
 def test_no_clipboard_or_focus_apis_repo_wide() -> None:
     """全仓**禁止**剪贴板/焦点/自动输入类 API（否则必然干扰用户桌面）。"""
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -77,11 +68,8 @@ def test_no_clipboard_or_focus_apis_repo_wide() -> None:
                 if any(k in ln for k in banned) and not ln.strip().startswith("#"):
                     hits.append("%s:%d" % (p.replace(os.sep, "/"), i))
     assert not hits, "发现剪贴板/焦点类 API：%s" % hits[:6]
-
-
 def test_office_com_is_gated_by_env() -> None:
     """Office/WPS COM 必须**默认禁用**（需 `RCO_ALLOW_OFFICE_COM=1` 显式开启）。
-
     判定：COM 调用行的**前 6 行内**必须出现 `RCO_ALLOW_OFFICE_COM` 门禁（即先门禁后调用）。
     """
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -95,12 +83,9 @@ def test_office_com_is_gated_by_env() -> None:
         window = chr(10).join(ls[max(0, idx - 6):idx])
         assert "RCO_ALLOW_OFFICE_COM" in window, \
             "%s:%d 的 COM 调用缺少 env 门禁（会与用户桌面会话交互）" % (rel, idx + 1)
-
-
 def test_no_lingering_process_helper_contract() -> None:
     """兜底清理契约：`_soffice_pids` 返回集合、`_kill_pids(空)` 无副作用且不抛异常。"""
     from std_lib.scraper_std.doc_convert import _kill_pids, _soffice_pids
-
     assert isinstance(_soffice_pids(), set)
     assert _kill_pids(set()) == 0
     assert sys.platform
