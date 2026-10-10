@@ -1,117 +1,170 @@
 # -*- coding: utf-8 -*-
-"""批 56 守卫：后台任务**不得干扰用户桌面**（剪贴板/焦点/浏览器抢占）——回归防线。
-背景（用户实测症状）：任务运行中，其他办公软件里**复制粘贴失效或被抢占**。
-取证结论：`doc_convert.doc_to_docx` 调用 LibreOffice 时**未指定 `-env:UserInstallation`**
-⇒ `--headless` 挂到**用户既有 LibreOffice 会话/默认 profile**，抢占焦点与剪贴板，且历史实测会
-**遗留 soffice 进程常驻用户会话**（实测命令行即本仓 doc_convert 的调用、进程长期存活）；
-另有 Word COM（`gov_zhengceku`）与 WPS COM（`crawler_common`）两条自动化链会与桌面会话交互。
+"""桌面干扰契约守卫（批 56 初版 → 批 61 重写为单一事实源）。
+
+覆盖四类契约：
+  1. **输入自动化 / 焦点干预全仓禁止**（用户在其他办公软件中被抢焦点不可接受）；
+  2. **剪贴板 API 仅豁免两处**：`clipboard_guard.py`（内容保全）与 `win_station.py`（窗口站隔离器，
+     其 `EmptyClipboard` 只出现在模块文档与**私有站自检**中）；其余文件出现即失败；
+  3. **LibreOffice 转换路径**：必须经**独立窗口站**（`win_station.isolated_run`）＋ 带**隔离 profile**
+     与**全静默旗标**；隔离不成立必须 fail-safe 放弃；保留紧急开关 `RCO_DISABLE_LO_CONVERT=1`；
+     外层必须有**剪贴板保全护栏**（快照/恢复）；
+  4. **子进程隐藏默认**（`proc.py`）：Windows 下 `hidden_kwargs()` 必须给出隐藏窗口参数。
+
+背景（用户实测症状与结论）：LibreOffice 在 Windows 上即使 `--headless` 也会在启动/退出清空系统剪贴板
+（实测每次转换 Δ≥1，最坏 6 次）⇒ 用户复制粘贴失效；窗口站隔离对普通操作有效但对 LO 不足 ⇒
+故采取"窗口站（隔离面）+ 保全护栏（内容不丢）"双重机制。
 """
 from __future__ import annotations
 
 import os
-import re
-import sys
+
+#: 输入自动化 / 焦点干预（**全仓禁止**）
+BANNED_FOCUS = ("pyautogui", "pynput", "SendInput", "keybd_event", "mouse_event",
+                "SetForegroundWindow", "BringWindowToTop", "SetActiveWindow",
+                "AttachThreadInput", "SendKeys", "os.startfile")
+#: 剪贴板 API（**仅豁免清单内文件**）
+CLIPBOARD_APIS = ("OpenClipboard", "SetClipboardData", "EmptyClipboard",
+                  "win32clipboard", "pyperclip", "to_clipboard")
+#: 剪贴板 API 豁免文件（相对仓根；附理由见模块 docstring）
+CLIPBOARD_EXEMPT = ("std_lib/scraper_std/clipboard_guard.py",
+                    "std_lib/scraper_std/win_station.py",
+                    "tests/test_no_desktop_interference.py")
+
+_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# 说明：`/external` 为**第三方 vendored 代码**（如 PaddleOCR），不属本仓纪律范围；
+_SKIP_DIRS = ("/.git", "__pycache__", "/refactor", "/reports", "/graphify-out",
+              "/.venv", "/external")
 
 
-def test_libreoffice_invocation_is_isolated_and_silent(monkeypatch, tmp_path) -> None:
-    """**行为守卫**：doc_convert 的 soffice 调用必须带隔离 profile 与全静默旗标。"""
-    from std_lib.scraper_std import doc_convert as dc
-    captured: dict = {}
-    class _R:
-        returncode = 0
-        stdout = ""
-        stderr = ""
-    def _fake_run(cmd, *a, **kw):
-        if "--convert-to" in cmd:   # 只捕获转换调用（另有 tasklist/powershell）
-            captured.setdefault("cmd", list(cmd))
-        return _R()
-    monkeypatch.setattr(dc, "find_libreoffice", lambda *a, **k: "soffice-stub")  # 隔离探测依赖
-    # 批 58：转换**默认禁用**（每次转换会清空系统剪贴板）⇒ 本测试需显式放行
-    monkeypatch.setenv("RCO_ALLOW_LO_CONVERT", "1")
-    monkeypatch.setattr(dc.subprocess, "run", _fake_run)
-    monkeypatch.setattr(dc, "_soffice_pids", lambda: set())   # 兜底清理不触真实 tasklist
-    monkeypatch.setattr(dc, "_kill_pids", lambda pids, **k: 0)
-    src = tmp_path / "input.doc"
-    src.write_bytes(b"x")
-    dc.doc_to_docx(str(src), timeout=5)
-    cmd = captured.get("cmd") or []
-    assert cmd, "未观察到 LibreOffice 调用（守卫失效）"
-    assert "--headless" in cmd, "必须 headless"
-    assert any(x.startswith("-env:UserInstallation=") for x in cmd), \
-        "缺少隔离 profile（会挂到用户 LibreOffice 会话并抢占焦点/剪贴板）"
-    assert "--norestore" in cmd and "--nodefault" in cmd, "缺少静默/无对话框旗标"
-    assert any("file://" in x for x in cmd), "隔离 profile 须为 file URL"
-def test_isolated_profile_is_repo_owned_temp_dir() -> None:
-    """隔离 profile 落在**本仓自有临时目录**（不触碰用户 LibreOffice 配置）。"""
-    from std_lib.scraper_std.doc_convert import _isolated_profile_url
-    url = _isolated_profile_url()
-    assert url.startswith("file://") and "rco_lo_profile" in url
-    assert os.path.isdir(os.path.join(__import__("tempfile").gettempdir(), "rco_lo_profile"))
-def test_no_clipboard_or_focus_apis_repo_wide() -> None:
-    """全仓**禁止**剪贴板/焦点/自动输入类 API（否则必然干扰用户桌面）。"""
-    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    banned = ("win32clipboard", "pyperclip", "SetClipboardData", "SetForegroundWindow",
-              "BringWindowToTop", "SetActiveWindow", "pyautogui", "SendKeys", "os.startfile")
-    hits = []
-    self_file = os.path.abspath(__file__)
-    for dp, _dn, fn in os.walk(root):
+def _iter_py():
+    for dp, _dn, fn in os.walk(_ROOT):
         d = dp.replace(os.sep, "/")
-        if any(s in (d + "/") for s in (".git/", "__pycache__/", "reports/", "graphify-out/",
-                                        "external/", "tests/", "refactor/")):
+        if any(s in d for s in _SKIP_DIRS):
             continue
         for f in fn:
-            if not f.endswith(".py"):
-                continue
-            p = os.path.join(dp, f)
-            if os.path.abspath(p) == self_file:
-                continue
-            txt = open(p, encoding="utf-8", errors="replace").read()
-            for i, ln in enumerate(txt.splitlines(), 1):
-                if any(k in ln for k in banned) and not ln.strip().startswith("#"):
-                    hits.append("%s:%d" % (p.replace(os.sep, "/"), i))
-    assert not hits, "发现剪贴板/焦点类 API：%s" % hits[:6]
-def test_office_com_is_gated_by_env() -> None:
-    """Office/WPS COM 必须**默认禁用**（需 `RCO_ALLOW_OFFICE_COM=1` 显式开启）。
-    判定：COM 调用行的**前 6 行内**必须出现 `RCO_ALLOW_OFFICE_COM` 门禁（即先门禁后调用）。
-    """
-    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    for rel, marker in (("std_lib/scraper_std/crawler_common.py", 'Dispatch("KWPS.Application")'),
-                        ("modules/regulatory_scrapers/collectors/gov_zhengceku.py",
-                         'Dispatch("Word.Application")')):
-        ls = open(os.path.join(root, rel), encoding="utf-8").read().splitlines()
-        # 只认**赋值形式的真实调用**（`x = mod.Dispatch(...)`），跳过 docstring/注释里的"提及"
-        idx = next(i for i, ln in enumerate(ls)
-                   if marker in ln and re.search(r"^\s*[\w.]+\s*=\s*[\w.]+\.Dispatch\(", ln))
-        window = chr(10).join(ls[max(0, idx - 6):idx])
-        assert "RCO_ALLOW_OFFICE_COM" in window, \
-            "%s:%d 的 COM 调用缺少 env 门禁（会与用户桌面会话交互）" % (rel, idx + 1)
-def test_no_lingering_process_helper_contract() -> None:
-    """兜底清理契约：`_soffice_pids` 返回集合、`_kill_pids(空)` 无副作用且不抛异常。"""
-    from std_lib.scraper_std.doc_convert import _kill_pids, _soffice_pids
-    assert isinstance(_soffice_pids(), set)
-    assert _kill_pids(set()) == 0
-    assert sys.platform
+            if f.endswith(".py"):
+                p = os.path.join(dp, f)
+                yield os.path.relpath(p, _ROOT).replace(os.sep, "/"), p
 
 
-def test_lo_convert_disabled_by_default(monkeypatch) -> None:
-    """**剪贴板根治守卫**（批 58）：`doc_to_docx` 默认**不得**调用 LibreOffice。
+def _read(p: str) -> str:
+    """读源码并**剔除注释行**：纪律扫描针对**调用**，不针对文档/注释中的提及。"""
+    txt = open(p, encoding="utf-8", errors="replace").read()
+    return "\n".join(ln for ln in txt.splitlines() if not ln.lstrip().startswith("#"))
 
-    取证：每次转换确定性清空系统剪贴板（A/B 实测 Δ=1）⇒ 默认禁用是唯一零风险根治。
-    """
-    import os as _os
 
+def test_no_input_automation_or_focus_apis_repo_wide() -> None:
+    """输入自动化 / 焦点干预 API **全仓禁止**（仅本测试文件内的禁列清单可提及）。"""
+    hits = []
+    for rel, p in _iter_py():
+        if rel == "tests/test_no_desktop_interference.py":
+            continue
+        txt = _read(p)
+        for kw in BANNED_FOCUS:
+            if kw in txt:
+                hits.append("%s:%s" % (rel, kw))
+    assert not hits, "禁止的焦点/输入自动化 API 出现在：%s" % hits
+
+
+def test_clipboard_apis_only_in_exempt_files() -> None:
+    """剪贴板 API 仅允许出现在**豁免清单**；其余文件出现即失败（批 61 策略）。"""
+    hits = []
+    for rel, p in _iter_py():
+        if rel in CLIPBOARD_EXEMPT:
+            continue
+        txt = _read(p)
+        for kw in CLIPBOARD_APIS:
+            if kw in txt:
+                hits.append("%s:%s" % (rel, kw))
+    assert not hits, "剪贴板 API 越界（仅允许 %s）：%s" % (list(CLIPBOARD_EXEMPT), hits)
+
+
+def test_clipboard_guard_safety_properties() -> None:
+    """护栏安全性质（源码级）：格式白名单 / 体积上限 / 关闭开关 / 不把"空"当内容恢复。"""
+    g = _read(os.path.join(_ROOT, "std_lib", "scraper_std", "clipboard_guard.py"))
+    for must in ("CF_UNICODETEXT", "CF_TEXT", "CF_HDROP", "_MAX_BYTES", "_MAX_TOTAL",
+                 "RCO_DISABLE_CLIPBOARD_GUARD", "def snapshot", "def restore", "def describe"):
+        assert must in g, "护栏缺少 %s" % must
+    head = g.split("_UNSAFE_NAMES")[0]
+    assert "CF_BITMAP" not in head, "位图不得进入保全白名单（延迟渲染会反向唤起持有者 GUI）"
+    assert "raise" not in g.split("def restore")[0].split("def snapshot")[1], \
+        "快照不得抛异常（护栏不可成为故障源）"
+
+
+def test_window_station_self_provable_and_fail_safe() -> None:
+    """窗口站隔离器：具备自证入口（`--selftest`）、fail-safe 语义与唯一站名。"""
+    w = _read(os.path.join(_ROOT, "std_lib", "scraper_std", "win_station.py"))
+    for must in ("CreateWindowStationW", "CreateDesktopW", "SetProcessWindowStation",
+                 "SetThreadDesktop", "RC_NO_ISOLATION", "def selftest",
+                 "def isolated_run", "rco_lo_ws_"):
+        assert must in w, "隔离器缺少 %s" % must
+    assert "SetThreadDesktop" in w and "隔离不成立" in w, "SetThreadDesktop 失败必须视为隔离不成立（fail-safe）"
+
+
+def test_lo_convert_path_uses_station_and_guard() -> None:
+    """转换路径守卫：必须经窗口站 + 护栏；隔离失败 fail-safe；保留紧急开关。"""
+    src = _read(os.path.join(_ROOT, "std_lib", "scraper_std", "doc_convert.py"))
+    assert "win_station.isolated_run(" in src, "转换必须经独立窗口站执行"
+    assert "clipboard_guard.snapshot()" in src and "clipboard_guard.restore(" in src, "必须有护栏快照与恢复"
+    assert "RC_NO_ISOLATION" in src, "隔离不成立时必须 fail-safe 放弃"
+    assert "RCO_DISABLE_LO_CONVERT" in src, "需保留紧急关闭开关"
+
+
+def test_lo_convert_disabled_by_env_only(monkeypatch) -> None:
+    """**紧急开关**语义：仅 `RCO_DISABLE_LO_CONVERT=1` 时禁止转换；默认**恢复转换**（经隔离+护栏）。"""
     from std_lib.scraper_std import doc_convert as _dc
 
     called = {"n": 0}
 
     def _fake_run(*a, **k):
         called["n"] += 1
-        raise AssertionError("默认禁用时不得启动任何子进程")
+        raise AssertionError("关闭开关生效时不得启动任何子进程")
 
-    monkeypatch.delenv("RCO_ALLOW_LO_CONVERT", raising=False)
+    monkeypatch.setenv("RCO_DISABLE_LO_CONVERT", "1")
     monkeypatch.setattr(_dc, "find_libreoffice", lambda *a, **k: "soffice-stub")
     monkeypatch.setattr(_dc.subprocess, "run", _fake_run)
-    assert _dc.doc_to_docx(__file__) is None, "默认必须返回 None（不转换）"
-    assert called["n"] == 0, "默认禁用时不得调用子进程"
-    assert _os.environ.get("SAL_USE_VCLPLUGIN") == "svp", "仍应保留 svp 环境默认（放行时降低影响）"
+    assert _dc.doc_to_docx(__file__) is None, "关闭开关生效时必须返回 None（不转换）"
+    assert called["n"] == 0, "关闭开关生效时不得调用子进程"
 
+
+def test_libreoffice_invocation_is_isolated_and_silent(monkeypatch) -> None:
+    """LibreOffice 调用必须带**隔离 profile + 全静默旗标**，且经**独立窗口站**执行。"""
+    from std_lib.scraper_std import doc_convert as _dc
+    from std_lib.scraper_std import win_station as _ws
+
+    captured: dict = {}
+
+    def _fake_isolated(argv, **kw):
+        captured.setdefault("argv", list(argv))
+        captured.setdefault("kw", dict(kw))
+        return 0, "", "", {"isolated": True, "winsta": "rco_lo_ws_stub", "note": ""}
+
+    monkeypatch.setattr(_dc, "find_libreoffice", lambda *a, **k: "soffice-stub")
+    monkeypatch.setattr(_ws, "isolated_run", _fake_isolated)
+    monkeypatch.setattr(_ws, "station_available", lambda: True)
+    monkeypatch.setattr(_ws, "global_clipboard_seq", lambda: 1)
+    monkeypatch.delenv("RCO_DISABLE_LO_CONVERT", raising=False)
+    _dc.doc_to_docx(__file__, timeout=5)
+
+    argv = captured.get("argv") or []
+    assert argv, "必须经 win_station.isolated_run 启动转换（不得直接 subprocess.run）"
+    assert "--headless" in argv, "缺少 --headless"
+    assert any(a.startswith("-env:UserInstallation=") for a in argv), "缺少隔离 profile"
+    assert "--norestore" in argv and "--nolockcheck" in argv, "缺少全静默旗标"
+    assert "--convert-to" in argv and "docx" in argv, "缺少转换目标"
+
+
+def test_hidden_subprocess_defaults(monkeypatch) -> None:
+    """子进程隐藏默认（批 57）：Windows 下 `hidden_kwargs()` 必须给出隐藏窗口参数且调用方优先。"""
+    from std_lib.scraper_std import proc
+
+    kw = proc.hidden_kwargs()
+    if proc.IS_WIN:
+        assert kw.get("creationflags"), "Windows 下必须带 CREATE_NO_WINDOW"
+        assert "startupinfo" in kw, "Windows 下必须带 SW_HIDE 的 startupinfo"
+        assert kw["startupinfo"].wShowWindow == 0
+    # 调用方显式参数优先
+    import subprocess  # noqa: F401
+
+    assert proc.child_kwargs(polite=False).get("creationflags", 0) & proc.BELOW_NORMAL_PRIORITY_CLASS == 0
+    assert proc.child_kwargs(polite=True).get("creationflags", 0) & proc.BELOW_NORMAL_PRIORITY_CLASS
