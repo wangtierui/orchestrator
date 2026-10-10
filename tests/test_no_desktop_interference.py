@@ -61,7 +61,7 @@ def test_no_clipboard_or_focus_apis_repo_wide() -> None:
               "BringWindowToTop", "SetActiveWindow", "pyautogui", "SendKeys", "os.startfile")
     hits = []
     self_file = os.path.abspath(__file__)
-    for dp, dn, fn in os.walk(root):
+    for dp, _dn, fn in os.walk(root):
         d = dp.replace(os.sep, "/")
         if any(s in (d + "/") for s in (".git/", "__pycache__/", "reports/", "graphify-out/",
                                         "external/", "tests/", "refactor/")):
