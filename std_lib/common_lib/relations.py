@@ -424,11 +424,6 @@ ORGAN_WORDS: tuple[str, ...] = (
 )
 
 
-def quote_title_span(min_len: int = QUOTE_TITLE_MIN, max_len: int = QUOTE_TITLE_MAX) -> str:
-    """书名号标题**跨度**（无捕获组），如 `《[^《》]{2,40}》`。"""
-    return rf"《[^《》]{{{min_len},{max_len}}}》"
-
-
 def quote_title_capture(min_len: int = QUOTE_TITLE_MIN, max_len: int = QUOTE_TITLE_MAX) -> str:
     """书名号标题**捕获**形态，如 `《([^《》]{2,40})》`（第 1 组 = 标题）。"""
     return rf"《([^《》]{{{min_len},{max_len}}})》"

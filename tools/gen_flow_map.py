@@ -428,6 +428,17 @@ def _dep_state(name: str, p: dict) -> tuple:
         return "**权重未预置**", "warn"
     if p.get("service_reachable") is False or (p.get("kind") == "service" and p.get("service_reachable") is None):
         return "**服务未部署**", "warn"
+    # 批 63（E3）：就绪度须**读取清单 `weights.status`** —— 原实现只看 probe ⇒ `deepke` 被标
+    # 「就绪（依赖 + 权重实检通过）」，而其清单写明权重本环境不可得 ✗。
+    try:
+        from std_lib.common_lib import semantic_tools as _st3
+
+        _w = str((((_st3.load_manifest().get("tools") or {}).get(name) or {})
+                  .get("weights") or {}).get("status") or "")
+    except Exception:  # noqa: BLE001  清单不可读 ⇒ 用原判据
+        _w = ""
+    if _w == "unobtainable_in_this_env":
+        return "**权重不可得**（框架/依赖就位，微调权重本环境未获得）", "warn"
     if p.get("offline_ready") is True:
         return "就绪（依赖 + 权重实检通过）", "ready"
     return "就绪（依赖可用；无需外部权重）", "ready"

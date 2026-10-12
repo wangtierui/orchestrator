@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# 批 63（T7）：**特殊工具（人工）** —— 被 tests/test_table_completeness.py 引用为护栏样板；依赖 env WIP_SALES_DIR，属用户手动工作流，**不删除**。
 """
 dump_related_systems.py —— 关联制度/体系梳理 xlsx 内容转储（I-4 路径参数化）
 

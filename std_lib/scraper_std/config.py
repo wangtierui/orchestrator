@@ -104,28 +104,6 @@ def load_settings(path: str | None = None, *, project_root: str | None = None) -
         return copy.deepcopy(DEFAULTS)
 
 
-def save_settings(path: str, cfg: dict[str, Any]) -> None:
-    """写出配置（含注释说明）。"""
-    import yaml
-
-    os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
-    with open(path, "w", encoding="utf-8") as f:
-        yaml.safe_dump(cfg, f, allow_unicode=True, sort_keys=False)
-
-
-def load_proxy_list(path: str) -> list:
-    """读取代理池文件（每行一个代理 URL；如需鉴权，用户名口令经环境变量注入）。"""
-    if not path or not os.path.exists(path):
-        return []
-    out = []
-    with open(path, encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if line and not line.startswith("#"):
-                out.append({"http": line, "https": line})
-    return out
-
-
 if __name__ == "__main__":  # 离线自检
     cfg = load_settings()  # 无文件 → 默认
     assert cfg["http"]["delay_range"] == [2.0, 5.0]

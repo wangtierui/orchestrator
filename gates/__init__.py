@@ -122,6 +122,13 @@ ALL_GATES: list[dict] = [
         "desc": "清洗校验质量（失败记录不得进入交付；v2 §3.4）",
         "require_impl": True,
     },
+    {
+        # 批 63（W-AM/W-AJ/W-AK/AJ′）：**声明面「执行者存在性」** —— 既有门禁只校验名字/文件/
+        # 字面量"存在"，不校验"谁执行它" ⇒ 全绿仍失实 ✗（第五十九批审计统一根因）。
+        "module": "gates.gate_declaration_executor",
+        "desc": "声明面执行者存在性（event 承接/告警发送方/resume 可达/manifest 归属）",
+        "require_impl": True,
+    },
 ]
 
 

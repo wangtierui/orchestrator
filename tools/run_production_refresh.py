@@ -676,7 +676,8 @@ STEP_ORDER: tuple[str, ...] = (
     "collect:{src}",
     "supp:ingest_batch",
     "clean:{src}",
-    # 批 61（T4/W-AL）：**J7 产生方真正可达** —— `filter_clean_relevance.py`（产出
+    # 批 63（T4）：`filter_clean_relevance.py` 入链（clean 之后、apply 之前）。
+    "relevance:{src}",
     # `relevance_boundary` 待办）原为"零调用脚本"✗，此处入链（clean 之后、apply 之前）。
     # N-53（2026-09-27）：触发项**入链**为条件步骤（决策复用 common_lib.triggers；
     #   config/triggers.yaml 仍是条件唯一事实源）。插入位置按**数据依赖**而非其
@@ -996,6 +997,20 @@ def _run_chain(args) -> int:
     # N-53：原由 `cli.py run --only 6.9` 驱动，而 `--only` 只认**步骤名**（实测 6.9
     # 使全部步骤 SKIP = 空跑）。入链后由 `days_since: 7` 条件自守（核验后 7 天内跳过）。
     report.append(_run_conditional("timeliness:verify", "timeliness_verify"))
+
+    # 批 63（T4/W-AW）：接线 `filter_clean_relevance.py`（原为「零调用脚本」✗）⇒
+    # 门禁 J7 的「产生方」**真正可达**；旁路分析件，失败不阻断主链。
+    try:
+        report.append(
+            _run(
+                f"relevance:{src}",
+                [PY, os.path.join(ROOT, "modules", "regulatory_classifier", "scripts",
+                                    "filter_clean_relevance.py"), "--source", src],
+                timeout=900,
+            )
+        )
+    except Exception as e:  # noqa: BLE001
+        print(f"[refresh] WARN relevance:{src} 跳过: {type(e).__name__}: {e}")
 
     # ---- 阶段 2：时效回写（consolidate → apply 五源）----
     led = None

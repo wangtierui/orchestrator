@@ -1,0 +1,87 @@
+{
+ "generated_at": "2026-10-11 06:19:51",
+ "source": "all",
+ "limit": 200,
+ "mode": "full",
+ "status": "degraded",
+ "note": "嵌入链不可用 → 显式降级（**不抛**）。候选尝试：bge_base_zh, text2vec",
+ "policy_enabled": true,
+ "records": 858,
+ "themes": 10,
+ "agreement": null,
+ "margin": {},
+ "distribution": {},
+ "disagreements": [],
+ "fingerprint": {
+  "model": "bge_base_zh",
+  "dep_version": "6.1.0",
+  "weights": "971cc2b8ddcb4eec",
+  "ready": true
+ },
+ "embedder_notice": "[semantic_embed] 语义增强 'bge_base_zh' 不可用（本地权重就绪（external/models/bge-base-zh-v1.5；指纹 971cc2b8ddcb））→ 回退既有正则实现；如需启用：pip install -e .[semantic] | [semantic_embed] 语义增强 'bge_base_zh' 不可用（本地权重就绪（external/models/bge-base-zh-v1.5；指纹 971cc2b8ddcb））→ 回退既有正则实现；如需启用：pip install -e .[semantic]",
+ "baseline": {
+  "sources": [
+   "cleaned.theme_name",
+   "classifier:_t{N}_final.json"
+  ],
+  "classifier_entries": 2138,
+  "files": [
+   {
+    "file": "_t1_final.json",
+    "mtime": "2026-09-21T20:55:30",
+    "entries": 196
+   },
+   {
+    "file": "_t2_final.json",
+    "mtime": "2026-09-21T20:55:51",
+    "entries": 150
+   },
+   {
+    "file": "_t3_final.json",
+    "mtime": "2026-09-21T20:56:11",
+    "entries": 76
+   },
+   {
+    "file": "_t4_final.json",
+    "mtime": "2026-09-21T20:56:30",
+    "entries": 109
+   },
+   {
+    "file": "_t5_final.json",
+    "mtime": "2026-09-21T20:56:48",
+    "entries": 142
+   },
+   {
+    "file": "_t6_final.json",
+    "mtime": "2026-09-21T20:57:08",
+    "entries": 66
+   },
+   {
+    "file": "_t7_final.json",
+    "mtime": "2026-09-21T20:57:25",
+    "entries": 35
+   },
+   {
+    "file": "_t8_final.json",
+    "mtime": "2026-09-21T20:57:43",
+    "entries": 78
+   },
+   {
+    "file": "_t9_final.json",
+    "mtime": "2026-09-21T20:58:01",
+    "entries": 78
+   },
+   {
+    "file": "_t10_final.json",
+    "mtime": "2026-09-21T20:58:19",
+    "entries": 143
+   }
+  ]
+ },
+ "sample_policy": {
+  "prefer_baseline": true,
+  "scan_cap_per_source": 4000,
+  "scanned": 5948,
+  "why": "优先取有确定性基线的记录，使 agreement 具代表性（N-184b）；其余记录仅计入分布/边距"
+ }
+}

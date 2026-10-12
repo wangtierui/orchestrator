@@ -142,6 +142,8 @@
    "runtime_note": "⚠️ 需垫片：ltp 4.2.x 调 `batch_encode_plus`（transformers 5 已移除）→ 加载层等价补齐，实测可用（**原版本直接 AttributeError**）。"
   },
   "pgvector": {
+    "wired": false,
+    "wired_note": "未接线（批 63 核：实现/规划存在但链上无调用点；见 gen_flow_map.MODEL_BINDINGS 的 wired=False）",
    "repo": "https://github.com/pgvector/pgvector",
    "purpose": "向量相似检索（PostgreSQL 扩展）—— 作为 **ParadeDB 的替代**（免 AGPL、PG 生态原生）",
    "extra": "",
@@ -177,6 +179,8 @@
    "substitute": "sqlite_vec（**保留**为无服务依赖的备选/降级路径，与既有 FTS5 同库同源）"
   },
   "sqlite_vec": {
+    "wired": false,
+    "wired_note": "未接线（批 63 核：实现/规划存在但链上无调用点；见 gen_flow_map.MODEL_BINDINGS 的 wired=False）",
    "repo": "https://github.com/asg017/sqlite-vec",
    "purpose": "SQLite 向量检索扩展 —— **pgvector/ParadeDB 在本环境的可部署替代**",
    "extra": "",
@@ -192,6 +196,8 @@
    "note": "2026-09-29 部署：`pip install sqlite-vec` → **0.1.9 已装**（win_amd64 wheel 292KB）。选它的理由：① **pypi 可达**（本环境白名单内）；② **零服务依赖**，与既有 SQLite FTS5 同一库文件，避免引入第二个存储引擎；③ 使向量能力**不依赖任何可达性受限的资源**（模型站/镜像站）——**检索索引的构建**仍可用离线预置的 embedding 权重，两者解耦。"
   },
   "youtu_embedding": {
+    "wired": false,
+    "wired_note": "未接线（批 63 核：实现/规划存在但链上无调用点；见 gen_flow_map.MODEL_BINDINGS 的 wired=False）",
    "repo": "https://github.com/TencentCloudADP/youtu-embedding",
    "purpose": "中文语义向量化（腾讯优图，CMTEB 77.58 SOTA）——**替代 text2vec**",
    "extra": "semantic",
@@ -248,6 +254,8 @@
    "loader": "semantic_models.load_embedder('text2vec')（sentence-transformers，均值池化）"
   },
   "bge_base_zh": {
+    "wired": false,
+    "wired_note": "未接线（批 63 核：实现/规划存在但链上无调用点；见 gen_flow_map.MODEL_BINDINGS 的 wired=False）",
    "repo": "https://github.com/FlagOpen/FlagEmbedding",
    "purpose": "中文语义向量化（BAAI bge-base-zh-v1.5；检索/相似度强基线）",
    "extra": "semantic",
@@ -274,6 +282,8 @@
    "loader": "semantic_models.load_embedder('bge_base_zh')（sentence-transformers，CLS 池化）"
   },
   "bertopic": {
+    "wired": false,
+    "wired_note": "未接线（批 63 核：实现/规划存在但链上无调用点；见 gen_flow_map.MODEL_BINDINGS 的 wired=False）",
    "repo": "https://github.com/MaartenGr/BERTopic",
    "purpose": "无监督主题聚类（Transformer + c-TF-IDF）",
    "extra": "semantic",
@@ -289,6 +299,8 @@
    "license_to_verify": true
   },
   "umap": {
+    "wired": false,
+    "wired_note": "未接线（批 63 核：实现/规划存在但链上无调用点；见 gen_flow_map.MODEL_BINDINGS 的 wired=False）",
    "repo": "https://github.com/lmcinnes/umap",
    "purpose": "非线性降维（BERTopic 依赖）",
    "extra": "semantic",
@@ -303,6 +315,8 @@
    "license_to_verify": true
   },
   "hdbscan": {
+    "wired": false,
+    "wired_note": "未接线（批 63 核：实现/规划存在但链上无调用点；见 gen_flow_map.MODEL_BINDINGS 的 wired=False）",
    "repo": "https://github.com/scikit-learn-contrib/hdbscan",
    "purpose": "层次密度聚类（发现变密度簇）",
    "extra": "semantic",
@@ -317,6 +331,8 @@
    "license_to_verify": true
   },
   "signalgraph": {
+    "wired": false,
+    "wired_note": "未接线（批 63 核：实现/规划存在但链上无调用点；见 gen_flow_map.MODEL_BINDINGS 的 wired=False）",
    "repo": "https://github.com/zhiliscope/SignalGraph",
    "purpose": "零 Token 确定性图构建",
    "extra": "semantic",
@@ -387,6 +403,8 @@
    }
   },
   "paradedb": {
+    "wired": false,
+    "wired_note": "未接线（批 63 核：实现/规划存在但链上无调用点；见 gen_flow_map.MODEL_BINDINGS 的 wired=False）",
    "repo": "https://github.com/paradedb/paradedb",
    "purpose": "向量检索 + BM25 + 混合检索（基于 PostgreSQL 扩展）",
    "extra": "",
@@ -409,8 +427,10 @@
    }
   },
   "deepke": {
+    "wired": false,
+    "wired_note": "未接线（批 63 核：实现/规划存在但链上无调用点；见 gen_flow_map.MODEL_BINDINGS 的 wired=False）",
    "repo": "https://github.com/zjunlp/DeepKE",
-   "purpose": "知识抽取框架（NER / 关系抽取 / 属性抽取）；本仓挂 `relations:gen` 作关系抽取增强，**替代原 aprcoie**",
+   "purpose": "知识抽取框架（NER / 关系抽取 / 属性抽取）；**未接线**（`gen_flow_map.MODEL_BINDINGS` 标 `wired: False`；批 63 核）——规划为 `relations:gen` 关系抽取增强（**替代原 aprcoie**）",
    "extra": "",
    "pypi": "",
    "probe": {

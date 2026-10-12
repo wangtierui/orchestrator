@@ -82,6 +82,9 @@ jobs:
     kind: event
     when: ""
     after: verify
+    # 批 63（T3/W-AM）：**承接者（链内步骤，执行者存在性由新门禁核对）** —— event 作业不在
+    # Task Scheduler 安装（无 cron），其语义由链内步骤实际承接；`after` 仅表「上游作业」。
+    covered_by: "timeliness:consolidate"
     argv: ["cli.py", "timeliness", "sync"]
     on_miss: skip
     desc: "核验后：台账 → 归属表时效同步（F-C03）；已由 run 主链 6.9 之后的阶段承接"
@@ -93,6 +96,9 @@ jobs:
     # （属"纸面接线"：读者据手册会以为 gov 每天增量，实际每源都无定时采集）。
     # 现改指**真实承接者** `incremental_weekly`（周三 01:00 采集 gov/mof/pbc）。
     after: incremental_weekly
+    # 批 63（T3/W-AM）：**承接者（链内步骤，执行者存在性由新门禁核对）** —— event 作业不在
+    # Task Scheduler 安装（无 cron），其语义由链内步骤实际承接；`after` 仅表「上游作业」。
+    covered_by: "collect:{src}"
     argv: ["cli.py", "run", "--collect", "gov"]
     on_miss: skip
     desc: "gov 源增量（含 zhengceku 子源）——由 `incremental_weekly`（周三 01:00）承接；此处仅登记语义，不重复调度"

@@ -188,15 +188,6 @@ def scan_directory(root: str, include_ext: list[str] | None = None) -> list[Find
     return findings
 
 
-def format_report(findings: list[Finding]) -> str:
-    if not findings:
-        return "✅ 未发现敏感字符串硬编码（按内置规则扫描）。"
-    lines = ["❌ 发现潜在敏感信息，请人工复核（命中行必须改为环境变量注入）：", ""]
-    for f in findings:
-        lines.append(f"- [{f.level}] {f.file}:{f.line} ({f.hint}) → {f.matched}")
-    return "\n".join(lines)
-
-
 if __name__ == "__main__":  # 离线自检
     # 测试夹具动态拼接，避免源码中出现可被扫描命中的字面量（自检自身不产生误报）
     _fake_key = "my_real_" + "key_123"

@@ -99,7 +99,9 @@
   {
    "file": "gen_benchmark.py",
    "category": "tool",
-   "entry": "BENCHMARK.md 回归对照基线生成"
+   "entry": "BENCHMARK.md 回归对照基线生成",
+   "independent": true,
+   "independent_why": "按需人工执行（报告/基线生成类）；批 63 补字段以消除归属不明"
   },
   {
    "file": "gen_flow_map.py",

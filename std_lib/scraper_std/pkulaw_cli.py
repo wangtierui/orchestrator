@@ -381,25 +381,6 @@ def _tl(rec: dict[str, Any]) -> str:
     return str(rec.get("TimelinessDic", "") or "")
 
 
-def pick_verdict(
-    records: list[dict[str, Any]], base_title: str
-) -> tuple[dict[str, Any] | None, int]:
-    """同名自版本优先判定（单名称查询用）：现行有效 ∩ 同名自版本 → 取 IssueDate 最新。
-    返回 (现行版本记录或None, 现行有效记录数)"""
-    cur = [r for r in records if "现行有效" in _tl(r)]
-    if not cur:
-        return None, 0
-    base = base_title.strip()
-    selfv = [
-        r for r in cur if r.get("Title") == base or str(r.get("Title", "")).startswith(base + "(")
-    ]
-    pool = sorted(
-        selfv if selfv else cur,
-        key=lambda r: (_norm_date(r.get("IssueDate")), _norm_date(r.get("ImplementDate"))),
-    )
-    return pool[-1], len(cur)
-
-
 def match_record(
     records: list[dict[str, Any]], cand: dict[str, Any]
 ) -> tuple[list[dict[str, Any]], dict[str, Any] | None]:

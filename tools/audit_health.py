@@ -423,7 +423,19 @@ def check_dead_public() -> list:
     """
     f: list = []
     all_src = {p: _read(p) for p in _pyfiles()}
-    ref_blob = "\n".join([_read(p) for p in _pyfiles(with_tests=True)])
+    # 批 63（W-AO）：引用面**补仓根文件**（cli/bootstrap/paths/file_list_watcher）——原
+    # `_pyfiles()` 只扫 SCAN_DIRS ⇒ 这些被误报「零引用」✗；并**剔除 `__all__` 字符串计权**。
+    _root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    _roots = [os.path.join(_root, f) for f in
+              ("cli.py", "bootstrap.py", "paths.py", "file_list_watcher.py")
+              if os.path.exists(os.path.join(_root, f))]
+
+    def _read_refs(p: str) -> str:
+        """读源码并**剔除 `__all__` 块**（其字面量会虚增引用计数 ✗）。"""
+        return re.sub(r"(?ms)^\s*__all__\s*=\s*\[.*?\]\s*$", "", _read(p))
+
+    ref_blob = "\n".join([_read_refs(p) for p in _pyfiles(with_tests=True)]
+                         + [_read_refs(p) for p in _roots])
     blob = ref_blob
     for p, src in all_src.items():
         if _rel(p).startswith(("tests/", "tools/audit_health.py")):

@@ -115,16 +115,6 @@ def collector_path(source_id: str, refresh: bool = False) -> str:
     return p if os.path.exists(p) else ""
 
 
-def collector_source_map(refresh: bool = False) -> dict[str, str]:
-    """{source_id: collector 脚本绝对路径}——仅 enabled 外部源，供编排/调用路由（R15/R11）。"""
-    out = {}
-    for sid in active_source_ids(refresh):
-        p = collector_path(sid, refresh)
-        if p:
-            out[sid] = p
-    return out
-
-
 # --------------------------------------------------------------------------- #
 # ocr.yaml → ocr 配置
 # --------------------------------------------------------------------------- #

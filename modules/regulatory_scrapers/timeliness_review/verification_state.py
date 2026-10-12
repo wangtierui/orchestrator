@@ -99,16 +99,6 @@ def load_state():
     return d
 
 
-def read_meta():
-    """F-D14：读原始状态文件的版本锚点（结构变更检测/迁移用；正常消费无需调用）。"""
-    if not os.path.exists(STATE_FILE):
-        return {}
-    try:
-        return (json.load(open(STATE_FILE, encoding="utf-8")) or {}).get("_meta") or {}
-    except (OSError, ValueError):
-        return {}
-
-
 def save_state(state):
     os.makedirs(TASK_DIR, exist_ok=True)
     # F-D14（H-01）：版本锚点（**副本**写入——不污染调用方对象，防"保存后继续遍历"踩 _meta；

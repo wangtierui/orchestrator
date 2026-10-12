@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+# 批 63（T7）：**已被主链取代的历史编排器**（timeliness:verify→consolidate→apply→classify→gates 已
+# 覆盖其三 stage 职责）；**保留为参考，勿运行** —— 其时序纪律（镜像刷新先于 sync_all_layers 等）未逐条复验。
 """
 sync_three_modules.py —— 效力查验变更 → 三模块层级联动（可复用编排器，2026-08-30）
 

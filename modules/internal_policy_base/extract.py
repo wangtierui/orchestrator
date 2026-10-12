@@ -145,29 +145,6 @@ def copy_original(src: str, dst_dir: str, rel_path: str) -> str:
     return dst
 
 
-def backfill_reflow() -> dict:
-    """对存量 processed fulltext 重做正文规范化（含 ⑪ reflow 句内硬换行合并），无需重摄/重 OCR。
-    重写 <ipn>_fulltext.json 的 text；随后调用方应重跑 backfill_clauses 刷新 clauses.json/.md。"""
-    import json as _json
-    data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
-    proc_dir = os.path.join(data_dir, "processed")
-    if not os.path.isdir(proc_dir):
-        return {"error": "no processed dir"}
-    n = 0
-    for fn in sorted(os.listdir(proc_dir)):
-        if not fn.endswith("_fulltext.json"):
-            continue
-        p = os.path.join(proc_dir, fn)
-        obj = _json.load(open(p, encoding="utf-8"))
-        old = obj.get("text", "")
-        new = normalize_text(old)
-        if new != old:
-            obj["text"] = new
-            _json.dump(obj, open(p, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
-            n += 1
-    return {"reflowed": n}
-
-
 def build_clause_payload(ipn: str, text: str, title: str = "") -> tuple[dict, str]:
     """条文产物装配（**唯一实现**）：返回 (`_clauses.json` 载荷, `_clauses.md` 文本)。
 
@@ -248,52 +225,6 @@ def backfill_clauses() -> dict:
         except Exception:  # noqa: BLE001  解析容错（非关键字段缺失降级）
             pass
     return {"backfilled": n}
-
-
-def renormalize_processed() -> dict:
-    """对 data/processed/*_fulltext.json 全量重跑 normalize_text（清洗规则升级后回刷）。
-
-    幂等：仅在清洗后文本变化时回写；同时回刷 index 的 text_chars。返回统计。
-    """
-    import json as _json
-
-    data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
-    proc_dir = os.path.join(data_dir, "processed")
-    idx_path = os.path.join(data_dir, "internal_policy_index.json")
-    changed = unchanged = 0
-    if os.path.isdir(proc_dir):
-        for fn in sorted(os.listdir(proc_dir)):
-            if not fn.endswith("_fulltext.json"):
-                continue
-            p = os.path.join(proc_dir, fn)
-            try:
-                obj = _json.load(open(p, encoding="utf-8"))
-            except Exception:  # noqa: BLE001
-                continue
-            new_t = normalize_text(obj.get("text", ""))
-            if new_t != obj.get("text", ""):
-                _json.dump({"ipn": obj.get("ipn", ""), "text": new_t},
-                           open(p + ".tmp", "w", encoding="utf-8"), ensure_ascii=False, indent=2)
-                os.replace(p + ".tmp", p)
-                changed += 1
-            else:
-                unchanged += 1
-    # 回刷主索引 text_chars
-    if os.path.exists(idx_path) and changed:
-        try:
-            idx = _json.load(open(idx_path, encoding="utf-8"))
-            for rec in idx.get("records", []):
-                ipn = rec.get("ipn", "")
-                p = os.path.join(proc_dir, ipn + "_fulltext.json")
-                if os.path.exists(p):
-                    obj = _json.load(open(p, encoding="utf-8"))
-                    rec["text_chars"] = len(obj.get("text", ""))
-            _json.dump(idx, open(idx_path + ".tmp", "w", encoding="utf-8"),
-                       ensure_ascii=False, indent=2)
-            os.replace(idx_path + ".tmp", idx_path)
-        except Exception:  # noqa: BLE001  解析容错（非关键字段缺失降级）
-            pass
-    return {"changed": changed, "unchanged": unchanged, "processed_dir": proc_dir}
 
 
 def _is_scan_pdf(path: str, *, min_cjk: int = 30, pages: int = 5) -> bool:
