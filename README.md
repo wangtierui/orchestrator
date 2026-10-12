@@ -70,7 +70,7 @@ regulatory_compliance_orchestrator/
 | `paths.py` | 文件 | **常规流程** | **路径唯一事实源**（含 `module_dir()` / `relations_index()` 等访问器） | 被全仓引用 |
 | `config/` | 目录 | **常规流程（配置 SSOT）** | `enums.py`（**31 个受控域**）/ `sources.yaml`（源清单）/ `schedule.yaml`（定时） / `triggers.yaml`（条件触发）/ `schema/*.json`（清单与契约） | 被 `interfaces/`、`modules/`、`gates/` 引用 |
 | `interfaces/` | 目录 | **常规流程（契约层）** | `contract.py`（字段契约）/ `protocols.py`（四协议）/ `*_api.py`（进程内接口，**跨模块唯一通道**） | 被 `modules/`、`tools/`、`gates/` 引用 |
-| `gates/` | 目录 | **常规流程（质量门禁）** | **23 道**门禁实现（`gate_*.py`）；**唯一注册表 = `gates/__init__.py:ALL_GATES`** | 由 `cli.py gates` / `tools/ci_check.py` 驱动 |
+| `gates/` | 目录 | **常规流程（质量门禁）** | **24 道**门禁实现（`gate_*.py`）；**唯一注册表 = `gates/__init__.py:ALL_GATES`** | 由 `cli.py gates` / `tools/ci_check.py` 驱动 |
 | `commands/` | 目录 | **常规流程** | 子命令实现（`gates.py` / `relations.py` / `schedule.py` …） | 被 `cli.py` 分发调用 |
 | `modules/regulatory_scrapers/` | 目录 | **常规流程** | 五源采集 + 清洗 + 条文 + 关系 + 时效核验（含 `collectors/` `clean/` `clause_index/` `clean_index/`） | 入口 `cli.py run`；产 `data/{raw,cleaned,clauses}` |
 | `modules/regulatory_classifier/` | 目录 | **常规流程** | 归属表/主题表底座链 + 明细表 + 桥表 + 关系产物消费 + `recall_audit` | 被 `cli.py classify` / `analysis` 调用 |
@@ -79,7 +79,7 @@ regulatory_compliance_orchestrator/
 | `modules/base_publish/` | 目录 | **常规流程（交付层）** | 双底座发布件 + FTS5 索引（`write_jsonl` 为**包级唯一实现**） | 被 `cli.py base publish` 调用 |
 | `std_lib/scraper_std/` | 目录 | **常规流程（共享库）** | 采集/清洗通用能力（`crawler_common` / `unified_schema` / `sentence_split` / `attachments` …） | 被 `modules/regulatory_scrapers` 引用 |
 | `std_lib/common_lib/` | 目录 | **常规流程（共享库）** | 跨模块公共能力：`relations`（关系抽取）/ `sentence_boundary`（**句读 SSOT**）/ `semantic_tools`（探测）/ `semantic_models`（加载）/ **`semantic_enhance`（执行门面）** / `governance_store` / `vector_store` … | 被 `modules/`、`tools/`、`gates/` 引用 |
-| `tools/run_production_refresh.py` | 文件 | **常规流程（编排）** | **全链编排器**：`STEP_ORDER` **30 项**、按源展开执行、`--resume` 续跑、稳定运行台账 | 被 `cli.py run` / 计划任务调用 |
+| `tools/run_production_refresh.py` | 文件 | **常规流程（编排）** | **全链编排器**：`STEP_ORDER` **31 项**（机器核验：`audit_health`）、按源展开执行、`--resume` 续跑、稳定运行台账 | 被 `cli.py run` / 计划任务调用 |
 | `tools/ci_check.py` | 文件 | **常规流程（CI）** | 六项阻断检查：ruff / mypy / schedule / pytest / gates / coverage | 被人工/CI 调用 |
 | `tools/smoke_semantic_models.py` | 文件 | **特殊工具** | P1 模型**真实初始化 + 真实调用**冒烟自检 | 按需人工执行 |
 | `tools/audit_health.py` | 文件 | **特殊工具** | **九类缺陷机器化审计**（统一入口/断点/门禁/数据源/阻塞/冗余/重复/硬编码/README 一致性） | 按需人工执行 |
@@ -218,7 +218,7 @@ flowchart LR
 | **Disclose 披露** | 运行态/能力 | 控制台 + `BENCHMARK.md` + 运行台账 | `retention:plan`（轮转计划·只移动）/ `quarantine:triage`（隔离体检）/ `semantic:preflight`（P1 五闸）/ `pg:health`（向量后端） | 各披露步骤 | **常规流程（只读披露·恒 rc=0）** |
 | **Knowledge 同步** | 发布件 | `<Obsidian vault>/监管法规库` | frontmatter 溯源 + 截断声明 + `--prune` | `tools/sync_wiki_sources.py` | **特殊工具** |
 | **Ingest 投放区** | `data/inbox` | worklist 决策项 | 按 `inbox_registry.yaml` 归类 → worklist | `tools/inbox_scan.py` | **常规流程** |
-| **Validate 门禁** | 全仓数据/代码 | 门禁报告（+ 治理库归档） | **23 道** `ALL_GATES`（契约/枚举/漂移/时效 SSOT/血缘/水位/跨模块/运行时卫生/调度触发一致性/运行台账…） | `cli.py gates` | **常规流程（阻断）** |
+| **Validate 门禁** | 全仓数据/代码 | 门禁报告（+ 治理库归档） | **24 道** `ALL_GATES`（契约/枚举/漂移/时效 SSOT/血缘/水位/跨模块/运行时卫生/调度触发一致性/运行台账…） | `cli.py gates` | **常规流程（阻断）** |
 
 ---
 
@@ -232,7 +232,7 @@ flowchart LR
 | **mypy** | 提交前 / CI | `mypy std_lib modules tools config interfaces gates commands` | 阻断；按文件报类型错误 |
 | **schedule** | CI | 比对已装计划任务与 `schedule.yaml` | 阻断；列出差异 |
 | **pytest** | CI | `pytest -q`（含 `data` 标记用例） | 阻断；输出失败用例 |
-| **gates** | CI | `cli.py gates`（**23 道**） | 阻断；输出未过门禁清单 |
+| **gates** | CI | `cli.py gates`（**24 道**） | 阻断；输出未过门禁清单 |
 | **coverage** | CI | `pytest --cov`（当前 ≈42%） | 阻断；输出 TOTAL |
 
 ### 5.2 定时与事件驱动任务清单（**唯一事实源 = `config/schedule.yaml` + `config/triggers.yaml`**）
@@ -258,12 +258,21 @@ flowchart LR
 > **调度纪律**：定时表由 `tools/gen_schedule_doc.py` **反向生成**（**勿手改**）；`cli.py schedule install/verify`
 > 负责安装与比对；判据 S 断言"手册/README 自动段 == yaml 渲染"。**条件触发**唯一事实源 = `triggers.yaml`（判据 T 断言）。
 
+**事件驱动作业与告警的承接语义（批 63 起由门禁机器核验）**：
+
+- `kind=event` 的作业（`timeliness_sync` / `gov_increment`）**不在 Windows 计划任务中安装**（无 cron）——
+  其语义由链内步骤实际承接，故必须声明 `covered_by:` 指明**承接步骤**（须 ∈ `STEP_ORDER`）；
+  `after:` 仅表「上游作业」。核验 = 门禁 **E1**（见 §5.3 第 24 道）。
+- `notify.on` 列出的每类告警（`failed_step` / `gate_fail` / `worklist_aged` / `doctor_fail`）
+  **都必须有真实发送方**（链尾 gates / 自检 / 状态命令）——核验 = 门禁 **E2**。
+- 条件触发的 `{vault}` 由 `REG_ORCH_VAULT`（或 `config/vault.yaml:vault_dir`）供给；**缺值即该步骤跳过并写明原因**
+  （绝不生成字面 `{vault}` 目录 ✗）——核验 = 门禁 **E3**（`resume` 指向的脚本必须真实可达）。
 ### 5.3 代码与数据质量门禁 (Quality Gates)
 
 - **代码门禁**：`ruff` 零 Error；`mypy` 零 error；`pytest` 全绿；**引导纪律**（`gate_import_bootstrap`：
   `sys.path.insert` **只减不增**，新代码一律经 `bootstrap`）；**运行时卫生**（`gate_runtime_hygiene`：禁裸整数
   `return N`、禁无意图声明的宽泛吞异常、`interfaces/` 禁 `NotImplementedError` 空壳）。
-- **数据门禁（写入/交付拦截，**23 道**）**：契约清单一致性（`gate_contract`）/ 受控枚举（`gate_enum_values`）
+- **数据门禁（写入/交付拦截，**24 道**）**：契约清单一致性（`gate_contract`）/ 受控枚举（`gate_enum_values`）
   / 清洗契约（`gate_clean_schema`）/ 目录拍平（`gate_flat_layout`）/ 关系产物（`gate_relations`）
   / RFN 漂移与同步 / 血缘与水位 / 跨模块越权（`gate_no_cross_module_import`）/ 时效 SSOT
   / **运行台账（`gate_run_steps`：失败步骤的产物**若落在该步时间窗内 → FAIL**，可经人工确认降级为告警）**
@@ -281,6 +290,28 @@ flowchart LR
 
 ---
 
+- **执行者存在性门禁（第 24 道，`gates/gate_declaration_executor.py`，批 63）**：核验“声明面”**确有执行者** ——
+  E1 `kind=event` 作业的 `covered_by` ∈ `STEP_ORDER`｜E2 `notify.on` 每类告警有发送方｜
+  E3 `triggers.yaml` 的 `resume` 解析到真实文件｜E4 `tools/_manifest.json` 条目归属明确
+  （`independent`+`independent_why` 或 `step`）。**动因**：既有门禁只校验“名字/文件/字面量存在”，
+  不校验“谁执行它” ⇒ 全绿仍失实（第五十九批审计的统一根因）✗。
+
+### 5.4 桌面干扰防护（剪贴板/焦点/CPU，第五十六~六十五批）
+
+> 用户症状：**在使用其他办公软件时复制粘贴失效或被抢占**。真凶（活体监控 + A/B 对照定位）= 
+> **LibreOffice 每次转换都会清空系统剪贴板**（实测每 2.5~3.5s 一次；单次转换 Δ≥1，超大含表文档达 **Δ=194** ✗）。
+> 现以**四重机制**治理，全部可经环境变量关闭（见 §6.3）：
+
+| 机制 | 实现 | 作用 |
+|---|---|---|
+| ① **独立窗口站隔离** | `std_lib/scraper_std/win_station.py` | `CreateWindowStation`+`CreateDesktop`+桌面继承式启动；剪贴板**按窗口站隔离** ⇒ 普通剪贴板操作不影响用户。自证：`python -m std_lib.scraper_std.win_station --selftest`（Δ=0 ✓） |
+| ② **剪贴板保全护栏** | `std_lib/scraper_std/clipboard_guard.py` | 转换前快照、转换后**原样恢复**（仅 `CF_TEXT`/`CF_UNICODETEXT`/`CF_HDROP`；未保格式日志明示）⇒ **用户内容永不丢失** ✓（因实测 LO 会自行挂回 `WinSta0`，单靠 ① 不足 ✗） |
+| ③ **内容哈希缓存** | `std_lib/scraper_std/doc_convert.py` | 键 = 输入字节 sha256；命中即**不启动 LibreOffice** ⇒ 零剪贴板窗口（实测 7.3MB 文档：冷转换 102s/Δ=194 → 二次 **0.02s/Δ=0**） |
+| ④ **用户活动让路** | `std_lib/scraper_std/user_activity.py` | `GetLastInputInfo` 探测键鼠活动；用户在用 ⇒ **推迟**转换启动（上限 `RCO_QUIET_MAX_WAIT`，默认 60s；不可用时 fail-open 绝不阻塞） |
+
+**配套**：全局**隐藏子进程**（`CREATE_NO_WINDOW`+`SW_HIDE`，见 `std_lib/scraper_std/proc.py`，由 `bootstrap.py` 与
+`std_lib/scraper_std/__init__.py` 安装唯二引导点）｜链内子进程 `BELOW_NORMAL_PRIORITY_CLASS` 让路｜`PYTHONUNBUFFERED=1`
+（避免子进程 stdout 块缓冲导致日志“假死”）。
 ## 6. 环境搭建与本地开发 (Quick Start)
 
 ### 6.0 异机部署先决条件（必读）
@@ -370,6 +401,32 @@ s = se.split_sentences(text, level="strict")   # level ∈ {strict, loose}（受
 
 ---
 
+
+### 6.3 环境变量总表（`RCO_*` / `REG_ORCH_*`，**机器核验**：`audit_health` 保证代码用到的变量此处必有记载）
+
+| 变量 | 默认 | 用途 |
+|---|---|---|
+| `RCO_YIELD_TO_USER` | `1` | 让路总开关：置 0 关闭**全部**让路（优先级 + 用户活动等待） |
+| `RCO_QUIET_MAX_WAIT` | `60` | 用户活动让路的**等待上限**（秒） |
+| `RCO_DISABLE_CLIPBOARD_GUARD` | `（空）` | 置 1 关闭剪贴板保全护栏（不推荐：用户内容将不再恢复） |
+| `RCO_DISABLE_LO_CACHE` | `（空）` | 置 1 关闭转换缓存（每份内容都会真实转换 ⇒ 剪贴板窗口增多） |
+| `RCO_DISABLE_LO_CONVERT` | `（空）` | 置 1 **紧急禁用** `.doc→.docx` 转换（默认启用，经窗口站 + 护栏 + 让路） |
+| `RCO_ALLOW_LO_CONVERT` | `（空）` | 历史开关（批 58 默认禁用期使用）；现语义等价于“未禁用”，保留兼容 |
+| `RCO_ALLOW_OFFICE_COM` | `（空）` | 置 1 放行 Office/WPS COM 调用（默认**全门禁**；仍会驱动外部应用，谨慎） |
+| `RCO_ALLOW_VISIBLE_SUBPROCESS` | `（空）` | 置 1 放行**可见**子进程（默认全局隐藏；仅调试用） |
+| `REG_ORCH_VAULT` | `（空）` | 条件触发 `{vault}` 的供给（优先级高于 `config/vault.yaml:vault_dir`） |
+| `REG_ORCH_SEMANTIC_SPLIT` | `（见 §6.2）` | P1 语义增强的段落切分口径（唯一约定见 §6.2） |
+| `REG_ORCH_SEMANTIC_ASSIST_LIMIT` | `代码默认` | `semantic:assist` 入链步骤的条数上限 |
+| `REG_ORCH_DOCREADER_LIMIT` | `代码默认` | `docreader:extract` 步骤的条数上限 |
+| `REG_ORCH_NOTIFY_WEBHOOK` | `（空）` | 告警 webhook URL（仅 `notify.kind=webhook` 时使用；**禁止入库**） |
+| `REG_ORCH_RUN_ID` | `自动` | 运行标识（链/门禁/治理库/告警共享，用于串联台账） |
+| `REG_ORCH_JSON_LOGS` | `代码默认` | 是否输出 JSON 结构化日志（`common_lib/logging.py`） |
+| `REG_ORCH_GOVERNANCE_DB` | `派生` | 治理库路径（默认由 `paths.py` 派生） |
+| `REG_ORCH_ROOT` | `派生` | 仓根覆盖（异机/只读挂载时使用） |
+| `REG_ORCH_TEST_HANLP` | `（空）` | 测试用：放行 hanlp 相关用例（`tests/test_seg_chunking.py`） |
+
+> 说明：`RCO_*` 为**本仓运行时行为开关**（默认值即生产推荐值）；`REG_ORCH_*` 为**部署/运行期注入**（路径、上限、标识）。
+> 该表由 `tools/audit_health.py` 的 README 一致性核验（§5.3 门禁前置）**反向守护**：新增 env 而漏记 ⇒ 报 HIGH。
 ## 7. 附录与延伸阅读
 
 | 资源 | 位置 | 说明 |
@@ -575,6 +632,7 @@ flowchart TD
 显式 `model="…"` **覆盖 mode**（优先级最高）；分句增强由 env `REG_ORCH_SEMANTIC_SPLIT=1` 控制（**默认关**，见 §8.6 第 2 条）。
 
 <!-- END GENERATED: 全链数据流总图 -->
+
 
 
 
