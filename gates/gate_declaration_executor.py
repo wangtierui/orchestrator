@@ -23,6 +23,7 @@ import re
 from typing import Any
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+NL_JOIN = chr(10)  # 零转义换行（避免转义链路二次解释）
 
 
 def _read_json(path: str) -> dict:
@@ -60,7 +61,10 @@ def _step_order() -> list[str]:
                 break
     if end < 0:
         return []
-    return re.findall(r'"([^"]+)"', txt[j:end])
+    # ⚠️ 剔除注释行后再取字面量：注释里也会出现引号（实测把 31 项数成 33 ✗）
+    body = NL_JOIN.join(ln for ln in txt[j:end].splitlines()
+                        if not ln.lstrip().startswith('#'))
+    return re.findall(r'"([^"]+)"', body)
 
 
 def _runs_ok(step: str, order: list[str]) -> bool:

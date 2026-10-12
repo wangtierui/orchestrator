@@ -148,6 +148,61 @@ def _kill_pids(pids: set[int]) -> int:
     return n
 
 
+#: 转换结果缓存目录（临时区；键 = **输入字节 sha256**）。
+#: 为何需要（批 64 / W-AV+W-AT）：LibreOffice **单次转换即清空系统剪贴板 6 次**（实测 ✗），
+#: 而同一 `.doc` 会被**表格轨**（`table_recovery`）与**富对象轨**（`rich_object`）各转一次 ✗，
+#: 跨轮次还会重复 ⇒ 缓存把"每次都要付的剪贴板窗口"降为"每份内容一次" ✓（护栏之外的**降频**手段）。
+_CACHE_DIR = os.path.join(tempfile.gettempdir(), "rco_lo_cache")
+
+
+def _cache_dir() -> str:
+    """缓存目录（首次调用即建）。"""
+    os.makedirs(_CACHE_DIR, exist_ok=True)
+    return _CACHE_DIR
+
+
+def cache_key(data: bytes) -> str:
+    """内容键（sha256 hex）——**按字节**而非路径（路径会变、内容不变 ✓）。"""
+    import hashlib
+
+    return hashlib.sha256(data).hexdigest()
+
+
+def _cache_get(data: bytes) -> bytes | None:
+    """命中返回 docx 字节；未命中/不可读返回 None（缓存**永远不是故障源** ✓）。"""
+    if os.environ.get("RCO_DISABLE_LO_CACHE", "").strip() in ("1", "true", "True"):
+        return None
+    try:
+        p = os.path.join(_cache_dir(), cache_key(data) + ".docx")
+        if os.path.exists(p):
+            with open(p, "rb") as fh:
+                b = fh.read()
+            if b:
+                LOG.info("[doc_convert] 转换缓存命中（%d 字节，免一次 LibreOffice 转换 ⇒ 免剪贴板窗口）",
+                         len(b))
+                return b
+    except Exception:  # noqa: BLE001  缓存异常不阻断
+        pass
+    return None
+
+
+def _cache_put(data: bytes, docx_path: str) -> None:
+    """把转换产物写入缓存（失败静默 ✓）。"""
+    try:
+        if not docx_path or not os.path.exists(docx_path):
+            return
+        with open(docx_path, "rb") as fh:
+            b = fh.read()
+        if not b:
+            return
+        dst = os.path.join(_cache_dir(), cache_key(data) + ".docx")
+        tmp = dst + ".tmp"
+        with open(tmp, "wb") as fh:
+            fh.write(b)
+        os.replace(tmp, dst)      # 原子落盘（并发安全 ✓）
+    except Exception:  # noqa: BLE001
+        pass
+
 def _isolated_profile_url() -> str:
     """**隔离的 LibreOffice 用户配置目录**（批 56 核心修复）。
 
@@ -180,6 +235,24 @@ def doc_to_docx(doc_path: str, *, bin: str | None = None, timeout: int = 120) ->
         LOG.info("[doc_convert] RCO_DISABLE_LO_CONVERT=1 ⇒ 跳过 LibreOffice 转换: %s",
                  os.path.basename(doc_path))
         return None
+    # 批 64：**先查缓存**（命中直接返回 ⇒ 不启动 LibreOffice ⇒ 无剪贴板窗口 ✓）
+    try:
+        with open(doc_path, "rb") as _fh:
+            _raw = _fh.read()
+    except OSError:
+        _raw = b""
+    _hit = _cache_get(_raw) if _raw else None
+    if _hit:
+        try:
+            _dst = os.path.join(os.path.dirname(os.path.abspath(doc_path)),
+                                os.path.splitext(os.path.basename(doc_path))[0] + ".docx")
+            with open(_dst + ".tmp", "wb") as _fh2:
+                _fh2.write(_hit)
+            os.replace(_dst + ".tmp", _dst)
+            return _dst
+        except OSError:
+            pass
+
     lo = find_libreoffice(bin)
     if not lo or not os.path.exists(doc_path):
         return None
@@ -234,6 +307,7 @@ def doc_to_docx(doc_path: str, *, bin: str | None = None, timeout: int = 120) ->
         return None
     base = os.path.splitext(os.path.basename(doc_path))[0]
     conv = os.path.join(out_dir, base + ".docx")
+    _cache_put(_raw, conv)   # 批 64：转换成功 ⇒ 写入缓存（下次免转换 ⇒ 免剪贴板窗口 ✓）
     return conv if os.path.exists(conv) else None
 
 
