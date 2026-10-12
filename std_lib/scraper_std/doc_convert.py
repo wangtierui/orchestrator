@@ -275,6 +275,16 @@ def doc_to_docx(doc_path: str, *, bin: str | None = None, timeout: int = 120) ->
 
     _snap = clipboard_guard.snapshot()
     LOG.info("[doc_convert] 转换前剪贴板快照：%s", clipboard_guard.describe(_snap))
+    # 批 65（W-AT 残余加固）：**用户活动感知让路** —— 用户正在用键鼠时**不开始**转换，
+    # 直接对准"用户复制的那一刻被打断"的实际场景（LO 转换一旦开始无法安全中止 ✗，
+    # 故唯一安全的让路是"不开始"）；退避有上限（`RCO_QUIET_MAX_WAIT`，默认 60s），
+    # 且 API 不可用时 **fail-open**（绝不阻塞管线 ✓）。开关与批 58 让路共用 `RCO_YIELD_TO_USER`。
+    from std_lib.scraper_std import user_activity
+
+    _waited = user_activity.wait_for_quiet_window()
+    if _waited > 0.05:
+        LOG.info("[doc_convert] 用户前台活跃 ⇒ 已让路等待 %.1fs（quiet=%s；RCO_YIELD_TO_USER=0 可关）",
+                 _waited, user_activity.QUIET_SECONDS_DEFAULT)
     _seq0 = win_station.global_clipboard_seq()  # 生产侧自审计：转换前后全局剪贴板序列号
     try:
         rc, _out, _err, _info = win_station.isolated_run(

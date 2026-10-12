@@ -168,3 +168,24 @@ def test_hidden_subprocess_defaults(monkeypatch) -> None:
 
     assert proc.child_kwargs(polite=False).get("creationflags", 0) & proc.BELOW_NORMAL_PRIORITY_CLASS == 0
     assert proc.child_kwargs(polite=True).get("creationflags", 0) & proc.BELOW_NORMAL_PRIORITY_CLASS
+
+
+def test_clipboard_guard_format_allowlist_is_exact() -> None:
+    """**受控取舍（W-AU）**：保全白名单**恰为** `CF_TEXT`/`CF_UNICODETEXT`/`CF_HDROP`，
+
+    不得擅自扩到延迟渲染格式 ✗。技术依据：位图/HTML/RTF/OLE 常为 **delayed rendering**，
+    `GetClipboardData` 会**反向请求持有者渲染**（可能唤起其 GUI、阻塞，甚至使 `CloseClipboard`
+    失败 ⇒ **用户的剪贴板被锁住** ✗✗，危害远大于收益）。故取舍为：只保全可确定性读取的
+    文本/文件列表，并在日志中**明示未保格式**（`describe()`）✓。
+    """
+    import os as _os
+    import re as _re
+
+    root = _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))
+    g = open(_os.path.join(root, "std_lib", "scraper_std", "clipboard_guard.py"),
+             encoding="utf-8").read()
+    m = _re.search(r"if fmt not in \(([^)]*)\):", g)
+    assert m, "未找到保全白名单判据"
+    got = {x.strip() for x in m.group(1).split(",") if x.strip()}
+    assert got == {"CF_TEXT", "CF_UNICODETEXT", "CF_HDROP"}, (
+        "白名单必须**恰为**文本/文件列表三项（W-AU 受控取舍）；实测=%s" % sorted(got))
