@@ -16,11 +16,12 @@ _WARMUP_COOLDOWN_S = 1.0
 _LIST_RETRY_COOLDOWN_S = 6
 
 # 复用主采集器（包内绝对导入，脚本/模块双兼容）
-from . import collector as m
+from ..nfra import collector as m
 
-from ..lib.cache import source_cache_root
+from ..lib.paths import source_cache_root
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+NFRA_DIR = os.path.normpath(os.path.join(HERE, os.pardir, "nfra"))
 CACHE = source_cache_root("nfra")  # 单一物理缓存根
 m.set_cache_dir(CACHE)
 
@@ -31,7 +32,7 @@ UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
 REF = (API.rsplit("/cbircweb", 1)[0] +
        "/cn/view/pages/ItemList.html?itemPId=923&itemId=926"
        "&itemUrl=ItemListRightMore.html&itemName=%E6%94%BF%E7%AD%96%E6%B3%95%E8%A7%84")
-CK = os.path.join(HERE, "config", "cookies.txt")
+CK = os.path.join(NFRA_DIR, "config", "cookies.txt")
 
 def _warmup():
     try:

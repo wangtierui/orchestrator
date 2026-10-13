@@ -8,7 +8,6 @@ import random
 import re
 import sys
 import time
-import urllib.parse
 from typing import Any
 
 try:
@@ -35,30 +34,6 @@ from ..lib.http import USER_AGENTS
 
 # 统一文号提取器（2026-09-05 五源共享：doc_number 模块）
 from ..lib.doc_number import extract_doc_number as _unified_doc_number
-
-# 通用缓存模块（五源统一抽象层，自包含 lib.cache）
-from ..lib.cache import OfflineMiss, bind_source_cache, url_endpoint_key as _cache_ep
-
-_RESP_TEXT = None  # TextResponseCache 实例；None 表示未启用缓存
-_OfflineMiss = OfflineMiss  # 兼容别名
-
-
-def _init_cache(path=None, offline=False):
-    """统一缓存根绑定（缺省 cache_store.source_cache_root("gov")，单物理根）；path 显式可覆盖。"""
-    global _RESP_TEXT
-    _RESP_TEXT = bind_source_cache("gov", "text", root=path)
-    if offline and _RESP_TEXT is not None:
-        _RESP_TEXT.set_offline(True)
-
-
-def set_cache_dir(path):
-    """兼容旧调用（同目录脚本）：仅设根，沿用当前离线态。"""
-    _init_cache(path)
-
-
-def set_offline(flag):
-    if _RESP_TEXT is not None:
-        _RESP_TEXT.set_offline(flag)
 
 
 DEFAULT_HEADERS = {
@@ -136,19 +111,8 @@ class RobustSession:
     def get(self, url: str, referer: str | None = None,
             params: dict[str, Any] | None = None,
             is_json: bool = False) -> Any | None:
+        """带重试/退避/UA 轮换的 GET；纯实时请求（HTTP 响应缓存已移除）。"""
         params = params or {}
-        # 1) 缓存命中：续跑 / 离线
-        if _RESP_TEXT is not None:
-            cp = _RESP_TEXT.path(_cache_ep(url), params)
-            if os.path.exists(cp):
-                try:
-                    with open(cp, encoding="utf-8") as fh:
-                        cached = fh.read()
-                    return json.loads(cached) if is_json else cached
-                except Exception:  # noqa: BLE001  采集容错（字段/附件缺失不阻断采集）
-                    pass  # 缓存损坏则重新请求
-            if _RESP_TEXT.offline:
-                raise _OfflineMiss("%s ? %s" % (url, urllib.parse.urlencode(params)))
         for attempt in range(1, self.cfg.retries + 2):
             try:
                 self._sleep()
@@ -159,17 +123,7 @@ class RobustSession:
                 if resp.status_code == 200:
                     # 文本响应使用鲁棒解码（UTF-8→GBK/GB18030），避免中文乱码；
                     # JSON 响应交由 requests 自行解码。
-                    result = resp.json() if is_json else decode_html(resp.content)
-                    # 写入缓存（仅成功响应且非空，不缓存错误/拦截页）
-                    if _RESP_TEXT is not None and result:
-                        try:
-                            _RESP_TEXT.put(
-                                _cache_ep(url), params,
-                                json.dumps(result, ensure_ascii=False) if is_json else result,
-                            )
-                        except Exception:  # noqa: BLE001  采集容错（字段/附件缺失不阻断采集）
-                            pass
-                    return result
+                    return resp.json() if is_json else decode_html(resp.content)
                 LOG.warning("GET %s -> HTTP %s (尝试 %d)",
                             url, resp.status_code, attempt)
             except Exception as e:  # 网络异常 / 超时  # noqa: BLE001

@@ -2,15 +2,12 @@
 """gov 解析/配置/IO 工具（原 gov_parse.py 迁出，逻辑逐函数等价）。
 
 含：子源登记表 SOURCES、ScrapeConfig、build_config、文本/日期/文号解析、
-resume 续跑、write_outputs（原子写 gov_laws.json）、merge_with_master、采集统计。
+merge_with_master（旧主库 ∪ 新条目增量合并）。
 仅 import 路径改为相对导入，仓库引导与 pbc 同口径。
 """
 from __future__ import annotations
 
-import csv
-import json
 import logging
-import os
 import re
 import sys
 from dataclasses import dataclass
@@ -47,11 +44,7 @@ from ..lib.http import USER_AGENTS
 # 统一文号提取器（2026-09-05 五源共享：doc_number 模块）
 from ..lib.doc_number import extract_doc_number as _unified_doc_number
 
-# 通用缓存模块（五源统一抽象层，自包含 lib.cache）
-from ..lib.cache import OfflineMiss, bind_source_cache  # noqa: F401
-
-_RESP_TEXT = None  # TextResponseCache 实例；None 表示未启用缓存
-_OfflineMiss = OfflineMiss  # 兼容别名
+from ..storage import get_storage, StorageSettings, open_storage
 
 
 DEFAULT_HEADERS = {
@@ -204,7 +197,7 @@ def extract_issue_organ(text: str) -> str:
     return clean_text(s)
 
 
-def make_summary(full_text: str, length: int) -> str:
+def make_summary(full_text: str, length: int = 200) -> str:
     s = clean_text(full_text)
     # 跳过开头的『（…公布…修订）』前言括号，直接取正文摘要
     if s.startswith("（") or s.startswith("("):
@@ -249,89 +242,6 @@ def _is_https_scheme_upgrade(html: str) -> bool:
     return bool(_SCHEME_UPGRADE_RE.search(html or ""))
 
 
-def load_resume(out_dir: str, source: str):
-    """读取 out_dir 下最新的同源输出 JSON，返回 (已抓条目key集合, 已有正文的detail_url集合)。"""
-    files = [os.path.join(out_dir, "gov_laws.json")] if os.path.exists(
-        os.path.join(out_dir, "gov_laws.json")) else []
-    seen: set = set()
-    detailed: set = set()
-    if not files:
-        return seen, detailed
-    try:
-        data = json.load(open(files[-1], encoding="utf-8"))
-        for r in data.get("records", []):
-            seen.add((r.get("title", ""), r.get("detail_url", "")))
-            if r.get("full_text"):
-                detailed.add(r.get("detail_url", ""))
-        LOG.info("【resume】已从 %s 加载 %d 条已抓条目（其中 %d 条已有正文）",
-                 os.path.basename(files[-1]), len(seen), len(detailed))
-    except Exception as e:  # noqa: BLE001
-        LOG.warning("【resume】读取历史输出失败，将全新抓取：%s", e)
-    return seen, detailed
-
-
-def write_outputs(records: list[dict[str, Any]], cfg: ScrapeConfig,
-                  source_label: str | None = None,
-                  write_csv: bool = False) -> dict[str, str]:
-    os.makedirs(cfg.out_dir, exist_ok=True)
-    stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    json_path = os.path.join(cfg.out_dir, "gov_laws.json")
-    csv_path = os.path.join(cfg.out_dir, "gov_laws.csv")
-
-    # JSON：保留全文与原始字段
-    _payload = {
-        "source": cfg.source,
-        "category": cfg.category,
-        "captured_at": stamp,
-        "count": len(records),
-        "records": records,
-    }
-    _tmp = json_path + ".tmp"
-    with open(_tmp, "w", encoding="utf-8") as f:
-        json.dump(_payload, f, ensure_ascii=False, indent=2)
-    os.replace(_tmp, json_path)
-
-    # CSV：仅 --csv 显式开启时输出表格视图（默认仅 JSON 主库，2026-09-09 规范）
-    if write_csv:
-        _tmpc = csv_path + ".tmp"
-        with open(_tmpc, "w", encoding="utf-8-sig", newline="") as f:
-            writer = csv.DictWriter(f, fieldnames=CSV_COLUMNS, extrasaction="ignore")
-            writer.writeheader()
-            for r in records:
-                writer.writerow({k: r.get(k, "") for k in CSV_COLUMNS})
-        os.replace(_tmpc, csv_path)
-
-    LOG.info("输出完成：\n  JSON: %s%s", json_path,
-             ("\n  CSV : %s" % csv_path) if write_csv else "")
-    return {"json": json_path, "csv": csv_path if write_csv else ""}
-
-
-#: 采集统计落点（相对仓库根）；每源**只保留最新一份**（覆盖写）
-_COLLECT_STATS_REL = ("data", "run_state", "collect_stats")
-
-
-def collect_stats_path(label: str) -> str:
-    """采集统计文件路径：`<repo>/data/run_state/collect_stats/<label>.json`（N-190）。"""
-    here = os.path.dirname(os.path.abspath(__file__))
-    repo_root = os.path.normpath(os.path.join(here, os.pardir, os.pardir, os.pardir))
-    return os.path.join(repo_root, *_COLLECT_STATS_REL, "%s.json" % label)
-
-
-def write_collect_stats(label: str, stats: dict) -> str:
-    """原子写采集统计（旁路观测；写失败**不得中断采集**）。返回路径（失败返回空串）。"""
-    p = collect_stats_path(label)
-    try:
-        os.makedirs(os.path.dirname(p), exist_ok=True)
-        tmp = p + ".tmp"
-        with open(tmp, "w", encoding="utf-8") as f:
-            json.dump(stats, f, ensure_ascii=False, indent=2)
-        os.replace(tmp, p)
-        return p
-    except Exception as e:  # noqa: BLE001  旁路观测：失败只告警
-        LOG.warning("【collect-stats】统计落盘失败（不影响采集）：%s", e)
-        return ""
-
-
 def build_config(args) -> ScrapeConfig:
     base, category = SOURCES[args.source]
     return ScrapeConfig(
@@ -357,15 +267,16 @@ def build_config(args) -> ScrapeConfig:
     )
 
 
-def merge_with_master(new_records: list[dict[str, Any]], out_dir: str) -> list[dict[str, Any]]:
-    """增量续抓合并：现主库旧记录 ∪ 本次新条目（detail_url 去重，新优先）。"""
-    master_path = os.path.join(out_dir, "gov_laws.json")
-    if not os.path.exists(master_path):
-        return new_records
+# ── 治理步骤（采集边界，非采集逻辑）：源内增量合并 ──
+def merge_with_master(new_records: list[dict[str, Any]], out_dir: str, storage=None) -> list[dict[str, Any]]:
+    """增量续抓合并：现主库旧记录 ∪ 本次新条目（detail_url 去重，新优先）。
+
+    读回走 storage（file/postgres 统一）；不写文件（由 write_outputs 落盘）。
+    """
+    if storage is None:
+        storage = open_storage("gov", out_dir)
     try:
-        with open(master_path, encoding="utf-8") as fh:
-            data = json.load(fh)
-        old = data.get("records") or []
+        old = storage.load_master().items
     except Exception as e:  # noqa: BLE001
         LOG.warning("【merge】读取现主库失败，仅写本次抓取结果：%s", e)
         return new_records
@@ -380,5 +291,5 @@ def merge_with_master(new_records: list[dict[str, Any]], out_dir: str) -> list[d
 
 
 __all__ = ["ScrapeConfig", "_is_https_scheme_upgrade", "_longest_text_block", "build_config", "clean_text",
-           "collect_stats_path", "write_collect_stats", "decode_html", "extract_date", "extract_doc_number",
-           "extract_issue_organ", "load_resume", "make_summary", "merge_with_master", "write_outputs"]
+           "decode_html", "extract_date", "extract_doc_number",
+           "extract_issue_organ", "make_summary", "merge_with_master"]

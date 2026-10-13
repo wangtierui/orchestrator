@@ -20,17 +20,6 @@ _ILLEGAL = re.compile(r'[\\/:*?"<>|\r\n\t]+')
 _ATTACH_EXT = (".pdf", ".doc", ".docx", ".xls", ".xlsx", ".wps", ".ceb", ".rtf", ".zip", ".rar")
 
 
-def is_attachment_url(url: str, text: str = "") -> bool:
-    """判断链接是否指向文档下载（扩展名命中或链接文案含下载关键词）。"""
-    if not url:
-        return False
-    low = url.split("?")[0].lower()
-    if low.endswith(_ATTACH_EXT):
-        return True
-    kw = ("下载", "download", "word", "pdf", "全文", "附件", "doc", "xlsx", "excel")
-    return any(k in (text or "").lower() for k in kw)
-
-
 def sniff_kind(data: bytes, name: str = "") -> str:
     """依据文件头魔数纠正真实格式。返回 pdf/docx/xlsx/ole2/zip/rar/unknown/empty。"""
     if not data:
@@ -571,21 +560,8 @@ def _run_ocr_detail(data: bytes, timeout: int) -> tuple[str, str]:
 # --------------------------------------------------------------------------- #
 # 4. 归一化 / 哈希工具
 # --------------------------------------------------------------------------- #
-_DATE_RE1 = re.compile(r"(\d{4})[-年](\d{1,2})[-月](\d{1,2})日?")
-_DATE_RE2 = re.compile(r"(\d{4})[-/](\d{1,2})[-/](\d{1,2})")
-
-
-def normalize_date(text: str) -> str:
-    if not isinstance(text, str) or not text:
-        return ""
-    m = _DATE_RE1.search(text) or _DATE_RE2.search(text)
-    if not m:
-        return ""
-    y, mo, d = m.groups()
-    try:
-        return "%04d-%02d-%02d" % (int(y), int(mo), int(d))
-    except ValueError:
-        return ""
+# 日期归一统一走 common.text.normalize_date（collectors 与 clean 共用单一事实源）。
+from common.text import normalize_date  # noqa: E402
 
 
 _FULLWIDTH = str.maketrans("０１２３４５６７８９", "0123456789")
@@ -597,8 +573,47 @@ def normalize_digits(s: str) -> str:
     return str(s).translate(_FULLWIDTH)
 
 
-def content_sha256(text: str) -> str:
-    return sha256_of((text or "").encode("utf-8"))
+def flatten_attachment_extras(attachments: list | None) -> dict:
+    """把每条附件的 table/rich 结构上卷到记录顶层（消除 mof/gov/nfra 的重复块）。
+
+    返回：table_structured / table_raw_text / table_recovery_method /
+    rich_structured / rich_text / rich_count / attachment_names。
+    """
+    atts = attachments or []
+    tbls = [t for a in atts for t in (a.get("table_structured") or [])]
+    raws = [a.get("table_raw_text") for a in atts if a.get("table_raw_text")]
+    richo = [o for a in atts for o in (a.get("rich_structured") or [])]
+    rtext = [a.get("rich_text") for a in atts if a.get("rich_text")]
+    return {
+        "table_structured": tbls,
+        "table_raw_text": "\n\n".join(raws),
+        "table_recovery_method": "structured" if tbls else "",
+        "rich_structured": richo,
+        "rich_count": len(richo),
+        "rich_text": "\n".join(rtext),
+        "attachment_names": "; ".join((a.get("file_name") or "") for a in atts),
+    }
+
+
+def html_to_text(html):
+    """将正文 HTML（含 Word 命名空间）转为紧凑纯文本；lxml 优先，回退正则。"""
+    if not html:
+        return ""
+    try:
+        from lxml import html as lxml_html
+        doc = lxml_html.fromstring(html)
+        for bad in doc.xpath("//script | //style"):
+            bad.getparent().remove(bad)
+        text = doc.text_content()
+    except Exception:  # noqa: BLE001
+        text = re.sub(r"<[^>]+>", "\n", html)
+    lines = [ln.strip() for ln in text.splitlines()]
+    text = "\n".join(ln for ln in lines if ln)
+    return text
+
+
+# 哈希统一走 common.text.content_sha256（与 clean 共用）。
+from common.text import content_sha256  # noqa: E402
 
 
 def build_attachment_record(

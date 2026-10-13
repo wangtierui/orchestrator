@@ -20,15 +20,14 @@ SCRAPERS_ROOT = os.path.join(_ORCH_ROOT, "data", "raw")
 # 产物目录统一：附件统一落盘 docs_root("gov","attachments")
 SRC_DIR = os.path.dirname(os.path.abspath(__file__))
 REPO_ROOT = SCRAPERS_ROOT  # 供 local_path 相对计算
-from ..lib.cache import docs_root
+from ..lib.paths import docs_root
 
 ATTACHMENTS_DIR = docs_root("gov", "attachments")
 
-from ..lib.http import robust_get
+from ..lib.http import robust_get, is_attachment_url
 from ..lib.text_utils import (
     build_attachment_record,
     extract_document_text,
-    is_attachment_url,
     safe_filename,
     sniff_kind,
 )

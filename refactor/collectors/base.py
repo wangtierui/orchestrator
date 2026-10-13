@@ -4,7 +4,7 @@
 设计原则：薄接口 + 共享 I/O，非深继承。
 - `SourceCollector` 协议：每个源只需暴露 `source_id` 与 `collect(out_dir) -> master_path`，
   内部增量/diff/站点差异由各源自行实现（不强行统一）。
-- 共享工具：`atomic_write` / `write_master_json` / 运行锁。
+- 共享工具：`atomic_write` / `write_master_json`。
 - 边界钉死：爬虫唯一产物 = `data/raw/{master}.json`，
   结构 `{source, captured_at, count, items}`（下游 clean 的输入契约，不可变）。
 """
@@ -14,8 +14,6 @@ import os
 from datetime import datetime, timezone
 UTC = timezone.utc
 from typing import Protocol, runtime_checkable
-
-from .lib.lock import ProcessLock
 
 logger = logging.getLogger("refactor.collectors")
 
@@ -54,18 +52,4 @@ def write_master_json(path: str, source: str, items: list) -> None:
     }, ensure_ascii=False, indent=2))
 
 
-_LOCKS = {}
 
-
-def acquire_lock(lock_path, max_age_sec=3 * 3600):
-    lk = ProcessLock(lock_path, max_age_sec=max_age_sec)
-    if lk.acquire():
-        _LOCKS[lock_path] = lk
-        return True
-    return False
-
-
-def release_lock(lock_path):
-    lk = _LOCKS.pop(lock_path, None)
-    if lk is not None:
-        lk.release()

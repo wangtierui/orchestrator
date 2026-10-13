@@ -13,7 +13,7 @@ import struct
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-from ..lib.cache import docs_root, source_cache_root
+from ..lib.paths import docs_root, source_cache_root
 
 CACHE = source_cache_root("nfra")
 ATT_DIR = docs_root("nfra", "attachments")

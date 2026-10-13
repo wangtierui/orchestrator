@@ -3,7 +3,6 @@
 
 仅依赖 Python 标准库 + 本包内 lib（自包含，不触碰外部 std_lib / modules）。
 """
-import html
 import json
 import logging
 import os
@@ -42,7 +41,8 @@ def rich_object_fields(data, name="", *, image_dir=None, rec_key=""):
 def _cc_safe_filename(name, ext, max_len=120):
     return re.sub(r'[\\/:*?"<>|]', "_", str(name or "")).strip()[:max_len]
 
-from ..lib.cache import OfflineMiss, bind_source_cache, docs_root
+from ..lib.paths import docs_root
+from ..lib.text_utils import html_to_text, normalize_date
 
 # refactor 项目根（mof/net.py 位于 refactor/collectors/mof/，上两级即 refactor/）。
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -98,61 +98,13 @@ class RateLimiter:
             self.cooldown = min(self.max_cooldown, self.cooldown + extra)
 
 
-_RESP = None
-_OfflineMiss = OfflineMiss
-
-
-def _init_cache(path=None, offline=False):
-    global _RESP
-    _RESP = bind_source_cache("mof", "json", root=path)
-    if offline and _RESP is not None:
-        _RESP.set_offline(True)
-
-
-def set_cache_dir(path):
-    _init_cache(path)
-
-
-def set_offline(flag):
-    if _RESP is not None:
-        _RESP.set_offline(flag)
-
-
 _TAG_RE = re.compile(r"<[^>]+>")
 _STYLE_RE = re.compile(r"<(style|script)[^>]*>.*?</\1>", re.IGNORECASE | re.DOTALL)
 _WS_RE = re.compile(r"\s+")
 
 
-def _mof_cache_key(method, path, payload):
-    full_url = HOST + path
-    if method == "GET" and "?" in path:
-        ep, q = path.split("?", 1)
-        params = dict(urllib.parse.parse_qsl(q))
-        endpoint = HOST + ep
-    elif method == "POST":
-        endpoint = full_url
-        params = dict(payload or {})
-    else:
-        endpoint = full_url
-        params = {}
-    flat = {}
-    for k, v in params.items():
-        flat[k] = json.dumps(v, sort_keys=True, ensure_ascii=False) if isinstance(v, (dict, list)) else v
-    return endpoint, flat
-
-
 def _request(method, path, payload=None, *, rate=None, timeout=30, max_retries=4):
-    endpoint, params = _mof_cache_key(method, path, payload)
-    if _RESP is not None:
-        cp = _RESP.path(endpoint, params)
-        if os.path.exists(cp):
-            try:
-                with open(cp, encoding="utf-8") as fh:
-                    return json.load(fh)
-            except Exception:  # noqa: BLE001
-                pass
-        if _RESP.offline:
-            raise _OfflineMiss("%s" % endpoint)
+    """带重试/退避/UA 轮换的请求（纯实时，HTTP 响应缓存已移除）。"""
     url = HOST + path
     body = json.dumps(payload).encode("utf-8") if payload is not None else None
     headers = dict(DEFAULT_HEADERS)
@@ -167,13 +119,7 @@ def _request(method, path, payload=None, *, rate=None, timeout=30, max_retries=4
             req = urllib.request.Request(url, data=body, headers=headers, method=method)
             with urllib.request.urlopen(req, timeout=timeout) as resp:
                 raw = resp.read().decode("utf-8", "replace")
-            data = json.loads(raw)
-            if _RESP is not None and isinstance(data, dict) and data.get("code") == 200:
-                try:
-                    _RESP.put(endpoint, params, data)
-                except Exception:  # noqa: BLE001
-                    pass
-            return data
+            return json.loads(raw)
         except urllib.error.HTTPError as e:
             last_err = e
             if e.code in (429, 503, 502, 500):
@@ -195,33 +141,9 @@ def _request(method, path, payload=None, *, rate=None, timeout=30, max_retries=4
     raise RuntimeError(f"请求失败（已达最大重试）：{path} -> {last_err}")
 
 
-def html_to_text(s):
-    if not s or not isinstance(s, str):
-        return ""
-    s = _STYLE_RE.sub(" ", s)
-    s = _TAG_RE.sub(" ", s)
-    s = html.unescape(s)
-    s = _WS_RE.sub(" ", s)
-    return s.strip()
 
 
-def normalize_date(v):
-    if v is None:
-        return None
-    if isinstance(v, list) and len(v) >= 3:
-        try:
-            return f"{int(v[0]):04d}-{int(v[1]):02d}-{int(v[2]):02d}"
-        except Exception:  # noqa: BLE001
-            return None
-    if isinstance(v, str):
-        v = v.strip()
-        if v in ("", "None", "null", "[]"):
-            return None
-        m = re.match(r"(\d{4})[-/年.](\d{1,2})[-/月.](\d{1,2})", v)
-        if m:
-            return f"{int(m.group(1)):04d}-{int(m.group(2)):02d}-{int(m.group(3)):02d}"
-        return v.split(" ")[0] if " " in v else v
-    return str(v)
+
 
 
 def safe_filename(name, ext, fallback):

@@ -18,7 +18,7 @@ import urllib.parse
 import urllib.request
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-from ..lib.cache import docs_root, source_cache_root
+from ..lib.paths import docs_root, source_cache_root
 from ..lib.rich_object import rich_object_fields
 from ..lib.table_recovery import structured_table_fields
 
@@ -41,7 +41,7 @@ DEFAULT_HEADERS = {
 }
 
 # ---- 拆分 re-export：附件抽取链在 .attachments_extract（包内相对导入） ----
-from .attachments_extract import (  # noqa: F401
+from ..nfra.attachments_extract import (  # noqa: F401
     _flush_run,
     _handle_ole2,
     _is_ole2_word,

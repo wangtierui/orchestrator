@@ -42,6 +42,11 @@ dev = [
     "pytest>=7.0.0",
     "ruff>=0.6",
 ]
+# 数据库后端（仅 backend=postgres 时需要；默认 file 路径不安装，保持零依赖）
+db = [
+    "sqlalchemy>=2.0",
+    "psycopg[binary]>=3.1",
+]
 
 [tool.setuptools.packages.find]
 include = ["collectors*"]

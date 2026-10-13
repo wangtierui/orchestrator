@@ -84,7 +84,6 @@ def test_lib_modules_importable():
         f"{_PKG}.lib.ocr",
         f"{_PKG}.lib.doc_number",
         f"{_PKG}.lib.cache",
-        f"{_PKG}.lib.lock",
         f"{_PKG}.lib.doc_convert",
     ]
     for m in mods:

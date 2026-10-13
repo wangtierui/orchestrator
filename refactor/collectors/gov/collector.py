@@ -1,55 +1,52 @@
 # -*- coding: utf-8 -*-
-"""gov 爬虫：主流程 + 多子源分发（实现 SourceCollector）。
+"""gov 爬虫（重构版）：双子源编排，继承 CollectorPipeline。
 
-原 modules/regulatory_scrapers/collectors/gov_collector.py 主流程迁出，逻辑逐函数等价；
-XzfgkScraper / RobustSession / 多子源分发 / 增量合并均保留；仅 import 改为相对导入，
-并抽出 `_run(args)` 供 GovCollector.collect() 复用。产物仍为 gov_laws.json
-（与下游 clean 既有输入契约一致）。
+站点：xzfgk（司法部行政法规库）+ zhengceku（国务院政策文件库·部门文件）。
+产物仍为 gov_laws.json（与下游 clean 既有输入契约一致）。
+
+通用流程（列表→known/new/dup 分流→落库）由 CollectorPipeline 承担；gov 的特殊步骤：
+  - iter_list_entries：串联两子源的列表生成器，每个生成器**只 yield new 条目**
+    （用基类 tracker 判 known/dup 并跳过），并实现各自的"无新即停"早停；
+  - handle_new：按 entry["source"] 分发到 xzfgk.build_record / zhengceku.fetch_one 抓详情；
+  - save：调 merge_with_master（旧主库 ∪ 新条目，新优先）后 save_master；
+  - batch_key_of：按列表页号分批落盘（每页详情抓完即 checkpoint，替代原 partial 续跑）；
+  - 双子源编排 + resume（主库已知即跳）+ merge，全部落在上述钩子/编排层。
+HTML 解析（_parse_list/_parse_detail/scan_list/parse_detail/fetch_attachments）逐字保留。
 """
 import argparse
+import csv
 import logging
 import os
 import re
 import sys
-import atexit
+import time
 
 from ..base import REPO_ROOT, SourceCollector
+from ..storage import open_storage
+from ..lib.text_utils import flatten_attachment_extras
 from .parse import (
     SOURCES,
     ScrapeConfig,
-    _is_https_scheme_upgrade,
-    _longest_text_block,
+    CSV_COLUMNS,
     build_config,
     clean_text,
     decode_html,
     extract_date,
     extract_doc_number,
     extract_issue_organ,
-    load_resume,
     make_summary,
     merge_with_master,
-    write_outputs,
-    write_collect_stats,
 )
 from .net import (
     DEFAULT_HEADERS,
     RobustSession,
-    _cache_ep,
-    _init_cache,
-    _OfflineMiss,
-    _RESP_TEXT,
 )
 from .attachments import fetch_gov_attachments
-from .zhengceku import ZhengcekuScraper
+from .zhengceku import ZhengcekuScraper, SUB_SOURCE, CATEGORY
 
-#: regulatory_scrapers 根（默认 out 与历史路径口径，字节兼容）。
+#: 输出目录（自包含，不指向外部 modules/）。产物文件名与结构保持重构前一致。
 SCRAPERS_ROOT = os.path.join(REPO_ROOT, "data", "raw")
 DEFAULT_OUT = SCRAPERS_ROOT
-
-# 本地 strip_tags（原 gov_collector 引用但未导出；此处就近定义，行为一致）。
-def strip_tags(s):
-    return re.sub(r"<[^>]+>", "", s or "")
-
 
 try:
     from bs4 import BeautifulSoup
@@ -57,14 +54,6 @@ except ImportError:  # pragma: no cover
     BeautifulSoup = None  # type: ignore
 
 LOG = logging.getLogger("gov_scraper")
-
-class ExitCode:
-    """本地退出码（原 config.exitcodes.ExitCode，去外部依赖）。"""
-    OK = 0
-    FAIL = 1
-
-
-from ..lib import lock as fs_lock  # noqa: E402
 
 
 # --------------------------------------------------------------------------- #
@@ -79,7 +68,7 @@ class XzfgkScraper:
     def __init__(self, cfg: ScrapeConfig, client: RobustSession):
         self.cfg = cfg
         self.client = client
-        self.stats: dict = {}
+        self._detail_fetched = 0
 
     def _list_page(self, page_index: int) -> str | None:
         return self.client.get_text(
@@ -160,113 +149,88 @@ class XzfgkScraper:
     def _noise_hints():
         return ["download", "fold", "historical", "tip", "btn", "share", "qr", "vconsole"]
 
-    def run(self) -> list[dict]:
-        records: list[dict] = []
+    # ---- 重构：run() 拆为 iter_list（列表生成器）+ build_record（详情）----
+    def iter_list(self, ctx) -> "Iterator[dict]":
+        """逐页翻列表，**只 yield new 条目**；一页无新即停（增量早停，N-190）。
+
+        用基类 tracker 判 known/dup 并跳过；max_pages/max_items/max_seconds 同样生效。
+        """
+        tracker = ctx.tracker
+        seen = set()  # 本地运行内去重（只读判重，不污染基类 tracker.seen_in_run）
         page = 1
-        seen_urls = set()
-        if self.cfg.resume:
-            resumed, _ = load_resume(self.cfg.out_dir, self.cfg.source)
-            seen_urls = set(k[1] for k in resumed if k[1])
-            LOG.info("【xzfgk resume】将跳过 %d 条已抓条目", len(seen_urls))
-        pages_fetched = 0
-        pages_without_new = 0
-        items_seen = 0
-        new_items = 0
-        details_fetched = 0
-        detail_seconds = 0.0
-        stopped_reason = "end"
+        max_pages = getattr(self.cfg, "max_pages", 0) or 0
+        max_items = getattr(self.cfg, "max_items", 0) or 0
         budget = float(getattr(self.cfg, "max_seconds", 0.0) or 0.0)
         t0 = time.time()
-
-        def _mk_stats() -> dict:
-            total = time.time() - t0
-            return {
-                "sub_source": "xzfgk",
-                "list_pages_fetched": pages_fetched,
-                "list_pages_without_new": pages_without_new,
-                "list_items_seen": items_seen,
-                "new_items": new_items,
-                "pending_details": new_items,
-                "details_fetched": details_fetched,
-                "details_failed": 0,
-                "details_skipped_master": 0,
-                "elapsed_list_s": round(max(0.0, total - detail_seconds), 1),
-                "elapsed_detail_s": round(detail_seconds, 1),
-                "stopped_reason": stopped_reason,
-                "backfill": False,
-                "budget_s": budget,
-            }
-
+        yielded = 0
         while True:
-            if self.cfg.max_pages and page > self.cfg.max_pages:
-                LOG.info("已达 max_pages=%d，停止翻页", self.cfg.max_pages)
-                stopped_reason = "max_pages"
+            if max_pages and page > max_pages:
+                LOG.info("xzfgk 已达 max_pages=%d，停止翻页", max_pages)
                 break
             if budget and (time.time() - t0) >= budget:
-                stopped_reason = "budget"
-                LOG.warning("已达 --max-seconds=%s 预算 → 停止翻页（已抓 %d 条正常落盘）",
-                            budget, len(records))
+                LOG.warning("xzfgk 已达 --max-seconds=%s 预算 → 停止翻页", budget)
                 break
-            LOG.info("【xzfgk】抓取列表第 %d 页", page)
             html = self._list_page(page)
             if not html:
-                LOG.warning("第 %d 页获取失败，停止", page)
-                stopped_reason = "list_fetch_failed"
+                LOG.warning("xzfgk 第 %d 页获取失败，停止", page)
                 break
             items = self._parse_list(html)
             if not items:
-                LOG.info("第 %d 页无条目，视为末页，停止", page)
-                stopped_reason = "no_items"
+                LOG.info("xzfgk 第 %d 页无条目，视为末页，停止", page)
                 break
-            pages_fetched += 1
-            items_seen += len(items)
             new_in_page = 0
             for it in items:
-                if it["detail_url"] in seen_urls:
+                key = it["detail_url"]
+                # 只读判重：主库已知 → 跳过（由 merge 保活）；本轮已列 → 跳过
+                if key in tracker.known or key in seen:
                     continue
-                seen_urls.add(it["detail_url"])
+                seen.add(key)
+                yield {
+                    "title": it["title"], "detail_url": it["detail_url"],
+                    "publish_date": it["publish_date"], "effective_date": it["effective_date"],
+                    "issue_organ": it.get("issue_organ", ""),
+                    "document_number": it.get("document_number", ""),
+                    "category": self.cfg.category, "source": "xzfgk", "page": page,
+                }
                 new_in_page += 1
-                new_items += 1
-                rec = dict(it)
-                rec["category"] = self.cfg.category
-                rec["source"] = "xzfgk"
-                if (self.cfg.fetch_details and it["detail_url"]
-                        and (self.cfg.details_limit == 0
-                             or len(records) < self.cfg.details_limit)):
-                    _t_d = time.time()
-                    d = self._fetch_detail(it["detail_url"])
-                    detail_seconds += time.time() - _t_d
-                    rec.update(d)
-                    if d:
-                        details_fetched += 1
-                rec["summary"] = make_summary(
-                    rec.get("full_text", ""), self.cfg.summary_len)
-                records.append(rec)
-                if self.cfg.max_items and len(records) >= self.cfg.max_items:
-                    LOG.info("已达 max_items=%d，停止", self.cfg.max_items)
-                    stopped_reason = "max_items"
-                    self.stats = _mk_stats()
-                    return records
+                yielded += 1
+                if max_items and yielded >= max_items:
+                    return
             if new_in_page == 0:
-                pages_without_new += 1
-                LOG.info("第 %d 页无新增条目（全部已抓或分页失效），停止翻页", page)
-                stopped_reason = "no_new_items"
+                LOG.info("xzfgk 第 %d 页无新增条目，停止翻页", page)
                 break
             page += 1
-        self.stats = _mk_stats()
-        return records
+
+    def build_record(self, entry: dict) -> dict:
+        """new 态：抓详情 + 摘要，产出 gov 主库契约记录。"""
+        rec = {k: v for k, v in entry.items() if k != "page"}
+        cfg = self.cfg
+        detail_cap = int(getattr(cfg, "details_limit", 0) or 0)
+        if cfg.fetch_details and entry["detail_url"]:
+            if detail_cap == 0 or self._detail_fetched < detail_cap:
+                self._detail_fetched += 1
+                rec.update(self._fetch_detail(entry["detail_url"]))
+            else:
+                rec.setdefault("full_text", "")
+        else:
+            rec.setdefault("full_text", "")
+            rec.setdefault("attachments", [])
+            rec.setdefault("attachment_text", "")
+            rec.setdefault("attachment_count", 0)
+        rec["summary"] = make_summary(rec.get("full_text", ""), cfg.summary_len)
+        return rec
 
     def _fetch_detail(self, url: str) -> dict:
         detail_html = self.client.get_text(url, referer=self.LIST_URL)
         if not detail_html:
-            LOG.warning("详情获取失败：%s", url)
+            LOG.warning("xzfgk 详情获取失败：%s", url)
             return {"full_text": "", "document_number": "",
                     "issue_organ": "", "effective_date": "",
                     "attachments": [], "attachment_text": "", "attachment_count": 0}
         try:
             d: dict = self._parse_detail(detail_html)
         except Exception as e:  # noqa: BLE001
-            LOG.warning("详情解析失败 %s：%s", url, e)
+            LOG.warning("xzfgk 详情解析失败 %s：%s", url, e)
             d = {"full_text": "", "document_number": "",
                  "issue_organ": "", "effective_date": ""}
         try:
@@ -276,22 +240,9 @@ class XzfgkScraper:
             d["attachments"] = atts
             d["attachment_text"] = att_text
             d["attachment_count"] = len(atts)
-            _tbls = [t for a in atts for t in (a.get("table_structured") or [])]
-            if _tbls:
-                d["table_structured"] = _tbls
-                d["table_recovery_method"] = "structured"
-                _raws = [a.get("table_raw_text") for a in atts if a.get("table_raw_text")]
-                if _raws:
-                    d["table_raw_text"] = "\n\n".join(_raws)
-            _richo = [o for a in atts for o in (a.get("rich_structured") or [])]
-            if _richo:
-                d["rich_structured"] = _richo
-                d["rich_count"] = len(_richo)
-                _rtext = [a.get("rich_text") for a in atts if a.get("rich_text")]
-                if _rtext:
-                    d["rich_text"] = "\n".join(_rtext)
+            d.update(flatten_attachment_extras(atts))
         except Exception as e:  # noqa: BLE001
-            LOG.warning("附件抓取异常 %s：%s", url, e)
+            LOG.warning("xzfgk 附件抓取异常 %s：%s", url, e)
             d.setdefault("attachments", [])
             d["attachment_text"] = ""
             d["attachment_count"] = 0
@@ -299,141 +250,73 @@ class XzfgkScraper:
 
 
 # --------------------------------------------------------------------------- #
-# 主流程（由 main() / GovCollector.collect() 共用）
+# gov 主采集器（串联双子源，继承 CollectorPipeline）
 # --------------------------------------------------------------------------- #
-import time  # noqa: E402
+from ..lib.pipeline import CollectorPipeline  # noqa: E402
 
 
-def _run(args) -> int:
-    # 增量默认（2026-09-08 周调度增量改造）：resume = 非 --full。
-    args.resume = not args.full
-
-    _init_cache(args.cache_dir or None, args.offline)
-
-    os.makedirs(args.out_dir, exist_ok=True)
-    os.makedirs("logs", exist_ok=True)
-    log_file = args.log_file or os.path.join("logs", "scraper.log")
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s [%(levelname)s] %(message)s",
-        handlers=[
-            logging.FileHandler(log_file, encoding="utf-8"),
-            logging.StreamHandler(sys.stdout),
-        ],
-    )
-
-    # —— 调度可靠性：跨进程单实例锁防并发重复（统一 fs_lock 公共库，N-8）——
-    _lock = fs_lock.ProcessLock(os.path.join(args.out_dir, "scrape.lock"))
-    if not _lock.acquire():
-        LOG.warning("已有抓取任务在运行（锁存在且 PID 存活），本次跳过以避免重复抓取。")
-        return ExitCode.OK
-    atexit.register(_lock.release)
-
-    if args.source == "all":
-        want = list(SOURCES)
-    else:
-        want = [args.source]
-
-    _cfg_args = argparse.Namespace(**vars(args))
-    _cfg_args.source = want[0]
-    cfg = build_config(_cfg_args)
-    client = RobustSession(cfg)
-
-    seen_urls = set()
-    known_urls = set()
-    if cfg.resume:
-        _seen, detailed = load_resume(cfg.out_dir, "gov")
-        seen_urls = set(detailed)
-        known_urls = set(k[1] for k in _seen if k[1])
-        LOG.info("【增量判据】主库 %d 条（已有正文 %d 条）", len(known_urls), len(seen_urls))
-
-    records: list = []
-    failed: list = []
-    sub_stats: dict = {}
-    scrapers: dict = {}
-    for s in want:
-        sub = argparse.Namespace(**vars(args))
-        sub.source = s
-        scfg = build_config(sub)
-        LOG.info("开始抓取子源：%s（%s）", scfg.source, scfg.category)
-        scraper = None
-        try:
-            if s == "xzfgk":
-                scraper = XzfgkScraper(scfg, client)
-            else:
-                scraper = ZhengcekuScraper(scfg, client, seen_urls, known_urls)
-            recs = scraper.run()
-        except Exception as e:
-            LOG.exception("子源 %s 抓取过程发生致命错误：%s", s, e)
-            failed.append(s)
-            continue
-        sub_stats[s] = dict(getattr(scraper, "stats", {}) or {})
-        scrapers[s] = scraper
-        LOG.info("子源 %s 抓取到 %d 条", s, len(recs))
-        records.extend(recs)
-        for r in recs:
-            if r.get("full_text"):
-                seen_urls.add(r.get("detail_url", ""))
-
-    def _emit_stats() -> None:
-        _run_at = time.strftime("%Y-%m-%dT%H:%M:%S")
-        for _s, _st in sub_stats.items():
-            _p = write_collect_stats(
-                "gov_%s" % _s,
-                {
-                    "source": "gov",
-                    "sub_source": _s,
-                    "run_at": _run_at,
-                    "out_dir": cfg.out_dir,
-                    "resume": cfg.resume,
-                    "backfill": bool(getattr(args, "backfill", False)),
-                    "max_seconds": float(getattr(args, "max_seconds", 0.0) or 0.0),
-                    "new_records": None,
-                    "stats": _st,
-                },
-            )
-            _pf = int(_st.get("list_pages_fetched") or 0)
-            _pw = int(_st.get("list_pages_without_new") or 0)
-            LOG.info(
-                "[collect-stats] gov_%s：翻页 %d（无新页 %d，**空转占比 %s**），新条目 %s，"
-                "待抓详情 %s（已抓 %s/失败 %s，跳过主库既有 %s），用时 list=%ss detail=%ss，"
-                "停止原因=%s → %s",
-                _s, _pf, _pw, ("%.0f%%" % (100.0 * _pw / _pf) if _pf else "n/a"),
-                _st.get("new_items"), _st.get("pending_details"), _st.get("details_fetched"),
-                _st.get("details_failed"), _st.get("details_skipped_master"),
-                _st.get("elapsed_list_s"), _st.get("elapsed_detail_s"),
-                _st.get("stopped_reason"), _p or "(落盘失败)",
-            )
-
-    if failed and args.stop_on_error:
-        _emit_stats()
-        return ExitCode.FAIL
-    if not records:
-        LOG.warning("未抓取到任何条目（失败子源：%s）。", failed or "无")
-        _emit_stats()
-        return ExitCode.OK
-
-    if cfg.resume:
-        records = merge_with_master(records, cfg.out_dir)
-
-    env_source = args.env_source or (cfg.source if len(want) == 1 else "gov")
-    env_cat = args.env_category or (cfg.category if len(want) == 1 else "行政法规+部门文件")
-    cfg.source, cfg.category = env_source, env_cat
-    paths = write_outputs(records, cfg, source_label=env_source, write_csv=args.csv)
-    for _sc in scrapers.values():
-        if hasattr(_sc, "clear_partial"):
-            _sc.clear_partial()
-    _emit_stats()
-    LOG.info("成功抓取 %d 条（子源：%s；失败：%s）。文件：%s",
-             len(records), ",".join(want), ",".join(failed) or "无", paths)
-    return ExitCode.OK
+def _write_csv(records: list, out_dir: str) -> str:
+    csv_path = os.path.join(out_dir, "gov_laws.csv")
+    tmp = csv_path + ".tmp"
+    with open(tmp, "w", encoding="utf-8-sig", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=CSV_COLUMNS, extrasaction="ignore")
+        writer.writeheader()
+        for r in records:
+            writer.writerow({k: r.get(k, "") for k in CSV_COLUMNS})
+    os.replace(tmp, csv_path)
+    return csv_path
 
 
-class GovCollector:
-    """gov 爬虫（xzfgk + zhengceku 双子源）；实现 SourceCollector。"""
+class GovCollector(CollectorPipeline):
+    """gov 双子源爬虫；继承通用管线，双子源编排表达为 iter_list/handle_new。"""
 
     source_id = "gov"
+    master_filename = "gov_laws.json"
 
+    def key_of(self, item: dict):
+        return item.get("detail_url")
+
+    def _setup(self, args):
+        self._args = args
+        os.makedirs(args.out_dir, exist_ok=True)
+        # 两子源各自 cfg（base_url/category 由 SOURCES 决定）
+        def _cfg(source):
+            a = argparse.Namespace(**vars(args))
+            a.source = source
+            return build_config(a)
+        self._cfg_xz = _cfg("xzfgk")
+        self._cfg_zc = _cfg("zhengceku")
+        self._client = RobustSession(self._cfg_xz)
+        self._xz = XzfgkScraper(self._cfg_xz, self._client)
+        self._zc = ZhengcekuScraper(self._cfg_zc, self._client,
+                                    seen_urls=set(), known_urls=set())
+
+    def iter_list_entries(self, ctx):
+        yield from self._xz.iter_list(ctx)
+        yield from self._zc.iter_list(ctx)
+
+    def handle_new(self, entry, ctx):
+        if entry["source"] == "xzfgk":
+            return self._xz.build_record(entry)
+        return self._zc.fetch_one(
+            entry["detail_url"], title_hint=entry["title"], date_hint=entry["publish_date"])
+
+    def batch_key_of(self, entry):
+        return entry.get("page")  # 按列表页分批落盘（每页详情抓完即 checkpoint）
+
+    def max_items(self) -> int:
+        return int(getattr(self._args, "max_items", 0) or 0)
+
+    def save(self, records, ctx):
+        merged = merge_with_master(records, ctx.out_dir, storage=ctx.storage)
+        cat = self._args.env_category or (
+            "行政法规+部门文件" if self._args.source == "all" else self._cfg_xz.category)
+        locator = ctx.storage.save_master(merged, extra={"category": cat})
+        if getattr(self._args, "csv", False):
+            _write_csv(merged, ctx.out_dir)
+        return locator
+
+    # ----------------------------- SourceCollector 协议入口 -----------------------------
     def collect(self, out_dir: str, *, source="all", max_pages=0, max_items=0,
                 no_details=False, details_limit=0, full=False, resume=None,
                 delay_min=1.5, delay_max=3.5, timeout=30, retries=4,
@@ -441,7 +324,6 @@ class GovCollector:
                 stop_on_error=False, checkpoint_every=200, stop_after_empty_pages=1,
                 backfill=False, max_seconds=0.0, env_source="", env_category="",
                 log_file="") -> str:
-        # resume 缺省时按 full 反推（与 CLI 默认一致：非 --full 即增量）
         _resume = (not full) if resume is None else resume
         args = argparse.Namespace(
             source=source, out_dir=out_dir, max_pages=max_pages, max_items=max_items,
@@ -453,15 +335,15 @@ class GovCollector:
             max_seconds=max_seconds, env_source=env_source, env_category=env_category,
             log_file=log_file,
         )
-        _run(args)
-        return os.path.join(out_dir, "gov_laws.json")
+        self._setup(args)
+        return self.run(out_dir)
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description="抓取 gov.cn 行政法规库（xzfg.moj.gov.cn）行政法规条目（含正文全文）")
+        description="抓取 gov.cn 行政法规库（xzfg.moj.gov.cn）+ 国务院政策文件库·部门文件")
     parser.add_argument("--source", choices=["xzfgk", "zhengceku", "all"], default="all",
-                        help="数据源（默认 all，gov 源常规采集范围）")
+                        help="数据源（默认 all）")
     parser.add_argument("--out-dir", default=DEFAULT_OUT, help="输出目录（默认统一 data/raw/）")
     parser.add_argument("--max-pages", type=int, default=0, help="最大翻页数（0=不限制）")
     parser.add_argument("--max-items", type=int, default=0, help="最大条目数（0=不限制）")
@@ -474,8 +356,6 @@ def main():
     parser.add_argument("--timeout", type=int, default=30, help="请求超时（秒）")
     parser.add_argument("--retries", type=int, default=4, help="重试次数")
     parser.add_argument("--summary-len", type=int, default=200, help="内容摘要字数")
-    parser.add_argument("--cache-dir", default="", help="请求缓存目录")
-    parser.add_argument("--offline", action="store_true", help="纯离线模式")
     parser.add_argument("--csv", action="store_true", help="额外输出 CSV")
     parser.add_argument("--stop-on-error", action="store_true", help="多子源抓取时任一失败即中止")
     parser.add_argument("--checkpoint-every", type=int, default=200, help="详情阶段断点落盘间隔")
@@ -486,7 +366,16 @@ def main():
     parser.add_argument("--env-category", default="", help="覆盖写主库信封 category")
     parser.add_argument("--log-file", default="", help="日志文件路径")
     args = parser.parse_args()
-    sys.exit(_run(args))
+    GovCollector().collect(
+        args.out_dir, source=args.source, max_pages=args.max_pages, max_items=args.max_items,
+        no_details=args.no_details, details_limit=args.details_limit, full=args.full,
+        resume=args.resume, delay_min=args.delay_min, delay_max=args.delay_max,
+        timeout=args.timeout, retries=args.retries, summary_len=args.summary_len, csv=args.csv,
+        stop_on_error=args.stop_on_error, checkpoint_every=args.checkpoint_every,
+        stop_after_empty_pages=args.stop_after_empty_pages, backfill=args.backfill,
+        max_seconds=args.max_seconds, env_source=args.env_source, env_category=args.env_category,
+        log_file=args.log_file,
+    )
 
 
 if __name__ == "__main__":

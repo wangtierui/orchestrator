@@ -23,6 +23,7 @@ from .net import (
     RE_WS,
     RE_ZOOM,
 )
+from ..lib.text_utils import normalize_digits
 
 from ..lib.doc_convert import find_libreoffice
 
@@ -114,12 +115,7 @@ def clean_text(s):
     return RE_WS.sub(" ", html.unescape(s or "")).strip()
 
 
-def normalize_digits(s):
-    """将全角数字 ０-９ 归一为半角 0-9，统一日期口径。"""
-    if not s:
-        return s
-    trans = str.maketrans("０１２３４５６７８９", "0123456789")
-    return s.translate(trans)
+
 
 
 def is_attachment(url):
@@ -270,6 +266,6 @@ def extract_effective(body_text):
 __all__ = [
     "clean_text", "convert_with_libreoffice", "detect_libreoffice", "detect_magic",
     "extract_docx_text", "extract_pdf_text", "extract_xls_text", "is_attachment",
-    "normalize_digits", "safe_filename", "safe_url", "strip_tags",
+    "safe_filename", "safe_url", "strip_tags",
     "parse_detail", "extract_doc_number", "extract_issuing", "extract_effective",
 ]

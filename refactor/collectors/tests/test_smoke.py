@@ -17,7 +17,7 @@ PROJ_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__fi
 # (源, 输出目录, CLI 参数含 out 旗标, 约定产物文件名)
 CASES = [
     ("mof", "/tmp/pytest_smoke/mof",
-     ["--outdir", "/tmp/pytest_smoke/mof", "--cache-dir", "/tmp/pytest_smoke/mof_cache",
+     ["--outdir", "/tmp/pytest_smoke/mof",
       "--max-items", "3", "--no-attachments"],
      "mof_laws.json"),
     ("pbc", "/tmp/pytest_smoke/pbc",
@@ -39,6 +39,8 @@ def test_smoke_fetch_and_write(src, out, args, fn):
     proc = subprocess.run(
         [sys.executable, "-m", f"collectors.{src}.collector", *args],
         cwd=PROJ_ROOT,
+        # 本测试验证"文件产物"，强制 file 后端，避免被全局 REFACTOR_STORAGE=postgres 干扰
+        env={**os.environ, "REFACTOR_STORAGE": "file"},
         capture_output=True, text=True, timeout=180,
     )
     assert proc.returncode == 0, f"{src} 冒烟非零退出:\n{proc.stderr[-3000:]}"

@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
-"""本地磁盘请求缓存 + 文档根路径。自包含，无外部依赖。
+"""可选的 HTTP 响应磁盘缓存（仅 nfra 的 --cache-dir/--offline 预取流水线使用）。
 
-替代原 std_lib.scraper_std.cache_store 在爬虫侧的用法：
-- `bind_source_cache(source, kind, root=None)` → 返回 LocalSourceCache（接口兼容旧 cache_store）
-- `docs_root(*parts)` → 文档/附件落盘基址，统一收口到 refactor/data/docs 下
-- `OfflineMiss` → 离线缺失异常
+注意：pbc / gov / mof 的透明 HTTP 响应重放已于重构中移除；此处仅保留 nfra 在显式
+WAF 规避两阶段工作流下所需的缓存能力。如需为全源统一缓存方案，后续可在此扩展。
 """
 import hashlib
 import json
@@ -57,13 +55,3 @@ class LocalSourceCache:
 
 def bind_source_cache(source, kind, root=None):
     return LocalSourceCache(source, kind, root=root)
-
-
-def source_cache_root(source, kind="text", root=None):
-    """返回某 (source, kind) 的缓存根目录（与 LocalSourceCache 的默认布局一致）。"""
-    return root or os.path.join(REPO_ROOT, "data", "cache", source, kind)
-
-
-def docs_root(*parts):
-    """文档/附件落盘基址：refactor/data/docs/<parts...>。"""
-    return os.path.join(REPO_ROOT, "data", "docs", *parts)

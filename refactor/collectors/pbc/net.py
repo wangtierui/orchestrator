@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-"""pbc 中国人民银行爬虫：网络层 + 站点常量 + 共享缓存状态。
+"""pbc 中国人民银行爬虫：网络层 + 站点常量（重构版）。
 
-原 modules/regulatory_scrapers/collectors/pbc_collector.py 的网络/常量部分迁出，
-逻辑逐函数等价；仅调整 import 路径（改为相对导入 + 仓库引导）。
+原 modules/regulatory_scrapers/collectors/pbc_collector.py 的网络/常量部分迁出，逻辑等价；
+仅调整 import 路径（相对导入 + 仓库引导）。HTTP 响应磁盘缓存已于重构中移除
+（透明重放不再需要），仅保留反爬风控检测 _is_cacheable 与实时请求。
 """
-import os
 import random
 import re
 import time
@@ -12,18 +12,11 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-from ..lib.cache import (
-    OfflineMiss,
-    bind_source_cache,
-    docs_root,
-    url_endpoint_key as _cache_ep,
-)
+from ..lib.paths import docs_root
 from ..lib.rich_object import rich_object_fields
 from ..lib.table_recovery import structured_table_fields
 from ..lib.doc_convert import find_libreoffice
-
-_RESP_TEXT = None  # TextResponseCache 实例；None 表示未启用缓存
-_OfflineMiss = OfflineMiss  # 兼容别名
+from ..lib.http import USER_AGENTS
 
 LO_PATH = find_libreoffice()
 LO_AVAILABLE = LO_PATH is not None
@@ -50,13 +43,6 @@ ISSUING_AUTHORITIES = [
     "最高人民法院", "最高人民检察院",
 ]
 
-USER_AGENTS = [
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0 Safari/537.36",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15",
-    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36",
-]
-
 # 正则表达式预编译
 RE_PAGING = re.compile(
     r'name="article_paging_list_hidden"\s+moduleid="([^"]+)"\s+modulekey="[^"]*"\s+totalpage="(\d+)"'
@@ -80,32 +66,30 @@ RE_EFFECTIVE = re.compile(r'自\s*([\d]{4}\s*年\s*\d{1,2}\s*月\s*\d{1,2}\s*日
 RE_TAG = re.compile(r'<[^>]+>')
 RE_WS = re.compile(r'\s+')
 
+# 风控检测：判断一页是否"像真实页"而非反爬拦截页（访问频率/验证码等）。
+# 仅用于抓取时的风控识别与退避重试，与响应缓存无关。
+_BLOCKED_HINTS = (
+    "访问频率", "访问过于频繁", "验证码", "请输入验证码",
+    "403 Forbidden", "Access Denied", "请求过于频繁", "captcha",
+)
+def _is_cacheable(text: str) -> bool:
+    if not text:
+        return False
+    low = text.lower()
+    if any(h.lower() in low for h in _BLOCKED_HINTS):
+        return False
+    # 列表页或详情页应含关键结构标记
+    return bool(
+        RE_PAGING.search(text) or RE_ENTRY.search(text)
+        or RE_ARTICLE_TITLE_META.search(text) or RE_ZOOM.search(text)
+        or RE_TITLE_H2.search(text)
+    )
+
 ATTACH_EXT = (".doc", ".docx", ".pdf", ".xls", ".xlsx", ".wps", ".ceb", ".rtf")
 
 
 # ----------------------------------------------------------------------------------
-# 缓存绑定：统一根（缺省 cache_store.source_cache_root("pbc")）
-# ----------------------------------------------------------------------------------
-def _init_cache(path=None, offline=False):
-    """统一缓存根绑定（缺省 cache_store.source_cache_root("pbc")，单物理根）；path 显式可覆盖。"""
-    global _RESP_TEXT
-    _RESP_TEXT = bind_source_cache("pbc", "text", root=path)
-    if offline and _RESP_TEXT is not None:
-        _RESP_TEXT.set_offline(True)
-
-
-def set_cache_dir(path):
-    """兼容旧调用（同目录脚本）：仅设根，沿用当前离线态。"""
-    _init_cache(path)
-
-
-def set_offline(flag):
-    if _RESP_TEXT is not None:
-        _RESP_TEXT.set_offline(flag)
-
-
-# ----------------------------------------------------------------------------------
-# 网络请求层：带重试退避、UA 轮换、超时、频率控制
+# 网络请求层：带重试退避、UA 轮换、超时、频率控制（纯实时，无磁盘缓存）
 # ----------------------------------------------------------------------------------
 class Fetcher:
     def __init__(self, min_delay=0.8, max_delay=1.6, timeout=30, retries=3):
@@ -124,29 +108,15 @@ class Fetcher:
         self._last_req = time.time()
 
     def get(self, url, referer=None, binary=False, timeout=None):
-        """
-        带指数退避重试的 GET 请求，返回 (status, content)。
-        status 为 HTTP 状态码；失败时 status=None，content 为错误说明字符串。
+        """带指数退避重试的 GET 请求，返回 (status, content)。
 
-        文本页（binary=False）委托通用缓存层 TextResponseCache：命中读盘跳过网络、
-        离线缺失抛 _OfflineMiss、仅成功响应（status==200）落盘；二进制附件
-        （binary=True）已落盘 ATTACHMENTS_DIR，不经文本缓存。
+        status 为 HTTP 状态码；失败时 status=None，content 为错误说明字符串。
+        纯实时请求（HTTP 响应磁盘缓存已移除）；二进制附件落盘到 ATTACHMENTS_DIR。
         """
         from .parse import safe_url  # 延迟导入，避免与 parse.py 的循环引用
 
         last_err = None
         url = safe_url(url)
-        # 1) 缓存命中（仅文本页）：续跑 / 离线
-        if not binary and _RESP_TEXT is not None:
-            cp = _RESP_TEXT.path(_cache_ep(url), {})
-            if os.path.exists(cp):
-                try:
-                    with open(cp, encoding="utf-8") as fh:
-                        return 200, fh.read()
-                except Exception:  # noqa: BLE001  采集容错（字段/附件缺失不阻断采集）
-                    pass  # 缓存损坏则重新请求
-            if _RESP_TEXT.offline:
-                raise _OfflineMiss(url)
         for attempt in range(1, self.retries + 1):
             self._throttle()
             try:
@@ -167,12 +137,6 @@ class Fetcher:
                         text = data.decode(enc, errors="replace")
                     except LookupError:
                         text = data.decode("utf-8", errors="replace")
-                    # 写入文本缓存（仅成功响应且非空）
-                    if _RESP_TEXT is not None and status == 200 and text:
-                        try:
-                            _RESP_TEXT.put(_cache_ep(url), {}, text)
-                        except Exception:  # noqa: BLE001  采集容错（字段/附件缺失不阻断采集）
-                            pass
                     return status, text
             except urllib.error.HTTPError as e:
                 last_err = f"HTTP {e.code}"

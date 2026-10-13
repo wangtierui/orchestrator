@@ -13,8 +13,6 @@
 """
 from __future__ import annotations
 
-import argparse
-import json
 import logging
 import os
 import re
@@ -23,6 +21,8 @@ import time
 from urllib.parse import urljoin
 
 from ..base import REPO_ROOT as _ORCH  # refactor 项目根（自包含，不指向外部）
+from .parse import make_summary  # 复用 gov 主链摘要口径（消除 zhengceku 副本）
+from ..lib.text_utils import normalize_date  # 复用统一日期归一化（消除 _iso 副本）
 # local_path 相对基址收口到 refactor/data/raw（自包含）。
 SCRAPERS_ROOT = os.path.join(_ORCH, "data", "raw")
 
@@ -44,7 +44,7 @@ _WS = re.compile(r"[ \t\u3000]{2,}")
 _BLANK = re.compile(r"\n{3,}")
 _A = re.compile(r'<a\b[^>]*\bhref="([^"]+)"[^>]*>(.*?)</a>', re.IGNORECASE | re.DOTALL)
 _LI = re.compile(r"<li\b[^>]*>(.*?)</li>", re.IGNORECASE | re.DOTALL)
-_DATE = re.compile(r"(20\d{2})[-/年](\d{1,2})[-/月](\d{1,2})")
+
 _META = re.compile(r"(发文字号|发文机关|成文日期|主题分类|公文种类|来\s*源|标\s*题)\s*[：:]", re.U)
 
 
@@ -56,12 +56,8 @@ def list_page_url(index: int) -> str:
 #: 增量早停阈值缺省：连续 1 页无「新条目」即停（N-190，2026-10-08）
 DEFAULT_STOP_AFTER_EMPTY_PAGES = 1
 
-
-def should_stop_paging(empty_streak: int, stop_after_empty_pages: int, backfill: bool) -> bool:
-    """是否停止翻页（**纯函数**，便于单测；N-190）。"""
-    if backfill:
-        return False
-    return empty_streak >= max(1, int(stop_after_empty_pages or 1))
+# 早停判据抽至通用模块（collectors/lib/incremental.py，G7），此处仅再导出以保持兼容。
+from ..lib.incremental import KnownTracker, should_stop_paging  # noqa: E402
 
 
 def total_pages(html: str) -> int:
@@ -128,15 +124,10 @@ def clean_html_text(html: str) -> str:
     return _BLANK.sub("\n\n", s).strip()
 
 
-def _iso(datestr: str) -> str:
-    m = _DATE.search(datestr or "")
-    return f"{int(m.group(1)):04d}-{int(m.group(2)):02d}-{int(m.group(3)):02d}" if m else ""
 
 
-def make_summary(full_text: str, length: int = 200) -> str:
-    """摘要：与 gov 主链 `gov_parse.make_summary` 同口径（压缩空白后截断）。"""
-    s = re.sub(r"\s+", " ", full_text or "").strip()
-    return s if len(s) <= length else s[:length]
+
+
 
 
 # --------------------------------------------------------------------------- #
@@ -162,7 +153,7 @@ def scan_list(html: str, base_url: str = LIST_BASE):
             continue
         seen.add(u)
         out.append((u, clean_html_text(m.group(2)).replace("\n", " ").strip()[:160],
-                    _iso(clean_html_text(li))))
+                    normalize_date(clean_html_text(li))))
     if out:
         return out
     for m in _A.finditer(html or ""):
@@ -240,7 +231,7 @@ def parse_detail(html: str, url: str) -> dict:
                 title = t2
             break
     body = clean_html_text(pick_content_html(html))
-    pub = _iso(_meta_field(html, "成文日期", 40))
+    pub = normalize_date(_meta_field(html, "成文日期", 40))
     docno = _meta_field(html, "发文字号", 60)
     if not docno:
         docno = _extract_docno(title) or _extract_docno(body[:600])
@@ -373,7 +364,7 @@ def fetch_attachments(html: str, url: str, entry_id: str) -> tuple[list, str]:
         lp = r.get("local_path") or ""
         if not lp.lower().endswith((".doc", ".docx")):
             continue
-        ap = lp if os.path.isabs(lp) else os.path.join(_SRC_ROOT, lp)
+        ap = lp if os.path.isabs(lp) else os.path.join(SCRAPERS_ROOT, lp)
         if not os.path.exists(ap):
             continue
         t2 = extract_doc_via_word(ap)
@@ -400,9 +391,12 @@ class ZhengcekuScraper:
     def __init__(self, cfg, client=None, seen_urls=None, known_urls=None):
         self.cfg = cfg
         self.client = client
-        self.seen_urls = seen_urls if seen_urls is not None else set()
+        # 已知态（主库已有正文 → 跳过详情；含本轮已列，由 seen_in_run 去重）
+        # 收口到通用 KnownTracker（key=detail_url）；known_urls 仅用于"新条目计数"指标。
         self.known_urls = known_urls if known_urls is not None else set()
-        self.stats: dict = {}
+        self.tracker = KnownTracker(key_of=lambda r: r.get("detail_url"))
+        if seen_urls:
+            self.tracker.load_known([{"detail_url": u} for u in seen_urls])
 
     def _list_url(self, index: int) -> str:
         return list_page_url(index)
@@ -410,197 +404,55 @@ class ZhengcekuScraper:
     def _parse_list(self, html: str, base_url: str):
         return scan_list(html, base_url)
 
-    def _partial_path(self) -> str:
-        """断点续跑暂存文件（位于 out_dir，即 data/raw/ 内，不新增 data 子目录）。"""
-        return os.path.join(self.cfg.out_dir, "_zhengceku_partial.json")
+    # ---- 重构：列表生成器 iter_list + 详情 fetch_one（原 run() 全流程已移除）----
+    def iter_list(self, ctx) -> "Iterator[dict]":
+        """逐页翻列表，**只 yield new 条目**；连续 N 页无新即停（增量早停，N-190）。
 
-    def _load_partial(self) -> list:
-        """载入上次未合并的已抓记录（进程中断后的续跑基线）。"""
-        p = self._partial_path()
-        if not os.path.exists(p):
-            return []
-        try:
-            recs = json.load(open(p, encoding="utf-8"))
-            if isinstance(recs, list) and recs:
-                LOG.info("【续跑】从 %s 载入上次未合并的 %d 条", os.path.basename(p), len(recs))
-                for r in recs:
-                    if r.get("detail_url"):
-                        self.seen_urls.add(r["detail_url"])
-                return recs
-        except Exception as e:  # noqa: BLE001
-            LOG.warning("【续跑】暂存文件读取失败，忽略：%s", e)
-        return []
-
-    def clear_partial(self) -> bool:
-        """清理**已消费**的续跑暂存（N-192，2026-10-08）。"""
-        p = self._partial_path()
-        removed = False
-        for cand in (p, p + ".tmp"):
-            try:
-                if os.path.exists(cand):
-                    os.remove(cand)
-                    removed = True
-            except OSError as e:
-                LOG.warning("【续跑】暂存清理失败（不影响主库）：%s", e)
-        if removed:
-            LOG.info("【续跑】主库已落盘 → 清理已消费的续跑暂存 %s", os.path.basename(p))
-        return removed
-
-    def _save_partial(self, records: list) -> None:
-        """原子落盘已抓记录。"""
-        p = self._partial_path()
-        tmp = p + ".tmp"
-        try:
-            with open(tmp, "w", encoding="utf-8") as f:
-                json.dump(records, f, ensure_ascii=False)
-            os.replace(tmp, p)
-        except Exception as e:  # noqa: BLE001
-            LOG.warning("暂存落盘失败：%s", e)
-
-    def run(self) -> list:
+        用基类 tracker 判 known/dup 并跳过；backfill 模式不早停（扫完全部）。
+        原 partial 断点续跑由"主库 resume + 基类按页 checkpoint"自然取代，此处删除。
+        """
         cfg = self.cfg
         max_pages = getattr(cfg, "max_pages", 0) or 0
         max_items = getattr(cfg, "max_items", 0) or 0
-        no_details = not getattr(cfg, "fetch_details", True)
         delay = getattr(cfg, "delay_min", 1.5)
-        ckpt = int(getattr(cfg, "checkpoint_every", 200) or 0)
-        carried = self._load_partial() if ckpt else []
-        backfill = bool(getattr(cfg, "backfill", False))
         stop_after = int(getattr(cfg, "stop_after_empty_pages", DEFAULT_STOP_AFTER_EMPTY_PAGES) or 1)
-        budget = float(getattr(cfg, "max_seconds", 0.0) or 0.0)
-        if backfill:
-            LOG.info("【backfill】历史存量补全模式：不早停，将扫完全部列表页")
-
+        backfill = bool(getattr(cfg, "backfill", False))
         first = fetch(self._list_url(0))
+        if not first:
+            return
         n_pages = total_pages(first)
         if max_pages:
             n_pages = min(n_pages, max_pages)
-        LOG.info("zhengceku 栏目：共 %d 页，本次抓取 %d 页", total_pages(first), n_pages)
-
-        seen = self.seen_urls
-        known = self.known_urls
-        n_listed = 0
-        n_new = 0
-        pages_fetched = 0
-        pages_without_new = 0
+        seen = set()  # 本地运行内去重（只读判重，不污染基类 tracker.seen_in_run）
         empty_streak = 0
-        pending = []
-        stopped_reason = "swept_all" if backfill else "end"
-        t_list0 = time.time()
+        yielded = 0
         for i in range(n_pages):
             html = first if i == 0 else fetch(self._list_url(i))
             if not html:
-                LOG.warning("列表页 %d 抓取失败，跳过", i)
                 continue
-            pages_fetched += 1
             items = self._parse_list(html, self._list_url(i))
-            n_listed += len(items)
             new_in_page = 0
             for u, t, d in items:
-                if u not in known:        # N-190：新条目判定（主库**无**此 detail_url）
-                    known.add(u)
-                    new_in_page += 1
-                    n_new += 1
-                if u in seen:             # 主库已有正文 → **不发详情请求**
+                # 只读判重：主库已知 → 跳过（由 merge 保活）；本轮已列 → 跳过
+                if u in ctx.tracker.known or u in seen:
                     continue
                 seen.add(u)
-                pending.append((u, t, d))
+                yield {"title": t, "detail_url": u, "publish_date": d,
+                       "pub_date_original": "", "effective_date": "",
+                       "issue_organ": "", "document_number": "",
+                       "category": CATEGORY, "source": SUB_SOURCE, "page": i}
+                new_in_page += 1
+                yielded += 1
+                if max_items and yielded >= max_items:
+                    return
             if new_in_page:
                 empty_streak = 0
             else:
                 empty_streak += 1
-                pages_without_new += 1
-            LOG.info("列表页 %d/%d → 命中 %d 条（新 %d），累计待抓 %d 条",
-                     i + 1, n_pages, len(items), new_in_page, len(pending))
-            if max_items and len(pending) >= max_items:
-                stopped_reason = "max_items"
-                break
             if should_stop_paging(empty_streak, stop_after, backfill):
-                stopped_reason = "no_new_items"
-                LOG.info("连续 %d 页无新条目 → 停止翻页（增量模式，N-190）；"
-                         "历史存量补全请用 --backfill（独立排程）", empty_streak)
                 break
             if delay and i + 1 < n_pages:
                 time.sleep(delay)
-        elapsed_list = time.time() - t_list0
-        if max_items:
-            pending = pending[:max_items]
-        LOG.info("列表级完成：翻页 %d/%d 页（无新页 %d），命中 %d 条，本次待抓 %d 条"
-                 "（主库既有正文跳过 %d 条）",
-                 pages_fetched, n_pages, pages_without_new, n_listed, len(pending),
-                 n_listed - len(pending))
-
-        if no_details:
-            LOG.warning("--no-details：仅产出列表级记录（无正文），请勿直接并入主库")
-            self.stats = {
-                "sub_source": SUB_SOURCE, "list_pages_fetched": pages_fetched,
-                "list_pages_without_new": pages_without_new, "list_items_seen": n_listed,
-                "new_items": n_new, "pending_details": len(pending), "details_fetched": 0,
-                "details_failed": 0, "details_skipped_master": n_listed - len(pending),
-                "elapsed_list_s": round(elapsed_list, 1), "stopped_reason": "no_details",
-                "backfill": backfill, "budget_s": budget, "list_pages_planned": n_pages,
-                "list_pages_total": total_pages(first), "elapsed_detail_s": 0.0,
-            }
-            return [{"title": t, "detail_url": u, "publish_date": d, "pub_date_original": "",
-                     "effective_date": "", "issue_organ": "", "document_number": "",
-                     "category": CATEGORY, "source": SUB_SOURCE, "full_text": "",
-                     "summary": "", "attachments": [], "attachment_text": "",
-                     "attachment_count": 0} for u, t, d in pending]
-
-        records = list(carried)
-        if carried:
-            LOG.info("【续跑】本次在此基础上继续，已计入 %d 条", len(carried))
-        details_fetched = 0
-        details_failed = 0
-        t_det0 = time.time()
-        for k, (u, t, d) in enumerate(pending, 1):
-            if budget and (time.time() - t_det0) >= budget:
-                stopped_reason = "budget"
-                LOG.warning("已达 --max-seconds=%s 预算 → 停止详情抓取（已抓 %d 条正常落盘，"
-                            "剩余 %d 条下次续跑）", budget, len(records), len(pending) - k + 1)
-                break
-            try:
-                rec = self.fetch_one(u, title_hint=t, date_hint=d)
-            except Exception as e:  # noqa: BLE001
-                details_failed += 1
-                LOG.warning("详情页失败 %s：%s", u, e)
-                continue
-            details_fetched += 1
-            records.append(rec)
-            if k % 20 == 0 or k == len(pending):
-                LOG.info("详情进度 %d/%d（累计 %d 条；最近：%s）",
-                         k, len(pending), len(records), rec["title"][:34])
-            if ckpt and len(records) % ckpt == 0:
-                self._save_partial(records)
-                LOG.info("【checkpoint】已落暂存 %d 条", len(records))
-            if delay:
-                time.sleep(delay)
-        elapsed_detail = time.time() - t_det0
-        if ckpt and records:
-            self._save_partial(records)      # 收尾落盘
-        if _ATTACH_FAST and _skipped[0]:
-            LOG.info("【提速模式】本次跳过附件原文抽取 %d 条（正文≥%d 字）；"
-                     "如需附件原文，对目标条目用 gov_zhengceku.py <url> 单条补录",
-                     _skipped[0], _FAST_MIN_BODY)
-        self.stats = {
-            "sub_source": SUB_SOURCE,
-            "list_pages_total": total_pages(first),
-            "list_pages_planned": n_pages,
-            "list_pages_fetched": pages_fetched,
-            "list_pages_without_new": pages_without_new,
-            "list_items_seen": n_listed,
-            "new_items": n_new,
-            "pending_details": len(pending),
-            "details_fetched": details_fetched,
-            "details_failed": details_failed,
-            "details_skipped_master": n_listed - len(pending),
-            "elapsed_list_s": round(elapsed_list, 1),
-            "elapsed_detail_s": round(elapsed_detail, 1),
-            "stopped_reason": stopped_reason,
-            "backfill": backfill,
-            "budget_s": budget,
-        }
-        return records
 
     def fetch_one(self, url: str, title_hint: str = "", date_hint: str = "") -> dict:
         """抓取单条详情（含附件原文），产出 gov 主库契约记录。"""
