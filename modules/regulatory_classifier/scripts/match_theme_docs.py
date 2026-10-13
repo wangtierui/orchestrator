@@ -58,18 +58,6 @@ def norm_doc(d):
     return d.rstrip("号")
 
 
-def get_year(r):
-    """兼容两种 final 字段结构：real_year（T1/T2）或 year/文号解析（T3-T8）。"""
-    y = r.get("real_year")
-    if y:
-        return y
-    y = r.get("year", "")
-    if y and y.isdigit():
-        return int(y)
-    m = re.search(r"[〔\[](\d{4})[〕\]]", r.get("doc_no", "") or "")
-    return int(m.group(1)) if m else None
-
-
 def extract_basis(body):
     """全文范围提取立法依据：'根据/依据/依照/按照'后 200 字内全部《X》去重。"""
     basis = []

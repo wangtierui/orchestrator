@@ -200,10 +200,25 @@ def cron_jobs() -> list[dict]:
 
 def _run(argv: list[str]) -> tuple[int, str]:
     try:
-        r = subprocess.run(
-            argv, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60
-        )
-        return r.returncode, (r.stdout or "") + (r.stderr or "")
+        r = subprocess.run(argv, capture_output=True, timeout=60)
+        # 批 60：**逐编码严格解码**。原按 `utf-8` 解码而 zh-CN 下 `schtasks` 输出为 **GBK** ⇒ 乱码 ⇒
+        # `installed_argv` 的中文标签（"要运行的任务"）匹配失败 ⇒ 参数读成空 ⇒ **verify 全量假 FAIL** ✗
+        # （实测：`schtasks /query /tn REG_ORCH_monthly_check /fo LIST /v` 参数实为 `cli.py gates` ✓）。
+        raw = (r.stdout or b"") + (r.stderr or b"")
+        # 批 63（W-AS）：`schtasks /query /xml` 输出为 **UTF-16**（带 BOM）⇒ 先按 BOM 判定，
+        # 否则会被后续 utf-8/gbk 链解成乱码（相邻于"全量假 FAIL"的坑 ✗）。
+        if raw[:2] in (b"\xff\xfe", b"\xfe\xff"):
+            return r.returncode, raw.decode("utf-16", "replace")
+        text = ""
+        for _enc in ("utf-8", "gbk", "cp936"):
+            try:
+                text = raw.decode(_enc)
+                break
+            except UnicodeDecodeError:
+                continue
+        else:
+            text = raw.decode("utf-8", "replace")
+        return r.returncode, text
     except Exception as e:  # noqa: BLE001  schtasks 不可用（非 Windows/权限）→ 明确返回
         return 127, f"{type(e).__name__}: {e}"
 
@@ -215,8 +230,35 @@ def schtasks_usable() -> bool:
     return shutil.which(SCHTASKS) is not None
 
 
+def _query_xml(task: str) -> str:
+    """读任务 XML（`/xml` 输出为 UTF-16；`_run` 已按 BOM 解码）；失败返回空串。"""
+    rc, out = _run([SCHTASKS, "/query", "/tn", task, "/xml"])
+    return out if rc == 0 and out.strip() else ""
+
+
 def installed_argv(task: str) -> tuple[str, str] | None:
-    """读已安装任务的 (Arguments, StartBoundary)；任务不存在/不可查 → None。"""
+    """读已安装任务的 (Arguments, StartBoundary)；任务不存在/不可查 → None。
+
+    批 63（W-AS）：**首选解析 `/xml`**（`<Arguments>`/`<StartBoundary>` 语言无关）；
+    失败回退 LIST（本地化标签）。原实现只解析 LIST ⇒ 标签漂移/编码异常即读空，
+    曾造成 CI「全量假 FAIL」（系统任务参数实为正确 ✗）。
+    """
+    xml = _query_xml(task)
+    if xml:
+        try:
+            import xml.etree.ElementTree as _ET
+
+            _ns = "{http://schemas.microsoft.com/windows/2004/02/mit/task}"
+            _root = _ET.fromstring(xml)
+            _a = _root.find(f".//{_ns}Actions/{_ns}Exec/{_ns}Arguments")
+            _t = (_root.find(f".//{_ns}Triggers/{_ns}CalendarTrigger/{_ns}StartBoundary")
+                  or _root.find(f".//{_ns}Triggers/{_ns}TimeTrigger/{_ns}StartBoundary"))
+            _args = ((_a.text or "").strip() if _a is not None else "")
+            _start = ((_t.text or "").strip() if _t is not None else "")
+            if _args or _start:
+                return _args, _start
+        except Exception:  # noqa: BLE001  XML 异常 ⇒ 回退 LIST
+            pass
     rc, out = _run([SCHTASKS, "/query", "/tn", task, "/fo", "LIST", "/v"])
     if rc != 0:
         return None

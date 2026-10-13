@@ -167,6 +167,12 @@ def extract_docx(data):
 def extract_xlsx(data):
     """从 .xlsx（OOXML，ZIP 包）抽取单元格文本：**行式制表符**（保留行列结构，2026-09-10
     修复「每单元格一行」扁平化丢结构问题），供 text 可读；结构化二维另由 structured_table_fields 回填。"""
+    # 批 58/W-AE：**收敛到共享抽取器**（伪装/损坏包先由共享链「拆封 + 重嗅」，W-W）——
+    # 非本格式内层直接返回共享结果；确为本格式时仍走下方**共享原语**（N-208 已受控）。
+    from std_lib.scraper_std.crawler_common import extract_document_text, sniff_kind
+
+    if sniff_kind(data, "") not in ("xlsx", "ole2"):
+        return extract_document_text(data, "", enable_ocr=False).get("text") or ""
     # 批 50：**统一到共享原语**（crawler_common.iter_xlsx_text_rows / cap_xlsx_text）。
     # 原实现按工作表**声明维度**逐行展开（与 N-208 同型缺陷：某 17KB xlsx 声明 4374×16384 格、
     # 有值仅 10,923 ⇒ 抽出 71,769,545 字符），且**无上限**。

@@ -140,15 +140,6 @@ def ensure_utf8_bom(text: str) -> bytes:
     return ("\ufeff" + text).encode("utf-8")
 
 
-def write_text_utf8_bom(path: str, text: str) -> None:
-    """便捷写文件（UTF-8 with BOM）。"""
-    import os
-
-    os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
-    with open(path, "wb") as f:
-        f.write(ensure_utf8_bom(text))
-
-
 if __name__ == "__main__":  # 离线自检
     assert decode_bytes("中文测试".encode())[1] in ("utf-8", "utf8")
     gb = "财政法规".encode("gb18030")

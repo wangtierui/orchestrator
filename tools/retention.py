@@ -310,7 +310,10 @@ def _plan_snapshot_dirs(spec: dict) -> tuple[list[dict], dict]:
     out: list[dict] = []
     kept = 0
     for grp, ps in by_grp.items():
-        ps.sort(key=os.path.getmtime, reverse=True)          # 新 → 旧
+        # 批 66（W-V）：**确定性次键** = 目录名（含 `YYYYmmdd_HHMMSS`）。原单键 mtime 在同时钟粒度内并列
+        # ⇒ 排序退化为 `os.listdir` 任意顺序 ⇒ 保留/删除**随机**（表现为"单独跑过、全量套件偶发失败" ✗）。
+        ps.sort(key=lambda p: (os.path.getmtime(p), os.path.basename(os.path.normpath(p))),
+                reverse=True)   # 新 → 旧（mtime 并列时按名称定序 ✓）
         kept += min(keep, len(ps))
         for d in ps[keep:]:
             size = 0

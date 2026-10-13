@@ -417,6 +417,15 @@ def main(argv=None) -> int:
         if res["fail"]:
             print("环境不满足：修复上方 [FAIL] 项后重试（`cli.py run` 会被前置自检拒绝）")
         print(f"报告：{os.path.relpath(OUT_JSON, paths.ROOT)}")
+    if res["fail"]:
+        # 批 61：补齐 `notify.on` 的 `doctor_fail` 发送者（此前无人外发 ✗）
+        try:
+            from std_lib.common_lib import notify as _notify_d
+
+            _notify_d.notify("doctor_fail", "环境自检未通过（%d 项）" % len(res["fail"]),
+                          {"failed": list(res["fail"])[:20]})
+        except Exception as e:  # noqa: BLE001  告警失败不得改变退出码
+            print(f"[doctor] WARN 告警发送失败: {type(e).__name__}: {e}")
     return ExitCode.ENV if res["fail"] else ExitCode.OK
 
 

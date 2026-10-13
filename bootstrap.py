@@ -107,3 +107,26 @@ def injected() -> tuple[str, ...]:
 if __name__ == "__main__":  # 离线自检
     bootstrap("all", include_tools=True)
     print("[bootstrap] 已注入:", len(injected()), "条")
+
+# --------------------------------------------------------------------------- #
+# 批 57：**全局隐藏子进程**（防闪窗 / 抢焦点 / 剪贴板被打断）
+#
+# 取证：全仓 `subprocess` 调用 54 处、0 处带隐藏旗标 ✗；`soffice.exe` 属 GUI 子系统启动器，
+# 未隐藏时**进程创建阶段即建窗并抢前台焦点** ⇒ 用户在其他办公软件中的复制粘贴被打断。
+# 本处为**唯一引导点**安装默认值（`std_lib.scraper_std.proc.install_global_defaults`）；
+# 调用方显式传参优先；调试需可见窗口时置 `RCO_ALLOW_VISIBLE_SUBPROCESS=1`。
+# --------------------------------------------------------------------------- #
+def _install_hidden_subprocess_defaults() -> bool:
+    import os as _os
+
+    if _os.environ.get("RCO_ALLOW_VISIBLE_SUBPROCESS", "").strip() in ("1", "true", "True"):
+        return False
+    try:
+        from std_lib.scraper_std.proc import install_global_defaults as _install
+
+        return bool(_install())
+    except Exception:  # noqa: BLE001  引导期失败不阻断（仅失去隐藏默认）
+        return False
+
+
+_install_hidden_subprocess_defaults()

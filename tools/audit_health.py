@@ -423,7 +423,19 @@ def check_dead_public() -> list:
     """
     f: list = []
     all_src = {p: _read(p) for p in _pyfiles()}
-    ref_blob = "\n".join([_read(p) for p in _pyfiles(with_tests=True)])
+    # 批 63（W-AO）：引用面**补仓根文件**（cli/bootstrap/paths/file_list_watcher）——原
+    # `_pyfiles()` 只扫 SCAN_DIRS ⇒ 这些被误报「零引用」✗；并**剔除 `__all__` 字符串计权**。
+    _root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    _roots = [os.path.join(_root, f) for f in
+              ("cli.py", "bootstrap.py", "paths.py", "file_list_watcher.py")
+              if os.path.exists(os.path.join(_root, f))]
+
+    def _read_refs(p: str) -> str:
+        """读源码并**剔除 `__all__` 块**（其字面量会虚增引用计数 ✗）。"""
+        return re.sub(r"(?ms)^\s*__all__\s*=\s*\[.*?\]\s*$", "", _read(p))
+
+    ref_blob = "\n".join([_read_refs(p) for p in _pyfiles(with_tests=True)]
+                         + [_read_refs(p) for p in _roots])
     blob = ref_blob
     for p, src in all_src.items():
         if _rel(p).startswith(("tests/", "tools/audit_health.py")):
@@ -567,11 +579,50 @@ def check_readme_consistency() -> list:
         f.append(
             {"cat": "README 一致性", "sev": "LOW", "where": "gates/__init__.py", "detail": f"门禁数核验跳过：{e}"}
         )
+    # ①b STEP_ORDER 项数声明（批 66：该数字曾 28→30→31 反复漂移 ⇒ 机器核验；SSOT 复用门禁实现）
+    try:
+        from gates.gate_declaration_executor import _step_order as _so
+
+        n_step = len(_so())
+        for m in re.finditer(r"`STEP_ORDER`\s*\*\*(\d+)\s*项\*\*", txt):
+            if int(m.group(1)) != n_step:
+                line = txt[: m.start()].count(chr(10)) + 1
+                f.append({
+                    "cat": "README 一致性", "sev": "HIGH", "where": f"README.md:{line}",
+                    "detail": f"声明 STEP_ORDER {m.group(1)} 项 ≠ 实际 {n_step}（文档漂移）",
+                })
+    except Exception as e:  # noqa: BLE001
+        f.append({"cat": "README 一致性", "sev": "LOW", "where": "tools/run_production_refresh.py",
+                  "detail": f"步骤数核验跳过：{e}"})
+
+    # ①c env **反向**核验（批 66）：代码用到的 RCO_*/REG_ORCH_* ⇒ README 必须记载
+    #     动因：此前 README 仅记 1/18 ✗，而原判据只做“README → 代码”单向核对 ⇒ 漏检。
+    try:
+        _envs: set = set()
+        for _dp, _dn, _fn in os.walk(ROOT):
+            _d = _dp.replace(os.sep, "/")
+            if any(x in _d for x in ("/.git", "__pycache__", "/refactor", "/reports",
+                                     "/external", "/graphify-out", "/.venv")):
+                continue
+            for _f in _fn:
+                if _f.endswith(".py"):
+                    _envs |= set(re.findall(r"\b(RCO_[A-Z_]+|REG_ORCH_[A-Z_]+)\b",
+                                           _read(os.path.join(_dp, _f))))
+        _missing = sorted(e for e in _envs if e not in txt)
+        if _missing:
+            f.append({
+                "cat": "README 一致性", "sev": "HIGH", "where": "README.md §6.3",
+                "detail": f"代码使用但 README 未记载的环境变量：{_missing}",
+            })
+    except Exception as e:  # noqa: BLE001
+        f.append({"cat": "README 一致性", "sev": "LOW", "where": "env 反向核验",
+                  "detail": f"跳过：{e}"})
     # ② README 引用的关键产物/工具是否存在
     for rel in (
         # N-165：链路总图已**并入 README 的受管块**（不再单独成文件）→ 改核验标记是否存在
         "docs/全链数据流总图.md",  # 历史路径：若 README 缺失该块则提示（见下方专门断言）
         "tools/gen_flow_map.py",
+        ".githooks/post-commit",   # 批 59/66：钩子版本化路径（曾失实为 tools/git_hooks/ ✗）
         "tools/audit_health.py",
         "config/schema/semantic_tools.json",
         "interfaces/contract.py",

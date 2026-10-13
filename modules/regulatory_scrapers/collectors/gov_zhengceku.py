@@ -327,6 +327,10 @@ def _word_app():
         import atexit
 
         import win32com.client as wc  # type: ignore
+        if os.environ.get("RCO_ALLOW_OFFICE_COM", "").strip() not in ("1", "true", "True"):
+            # 批 56：**默认禁用 Office/WPS COM**（COM 实例与用户桌面会话交互，实测导致剪贴板/焦点被抢占；隐藏窗口下安全对话框还会永久阻塞）
+            # ⇒ 需要时显式置 RCO_ALLOW_OFFICE_COM=1 开启
+            return None
         app = wc.Dispatch("Word.Application")
         app.Visible = False
         app.DisplayAlerts = False

@@ -38,6 +38,9 @@ def build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--json-logs", action="store_true", help="结构化日志（JSON lines）")
     ap.add_argument("--dry-run", action="store_true", help="只打印将执行的 argv，不执行")
     ap.add_argument("--list-steps", action="store_true", help="列出步骤名后退出")
+    # 批 59（W-AP）：⚠️ 链内已由 `_run_conditional` 执行 timeliness_verify / inbox_drop /
+    # internal_update / wiki_sync（run_production_refresh.py:976/1140/1141/1318）⇒ 本开关会对
+    # **已入链**触发项**再跑一遍**（双写风险）。生产 argv 未带本开关；语义待明确定义。
     ap.add_argument(
         "--triggers",
         action="store_true",
@@ -96,7 +99,12 @@ def main(argv=None) -> int:
     if args.triggers and rc == 0 and not args.dry_run:
         from std_lib.common_lib import triggers as trg
 
-        rep = trg.run_all({"argv": list(argv or [])})
+        # 批 61（W-AP）：**只跑链外触发项** —— 链内 4 项已由 `_run_conditional` 承接，
+        # 重复执行会双写 ✗（SSOT = triggers.CHAIN_TRIGGER_IDS）。
+        _chain_ids: frozenset = frozenset(getattr(trg, "CHAIN_TRIGGER_IDS", frozenset()))
+        _only = [t["id"] for t in trg.decide({}) if t["id"] not in _chain_ids]
+        rep = trg.run_all({"argv": list(argv or [])}, only=_only)
+        print(f"[run] 条件触发（链外 {len(_only)} 项）：执行 {rep['ran']} / 跳过 {rep['skipped']} / 失败 {rep['failed']}")
         print(f"[run] 条件触发：执行 {rep['ran']} / 跳过 {rep['skipped']} / 失败 {rep['failed']}")
         if rep["failed"]:
             return ExitCode.DATA

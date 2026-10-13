@@ -421,15 +421,6 @@ def is_article_line(line: str) -> bool:
     return bool(_ARTICLE_RE.match(line.strip()))
 
 
-def extract_article_no(line: str) -> str:
-    m = _ARTICLE_RE.match(line.strip())
-    return m.group(0) if m else ""
-
-
-def is_chapter_line(line: str) -> bool:
-    return bool(_CHAPTER_RE.match(line.strip()))
-
-
 def _drop_toc_chapters(chapters: list[dict]) -> list[dict]:
     """剔除目录页残留章标题（2026-09-08 增补）。
 

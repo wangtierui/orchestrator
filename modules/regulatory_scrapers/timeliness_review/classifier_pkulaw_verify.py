@@ -24,7 +24,6 @@ from __future__ import annotations
 import argparse
 import csv
 import datetime
-import json
 import os
 import sys
 
@@ -96,32 +95,6 @@ def load_classifier_rows(csv_path):
     for r in rows:
         r["_key"] = vstate.state_key(docno=r.get("发文字号", ""), title=r.get("文件名称", ""))
     return rows
-
-
-def load_five_source_rows():
-    """加载五源 cleaned 行（供三库一致回写）。返回 (src, rows) 列表。"""
-    out = {}
-    for src, rel in FILES.items():
-        if not rel:
-            continue
-        if src == "supplementary":
-            rel = _latest_supp_jsonl()
-            if not rel:
-                continue
-            rel = os.path.relpath(rel, ROOT)
-        p = os.path.join(ROOT, rel)
-        if not os.path.exists(p):
-            continue
-        rows = []
-        for ln in open(p, encoding="utf-8"):
-            ln = ln.strip()
-            if ln:
-                try:
-                    rows.append(json.loads(ln))
-                except Exception:  # noqa: BLE001  容错降级
-                    pass
-        out[src] = rows
-    return out
 
 
 def build_candidates(classifier_rows, state):

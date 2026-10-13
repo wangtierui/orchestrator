@@ -84,11 +84,6 @@ def is_non_policy_sheet(file_name: str) -> bool:
     return os.path.splitext(file_name or "")[1].lower() in NON_POLICY_EXTS
 
 
-def is_ledger_named(file_name: str) -> bool:
-    """detail 标注用：名称是否命中台账/清单类关键词（不参与豁免判定）。"""
-    return any(k in (file_name or "") for k in LEDGER_HINTS)
-
-
 def _norm(rel: str) -> str:
     return os.path.normcase(rel.replace("/", os.sep))
 

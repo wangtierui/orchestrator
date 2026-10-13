@@ -131,36 +131,7 @@ def extract_pdf_links(html, page_url):
             seen.add(abs_url)
             out.append(abs_url)
     return out
-
-# ---------- PDF 文本解析（pdfplumber 文本层优先，Tesseract OCR 回退） ----------
-# OCR 引擎：优先 PaddleOCR（std_lib ocr_engine），Tesseract 作降级。
-# P1 去硬编码（R17）：路径由 config/ocr.yaml / env OCR_TESSERACT_BIN 提供，空则视为不可用。
-TESSERACT_CMD = os.environ.get("OCR_TESSERACT_BIN", "")
-TESSDATA_DIR = os.path.join(ROOT, "tessdata")   # 工作区内 chi_sim/eng 训练数据
 OCR_DPI = 220                                  # 渲染分辨率：平衡识别率与耗时
-_OCR_AVAIL = None
-
-def tesseract_available():
-    """懒校验 Tesseract 可执行文件 + 中文包是否就绪。"""
-    global _OCR_AVAIL
-    if _OCR_AVAIL is not None:
-        return _OCR_AVAIL
-    try:
-        import pytesseract
-        if not os.path.exists(TESSERACT_CMD):
-            _OCR_AVAIL = False
-            return False
-        pytesseract.pytesseract.tesseract_cmd = TESSERACT_CMD
-        os.environ["TESSDATA_PREFIX"] = TESSDATA_DIR
-        langs = pytesseract.get_languages()
-        if "chi_sim" not in langs:
-            _OCR_AVAIL = False
-            return False
-        _OCR_AVAIL = True
-        return True
-    except Exception:  # noqa: BLE001
-        _OCR_AVAIL = False
-        return False
 
 def ocr_image_to_text(img):
     """对 PIL.Image(RGB) 做中文 OCR（统一 OCR 模块：PaddleOCR 默认 + Tesseract 降级）。

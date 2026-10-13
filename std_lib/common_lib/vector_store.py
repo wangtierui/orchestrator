@@ -161,28 +161,6 @@ def _redact(dsn: str) -> str:
     return f"{m.group(1)}:{m.group(2) or '?'}/{m.group(3) or '?'}"
 
 
-def ensure_table(table: str, dim: int) -> None:
-    """建表（幂等）：`vec.<table>(doc_id text PK, emb vector(dim))` + HNSW(L2) 索引。"""
-    t = _check_name(table)
-    if not isinstance(dim, int) or not (1 <= dim <= 4096):
-        raise ValueError(f"维度非法：{dim!r}")
-    try:
-        with _conn() as c, c.cursor() as cur:
-            cur.execute(
-                f"CREATE TABLE IF NOT EXISTS {SCHEMA}.{t}"
-                f"(doc_id text PRIMARY KEY, emb vector({dim}));"
-            )
-            cur.execute(
-                f"CREATE INDEX IF NOT EXISTS {t}_hnsw ON {SCHEMA}.{t} "
-                f"USING hnsw (emb vector_l2_ops);"
-            )
-            c.commit()
-    except VectorStoreUnavailable:
-        raise
-    except Exception as e:
-        raise VectorStoreUnavailable(f"建表失败：{type(e).__name__}: {str(e)[:120]}") from e
-
-
 def upsert(table: str, rows: list) -> int:
     """**写**：`rows = [(doc_id, [float, ...]), ...]` → 幂等 upsert，返回写入行数。"""
     t = _check_name(table)

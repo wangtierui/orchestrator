@@ -154,11 +154,6 @@ def rules_of_module(short: str) -> list[dict]:
     return [r for r in RULES if r["module"] == short]
 
 
-def entry_rules() -> list[dict]:
-    """`role == "entry"` 的规则（流水线入口）。"""
-    return [r for r in RULES if r["role"] == "entry"]
-
-
 def verify() -> list[str]:
     """自检：每条规则声明的 `(module, fn)` 必须**可导入**；stage 必须已登记。
 

@@ -77,17 +77,3 @@ def sync_to_classifier(changed_records, dry_run: bool = False):
     仅在访问路径上收口到本接口，**该单写方越权已登记为待治理项**。
     """
     return _impl().sync_to_classifier(changed_records, dry_run=dry_run)
-
-
-def latest_summary() -> dict | None:
-    """最新 `verify_summary_*.json`（无则 None）。"""
-    import glob
-    import json
-
-    files = sorted(glob.glob(os.path.join(REVIEW_DIR, "verify_summary_*.json")))
-    if not files:
-        return None
-    try:
-        return json.load(open(files[-1], encoding="utf-8"))
-    except (OSError, ValueError):
-        return None

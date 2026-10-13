@@ -49,7 +49,6 @@ from std_lib.scraper_std.attachments import (
 )
 
 # 阶段 1 收敛：文件名安全化 / 摘要 复用共享库（与四源 supp_downloader.py 同款）
-from std_lib.scraper_std.crawler_common import safe_filename, sha256_of
 from std_lib.scraper_std.http import AdaptiveHttpClient
 
 # 二进制附件缓存委托通用 BlobCache（与四源统一抽象层；落盘于 cache/supp/attachments/）
@@ -137,7 +136,7 @@ def download_file(client: AdaptiveHttpClient, url: str, dest_path: str, **kw) ->
 
 __all__ = [
     "AdaptiveHttpClient", "download_file", "download_and_extract",
-    "pick_body_doc", "is_attachment_url", "sniff_kind", "safe_filename", "sha256_of",
+    "pick_body_doc", "is_attachment_url", "sniff_kind",
     "set_cache_dir", "set_offline",
 ]
 # 注：sniff_kind 为本项目内联版（返回**扩展名**，带点），与 crawler_common.sniff_kind

@@ -216,3 +216,61 @@ def test_w_i_supp_extracts_docx_and_xlsx() -> None:
     wb.save(b2)
     r2 = extract_document_text(b2.getvalue(), "a.xlsx", enable_ocr=False)
     assert "药品儿童专用清单" in (r2.get("text") or "")
+
+
+# --------------------------------------------------------------------------- #
+# 批 52：W-L 纳入治理（xlsx 逐行读取唯一共享原语）+ W-N ③⑧ 可审计化
+# --------------------------------------------------------------------------- #
+def test_w_l_xlsx_row_iteration_is_shared() -> None:
+    """W-L：两处非五源工具不得自行遍历声明维度，一律经共享原语 `iter_ws_text_rows`。"""
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    for rel in ("tools/build_east_backlog.py",
+                "modules/internal_policy_drafter/scripts/dump_related_systems.py"):
+        text = open(os.path.join(root, rel), encoding="utf-8").read()
+        assert "iter_ws_text_rows" in text, "%s 未接共享原语（W-L 回归）" % rel
+        assert ".iter_rows(" not in text, "%s 仍在自查遍历声明维度（W-L 回归）" % rel
+
+
+def test_shared_iterator_single_source() -> None:
+    """DRY：`iter_ws_text_rows` 为逐行读取唯一实现（≥3 处在用）。"""
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    users = 0
+    for rel in ("std_lib/scraper_std/crawler_common.py", "std_lib/scraper_std/table_recovery.py",
+                "tools/build_east_backlog.py",
+                "modules/internal_policy_drafter/scripts/dump_related_systems.py"):
+        users += open(os.path.join(root, rel), encoding="utf-8").read().count("iter_ws_text_rows")
+    assert users >= 4, "共享原语采纳度不足（实际 %d）" % users
+
+
+def test_w_n_formula_cells_auditable() -> None:
+    """W-N⑧：公式单元格计数可审计；共享原语不按声明维度展开（W-L/⑮ 共同基础）。"""
+    import io as _io
+
+    import openpyxl
+
+    from std_lib.scraper_std.crawler_common import count_xlsx_formula_cells
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws["A1"], ws["B1"], ws["C1"] = 2, 3, "=A1+B1"
+    buf = _io.BytesIO()
+    wb.save(buf)
+    assert count_xlsx_formula_cells(buf.getvalue()) >= 1
+    assert count_xlsx_formula_cells(b"not-a-zip") == 0
+    # 共享原语：声明维度虚高的小表仍只产出内容行（W-L/⑮ 共同基础）
+    wb2 = openpyxl.Workbook()
+    wb2.active["A1"] = "值"
+    wb2.active.cell(row=1, column=300, value="")
+    b2 = _io.BytesIO()
+    wb2.save(b2)
+    from std_lib.scraper_std.crawler_common import iter_xlsx_text_rows
+
+    rows = list(iter_xlsx_text_rows(b2.getvalue()))
+    assert rows and len("|".join(rows[0])) < 40, "声明维度不得撑大输出"
+
+
+def test_w_n_truncation_notes_api() -> None:
+    """W-N③：矩阵截断落备注（`excel_matrix.pop_read_notes` 存在且为列表）。"""
+    from std_lib.scraper_std import excel_matrix as em
+
+    assert isinstance(em.pop_read_notes(), list)

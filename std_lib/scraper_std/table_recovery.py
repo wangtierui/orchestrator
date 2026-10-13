@@ -299,6 +299,21 @@ def structured_table_fields(
             from std_lib.scraper_std.excel_structure import process_workbook_bytes
 
             wb_struct = process_workbook_bytes(data, os.path.basename(low))
+            # 批 52-53/W-N③⑧ + W-R：**静默 → 可审计**（只加 meta，不动语义）
+            from std_lib.scraper_std import excel_matrix as _em
+            from std_lib.scraper_std.crawler_common import count_xlsx_formula_cells
+
+            _notes = _em.pop_read_notes()        # ③ 矩阵截断备注
+            _hnotes = _em.pop_header_notes()      # ⑦ 表头上限备注（W-R）
+            _fcells = count_xlsx_formula_cells(data)   # ⑧ 公式单元格计数
+            _meta = wb_struct.setdefault("meta", {})
+            if _notes:
+                _meta["truncated"] = _notes
+            if _hnotes:
+                _meta["header_capped"] = _hnotes
+            if _fcells:
+                _meta["formula_cells"] = _fcells
+                _meta["formula_values"] = "cached"
             has = bool(
                 wb_struct.get("sheets") or wb_struct.get("row_sets") or wb_struct.get("table_sets")
             )

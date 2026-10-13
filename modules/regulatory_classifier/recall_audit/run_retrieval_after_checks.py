@@ -495,7 +495,7 @@ def gate_contract(scripts_dir=None):
 #   - 明细表 10 列：scripts/build_detail_tables.FIELDS
 #   - 数据底座 40 个（T1–T10 × base/final/matched/citerefs）：
 #     结构类型 + 元素键集（超集判定，允许未来加字段；缺字段必报）
-#   注：计数校验（T1 339 等）由 scripts/_verify_written.py 门禁负责，本门禁不重复。
+#   注：计数校验（T1 339 等）**无独立门禁承接**（批 59 审计：原注释所指 `scripts/_verify_written.py` 全仓零引用、已删除 ⇒ 该计数校验需人工执行或另行接线，登记 W-A1）
 SCHEMA_OK = True
 try:
     from rfn.registry import CSV_FIELDS, THEME_FIELDS

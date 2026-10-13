@@ -202,7 +202,12 @@ def test_run_step_order_matches_call_sites():
     #   22 项依赖）完成后给出**真实调用点**（原绑定指向 `clean`，而该节点**没有** docreader 调用点
     #   = 纸面接线）。形态：**跨解释器子进程**（`std_lib/common_lib/docreader_bridge.py`），无端口无长驻；
     #   产物为**分析视图**（`reports/docreader/`，含与既有 6 态抽取的**增量度量**）；不可用即显式 SKIP（rc=0）。
-    assert len(rpr.STEP_ORDER) == 30
+    # 31（30 → +1）：批 63（T4/W-AW）`relevance:{src}`（`filter_clean_relevance.py` 入链）——
+    #   动因：该脚本是 worklist kind `relevance_boundary` 的**唯一产生方**，却长期零调用点 ⇒
+    #   门禁 J7 的「双向闭合全量成立」实为**过判**（只查源码字面量、不查可达性 ✗）。
+    #   形态：clean 之后、apply 之前；旁路分析件（写 `modules/regulatory_classifier/relevance/`），
+    #   失败不阻断主链（try/except 包裹）。
+    assert len(rpr.STEP_ORDER) == 31
     # 每个步骤名必须能在本文件中找到**引号字面量**（`"gates"` / `f"clean:{src}"` ⇒ `"clean:{src}"`）
     text = open(fp, encoding="utf-8").read()
     for step in rpr.STEP_ORDER:

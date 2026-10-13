@@ -277,9 +277,3 @@ def locate_dst_article(snippet: str, key: str, index: dict | None = None) -> str
     """
     cands = {no for _pos, no in dst_article_candidates(snippet, key, index)}
     return next(iter(cands)) if len(cands) == 1 else ""
-
-
-def reset_caches() -> None:
-    """清空进程内索引缓存（测试/长驻进程换数据后调用）。"""
-    global _INDEX
-    _INDEX = None

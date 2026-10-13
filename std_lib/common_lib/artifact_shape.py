@@ -27,7 +27,6 @@ from __future__ import annotations
 
 import csv
 import json
-import os
 import re
 
 from interfaces.theme_api import theme_map as _theme_map
@@ -44,11 +43,6 @@ BASE_SUFFIX_SHAPE: dict[str, str] = {
 # 底座文件名（`_t{n}_{suf}.json`）；`_t0_*` 不在期望集内
 BASE_RE = re.compile(r"^_t\d+_(base|final|matched|citerefs)\.json$")
 DET_RE = re.compile(r"^(T\d+)_\d+逐份条款引用与上位法依据明细表\.csv$")
-
-
-def theme_codes() -> dict[str, str]:
-    """主题码 → 全名（唯一来源 `interfaces.theme_api`）。"""
-    return dict(_theme_map())
 
 
 def expect_base_files() -> list[str]:
@@ -103,13 +97,3 @@ def dotted(rel: str) -> str:
     if p.endswith("/__init__"):
         p = p[: -len("/__init__")]
     return p.replace("/", ".")
-
-
-def base_suffix_of(name: str) -> str:
-    """底座文件名 → 后缀（非底座返回 ""）。"""
-    m = BASE_RE.match(name)
-    return m.group(1) if m else ""
-
-
-def is_base_file(name: str) -> bool:
-    return bool(BASE_RE.match(name)) and os.path.splitext(name)[1] == ".json"

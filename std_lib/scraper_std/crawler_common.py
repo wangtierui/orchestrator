@@ -266,6 +266,72 @@ def garble_ratio(text: str) -> float:
     return text.count("\ufffd") / max(1, len(text))
 
 
+_HTML_HEAD_RE = re.compile(rb"<(?:!doctype\s+html|html|body|table|div|p)\b", re.I)
+_MIME_HEAD_RE = re.compile(
+    rb"^(?:MIME-Version|Content-Type|Content-Transfer-Encoding|Content-Disposition)\s*:", re.I | re.M)
+_HTTP_HEAD_RE = re.compile(rb"^HTTP/\d\.\d\s+\d{3}|^(?:Server|Date|Content-Length)\s*:", re.I | re.M)
+
+
+def _strip_leading_headers(data: bytes) -> tuple[bytes, str]:
+    """剥离**前导文本头**（MIME/HTTP 头）：返回 `(载荷, 证据)`；无分隔空行则不剥离。"""
+    head = data[: min(len(data), 65536)]
+    if not (_MIME_HEAD_RE.search(head) or _HTTP_HEAD_RE.search(head)):
+        return data, ""
+    for sep in (b"\r\n\r\n", b"\n\n", b"\r\r"):
+        i = head.find(sep)
+        if i >= 0:
+            return data[i + len(sep):], "headers"
+    return data, ""
+
+
+def unmask_payload(data: bytes) -> tuple[bytes, dict]:
+    """**拆封**（批 54/W-W）：识别并解开"外壳非内容"的伪装，返回 `(内层载荷, 证据)`。
+
+    覆盖：① 前导 MIME/HTTP 头（实测 `83896.doc` 内容以 `MIME-Ver…` 开头 ⇒ xlrd/OLE2 解析全败）
+    ② MIME multipart（取最大有效部分）③ BOM/空白等前缀噪声。
+    仅在**确实拆封**时返回非空证据（`{unmasked, outer_head, inner_head}`），否则原字节 + `{}`。
+    """
+    ev: dict[str, Any] = {}
+    # ① **MIME 容器优先**（整封含 MIME-Version/Content-Type + boundary）——须在剥离前判定，
+    #    否则头部被剥离后 email 解析器无从识别 multipart。
+    head = data[: min(len(data), 65536)]
+    if _MIME_HEAD_RE.search(head[:4096]) and b"boundary=" in head[:4096].lower():
+        try:
+            import email
+
+            msg = email.message_from_bytes(data)
+            best: bytes = b""
+            for part in msg.walk():
+                payload = bytes(part.get_payload(decode=True) or b"")
+                if len(payload) > len(best):
+                    best = payload
+            # 阈值 16B（批 54 实测：`EmailMessage` 小附件 <64B 会被漏拆；真实载荷均 ≥16B）
+            if len(best) >= 16:
+                ev = {"unmasked": "mime_multipart",
+                      "outer_head": data[:24].decode("utf-8", "replace")}
+                data = best
+        except Exception:  # noqa: BLE001  拆封失败不阻断（保持原字节）
+            pass
+    # ② 前导 MIME/HTTP 头（外壳头 + 载荷）——仅在非 MIME 容器时适用
+    if not ev:
+        inner, why = _strip_leading_headers(data)
+        if why:
+            ev = {"unmasked": why, "outer_head": data[:24].decode("utf-8", "replace")}
+            data = inner
+    if not ev:
+        return data, {}
+    ev["inner_head"] = data[:12].decode("utf-8", "replace")
+    return data, ev
+
+
+def html_to_text(payload: bytes) -> str:
+    """HTML → 可见文本（批 54/W-W：`html` 伪装轨；去 script/style 与标签）。"""
+    s = payload.decode("utf-8", "replace")
+    s = re.sub(r"(?is)<(script|style)\b.*?</\1>", " ", s)
+    s = re.sub(r"(?s)<[^>]+>", " ", s)
+    return re.sub(r"[ \t\r\f\v]+", " ", s).strip()
+
+
 def extract_document_text(
     data: bytes,
     name: str = "",
@@ -286,7 +352,44 @@ def extract_document_text(
     """
     kind = sniff_kind(data, name)
     sha = sha256_of(data)
+    # 批 54/W-W：**content-type/sniff 二次判定** —— 扩展名与魔数均不可信时（MIME 封装、前导
+    # MIME/HTTP 头、HTML 冒充 .doc 等）先**拆封**再重新嗅探，全过程**留证据** `sniff`（可审计）。
+    _sniff: dict[str, Any] = {"declared_ext": os.path.splitext(name or "")[1].lower(),
+                              "sniffed_kind": kind}
+    _inner, _ev = unmask_payload(data)
+    if _ev:
+        _sniff.update(_ev)
+        data = _inner
+        # 拆封后**不得再用（可能误导的）扩展名兜底** —— 扩展名正是伪装来源本身
+        kind = sniff_kind(_inner, "")
+        if kind == "unknown":
+            try:
+                if _inner.decode("utf-8").strip():
+                    kind = "text"   # 外壳包裹的纯文本（实测 83896.doc 同类：MIME 头 + 文本载荷）
+            except UnicodeDecodeError:
+                pass
+        _sniff["inner_kind"] = kind
+        LOG.info("[sniff2] %s：%s → %s（%s）", name, _sniff["sniffed_kind"], kind,
+                 _ev.get("unmasked"))
+    if kind == "text":   # 批 54：拆封得到的纯文本（不做二进制解析）
+        _txt = data.decode("utf-8", "replace")
+        LOG.info("[sniff2] %s：按纯文本处理（%d 字符）", name, len(_txt))
+        return {"text": _txt, "kind": "text", "extracted": bool(_txt.strip()),
+                "extract_status": "ok" if _txt.strip() else "empty", "sha256": sha,
+                "needs_ocr": False, "garble_ratio": 0.0, "size_bytes": len(data),
+                "sniff": _sniff}
+    _head_probe = data[:256].lstrip(b"\xef\xbb\xbf \t\r\n")
+    if _HTML_HEAD_RE.match(_head_probe):
+        _txt = html_to_text(data)
+        kind = "html"
+        _sniff["inner_kind"] = "html"
+        LOG.info("[sniff2] %s：按 HTML 伪装处理（%d 字符可见文本）", name, len(_txt))
+        return {"text": _txt, "kind": "html", "extracted": bool(_txt),
+                "extract_status": "ok" if _txt else "empty", "sha256": sha,
+                "needs_ocr": False, "garble_ratio": 0.0, "size_bytes": len(data),
+                "sniff": _sniff}
     rec: dict[str, Any] = {
+        "sniff": _sniff,
         "text": "",
         "kind": kind,
         "extracted": False,
@@ -306,7 +409,10 @@ def extract_document_text(
         if kind == "pdf":
             return _merge(rec, _extract_pdf(data, enable_ocr, ocr_timeout))
         if kind == "docx":
-            return _merge(rec, _extract_docx(data))
+            _dr = _extract_docx(data)
+            if not (_dr.get("text") or "").strip():      # 批 57/W-Z：**容忍缺失附属部件**
+                _dr = _merge(_dr, _extract_docx_lenient(data))
+            return _merge(rec, _dr)
         if kind == "xlsx":
             return _merge(rec, _extract_xlsx(data))
         if kind == "ole2":
@@ -512,6 +618,33 @@ def _pdf_lib_available() -> bool:
         return False
 
 
+def _extract_docx_lenient(data: bytes) -> dict[str, Any]:
+    """**容忍缺失附属部件**的 docx 文本抽取（批 57/W-Z）。
+
+    实证：大量《道路机动车辆生产企业及产品》.docx 因缺 `userCustomization/customUI.xml` 等
+    **附属部件**被 python-docx 整体拒绝（`no item named ...`）⇒ 正文可取却全丢 ✗。
+    本函数只依赖 OOXML 最小要件：直读 zip 内 `word/document.xml`，按段落提取 `<w:t>` 文本。
+    """
+    import re as _re
+    import zipfile
+
+    try:
+        with zipfile.ZipFile(__import__("io").BytesIO(data)) as z:
+            if "word/document.xml" not in z.namelist():
+                return {"text": "", "extracted": False, "extract_status": "unsupported"}
+            xml = z.read("word/document.xml").decode("utf-8", "replace")
+    except Exception:  # noqa: BLE001  非 zip/损坏：交上层降级
+        return {"text": "", "extracted": False, "extract_status": "corrupt"}
+    out = []
+    for p in _re.split(r"</w:p>", xml):
+        txt = "".join(_re.findall(r"<w:t[^>]*>([^<]*)</w:t>", p))
+        if txt.strip():
+            out.append(txt)
+    text = "\\n".join(out).strip()
+    return {"text": text, "extracted": bool(text),
+            "extract_status": "ok" if text else "empty"}
+
+
 def _extract_docx(data: bytes) -> dict[str, Any]:
     # 优先 python-docx
     try:
@@ -569,6 +702,65 @@ XLSX_MAX_CHARS = 2_000_000
 XLSX_MAX_EMPTY_ROWS = 60
 XLSX_MAX_ROWS = 200_000
 
+#: 批 55：**旧二进制/不可解析 kind 的唯一事实源**（表格/富内容轨默认跳过这些 kind：
+#: LibreOffice 转换约 6.5s/附件且多数产出为空）。gov/mof 等采集侧一律引用此处，禁止各自定义。
+LEGACY_KINDS: frozenset[str] = frozenset({"ole2", "doc", "xls", "wps", "rtf", "ceb", "bin",
+                                           "unknown"})
+
+
+def iter_ws_text_rows(ws, *, max_rows: int = XLSX_MAX_ROWS,
+                      max_empty_rows: int = XLSX_MAX_EMPTY_ROWS):
+    """**单个工作表**的文本行迭代（批 52/W-L：xlsx 逐行读取的**唯一共享原语**）。
+
+    行为：右裁空单元格（N-208 爆量主因）→ 连续空行达阈值视为表尾（前 2 个空行仍产出 `[]`
+    以保留块间分隔）→ 累计行数受 `max_rows` 约束（产出即计数）。
+    在用户（**不重复造轮子**）：`iter_xlsx_text_rows`（五源文本轨）、
+    `table_recovery._tables_from_xlsx`（矩阵轨/⑮）、`tools/build_east_backlog.extract_xlsx`、
+    `internal_policy_drafter/scripts/dump_related_systems.dump`。
+    """
+    emitted = 0
+    empty_streak = 0
+    for r in ws.iter_rows(values_only=True):
+        if emitted >= max_rows:
+            return
+        cells = ["" if c is None else str(c) for c in r]
+        while cells and cells[-1] == "":
+            cells.pop()
+        if not cells:
+            empty_streak += 1
+            if empty_streak >= max_empty_rows:
+                return
+            if empty_streak <= 2:
+                yield []
+                emitted += 1
+            continue
+        empty_streak = 0
+        emitted += 1
+        yield cells
+
+
+def count_xlsx_formula_cells(data: bytes) -> int:
+    """xlsx 内**公式单元格计数**（批 52/W-N⑧）：经 zip 内工作表 XML 的 `<f` 标签计数（有界扫描）。
+
+    用途：`data_only=True` 取值**依赖缓存值**——公式无缓存值时读到 None 而无从分辨 ⇒ 本计数落
+    `table_structured[].meta.formula_cells` + `formula_values="cached"`，把"静默丢"变**可审计**。
+    """
+    import re as _re
+    import zipfile
+
+    n = 0
+    try:
+        with zipfile.ZipFile(__import__("io").BytesIO(data)) as z:
+            for nm in z.namelist()[:512]:
+                if not _re.match(r"xl/worksheets/sheet\d+[.]xml$", nm):
+                    continue
+                with z.open(nm) as fh:
+                    blob = fh.read(64 * 1024 * 1024)
+                n += blob.count(b"<f")
+    except Exception:  # noqa: BLE001  非 OOXML/损坏包：计数为 0（不阻断）
+        return 0
+    return n
+
 
 def iter_xlsx_text_rows(data: bytes):
     """**共享原语**（批 49/50）：逐行产出 xlsx 的**已右裁空单元格**行（`list[str]`）。
@@ -587,26 +779,8 @@ def iter_xlsx_text_rows(data: bytes):
     import openpyxl
 
     wb = openpyxl.load_workbook(__import__("io").BytesIO(data), data_only=True, read_only=True)
-    emitted = 0
     for ws in wb.worksheets:
-        empty_streak = 0
-        for r in ws.iter_rows(values_only=True):
-            if emitted >= XLSX_MAX_ROWS:
-                return
-            cells = ["" if c is None else str(c) for c in r]
-            while cells and cells[-1] == "":          # ① 右裁空列（爆量主因）
-                cells.pop()
-            if not cells:
-                empty_streak += 1
-                if empty_streak >= XLSX_MAX_EMPTY_ROWS:   # ② 连续空行 ⇒ 视为表尾
-                    break
-                if empty_streak <= 2:                     # 保留最多 2 个空行（块间分隔仍可辨）
-                    yield []
-                    emitted += 1
-                continue
-            empty_streak = 0
-            emitted += 1
-            yield cells
+        yield from iter_ws_text_rows(ws)
 
 
 def cap_xlsx_text(text: str, limit: int = XLSX_MAX_CHARS) -> str:
@@ -793,6 +967,10 @@ def _extract_doc_via_wps(data: bytes, timeout: float = 45.0) -> str | None:
         # 只首次 Dispatch 成功，第二次起即快速失败；主线程连续调用稳定。
         import win32com.client
 
+        if os.environ.get("RCO_ALLOW_OFFICE_COM", "").strip() not in ("1", "true", "True"):
+            # 批 56：**默认禁用 Office/WPS COM**（COM 实例与用户桌面会话交互，实测导致剪贴板/焦点被抢占；隐藏窗口下安全对话框还会永久阻塞）
+            # ⇒ 需要时显式置 RCO_ALLOW_OFFICE_COM=1 开启
+            return None
         app = win32com.client.Dispatch("KWPS.Application")
         try:
             app.Visible = False

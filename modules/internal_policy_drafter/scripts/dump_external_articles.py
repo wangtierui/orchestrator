@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# 批 63（T7）：**特殊工具（人工）** —— 外部条款级对照查询；无调用方，保留供人工使用。
 """
 internal_policy_drafter.scripts.dump_external_articles — 外部监管文件条款正文查询（② 条款级对照）
 

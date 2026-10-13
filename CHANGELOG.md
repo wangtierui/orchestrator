@@ -1,5 +1,41 @@
 # Changelog
 
+## [Unreleased] 2026-10-08 ~ 10-12 — 桌面干扰根治 + 声明面/死代码清剿（第五十六~六十五批，回链 `reports/重构执行报告_*.md`）
+
+> 两条主线：**① 用户体感故障（复制粘贴失效/被抢占）的真凶定位与根治**；
+> **② “声明面先进、执行面缺失”的系统性清剿**（未接线脚本 / 死代码 / 未接线模型 / 调度失实 / README 失实）。
+
+### 真凶定位（第五十六~五十八批）
+- 新建 **Win32 活体监控器**（剪贴板序列号 + 持有者 + 前台窗口归属，250ms 采样）⇒ 实测**系统剪贴板每 2.5~3.5s 被清空**
+  （持有者 `Idle(0)`/`soffice.bin`）✗；**A/B 对照**证明「每次 LibreOffice 转换 = 确定性 1 次 `EmptyClipboard()`」。
+- **假设被证伪并如实记录**：`SAL_USE_VCLPLUGIN=svp` 无法阻止该行为（Δ 仍为 1）✗ ⇒ 转机制隔离路线。
+- 排除性结论：全仓**剪贴板 API 0 处、输入自动化 0 处** ⇒ 真凶在**外部程序**；前三轮修复（COM 门禁/窗口隐藏/进程误杀）全部打偏 ✗。
+  自查纠正：批 56 引入的「PID 差集强杀」会**误杀用户 LibreOffice**（剪贴板内容由源进程持有）⇒ 改**按我方隔离 profile 精确归属**。
+
+### 桌面干扰**四重机制**（第五十八~六十五批）
+- **独立窗口站隔离**（`std_lib/scraper_std/win_station.py`）：`CreateWindowStation`+`CreateDesktop`+桌面继承式启动；
+  自证 `--selftest` 私有站内 `EmptyClipboard()` ⇒ 全局 **Δ=0**；fail-safe（隔离不成立即**放弃转换**）。
+- **剪贴板保全护栏**（`std_lib/scraper_std/clipboard_guard.py`）：转换前快照、转换后**原样恢复**（仅文本/文件列表；
+  未保格式日志明示）⇒ 用户内容**永不丢失**；验收以“金丝雀文本原样存活 = True”。
+- **内容哈希缓存**（`doc_convert`）：键 = 输入字节 sha256；命中即**不启动 LibreOffice** ⇒ 零窗口
+  （7.3MB 含表 `.doc`：102s/Δ=194 → **0.02s/Δ=0**）。
+- **用户活动让路**（`std_lib/scraper_std/user_activity.py`）：`GetLastInputInfo`；用户在用则不开始转换
+  （上限 `RCO_QUIET_MAX_WAIT`；**fail-open** 绝不阻塞管线）；与批 58 优先级让路共用 `RCO_YIELD_TO_USER`。
+- 配套：全局隐藏子进程（`proc.py`，唯二引导点 `bootstrap.py`/`scraper_std/__init__.py`）、链内 `BELOW_NORMAL` 让路、
+  `PYTHONUNBUFFERED=1`（更正“mof 停滞”＝子进程 stdout 块缓冲导致的日志假死 ✗）。
+
+### 声明面与接线清剿（第五十九~六十三批）
+- **新增第 24 道门禁「执行者存在性」**（`gates/gate_declaration_executor.py`）：E1 `kind=event` 作业 `covered_by` ∈ `STEP_ORDER`｜
+  E2 `notify.on` 每类告警有发送方｜E3 `triggers.resume` 解析到真实文件｜E4 manifest 归属明确。
+- 补齐：`{vault}` 供给（`ctx_vars()` + 缺值**显式失败**⇒步骤跳过）／`resume` 消费（`resume_path()`）／
+  `notify.on` **四类告警全部有发送方**／`run --triggers` **只跑链外**（`CHAIN_TRIGGER_IDS` SSOT）／`schedule.yaml` event 作业补 `covered_by`。
+- **T7 死代码清剿**：28 项零引用符号/常量/`__all__` 条目/未用 import 清理（逐条 AST 校验，0 跳过）；5 个游离脚本标注特殊工具。
+- **W-AI 闭环**：legacy `.doc` 表格轨恢复并实证（7.3MB 含表样本：**115 张表** / `table_structured` 115 项 / 321,233 字符）。
+
+### 一致性守卫（第六十六批）
+- `tools/audit_health.check_readme_consistency` 增验：**步骤数**（复用门禁 `_step_order` SSOT）、**env 反向核验**
+  （代码用到 ⇒ README §6.3 必须记载）、关键路径补 `.githooks/post-commit` ⇒ 文档漂移**由机器拦截**。
+- 本轮修正 README 漂移：门禁数 4 处 **23→24**、步骤数 **30→31**、新增 §5.4/§6.3（原 env 仅记 1/18 ✗）。
 ## [Unreleased] 2026-09-24 ~ 09-26 — v2 全链路重构（九批，回链 `reports/重构执行报告_*.md`）
 
 > 依据《全链路重构方案_修订版_v2_20260926.md》落地，把采集→清洗→分类→对齐→起草→交付全链路收敛为

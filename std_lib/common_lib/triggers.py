@@ -253,12 +253,93 @@ def decide(ctx: dict | None = None, *, only: str = "") -> list[dict]:
 # --------------------------------------------------------------------------- #
 # 执行
 # --------------------------------------------------------------------------- #
+#: 链内已由 `run_production_refresh._run_conditional` 承接的触发项（**SSOT**）。
+#: `cli.py run --triggers` 只跑**链外**触发项（否则会对已入链项再跑一遍 ⇒ 双写风险 ✗，W-AP）。
+CHAIN_TRIGGER_IDS = frozenset({"timeliness_verify", "inbox_drop", "internal_update", "wiki_sync"})
+#: 链内触发项 → 链步骤名（供门禁核对"执行者存在性"；与 STEP_ORDER 中名字一致）
+CHAIN_TRIGGER_STEPS = {
+    "timeliness_verify": "timeliness:verify",
+    "inbox_drop": "inbox:drop",
+    "internal_update": "internal:update",
+    "wiki_sync": "wiki:sync",
+}
+
+
+class UnresolvedPlaceholder(RuntimeError):
+    """占位符缺值（批 61）：**必须显式失败**——绝不把字面量 `{vault}` 原样传给子进程 ✗。
+
+    起因（W-AJ'）：`triggers.yaml:wiki_sync` 的 `--out {vault}` 在链内无人供给 `vars`，
+    旧实现"缺值留原样"⇒ 会造出名为 `{vault}` 的目录或直接失败。
+    """
+
+
+def ctx_vars() -> dict[str, str]:
+    """条件触发的上下文变量（**唯一供给点**）。
+
+    目前仅 `vault`，来源优先级：① env `REG_ORCH_VAULT` ② `config/vault.yaml` 的 `vault_dir`
+    ③ 都无 ⇒ 返回 `{}`（触及 `{vault}` 的步骤将**跳过并给出原因**，不产生字面目录 ✓）。
+    """
+    out: dict[str, str] = {}
+    v = os.environ.get("REG_ORCH_VAULT", "").strip()
+    if not v:
+        try:
+            import yaml
+
+            # 自足定位 `config/`（本文件位于 std_lib/common_lib/ ⇒ 上溯三层）
+            _cfg_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
+                os.path.abspath(__file__)))), "config")
+            p = os.path.join(_cfg_dir, "vault.yaml")
+            if os.path.exists(p):
+                with open(p, encoding="utf-8") as fh:
+                    v = str((yaml.safe_load(fh) or {}).get("vault_dir") or "").strip()
+        except Exception:  # noqa: BLE001  配置不可读 ⇒ 视为未配置（不抛）
+            v = ""
+    if v:
+        out["vault"] = v
+    return out
+
+
+def resume_path(tid: str) -> str:
+    """解析触发项 `resume` 字段指向的**续跑脚本真实路径**（消费 W-AK 的"纸面字段"）。
+
+    直接读 `config/triggers.yaml`（不依赖内部 loader，避免耦合 ✗）；在 `modules/**` 下按
+    basename 查找；未配置/未找到 ⇒ 空串（调用方据此给出明确提示）。
+    """
+    import glob
+
+    import yaml
+
+    cfg = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
+        os.path.abspath(__file__)))), "config", "triggers.yaml")
+    name = ""
+    try:
+        with open(cfg, encoding="utf-8") as fh:
+            for t in ((yaml.safe_load(fh) or {}).get("triggers") or []):
+                if t.get("id") == tid:
+                    name = str(t.get("resume") or "").strip()
+                    break
+    except Exception:  # noqa: BLE001  配置不可读 ⇒ 视为未配置
+        name = ""
+    if not name:
+        return ""
+    root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    hits = glob.glob(os.path.join(root, "modules", "**", os.path.basename(name)), recursive=True)
+    return hits[0] if hits else ""
+
 def _expand_args(argv: list[str], ctx: dict) -> list[str]:
-    """`{arg}` / `{vault}` 占位符展开（来自 ctx；缺值则原样保留 → 目标校验会报错）。"""
+    """`{arg}` / `{vault}` 占位符展开。
+
+    批 61（W-AJ'）：**缺值即 `UnresolvedPlaceholder`**（旧实现"原样保留"会把 `{vault}` 当普通参数
+    传给脚本 ⇒ 造出字面目录/失败 ✗）。调用方（`run_trigger`）捕获该异常 ⇒ 该步骤**跳过并写明原因** ✓。
+    """
+    import re as _re
+
     out = []
     for a in argv:
         for k, v in (ctx.get("vars") or {}).items():
             a = a.replace("{" + k + "}", str(v))
+        if _re.search(r"\{[A-Za-z_][A-Za-z0-9_]*\}", a):
+            raise UnresolvedPlaceholder(a)
         out.append(a)
     return out
 
@@ -332,8 +413,8 @@ def run_trigger(tid: str, ctx: dict | None = None, *, dry_run: bool = False, wor
     results: list[dict] = []
     failed = False
     for s in row["steps"]:
-        argv = _argv_abs(_expand_args(s.get("argv") or [], ctx))
         timeout = s.get("timeout")
+        argv = _argv_abs(_expand_args(s.get("argv") or [], ctx))
         rec = {"argv": argv, "rc": -1, "timeout": timeout}
         try:
             r = subprocess.run(
@@ -386,11 +467,18 @@ def _worklist(tid: str, results: list[dict], note: str) -> None:
         pass
 
 
-def run_all(ctx: dict | None = None, *, dry_run: bool = False) -> dict:
+def run_all(ctx: dict | None = None, *, dry_run: bool = False, only=None) -> dict:
     """按 yaml 声明顺序执行全部触发项 → {ran, skipped, failed, details[]}。"""
     ctx = dict(ctx or {})
     ctx.setdefault("argv", [])
-    details = [run_trigger(r["id"], ctx, dry_run=dry_run) for r in decide(ctx)]
+    # 批 61/W-AP：`only` 给定则**只跑列出的 id**（`run --triggers` 用它排除链内已承接的 4 项，
+    # 避免"主链已跑过又跑一遍"的双写风险 ✗；SSOT 见 `CHAIN_TRIGGER_IDS`）。
+    _ids = None if only is None else set(only)
+    details = [
+        run_trigger(r["id"], ctx, dry_run=dry_run)
+        for r in decide(ctx)
+        if _ids is None or r["id"] in _ids
+    ]
     return {
         "ran": sum(1 for d in details if d["status"] == "ran"),
         "skipped": sum(1 for d in details if d["status"] == "skipped"),

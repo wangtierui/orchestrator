@@ -71,10 +71,6 @@ def module_by_pkg(pkg: str) -> ModuleSpec:
         raise KeyError(f"未知模块包名: {pkg!r}（允许 {sorted(MODULE_PKG_SET)}）") from None
 
 
-def is_module_pkg(name: str) -> bool:
-    return name in MODULE_PKG_SET
-
-
 # --------------------------------------------------------------------------- #
 # 主链阶段清单（唯一声明）
 # --------------------------------------------------------------------------- #

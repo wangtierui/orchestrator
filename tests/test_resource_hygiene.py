@@ -158,7 +158,7 @@ def test_backup_prune_grouped_by_tag_and_source(tmp_path, monkeypatch) -> None:
         d.mkdir()
         (d / fname).write_text("x", encoding="utf-8")
     monkeypatch.setattr(mod, "BACKUP_ROOT", str(root))
-    removed = mod._cleanup_backups()
+    removed = mod._cleanup_backups(keep=1)   # 批 61（W-V）：**显式固定策略**，与 env `SCRAPERS_BACKUP_KEEP` 解耦（否则本机设为 ≥2 时该断言偶发失败 ✗）
     assert removed == ["cleaned_before_timeliness_20261007_010101"]
     assert (root / "cleaned_before_timeliness_20261008_010101").exists()
     assert (root / "cleaned_before_timeliness_20261008_020202").exists(), "他源快照不得被牵连"
@@ -269,3 +269,30 @@ def test_backfill_short_circuits_when_nothing_to_backfill() -> None:
     assert sc.run() == []
     assert sc.stats["stopped_reason"] == "nothing_to_backfill"
     assert sc.stats["list_pages_fetched"] == 0
+
+
+def test_snapshot_sort_is_deterministic_on_mtime_tie(tmp_path, monkeypatch) -> None:
+    """批 66（W-V）：mtime **并列**时，快照保留必须由**名称**决定（确定性 ✓），
+
+    不得退化为 `os.listdir` 的任意顺序 ✗（原实现只按 mtime 排序 ⇒ 全量套件下偶发保留错的那份，
+    即 W-V "单独跑过、整跑偶发失败" 的真因）。
+    """
+    import os as _os
+
+    ret = _load(_os.path.join("tools", "retention.py"), "_ret_dirs_tie")
+    base = tmp_path / "snaps"
+    base.mkdir()
+    older = base / "cleaned_before_timeliness_20261007_010101"
+    newer = base / "cleaned_before_timeliness_20261008_010101"
+    for d in (older, newer):
+        d.mkdir()
+        (d / "gov_cleaned_x.jsonl").write_text("x", encoding="utf-8")
+    same = 1_700_000_000                       # 同一时间戳 ⇒ mtime 必然并列 ✓
+    _os.utime(older, (same, same))
+    _os.utime(newer, (same, same))
+    monkeypatch.setattr(ret.paths, "ROOT", str(tmp_path))
+    plan, _meta = ret._plan_snapshot_dirs(
+        {"name": "t", "dir": "snaps", "keep": 1, "dirs": True})
+    dropped = [_os.path.basename(x["file"]) for x in plan]
+    assert dropped == ["cleaned_before_timeliness_20261007_010101"], (
+        "mtime 并列时必须按名称确定（保留较新者）；实际丢弃 = %s" % dropped)

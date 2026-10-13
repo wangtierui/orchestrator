@@ -125,7 +125,10 @@ COLLECT_TIMEOUT = {
     "gov_zhengceku_backfill": 21600,   # 补全：须扫全 629 页（月度、离线时段）
     "nfra": 7200,
     "nfra-weekly": 7200,
-    "mof": 7200,
+    # 批 55/F2：实测 2026-10-10 `collect:mof` elapsed=7200.3s **恰好用尽上限被强杀**；
+    # mof 为「列表 + 详情 + 附件」三段抓取且附件主机限流/退避重（429/500 退避至 60s、502 连续 8 次熔断）
+    # ⇒ 单独放宽至 4h（其余源保持 7200s）；并已对齐 gov 的 legacy 跳过策略从源头降耗。
+    "mof": 14400,
     "pbc": 3600,
 }
 RAW_JSON = {
@@ -525,7 +528,14 @@ def _run(step: str, argv, cwd=ROOT, timeout: int | None = None) -> dict:
             open(out_path, "w", encoding="utf-8", newline="\n") as _fo,
             open(err_path, "w", encoding="utf-8", newline="\n") as _fe,
         ):
-            r = subprocess.run(argv, cwd=cwd, stdout=_fo, stderr=_fe, timeout=timeout, env=env)
+            # 批 58：**隐藏窗口 + 让路优先级**（子进程及其后代继承 BELOW_NORMAL）＋ **强制无缓冲**。
+            # 前者防闪窗抢焦点；后者修"日志假死"（此前子进程 stdout 重定向到文件时块缓冲 ⇒ 长时间不刷新，
+            # 被误判为"采集停滞" ✗）。让路可用 `RCO_YIELD_TO_USER=0` 关闭。
+            env = dict(env or {})
+            env.setdefault("PYTHONUNBUFFERED", "1")
+            from std_lib.scraper_std.proc import child_kwargs as _child_kwargs
+            r = subprocess.run(argv, cwd=cwd, stdout=_fo, stderr=_fe, timeout=timeout, env=env,
+                               **_child_kwargs())
         rec["rc"] = r.returncode
         rec["exit_code"] = _exit_semantic(r.returncode)
         rec["tail"] = _tail(out_path, 3)
@@ -606,7 +616,20 @@ def _run_conditional(step: str, tid: str) -> dict:
     try:
         from std_lib.common_lib import triggers as trg
 
-        res = trg.run_trigger(tid, {"argv": list(sys.argv)})
+        # 批 61：**注入上下文变量**（`vault` 唯一供给点 ⇒ `{vault}` 不再留字面量 ✗）；并消费 `resume` 字段：
+        # 失败时打印**可直接执行的续跑命令**（W-AK：原为"纸面字段"）。
+        try:
+            res = trg.run_trigger(tid, {"argv": list(sys.argv), "vars": trg.ctx_vars()})
+        except trg.UnresolvedPlaceholder as e:
+            # 批 61（W-AJ'）：占位符缺值（如未设 `REG_ORCH_VAULT`）⇒ **本条件步骤跳过并写明原因**，
+            # 绝不把字面量 `{vault}` 传给脚本（旧实现会造出字面目录 ✗）。
+            print(f"[step:{step}] SKIP（占位符缺值：{e}；请设 REG_ORCH_VAULT 或 config/vault.yaml 的 vault_dir）",
+                  flush=True)
+            return {"step": step, "rc": 0, "skipped": True, "reason": "占位符缺值: %s" % e}   # 由调用点 append ✓
+        if res.get("status") in ("failed", "partial"):
+            _rp = trg.resume_path(tid)
+            if _rp:
+                print(f"[step:{step}] 续跑命令：{PY} {_rp} --py {PY}", flush=True)
     except Exception as e:  # noqa: BLE001  触发链异常不拖垮主链（但须显式记录）
         res = {"status": "failed", "steps": [], "note": f"{type(e).__name__}: {e}"}
     status = res.get("status", "")
@@ -653,6 +676,9 @@ STEP_ORDER: tuple[str, ...] = (
     "collect:{src}",
     "supp:ingest_batch",
     "clean:{src}",
+    # 批 63（T4）：`filter_clean_relevance.py` 入链（clean 之后、apply 之前）。
+    "relevance:{src}",
+    # `relevance_boundary` 待办）原为"零调用脚本"✗，此处入链（clean 之后、apply 之前）。
     # N-53（2026-09-27）：触发项**入链**为条件步骤（决策复用 common_lib.triggers；
     #   config/triggers.yaml 仍是条件唯一事实源）。插入位置按**数据依赖**而非其
     #   stage 编号（旧口径，与现行链序不一致）：verify 产出台账 → 在 consolidate 之前。
@@ -971,6 +997,20 @@ def _run_chain(args) -> int:
     # N-53：原由 `cli.py run --only 6.9` 驱动，而 `--only` 只认**步骤名**（实测 6.9
     # 使全部步骤 SKIP = 空跑）。入链后由 `days_since: 7` 条件自守（核验后 7 天内跳过）。
     report.append(_run_conditional("timeliness:verify", "timeliness_verify"))
+
+    # 批 63（T4/W-AW）：接线 `filter_clean_relevance.py`（原为「零调用脚本」✗）⇒
+    # 门禁 J7 的「产生方」**真正可达**；旁路分析件，失败不阻断主链。
+    try:
+        report.append(
+            _run(
+                f"relevance:{src}",
+                [PY, os.path.join(ROOT, "modules", "regulatory_classifier", "scripts",
+                                    "filter_clean_relevance.py"), "--source", src],
+                timeout=900,
+            )
+        )
+    except Exception as e:  # noqa: BLE001
+        print(f"[refresh] WARN relevance:{src} 跳过: {type(e).__name__}: {e}")
 
     # ---- 阶段 2：时效回写（consolidate → apply 五源）----
     led = None
@@ -1318,7 +1358,17 @@ def _run_chain(args) -> int:
     # 交付门禁应在**全部产物生成之后**运行：① 才覆盖本轮 6.8 的 `analysis:manifest`；
     # ② 与人工心智一致（"最后一道门"）；③ `gate_result` 仍记同一 run_id，无归档方式变化；
     # ④ 门禁失败时其**之前**的产物已落盘（与改动前一致：原顺序下 analysis:gen 也在门禁之后）。
-    report.append(_run("gates", [PY, os.path.join(ROOT, "cli.py"), "gates"], timeout=1800))
+    _gates_rec = _run("gates", [PY, os.path.join(ROOT, "cli.py"), "gates"], timeout=1800)
+    report.append(_gates_rec)
+    if _gates_rec.get("rc"):
+        # 批 61：补齐 `notify.on` 声明面的**发送者**（声明 4 类，此前仅 failed_step 有产生方 ✗）
+        try:
+            from std_lib.common_lib import notify as _notify_g
+
+            _notify_g.notify("gate_fail", "门禁未通过（链尾 gates rc=%s）" % _gates_rec.get("rc"),
+                          {"step": "gates", "rc": _gates_rec.get("rc")})
+        except Exception as e:  # noqa: BLE001  告警失败不得改变退出码
+            print(f"[refresh] WARN 告警发送失败（不影响退出码）: {type(e).__name__}: {e}")
 
     summary: dict = {
         "run_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -1524,6 +1574,17 @@ def main(argv=None) -> int:
 
 
 if __name__ == "__main__":
+    # 批 61（W-AD）：**让路实装** —— 本进程切到 Windows 后台模式（CPU+I/O 双低优先级，子进程继承），
+    # 使前台办公软件优先获得资源；置 `RCO_YIELD_TO_USER=0` 关闭（详见 proc.py 模块头）。
+    import os as _os
+
+    if _os.environ.get("RCO_YIELD_TO_USER", "1").strip() not in ("0", "false", "False"):
+        try:
+            from std_lib.scraper_std import proc as _proc
+
+            _proc.set_self_background()
+        except Exception:  # noqa: BLE001  让路失败不阻断
+            pass
     # v2 §3.13.7（P2-6）：本文件保留为**库**（其 `main()` 被 `cli.py run` 调用）；
     # 直调路径保留一个版本用于回滚/排障，但一律提示改用唯一入口。
     print(
