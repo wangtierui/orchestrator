@@ -30,11 +30,10 @@ def write_text(path: Path, content: str) -> None:
     path.write_text(content, encoding="utf-8")
 
 
-def write_jsonl(path: Path, rows: list[dict]) -> None:
-    _ensure_parent(path)
-    with path.open("w", encoding="utf-8") as fh:
-        for row in rows:
-            fh.write(json.dumps(row, ensure_ascii=False) + "\n")
+# B6（W4，2026-10）：原 `write_jsonl` 已删——**零调用方**，且与 JSONL 原子写 SSOT
+# `modules.base_publish.write_jsonl` 语义分化（本件为采集侧**非原子**便捷写入；SSOT 为
+# 发布安全件：tmp + os.replace）。JSONL 落盘一律走 SSOT；采集侧临时 JSONL 直接用
+# `path.open("w")` 显式表达「非原子」意图（不提供同名函数，防误选）。
 
 
 def write_csv(path: Path, rows: list[dict]) -> None:

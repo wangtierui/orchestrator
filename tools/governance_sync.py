@@ -220,7 +220,11 @@ def load_relations() -> tuple[list[dict], list[str]]:
         row_key = hashlib.sha256(f"{base}|{n}".encode()).hexdigest()[:16]
         conf = r.get("confidence")
         try:
-            conf = float(conf) if conf not in (None, "") else None
+            # 2026-10-13（问题项 P-7）：原式 `float(conf) if conf not in (None, "") else None`
+            # 对 `Any | None` 仍可能把 dict/list 等喂进 float（mypy [arg-type]）。先收窄为
+            # 「标量或 None」再转；非标量（dict/list）显式判 None——置信度字段出现结构值
+            # 属数据缺陷，静默转 0.0 会伪造确定性，此处按「不可信 → None」处理。
+            conf = float(conf) if isinstance(conf, (int, float, str)) and conf != "" else None
         except (TypeError, ValueError):
             conf = None
         out.append(

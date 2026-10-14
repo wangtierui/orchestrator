@@ -45,6 +45,11 @@ MODULE_SPECS: Final[tuple[ModuleSpec, ...]] = (
     # base_publish 此前长期缺席于 paths/gate_flat_layout，但 gate_no_cross_module_import
     # 早已把它算作第 5 个模块 —— 本次统一（v2 §2.1 A4）
     ModuleSpec("publish", "base_publish", "publish"),
+    # ---- W3（2026-10-14）：领域层扩展（方案 §5.1，5 → 7）----
+    # reg_frameworks：多监管数据体系建模（数据表/数据项/条款↔数据项映射；用途二）
+    ModuleSpec("regframeworks", "reg_frameworks", "core"),
+    # implementation_audit：落地执行检视（执行记录 × 作证材料 × 制度条款的差距；用途四）
+    ModuleSpec("implaudit", "implementation_audit", "core"),
 )
 
 MODULE_PKGS: Final[tuple[str, ...]] = tuple(m.pkg for m in MODULE_SPECS)
@@ -95,7 +100,10 @@ PIPELINE_STAGES: Final[tuple[str, ...]] = (
     "6.5",
 )
 
-# 条件触发链阶段（v2 §3.5 设计，尚未接线；供 triggers.yaml 的 stage 字段引用）
+# 条件触发链阶段（v2 §3.5 设计）。⚠️ W0-4（2026-10-13，C3）：原注释「尚未接线」已漂移——
+# N-53 起四个条件步骤（timeliness:verify=6.9 / inbox:drop=7.4 / internal:update=7.5 /
+# wiki:sync=21.5）**均已入链**（run_production_refresh._run_conditional）；且现行链以**步骤名**
+# 为准，阶段号仅供 triggers.yaml 的 stage 字段引用。W1 起由 STEP_LAYERS 判据 R4 机器校验。
 CONDITIONAL_STAGES: Final[tuple[str, ...]] = ("6.9", "7.4", "7.5", "21.5")
 
 STAGES: Final[frozenset[str]] = frozenset(PIPELINE_STAGES) | frozenset(CONDITIONAL_STAGES)
@@ -107,9 +115,9 @@ STAGE_ORDER: Final[dict[str, int]] = {s: i for i, s in enumerate(PIPELINE_STAGES
 # --------------------------------------------------------------------------- #
 def assert_registry_consistent() -> None:
     """清单自身完整性自检：键/包名唯一、kind 受控、阶段编号唯一。"""
-    assert len(MODULE_SPECS) == 5, MODULE_SPECS
-    assert len(MODULE_KEYS) == 5, "模块短键重复"
-    assert len(MODULE_PKG_SET) == 5, "模块包名重复"
+    assert len(MODULE_SPECS) == 7, MODULE_SPECS
+    assert len(MODULE_KEYS) == 7, "模块短键重复"
+    assert len(MODULE_PKG_SET) == 7, "模块包名重复"
     assert {m.kind for m in MODULE_SPECS} <= {"core", "publish"}, "kind 非受控值"
     assert len(PIPELINE_STAGES) == 15, PIPELINE_STAGES
     assert len(set(PIPELINE_STAGES)) == 15, "主链阶段编号重复"

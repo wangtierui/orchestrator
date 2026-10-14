@@ -43,6 +43,9 @@ PKG_OWNER: dict[str, str | None] = {
     "internal_policy_base": "internal_policy_base",
     "internal_policy_drafter": "internal_policy_drafter",
     "base_publish": "base_publish",
+    # W3（2026-10-14）：领域层两新模块（方案 §5.1，挂在既有单向链**之后**）
+    "reg_frameworks": "reg_frameworks",
+    "implementation_audit": "implementation_audit",
     # 模块内部包（裸 import 形态）
     "clean_index": "regulatory_scrapers",
     "clause_index": "regulatory_scrapers",
@@ -56,6 +59,8 @@ MODULES = (
     "internal_policy_base",
     "internal_policy_drafter",
     "base_publish",
+    "reg_frameworks",
+    "implementation_audit",
 )
 
 # 冻结基线（`相对路径:行号`）；当前为空 —— 阶段 3 已把 30 处直连全部收口。

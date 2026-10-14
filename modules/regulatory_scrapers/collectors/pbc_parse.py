@@ -93,12 +93,15 @@ ISSUING_AUTHORITIES = [
     "最高人民法院", "最高人民检察院",
 ]
 
-USER_AGENTS = [
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0 Safari/537.36",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15",
-    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36",
-]
+# B1/W4（2026-10）：UA 池单栈——原本地 4 条池（Chrome 120/119 时代）删，改 SSOT
+# （crawler_common.USER_AGENTS → http.USER_AGENTS_PC；try-import + 单 UA 兜底降级）。
+try:
+    from std_lib.scraper_std.crawler_common import USER_AGENTS
+except ImportError:  # pragma: no cover
+    USER_AGENTS = [
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+        "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+    ]
 
 RE_PAGING = re.compile(
     r'name="article_paging_list_hidden"\s+moduleid="([^"]+)"\s+modulekey="[^"]*"\s+totalpage="(\d+)"'

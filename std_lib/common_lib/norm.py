@@ -20,14 +20,19 @@ std_lib.common_lib.norm — 归一化唯一实现（专项三；A-10 分层收�
   - recall_audit.scanner / build_outputs._norm_docno（F-D06 2026-09-13 登记：空占位判定型——
     仅判空/NULL 占位，非全量归一；用于行键比对，保持原语义防 recall 结果漂移）。
 
-**日期归一分层**（F-D06，2026-09-13；与文号同级收敛约定）：
+**日期归一分层**（F-D06，2026-09-13；与文号同级收敛约定；W4 2026-10 补第三类登记）：
   - 解析/清洗层唯一实现：`scraper_std.cleaner.normalize_date`
     （strptime 多格式 → YYYY-MM-DD[ HH:MM:SS]，无法解析原样保留——保守策略）；
   - 抽取型特化（豁免）：`scraper_std.crawler_common.normalize_date`
     （从长文本正则抽取 → YYYY-MM-DD 或 ""，用于列表页/详情页混排文本）；
+  - 字段规范化型特化（豁免）：`collectors.mof_attachments.normalize_date`
+    （字段值规范化：list [y,m,d] / '2024-11-03 00:00:00' / None → 'YYYY-MM-DD' 或 None；
+    与解析层的差异在 **None 语义**（缺省≠空串）与 list 入参，B3/W4 登记）；
   - 摄取预处理（豁免）：`collectors.supp_ingest_batch._norm_date`（前缀截取 + 年月日抽取）；
   - 比较键（豁免）：`scraper_std.pkulaw_cli._norm_date`（→ (y, m, d) tuple，仅供排序/比对）。
   收敛基线测试：tests/test_ssot_convergence.py（跨实现兼容断言，防再分叉）。
+  门禁：`gate_no_duplicate_libs` 对上述 5 符号（公开+私有）执行「非共享库须豁免标记 /
+  共享库内多定义须全标记」判定（W4 §7.6.1）——标记即登记，未标记即违规。
 """
 
 from __future__ import annotations

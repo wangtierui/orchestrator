@@ -44,83 +44,46 @@ README = os.path.join(paths.ROOT, "README.md")
 LEGACY_OUT = os.path.join(paths.ROOT, "docs", "全链数据流总图.md")  # N-165 起废弃
 RUNNER = os.path.join(paths.ROOT, "tools", "run_production_refresh.py")
 
+_SPECS: dict = {}  # StepSpec 索引（首次渲染时填充，见 `_spec_index`）
+
 BEGIN = "<!-- BEGIN GENERATED: 全链数据流总图（由 tools/gen_flow_map.py 生成，勿手改） -->"
 END = "<!-- END GENERATED: 全链数据流总图 -->"
+ARCH_BEGIN = "<!-- BEGIN GENERATED: 架构共识图（E-5，由 tools/gen_flow_map.py 生成，勿手改） -->"
+ARCH_END = "<!-- END GENERATED: 架构共识图 -->"
 
-# 已知的「只读披露」步骤（**恒 rc=0**：后端不可用属合法状态，不应误报为链路故障）
-READONLY_DISCLOSURE = {"retention:plan", "semantic:preflight", "pg:health"}
+# --------------------------------------------------------------------------- #
+# 步骤语义：**唯一事实源 = 链模块的 `STEP_LAYERS`/`StepSpec`**（W1，2026-10-13）
+#
+# 计划 §3.5 / B8：原两张平铺 dict（`PURPOSE` / `STEP_FAILURE`）与链声明各自漂移——
+#   · 模板步骤（`clean:{src}`）在 dict 里只能登记头键 `clean`，专属语义丢失（D-6）；
+#   · 新入链步骤未补登 → README §8 渲染「⚠️ 未登记作用」，或落回默认「阻断」而实装是旁路（D-7）；
+#   · 「哪些是只读披露」又是第三份硬编码集合（READONLY_DISCLOSURE）。
+# 现全部改为**从 StepSpec 派生**：purpose / degrade_note / kind（分色与分组）三列同源。
+# --------------------------------------------------------------------------- #
 
-# 步骤 → 作用（**唯一事实源在此**；键与 `STEP_ORDER` 实际值一致，支持「前缀兜底」）
-PURPOSE: dict = {
-    # —— 阶段 1 采集/清洗/条文 ——
-    "collect:nfra_weekly": "nfra 周报采集（按周触发）",
-    "collect": "各源原始采集（gov **按子源拆为 xzfgk/zhengceku 两独立步骤**、mof/nfra/pbc/supp）",
-    "supp:ingest_batch": "补充库批量摄取（backlog 驱动）",
-    "clean": "原始 → 清洗（6 态抽取 + 校验隔离）",
-    "timeliness:verify": "时效核验（北大法宝；Node 侧 MCP）",
-    "timeliness:consolidate": "时效核验结果汇总",
-    "apply": "时效核验结果回写清洗产物",
-    # —— 阶段 2 分类/关系/召回 ——
-    "classify:all": "主题分类（_t*_base / _t*_final 派生）",
-    "relations:gen": "关系抽取（含条款级定位：**窗口优先 + 跨度退路**）",
-    "reconcile": "清洗漂移对账（clean_drift）",
-    "recall": "召回复核与四门禁（clean/validity/contract/schema）",
-    # —— 阶段 3 治理库/内部制度/条款 ——
-    "inbox:drop": "收件箱投放（人工投递的制度文件入库）",
-    "internal:update": "内部制度索引更新（原件同步）",
-    "internal:merged": "内部制度**合并视图**（供条款对照与检索）",
-    "governance:artifacts": "原件注册（治理库 artifact 表）",
-    "governance:sync": "治理库同步（run_log / gate_result / relation 等，**全量替换**）",
-    "draft:clause": "条款对照素材（drafter 视图）",
-    # —— 阶段 4 发布/报告/分析/基线 ——
-    "reports:build": "总览报告生成",
-    "reports:theme": "主题报告生成",
-    "base:publish": "底座发布（发布清单 publish_manifest）",
-    "analysis:gen": "分析交付物（docs/reports，含 17 项 manifest sha）",
-    "watch:baseline": "观测基线快照",
-    # —— 阶段 5 只读披露（恒 rc=0）——
-    "retention:plan": "数据生命周期**只读披露**（dry-run + 台账；`--apply` 为人工闸门）",
-    "quarantine:triage": "清洗隔离件分类与处置登记（零回写 → worklist）",
-    # —— 阶段 2 的**只读分析视图**步骤（不写事实源）——
-    "semantic:assist": "P1 语义增强**入链调用点**（嵌入→主题辅助裁定；**只产分析视图**）",
-    "docreader:extract": "docreader **入链调用点**（版面解析 + 段落级定位；**只产分析视图**）",
-    "semantic:preflight": "P1 语义增强**启用前置披露**（五道闸逐项）",
-    "pg:health": "向量存储**只读**健康检查（pgvector / sqlite_vec 降级链披露）",
-    # —— 阶段 6 条件步骤 / 链尾 ——
-    "wiki:sync": "llm_wiki 源同步（条件步骤，未触发即跳过）",
-    "gates": "全部门禁（**阻断**；置于链尾以终态产物为准）",
-}
 
-# 步骤 → **降级 / 失败语义**（N-165：原实现把非披露步骤一律写作"阻断（失败即停）" ——
-# 这与实装不符：采集/清洗在 `--no-scrape` 或「无 raw 变化」时会**快跳**（SKIP 且 rc=0），
-# 时效核验无 token 时**降级为 unavailable**，条件步骤**未触发即跳过**。此表为逐步声明的事实源。）
-COLLECT_STEPS = {"collect:nfra_weekly", "collect", "supp:ingest_batch"}
-CLEAN_STEPS = {"clean", "apply"}
-STEP_FAILURE: dict = {
-    "collect": "**阻断**（失败即停）；`--no-scrape` → **SKIP**（rc=0，不采集）",
-    "collect:nfra_weekly": "**阻断**；未到周度触发 → **SKIP**（rc=0）",
-    "supp:ingest_batch": "**阻断**；backlog 为空 → **SKIP**（rc=0）",
-    "clean": "**阻断**；**超时按源体量配置**（`max(1800, raw_MB×2)`，上限 6h，N-150；"
-             "系数 N-188 重标定）；无 raw 变化 → **SKIP**（rc=0）",
-    "apply": "**阻断**；无核验结果可回写 → **SKIP**（rc=0）",
-    "timeliness:verify": "**降级**：无 token / 工具缺失 → `verification_state=unavailable`"
-                         "（**不误标**）；配额耗尽自动停（断点续跑）",
-    "timeliness:consolidate": "**阻断**；无核验输入 → 空汇总（rc=0）",
-    "recall": "**阻断**（四门禁不过即 FAIL，留人工）",
-    "retention:plan": "**只读披露 · 恒 rc=0**（无待归档为合法状态；`--apply` 才是人工闸门）",
-    "quarantine:triage": "**只读产出**（零回写；结果入 worklist，rc=0）",
-    "semantic:preflight": "**只读披露 · 恒 rc=0**（增强未启用为合法状态；"
-                          "真正的启用判定用 `semantic_tools --preflight` 的 rc）",
-    "semantic:assist": "**只读分析视图**（增强层零硬依赖）：未启用（`usage_policy.enabled=false`）"
-                       "或嵌入链不可用均为合法状态 → **rc=0**；**绝不写事实源**",
-    "docreader:extract": "**只读分析视图**：docreader 不可用/自检不过 → **显式 SKIP（rc=0）**，"
-                         "回退既有 6 态抽取；**不替换**抽取事实源（替换须先度量）",
-    "pg:health": "**只读披露 · 恒 rc=0**（后端不可用为合法状态；实际读写按 `vector_store` 降级链）",
-    "wiki:sync": "**条件步骤**（`triggers.yaml` 判定）：未触发 → **SKIP**（rc=0）",
-    "gates": "**阻断**（失败即停；链尾以终态产物为准）",
-}
-# 未在 STEP_FAILURE 单列的步骤 → 默认语义
-DEFAULT_FAILURE = "**阻断**（失败即停；`--resume` 可从该步续跑）"
+def _chain_mod():
+    """加载链模块（运行时；**必须先登记 sys.modules**——模块含 @dataclass，
+    否则 dataclasses 回查 `sys.modules[cls.__module__].__dict__` 命中 None → AttributeError）。"""
+    import importlib.util as _iu
+
+    spec = _iu.spec_from_file_location("_rpr_for_flowmap", RUNNER)
+    if spec is None or spec.loader is None:
+        return None
+    mod = _iu.module_from_spec(spec)
+    sys.modules[spec.name] = mod
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def _spec_index() -> dict:
+    """步骤名 → StepSpec（运行时派生；失败返回空 dict ⇒ 渲染层显式披露而非静默）。"""
+    try:
+        mod = _chain_mod()
+        return {s.name: s for s in mod.step_specs()} if mod else {}
+    except Exception:  # noqa: BLE001  链模块不可读 → 显式空（渲染层标注「不可读」）
+        return {}
+
 
 # 降级链总表（**N-165 新增**：用户要求「补充降级链的完整表述」）。
 # 每条链的事实源（SSOT）在括号中注明；此处只做**汇总披露**，不重复定义。
@@ -305,15 +268,63 @@ _OND = "**按需节点**（无独立链步骤；由 `pg:health` 披露、业务�
 STAGE_NODE = {"阶段1": "A", "阶段2": "B", "阶段3": "C", "阶段4": "D", "阶段5": "E", "阶段6": "F"}
 
 
-def _purpose(step: str) -> str:
-    """作用查表：精确 → 前缀（`clean:gov`→`clean`）→ 未登记告警（**不静默**）。"""
-    if step in PURPOSE:
-        return PURPOSE[step]
-    head = step.split(":")[0]
-    if head in PURPOSE:
-        return PURPOSE[head]
-    return f"⚠️ **未登记作用**（请在 `gen_flow_map.PURPOSE` 补登 `{step}`）"
+def _plan_segments() -> list[tuple[str, tuple[str, ...]]]:
+    """执行计划分段（`(层键, 步骤名序列)`；链模块不可读时回退为单段全量）。"""
+    try:
+        mod = _chain_mod()
+        return [(k, tuple(v)) for k, v in mod.LAYER_EXEC_PLAN]
+    except Exception:  # noqa: BLE001  不可读 → 单段（渲染层显式披露）
+        idx = _SPECS if _SPECS else _spec_index()
+        return [("?", tuple(idx))] if idx else []
 
+
+def _layer_spec(layer_key: str):
+    try:
+        mod = _chain_mod()
+        return mod.STEP_LAYERS.get(layer_key)
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def _spec_of(step: str):
+    """步骤名 → StepSpec（精确 → 前缀兜底：模板步骤 `clean:{src}` 回退到声明形态）。"""
+    idx = _SPECS if _SPECS else _spec_index()
+    if step in idx:
+        return idx[step]
+    head = step.split(":")[0]
+    for name, spec in idx.items():
+        if name.split(":")[0] == head:
+            return spec
+    return None
+
+
+def _purpose(step: str) -> str:
+    """作用（事实源：`StepSpec.purpose`；未登记即显式告警，不静默）。"""
+    spec = _spec_of(step)
+    if spec is None:
+        return f"⚠️ **未登记作用**（请在 `STEP_LAYERS` 补登 `{step}`）"
+    return spec.purpose
+
+
+def _failure(step: str) -> str:
+    """降级/失败语义（事实源：`StepSpec.degrade_note`；缺失时按 kind/fail_semantics 兜底）。"""
+    spec = _spec_of(step)
+    if spec is None:
+        return "⚠️ **未登记语义**（请在 `STEP_LAYERS` 补登）"
+    if spec.degrade_note:
+        return spec.degrade_note
+    return _KIND_FALLBACK.get(spec.kind, "**阻断**（失败即停；`--resume` 可从该步续跑）")
+
+
+#: `degrade_note` 为空时的 kind 级兜底文案（与 `config.enums` 受控域一致）
+_KIND_FALLBACK = {
+    "disclosure": "**只读披露 · 恒 rc=0**（未就绪是合法状态）",
+    "enhancement": "**增强层 · 恒 rc=0**（可缺失，降级可观测）",
+    "conditional": "**条件步骤**：未触发 → SKIP（rc=0）",
+    "side": "**旁路**：失败告警，不阻断主链",
+    "gate": "**阻断**（失败即停；链尾以终态产物为准）",
+    "main": "**阻断**（失败即停；`--resume` 可从该步续跑）",
+}
 
 # --------------------------------------------------------------------------
 # 命令抽取（AST）
@@ -548,22 +559,35 @@ def build() -> str:
     L.append(
         "> 说明：命令列取自源码 `_run(...)` 的 `argv` **字面量**（f-string 保留为 `{src}` 占位；"
         "`<NAME>` 表示由变量构造的实参）。完整参数以源码为准。"
-        "「降级 / 失败语义」为**逐步声明**（事实源：`gen_flow_map.STEP_FAILURE`）。"
+        "「作用」与「降级 / 失败语义」两列均**派生自 `STEP_LAYERS` 的 `StepSpec`**"
+        "（唯一事实源；`purpose` / `degrade_note`），并按 `LAYER_EXEC_PLAN` 分层分组。"
         "另见 §8.2.1「编排层通性」与 §六「降级链总表」。"
     )
     L.append("")
-    L.append("| # | 步骤 | 作用 | 脚本/命令（AST 抽取） | 降级 / 失败语义 |")
-    L.append("|---|---|---|---|---|")
-    for i, s in enumerate(steps, 1):
-        purpose = _purpose(s)
-        cmd = cmds.get(s, "（未见字面量调用；见源码）")
-        if s in READONLY_DISCLOSURE:
-            degr = STEP_FAILURE.get(s, "**只读披露 · 恒 rc=0**")
-        else:
-            degr = STEP_FAILURE.get(s, DEFAULT_FAILURE)
-        # 命令单元格：**含反引号时不加外层反引号**（否则表格里的内联代码会串行、渲染错乱）
-        cell = cmd if "`" in cmd else f"`{cmd}`"
-        L.append(f"| {i} | `{s}` | {purpose} | {cell} | {degr} |")
+    L.append("| 层 | kind | # | 步骤 | 作用 | 脚本/命令（AST 抽取） | 降级 / 失败语义 |")
+    L.append("|---|---|---|---|---|---|---|")
+    i = 0
+    for layer_key, names in _plan_segments():
+        layer = _layer_spec(layer_key)
+        kind = getattr(layer, "kind", "?")
+        for name in names:
+            i += 1
+            spec = _spec_of(name)
+            purpose = _purpose(name)
+            cmd = cmds.get(name, "（未见字面量调用；见源码）")
+            degr = _failure(name)
+            timeout = getattr(spec, "timeout", None)
+            kind = getattr(spec, "kind", "")
+            if kind == "conditional":
+                tnote = "（超时见 triggers.yaml）"
+            elif timeout is None:
+                tnote = "（调用点动态计算）"
+            else:
+                tnote = ""
+            cell = cmd if "`" in cmd else f"`{cmd}`"
+            L.append(
+                f"| `{layer_key}` | {kind} | {i} | `{name}`{tnote} | {purpose} | {cell} | {degr} |"
+            )
     L.append("")
     L.append("#### 8.2.1 编排层通性（**对所有步骤生效**）")
     L.append("")
@@ -748,7 +772,7 @@ def _norm(s: str) -> str:
     return s.replace("\r\n", "\n").replace("\r", "\n").strip("\n")
 
 
-def check() -> int:
+def _check_total_map() -> int:
     """核验 README §8 受管块与**当前源码派生结果**是否一致（R-5：入 CI，防生成物漂移）。
 
     为什么必须入 CI：§8 是**机器生成物**，而"文档漂移不会报错"——链路改了却忘了重跑，
@@ -781,6 +805,173 @@ def check() -> int:
     return int(ExitCode.OK)
 
 
+
+
+# --------------------------------------------------------------------------- #
+# E-5（W1-6）：架构共识图（受管块）——**全部计数与节点均由事实源派生**
+# --------------------------------------------------------------------------- #
+_KIND_LABEL = {
+    "main": "主链",
+    "side": "旁路",
+    "disclosure": "披露",
+    "enhancement": "增强",
+    "conditional": "条件",
+    "gate": "门禁",
+}
+
+
+def _arch_facts() -> dict:
+    """共识图事实（任一来源不可读 → 该节显式标注「不可读」，不静默省略）。"""
+    import yaml
+
+    facts: dict = {"errors": []}
+    # 链层
+    try:
+        mod = _chain_mod()
+        # `LAYER_EXEC_PLAN` 是**分段**计划（同一层可出现在多个段，如 L2 清洁与回写）
+        #   → 图上按层**聚合**（一个节点），步数累加、kind 取声明值（否则重复节点破渲染）。
+        agg: dict = {}
+        for k, names in mod.LAYER_EXEC_PLAN:
+            agg[k] = agg.get(k, 0) + len(names)
+        facts["layers"] = [
+            (k, n, getattr(mod.STEP_LAYERS.get(k), "kind", "main")) for k, n in agg.items()
+        ]
+        facts["n_steps"] = len(mod.step_specs())
+        facts["artifacts"] = sorted(mod.GOV_ARTIFACTS)
+    except Exception as e:  # noqa: BLE001
+        facts["errors"].append(f"链声明不可读（{type(e).__name__}）")
+        facts["layers"], facts["n_steps"], facts["artifacts"] = [], 0, []
+    # 调度层
+    try:
+        sc = yaml.safe_load(open(os.path.join(paths.ROOT, "config", "schedule.yaml"),
+                                encoding="utf-8")) or {}
+        jobs = sc.get("jobs") or []
+        facts["cron"] = sum(1 for j in jobs if j.get("trigger") == "cron")
+        facts["event"] = sum(1 for j in jobs if j.get("trigger") == "event")
+        facts["job_kinds"] = sorted({str(j.get("kind")) for j in jobs if j.get("kind")})
+        facts["triggers"] = len(sc.get("triggers") or []) if isinstance(sc, dict) else 0
+    except Exception as e:  # noqa: BLE001
+        facts["errors"].append(f"schedule.yaml 不可读（{type(e).__name__}）")
+        facts["cron"] = facts["event"] = facts["triggers"] = 0
+        facts["job_kinds"] = []
+    try:
+        tg = yaml.safe_load(open(os.path.join(paths.ROOT, "config", "triggers.yaml"),
+                                encoding="utf-8")) or {}
+        facts["n_triggers"] = len(tg.get("triggers") or [])
+    except Exception:  # noqa: BLE001
+        facts["n_triggers"] = 0
+    # 质量层
+    try:
+        from gates import ALL_GATES
+
+        facts["n_gates"] = len(ALL_GATES)
+    except Exception:  # noqa: BLE001
+        facts["n_gates"] = 0
+    # 治理层
+    try:
+        from config.enums import WORKLIST_KIND
+
+        facts["n_wl_kinds"] = len(WORKLIST_KIND)
+    except Exception:  # noqa: BLE001
+        facts["n_wl_kinds"] = 0
+    return facts
+
+
+def render_arch_map() -> str:
+    """渲染架构共识图（mermaid）。计数与节点全部派生——手写图必漂移，这是本块的立意。"""
+    f = _arch_facts()
+    L: list[str] = []
+    L.append(ARCH_BEGIN)
+    if f["errors"]:
+        L.append("")
+        L.append("> ⚠️ **部分事实源不可读**（" + "；".join(f["errors"]) + "）——图中相应计数按 0/空渲染，请修源后重生成。")
+    L.append("")
+    L.append("```mermaid")
+    L.append("flowchart TB")
+    L.append('  subgraph ACC["接入层（L6）"]')
+    L.append('    CLI["cli.py<br/>19 命令 · 唯一入口"]')
+    L.append('    WEB["web/ 本地确认台<br/>loopback · 8 页"]')
+    L.append('    MCP["mcp_server/<br/>计划 W2 · MCP tool 面"]')
+    L.append("  end")
+    L.append('  subgraph SCHED["调度层（唯一事实源 schedule.yaml + triggers.yaml）"]')
+    L.append(f'    JOB["{f["cron"]} cron + {f["event"]} event 作业<br/>角色：{" · ".join(f["job_kinds"]) or "—"}"]')
+    L.append(f'    TRG["{f["n_triggers"]} 条件触发项"]')
+    L.append("  end")
+    L.append('  subgraph CHAIN["处理链层（STEP_LAYERS 分层声明 · W1）"]')
+    for key, n, kind in f["layers"]:
+        L.append(f'    {key.replace("_", "")}["{key}<br/>{n} 步 · {_KIND_LABEL.get(kind, kind)}"]')
+    L.append("  end")
+    L.append('  subgraph ART["产物层（GOV_ARTIFACTS 血缘声明）"]')
+    arts = f["artifacts"]
+    L.append(f'    ARTN["{len(arts)} 类产物键<br/>{arts[0] if arts else "—"} … {arts[-1] if arts else "—"}"]')
+    L.append("  end")
+    L.append('  subgraph GOV["治理层（governance.db · 旁路观测）"]')
+    L.append(f'    WL["待办队列 worklist<br/>{f["n_wl_kinds"]} 类 kind"]')
+    L.append('    LED["运行台账 run_log / audit_log / gate_result"]')
+    L.append("  end")
+    L.append('  subgraph QUAL["质量层"]')
+    L.append(f'    GATES["门禁 {f["n_gates"]} 道（链尾阻断）"]')
+    L.append("  end")
+    L.append("  ACC --> SCHED --> CHAIN --> ART")
+    L.append("  CHAIN --> GOV")
+    L.append("  ART --> QUAL")
+    L.append("  classDef acc fill:#dae8fc")
+    L.append("  classDef sched fill:#d5e8d4")
+    L.append("  classDef chain fill:#fff2cc")
+    L.append("  classDef art fill:#e1d5e7")
+    L.append("  classDef gov fill:#f8cecc")
+    L.append("  classDef qual fill:#f5f5f5")
+    L.append("  class CLI,WEB,MCP acc")
+    L.append("  class JOB,TRG sched")
+    for key, _n, _k in f["layers"]:
+        L.append(f'  class {key.replace("_", "")} chain')
+    L.append("  class ARTN art")
+    L.append("  class WL,LED gov")
+    L.append("  class GATES qual")
+    L.append("```")
+    L.append("")
+    L.append(
+        "> 事实源：`STEP_LAYERS`（链层）· `schedule.yaml`/`triggers.yaml`（调度层）· "
+        "`GOV_ARTIFACTS`（产物与血缘）· `ALL_GATES`（质量层）· `worklist.kind`（治理层）。"
+        "**计数由生成器派生，勿手改**；`python -m tools.gen_flow_map --check` 核验一致性。"
+    )
+    L.append(ARCH_END)
+    return "\n".join(L)
+
+
+def _inject_arch(txt: str) -> str:
+    """把共识图受管块写入 README（已存在则整块替换；不存在则追加到 §4.1 之后）。"""
+    block = render_arch_map()
+    if ARCH_BEGIN in txt and ARCH_END in txt:
+        pre = txt[: txt.index(ARCH_BEGIN)]
+        post = txt[txt.index(ARCH_END) + len(ARCH_END) :]
+        return pre + block + post
+    anchor = "### 4.2 ETL/数据处理管道明细"
+    if anchor in txt:
+        i = txt.index(anchor)
+        return txt[:i] + block + "\n\n" + txt[i:]
+    return txt.rstrip() + "\n\n" + block + "\n"
+
+def check() -> int:
+    """核验 README 两个受管块：§8 全链总图 + §4.1 架构共识图（E-5）——任一漂移即 FAIL。"""
+    rc = _check_total_map()
+    try:
+        cur = open(README, encoding="utf-8").read()
+    except OSError as e:
+        print(f"[gen_flow_map] [FAIL] README 不可读：{type(e).__name__}: {e}")
+        return ExitCode.FAIL
+    if ARCH_BEGIN not in cur:
+        print("[gen_flow_map] [WARN] README §4.1 无架构共识图受管块（首次生成后即存在）")
+        return rc
+    if ARCH_END not in cur:
+        print("[gen_flow_map] [FAIL] 共识图受管块标记不完整（缺 END）")
+        return ExitCode.FAIL
+    seg = cur[cur.index(ARCH_BEGIN): cur.index(ARCH_END) + len(ARCH_END)]
+    if seg != render_arch_map():
+        print("[gen_flow_map] [FAIL] README §4.1 架构共识图与事实源不一致（E-5；重跑生成器）")
+        return ExitCode.FAIL
+    print("[gen_flow_map] [OK] README §4.1 架构共识图与事实源一致")
+    return rc
 def main(argv=None) -> int:
     argv = list(argv if argv is not None else sys.argv[1:])
     if "--check" in argv:
@@ -788,6 +979,20 @@ def main(argv=None) -> int:
     text = build()
     changed, msg = inject_into_readme(text)
     print(f"[gen_flow_map] {msg}")
+    # E-5（W1-6）：架构共识图受管块（README §4.1；事实源 = STEP_LAYERS / schedule.yaml /
+    # triggers.yaml / GOV_ARTIFACTS / ALL_GATES / worklist kind）——与 §8 总图同批生成与核验。
+    try:
+        cur = open(README, encoding="utf-8").read()
+        nxt = _inject_arch(cur)
+        if nxt != cur:
+            with open(README, "w", encoding="utf-8") as fh:
+                fh.write(nxt)
+            print("[gen_flow_map] 架构共识图受管块已更新（README §4.1）")
+            changed = True
+        else:
+            print("[gen_flow_map] 架构共识图受管块已是最新")
+    except OSError as e:
+        print(f"[gen_flow_map] WARN 共识图写入失败：{type(e).__name__}: {e}")
     # N-165：**不再单独生成 docs/全链数据流总图.md**；若历史文件仍在，提示删除（避免「两处事实源」）
     if os.path.exists(LEGACY_OUT):
         print(

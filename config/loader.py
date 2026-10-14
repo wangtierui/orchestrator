@@ -11,12 +11,18 @@ from __future__ import annotations
 
 import os
 import re
+from types import ModuleType
 from typing import Any
 
 try:
-    import yaml
+    import yaml as _yaml
 except Exception:  # pragma: no cover  # noqa: BLE001
-    yaml = None
+    _yaml = None  # type: ignore[assignment]
+
+#: PyYAML 模块句柄；缺失时为 None——一律经 `_require_yaml()` 守卫后使用（问题项 P-6：
+#: 原 `yaml = None` 把导入名重绑为 None，mypy 判 Module→None 不兼容且裸用会
+#: AttributeError；现为显式 Optional + 统一守卫）。
+yaml: ModuleType | None = _yaml
 
 import paths
 
@@ -64,6 +70,13 @@ def _expand_deep(obj: Any) -> Any:
 _ENABLED_SOURCES: dict[str, dict] | None = None
 
 
+def _require_yaml():
+    """PyYAML 就绪守卫（SSOT：四个加载函数共用；缺依赖 → 显式 RuntimeError，不裸 AttributeError）。"""
+    if yaml is None:
+        raise RuntimeError("PyYAML 未安装：pip install PyYAML")
+    return yaml
+
+
 def load_sources(refresh: bool = False) -> dict[str, dict]:
     """返回 {source_id: cfg}，含 enabled=false 的条目（带 disabled_reasons）。
 
@@ -72,10 +85,9 @@ def load_sources(refresh: bool = False) -> dict[str, dict]:
     global _ENABLED_SOURCES
     if _ENABLED_SOURCES is not None and not refresh:
         return _ENABLED_SOURCES
-    if yaml is None:
-        raise RuntimeError("PyYAML 未安装：pip install PyYAML")
+    _y = _require_yaml()
     with open(paths.SOURCES_YAML, encoding="utf-8") as fh:
-        data = yaml.safe_load(fh)
+        data = _y.safe_load(fh)
     out: dict[str, dict] = {}
     for src in data.get("external_sources", []):
         out[src["id"]] = src
@@ -131,8 +143,9 @@ def load_mirrors(refresh: bool = False) -> dict:
     global _MIRRORS_CFG
     if _MIRRORS_CFG is not None and not refresh:
         return _MIRRORS_CFG
+    _y = _require_yaml()
     with open(MIRRORS_YAML, encoding="utf-8") as fh:
-        _MIRRORS_CFG = yaml.safe_load(fh) or {}
+        _MIRRORS_CFG = _y.safe_load(fh) or {}
     return _MIRRORS_CFG
 
 
@@ -191,8 +204,9 @@ def load_integrity_policy(refresh: bool = False) -> dict:
     global _POLICY_CFG
     if _POLICY_CFG is not None and not refresh:
         return _POLICY_CFG
+    _y = _require_yaml()
     with open(INTEGRITY_POLICY_YAML, encoding="utf-8") as fh:
-        _POLICY_CFG = yaml.safe_load(fh) or {}
+        _POLICY_CFG = _y.safe_load(fh) or {}
     return _POLICY_CFG
 
 
@@ -203,10 +217,9 @@ def load_ocr(refresh: bool = False) -> dict:
     global _OCR_CFG
     if _OCR_CFG is not None and not refresh:
         return _OCR_CFG
-    if yaml is None:
-        raise RuntimeError("PyYAML 未安装")
+    _y = _require_yaml()
     with open(paths.OCR_YAML, encoding="utf-8") as fh:
-        _OCR_CFG = _expand_deep(yaml.safe_load(fh))
+        _OCR_CFG = _expand_deep(_y.safe_load(fh))
     return _OCR_CFG
 
 

@@ -45,7 +45,6 @@ _GUIDE_ROOT = _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(_
 if _GUIDE_ROOT not in _sys.path:
     _sys.path.insert(0, _GUIDE_ROOT)
 del _GUIDE_ROOT, _os, _sys
-import hashlib
 import os
 import re
 import ssl
@@ -120,8 +119,8 @@ def ocr_pdf(path):
     return res.text or ""
 
 
-def sha256_of(data):
-    return hashlib.sha256(data).hexdigest()
+# B2（W4，2026-10）：原 `def sha256_of(data)` 已删——**零调用方**且与 SSOT
+# `std_lib.common_lib.io_atomic.sha256_bytes` 逐字重复；本文件 sha256 一律用 SSOT。
 
 
 def extract_pdf_text(data):
@@ -516,4 +515,4 @@ def _temp_pdf(data):
     return p
 
 
-__all__ = ["is_pdf", "ocr_pdf", "sha256_of", "extract_pdf_text", "extract_docx", "extract_xlsx", "attachment_kind", "dispatch_extract", "sniff_kind", "extract_xls_ole", "_walk_pieces", "_recover_cjk_stream", "_flush_run", "extract_doc_ole", "_is_ole2_word", "_handle_ole2", "extract_any", "_temp_pdf"]
+__all__ = ["is_pdf", "ocr_pdf", "extract_pdf_text", "extract_docx", "extract_xlsx", "attachment_kind", "dispatch_extract", "sniff_kind", "extract_xls_ole", "_walk_pieces", "_recover_cjk_stream", "_flush_run", "extract_doc_ole", "_is_ole2_word", "_handle_ole2", "extract_any", "_temp_pdf"]

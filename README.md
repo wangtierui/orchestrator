@@ -22,7 +22,7 @@
   - **语言/运行**：Python **≥ 3.13**（`requires-python`）；Windows 计划任务调度（`cli.py schedule`）
   - **数据存储**：文件产物（JSONL/CSV）+ **SQLite FTS5**（全文检索）+ **PostgreSQL/pgvector**（向量检索，可选）
   - **治理留痕**：`data/governance.db`（SQLite 治理库：水位/门禁结果/步骤台账）
-  - **质量工具**：`ruff`（Lint）/ `mypy`（类型）/ `pytest`（测试）/ 自研 **23 道门禁**（`cli.py gates`）
+  - **质量工具**：`ruff`（Lint）/ `mypy`（类型）/ `pytest`（测试）/ 自研 **29 道门禁**（`cli.py gates`）
   - **P1 语义增强（可选叠加，对应 `.[semantic]` extra）**：`sentence-transformers` / `transformers` /
     模型权重**随仓外置于 `external/models/`**（git 忽略）
   - **依赖管理**：`pyproject.toml`（PEP 621，含 `[dev]` `[ocr]` `[semantic]` 三个 extra）
@@ -45,7 +45,7 @@ regulatory_compliance_orchestrator/
 ├── pyproject.toml              # 【元数据】PEP 621 依赖与 extras（dev/ocr/semantic）
 ├── config/                     # 【常规流程】**配置唯一事实源**
 ├── interfaces/                 # 【常规流程】数据契约 + 四协议 + `*_api` 进程内接口层
-├── gates/                      # 【常规流程·门禁】ALL_GATES **24 道**交付门禁
+├── gates/                      # 【常规流程·门禁】ALL_GATES **29 道**交付门禁
 ├── commands/                   # 【常规流程】cli.py 子命令实现（自 cli.py 迁移）
 ├── modules/                    # 【常规流程】**业务模块**（五模块，单向依赖）
 ├── std_lib/                    # 【常规流程】**共享库**（scraper_std + common_lib）
@@ -70,7 +70,7 @@ regulatory_compliance_orchestrator/
 | `paths.py` | 文件 | **常规流程** | **路径唯一事实源**（含 `module_dir()` / `relations_index()` 等访问器） | 被全仓引用 |
 | `config/` | 目录 | **常规流程（配置 SSOT）** | `enums.py`（**31 个受控域**）/ `sources.yaml`（源清单）/ `schedule.yaml`（定时） / `triggers.yaml`（条件触发）/ `schema/*.json`（清单与契约） | 被 `interfaces/`、`modules/`、`gates/` 引用 |
 | `interfaces/` | 目录 | **常规流程（契约层）** | `contract.py`（字段契约）/ `protocols.py`（四协议）/ `*_api.py`（进程内接口，**跨模块唯一通道**） | 被 `modules/`、`tools/`、`gates/` 引用 |
-| `gates/` | 目录 | **常规流程（质量门禁）** | **24 道**门禁实现（`gate_*.py`）；**唯一注册表 = `gates/__init__.py:ALL_GATES`** | 由 `cli.py gates` / `tools/ci_check.py` 驱动 |
+| `gates/` | 目录 | **常规流程（质量门禁）** | **29 道**门禁实现（`gate_*.py`）；**唯一注册表 = `gates/__init__.py:ALL_GATES`** | 由 `cli.py gates` / `tools/ci_check.py` 驱动 |
 | `commands/` | 目录 | **常规流程** | 子命令实现（`gates.py` / `relations.py` / `schedule.py` …） | 被 `cli.py` 分发调用 |
 | `modules/regulatory_scrapers/` | 目录 | **常规流程** | 五源采集 + 清洗 + 条文 + 关系 + 时效核验（含 `collectors/` `clean/` `clause_index/` `clean_index/`） | 入口 `cli.py run`；产 `data/{raw,cleaned,clauses}` |
 | `modules/regulatory_classifier/` | 目录 | **常规流程** | 归属表/主题表底座链 + 明细表 + 桥表 + 关系产物消费 + `recall_audit` | 被 `cli.py classify` / `analysis` 调用 |
@@ -181,7 +181,7 @@ flowchart LR
     AT & MV & REL -->|gen_analysis_deliveries| AN[(docs/reports 17 项)]
     INBOX[(data/inbox)] -->|inbox_scan| WL[(worklist 决策项)]
     PUB -.->|sync_wiki_sources| KB[Obsidian vault]
-    C & CL & AT & REL & MV & PUB -->|**23 道门禁**| G8{gates}
+    C & CL & AT & REL & MV & PUB -->|**29 道门禁**| G8{gates}
     G8 -->|全绿| OK[交付]
     subgraph P1[P1 语义增强（可选叠加，默认不介入主链）]
         SE[["semantic_enhance<br/>执行门面"]]
@@ -202,6 +202,70 @@ flowchart LR
 **依赖纪律**：`scraper → classifier → internal_base → drafter → analysis` **单向**；跨模块仅经 `interfaces/`；
 唯一同仓互引 = `classifier → clean_index`（由 `gate_no_cross_module_import` 守卫）。
 
+<!-- BEGIN GENERATED: 架构共识图（E-5，由 tools/gen_flow_map.py 生成，勿手改） -->
+
+```mermaid
+flowchart TB
+  subgraph ACC["接入层（L6）"]
+    CLI["cli.py<br/>19 命令 · 唯一入口"]
+    WEB["web/ 本地确认台<br/>loopback · 8 页"]
+    MCP["mcp_server/<br/>计划 W2 · MCP tool 面"]
+  end
+  subgraph SCHED["调度层（唯一事实源 schedule.yaml + triggers.yaml）"]
+    JOB["7 cron + 2 event 作业<br/>角色：agent_sync · processing · quality"]
+    TRG["5 条件触发项"]
+  end
+  subgraph CHAIN["处理链层（STEP_LAYERS 分层声明 · W1）"]
+    L1ingest["L1_ingest<br/>3 步 · 主链"]
+    L2transform["L2_transform<br/>4 步 · 主链"]
+    L9sync["L9_sync<br/>4 步 · 条件"]
+    L3knowledge["L3_knowledge<br/>4 步 · 主链"]
+    L8enhancement["L8_enhancement<br/>2 步 · 增强"]
+    L6governance["L6_governance<br/>3 步 · 旁路"]
+    L4internal["L4_internal<br/>1 步 · 主链"]
+    L5delivery["L5_delivery<br/>5 步 · 主链"]
+    L7disclosure["L7_disclosure<br/>4 步 · 披露"]
+    L10gate["L10_gate<br/>1 步 · 门禁"]
+  end
+  subgraph ART["产物层（GOV_ARTIFACTS 血缘声明）"]
+    ARTN["18 类产物键<br/>analysis:manifest … wiki:sync"]
+  end
+  subgraph GOV["治理层（governance.db · 旁路观测）"]
+    WL["待办队列 worklist<br/>12 类 kind"]
+    LED["运行台账 run_log / audit_log / gate_result"]
+  end
+  subgraph QUAL["质量层"]
+    GATES["门禁 29 道（链尾阻断）"]
+  end
+  ACC --> SCHED --> CHAIN --> ART
+  CHAIN --> GOV
+  ART --> QUAL
+  classDef acc fill:#dae8fc
+  classDef sched fill:#d5e8d4
+  classDef chain fill:#fff2cc
+  classDef art fill:#e1d5e7
+  classDef gov fill:#f8cecc
+  classDef qual fill:#f5f5f5
+  class CLI,WEB,MCP acc
+  class JOB,TRG sched
+  class L1ingest chain
+  class L2transform chain
+  class L9sync chain
+  class L3knowledge chain
+  class L8enhancement chain
+  class L6governance chain
+  class L4internal chain
+  class L5delivery chain
+  class L7disclosure chain
+  class L10gate chain
+  class ARTN art
+  class WL,LED gov
+  class GATES qual
+```
+
+> 事实源：`STEP_LAYERS`（链层）· `schedule.yaml`/`triggers.yaml`（调度层）· `GOV_ARTIFACTS`（产物与血缘）· `ALL_GATES`（质量层）· `worklist.kind`（治理层）。**计数由生成器派生，勿手改**；`python -m tools.gen_flow_map --check` 核验一致性。
+<!-- END GENERATED: 架构共识图 -->
+
 ### 4.2 ETL/数据处理管道明细
 
 | 阶段 (Stage) | 数据源 (Source) | 目标存储 (Target) | 转换逻辑 (Transform) | 所属脚本/Job | **脚本分类** |
@@ -218,7 +282,7 @@ flowchart LR
 | **Disclose 披露** | 运行态/能力 | 控制台 + `BENCHMARK.md` + 运行台账 | `retention:plan`（轮转计划·只移动）/ `quarantine:triage`（隔离体检）/ `semantic:preflight`（P1 五闸）/ `pg:health`（向量后端） | 各披露步骤 | **常规流程（只读披露·恒 rc=0）** |
 | **Knowledge 同步** | 发布件 | `<Obsidian vault>/监管法规库` | frontmatter 溯源 + 截断声明 + `--prune` | `tools/sync_wiki_sources.py` | **特殊工具** |
 | **Ingest 投放区** | `data/inbox` | worklist 决策项 | 按 `inbox_registry.yaml` 归类 → worklist | `tools/inbox_scan.py` | **常规流程** |
-| **Validate 门禁** | 全仓数据/代码 | 门禁报告（+ 治理库归档） | **24 道** `ALL_GATES`（契约/枚举/漂移/时效 SSOT/血缘/水位/跨模块/运行时卫生/调度触发一致性/运行台账…） | `cli.py gates` | **常规流程（阻断）** |
+| **Validate 门禁** | 全仓数据/代码 | 门禁报告（+ 治理库归档） | **29 道** `ALL_GATES`（契约/枚举/漂移/时效 SSOT/血缘/水位/跨模块/运行时卫生/调度触发一致性/运行台账…） | `cli.py gates` | **常规流程（阻断）** |
 
 ---
 
@@ -232,7 +296,7 @@ flowchart LR
 | **mypy** | 提交前 / CI | `mypy std_lib modules tools config interfaces gates commands` | 阻断；按文件报类型错误 |
 | **schedule** | CI | 比对已装计划任务与 `schedule.yaml` | 阻断；列出差异 |
 | **pytest** | CI | `pytest -q`（含 `data` 标记用例） | 阻断；输出失败用例 |
-| **gates** | CI | `cli.py gates`（**24 道**） | 阻断；输出未过门禁清单 |
+| **gates** | CI | `cli.py gates`（**29 道**） | 阻断；输出未过门禁清单 |
 | **coverage** | CI | `pytest --cov`（当前 ≈42%） | 阻断；输出 TOTAL |
 
 ### 5.2 定时与事件驱动任务清单（**唯一事实源 = `config/schedule.yaml` + `config/triggers.yaml`**）
@@ -244,15 +308,15 @@ flowchart LR
 | 频率 | cron | 命令 | 说明 |
 | :--- | :--- | :--- | :--- |
 <!-- SCHED:AUTO -->
-| **每月 3 日 01:00** | `0 1 3 * *` | `cli.py run --collect gov_zhengceku_backfill --only collect:gov_zhengceku_backfill,clean:gov,apply:gov` | zhengceku 历史存量补全（月度；扫全 629 页，仅跑 clean/apply:gov） |
-| **每周三 01:00** | `0 1 * * 3` | `cli.py run --collect gov,mof,pbc` | 周度增量：gov（**已拆为 xzfgk/zhengceku 两个独立步骤**）+ mof + pbc，随后全链出报告；supp 走投放区（inbox_drop 触发） |
-| **每周二 01:00** | `0 1 * * 2` | `cli.py run --collect nfra-weekly` | nfra 周报增量链（单实例锁 / 顶部窗口 / 断点续跑） |
-| **每日 06:00** | `0 6 * * *` | `cli.py run --no-scrape --resume` | 全链刷新（raw 已抓取，仅重清洗 + 全链；当日无 raw 变化时各阶段快跳）（漏跑策略：run_at_next_boot） |
-| **每周一 07:00** | `0 7 * * 1` | `cli.py run --only timeliness:verify` | 效力核验批次（有 Token 时；断点续跑，配额耗尽自动停） |
-| **每周一 08:00** | `0 8 * * 1` | `cli.py run --only wiki:sync` | 发布件刷新 + llm_wiki 源同步（SHA256 增量；条件触发 wiki_sync，见 triggers.yaml） |
-| **每月 1 日 09:00** | `0 9 1 * *` | `cli.py gates` | 月度巡检：门禁（另需人工跑 `cli.py source diff` / `cli.py timeliness summary` / check_llm_wiki_upstream） |
-| **事件驱动（after: incremental_weekly）** | — | `cli.py run --collect gov` | gov 源增量（含 zhengceku 子源）——由 `incremental_weekly`（周三 01:00）承接；此处仅登记语义，不重复调度 |
-| **事件驱动（after: verify）** | — | `cli.py timeliness sync` | 核验后：台账 → 归属表时效同步（F-C03）；已由 run 主链 6.9 之后的阶段承接 |
+| **每月 3 日 01:00** | `0 1 3 * *` | processing | `cli.py run --collect gov_zhengceku_backfill --only collect:gov_zhengceku_backfill,clean:gov,apply:gov` | zhengceku 历史存量补全（月度；扫全 629 页，仅跑 clean/apply:gov） |
+| **每周三 01:00** | `0 1 * * 3` | processing | `cli.py run --collect gov,mof,pbc` | 周度增量：gov（**已拆为 xzfgk/zhengceku 两个独立步骤**）+ mof + pbc，随后全链出报告；supp 走投放区（inbox_drop 触发） |
+| **每周二 01:00** | `0 1 * * 2` | processing | `cli.py run --collect nfra-weekly` | nfra 周报增量链（单实例锁 / 顶部窗口 / 断点续跑） |
+| **每日 06:00** | `0 6 * * *` | processing | `cli.py run --no-scrape --resume` | 全链刷新（raw 已抓取，仅重清洗 + 全链；当日无 raw 变化时各阶段快跳）（漏跑策略：run_at_next_boot） |
+| **每周一 07:00** | `0 7 * * 1` | processing | `cli.py run --only timeliness:verify` | 效力核验批次（有 Token 时；断点续跑，配额耗尽自动停） |
+| **每周一 08:00** | `0 8 * * 1` | agent_sync | `cli.py run --only wiki:sync` | 发布件刷新 + llm_wiki 源同步（SHA256 增量；条件触发 wiki_sync，见 triggers.yaml） |
+| **每月 1 日 09:00** | `0 9 1 * *` | quality | `cli.py gates` | 月度巡检：门禁（另需人工跑 `cli.py source diff` / `cli.py timeliness summary` / check_llm_wiki_upstream） |
+| **事件驱动（after: incremental_weekly）** | — | processing | `cli.py run --collect gov` | gov 源增量（含 zhengceku 子源）——由 `incremental_weekly`（周三 01:00）承接；此处仅登记语义，不重复调度 |
+| **事件驱动（after: verify）** | — | processing | `cli.py timeliness sync` | 核验后：台账 → 归属表时效同步（F-C03）；已由 run 主链 6.9 之后的阶段承接 |
 <!-- SCHED:END -->
 
 > **调度纪律**：定时表由 `tools/gen_schedule_doc.py` **反向生成**（**勿手改**）；`cli.py schedule install/verify`
@@ -272,11 +336,12 @@ flowchart LR
 - **代码门禁**：`ruff` 零 Error；`mypy` 零 error；`pytest` 全绿；**引导纪律**（`gate_import_bootstrap`：
   `sys.path.insert` **只减不增**，新代码一律经 `bootstrap`）；**运行时卫生**（`gate_runtime_hygiene`：禁裸整数
   `return N`、禁无意图声明的宽泛吞异常、`interfaces/` 禁 `NotImplementedError` 空壳）。
-- **数据门禁（写入/交付拦截，**24 道**）**：契约清单一致性（`gate_contract`）/ 受控枚举（`gate_enum_values`）
+- **数据门禁（写入/交付拦截，**29 道**）**：契约清单一致性（`gate_contract`）/ 受控枚举（`gate_enum_values`）
   / 清洗契约（`gate_clean_schema`）/ 目录拍平（`gate_flat_layout`）/ 关系产物（`gate_relations`）
   / RFN 漂移与同步 / 血缘与水位 / 跨模块越权（`gate_no_cross_module_import`）/ 时效 SSOT
   / **运行台账（`gate_run_steps`：失败步骤的产物**若落在该步时间窗内 → FAIL**，可经人工确认降级为告警）**
-  / 盘符硬编码 / 密钥扫描（`gate_secret_scan`）…
+  / 盘符硬编码 / 密钥扫描（`gate_secret_scan`）/ **条件观察对象（`gate_condition_observers`，T4）**
+  / **动态步骤运行时覆盖（`gate_dynamic_step_coverage`，R3：`{src}` 模板步骤台账五源覆盖）**…
 - **发布门禁**：**人工闸门**保留在三处破坏性动作 —— `retention --apply`（归档）、`governance_sync --apply`
   （写治理库）、`acknowledged.json`（失败步骤知悉登记）；其余一律**机器判定**。
 - **提交后自动推送**：`.git/hooks/post-commit` 在每次提交后自动 `git push origin main`
@@ -295,7 +360,16 @@ flowchart LR
   E3 `triggers.yaml` 的 `resume` 解析到真实文件｜E4 `tools/_manifest.json` 条目归属明确
   （`independent`+`independent_why` 或 `step`）。**动因**：既有门禁只校验“名字/文件/字面量存在”，
   不校验“谁执行它” ⇒ 全绿仍失实（第五十九批审计的统一根因）✗。
+- **条件观察对象门禁（第 25 道，`gates/gate_condition_observers.py`，W0-5）**：核验条件触发的
+  **观察对象**——闭合（条件↔登记互为闭包）/ 可达（`required` 观察路径必须存在）/ 同源（实现引用的
+  路径常量必须已登记）/ 归属（路径须在 `paths` 注册目录族内）。**动因（D-1）**：`wiki_sync` 观察
+  一份**从未存在**的清单文件 ⇒ 条件恒“不判定”⇒ 触发项从未执行且无门禁发现。
+- **动态步骤覆盖门禁（第 26 道，`gates/gate_dynamic_step_coverage.py`，W0-5）**：核验 `{src}`
+  模板步骤的**运行时五源覆盖**（台账断言：已演练的模板每个期望实例须有记录、连续成段）。
+  **动因（D-3）**：`relevance:{src}` 实装挂在 clean 循环之后用残留变量 ⇒ 只跑 supp，
+  而 STEP_ORDER 声明与 README 渲染都“正确”——**静态清单看不出来，只有台账能证伪**。
 
+- **MCP schema 门禁（第 27 道，`gates/gate_mcp_schema.py`，W2）**：核验 MCP 门面——tool `inputSchema` 形态合法（由类型注解派生）、**写能力必须声明副作用且经 `call_tool` 强制落审计**（AST 断言）、E-4 资源 `chain_steps`/`schedule_jobs` 齐备且`list`/`read` 版本一致、门面**零硬依赖**（不 import `mcp` SDK）。**动因**：手写 schema 与实现必然漂移（第二事实源），写工具若无留痕则是最危险形态。
 ### 5.4 桌面干扰防护（剪贴板/焦点/CPU，第五十六~六十五批）
 
 > 用户症状：**在使用其他办公软件时复制粘贴失效或被抢占**。真凶（活体监控 + A/B 对照定位）= 
@@ -352,7 +426,7 @@ flowchart LR
    %PY% cli.py run --dry-run             # 只打印将执行的 argv
    %PY% cli.py run --json-logs           # 结构化日志（JSON lines）
    ```
-6. **质量自检**：`%PY% tools/ci_check.py --cov`（六项阻断）；`%PY% cli.py gates`（23 道）
+6. **质量自检**：`%PY% tools/ci_check.py --cov`（六项阻断）；`%PY% cli.py gates`（29 道）
 7. **缺陷审计（可选）**：`%PY% -m tools.audit_health`（九类）→ `%PY% -m tools.gen_audit_ledger`（判定台账）
 8. **P1 语义增强（可选）**：
    ```bash
@@ -509,41 +583,41 @@ flowchart TD
 
 ### 8.2 逐步骤表（顺序 = `STEP_ORDER`；命令由 **AST** 自源码抽取）
 
-> 说明：命令列取自源码 `_run(...)` 的 `argv` **字面量**（f-string 保留为 `{src}` 占位；`<NAME>` 表示由变量构造的实参）。完整参数以源码为准。「降级 / 失败语义」为**逐步声明**（事实源：`gen_flow_map.STEP_FAILURE`）。另见 §8.2.1「编排层通性」与 §六「降级链总表」。
+> 说明：命令列取自源码 `_run(...)` 的 `argv` **字面量**（f-string 保留为 `{src}` 占位；`<NAME>` 表示由变量构造的实参）。完整参数以源码为准。「作用」与「降级 / 失败语义」两列均**派生自 `STEP_LAYERS` 的 `StepSpec`**（唯一事实源；`purpose` / `degrade_note`），并按 `LAYER_EXEC_PLAN` 分层分组。另见 §8.2.1「编排层通性」与 §六「降级链总表」。
 
-| # | 步骤 | 作用 | 脚本/命令（AST 抽取） | 降级 / 失败语义 |
-|---|---|---|---|---|
-| 1 | `collect:nfra_weekly` | nfra 周报采集（按周触发） | `nfra_weekly.py` | **阻断**；未到周度触发 → **SKIP**（rc=0） |
-| 2 | `collect:{src}` | 各源原始采集（gov **按子源拆为 xzfgk/zhengceku 两独立步骤**、mof/nfra/pbc/supp） | `（argv 由变量构造，完整形态见源码）` | **阻断**（失败即停；`--resume` 可从该步续跑） |
-| 3 | `supp:ingest_batch` | 补充库批量摄取（backlog 驱动） | `supp_ingest_batch.py --backlog <args.supp_batch>` | **阻断**；backlog 为空 → **SKIP**（rc=0） |
-| 4 | `clean:{src}` | 原始 → 清洗（6 态抽取 + 校验隔离） | `run_clean_pipeline.py --project <src> --raw <os.path.join(RAW_DIR, RAW_JSON[src])>` | **阻断**（失败即停；`--resume` 可从该步续跑） |
-| 5 | `relevance:{src}` | ⚠️ **未登记作用**（请在 `gen_flow_map.PURPOSE` 补登 `relevance:{src}`） | `filter_clean_relevance.py --source <src>` | **阻断**（失败即停；`--resume` 可从该步续跑） |
-| 6 | `timeliness:verify` | 时效核验（北大法宝；Node 侧 MCP） | （条件步骤；触发项 `timeliness_verify`，判据见 `config/triggers.yaml`） | **降级**：无 token / 工具缺失 → `verification_state=unavailable`（**不误标**）；配额耗尽自动停（断点续跑） |
-| 7 | `timeliness:consolidate` | 时效核验结果汇总 | `consolidate_timeliness.py --use-state` | **阻断**；无核验输入 → 空汇总（rc=0） |
-| 8 | `apply:{src}` | 时效核验结果回写清洗产物 | `（argv 由变量构造，完整形态见源码）` | **阻断**（失败即停；`--resume` 可从该步续跑） |
-| 9 | `classify:all` | 主题分类（_t*_base / _t*_final 派生） | `cli.py classify --all` | **阻断**（失败即停；`--resume` 可从该步续跑） |
-| 10 | `relations:gen` | 关系抽取（含条款级定位：**窗口优先 + 跨度退路**） | `cli.py relations gen` | **阻断**（失败即停；`--resume` 可从该步续跑） |
-| 11 | `semantic:assist` | P1 语义增强**入链调用点**（嵌入→主题辅助裁定；**只产分析视图**） | `-m tools.semantic_assist --source all --limit 200` | **只读分析视图**（增强层零硬依赖）：未启用（`usage_policy.enabled=false`）或嵌入链不可用均为合法状态 → **rc=0**；**绝不写事实源** |
-| 12 | `docreader:extract` | docreader **入链调用点**（版面解析 + 段落级定位；**只产分析视图**） | `-m tools.docreader_extract --limit 20` | **只读分析视图**：docreader 不可用/自检不过 → **显式 SKIP（rc=0）**，回退既有 6 态抽取；**不替换**抽取事实源（替换须先度量） |
-| 13 | `reconcile` | 清洗漂移对账（clean_drift） | `reconcile_clean_drift.py` | **阻断**（失败即停；`--resume` 可从该步续跑） |
-| 14 | `recall` | 召回复核与四门禁（clean/validity/contract/schema） | `run_retrieval_after_checks.py` | **阻断**（四门禁不过即 FAIL，留人工） |
-| 15 | `inbox:drop` | 收件箱投放（人工投递的制度文件入库） | （条件步骤；触发项 `inbox_drop`，判据见 `config/triggers.yaml`） | **阻断**（失败即停；`--resume` 可从该步续跑） |
-| 16 | `internal:update` | 内部制度索引更新（原件同步） | （条件步骤；触发项 `internal_update`，判据见 `config/triggers.yaml`） | **阻断**（失败即停；`--resume` 可从该步续跑） |
-| 17 | `governance:artifacts` | 原件注册（治理库 artifact 表） | `governance_register_artifacts.py` | **阻断**（失败即停；`--resume` 可从该步续跑） |
-| 18 | `governance:sync` | 治理库同步（run_log / gate_result / relation 等，**全量替换**） | `governance_sync.py --apply` | **阻断**（失败即停；`--resume` 可从该步续跑） |
-| 19 | `internal:merged` | 内部制度**合并视图**（供条款对照与检索） | `cli.py internal merged` | **阻断**（失败即停；`--resume` 可从该步续跑） |
-| 20 | `reports:build` | 总览报告生成 | `build_overview_report.py` | **阻断**（失败即停；`--resume` 可从该步续跑） |
-| 21 | `reports:theme` | 主题报告生成 | `build_theme_report.py` | **阻断**（失败即停；`--resume` 可从该步续跑） |
-| 22 | `draft:clause` | 条款对照素材（drafter 视图） | `cli.py draft` | **阻断**（失败即停；`--resume` 可从该步续跑） |
-| 23 | `base:publish` | 底座发布（发布清单 publish_manifest） | `cli.py base publish` | **阻断**（失败即停；`--resume` 可从该步续跑） |
-| 24 | `analysis:gen` | 分析交付物（docs/reports，含 17 项 manifest sha） | `cli.py analysis gen` | **阻断**（失败即停；`--resume` 可从该步续跑） |
-| 25 | `watch:baseline` | 观测基线快照 | `cli.py source diff --record` | **阻断**（失败即停；`--resume` 可从该步续跑） |
-| 26 | `retention:plan` | 数据生命周期**只读披露**（dry-run + 台账；`--apply` 为人工闸门） | `retention.py` | **只读披露 · 恒 rc=0**（无待归档为合法状态；`--apply` 才是人工闸门） |
-| 27 | `quarantine:triage` | 清洗隔离件分类与处置登记（零回写 → worklist） | `quarantine_triage.py` | **只读产出**（零回写；结果入 worklist，rc=0） |
-| 28 | `semantic:preflight` | P1 语义增强**启用前置披露**（五道闸逐项） | `-m std_lib.common_lib.semantic_tools --preflight-report` | **只读披露 · 恒 rc=0**（增强未启用为合法状态；真正的启用判定用 `semantic_tools --preflight` 的 rc） |
-| 29 | `pg:health` | 向量存储**只读**健康检查（pgvector / sqlite_vec 降级链披露） | `-m std_lib.common_lib.vector_store --health` | **只读披露 · 恒 rc=0**（后端不可用为合法状态；实际读写按 `vector_store` 降级链） |
-| 30 | `wiki:sync` | llm_wiki 源同步（条件步骤，未触发即跳过） | （条件步骤；触发项 `wiki_sync`，判据见 `config/triggers.yaml`） | **条件步骤**（`triggers.yaml` 判定）：未触发 → **SKIP**（rc=0） |
-| 31 | `gates` | 全部门禁（**阻断**；置于链尾以终态产物为准） | `cli.py gates` | **阻断**（失败即停；链尾以终态产物为准） |
+| 层 | kind | # | 步骤 | 作用 | 脚本/命令（AST 抽取） | 降级 / 失败语义 |
+|---|---|---|---|---|---|---|
+| `L1_ingest` | main | 1 | `collect:nfra_weekly`（调用点动态计算） | nfra 周报采集（按周触发） | `nfra_weekly.py` | 未到周度触发 → SKIP（rc=0）；超时按 COLLECT_TIMEOUT 配置 |
+| `L1_ingest` | main | 2 | `collect:{src}`（调用点动态计算） | 各源原始采集（gov 拆 xzfgk/zhengceku 两个子源步骤；mof/nfra/pbc/supp） | `（argv 由变量构造，完整形态见源码）` | 失败即停；--no-scrape → SKIP（rc=0）；--resume 可从该步续跑 |
+| `L1_ingest` | main | 3 | `supp:ingest_batch` | 补充库批量摄取（backlog 驱动） | `supp_ingest_batch.py --backlog <args.supp_batch>` | backlog 为空 → SKIP（rc=0） |
+| `L2_transform` | main | 4 | `clean:{src}`（调用点动态计算） | 原始 → 清洗（6 态抽取 + 校验隔离） | `run_clean_pipeline.py --project <src> --raw <os.path.join(RAW_DIR, RAW_JSON[src])>` | **超时按源体量配置**（N-150；N-188 重标定 0.24~0.41 s/MB）；当日无 raw 变化 → SKIP（rc=0） |
+| `L2_transform` | side | 5 | `relevance:{src}` | 清洗产物监管相关性边界筛选（BOUNDARY 边界案例 → worklist 待办） | `filter_clean_relevance.py --source <src>` | **旁路分析件**：单源失败 WARN 不阻断主链；--stop-on-error 时中断 |
+| `L9_sync` | conditional | 6 | `timeliness:verify`（超时见 triggers.yaml） | 时效核验（北大法宝；Node 侧 MCP） | （条件步骤；触发项 `timeliness_verify`，判据见 `config/triggers.yaml`） | 无 token/工具缺失 → verification_state=unavailable（**不误标**）；配额耗尽自动停（断点续跑）；条件未触发 → SKIP（rc=0） |
+| `L2_transform` | main | 7 | `timeliness:consolidate` | 时效核验结果汇总 | `consolidate_timeliness.py --use-state` | 无核验输入 → 空汇总（rc=0） |
+| `L2_transform` | main | 8 | `apply:{src}` | 时效核验结果回写清洗产物 | `（argv 由变量构造，完整形态见源码）` | 无核验结果可回写 → SKIP（rc=0） |
+| `L3_knowledge` | main | 9 | `classify:all` | 主题分类（_t*_base / _t*_final 派生） | `cli.py classify --all` | 断点幂等：输入未变自动跳过 |
+| `L3_knowledge` | main | 10 | `relations:gen` | 关系抽取（依据/废止，含条款级定位：窗口优先 + 跨度退路） | `cli.py relations gen` | 失败即停；必须在 cleaned 写入后、下游消费者（base:publish）之前 |
+| `L8_enhancement` | enhancement | 11 | `semantic:assist` | P1 语义增强入链调用点（嵌入 → 主题辅助裁定；只产分析视图） | `-m tools.semantic_assist --source all --limit 200` | 未启用（usage_policy.enabled=false）或嵌入链不可用 → 显式 rc=0；**绝不写事实源** |
+| `L8_enhancement` | enhancement | 12 | `docreader:extract` | docreader 入链调用点（版面解析 + 段落级定位；只产分析视图） | `-m tools.docreader_extract --limit 20` | 不可用/自检不过 → 显式 SKIP（rc=0），回退既有 6 态抽取；不替换抽取事实源（替换须先度量） |
+| `L3_knowledge` | main | 13 | `reconcile` | 清洗漂移对账（clean_drift） | `reconcile_clean_drift.py` | C2 漂移待人工 → worklist 待办，不阻断主链 |
+| `L3_knowledge` | main | 14 | `recall` | 召回复核与四门禁（clean/validity/contract/schema） | `run_retrieval_after_checks.py` | 四门禁不过即 FAIL，留人工 |
+| `L9_sync` | conditional | 15 | `inbox:drop`（超时见 triggers.yaml） | 收件箱投放（人工投递的制度文件入库） | （条件步骤；触发项 `inbox_drop`，判据见 `config/triggers.yaml`） | 投放区无新文件 → SKIP（rc=0）；产出 index/align/processed → 必须在 internal:merged 之前 |
+| `L9_sync` | conditional | 16 | `internal:update`（超时见 triggers.yaml） | 内部制度索引更新（原件同步） | （条件步骤；触发项 `internal_update`，判据见 `config/triggers.yaml`） | 原件库无未索引文件 → SKIP（rc=0） |
+| `L6_governance` | side | 17 | `governance:artifacts` | 原件注册（治理库 artifact 表） | `governance_register_artifacts.py` | N-63：此前**从未入链**（仅 docstring 自述）→ 原件 sha256/路径集长期不刷新；治理库不可用为合法降级 |
+| `L6_governance` | side | 18 | `governance:sync` | 治理库同步（run_log / gate_result / relation 等投影） | `governance_sync.py --apply` | N-64：投影后移到 internal:update **之后**（否则投影落后一轮）；库/文件摘要不一致 → 计入失败步骤（分叉判定） |
+| `L4_internal` | main | 19 | `internal:merged` | 内部制度合并视图（供条款对照与检索） | `cli.py internal merged` | 必须在 inbox:drop / internal:update（索引与原件同步）之后 |
+| `L5_delivery` | main | 20 | `reports:build` | 总览报告生成 | `build_overview_report.py` | **阻断**（失败即停；`--resume` 可从该步续跑） |
+| `L5_delivery` | main | 21 | `reports:theme` | 主题报告生成（T0–T10 × 11） | `build_theme_report.py` | **阻断**（失败即停；`--resume` 可从该步续跑） |
+| `L5_delivery` | main | 22 | `draft:clause` | 条款对照素材（drafter 视图） | `cli.py draft` | N-52：此前无任何调度导致滞后，故入链并置于 merged_view 之后 |
+| `L5_delivery` | main | 23 | `base:publish` | 底座发布（发布清单 publish_manifest） | `cli.py base publish` | 发布清单是 wiki_sync 条件触发（publish_manifest_changed）的观察对象 —— 可达性由门禁 T4 守护 |
+| `L5_delivery` | main | 24 | `analysis:gen` | 分析交付物（docs/reports，含 17 项 manifest sha） | `cli.py analysis gen` | **阻断**（失败即停；`--resume` 可从该步续跑） |
+| `L6_governance` | side | 25 | `watch:baseline` | 观测基线快照（source diff --record） | `cli.py source diff --record` | **旁路**：失败告警，不阻断主链 |
+| `L7_disclosure` | disclosure | 26 | `retention:plan` | 数据生命周期只读披露（dry-run + 台账） | `retention.py` | 恒 rc=0（无待归档是合法状态）；`--apply` 才是人工闸门 |
+| `L7_disclosure` | disclosure | 27 | `quarantine:triage` | 清洗隔离件分类与处置登记（零回写 → worklist 待办） | `quarantine_triage.py` | 恒 rc=0（零回写保证：不修复数据，只分类登记） |
+| `L7_disclosure` | disclosure | 28 | `semantic:preflight` | P1 语义增强启用前置披露（五道闸逐项） | `-m std_lib.common_lib.semantic_tools --preflight-report` | 恒 rc=0；未启用是合法状态（真正的启用判定用 semantic_tools --preflight 的 rc） |
+| `L7_disclosure` | disclosure | 29 | `pg:health` | 向量存储只读健康检查（pgvector / sqlite_vec 降级链披露） | `-m std_lib.common_lib.vector_store --health` | 恒 rc=0；后端不可用为合法状态 |
+| `L9_sync` | conditional | 30 | `wiki:sync`（超时见 triggers.yaml） | llm_wiki 源同步（发布件变化时执行） | （条件步骤；触发项 `wiki_sync`，判据见 `config/triggers.yaml`） | 发布件未变化 / vault 不可达 → SKIP（rc=0）；on_fail=skip_and_warn；观察对象可达性由门禁 T4 守护（D-1 修复） |
+| `L10_gate` | gate | 31 | `gates` | 全部门禁（阻断；置于链尾以终态产物为准） | `cli.py gates` | 失败即停并触发 notify(gate_fail)；P3-5 顺序解耦（原 gates 在链首） |
 
 #### 8.2.1 编排层通性（**对所有步骤生效**）
 
@@ -632,6 +706,16 @@ flowchart TD
 显式 `model="…"` **覆盖 mode**（优先级最高）；分句增强由 env `REG_ORCH_SEMANTIC_SPLIT=1` 控制（**默认关**，见 §8.6 第 2 条）。
 
 <!-- END GENERATED: 全链数据流总图 -->
+
+
+
+
+
+
+
+
+
+
 
 
 

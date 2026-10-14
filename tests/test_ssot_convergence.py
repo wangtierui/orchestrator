@@ -91,6 +91,140 @@ class TestDateLayeringAndNorm:
         assert norm_docno("N/A") == ""
 
 
+class TestW4PrimitiveConvergence:
+    """W4-a（2026-10）B2~B7 原语收敛对等测试（防「合并即改行为」静默回归）。"""
+
+    def test_sha256_bytes_matches_legacy_sha256_of(self):
+        """B2：SSOT sha256_bytes 与被删的 sha256_of 语义一致（同字节同摘要）。"""
+        import hashlib
+
+        from common_lib.io_atomic import sha256_bytes
+        for data in (b"", b"hello", "中文附件".encode(), bytes(range(256))):
+            assert sha256_bytes(data) == hashlib.sha256(data).hexdigest(), data[:16]
+
+    def test_sha256_file_matches_legacy_stream(self, tmp_path):
+        """B2：SSOT sha256_file 与被删的 inbox_scan.sha256_of 语义一致（流式分块）。"""
+        import hashlib
+
+        from common_lib.io_atomic import sha256_file
+        p = tmp_path / "blob.bin"
+        p.write_bytes(bytes(range(256)) * 5000)  # >1MB：跨分块
+        assert sha256_file(str(p)) == hashlib.sha256(p.read_bytes()).hexdigest()
+
+    def test_cache_store_compact_json_write(self, tmp_path):
+        """B7：cache_store 经 SSOT 薄壳输出**compact**（与原 _atomic_write_json 逐字节一致）。"""
+        import json
+
+        from scraper_std.cache_store import _compact_json_write
+        p = tmp_path / "sub" / "m.json"  # 目录不存在：SSOT makedirs 兼容
+        obj = {"b": [1, 2], "a": "中文", "n": None}
+        _compact_json_write(str(p), obj)
+        raw = p.read_text(encoding="utf-8")
+        assert raw == json.dumps(obj, ensure_ascii=False), "compact 形态漂移"
+        assert not (tmp_path / "sub" / "m.json.tmp").exists(), "临时文件残留"
+
+    def test_mof_collector_status_write_via_ssot(self):
+        """B7：mof_collector 状态/JSON/CSV/报告写入口全部解析到 fs_lock.atomic_write_text。
+
+        读文件而非 import 模块——mof_collector 加载有 sys.path 引导副作用，
+        本断言只关静态形态（无 `_atomic_write(` 私有调用残留）。
+        """
+        p = os.path.join(
+            ROOT, "modules", "regulatory_scrapers", "collectors", "mof_collector.py"
+        )
+        src = open(p, encoding="utf-8").read()
+        residue = src.replace("fs_lock.atomic_write_text(", "")
+        assert "_atomic_write(" not in residue, "仍存在 _atomic_write 私有调用（应走 SSOT）"
+        assert "fs_lock.atomic_write_text(" in src
+
+    def test_date_layering_three_types_distinct(self):
+        """B3：日期三层契约互斥——解析层保守保留 / 抽取型空串 / 字段规范化 None。"""
+        # 解析层：无法解析 → 原样保留（保守）
+        assert cleaner.normalize_date("待定") == "待定"
+        # 抽取型：无法识别 → 空串
+        assert crawler_common.normalize_date("待定") == ""
+        # 字段规范化型：None/空 → None；list → YYYY-MM-DD
+        from collectors.mof_attachments import normalize_date as field_norm
+        assert field_norm(None) is None
+        assert field_norm([2024, 11, 3, 0, 0]) == "2024-11-03"
+        assert field_norm("2024-11-03 00:00:00") == "2024-11-03"
+
+
+class TestW4DupPrimitiveGate:
+    """W4-a 门禁判据测试（§7.6.1 私有名模式堵漏 + 共享库内分裂检测）。"""
+
+    def _gate(self):
+        from gates import gate_no_duplicate_libs as g
+        return g
+
+    def test_gate_passes_current_tree(self):
+        g = self._gate()
+        ok, det = g.run()
+        assert ok, det["problems"]
+
+    def test_private_and_public_both_scanned(self):
+        """公开+私有双形态入扫描（私有名不再是规避通道）。"""
+        g = self._gate()
+        assert g.PAT_DUP_PRIMITIVE.search("def _norm_docno(x):")
+        assert g.PAT_DUP_PRIMITIVE.search("def norm_docno(x):")
+        assert g.PAT_DUP_PRIMITIVE.search("def sha256_of(data):")
+        assert g.PAT_DUP_PRIMITIVE.search("def write_jsonl(p, rows):")
+        assert g.PAT_DUP_PRIMITIVE.search("def normalize_date(v):")
+        assert not g.PAT_DUP_PRIMITIVE.search("def unrelated(x):")
+
+    def test_unmarked_foreign_def_fails(self, tmp_path, monkeypatch):
+        """负例：非共享库无标记副本 → FAIL（防增量）。"""
+        g = self._gate()
+        bad = tmp_path / "modules" / "x" / "y.py"
+        bad.parent.mkdir(parents=True)
+        bad.write_text("def norm_docno(s):\n    return s\n", encoding="utf-8")
+
+        def fake_walk():
+            return [str(bad)]
+
+        # _rel 以 tmp_path 为基准（tmp_path 可能在异盘，直接对 ROOT 取相对路径会 ValueError）
+        monkeypatch.setattr(g, "_walk_py", fake_walk)
+        monkeypatch.setattr(g, "_rel", lambda p: os.path.relpath(p, tmp_path))
+        ok, det = g.run()
+        assert not ok
+        assert any("norm_docno" in p for p in det["problems"]), det["problems"]
+
+    def test_marked_foreign_def_passes(self, tmp_path, monkeypatch):
+        """正例：带 `# norm-specialization` 标记的特化存活。"""
+        g = self._gate()
+        bad = tmp_path / "modules" / "x" / "y.py"
+        bad.parent.mkdir(parents=True)
+        bad.write_text(
+            "# norm-specialization: 测试特化\ndef norm_docno(s):\n    return s\n",
+            encoding="utf-8",
+        )
+
+        def fake_walk():
+            return [str(bad)]
+
+        monkeypatch.setattr(g, "_walk_py", fake_walk)
+        monkeypatch.setattr(g, "_rel", lambda p: os.path.relpath(p, tmp_path))
+        ok, det = g.run()
+        assert ok, det["problems"]
+
+    def test_shared_library_split_fails(self, tmp_path, monkeypatch):
+        """负例：共享库内同符号两文件定义且无一标记 → FAIL（B2/B7 消灭的现象复发即报）。"""
+        g = self._gate()
+        d = tmp_path / "std_lib" / "scraper_std"
+        d.mkdir(parents=True)
+        (d / "a.py").write_text("def sha256_of(x):\n    return x\n", encoding="utf-8")
+        (d / "b.py").write_text("def sha256_of(x):\n    return x\n", encoding="utf-8")
+
+        def fake_walk():
+            return [str(d / "a.py"), str(d / "b.py")]
+
+        monkeypatch.setattr(g, "_walk_py", fake_walk)
+        monkeypatch.setattr(g, "_rel", lambda p: os.path.relpath(p, tmp_path))
+        ok, det = g.run()
+        assert not ok
+        assert any("sha256_of" in p and "共享库" in p for p in det["problems"]), det["problems"]
+
+
 class TestCrossSourceNoAbsorb:
     """时效链跨源吸附防护（2026-09-13 续跑治理）：delta.source 明确且 ≠ 命中条目 source
     → 视为未匹配走新增（多源条目并存），不再把本源核验结论吸附到他源条目。"""

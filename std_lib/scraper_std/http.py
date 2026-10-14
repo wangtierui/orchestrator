@@ -10,6 +10,17 @@ http.py —— 反爬加固 HTTP 客户端（第四节 4.3 / 第十二节 资源
   5. 代理池开关（config 控制，高匿名住宅代理建议）；
   6. 流式下载（stream=True），连接超时 10s / 读取超时 30s，禁止整文件载入内存；
   7. with 上下文管理器保证连接释放；编码经 encoding.decode_bytes 自动检测。
+
+**HTTP 单栈（W4-b，2026-10，方案 B1）**：本文件是全仓**无会话 GET 的唯一实现**——
+  - `robust_get(...)`：轻量门面（原 `crawler_common.robust_get` 实现已并入此处，
+    crawler_common 改为 re-export；默认参数与原实现逐项对齐，见函数 docstring）；
+  - `AdaptiveHttpClient`：有状态客户端（冷却/熔断/代理池/流式下载），附件下载与
+    supp 采集经此类；
+  - UA 池 SSOT = `load_ua_pool()`（内置 USER_AGENTS_PC/MOBILE，可被
+    config/user_agents.json 覆盖）——原六处采集器本地 UA 池副本已统一改引。
+  分层保留（有理由的非单栈）：会话级 `gov_collector.RobustSession`（requests
+  Session + 连接池 + POST）——urllib 标准库无连接复用对应能力，gov 千页级采集
+  改 urllib 是性能退化；该决策与「L2 会话级保留」记于 ADR-0009。
 """
 
 from __future__ import annotations
@@ -245,6 +256,7 @@ class AdaptiveHttpClient:
                     return status, text
             except urllib.error.HTTPError as e:
                 status = e.code
+                last_err = f"HTTP {status}"  # W4-b：先记录（原实现漏记 → 重试耗尽返回 (None, None)）
                 self._consecutive_errors += 1
                 if status in _NO_RETRY_STATUS:
                     self.log.info("确定性错误 HTTP %d @ %s（不重试）", status, url)
@@ -262,8 +274,7 @@ class AdaptiveHttpClient:
                         self.retries,
                     )
                     continue
-                last_err = f"HTTP {status}"
-                return status, last_err
+                return status, last_err  # 非重试类 4xx/5xx：last_err 已在分支首记录
             except (urllib.error.URLError, ConnectionError, TimeoutError, OSError) as e:
                 self._consecutive_errors += 1
                 last_err = f"{type(e).__name__}: {e}"
@@ -363,6 +374,86 @@ class AdaptiveHttpClient:
                 time.sleep(wait)
                 continue
         return False, "download retries exhausted", 0
+
+
+# --------------------------------------------------------------------------- #
+# 轻量门面：robust_get（W4-b 单栈：原 crawler_common.robust_get 实现并入此处）
+# --------------------------------------------------------------------------- #
+def _safe_url(url: str) -> str:
+    """简单清理：去除危险空白；保留原样其余部分。"""
+    return (url or "").strip()
+
+
+def _backoff_wait(attempt: int, retry_after: str | None) -> float:
+    """退避时长：优先 Retry-After（秒），否则 2**attempt 上限 16s，加随机抖动。
+
+    W4-b：与 `AdaptiveHttpClient._backoff` 同算法（本仓退避公式唯一事实源——
+    原 crawler_common 副本逐字重复，已删；类内静态方法保留给实例路径用）。
+    """
+    if retry_after and str(retry_after).isdigit():
+        return float(int(retry_after))
+    return min(2**attempt, 16) + random.uniform(0, 1)
+
+
+def robust_get(
+    url: str,
+    *,
+    binary: bool = False,
+    timeout: int = 30,
+    retries: int = 4,
+    min_delay: float = 0.8,
+    max_delay: float = 1.6,
+    referer: str | None = None,
+    extra_headers: dict[str, str] | None = None,
+) -> tuple[int | None, Any]:
+    """带反爬策略的 GET 请求，返回 (status, content)。
+
+    - status: HTTP 状态码；失败（含重试耗尽）为 None。
+    - content: 文本模式返回 str；binary 模式返回 bytes；失败返回错误说明 str。
+
+    策略：
+      * 每次请求随机轮换 UA + 富请求头（Accept/Accept-Language/Referer）；
+      * 请求间隔在 [min_delay, max_delay] 随机化，规避固定节奏风控；
+      * 指数退避重试（2**attempt 秒上限 16s）；
+      * 命中 429/503 且响应带 Retry-After 时，优先采用服务端给出的等待时长；
+      * 403/404/410 确定性错误立即返回，不浪费重试配额。
+
+    **W4-b 单栈说明**（原 `crawler_common.robust_get` 实现已删，此处为唯一实现）：
+    默认参数与原实现逐项一致（retries=4 / min_delay=0.8 / max_delay=1.6 / timeout=30）。
+    与原实现的两处**显式行为差异**（均为加固向，对等测试 tests/test_http_unification.py
+    锁定）：① UA 池从「本地 5 条 Chrome 120 时代静态池」统一为 `load_ua_pool()` 的
+    8 条池（Chrome 124/125/Edge/Firefox/Safari/Linux，含移动端混入关闭——门面
+    默认 use_mobile=False 保持 PC 形态）；② 文本解码经 `decode_bytes`（乱码检测+
+    编码自动识别），LookupError 兜底行为等价。确定性错误/退避/重试语义不变。
+    无跨调用状态（每次调用新建轻量客户端）——与原函数式语义一致。
+    """
+    url = _safe_url(url)
+    if not url:
+        return None, "empty_url"
+    # 礼貌延迟对齐原 robust_get 语义（**先延迟再请求**）：client._throttle 是
+    # 「间隔保持」语义（首次无上次记录不延迟），函数式单次调用需自行先延迟一次，
+    # 否则 gov 等调用方的请求节奏会比原实现激进（0.8-1.6s → 0s），有风控风险。
+    gap = random.uniform(min_delay, max_delay)
+    if gap > 0:
+        time.sleep(gap)
+    client = AdaptiveHttpClient(
+        delay_range=(min_delay, max_delay),
+        retries=retries,
+        connect_timeout=10.0,
+        read_timeout=float(timeout),
+        use_mobile=False,
+    )
+    # 尊重调用方 retries（原 robust_get 无「≥3」下限；AdaptiveHttpClient 构造器的
+    # max(3, ...) 规范留给附件下载场景——门面显式覆写回调用方语义）。
+    client.retries = max(1, int(retries))
+    status, content = client.get(
+        url, binary=binary, timeout=float(timeout), referer=referer, extra_headers=extra_headers
+    )
+    # 语义对齐：原 robust_get 对确定性错误与非重试 4xx 返回 (code, None)；
+    # client.get 返回 (status, "HTTP <code>") 文本 → 归一为 (code, None)。
+    if isinstance(status, int) and status >= 400 and isinstance(content, str):
+        return status, None
+    return status, content
 
 
 if __name__ == "__main__":  # 离线自检（不联网）

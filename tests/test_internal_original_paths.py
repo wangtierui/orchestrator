@@ -255,7 +255,9 @@ class TestDedupeOriginalStorage:
     """P1/P2 工具：内部去冗余 / 跨层硬链接 / 非正文标记 的分类与执行。"""
 
     def _env(self, tmp_path, monkeypatch):
-        from tools import dedupe_original_storage as dd
+        # 裸名导入（与测试层主流形态一致；conftest bootstrap include_tools=True 注入 tools/）。
+        # ⚠️ 勿改回 `from tools import ...`——mypy 全仓走查会双模块名冲突（问题项 P-5）。
+        import dedupe_original_storage as dd
 
         orig = tmp_path / "originals"
         corpus = tmp_path / "corpus"
@@ -300,7 +302,7 @@ class TestNamingRules:
     名称不回退清单。本类把批量改名中修正过的四类解析缺陷固化为不变式（详见报告 §11.2）。"""
 
     def test_docno_shape_rejects_circulation_and_archive_numbers(self):
-        from tools.normalize_internal_naming import is_valid_docno
+        from normalize_internal_naming import is_valid_docno
 
         assert is_valid_docno("阳光人寿发〔2025〕154号")
         # 2026-09-13 用户规则：内部文号须以"阳光人寿/阳光保险"开头 → 监管机关文号一律判否
@@ -312,7 +314,7 @@ class TestNamingRules:
         assert not is_valid_docno("")
 
     def test_title_derivation_strips_prefix_and_tail_noise(self):
-        from tools.normalize_internal_naming import derive_title_from_name, tidy_title
+        from normalize_internal_naming import derive_title_from_name, tidy_title
 
         cases = {
             "2-关于下发《X》的通知_盖章.pdf": "关于下发《X》的通知",
@@ -327,7 +329,7 @@ class TestNamingRules:
             assert tidy_title(derive_title_from_name(src)) == want, src
 
     def test_inline_docno_variant_chars_and_spaces_cleaned(self):
-        from tools.normalize_internal_naming import tidy_title
+        from normalize_internal_naming import tidy_title
 
         assert tidy_title("阳光人寿发（2022）502号阳光人寿银行保险销售人员管理办法") == \
             "阳光人寿银行保险销售人员管理办法", "名称内嵌文号须剔除（文号只在前缀）"
@@ -336,7 +338,7 @@ class TestNamingRules:
         assert tidy_title("某细则（2025 版）") == "某细则（2025版）", "数字与「版」间空格须去"
 
     def test_registry_only_supplies_docno_and_name_never_falls_back(self):
-        from tools.normalize_internal_naming import match_registry
+        from normalize_internal_naming import match_registry
 
         rows = [{"dept": "办公室", "name": "阳光人寿绿色办公实施方案",
                  "docno": "阳光人寿办发〔2024〕55号", "valid": "是"},
@@ -351,7 +353,7 @@ class TestNamingRules:
         assert match_registry("完全无关的制度名称", rows)[0] == ""
 
     def test_safe_filename_replaces_windows_illegal_chars(self):
-        from tools.normalize_internal_naming import safe_filename
+        from normalize_internal_naming import safe_filename
 
         out = safe_filename('阳光人寿发〔2025〕1号_关于下发《A/B:C*D?E"F<G>H|I》的通知.pdf')
         assert not any(ch in out for ch in '\\/:*?"<>|')
@@ -359,8 +361,7 @@ class TestNamingRules:
 
     def test_nonpolicy_extension_partition(self):
         from internal_policy_base.scan import is_non_policy_ledger
-
-        from tools.split_internal_nonpolicy import DOC_EXTS, LEDGER_EXTS
+        from split_internal_nonpolicy import DOC_EXTS, LEDGER_EXTS
 
         assert is_non_policy_ledger("附件1：2025年制度检视自查情况表-财务部.xls")
         assert is_non_policy_ledger("风控管理制度清单20220914.xlsx")
@@ -505,7 +506,7 @@ class TestDocnoTitleAreaRules:
         assert parse_content_identity("公司政策制度出台依据说明表序号名称说明")["title"] == "公司政策制度"
 
     def test_version_space_cleaned_and_variant_not_duplicated(self):
-        from tools.normalize_internal_naming import keep_variant_suffix, tidy_title
+        from normalize_internal_naming import keep_variant_suffix, tidy_title
 
         assert tidy_title("关于印发《X办法（2017 修订版）》的通知") == \
             "关于印发《X办法（2017修订版）》的通知", "数字与版本词间的空格须清"

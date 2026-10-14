@@ -32,8 +32,11 @@ from commands import doctor as _m_doctor
 from commands import draft as _m_draft
 from commands import gates as _m_gates
 from commands import governance as _m_governance
+from commands import implaudit as _m_implaudit
 from commands import internal as _m_internal
+from commands import mcp as _m_mcp
 from commands import ping as _m_ping
+from commands import regfw as _m_regfw
 from commands import relations as _m_relations
 from commands import rfn as _m_rfn
 from commands import run as _m_run
@@ -57,6 +60,11 @@ COMMANDS = {
     "base": _m_base.run,
     "analysis": _m_analysis.run,
     "relations": _m_relations.run,
+    # W2（v2 §4）：MCP 门面（stdio 传输 + 只读 tool/resource 面）
+    "mcp": _m_mcp.run,
+    # W3（§5.2/§5.3）：领域层两模块的操作面
+    "regfw": _m_regfw.run,
+    "implaudit": _m_implaudit.run,
     # v2 §3.14.3（P1-6）：待办队列（链外节点决策自动化缺口的处置入口）
     "worklist": _m_worklist.run,
     # v2 §3.13（P2-6）：统一执行入口 —— run 主链 / doctor 环境自检 / status 状态披露 /
@@ -87,6 +95,9 @@ def build_parser() -> argparse.ArgumentParser:
                             "sync 元数据投影（阶段 2，--apply 写库）| verify 比对断言 | "
                             "export 导出文本快照")
     sub.add_parser("ping", help="骨架自检")
+    sub.add_parser("mcp", help="MCP 门面（serve/tools/resources/selftest；v2 §4）")
+    sub.add_parser("regfw", help="监管数据体系（register/extract/map/stats；v2 §5.2）")
+    sub.add_parser("implaudit", help="落地执行检视（ingest/gaps/report/stats；v2 §5.3）")
     p_source = sub.add_parser("source", help="源目录（config/sources.yaml 唯一事实源，R15）")
     p_source.add_argument("action", choices=["list", "add", "diff"],
                           help="list 列出源与 collector 路由 | add 新增源 checklist | "

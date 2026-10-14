@@ -340,6 +340,26 @@ def _c_mirrors() -> tuple[str, str, str]:
     return "ok", summary(), "实测：python -m tools.check_mirrors --probe"
 
 
+def _c_mcp() -> tuple[str, str, str]:
+    """MCP 门面就绪度（W2）—— token 文件 / tool schema 生成 / stdio 自检。
+
+    缺失语义：**warn 而非 fail**（MCP 是可选门面；§4.5 纪律「可选增强缺失不影响主链」）。
+    """
+    try:
+        from mcp_server import auth as _auth
+        from mcp_server.registry import list_tools
+    except Exception as e:  # noqa: BLE001
+        return "warn", f"MCP 门面不可导入（{type(e).__name__}）", "不影响主链；需要时再排查"
+    tok = _auth.load_token()
+    try:
+        n = len(list_tools())
+    except Exception as e:  # noqa: BLE001
+        return "warn", f"tool schema 生成失败（{type(e).__name__}）", "python -m mcp_server.transport_stdio"
+    if not tok:
+        return "warn", f"tool {n} 个已注册；**无 token 文件**", "生成：python -m mcp_server.auth --init"
+    return "ok", f"tool {n} 个已注册；token 就绪", "自检：python cli.py mcp selftest"
+
+
 # (id, 组, 函数)
 CHECKS: tuple[tuple[str, str, object], ...] = (
     ("python", "运行时", _c_python),
@@ -362,6 +382,7 @@ CHECKS: tuple[tuple[str, str, object], ...] = (
     ("git_hooks", "版本控制", _c_git_hooks),
     ("mirrors", "依赖", _c_mirrors),
     ("disk", "磁盘", _c_disk),
+    ("mcp", "门面", _c_mcp),
 )
 
 
@@ -400,7 +421,7 @@ def write_report(res: dict) -> str:
 def main(argv=None) -> int:
     import argparse
 
-    ap = argparse.ArgumentParser(description="环境前置自检（v2 §3.13.4；18 项机器判定）")
+    ap = argparse.ArgumentParser(description="环境前置自检（v2 §3.13.4；机器判定项见 CHECKS）")
     ap.add_argument("--quick", action="store_true", help="只跑 run 前置子集")
     ap.add_argument("--json", action="store_true", help="输出 JSON（stdout）")
     args = ap.parse_args(argv)

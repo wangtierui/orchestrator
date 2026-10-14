@@ -106,7 +106,10 @@ class TestCrawlerPure:
         assert cc.is_attachment_url("http://x/page.html") in (True, False)
 
     def test_sha256_of(self):
-        r = cc.sha256_of(b"x")
+        # B2/W4：SSOT 收敛后断言改测 io_atomic.sha256_bytes（原 crawler_common.sha256_of 已删）
+        from std_lib.common_lib.io_atomic import sha256_bytes
+
+        r = sha256_bytes(b"x")
         assert isinstance(r, str) and len(r) == 64
 
     def test_garble_ratio(self):

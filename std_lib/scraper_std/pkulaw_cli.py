@@ -307,6 +307,9 @@ def _norm_date(v: Any) -> tuple[int, int, int]:
         return (0, 0, 0)
 
 
+# norm-specialization: 法宝库标题比较专用（norm.py 特化豁免表在册）——全角括号/顿号
+# 形态对齐（库内标题 vs 法宝标题的分隔符差异），**不**走 norm.norm_title 的激进去标点
+# （法宝标题比较需要保留机关名间的结构信息）。
 def _norm_title(t: Any) -> str:
     """标题归一化（用于同名判定）：全角括号→半角；顿号/逗号/分号/空格→去全部空白。
     解决库内标题（半角空格分隔多机关，如『总局 中国人民银行』）与北大法宝标题
@@ -339,6 +342,9 @@ def same_doc(query: str, t: Any) -> bool:
     return False
 
 
+# norm-specialization: 法宝库文号比较专用形态（norm.py 特化豁免表在册，F-D06 2026-09-13
+# 登记）——全角→半角 + 〔〕→[] 后去空白，与该库返回值对齐比较用，**不产出**本层标准文号
+# （norm.norm_docno 去尾"号"+空占位归一，语义不同）。
 def norm_docno(s: Any) -> str:
     """文号归一化：去空白/全角→半角/〔〕→[]/去『第』『号』/去括号"""
     if not s:

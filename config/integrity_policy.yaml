@@ -41,11 +41,14 @@ schedule:
     - file
     - webhook
   # 允许的通知触发事件（schedule.yaml `notify.on` 的受控值域）
+  # ⚠️ W1-5：**判定基准是 `common_lib.notify.NOTIFY_EVENTS`**（唯一事实源）；本项仅作
+  #   漂移检测对照——两份不一致即门禁 FAIL（此前两份各自维护，新增 degraded_step 时漂移）。
   notify_on:
     - failed_step
     - gate_fail
     - worklist_aged
     - doctor_fail
+    - degraded_step
 
 # 触发项策略（与 `config/triggers.yaml` 一致）
 triggers:

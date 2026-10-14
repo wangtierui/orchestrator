@@ -129,6 +129,39 @@ ALL_GATES: list[dict] = [
         "desc": "声明面执行者存在性（event 承接/告警发送方/resume 可达/manifest 归属）",
         "require_impl": True,
     },
+    # ---- W0-5（2026-10-13）新增：24 → 26 道；W2 +1 → 27；W3 +2 → 29 ----
+    {
+        # D-1 的直接防线：条件触发观察对象的存在性/闭合/同源（见该门禁 docstring）。
+        "module": "gates.gate_condition_observers",
+        "desc": "条件触发观察对象存在性（T4：闭合/可达/同源/归属）",
+        "require_impl": True,
+    },
+    {
+        # D-3 的直接防线：`{src}` 模板步骤的运行时五源覆盖（台账断言，静态清单看不出来）。
+        "module": "gates.gate_dynamic_step_coverage",
+        "desc": "动态模板步骤运行时覆盖（R3：台账五源覆盖 + 连续成段）",
+        "require_impl": True,
+    },
+    # ---- W2（2026-10-14）新增：26 → 27 道 ----
+    {
+        # MCP 门面：schema 派生一致性 + 写能力审计绑定 + E-4 资源齐备 + 零硬依赖。
+        "module": "gates.gate_mcp_schema",
+        "desc": "MCP tool schema 与声明面一致（schema 有效/写能力审计/资源版本联动/零 SDK）",
+        "require_impl": True,
+    },
+    # ---- W3（2026-10-14）新增：27 → 29 道 ----
+    {
+        # 多监管数据体系建模：契约登记/受控域闭包/置信纪律（语义法不得自动确认）/映射闭合。
+        "module": "gates.gate_reg_frameworks",
+        "desc": "监管数据体系契约（登记/受控域/置信纪律/映射闭合）",
+        "require_impl": True,
+    },
+    {
+        # 落地执行检视：规则表完整性（覆盖四类 gap_class、order 唯一）/契约登记/差距闭合/受控域。
+        "module": "gates.gate_implementation_audit",
+        "desc": "落地执行检视契约（规则表/登记/差距闭合/受控域）",
+        "require_impl": True,
+    },
 ]
 
 

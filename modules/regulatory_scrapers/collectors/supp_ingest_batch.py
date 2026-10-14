@@ -45,7 +45,14 @@ for _p in (HERE, SCRAPERS_ROOT):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-RAW_PATH = os.path.join(SCRAPERS_ROOT, "data", "raw", "supplementary_regulations.json")
+# W0-4（2026-10-13，C8）：原常量字面量为 `supplementary_regulations.json`，而批 49 起实际
+# 落盘是 `.jsonl`——「常量说 .json、实际写 .jsonl」的迁移遗留漂移（易误导读者按字面量拼路径）。
+# 保留历史名作**逻辑路径**（resolve_raw_path/read_raw_records/write_raw_jsonl 三助手都接受
+# 历史名并解析到实际文件，双向兼容是既定设计），但**改名明示角色**：一律经助手访问，
+# 禁止按字面量 open()。
+RAW_LOGICAL_PATH = os.path.join(
+    SCRAPERS_ROOT, "data", "raw", "supplementary_regulations.json"
+)
 
 def _norm_date(s: str) -> str:
     s = (s or "").strip()
@@ -60,9 +67,9 @@ def _norm_date(s: str) -> str:
 
 def load_existing():
     # 批 49/T1：raw 已统一 JSONL —— `read_raw_records` 双格式（.jsonl 逐行 / 旧 .json 逐条）
-    if os.path.exists(resolve_raw_path(RAW_PATH)):
+    if os.path.exists(resolve_raw_path(RAW_LOGICAL_PATH)):
         try:
-            data = read_raw_records(RAW_PATH)
+            data = read_raw_records(RAW_LOGICAL_PATH)
             if isinstance(data, list):
                 return data
         except Exception:  # noqa: BLE001  采集容错（字段/附件缺失不阻断采集）
@@ -117,9 +124,9 @@ def main(argv=None):
         print("[batch] DRY-RUN：未写盘。")
         return 0
 
-    os.makedirs(os.path.dirname(RAW_PATH), exist_ok=True)
+    os.makedirs(os.path.dirname(RAW_LOGICAL_PATH), exist_ok=True)
     # 批 49/T1：raw 统一 JSONL（流式 + 首行 `_meta`；原为**裸数组**整表 json.dump）
-    _raw_written = write_raw_jsonl(RAW_PATH, merged, source="supp")
+    _raw_written = write_raw_jsonl(RAW_LOGICAL_PATH, merged, source="supp")
     print(f"[batch] 已写 raw: {_raw_written} ({len(merged)} 条)")
 
     # 调用统一清洗管道（modules/regulatory_scrapers/clean/run_clean_pipeline.py）

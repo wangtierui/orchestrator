@@ -14,12 +14,17 @@ scraper_std 的成熟实现，本模块仅做再导出，保证与既有爬虫�
 
 from __future__ import annotations
 
+# B2/W4：SSOT sha256_bytes（crawler_common.sha256_of 已删）。**绝对导入**——三级
+# 相对导入（...common_lib）在 scraper_std 作为顶层包导入时越界（ImportError），
+# 与 crawler_common.py 顶部的绝对导入形态一致。
+from std_lib.common_lib.io_atomic import sha256_bytes
+
 from ..attachments import (
     download_and_extract,
     is_attachment_url,
     pick_body_doc,
 )
-from ..crawler_common import safe_filename, sha256_of, sniff_kind
+from ..crawler_common import safe_filename, sniff_kind
 from ..http import AdaptiveHttpClient
 
 
@@ -36,5 +41,5 @@ __all__ = [
     "is_attachment_url",
     "sniff_kind",
     "safe_filename",
-    "sha256_of",
+    "sha256_bytes",
 ]

@@ -1,0 +1,114 @@
+warning: The `
+[run] 前置自检通过（<doctor>）
+[refresh] run_id=RUN-<id>（治理库：<ROOT>\data\governance.db）
+[collect] gov_xzfgk argv=['<PY>', '<ROOT>\\modules\\regulatory_scrapers\\collectors\\gov_collector.py', '--source', 'xzfgk', '--max-seconds', '1500', '--env-source', 'gov', '--env-category', '行政法规+部门文件', '--out-dir', '<ROOT>\\modules\\regulatory_scrapers\\data\\raw']
+[step:collect:gov_xzfgk] SKIP（--dry-run（只列 argv，不执行））
+[collect] gov_zhengceku argv=['<PY>', '<ROOT>\\modules\\regulatory_scrapers\\collectors\\gov_collector.py', '--source', 'zhengceku', '--max-seconds', '5100', '--env-source', 'gov', '--env-category', '行政法规+部门文件', '--out-dir', '<ROOT>\\modules\\regulatory_scrapers\\data\\raw']
+[step:collect:gov_zhengceku] SKIP（--dry-run（只列 argv，不执行））
+[collect] mof argv=['<PY>', '<ROOT>\\modules\\regulatory_scrapers\\collectors\\mof_collector.py', '--outdir', '<ROOT>\\modules\\regulatory_scrapers\\data\\raw']
+[step:collect:mof] SKIP（--dry-run（只列 argv，不执行））
+[collect] nfra argv=['<PY>', '<ROOT>\\modules\\regulatory_scrapers\\collectors\\nfra_collector.py', '--out-dir', '<ROOT>\\modules\\regulatory_scrapers\\data\\raw']
+[step:collect:nfra] SKIP（--dry-run（只列 argv，不执行））
+[collect] pbc argv=['<PY>', '<ROOT>\\modules\\regulatory_scrapers\\collectors\\pbc_collector.py', '--out', '<ROOT>\\modules\\regulatory_scrapers\\data\\raw']
+[step:collect:pbc] SKIP（--dry-run（只列 argv，不执行））
+[collect] supp 无网络采集（本地摄取/清洗刷新）→ 跳过
+[collect] supp：未触发本地摄取（经 --supp-batch <backlog.json> 或 collectors/supp_ingest_local_dir.py）
+[clean] gov: raw 459MB → 超时 1800s（N-150 按体量配置；原固定 1800s）
+[step:clean:gov] SKIP（--dry-run（只列 argv，不执行））
+[clean] mof: raw 64MB → 超时 1800s（N-150 按体量配置；原固定 1800s）
+[step:clean:mof] SKIP（--dry-run（只列 argv，不执行））
+[clean] nfra: raw 90MB → 超时 1800s（N-150 按体量配置；原固定 1800s）
+[step:clean:nfra] SKIP（--dry-run（只列 argv，不执行））
+[clean] pbc: raw 3MB → 超时 1800s（N-150 按体量配置；原固定 1800s）
+[step:clean:pbc] SKIP（--dry-run（只列 argv，不执行））
+[clean] supp: raw 14MB → 超时 1800s（N-150 按体量配置；原固定 1800s）
+[step:clean:supp] SKIP（--dry-run（只列 argv，不执行））
+[step:timeliness:verify] SKIP（--dry-run（只列 argv，不执行））
+[step:relevance:gov] SKIP（--dry-run（只列 argv，不执行））
+[step:relevance:mof] SKIP（--dry-run（只列 argv，不执行））
+[step:relevance:nfra] SKIP（--dry-run（只列 argv，不执行））
+[step:relevance:pbc] SKIP（--dry-run（只列 argv，不执行））
+[step:relevance:supp] SKIP（--dry-run（只列 argv，不执行））
+[step:timeliness:consolidate] SKIP（--dry-run（只列 argv，不执行））
+[timeliness] 使用清单 时效性标注结果清单_全量_20261014.jsonl
+[step:apply:gov] SKIP（--dry-run（只列 argv，不执行））
+[step:apply:mof] SKIP（--dry-run（只列 argv，不执行））
+[step:apply:nfra] SKIP（--dry-run（只列 argv，不执行））
+[step:apply:pbc] SKIP（--dry-run（只列 argv，不执行））
+[step:apply:supp] SKIP（--dry-run（只列 argv，不执行））
+[step:classify:all] SKIP（--dry-run（只列 argv，不执行））
+[step:relations:gen] SKIP（--dry-run（只列 argv，不执行））
+[step:semantic:assist] SKIP（--dry-run（只列 argv，不执行））
+[step:docreader:extract] SKIP（--dry-run（只列 argv，不执行））
+[step:reconcile] SKIP（--dry-run（只列 argv，不执行））
+[step:recall] SKIP（--dry-run（只列 argv，不执行））
+[step:inbox:drop] SKIP（--dry-run（只列 argv，不执行））
+[step:internal:update] SKIP（--dry-run（只列 argv，不执行））
+[step:governance:artifacts] SKIP（--dry-run（只列 argv，不执行））
+[step:governance:sync] SKIP（--dry-run（只列 argv，不执行））
+[step:internal:merged] SKIP（--dry-run（只列 argv，不执行））
+[step:reports:build] SKIP（--dry-run（只列 argv，不执行））
+[step:reports:theme] SKIP（--dry-run（只列 argv，不执行））
+[step:draft:clause] SKIP（--dry-run（只列 argv，不执行））
+[step:base:publish] SKIP（--dry-run（只列 argv，不执行））
+[step:analysis:gen] SKIP（--dry-run（只列 argv，不执行））
+[step:watch:baseline] SKIP（--dry-run（只列 argv，不执行））
+[step:retention:plan] SKIP（--dry-run（只列 argv，不执行））
+[step:quarantine:triage] SKIP（--dry-run（只列 argv，不执行））
+[step:semantic:preflight] SKIP（--dry-run（只列 argv，不执行））
+[step:pg:health] SKIP（--dry-run（只列 argv，不执行））
+[step:wiki:sync] SKIP（--dry-run（只列 argv，不执行））
+[step:gates] SKIP（--dry-run（只列 argv，不执行））
+========================================================================
+生产全量刷新汇总
+========================================================================
+step                    rc   elapsed_s
+collect:gov_xzfgk        0         0.0
+collect:gov_zhengceku    0         0.0
+collect:mof              0         0.0
+collect:nfra             0         0.0
+collect:pbc              0         0.0
+clean:gov                0         0.0
+clean:mof                0         0.0
+clean:nfra               0         0.0
+clean:pbc                0         0.0
+clean:supp               0         0.0
+timeliness:verify        0         0.0
+relevance:gov            0         0.0
+relevance:mof            0         0.0
+relevance:nfra           0         0.0
+relevance:pbc            0         0.0
+relevance:supp           0         0.0
+timeliness:consolidate   0         0.0
+apply:gov                0         0.0
+apply:mof                0         0.0
+apply:nfra               0         0.0
+apply:pbc                0         0.0
+apply:supp               0         0.0
+classify:all             0         0.0
+relations:gen            0         0.0
+semantic:assist          0         0.0
+docreader:extract        0         0.0
+reconcile                0         0.0
+recall                   0         0.0
+inbox:drop               0         0.0
+internal:update          0         0.0
+governance:artifacts     0         0.0
+governance:sync          0         0.0
+internal:merged          0         0.0
+reports:build            0         0.0
+reports:theme            0         0.0
+draft:clause             0         0.0
+base:publish             0         0.0
+analysis:gen             0         0.0
+watch:baseline           0         0.0
+retention:plan           0         0.0
+quarantine:triage        0         0.0
+semantic:preflight       0         0.0
+pg:health                0         0.0
+wiki:sync                0         0.0
+gates                    0         0.0
+raw: gov=13178条/458.6MB | mof=870条/63.6MB | nfra=1939条/90.3MB | pbc=571条/2.6MB | supp=60条/13.8MB
+总耗时 <x>s | 失败步骤 0
+汇总已落盘: <ROOT>\reports\_tmp\生产刷新汇总_<ts>.json
+[run_state] 稳定运行台账已更新: <ROOT>\data\run_state\last_run_steps.json

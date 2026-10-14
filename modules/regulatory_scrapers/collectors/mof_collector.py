@@ -73,6 +73,11 @@ from std_lib.scraper_std.pipeline import (  # 批 49/T1：raw 统一 JSONL 读�
     write_raw_jsonl,
 )
 
+# B7（W4，2026-10）：原子写 SSOT = std_lib.common_lib.fs_lock（本文件下方「运行锁」段
+# 已有 `from std_lib.common_lib import fs_lock` 模块级 import；原本地 `_atomic_write`
+# 私造已删，状态/报告写入一律 `fs_lock.atomic_write_text`——差异仅是 mkstemp+fsync
+# 加固（更安全，语义不变：同目录临时文件 + os.replace 原子替换 + 目录自动创建）。
+
 # 共享加固工具层（UA 池、文档文本抽取、魔数纠正命名、表格结构化）
 try:
     from std_lib.scraper_std.crawler_common import USER_AGENTS as CC_USER_AGENTS
@@ -327,20 +332,9 @@ def _canon_law_id(v):
 # --------------------------------------------------------------------------- #
 # 可靠性增强：原子写、运行锁、状态记录
 # --------------------------------------------------------------------------- #
-def _atomic_write(path, text):
-    """先写临时文件再原子替换，避免写入中途崩溃损坏已有结果文件。
-
-    2026-09-04 修复：目标目录不存在时自动创建。此前 data/reports、data/state
-    目录缺失会导致首跑在写报告/状态阶段抛 FileNotFoundError（主库已写入但
-    状态未落盘，周报失真）。
-    """
-    _d = os.path.dirname(path)
-    if _d:
-        os.makedirs(_d, exist_ok=True)
-    tmp = path + ".tmp"
-    with open(tmp, "w", encoding="utf-8") as f:
-        f.write(text)
-    os.replace(tmp, path)
+# B7（W4，2026-10）：原 `_atomic_write` 私造已删（与 fs_lock.atomic_write_text 语义重复；
+# SSOT 版增加 mkstemp 防并发撞名 + fsync 崩溃安全 + overwrite 参数）。状态/报告写入
+# 一律 `fs_lock.atomic_write_text(path, text)`（模块级 import 见下方运行锁段）。
 
 # —— 运行锁统一实现（N-8）：判定逻辑收敛到 regulatory_scrapers/fs_lock.py，四源共用 ——
 _SCRAPERS_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -395,11 +389,11 @@ def release_lock(lock_path):
 
 def write_status(outdir, status):
     """记录抓取状态（成功 / 异常），供调度与监控读取，保留异常状态处理能力。"""
-    _atomic_write(os.path.join(os.path.dirname(outdir), "state", "status.json"),
+    fs_lock.atomic_write_text(os.path.join(os.path.dirname(outdir), "state", "status.json"),
                   json.dumps(status, ensure_ascii=False, indent=2))
 
 def save_json(entries, path):
-    _atomic_write(path, json.dumps({
+    fs_lock.atomic_write_text(path, json.dumps({
         "source": HOST,
         "captured_at": datetime.now(UTC).isoformat(),
         "count": len(entries),
@@ -421,7 +415,7 @@ def save_csv(entries, path):
     for e in entries:
         w.writerow({c: e.get(c, "") for c in cols})
     # 前置 BOM，保证 Excel 正确识别 UTF-8
-    _atomic_write(path, "\ufeff" + buf.getvalue())
+    fs_lock.atomic_write_text(path, "\ufeff" + buf.getvalue())
 
 def save_html_report(entries, path):
     """生成可读的离线 HTML 报告（自包含，无外部依赖）。"""
@@ -469,7 +463,7 @@ def save_html_report(entries, path):
 <th>发文机关</th><th>发文字号</th><th>内容摘要</th><th>正文字数</th><th>附件</th><th>状态</th><th>变更</th></tr></thead>
 <tbody>{''.join(items_html)}</tbody>
 </table></body></html>"""
-    _atomic_write(path, doc)
+    fs_lock.atomic_write_text(path, doc)
 
 # --------------------------------------------------------------------------- #
 # 主程序

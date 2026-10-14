@@ -14,8 +14,12 @@ from __future__ import annotations
 import json
 import os
 
+# 裸名导入（与测试层主流形态一致；conftest bootstrap include_tools=True 已把 tools/ 注入
+# sys.path）。⚠️ 勿改回 `from tools import ...`——mypy 全仓走查时同一文件会同时被登记为
+# `tools.X` 与裸名 `X` 两个模块名而报 "found twice"（问题项 P-5，2026-10-13）。
+import semantic_assist as sa
+
 from std_lib.common_lib.norm import norm_title_strict
-from tools import semantic_assist as sa
 
 
 def _write(path: str, items: list) -> None:

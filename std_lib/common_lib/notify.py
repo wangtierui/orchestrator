@@ -29,10 +29,32 @@ import sys
 import paths
 
 # 受控事件值（与 config/schedule.yaml 的 notify.on 对齐）
-NOTIFY_EVENTS = frozenset({"failed_step", "gate_fail", "worklist_aged", "doctor_fail"})
+NOTIFY_EVENTS = frozenset(
+    {"failed_step", "gate_fail", "worklist_aged", "doctor_fail", "degraded_step"}
+)
 NOTIFY_KINDS = ("none", "file", "webhook")
 DEFAULT_DIR = os.path.join(paths.ROOT, "reports", "_alerts")
 WEBHOOK_ENV = "REG_ORCH_NOTIFY_WEBHOOK"
+
+
+#: YAML 1.1 的历史坑：裸键 `on` 被解析为**布尔 True**（`on: [a]` → `{True: [a]}`）——
+#: 曾使 `notify.on` 声明**从未生效**（告警不发送），而门禁读到空列表又「真空通过」。
+#: 现文件已用 `"on"`（引号），下表仅为**读端兼容**（旧文件/其他工具生成物仍可读）。
+_ON_ALIASES = ("on", True, "True", "true")
+
+
+def _events_of(cfg: dict) -> list:
+    """从 notify 配置段取事件列表（容忍上述别名；缺键 → 空列表**并由门禁判空**）。"""
+    for k in _ON_ALIASES:
+        v = cfg.get(k)
+        if isinstance(v, list) and v:
+            return list(v)
+    return []
+
+
+def declared_events() -> list[str]:
+    """**唯一读取口**：schedule.yaml 的 `notify.on` 声明事件（供门禁 E2/S3 与消费方复用）。"""
+    return [str(x) for x in _events_of(_load_cfg())]
 
 
 def _load_cfg() -> dict:
@@ -42,7 +64,14 @@ def _load_cfg() -> dict:
         import yaml
 
         with open(path, encoding="utf-8") as fh:
-            return ((yaml.safe_load(fh) or {}).get("notify") or {}) or {"kind": "file"}
+            cfg = ((yaml.safe_load(fh) or {}).get("notify") or {}) or {"kind": "file"}
+        if not isinstance(cfg, dict):
+            return {"kind": "file", "file_dir": DEFAULT_DIR}
+        # 归一布尔键 → "on"（读端兼容，见 _ON_ALIASES 注释）
+        got = _events_of(cfg)
+        if got and "on" not in cfg:
+            cfg = {**cfg, "on": got}
+        return cfg
     except Exception:  # noqa: BLE001  配置不可读 → 保守默认（file，落 reports/_alerts）
         return {"kind": "file", "file_dir": DEFAULT_DIR}
 
@@ -52,7 +81,7 @@ def enabled_for(event: str) -> bool:
     cfg = _load_cfg()
     if cfg.get("kind", "file") == "none":
         return False
-    return event in set(cfg.get("on") or [])
+    return event in set(_events_of(cfg))
 
 
 def notify(

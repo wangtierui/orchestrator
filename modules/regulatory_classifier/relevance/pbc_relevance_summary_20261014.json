@@ -1,0 +1,38 @@
+{
+ "source": "pbc",
+ "stamp": "20261014",
+ "csv": "modules/regulatory_scrapers/data/cleaned/pbc_cleaned_20261014.csv",
+ "total": 571,
+ "layer": {
+  "BOUNDARY": 39,
+  "EXCLUDE": 530,
+  "INCLUDE": 2
+ },
+ "confidence": {
+  "BOUNDARY/低": 39,
+  "EXCLUDE/—": 393,
+  "EXCLUDE/中": 137,
+  "INCLUDE/中": 2
+ },
+ "fin_hit": 552,
+ "decisions_exported": [
+  "BOUNDARY",
+  "EXCLUDE",
+  "INCLUDE"
+ ],
+ "elapsed_s": 0.6,
+ "year_top": {
+  "1993": 1,
+  "1997": 8,
+  "1999": 3,
+  "2000": 10,
+  "2001": 6,
+  "2002": 10,
+  "2003": 12,
+  "2004": 14,
+  "2005": 18,
+  "2006": 17,
+  "2007": 27,
+  "2008": 20
+ }
+}

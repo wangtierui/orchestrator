@@ -24,6 +24,7 @@
 from __future__ import annotations
 
 import ctypes
+import inspect
 import os
 import subprocess
 import sys
@@ -69,6 +70,13 @@ def install_global_defaults() -> bool:
     """**全局默认**：为 `subprocess.run/Popen/check_output/check_call/call` 注入隐藏窗口参数（幂等）。
 
     返回是否本次完成安装。已安装或非 Windows 返回 False。
+
+    ⚠️ **类形态包装（2026-10-13 修复，问题项 P-1）**：`Popen` 必须用**子类**包装而非函数——
+    函数替换后 `class X(subprocess.Popen)` 会以 `TypeError: function() argument 'code' must be
+    code, not str` 崩溃（type() 把函数当元类）。实证：stdlib `asyncio.windows_utils` 在导入时
+    `class Popen(subprocess.Popen)` ⇒ `import pdb` → `import asyncio` 链全断（pytest 9 的
+    debugging 插件在 configure 期无条件 `import pdb`，故全测试套件无法启动——此前旧版
+    pytest 不 import pdb 才掩盖至今）。其余四个是函数，保持函数包装。
     """
     if not IS_WIN or getattr(subprocess, _HIDDEN_FLAG, False):
         return False
@@ -76,20 +84,43 @@ def install_global_defaults() -> bool:
         orig = getattr(subprocess, name, None)
         if orig is None or getattr(orig, "_rco_hidden", False):
             continue
-
-        def _wrap(func):
-            def wrapper(*args, **kwargs):
-                for k, v in hidden_kwargs().items():
-                    kwargs.setdefault(k, v)
-                return func(*args, **kwargs)
-
-            wrapper._rco_hidden = True      # type: ignore[attr-defined]
-            wrapper.__doc__ = func.__doc__
-            return wrapper
-
-        setattr(subprocess, name, _wrap(orig))
+        if inspect.isclass(orig):
+            setattr(subprocess, name, _wrap_class(orig))
+        else:
+            setattr(subprocess, name, _wrap_func(orig))
     setattr(subprocess, _HIDDEN_FLAG, True)
     return True
+
+
+def _wrap_func(func: Any) -> Any:
+    """函数形态包装（run/call/check_output/check_call）。"""
+
+    def wrapper(*args, **kwargs):
+        for k, v in hidden_kwargs().items():
+            kwargs.setdefault(k, v)
+        return func(*args, **kwargs)
+
+    wrapper._rco_hidden = True  # type: ignore[attr-defined]
+    wrapper.__doc__ = func.__doc__
+    wrapper.__name__ = getattr(func, "__name__", "wrapper")
+    return wrapper
+
+
+def _wrap_class(cls: type) -> type:
+    """类形态包装（Popen）：**子类化**以保持 `class X(subprocess.Popen)` 可继承（问题项 P-1）。"""
+
+    class wrapper(cls):  # type: ignore[misc,valid-type]
+        _rco_hidden = True  # type: ignore[attr-defined]
+
+        def __init__(self, *args: Any, **kwargs: Any) -> None:
+            for k, v in hidden_kwargs().items():
+                kwargs.setdefault(k, v)
+            super().__init__(*args, **kwargs)
+
+    wrapper.__doc__ = cls.__doc__
+    wrapper.__name__ = cls.__name__
+    wrapper.__qualname__ = cls.__qualname__
+    return wrapper
 
 
 if __name__ == "__main__":  # 离线自检（不联网）

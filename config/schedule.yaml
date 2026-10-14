@@ -14,13 +14,15 @@ version: "1.0"
 jobs:
   # ---- 定时（cron 五段式；Windows 计划任务由 tools/install_schedule.py 生成 XML）----
   - id: refresh
-    kind: cron
+    trigger: cron
+    kind: processing          # 作业角色（processing→链 main 层 / quality→gate 层 / governance→side 层 / agent_sync→conditional 层）
     when: "0 6 * * *"
     argv: ["cli.py", "run", "--no-scrape", "--resume"]
     on_miss: run_at_next_boot
     desc: "全链刷新（raw 已抓取，仅重清洗 + 全链；当日无 raw 变化时各阶段快跳）"
   - id: nfra_weekly
-    kind: cron
+    trigger: cron
+    kind: processing          # 作业角色（processing→链 main 层 / quality→gate 层 / governance→side 层 / agent_sync→conditional 层）
     when: "0 1 * * 2"
     argv: ["cli.py", "run", "--collect", "nfra-weekly"]
     on_miss: skip
@@ -38,7 +40,8 @@ jobs:
   #     与「人工批次 `--supp-batch`」。此处**不假装自动**（与 triggers.yaml 的 supp_ingest 口径一致）。
   #   · 下游（clean/apply/relate…）由本作业的**同轮全链**完成；次日的 `refresh --resume` 再兜底。
   - id: incremental_weekly
-    kind: cron
+    trigger: cron
+    kind: processing          # 作业角色（processing→链 main 层 / quality→gate 层 / governance→side 层 / agent_sync→conditional 层）
     when: "0 1 * * 3"
     argv: ["cli.py", "run", "--collect", "gov,mof,pbc"]
     on_miss: skip
@@ -48,14 +51,16 @@ jobs:
   #   而"补齐在主库但尚无正文的历史条目"需要扫完全部页 —— 若不另排，历史正文会**停止收敛**。
   # 范围控制：`--only` 只跑该采集步 + 其下游两步（clean:gov / apply:gov），其余留给每日 06:00 refresh。
   - id: gov_zhengceku_backfill
-    kind: cron
+    trigger: cron
+    kind: processing          # 作业角色（processing→链 main 层 / quality→gate 层 / governance→side 层 / agent_sync→conditional 层）
     when: "0 1 3 * *"
     argv: ["cli.py", "run", "--collect", "gov_zhengceku_backfill",
            "--only", "collect:gov_zhengceku_backfill,clean:gov,apply:gov"]
     on_miss: skip
     desc: "zhengceku 历史存量补全（月度；扫全 629 页，仅跑 clean/apply:gov）"
   - id: verify
-    kind: cron
+    trigger: cron
+    kind: processing          # 作业角色（processing→链 main 层 / quality→gate 层 / governance→side 层 / agent_sync→conditional 层）
     when: "0 7 * * 1"
     # N-51（2026-09-27）：原 `--only 6.9` 用**阶段号**，而 `--only` 只认**步骤名**
     # （实测 6.9 令全部步骤 SKIP = 空跑 5.7s）。改为步骤名；该步已入主链为条件步骤，
@@ -64,14 +69,16 @@ jobs:
     on_miss: skip
     desc: "效力核验批次（有 Token 时；断点续跑，配额耗尽自动停）"
   - id: publish_wiki
-    kind: cron
+    trigger: cron
+    kind: agent_sync          # 作业角色（processing→链 main 层 / quality→gate 层 / governance→side 层 / agent_sync→conditional 层）
     when: "0 8 * * 1"
     # N-51：同上（原 `--only 21.5` → 步骤名）；wiki_sync 已入主链为条件步骤。
     argv: ["cli.py", "run", "--only", "wiki:sync"]
     on_miss: skip
     desc: "发布件刷新 + llm_wiki 源同步（SHA256 增量；条件触发 wiki_sync，见 triggers.yaml）"
   - id: monthly_check
-    kind: cron
+    trigger: cron
+    kind: quality          # 作业角色（processing→链 main 层 / quality→gate 层 / governance→side 层 / agent_sync→conditional 层）
     when: "0 9 1 * *"
     argv: ["cli.py", "gates"]
     on_miss: skip
@@ -79,7 +86,8 @@ jobs:
 
   # ---- 事件驱动（无 cron；由上游步骤完成后触发，登记于此以保证"定时清单"完整且单一来源）----
   - id: timeliness_sync
-    kind: event
+    trigger: event
+    kind: processing          # 作业角色（processing→链 main 层 / quality→gate 层 / governance→side 层 / agent_sync→conditional 层）
     when: ""
     after: verify
     # 批 63（T3/W-AM）：**承接者（链内步骤，执行者存在性由新门禁核对）** —— event 作业不在
@@ -89,7 +97,8 @@ jobs:
     on_miss: skip
     desc: "核验后：台账 → 归属表时效同步（F-C03）；已由 run 主链 6.9 之后的阶段承接"
   - id: gov_increment
-    kind: event
+    trigger: event
+    kind: processing          # 作业角色（processing→链 main 层 / quality→gate 层 / governance→side 层 / agent_sync→conditional 层）
     when: ""
     # N-185 修正（2026-10-08）：原写 `after: refresh` 且 desc 称「**已并入 refresh**」，
     # 但 `refresh` 的 argv 是 `--no-scrape` ⇒ **根本不含采集**，该声明与实现**矛盾**
@@ -106,6 +115,6 @@ jobs:
 notify:
   # 无人值守的必要件（v2 §3.13.6）：现状编排器只有 run_log 与 stdout，失败无人知晓。
   kind: file            # none | file | webhook
-  on: [failed_step, gate_fail, worklist_aged, doctor_fail]
+  "on": [failed_step, gate_fail, worklist_aged, doctor_fail, degraded_step]
   file_dir: reports/_alerts     # 入库可审计（reports 已在门禁排除集，不新增盲区）
   # webhook 为可选：URL 只从环境变量 `REG_ORCH_NOTIFY_WEBHOOK` 读取，**禁止入库**

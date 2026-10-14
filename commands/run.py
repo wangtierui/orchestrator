@@ -104,8 +104,9 @@ def main(argv=None) -> int:
         _chain_ids: frozenset = frozenset(getattr(trg, "CHAIN_TRIGGER_IDS", frozenset()))
         _only = [t["id"] for t in trg.decide({}) if t["id"] not in _chain_ids]
         rep = trg.run_all({"argv": list(argv or [])}, only=_only)
+        # W0-4（2026-10-13，D2）：删重复 print——原两行输出仅首行带「链外 N 项」限定，
+        # 第二行是首批接线时的残留（同一次运行打两行几乎相同的摘要，误导排障）。
         print(f"[run] 条件触发（链外 {len(_only)} 项）：执行 {rep['ran']} / 跳过 {rep['skipped']} / 失败 {rep['failed']}")
-        print(f"[run] 条件触发：执行 {rep['ran']} / 跳过 {rep['skipped']} / 失败 {rep['failed']}")
         if rep["failed"]:
             return ExitCode.DATA
     return rc

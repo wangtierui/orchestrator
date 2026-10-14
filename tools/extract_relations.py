@@ -115,6 +115,11 @@ from std_lib.common_lib.logging import get_logger
 
 LOG = get_logger("relations")
 
+# B6（W4，2026-10）：JSONL 原子写收敛至 `modules.base_publish.write_jsonl`（SSOT）——
+# 原本地 `_write_jsonl` 私有实现与之语义重复（tmp + os.replace）；tools 是横切治理层，
+# 读取 modules 事实源不受 gate_no_cross_module_import 约束（该门禁扫描范围仅 modules/）。
+from base_publish import write_jsonl
+
 
 def _empty_index() -> dict:
     """实体索引容器。
@@ -737,7 +742,7 @@ def write_products(rows: list[dict], stat: dict) -> dict:
         rows,
         key=lambda r: (r["src_kind"], r["src_ref"], r["relation"], r["dst_ref"], r["dst_name"]),
     )
-    _write_jsonl(index_p, rows_sorted)
+    write_jsonl(index_p, rows_sorted)
     cross = [
         r
         for r in rows_sorted
@@ -745,7 +750,7 @@ def write_products(rows: list[dict], stat: dict) -> dict:
         and r["dst_kind"] == "regulatory"
         and r["relation"] == "basis"
     ]
-    _write_jsonl(cross_p, cross)
+    write_jsonl(cross_p, cross)
     stat["cross_basis_rows"] = len(cross)
     # 就地注入文件信息（调用方（write_report 等）在同一 stat 上继续消费）
     stat["files"] = {
@@ -759,12 +764,8 @@ def write_products(rows: list[dict], stat: dict) -> dict:
     return {"index": index_p, "cross": cross_p, "stat": stat_p, "cross_rows": len(cross)}
 
 
-def _write_jsonl(path: str, rows: list[dict]) -> None:
-    tmp = path + ".tmp"
-    with open(tmp, "w", encoding="utf-8") as fh:
-        for r in rows:
-            fh.write(json.dumps(r, ensure_ascii=False) + "\n")
-    os.replace(tmp, path)
+# B6（W4，2026-10）：原私有 `_write_jsonl` 已删（与 SSOT base_publish.write_jsonl 语义
+# 重复：tmp + os.replace 原子替换）；本工具 JSONL 落盘一律 `write_jsonl`（SSOT）。
 
 
 def render_report(rows: list[dict], stat: dict) -> str:

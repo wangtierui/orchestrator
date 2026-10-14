@@ -1,0 +1,31 @@
+ 1. collect:nfra_weekly
+ 2. collect:{src}   （动态：每源一步）
+ 3. supp:ingest_batch
+ 4. clean:{src}   （动态：每源一步）
+ 5. relevance:{src}   （动态：每源一步）
+ 6. timeliness:verify
+ 7. timeliness:consolidate
+ 8. apply:{src}   （动态：每源一步）
+ 9. classify:all
+10. relations:gen
+11. semantic:assist
+12. docreader:extract
+13. reconcile
+14. recall
+15. inbox:drop
+16. internal:update
+17. governance:artifacts
+18. governance:sync
+19. internal:merged
+20. reports:build
+21. reports:theme
+22. draft:clause
+23. base:publish
+24. analysis:gen
+25. watch:baseline
+26. retention:plan
+27. quarantine:triage
+28. semantic:preflight
+29. pg:health
+30. wiki:sync
+31. gates

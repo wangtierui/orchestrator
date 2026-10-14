@@ -94,7 +94,15 @@ def run() -> tuple:
         return False, {"run_steps": {"error": str(e)}}
 
     steps = led.get("steps") or []
+    # W1-4 kind 感知：只把**阻断类失败**（`stop_chain`）纳入危险组合判定；旁路 WARN
+    # （`degraded=True`）与强制 rc=0（`forced_rc0=True`）是「可见不阻断」，只披露。
+    # 旧台账（无 action 字段）按最严处理 = 原行为，避免历史台账被判绿。
     failed = [s for s in steps if isinstance(s, dict) and int(s.get("rc") or 0) != 0]
+    degraded_steps = [str(s.get("step")) for s in failed if s.get("degraded")]
+    blocking = [
+        s for s in failed
+        if s.get("action", "stop_chain") == "stop_chain" and not s.get("forced_rc0")
+    ]
     acked: dict = {}
     if os.path.exists(ACK):
         try:
@@ -103,7 +111,7 @@ def run() -> tuple:
             acked = {}
 
     dangerous: list = []
-    for s in failed:
+    for s in blocking:
         name = str(s.get("step") or "")
         t0, t1 = _ts(s.get("started_at")), _ts(s.get("ended_at"))
         products = _product_of(name)
@@ -125,6 +133,8 @@ def run() -> tuple:
         "total_elapsed_s": led.get("total_elapsed_s"),
         "steps": len(steps),
         "failed": [str(s.get("step")) for s in failed],
+        "blocking": [str(s.get("step")) for s in blocking],
+        "degraded": degraded_steps,
         "dangerous": dangerous,
         "acknowledged": sorted(acked),
     }

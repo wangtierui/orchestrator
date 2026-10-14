@@ -470,6 +470,127 @@ CATEGORY_MODIFIER_HINTS: tuple[str, ...] = ("内部便函", "内部文件", "内
 #   ① 每个 kind 必须与**唯一产生方**对应（gate_config_integrity 断言双向闭合）；
 #   ② `open` 项**不阻断门禁**（与 gate_rfn_drift 的"存量治理不阻断"口径一致）；
 #   ③ 新增 kind 必须同时更新本表与产生方，禁止只写队列不登记。
+# --------------------------------------------------------------------------- #
+# W1（2026-10-13）：编排层受控域（STEP_LAYERS 的语义声明面；避免魔法字符串）
+# --------------------------------------------------------------------------- #
+#: 步骤类别（StepSpec.kind）：main 主链 / side 旁路治理 / disclosure 只读披露 /
+#: conditional 条件触发 / gate 链尾门禁 / enhancement 增强层（可缺失、可观测降级）
+STEP_KINDS: frozenset[str] = frozenset(
+    {"main", "side", "disclosure", "conditional", "gate", "enhancement"}
+)
+
+#: 失败语义（StepSpec.fail_semantics）：abort 失败即断 / warn 告警继续（不污染链 rc）/
+#: rc0 恒 rc=0（未就绪是合法状态）/ skip 条件不满足即跳过
+FAIL_SEMANTICS: frozenset[str] = frozenset({"abort", "warn", "rc0", "skip"})
+
+#: 失败传播动作（kind × fail_semantics → 执行器行为；机器可查，取代散落注释）
+FAILURE_ACTIONS: frozenset[str] = frozenset(
+    {"stop_chain", "warn_continue", "force_rc0", "skip_or_run"}
+)
+
+#: 调度作业的**触发方式**（`config/schedule.yaml` 的 `trigger`；W1-5 由原 `kind` 改名而来，
+#: 释放 `kind` 归位为作业角色——两者语义此前混用一个字段名，消费方看不出作业主次）。
+SCHEDULE_TRIGGER: frozenset[str] = frozenset({"cron", "event"})
+
+#: 调度作业的**角色**（`kind`，E-3/W1-5）：决定它在链里应由哪一层承接——
+#:   processing → main层｜quality → gate 层｜governance → side 层｜agent_sync → conditional 层。
+#: 该映射由 `gates/gate_declaration_executor` 的 E1 判据按层断言（防「角色与承接层不符」）。
+SCHEDULE_JOB_KIND: frozenset[str] = frozenset(
+    {"processing", "quality", "governance", "agent_sync"}
+)
+
+#: 作业角色 → 期望承接层（`STEP_KINDS`；E1 断言用，非装饰）
+SCHEDULE_JOB_KIND_LAYER: dict[str, frozenset[str]] = {
+    "processing": frozenset({"main"}),
+    "quality": frozenset({"gate"}),
+    "governance": frozenset({"side"}),
+    "agent_sync": frozenset({"conditional"}),
+}
+
+#: **失败传播矩阵**（W1-3/W1-4，v2 §3.3.3）：`kind × fail_semantics → 动作`。
+#: 取代散落在执行器里的注释与 if——**机器可查、单一事实源**；执行器与门禁都只读本表。
+#:
+#: 动作语义（`FAILURE_ACTIONS`）：
+#:   · `stop_chain`    —— 计入链失败（rc=2）；`--stop-on-error` 时中止后续步骤；
+#:   · `warn_continue` —— 记入 `degraded`（台账/汇总/告警可见），**不污染链 rc**；
+#:   · `force_rc0`     —— 后端未就绪属合法状态：原始 rc 存 `raw_rc` 后**强制 rc=0**；
+#:   · `skip_or_run`   —— 条件步骤未触发即 SKIP（rc=0，不算失败）。
+FAILURE_MATRIX: dict[str, dict[str, str]] = {
+    # 主链：失败即停（W0-2 起 `relevance:{src}` 改判 side，见下）
+    "main": {
+        "abort": "stop_chain", "warn": "warn_continue",
+        "rc0": "force_rc0", "skip": "skip_or_run",
+    },
+    # 旁路（WARN）：失败可见但不阻断——`relevance:{src}` 属此类（D-3 修复时改判）
+    "side": {
+        "abort": "warn_continue", "warn": "warn_continue",
+        "rc0": "force_rc0", "skip": "skip_or_run",
+    },
+    # 只读披露 / 增强层：后端不可用是**合法状态**，不得报为链路故障
+    "disclosure": {
+        "abort": "force_rc0", "warn": "force_rc0",
+        "rc0": "force_rc0", "skip": "skip_or_run",
+    },
+    "enhancement": {
+        "abort": "force_rc0", "warn": "force_rc0",
+        "rc0": "force_rc0", "skip": "skip_or_run",
+    },
+    # 条件步骤：未触发即跳过；已触发失败按其声明的 kind 语义（默认 main→abort）
+    "conditional": {
+        "abort": "skip_or_run", "warn": "skip_or_run",
+        "rc0": "skip_or_run", "skip": "skip_or_run",
+    },
+    # 链尾门禁：失败必阻断（交付准入门）
+    "gate": {
+        "abort": "stop_chain", "warn": "stop_chain",
+        "rc0": "force_rc0", "skip": "skip_or_run",
+    },
+}
+
+
+def failure_action(kind: str, fail_semantics: str) -> str:
+    """查失败传播矩阵；未知组合**保守按最严处理**（`stop_chain`）——不静默放宽。"""
+    row = FAILURE_MATRIX.get(kind) or {}
+    return row.get(fail_semantics, "stop_chain")
+
+# ==================== W3 领域层受控域（reg_frameworks / implementation_audit）====================
+#: 监管数据体系标识（多体系并存：EAST 2.0 / 县域分支 / 保险统计 / 偿付能力 …）
+FRAMEWORK_ID: frozenset[str] = frozenset(
+    {"east2", "county_branch", "insurance_stats", "solvency"}
+)
+
+#: 报送频度（用途二关键字段：决定调度作业与提醒节奏）
+REPORTING_CADENCE: frozenset[str] = frozenset(
+    {"monthly", "quarterly", "annual", "daily", "per_transaction"}
+)
+
+#: 数据项类型（统计/财务/业务/管理 …）
+ITEM_TYPE: frozenset[str] = frozenset(
+    {"statistic", "financial", "business", "management", "other"}
+)
+
+#: 条款↔数据项映射方法（质量优先的分层置信：显式 > 关键词 > 语义）
+MAP_METHOD: frozenset[str] = frozenset({"explicit", "keyword", "semantic"})
+
+#: 映射状态（低置信与语义法一律进人工闸门，不自动 confirmed）
+MAP_STATUS: frozenset[str] = frozenset({"confirmed", "review", "rejected"})
+
+#: 落地执行状态（implementation_audit 的执行表口径）
+EXEC_STATUS: frozenset[str] = frozenset({"executed", "partial", "not_executed"})
+
+#: 差距分类（三方差距引擎的四条规则产出）
+GAP_CLASS: frozenset[str] = frozenset(
+    {"not_executed", "partial", "no_evidence", "insufficient_evidence"}
+)
+
+#: 差距严重度（监管要求等级 × 风险；规则表可覆盖）
+GAP_SEVERITY: frozenset[str] = frozenset({"high", "medium", "low"})
+
+#: 作证材料形态（report/log/screenshot/system_export/other）
+EVIDENCE_KIND: frozenset[str] = frozenset(
+    {"report", "log", "screenshot", "system_export", "other"}
+)
+
 WORKLIST_KIND: frozenset[str] = frozenset(
     {
         "rfn_theme_uncertain",  # D1 tools/rfn_backlog.py：主题投票 uncertain（无票/并列/形态不明）
@@ -485,6 +606,10 @@ WORKLIST_KIND: frozenset[str] = frozenset(
         #   纪律：**零回写**——只分类 + 登记，实际修复走人工/受控变更
         #   （`gates/gate_clean_schema` 明文"隔离记录属数据治理待办、需人工清理源数据"）
         "clean_quarantine_triage",
+        # W3（reg_frameworks）：条款↔数据项映射的低置信/语义法结果 → 人工闸门
+        "regfw_map_review",
+        # W3（implementation_audit）：制度条款 × 执行记录 × 作证材料 的三方差距
+        "implaudit_gap",
     }
 )
 # 待办状态（`worklist.status`）
@@ -552,8 +677,35 @@ def assert_enum_bindings() -> None:
     assert CLAUSE_STRUCTURE_LEVELS == {"一级", "二级", "条", "项", "目"}, CLAUSE_STRUCTURE_LEVELS
     # 待办队列（v2 §3.14.3）：9 类 kind 与 3 态 status 闭包
     # （8 → 9：P2-1 增 trigger_manual_breakpoint —— 触发链 on_fail=manual_breakpoint 的落点）
-    assert len(WORKLIST_KIND) == 10, WORKLIST_KIND  # N-93：+clean_quarantine_triage（D7）
+    # 10 → 12（W3）：+regfw_map_review（映射低置信人工闸门）、+implaudit_gap（三方差距）
+    assert len(WORKLIST_KIND) == 12, WORKLIST_KIND
     assert WORKLIST_STATUS == {"open", "resolved", "dismissed"}, WORKLIST_STATUS
+    # 编排层受控域（W1）：6 类 kind / 4 种失败语义 / 4 种传播动作闭包
+    assert len(STEP_KINDS) == 6, sorted(STEP_KINDS)
+    assert len(FAIL_SEMANTICS) == 4, sorted(FAIL_SEMANTICS)
+    # W3 领域域闭包自检（防表内漂移/漏登记）
+    assert len(FRAMEWORK_ID) == 4, sorted(FRAMEWORK_ID)
+    assert "east2" in FRAMEWORK_ID and "monthly" in REPORTING_CADENCE
+    assert {"confirmed", "review"} <= MAP_STATUS and {"explicit"} <= MAP_METHOD
+    assert {"executed", "partial", "not_executed"} <= EXEC_STATUS
+    assert {"not_executed", "no_evidence"} <= GAP_CLASS
+    assert {"high", "medium", "low"} == GAP_SEVERITY
+    assert {"report", "log"} <= EVIDENCE_KIND and len(ITEM_TYPE) == 5
+    assert {"regfw_map_review", "implaudit_gap"} <= WORKLIST_KIND
+
+    assert len(SCHEDULE_TRIGGER) == 2, sorted(SCHEDULE_TRIGGER)
+    assert set(SCHEDULE_JOB_KIND) == set(SCHEDULE_JOB_KIND_LAYER), sorted(SCHEDULE_JOB_KIND)
+    for _jk, _layers in SCHEDULE_JOB_KIND_LAYER.items():
+        assert _layers <= STEP_KINDS, (_jk, sorted(_layers - STEP_KINDS))
+    assert len(FAILURE_ACTIONS) == 4, sorted(FAILURE_ACTIONS)
+    # 失败传播矩阵闭包自检（防表内漂移）：覆盖全部 kind × fail_semantics、取值合法
+    assert set(FAILURE_MATRIX) == set(STEP_KINDS), sorted(set(STEP_KINDS) - set(FAILURE_MATRIX))
+    for _mk, _row in FAILURE_MATRIX.items():
+        assert set(_row) == set(FAIL_SEMANTICS), (_mk, sorted(_row))
+        assert set(_row.values()) <= FAILURE_ACTIONS, (_mk, sorted(set(_row.values())))
+        for _fs in _row:
+            assert failure_action(_mk, _fs) == _row[_fs]
+    assert FAIL_SEMANTICS <= {"abort", "warn", "rc0", "skip"}
 
 
 if __name__ == "__main__":  # 离线自检

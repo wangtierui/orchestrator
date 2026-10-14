@@ -286,6 +286,10 @@ def html_to_text(s):
     return s.strip()
 
 
+# norm-specialization: 字段规范化型日期（B3/W4 登记，norm.py 日期分层第三类）——
+# 与解析层 cleaner.normalize_date 的真实语义差异：入参为**字段值**（list [y,m,d] /
+# datetime 字符串 / None），输出 None 语义（缺省 vs 空串分化）；抽取型（crawler_common）
+# 入参为长文本。三类各有契约，不合并。
 def normalize_date(v):
     """规范化日期字段（兼容 '2024-11-03 00:00:00' / [2024,11,3,0,0] / 'None'）。"""
     if v is None:

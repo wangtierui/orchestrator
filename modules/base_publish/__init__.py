@@ -18,6 +18,8 @@ import os
 SCHEMA_VERSION = "1.0.0"
 
 
+# norm-specialization: JSONL 原子写**登记 SSOT**（B6/W4，README:79 明载；原 scraper_std
+# 侧非原子副本与 tools 侧私有副本均已删——收敛自两处，见函数 docstring L2 标注）
 def write_jsonl(path: str, rows) -> int:
     """按行写 JSONL（**原子替换**：先写 `.tmp` 再 `os.replace`）→ 返回行数。
 
@@ -25,6 +27,11 @@ def write_jsonl(path: str, rows) -> int:
     曾**逐字重复**（同包两处）。风险不是"多 8 行"，而是**改一处漏一处** ——
     原子替换是**交付安全属性**（中断写不得留半截发布件），只改一处会让另一个底座
     在中断时留下**半截文件**，而两处代码**看起来一样**，审查极易放过。
+
+    L2（W4，2026-10）SSOT 标注——**收敛自**：`tools/extract_relations._write_jsonl`
+    （tmp+replace 语义一致的跨层副本，已删）；`std_lib/scraper_std/common/file_io.write_jsonl`
+    （**语义分化**：非原子便捷写入，零调用，已删——JSONL 落盘一律走本 SSOT）。
+    门禁 `gate_no_duplicate_libs` 对同名函数要求本标注存在（无标注 → 告警候选）。
     """
     tmp = path + ".tmp"
     n = 0

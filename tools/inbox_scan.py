@@ -17,7 +17,6 @@ tools/inbox_scan.py — 投放区扫描与路由（v2 §3.12.6，P2-3b）
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import os
 import sys
@@ -25,6 +24,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import paths
 from config.exitcodes import ExitCode
+from std_lib.common_lib.io_atomic import sha256_file
 
 INBOX = paths.INBOX_DIR
 # ⚠️ 落点修正（2026-09-26，P2-3b 执行中发现 N-26）：方案 §3.12.4 写 `data/inbox/_registry.yaml`，
@@ -59,12 +59,9 @@ def load_registry() -> dict:
         return yaml.safe_load(fh) or {}
 
 
-def sha256_of(path: str, chunk: int = 1 << 20) -> str:
-    h = hashlib.sha256()
-    with open(path, "rb") as fh:
-        for blk in iter(lambda: fh.read(chunk), b""):
-            h.update(blk)
-    return h.hexdigest()
+# B2（W4，2026-10）：原 `def sha256_of(path, chunk)` 已删——与 SSOT
+# `std_lib.common_lib.io_atomic.sha256_file` 逐字重复（含 chunk 默认值）；
+# 本文件 sha256 一律用 SSOT（L2 来源标注防再分裂）。
 
 
 def _known_hashes() -> tuple[dict[str, str], dict[int, list[str]]]:
@@ -145,7 +142,7 @@ def scan(apply: bool = False) -> dict:
                 rel = os.path.relpath(fp, paths.ROOT).replace(os.sep, "/")
                 try:
                     st = os.stat(fp)
-                    digest = sha256_of(fp)
+                    digest = sha256_file(fp)
                 except OSError as e:
                     rows.append(
                         {
@@ -171,7 +168,7 @@ def scan(apply: bool = False) -> dict:
                     hit = ""
                     for cand in _hash_candidates(st.st_size, sizes):
                         try:
-                            if sha256_of(cand.split(":", 1)[1]) == digest:
+                            if sha256_file(cand.split(":", 1)[1]) == digest:
                                 hit = cand
                                 break
                         except OSError:

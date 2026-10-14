@@ -3,6 +3,13 @@
 Re-exports the same public symbols as the original ``cn-law-hub-2.0.1/scripts/common``
 so crawler import statements only need their absolute path changed from
 ``from common import ...`` to ``from std_lib.scraper_std.common import ...``.
+
+W4-b（2026-10，B1 死代码处置）：`ratelimit` 模块已删——`SmartRateLimiter` /
+`init_limiter` / `http_request` / `RateLimitMode` / `RateLimitConfig` **零生产调用方**
+（仅本文件 re-export），且它是全仓**唯一 requests 硬依赖**（共享库层）。删除后
+requests 依赖面收缩至 gov_collector 单采集器（会话级，L2 分层保留，见 http.py
+docstring 与 ADR-0009）；限速/退避能力由 http.py 的 `AdaptiveHttpClient` 承载
+（更细：冷却/熔断/Retry-After/代理池）。
 """
 
 from __future__ import annotations
@@ -40,27 +47,19 @@ from .docx_utils import (
 )
 
 # Re-export file I/O
+# B6（W4，2026-10）：`write_jsonl` re-export 已删（零调用 + 与原子写 SSOT 语义分化；
+# JSONL 落盘一律 `from base_publish import write_jsonl`）。
 from .file_io import (
     read_jsonl,
     render_markdown_report,
     unique_path,
     write_csv,
     write_json,
-    write_jsonl,
     write_text,
 )
 
 # Re-export logger (thin wrapper over scraper_std.logging_setup)
 from .logger import setup_logger
-
-# Re-export rate limiter & HTTP client
-from .ratelimit import (
-    RateLimitConfig,
-    RateLimitMode,
-    SmartRateLimiter,
-    http_request,
-    init_limiter,
-)
 
 # Re-export text utilities + factory
 from .text_utils import (
@@ -98,14 +97,8 @@ __all__ = [
     "unique_path",
     "write_csv",
     "write_json",
-    "write_jsonl",
     "write_text",
     "setup_logger",
-    "RateLimitConfig",
-    "RateLimitMode",
-    "SmartRateLimiter",
-    "http_request",
-    "init_limiter",
     "clean_text",
     "create_crawler_headers",
     "decode_filename_from_url",
@@ -120,7 +113,4 @@ __all__ = [
 # Backward-compatible aliases (old private names still work)
 # ---------------------------------------------------------------------------
 _CacheManager = CacheManager
-_RateLimitConfig = RateLimitConfig
-_RateLimitMode = RateLimitMode
-_SmartRateLimiter = SmartRateLimiter
 _cache = get_cache()

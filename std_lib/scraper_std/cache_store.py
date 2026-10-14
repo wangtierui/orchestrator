@@ -109,6 +109,11 @@ import urllib.parse
 from collections.abc import Callable
 from typing import Any
 
+# B7（W4，2026-10）：原子写 JSON 收敛至 `std_lib.common_lib.fs_lock.atomic_write_json`（SSOT）。
+# 原本地 `_atomic_write_json` 与之语义重复（makedirs + 临时文件 + os.replace）；保留原
+# **compact 无缩进**输出形态（`indent=None`——cache/manifest 是机器件，非人读件）。
+from std_lib.common_lib.fs_lock import atomic_write_json
+
 __all__ = [
     "OfflineMiss",
     "ResponseCache",
@@ -142,21 +147,11 @@ class OfflineMiss(Exception):
     """离线模式下缓存未命中时抛出，由调用方决定跳过而非联网。"""
 
 
-def _atomic_write_json(path: str, obj: Any) -> None:
-    """跨平台原子写 JSON：先写临时文件再 os.replace，避免半截文件。"""
-    d = os.path.dirname(path) or "."
-    os.makedirs(d, exist_ok=True)
-    fd, tmp = tempfile.mkstemp(dir=d, suffix=".tmp")
-    try:
-        with os.fdopen(fd, "w", encoding="utf-8") as fh:
-            json.dump(obj, fh, ensure_ascii=False)
-        os.replace(tmp, path)
-    except Exception:
-        try:
-            os.remove(tmp)
-        except OSError:
-            pass
-        raise
+# B7（W4，2026-10）：原私有 `_atomic_write_json` 已删（与 SSOT 语义重复）。本模块
+# JSON 原子写一律直调 `atomic_write_json`（compact：indent=None；对等测试锁定格式）。
+def _compact_json_write(path: str, obj: Any) -> None:
+    """compact JSON 原子写（cache/manifest 机器件用；SSOT=fs_lock.atomic_write_json）。"""
+    atomic_write_json(path, obj, ensure_ascii=False, indent=None)
 
 
 def default_cache_root() -> str:
@@ -317,7 +312,7 @@ class ResponseCache(_RootedCache):
         p = self.path(endpoint, params)
         if not overwrite and os.path.exists(p):
             return p
-        _atomic_write_json(p, data)
+        _compact_json_write(p, data)
         return p
 
     def set_offline(self, flag: bool) -> None:
@@ -521,7 +516,7 @@ class BlobCache:
         else:
             m["attachments"].append(entry)
         m["attachment_count"] = len(m["attachments"])
-        _atomic_write_json(self.manifest_path(owner_id), m)
+        _compact_json_write(self.manifest_path(owner_id), m)
         return entry
 
     def load(self, owner_id: Any, filename: str) -> bytes:

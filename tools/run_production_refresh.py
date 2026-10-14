@@ -51,6 +51,8 @@ import shlex
 import subprocess
 import sys
 import time
+from dataclasses import dataclass, replace
+from typing import Final
 
 _THIS = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(_THIS)
@@ -67,7 +69,7 @@ DOCS_REPORTS = os.path.join(ROOT, "docs", "reports")
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 import paths
-from config.enums import SOURCE_ORDER
+from config.enums import FAIL_SEMANTICS, SOURCE_ORDER, STEP_KINDS, failure_action
 from config.exitcodes import ExitCode
 
 SOURCES = list(SOURCE_ORDER)
@@ -225,6 +227,24 @@ GOV_ARTIFACTS: dict[str, dict] = {
         "stage": "3",
         "inputs": ["cleaned:{src}"],
     },
+    # W1-3（2026-10-13）：判据 R4「`produces` ∈ GOV_ARTIFACTS」暴露的**两处血缘缺口**——
+    # 下列产物真实存在却从未登记，故「相关性与时效汇总」无血缘可查（旁路产物同样应可追溯）：
+    #   · `relevance:views`——`filter_clean_relevance.py` 落
+    #     `modules/regulatory_classifier/relevance/<src>_relevance_<stamp>.jsonl` + 同名摘要
+    #     （批 63 入链为旁路步骤，但产物此前不在声明面）；
+    #   · `timeliness:ledger`——`consolidate_timeliness.py` 落
+    #     `时效性标注结果清单_全量_*.jsonl`（apply:{src} 的实际输入）。
+    # 均为**观察型**（不声明 inputs）：它们不被下游 `inputs` 引用，登记只解决「可追溯/可判龄」。
+    "relevance:views": {
+        "produced_by": "regulatory_classifier.scripts.filter_clean_relevance",
+        "stage": "2.1",
+        "inputs": [],
+    },
+    "timeliness:ledger": {
+        "produced_by": "regulatory_scrapers.timeliness_review.consolidate_timeliness",
+        "stage": "2.2",
+        "inputs": ["timeliness:state"],
+    },
     "merged_view": {
         "produced_by": "internal_policy_base.merged.build_merged_view",
         "stage": "4.2",
@@ -239,6 +259,17 @@ GOV_ARTIFACTS: dict[str, dict] = {
         "produced_by": "base_publish.build_internal+build_fts",
         "stage": "5.5",
         "inputs": ["internal_index", "merged_view"],
+    },
+    # `wiki:sync`（2026-10-13 W0-1 收尾 D-1）：llm_wiki 源同步的**基线水位**——版本 = 双底座
+    # 发布件清单的联合版本，是 `triggers.yaml` 的 `publish_manifest_changed` 条件的比对基线
+    # （缺此登记 → 条件「无基线 → 恒满足」→ 每轮全量重同步）。**刻意不声明 inputs**：其
+    # 「陈旧」由触发条件判定（发布件变 → 条件满足 → 重跑），若声明 published:* 为依赖，
+    # 则「发布件已更新但本轮条件未满足而 SKIP」会被 dependency_edges 误判为 stale → 假阳性
+    # FAIL。观察型语义（只记版本，不进依赖图）。
+    "wiki:sync": {
+        "produced_by": "tools.sync_wiki_sources",
+        "stage": "6.7",
+        "inputs": [],
     },
     # `analysis:manifest` —— **P3-5 已解耦（2026-09-26）**：原登记（N-13）为"只观察、不声明依赖"，
     #   因其在 6.8 生成而门禁在阶段 6 运行 → 门禁看到**上一轮**产物、依赖已在本轮推进
@@ -668,71 +699,320 @@ def _run_conditional(step: str, tid: str) -> dict:
 # --------------------------------------------------------------------------- #
 # 步骤选择 / 续跑 / 试跑（v2 §3.13.3，P2-6）
 # --------------------------------------------------------------------------- #
-# 步骤清单（**执行顺序**）：`--from` 的先后判定、`--list-steps` 的输出、`--only` 的合法性
-# 都以此为准；`gate_config_integrity` 判据 R 断言它与本文件实际 `_run("<step>"` 调用点一致
-# （防"清单漂移"——这正是本仓其它清单的既有治理方式）。
-STEP_ORDER: tuple[str, ...] = (
-    "collect:nfra_weekly",
-    "collect:{src}",
-    "supp:ingest_batch",
-    "clean:{src}",
-    # 批 63（T4）：`filter_clean_relevance.py` 入链（clean 之后、apply 之前）。
-    "relevance:{src}",
-    # `relevance_boundary` 待办）原为"零调用脚本"✗，此处入链（clean 之后、apply 之前）。
-    # N-53（2026-09-27）：触发项**入链**为条件步骤（决策复用 common_lib.triggers；
-    #   config/triggers.yaml 仍是条件唯一事实源）。插入位置按**数据依赖**而非其
-    #   stage 编号（旧口径，与现行链序不一致）：verify 产出台账 → 在 consolidate 之前。
-    "timeliness:verify",
-    "timeliness:consolidate",
-    "apply:{src}",
-    "classify:all",
-    "relations:gen",
-    # N-177（2026-09-30）：P1 语义增强的**入链调用点**（`semantic:assist`）。
-    # 位置：消费 cleaned（阶段 1/2 已写）与主题关键词 SSOT，产出**分析视图**（reports/semantic/），
-    # **不写事实源** → 可在 relations:gen 之后、下游消费者之前安全插入（不影响任何事实源版本）。
-    "semantic:assist",
-    # N-180（2026-09-30）：**docreader 的入链调用点**（`docreader:extract`）。
-    # 部署形态＝源码模式 + 独立 venv（3.11）→ 子进程调用（见 `std_lib/common_lib/docreader_bridge.py`）。
-    # 同 `semantic:assist`：只产出**分析视图**（`reports/docreader/`，含与既有 6 态抽取的**增量度量**），
-    # **不写事实源**（替换既有抽取须先度量）；不可用时显式 SKIP 且 rc=0（增强层零硬依赖）。
-    "docreader:extract",
-    "reconcile",
-    "recall",
-    # inbox_drop / internal_update 产出 index/align/processed → 必须在 internal:merged 之前。
-    "inbox:drop",
-    "internal:update",
-    # N-63 / N-64（2026-09-27）：治理库**投影后移 + 阶段 1 入链**——
-    #   ① N-64：`governance:sync`（阶段 2）投影 `document` 的 internal 侧自内部主索引，
-    #      原位置在其生产者 `internal:update` **之前** → `internal:update` 真正执行的那一轮投影的是
-    #      **上一轮索引**（落后一轮）；现移其后。
-    #   ② N-63：阶段 1（原件注册 `artifact` 表，`tools/governance_register_artifacts.py`）
-    #      **从未入链**（仅 docstring 自述"阶段 1"）→ 原件 sha256/路径集合长期不随原件库变化刷新；
-    #      按其自身分期置于阶段 2 **之前**。
-    "governance:artifacts",
-    "governance:sync",
-    "internal:merged",
-    "reports:build",
-    "reports:theme",
-    # N-52（2026-09-27）：条款对照素材（drafter/data/draft_clause/）此前**无任何调度**
-    #   （STEP_ORDER 与 triggers.yaml 皆无）→ 自 09-08 起滞后。依赖 merged_view，故在其后。
-    "draft:clause",
-    "base:publish",
-    "analysis:gen",
-    "watch:baseline",
-    # N-73b（2026-09-28）：数据生命周期**只读披露**（`tools/retention.py` dry-run + 台账）
-    #   —— 置于链尾（看得见本轮全部备份/日志），`--apply` 仍为人工闸门。
-    "retention:plan",
-    # N-93（2026-09-28）：清洗**隔离记录**分类与处置登记（零回写 → worklist）。
-    #   置于链尾：看得见本轮全部 cleaned 快照与隔离件（含历史残留体检）。
-    "quarantine:triage",
-    # N-114（2026-09-28）：P1 语义增强启用前置**披露**（五道闸逐项；`--preflight-report` 恒 rc=0）
-    "semantic:preflight",
-    # P2-2 接入（2026-09-29）：向量存储**只读**健康检查（pgvector / sqlite_vec 降级链披露）
-    "pg:health",
-    # wiki_sync 依赖 published 清单（publish_manifest）→ 在 base:publish 之后、gates 之前。
-    "wiki:sync",
-    "gates",
+# --------------------------------------------------------------------------- #
+# 步骤声明面（W1，2026-10-13）——`STEP_LAYERS` 为**语义唯一事实源**
+#
+# 分层动因（v2 §3.13.3 D-12/D-13/D-6/D-7）：原 `STEP_ORDER` 是**平铺字符串元组**，
+# 步骤的「用途 / 超时 / 触发器 / 产物 / 失败语义」散落三处（本文件注释、`gen_flow_map.PURPOSE`、
+# `STEP_FAILURE`），导致三处漂移且 README §8 渲染靠人工同步。本块把语义收敛为**声明**：
+#   · `StepSpec` —— 步骤语义（受控 kind/fail_semantics 校验在构造时，不合规即导入失败）；
+#   · `LayerSpec` —— 层语义（层的默认 kind/fail_semantics + 层间 note）；
+#   · `LAYER_EXEC_PLAN` —— **执行顺序的单一声明处**（层可被拆成多段插入：见下注）；
+#   · `STEP_ORDER` —— **派生兼容视图**（`--from`/`--only`/`--list-steps`/门禁判据 R 语义不变）。
+#
+# 顺序事实注（与方案 §3.2 的差异，已实证校正）：方案示例 `LAYER_EXEC_ORDER` 把 L2 整层排在
+# 条件步骤 `timeliness:verify` 之前，但现行链序是 **verify 必须先于 consolidate**（verify 产出
+# 台账 → consolidate 汇总 → apply 回写；数据依赖，非同层批处理）。故此处用**分段计划**
+# （同一层可出现在多个段）精确复刻现行 31 步顺序，等价性由 `tests/test_chain_equivalence.py`
+# 对 golden 夹具逐字节比对。
+# --------------------------------------------------------------------------- #
+
+
+@dataclass(frozen=True)
+class StepSpec:
+    """步骤语义声明（README §8 / MCP 编排 / 门禁判据 R 全部派生自此）。
+
+    name          : 步骤名；`{src}` 为五源动态模板（口径与旧 `STEP_ORDER` 一致）
+    kind          : main（主链）/ side（旁路治理）/ disclosure（只读披露）/ conditional（条件触发）
+                    / gate（链尾门禁）/ enhancement（增强层，可缺失且降级可观测）
+    fail_semantics: abort（失败即断）/ warn（告警继续，**不污染链 rc**）/ rc0（恒 rc=0）/
+                    skip（条件不满足即跳过）
+    purpose       : 作用一句话（README §8「作用」列；旧 `gen_flow_map.PURPOSE` 的替代事实源）
+    timeout       : 固定超时（秒）；None = 调用点动态计算（clean 按 raw 体量 / collect 按
+                    `COLLECT_TIMEOUT` 配置 / 条件步骤按 triggers.yaml）
+    trigger_id    : kind=conditional 专用：`config/triggers.yaml` 触发项 id
+    depends_on    : 步骤名或产物键（供水位/血缘与判据 R4 拓扑校验）
+    produces      : 该步产生的产物键（`GOV_ARTIFACTS` 键族）
+    degrade_note  : 降级/失败语义的自然语言声明（README §8「降级/失败语义」列；旧
+                    `STEP_FAILURE` 的替代事实源）
+    """
+
+    name: str
+    kind: str
+    fail_semantics: str
+    purpose: str
+    timeout: int | None = None
+    layer: str = ""          # 所属层键（W1-3 起显式打戳：MCP 资源/确认台桑基图都需层归属）
+    trigger_id: str = ""
+    depends_on: tuple[str, ...] = ()
+    produces: tuple[str, ...] = ()
+    degrade_note: str = ""
+
+    def __post_init__(self) -> None:
+        if self.kind not in STEP_KINDS:
+            raise ValueError(f"{self.name}: kind={self.kind!r} 非受控值 {sorted(STEP_KINDS)}")
+        if self.fail_semantics not in FAIL_SEMANTICS:
+            raise ValueError(
+                f"{self.name}: fail_semantics={self.fail_semantics!r} 非受控值 {sorted(FAIL_SEMANTICS)}"
+            )
+        if self.kind == "conditional" and not self.trigger_id:
+            raise ValueError(f"{self.name}: 条件步骤必须声明 trigger_id")
+        if self.kind != "conditional" and self.trigger_id:
+            raise ValueError(f"{self.name}: 非条件步骤不得声明 trigger_id（trigger_id={self.trigger_id!r}）")
+
+
+@dataclass(frozen=True)
+class LayerSpec:
+    """层声明：层的默认语义可被步骤覆盖；`note` 记录该层的编排要点。"""
+
+    kind: str
+    fail_semantics: str
+    steps: tuple[StepSpec, ...]
+    depends_on: tuple[str, ...] = ()
+    note: str = ""
+
+
+STEP_LAYERS: Final[dict[str, LayerSpec]] = {
+    # ---- L1 采集（main）----
+    "L1_ingest": LayerSpec(
+        kind="main",
+        fail_semantics="abort",
+        steps=(
+            StepSpec("collect:nfra_weekly", "main", "abort", "nfra 周报采集（按周触发）",
+                     None,  # 按 COLLECT_TIMEOUT['nfra-weekly'] 动态取
+                     degrade_note="未到周度触发 → SKIP（rc=0）；超时按 COLLECT_TIMEOUT 配置"),
+            StepSpec("collect:{src}", "main", "abort",
+                     "各源原始采集（gov 拆 xzfgk/zhengceku 两个子源步骤；mof/nfra/pbc/supp）",
+                     None,  # 按 COLLECT_TIMEOUT[src] 动态取
+                     degrade_note="失败即停；--no-scrape → SKIP（rc=0）；--resume 可从该步续跑"),
+            StepSpec("supp:ingest_batch", "main", "abort", "补充库批量摄取（backlog 驱动）", 1800,
+                     degrade_note="backlog 为空 → SKIP（rc=0）"),
+        ),
+    ),
+    # ---- L2 加工（main；relevance 为旁路 side —— 批 63 入链，D-7 语义矛盾修正）----
+    "L2_transform": LayerSpec(
+        kind="main",
+        fail_semantics="abort",
+        steps=(
+            StepSpec("clean:{src}", "main", "abort", "原始 → 清洗（6 态抽取 + 校验隔离）",
+                     None,  # 调用点按 raw 体量动态计算：min(max(1800, MB×2), 21600)
+                     produces=("cleaned:{src}", "clauses:{src}"),
+                     degrade_note="**超时按源体量配置**（N-150；N-188 重标定 0.24~0.41 s/MB）；"
+                                  "当日无 raw 变化 → SKIP（rc=0）"),
+            StepSpec("relevance:{src}", "side", "warn",
+                     "清洗产物监管相关性边界筛选（BOUNDARY 边界案例 → worklist 待办）", 900,
+                     produces=("relevance:views",),
+                     degrade_note="**旁路分析件**：单源失败 WARN 不阻断主链；--stop-on-error 时中断"),
+            StepSpec("timeliness:consolidate", "main", "abort", "时效核验结果汇总", 600,
+                     produces=("timeliness:ledger",),
+                     degrade_note="无核验输入 → 空汇总（rc=0）"),
+            StepSpec("apply:{src}", "main", "abort", "时效核验结果回写清洗产物", 600,
+                     produces=("cleaned:{src}",),
+                     degrade_note="无核验结果可回写 → SKIP（rc=0）"),
+        ),
+        note="条件步骤 timeliness:verify 插在 clean/relevance 与 consolidate 之间（数据依赖："
+             "verify 产出台账 → consolidate 汇总 → apply 回写）",
+    ),
+    # ---- L3 知识（main）----
+    "L3_knowledge": LayerSpec(
+        kind="main",
+        fail_semantics="abort",
+        steps=(
+            StepSpec("classify:all", "main", "abort", "主题分类（_t*_base / _t*_final 派生）", 5400,
+                     produces=("classify:products",),
+                     degrade_note="断点幂等：输入未变自动跳过"),
+            StepSpec("relations:gen", "main", "abort",
+                     "关系抽取（依据/废止，含条款级定位：窗口优先 + 跨度退路）", 1800,
+                     produces=("relations_index",),
+                     degrade_note="失败即停；必须在 cleaned 写入后、下游消费者（base:publish）之前"),
+            StepSpec("reconcile", "main", "abort", "清洗漂移对账（clean_drift）", 1200,
+                     produces=("reconcile:drift",),
+                     degrade_note="C2 漂移待人工 → worklist 待办，不阻断主链"),
+            StepSpec("recall", "main", "abort", "召回复核与四门禁（clean/validity/contract/schema）",
+                     3600, degrade_note="四门禁不过即 FAIL，留人工"),
+        ),
+    ),
+    # ---- L4 内部制度（main）----
+    "L4_internal": LayerSpec(
+        kind="main",
+        fail_semantics="abort",
+        steps=(
+            StepSpec("internal:merged", "main", "abort",
+                     "内部制度合并视图（供条款对照与检索）", 1800,
+                     produces=("merged_view",),
+                     degrade_note="必须在 inbox:drop / internal:update（索引与原件同步）之后"),
+        ),
+    ),
+    # ---- L5 交付（main）----
+    "L5_delivery": LayerSpec(
+        kind="main",
+        fail_semantics="abort",
+        steps=(
+            StepSpec("reports:build", "main", "abort", "总览报告生成", 1800),
+            StepSpec("reports:theme", "main", "abort", "主题报告生成（T0–T10 × 11）", 1800,
+                     depends_on=("classify:products",)),
+            StepSpec("draft:clause", "main", "abort", "条款对照素材（drafter 视图）", 3600,
+                     depends_on=("merged_view",),
+                     degrade_note="N-52：此前无任何调度导致滞后，故入链并置于 merged_view 之后"),
+            StepSpec("base:publish", "main", "abort", "底座发布（发布清单 publish_manifest）", 1800,
+                     produces=("published:external", "published:internal"),
+                     degrade_note="发布清单是 wiki_sync 条件触发（publish_manifest_changed）的观察对象 —— "
+                                  "可达性由门禁 T4 守护"),
+            StepSpec("analysis:gen", "main", "abort",
+                     "分析交付物（docs/reports，含 17 项 manifest sha）", 600,
+                     produces=("analysis:manifest",)),
+        ),
+    ),
+    # ---- L6 治理（side：失败告警不阻断主链）----
+    "L6_governance": LayerSpec(
+        kind="side",
+        fail_semantics="warn",
+        steps=(
+            StepSpec("governance:artifacts", "side", "warn", "原件注册（治理库 artifact 表）", 3600,
+                     degrade_note="N-63：此前**从未入链**（仅 docstring 自述）→ 原件 sha256/路径集"
+                                  "长期不刷新；治理库不可用为合法降级"),
+            StepSpec("governance:sync", "side", "warn",
+                     "治理库同步（run_log / gate_result / relation 等投影）", 900,
+                     degrade_note="N-64：投影后移到 internal:update **之后**（否则投影落后一轮）；"
+                                  "库/文件摘要不一致 → 计入失败步骤（分叉判定）"),
+            StepSpec("watch:baseline", "side", "warn", "观测基线快照（source diff --record）", 300),
+        ),
+        note="旁路观测设施：失败仅告警，**不阻断主链**（治理库不可用为合法降级）",
+    ),
+    # ---- L7 只读披露（恒 rc=0）----
+    "L7_disclosure": LayerSpec(
+        kind="disclosure",
+        fail_semantics="rc0",
+        steps=(
+            StepSpec("retention:plan", "disclosure", "rc0",
+                     "数据生命周期只读披露（dry-run + 台账）", 900,
+                     degrade_note="恒 rc=0（无待归档是合法状态）；`--apply` 才是人工闸门"),
+            StepSpec("quarantine:triage", "disclosure", "rc0",
+                     "清洗隔离件分类与处置登记（零回写 → worklist 待办）", 600,
+                     degrade_note="恒 rc=0（零回写保证：不修复数据，只分类登记）"),
+            StepSpec("semantic:preflight", "disclosure", "rc0",
+                     "P1 语义增强启用前置披露（五道闸逐项）", 300,
+                     degrade_note="恒 rc=0；未启用是合法状态（真正的启用判定用 semantic_tools "
+                                  "--preflight 的 rc）"),
+            StepSpec("pg:health", "disclosure", "rc0",
+                     "向量存储只读健康检查（pgvector / sqlite_vec 降级链披露）", 300,
+                     degrade_note="恒 rc=0；后端不可用为合法状态"),
+        ),
+    ),
+    # ---- L8 增强层（零硬依赖，可缺失且降级可观测）----
+    "L8_enhancement": LayerSpec(
+        kind="enhancement",
+        fail_semantics="rc0",
+        steps=(
+            StepSpec("semantic:assist", "enhancement", "rc0",
+                     "P1 语义增强入链调用点（嵌入 → 主题辅助裁定；只产分析视图）", 1800,
+                     degrade_note="未启用（usage_policy.enabled=false）或嵌入链不可用 → 显式 rc=0；"
+                                  "**绝不写事实源**"),
+            StepSpec("docreader:extract", "enhancement", "rc0",
+                     "docreader 入链调用点（版面解析 + 段落级定位；只产分析视图）", 1800,
+                     degrade_note="不可用/自检不过 → 显式 SKIP（rc=0），回退既有 6 态抽取；"
+                                  "不替换抽取事实源（替换须先度量）"),
+        ),
+        note="增强层可缺失、降级可观测、绝不阻断（N-177/N-180 入链背景）",
+    ),
+    # ---- L9 条件同步（判据事实源 = config/triggers.yaml）----
+    "L9_sync": LayerSpec(
+        kind="conditional",
+        fail_semantics="skip",
+        steps=(
+            StepSpec("timeliness:verify", "conditional", "skip",
+                     "时效核验（北大法宝；Node 侧 MCP）", None,
+                     trigger_id="timeliness_verify",
+                     degrade_note="无 token/工具缺失 → verification_state=unavailable（**不误标**）；"
+                                  "配额耗尽自动停（断点续跑）；条件未触发 → SKIP（rc=0）"),
+            StepSpec("inbox:drop", "conditional", "skip",
+                     "收件箱投放（人工投递的制度文件入库）", None,
+                     trigger_id="inbox_drop",
+                     degrade_note="投放区无新文件 → SKIP（rc=0）；产出 index/align/processed → "
+                                  "必须在 internal:merged 之前"),
+            StepSpec("internal:update", "conditional", "skip",
+                     "内部制度索引更新（原件同步）", None,
+                     trigger_id="internal_update",
+                     degrade_note="原件库无未索引文件 → SKIP（rc=0）"),
+            StepSpec("wiki:sync", "conditional", "skip",
+                     "llm_wiki 源同步（发布件变化时执行）", None,
+                     trigger_id="wiki_sync",
+                     degrade_note="发布件未变化 / vault 不可达 → SKIP（rc=0）；on_fail=skip_and_warn；"
+                                  "观察对象可达性由门禁 T4 守护（D-1 修复）"),
+        ),
+        note="条件判据唯一事实源 = config/triggers.yaml；四步按数据依赖分散插入不同层段",
+    ),
+    # ---- L10 链尾门禁（阻断）----
+    "L10_gate": LayerSpec(
+        kind="gate",
+        fail_semantics="abort",
+        steps=(
+            StepSpec("gates", "gate", "abort", "全部门禁（阻断；置于链尾以终态产物为准）", 1800,
+                     degrade_note="失败即停并触发 notify(gate_fail)；P3-5 顺序解耦（原 gates 在链首）"),
+        ),
+    ),
+}
+
+# 执行顺序计划：`(层键, 步骤名序列)` 有序段。**同一层可出现在多段**（条件步骤按数据依赖
+# 插入、L2 被 verify 切分、L6 的 watch:baseline 在交付之后）。
+LAYER_EXEC_PLAN: Final[tuple[tuple[str, tuple[str, ...]], ...]] = (
+    ("L1_ingest", ("collect:nfra_weekly", "collect:{src}", "supp:ingest_batch")),
+    ("L2_transform", ("clean:{src}", "relevance:{src}")),
+    ("L9_sync", ("timeliness:verify",)),
+    ("L2_transform", ("timeliness:consolidate", "apply:{src}")),
+    ("L3_knowledge", ("classify:all", "relations:gen")),
+    ("L8_enhancement", ("semantic:assist", "docreader:extract")),
+    ("L3_knowledge", ("reconcile", "recall")),
+    ("L9_sync", ("inbox:drop", "internal:update")),
+    ("L6_governance", ("governance:artifacts", "governance:sync")),
+    ("L4_internal", ("internal:merged",)),
+    ("L5_delivery", ("reports:build", "reports:theme", "draft:clause", "base:publish",
+                     "analysis:gen")),
+    ("L6_governance", ("watch:baseline",)),
+    ("L7_disclosure", ("retention:plan", "quarantine:triage", "semantic:preflight", "pg:health")),
+    ("L9_sync", ("wiki:sync",)),
+    ("L10_gate", ("gates",)),
 )
+
+
+def step_specs() -> tuple[StepSpec, ...]:
+    """全链步骤声明（**执行序**，每步带 `layer` 归属；派生自 STEP_LAYERS + LAYER_EXEC_PLAN）。"""
+    return _specs_in_exec_order()
+
+
+def _specs_in_exec_order() -> tuple[StepSpec, ...]:
+    """全量步骤（**执行序**，由 `LAYER_EXEC_PLAN` 从 `STEP_LAYERS` 派生）。
+
+    每步带 `layer` 戳（所属层键）——MCP 资源 / 确认台桑基图 / E-3 作业归属断言都需要
+    「这一步属于哪一层」，而声明面把步骤挂在 LayerSpec 下、执行序由计划分段决定，
+    故层归属必须在**派生时**盖章，不能靠调用方反查。
+    """
+    out: list[StepSpec] = []
+    for layer_key, names in LAYER_EXEC_PLAN:
+        layer = STEP_LAYERS[layer_key]
+        by_name = {s.name: s for s in layer.steps}
+        for n in names:
+            spec = by_name[n]  # KeyError = 计划与声明不一致 → 导入即失败（不静默）
+            out.append(spec if spec.layer == layer_key else replace(spec, layer=layer_key))
+    return tuple(out)
+
+
+def step_by_name() -> dict[str, StepSpec]:
+    """步骤名 → StepSpec（派生视图；W1 起语义查询统一走此）。"""
+    return {s.name: s for s in step_specs()}
+
+
+def step_layer_of(name: str) -> str:
+    """步骤 → 所属层键（派生；README 分层渲染与 E-3 作业归属断言共用）。"""
+    for layer_key, names in LAYER_EXEC_PLAN:
+        if name in names:
+            return layer_key
+    raise KeyError(name)
+
+
+# 兼容视图（派生）：**现行 `STEP_ORDER` 语义逐项保留** —— `--from`/`--only`/`--list-steps`
+# 与门禁判据 R 全部按此消费（类型仍是 tuple[str, ...]，调用方零改动）。
+STEP_ORDER: Final[tuple[str, ...]] = tuple(s.name for s in step_specs())
 # ⚠️ 上表为**执行顺序**（取自本文件 `_run(...)` 调用点出现次序，2026-09-26 实测）。
 #    **gates 已移为链尾**（P3-5 顺序解耦，同日）：原顺序 gates→analysis:gen→watch:baseline
 #    使 `analysis:manifest` 无法声明依赖（门禁看到上一轮产物）。此处以**实装为准**；
@@ -847,15 +1127,90 @@ def _raw_records(data) -> int | None:
     return None
 
 
+# W0-3（2026-10-13，D-2）：raw 记录数**流式双格式计数**。
+# 原 `_raw_size()` 用 `json.load()` 全量解析——批 47/49 起五源主库均为 **JSONL**（首行
+# `_meta` 信封 + 一行一记录），对 JSONL 必然抛 `JSONDecodeError: Extra data` → 落 except
+# → `records=None` ⇒ 运行汇总的 raw 记录数自 JSONL 化起**静默失效**（实测复现）。
+# 且即便对遗留 JSON 数组，458MB 主库全量载入也与「流式化」目标相悖。
+# 现按**首字节嗅探**分流：`[` → 遗留数组（raw_decode 增量计数）；`{` → JSONL（逐行计数，
+# 跳过 `_meta` 信封行）。两种格式都不把文件载入内存。
+def _count_jsonl(path: str) -> int:
+    """JSONL 记录数（流式；跳过空行与首行 `_meta` 信封）。"""
+    n = 0
+    with open(path, encoding="utf-8") as fh:
+        for i, line in enumerate(fh):
+            s = line.strip()
+            if not s:
+                continue
+            if i == 0 and s.startswith("{") and '"_meta"' in s:
+                continue  # 信封行（_meta）不计入记录数
+            n += 1
+    return n
+
+
+def _count_json_array(path: str) -> int:
+    """遗留 JSON 数组元素数（**流式**：raw_decode 增量消化，不整文件载入）。"""
+    dec = json.JSONDecoder()
+    count = 0
+    with open(path, encoding="utf-8") as fh:
+        buf = ""
+        eof = False
+        while not eof:
+            chunk = fh.read(1 << 20)
+            if not chunk:
+                eof = True
+            buf += chunk
+            while True:
+                s = buf.lstrip()
+                buf = s
+                if not buf:
+                    break
+                c = buf[0]
+                if c == "]":
+                    return count
+                if c == ",":
+                    buf = buf[1:]
+                    continue
+                if c != "{":
+                    # 非对象元素（历史数据不应出现）→ 跳过该字符继续（防御性，不猜格式）
+                    buf = buf[1:]
+                    continue
+                try:
+                    _obj, end = dec.raw_decode(buf)
+                except ValueError:
+                    if eof:
+                        # EOF 仍无法解析 → 截断/损坏：以已计数返回（调用方可见偏差）
+                        return count
+                    break  # 元素跨块：读更多
+                count += 1
+                buf = buf[end:]
+    return count
+
+
+def _raw_count(path: str) -> int | None:
+    """raw 主库记录数（双格式流式）；文件缺失/不可读 → None（调用方披露，不伪造 0）。"""
+    if not path or not os.path.exists(path):
+        return None
+    try:
+        with open(path, "rb") as fh:
+            head = fh.read(8192).lstrip()
+        if not head:
+            return 0
+        if head[0:1] == b"[":
+            return _count_json_array(path)
+        return _count_jsonl(path)
+    except (OSError, ValueError):
+        return None
+
+
 def _raw_size() -> dict:
     out = {}
     for src, fn in RAW_JSON.items():
         p = os.path.join(RAW_DIR, fn)
-        try:
-            data = json.load(open(p, encoding="utf-8"))
-            out[src] = {"bytes": os.path.getsize(p), "records": _raw_records(data)}
-        except Exception:  # noqa: BLE001
-            out[src] = {"bytes": os.path.getsize(p) if os.path.exists(p) else 0, "records": None}
+        out[src] = {
+            "bytes": os.path.getsize(p) if os.path.exists(p) else 0,
+            "records": _raw_count(p),
+        }
     return out
 
 
@@ -885,6 +1240,81 @@ def collect_targets(collect: str) -> list[str]:
             if t not in out:
                 out.append(t)
     return out
+
+
+def _spec_for(step_name: str):
+    """步骤名 → StepSpec（**精确 → 模板 → 头键**三级回退）。
+
+    W1-4：矩阵消费的是**实跑实例名**（`relevance:gov` / `collect:gov_xzfgk`），而声明面用
+    模板与头键（`relevance:{src}` / `collect:{src}`）——只做精确匹配会查不到声明、误按
+    `main/abort` 处理（旁路失败被当成链失败，正是本次要修的 D-7 形态）。
+    """
+    idx = step_by_name()
+    if step_name in idx:
+        return idx[step_name]
+    head, sep, _tail = step_name.partition(":")
+    if sep:
+        tpl = f"{head}:{{src}}"
+        if tpl in idx:
+            return idx[tpl]
+        if head in idx:
+            return idx[head]
+    for name, spec in idx.items():
+        if name.split(":")[0] == head:
+            return spec
+    return None
+
+
+def _apply_failure_matrix(report: list[dict]) -> None:
+    """按**失败传播矩阵**归一化每步 rc（W1-4，v2 §3.3.3；矩阵 SSOT = `config.enums.FAILURE_MATRIX`）。
+
+    动因（D-7）：原实现用「`rc != 0` 即失败」一刀切 ⇒ 旁路步骤（`relevance:{src}`，
+    fail_semantics=warn）失败会把整条链标成失败（rc=2）并触发 `failed_step` 告警；
+    只读披露/增强层后端不可用（合法状态）同理。现按声明语义分流：
+      · `force_rc0`    → 原始 rc 存 `raw_rc`，对外一律 rc=0（后端未就绪是合法状态）；
+      · `warn_continue`→ 保留 `raw_rc`，标 `degraded=True`（台账/汇总/告警可见，不阻断）；
+      · `stop_chain`   → 保留非零 rc（计入链失败）。
+    """
+    for r in report:
+        name = str(r.get("step") or "")
+        spec = _spec_for(name)
+        kind = getattr(spec, "kind", "main")
+        fs = getattr(spec, "fail_semantics", "abort")
+        action = failure_action(kind, fs)
+        raw = int(r.get("rc") or 0)
+        r["kind"] = kind
+        r["action"] = action
+        if r.get("skipped"):
+            r["rc"] = 0  # 跳过不是失败（条件未触发/未选中）
+            continue
+        if raw == 0:
+            continue
+        if action == "force_rc0":
+            r["raw_rc"] = raw
+            r["rc"] = 0
+            r["forced_rc0"] = True
+        elif action == "warn_continue":
+            r["raw_rc"] = raw
+            r["degraded"] = True
+
+
+def _stop_requested(args, entry: dict | None) -> bool:
+    """`--stop-on-error` 的**统一**判定（W1-4：此前只有三个循环各自判断，单步调用点漏判）。
+
+    仅 `stop_chain` 类失败才触发中止；`warn_continue`/`force_rc0` 不中止（与矩阵一致）。
+    `action` 优先取矩阵归一化后的值；未归一化时按声明现查（矩阵 SSOT 单一）。
+    """
+    if not getattr(args, "stop_on_error", False) or not entry:
+        return False
+    if int(entry.get("rc") or 0) == 0:
+        return False
+    action = entry.get("action")
+    if not action:
+        spec = _spec_for(str(entry.get("step") or ""))
+        action = failure_action(
+            getattr(spec, "kind", "main"), getattr(spec, "fail_semantics", "abort")
+        )
+    return action == "stop_chain"
 
 
 def _run_chain(args) -> int:
@@ -917,7 +1347,7 @@ def _run_chain(args) -> int:
             argv = cmd + [OUT_FLAG.get(src, "--out-dir"), RAW_DIR]
             print(f"[collect] {src} argv={argv}", flush=True)
             report.append(_run(f"collect:{src}", argv, timeout=COLLECT_TIMEOUT.get(src, 7200)))
-            if args.stop_on_error and report[-1]["rc"]:
+            if _stop_requested(args, report[-1]):
                 break
     # A-12（2026-09-12）：删除假步骤（原 python -c pass 产生 rc=0 的"快照"行，汇总含假成功）；
     # raw 摘要已由汇总 raw 字段（_raw_size）输出。
@@ -984,7 +1414,7 @@ def _run_chain(args) -> int:
                 timeout=_clean_timeout,
             )
         )
-        if args.stop_on_error and report[-1]["rc"]:
+        if _stop_requested(args, report[-1]):
             break
 
     # ---- 阶段 1 水位：clauses（clean 尾部节点产物）----
@@ -1000,17 +1430,24 @@ def _run_chain(args) -> int:
 
     # 批 63（T4/W-AW）：接线 `filter_clean_relevance.py`（原为「零调用脚本」✗）⇒
     # 门禁 J7 的「产生方」**真正可达**；旁路分析件，失败不阻断主链。
-    try:
-        report.append(
-            _run(
-                f"relevance:{src}",
-                [PY, os.path.join(ROOT, "modules", "regulatory_classifier", "scripts",
-                                    "filter_clean_relevance.py"), "--source", src],
-                timeout=900,
+    # W0-2（2026-10-13，D-3）：**包入 for src in SOURCES 循环**——原实现挂在 clean 循环
+    # 之后、用**残留循环变量** `src`（循环退出时恒为最后一源 supp）⇒ 只跑 `relevance:supp`、
+    # 其余四源的边界筛选从不执行（台账实证）。与 `clean:{src}` 同构：逐步 try/WARN
+    # （旁路语义：单源失败不拖垮主链），`--stop-on-error` 时中断（与 clean 同语义）。
+    for src in SOURCES:
+        try:
+            report.append(
+                _run(
+                    f"relevance:{src}",
+                    [PY, os.path.join(ROOT, "modules", "regulatory_classifier", "scripts",
+                                        "filter_clean_relevance.py"), "--source", src],
+                    timeout=900,
+                )
             )
-        )
-    except Exception as e:  # noqa: BLE001
-        print(f"[refresh] WARN relevance:{src} 跳过: {type(e).__name__}: {e}")
+            if _stop_requested(args, report[-1]):
+                break
+        except Exception as e:  # noqa: BLE001
+            print(f"[refresh] WARN relevance:{src} 跳过: {type(e).__name__}: {e}")
 
     # ---- 阶段 2：时效回写（consolidate → apply 五源）----
     led = None
@@ -1352,7 +1789,13 @@ def _run_chain(args) -> int:
     # ---- 阶段 6.7：llm_wiki 源同步（← triggers.yaml:wiki_sync，条件步骤；N-53）----
     # 依赖 published 清单（`publish_manifest_changed` 判据）；vault 不可达时跳过（on_fail:
     #   skip_and_warn）。原由 `cli.py run --only 21.5` 驱动 → 阶段号不匹配步骤名，空跑。
-    report.append(_run_conditional("wiki:sync", "wiki_sync"))
+    _wiki_rec = _run_conditional("wiki:sync", "wiki_sync")
+    report.append(_wiki_rec)
+    # W0-1（2026-10-13，D-1 收尾）：同步**成功后**登记 `wiki:sync` 水位（版本 = 双清单联合版本，
+    # 与 triggers 条件同口径）——它是 `publish_manifest_changed` 的基线来源；SKIP/失败不登记
+    # （基线须停在「上次成功同步的版本」）。条件侧观察路径修复见 common_lib/triggers.py。
+    if _wiki_rec.get("rc") == 0 and not _wiki_rec.get("skipped"):
+        _wm("wiki:sync", paths=[_m_ext, _m_int])
 
     # ---- 阶段 6：gates（**链尾**，P3-5）----
     # 交付门禁应在**全部产物生成之后**运行：① 才覆盖本轮 6.8 的 `analysis:manifest`；
@@ -1375,8 +1818,15 @@ def _run_chain(args) -> int:
         "total_elapsed_s": round(time.time() - t_start, 1),
         "raw": _raw_size(),
         "steps": report,
-        "failed": [r for r in report if r["rc"] != 0],
+        # 三桶分离（W1-4）：`failed`=stop_chain（计入链失败）；`degraded`=warn_continue
+        # （可见不阻断）；`forced_rc0`=force_rc0（后端未就绪属合法状态）。
+        "failed": [r for r in report if int(r.get("rc") or 0) != 0],
+        "degraded": [r for r in report if r.get("degraded")],
+        "forced_rc0": [r for r in report if r.get("forced_rc0")],
     }
+    # W1-4：矩阵归一化必须在汇总/台账/告警**之前**（否则 degraded/forced 会被算成链失败）
+    _apply_failure_matrix(report)
+
     print("\n" + "=" * 72)
     print("生产全量刷新汇总")
     print("=" * 72)
@@ -1390,6 +1840,14 @@ def _run_chain(args) -> int:
             for k, v in summary["raw"].items()
         )
     )
+    if summary["degraded"]:
+        print(f"[降级] 旁路步骤 {len(summary['degraded'])} 个（可见不阻断）:")
+        for d in summary["degraded"]:
+            print(f"  ~ {d['step']} raw_rc={d.get('raw_rc')}({d.get('exit_code', '')})")
+    if summary["forced_rc0"]:
+        print(f"[强制 rc=0] {len(summary['forced_rc0'])} 个（后端未就绪属合法状态）:")
+        for d in summary["forced_rc0"]:
+            print(f"  · {d['step']} raw_rc={d.get('raw_rc')}({d.get('exit_code', '')})")
     print(f"总耗时 {summary['total_elapsed_s']}s | 失败步骤 {len(summary['failed'])}")
     for f in summary["failed"]:
         print(
@@ -1422,6 +1880,41 @@ def _run_chain(args) -> int:
         print(f"[run_state] 稳定运行台账已更新: {_rs_p}")
     except Exception as _e:  # noqa: BLE001  台账落盘失败不得中断主链，但必须可见
         print(f"[run_state] WARN 运行台账落盘失败（门禁将无法判定失败步骤）: {type(_e).__name__}: {_e}")
+    # W1-4：degraded（旁路 WARN / force_rc0）**独立告警**——「可见但不阻断」不等于「不告警」。
+    # 旁路步骤长期失败若只进台账无人看，等于回到 D-1 式的静默；单列事件便于运营区分
+    # 「链失败（failed_step）」与「降级运行（degraded_step）」。
+    if summary["degraded"] or summary["forced_rc0"]:
+        try:
+            from std_lib.common_lib import notify as _notify
+
+            _notify.notify(
+                "degraded_step",
+                f"生产刷新降级 {len(summary['degraded'])} 旁路 / "
+                f"{len(summary['forced_rc0'])} 未就绪（不阻断链）",
+                {
+                    "summary_json": out_p,
+                    "total_elapsed_s": summary["total_elapsed_s"],
+                    "degraded": [
+                        {"step": d["step"], "raw_rc": d.get("raw_rc"),
+                         "kind": d.get("kind"), "action": d.get("action"),
+                         "exit_code": d.get("exit_code"), "tail": d.get("tail", "")[:200]}
+                        for d in summary["degraded"]
+                    ],
+                    "forced_rc0": [
+                        {"step": d["step"], "raw_rc": d.get("raw_rc"),
+                         "kind": d.get("kind"), "exit_code": d.get("exit_code")}
+                        for d in summary["forced_rc0"]
+                    ],
+                    "evidence": [
+                        f"{d['step']} raw_rc={d.get('raw_rc')}({d.get('exit_code', '')}) "
+                        f"kind={d.get('kind')}/{d.get('action')} {d.get('tail', '')[:160]}"
+                        for d in summary["degraded"] + summary["forced_rc0"]
+                    ][:20],
+                },
+            )
+        except Exception as e:  # noqa: BLE001  告警失败不得改变退出码
+            print(f"[refresh] WARN 降级告警发送失败（不影响退出码）: {type(e).__name__}: {e}")
+
     # P2-6：失败 → 告警通道（v2 §3.13.6；无人值守下"失败无人知晓"是原设计的硬缺口）
     if summary["failed"]:
         try:

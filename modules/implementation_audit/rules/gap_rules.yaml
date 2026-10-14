@@ -1,0 +1,59 @@
+# gap_rules.yaml — 差距判定规则表（方案 §5.3.2「规则形式化」）
+#
+# 为什么规则外置为 YAML：规则是**领域资产**（合规人员要能审阅、能改、能版本化），
+# 而不是埋在代码里的 if 链。求值器（engine.py）只负责确定性执行，规则本身不含逻辑。
+#
+# 判据语义（all = 全部条件满足才命中；按 order 顺序求值，首个命中即止 → 可解释）：
+#   not_executed         条款有要求 ∧ 无执行记录              → high
+#   partial              条款有要求 ∧ 执行记录 partial        → medium
+#   no_evidence          条款有要求 ∧ executed ∧ 无作证      → medium
+#   insufficient_evidence 条款有要求 ∧ executed ∧ 作证不充分  → low
+#
+# 字段说明：
+#   exec_statuses  该 gap 适用的执行状态集合（空 = 任意）
+#   evidence_rule  作证维度的判据：none（与作证无关）/ zero（零作证才成立）/
+#                  min_count（作证少于 min_count 件才成立）
+#                  —— 字段名带 rule 后缀是为避免与「作证要求」混淆（2026-10-14 修正：
+#                  原 `evidence: required/sufficient` 实现与语义相反，导致 no_evidence
+#                  在「有作证材料」时命中 ✗）
+#   recommended_gap 对 recommended（非强制）条款：是否仍判 gap（默认否 —— 建议性条款不罚）
+
+version: "1"
+
+rules:
+  - id: R1-not-executed
+    order: 1
+    gap_class: not_executed
+    severity: high
+    exec_statuses: []
+    evidence_rule: none             # 无差距条件：不需要作证
+    condition: no_record            # 无任何执行记录
+    detail: "条款有要求但台账无执行记录"
+
+  - id: R2-partial
+    order: 2
+    gap_class: partial
+    severity: medium
+    exec_statuses: [partial]
+    evidence_rule: none
+    condition: always
+    detail: "执行记录为部分执行"
+
+  - id: R3-no-evidence
+    order: 3
+    gap_class: no_evidence
+    severity: medium
+    exec_statuses: [executed]
+    evidence_rule: zero             # gap 条件：**一件作证都没有**
+    condition: always
+    detail: "已执行但无作证材料"
+
+  - id: R4-insufficient-evidence
+    order: 4
+    gap_class: insufficient_evidence
+    severity: low
+    exec_statuses: [executed]
+    evidence_rule: min_count        # gap 条件：作证少于 min_count 件
+    min_count: 2
+    condition: always
+    detail: "已执行但作证材料不足"

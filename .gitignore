@@ -107,3 +107,10 @@ _tmp_smoke/
 # manifest.json / cache/ / converted/），内容含本机绝对路径且体积较大（~9 MB），不入库；
 # 助手侧依赖说明见仓库根 CODEBUDDY.md（该文件入库）。
 graphify-out/
+
+# ===== 工具缓存目录（W0-4，2026-10-13；§7.10 问题 8）=====
+# 此前未显式忽略——本机因 .git/info/exclude 或全局忽略"恰好"干净，换机/新克隆即会误提交
+# （.mypy_cache 实测 132MB）。三条均为可随时重建的本机缓存，显式忽略防换机失效。
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/

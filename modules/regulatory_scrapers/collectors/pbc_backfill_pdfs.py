@@ -55,11 +55,16 @@ from std_lib.scraper_std.cache_store import docs_root
 ATTACHMENTS_DIR = docs_root("pbc", "attachments")
 DEFAULT_JSON = os.path.join(ROOT, "data", "raw", "pbc_laws.json")
 TARGET_CATEGORY = "规范性文件"
-USER_AGENTS = [
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0",
-]
+# B1/W4（2026-10）：UA 池单栈——原本地 3 条池（Chrome 120 时代）删，改 SSOT
+# （crawler_common.USER_AGENTS → http.USER_AGENTS_PC 5 条含 124/125/Edge/Firefox/
+# Safari；与 gov/nfra 同款「try-import + 单 UA 兜底」降级样板）。
+try:
+    from std_lib.scraper_std.crawler_common import USER_AGENTS
+except ImportError:  # pragma: no cover
+    USER_AGENTS = [
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+        "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+    ]
 OCR_MIN_CHARS = 30          # 单页平均低于此值视为扫描件，触发 OCR
 TEXT_FALLBACK_THRESHOLD = 50  # pdfplumber 总字符低于此值也认为需 OCR
 SUMMARY_LEN = 200

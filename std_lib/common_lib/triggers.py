@@ -42,11 +42,68 @@ ON_FAIL = frozenset({"stop", "stop_on_quota", "manual_breakpoint", "skip_and_war
 _TIMELINESS_STATE = os.path.join(
     paths.MODULES_DIR, "regulatory_scrapers", "timeliness_review", "verification_state.json"
 )
-# 发布件清单（`publish_manifest_changed` 条件的观察对象）
-_PUBLISH_MANIFEST = os.path.join(
-    paths.MODULES_DIR, "base_publish", "published", "publish_manifest.json"
+# 内部制度数据面（`unindexed_originals` 条件的观察对象；W0-5 提为模块常量供登记表同引）
+_IPB_DATA = os.path.join(paths.MODULES_DIR, "internal_policy_base", "data")
+_IPB_ORIGINALS = os.path.join(_IPB_DATA, "originals")
+_IPB_INDEX = os.path.join(_IPB_DATA, "internal_policy_index.json")
+_IPB_INGEST_STATE = os.path.join(_IPB_DATA, "_ingest_state.json")
+# 发布件清单（`publish_manifest_changed` 条件的观察对象）——**双底座**（2026-10-13 W0-1 修复 D-1）：
+# 原观察 `base_publish/published/publish_manifest.json`——该文件**从未存在**（base_publish 只有
+# 构建脚本，发布件落在两个模块的 published/ 下）⇒ 条件恒返回「不存在 → 不判定」⇒ wiki:sync
+# 自 2026-09-29 接入起**从未触发**（运行台账 note 实证：「publish_manifest.json 不存在 → 不判定」）。
+# 现按事实源观察两份真实清单（外部为主、内部为辅），以**联合版本**与 `wiki:sync` 水位基线比对，
+# 判定规则：**任一较基线变化即满足**。
+_PUBLISH_MANIFESTS = (
+    os.path.join(paths.MODULES_DIR, "regulatory_scrapers", "published", "publish_manifest.json"),
+    os.path.join(paths.MODULES_DIR, "internal_policy_base", "published", "publish_manifest.json"),
 )
 _PKULAW_TOKEN = os.path.join(paths.ROOT, ".pkulaw_token")
+# 投放区（`inbox_has_new` 条件的观察对象）
+_INBOX_DIR = paths.INBOX_DIR
+_INBOX_MANIFEST = os.path.join(_INBOX_DIR, "_inbox_manifest.json")
+
+# --------------------------------------------------------------------------- #
+# W0-5（2026-10-13，T4）：**条件观察对象登记表**——`gate_condition_observers` 的事实源。
+#
+# 为什么需要：D-1 的根因是「观察路径指向不存在的文件」而**无任何门禁核验观察对象**——
+# 条件静默失效（恒 False）。本表把每个条件的文件观察对象显式化：
+#   · `paths` 引用条件实现里的**同一常量**（值不双写，只双引）；
+#   · `required=True` = 该路径缺失即门禁 FAIL（链内产物理应存在）；
+#   · `required=False` = 缺失合法（用户自备 token/从未核验），条件实现须在证据串明示。
+# 纪律：条件实现**新增文件观察**时必须同步登记（门禁断言两个集合互为闭包）。
+# --------------------------------------------------------------------------- #
+OBSERVATIONS: dict[str, dict] = {
+    "token_exists": {
+        "paths": [_PKULAW_TOKEN],
+        "required": False,
+        "why": "法宝 token 为用户自备；缺失时条件返回 False + 证据明示",
+    },
+    "days_since": {
+        "paths": [_TIMELINESS_STATE],
+        "required": False,
+        "why": "从未核验合法（视为满足）；条件实现明示「视为从未核验」",
+    },
+    "publish_manifest_changed": {
+        "paths": list(_PUBLISH_MANIFESTS),
+        "required": True,
+        "why": "base:publish 的链内产物；缺失 = 观察路径漂移（D-1 病灶复发）",
+    },
+    "unindexed_originals": {
+        "paths": [_IPB_ORIGINALS, _IPB_INDEX, _IPB_INGEST_STATE],
+        "required": True,
+        "why": "内部制度数据面（索引/状态缺失即数据面被破坏）",
+    },
+    "inbox_has_new": {
+        "paths": [_INBOX_DIR, _INBOX_MANIFEST],
+        "required": True,
+        "why": "投放区目录必须存在；清单缺失时条件按「有文件即新」合法降级",
+    },
+    "explicit_arg": {
+        "paths": [],
+        "required": False,
+        "why": "无文件观察（读 ctx.argv）",
+    },
+}
 
 
 def load_triggers() -> dict:
@@ -89,10 +146,11 @@ def _c_unindexed_originals(want: bool, _ctx: dict) -> tuple[bool, str]:
     → 条件恒真（每次链跑都全量重跑该触发项，实测 17 份重复件所致）。现补内容级过滤，
     仅对"不在索引路径集"的少量候选算 sha（避免全库重算）。
     """
-    base = os.path.join(paths.MODULES_DIR, "internal_policy_base", "data")
-    originals = os.path.join(base, "originals")
-    idx = os.path.join(base, "internal_policy_index.json")
-    state_p = os.path.join(base, "_ingest_state.json")
+    # W0-5：观察对象一律经模块常量（与 OBSERVATIONS 登记表同源；base 别名已清——
+    # 残留别名会被 T4-3 判为「引用未登记常量」）。
+    originals = _IPB_ORIGINALS
+    idx = _IPB_INDEX
+    state_p = _IPB_INGEST_STATE
     if not os.path.isdir(originals):
         return False, f"原件库不存在（{os.path.relpath(originals, paths.ROOT)}）"
     ref: set = set()
@@ -145,20 +203,30 @@ def _c_explicit_arg(flag: str, ctx: dict) -> tuple[bool, str]:
 
 
 def _c_publish_manifest_changed(want: bool, _ctx: dict) -> tuple[bool, str]:
-    """发布件清单自上次 wiki 同步后是否变化（以治理库登记的 `version` 为基线）。"""
-    if not os.path.exists(_PUBLISH_MANIFEST):
-        return False, "publish_manifest.json 不存在 → 不判定"
+    """发布件清单自上次 wiki 同步后是否变化（以治理库登记的 `wiki:sync` 水位为基线）。
+
+    W0-1（2026-10-13，D-1）：观察对象为**双底座两份真实清单**（见 `_PUBLISH_MANIFESTS`）；
+    版本 = 两份清单的**联合版本**（`governance_store.version_of_files`：各自 sha 拼接入哈希，
+    与链内 `_wm` 多文件登记同口径）。基线 = `wiki:sync` 水位行的 version——由
+    `run_production_refresh` 在 wiki:sync **成功执行后**登记（缺登记 → 无基线 → 视为变化）。
+    """
+    existing = [p for p in _PUBLISH_MANIFESTS if os.path.exists(p)]
+    if not existing:
+        return False, "双底座发布件清单均不存在 → 不判定"
     try:
         from common_lib import governance_store as gs
 
         if not gs.enabled():
             return False, "治理库未启用 → 无基线可比（不判定）"
-        cur = gs.version_of_file(_PUBLISH_MANIFEST)
+        cur = gs.version_of_files(existing)
         prev = gs.get_watermark("wiki:sync") or {}
         base_v = (prev.get("version") or "") if isinstance(prev, dict) else ""
         if not base_v:
             return bool(want), "无 wiki:sync 水位基线（视为变化 → 满足）"
-        return (cur != base_v) == bool(want), f"清单版本 {cur[:12]} vs 基线 {base_v[:12]}"
+        return (cur != base_v) == bool(want), (
+            f"双清单联合版本 {cur[:12]} vs 基线 {base_v[:12]}"
+            f"（{len(existing)}/{len(_PUBLISH_MANIFESTS)} 份在场）"
+        )
     except Exception as e:  # noqa: BLE001  条件判定失败不得中断主链
         return False, f"判定异常（{type(e).__name__}）→ 不判定"
 
@@ -166,10 +234,10 @@ def _c_publish_manifest_changed(want: bool, _ctx: dict) -> tuple[bool, str]:
 def _c_inbox_has_new(want: bool, _ctx: dict) -> tuple[bool, str]:
     """投放区是否有**新内容**（v2 §3.12.6）：与 `_inbox_manifest.json` 的 (文件, size, mtime)
     逐项比对；无清单时"有文件即视为新"。清单缺失/不可读 → 不判定（返回 False + 原因）。"""
-    manifest = os.path.join(paths.INBOX_DIR, "_inbox_manifest.json")
+    manifest = _INBOX_MANIFEST
     current: dict[str, tuple] = {}
     for dom in ("internal", "regulatory_stats"):
-        base = os.path.join(paths.INBOX_DIR, dom)
+        base = os.path.join(_INBOX_DIR, dom)
         if not os.path.isdir(base):
             continue
         for dirpath, _dirs, files in os.walk(base):

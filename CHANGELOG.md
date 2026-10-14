@@ -1,5 +1,52 @@
 # Changelog
 
+## [Unreleased] 2026-10-13 ~ 10-15 — 架构重构五波落地（W0 缺陷修复 → W3 领域层 + W4 共享库收敛启动，依据 `reports/项目最优重构方案_20261012.md`）
+
+> 两条主线：**① W0-W3 架构波次全部落地**（编排分层 / MCP 门面 / 领域层扩展 / 三处静默失效修复）；
+> **② W4 共享库收敛启动**（HTTP 单栈 / 公共原语 SSOT / 三个千行级大文件包化拆分）。
+> 验证：**754 用例全绿**（2 skipped）、**29 道门禁 PASS**、ruff 0、mypy 0 error（全仓 CI 口径）、`ci_check --fast` 5/5。
+
+### W0 · P0 缺陷修复（正确性止损，24 → 26 道门禁）
+- **修复三处「静默失效」实证缺陷**（门禁/单测全绿但真实运行仍断）：
+  ① `modules` standalone 脚本的 `from config.exitcodes import ExitCode` 须在**仓根引导之后**（曾致 apply 5 源全 FAIL）；
+  ② `source_url` 校验语义分级（带 scheme 非 http(s) → error；无 scheme 来源标注 → warning）——supp 源合法承载本地路径，严格 `^https?://` 会误判阻塞数据；
+  ③ `token` 移出 `doctor` QUICK_IDS（核验步骤级依赖，非 run 主链必要条件；`run --no-scrape` 不被 token 缺失阻断）。
+- **新增 2 道门禁**：`gate_condition_observers`（T4：条件触发观察对象闭合/可达/同源）、
+  `gate_dynamic_step_coverage`（R3：`{src}` 模板步骤运行时五源覆盖 + 连续成段，台账断言）。
+
+### W1 · 编排层重构（STEP_ORDER → STEP_LAYERS）
+- 31 步平铺链升级为**分层声明式编排**：步骤的执行性质/失败语义/依赖/条件/增强标记全部机器可读，
+  作为 README §8、MCP 编排描述、多体系频度调度的**单一事实源**；STEP_ORDER 由 STEP_LAYERS **派生**。
+- `tests/test_step_layers.py` + `tests/test_chain_equivalence.py`（golden 逐行比对 `--list-steps`/`--dry-run`，防漂移）。
+
+### W2 · MCP 门面（26 → 27 道门禁）
+- 新建 `mcp_server/`（schema 生成 + 传输 + 鉴权 + 审计四件事，**零 SDK 依赖**）+ `commands/mcp.py`；
+  12 个只读 tool + 3 个资源，写能力审计绑定。门面必须薄——业务逻辑仍在 interfaces/modules。
+- `gates/gate_mcp_schema.py`：schema 派生一致性 + 写能力审计 + E-4 资源齐备 + 零硬依赖。
+
+### W3 · 领域层扩展（27 → 29 道门禁）
+- 新增 `modules/reg_frameworks/`（多监管数据体系建模：数据表/数据项/条款↔数据项映射）与
+  `modules/implementation_audit/`（落地执行检视：执行记录 × 作证材料 × 制度条款的差距）——
+  完全遵循既有模块范式（MODULE_SPECS 5→7 + interfaces api + 契约 + 门禁 + worklist 联动）。
+- 7 契约锚点（模块级 `*_FIELDS` 元组）+ contract_manifest 登记；7 个新受控域；cli 19→21 命令；
+  `std_lib/common_lib/tabular.py` 共享表格原语（消除跨模块 import）。
+
+### W4a · 共享库收敛启动
+- **HTTP 单栈**：`crawler_common.robust_get` 为唯一传输出口（requests 生态）；`http.py` 差异化能力并入后
+  退役为薄封装、`common/ratelimit.py` 退避逻辑并入；`tests/test_http_unification.py` 契约测试锁定行为。
+- **公共原语 SSOT**：sha256/normalize_date/norm_docno/write_jsonl/atomic_write 全仓改引唯一实现；
+  `gate_no_duplicate_libs` 扫描模式扩展 `def _?(norm_title|...)` 堵私有名绕过 + 实现体相似度检测（>0.8 告警不判死）。
+- **千行级大文件包化**（与 governance_store 拆分同构：包 + 门面，import 路径不变）：
+  `governance_store.py`（1507 行）→ `governance_store/`；`relations.py`（1081 行）→ `relations/`；
+  `gate_config_integrity.py`（1407 行）→ `gate_config_integrity/`（按判据族五拆）。
+- **拆分类门禁的环状导入修复**：`gate_config_integrity` 新建 `_common.py` 承载公共基础设施
+  （子模块一律 `from ._common import …`，禁止回头 import 门面）——环状导入运行期可解但 mypy `[has-type]` 阻断。
+
+### 本轮发现并修复的回归（均已在测试/门禁中固化）
+- **P-5 回归**：新测试 `from tools import run_production_refresh` 使 mypy 全仓走查双模块名冲突
+  （"Source file found twice"）直接中止检查 → 改裸名导入（conftest bootstrap 已注入 tools）。
+- **flowmap 漂移**：架构变更后 README §8 链路总图未重生成 → `gen_flow_map` 重注入（173 行受管块）。
+
 ## [Unreleased] 2026-10-08 ~ 10-12 — 桌面干扰根治 + 声明面/死代码清剿（第五十六~六十五批，回链 `reports/重构执行报告_*.md`）
 
 > 两条主线：**① 用户体感故障（复制粘贴失效/被抢占）的真凶定位与根治**；

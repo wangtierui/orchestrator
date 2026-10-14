@@ -11,6 +11,7 @@
 from __future__ import annotations
 
 import os
+import sys
 
 import pytest
 
@@ -36,7 +37,7 @@ def test_schedule_yaml_schema_and_jobs():
     assert len(jobs) >= 5
     ids = [j["id"] for j in jobs]
     assert len(set(ids)) == len(ids)
-    assert all(j.get("kind") in ("cron", "event") for j in jobs)
+    assert all(j.get("trigger") in ("cron", "event") for j in jobs)
     assert all(j.get("on_miss") in ("skip", "run_at_next_boot") for j in jobs)
 
 
@@ -181,6 +182,10 @@ def test_run_step_order_matches_call_sites():
     fp = os.path.join(paths.ROOT, "tools", "run_production_refresh.py")
     spec = importlib.util.spec_from_file_location("_rpr_test", fp)
     rpr = importlib.util.module_from_spec(spec)
+    # W1（2026-10-13）：链模块起含 `@dataclass`（StepSpec/LayerSpec）⇒ 必须先登记
+    # `sys.modules`——dataclasses 处理类时回查 `sys.modules[cls.__module__].__dict__`
+    # （CPython dataclasses.py:814），未登记即 AttributeError（Python 3.14 实证）。
+    sys.modules[spec.name] = rpr
     spec.loader.exec_module(rpr)
     # 25（24 → +1）：N-73b（2026-09-28）`retention:plan`（数据生命周期**只读披露**）入链
     #   —— `tools/retention.py` 为 v2 §3.10 的生命周期节点，原仅人工执行、链内无可见性；

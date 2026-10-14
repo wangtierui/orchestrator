@@ -195,7 +195,7 @@ def build_xml(job: dict) -> str:
 
 
 def cron_jobs() -> list[dict]:
-    return [j for j in (_gsd().load_schedule().get("jobs") or []) if j.get("kind") == "cron"]
+    return [j for j in (_gsd().load_schedule().get("jobs") or []) if j.get("trigger") == "cron"]
 
 
 def _run(argv: list[str]) -> tuple[int, str]:

@@ -62,7 +62,7 @@ def cron_label(when: str) -> str:
 
 def _clock_key(job: dict) -> tuple:
     """排序键：cron 类按「一天内的钟点」升序，事件驱动类排在最后（再按 id 稳定）。"""
-    if job.get("kind") != "cron":
+    if job.get("trigger") != "cron":
         return (1, 99, 99, job.get("id", ""))
     parts = (job.get("when") or "").split()
     mi = int(parts[0]) if len(parts) >= 2 and parts[0].isdigit() else 99
@@ -74,7 +74,7 @@ def render_table(jobs: list[dict]) -> str:
     """渲染定时表（markdown 表体，不含表头分隔行——表头由手册模板固定）。"""
     rows = []
     for j in sorted(jobs, key=_clock_key):
-        if j.get("kind") == "cron":
+        if j.get("trigger") == "cron":
             label = cron_label(j.get("when", ""))
             when = "`" + j.get("when", "") + "`"
         else:
@@ -84,7 +84,8 @@ def render_table(jobs: list[dict]) -> str:
         desc = (j.get("desc") or "").strip()
         if j.get("on_miss") and j.get("on_miss") != "skip":
             desc += f"（漏跑策略：{j['on_miss']}）"
-        rows.append(f"| **{label}** | {when} | {cmd} | {desc} |")
+        role = j.get("kind") or "—"
+        rows.append(f"| **{label}** | {when} | {role} | {cmd} | {desc} |")
     return "\n".join(rows)
 
 
@@ -92,7 +93,7 @@ def render_cron(jobs: list[dict], *, repo_placeholder: str = "/path/to/repo") ->
     """渲染 crontab 片段（仅 cron 类作业；统一走 `cli.py` 唯一入口）。"""
     lines = ["```cron"]
     for j in jobs:
-        if j.get("kind") != "cron":
+        if j.get("trigger") != "cron":
             continue
         argv = " ".join(a for a in (j.get("argv") or []) if a != "cli.py")
         lines.append(

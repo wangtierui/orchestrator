@@ -21,34 +21,39 @@ from __future__ import annotations
 import hashlib
 import logging
 import os
-import random
 import re
 import time
-import urllib.error
-import urllib.parse
-import urllib.request
 from typing import Any
+
+# B2（W4，2026-10）：sha256 收敛至 `std_lib.common_lib.io_atomic.sha256_bytes`（SSOT）。
+# 原本地 `def sha256_of(data: bytes)` 与 SSOT 逐字重复（hashlib.sha256(data).hexdigest()）——
+# 分裂始于「不知道已有 SSOT」，故删本地定义、调用方直调 SSOT（L2 来源标注防再分裂）。
+from std_lib.common_lib.io_atomic import sha256_bytes
+
+# B1（W4，2026-10）：HTTP 单栈——robust_get / _backoff_wait / _safe_url 的唯一实现
+# 已并入 `std_lib.scraper_std.http`（本文件原逐字重复的实现已删）；USER_AGENTS 池
+# 统一为 http.USER_AGENTS_PC（原 5 条 Chrome 120 时代池 → 5 条含 124/125/Edge/
+# Firefox/Safari）。采集侧六处「try-import + 单 UA 兜底」消费方（gov/nfra/pbc 等）
+# 经本 SSOT 单栈化——兜底值保留（缺依赖时的降级路径，接触即统一，不动降级语义）。
+# 以下为**兼容 re-export**（noqa: F401 防「未使用」误删——本文件是 import 门面，
+# 符号供 collectors 五源与测试消费）；行为差异见 http.robust_get docstring（加固向：
+# UA 版本更新 + decode_bytes 乱码检测）。
+from .http import USER_AGENTS_PC as USER_AGENTS  # noqa: F401
+from .http import (
+    _backoff_wait,  # noqa: F401
+    _safe_url,  # noqa: F401
+    robust_get,  # noqa: F401
+)
 
 LOG = logging.getLogger("crawler_common")
 
 # --------------------------------------------------------------------------- #
-# 1. 反爬加固 HTTP 客户端
+# 1. 反爬加固 HTTP 客户端（W4-b：实现已并入 http.py，此处仅保留共享常量定义）
 # --------------------------------------------------------------------------- #
 
-# 桌面浏览器 UA 池（轮换以规避脚本识别）
-USER_AGENTS = [
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-    "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-    "(KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36 Edg/119.0.0.0",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 "
-    "(KHTML, like Gecko) Version/17.0 Safari/605.1.15",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0",
-    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
-    "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-]
-
 # 富请求头模板（模拟真实浏览器；不含 br 压缩，避免无 brotli 解码器导致乱码）
+# W4-b：与 http.BASE_HEADERS 同内容（http 为事实源；本常量保留供既有调用方引用，
+# 后续随接触迁移——两处字典内容若漂移由 test_http_unification 对等测试锁定）。
 BASE_HEADERS = {
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,"
     "application/json;q=0.8,application/pdf;q=0.7,*/*;q=0.6",
@@ -64,96 +69,11 @@ _NO_RETRY_STATUS = frozenset({403, 404, 410})
 _RETRY_STATUS = frozenset({429, 500, 502, 503, 504})
 
 
-def robust_get(
-    url: str,
-    *,
-    binary: bool = False,
-    timeout: int = 30,
-    retries: int = 4,
-    min_delay: float = 0.8,
-    max_delay: float = 1.6,
-    referer: str | None = None,
-    extra_headers: dict[str, str] | None = None,
-) -> tuple[int | None, Any]:
-    """
-    带反爬策略的 GET 请求，返回 (status, content)。
-
-    - status: HTTP 状态码；失败（含重试耗尽）为 None。
-    - content: 文本模式返回 str；binary 模式返回 bytes；失败返回错误说明 str。
-
-    策略：
-      * 每次请求随机轮换 UA + 富请求头（Accept/Accept-Language/Referer）；
-      * 请求间隔在 [min_delay, max_delay] 随机化，规避固定节奏风控；
-      * 指数退避重试（2**attempt 秒上限 16s）；
-      * 命中 429/503 且响应带 Retry-After 时，优先采用服务端给出的等待时长；
-      * 403/404/410 确定性错误立即返回，不浪费重试配额。
-    """
-    url = _safe_url(url)
-    last_err: Any = None
-    for attempt in range(1, retries + 1):
-        # 礼貌限速：随机间隔
-        gap = random.uniform(min_delay, max_delay)
-        time.sleep(gap)
-        try:
-            req = urllib.request.Request(url, method="GET")
-            req.add_header("User-Agent", random.choice(USER_AGENTS))
-            for k, v in BASE_HEADERS.items():
-                req.add_header(k, v)
-            if referer:
-                req.add_header("Referer", referer)
-            if extra_headers:
-                for k, v in extra_headers.items():
-                    req.add_header(k, v)
-            with urllib.request.urlopen(req, timeout=timeout) as resp:
-                status = resp.status
-                data = resp.read()
-                if binary:
-                    return status, data
-                enc = resp.headers.get_content_charset() or "utf-8"
-                try:
-                    return status, data.decode(enc, errors="replace")
-                except LookupError:
-                    return status, data.decode("utf-8", errors="replace")
-        except urllib.error.HTTPError as e:
-            last_err = f"HTTP {e.code}"
-            if e.code in _NO_RETRY_STATUS:
-                return e.code, None
-            if e.code in _RETRY_STATUS:
-                wait = _backoff_wait(attempt, e.headers.get("Retry-After"))
-                LOG.warning(
-                    "HTTP %s @ %s 限流/暂不可用，%ss 后重试(%d/%d)",
-                    e.code,
-                    url,
-                    round(wait, 1),
-                    attempt,
-                    retries,
-                )
-                time.sleep(wait)
-                continue
-            return e.code, None
-        except (urllib.error.URLError, ConnectionError, TimeoutError, OSError) as e:
-            last_err = f"{type(e).__name__}: {e}"
-            wait = _backoff_wait(attempt, None)
-            LOG.warning(
-                "网络异常 @ %s，%ss 后重试(%d/%d): %s", url, round(wait, 1), attempt, retries, e
-            )
-            time.sleep(wait)
-            continue
-    LOG.error("GET %s 重试 %d 次仍失败：%s", url, retries, last_err)
-    return None, last_err
-
-
-def _backoff_wait(attempt: int, retry_after: str | None) -> float:
-    """退避时长：优先 Retry-After（秒），否则 2**attempt 上限 16s，加随机抖动。"""
-    if retry_after and retry_after.isdigit():
-        return float(int(retry_after))
-    return min(2**attempt, 16) + random.uniform(0, 1)
-
-
-def _safe_url(url: str) -> str:
-    """简单清理：去除危险空白；保留原样其余部分。"""
-    return (url or "").strip()
-
+# W4-b（2026-10，B1）：robust_get / _backoff_wait / _safe_url 的本地实现已删——
+# 唯一实现并入 .http（本文件顶部 re-export，import 路径与调用形态不变）。
+# 原实现约 90 行与新栈逐字重复（退避公式/UA 轮换/重试语义），是本轮 HTTP 单栈
+# 要消灭的第二套并行实现；行为差异（UA 池扩大 + decode_bytes）由
+# tests/test_http_unification.py 对等测试锁定，见 http.robust_get docstring。
 
 # --------------------------------------------------------------------------- #
 # 2. 安全文件名（魔数纠正扩展名）
@@ -253,10 +173,8 @@ def is_attachment_url(url: str, text: str = "") -> bool:
 # --------------------------------------------------------------------------- #
 # 3. 多格式文档文本抽取（透明标记 + sha256）
 # --------------------------------------------------------------------------- #
-
-
-def sha256_of(data: bytes) -> str:
-    return hashlib.sha256(data).hexdigest()
+# B2（W4，2026-10）：原 `def sha256_of(data: bytes)` 已删——与 io_atomic.sha256_bytes 逐字
+# 重复；本文件内 sha256 一律用模块顶部 import 的 SSOT（见 L2 来源标注纪律）。
 
 
 def garble_ratio(text: str) -> float:
@@ -351,7 +269,7 @@ def extract_document_text(
     源字节调用方负责落盘留存，本函数不丢弃任何文件。
     """
     kind = sniff_kind(data, name)
-    sha = sha256_of(data)
+    sha = sha256_bytes(data)
     # 批 54/W-W：**content-type/sniff 二次判定** —— 扩展名与魔数均不可信时（MIME 封装、前导
     # MIME/HTTP 头、HTML 冒充 .doc 等）先**拆封**再重新嗅探，全过程**留证据** `sniff`（可审计）。
     _sniff: dict[str, Any] = {"declared_ext": os.path.splitext(name or "")[1].lower(),
@@ -1147,6 +1065,10 @@ _DATE_RE1 = re.compile(r"(\d{4})[-年](\d{1,2})[-月](\d{1,2})日?")
 _DATE_RE2 = re.compile(r"(\d{4})[-/](\d{1,2})[-/](\d{1,2})")
 
 
+# norm-specialization: 抽取型日期（norm.py 日期分层第二类，F-D06 在册）——入参为
+# 列表页/详情页**长文本**（正则抽取），无法识别返回空串；与解析层 cleaner.normalize_date
+# （字段值→保守原样保留）、字段规范化型 mof_attachments.normalize_date（list/None 语义）
+# 三类契约互斥，不合并。
 def normalize_date(text: str) -> str:
     """抽取并归一为 YYYY-MM-DD；无法识别返回空串。"""
     if not isinstance(text, str) or not text:
@@ -1173,7 +1095,7 @@ def normalize_digits(s: str) -> str:
 
 def content_sha256(text: str) -> str:
     """正文内容哈希，用于内容级去重（同源多 URL / 改版重发）。"""
-    return sha256_of((text or "").encode("utf-8"))
+    return sha256_bytes((text or "").encode("utf-8"))
 
 
 # --------------------------------------------------------------------------- #
@@ -1205,7 +1127,7 @@ def build_attachment_record(
         "size_bytes": len(data),
         "extension": os.path.splitext(file_name)[1].lower(),
         "kind": kind,
-        "sha256": sha256_of(data),
+        "sha256": sha256_bytes(data),
         "extracted": extracted,
         "extract_status": extract_status,
         "needs_ocr": needs_ocr,
