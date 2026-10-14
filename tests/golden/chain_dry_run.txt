@@ -52,6 +52,7 @@ warning: The `
 [step:draft:clause] SKIP（--dry-run（只列 argv，不执行））
 [step:base:publish] SKIP（--dry-run（只列 argv，不执行））
 [step:analysis:gen] SKIP（--dry-run（只列 argv，不执行））
+[step:semantic:search] SKIP（--dry-run（只列 argv，不执行））
 [step:watch:baseline] SKIP（--dry-run（只列 argv，不执行））
 [step:retention:plan] SKIP（--dry-run（只列 argv，不执行））
 [step:quarantine:triage] SKIP（--dry-run（只列 argv，不执行））
@@ -101,6 +102,7 @@ reports:theme            0         0.0
 draft:clause             0         0.0
 base:publish             0         0.0
 analysis:gen             0         0.0
+semantic:search          0         0.0
 watch:baseline           0         0.0
 retention:plan           0         0.0
 quarantine:triage        0         0.0

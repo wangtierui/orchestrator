@@ -212,7 +212,10 @@ def test_run_step_order_matches_call_sites():
     #   门禁 J7 的「双向闭合全量成立」实为**过判**（只查源码字面量、不查可达性 ✗）。
     #   形态：clean 之后、apply 之前；旁路分析件（写 `modules/regulatory_classifier/relevance/`），
     #   失败不阻断主链（try/except 包裹）。
-    assert len(rpr.STEP_ORDER) == 31
+    # 32（31 → +1）：W4（§6.4）`semantic:search`（pgvector 语义检索视图的**链上调用点**）——
+    #   动因：pgvector 长期"实现就绪但链上无调用点"（纸面接线）；形态：analysis:gen 之后
+    #   （索引含 17 项交付物，须取 6.8 终态）；增强层 rc0（后端/嵌入不可用为合法状态）。
+    assert len(rpr.STEP_ORDER) == 32
     # 每个步骤名必须能在本文件中找到**引号字面量**（`"gates"` / `f"clean:{src}"` ⇒ `"clean:{src}"`）
     text = open(fp, encoding="utf-8").read()
     for step in rpr.STEP_ORDER:

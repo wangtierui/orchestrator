@@ -172,7 +172,7 @@ def test_chain_steps_resource_reflects_layers():
     assert "error" not in r
     c = r["contents"]
     assert c["available"] is True
-    assert c["count"] == 31
+    assert c["count"] == 32
     first = c["steps"][0]
     assert {"order", "name", "layer", "kind", "depends_on", "produces"} <= set(first)
     assert first["layer"], "步骤必须带层归属"

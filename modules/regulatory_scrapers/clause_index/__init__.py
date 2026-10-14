@@ -9,6 +9,10 @@ modules.regulatory_scrapers.clause_index — 五源 clean 条文抽取固定节�
 对称 clean_index：build（增量，仅当 clean 快照新于产物）→ data/clauses/{src}_clauses_{date}.jsonl
 （每行=一份文件的条款结构）+ clause_index_state.json（快照日期登记）。
 
+W4（2026-10-15，双轨决策 ADR-0013；方案 §6.3.2）：`{src}_clauses_{date}.md` 渲染视图
+**默认不再生成**（`build_clause_index(with_md=False)`）——消费面盘点实证其程序读取方/
+契约/门禁判据/人工报告数据源引用均为 0；按需经 `run_clean_pipeline --md` 开启。
+
 产物行 schema（F-D10 补 4 维 + 2026-09-18 解析适配补 7 维 + 2026-09-20 条内层级 1 维）：
   {dedup_key, source_url, document_number, title,
    rfn, timeliness_status, publish_date, effective_date,
@@ -39,6 +43,7 @@ modules.regulatory_scrapers.clause_index — 五源 clean 条文抽取固定节�
 """
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import re
@@ -267,12 +272,19 @@ def _file_sha256(p: str) -> str:
     return h.hexdigest()
 
 
-def build_clause_index(rebuild: bool = False) -> dict:
+def build_clause_index(rebuild: bool = False, with_md: bool = False) -> dict:
     """clean → 条文 固定节点（②）。增量：仅对 clean 快照**日期或内容**新于 clause 产物的源抽取。
     rebuild=True 强制全量重建。返回 {src: {date, built, files}}。
 
     F-C02：原增量仅比日期——同日 cleaned 内容更新（apply 回写/收编）不触发重建，
     条款静默陈旧（M-09）。现同日也比 input_sha（文件内容指纹），任一不同即重建。
+
+    with_md（W4 双轨决策，ADR-0013；方案 §6.3.2）：是否同批写出 `{src}_clauses_{date}.md`
+    渲染视图。**默认 False**——消费面盘点实证：MD 的**程序读取方为 0**（全部条文消费方
+    走 JSONL：发布层/主题报告/条款定位/drafter/门禁/基准），契约与门禁判据 0，人工报告
+    数据源引用 0（唯一定位是"人工审阅视图"，且无任何文档佐证其被实际使用）。按方案
+    「无消费方 → 默认关闭、保留生成能力（按需开启）」落旗：链上不再每轮重写 147MB，
+    需要时经 `run_clean_pipeline --md` 或本参数显式开启（可逆，不删历史产物）。
     """
     os.makedirs(CLAUSE_DIR, exist_ok=True)
     ci = get_clean_index()
@@ -301,9 +313,12 @@ def build_clause_index(rebuild: bool = False) -> dict:
         tmp = dest + ".tmp"
         mdtmp = mddest + ".tmp"
         n = 0
-        with open(cp, encoding="utf-8") as fin, \
-                open(tmp, "w", encoding="utf-8") as fout, \
-                open(mdtmp, "w", encoding="utf-8") as fout_md:
+        # W4（ADR-0013）：with_md=False 时不开 MD 临时文件（省 147MB/轮 的渲染与落盘）；
+        # 用 contextlib.ExitStack 按旗标条件性持有第三个句柄（保持流式单遍不变）。
+        with contextlib.ExitStack() as stack:
+            fin = stack.enter_context(open(cp, encoding="utf-8"))
+            fout = stack.enter_context(open(tmp, "w", encoding="utf-8"))
+            fout_md = stack.enter_context(open(mdtmp, "w", encoding="utf-8")) if with_md else None
             for ln in fin:
                 if not ln.strip():
                     continue
@@ -362,13 +377,16 @@ def build_clause_index(rebuild: bool = False) -> dict:
                 }
                 row["validation"] = validate_clauses(row)   # V001–V007（在行装配完成后执行）
                 fout.write(json.dumps(row, ensure_ascii=False) + "\n")
-                # clauses.md 渲染视图（与 internal_policy_base 共享 render_markdown，双产物）
-                fout_md.write(render_markdown(stru, title=rec.get("title", "")))
-                fout_md.write("\n\n---\n\n")
+                if fout_md is not None:
+                    # clauses.md 渲染视图（与 internal_policy_base 共享 render_markdown，双产物）
+                    fout_md.write(render_markdown(stru, title=rec.get("title", "")))
+                    fout_md.write("\n\n---\n\n")
                 n += 1
         os.replace(tmp, dest)
-        os.replace(mdtmp, mddest)
-        state[src] = {"date": date, "files": n, "clause_path": dest, "md_path": mddest,
+        if with_md:
+            os.replace(mdtmp, mddest)
+        state[src] = {"date": date, "files": n, "clause_path": dest,
+                      "md_path": mddest if with_md else "",
                       "input_sha": _file_sha256(cp)}   # F-C02：内容指纹（同日改写检测）
         cur_dates[src] = date
         out[src] = {"date": date, "built": True, "files": n}

@@ -1,5 +1,69 @@
 # Changelog
 
+## [Unreleased] 2026-10-15 — W4 数据层强化 + pgvector 接线 + ADR 制度化（第六十九批）
+
+> 接第六十八批（W0-W3 + W4a）落地 W4 剩余出口判据（方案 §6.3~§6.5）与 ADR 制度化（§9.4 部分）。
+> 验证：**754+ 用例全绿**（W4 新增 11 项）、**29 道门禁 PASS**、ruff 0、mypy 0、`ci_check --fast` 5/5。
+
+### W4 §6.3.1 raw 纳入水位体系 + resume 第三条件（D-16）
+- `GOV_ARTIFACTS` 增 `raw:{src}`（观察型，stage 0 采集后登记——**先于 clean 的输入解析**，
+  否则 cleaned 声明的是上轮 raw 版本、边恒 `ok_within_round` 噪声）；`cleaned:{src}` 声明
+  `inputs: ["raw:{src}"]`——「链外 raw 更新 → clean 不跳」成为机器可判面。
+- `_resume_plan` 第三条件**并行计算、只披露不生效**（方案风险控制：判据切换先并行验证一周）：
+  文件级新算 depends_on 版本 vs 上次执行记录版本（watermark.inputs_json），新增信号只有
+  一类——**文件已变但水位未更新** = 链外写方；差异入 `audit_log` 台账；
+  `REG_ORCH_RESUME_V2=1` 显式开启（默认关）。合法再生产（水位已跟进）不误判。
+- 新增 `_artifact_paths()` 产物→路径**唯一映射**（登记与第三条件核验同源，防两处定义漂移）；
+  全部 `_wm` 调用点与 `_wm_observations` 改引。
+- 台账实证测试：`tests/test_w4_data_layer.py`（链外改写 → v2 剔除 clean:gov + 证据披露）。
+
+### W4 §6.3.2 双轨决策（ADR-0013）
+- 消费面盘点（code-explorer 全仓实证，文件:行号 级证据）：**cleaned CSV 有 10 处生产读点
+  + 3 处存在性/sha 依赖 + 1 条活契约**（recall/相关性/时效核验/漂移核验全在链内读 latest）
+  → **保留每轮生成**；**clauses MD 程序读取方 0、契约 0、门禁 0、人工报告数据源引用 0**
+  → **默认关闭**（`build_clause_index(with_md=False)`；`run_clean_pipeline --md` 按需开启，
+  可逆不删历史）。「人工审阅是否真实发生」列为待人工确认项（旗标翻转是一行改动）。
+
+### W4 §6.3.3 .tmp 治理 + 发布版本史
+- `fs_lock.sweep_stale_tmp()`：链启动清理超过 24h 的崩溃残留 `.tmp_*`（删除前打印清单；
+  写入侧 except 清理 + os.replace 保证正常路径零残留——实测全仓 0 个）。
+- retention 增 `published_tmp_ext/int`（keep_days=1 + delete；`_plan_age` 增 include_glob
+  收窄——无收窄会误删发布目录正式件）。
+- `base_publish.append_publish_history()`：每次发布追加一行到 `publish_manifest_history.jsonl`
+  （manifest 自身 sha + 各件 sha/计数 + 时间）——条款级变更追踪与审计回溯的凭据。
+
+### W4 §6.3.4 / E-1 产物分级存储（ADR-0007）+ ADR 制度化
+- 新建 `docs/adr/` + README 索引（13 条）；落地 **ADR-0007**（四级形态 L-a 文件事实源 /
+  L-b SQLite 索引 / L-c 治理库 / L-d PG 可选门槛 + 四条引入门槛；治理库 28.8MB 远低于
+  50MB ⇒ 无需 PG 迁移的证据记录在案）；README §3.4 数据字典补对应章节。
+- 补录 ADR-0001~0006 / 0008~0010（既有选型，证据取 CHANGELOG 与批次报告）；
+  ADR-0011/0012 随 W5 落地。
+
+### W4 §6.4 pgvector 接线（语义检索视图）
+- 新工具 `tools/semantic_search.py`：17 项交付物 + 发布件记录（限量）嵌入 →
+  `vec.delivery_docs/delivery_records`（只读消费；`vector_store.ensure_table` 表自供给）；
+  降级链 pgvector→sqlite_vec→none 全部 rc0 披露（增强层纪律）。
+- **链步骤 `semantic:search`**（STEP_ORDER 31→32，插在 analysis:gen 之后——索引含交付物
+  终态）；`doctor` 增 pgvector 服务检查项；BENCHMARK §6.7 披露「可用性 + 与 FTS5 的
+  A/B overlap（同索引子集，mean_jaccard）」；`semantic_tools.json` pgvector `wired: true`。
+- A/B 公平性修正：FTS5 侧必须**过滤到同一索引子集**再取 top-k（否则全库 vs 子集的
+  overlap 恒低、度量失真）。
+
+### 本轮发现并修复的回归/缺陷（均已固化）
+- **P-5 回归（mypy 双模块名）**：新测试 `from tools import …` 使 `mypy .` 报
+  "Source file found twice" 中止全仓检查 → 改裸名导入（conftest bootstrap 已注入）。
+- **gate_config_integrity 环状导入**：五拆后子模块 `from . import ROOT` 形成环，mypy
+  `[has-type]` 阻断 → 新建 `_common.py` 承载共用件（子模块一律 `from ._common import …`）。
+- **golden 盘符大小写**：regen 时 cwd 小写盘符 vs 子进程输出大写盘符 → 归一化漏匹配，
+  golden 混入机器路径（gate_hardcoded_paths 拦下）→ `_normalize` 改大小写不敏感。
+- **N-3 回归**：新测试含 cleaned 快照日期字面量 → 改动态生成。
+- **HTTP 方向校正（诚实记录）**：W4a 实作与方案 §6.1 原文相反（http.py/urllib 成为单栈，
+  robust_get 为其门面）——按「移动+适配不重写」纪律，小面是吸收 robust_get 而非搬迁
+  http.py 的 382 行差异化能力；方案 §6.1/权衡 #6/ADR-0009 已同步校正。
+- **refactor/ 归属方转交登记**：远程提交（其他用户）引入的明文数据库连接串（2 处
+  CRITICAL）被 gate_secret_scan 拦下 → 按项目纪律排除出检查范围（与 mypy/ruff 同口径）
+  + `reports/refactor归属方转交登记_20261015.md` 转交（不代改）。
+
 ## [Unreleased] 2026-10-13 ~ 10-15 — 架构重构五波落地（W0 缺陷修复 → W3 领域层 + W4 共享库收敛启动，依据 `reports/项目最优重构方案_20261012.md`）
 
 > 两条主线：**① W0-W3 架构波次全部落地**（编排分层 / MCP 门面 / 领域层扩展 / 三处静默失效修复）；
@@ -32,8 +96,15 @@
   `std_lib/common_lib/tabular.py` 共享表格原语（消除跨模块 import）。
 
 ### W4a · 共享库收敛启动
-- **HTTP 单栈**：`crawler_common.robust_get` 为唯一传输出口（requests 生态）；`http.py` 差异化能力并入后
-  退役为薄封装、`common/ratelimit.py` 退避逻辑并入；`tests/test_http_unification.py` 契约测试锁定行为。
+- **HTTP 单栈**（**方向校正**，见 ADR-0009 与方案 §6.1 校正注）：最终形态为
+  `http.py`（urllib `AdaptiveHttpClient`）为**无会话 GET 唯一实现**——原
+  `crawler_common.robust_get` 实现并入此处、crawler_common 改 re-export 门面，
+  `common/ratelimit.py` 退役（退避公式 SSOT 落 http.py）。动因：http.py 已承载全部
+  差异化能力（UA 轮换/冷却/代理池/流式，382 行成熟代码 + 自检），"移动 + 适配不重写"
+  的小面是吸收 robust_get（约 60 行函数）而非反向搬迁；分层保留 `gov_collector.
+  RobustSession`（requests Session + 连接池 + POST——urllib 无连接复用对应能力，
+  gov 千页级采集改 urllib 是性能退化）。默认参数逐项对齐 + 两处加固向差异
+  （UA 池升 8 条 / decode_bytes 解码）由 `tests/test_http_unification.py` 对等锁定。
 - **公共原语 SSOT**：sha256/normalize_date/norm_docno/write_jsonl/atomic_write 全仓改引唯一实现；
   `gate_no_duplicate_libs` 扫描模式扩展 `def _?(norm_title|...)` 堵私有名绕过 + 实现体相似度检测（>0.8 告警不判死）。
 - **千行级大文件包化**（与 governance_store 拆分同构：包 + 门面，import 路径不变）：

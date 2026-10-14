@@ -31,7 +31,7 @@ for _p in (_ROOT, _MODULES, os.path.join(_ROOT, "std_lib")):
 # 阶段 3（2026-09-18）：发布层读取双底座产物一律经 interfaces（原插入兄弟模块
 # 目录以 import clean_index/clause_index 的引导已移除）。
 
-from base_publish import SCHEMA_VERSION
+from base_publish import SCHEMA_VERSION, append_publish_history
 
 from config.enums import SOURCE_ORDER
 from config.exitcodes import ExitCode
@@ -322,6 +322,12 @@ def build() -> dict:
     with open(tmp, "w", encoding="utf-8") as fh:
         json.dump(manifest, fh, ensure_ascii=False, indent=1)
     os.replace(tmp, mp)
+    # W4（方案 §6.3.3）：发布版本史（append-only，每次一行）——版本史缺失不回滚发布
+    # （发布已完成），但必须显式暴露，不得静默。
+    try:
+        append_publish_history(mp, manifest)
+    except Exception as e:  # noqa: BLE001
+        print(f"[base_publish] WARN 发布版本史追加失败（不阻断发布）: {type(e).__name__}: {e}")
     return manifest
 
 

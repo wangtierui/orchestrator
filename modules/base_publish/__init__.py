@@ -41,3 +41,38 @@ def write_jsonl(path: str, rows) -> int:
             n += 1
     os.replace(tmp, path)
     return n
+
+
+# W4（方案 §6.3.3）：发布**版本史**（append-only）。
+# `publish_manifest.json` 是**单版**（每次发布被覆盖）——"上次发布长什么样"随之丢失，
+# 条款级变更追踪（用途十六：某条款何时进/出发布件）与审计回溯（某次发布为何计数跳变）
+# 都无可判据。版本史补这一面：每次发布追加一行（manifest 自身 sha + 各件 sha/计数 +
+# 时间），成本极低（一次一行），且与 manifest 同目录、同发布事务写入。
+def append_publish_history(manifest_path: str, manifest: dict) -> str:
+    """把一次发布的指纹摘要追加到 `publish_manifest_history.jsonl`（同目录）。
+
+    返回版本史路径。行形态：
+        {ts, base, snapshot_date, manifest_sha256, counts, files: {name: {sha256, count}}}
+    `manifest_sha256` 对**刚落盘的 manifest 文件**取哈希（版本史自证：该行描述的
+    就是那一版 manifest）。写失败**向上抛**（调用方决定是否阻断——发布已完成，
+    版本史缺失不应回滚发布，但必须显式暴露，不得静默）。
+    """
+    import hashlib
+
+    hist = os.path.join(os.path.dirname(manifest_path), "publish_manifest_history.jsonl")
+    h = hashlib.sha256()
+    with open(manifest_path, "rb") as fh:
+        for chunk in iter(lambda: fh.read(1 << 20), b""):
+            h.update(chunk)
+    row = {
+        "ts": manifest.get("generated_at", ""),
+        "base": manifest.get("base", ""),
+        "snapshot_date": manifest.get("snapshot_date", ""),
+        "schema_version": manifest.get("schema_version", ""),
+        "manifest_sha256": h.hexdigest(),
+        "counts": manifest.get("counts", {}),
+        "files": manifest.get("files", {}),
+    }
+    with open(hist, "a", encoding="utf-8") as fh:
+        fh.write(json.dumps(row, ensure_ascii=False) + "\n")
+    return hist

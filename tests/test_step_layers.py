@@ -23,11 +23,11 @@ def rpr():
 
 
 def test_step_layers_declaration_shape(rpr):
-    """分层声明的基本形状：10 层 / 31 步 / 受控 kind。"""
+    """分层声明的基本形状：10 层 / 32 步 / 受控 kind。"""
     from config.enums import STEP_KINDS
 
     assert len(rpr.STEP_LAYERS) >= 8, sorted(rpr.STEP_LAYERS)
-    assert len(rpr.step_specs()) == 31
+    assert len(rpr.step_specs()) == 32
     assert {s.kind for s in rpr.step_specs()} <= STEP_KINDS
 
 
@@ -88,7 +88,7 @@ def test_r4_passes_on_real_declarations():
     """正例：真实声明面下 R4 全绿。"""
     problems, detail = gci._check_step_layers()
     assert problems == [], problems
-    assert detail.get("steps") == 31, detail
+    assert detail.get("steps") == 32, detail
 
 
 def test_r4_rejects_produces_outside_gov_artifacts(monkeypatch):

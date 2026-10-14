@@ -246,6 +246,13 @@
    "step": "semantic:assist"
   },
   {
+   "file": "semantic_search.py",
+   "category": "tool",
+   "entry": "语义检索视图（W4 §6.4 pgvector 接线：17 项交付物 + 发布件记录限量嵌入；只读消费，A/B vs FTS5 披露）",
+   "independent": false,
+   "step": "semantic:search"
+  },
+  {
    "file": "smoke_semantic_models.py",
    "category": "tool",
    "entry": "P1 语义模型冒烟自检（真实初始化 + 真实调用）",

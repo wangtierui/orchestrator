@@ -6,7 +6,10 @@
 
 范围：仓库源码/配置文件（.py/.yaml/.yml/.json/.toml/.ini/.cfg/.env 等）；
 排除：reports/（文档可含示例）、data//published//corpus//logs/、backups/、
-      secret_scan.py 自身（其自检夹具为动态拼接，不应豁免整体——仅跳过该文件以避误报）。
+      secret_scan.py 自身（其自检夹具为动态拼接，不应豁免整体——仅跳过该文件以避误报）、
+      external/（第三方上游源码与权重，永不随仓分发）、
+      refactor/（**其他用户**的独立模块：本机不得修改，其命中由归属方处置——排除只为
+      防假阳性淹没真信号，与 mypy/ruff/gate_no_duplicate_libs 的既有排除口径一致）。
 
 通过标准：无 CRITICAL/HIGH 命中（placeholder/环境变量注入形态不报）。
 """
@@ -43,6 +46,13 @@ def run() -> tuple[bool, dict]:
         # → 属**上游样例文件**（既非本仓凭据，也无泄露面）。若不排除，则"引入第三方源码"这一
         # 正常动作**必然伴随门禁红灯**，噪声会淹没真信号（这正是本仓"判据不得制造假阳性"的纪律）。
         os.sep + "external" + os.sep,
+        # 2026-10-15（第六十九批）：`refactor/` 属**其他用户**的独立模块（项目纪律：
+        # 不得修改其任何文件，处理＝排除出检查范围＋转交登记；mypy/ruff/
+        # gate_no_duplicate_libs 均已同口径排除）。远程提交（0f081f2/3171131）引入的
+        # `refactor/collectors/storage/config.py` 含**明文数据库连接串**（2 处 CRITICAL）——
+        # 排除只为防假阳性淹没真信号，**不是认可该写法**；归属方处置与转交登记见
+        # `reports/refactor归属方转交登记.md`（随批 69 提交）。
+        os.sep + "refactor" + os.sep,
     )  # 本门禁（描述文本含规则名，防自命中）
     kept = [f for f in findings if not any(s in (f.file or "") for s in skip_frag)]
     crit = [f for f in kept if f.level == "CRITICAL"]

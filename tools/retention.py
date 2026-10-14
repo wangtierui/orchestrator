@@ -19,6 +19,7 @@ tools/retention.py — 数据生命周期与保留策略（v2 §3.10，P2-3）
 | `ipb_backups` | `modules/internal_policy_base/backups/` | 同上 |
 | `reports_tmp` | `reports/_tmp/` | 保留 `keep_days` 天（运行日志/临时产物） |
 | `timeliness_err` | `modules/regulatory_scrapers/timeliness_review/*.log.err` | 移入 `reports/_tmp/timeliness_err/`（§3.10 要求"运行日志统一落 reports/_tmp"） |
+| `published_tmp_ext` / `published_tmp_int` | 双底座 `published/` 下的 `.tmp_*` | 保留 1 天并**真删**（§6.3.3 原子写崩溃残留兜底；与链启动 `fs_lock.sweep_stale_tmp` 同口径——彼执行、此披露） |
 | `repo_baks` | 全仓 `*.bak_*` / `*.bak2_*` | 只统计（`.gitignore` 已忽略），`--include-baks` 才归档 |
 
 纪律：`archive/` 与 `reports/` 均在门禁排除集内（不新增盲区）；本工具**只移动不删除**。
@@ -116,6 +117,28 @@ POLICY: tuple[dict, ...] = (
         "group_by_regex": "^([a-z]+)_cleaned_",
         "keep": 1,
         "move_to": "archive/clean_quarantine",
+    },
+    {
+        # W4（方案 §6.3.3）：发布目录的**原子写临时文件**兜底。写入侧
+        # （fs_lock.atomic_write_* 的 except 清理 + os.replace）保证正常路径零残留，
+        # 但崩溃残留可达数百 MB（external_records.jsonl 单体 289MB ⇒ 同名 .tmp_ 同量级）。
+        # keep_days=1 + delete：与链启动 sweeper（`fs_lock.sweep_stale_tmp`，24h）同口径——
+        # sweeper 是**执行**，本条目是**披露/审计**面（dry-run 计划可见、台账留痕）。
+        # ⚠️ include_glob 必须收窄到 `.tmp_*`：发布目录的正式件（manifest/records）无保留策略，
+        #   无收窄的 keep_days+delete 会误删事实源。
+        "name": "published_tmp_ext",
+        "dir": "modules/regulatory_scrapers/published",
+        "include_glob": ".tmp_*",
+        "keep_days": 1,
+        "delete": True,
+    },
+    {
+        # 同上：内部制度底座发布目录（merged_view/policies 单体较小，但同形态同纪律）。
+        "name": "published_tmp_int",
+        "dir": "modules/internal_policy_base/published",
+        "include_glob": ".tmp_*",
+        "keep_days": 1,
+        "delete": True,
     },
 )
 
@@ -222,17 +245,25 @@ def _plan_dir(spec: dict) -> tuple[list[dict], dict]:
 
 
 def _plan_age(spec: dict) -> tuple[list[dict], dict]:
-    """按 `keep_days` 计划某目录（含子目录，但遵守 `exclude_names`）。"""
+    """按 `keep_days` 计划某目录（含子目录，但遵守 `exclude_names`）。
+
+    `include_glob`（W4 §6.3.3 增）：与 `_plan_dir` 同语义的**包含过滤**——只计划匹配名。
+    动因：`published_tmp_*` 类目位于发布目录，正式件（manifest/records）**无保留策略**，
+    无收窄的 keep_days+delete 会误删事实源；故必须先把候选集收窄到 `.tmp_*`。
+    """
     base = os.path.join(paths.ROOT, spec["dir"])
     if not os.path.isdir(base):
         return [], {"exists": False}
     days = int(spec.get("keep_days", 7))
     excluded = set(spec.get("exclude_names") or ())
+    inc_only = spec.get("include_glob", "")
     out: list[dict] = []
     total = 0
     for dirpath, dirnames, filenames in os.walk(base):
         dirnames[:] = [d for d in dirnames if d not in excluded]
         for fn in filenames:
+            if inc_only and not fnmatch.fnmatch(fn, inc_only):
+                continue
             fp = os.path.join(dirpath, fn)
             total += 1
             if _age_days(fp) > days:

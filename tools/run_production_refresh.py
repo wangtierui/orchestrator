@@ -184,6 +184,11 @@ GOV_ARTIFACTS: dict[str, dict] = {
         "stage": "2",
     },
     "internal_index": {"produced_by": "internal_policy_base.indexer.ingest", "stage": "3"},
+    # ---- W4（方案 §6.3.1，D-16）：raw 纳入水位体系 ----
+    # raw 是**链外写方**（collectors 直写 RAW_DIR，亦可被链外重采/手工补救改写）——
+    # 此前无任何水位登记，「链外 raw 更新」对下游完全不可见（cleaned 的水位边只到
+    # cleaned 自身）。登记为**观察型**（stage 0，采集后即登记），供 cleaned 声明输入边。
+    "raw:{src}": {"produced_by": "collectors.<src>_collector", "stage": "0"},
     # ---- 声明依赖型（阶段 1 主链边）----
     # v2 §3.3.1（2026-09-26）：`clauses:{src}` **现声明** `cleaned:{src}` 上游。
     #   此前不声明的原因——"阶段 1 的 cleaned 版本会被阶段 2 时效回写作废，声明即恒 stale"
@@ -199,6 +204,9 @@ GOV_ARTIFACTS: dict[str, dict] = {
     "cleaned:{src}": {
         "produced_by": "regulatory_scrapers.clean.run_clean_pipeline.main",
         "stage": "2",
+        # W4（方案 §6.3.1，D-16）：声明 raw 上游——「链外 raw 更新 → clean 不跳」
+        # 的机器可判面（详见 raw:{src} 注释与 _resume_plan 第三条件）。
+        "inputs": ["raw:{src}"],
     },
     "classify:products": {
         "produced_by": "regulatory_classifier.scripts.classify.run",
@@ -336,6 +344,12 @@ def _cleaned_jsonl(src: str) -> str:
     return (idx.latest_jsonl_path(src) or "") if idx else ""
 
 
+def _raw_jsonl(src: str) -> str:
+    """该源 raw 主库（JSONL）绝对路径（W4 §6.3.1：raw 纳入水位体系）。"""
+    name = RAW_JSON.get(src, "")
+    return os.path.join(RAW_DIR, name) if name else ""
+
+
 def _cleaned_count(src: str):
     """该源最新快照记录数（供水位披露；取不到返回 None）。"""
     idx = _clean_idx()
@@ -389,6 +403,51 @@ def _classifier_reports() -> list[str]:
     if not os.path.isdir(d):
         return []
     return [os.path.join(d, f) for f in sorted(os.listdir(d)) if f.endswith(".md")]
+
+
+# W4（方案 §6.3.1，D-16）：产物键 → 代表文件路径集的**唯一映射**。
+# 动因：resume 第三条件要按 depends_on **文件级**新算当前版本（链外写方不更新水位，
+# 只有文件哈希能发现），而此前各 `_wm(...)` 调用点与 `_wm_observations` 各自拼路径
+# ——同一产物两处定义即漂移风险，且「登记时算的版本」与「核验时算的版本」不同源
+# 会造出假阳性。故收敛为单映射：登记与核验共用。
+def _artifact_paths(artifact_key: str) -> list[str]:
+    """产物键 → 代表文件路径集（水位版本计算的唯一路径源）。
+
+    覆盖 GOV_ARTIFACTS 中**会被声明为 inputs** 的键族（第三条件的核验面）与全部
+    观察型键；叶子产物（relevance:views / timeliness:ledger）无人依赖，无需映射。
+    文件不存在 → 返回空（调用方按「无版本」处理，与 _wm 既有语义一致）。
+    """
+    head, sep, src = artifact_key.partition(":")
+    if sep and head in ("raw", "cleaned", "clauses"):
+        fn = {"raw": _raw_jsonl, "cleaned": _cleaned_jsonl, "clauses": _clauses_jsonl}[head]
+        p = fn(src)
+        return [p] if p else []
+    fixed: dict[str, list[str]] = {
+        "clean_index": [os.path.join(SCRAPERS, "clean_index", "index.json")],
+        "rfn_attr": [os.path.join(CLS_DATA, "人身保险公司-文件归属表.csv")],
+        "rfn_theme": [os.path.join(CLS_DATA, "人身保险公司-主题归属表.csv")],
+        "timeliness:state": [os.path.join(REVIEW, "verification_state.json")],
+        "internal_index": [os.path.join(IPB_DATA, "internal_policy_index.json")],
+        "relations_index": [paths.relations_index()],
+        "reconcile:drift": [os.path.join(CLS_DATA, "rfn_drift_state.json")],
+        "merged_view": [os.path.join(IPB_DATA, "merged_view.json")],
+        "analysis:manifest": [os.path.join(DOCS_REPORTS, "_manifest.json")],
+        "published:external": [os.path.join(PUB_EXT, "publish_manifest.json")],
+        "published:internal": [os.path.join(PUB_INT, "publish_manifest.json")],
+        "wiki:sync": [
+            os.path.join(PUB_EXT, "publish_manifest.json"),
+            os.path.join(PUB_INT, "publish_manifest.json"),
+        ],
+    }
+    dyn: dict[str, object] = {
+        "classify:products": _detail_tables,
+        "reports:classifier": _classifier_reports,
+    }
+    if artifact_key in fixed:
+        return fixed[artifact_key]
+    if artifact_key in dyn:
+        return list(dyn[artifact_key]())  # type: ignore[operator]
+    return []
 
 
 def _spec_of(artifact_key: str) -> dict:
@@ -452,7 +511,13 @@ def _wm(
 
 
 def _wm_observations() -> None:
-    """登记**观察型**产物（链外写方，只记录当前版本供下游引用/审计）。"""
+    """登记**观察型**产物（链外写方，只记录当前版本供下游引用/审计）。
+
+    W4（§6.3.1）：路径统一经 `_artifact_paths` 单映射（与 resume 第三条件的
+    文件级核验同源——「登记时算的版本」与「核验时算的版本」必须同源，否则造假阳性）。
+    raw:{src} 不在此处登记：其写方是**链内采集**（stage 0 尾部即登记，见 _run_chain），
+    必须早于 cleaned 的输入解析（stage 2）。
+    """
     try:
         from std_lib.common_lib import governance_store as gs
 
@@ -460,15 +525,15 @@ def _wm_observations() -> None:
             return
     except Exception:  # noqa: BLE001
         return
-    obs = {
-        "rfn_attr": os.path.join(CLS_DATA, "人身保险公司-文件归属表.csv"),
-        "rfn_theme": os.path.join(CLS_DATA, "人身保险公司-主题归属表.csv"),
-        "timeliness:state": os.path.join(REVIEW, "verification_state.json"),
-        "internal_index": os.path.join(IPB_DATA, "internal_policy_index.json"),
-        "clean_index": os.path.join(SCRAPERS, "clean_index", "index.json"),
-    }
-    for key, p in obs.items():
-        _wm(key, paths=[p])
+    obs = (
+        "rfn_attr",
+        "rfn_theme",
+        "timeliness:state",
+        "internal_index",
+        "clean_index",
+    )
+    for key in obs:
+        _wm(key, paths=_artifact_paths(key))
 
 
 def _exit_semantic(rc: int) -> str:
@@ -912,8 +977,16 @@ STEP_LAYERS: Final[dict[str, LayerSpec]] = {
                      "docreader 入链调用点（版面解析 + 段落级定位；只产分析视图）", 1800,
                      degrade_note="不可用/自检不过 → 显式 SKIP（rc=0），回退既有 6 态抽取；"
                                   "不替换抽取事实源（替换须先度量）"),
+            # W4（方案 §6.4）：pgvector 落地的**唯一链上调用点**——语义检索视图
+            # 构建（17 项交付物 + 发布件记录限量嵌入 → vec schema；只读消费）。
+            # 位置在 analysis:gen 之后（见 LAYER_EXEC_PLAN）：索引对象含交付物，
+            # 必须等 6.8 重建出终态再嵌。降级链（pgvector→sqlite_vec→none）披露。
+            StepSpec("semantic:search", "enhancement", "rc0",
+                     "分析交付库语义检索视图（pgvector 嵌入索引 + FTS5 A/B 披露）", 1800,
+                     degrade_note="后端/嵌入链不可用 → rc=0 显式披露（既有 FTS5 检索路径"
+                                  "不受影响；无度量不扩大使用面——ADR-0003 延伸）"),
         ),
-        note="增强层可缺失、降级可观测、绝不阻断（N-177/N-180 入链背景）",
+        note="增强层可缺失、降级可观测、绝不阻断（N-177/N-180 入链背景；W4 §6.4 语义检索视图）",
     ),
     # ---- L9 条件同步（判据事实源 = config/triggers.yaml）----
     "L9_sync": LayerSpec(
@@ -968,6 +1041,9 @@ LAYER_EXEC_PLAN: Final[tuple[tuple[str, tuple[str, ...]], ...]] = (
     ("L4_internal", ("internal:merged",)),
     ("L5_delivery", ("reports:build", "reports:theme", "draft:clause", "base:publish",
                      "analysis:gen")),
+    # W4（§6.4）：语义检索视图在 analysis:gen **之后**——索引对象含 17 项交付物，
+    # 须取 6.8 重建出的终态再嵌入（先嵌后建 = 索引旧交付物）。
+    ("L8_enhancement", ("semantic:search",)),
     ("L6_governance", ("watch:baseline",)),
     ("L7_disclosure", ("retention:plan", "quarantine:triage", "semantic:preflight", "pg:health")),
     ("L9_sync", ("wiki:sync",)),
@@ -1094,6 +1170,17 @@ def _resume_plan() -> dict:
         skip ⟺ 「上次该步骤 rc=0（且非跳过）」**且**「全库水位无 stale/未登记」。
 
     水位有异常 → 一律全量重跑（宁重跑不跳：重跑的代价是时间，跳错的代价是数据陈旧）。
+
+    W4（方案 §6.3.1，D-16）第三条件**并行计算、只披露不生效**：
+
+        skip_v2 ⟺ skip_v1 ∧ 「该步 depends_on 的当前**文件**版本 == 上次执行记录版本」
+
+    · 「上次执行记录版本」= 该步 produces 产物的 `watermark.inputs_json`（登记时
+      各依赖的版本）；「当前版本」按 `_artifact_paths` **文件级新算**。
+    · 新增信号只有一类：**文件已变但水位未更新** = 链外写方（重采/手工补救）——
+      水位表判据（v1）对此完全失明（表里还是旧版本， declared == current）。
+    · 判据切换必须先并行验证一周（新旧跳过集差异无异常），环境变量
+      `REG_ORCH_RESUME_V2=1` 显式开启；差异每次运行写入 `audit_log`（台账）。
     """
     try:
         from std_lib.common_lib import governance_store as gs
@@ -1113,7 +1200,86 @@ def _resume_plan() -> dict:
             "watermark": det,
         }
     skip = {s["step"] for s in steps if s["rc"] == 0 and not s.get("skipped")}
-    return {"enabled": True, "from_run": rid, "count": len(skip), "steps": sorted(skip)}
+    plan = {"enabled": True, "from_run": rid, "count": len(skip), "steps": sorted(skip)}
+    # ---- W4 第三条件：并行计算（v1 仍决定实际跳过集；v2 披露 + 台账留痕）----
+    try:
+        skip_v2, delta = _resume_inputs_changed(skip, gs)
+    except Exception as e:  # noqa: BLE001  判据计算失败不得影响 v1 行为
+        plan["v2_error"] = f"{type(e).__name__}: {e}"
+        return plan
+    plan["steps_v2"] = sorted(skip_v2)
+    plan["skip_delta"] = delta  # v1 跳、v2 不跳的步骤 + 命中的链外写方证据
+    plan["v2_active"] = os.environ.get("REG_ORCH_RESUME_V2", "") == "1"
+    if delta:
+        try:
+            gs.log_audit(
+                "resume_plan_v2",
+                "resume",
+                target_key=rid,
+                field="skip_delta",
+                old=str(sorted(skip)),
+                new=str(sorted(skip_v2)),
+                basis="第三条件并行计算（W4 §6.3.1）：链外写方改写 depends_on 文件、水位未更新",
+                actor="tools.run_production_refresh",
+            )
+        except Exception:  # noqa: BLE001  台账留痕失败不影响主链
+            pass
+    return plan
+
+
+def _resume_inputs_changed(skip: set[str], gs) -> tuple[set[str], list[dict]]:
+    """第三条件核验（W4 §6.3.1）：v1 跳过集中哪些步骤的 depends_on 已被**链外**改写。
+
+    对每一步：其 produces 产物的 `watermark.inputs_json` 记录了「上次执行时各依赖
+    的版本」；与依赖的**当前文件版本**（`_artifact_paths` + `version_of_files`）比对：
+
+        当前文件版本 == 声明版本        → 未变（保留跳过）
+        水位版本 == 当前文件版本        → 依赖被**合法再生产**（含同轮顺序特性，
+                                         如 apply 回写 cleaned）——v1 的 ok_within_round
+                                         已披露，不算链外改写（保留跳过）
+        水位版本 == 声明版本 ≠ 文件版本 → **链外写方**（文件变了、水位没变）
+                                         → 该步必须重跑（剔除出 v2 跳过集）
+
+    返回 (v2 跳过集, 差异披露列表)。产物未登记水位/无 inputs → 无证据，保留跳过。
+    """
+    out: set[str] = set()
+    delta: list[dict] = []
+    for step in sorted(skip):
+        spec = _spec_for(step)
+        src = step.split(":", 1)[1] if ":" in step else ""
+        rerun_reasons: list[dict] = []
+        for art_tpl in getattr(spec, "produces", ()) or ():
+            art = art_tpl.replace("{src}", src) if src else art_tpl
+            w = gs.get_watermark(art)
+            if not w:
+                continue
+            ins = w.get("inputs") or {}
+            for dep, declared in sorted(ins.items()):
+                dep_w = gs.get_watermark(dep) or {}
+                dep_wm_version = str(dep_w.get("version") or "")
+                plist = [p for p in _artifact_paths(dep) if p and os.path.exists(p)]
+                if not plist:
+                    continue  # 依赖文件不在（未部署/未生成）→ 无证据
+                cur = gs.version_of_files(plist) if len(plist) > 1 else gs.version_of_file(plist[0])
+                if not cur or cur == str(declared):
+                    continue  # 未变
+                if dep_wm_version == cur:
+                    continue  # 合法再生产（水位已跟进）——v1 已按 round 判 ok/within_round
+                rerun_reasons.append(
+                    {
+                        "step": step,
+                        "artifact": art,
+                        "dep": dep,
+                        "declared": str(declared),
+                        "watermark": dep_wm_version,
+                        "file_now": cur,
+                    }
+                )
+        if rerun_reasons:
+            delta.extend(rerun_reasons)
+        else:
+            out.add(step)
+    return out, delta
 
 
 def _raw_records(data) -> int | None:
@@ -1374,6 +1540,16 @@ def _run_chain(args) -> int:
             flush=True,
         )
 
+    # ---- W4（方案 §6.3.1，D-16）：raw 水位登记（观察型，stage 0 尾部）----
+    # 位置纪律：必须在 clean 之前——cleaned:{src} 阶段 2 登记 inputs 时按**当前水位表**
+    # 解析 raw:{src} 版本，若晚于 clean 登记，cleaned 声明的是上一轮 raw 版本、raw 同轮
+    # 再更新 → 边恒为 ok_within_round（噪声）；此前登记则 declared == current → `ok`。
+    # 在 supp:ingest_batch 之后：该步也写 raw:supp（本地摄取），须取到 stage 0 终态。
+    # 采集未执行（--no-scrape/--resume 跳过）时同样登记：raw 文件未变，幂等同版本；
+    # 采集失败亦登记当前文件态（collectors 原子写，文件非旧即新，均为真实状态）。
+    for src in SOURCES:
+        _wm(f"raw:{src}", paths=_artifact_paths(f"raw:{src}"))
+
     # ---- 阶段 1：clean（尾部自动 clause）----
     # N-150（2026-09-29，**N-188 于 2026-10-08 重标定**）**超时按源体量配置**（原为固定 `timeout=1800`）。
     # 背景：真实运行暴露 `clean:gov` **必然超时** —— 原固定 1800s 使**最大的源永远跑不完**（端到端阻断）；
@@ -1421,7 +1597,8 @@ def _run_chain(args) -> int:
     # 不声明 cleaned 上游：apply_timeliness 会在阶段 2 双轨回写 cleaned，
     # 届时阶段 1 的 cleaned 版本作废（已知顺序特性，见 GOV_ARTIFACTS 注释）。
     for src in SOURCES:
-        _wm(f"clauses:{src}", rc=_rc_of(report, f"clean:{src}"), paths=[_clauses_jsonl(src)])
+        _wm(f"clauses:{src}", rc=_rc_of(report, f"clean:{src}"),
+            paths=_artifact_paths(f"clauses:{src}"))
 
     # ---- 阶段 1.9：时效核验（← triggers.yaml:timeliness_verify，条件步骤）----
     # N-53：原由 `cli.py run --only 6.9` 驱动，而 `--only` 只认**步骤名**（实测 6.9
@@ -1487,7 +1664,7 @@ def _run_chain(args) -> int:
         _wm(
             f"cleaned:{src}",
             rc=_rc_of(report, f"apply:{src}"),
-            paths=[_cleaned_jsonl(src)],
+            paths=_artifact_paths(f"cleaned:{src}"),
             record_count=_cleaned_count(src),
         )
 
@@ -1498,7 +1675,8 @@ def _run_chain(args) -> int:
         _run("classify:all", [PY, os.path.join(ROOT, "cli.py"), "classify", "--all"], timeout=5400)
     )
     # 阶段 2.5 水位：分类产物族（以 11 份明细表为版本代表集——交付级产物、体量小）
-    _wm("classify:products", rc=_rc_of(report, "classify:all"), paths=_detail_tables())
+    _wm("classify:products", rc=_rc_of(report, "classify:all"),
+        paths=_artifact_paths("classify:products"))
 
     # ---- 阶段 2.55：观察型水位**提前登记**（2026-09-19 修复顺序缺陷）----
     # 动因：`relations_index` 声明 `internal_index` 为依赖，而解析依赖版本走**当前水位表**；
@@ -1525,7 +1703,7 @@ def _run_chain(args) -> int:
     _wm(
         "relations_index",
         rc=_rc_of(report, "relations:gen"),
-        paths=[paths.relations_index()],
+        paths=_artifact_paths("relations_index"),
     )
 
     # ---- 阶段 2.7：P1 语义增强**入链**（`semantic:assist`，N-177）----
@@ -1584,7 +1762,7 @@ def _run_chain(args) -> int:
     _wm(
         "reconcile:drift",
         rc=_rc_of(report, "reconcile"),
-        paths=[os.path.join(CLS_DATA, "rfn_drift_state.json")],
+        paths=_artifact_paths("reconcile:drift"),
     )
     # 观察型登记（第二次）：链外写方（归属表/主题表/时效 state/内部索引/clean_index）。
     # 放在 stage 3 之后 = 链内最后一个 attr 写方（reconcile）之后，版本才稳定。
@@ -1648,7 +1826,7 @@ def _run_chain(args) -> int:
     _wm(
         "merged_view",
         rc=_rc_of(report, "internal:merged"),
-        paths=[os.path.join(IPB_DATA, "merged_view.json")],
+        paths=_artifact_paths("merged_view"),
     )
 
     # ---- 阶段 4.5：reports（全景/主题分类报告生成；F-O06 报告生成入编排）----
@@ -1680,7 +1858,7 @@ def _run_chain(args) -> int:
     _rc_rep = _rc_of(report, "reports:build")
     _rc_theme = _rc_of(report, "reports:theme")
     _rc_reports = _rc_theme if _rc_theme not in (None, 0) else (_rc_rep or 0)
-    _wm("reports:classifier", rc=_rc_reports, paths=_classifier_reports())
+    _wm("reports:classifier", rc=_rc_reports, paths=_artifact_paths("reports:classifier"))
 
     # ---- 阶段 4.7：draft（条款对照素材；N-52 修复 2026-09-27）----
     # 此前 `cli.py draft`（build_draft_clause_view.py → drafter/data/draft_clause/）
@@ -1698,10 +1876,10 @@ def _run_chain(args) -> int:
     # 阶段 5.5 水位：双底座发布件（版本取 publish_manifest.json——已含 sha/计数，
     # 避免对 733 MB 的 external_index.sqlite 二次哈希）
     _rc_pub = _rc_of(report, "base:publish")
-    _m_ext = os.path.join(PUB_EXT, "publish_manifest.json")
-    _m_int = os.path.join(PUB_INT, "publish_manifest.json")
-    _wm("published:external", rc=_rc_pub, paths=[_m_ext], record_count=_pub_count(_m_ext))
-    _wm("published:internal", rc=_rc_pub, paths=[_m_int], record_count=_pub_count(_m_int))
+    _wm("published:external", rc=_rc_pub, paths=_artifact_paths("published:external"),
+        record_count=_pub_count(os.path.join(PUB_EXT, "publish_manifest.json")))
+    _wm("published:internal", rc=_rc_pub, paths=_artifact_paths("published:internal"),
+        record_count=_pub_count(os.path.join(PUB_INT, "publish_manifest.json")))
 
     # ---- 阶段 6.8：分析交付库刷新（F-L01）----
     # 数据重建后刷新规划 §2.1 五级分析 17 项交付（docs/reports/）；classify 阶段已
@@ -1720,7 +1898,25 @@ def _run_chain(args) -> int:
     _wm(
         "analysis:manifest",
         rc=_rc_of(report, "analysis:gen"),
-        paths=[os.path.join(DOCS_REPORTS, "_manifest.json")],
+        paths=_artifact_paths("analysis:manifest"),
+    )
+
+    # ---- 阶段 6.85：语义检索视图（W4 §6.4；analysis:gen 之后——索引含交付物终态）----
+    # 增强层纪律：rc0（后端/嵌入不可用为合法状态，显式披露）；产物
+    # reports/semantic_search/semantic_search_<date>.json（可用性 + A/B overlap）。
+    report.append(
+        _run(
+            "semantic:search",
+            [
+                PY,
+                "-m",
+                "tools.semantic_search",
+                "--build",
+                "--records-limit",
+                os.environ.get("REG_ORCH_SEMANTIC_SEARCH_LIMIT", "1000"),
+            ],
+            timeout=1800,
+        )
     )
 
     # ---- 阶段 6.5：变更监听基线记录（F-O02）----
@@ -1795,7 +1991,7 @@ def _run_chain(args) -> int:
     # 与 triggers 条件同口径）——它是 `publish_manifest_changed` 的基线来源；SKIP/失败不登记
     # （基线须停在「上次成功同步的版本」）。条件侧观察路径修复见 common_lib/triggers.py。
     if _wiki_rec.get("rc") == 0 and not _wiki_rec.get("skipped"):
-        _wm("wiki:sync", paths=[_m_ext, _m_int])
+        _wm("wiki:sync", paths=_artifact_paths("wiki:sync"))
 
     # ---- 阶段 6：gates（**链尾**，P3-5）----
     # 交付门禁应在**全部产物生成之后**运行：① 才覆盖本轮 6.8 的 `analysis:manifest`；
@@ -2009,11 +2205,34 @@ def main(argv=None) -> int:
             print(f"[refresh] WARN 日志初始化失败（退回 stdout）: {type(e).__name__}")
     if args.resume:
         plan = _resume_plan()
-        _RESUME_SKIP.update(plan.get("steps") or [])
+        # W4（§6.3.1）：第三条件并行验证期**只披露不生效**（v1 决定实际跳过集）；
+        # `REG_ORCH_RESUME_V2=1` 显式开启（前置：新旧跳过集差异观察一周无异常）。
+        skip_steps = (
+            (plan.get("steps_v2") or plan.get("steps") or [])
+            if plan.get("v2_active")
+            else (plan.get("steps") or [])
+        )
+        _RESUME_SKIP.update(skip_steps)
         print(
             f"[refresh] --resume：跳过集 {len(_RESUME_SKIP)} 步"
             f"（{plan.get('from_run') or plan.get('reason')}）"
         )
+        delta = plan.get("skip_delta") or []
+        if delta:
+            print(
+                f"[refresh] --resume 第三条件（W4 §6.3.1，并行验证期只披露）："
+                f"{len(delta)} 条链外改写证据 → v2 将不跳 "
+                f"{sorted({d['step'] for d in delta})}"
+            )
+            for d in delta[:5]:
+                print(
+                    f"  - {d['step']}: {d['dep']} 文件已变"
+                    f"（水位={str(d.get('watermark'))[:12]}…"
+                    f" 声明={str(d.get('declared'))[:12]}…"
+                    f" 现值={str(d.get('file_now'))[:12]}…）"
+                )
+        if plan.get("v2_active"):
+            print("[refresh] --resume：REG_ORCH_RESUME_V2=1 → 第三条件已生效")
 
     # ---- 单实例锁（阶段 0 止血，2026-09-18）----
     # 此前只有各 collector 自带 ProcessLock，**编排本体无锁** → 调度器抖动/人工重入会让
@@ -2028,6 +2247,26 @@ def main(argv=None) -> int:
         print("[refresh] 已有实例在运行（锁被占用）——本次退出以避免并发改写数据面")
         print(f"[refresh] 锁文件：{lock.lock_path}（陈旧锁可删除或等待 PID 退出）")
         return ExitCode.ENV
+
+    # ---- W4（方案 §6.3.3）：.tmp 启动侧兜底清理 ----
+    # 写入侧（atomic_write_* 的 except 清理 + os.replace）保证正常路径零残留；此处
+    # 清理**崩溃残留**（mkstemp 与 replace 之间被杀）超过 24h 的孤儿临时文件，
+    # 删除前打印清单（可审计）。单实例锁已保证无并发本链写入；24h 阈值规避链外采集。
+    try:
+        from std_lib.common_lib.fs_lock import sweep_stale_tmp
+
+        swept = sweep_stale_tmp(ROOT, max_age_hours=24, apply=True)
+        if swept["found"]:
+            print(
+                f"[refresh] .tmp 兜底清理：{swept['found']} 个超过 24h 的残留"
+                f"（{swept['removed_bytes'] / 1048576:.1f} MB）"
+            )
+            for f in swept["files"][:10]:
+                print(f"  - {f['file']}（{f['age_hours']:.1f}h, {f['size'] / 1024:.1f}KB）")
+            for bad in swept["failed"]:
+                print(f"[refresh] WARN .tmp 删除失败：{bad}")
+    except Exception as e:  # noqa: BLE001  清理是兜底，失败不得阻断主链
+        print(f"[refresh] WARN .tmp 兜底清理失败（不影响主链）: {type(e).__name__}: {e}")
 
     # ---- 运行台账（治理库为**旁路观测设施**：建库/登记失败一律降级为告警，不得阻断主链）----
     gs = None

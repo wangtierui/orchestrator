@@ -360,6 +360,32 @@ def _c_mcp() -> tuple[str, str, str]:
     return "ok", f"tool {n} 个已注册；token 就绪", "自检：python cli.py mcp selftest"
 
 
+def _c_pgvector() -> tuple[str, str, str]:
+    """pgvector 服务就绪度（W4 §6.4）—— 语义检索视图的后端健康检查。
+
+    缺失语义：**warn 而非 fail**——pgvector 是**可选查询后端**（ADR-0007 L-d；
+    降级链 pgvector→sqlite_vec→none，`semantic:search` 步骤 rc0 披露）。未配置
+    `PGVECTOR_DSN` 是合法状态（既有 FTS5 检索路径不受影响）；配了但连不上才是
+    需要人看的信号。口令仅经 env 注入（`gate_secret_scan` 守护）。
+    """
+    try:
+        from std_lib.common_lib import vector_store as _vs
+
+        h = _vs.health()
+    except Exception as e:  # noqa: BLE001
+        return "warn", f"健康检查不可用（{type(e).__name__}）", "不影响主链"
+    if not h.get("dsn_configured"):
+        return "warn", f"未配置 env {h.get('dsn_env')}（降级 {_vs.backend()}）", "语义检索视图走降级披露（rc=0）"
+    if h.get("ok"):
+        return (
+            "ok",
+            f"{h.get('database')}:{h.get('port')} vector {h.get('vector_ext')} 就绪"
+            f"（用户 {h.get('user')}，非超管={h.get('not_superuser')}）",
+            "链步骤 pg:health / semantic:search 披露",
+        )
+    return "warn", f"不可用：{h.get('detail', '')[:110]}", "检查 PG 服务/env DSN；降级路径不受影响"
+
+
 # (id, 组, 函数)
 CHECKS: tuple[tuple[str, str, object], ...] = (
     ("python", "运行时", _c_python),
@@ -383,6 +409,7 @@ CHECKS: tuple[tuple[str, str, object], ...] = (
     ("mirrors", "依赖", _c_mirrors),
     ("disk", "磁盘", _c_disk),
     ("mcp", "门面", _c_mcp),
+    ("pgvector", "门面", _c_pgvector),
 )
 
 

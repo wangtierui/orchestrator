@@ -142,8 +142,8 @@
    "runtime_note": "⚠️ 需垫片：ltp 4.2.x 调 `batch_encode_plus`（transformers 5 已移除）→ 加载层等价补齐，实测可用（**原版本直接 AttributeError**）。"
   },
   "pgvector": {
-    "wired": false,
-    "wired_note": "未接线（批 63 核：实现/规划存在但链上无调用点；见 gen_flow_map.MODEL_BINDINGS 的 wired=False）",
+    "wired": true,
+    "wired_note": "W4 §6.4（2026-10-15）已接线：链步骤 `semantic:search`（analysis:gen 之后）经 `std_lib.common_lib.vector_store` 读写 `vec.delivery_docs/delivery_records`（17 项交付物 + 发布件记录限量嵌入；只读消费、降级链 pgvector→sqlite_vec→none 披露）。A/B（vs FTS5 overlap）随 `reports/semantic_search/*.json` 落盘、进 BENCHMARK §6.7——无度量不扩大使用面。",
    "repo": "https://github.com/pgvector/pgvector",
    "purpose": "向量相似检索（PostgreSQL 扩展）—— 作为 **ParadeDB 的替代**（免 AGPL、PG 生态原生）",
    "extra": "",

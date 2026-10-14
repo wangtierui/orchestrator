@@ -152,6 +152,20 @@ erDiagram
 
 > **纪律**：受控域是"属性全部合法取值的集合"——**不得含永不产出的值**（N-105：方案否决后必须回退域取值）。
 
+### 3.4 产物分级存储（ADR-0007：文件事实源 / SQLite 索引治理 / PG 可选门槛）
+
+产物按**四级形态**组织（分级纪律：文件即权威，关系库只承载可重建的派生层）：
+
+| 级 | 形态 | 内容 | 本项目实例 | 演进规则 |
+|---|---|---|---|---|
+| **L-a 事实源** | 文件（JSONL/CSV） | 正文、条款、关系边、发布件——**文件即权威** | `data/raw/*.jsonl`、`cleaned/*.jsonl`、`published/external_records.jsonl`(289MB) | **永不入关系库** |
+| **L-b 索引/查询** | SQLite（FTS5 + 可选 sqlite_vec/pgvector） | 检索索引、向量索引——**可随时重建的派生层** | `external_index.sqlite`(908MB FTS5) | 重建命令必须存在且被测试覆盖 |
+| **L-c 治理元数据** | SQLite `governance.db` | 水位/血缘/台账/审计/待办/关系投影 | 11 表 28.8MB（目标 <50MB） | 超 50MB 或并发写冲突实测出现 → 评估迁移 PG |
+| **L-d 查询服务（可选）** | PostgreSQL（env `PGVECTOR_DSN` 注入） | 多消费方并发结构化查询——**按需启用的服务层** | pgvector 已部署（127.0.0.1:7777，wired=false） | 引入门槛见 ADR-0007（实测需求/降级链先行/仅索引元数据可入/运维责任明确，缺一不可） |
+
+> 治理库 28.8MB 远低于 50MB 门槛 ⇒ **当前无需 PG 迁移**（证据记录在案，ADR-0007）。
+> 双轨决策（cleaned CSV 保留 / clauses MD 默认关）见 ADR-0013。
+
 ---
 
 ## 4. 数据流转与拓扑 (Data Flow & Topology)
@@ -220,7 +234,7 @@ flowchart TB
     L2transform["L2_transform<br/>4 步 · 主链"]
     L9sync["L9_sync<br/>4 步 · 条件"]
     L3knowledge["L3_knowledge<br/>4 步 · 主链"]
-    L8enhancement["L8_enhancement<br/>2 步 · 增强"]
+    L8enhancement["L8_enhancement<br/>3 步 · 增强"]
     L6governance["L6_governance<br/>3 步 · 旁路"]
     L4internal["L4_internal<br/>1 步 · 主链"]
     L5delivery["L5_delivery<br/>5 步 · 主链"]
@@ -228,7 +242,7 @@ flowchart TB
     L10gate["L10_gate<br/>1 步 · 门禁"]
   end
   subgraph ART["产物层（GOV_ARTIFACTS 血缘声明）"]
-    ARTN["18 类产物键<br/>analysis:manifest … wiki:sync"]
+    ARTN["19 类产物键<br/>analysis:manifest … wiki:sync"]
   end
   subgraph GOV["治理层（governance.db · 旁路观测）"]
     WL["待办队列 worklist<br/>12 类 kind"]
@@ -535,7 +549,7 @@ s = se.split_sentences(text, level="strict")   # level ∈ {strict, loose}（受
 
 > **本节由 `tools/gen_flow_map.py` 机器生成并注入本 README**（受管块；事实源：`STEP_ORDER` + `_run` 调用点（AST）+ `config/schema/semantic_tools.json`）。**请勿手工编辑本节** —— 改链路请改源码后重跑 `python -m tools.gen_flow_map`。
 >
-> 步骤数：**31**；语义工具：**14**（可用 13，未装 1）
+> 步骤数：**32**；语义工具：**14**（可用 13，未装 1）
 
 ### 8.1 链路总览（Mermaid：**含全部接入模型节点**）
 
@@ -559,7 +573,7 @@ flowchart TD
   B -.->|"classify:all"| M_hdbscan["hdbscan<br/>未接线"]
   A -.->|"clauses"| M_ltp["ltp<br/>已接线·默认关"]
   D -.->|"OND"| M_paradedb["paradedb<br/>未就绪"]
-  D -.->|"OND"| M_pgvector["pgvector<br/>按需节点"]
+  A -.->|"semantic:search"| M_pgvector["pgvector<br/>已接线·默认关"]
   B -.->|"relations:gen"| M_signalgraph["signalgraph<br/>未装"]
   D -.->|"OND"| M_sqlite_vec["sqlite_vec<br/>按需节点"]
   B -.->|"semantic:assist"| M_text2vec["text2vec<br/>已接线·默认关"]
@@ -572,14 +586,14 @@ flowchart TD
   classDef gated fill:#dbe9ff,stroke:#1565c0,stroke-width:1px
   classDef off fill:#f2f2f2,stroke:#8a8a8a,stroke-dasharray:4 2
   classDef notready fill:#ffe8cc,stroke:#e65100,stroke-width:1px
-  class M_bge_base_zh,M_hanlp,M_ltp,M_text2vec,M_weknora_docreader,M_youtu_embedding gated
+  class M_bge_base_zh,M_hanlp,M_ltp,M_pgvector,M_text2vec,M_weknora_docreader,M_youtu_embedding gated
   class M_bertopic,M_bge_base_zh_relations,M_hdbscan,M_umap,M_youtu_embedding_relations off
-  class M_pgvector,M_sqlite_vec off
+  class M_sqlite_vec off
   class M_deepke,M_paradedb notready
   class M_signalgraph notready
 ```
 
-图例：**已接线 0** ／ **已接线·默认关 6** ／ **未接线 7** ／ **未就绪（权重未预置或未装）3** —— **未接线/未就绪的模型同样作为节点存在**，便于在链路上定位其将来挂接的位置（原因见 §8.3）。
+图例：**已接线 0** ／ **已接线·默认关 7** ／ **未接线 6** ／ **未就绪（权重未预置或未装）3** —— **未接线/未就绪的模型同样作为节点存在**，便于在链路上定位其将来挂接的位置（原因见 §8.3）。
 
 ### 8.2 逐步骤表（顺序 = `STEP_ORDER`；命令由 **AST** 自源码抽取）
 
@@ -611,13 +625,14 @@ flowchart TD
 | `L5_delivery` | main | 22 | `draft:clause` | 条款对照素材（drafter 视图） | `cli.py draft` | N-52：此前无任何调度导致滞后，故入链并置于 merged_view 之后 |
 | `L5_delivery` | main | 23 | `base:publish` | 底座发布（发布清单 publish_manifest） | `cli.py base publish` | 发布清单是 wiki_sync 条件触发（publish_manifest_changed）的观察对象 —— 可达性由门禁 T4 守护 |
 | `L5_delivery` | main | 24 | `analysis:gen` | 分析交付物（docs/reports，含 17 项 manifest sha） | `cli.py analysis gen` | **阻断**（失败即停；`--resume` 可从该步续跑） |
-| `L6_governance` | side | 25 | `watch:baseline` | 观测基线快照（source diff --record） | `cli.py source diff --record` | **旁路**：失败告警，不阻断主链 |
-| `L7_disclosure` | disclosure | 26 | `retention:plan` | 数据生命周期只读披露（dry-run + 台账） | `retention.py` | 恒 rc=0（无待归档是合法状态）；`--apply` 才是人工闸门 |
-| `L7_disclosure` | disclosure | 27 | `quarantine:triage` | 清洗隔离件分类与处置登记（零回写 → worklist 待办） | `quarantine_triage.py` | 恒 rc=0（零回写保证：不修复数据，只分类登记） |
-| `L7_disclosure` | disclosure | 28 | `semantic:preflight` | P1 语义增强启用前置披露（五道闸逐项） | `-m std_lib.common_lib.semantic_tools --preflight-report` | 恒 rc=0；未启用是合法状态（真正的启用判定用 semantic_tools --preflight 的 rc） |
-| `L7_disclosure` | disclosure | 29 | `pg:health` | 向量存储只读健康检查（pgvector / sqlite_vec 降级链披露） | `-m std_lib.common_lib.vector_store --health` | 恒 rc=0；后端不可用为合法状态 |
-| `L9_sync` | conditional | 30 | `wiki:sync`（超时见 triggers.yaml） | llm_wiki 源同步（发布件变化时执行） | （条件步骤；触发项 `wiki_sync`，判据见 `config/triggers.yaml`） | 发布件未变化 / vault 不可达 → SKIP（rc=0）；on_fail=skip_and_warn；观察对象可达性由门禁 T4 守护（D-1 修复） |
-| `L10_gate` | gate | 31 | `gates` | 全部门禁（阻断；置于链尾以终态产物为准） | `cli.py gates` | 失败即停并触发 notify(gate_fail)；P3-5 顺序解耦（原 gates 在链首） |
+| `L8_enhancement` | enhancement | 25 | `semantic:search` | 分析交付库语义检索视图（pgvector 嵌入索引 + FTS5 A/B 披露） | `-m tools.semantic_search --build --records-limit 1000` | 后端/嵌入链不可用 → rc=0 显式披露（既有 FTS5 检索路径不受影响；无度量不扩大使用面——ADR-0003 延伸） |
+| `L6_governance` | side | 26 | `watch:baseline` | 观测基线快照（source diff --record） | `cli.py source diff --record` | **旁路**：失败告警，不阻断主链 |
+| `L7_disclosure` | disclosure | 27 | `retention:plan` | 数据生命周期只读披露（dry-run + 台账） | `retention.py` | 恒 rc=0（无待归档是合法状态）；`--apply` 才是人工闸门 |
+| `L7_disclosure` | disclosure | 28 | `quarantine:triage` | 清洗隔离件分类与处置登记（零回写 → worklist 待办） | `quarantine_triage.py` | 恒 rc=0（零回写保证：不修复数据，只分类登记） |
+| `L7_disclosure` | disclosure | 29 | `semantic:preflight` | P1 语义增强启用前置披露（五道闸逐项） | `-m std_lib.common_lib.semantic_tools --preflight-report` | 恒 rc=0；未启用是合法状态（真正的启用判定用 semantic_tools --preflight 的 rc） |
+| `L7_disclosure` | disclosure | 30 | `pg:health` | 向量存储只读健康检查（pgvector / sqlite_vec 降级链披露） | `-m std_lib.common_lib.vector_store --health` | 恒 rc=0；后端不可用为合法状态 |
+| `L9_sync` | conditional | 31 | `wiki:sync`（超时见 triggers.yaml） | llm_wiki 源同步（发布件变化时执行） | （条件步骤；触发项 `wiki_sync`，判据见 `config/triggers.yaml`） | 发布件未变化 / vault 不可达 → SKIP（rc=0）；on_fail=skip_and_warn；观察对象可达性由门禁 T4 守护（D-1 修复） |
+| `L10_gate` | gate | 32 | `gates` | 全部门禁（阻断；置于链尾以终态产物为准） | `cli.py gates` | 失败即停并触发 notify(gate_fail)；P3-5 顺序解耦（原 gates 在链首） |
 
 #### 8.2.1 编排层通性（**对所有步骤生效**）
 
@@ -641,7 +656,7 @@ flowchart TD
 | `hdbscan` | `classify:all` | 阶段2 | bertopic 的聚类依赖（**不单独使用**，无权重） | 就绪（依赖可用；无需外部权重） | 未接线（执行门面已就绪，待业务节点接入） | 随 bertopic 一并跳过 |
 | `ltp` | `clauses` | 阶段1 | 条文**分句增强**（分词锚切句；LTP 4.x 无原生分句 API，`basis_split=ltp_cws`） | 就绪（依赖 + 权重实检通过） | **已接线**（`REG_ORCH_SEMANTIC_SPLIT=1`（**默认关**）） | 回退 `sentence_boundary.split_by`（受控 SSOT，**逐字节对等**，零依赖） |
 | `paradedb` | **按需节点**（无独立链步骤；由 `pg:health` 披露、业务按需调用） | 阶段4 | 向量+BM25 混合检索（**已被 pgvector 替代**，可选外部后端） | **服务未部署** | 不适用（按需节点：无独立链步骤，由 `pg:health` 披露） | 使用 pgvector / sqlite_vec（**不建议随仓分发**：AGPL-3.0） |
-| `pgvector` | **按需节点**（无独立链步骤；由 `pg:health` 披露、业务按需调用） | 阶段4 | **向量检索**后端（P2-2；`vec` schema，最小权限角色） | 就绪（依赖可用；无需外部权重） | 不适用（按需节点：无独立链步骤，由 `pg:health` 披露） | 降级 `sqlite_vec`（同库同源）→ 再退 SQLite FTS5 全文 |
+| `pgvector` | `semantic:search` | 阶段6.85 | **向量检索**后端（P2-2；`vec` schema，最小权限角色） | 就绪（依赖可用；无需外部权重） | **已接线**（env `PGVECTOR_DSN` 配置 + 嵌入链就绪（缺一即 rc0 降级披露）） | 降级 `sqlite_vec`（同库同源）→ 再退 SQLite FTS5 全文 |
 | `signalgraph` | `relations:gen` | 阶段2 | **零 Token 确定性图构建**（P3-2） | 未装 | 未接线（执行门面已就绪，待业务节点接入） | 回退关系三元组 → 既有图构件 |
 | `sqlite_vec` | **按需节点**（无独立链步骤；由 `pg:health` 披露、业务按需调用） | 阶段4 | 向量检索**降级后端**（与既有 SQLite FTS5 同库同源） | 就绪（依赖可用；无需外部权重） | 不适用（按需节点：无独立链步骤，由 `pg:health` 披露） | 回退 SQLite FTS5 全文检索（零服务依赖） |
 | `text2vec` | `semantic:assist` | 阶段2 | 嵌入**降级备选**（768 维，与 bge 同维等价备份） | 就绪（依赖 + 权重实检通过） | **已接线**（`usage_policy.enabled=true`（配置开关）） | 优先 `bge_base_zh`（全量）/`youtu_embedding`（增量）；再退关键词规则 |
@@ -650,7 +665,7 @@ flowchart TD
 | `youtu_embedding` | `semantic:assist` | 阶段2 | **增量/指定场景嵌入**（`mode=incremental` 首选；2B/2048 维） | 就绪（依赖 + 权重实检通过） | **已接线**（`usage_policy.enabled=true` + `--mode incremental`） | 降级 `bge_base_zh` → `text2vec`；再退关键词/规则判定 |
 | `youtu_embedding@relations`（`@`：同工具的第二用途） | `relations:gen` | 阶段2 | **关联语义档**（P1-2：依据/废止关系的语义近似判定） | 就绪（依赖 + 权重实检通过） | 未接线（执行门面已就绪，待业务节点接入） | 降级 `bge_base_zh` → `text2vec`；再退正则关系抽取 |
 
-合计 **16** 个模型节点（**已接线 0** ／ **已接线·默认关 6** ／ **未接线 7** ／ **未就绪 3**）—— 均已入图（§8.1）。
+合计 **16** 个模型节点（**已接线 0** ／ **已接线·默认关 7** ／ **未接线 6** ／ **未就绪 3**）—— 均已入图（§8.1）。
 
 #### 8.3.1 ⚠️ 未就绪环节（**依赖或权重缺失，单独标记**）
 
@@ -706,6 +721,7 @@ flowchart TD
 显式 `model="…"` **覆盖 mode**（优先级最高）；分句增强由 env `REG_ORCH_SEMANTIC_SPLIT=1` 控制（**默认关**，见 §8.6 第 2 条）。
 
 <!-- END GENERATED: 全链数据流总图 -->
+
 
 
 

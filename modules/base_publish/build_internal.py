@@ -23,7 +23,7 @@ for _p in (_ROOT, _MODULES, os.path.join(_ROOT, "std_lib")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from base_publish import SCHEMA_VERSION
+from base_publish import SCHEMA_VERSION, append_publish_history
 
 from config.exitcodes import ExitCode
 
@@ -139,6 +139,11 @@ def build() -> dict:
     with open(tmp, "w", encoding="utf-8") as fh:
         json.dump(manifest, fh, ensure_ascii=False, indent=1)
     os.replace(tmp, mp)
+    # W4（方案 §6.3.3）：发布版本史（append-only，每次一行）——缺失不回滚发布但显式告警。
+    try:
+        append_publish_history(mp, manifest)
+    except Exception as e:  # noqa: BLE001
+        print(f"[base_publish] WARN 发布版本史追加失败（不阻断发布）: {type(e).__name__}: {e}")
     return manifest
 
 

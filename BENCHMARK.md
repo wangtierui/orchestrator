@@ -1,26 +1,31 @@
 # BENCHMARK —— 交付基准登记（回归对照基线）
 
-> 自动生成：tools/gen_benchmark.py @ 2026-09-30 19:13:57 | python 3.13.14
+> 自动生成：tools/gen_benchmark.py @ 2026-10-15 02:47:54 | python 3.13.14
 > 用途：数据重建/重构后重跑 `python tools/gen_benchmark.py` 刷新；数值漂移即回归信号。
 
 ## 1 门禁（gates/ALL_GATES）
 
-实装 23 道（gates/gate_*.py）：
+实装 28 道（gates/gate_*.py）：
 ```
   gate_citations.py
   gate_clean_schema.py
-  gate_config_integrity.py
+  gate_condition_observers.py
   gate_contract.py
+  gate_declaration_executor.py
+  gate_dynamic_step_coverage.py
   gate_enum_values.py
   gate_field_aliases.py
   gate_flat_layout.py
   gate_hardcoded_paths.py
   gate_hardcoded_snapshots.py
+  gate_implementation_audit.py
   gate_import_bootstrap.py
+  gate_mcp_schema.py
   gate_no_cross_module_import.py
   gate_no_duplicate_libs.py
   gate_original_resolvable.py
   gate_provenance.py
+  gate_reg_frameworks.py
   gate_relations.py
   gate_rfn_drift.py
   gate_rfn_sync.py
@@ -36,10 +41,10 @@
 
 ## 2 自动化验收测试（pytest）
 
-用例文件 34：`test_analysis_deliveries.py`、`test_base_publish.py`、`test_clean_index_portability.py`、`test_cli_facade.py`、`test_common_lib.py`、`test_contract_api.py`、`test_contract_manifest.py`、`test_crawler_extract.py`、`test_dedup_key_uniqueness.py`、`test_document_structure.py`、`test_drafter_pure.py`、`test_e2e_pipeline.py`、`test_excel_crawler_pipeline.py`、`test_gates_matrix.py`、`test_governance_store.py`、`test_governance_watermark.py`、`test_governance_worklist.py`、`test_interfaces_protocols.py`、`test_internal_original_paths.py`、`test_internal_policy_base.py`、`test_ipb_deep.py`、`test_ipb_extract_file.py`、`test_misc_pure.py`、`test_p2_governance_layer.py`、`test_relations.py`、`test_rich_object.py`、`test_scraper_std_core.py`、`test_scraper_std_extra.py`、`test_scraper_std_tables.py`、`test_scrapers_pure.py`、`test_semantic_enhance.py`、`test_ssot_convergence.py`、`test_std_lib_more.py`、`test_table_structured.py`
+用例文件 58：`test_analysis_deliveries.py`、`test_attachment_unmask.py`、`test_attachments_body_docs.py`、`test_base_publish.py`、`test_chain_equivalence.py`、`test_clean_index_portability.py`、`test_cli_facade.py`、`test_common_lib.py`、`test_contract_api.py`、`test_contract_manifest.py`、`test_crawler_extract.py`、`test_dedup_key_uniqueness.py`、`test_doc_convert_cache.py`、`test_document_structure.py`、`test_drafter_pure.py`、`test_e2e_pipeline.py`、`test_excel_crawler_pipeline.py`、`test_failure_matrix.py`、`test_gate_run_steps.py`、`test_gates_matrix.py`、`test_gov_incremental.py`、`test_governance_store.py`、`test_governance_watermark.py`、`test_governance_worklist.py`、`test_http_unification.py`、`test_import_surface.py`、`test_interfaces_protocols.py`、`test_internal_original_paths.py`、`test_internal_policy_base.py`、`test_ipb_deep.py`、`test_ipb_extract_file.py`、`test_mcp_server.py`、`test_misc_pure.py`、`test_no_desktop_interference.py`、`test_ocr_correction_equiv.py`、`test_p2_governance_layer.py`、`test_raw_jsonl.py`、`test_relations.py`、`test_resource_hygiene.py`、`test_rich_object.py`、`test_scraper_std_core.py`、`test_scraper_std_extra.py`、`test_scraper_std_tables.py`、`test_scrapers_pure.py`、`test_seg_chunking.py`、`test_semantic_assist_baseline.py`、`test_semantic_enhance.py`、`test_semantic_model_cache.py`、`test_ssot_convergence.py`、`test_std_lib_more.py`、`test_step_layers.py`、`test_table_completeness.py`、`test_table_structured.py`、`test_triggers_conditions.py`、`test_user_activity.py`、`test_w0_fixes.py`、`test_w3_domain_modules.py`、`test_w4_data_layer.py`
 运行：`python -m pytest tests -q`
 
-**覆盖率基线（只升不降）**：TOTAL 40%（采自 `.coverage`；刷新：`python -m coverage run -m pytest tests -q`）
+**覆盖率基线（只升不降）**：TOTAL ?%（采自 `.coverage`；刷新：`python -m coverage run -m pytest tests -q`）
 
 ## 3 数据基线
 
@@ -47,11 +52,11 @@
 
 | 源 | 快照日期 | 备注 |
 |---|---|---|
-| gov | 20260929 | 最新 cleaned |
-| mof | 20260929 | 最新 cleaned |
-| nfra | 20260929 | 最新 cleaned |
-| pbc | 20260929 | 最新 cleaned |
-| supp | 20260929 | 最新 cleaned |
+| gov | 20261014 | 最新 cleaned |
+| mof | 20261014 | 最新 cleaned |
+| nfra | 20261014 | 最新 cleaned |
+| pbc | 20261014 | 最新 cleaned |
+| supp | 20261014 | 最新 cleaned |
 | 合计 | — | 索引记录 16611 |
 
 ### 3.2 classifier 底座/明细/桥（数据血缘 R10 已注入 generated_*）
@@ -81,7 +86,7 @@
 
 | 命令 | 职责 |
 |---|---|
-| `python cli.py gates` | 23 道交付门禁（以 ALL_GATES 为准） |
+| `python cli.py gates` | 28 道交付门禁（以 ALL_GATES 为准） |
 | `python cli.py classify --all --steps base,cluster,match,detail,upper,clause_graph` | 底座强序重建（R8 幂等断点） |
 | `python cli.py source list / add --id` | 源目录路由（R15） |
 | `python cli.py internal index/align/merged` | 内部制度链路 |
@@ -123,19 +128,19 @@
 
 ### 6.2 条文结构（既有 `validate_schema` 判据）
 
-- 文件 **16611** / 条 **108409** / 章 **12313**，契约自检 `consistent=True`
-- 体裁分布（`parse_mode`）：`{'empty': 29, 'law': 2599, 'notice': 9140, 'plain': 4843}`　※ `degraded` 旧口径＝非 law 体裁计数，**非质量降级**（N-101）
-- 质量信号：`empty 29（0.17%）` / `fallback 29.33%` / `invalid 94`
-- 结构语义指标（「曾被静默放过」的直接堵漏项）：`title_swallow=0` / `tail_contam=92` / `space_contam=40` / `law_items=439`
-- 但书计数（N-94 度量先行，**只披露不判定**）：宽档 `proviso=4540` 条 / 严档 `proviso_strict=925` 条　※ 用途：为"是否值得改解析器切分逻辑"提供量级证据
+- 文件 **16611** / 条 **108650** / 章 **12313**，契约自检 `consistent=True`
+- 体裁分布（`parse_mode`）：`{'empty': 29, 'law': 2599, 'notice': 9139, 'plain': 4844}`　※ `degraded` 旧口径＝非 law 体裁计数，**非质量降级**（N-101）
+- 质量信号：`empty 29（0.17%）` / `fallback 29.34%` / `invalid 177`
+- 结构语义指标（「曾被静默放过」的直接堵漏项）：`title_swallow=0` / `tail_contam=105` / `space_contam=40` / `law_items=446`
+- 但书计数（N-94 度量先行，**只披露不判定**）：宽档 `proviso=4617` 条 / 严档 `proviso_strict=927` 条　※ 用途：为"是否值得改解析器切分逻辑"提供量级证据
 
 ### 6.3 关系抽取（`relations_index.jsonl`）
 
-- 行数 **4192**；`relation_id` 唯一性 `True`（distinct 4192）
-- 源侧条款定位 **2303/4192**（54.9%）；目标侧 **609**（14.5%）；双侧 **489**
-- 定位来源分布：`{'': 1769, 'snippet': 108, 'span': 12, 'src_offset': 1814, 'src_offset+snippet': 445, 'src_offset+span': 44}`
-- 引用跨度（N-98 新增 / **N-106 起参与定位**：窗口未唯一命中时的退路）：`source_span` 4192/4192（100.0%）
-- **定位正确性边界**（N-106，以跨度为锚；有目标键 1733 行）：一致 191 ／ **冲突 0** ／ 仅窗口 418 ／ 仅跨度 0 ／ 皆无 1124
+- 行数 **4191**；`relation_id` 唯一性 `True`（distinct 4191）
+- 源侧条款定位 **2303/4191**（54.9%）；目标侧 **608**（14.5%）；双侧 **489**
+- 定位来源分布：`{'': 1769, 'snippet': 107, 'span': 12, 'src_offset': 1814, 'src_offset+snippet': 445, 'src_offset+span': 44}`
+- 引用跨度（N-98 新增 / **N-106 起参与定位**：窗口未唯一命中时的退路）：`source_span` 4191/4191（100.0%）
+- **定位正确性边界**（N-106，以跨度为锚；有目标键 1732 行）：一致 190 ／ **冲突 0** ／ 仅窗口 418 ／ 仅跨度 0 ／ 皆无 1124
 - **窗口命中位置归因**（N-109，写入侧已**剔除前文**）：引用**之前** 0（**应为 0**，非 0 即有源侧自指残留）／ 引用之后 418 ／ 两处皆有 0 ／ 定位不到出处 0
 - **互证分档**（N-112，零人工）：强证据（条号距引用名 ≤40 字符且全窗无竞争者）84 ／ 弱证据 334；距离分布 ≤40 84 ／ 40–80 285 ／ >80 49
   → W2 决议（**保持后向 100 字符**）：抽样证实 `>80` 行的 **88%** 为**长引用列表**（“依据《A》《B》《C》等，制定本法第X条”→ 条号必然偏远）→ 远距离**不是**可疑信号；故**不收窄**（会丢合法长引用命中）**不加宽**（无正确性增益）
@@ -145,30 +150,31 @@
 
 ### 6.4 召回覆盖（`recall_audit` 既有产物）
 
-- 产物目录存在 `True`；报告生成于 2026-09-29T22:03:57+0800
+- 产物目录存在 `True`；报告生成于 2026-10-14T05:17:49+0800
 - 四门禁：`{'clean': True, 'validity': True, 'contract': True, 'schema': True}`
 
 ### 6.5 清洗体量
 
 | 产物 | 条数 |
 |---|---|
-| gov_cleaned_20260929 | 13178 |
-| mof_cleaned_20260929 | 870 |
-| nfra_cleaned_20260926.quarantine | 5 |
-| nfra_cleaned_20260927.quarantine | 5 |
-| nfra_cleaned_20260928.quarantine | 5 |
-| nfra_cleaned_20260929 | 1934 |
-| nfra_cleaned_20260929.quarantine | 5 |
-| pbc_cleaned_20260929 | 571 |
+| gov_cleaned_20261014 | 13178 |
+| mof_cleaned_20261014 | 870 |
+| nfra_cleaned_20261009.quarantine | 5 |
+| nfra_cleaned_20261010.quarantine | 5 |
+| nfra_cleaned_20261011.quarantine | 5 |
+| nfra_cleaned_20261013.quarantine | 5 |
+| nfra_cleaned_20261014 | 1934 |
+| nfra_cleaned_20261014.quarantine | 5 |
+| pbc_cleaned_20261014 | 571 |
 | supp_cleaned_20260926.quarantine | 4 |
-| supp_cleaned_20260929 | 58 |
+| supp_cleaned_20261014 | 58 |
 
 **纪律**：主题判定新增任何分类器时，须在 §6.1 的**可评样本**上报告 P/R，并**对齐**既有 `判定依据` 的「排名 + margin」留痕格式。
 
 ### 6.6 P1 语义增强能力（当前环境）
 
-- 语义增强能力：12/14 可用（bertopic, bge_base_zh, deepke, hanlp, hdbscan, ltp, paradedb, pgvector, sqlite_vec, text2vec, umap, youtu_embedding）
-- 指纹：可用 `['bertopic', 'bge_base_zh', 'deepke', 'hanlp', 'hdbscan', 'ltp', 'paradedb', 'pgvector', 'sqlite_vec', 'text2vec', 'umap', 'youtu_embedding']`；未装 `2` 项
+- 语义增强能力：13/14 可用（bertopic, bge_base_zh, deepke, hanlp, hdbscan, ltp, paradedb, pgvector, sqlite_vec, text2vec, umap, weknora_docreader, youtu_embedding）
+- 指纹：可用 `['bertopic', 'bge_base_zh', 'deepke', 'hanlp', 'hdbscan', 'ltp', 'paradedb', 'pgvector', 'sqlite_vec', 'text2vec', 'umap', 'weknora_docreader', 'youtu_embedding']`；未装 `1` 项
 
 | 工具 | 状态 | 版本 | 对应方案项 |
 |---|---|---|---|
@@ -184,7 +190,15 @@
 | `sqlite_vec` | 可用 | 0.1.9 | v2 P2-2（检索语义化；与 SQLite FTS5 **同库共存**） |
 | `text2vec` | 可用 | 1.3.8 | v2 P1-1（主题辅助裁定）、P1-2（关联语义档） |
 | `umap` | 可用 | 0.5.12 | v2 P1-5（随 BERTopic，不单独使用） |
-| `weknora_docreader` | 未装 | — | v2 P2-1（只补版面分析；OCR 通路已存在，不重做） |
+| `weknora_docreader` | 可用 | — | v2 P2-1（只补版面分析；OCR 通路已存在，不重做） |
 | `youtu_embedding` | 可用 | 5.17.0 | v2 P1-1（主题辅助裁定）、P1-2（关联语义档） |
 
 > 未装工具不阻断全链：调用方一律经 `std_lib.common_lib.semantic_tools` 探测后惰性导入，不可用时回退既有正则实现并**记录回退说明**（`fallback_notice()`）。清单：`config/schema/semantic_tools.json`；启用：`pip install -e .[semantic]`。
+
+### 6.7 向量检索可用性 + FTS5 A/B（W4 §6.4）
+
+- 后端 `pgvector`；模型 `bge_base_zh`；嵌入 17 交付物 + 200 记录
+- A/B（同索引子集，8 探针）：mean_jaccard = **0.0191**
+- 产物：`reports/semantic_search/semantic_search_20261015.json`（2026-10-15 02:40:53）
+
+> 纪律（ADR-0003 延伸）：mean_jaccard 高 = 向量路径当前无增量信息（不值得切主路径）；低 + 人工抽样认可 = 有增量（再议扩大）。**无度量不上线**。

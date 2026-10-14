@@ -517,6 +517,41 @@ def gather_quality() -> dict:
         "recall": _q_recall(),
         "cleaning": _q_cleaning(),
         "semantic": _q_semantic_capability(),
+        "vector_search": _q_vector_search(),
+    }
+
+
+def _q_vector_search() -> dict:
+    """向量检索**可用性 + A/B 相关性**披露（W4 §6.4）。
+
+    读最近一次 `reports/semantic_search/semantic_search_*.json`（链步骤
+    `semantic:search` 产物）。纪律（ADR-0003 延伸「无度量不上线」）：先披露
+    「向量 vs FTS5 的 overlap」再议扩大使用面——没有这个数字，任何"切主路径"
+    的讨论都是无据之争。
+    """
+    import glob
+
+    d = os.path.join(ROOT, "reports", "semantic_search")
+    cands = sorted(glob.glob(os.path.join(d, "semantic_search_*.json")))
+    if not cands:
+        return {"available": False, "note": "无产物（链步骤 semantic:search 未跑或未落盘）"}
+    try:
+        with open(cands[-1], encoding="utf-8") as fh:
+            res = json.load(fh)
+    except (OSError, ValueError) as e:
+        return {"available": False, "note": f"产物不可读：{type(e).__name__}"}
+    ab = res.get("ab") or {}
+    return {
+        "available": bool(res.get("ok")),
+        "degraded": bool(res.get("degraded")),
+        "note": res.get("note", ""),
+        "backend": res.get("backend", ""),
+        "model": (res.get("fingerprint") or {}).get("model", ""),
+        "embedded": res.get("embedded") or {},
+        "ab_mean_jaccard": ab.get("mean_jaccard"),
+        "ab_probes": ab.get("probes"),
+        "generated_at": res.get("generated_at", ""),
+        "source": os.path.relpath(cands[-1], ROOT).replace(os.sep, "/"),
     }
 
 
@@ -711,6 +746,22 @@ def render_quality(q: dict) -> list:
             "> 未装工具不阻断全链：调用方一律经 `std_lib.common_lib.semantic_tools` 探测后惰性导入，"
             "不可用时回退既有正则实现并**记录回退说明**（`fallback_notice()`）。清单："
             "`config/schema/semantic_tools.json`；启用：`pip install -e .[semantic]`。"
+        )
+    vsq = q.get("vector_search") or {}
+    L.append("\n### 6.7 向量检索可用性 + FTS5 A/B（W4 §6.4）")
+    if not vsq.get("available"):
+        L.append(f"\n- ⚠️ 不可用/未跑：{vsq.get('note', '')}")
+    else:
+        L.append(f"\n- 后端 `{vsq.get('backend')}`；模型 `{vsq.get('model')}`；"
+                 f"嵌入 {vsq.get('embedded', {}).get('docs', 0)} 交付物 + "
+                 f"{vsq.get('embedded', {}).get('records', 0)} 记录")
+        L.append(f"- A/B（同索引子集，{vsq.get('ab_probes')} 探针）："
+                 f"mean_jaccard = **{vsq.get('ab_mean_jaccard')}**")
+        L.append(f"- 产物：`{vsq.get('source')}`（{vsq.get('generated_at')}）")
+        L.append("")
+        L.append(
+            "> 纪律（ADR-0003 延伸）：mean_jaccard 高 = 向量路径当前无增量信息（不值得切主路径）；"
+            "低 + 人工抽样认可 = 有增量（再议扩大）。**无度量不上线**。"
         )
     return L
 

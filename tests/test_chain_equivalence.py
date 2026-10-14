@@ -30,9 +30,14 @@ DRY_RUN = os.path.join(GOLDEN_DIR, "chain_dry_run.txt")
 
 def _normalize(text: str) -> list[str]:
     """归一化命令行输出（去机器相关信息，保留行为指纹）。"""
-    t = text.replace(paths.ROOT, "<ROOT>")
-    # argv 以 repr 输出 → 路径里的反斜杠被转义成双写，须一并归一（否则夹具含机器路径）
-    t = t.replace(paths.ROOT.replace("\\", "\\\\"), "<ROOT>")
+    t = text
+    # 仓根 → `<ROOT>`（两种斜杠形态：argv repr 会把反斜杠转义成双写）。
+    # ⚠️ 大小写不敏感：`paths.ROOT` 的盘符写法继承 cwd（小写盘符进入的工作目录 →
+    # 小写盘符的 ROOT），而子进程 argv 的盘符经 Windows API 归一为**大写**盘符——
+    # 大小写敏感替换会漏（2026-10-15 实测：regen 出的 golden 含 6 行机器路径，
+    # gate_hardcoded_paths 拦下）。
+    for pat in (paths.ROOT, paths.ROOT.replace("\\", "\\\\")):
+        t = re.sub(re.escape(pat), "<ROOT>", t, flags=re.IGNORECASE)
     # 解释器路径（任意盘符下的 python.exe）
     t = re.sub(r"[A-Za-z]:[\\/][^\s\"']*?python(?:\d+\.\d+)?\.exe", "<PY>", t)
     t = re.sub(r"RUN-\d{8}-\d{6}-\d+", "RUN-<id>", t)
@@ -81,8 +86,12 @@ def test_dry_run_argv_sequence_matches_golden():
     )
 
 
-def test_step_order_derived_from_layers_is_31():
-    """派生 STEP_ORDER = 31 项且与 plan 覆盖一致（结构自洽，防 plan 漏段/重段）。"""
+def test_step_order_derived_from_layers_is_32():
+    """派生 STEP_ORDER = 32 项且与 plan 覆盖一致（结构自洽，防 plan 漏段/重段）。
+
+    W4（§6.4）：31 → 32（`semantic:search` 插入 analysis:gen 之后——语义检索视图
+    的索引对象含 17 项交付物，须取 6.8 终态再嵌入）。
+    """
     # ⚠️ 必须用裸名（conftest 的 bootstrap(include_tools=True) 已把 tools/ 注入
     # sys.path）——`from tools import ...` 会让 mypy 全仓走查把同一文件同时登记为
     # `run_production_refresh` 与 `tools.run_production_refresh` 双模块名冲突
@@ -90,7 +99,7 @@ def test_step_order_derived_from_layers_is_31():
     import run_production_refresh as rpr
 
     order = rpr.STEP_ORDER
-    assert len(order) == 31, len(order)
+    assert len(order) == 32, len(order)
     plan_names = [n for _layer, names in rpr.LAYER_EXEC_PLAN for n in names]
     assert plan_names == list(order), "LAYER_EXEC_PLAN 与派生 STEP_ORDER 不一致"
     # 每个 StepSpec 恰好出现在一个 plan 段

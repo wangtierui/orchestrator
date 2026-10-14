@@ -247,7 +247,11 @@ MODEL_BINDINGS: dict = {
         "down": "回退关系三元组 → 既有图构件",
     },
     "pgvector": {
-        "step": "OND", "stage": "阶段4", "wired": False,
+        # W4（§6.4，2026-10-15）：OND → **真实链步骤** `semantic:search`（analysis:gen
+        # 之后）——语义检索视图构建（17 项交付物 + 发布件记录限量嵌入；只读消费）。
+        # 可用性由 `pg:health` / doctor `pgvector` 项披露；A/B（vs FTS5）进 BENCHMARK §6.7。
+        "step": "semantic:search", "stage": "阶段6.85", "wired": True,
+        "gate": "env `PGVECTOR_DSN` 配置 + 嵌入链就绪（缺一即 rc0 降级披露）",
         "role": "**向量检索**后端（P2-2；`vec` schema，最小权限角色）",
         "down": "降级 `sqlite_vec`（同库同源）→ 再退 SQLite FTS5 全文",
     },

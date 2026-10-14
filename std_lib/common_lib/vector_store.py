@@ -161,6 +161,34 @@ def _redact(dsn: str) -> str:
     return f"{m.group(1)}:{m.group(2) or '?'}/{m.group(3) or '?'}"
 
 
+def ensure_table(table: str, dim: int) -> None:
+    """按需建表（幂等）：`vec.<table>(doc_id text PK, emb vector(dim))`。
+
+    为什么在接入层而不靠一次性运维脚本：`vec` schema 的 CREATE 权已授
+    `orchestrator_app`（最小权限角色），建表是**使用方自供给**的派生层动作
+    （L-b「可随时重建」语义）——每次为新表跑人工脚本违背该语义。维度由调用方
+    按**实际向量宽度**传入（嵌入模型决定；bge-zh = 512）。不可用抛
+    `VectorStoreUnavailable`（调用方降级披露）。
+    """
+    t = _check_name(table)
+    d = int(dim)
+    if d <= 0 or d > 4096:
+        raise ValueError(f"非法向量维度：{dim}")
+    try:
+        with _conn() as c, c.cursor() as cur:
+            # 维度经 int() 收敛（1..4096）后**内联**进 DDL：PG 类型修饰符不接受
+            # 参数占位（`vector($1)` 报 SyntaxError），且此处已无注入面。
+            cur.execute(
+                f"CREATE TABLE IF NOT EXISTS {SCHEMA}.{t}"
+                "(doc_id text PRIMARY KEY, emb vector(%d));" % d,
+            )
+            c.commit()
+    except VectorStoreUnavailable:
+        raise
+    except Exception as e:
+        raise VectorStoreUnavailable(f"建表失败：{type(e).__name__}: {str(e)[:120]}") from e
+
+
 def upsert(table: str, rows: list) -> int:
     """**写**：`rows = [(doc_id, [float, ...]), ...]` → 幂等 upsert，返回写入行数。"""
     t = _check_name(table)

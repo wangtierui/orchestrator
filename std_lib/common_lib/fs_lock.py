@@ -230,3 +230,77 @@ def atomic_write_csv_dict(path, rows, fieldnames, encoding="utf-8-sig"):
     w.writerows(rows)
     atomic_write_text(path, buf.getvalue(), encoding=encoding)
     return len(rows)
+
+
+# W4（方案 §6.3.3）：.tmp 生命周期的**启动侧兜底**。
+# 写入侧保证 = atomic_write_* 的 except 清理 + os.replace（正常路径零残留，实测全仓
+# `.tmp_*` 0 个）；但进程在 mkstemp 与 replace **之间**被杀（断电/强杀/OOM）时临时
+# 文件成孤儿——发布目录的单体原子写可达数百 MB（external_records.jsonl 289MB），
+# 孤儿文件既占磁盘又无主。本函数在链启动时清理超过 max_age_hours 的残留，
+# **删除前打印清单**（可审计）；apply=False 只披露不删。
+_TMP_SKIP_DIRS = frozenset(
+    {
+        ".git",
+        "__pycache__",
+        ".pytest_cache",
+        ".mypy_cache",
+        ".ruff_cache",
+        "external",
+        "graphify-out",
+        "node_modules",
+        ".venv",
+        "venv",
+        "archive",
+        "corpus",
+    }
+)
+
+
+def sweep_stale_tmp(root, *, max_age_hours: int = 24, apply: bool = False) -> dict:
+    """清理超过 `max_age_hours` 的原子写临时文件（`.tmp_*` / `*.tmp`）。
+
+    返回 {scanned_dirs, found, removed_bytes, failed, files[]}；found>0 时 files 为
+    清单（相对路径 + 年龄 + 体积）。删除失败（占用中等）不抛错——记入 failed 披露。
+    """
+    import datetime
+
+    now = datetime.datetime.now().timestamp()
+    cutoff = now - max_age_hours * 3600
+    files: list[dict] = []
+    failed: list[str] = []
+    removed_bytes = 0
+    scanned = 0
+    for dirpath, dirnames, filenames in os.walk(root):
+        scanned += 1
+        dirnames[:] = [d for d in dirnames if d not in _TMP_SKIP_DIRS]
+        for fn in filenames:
+            if not (fn.startswith(".tmp_") or fn.endswith(".tmp")):
+                continue
+            fp = os.path.join(dirpath, fn)
+            try:
+                st = os.stat(fp)
+            except OSError:
+                continue
+            if st.st_mtime >= cutoff:
+                continue  # 24h 内的临时文件可能是并发写入方正在用（链外采集）
+            rel = os.path.relpath(fp, root).replace(os.sep, "/")
+            if apply:
+                try:
+                    os.remove(fp)
+                    removed_bytes += st.st_size
+                except OSError as e:
+                    failed.append(f"{rel}: {type(e).__name__}")
+            files.append(
+                {
+                    "file": rel,
+                    "age_hours": round((now - st.st_mtime) / 3600, 1),
+                    "size": st.st_size,
+                }
+            )
+    return {
+        "scanned_dirs": scanned,
+        "found": len(files),
+        "removed_bytes": removed_bytes,
+        "failed": failed,
+        "files": files,
+    }

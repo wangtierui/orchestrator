@@ -109,6 +109,11 @@ def main(argv=None) -> int:
                     help="JSONL 字段换行一并归一（默认保留原始 \\n）")
     ap.add_argument("--no-clauses", action="store_true",
                     help="跳过 clean→条文 固定节点（默认清洗成功后自动增量构建 clause_index，②）")
+    # W4（双轨决策，ADR-0013；方案 §6.3.2）：clauses MD 渲染视图**默认不再生成**——
+    # 消费面盘点实证其程序读取方/契约/门禁/人工报告数据源引用均为 0（唯一定位"人工
+    # 审阅视图"无文档佐证）。本旗标按需开启（可逆；历史 MD 不删，轮转逻辑照旧）。
+    ap.add_argument("--md", action="store_true",
+                    help="同时写出 {src}_clauses_{date}.md 渲染视图（默认关；按需开启）")
     # v2 §3.4 V1（2026-09-26）：校验失败记录默认**不进入交付**（隔离落盘）。
     ap.add_argument("--allow-schema-errors", action="store_true", dest="allow_schema_errors",
                     help="逃生阀：校验失败记录仍进入交付（兼容旧行为；默认关闭）")
@@ -232,7 +237,7 @@ def main(argv=None) -> int:
     if not args.no_clauses:
         try:
             from modules.regulatory_scrapers.clause_index import build_clause_index
-            res = build_clause_index()
+            res = build_clause_index(with_md=args.md)
             print("[clauses] 条文固定节点: "
                   + "; ".join(f"{k}={v.get('built', v.get('error', 'skip'))}"
                               for k, v in res.items() if not k.startswith("_")))
