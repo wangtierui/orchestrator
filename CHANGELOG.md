@@ -1,5 +1,55 @@
 # Changelog
 
+## [Unreleased] 2026-10-15 — 诊断能力五阶段审查 + 取证缺陷修复（第七十八批）
+
+> 对 `reports/refactors/基于腾讯云Agent根因定位实践的项目诊断能力增强方案.md`（878 行）
+> 做**五阶段实证审查**（现状 → 选型 → 用途 → 需求 → 偏差），出具
+> `reports/refactors/项目诊断能力增强方案_五阶段审查与最优方案.md`。
+> 方法论沿用腾讯云《Agent 自主定位根因实践》，但**不采信原方案的任何断言**，
+> 逐条以代码与真实数据重验。
+
+### 审查结论（三处阻断级偏差，均源于未核对真实数据）
+
+| # | 偏差 | 代码/数据证据 |
+|---|---|---|
+| B1 | **拓扑单层节点设计错误**——未识别「声明模板步 ↔ 运行实例步」双层结构 | `tools/run_production_refresh.py:1100` STEP_ORDER 32 项含 4 个 `{src}` 模板（`collect/clean/relevance/apply:{src}`）；最近一次真实运行台账 **40 实例步、0 个模板形态**；`GOV_ARTIFACTS` 19 键同样模板化（`raw:{src}` 等）⇒ 原方案「`get_node()` 查不到即拒绝」的硬约束在真实失败场景（`clean:nfra`）下**必然自我拒绝** |
+| B2 | **取证入口路径错误** | 写入方 `run_production_refresh.py:611-613` 产出 `{全字符归一}_{时间戳}.out.log` / `.err.log`（实测 424 个文件）；原方案按 `{step}.log` 取证**恒不可达** |
+| B3 | **schema 臆断** | `run_step` 实际列为 `[run_id, step, rc, exit_code, elapsed_s, skipped, note, recorded_at]`——**无 `started_at`、无记录数列** ⇒ 原方案的 `ORDER BY started_at` 与「记录数少 12%」类规则不可实现 |
+
+### 现状基线（供后续判定的锚点）
+
+- 已有诊断类设施：doctor 22 项环境体检（`commands/doctor.py:392`）、audit_health 12 项静态审计、
+  3 个 SLI（`tools/check_slo.py:58,72,98`）、30 道门禁、确认台 P0–P8。
+  **唯独没有「运行期症状 → 归因」这一环** ⇒ 原方案方向正确。
+- **诊断需求频次实测**：近 90 天步级失败 **35 次**、门禁 FAIL **19 次**、告警落盘 **0 次**
+  （`reports/_alerts` 目录不存在）；而 **worklist open 641 条 / 已处置 14 条（处置率 2.1%）**、
+  其中 82% 集中在 `rfn_theme_uncertain`(324) + `relevance_boundary`(211)。
+  ⇒ 项目是「**低故障率 + 高积压**」系统，原方案把主要投入放在步级根因属**优先级错配**。
+- `audit_log` 0 行的真实原因：**有**写入方（`governance_store/projections.py:47`，
+  由 MCP 写级审计 `mcp_server/registry.py:258` 调用）但 **MCP 门面从未被真实调用**。
+
+### 本批修复（B2 的代码落地）
+
+- `web/snapshots.py`：新增模块级公开函数 `latest_step_log(step, tail_lines=40)`——
+  按**写入方逐字同规则**归一（`re.sub(r"[^0-9A-Za-z_.-]", "_", step)`，全字符而非只换冒号），
+  glob 取时间戳最大者；`step_detail()` 改用它。此前确认台 P1 节点抽屉的「日志 tail」**恒为空**，
+  修复后实测可取到真实日志（如 `clean_nfra_1792015532.out.log`）。
+- `tests/test_step_log_evidence.py`（4 项守卫，contract 标记）：
+  ① 写入方命名三要素可识别；② **归一规则与写入方逐字一致**（从两侧源码提取正则比对，
+  并对含冒号/斜杠/点/中文的步骤名断言归一结果相同）——防漂移；
+  ③ 对磁盘真实文件能取回；④ 负例静态断言：不得退回固定 `{step}.log` 拼接。
+
+### 待人工确认（审查中标记，不猜测）
+
+1. **C1** `audit_log` 是否应覆盖人工处置路径（现仅 MCP 写级审计）——治理决策
+2. **C2** 641 条 open 的处置策略（批量 dismiss / 分批裁决 / 改判据从源头减产）——业务判断
+3. **C3** 是否扩展 `run_step` schema（记录 argv/开始时间/记录数）以支撑量化归因——架构决策
+   （与「不改主链」约束冲突，需权衡）
+
+### 验证
+
+30 道门禁 PASS、ruff 0、mypy 0、新增守卫 4 项 + 确认台契约 26 项全绿。
+
 ## [Unreleased] 2026-10-15 — D-遗留第一批：pbc 采集器按层拆分（第七十七批）
 
 > 承接 TD-1（上一批处置的录制-重放夹具）：夹具就位后才动大文件内部结构。

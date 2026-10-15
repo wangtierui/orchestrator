@@ -308,26 +308,51 @@ def flow_graph() -> dict:
         return _degrade("STEP_ORDER/triggers", e)
 
 
+#: 步骤日志目录（写入方 = tools/run_production_refresh.py 的 `_run`，命名
+#: `{步骤名去冒号}_{时间戳}.{out|err}.log`；时间戳在**文件名尾部** ⇒ 按名排序即最新优先）
+STEP_LOG_DIR = os.path.join(paths.REPORTS_DIR, "_tmp", "step_logs")
+
+
+def latest_step_log(step: str, tail_lines: int = 40) -> tuple[str, str]:
+    """取某步骤**最新一份**日志 ⇒ `(日志正文尾部, 文件相对路径)`；无则 `("", "")`。
+
+    取证入口的唯一实现：确认台 P1 抽屉与后续诊断工具（step_triage）共用本函数，
+    杜绝第二份日志取证逻辑与写入方命名规则漂移。
+    """
+    import glob
+    import re as _re
+
+    # 前缀归一规则**必须与写入方逐字一致**（`tools/run_production_refresh.py:611`：
+    # `_safe = re.sub(r"[^0-9A-Za-z_.-]", "_", step)`）——全字符归一，不是只换冒号；
+    # 两处规则漂移会让取证"安静地取不到"，故此处同写并由
+    # `tests/test_step_log_evidence.py::test_sanitisation_rule_matches_writer` 绑定。
+    prefix = _re.sub(r"[^0-9A-Za-z_.-]", "_", str(step))
+    hits: list[str] = []
+    for ext in ("out", "err"):
+        hits += glob.glob(os.path.join(STEP_LOG_DIR, f"{prefix}_*.{ext}.log"))
+    if not hits:
+        return "", ""
+    # 文件名以时间戳结尾 ⇒ 字典序即时间序
+    path = sorted(hits)[-1]
+    try:
+        with open(path, encoding="utf-8", errors="replace") as fh:
+            return "\n".join(fh.read().splitlines()[-tail_lines:]), path
+    except OSError:
+        return "(日志不可读)", path
+
+
 def step_detail(step: str) -> dict:
-    """P1 节点抽屉：某步骤的 argv/rc/耗时/日志 tail。"""
+    """P1 节点抽屉：某步骤的 rc/耗时/note + 日志 tail。"""
     try:
         def _load():
             from std_lib.common_lib import governance_store as gs
 
             _rid, rows = gs.last_run_with_steps()
             row = next((r for r in rows if str(r.get("step")) == step), None)
-            log_tail = ""
-            lp = os.path.join(paths.REPORTS_DIR, "_tmp", "step_logs", f"{step}.log")
-            if os.path.exists(lp):
-                try:
-                    with open(lp, encoding="utf-8", errors="replace") as fh:
-                        lines = fh.read().splitlines()
-                    log_tail = "\n".join(lines[-40:])
-                except OSError:
-                    log_tail = "(日志不可读)"
+            log_tail, lp = latest_step_log(step)
             return {"available": True, "source": "governance_store + step_logs",
                     "fetched_at": _now(), "step": step, "row": row, "log_tail": log_tail,
-                    "log_path": os.path.relpath(lp, paths.ROOT) if os.path.exists(lp) else ""}
+                    "log_path": os.path.relpath(lp, paths.ROOT) if lp else ""}
         return CACHE.get_or_call(f"step_detail:{step}", _load)
     except Exception as e:  # noqa: BLE001
         return _degrade("step_logs", e)
