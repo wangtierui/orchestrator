@@ -27,7 +27,7 @@ import logging
 import os
 import re
 import sys
-from urllib.parse import urljoin
+from urllib.parse import quote, urljoin, urlsplit, urlunsplit
 
 # 确保项目根（含 std_lib 包）在 sys.path，使 `from std_lib.scraper_std.crawler_common import` 可达
 _ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -67,8 +67,34 @@ _KIND_EXT = {
 def _link_text(html_fragment: str) -> str:
     return _TAG_RE.sub("", html_fragment).strip()
 
+def encode_url_path(url: str) -> str:
+    """对 URL 的 **path** 做 percent-encoding，query/fragment 原样保留。
+
+    为什么必须有（2026-10-16 实测缺陷）：gov.cn 附件名普遍含中文
+    （如 `.../files/20240105_附件1.xlsx`），`urljoin` 产物含非 ASCII 字符，
+    直接交给 `robust_get` 会在拼 ASCII 请求行时抛
+    `UnicodeEncodeError: 'ascii' codec can't encode characters`——
+    即**中文名附件全部下载失败**（崩溃而非降级）。
+
+    safe 字符集按 RFC 3986 unreserved + sub-delims + `:@/`；
+    已编码的 `%XX` 不会被二次编码（`quote` 的默认行为即幂等）。
+    """
+    if not url:
+        return url
+    parts = urlsplit(url)
+    if not any(ord(c) > 127 for c in parts.path):
+        return url                      #纯 ASCII：不改动（零行为变化）
+    return urlunsplit((
+        parts.scheme,
+        parts.netloc,
+        quote(parts.path, safe="/%:@&=+$,~!*'()"),
+        parts.query,
+        parts.fragment,
+    ))
+
+
 def scan_attachment_links(html: str, base_url: str):
-    """从详情页 HTML 提取指向文档下载的 <a> 链接（绝对化、去重）。"""
+    """从详情页 HTML 提取指向文档下载的 <a> 链接（绝对化 + percent-encode、去重）。"""
     if not html:
         return []
     out = []
@@ -78,7 +104,9 @@ def scan_attachment_links(html: str, base_url: str):
         if not href or href.startswith(("javascript:", "#", "mailto:")):
             continue
         text = _link_text(m.group(2))
-        abs_url = urljoin(base_url, href)
+        # ⚠️ 必须编码：gov附件名普遍含中文，未编码会在请求层抛 UnicodeEncodeError
+        #    （2026-10-16 实测；此前未编码 ⇒ 中文名附件 100% 下载失败）
+        abs_url = encode_url_path(urljoin(base_url, href))
         if abs_url in seen:
             continue
         if is_attachment_url(abs_url, text):

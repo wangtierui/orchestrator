@@ -1,0 +1,21 @@
+{
+  "interactions": [
+    {
+      "body": "<!DOCTYPE html>\n<html><head><meta charset=\"utf-8\"><title>国务院政策文件库 · 部门文件</title></head>\n<body>\n<script>var nPageCount = 3; var currentPage = 1; var recordCount = 52;</script>\n<div class=\"news-list\">\n<ul>\n  <li><a href=\"./202401/content_1001.htm\"\n         title=\"国务院关于印发某某管理办法的通知\">国务院关于印发某某管理办法的通知</a>\n      <span class=\"date\">2024-01-05</span></li>\n  <li><a href=\"/zhengce/content/202312/content_9988.htm\"\n         title=\"关于优化营商环境若干措施的通知\">关于优化营商环境若干措施的通知</a>\n      <span class=\"date\">2023-12-20</span></li>\n  <li><a href=\"./202401/content_1001.htm\"\n         title=\"国务院关于印发某某管理办法的通知\">国务院关于印发某某管理办法的通知</a>\n      <span class=\"date\">2024-01-05</span></li>\n</ul>\n</div>\n</body></html>\n",
+      "body_encoding": "utf-8",
+      "body_sha256": "97b87ea29eb5cfbc87d882e35d53927518d0f0f48b373a26e7e6828880483e30",
+      "headers": {},
+      "key": "4b3833a110d7d7c7",
+      "method": "GET",
+      "normalized_url": "https://www.gov.cn/zhengce/zhengceku/bmwj/home.htm",
+      "reason": "OK",
+      "status": 200,
+      "url": "https://www.gov.cn/zhengce/zhengceku/bmwj/home.htm"
+    }
+  ],
+  "note": "",
+  "origin": "synthetic",
+  "recorded_at": "2026-10-16T00:00:00+08:00",
+  "schema_version": 1,
+  "source": "gov"
+}

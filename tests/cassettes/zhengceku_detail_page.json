@@ -1,0 +1,21 @@
+{
+  "interactions": [
+    {
+      "body": "<!DOCTYPE html>\n<html><head><meta charset=\"utf-8\">\n<title>国务院关于印发某某管理办法的通知 - 中国政府网</title>\n<meta name=\"ArticleTitle\" content=\"国务院关于印发某某管理办法的通知\"></head>\n<body>\n<div class=\"pages_content\">\n<div class=\"pages_content_cn\">\n<p>第一条 为加强某某管理，制定本办法。</p>\n<p>第二条 本办法自2024年3月1日起施行。</p>\n<p>第三条 本办法由国务院某某部门负责解释。</p>\n</div>\n</div>\n<table class=\"pages-table\">\n<tr><td>发文字号：国发〔2024〕3号</td></tr>\n<tr><td>成文日期：2024年1月3日</td></tr>\n<tr><td>发文机关：国务院</td></tr>\n</table>\n<div class=\"appendix\">\n<a href=\"./files/20240105_附件1.xlsx\">附件1：登记表</a>\n<a href=\"./files/20240105_附件2.pdf\">附件2：实施计划</a>\n<a href=\"https://www.example.com/outside.pdf\">站外链接</a>\n</div>\n</body></html>\n",
+      "body_encoding": "utf-8",
+      "body_sha256": "918267eab0658548046a4a1917c85ccb190ad6e89d3c14ad5e46e390da409553",
+      "headers": {},
+      "key": "13ac19d0fe1852bd",
+      "method": "GET",
+      "normalized_url": "https://www.gov.cn/zhengce/content/202401/content_1001.htm",
+      "reason": "OK",
+      "status": 200,
+      "url": "https://www.gov.cn/zhengce/content/202401/content_1001.htm"
+    }
+  ],
+  "note": "",
+  "origin": "synthetic",
+  "recorded_at": "2026-10-16T00:00:00+08:00",
+  "schema_version": 1,
+  "source": "gov"
+}

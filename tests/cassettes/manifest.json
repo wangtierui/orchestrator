@@ -31,9 +31,25 @@
       "origin": "synthetic",
       "sha256": "8aa4541ee66fc954ca63cf92d572c247e9c721f2c0652a81aba5cc5900c6afaa",
       "source": "pbc"
+    },
+    {
+      "interactions": 1,
+      "name": "zhengceku_detail_page",
+      "note": "",
+      "origin": "synthetic",
+      "sha256": "9f661125a1879d63902cc631c54ba866e3906481c0dc8d1fcce46ec28f4080f1",
+      "source": "gov"
+    },
+    {
+      "interactions": 1,
+      "name": "zhengceku_list_page",
+      "note": "",
+      "origin": "synthetic",
+      "sha256": "6d95dc2963ceca719bfe01832c3c6d2f337c9f5283dd405e0ff7854f9cd13773",
+      "source": "gov"
     }
   ],
-  "generated_at": "2026-10-15T18:26:17+0800",
+  "generated_at": "2026-10-16T01:53:22+0800",
   "generated_by": "tools/record_cassettes.py --rebuild-manifest",
   "schema_version": 1
 }
