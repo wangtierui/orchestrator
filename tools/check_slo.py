@@ -55,18 +55,43 @@ def _rows(conn, sql: str, args: tuple = ()) -> list[tuple]:
         return []
 
 
+#: dry-run 识别的 note 片段（与 `tools/run_production_refresh.py` 写入的文本一致）。
+#: 用既有 `note` 文本识别而非加列——零 schema 变更、零主链改动。
+_DRY_RUN_NOTE = "%dry-run%"
+
+
 def sli_chain(conn, window: int) -> dict | None:
-    """链成功率：最近 N 次**运行**（run_log）中 failed=0 的占比。"""
-    runs = _rows(conn, "select run_id from run_log order by started_at desc limit ?", (window,))
-    if not runs:
+    """链成功率：最近 N 次**生产运行**（run_log，排除 dry-run）中 failed=0 的占比。
+
+    ⚠️ 口径（2026-10-16 修正）：此前把 dry-run 也当"运行"，而 dry-run 每步 rc=0
+    ⇒ 只要窗口内多为 dry-run，成功率恒 100%，SLO 永不触发。dry-run **不是一次运行**
+    （它不执行任何步骤），排除它是对定义的纠正，不是口径变更。
+    """
+    # 先在 SQL 侧取「**不含任何 dry-run 步骤**」的运行（= 生产运行），再取最近 N 个。
+    # ⚠️ 不能"先取最近 N 个再逐个过滤"：实测最近 N 个常常全是 dry-run（gates 每次调用
+    #产生 1 个 dry-run，占 run 数 74.5%），过滤后为空 ⇒ SLI 直接失效（比虚高更糟）。
+    prod = [rid for (rid,) in _rows(
+        conn,
+        "select r.run_id from run_log r where r.run_id not in ("
+        "  select run_id from run_step where note like ?) "
+        "order by r.started_at desc limit ?", (_DRY_RUN_NOTE, window))]
+    dry_runs = _rows(
+        conn,
+        "select count(distinct run_id) from run_step where note like ?", (_DRY_RUN_NOTE,))
+    n_dry = int(dry_runs[0][0]) if dry_runs else 0
+    if not prod:
         return None
     ok = 0
-    for (run_id,) in runs:
+    for run_id in prod:
         bad = _rows(conn, "select count(*) from run_step where run_id=? and status not in "
                           "('ok','skip','degraded')", (run_id,))
         if (bad[0][0] if bad else 0) == 0:
             ok += 1
-    return {"value": round(100.0 * ok / len(runs), 2), "n": len(runs), "ok": ok}
+    out: dict = {"value": round(100.0 * ok / len(prod), 2), "n": len(prod), "ok": ok}
+    if n_dry:
+        out["excluded_dry_run_total"] = n_dry
+        out["note"] = f"全库 {n_dry} 次 dry-run 已排除（不计入运行；dry-run 不执行任何步骤）"
+    return out
 
 
 def sli_freshness(conn, window: int) -> dict | None:

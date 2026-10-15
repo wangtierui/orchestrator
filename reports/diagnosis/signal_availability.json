@@ -1,0 +1,83 @@
+{
+  "generated_at": "2026-10-16T01:16:06+08:00",
+  "db_tables": [
+    {
+      "table": "artifact",
+      "rows": 1595,
+      "last_write": ""
+    },
+    {
+      "table": "audit_log",
+      "rows": 3,
+      "last_write": "2026-10-16T00:10:10+0800"
+    },
+    {
+      "table": "document",
+      "rows": 2023,
+      "last_write": ""
+    },
+    {
+      "table": "gate_result",
+      "rows": 1062,
+      "last_write": "2026-10-15T06:46:36+0800"
+    },
+    {
+      "table": "relation",
+      "rows": 4191,
+      "last_write": ""
+    },
+    {
+      "table": "run_log",
+      "rows": 157,
+      "last_write": ""
+    },
+    {
+      "table": "run_step",
+      "rows": 5270,
+      "last_write": "2026-10-16T00:57:30+0800"
+    },
+    {
+      "table": "sqlite_sequence",
+      "rows": 2,
+      "last_write": ""
+    },
+    {
+      "table": "theme_assign",
+      "rows": 1162,
+      "last_write": ""
+    },
+    {
+      "table": "timeliness_history",
+      "rows": 14798,
+      "last_write": ""
+    },
+    {
+      "table": "watermark",
+      "rows": 28,
+      "last_write": ""
+    },
+    {
+      "table": "worklist",
+      "rows": 655,
+      "last_write": "2026-10-14T05:08:07+0800"
+    }
+  ],
+  "step_logs": {
+    "dir_exists": true,
+    "files": 424,
+    "last_write": "2026-10-15T06:46:36.808258+08:00"
+  },
+  "alerts": {
+    "dir_exists": false,
+    "files": 0,
+    "note": "目录不存在 ⇒ 从未落盘过告警"
+  },
+  "notify_channel": {
+    "checked": "notify_file_channel",
+    "ok": true,
+    "detail": "目录可创建且可写；探针已清理",
+    "dir": "reports\\_alerts",
+    "exists_before": false,
+    "note": "目录此前**不存在** ⇒ 自notify 落地以来从未落盘过告警"
+  }
+}

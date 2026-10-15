@@ -312,6 +312,13 @@
       "file": "worklist_triage.py",
       "independent_why": "治理决策（2026-10-16）641 条 open 待办分批裁决的执行入口。写路径唯一（governance_store.worklist_resolve，自动落 audit_log）；默认只读，执行需 --execute + --by + --reason；机器只判『机器能判的』（summary 汇总项 / payload 自证闭环），业务判断批次一律拒绝代劳。",
       "produced_by": "人工处置分批裁决（scan/bundle/apply）"
+    },
+    {
+      "category": "independent",
+      "entry": "python -m tools.signal_availability",
+      "file": "signal_availability.py",
+      "independent_why": "五阶段审查发现『告警从未真正送达』（reports/_alerts 目录不存在），即以告警为输入的诊断能力建立在未被验证的通道上。本工具实测各信号源（治理库各表行数与最后活动 / step_logs / _alerts）+ notify 通道可达性探针（写探针即删，不触发真实告警），产出 reports/diagnosis/signal_availability.json。",
+      "produced_by": "诊断能力第 0 波：信号源可用性实测"
     }
   ],
   "generated_at": "2026-09-30",
