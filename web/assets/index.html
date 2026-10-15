@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>监管合规编排器 · 本地确认台</title>
+<!-- 零 CDN：全部原生 JS + 手绘 SVG（§8.4 纪律） -->
+<style>
+:root{
+  --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --line:#2a2f3a;
+  --fg:#e6e9ef; --dim:#98a2b3; --ok:#2fbf71; --warn:#f2b53b; --bad:#ef5f5f;
+  --accent:#4f9cf9; --accent2:#9b7cf9;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);
+  font:14px/1.55 "Microsoft YaHei UI","Segoe UI",system-ui,sans-serif}
+header{display:flex;align-items:center;gap:14px;padding:10px 16px;
+  background:var(--panel);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:9}
+header h1{font-size:15px;margin:0;font-weight:600;letter-spacing:.4px}
+.badge{font-size:12px;color:var(--dim);border:1px solid var(--line);
+  border-radius:999px;padding:2px 10px}
+.badge.live{color:var(--ok);border-color:#205c3d}
+.badge.off{color:var(--warn);border-color:#5c4a20}
+nav{display:flex;gap:2px;padding:8px 12px;background:var(--panel2);
+  border-bottom:1px solid var(--line);flex-wrap:wrap}
+nav button{background:transparent;border:0;border-bottom:2px solid transparent;
+  color:var(--dim);padding:7px 12px;cursor:pointer;font:inherit;border-radius:6px 6px 0 0}
+nav button:hover{color:var(--fg);background:#232836}
+nav button.on{color:var(--fg);border-bottom-color:var(--accent)}
+main{padding:14px;max-width:1500px;margin:0 auto}
+.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(330px,1fr))}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.card h3{margin:0 0 8px;font-size:13px;color:var(--fg);font-weight:600;
+  display:flex;justify-content:space-between;align-items:center;gap:8px}
+.card h3 .hint{font-size:11px;color:var(--dim);font-weight:400}
+.kv{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px dashed #232836}
+.kv:last-child{border-bottom:0}
+.kv b{font-weight:600}
+.muted{color:var(--dim)}
+.ok{color:var(--ok)} .warn{color:var(--warn)} .bad{color:var(--bad)}
+.unavail{color:var(--warn);font-size:12px}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th,td{text-align:left;padding:5px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--dim);font-weight:600;position:sticky;top:0;background:var(--panel)}
+tr:hover td{background:#1b1f28}
+.bar{height:8px;background:#232836;border-radius:4px;overflow:hidden;display:flex}
+.bar i{display:block;height:100%}
+.pill{font-size:11px;padding:1px 8px;border-radius:999px;border:1px solid var(--line)}
+.pill.ok{border-color:#205c3d} .pill.warn{border-color:#5c4a20}
+.pill.bad{border-color:#6b2626}
+input,select,textarea,button.act{font:inherit;background:#12151b;color:var(--fg);
+  border:1px solid var(--line);border-radius:6px;padding:6px 8px}
+textarea{width:100%;min-height:56px;resize:vertical}
+button.act{cursor:pointer;background:#1d3a5c;border-color:#2c5a8c}
+button.act:hover{background:#24486f}
+button.act.ghost{background:#12151b;border-color:var(--line)}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+svg{display:block;max-width:100%}
+.legend{font-size:11px;color:var(--dim);display:flex;gap:12px;flex-wrap:wrap;margin-top:6px}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:4px}
+.foot{color:var(--dim);font-size:11.5px;margin-top:16px;padding:8px 2px;border-top:1px solid var(--line)}
+.toast{position:fixed;right:14px;bottom:14px;background:var(--panel2);border:1px solid var(--line);
+  border-radius:8px;padding:9px 13px;font-size:12.5px;opacity:0;transition:opacity .2s;z-index:20}
+.toast.on{opacity:1}
+details summary{cursor:pointer;color:var(--accent);font-size:12.5px}
+pre{background:#0c0e12;border:1px solid var(--line);border-radius:6px;padding:8px;
+  overflow:auto;font-size:11.5px;max-height:240px}
+</style>
+</head>
+<body>
+<header>
+  <h1>监管合规编排器 · 本地确认台</h1>
+  <span class="badge" id="live">SSE 连接中…</span>
+  <span class="badge" id="gates">门禁 —</span>
+  <span class="muted" style="margin-left:auto;font-size:12px" id="stamp">—</span>
+</header>
+
+<nav id="nav"></nav>
+<main id="view"><div class="card">加载中…</div></main>
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+/* ============================================================
+ * 确认台前端（原生 JS + 手绘 SVG，零外链）
+ * 纪律：① 每张卡都渲染「数据源 + 抓取时刻」；② 不可用即显示原因（不白屏）；
+ *      ③ EventSource 失败自动降级为 5s 轮询。
+ * ============================================================ */
+const TABS = [
+  {id:"overview", name:"P0 总览"},
+  {id:"flow",     name:"P1 数据流转"},
+  {id:"assets",   name:"P2 数据状态"},
+  {id:"metrics",  name:"P3 指标"},
+  {id:"worklist", name:"P4 待办闭环"},
+  {id:"governance",name:"P5 治理审计"},
+  {id:"search",   name:"P6 文档检索"},
+  {id:"publish",  name:"P7 投放看板"},
+  {id:"release",  name:"P8 发布事件流"},
+];
+
+const $ = (s,r=document)=>r.querySelector(s);
+const esc = s => String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const num = n => (n==null?"—":(typeof n==="number"?(n.toLocaleString? n.toLocaleString():n):n));
+const kb  = b => { if(b==null) return "—"; const u=["B","KB","MB","GB","TB"]; let i=0,v=Number(b);
+  while(v>=1024&&i<u.length-1){v/=1024;i++;} return v.toFixed(v<10?1:0)+" "+u[i]; };
+
+function toast(msg, bad){
+  const t=$("#toast"); t.textContent=msg; t.className="toast on"+(bad?" bad":"");
+  clearTimeout(t._h); t._h=setTimeout(()=>t.className="toast",3200);
+}
+
+async function api(path, opts){
+  const r = await fetch(path, Object.assign({headers:{"Accept":"application/json"}}, opts||{}));
+  const ct = r.headers.get("content-type")||"";
+  if(!ct.includes("json")){ return {available:false, reason:"非 JSON 响应（HTTP "+r.status+"）"}; }
+  const j = await r.json();
+  if(!r.ok) return Object.assign({available:false}, j, {httpStatus:r.status});
+  return j;
+}
+
+/* 卡片外壳：统一渲染 source + fetched_at（可观测披露纪律） */
+function card(title, hint, body, src){
+  return `<div class="card"><h3><span>${esc(title)}</span><span class="hint">${esc(hint||"")}</span></h3>${body}
+    <div class="foot" style="padding:5px 0 0;border:0">数据源：${esc(src||"—")}${
+      arguments[4]? " ｜ 抓取："+esc(arguments[4]) : ""}</div></div>`;
+}
+function unavail(d, why){
+  return card(why||"卡片", "", `<div class="unavail">⚠ 不可用：${esc(d.reason||d.error||"未知原因")}</div>`,
+              d.source);
+}
+function kv(k,v,cls){ return `<div class="kv"><span class="muted">${esc(k)}</span><b class="${cls||""}">${v}</b></div>`; }
+function pill(txt,cls){ return `<span class="pill ${cls||""}">${esc(txt)}</span>`; }
+
+/* ---------------- P0 总览 ---------------- */
+function viewOverview(d){
+  if(!d.available) return unavail(d);
+  const rh=d.run_health||{}, gs=d.gate_status||{}, wl=d.worklist||{},
+        al=d.alerts||{}, fr=d.freshness||{}, st=d.storage||{};
+  const counts = rh.counts||{};
+  const runHtml = rh.available
+    ? kv("run_id", esc(rh.run_id||"—")) + kv("总步数", num(rh.steps))
+      + kv("状态分布", Object.entries(counts).map(([k,v])=>pill(`${esc(k)} ${v}`,
+          k==="ok"?"ok":(k==="failed"||k==="error"?"bad":"warn"))).join(" "))
+      + kv("累计耗时", (rh.total_elapsed_s??"—")+" s")
+      + kv("最近运行", esc(rh.run_at||"—"))
+    : `<div class="unavail">⚠ ${esc(rh.reason||"无运行台账")}</div>`;
+  const gateHtml = gs.available
+    ? kv("最近一轮", esc(gs.run_id||"—"))
+      + kv("通过", `${num(gs.passed)}/${num(gs.total)}`, gs.failed&&gs.failed.length?"bad":"ok")
+      + (gs.failed&&gs.failed.length
+          ? `<div style="margin-top:6px">${gs.failed.map(f=>`<div class="bad" style="font-size:12px">● ${esc(f.gate)} — ${esc(f.descr||"")}</div>`).join("")}</div>`
+          : `<div class="ok" style="margin-top:6px;font-size:12px">✓ 全部通过</div>`)
+    : `<div class="unavail">⚠ ${esc(gs.reason||"无门禁记录")}</div>`;
+  const wlHtml = wl.available
+    ? kv("open 总数", num(wl.open_total), wl.open_total>0?"warn":"ok")
+      + kv("最老未处置", (wl.oldest_open_days??"—")+" 天", wl.oldest_open_days>7?"bad":"")
+      + kv("按 kind", Object.entries(wl.by_kind||{}).map(([k,v])=>pill(`${esc(k)} ${v}`)).join(" "))
+    : `<div class="unavail">⚠ ${esc(wl.reason||"待办不可用")}</div>`;
+  const alHtml = (al.alerts&&al.alerts.length)
+    ? `<table><tr><th>事件</th><th>时间</th></tr>`+al.alerts.slice(0,8).map(a=>
+        `<tr><td>${esc(a.event||a.title||"—")}</td><td class="muted">${esc(a.at||a.ts||"")}</td></tr>`).join("")+`</table>`
+    : `<div class="muted">无近期告警（${esc(al.count??0)} 条记录）</div>`;
+  const frHtml = fr.available
+    ? kv("边状态", Object.entries(fr.by_status||{}).map(([k,v])=>pill(`${k} ${v}`,
+        k==="stale"?"bad":(k==="ok"?"ok":"warn"))).join(" "))
+      + (fr.stale&&fr.stale.length? `<div style="margin-top:6px;font-size:12px">${
+          fr.stale.slice(0,5).map(s=>`<div class="bad">● ${esc(s.artifact)} ← ${esc(s.dep)}（建议重跑上游链）</div>`).join("")}</div>`:"")
+    : `<div class="unavail">⚠ ${esc(fr.reason||"水位不可用")}</div>`;
+  const stHtml = st.available
+    ? Object.entries(st.bytes||{}).map(([k,v])=>kv(k, kb(v)+" · "+((st.ratio||{})[k]||0)+"%")).join("")
+      + `<div class="bar" style="margin-top:8px">`+Object.entries(st.ratio||{}).map(([k,v],i)=>
+        `<i style="width:${v}%;background:${["#4f9cf9","#9b7cf9","#2fbf71","#f2b53b","#ef5f5f"][i%5]}"></i>`).join("")+`</div>`
+    : `<div class="unavail">⚠ ${esc(st.reason||"存储扫描不可用")}</div>`;
+  return `<div class="grid">
+    ${card("运行健康","最近一次运行",runHtml,rh.source,rh.fetched_at)}
+    ${card("门禁状态","逐道结果",gateHtml,gs.source,gs.fetched_at)}
+    ${card("待办","worklist open",wlHtml,wl.source,wl.fetched_at)}
+    ${card("告警","reports/_alerts",alHtml,al.source,al.fetched_at)}
+    ${card("数据新鲜度","水位边状态",frHtml,fr.source,fr.fetched_at)}
+    ${card("存储占用","实测体积",stHtml,st.source,st.fetched_at)}
+  </div>`;
+}
+
+/* ---------------- P1 数据流转（手绘 SVG 桑基） ---------------- */
+function viewFlow(d){
+  if(!d.available) return unavail(d);
+  const steps=d.steps||[], srcs=d.sources||[], w=d.weights||{}, st=d.step_status||{};
+  const N = steps.length + srcs.length;
+  if(!N) return card("数据流转","",'<div class="unavail">⚠ 链路为空（STEP_ORDER 未加载）</div>', d.source);
+  const W=1200, rowH=26, padTop=30, padLeft=150, gap=10;
+  const H = padTop + N*(rowH+gap) + 20;
+  // 布局：左侧源列 → 右侧步骤列（边为贝塞尔流量带，边宽 ∝ √记录数）
+  const colSrcX=padLeft, colStepX=W-260;
+  const srcY=i=>padTop+i*(rowH+26);
+  const stY=i=>padTop+i*(rowH+gap);
+  let svg=`<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}">`;
+  // 步骤列节点
+  steps.forEach((s,i)=>{
+    const y=stY(i), info=st[s]||{}, stat=info.status||"idle";
+    const fill = stat==="ok"?"#1d3a5c":(stat==="failed"?"#5c1f1f":(stat==="degraded"?"#5c4a20":"#20242d"));
+    svg+=`<rect x="${colStepX}" y="${y}" width="230" height="${rowH}" rx="5" fill="${fill}" stroke="#2a2f3a"/>
+      <text x="${colStepX+8}" y="${y+17}" fill="#e6e9ef" font-size="11.5">${esc(s)}</text>`;
+    if(w[s]) svg+=`<text x="${colStepX+222}" y="${y+17}" fill="#98a2b3" font-size="10.5" text-anchor="end">${num(w[s])}</text>`;
+    if(stat==="failed") svg+=`<circle cx="${colStepX-8}" cy="${y+rowH/2}" r="4" fill="#ef5f5f"/>`;
+    // 边：源 → 步骤（collect:{src} 前缀的步骤连到该源）
+    const m=s.match(/^collect:\{?(\w+)\}?/);
+    if(m && srcs.includes(m[1])){
+      const si=srcs.indexOf(m[1]);
+      const x1=colSrcX+90, y1=srcY(si)+rowH/2, x2=colStepX, y2=y+rowH/2;
+      const bw=Math.max(1.5, Math.min(22, Math.sqrt(w[s]||1)/12));
+      svg+=`<path d="M${x1},${y1} C${x1+90},${y1} ${x2-90},${y2} ${x2},${y2}"
+        fill="none" stroke="#4f9cf9" stroke-opacity="0.34" stroke-width="${bw}"/>`;
+    }
+  });
+  // 源列节点
+  srcs.forEach((s,i)=>{
+    const y=srcY(i);
+    svg+=`<rect x="${colSrcX-90}" y="${y}" width="180" height="${rowH}" rx="5" fill="#1d3a2c" stroke="#2fbf71" stroke-opacity=".5"/>
+      <text x="${colSrcX-80}" y="${y+17}" fill="#e6e9ef" font-size="11.5">${esc(s)}</text>`;
+  });
+  svg+=`<text x="${colSrcX-90}" y="${padTop-12}" fill="#98a2b3" font-size="11">源</text>
+        <text x="${colStepX}" y="${padTop-12}" fill="#98a2b3" font-size="11">步骤（点击看抽屉）</text></svg>`;
+  const legend=`<div class="legend">
+    <span><i style="background:#1d3a5c"></i>ok</span>
+    <span><i style="background:#5c4a20"></i>degraded</span>
+    <span><i style="background:#5c1f1f"></i>failed</span>
+    <span><i style="background:#20242d"></i>未运行</span>
+    <span>边宽 ∝ √(最近一次处理记录数)；模式：<b>${esc(d.mode)}</b></span></div>`;
+  return card("数据流转（状态/流量桑基）",
+    `${steps.length} 步骤 · ${srcs.length} 源`, svg+legend+
+    `<div class="row" style="margin-top:8px"><span class="muted">节点抽屉：</span>
+      <select id="stepsel">${steps.map(s=>`<option>${esc(s)}</option>`).join("")}</select>
+      <button class="act ghost" id="stepbtn">查看</button></div>
+     <div id="stepout"></div>`, d.source, d.fetched_at);
+}
+
+/* ---------------- P2 数据状态 ---------------- */
+function viewAssets(d){
+  if(!d.available) return unavail(d);
+  const rows=(d.files||[]).map(f=>`<tr><td>${esc(f.source)}</td><td>${esc(f.date||"—")}</td>
+    <td>${num(f.records)}</td></tr>`).join("");
+  const pub=d.publish||{};
+  const pubRows=["external","internal"].map(b=>{
+    const m=pub[b]||{};
+    return `<tr><td>${esc(b)}</td><td>${m.available===false?`<span class="bad">${esc(m.reason||"未发布")}</span>`
+      : `${esc(m.snapshot_date||m.snapshot||"—")}<br/><span class="muted" style="font-size:11px">${esc((m.schema_version)||"")} ${esc((m.sha256||"").slice(0,12))}</span>`}</td>
+      <td>${num((m.count||m.records||m.record_count))}</td></tr>`;}).join("");
+  const c=d.contract||{};
+  return `<div class="grid">
+    ${card("产物清单","clean 索引", rows?`<table><tr><th>源</th><th>快照日</th><th>记录数</th></tr>${rows}</table>`
+      :'<div class="muted">无产物</div>', d.source, d.fetched_at)}
+    ${card("发布件状态","双底座", `<table><tr><th>底座</th><th>快照/版本</th><th>记录数</th></tr>${pubRows}</table>`, d.source, d.fetched_at)}
+    ${card("契约状态","条文 schema 自检",
+      kv("consistent", c.consistent===null?"—":(c.consistent?"通过":"<span class='bad'>不一致</span>"),
+         c.consistent?"ok":"bad")
+      + ((c.problems&&c.problems.length)?`<div class="bad" style="font-size:12px;margin-top:6px">${
+          c.problems.slice(0,5).map(p=>esc(p)).join("<br/>")}</div>`:"")
+      + kv("统计", esc(JSON.stringify(c.stat||{}).slice(0,160))), d.source, d.fetched_at)}
+  </div>`;
+}
+
+/* ---------------- P3 指标 ---------------- */
+function barChart(data, labels, color){
+  const vals=Object.values(data||{});
+  const max=Math.max(1,...vals.map(Number));
+  let svg=`<svg viewBox="0 0 420 ${labels.length*22+14}" width="100%" height="${labels.length*22+14}">`;
+  labels.forEach((lb,i)=>{
+    const v=Number((Object.values(data||{}))[i]||0), y=i*22+4, w=Math.round(300*v/max);
+    svg+=`<text x="0" y="${y+12}" fill="#98a2b3" font-size="11">${esc(lb)}</text>
+      <rect x="110" y="${y+2}" width="${w}" height="14" rx="3" fill="${color}"/>
+      <text x="${118+w}" y="${y+13}" fill="#e6e9ef" font-size="10.5">${num(v)}</text>`;});
+  return svg+"</svg>";
+}
+function lineChart(rows, color){
+  if(!rows||rows.length<2) return '<div class="muted">数据点不足（需 ≥2 个运行）</div>';
+  const W=420,H=140,pad=26;
+  const vals=rows.map(r=>Number(r.rate||0));
+  const min=Math.min(...vals)-5, max=Math.max(...vals)+5, span=(max-min)||1;
+  const pts=rows.map((r,i)=>[pad+i*(W-2*pad)/(rows.length-1), H-pad-((Number(r.rate)-min)/span)*(H-2*pad)]);
+  let svg=`<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}">
+    <polyline fill="none" stroke="${color}" stroke-width="2" points="${pts.map(p=>p.join(",")).join(" ")}"/>`;
+  rows.forEach((r,i)=>{svg+=`<circle cx="${pts[i][0]}" cy="${pts[i][1]}" r="2.5" fill="${color}">
+    <title>${esc(r.run_id)}：${r.rate}%</title></circle>`;});
+  return svg+`<text x="0" y="${H-6}" fill="#98a2b3" font-size="10">${esc(rows[0].run_id)}</text>
+    <text x="${W}" y="${H-6}" fill="#98a2b3" font-size="10" text-anchor="end">${esc(rows[rows.length-1].run_id)}</text></svg>`;
+}
+function viewMetrics(d){
+  if(!d.available) return unavail(d);
+  const q=d.quality||{}, s=d.slo||{};
+  const qd=(q.doc&&q.doc.dimensions)||{};
+  const dims=Object.entries(qd).map(([k,v])=>({k,v:v.score==null?"—":v.score}));
+  const qSvg=`<svg viewBox="0 0 420 ${dims.length*20+10}" width="100%" height="${dims.length*20+10}">`+
+    dims.map((x,i)=>{const val=x.v==="—"?0:Number(x.v), y=i*20+3, w=Math.round(300*val/100);
+      return `<text x="0" y="${y+12}" fill="#98a2b3" font-size="11">${esc(x.k)}</text>
+      <rect x="100" y="${y+1}" width="${w}" height="13" rx="3" fill="${val>=90?"#2fbf71":(val>=70?"#f2b53b":"#ef5f5f")}"/>
+      <text x="${106+w}" y="${y+12}" fill="#e6e9ef" font-size="10.5">${x.v}</text>`;}).join("")+"</svg>";
+  const lastSLI=(s.last&&s.last.sli)||{}, tgt=(s.last&&s.last.targets)||{};
+  const sliRows=Object.keys(lastSLI).map(k=>kv(k, (lastSLI[k].value??"—")+"%（SLO "+(tgt[k]!=null?Math.round(tgt[k]):"—")+"%）",
+      (lastSLI[k].value!=null&&tgt[k]!=null&&lastSLI[k].value<tgt[k])?"bad":"ok")).join("");
+  return `<div class="grid">
+    ${card("门禁通过率趋势","逐轮", lineChart(d.gate_trend,"#4f9cf9"), d.source, d.fetched_at)}
+    ${card("待办 aging","未处置天数分布", barChart(d.worklist_aging,["0-3","4-7","8-14","15+"],"#f2b53b"), d.source, d.fetched_at)}
+    ${card("DAMA 六维","健康度 "+(q.doc&&q.doc.health_score!=null?q.doc.health_score:"—"), qSvg
+      + kv("加权说明","均权；缺失维度不计入分母"), q.source, q.fetched_at)}
+    ${card("SLI/SLO","最近快照", sliRows||'<div class="muted">尚无快照（python -m tools.check_slo）</div>',
+      s.source, s.fetched_at)}
+    ${card("时效三态","valid/pending/uncertain", barChart(d.timeliness_tri,["valid","pending","uncertain"],"#2fbf71"), d.source, d.fetched_at)}
+    ${card("主题分布","RFN 归属表", barChart(Object.fromEntries(Object.entries(d.theme_dist||{}).slice(0,8)),
+      Object.keys(d.theme_dist||{}).slice(0,8), "#9b7cf9"), d.source, d.fetched_at)}
+  </div>`;
+}
+
+/* ---------------- P4 待办闭环 ---------------- */
+function viewWorklist(d, kinds){
+  if(!d.available) return unavail(d);
+  const rows=(d.items||[]).map(it=>`<tr data-id="${esc(it.item_id)}">
+    <td>${esc(it.kind)}</td><td>${esc(it.subject||"")}</td>
+    <td>${esc(it.stage||"—")}</td><td class="muted">${esc((it.payload&&(it.payload.detail||it.payload.note))||"")}</td>
+    <td class="muted">${esc(it.suggestion||"")}</td>
+    <td><button class="act" data-resolve="${esc(it.item_id)}">处置</button></td></tr>`).join("");
+  const policy=(kinds&&kinds.action_policy)||"";
+  return card("待办闭环台", `${d.count} 条（${esc(d.status)}）`,
+    (rows?`<table><tr><th>kind</th><th>subject</th><th>stage</th><th>详情</th><th>生产者建议</th><th></th></tr>${rows}</table>`
+      :'<div class="muted">当前无待办 ✓</div>')
+    + `<div class="muted" style="margin-top:8px;font-size:12px">写路径纪律：${esc(policy)}</div>
+       <div id="resolvebox"></div>`, d.source, d.fetched_at);
+}
+
+/* ---------------- P5 治理审计 ---------------- */
+function viewGovernance(d){
+  if(!d.available) return unavail(d);
+  const runs=(d.runs||[]).slice(0,10).map(r=>`<tr><td>${esc(r.run_id)}</td><td class="muted">${esc(r.started_at||"")}</td>
+    <td>${esc(r.finished_at||"—")}</td><td>${esc(r.status||"")}</td></tr>`).join("");
+  const audit=(d.audit||[]).slice(0,15).map(a=>`<tr><td class="muted">${esc(a.at||a.ts||"")}</td>
+    <td>${esc(a.actor||a.by||"")}</td><td>${esc(a.action||a.event||"")}</td>
+    <td class="muted">${esc((a.target||"")+" "+(a.target_key||""))}</td></tr>`).join("");
+  return `<div class="grid" style="grid-template-columns:1fr 1fr">
+    ${card("最近运行","run_log", runs?`<table><tr><th>run_id</th><th>开始</th><th>结束</th><th>状态</th></tr>${runs}</table>`
+      :'<div class="muted">无运行记录</div>', d.source, d.fetched_at)}
+    ${card("审计日志","audit_log 尾部", audit?`<table><tr><th>时间</th><th>操作者</th><th>动作</th><th>对象</th></tr>${audit}</table>`
+      :'<div class="muted">无审计记录</div>', d.source, d.fetched_at)}
+  </div>`;
+}
+
+/* ---------------- P6 文档检索 ---------------- */
+function viewSearch(d){
+  if(!d.available && d.reason) return card("文档检索","", `<div class="unavail">⚠ ${esc(d.reason)}</div>`, d.source);
+  const rows=(d.results||[]).map(r=>`<tr><td>${esc(r.rfn||r.ipn||"—")}</td>
+    <td>${esc(r.title||"")}</td><td>${esc(r.document_number||"")}</td>
+    <td class="muted">${esc(r.timeliness_status||"")}</td></tr>`).join("");
+  return card("文档检索","base_api FTS5",
+    `<div class="row" style="margin-bottom:8px">
+      <input id="q" placeholder="输入关键词（标题/文号/正文）" value="${esc(d.query||"")}" style="flex:1">
+      <select id="kind"><option value="records">记录</option><option value="clauses">条文</option></select>
+      <button class="act" id="qbtn">检索</button></div>
+    ${d.error_external?`<div class="muted" style="font-size:12px">external 底座不可用，已回退 internal：${esc(d.error_external)}</div>`:""}
+    ${rows?`<table><tr><th>RFN/IPN</th><th>标题</th><th>文号</th><th>时效</th></tr>${rows}</table>`
+      :'<div class="muted">无命中</div>'}`, (d.source||"base_api"), d.fetched_at);
+}
+
+/* ---------------- P7 投放看板 ---------------- */
+function viewPublish(d){
+  if(!d.available) return unavail(d);
+  const rows=["external","internal"].map(b=>{const m=d[b]||{};
+    return `<tr><td>${esc(b)}</td><td>${m.available===false?`<span class="bad">${esc(m.reason||"未发布")}</span>`:pill("已发布","ok")}</td>
+    <td>${esc(m.snapshot_date||m.snapshot||"—")}</td><td>${num(m.count||m.records||m.record_count)}</td></tr>`;}).join("");
+  const w=d.wiki_sources||{};
+  return `<div class="grid">
+    ${card("双底座发布件","base_api.manifest",
+      `<table><tr><th>底座</th><th>状态</th><th>快照日</th><th>记录数</th></tr>${rows}</table>`, d.source, d.fetched_at)}
+    ${card("wiki 投放源","reports/_wiki_sources",
+      kv("目录", esc(w.dir||"—")) + kv("存在", w.exists?"是":"否", w.exists?"ok":"warn")
+      + kv("文件数", num(w.files)), d.source, d.fetched_at)}
+  </div>`;
+}
+
+/* ---------------- P8 发布事件流 ---------------- */
+function viewRelease(d){
+  if(!d.available) return unavail(d);
+  const commits=(d.commits||[]).map(c=>`<tr><td class="muted">${esc(c.date)}</td>
+    <td class="muted">${esc(c.sha)}</td><td>${esc(c.subject)}</td></tr>`).join("");
+  const sb=d.sbom||{};
+  return `<div class="grid">
+    ${card("提交流","git log（近 20 条）",
+      commits?`<table><tr><th>日期</th><th>sha</th><th>主题</th></tr>${commits}</table>`
+        :`<div class="muted">git 不可用${d.git_error?("："+esc(d.git_error)):""}</div>`, d.source, d.fetched_at)}
+    ${card("发布物证据","SBOM + 契约版本",
+      kv("SBOM 组件数", num(sb.components)) + kv("lock sha256", esc((sb.lock_sha256||"").slice(0,16)))
+      + kv("契约版本", esc(d.contract_version||"—")), d.source, d.fetched_at)}
+  </div>`;
+}
+
+/* ---------------- 调度 + 交互 ---------------- */
+let CUR="overview", LAST={};
+async function render(){
+  const map={overview:"/api/overview", flow:"/api/flow", assets:"/api/assets",
+    metrics:"/api/metrics", worklist:"/api/worklist", governance:"/api/governance",
+    publish:"/api/publish", release:"/api/release"};
+  const v=$("#view");
+  try{
+    if(CUR==="search"){ const q=$("#q")?$("#q").value:""; const kind=$("#kind")?$("#kind").value:"records";
+      LAST.search=await api(`/api/search?q=${encodeURIComponent(q)}&kind=${kind}`); v.innerHTML=viewSearch(LAST.search);
+      if($("#qbtn")) $("#qbtn").onclick=()=>render();
+      if($("#q")) $("#q").onkeydown=e=>{if(e.key==="Enter")render();};
+      return; }
+    if(CUR==="metrics"){
+      const [m,q,s]=await Promise.all([api("/api/metrics"),api("/api/quality"),api("/api/slo")]);
+      Object.assign(LAST.metrics,m); m.quality=q; m.slo=s; v.innerHTML=viewMetrics(m); return; }
+    if(CUR==="worklist"){
+      const [wl,k]=await Promise.all([api("/api/worklist"),api("/api/worklist/kinds")]);
+      LAST.worklist=wl; v.innerHTML=viewWorklist(wl,k);
+      v.querySelectorAll("button[data-resolve]").forEach(b=>b.onclick=()=>openResolve(b.dataset.resolve));
+      return; }
+    LAST[CUR]=await api(map[CUR]||"/api/overview");
+    v.innerHTML=({overview:viewOverview,flow:viewFlow,assets:viewAssets,metrics:viewMetrics,
+      worklist:viewWorklist,governance:viewGovernance,search:viewSearch,publish:viewPublish,
+      release:viewRelease}[CUR])(LAST[CUR]);
+    if(CUR==="flow"&&$("#stepbtn")) $("#stepbtn").onclick=async()=>{
+      const s=$("#stepsel").value; const d=await api("/api/flow/step?step="+encodeURIComponent(s));
+      const row=(d.row||{});
+      $("#stepout").innerHTML=card("步骤抽屉："+s,
+        esc(d.source||""),
+        kv("status",esc(row.status||"—")) + kv("rc",esc(row.rc||row.exit_code||"—"))
+        + `<pre>${esc(d.log_tail||"(无日志)")}</pre>`, d.source, d.fetched_at);};
+  }catch(e){ v.innerHTML=card("渲染异常","",`<div class="bad">⚠ ${esc(String(e))}</div>`,"web 前端"); }
+  $("#stamp").textContent = "最近抓取："+new Date().toLocaleTimeString();
+}
+function openResolve(id){
+  const box=$("#resolvebox");
+  box.innerHTML=`<div style="margin-top:10px;border-top:1px solid var(--line);padding-top:10px">
+    <div class="row"><b>处置 ${esc(id)}</b>
+      <select id="rstatus"><option value="resolved">resolved（已处置）</option>
+        <option value="dismissed">dismissed（不适用）</option></select>
+      <input id="rby" placeholder="操作者" value="confirm_console" size="14">
+      <button class="act" id="rok">提交</button>
+      <button class="act ghost" id="rcancel">取消</button></div>
+    <textarea id="rwhy" placeholder="处置理由（必填，进入审计台账）"></textarea></div>`;
+  $("#rcancel").onclick=()=>box.innerHTML="";
+  $("#rok").onclick=async()=>{
+    const payload={item_id:id, resolution:$("#rwhy").value, status:$("#rstatus").value, by:$("#rby").value};
+    const r=await api("/api/worklist/resolve",{method:"POST",
+      headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload)});
+    if(r.ok||r.available){ toast("已处置："+id+"（写路径：worklist_resolve）"); box.innerHTML=""; render(); }
+    else toast("处置失败："+(r.reason||r.error||"未知"), true);
+  };
+}
+function initNav(){
+  const nav=$("#nav");
+  TABS.forEach(t=>{const b=document.createElement("button");
+    b.textContent=t.name; b.dataset.id=t.id;
+    b.onclick=()=>{ [...nav.children].forEach(x=>x.classList.remove("on")); b.classList.add("on");
+      CUR=t.id; render(); };
+    nav.appendChild(b);});
+  nav.firstChild.classList.add("on");
+}
+function initLive(){
+  const badge=$("#live");
+  try{
+    const es=new EventSource("/api/events");
+    es.addEventListener("hello",()=>{badge.textContent="SSE 实时";badge.className="badge live";});
+    es.addEventListener("changed",()=>{ render(); });
+    es.onerror=()=>{ badge.textContent="轮询降级 5s"; badge.className="badge off";
+      if(!window._poll){ window._poll=setInterval(render,5000); } };
+  }catch(e){ badge.textContent="轮询降级 5s"; badge.className="badge off";
+    window._poll=setInterval(render,5000); }
+}
+async function initGates(){
+  try{ const h=await api("/api/health");
+    $("#gates").textContent="门禁 "+h.gates_registered+" 道"; }catch(e){}
+}
+initNav(); render(); initLive(); initGates();
+setInterval(()=>{ if(!window._poll) render(); }, 10000);
+</script>
+</body>
+</html>

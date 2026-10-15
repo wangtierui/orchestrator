@@ -518,6 +518,42 @@ s = se.split_sentences(text, level="strict")   # level ∈ {strict, loose}（受
 
 > 说明：`RCO_*` 为**本仓运行时行为开关**（默认值即生产推荐值）；`REG_ORCH_*` 为**部署/运行期注入**（路径、上限、标识）。
 > 该表由 `tools/audit_health.py` 的 README 一致性核验（§5.3 门禁前置）**反向守护**：新增 env 而漏记 ⇒ 报 HIGH。
+### 6.5 本地确认台（`cli.py serve`，H 轨 · 方案 §8）
+
+一个**本地界面**同时承载两类能力：**待办闭环管理**（操作面）与**项目数据总览**（观测面）。
+
+```bash
+python cli.py serve                 # 默认 http://127.0.0.1:8765/（仅回环，无鉴权）
+python cli.py serve --port 9000     # 换端口
+python cli.py serve --open          # 启动后打开浏览器
+```
+
+| 页 | 内容 | 数据源（**全部经 `interfaces/` 只读门面**） |
+|---|---|---|
+| **P0 总览** | 运行健康 / 门禁状态 / 待办 / 告警 / 数据新鲜度 / 存储占用 六卡 | 治理库台账、`run_state`、`reports/_alerts/`、`paths` 目录扫描 |
+| **P1 数据流转** | 手绘 SVG 桑基图（源 → 步骤），边宽 ∝ √最近处理记录数；节点抽屉含 argv/rc/日志尾 | `STEP_ORDER` + `sources.yaml` + `triggers.yaml` + 运行台账 |
+| **P2 数据状态** | 五源产物清单（记录数/快照日）+ 双底座发布件 + 条文契约自检 | `clean_index_api` / `base_api` / `clause_index_api` |
+| **P3 指标** | 门禁通过率趋势、待办 aging、**DAMA 六维质量**、**SLI/SLO**、时效三态、主题分布 | `governance_api` / `rfn_api` / `timeliness_api` + W5 度量产物 |
+| **P4 待办闭环** | worklist 列表 → 处置（选项 + **必填理由**）→ 状态即时回读 | `governance_store.worklist_list` / **`worklist_resolve`（唯一写路径）** |
+| **P5 治理审计** | 最近运行 + 审计日志尾部 | `governance_store.list_runs` / `governance_api.audit` |
+| **P6 文档检索** | FTS5 全文检索（external → internal 自动回退） | `base_api.search_external/search_internal` |
+| **P7 投放看板** | 双底座发布件状态 + wiki 投放源 | `base_api.manifest` |
+| **P8 发布事件流** | 提交流 + SBOM 组件数/锁哈希 + 契约版本 | `git log` + `reports/_sbom/` + `contract_manifest.json` |
+
+**纪律（与全仓一致，方案 §8.2.2）**
+
+| 原则 | 落实 |
+|---|---|
+| 零新增依赖 | 服务端纯标准库（`http.server`/`sqlite3`）；前端单文件原生 JS + 手绘 SVG，**零 CDN**（出口网络有过滤，外链即不可用风险） |
+| 不裸读 | 一切取数经 `interfaces/`；**唯一写路径** = `worklist_resolve`（处置登记，不执行任意动作） |
+| 旁路降级 | 任一数据源故障只让**该卡片**显示「不可用 + 原因」，页面不白屏；确认台进程故障不影响主链 |
+| loopback-only | 默认只绑 `127.0.0.1`；改绑非回环会打印**无鉴权**告警 |
+| 密钥 env-only | 响应经 `_scrub` 过滤 token/secret/dsn 等 11 类密钥形态字段 |
+| 可观测披露 | 每卡标注「数据源 + 抓取时刻」 |
+| 机器守护 | 判据 **J12**（`gate_config_integrity`）：禁裸 SQL 写、禁自写 `sys.path`、禁外链 CDN、`serve` 必须注册、响应必须脱敏；契约测试 `tests/test_confirm_console.py` 26 项 |
+
+**明确不做**（§8.2.1 非目标）：不触发主链（执行权归 `run`/计划任务）、不做业务逻辑、不引外部资产、不做多租户/权限、不替代 CLI。
+
 ## 7. 附录与延伸阅读
 
 | 资源 | 位置 | 说明 |

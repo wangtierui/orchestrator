@@ -6,7 +6,7 @@
   - argparse 蓝图 build_parser（帮助文本/子命令参数声明）；
   - 分发 main（UTF-8 强置、-h 处理、未知命令提示）。
 命令实现（18 个）见 commands/：run/doctor/status/schedule ｜ gates/governance/source/internal/
-classify/timeliness/draft/rfn/base/analysis/relations/worklist/triggers/ping。
+classify/timeliness/draft/rfn/base/analysis/relations/worklist/triggers/ping/serve。
 唯一主链入口是 `run`（v2 §3.13）；`tools/run_production_refresh.py` 降级为库 + legacy 直调。
 
 ⚠️ 阶段 0 澄清（2026-09-18）：`build_parser()` **仅用于 `-h/--help` 文本**，
@@ -21,6 +21,7 @@ import argparse
 import contextlib
 import os
 import sys
+from typing import Any, cast
 
 import paths
 from commands import analysis as _m_analysis
@@ -41,6 +42,7 @@ from commands import relations as _m_relations
 from commands import rfn as _m_rfn
 from commands import run as _m_run
 from commands import schedule as _m_schedule
+from commands import serve as _m_serve
 from commands import source as _m_source
 from commands import status as _m_status
 from commands import timeliness as _m_timeliness
@@ -75,6 +77,8 @@ COMMANDS = {
     "schedule": _m_schedule.run,
     "triggers": _m_triggers.run,
     "ping": _m_ping.run,
+    # H 轨（方案 §8）：本地确认台（Web 控制台；**不触发主链**，执行权归 run/计划任务）
+    "serve": _m_serve.run,
 }
 
 
@@ -85,6 +89,13 @@ def build_parser() -> argparse.ArgumentParser:
     )
     sub = p.add_subparsers(dest="command", metavar="<command>")
     sub.add_parser("gates", help="运行交付门禁（ALL_GATES）")
+    p_serve = sub.add_parser(
+        "serve", help="本地确认台（待办闭环 + 数据总览；loopback-only、无鉴权）")
+    p_serve.add_argument("--host", default="127.0.0.1",
+                         help="绑定地址（默认回环；非回环会告警）")
+    p_serve.add_argument("--port", type=int, default=8765, help="端口（默认 8765）")
+    p_serve.add_argument("--open", action="store_true", help="启动后打开浏览器")
+    p_serve.add_argument("--verbose", action="store_true", help="逐请求日志")
     p_gov = sub.add_parser("governance", help="治理库（阶段 1；水位/审计/原件注册）")
     p_gov.add_argument("sub", choices=["init", "status", "watermarks", "edges",
                                        "audit", "artifacts", "gates",
@@ -152,8 +163,11 @@ def _fail_not_source_tree(cmd: str) -> int:
 def main(argv=None) -> int:
     # Windows 控制台默认 GBK：强制 stdout UTF-8 防 UnicodeEncodeError（含 ↔ 等符号）
     # （`contextlib.suppress` 取代 try/except: pass —— 意图显式化，且不被裸 pass 判据计入）
+    # `reconfigure` 只在 TextIOWrapper 上存在（重定向到 StringIO/管道时没有）⇒ 运行时
+    # 用 suppress 兜住；类型侧显式 cast，让 mypy 不必把 `sys.stdout` 永久视为 TextIO。
     with contextlib.suppress(Exception):
-        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        _stdout = cast("Any", sys.stdout)
+        _stdout.reconfigure(encoding="utf-8", errors="replace")
     argv = list(sys.argv[1:] if argv is None else argv)
     # A-11（2026-09-12）：-h/--help/help 显式处理（原仅无参打印，`cli.py --help` 报"未知命令"）。
     if not argv or argv[0] in ("-h", "--help", "help"):

@@ -1,5 +1,42 @@
 # Changelog
 
+## [Unreleased] 2026-10-15 — H 轨：本地 Web 确认台（P0–P8）+ 判据 J12（第七十五批）
+
+> 方案 §8（人机交互层）。`cli.py serve` 一个本地界面同时承载**待办闭环管理**（操作面）与
+> **项目数据总览**（观测面）；**零新增依赖**（纯标准库服务端 + 单文件原生 JS 前端）。
+
+### 结构与纪律
+- `web/` 新顶层包（服务端与页面资源）+ `commands/serve.py` CLI 薄壳（与 `commands/run.py`
+  薄壳 + `tools/run_production_refresh.py` 实现同构）：
+  · `web/snapshots.py` —— 卡片数据层（每源一 provider，统一 `available/source/fetched_at`
+    降级形状 + 2s TTL 防抖缓存），**一切取数经 `interfaces/` + `governance_store`**；
+  · `web/api.py` —— 15 条路由的薄层（参数校验 + 委派 + `_scrub` 密钥脱敏 + 请求体 4KB 上限）；
+  · `web/sse.py` —— SSE Hub（服务端 2s diff 指纹，有变更才推；前端断线自动降级 5s 轮询）；
+  · `web/server.py` —— `ThreadingHTTPServer`（loopback-only，非回环打印**无鉴权**告警；
+    安全头 nosniff/ DENY / no-referrer；静态资源路径穿越拒绝）；
+  · `web/assets/index.html` —— 单文件 SPA：9 个页签 + **手绘 SVG**（桑基图/折线/柱状/环形），
+    **零 CDN**（出口网络有过滤，外链即不可用风险）。
+- 页面：P0 总览六卡 / P1 桑基（边宽 ∝ √记录数，节点抽屉含 argv·rc·日志尾）/ P2 资产与水位 /
+  P3 指标（含 **DAMA 六维**与 **SLI/SLO** 卡片，直接读 W5 度量产物）/ P4 待办闭环（处置必填理由）/
+  P5 治理审计 / P6 FTS5 检索（external→internal 自动回退）/ P7 投放看板 / P8 发布事件流。
+- **唯一写路径** = `governance_store.worklist_resolve`（处置登记；确认台**不执行任意动作**，
+  §8.6 安全核心）；P4 动作注册表显式声明该边界。
+
+### 门禁与测试
+- **新判据 J12**（`gates/gate_config_integrity/_console.py`，5 条）：禁裸 SQL 写 / 禁自写
+  `sys.path` / 禁外链 CDN / `serve` 必须注册 / 响应必须脱敏。
+- `tests/test_confirm_console.py` 26 项契约测试（随机端口真实起服务，不 mock HTTP）：
+  13 条路由 200+JSON、未知路由 404、参数非法 400、路径穿越被拒、处置缺理由 400、
+  脱敏生效、以及三条**静态纪律断言**（无裸 SQL 写 / sqlite 只读 / 无自写引导）。
+- 修复 `gate_import_bootstrap._code_hits` 的**自指误报**（2026-10-15 亲历）：原口径只跳注释，
+  门禁/测试**自己代码里的字符串字面量**（含 3.12+ 的 f-string 字面量片段）被计成注入
+  ⇒ 「只减不增」纪律被自己的判据文本顶破。现改为 `tokenize` 剥离注释**与字符串**（含
+  `FSTRING_MIDDLE`）后再匹配，无法 tokenize 时回退保守计数。副作用：计数更准
+  （剔除散文与字面量，modules 由 111 → 109 真实下降），基线无需重标。
+
+### 验证
+30 道门禁 PASS、ruff 0、mypy 0（含新引入的 `web` 与被 J12 拉进图的 `cli.py`）。
+
 ## [Unreleased] 2026-10-15 — W5 三批：版本管理 + 技术债台账 + 测试矩阵 + 风格报告 + 行数预算判据 J11（第七十四批）
 
 > 方案 §13.6（版本管理 P1）、§13.7（技术债台账 P2）、§13.8（测试深度 P1）、§13.9（现代特性 P1）、

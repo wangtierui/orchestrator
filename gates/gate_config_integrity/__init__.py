@@ -35,6 +35,7 @@ from ._common import (  # noqa: F401
     _load_manifest,
     _load_module_from_path,
 )
+from ._console import _check_console_discipline
 from ._domains import (
     _check_agent_state,
     _check_domains,
@@ -134,6 +135,11 @@ def run() -> tuple[bool, dict]:
     p13, d13 = _check_file_budget(ROOT)
     problems += p13
     detail.update(d13)
+
+    # 判据 J12（§8）：确认台（web/）纪律——只读取数/唯一引导/零 CDN/serve 已接线/响应脱敏
+    p14, d14 = _check_console_discipline(ROOT)
+    problems += p14
+    detail.update(d14)
 
     if warnings:
         detail["warnings"] = warnings

@@ -71,29 +71,67 @@ _TQ_D = '"' * 3
 _TQ_S = "'" * 3
 
 
+def _strip_noncode(text: str) -> str | None:
+    """剥离注释与字符串字面量，只留代码；无法 tokenize 时返回 None（调用方回退）。"""
+    import io as _io
+    import tokenize
+
+    # ⚠️ 必须**按逻辑行重组**：逐 token 换行会把 `sys . path . insert (` 拆到不同行，
+    #    `sys.path.insert(` 就不再连续 ⇒ 匹配全失（实测 gates 11 → 1 的假阴性）。
+    # ⚠️ Python 3.12+ 把 **f-string** 拆成 FSTRING_START/MIDDLE/END 三个 token 类型，
+    #    **不属于 STRING** ⇒ f-string 里的字面量文本会漏过剥离（报错消息里的
+    #    "sys.path.insert" 之类会被判据计成真实注入）。故显式跳过 FSTRING_MIDDLE
+    #    （纯字面量），保留 START/END（花括号与插值表达式仍是代码）。
+    fstring_middle = getattr(tokenize, "FSTRING_MIDDLE", None)
+    skip_types = {tokenize.COMMENT, tokenize.STRING}
+    if fstring_middle is not None:
+        skip_types.add(fstring_middle)
+    lines: dict[int, list[str]] = {}
+    try:
+        for tok in tokenize.generate_tokens(_io.StringIO(text).readline):
+            if tok.type in skip_types:
+                continue
+            if tok.type in (tokenize.NL, tokenize.NEWLINE, tokenize.INDENT,
+                            tokenize.DEDENT, tokenize.ENDMARKER):
+                continue
+            lines.setdefault(tok.start[0], []).append(tok.string)
+    except (tokenize.TokenError, IndentationError, SyntaxError):
+        return None
+    return "\n".join("".join(v) for _k, v in sorted(lines.items()))
+
+
 def _code_hits(text: str) -> int:
-    """统计**代码行**中的注入次数（跳过注释行与文档字符串）。
+    """统计**真实代码**中的注入次数（注释、文档字符串、字符串字面量均不计）。
 
     修正（2026-09-26，P1-3 执行中发现）：原实现直接对全文跑正则，于是**文档/注释里的
     文字提及**（如「禁止业务代码 sys.path.insert」「A 越权引导：sys.path.insert/append」）
     也被计成"注入"——实测 gates/ 的 18 计数里有 7 处纯属散文，且新增一句说明性注释
     就会顶破基线（本批亲历）。判据意图是"有多少真实引导点"，故此处只数代码行。
+
+    再修正（2026-10-15，H 轨批次 · 自指误报）：只跳注释**仍不够**——**代码里出现的
+    字符串字面量**（如判据自身的检测串 `if "sys.path.insert" in text:`、常量表、
+    报错消息）同样不是引导点，却会被计入 ⇒ 门禁被自己的判据文本顶破（gates 9→11、
+    tests 33→35）。现改为：先 `tokenize` 剥离注释**与字符串**，再匹配；无法
+    tokenize（语法错误文件）时回退原行级启发式（保守计数，宁可多报不漏报）。
     """
-    n = 0
-    in_doc = False
-    for ln in text.splitlines():
-        s = ln.strip()
-        if in_doc:
-            if _TQ_D in s or _TQ_S in s:
-                in_doc = False
-            continue
-        if s.startswith("#"):
-            continue
-        for q in (_TQ_D, _TQ_S):
-            if q in s and s.count(q) % 2 == 1:
-                in_doc = True
-        n += len(PAT.findall(ln))
-    return n
+    stripped = _strip_noncode(text)
+    if stripped is None:
+        n = 0
+        in_doc = False
+        for ln in text.splitlines():
+            s = ln.strip()
+            if in_doc:
+                if _TQ_D in s or _TQ_S in s:
+                    in_doc = False
+                continue
+            if s.startswith("#"):
+                continue
+            for q in (_TQ_D, _TQ_S):
+                if q in s and s.count(q) % 2 == 1:
+                    in_doc = True
+            n += len(PAT.findall(ln))
+        return n
+    return len(PAT.findall(stripped))
 
 
 def _scan() -> dict[str, int]:
