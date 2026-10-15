@@ -1,5 +1,71 @@
 # Changelog
 
+## [Unreleased] 2026-10-16 — E2：gov/parse.py 按层拆分（config/extract/outputs）（第八十二批）
+
+> D-遗留第二批。承接第八十一批的 zhengceku 夹具（E1），本批拆分 `gov/parse.py`
+> （843 行 → 210 行）。拆分判据与 pbc 同构：**纯函数层可被夹具驱动 + 分层边界内聚**。
+
+### 结构（依赖单向，两块闭包经 AST 分析**无交集**）
+
+```
+gov/config.py    ScrapeConfig（采集配置契约）+ CSV_COLUMNS（产物列契约）+ DEFAULT_HEADERS
+gov/extract.py   8 个纯抽取函数 + 3 个抽取常量（无网络/无落盘/无全局状态）
+gov/outputs.py   13 个落盘函数 + MasterView + load_resume + 5 个落盘常量
+gov/parse.py     引导 + SOURCES（子源登记表**唯一事实源**）+ build_config + 缓存 +
+                 全部迁出符号的显式 re-export（外部调用面不变）
+```
+
+- **依赖方向**：config ← outputs ← parse；extract 独立（无横向依赖）。
+- **re-export 沿用 2026-09-13 P3 写法**（模块对象 + 显式赋值），规避 F401/F405 与
+  mypy `no-redef`；`collector.py` 的导入点一行未改。
+- 规模：parse.py 843 → 210 行；新增 config.py 84 / extract.py 175 / outputs.py 512 行。
+
+### 等价性证据（两层，均可复跑）
+
+1. **夹具回放**：`tests/test_collector_replay.py` + `test_collector_replay_zhengceku.py`
+   共 34 项全绿（gov 抽取 + zhengceku 纯函数 + 附件编码）。
+2. **重构前后逐字段比对**：加载拆分前的备份模块与拆分后三层，在同一夹具输入上比对
+   7 个抽取函数（各多组参数）× 7 个常量 + 11 个符号的**归属确认**
+   ⇒ `DIFF: none`。
+
+### 顺带清理
+
+- **死定义**：`CONTENT_SELECTORS` / `TITLE_SELECTORS` 在 parse.py 定义但**代码零引用**
+  （仅 docstring 提及），实际使用方是 `collector.py`（其 L391 遍历）⇒ 删parse.py 副本，
+  消除同仓重复定义。
+- **J11 基线维护**：`gov/parse.py` 拆分后已不超限，门禁明示「不得留已偿条目」⇒
+  从 `config/integrity_policy.yaml` 的 file_budget.baseline 移除（13 → 12 条）。
+  用**文本定点删除**而非 yaml 重写——`yaml.safe_dump` 会吞掉全部注释与格式
+  （实测 -77 行），配置文件的注释是判据语义的一部分，不能用解析器回写。
+
+### 拆分过程中被及时发现并修复的缺陷（记录以自省）
+
+| 现象 | 根因 | 处置 |
+|---|---|---|
+| `ScrapeConfig` 报无 `max_seconds` | 按 AST `end_lineno` 取块，少取了末行 | 改为「从定义行到下一个顶层定义前一行」逐字重取 |
+| `parse.py` 报 `invalid syntax`（病灶在更早处） | 搬走 `ScrapeConfig` 后其`@dataclass` 装饰器孤立 | 清理孤立装饰器 + 压缩空行 |
+| `NameError: _unified_doc_number` | 该名字定义在 `try` 块的 import alias 里，AST 闭包**未捕获** | 迁到真正使用方 `extract.py` |
+| `AttributeError: DEFAULT_HEADERS` | 漏搬该块 | 补入 config.py |
+| `NameError: dataclass` / `csv` / `datetime` | ruff 在使用点缺失期间把导入当"未使用"删了；补回使用点时不会自动补回 | 补齐导入并复验 |
+
+**教训**：**自动修复必须在校验之后**——ruff 按"当前文件状态"判断未使用，
+若中途手工删了使用点，会连锁删掉导入；而恢复使用点时 ruff 不会补回导入。
+
+### 全量回归暴露的两个结构性问题（当场发现并修复）
+
+| 问题 | 根因 | 处置 |
+|---|---|---|
+| **模块同名遮蔽**（`gov/scrape_config.py` 原名 `config.py`） | 仓根已有真实包 `config/`（含 `__init__.py`）。脚本形态下 `sys.path` 中仓根在先⇒ `from config import CSV_COLUMNS` 解析到 `config/__init__.py` ⇒ `ImportError: cannot import name 'CSV_COLUMNS' from 'config'`。**同类名在同仓共存是真实的歧义** | 改名 `config.py` → `scrape_config.py`（与类名 `ScrapeConfig` 对齐）。三个候选（改名 / `importlib` 动态加载 / 把常量留原层）中**只有改名是根治**——另两者都是在绕过歧义 |
+| **脚本形态引导缺本目录** | 单文件时代只需仓根与上层包；拆出兄弟模块后，脚本形态的裸名 `import outputs` 需要 `collectors/gov/` **自身**在 `sys.path`。三个新文件的引导块补入 `_HERE` | 引导块统一为「本目录 + 仓根 + 上层 `collectors`」三条路径 |
+
+另修三处**测试跟随分层**：`test_resource_hygiene.gp` / `test_raw_jsonl` /
+`test_gov_incremental` 用 `importlib` 按路径加载 `parse.py` 并监视其 `json` /
+`_COLLECT_STATS_REL` 属性——这些实现已随落盘逻辑迁到 `outputs.py` ⇒ 加载目标更新为
+`outputs.py`，**断言的性质不变**（仍是"走流式而非整表解析"），只是不再依赖分层位置。
+
+### 验证
+
+
 ## [Unreleased] 2026-10-16 — 诊断第 0 波：信号源可用性自检 + SLI 口径修正（第八十批）
 
 > 承接第七十九批与五阶段审查的最上游结论：**「告警从未真正送达」**——`reports/_alerts`

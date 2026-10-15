@@ -71,7 +71,6 @@ file_budget:
     - std_lib/scraper_std/crawler_common.py
     - tools/gen_flow_map.py
     - tools/audit_health.py
-    - modules/regulatory_scrapers/collectors/gov/parse.py
     - modules/regulatory_scrapers/collectors/gov/collector.py
     - modules/regulatory_scrapers/collectors/gov/zhengceku.py
     - modules/regulatory_classifier/recall_audit/run_retrieval_after_checks.py

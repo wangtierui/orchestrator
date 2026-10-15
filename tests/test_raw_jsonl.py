@@ -34,13 +34,15 @@ def _load(rel_path: str, name: str):
 
 @pytest.fixture(scope="module")
 def gp():
-    return _load(os.path.join("modules", "regulatory_scrapers", "collectors", "gov", "parse.py"), "_gp_jsonl")
+    return _load(os.path.join("modules", "regulatory_scrapers", "collectors", "gov",
+                            "outputs.py"), "_gp_jsonl")
 
 
 @pytest.fixture(scope="module")
 def pipe():
     """按**包路径**导入：`pipeline.py` 含相对导入（`from .cleaner import …`）
-    ⇒ 不能用 `spec_from_file_location` 独立加载（实测 ImportError: attempted relative import）。"""
+    ⇒ 不能用 `spec_from_file_location` 独立加载（实测 ImportError: attempted relative import）。
+    W4 E2 拆分后加载目标为 `outputs.py`（落盘层）；该层自带脚本形态引导（含本目录路径），故可独立加载。"""
     from std_lib.scraper_std import pipeline
 
     return pipeline

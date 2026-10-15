@@ -40,7 +40,16 @@ def _load(rel_path: str, name: str):
 
 @pytest.fixture(scope="module")
 def gp():
-    return _load(os.path.join("modules", "regulatory_scrapers", "collectors", "gov", "parse.py"), "_gp_res")
+    """加载 gov 采集器的**落盘实现层**。
+
+    W4 E2 拆分（2026-10-16）后，落盘逻辑（`write_outputs` / `merge_and_write` /
+    `MasterView` / `build_master_index_streaming`）迁到 `collectors/gov/outputs.py`，
+    `parse.py` 只做 re-export。本组用例监视 `json.load` 以断言"走流式重建而非整表
+    解析"——该实现随落盘逻辑一并迁到 outputs，故加载目标随之更新（**断言的性质不变**，
+    只是不再依赖分层位置）。
+    """
+    return _load(os.path.join("modules", "regulatory_scrapers", "collectors", "gov",
+                              "outputs.py"), "_gp_res")
 
 
 # --------------------------------------------------------------------------- #

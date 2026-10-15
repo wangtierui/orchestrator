@@ -163,7 +163,8 @@ def test_raw_readme_is_gone() -> None:
 
 def test_collect_stats_path_outside_fact_source(monkeypatch) -> None:
     """统计落点必须在 `data/run_state/`（旁路观测），**绝不能**落 `data/raw/`（事实源）。"""
-    gp = _load(os.path.join("modules", "regulatory_scrapers", "collectors", "gov", "parse.py"), "_gp_stats")
+    gp = _load(os.path.join("modules", "regulatory_scrapers", "collectors", "gov",
+                            "outputs.py"), "_gp_stats")
     p = gp.collect_stats_path("gov_xzfgk")
     assert p.endswith(os.path.join("collect_stats", "gov_xzfgk.json"))
     norm = p.replace(os.sep, "/")
@@ -173,7 +174,8 @@ def test_collect_stats_path_outside_fact_source(monkeypatch) -> None:
 
 def test_write_collect_stats_roundtrip(monkeypatch) -> None:
     """统计写入：原子落盘 + 内容可回读；写失败**不得抛错**（旁路观测）。"""
-    gp = _load(os.path.join("modules", "regulatory_scrapers", "collectors", "gov", "parse.py"), "_gp_stats2")
+    gp = _load(os.path.join("modules", "regulatory_scrapers", "collectors", "gov",
+                            "outputs.py"), "_gp_stats2")
     monkeypatch.setattr(gp, "_COLLECT_STATS_REL", ("reports", "_tmp", "collect_stats_test"))
     payload = {"sub_source": "xzfgk", "stats": {"list_pages_fetched": 3, "list_pages_without_new": 2}}
     p = gp.write_collect_stats("unit_test", payload)
