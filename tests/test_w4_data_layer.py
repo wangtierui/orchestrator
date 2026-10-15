@@ -87,7 +87,7 @@ def test_resume_third_condition_detects_out_of_chain_raw_write(gs, tmp_path, mon
 
     # 上一轮执行记录：cleaned:gov 在 raw 版本 V0 上算出（inputs_json 留痕）
     v0 = gs.version_of_file(str(raw))
-    gs.record_watermark("raw:gov", "collectors.gov_collector", v0, run_id="run-prev", round_id="run-prev")
+    gs.record_watermark("raw:gov", "collectors.gov.collector", v0, run_id="run-prev", round_id="run-prev")
     gs.record_watermark(
         "cleaned:gov",
         "regulatory_scrapers.clean.run_clean_pipeline.main",
@@ -134,7 +134,7 @@ def test_resume_third_condition_ignores_legitimate_reproduction(gs, tmp_path, mo
     raw.write_text('{"a":1}\n', encoding="utf-8")
     cleaned.write_text('{"b":1}\n', encoding="utf-8")
     v0 = gs.version_of_file(str(raw))
-    gs.record_watermark("raw:gov", "collectors.gov_collector", v0, run_id="run-prev", round_id="run-prev")
+    gs.record_watermark("raw:gov", "collectors.gov.collector", v0, run_id="run-prev", round_id="run-prev")
     gs.record_watermark(
         "cleaned:gov",
         "regulatory_scrapers.clean.run_clean_pipeline.main",
@@ -149,7 +149,7 @@ def test_resume_third_condition_ignores_legitimate_reproduction(gs, tmp_path, mo
     # 同轮合法再生产：raw 再采集（文件变）+ 水位同步登记到新版本（同 run-prev 轮）
     raw.write_text('{"a":1}\n{"a":2}\n', encoding="utf-8")
     gs.record_watermark(
-        "raw:gov", "collectors.gov_collector", gs.version_of_file(str(raw)),
+        "raw:gov", "collectors.gov.collector", gs.version_of_file(str(raw)),
         run_id="run-prev", round_id="run-prev",
     )
     plan = rpr._resume_plan()

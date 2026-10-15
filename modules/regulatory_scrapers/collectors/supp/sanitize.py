@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-supp_sanitize.py —— 交付物行对齐修复（错行治理）
+collectors/supp/sanitize.py —— 交付物行对齐修复（错行治理）
 
 问题根因：
   清洗管道 run_pipeline 在 map_unified 之后还会执行 clean_body / sentence_split
@@ -15,7 +15,7 @@ supp_sanitize.py —— 交付物行对齐修复（错行治理）
   结果：CSV 仅剩 57 个 \\r\\n 记录分隔符（表头+56 行），彻底消除错行；
         JSONL 同为字段级归一，正文事实性内容由 raw JSON / 落盘 PDF 完整保留。
 
-本脚本可独立运行（python scripts/supp_sanitize.py <csv> [<jsonl>]），
+本脚本可独立运行（python collectors/supp/sanitize.py <csv> [<jsonl>]），
 也可被 run_clean_pipeline.py 在落盘后调用，保证重跑管道结果一致。
 
 幂等：对已是单行文本的字段无副作用，可重复执行。
@@ -26,7 +26,7 @@ from __future__ import annotations
 import os as _os
 import sys as _sys
 
-_GUIDE_ROOT = _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "..", ".."))
+_GUIDE_ROOT = _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "..", "..", ".."))
 if _GUIDE_ROOT not in _sys.path:
     _sys.path.insert(0, _GUIDE_ROOT)
 del _GUIDE_ROOT, _os, _sys
@@ -38,26 +38,31 @@ import sys
 csv.field_size_limit(10 ** 9)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-UTILS = HERE  # 拍平后无 utils 层，兄弟模块同在 collectors/ 单层
+UTILS = HERE  # W4 L1 重组后兄弟模块同在 collectors/supp/
 for _p in (HERE,):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-# 复用 supp_normalize 的归一逻辑，保证字段级规则单一来源
+# 复用 supp/normalize 的归一逻辑，保证字段级规则单一来源
+# W4（L1 重组）：import 双形态（包形态相对导入 / 脚本形态裸名）。
 try:
-    from supp_normalize import _flatten_text as _flatten
-except Exception:  # pragma: no cover - 退化实现  # noqa: BLE001
-    import re
+    from .normalize import _flatten_text as _flatten
+except ImportError:  # pragma: no cover - 脚本形态
+    try:
+        from normalize import _flatten_text as _flatten  # type: ignore[no-redef]
+    except ImportError:  # pragma: no cover - 退化实现
+        import re
 
-    def _flatten(v):
-        if isinstance(v, str):
-            s = v.replace("\r\n", "\n").replace("\r", "\n").replace("\n", " ")
-            return re.sub(r"\s+", " ", s).strip()
-        if isinstance(v, dict):
-            return {k: _flatten(x) for k, x in v.items()}
-        if isinstance(v, (list, tuple)):
-            return type(v)(_flatten(x) for x in v)
-        return v
+        def _flatten(v):  # type: ignore[no-redef,misc]
+            if isinstance(v, str):
+                s = v.replace("\r\n", "\n").replace("\r", "\n").replace("\n", " ")
+                return re.sub(r"\s+", " ", s).strip()
+            if isinstance(v, dict):
+                return {k: _flatten(x) for k, x in v.items()}
+            if isinstance(v, (list, tuple)):
+                return type(v)(_flatten(x) for x in v)
+            return v
+
 
 def sanitize_csv(path: str) -> int:
     """消除 CSV 所有字段值内部换行；保持 UTF-8 BOM 与 39 列结构。返回数据行数。"""
@@ -101,7 +106,7 @@ def sanitize_jsonl(path: str) -> int:
 def main(argv=None) -> int:
     argv = argv if argv is not None else sys.argv[1:]
     if not argv:
-        print("用法: python scripts/supp_sanitize.py <csv路径> [<jsonl路径>]")
+        print("用法: python collectors/supp/sanitize.py <csv路径> [<jsonl路径>]")
         return 2
     csv_path = argv[0]
     jsonl_path = argv[1] if len(argv) > 1 else ""

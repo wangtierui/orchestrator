@@ -1,18 +1,18 @@
 warning: The `
 [run] 前置自检通过（<doctor>）
 [refresh] run_id=RUN-<id>（治理库：<ROOT>\data\governance.db）
-[collect] gov_xzfgk argv=['<PY>', '<ROOT>\\modules\\regulatory_scrapers\\collectors\\gov_collector.py', '--source', 'xzfgk', '--max-seconds', '1500', '--env-source', 'gov', '--env-category', '行政法规+部门文件', '--out-dir', '<ROOT>\\modules\\regulatory_scrapers\\data\\raw']
+[collect] gov_xzfgk argv=['<PY>', '<ROOT>\\modules\\regulatory_scrapers\\collectors\\gov\\collector.py', '--source', 'xzfgk', '--max-seconds', '1500', '--env-source', 'gov', '--env-category', '行政法规+部门文件', '--out-dir', '<ROOT>\\modules\\regulatory_scrapers\\data\\raw']
 [step:collect:gov_xzfgk] SKIP（--dry-run（只列 argv，不执行））
-[collect] gov_zhengceku argv=['<PY>', '<ROOT>\\modules\\regulatory_scrapers\\collectors\\gov_collector.py', '--source', 'zhengceku', '--max-seconds', '5100', '--env-source', 'gov', '--env-category', '行政法规+部门文件', '--out-dir', '<ROOT>\\modules\\regulatory_scrapers\\data\\raw']
+[collect] gov_zhengceku argv=['<PY>', '<ROOT>\\modules\\regulatory_scrapers\\collectors\\gov\\collector.py', '--source', 'zhengceku', '--max-seconds', '5100', '--env-source', 'gov', '--env-category', '行政法规+部门文件', '--out-dir', '<ROOT>\\modules\\regulatory_scrapers\\data\\raw']
 [step:collect:gov_zhengceku] SKIP（--dry-run（只列 argv，不执行））
-[collect] mof argv=['<PY>', '<ROOT>\\modules\\regulatory_scrapers\\collectors\\mof_collector.py', '--outdir', '<ROOT>\\modules\\regulatory_scrapers\\data\\raw']
+[collect] mof argv=['<PY>', '<ROOT>\\modules\\regulatory_scrapers\\collectors\\mof\\collector.py', '--outdir', '<ROOT>\\modules\\regulatory_scrapers\\data\\raw']
 [step:collect:mof] SKIP（--dry-run（只列 argv，不执行））
-[collect] nfra argv=['<PY>', '<ROOT>\\modules\\regulatory_scrapers\\collectors\\nfra_collector.py', '--out-dir', '<ROOT>\\modules\\regulatory_scrapers\\data\\raw']
+[collect] nfra argv=['<PY>', '<ROOT>\\modules\\regulatory_scrapers\\collectors\\nfra\\collector.py', '--out-dir', '<ROOT>\\modules\\regulatory_scrapers\\data\\raw']
 [step:collect:nfra] SKIP（--dry-run（只列 argv，不执行））
-[collect] pbc argv=['<PY>', '<ROOT>\\modules\\regulatory_scrapers\\collectors\\pbc_collector.py', '--out', '<ROOT>\\modules\\regulatory_scrapers\\data\\raw']
+[collect] pbc argv=['<PY>', '<ROOT>\\modules\\regulatory_scrapers\\collectors\\pbc\\collector.py', '--out', '<ROOT>\\modules\\regulatory_scrapers\\data\\raw']
 [step:collect:pbc] SKIP（--dry-run（只列 argv，不执行））
 [collect] supp 无网络采集（本地摄取/清洗刷新）→ 跳过
-[collect] supp：未触发本地摄取（经 --supp-batch <backlog.json> 或 collectors/supp_ingest_local_dir.py）
+[collect] supp：未触发本地摄取（经 --supp-batch <backlog.json> 或 collectors/supp/ingest_local_dir.py）
 [clean] gov: raw 459MB → 超时 1800s（N-150 按体量配置；原固定 1800s）
 [step:clean:gov] SKIP（--dry-run（只列 argv，不执行））
 [clean] mof: raw 64MB → 超时 1800s（N-150 按体量配置；原固定 1800s）
@@ -30,7 +30,7 @@ warning: The `
 [step:relevance:pbc] SKIP（--dry-run（只列 argv，不执行））
 [step:relevance:supp] SKIP（--dry-run（只列 argv，不执行））
 [step:timeliness:consolidate] SKIP（--dry-run（只列 argv，不执行））
-[timeliness] 使用清单 时效性标注结果清单_全量_20261014.jsonl
+[timeliness] 使用清单 时效性标注结果清单_全量_<date>.jsonl
 [step:apply:gov] SKIP（--dry-run（只列 argv，不执行））
 [step:apply:mof] SKIP（--dry-run（只列 argv，不执行））
 [step:apply:nfra] SKIP（--dry-run（只列 argv，不执行））

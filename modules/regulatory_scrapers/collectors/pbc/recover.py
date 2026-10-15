@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-pbc_recover.py —— pbc_laws.json 灾难恢复脚本（独立于会覆写 JSON 的 pbc_collector.py）
+collectors/pbc/recover.py —— pbc_laws.json 灾难恢复脚本（独立于会覆写 JSON 的 collectors/pbc/collector.py）
 
-背景：pbc_collector.py 的 --max-items 试跑把 pbc_laws.json（568 条）覆写成 2 条。
+背景：collectors/pbc/collector.py 的 --max-items 试跑把 pbc_laws.json（568 条）覆写成 2 条。
 本脚本从 pbc_laws.bak.json（568 条，mid-backfill 快照）恢复，并补全正文：
 
   - 344 条「规范性文件」：content 仅含本地 PDF 文件名 → 直接用已下载的本地 PDF
@@ -12,13 +12,20 @@ pbc_recover.py —— pbc_laws.json 灾难恢复脚本（独立于会覆写 JSON
   - 6 条「国家法律」：detail_url 直接指向 .doc → 下载并尽力解析（二进制抽取/ python-docx）。
 
 关键：始终以「整份 568 条数组」写盘，绝不截断；每处理 20 条增量落盘。
+
+⚠️ W4（L1 重组，2026-10-15）：本脚本的路径基准原为 `collectors/`（`collectors/data`、
+`collectors/backups` **两个目录都已不存在** ⇒ 输入输出均为幻影路径，脚本在
+「备份不存在」检查处即退出）。现基准改为 **模块数据根** `regulatory_scrapers/`，
+且恢复产物**另存** `pbc_recovered.jsonl`（不覆写在线 `pbc_laws.jsonl`——本脚本会
+重写整份记录，误指向活库即造成数据事故）。原始 mid-backfill 快照已清理，
+运行前须由操作者把备份放到 `regulatory_scrapers/backups/pbc_laws.bak.json`。
 """
 
 # ---- P3b 仓库引导（migrate_collectors_p3b.py 注入）：使 std_lib/config 可导入 ----
 import os as _os
 import sys as _sys
 
-_GUIDE_ROOT = _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "..", ".."))
+_GUIDE_ROOT = _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "..", "..", ".."))
 if _GUIDE_ROOT not in _sys.path:
     _sys.path.insert(0, _GUIDE_ROOT)
 del _GUIDE_ROOT, _os, _sys
@@ -39,9 +46,13 @@ from std_lib.scraper_std.pipeline import (  # 批 49/T1：raw 统一 JSONL 读�
 
 sys.stdout.reconfigure(encoding="utf-8")  # type: ignore[union-attr]
 
-BASE = os.path.dirname(os.path.abspath(__file__))
+# 路径基准 = **模块数据根**（collectors/pbc/ 的上上级）。W4（L1 重组）：原基准为
+# `collectors/`，其 data/backups 子目录早已不存在（幻影路径）；local_path 以此为
+# 相对基准产出 `data/docs/...`，与 clean 管道的解析口径一致。
+BASE = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 BAK = os.path.join(BASE, "backups", "pbc_laws.bak.json")
-JSON_OUT = os.path.join(BASE, "data", "raw", "pbc_laws.json")
+# 恢复产物**另存**：本脚本重写整份记录，指向在线 `pbc_laws.jsonl` 即数据事故。
+JSON_OUT = os.path.join(BASE, "data", "raw", "pbc_recovered.json")
 TESS = os.environ.get("OCR_TESSERACT_BIN", "")  # R17：由 config/ocr.yaml/env 提供，空则降级
 # W4（§7.10 案例二）：原 `TESSD = os.path.join(BASE, "tessdata")` 是**死常量**
 # （全文件零使用）且指向不存在的目录（真实语言数据在仓根）——删除而非改引。
@@ -49,8 +60,8 @@ SUMMARY_LEN = 200
 OCR_DPI = 200
 SAVE_EVERY = 20
 
-# 复用 backfill_pdfs 的下载/链接提取工具（经验证可用）
-spec = importlib.util.spec_from_file_location("bf", os.path.join(BASE, "pbc_backfill_pdfs.py"))
+# 复用同源 backfill 的下载/链接提取工具（经验证可用；W4 L1：原 collectors/pbc/backfill.py）
+spec = importlib.util.spec_from_file_location("bf", os.path.join(os.path.dirname(os.path.abspath(__file__)), "backfill.py"))
 assert spec is not None and spec.loader is not None   # 本地文件存在 ⟹ spec/loader 必非空（供 mypy 收窄）
 bf = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(bf)

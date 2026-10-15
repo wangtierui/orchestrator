@@ -5,7 +5,7 @@ nfra 法规附件下载 + PDF 文本抽取 + 数据质量校验（高精度专�
 =================================================================
 背景
 ----
-主抓取脚本 `nfra_collector.py` 仅抓取详情页 `docClob`（印发通知序言），
+主抓取脚本 `collector.py` 仅抓取详情页 `docClob`（印发通知序言），
 而大量法规（如《保险公司偿付能力监管规则（Ⅱ）》）的**实质正文挂在 PDF 附件**上
 （`attachmentInfoVOList`）。本模块补齐这一缺口：把附件 PDF 下载并抽取为纯文本，
 落盘为可离线复用的缓存，由主脚本在重建时并入输出。
@@ -30,10 +30,10 @@ WAF 礼貌原则
 
 用法
 ----
-  python nfra_fetch_attachments.py                      # 全量（续跑）
-  python nfra_fetch_attachments.py --doc-id 1027892     # 单篇试点
-  python nfra_fetch_attachments.py --keep-pdf           # 保留原始 PDF（默认仅留 .txt）
-  python nfra_fetch_attachments.py --ocr                # 启用 OCR 兜底（需 paddleocr+模型）
+  python collectors/nfra/fetch_attachments.py                      # 全量（续跑）
+  python collectors/nfra/fetch_attachments.py --doc-id 1027892     # 单篇试点
+  python collectors/nfra/fetch_attachments.py --keep-pdf           # 保留原始 PDF（默认仅留 .txt）
+  python collectors/nfra/fetch_attachments.py --ocr                # 启用 OCR 兜底（需 paddleocr+模型）
 =================================================================
 """
 
@@ -41,7 +41,7 @@ WAF 礼貌原则
 import os as _os
 import sys as _sys
 
-_GUIDE_ROOT = _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "..", ".."))
+_GUIDE_ROOT = _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "..", "..", ".."))
 if _GUIDE_ROOT not in _sys.path:
     _sys.path.insert(0, _GUIDE_ROOT)
 del _GUIDE_ROOT, _os, _sys

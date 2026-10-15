@@ -53,7 +53,7 @@ def _save_er_diagram(src: str, fname: str) -> str:
 def _load_extract_doc():
     """按需加载 supp_extract_doc_text.extract（Word97 OLE UTF16 过滤提取），避免导入其主流程。"""
     p = os.path.join(
-        _ROOT, "modules", "regulatory_scrapers", "collectors", "supp_extract_doc_text.py"
+        _ROOT, "modules", "regulatory_scrapers", "collectors", "supp", "extract_doc_text.py"
     )
     spec = importlib.util.spec_from_file_location("_ext", p)
     assert spec is not None and spec.loader is not None   # 仓内文件必存在（供 mypy 收窄）

@@ -127,8 +127,8 @@ def test_legacy_xlsx_path_bounded(tmp_path) -> None:
 # 接线守卫（W-A / W-B / W-D / W-I）
 # --------------------------------------------------------------------------- #
 @pytest.mark.parametrize("rel,needle", [
-    ("modules/regulatory_scrapers/collectors/gov_collector.py", 'd["attachment_text"] = att_text'),
-    ("modules/regulatory_scrapers/collectors/gov_zhengceku.py", '"attachment_text": att_text'),
+    ("modules/regulatory_scrapers/collectors/gov/collector.py", 'd["attachment_text"] = att_text'),
+    ("modules/regulatory_scrapers/collectors/gov/zhengceku.py", '"attachment_text": att_text'),
 ])
 def test_w_a_raw_writers_do_not_duplicate(rel: str, needle: str) -> None:
     """W-A：gov 写侧不得再写记录级聚合副本（attachments[].text 为唯一权威）。
@@ -187,7 +187,7 @@ def test_w_d_pbc_serve_zero_disk() -> None:
 def test_w_i_supp_multiformat() -> None:
     """W-I：supp 抽取须支持 PDF 之外格式（委托共享抽取器）。"""
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    src = open(os.path.join(root, "modules/regulatory_scrapers/collectors/supp_parser.py"),
+    src = open(os.path.join(root, "modules/regulatory_scrapers/collectors/supp/parser.py"),
                encoding="utf-8").read()
     assert "crawler_common import extract_document_text as _shared_extract" in src
 
@@ -202,7 +202,7 @@ def test_w_i_supp_extracts_docx_and_xlsx() -> None:
     import bootstrap
 
     bootstrap.bootstrap("all")
-    from modules.regulatory_scrapers.collectors.supp_parser import extract_document_text
+    from modules.regulatory_scrapers.collectors.supp.parser import extract_document_text
 
     doc = Document()
     doc.add_paragraph("附件正文：续保表述要求")

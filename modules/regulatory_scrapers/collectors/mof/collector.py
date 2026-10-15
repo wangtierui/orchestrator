@@ -34,13 +34,13 @@
 使用：
   # 增量 diff 更新（默认）：载入历史存储，仅对新增/变更条目抓详情，
   # 消失条目标记 removed 而非删除；mof_laws.json 本身即持久化存储
-  python mof_collector.py
+  python collectors/mof/collector.py
 
   # 只抓列表前若干条做验证（不抓详情，快速）
-  python mof_collector.py --max-items 10 --no-detail
+  python collectors/mof/collector.py --max-items 10 --no-detail
 
   # 自定义类别与输出目录
-  python mof_collector.py --categories 1000000000000300000 1000000000000400000 \
+  python collectors/mof/collector.py --categories 1000000000000300000 1000000000000400000 \
                             --outdir ./data/raw --delay-min 0.4 --delay-max 0.9
 """
 
@@ -49,7 +49,7 @@
 import os as _os
 import sys as _sys
 
-_GUIDE_ROOT = _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "..", ".."))
+_GUIDE_ROOT = _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "..", "..", ".."))
 if _GUIDE_ROOT not in _sys.path:
     _sys.path.insert(0, _GUIDE_ROOT)
 del _GUIDE_ROOT, _os, _sys
@@ -113,21 +113,27 @@ _RESP = None  # ResponseCache 实例；None 表示未启用缓存
 _OfflineMiss = OfflineMiss  # 兼容别名
 
 
-# ---- 拆分（2026-09-13，P3）：下列符号迁 mof_attachments，re-export 保持外部调用兼容 ----
-from mof_attachments import (  # noqa: F401  拆分 re-export（显式；规避 F405）
-    _finalize_attachment,
-    _mof_cache_key,
-    _request,
-    build_entry,
-    collect_attachments,
-    download_attachment,
-    fetch_attachments,
-    fetch_category_records,
-    fetch_list_page,
-    html_to_text,
-    normalize_date,
-    safe_filename,
-)
+# ---- 拆分（2026-09-13，P3）：下列符号迁 mof/attachments，re-export 保持外部调用兼容 ----
+# W4（L1 重组）：import 双形态（包形态相对导入 / 脚本形态裸名）。经**模块对象**取符号
+# ⇒ 名单只此一份（两形态各写一遍名单必然漂移）。
+try:
+    from . import attachments as _att
+except ImportError:  # pragma: no cover - 脚本形态
+    import attachments as _att  # type: ignore[no-redef]
+
+# re-export（显式赋值，规避 F401/F405；外部调用面不变）
+_finalize_attachment = _att._finalize_attachment
+_mof_cache_key = _att._mof_cache_key
+_request = _att._request
+build_entry = _att.build_entry
+collect_attachments = _att.collect_attachments
+download_attachment = _att.download_attachment
+fetch_attachments = _att.fetch_attachments
+fetch_category_records = _att.fetch_category_records
+fetch_list_page = _att.fetch_list_page
+html_to_text = _att.html_to_text
+normalize_date = _att.normalize_date
+safe_filename = _att.safe_filename
 
 
 def _init_cache(path=None, offline=False):
@@ -256,14 +262,14 @@ _ATTACH_KIND = {"0": "attachment", "90": "text_version"}
 # 附件主机 502 熔断（2026-09-10 增量策略）：附件主机 10.1.60.36:8888 曾实测 100% HTTP 502
 # 会让全量任务空转数十小时。连续 502 达阈值即熔断，本次运行剩余附件一律跳过（不阻塞主数据）。
 #
-# ⚠️ N-174（2026-09-30）：**熔断状态的真身不在这里**，在 `mof_attachments.py:152-156`
+# ⚠️ N-174（2026-09-30）：**熔断状态的真身不在这里**，在 `collectors/mof/attachments.py:152-156`
 # （`_ATT_502_STREAK` / `_ATT_CIRCUIT_OPEN` / `_MAX_ATT_502_STREAK`）—— 下载逻辑
 # （`_request` / `download_attachment`）随 P3 拆分迁到了那里（见上方 re-export 块）。
 # 此处原有一份**死副本**（三个同名全局，本文件**从不读写**：实测 trio 仅出现在定义处）。
 # 它的唯一后果是**让人改错文件**：在这里把阈值 8 改成别的数**不会有任何效果**，而排查者会
 # 据此认为"改了却没生效"。故**删除**该副本，并**刻意不做 re-export** ——
 # `int`/`bool` 的导入绑定**不会跟随原模块的后续更新**，再导出只会制造"看起来是活的"假象
-# （那正是要消除的隐患）。需要观察熔断状态请直接 `import mof_attachments` 后取其同名属性。
+# （那正是要消除的隐患）。需要观察熔断状态请直接 `import attachments` 后取其同名属性。
 
 
 
@@ -337,7 +343,7 @@ def _canon_law_id(v):
 # 一律 `fs_lock.atomic_write_text(path, text)`（模块级 import 见下方运行锁段）。
 
 # —— 运行锁统一实现（N-8）：判定逻辑收敛到 regulatory_scrapers/fs_lock.py，四源共用 ——
-_SCRAPERS_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_SCRAPERS_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if _SCRAPERS_ROOT not in sys.path:
     sys.path.insert(0, _SCRAPERS_ROOT)
 from std_lib.common_lib import fs_lock

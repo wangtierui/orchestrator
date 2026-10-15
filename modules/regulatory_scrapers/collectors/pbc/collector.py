@@ -28,11 +28,11 @@
   - 可断点续跑：已存在输出文件时，跳过已成功抓取的详情链接。
 
 用法：
-  python pbc_collector.py                 # 抓取全部四个栏目
-  python pbc_collector.py --category 国家法律   # 仅抓取指定栏目
-  python pbc_collector.py --max-items 50       # 限制条目数（调试用）
-  python pbc_collector.py --delay 1.2 --out ./out
-  python pbc_collector.py --no-attachments     # 不下载附件正文（仅记录链接）
+  python collectors/pbc/collector.py                 # 抓取全部四个栏目
+  python collectors/pbc/collector.py --category 国家法律   # 仅抓取指定栏目
+  python collectors/pbc/collector.py --max-items 50       # 限制条目数（调试用）
+  python collectors/pbc/collector.py --delay 1.2 --out ./out
+  python collectors/pbc/collector.py --no-attachments     # 不下载附件正文（仅记录链接）
 """
 
 
@@ -40,7 +40,7 @@
 import os as _os
 import sys as _sys
 
-_GUIDE_ROOT = _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "..", ".."))
+_GUIDE_ROOT = _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "..", "..", ".."))
 if _GUIDE_ROOT not in _sys.path:
     _sys.path.insert(0, _GUIDE_ROOT)
 del _GUIDE_ROOT, _os, _sys
@@ -82,21 +82,27 @@ _RESP_TEXT = None  # TextResponseCache 实例；None 表示未启用缓存
 _OfflineMiss = OfflineMiss  # 兼容别名
 
 
-# ---- 拆分（2026-09-13，P3）：下列符号迁 pbc_parse，re-export 保持外部调用兼容 ----
-from pbc_parse import (  # noqa: F401  拆分 re-export（显式；规避 F405）
-    clean_text,
-    convert_with_libreoffice,
-    detect_libreoffice,
-    detect_magic,
-    extract_docx_text,
-    extract_pdf_text,
-    extract_xls_text,
-    is_attachment,
-    normalize_digits,
-    safe_filename,
-    safe_url,
-    strip_tags,
-)
+# ---- 拆分（2026-09-13，P3）：下列符号迁 pbc/parse，re-export 保持外部调用兼容 ----
+# W4（L1 重组）：import 双形态（包形态相对导入 / 脚本形态裸名）；经**模块对象**取符号
+# ⇒ 名单只此一份。
+try:
+    from . import parse as _parse
+except ImportError:  # pragma: no cover - 脚本形态
+    import parse as _parse  # type: ignore[no-redef]
+
+# re-export（显式赋值，规避 F401/F405；外部调用面不变）
+clean_text = _parse.clean_text
+convert_with_libreoffice = _parse.convert_with_libreoffice
+detect_libreoffice = _parse.detect_libreoffice
+detect_magic = _parse.detect_magic
+extract_docx_text = _parse.extract_docx_text
+extract_pdf_text = _parse.extract_pdf_text
+extract_xls_text = _parse.extract_xls_text
+is_attachment = _parse.is_attachment
+normalize_digits = _parse.normalize_digits
+safe_filename = _parse.safe_filename
+safe_url = _parse.safe_url
+strip_tags = _parse.strip_tags
 
 
 def _init_cache(path=None, offline=False):
@@ -647,7 +653,7 @@ def save_outputs(records, out_dir, write_csv=False):
 # —— 运行锁统一实现（N-8）：判定逻辑收敛到 regulatory_scrapers/fs_lock.py，四源共用 ——
 import atexit
 
-_SCRAPERS_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_SCRAPERS_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if _SCRAPERS_ROOT not in sys.path:
     sys.path.insert(0, _SCRAPERS_ROOT)
 from std_lib.common_lib import fs_lock
@@ -658,7 +664,7 @@ def main():
     ap.add_argument("--category", help="仅抓取指定栏目名称（如 国家法律）")
     ap.add_argument("--max-items", type=int, default=0, help="限制总条目数（调试用）")
     ap.add_argument("--delay", type=float, default=1.0, help="平均请求间隔（秒）")
-    ap.add_argument("--out", default=os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "raw"), help="输出目录（默认统一 data/raw/：regulatory_scrapers/data/raw）")
+    ap.add_argument("--out", default=os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "data", "raw"), help="输出目录（默认统一 data/raw/：regulatory_scrapers/data/raw）")
     ap.add_argument("--no-attachments", action="store_true", help="不下载附件正文，仅记录链接")
     ap.add_argument("--csv", action="store_true",
                     help="额外输出 CSV（默认仅写 JSON 主库，2026-09-09 规范）")

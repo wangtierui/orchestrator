@@ -23,11 +23,11 @@
   - 可断点续跑：已存在输出文件时，跳过已成功抓取的详情链接。
 
 用法：
-  python pbc_collector.py                 # 抓取全部四个栏目
-  python pbc_collector.py --category 国家法律   # 仅抓取指定栏目
-  python pbc_collector.py --max-items 50       # 限制条目数（调试用）
-  python pbc_collector.py --delay 1.2 --out ./out
-  python pbc_collector.py --no-attachments     # 不下载附件正文（仅记录链接）
+  python collectors/pbc/collector.py                 # 抓取全部四个栏目
+  python collectors/pbc/collector.py --category 国家法律   # 仅抓取指定栏目
+  python collectors/pbc/collector.py --max-items 50       # 限制条目数（调试用）
+  python collectors/pbc/collector.py --delay 1.2 --out ./out
+  python collectors/pbc/collector.py --no-attachments     # 不下载附件正文（仅记录链接）
 """
 
 
@@ -35,7 +35,7 @@
 import os as _os
 import sys as _sys
 
-_GUIDE_ROOT = _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "..", ".."))
+_GUIDE_ROOT = _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "..", "..", ".."))
 if _GUIDE_ROOT not in _sys.path:
     _sys.path.insert(0, _GUIDE_ROOT)
 del _GUIDE_ROOT, _os, _sys
@@ -146,7 +146,7 @@ LO_PATH = find_libreoffice()
 LO_AVAILABLE = LO_PATH is not None
 
 
-_SCRAPERS_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_SCRAPERS_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 if _SCRAPERS_ROOT not in sys.path:
     sys.path.insert(0, _SCRAPERS_ROOT)
@@ -159,7 +159,7 @@ def safe_filename(title, ext, url):
     ``crawler_common.safe_filename``，本函数仅补扩展名；**保留 pbc 原有**限长 60**，
     签名与返回结构不变。与 ``backfill_pdfs.safe_filename`` 同口径，二者现共用共享库实现。
     """
-    repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    repo_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     if repo_root not in sys.path:
         sys.path.insert(0, repo_root)
     from std_lib.scraper_std.crawler_common import safe_filename as _cc_safe_filename
@@ -201,7 +201,7 @@ def extract_pdf_text(data):
     （disable_mkldnn 默认开启）。返回抽取文本（str）或 None（无文本层且 OCR 失败）。
     """
     import tempfile
-    repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    repo_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     if repo_root not in sys.path:
         sys.path.insert(0, repo_root)
     from std_lib.scraper_std.ocr_engine import get_ocr

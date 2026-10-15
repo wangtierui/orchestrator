@@ -34,7 +34,7 @@ def _load(rel_path: str, name: str):
 
 @pytest.fixture(scope="module")
 def gp():
-    return _load(os.path.join("modules", "regulatory_scrapers", "collectors", "gov_parse.py"), "_gp_jsonl")
+    return _load(os.path.join("modules", "regulatory_scrapers", "collectors", "gov", "parse.py"), "_gp_jsonl")
 
 
 @pytest.fixture(scope="module")

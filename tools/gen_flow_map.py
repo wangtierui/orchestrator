@@ -498,9 +498,13 @@ def build() -> str:
         "**请勿手工编辑本节** —— 改链路请改源码后重跑 `python -m tools.gen_flow_map`。"
     )
     L.append(
-        f">\n> 步骤数：**{len(steps)}**；语义工具：**{len(tools)}**（可用 "
+        f">\n> 步骤数：**{len(steps)}**；语义工具：**{len(tools)}**（生成时点实测：可用 "
         f"{sum(1 for t in tools.values() if t['available'])}，未装 "
         f"{sum(1 for t in tools.values() if not t['available'])}）\n"
+        ">\n> ⚠️ 上面的「可用/未装」是**本机当次运行的探针快照**（`semantic_tools.probe` 逐个"
+        "import + 模型实测，**依赖本机已装包与模型/env**），随环境漂移——**不是回归信号**，"
+        "更不是接线状态：接线事实以 8.2 表「命令」列与 `config/schema/semantic_tools.json` 的"
+        "`wired` 为准（结构事实，不随环境变）。"
     )
     L.append("### 8.1 链路总览（Mermaid：**含全部接入模型节点**）")
     L.append("")

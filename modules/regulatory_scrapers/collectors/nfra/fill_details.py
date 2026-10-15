@@ -8,16 +8,16 @@
   * 单进程、低速率（默认 3s 间隔），尽量贴合站点反爬节奏。
 
 用法：
-  python nfra_fill_details.py            # 默认：缺失即补，自动冷却
-  python nfra_fill_details.py --delay 4  # 更保守的间隔
-  python nfra_fill_details.py --cooldown 300 --max-consecutive-fail 3
+  python collectors/nfra/fill_details.py            # 默认：缺失即补，自动冷却
+  python collectors/nfra/fill_details.py --delay 4  # 更保守的间隔
+  python collectors/nfra/fill_details.py --cooldown 300 --max-consecutive-fail 3
 """
 
 # ---- P3b 仓库引导（migrate_collectors_p3b.py 注入）：使 std_lib/config 可导入 ----
 import os as _os
 import sys as _sys
 
-_GUIDE_ROOT = _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "..", ".."))
+_GUIDE_ROOT = _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "..", "..", ".."))
 if _GUIDE_ROOT not in _sys.path:
     _sys.path.insert(0, _GUIDE_ROOT)
 del _GUIDE_ROOT, _os, _sys
@@ -38,11 +38,17 @@ import urllib.parse
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-import nfra_collector as m
+# W4（L1 重组）：兄弟模块 import 双形态（包形态相对导入 / 脚本形态裸名）。
+try:
+    from . import collector as m
+except ImportError:  # pragma: no cover - 脚本形态
+    import collector as m  # type: ignore[no-redef]
 
-from modules.regulatory_scrapers.collectors import nfra_common
+# `common` 保留**绝对包形态**：脚本形态下 `import common` 会把通用名放进 sys.path[0]，
+# 与第三方/标准库同名模块相撞风险高；绝对形态在两种上下文均成立（仓根已由引导入 path）。
+from modules.regulatory_scrapers.collectors.nfra import common as common
 
-# N-167：`warmup` 的**唯一实现**在 `nfra_common`（原两脚本各写一份逐字相同的
+# N-167：`warmup` 的**唯一实现**在 `common`（原两脚本各写一份逐字相同的
 # `_warmup()` 与四个同值常量 —— 预热行为分叉**不会报错**，只会让其中一条链路
 # 以旧握手访问站点，属难排查型缺陷）。
 from std_lib.scraper_std.cache_store import source_cache_root
@@ -152,7 +158,7 @@ def main():
         _write_state(st)
         return
 
-    nfra_common.warmup(COOKIE_JAR)
+    common.warmup(COOKIE_JAR)
     st = _read_state()
     done_round = 0
     consecutive_fail = 0
@@ -177,7 +183,7 @@ def main():
             if consecutive_fail >= args.max_consecutive_fail:
                 print("  [冷却] 连续被拦截，睡眠 %ds 以降温..." % args.cooldown)
                 time.sleep(args.cooldown)
-                nfra_common.warmup(COOKIE_JAR)  # 冷却后重新预热 cookie
+                common.warmup(COOKIE_JAR)  # 冷却后重新预热 cookie
                 consecutive_fail = 0
 
     remaining = len(missing) - fetched_this_run

@@ -130,7 +130,7 @@ class TestW4PrimitiveConvergence:
         本断言只关静态形态（无 `_atomic_write(` 私有调用残留）。
         """
         p = os.path.join(
-            ROOT, "modules", "regulatory_scrapers", "collectors", "mof_collector.py"
+            ROOT, "modules", "regulatory_scrapers", "collectors", "mof", "collector.py"
         )
         src = open(p, encoding="utf-8").read()
         residue = src.replace("fs_lock.atomic_write_text(", "")
@@ -144,7 +144,7 @@ class TestW4PrimitiveConvergence:
         # 抽取型：无法识别 → 空串
         assert crawler_common.normalize_date("待定") == ""
         # 字段规范化型：None/空 → None；list → YYYY-MM-DD
-        from collectors.mof_attachments import normalize_date as field_norm
+        from collectors.mof.attachments import normalize_date as field_norm
         assert field_norm(None) is None
         assert field_norm([2024, 11, 3, 0, 0]) == "2024-11-03"
         assert field_norm("2024-11-03 00:00:00") == "2024-11-03"

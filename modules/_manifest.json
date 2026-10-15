@@ -16,31 +16,31 @@
       "independent_why": "一次性迁移转储工具：同上（旧仓工作区 + env 注入）；测试读源码锁定其解析口径"
     },
     {
-      "file": "regulatory_scrapers/collectors/pbc_recover.py",
+      "file": "regulatory_scrapers/collectors/pbc/recover.py",
       "category": "independent",
       "entry": "pbc 灾难恢复独立脚本（反向 importlib 载 pbc_backfill_pdfs 的下载/抽取工具，从本地 PDF 重建正文）",
       "independent_why": "灾难恢复专用：仅在 pbc raw 损坏/误删时人工执行；反向动态加载避免与链上补全路径耦合"
     },
     {
-      "file": "regulatory_scrapers/collectors/supp_ingest_local_dir.py",
+      "file": "regulatory_scrapers/collectors/supp/ingest_local_dir.py",
       "category": "independent",
       "entry": "supp 本地目录手动收录入口（把指定目录的法规文件归集进 supp raw）",
       "independent_why": "人工归集入口：supp 无网站增量，本地素材收录按需人工执行（run_production_refresh --supp-batch 提示文本指向）"
     },
     {
-      "file": "regulatory_scrapers/collectors/supp_ingest.py",
+      "file": "regulatory_scrapers/collectors/supp/ingest.py",
       "category": "independent",
       "entry": "supp 多源合库归集工具（sources.yaml 登记为 collector_kind=ingest 的归集入口）",
       "independent_why": "人工/触发器归集工具：链上无 collect:supp 步骤（COLLECT_CMD 无 supp 项）；语义已于 W4 从「纸面 collector」降级为 ingest（见 sources.yaml collector_kind）"
     },
     {
-      "file": "regulatory_scrapers/collectors/supp_parser.py",
+      "file": "regulatory_scrapers/collectors/supp/parser.py",
       "category": "independent",
       "entry": "supp 文档解析封装（多格式文本提取；supp_ocr_pdf 的上层，OCR 回退链）",
       "independent_why": "解析能力封装：生产链 supp 清洗走 unified_schema.map_supp 内置路径，本封装供 supp_ocr_pdf 复用契约与测试锁定（tests/test_table_completeness 读源码）"
     },
     {
-      "file": "regulatory_scrapers/collectors/supp_sanitize.py",
+      "file": "regulatory_scrapers/collectors/supp/sanitize.py",
       "category": "independent",
       "entry": "supp 交付物错行修复（CSV/JSONL 字段换行归一的事后处置）",
       "independent_why": "事后处置工具：交付物出现错行时按需人工执行；clean 链内已由 clean/sanitize 前置治理（ twin：clean/sanitize 为链内版、本文件为 supp 专项版）"

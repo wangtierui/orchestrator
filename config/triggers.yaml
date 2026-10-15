@@ -44,7 +44,7 @@ triggers:
     stage: "0"
     enabled_when: { explicit_arg: "--supp-batch" }
     steps:
-      - { argv: ["python", "modules/regulatory_scrapers/collectors/supp_ingest_batch.py",
+      - { argv: ["python", "modules/regulatory_scrapers/collectors/supp/ingest_batch.py",
                  "--backlog", "{arg}"], timeout: 1800 }
     on_fail: stop
     on_skip: "未显式传 --supp-batch（该通道**不假装自动**：supp 为表格类人工批次）"

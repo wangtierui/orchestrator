@@ -14,9 +14,9 @@ nfra 政策数据 周级自动刷新编排器（由自动化每周二 01:00 调�
          自动回滚备份并告警，本周沿用旧列表（不丢数据）。
        - 取舍：深层列表中"被站点下架/删除"的条目不会被主动发现（需重拉全量才有此能力，
          但那会暴露 WAF，按约定不采用）；此类 stale 项保留在结果中，影响极小。
-  2. 详情续跑：nfra_fill_details.py --delay 3 --cooldown 150 --max-consecutive-fail 3
+  2. 详情续跑：collectors/nfra/fill_details.py --delay 3 --cooldown 150 --max-consecutive-fail 3
        （只补缺失、可续跑、cache 落盘；命中 WAF 自动冷却，无 --round-limit 尽量多抓）。
-  3. 离线重建：nfra_collector.py --cache-dir cache --offline --delay-min 0 --delay-max 0 --out-dir data/raw
+  3. 离线重建：collectors/nfra/collector.py --cache-dir cache --offline --delay-min 0 --delay-max 0 --out-dir data/raw
   4. 写运行摘要 weekly_refresh.last.json，并打印结论。
 
 异常状态处理：
@@ -29,7 +29,7 @@ nfra 政策数据 周级自动刷新编排器（由自动化每周二 01:00 调�
 import os as _os
 import sys as _sys
 
-_GUIDE_ROOT = _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "..", ".."))
+_GUIDE_ROOT = _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "..", "..", ".."))
 if _GUIDE_ROOT not in _sys.path:
     _sys.path.insert(0, _GUIDE_ROOT)
 del _GUIDE_ROOT, _os, _sys
@@ -158,7 +158,7 @@ def refresh_list():
     # 阶段1：刷新 page1（捕获最新发布项 + 取得各栏目 live total）
     _backup_and_delete(page1, bk)
     try:
-        subprocess.run([PY, "nfra_fetch_lists.py"], cwd=HERE, check=False,
+        subprocess.run([PY, "fetch_lists.py"], cwd=HERE, check=False,
                        stdout=sys.stdout, stderr=sys.stderr, timeout=1200)
     except Exception as e:  # noqa: BLE001
         info["fetch_err"] = str(e)
@@ -186,7 +186,7 @@ def refresh_list():
         if extra:
             _backup_and_delete(extra, bk)
             try:
-                subprocess.run([PY, "nfra_fetch_lists.py"], cwd=HERE, check=False,
+                subprocess.run([PY, "fetch_lists.py"], cwd=HERE, check=False,
                                stdout=sys.stdout, stderr=sys.stderr, timeout=1200)
             except Exception as e:  # noqa: BLE001
                 info.setdefault("fetch_err", str(e))
@@ -207,14 +207,14 @@ def refresh_list():
 
 def run_fill(timeout=None):
     return subprocess.run(
-        [PY, "nfra_fill_details.py", "--delay", "3", "--cooldown", "150",
+        [PY, "fill_details.py", "--delay", "3", "--cooldown", "150",
          "--max-consecutive-fail", "3"],
         cwd=HERE, check=False, stdout=sys.stdout, stderr=sys.stderr, timeout=timeout,
     )
 
 def run_rebuild():
     return subprocess.run(
-        [PY, "nfra_collector.py", "--offline",
+        [PY, "collector.py", "--offline",
          "--delay-min", "0", "--delay-max", "0", "--out-dir",
          os.path.join(os.path.dirname(HERE), "data", "raw")],
         cwd=HERE, check=False, stdout=sys.stdout, stderr=sys.stderr,
@@ -224,7 +224,7 @@ def run_rebuild():
 def run_attachments(timeout=None):
     """附件下载 + PDF 抽取（高精度）。缓存落盘，超时/异常由调用方兜底，不影响重建。"""
     return subprocess.run(
-        [PY, "nfra_fetch_attachments.py"],
+        [PY, "fetch_attachments.py"],
         cwd=HERE, check=False, stdout=sys.stdout, stderr=sys.stderr, timeout=timeout,
     )
 

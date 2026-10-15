@@ -1,5 +1,48 @@
 # Changelog
 
+## [Unreleased] 2026-10-15 — W4 L1：collectors 按源建子包（源内四分层）（第七十一批）
+
+> 方案 §7.9.2 L1：`modules/regulatory_scrapers/collectors/` 由「单层拍平 + 源前缀命名」
+> 改为**按源建子包**，源内按职责分层命名。**纯结构变更**（git mv + import/argv 重写），
+> 零业务逻辑改动；边界纪律见 §7.9.4（结构思想借鉴 refactor/，代码全部来自本仓现行脚本）。
+
+### 结构
+- 25 个采集脚本 `git mv` 入 5 个源子包：`gov/`（collector/parse/attachments/zhengceku）、
+  `mof/`（collector/attachments）、`nfra/`（collector/common/fetch_lists/fill_details/
+  fetch_attachments/attachments_extract/weekly）、`pbc/`（collector/parse/backfill/recover）、
+  `supp/`（ingest/ingest_local_dir/ingest_batch/normalize/parser/ocr/sanitize/extract_doc_text）。
+- **双形态 import 纪律**：每个脚本既要能包形态加载（`…collectors.<src>.<role>`），又要能
+  脚本形态独立启动（编排器以子进程调用的真实方式）⇒ 兄弟 import 一律「相对导入 + 裸名兜底」；
+  多符号 re-export 改为「模块对象 + 显式赋值」（名单只维护一份，杜绝两形态名单漂移）。
+- **接线同步**：sources.yaml collector 字段改两级点号（`collectors.gov.collector`）+
+  `config.loader.collector_module/collector_path` 解析（点号→路径）；编排器 8 处 argv；
+  triggers.yaml ingest argv；`produced_by` 模板；`build_east_backlog` importlib 路径；
+  `modules/_manifest.json` 5 条 independent 登记路径；门禁 `_chain_invoked`/
+  `_manifest_independent` 改点号逐段比对（五源同名 `collector.py` 不互相冒名）。
+- 删除零消费方配置字段 `weekly_orchestrator`（自 ee3e535 引入后**零读者**，幽灵注册点；
+  weekly 编排身份以链上 STEP 为唯一事实源）。
+
+### 顺带修复的实质缺陷（非纯结构）
+- **`nfra/fetch_attachments.py` 潜伏断裂**：`sha256_of` 在 B2 批（死代码清理、与 SSOT
+  `io_atomic.sha256_bytes` 重复）已从 `attachments_extract` 删除，但**本文件两处活调用点与
+  re-export 名单未同步** ⇒ 包形态与脚本形态**均** ImportError/NameError（链上 nfra 附件
+  步骤一跑即炸）。现直接绑 SSOT 实现。此前**双侧均无测试覆盖**，故未被发现。
+- **`pbc/recover.py` 幻影路径**：数据基准原为 `collectors/`（其 `data/`、`backups/` 子目录
+  **早已不存在**⇒ 输入输出均为幻影，脚本在「备份不存在」检查处即退出）。现基准改为模块
+  数据根 `regulatory_scrapers/`，且恢复产物**另存** `pbc_recovered.jsonl`（不覆写在线
+  `pbc_laws.jsonl`——本脚本重写整份记录，误指向活库即数据事故）。
+- **仓根引导深度**：迁子包后上溯层数 3→4（23 处 `_GUIDE_ROOT`）、模块根 dirname 2→3 级
+  （18 处）；原写法迁一层即静默失效（`import paths` ModuleNotFoundError）。
+- **生成器环境噪声入文档**：`gen_flow_map` 把运行时探针（语义工具可用性）写进 README 受管
+  块，环境漂移被误读为回归 ⇒ 标注为「生成时点实测快照」并指明接线事实以 8.2 命令列 +
+  `semantic_tools.json.wired` 为准。
+
+### 新增测试（36 项，此前该维度零覆盖）
+- `tests/test_collectors_dual_form.py`：19 项包形态（模块可导入 + re-export 符号真实存在）
+  + 15 项脚本形态（`--help` 可起）+ yaml↔文件↔编排器 argv 三方接线一致性 2 项。
+  **死符号与引导层数错位只在此暴露**（两者都曾真实发生）。
+- golden 重录（`chain_dry_run.txt`：7 行差异**仅路径形态**，零行为变更）。
+
 ## [Unreleased] 2026-10-15 — W4 §7.10 目录 SSOT 收口 + §7.2 A 类死代码清零 + J9 门禁（第七十批）
 
 > 接第六十九批，收口 W4 最后两项结构性任务（方案 §7.10 目录体系 / §7.2 死代码专项）。

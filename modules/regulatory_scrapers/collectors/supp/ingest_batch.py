@@ -1,20 +1,20 @@
 # -*- coding: utf-8 -*-
 """
-supp_ingest_batch.py —— supplementary 批量摄取入口（五源缺失文件补全）
+collectors/supp/ingest_batch.py —— supplementary 批量摄取入口（五源缺失文件补全）
 
 用途：将"五爬虫产物缺失、且已取得官方全文并经核验"的补充法规记录，合并进
       data/raw/supplementary_regulations.json（保留既有 F9~F17 记录，按
       发文字号/标题去重），再调用统一清洗管道生成 data/cleaned/ 双轨输出。
 
-与 scripts/supp_ingest.py 的关系：
-  supp_ingest.py 负责"手写 4 份"（保险销售行为主题）；
+与 collectors/supp/ingest.py 的关系：
+  collectors/supp/ingest.py 负责"手写 4 份"（保险销售行为主题）；
   本脚本负责"批量补全"——消费一份 backlog JSON（每条须含已核验的 body_text）。
   二者写入同一 raw JSON，管道统一清洗，互不覆盖。
 
 严禁：body_text 为空或未经官网/北大法宝核验的记录不得入库（禁止臆造正文）。
 
 用法：
-  python scripts/supp_ingest_batch.py --backlog <backlog.json> [--merge] [--dry-run]
+  python collectors/supp/ingest_batch.py --backlog <backlog.json> [--merge] [--dry-run]
 """
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ from __future__ import annotations
 import os as _os
 import sys as _sys
 
-_GUIDE_ROOT = _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "..", ".."))
+_GUIDE_ROOT = _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "..", "..", ".."))
 if _GUIDE_ROOT not in _sys.path:
     _sys.path.insert(0, _GUIDE_ROOT)
 del _GUIDE_ROOT, _os, _sys

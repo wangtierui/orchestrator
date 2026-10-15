@@ -37,7 +37,7 @@ from __future__ import annotations
 import os as _os
 import sys as _sys
 
-_GUIDE_ROOT = _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "..", ".."))
+_GUIDE_ROOT = _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "..", "..", ".."))
 if _GUIDE_ROOT not in _sys.path:
     _sys.path.insert(0, _GUIDE_ROOT)
 del _GUIDE_ROOT, _os, _sys
@@ -66,11 +66,15 @@ except ImportError as e:  # pragma: no cover
     sys.exit(2)
 
 # 附件下载 + 文本抽取（修复：gov 此前完全不抓附件）
+# W4（L1 重组）：import 双形态（包形态相对导入 / 脚本形态裸名）。
 try:
-    from gov_fetch_attachments import fetch_gov_attachments
+    from .attachments import fetch_gov_attachments
 except ImportError:  # pragma: no cover
-    def fetch_gov_attachments(*a, **k):
-        return [], ""
+    try:
+        from attachments import fetch_gov_attachments  # type: ignore[no-redef]
+    except ImportError:
+        def fetch_gov_attachments(*a, **k):  # type: ignore[no-redef,misc]
+            return [], ""
 
 LOG = logging.getLogger("gov_scraper")
 
@@ -82,7 +86,7 @@ LOG = logging.getLogger("gov_scraper")
 # （共享库对齐审计 阶段 4）实测：本文件原有 UA 池与 ``crawler_common.USER_AGENTS``
 # **逐字相同**（md5 一致、n=5），故改为复用共享库，消除重复副本；
 # 沿用 nfra 既有「try 导入 + 缺模块回退单 UA」降级样板，避免缺依赖时启动失败。
-_STD_LIB_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_STD_LIB_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if _STD_LIB_ROOT not in sys.path:
     sys.path.insert(0, _STD_LIB_ROOT)
 try:
@@ -159,14 +163,14 @@ SOURCES = {
     # 2026-09-15：纳入「国务院政策文件库·国务院部门文件」（zhengceku/bmwj，629 页）
     # 为 gov 源第 2 个子源。此前该栏目完全缺采，导致其下规范性文件（如银发〔2019〕316号）
     # 在 gov 源无任何记录；且该栏目正文常以附件(.doc/.pdf)形式发布，须同时抓附件原文。
-    # 实现见 collectors/gov_zhengceku.py（ZhengcekuScraper）。
+    # 实现见 collectors/gov/zhengceku.py（ZhengcekuScraper）。
     "zhengceku": ("https://www.gov.cn/zhengce/zhengceku/bmwj/home.htm", "部门文件"),
 }
-# ⚠️ 本 dict 为 gov 源子源登记表的**唯一事实源**；gov_collector.py 从此处导入，
+# ⚠️ 本 dict 为 gov 源子源登记表的**唯一事实源**；collectors/gov/collector.py 从此处导入，
 # 不在采集器主文件中重复定义（避免两处漂移，见 2026-09-15 收敛）。
 
 
-_SCRAPERS_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_SCRAPERS_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 if _SCRAPERS_ROOT not in sys.path:
     sys.path.insert(0, _SCRAPERS_ROOT)
@@ -191,7 +195,7 @@ class ScrapeConfig:
     # 详情阶段断点落盘间隔（条；0=不落暂存）。供长时子源（zhengceku，全量约 30 小时）
     # 在中断后可续跑——主库只在全部结束后写一次，中途中断必须靠暂存文件兜底。
     checkpoint_every: int = 200
-    # ---- N-190（2026-10-08）**增量治理**参数（两子源共用；判据见 gov_zhengceku.should_stop_paging）----
+    # ---- N-190（2026-10-08）**增量治理**参数（两子源共用；判据见 zhengceku.should_stop_paging）----
     #: 连续 N 页无「新条目」（detail_url 不在主库）即停止翻页（**仅 zhengceku**；xzfgk 早有等价逻辑）。
     #: 为何需要：zhengceku 列表 629 页、原实现**恒扫全部页**，实测单轮 ~20+ 分钟纯空转
     #: （页面全是主库既有条目）。列表按发布日期倒序 ⇒ 首页起后续只会更旧。
@@ -436,7 +440,7 @@ def write_master_index(out_dir: str, records: list[dict[str, Any]]) -> str:
     """写主库旁路索引（与主库**同批**落盘；供下次增量**免解析 1GB 正文**）。
 
     为何必需（批 46 实测）：`gov_laws.json` 1132MB，`json.load` 的**峰值 RSS 6.2GB**（≈6× 体积，
-    Python 对象膨胀 —— 实测 `collect:gov_zhengceku` 与 `clean:gov` 均因此触顶）；而**周度增量只需**
+    Python 对象膨胀 —— 实测 `collect:zhengceku` 与 `clean:gov` 均因此触顶）；而**周度增量只需**
     ① 哪些 `detail_url` 已抓（跳过）　　② 其中哪些**已有正文**（其余仍需补详情）。
     索引只存 `[detail_url, title, has_full_text]`（13k 条 ≈1MB）⇒ 读取毫秒级、峰值可忽略。
 
@@ -498,7 +502,7 @@ class MasterView:
     """主库只读视图（N-200）：**索引优先**，需要正文时才全量解析，且**整个进程只解析一次**。
 
     背景（实测）：原实现 `load_resume` 与 `merge_with_master` **各解析一次** 1GB 主库
-    ⇒ 同一进程两轮 6GB 级瞬时峰值（`collect:gov_zhengceku` 实测触顶被中止）。
+    ⇒ 同一进程两轮 6GB 级瞬时峰值（`collect:zhengceku` 实测触顶被中止）。
     本类把「跳过集判定」与「合并所需记录」收敛到同一份解析结果，并在索引可用时**完全不解析正文**。
     """
 
@@ -724,14 +728,14 @@ def collect_stats_path(label: str) -> str:
     根路径用 `os.pardir` 拼（零转义写法）：本文件在 `collectors/`，上溯三级即仓库根。
     """
     here = os.path.dirname(os.path.abspath(__file__))
-    repo_root = os.path.normpath(os.path.join(here, os.pardir, os.pardir, os.pardir))
+    repo_root = os.path.normpath(os.path.join(here, os.pardir, os.pardir, os.pardir, os.pardir))
     return os.path.join(repo_root, *_COLLECT_STATS_REL, "%s.json" % label)
 
 
 def write_collect_stats(label: str, stats: dict) -> str:
     """原子写采集统计（旁路观测；写失败**不得中断采集**）。返回路径（失败返回空串）。
 
-    指标口径（供"无效时长"评估，字段含义见 `gov_zhengceku.should_stop_paging` 与批 45 报告）：
+    指标口径（供"无效时长"评估，字段含义见 `zhengceku.should_stop_paging` 与批 45 报告）：
       `list_pages_fetched` / `list_pages_without_new` → **空转页占比** = 后者/前者；
       `details_skipped_master` → 因"主库已有正文"而**未发请求**的条目（省下的详情请求数）；
       `elapsed_list_s` / `elapsed_detail_s` → 时长按阶段归因。

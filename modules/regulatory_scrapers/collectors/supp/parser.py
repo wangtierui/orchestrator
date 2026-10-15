@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 """
-supp_parser.py —— 解析/清洗模块（交付标准第三节：scripts/ 按模块拆分）
+collectors/supp/parser.py —— 解析/清洗模块（交付标准第三节：scripts/ 按模块拆分）
 
 职责：正文抽取、基础清洗、断句修复、OCR 校正、表格结构还原的按职责封装。
-与四源（gov/mof/nfra/pbc）的 scripts/supp_parser.py 结构一致；本项目不携带
-crawler_common 模块，文档文本提取基于 pypdf 文本层 + scripts/supp_ocr_pdf.py
+与四源（gov/mof/nfra/pbc）的 collectors/supp/parser.py 结构一致；本项目不携带
+crawler_common 模块，文档文本提取基于 pypdf 文本层 + collectors/supp/ocr.py
 （扫描件 Tesseract OCR 回退），表格复用 utils/scraper_std.table_recovery。
 
 用法示例：
-    from supp_parser import parse_document
+    from parser import parse_document
     result = parse_document(data_bytes, "scan.pdf")
 """
 from __future__ import annotations
@@ -17,7 +17,7 @@ from __future__ import annotations
 import os as _os
 import sys as _sys
 
-_GUIDE_ROOT = _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "..", ".."))
+_GUIDE_ROOT = _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "..", "..", ".."))
 if _GUIDE_ROOT not in _sys.path:
     _sys.path.insert(0, _GUIDE_ROOT)
 del _GUIDE_ROOT, _os, _sys
@@ -30,10 +30,12 @@ for _p in (_PROJECT_ROOT, os.path.join(_PROJECT_ROOT, "utils")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+# W4（L1 重组）：兄弟模块 import 双形态——脚本形态（collectors/supp/ 为 sys.path[0]）
+# / 包形态（相对导入）。
 try:
-    from supp_ocr_pdf import ocr_scanned  # 脚本式导入（collectors/ 在 sys.path）
-except ImportError:  # 批 51：**包式导入**（`modules...collectors.supp_parser`）下兄弟模块需相对导入
-    from .supp_ocr_pdf import ocr_scanned
+    from .ocr import ocr_scanned
+except ImportError:  # pragma: no cover - 脚本形态
+    from ocr import ocr_scanned  # type: ignore[no-redef]
 
 from std_lib.scraper_std.cleaner import clean_text, is_table_block, normalize_ws
 from std_lib.scraper_std.sentence_split import repair_text

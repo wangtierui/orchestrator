@@ -32,26 +32,49 @@ _MODULES_MANIFEST = os.path.join(paths.MODULES_DIR, "_manifest.json")
 
 
 def _chain_invoked(mod: str) -> bool:
-    """collector 模块是否在编排器有执行证据（argv 路径 `"<mod>.py"` 或点号 produced_by）。"""
+    """collector 模块是否在编排器有执行证据。
+
+    W4（L1 重组，2026-10-15）：`mod` 现为**点号路径**（如 `gov.collector`），链上 argv
+    形态为 `os.path.join(COLLECTORS, "gov", "collector.py")`。因五源都有同名
+    `collector.py`，只查脚本名会互相冒名 ⇒ 断言「源目录名 + 脚本名」**同时**出现
+    （produced_by 模板 `collectors.<src>.collector` 形态亦计入）。
+    """
     try:
         text = open(_ORCHESTRATOR, encoding="utf-8", errors="replace").read()
     except OSError:
         return False
-    return (mod + ".py") in text or ("." + mod) in text
+    parts = mod.split(".")
+    base = parts[-1]
+    if (base + ".py") not in text and ("." + mod) not in text:
+        return False
+    return all(('"' + p + '"') in text or ("<" + p + ">") in text or ("." + p + ".") in text
+               for p in parts[:-1])
 
 
 def _manifest_independent(mod: str) -> bool:
-    """ingest 模块是否在 modules/_manifest.json 登记为 independent。"""
+    """ingest 模块是否在 modules/_manifest.json 登记为 independent（点号路径逐段比对）。"""
     try:
         with open(_MODULES_MANIFEST, encoding="utf-8") as fh:
             man = json.load(fh)
     except (OSError, ValueError):
         return False
+    parts = mod.split(".")
+    want_dir = "/".join(parts[:-1])
+    want_file = parts[-1] + ".py"
     for e in man.get("entries") or []:
         f = str(e.get("file") or "")
-        if os.path.basename(f) == mod + ".py" and e.get("category") == "independent":
+        if not f.endswith("/" + want_file):
+            continue
+        if want_dir and f"/{want_dir}/" not in "/" + f:
+            continue
+        if e.get("category") == "independent":
             return True
     return False
+
+
+def _collector_file(mod: str) -> str:
+    """点号路径 → collectors/ 下的实际脚本路径（`gov.collector` → `gov/collector.py`）。"""
+    return os.path.join(_COLLECTORS_DIR, *mod.split(".")) + ".py"
 
 
 def run():
@@ -73,19 +96,22 @@ def run():
         if not mod:
             problems.append(f"{sid}: 缺 collector 字段")
             continue
-        if not os.path.exists(os.path.join(_COLLECTORS_DIR, mod + ".py")):
-            problems.append(f"{sid}: collector 模块 {mod}.py 不存在（collectors/ 命名未对齐 yaml）")
+        if not os.path.exists(_collector_file(mod)):
+            problems.append(
+                f"{sid}: collector 模块 {mod} 不存在"
+                f"（实际查找 {_collector_file(mod)}——collectors/ 命名未对齐 yaml）"
+            )
             continue
         kind = collector_kind(sid)
         if kind == "collector" and not _chain_invoked(mod):
             problems.append(
-                f"{sid}: collector 模块 {mod}.py 在编排器无执行证据"
+                f"{sid}: collector 模块 {mod} 在编排器无执行证据"
                 "（COLLECT_CMD/produced_by 均未引用——纸面 collector；"
                 "若为人工归集工具应在 sources.yaml 标 collector_kind: ingest）"
             )
         elif kind == "ingest" and not _manifest_independent(mod):
             problems.append(
-                f"{sid}: ingest 模块 {mod}.py 未在 modules/_manifest.json 登记 independent"
+                f"{sid}: ingest 模块 {mod} 未在 modules/_manifest.json 登记 independent"
                 "（人工归集工具须显式登记，J9 判据同源）"
             )
         cp = (cfg.get("clean_project") or "").strip()

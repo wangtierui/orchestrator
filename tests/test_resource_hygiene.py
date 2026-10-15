@@ -40,7 +40,7 @@ def _load(rel_path: str, name: str):
 
 @pytest.fixture(scope="module")
 def gp():
-    return _load(os.path.join("modules", "regulatory_scrapers", "collectors", "gov_parse.py"), "_gp_res")
+    return _load(os.path.join("modules", "regulatory_scrapers", "collectors", "gov", "parse.py"), "_gp_res")
 
 
 # --------------------------------------------------------------------------- #
@@ -261,7 +261,7 @@ def test_dedup_check_accepts_generator() -> None:
 # --------------------------------------------------------------------------- #
 def test_backfill_short_circuits_when_nothing_to_backfill() -> None:
     """backfill：主库**全部已有正文** ⇒ 不翻页（`nothing_to_backfill`），避免空扫 629 页。"""
-    zck = _load(os.path.join("modules", "regulatory_scrapers", "collectors", "gov_zhengceku.py"), "_zck_res")
+    zck = _load(os.path.join("modules", "regulatory_scrapers", "collectors", "gov", "zhengceku.py"), "_zck_res")
     cfg = type("C", (), {"out_dir": "", "resume": True, "backfill": True, "checkpoint_every": 0,
                         "max_pages": 0, "max_items": 0, "fetch_details": True,
                         "stop_after_empty_pages": 1, "max_seconds": 0})()

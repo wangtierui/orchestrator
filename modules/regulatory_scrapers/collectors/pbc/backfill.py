@@ -27,7 +27,7 @@
 import os as _os
 import sys as _sys
 
-_GUIDE_ROOT = _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "..", ".."))
+_GUIDE_ROOT = _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "..", "..", ".."))
 if _GUIDE_ROOT not in _sys.path:
     _sys.path.insert(0, _GUIDE_ROOT)
 del _GUIDE_ROOT, _os, _sys
@@ -49,7 +49,7 @@ from std_lib.scraper_std.pipeline import (  # 批 49/T1：raw 统一 JSONL 读�
 
 # ---------- 配置 ----------
 # 2026-09-08 docs_root 统一根：修正原 BASE=collectors 落点（曾指 collectors/data/… 分叉）
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # modules/regulatory_scrapers
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # modules/regulatory_scrapers
 from std_lib.scraper_std.cache_store import docs_root
 
 ATTACHMENTS_DIR = docs_root("pbc", "attachments")

@@ -34,13 +34,13 @@
 使用：
   # 增量 diff 更新（默认）：载入历史存储，仅对新增/变更条目抓详情，
   # 消失条目标记 removed 而非删除；mof_laws.json 本身即持久化存储
-  python mof_collector.py
+  python collectors/mof/collector.py
 
   # 只抓列表前若干条做验证（不抓详情，快速）
-  python mof_collector.py --max-items 10 --no-detail
+  python collectors/mof/collector.py --max-items 10 --no-detail
 
   # 自定义类别与输出目录
-  python mof_collector.py --categories 1000000000000300000 1000000000000400000 \
+  python collectors/mof/collector.py --categories 1000000000000300000 1000000000000400000 \
                             --outdir ./data/raw --delay-min 0.4 --delay-max 0.9
 """
 
@@ -49,7 +49,7 @@
 import os as _os
 import sys as _sys
 
-_GUIDE_ROOT = _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "..", ".."))
+_GUIDE_ROOT = _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "..", "..", ".."))
 if _GUIDE_ROOT not in _sys.path:
     _sys.path.insert(0, _GUIDE_ROOT)
 del _GUIDE_ROOT, _os, _sys
@@ -165,7 +165,7 @@ _ATT_CIRCUIT_OPEN = False
 
 _MAX_ATT_502_STREAK = 8
 
-_SCRAPERS_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_SCRAPERS_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 if _SCRAPERS_ROOT not in sys.path:
     sys.path.insert(0, _SCRAPERS_ROOT)
@@ -338,7 +338,7 @@ def safe_filename(name, ext, fallback):
     ``crawler_common.safe_filename``；本函数保留 mof 原有语义：
     **无 URL 参与哈希**、第三参 ``fallback`` 兜底、末补扩展名（共享库版不补扩展名）。
     """
-    repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    repo_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     if repo_root not in sys.path:
         sys.path.insert(0, repo_root)
     from std_lib.scraper_std.crawler_common import safe_filename as _cc_safe_filename

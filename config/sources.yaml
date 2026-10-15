@@ -5,7 +5,7 @@ schema_version: "1.0"
 external_sources:
   - id: gov
     enabled: true
-    collector: collectors.gov_collector
+    collector: collectors.gov.collector
     clean_project: gov
     note: 国务院及地方政府规章/法规库；xzfgk 正文可用
     disabled_reasons: []
@@ -15,25 +15,24 @@ external_sources:
     disabled_reasons: ["OBS 不可达", "正文文档版无法抓取"]
   - id: mof
     enabled: true
-    collector: collectors.mof_collector
+    collector: collectors.mof.collector
     clean_project: mof
     note: 财政部 fgk.mof.gov.cn
   - id: nfra
     enabled: true
-    collector: collectors.nfra_collector
+    collector: collectors.nfra.collector
     clean_project: nfra
-    weekly_orchestrator: collectors.nfra_weekly   # Q4：保留 weekly_refresh 内部确定性编排
     note: 国家金融监督管理总局
   - id: pbc
     enabled: true
-    collector: collectors.pbc_collector
+    collector: collectors.pbc.collector
     clean_project: pbc
     note: 中国人民银行
   - id: supp
     enabled: true
-    collector: collectors.supp_ingest
+    collector: collectors.supp.ingest
     # W4（§7.2 A 类 / R-8）：supp 无网站增量采集——归集入口是**人工/触发器**的
-    # ingest 工具（supp_ingest.py 本地/多源合库），链上无 collect 步骤。原登记为
+    # ingest 工具（collectors/supp/ingest.py 本地/多源合库），链上无 collect 步骤。原登记为
     # 裸 collector 是「纸面 collector」（从不被运行）；此处显式降级为 ingest 语义，
     # gate_sources_config 按类别分别断言（collector 须有链上执行证据；ingest 只断言
     # 模块存在 + independent 登记）。

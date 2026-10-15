@@ -41,7 +41,7 @@
 import os as _os
 import sys as _sys
 
-_GUIDE_ROOT = _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "..", ".."))
+_GUIDE_ROOT = _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "..", "..", ".."))
 if _GUIDE_ROOT not in _sys.path:
     _sys.path.insert(0, _GUIDE_ROOT)
 del _GUIDE_ROOT, _os, _sys
@@ -70,7 +70,7 @@ from std_lib.scraper_std.pipeline import (  # 批 49/T1：raw 统一 JSONL 读�
 )
 
 # 确保项目根（含 std_lib 包）在 sys.path，使 `from std_lib.scraper_std.crawler_common import` 可达
-_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
@@ -366,11 +366,11 @@ def get_detail(opener, doc_id, delay_min, delay_max):
 def build_detail_url(doc_id, item_id):
     return "%s/cn/view/pages/ItemDetail.html?docId=%s&itemId=%s" % (BASE, doc_id, item_id)
 
-# 附件产物根（统一 data/docs，2026-09-08 docs_root；与 nfra_fetch_attachments.py 一致）
+# 附件产物根（统一 data/docs，2026-09-08 docs_root；与 collectors/nfra/fetch_attachments.py 一致）
 _ATT_DIR = docs_root("nfra", "attachments")
 
 def load_attachments(doc_id):
-    """读取 nfra_fetch_attachments.py 落盘的附件清单与抽取文本（纯标准库，离线安全）。
+    """读取 collectors/nfra/fetch_attachments.py 落盘的附件清单与抽取文本（纯标准库，离线安全）。
 
     返回 list[{title,url,attachment_name,page_count,char_count,sha256,
                extracted,ocr_status,quality,text}]；无附件则返回 []。
@@ -609,7 +609,7 @@ def scrape(args):
         if rec:
             # 正文原文下载（--download-originals 门控；默认不启用防无谓大流量/WAF 冲击）
             if getattr(args, "download_originals", False):
-                _scr = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                _scr = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
                 rec["downloaded_doc_path"] = download_original_doc(rec, did, _scr)
             _atts = load_attachments(did)
             rec["attachments"] = _atts
@@ -678,7 +678,7 @@ def scrape(args):
 def main():
     ap = argparse.ArgumentParser(description="国家金融监督管理总局 政策法规 全量抓取")
     ap.add_argument("--out-dir",
-                    default=os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "raw"))
+                    default=os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "data", "raw"))
     ap.add_argument("--page-size", type=int, default=PAGE_SIZE)
     ap.add_argument("--delay-min", type=float, default=1.5, help="请求最小间隔(秒)")
     ap.add_argument("--delay-max", type=float, default=3.0, help="请求最大间隔(秒)")

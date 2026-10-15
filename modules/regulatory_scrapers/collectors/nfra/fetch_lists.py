@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 补全"政策法规"完整列表缓存：分页抓取 927(法律法规) 与 928(政策规章规范性文件) 的
-全部列表页，写入 nfra_collector.py 的缓存目录（与 --cache-dir 共用命名）。
+全部列表页，写入 collectors/nfra/collector.py 的缓存目录（与 --cache-dir 共用命名）。
 仅抓列表（含 docId/标题/日期/链接），不含详情；详情由主脚本按需抓取。
 WAF 弹性：cookie 预热 + 重试 + 退避 + 间隔。
 """
@@ -11,7 +11,7 @@ WAF 弹性：cookie 预热 + 重试 + 退避 + 间隔。
 import os as _os
 import sys as _sys
 
-_GUIDE_ROOT = _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "..", ".."))
+_GUIDE_ROOT = _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "..", "..", ".."))
 if _GUIDE_ROOT not in _sys.path:
     _sys.path.insert(0, _GUIDE_ROOT)
 del _GUIDE_ROOT, _os, _sys
@@ -29,7 +29,11 @@ _LIST_RETRY_COOLDOWN_S = 6
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-import nfra_collector as m
+# W4（L1 重组）：兄弟模块 import 双形态（包形态相对导入 / 脚本形态裸名）。
+try:
+    from . import collector as m
+except ImportError:  # pragma: no cover - 脚本形态
+    import collector as m  # type: ignore[no-redef]
 
 from std_lib.scraper_std.cache_store import source_cache_root
 

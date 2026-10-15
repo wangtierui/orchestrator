@@ -37,7 +37,7 @@ from __future__ import annotations
 import os as _os
 import sys as _sys
 
-_GUIDE_ROOT = _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "..", ".."))
+_GUIDE_ROOT = _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "..", "..", ".."))
 if _GUIDE_ROOT not in _sys.path:
     _sys.path.insert(0, _GUIDE_ROOT)
 del _GUIDE_ROOT, _os, _sys
@@ -72,11 +72,16 @@ except ImportError as e:  # pragma: no cover
     sys.exit(2)
 
 # 附件下载 + 文本抽取（修复：gov 此前完全不抓附件）
+# W4（L1 重组）：兄弟模块 import 双形态——包形态（相对导入）/ 脚本形态
+# （`python collectors/gov/collector.py` 直调时本目录为 sys.path[0]）。
 try:
-    from gov_fetch_attachments import fetch_gov_attachments
+    from .attachments import fetch_gov_attachments
 except ImportError:  # pragma: no cover
-    def fetch_gov_attachments(*a, **k):
-        return [], ""
+    try:
+        from attachments import fetch_gov_attachments  # type: ignore[no-redef]
+    except ImportError:
+        def fetch_gov_attachments(*a, **k):  # type: ignore[no-redef,misc]
+            return [], ""
 
 LOG = logging.getLogger("gov_scraper")
 
@@ -88,7 +93,7 @@ LOG = logging.getLogger("gov_scraper")
 # （共享库对齐审计 阶段 4）实测：本文件原有 UA 池与 ``crawler_common.USER_AGENTS``
 # **逐字相同**（md5 一致、n=5），故改为复用共享库，消除重复副本；
 # 沿用 nfra 既有「try 导入 + 缺模块回退单 UA」降级样板，避免缺依赖时启动失败。
-_STD_LIB_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_STD_LIB_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if _STD_LIB_ROOT not in sys.path:
     sys.path.insert(0, _STD_LIB_ROOT)
 try:
@@ -118,26 +123,33 @@ _RESP_TEXT = None  # TextResponseCache 实例；None 表示未启用缓存
 _OfflineMiss = OfflineMiss  # 兼容别名
 
 
-# ---- 拆分（2026-09-13，P3）：下列符号迁 gov_parse，re-export 保持外部调用兼容 ----
-from gov_parse import (  # noqa: F401  拆分 re-export（显式；规避 F405）
-    SOURCES,  # 子源登记表唯一事实源在 gov_parse（2026-09-15 收敛，勿在别处重复定义）
-    MasterView,
-    ScrapeConfig,
-    _is_https_scheme_upgrade,
-    _longest_text_block,
-    build_config,
-    clean_text,
-    decode_html,
-    extract_date,
-    extract_doc_number,
-    extract_issue_organ,
-    load_resume,
-    make_summary,
-    merge_and_write,
-    merge_with_master,
-    write_collect_stats,
-    write_outputs,
-)
+# ---- 拆分（2026-09-13，P3）：下列符号迁 gov/parse，re-export 保持外部调用兼容 ----
+# W4（L1 重组）：兄弟模块 import 双形态——包形态（相对导入）/ 脚本形态（裸名，
+# 此时 collectors/gov/ 为 sys.path[0]）。经**模块对象**再取符号 ⇒ 名单只此一份
+# （双份名单 = 双份维护点，双形态各写一遍 import 名单必然漂移）。
+try:
+    from . import parse as _parse
+except ImportError:  # pragma: no cover - 脚本形态
+    import parse as _parse  # type: ignore[no-redef]
+
+# re-export（显式赋值，规避 F401/F405；外部调用面不变）
+SOURCES = _parse.SOURCES  # 子源登记表唯一事实源在 gov/parse（2026-09-15 收敛，勿在别处重复定义）
+MasterView = _parse.MasterView
+ScrapeConfig = _parse.ScrapeConfig
+_is_https_scheme_upgrade = _parse._is_https_scheme_upgrade
+_longest_text_block = _parse._longest_text_block
+build_config = _parse.build_config
+clean_text = _parse.clean_text
+decode_html = _parse.decode_html
+extract_date = _parse.extract_date
+extract_doc_number = _parse.extract_doc_number
+extract_issue_organ = _parse.extract_issue_organ
+load_resume = _parse.load_resume
+make_summary = _parse.make_summary
+merge_and_write = _parse.merge_and_write
+merge_with_master = _parse.merge_with_master
+write_collect_stats = _parse.write_collect_stats
+write_outputs = _parse.write_outputs
 
 
 def _init_cache(path=None, offline=False):
@@ -584,13 +596,13 @@ CSV_COLUMNS = [
 # 主流程
 # --------------------------------------------------------------------------- #
 
-# 子源登记表 SOURCES 由 gov_parse 导入（唯一事实源，见上方 import 块）。
+# 子源登记表 SOURCES 由 parse 导入（唯一事实源，见上方 import 块）。
 
 
 # —— 运行锁统一实现（N-8）：判定逻辑收敛到 regulatory_scrapers/fs_lock.py，四源共用 ——
 import atexit
 
-_SCRAPERS_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_SCRAPERS_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if _SCRAPERS_ROOT not in sys.path:
     sys.path.insert(0, _SCRAPERS_ROOT)
 from config.exitcodes import ExitCode
@@ -604,7 +616,7 @@ def main(argv=None) -> int:
                         help="数据源：xzfgk=行政法规库；zhengceku=国务院政策文件库·部门文件；"
                              "all=两者依次抓取（默认，gov 源常规采集范围）")
     parser.add_argument("--out-dir",
-                        default=os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "raw"),
+                        default=os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "data", "raw"),
                         help="输出目录（5b 收敛：默认统一 data/raw/，即 regulatory_scrapers/data/raw）")
     parser.add_argument("--max-pages", type=int, default=0,
                         help="最大翻页数（0=不限制）")
@@ -684,7 +696,11 @@ def main(argv=None) -> int:
     # —— 多子源分发（2026-09-15 纳入 zhengceku）——
     # 原实现硬编码 XzfgkScraper；现按 cfg.source 分发，支持 --source all 依次抓取
     # 两个子源并**合并进同一 gov 主库** gov_laws.json（按 detail_url 去重，新优先）。
-    from gov_zhengceku import ZhengcekuScraper
+    # W4（L1 重组）：import 双形态（包形态相对导入 / 脚本形态裸名）。
+    try:
+        from .zhengceku import ZhengcekuScraper
+    except ImportError:  # pragma: no cover - 脚本形态
+        from zhengceku import ZhengcekuScraper  # type: ignore[no-redef]
 
     if args.source == "all":
         want = list(SOURCES)

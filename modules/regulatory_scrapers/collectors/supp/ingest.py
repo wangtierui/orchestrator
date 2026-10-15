@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-supp_ingest.py —— 四源补充法规数据摄取脚本（supplementary_regulations_scraper）
+collectors/supp/ingest.py —— 四源补充法规数据摄取脚本（supplementary_regulations_scraper）
 
 用途：将「已有四源（gov/mof/nfra/pbc）未收录」的补充法规文件，按爬虫规范
 （字段对齐 shared_lib 数据字典 CSV_COLUMNS；正文+附件齐全；6.4 标准命名落盘）
@@ -20,7 +20,7 @@ scripts/run_clean_pipeline.py 消费。
 
 流程：
   1) 读取 _sources/ 官网全文（F9/F11）与人工校对文本（F15/F17，优先 curated，
-     回退 OCR 缓存，再回退实时 OCR —— 见 scripts/supp_ocr_pdf.py）；
+     回退 OCR 缓存，再回退实时 OCR —— 见 collectors/supp/ocr.py）；
   2) 本地 PDF（F15/F17）复制到 downloaded_docs/（6.4 标准命名），记录 MD5；
   3) 组装 4 条记录 → data/raw/supplementary_regulations.json；
   4) 输出摄取摘要与 OCR 质量/误差声明。
@@ -38,7 +38,7 @@ scripts/run_clean_pipeline.py 消费。
      source 字段标注核验方式（见 verify_official_source()）。
 
 用法：
-  python scripts/supp_ingest.py
+  python collectors/supp/ingest.py
 """
 
 from __future__ import annotations
@@ -47,7 +47,7 @@ from __future__ import annotations
 import os as _os
 import sys as _sys
 
-_GUIDE_ROOT = _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "..", ".."))
+_GUIDE_ROOT = _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "..", "..", ".."))
 if _GUIDE_ROOT not in _sys.path:
     _sys.path.insert(0, _GUIDE_ROOT)
 del _GUIDE_ROOT, _os, _sys
@@ -126,7 +126,7 @@ def enrich_placeholder_records(records: list) -> tuple:
 
     适用场景：本批次（T1 五库补充 seq...）直接以占位正文入 JSON 的记录，
     只要把官方全文存为 `_sources/<文号key>_body.txt`（key = 发文字号规整），
-    重跑 scripts/supp_ingest.py 即自动回填，并将 body_source 归并为
+    重跑 collectors/supp/ingest.py 即自动回填，并将 body_source 归并为
     规范值 'webpage'，保证清洗管道 body_text_webpage 正确分流、不出现 'N/A'。
     无法以文本解析的来源（如二进制 .doc 附件）不下臆造内容，交由人工本地提供。
     """

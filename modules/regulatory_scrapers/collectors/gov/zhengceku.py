@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""gov_zhengceku.py —— gov 源「国务院政策文件库·国务院部门文件」子采集器。
+"""collectors/gov/zhengceku.py —— gov 源「国务院政策文件库·国务院部门文件」子采集器。
 
 【纳入常规采集范围（2026-09-15）】
   此前 gov 源只有 `xzfgk` 一个子源（= `www.gov.cn/zhengce/xzfgk/` 行政法规库，详情落司法部
@@ -19,10 +19,10 @@
   否则 `map_gov` 取不到值，cleaned 层正文落空。
   `source="zhengceku"` 经 `config/enums.SOURCE_ALIASES` 归并为 `gov`，子源名进 `_raw_fields.子源`。
 
-用法（通常由 gov_collector.py 分发调用，也可独立单条补录）：
-  python gov_collector.py --source zhengceku              # 常规增量（resume 默认开）
-  python gov_collector.py --source zhengceku --full       # 全量（629 页）
-  python gov_zhengceku.py --url <详情页URL>                # 单条补录（独立入口，便于人工核验）
+用法（通常由 collectors/gov/collector.py 分发调用，也可独立单条补录）：
+  python collectors/gov/collector.py --source zhengceku              # 常规增量（resume 默认开）
+  python collectors/gov/collector.py --source zhengceku --full       # 全量（629 页）
+  python collectors/gov/zhengceku.py --url <详情页URL>                # 单条补录（独立入口，便于人工核验）
 """
 from __future__ import annotations
 
@@ -42,7 +42,7 @@ for _p in (_SRC_ROOT, _REPO_ROOT):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-LOG = logging.getLogger("gov_zhengceku")
+LOG = logging.getLogger("zhengceku")
 
 # 列表：首页无后缀，第 i 页为 home_{i}.htm（0-based，实测 nPageCount=629）
 LIST_BASE = "https://www.gov.cn/zhengce/zhengceku/bmwj/home.htm"
@@ -166,7 +166,7 @@ def _iso(datestr: str) -> str:
 
 
 def make_summary(full_text: str, length: int = 200) -> str:
-    """摘要：与 gov 主链 `gov_parse.make_summary` 同口径（压缩空白后截断）。"""
+    """摘要：与 gov 主链 `parse.make_summary` 同口径（压缩空白后截断）。"""
     s = re.sub(r"\s+", " ", full_text or "").strip()
     return s if len(s) <= length else s[:length]
 
@@ -178,7 +178,7 @@ def make_summary(full_text: str, length: int = 200) -> str:
 # 依据：附件原文（OCR + Word COM）是全量采集的耗时与体积主因——实测 1600 条暂存 516 MB
 # （均 322 KB/条），全量 1.22 万条约需 5.5 GB，内存压力是进程中断的首要嫌疑。
 # 默认关闭（保持常规增量采集行为不变）；如需附件原文，对目标条目用
-# `python collectors/gov_zhengceku.py <url>` 单条补录即可（该入口始终完整抽取）。
+# `python collectors/gov/zhengceku.py <url>` 单条补录即可（该入口始终完整抽取）。
 _ATTACH_FAST = os.environ.get("ZC_ATTACH_FAST", "").strip().lower() in ("1", "true", "yes", "on")
 _FAST_MIN_BODY = int(os.environ.get("ZC_FAST_MIN_BODY", "200") or 200)
 _skipped = [0]                 # 本次运行跳过附件抽取的条目计数（供收尾日志）
@@ -433,10 +433,11 @@ def fetch_attachments(html: str, url: str, entry_id: str) -> tuple[list, str]:
     首尾均为乱码；Word COM 3099 字、CJK 占比 0.906、35 段落）。
     **故择优规则以「文本洁净度」为主、长度为辅**，不能只比长度——否则会选中有噪声的长文本。
     """
+    # W4（L1 重组）：import 双形态（包形态相对导入 / 脚本形态裸名）。
     try:
-        from collectors.gov_fetch_attachments import fetch_gov_attachments  # type: ignore
-    except Exception:  # noqa: BLE001
-        from gov_fetch_attachments import fetch_gov_attachments  # type: ignore
+        from .attachments import fetch_gov_attachments  # type: ignore
+    except ImportError:  # pragma: no cover - 脚本形态
+        from attachments import fetch_gov_attachments  # type: ignore
     recs, att_text = fetch_gov_attachments(
         html, entry_id=entry_id, entry_title="", out_dir=None, base_url=url)
     improved = 0
@@ -463,7 +464,7 @@ def fetch_attachments(html: str, url: str, entry_id: str) -> tuple[list, str]:
 
 
 # --------------------------------------------------------------------------- #
-# 采集器（与 XzfgkScraper 同构，供 gov_collector 分发）
+# 采集器（与 XzfgkScraper 同构，供 collector 分发）
 # --------------------------------------------------------------------------- #
 class ZhengcekuScraper:
     """国务院政策文件库·部门文件（bmwj）子采集器。"""
@@ -471,7 +472,7 @@ class ZhengcekuScraper:
     def __init__(self, cfg, client=None, seen_urls=None, known_urls=None):
         self.cfg = cfg
         self.client = client
-        # 已抓 detail_url 集合（由 gov_collector 从主库 load_resume 取得）→ --resume 增量跳过
+        # 已抓 detail_url 集合（由 collector 从主库 load_resume 取得）→ --resume 增量跳过
         self.seen_urls = seen_urls if seen_urls is not None else set()
         # N-190：主库**全部** detail_url（含**尚无正文**者）——用于区分两类条目：
         #   · **新条目**   = detail_url ∉ known_urls → **增量早停的判据**（连续无新即停翻页）
@@ -516,7 +517,7 @@ class ZhengcekuScraper:
         此后**每一轮增量**都要白付一次"载入 899.7MB / 12573 条 + 全量合并"的代价
         （本轮实测 merge 阶段 **~10 分钟**，占采集步总时长的一半以上，且**产出零变化**）。
 
-        时序安全性：本方法**只在主库写成功之后**被调用（见 `gov_collector.main`）——
+        时序安全性：本方法**只在主库写成功之后**被调用（见 `collector.main`）——
         主库是**原子替换**（`.tmp` + `os.replace`）写出的，写成功即数据已持久化，
         此时暂存已完全冗余（其记录已并入主库）⇒ 删除不会丢数据；
         反之若主库写失败/进程被杀，暂存**必须保留**（下次续跑的唯一依据）⇒ 故不在别处清理。
@@ -537,7 +538,7 @@ class ZhengcekuScraper:
     def _save_partial(self, records: list) -> None:
         """原子落盘已抓记录。
 
-        ⚠️ 必要性：`gov_parse.write_outputs` 只在**全部结束后**写一次主库，
+        ⚠️ 必要性：`parse.write_outputs` 只在**全部结束后**写一次主库，
         本栏目全量约 1.7 万条 / 30 小时，中途任何中断（网络、进程被杀、机器重启）
         都会让已抓数据**全部丢失**。故详情阶段按 `checkpoint_every` 周期落盘暂存，
         下次运行先载入暂存再续抓，最后统一并入主库。
@@ -697,7 +698,7 @@ class ZhengcekuScraper:
             self._save_partial(records)      # 收尾落盘：保证最后不足一批的增量也持久化
         if _ATTACH_FAST and _skipped[0]:
             LOG.info("【提速模式】本次跳过附件原文抽取 %d 条（正文≥%d 字）；"
-                     "如需附件原文，对目标条目用 gov_zhengceku.py <url> 单条补录",
+                     "如需附件原文，对目标条目用 collectors/gov/zhengceku.py <url> 单条补录",
                      _skipped[0], _FAST_MIN_BODY)
         # —— N-190 采集统计（供上游落 data/run_state/collect_stats/*.json）——
         # 关键指标：pages_without_new / pages_fetched = **空转页占比**（本次优化要压的就是它）；
@@ -763,7 +764,7 @@ class ZhengcekuScraper:
             "source": SUB_SOURCE,
             "full_text": body,
             "attachments": atts,
-            # 批 51/W-A：记录级聚合副本不再写（见 gov_collector 同注）
+            # 批 51/W-A：记录级聚合副本不再写（见 collector 同注）
             "attachment_count": len(atts),
             "summary": make_summary(body),
         }
@@ -783,7 +784,7 @@ def build_record(url: str, with_attachments: bool = True) -> dict:
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(
-        description="gov 源「国务院政策文件库·部门文件」子采集器（单条补录入口；批量请用 gov_collector.py）")
+        description="gov 源「国务院政策文件库·部门文件」子采集器（单条补录入口；批量请用 collectors/gov/collector.py）")
     ap.add_argument("--url", required=True, help="详情页 URL")
     ap.add_argument("--out", default="", help="输出 JSON 路径（可选，默认仅打印）")
     args = ap.parse_args(argv)

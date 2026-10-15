@@ -121,10 +121,15 @@ def active_source_ids(refresh: bool = False) -> list[str]:
 #     步骤**；只断言模块存在 + 在 modules/_manifest.json 有独立登记。
 # --------------------------------------------------------------------------- #
 def collector_module(source_id: str, refresh: bool = False) -> str:
-    """源 collector 模块名（collectors.gov_collector → gov_collector；无点原样返回）。"""
+    """源 collector 模块**点号路径**（`collectors.gov.collector` → `gov.collector`）。
+
+    W4（L1 重组，2026-10-15）：collectors 改为「按源建子包」，collector 字段随之由
+    单段模块名（`collectors.gov_collector`）变为**两级路径**（`collectors.gov.collector`）。
+    故此处返回**去前缀后的完整点号路径**（不再是末段名）——路径解析见 `collector_path`。
+    """
     cfg = load_sources(refresh).get(source_id) or {}
     v = (cfg.get("collector") or "").strip()
-    return v.rsplit(".", 1)[-1] if "." in v else v
+    return v[len("collectors."):] if v.startswith("collectors.") else v
 
 
 def collector_kind(source_id: str, refresh: bool = False) -> str:
@@ -140,11 +145,15 @@ def collector_kind(source_id: str, refresh: bool = False) -> str:
 
 
 def collector_path(source_id: str, refresh: bool = False) -> str:
-    """解析源 collector 脚本绝对路径；collectors 目录缺失对应模块返回空串（供新增源 checklist 判空）。"""
+    """解析源 collector 脚本绝对路径；collectors 目录缺失对应模块返回空串（供新增源 checklist 判空）。
+
+    W4（L1 重组）：`gov.collector` → `collectors/gov/collector.py`（点号→路径分隔）。
+    """
     mod = collector_module(source_id, refresh)
     if not mod:
         return ""
-    p = os.path.join(paths.ROOT, "modules", "regulatory_scrapers", "collectors", mod + ".py")
+    rel = os.path.join(*mod.split(".")) + ".py" if "." in mod else mod + ".py"
+    p = os.path.join(paths.ROOT, "modules", "regulatory_scrapers", "collectors", rel)
     return p if os.path.exists(p) else ""
 
 

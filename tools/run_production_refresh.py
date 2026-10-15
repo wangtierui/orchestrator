@@ -94,28 +94,28 @@ COLLECT_CMD = {
     # 实测 ≈3~4 分钟）⇒ 到达预算即"停止取新详情并正常落盘退出"（rc=0），而不是被硬超时**强杀**
     # （强杀会让未走完的产物落盘并被下游采用 —— N-152 的教训）。
     "gov_xzfgk": [
-        PY, os.path.join(COLLECTORS, "gov_collector.py"),
+        PY, os.path.join(COLLECTORS, "gov", "collector.py"),
         "--source", "xzfgk", "--max-seconds", "1500",           # 硬 1800 − 300
         "--env-source", "gov", "--env-category", "行政法规+部门文件",
     ],
     "gov_zhengceku": [
-        PY, os.path.join(COLLECTORS, "gov_collector.py"),
+        PY, os.path.join(COLLECTORS, "gov", "collector.py"),
         "--source", "zhengceku", "--max-seconds", "5100",       # 硬 5400 − 300
         "--env-source", "gov", "--env-category", "行政法规+部门文件",
     ],
     # 历史存量补全（**月度独立排程**）：不早停、扫完 629 页，补齐"在主库但尚无正文"的历史条目。
     # 原设计意图（持续补全历史存量）保留，但与周度"追新"**分离** ⇒ 代价显式化、各自计时。
     "gov_zhengceku_backfill": [
-        PY, os.path.join(COLLECTORS, "gov_collector.py"),
+        PY, os.path.join(COLLECTORS, "gov", "collector.py"),
         "--source", "zhengceku", "--backfill", "--max-seconds", "21000",   # 硬 21600 − 600
         "--env-source", "gov", "--env-category", "行政法规+部门文件",
     ],
     # mof 附件主机 10.1.60.36:8888 曾实测 100% HTTP 502：默认全量会空转数十小时，
     # 可用环境 MOF_COLLECT_ARGS="--no-attachments" 追加逃生参数（仍会抓详情正文）。
-    "mof": [PY, os.path.join(COLLECTORS, "mof_collector.py")],
+    "mof": [PY, os.path.join(COLLECTORS, "mof", "collector.py")],
     # nfra 全量：原文（doc/pdf）已默认下载（2026-09-09 五源统一完整文档内容）。
-    "nfra": [PY, os.path.join(COLLECTORS, "nfra_collector.py")],
-    "pbc": [PY, os.path.join(COLLECTORS, "pbc_collector.py")],
+    "nfra": [PY, os.path.join(COLLECTORS, "nfra", "collector.py")],
+    "pbc": [PY, os.path.join(COLLECTORS, "pbc", "collector.py")],
 }
 # 各源 collector 输出目录参数名不一致（历史遗留），必须按源传参（2026-09-09 接线修复）。
 # gov/nfra: --out-dir | mof: --outdir | pbc: --out
@@ -196,7 +196,7 @@ GOV_ARTIFACTS: dict[str, dict] = {
     # raw 是**链外写方**（collectors 直写 RAW_DIR，亦可被链外重采/手工补救改写）——
     # 此前无任何水位登记，「链外 raw 更新」对下游完全不可见（cleaned 的水位边只到
     # cleaned 自身）。登记为**观察型**（stage 0，采集后即登记），供 cleaned 声明输入边。
-    "raw:{src}": {"produced_by": "collectors.<src>_collector", "stage": "0"},
+    "raw:{src}": {"produced_by": "collectors.<src>.collector", "stage": "0"},
     # ---- 声明依赖型（阶段 1 主链边）----
     # v2 §3.3.1（2026-09-26）：`clauses:{src}` **现声明** `cleaned:{src}` 上游。
     #   此前不声明的原因——"阶段 1 的 cleaned 版本会被阶段 2 时效回写作废，声明即恒 stale"
@@ -1506,7 +1506,7 @@ def _run_chain(args) -> int:
             report.append(
                 _run(
                     "collect:nfra_weekly",
-                    [PY, os.path.join(COLLECTORS, "nfra_weekly.py")],
+                    [PY, os.path.join(COLLECTORS, "nfra", "weekly.py")],
                     timeout=COLLECT_TIMEOUT.get("nfra-weekly", 7200),
                 )
             )
@@ -1528,14 +1528,14 @@ def _run_chain(args) -> int:
     # raw 摘要已由汇总 raw 字段（_raw_size）输出。
     # F-O05（2026-09-12）：supp 本地摄取入编排（可选）——此前 supp 链完全在编排外，
     # supp 新文件永不过链。默认跳过（防重写 raw）；需要时经 --supp-batch 显式触发，
-    # 或以 collectors/supp_ingest_local_dir.py 收录本地目录。
+    # 或以 collectors/supp/ingest_local_dir.py 收录本地目录。
     if args.supp_batch:
         report.append(
             _run(
                 "supp:ingest_batch",
                 [
                     PY,
-                    os.path.join(COLLECTORS, "supp_ingest_batch.py"),
+                    os.path.join(COLLECTORS, "supp", "ingest_batch.py"),
                     "--backlog",
                     args.supp_batch,
                 ],
@@ -1545,7 +1545,7 @@ def _run_chain(args) -> int:
     else:
         print(
             "[collect] supp：未触发本地摄取（经 --supp-batch <backlog.json> 或 "
-            "collectors/supp_ingest_local_dir.py）",
+            "collectors/supp/ingest_local_dir.py）",
             flush=True,
         )
 

@@ -118,7 +118,8 @@ def run(argv):
         print(f"       - id: {a.id}")
         print("         enabled: false          # 先停用登记，待 collector/清洗验证后置 true")
         print(
-            "         collector: collectors.<{id}_collector|{id}_ingest>   # 与 collectors/ 拍平命名对齐"
+            "         collector: collectors.<src>.collector          # W4 L1：按源建子包，两级点号"
+            "（<src> 为源目录名）"
         )
         print(
             "         collector_kind: collector   # collector=链上采集（默认，须有编排器执行证据）"
@@ -129,7 +130,9 @@ def run(argv):
         print("         disabled_reasons: [待采集实现验证]")
         print("  2. config/enums.py SOURCE_SET 加值（受控变更；assert_enum_bindings 断言条数随动）")
         print(
-            "  3. 提供 collectors 模块并跑：python -m py_compile + 只读冒烟（--help / 空参数退出）"
+            "  3. 提供 collectors 模块（新目录 modules/regulatory_scrapers/collectors/<src>/，"
+            "兄弟 import 用「相对 + 裸名兜底」双形态、仓根引导上溯 4 级）并跑："
+            "python -m py_compile + 只读冒烟（--help / 空参数退出）"
         )
         print(
             "  4. python cli.py gates（gate_sources_config 校验 collector 模块/clean_project/enums 一致）"

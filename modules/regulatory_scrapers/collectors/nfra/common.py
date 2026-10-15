@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
-"""collectors.nfra_common — **nfra 采集脚本的共用件**（N-167，2026-09-30）
+"""collectors.nfra.common — **nfra 采集脚本的共用件**（N-167，2026-09-30）
 
 为什么独立成文件
 ----------------
-`nfra_fill_details.py` 与 `nfra_prefetch.py` 原先**各写一份逐字相同的 `_warmup()`**
+`fill_details.py` 与 `nfra_prefetch.py` 原先**各写一份逐字相同的 `_warmup()`**
 （curl 预热 + 冷却 sleep，连 `UA`/`BASE`/`COOKIE_JAR`/冷却秒数四个常量也各写一份）。
 风险不在"多几行"，而在**改一漏一**：预热行为（UA、站点、cookie 罐、冷却时长）会出现
 两个版本，而**分叉不会报错** —— 只会让其中一条链路以"旧握手"访问站点（被限流/拿到

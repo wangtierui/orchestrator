@@ -5,7 +5,7 @@ nfra 法规附件下载 + PDF 文本抽取 + 数据质量校验（高精度专�
 =================================================================
 背景
 ----
-主抓取脚本 `nfra_collector.py` 仅抓取详情页 `docClob`（印发通知序言），
+主抓取脚本 `collector.py` 仅抓取详情页 `docClob`（印发通知序言），
 而大量法规（如《保险公司偿付能力监管规则（Ⅱ）》）的**实质正文挂在 PDF 附件**上
 （`attachmentInfoVOList`）。本模块补齐这一缺口：把附件 PDF 下载并抽取为纯文本，
 落盘为可离线复用的缓存，由主脚本在重建时并入输出。
@@ -30,10 +30,10 @@ WAF 礼貌原则
 
 用法
 ----
-  python nfra_fetch_attachments.py                      # 全量（续跑）
-  python nfra_fetch_attachments.py --doc-id 1027892     # 单篇试点
-  python nfra_fetch_attachments.py --keep-pdf           # 保留原始 PDF（默认仅留 .txt）
-  python nfra_fetch_attachments.py --ocr                # 启用 OCR 兜底（需 paddleocr+模型）
+  python collectors/nfra/fetch_attachments.py                      # 全量（续跑）
+  python collectors/nfra/fetch_attachments.py --doc-id 1027892     # 单篇试点
+  python collectors/nfra/fetch_attachments.py --keep-pdf           # 保留原始 PDF（默认仅留 .txt）
+  python collectors/nfra/fetch_attachments.py --ocr                # 启用 OCR 兜底（需 paddleocr+模型）
 =================================================================
 """
 
@@ -41,7 +41,7 @@ WAF 礼貌原则
 import os as _os
 import sys as _sys
 
-_GUIDE_ROOT = _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "..", ".."))
+_GUIDE_ROOT = _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "..", "..", ".."))
 if _GUIDE_ROOT not in _sys.path:
     _sys.path.insert(0, _GUIDE_ROOT)
 del _GUIDE_ROOT, _os, _sys
@@ -79,27 +79,37 @@ DEFAULT_HEADERS = {
     "Referer": BASE + "/cn/view/pages/ItemDetail.html",
 }
 
-# ---- 拆分（2026-09-13，P3）：文档抽取链迁 nfra_attachments_extract，以下 re-export 保持外部调用兼容 ----
-from nfra_attachments_extract import (  # noqa: F401  拆分 re-export（显式；规避 F405）
-    _flush_run,
-    _handle_ole2,
-    _is_ole2_word,
-    _recover_cjk_stream,
-    _temp_pdf,
-    _walk_pieces,
-    attachment_kind,
-    dispatch_extract,
-    extract_any,
-    extract_doc_ole,
-    extract_docx,
-    extract_pdf_text,
-    extract_xls_ole,
-    extract_xlsx,
-    is_pdf,
-    ocr_pdf,
-    sha256_of,
-    sniff_kind,
-)
+# ---- 拆分（2026-09-13，P3）：文档抽取链迁 nfra/attachments_extract，以下 re-export 保持外部调用兼容 ----
+# W4（L1 重组）：import 双形态（包形态相对导入 / 脚本形态裸名）；经**模块对象**取符号
+# ⇒ 名单只此一份。
+try:
+    from . import attachments_extract as _ext
+except ImportError:  # pragma: no cover - 脚本形态
+    import attachments_extract as _ext  # type: ignore[no-redef]
+
+# re-export（显式赋值，规避 F401/F405；外部调用面不变）
+_flush_run = _ext._flush_run
+_handle_ole2 = _ext._handle_ole2
+_is_ole2_word = _ext._is_ole2_word
+_recover_cjk_stream = _ext._recover_cjk_stream
+_temp_pdf = _ext._temp_pdf
+_walk_pieces = _ext._walk_pieces
+attachment_kind = _ext.attachment_kind
+dispatch_extract = _ext.dispatch_extract
+extract_any = _ext.extract_any
+extract_doc_ole = _ext.extract_doc_ole
+extract_docx = _ext.extract_docx
+extract_pdf_text = _ext.extract_pdf_text
+extract_xls_ole = _ext.extract_xls_ole
+extract_xlsx = _ext.extract_xlsx
+is_pdf = _ext.is_pdf
+ocr_pdf = _ext.ocr_pdf
+sniff_kind = _ext.sniff_kind
+# ⚠️ W4/L1（2026-10-15）：`sha256_of` **不是**死符号——本文件有两处活调用点（下载后与
+# 校验重算）。B2 批把它从 attachments_extract 删除（与 SSOT 重复）时**未同步本文件的
+# 调用点**，两形态 import 均在此 NameError（潜伏断裂，由 L1 双形态契约测试暴露）。
+# 现直接绑 SSOT 实现（`sha256_bytes(data: bytes) -> str`），不再经兄弟模块中转。
+from std_lib.common_lib.io_atomic import sha256_bytes as sha256_of
 
 
 def http_get_bytes(url, timeout=30, max_retries=4):

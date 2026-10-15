@@ -1,19 +1,19 @@
 # -*- coding: utf-8 -*-
-"""supp_ingest_local_dir.py —— supplementary 本地目录收录（"本地提供"文件的标准化归集入口）
+"""collectors/supp/ingest_local_dir.py —— supplementary 本地目录收录（"本地提供"文件的标准化归集入口）
 
 用途：将"已取得官方全文/规范附件"的本地目录（如 EAST 规范包），按 6.4 标准命名归集进
       data/docs/supplementary_regulations_scraper/，并把附件实体登记（local_path/sha256/bytes）
       写回 data/raw/supplementary_regulations.json 的对应记录（按 --task-index/--doc-number 匹配）；
       xls/xlsx 附件用 excel_classified_v2 重建 table_structured。
 
-与 supp_ingest_batch.py 的关系：
+与 collectors/supp/ingest_batch.py 的关系：
   batch 入口消费 backlog JSON（负责正文与记录级合并）；本脚本负责"本地目录附件实体"的归集与登记，
   二者互不覆盖（本脚本只更新匹配记录的附件字段/表格结构，不新增记录、不改正文）。
 
 严禁：本脚本不臆造正文；记录正文仍以既有已核验 body_text 为准。
 
 用法：
-  python collectors/supp_ingest_local_dir.py --src-dir <目录> --task-index EAST-20250410-01 \
+  python collectors/supp/ingest_local_dir.py --src-dir <目录> --task-index EAST-20250410-01 \
       --doc-number "金非银检函〔2025〕82号" --date 20250410 [--run-clean] [--dry-run]
 """
 
@@ -21,7 +21,7 @@
 import os as _os
 import sys as _sys
 
-_GUIDE_ROOT = _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "..", ".."))
+_GUIDE_ROOT = _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "..", "..", ".."))
 if _GUIDE_ROOT not in _sys.path:
     _sys.path.insert(0, _GUIDE_ROOT)
 del _GUIDE_ROOT, _os
@@ -220,7 +220,7 @@ def main(argv=None):
     rf = dict(rec.get("_raw_fields") or {})
     rf["east_dir"] = args.src_dir
     rf["collected_at"] = _dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    rf["collect_tool"] = "supp_ingest_local_dir.py"
+    rf["collect_tool"] = "ingest_local_dir.py"
     rec["_raw_fields"] = rf
 
     tmp = RAW_PATH + ".tmp"

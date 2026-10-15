@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-supp_ocr_pdf.py —— 扫描件 PDF 文本提取模块（统一 OCR 封装的薄包装）
+collectors/supp/ocr.py —— 扫描件 PDF 文本提取模块（统一 OCR 封装的薄包装）
 
 职责：封装 std_lib/scraper_std/ocr_engine.py 的 UnifiedOCR，对外维持历史接口：
   - extract_pdf_text(path) -> (text, mode)    # mode ∈ {"text", "ocr"}
@@ -16,7 +16,7 @@ PDF 提取范式（与历史一致）：
 
 依赖注入：本模块在导入时把项目根（regulatory_scrapers）加入 sys.path，再
 import std_lib.scraper_std.ocr_engine；若统一模块不可用，则回退到内联
-Tesseract 实现，保证 supp_parser.py 等调用方不中断。
+Tesseract 实现，保证 collectors/supp/parser.py 等调用方不中断。
 """
 
 from __future__ import annotations
@@ -25,7 +25,7 @@ from __future__ import annotations
 import os as _os
 import sys as _sys
 
-_GUIDE_ROOT = _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "..", ".."))
+_GUIDE_ROOT = _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "..", "..", ".."))
 if _GUIDE_ROOT not in _sys.path:
     _sys.path.insert(0, _GUIDE_ROOT)
 del _GUIDE_ROOT, _os, _sys
@@ -82,7 +82,7 @@ def _post_process(text: str) -> str:
     return t.strip()
 
 # ---------------------------------------------------------------------------
-# 对外接口（兼容 supp_parser.py / 历史调用方）
+# 对外接口（兼容 collectors/supp/parser.py / 历史调用方）
 # ---------------------------------------------------------------------------
 def extract_text_layer(path: str) -> str:
     """pypdf 文本层提取（纯文本层，不做 OCR）。"""
@@ -160,7 +160,7 @@ def _tesseract_fallback(path: str, *, dpi: int = 220) -> str:
 
 if __name__ == "__main__":  # 命令行自测
     if len(sys.argv) < 2:
-        print("用法: python supp_ocr_pdf.py <pdf路径> [--force-ocr]")
+        print("用法: python collectors/supp/ocr.py <pdf路径> [--force-ocr]")
         sys.exit(1)
     force = "--force-ocr" in sys.argv
     path = sys.argv[1]

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-supp_extract_doc_text.py —— 从 Word 97-2003 (.doc) OLE 二进制中提取正文文本。
+collectors/supp/extract_doc_text.py —— 从 Word 97-2003 (.doc) OLE 二进制中提取正文文本。
 
 环境约束：onnxruntime 不可用 → PaddleOCR/rapidocr 不可用；WPS/LibreOffice CLI 在
 无头环境失败或被安全策略拦截。故采用「UTF-16LE 解码 + 常见字锚点过滤」方案：
@@ -9,7 +9,7 @@ supp_extract_doc_text.py —— 从 Word 97-2003 (.doc) OLE 二进制中提取�
     垃圾串几乎不含这些锚点 → 据此整段丢弃垃圾，保留真实正文。
 
 用法：
-  python scripts/supp_extract_doc_text.py
+  python collectors/supp/extract_doc_text.py
 输出：data/raw/_sources/_docs/<name>_body.txt / _附件1.txt（UTF-8，已清洗）
 """
 from __future__ import annotations
@@ -18,7 +18,7 @@ from __future__ import annotations
 import os as _os
 import sys as _sys
 
-_GUIDE_ROOT = _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "..", ".."))
+_GUIDE_ROOT = _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "..", "..", ".."))
 if _GUIDE_ROOT not in _sys.path:
     _sys.path.insert(0, _GUIDE_ROOT)
 del _GUIDE_ROOT, _os, _sys

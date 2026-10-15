@@ -111,7 +111,7 @@ SOURCE_ALIASES: dict[str, str] = {
     "gov.cn": "gov",
     "gov.cn补充": "gov",
     # 2026-09-15：gov 源第 2 子源「国务院政策文件库·国务院部门文件」
-    # （www.gov.cn/zhengce/zhengceku/bmwj），采集器 collectors/gov_zhengceku.py；
+    # （www.gov.cn/zhengce/zhengceku/bmwj），采集器 collectors/gov/zhengceku.py；
     # 归并为 gov，子源名进 _raw_fields.子源。
     "zhengceku": "gov",
     "bmwj": "gov",

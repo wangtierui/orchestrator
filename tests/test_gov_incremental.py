@@ -39,7 +39,7 @@ def _load(rel_path: str, name: str):
 
 @pytest.fixture(scope="module")
 def zck():
-    return _load(os.path.join("modules", "regulatory_scrapers", "collectors", "gov_zhengceku.py"), "_zck")
+    return _load(os.path.join("modules", "regulatory_scrapers", "collectors", "gov", "zhengceku.py"), "_zck")
 
 
 @pytest.fixture(scope="module")
@@ -140,7 +140,7 @@ def test_pbc_has_no_report_generation() -> None:
     判据用**代码标识符 + 报告标题字面量**（不用 `report.md` 子串）——否则**说明文字**里的
     文件名会把守卫自己判红（本测试首版即踩此坑）。
     """
-    src = open(os.path.join(CD, "pbc_collector.py"), encoding="utf-8").read()
+    src = open(os.path.join(CD, "pbc", "collector.py"), encoding="utf-8").read()
     assert "build_report" not in src
     assert "report_path" not in src
     assert "抓取统计报告" not in src
@@ -148,7 +148,7 @@ def test_pbc_has_no_report_generation() -> None:
 
 def test_nfra_has_no_readme_writer() -> None:
     """nfra 采集器**不得**再写 `README.md` 到 out_dir（即 `data/raw/README.md`）。"""
-    src = open(os.path.join(CD, "nfra_collector.py"), encoding="utf-8").read()
+    src = open(os.path.join(CD, "nfra", "collector.py"), encoding="utf-8").read()
     assert "report_path" not in src
     assert "国家金融监督管理总局 · 政策法规抓取结果" not in src
     assert "return json_path, csv_path\n" in src
@@ -163,7 +163,7 @@ def test_raw_readme_is_gone() -> None:
 
 def test_collect_stats_path_outside_fact_source(monkeypatch) -> None:
     """统计落点必须在 `data/run_state/`（旁路观测），**绝不能**落 `data/raw/`（事实源）。"""
-    gp = _load(os.path.join("modules", "regulatory_scrapers", "collectors", "gov_parse.py"), "_gp_stats")
+    gp = _load(os.path.join("modules", "regulatory_scrapers", "collectors", "gov", "parse.py"), "_gp_stats")
     p = gp.collect_stats_path("gov_xzfgk")
     assert p.endswith(os.path.join("collect_stats", "gov_xzfgk.json"))
     norm = p.replace(os.sep, "/")
@@ -173,7 +173,7 @@ def test_collect_stats_path_outside_fact_source(monkeypatch) -> None:
 
 def test_write_collect_stats_roundtrip(monkeypatch) -> None:
     """统计写入：原子落盘 + 内容可回读；写失败**不得抛错**（旁路观测）。"""
-    gp = _load(os.path.join("modules", "regulatory_scrapers", "collectors", "gov_parse.py"), "_gp_stats2")
+    gp = _load(os.path.join("modules", "regulatory_scrapers", "collectors", "gov", "parse.py"), "_gp_stats2")
     monkeypatch.setattr(gp, "_COLLECT_STATS_REL", ("reports", "_tmp", "collect_stats_test"))
     payload = {"sub_source": "xzfgk", "stats": {"list_pages_fetched": 3, "list_pages_without_new": 2}}
     p = gp.write_collect_stats("unit_test", payload)

@@ -149,8 +149,8 @@ def test_shared_xlsx_rows_trim_declared_dimension(tmp_path) -> None:
 def test_collector_extractors_delegate_to_shared_primitives() -> None:
     """**接线守卫**：nfra / pbc 的自建 xlsx 抽取必须引用共享原语（防回退成"按声明维度展开"）。"""
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    for rel, fn in (("modules/regulatory_scrapers/collectors/nfra_attachments_extract.py", "extract_xlsx"),
-                    ("modules/regulatory_scrapers/collectors/pbc_parse.py", "extract_xls_text")):
+    for rel, fn in (("modules/regulatory_scrapers/collectors/nfra/attachments_extract.py", "extract_xlsx"),
+                    ("modules/regulatory_scrapers/collectors/pbc/parse.py", "extract_xls_text")):
         src = open(os.path.join(root, rel), encoding="utf-8").read()
         assert ("def %s(" % fn) in src, "%s 缺少 %s 定义" % (rel, fn)
         assert "iter_xlsx_text_rows" in src and "cap_xlsx_text" in src, "%s 未使用共享原语" % rel
@@ -162,9 +162,9 @@ def test_collector_extractors_delegate_to_shared_primitives() -> None:
 def test_write_side_call_sites_wire_split(field: str) -> None:
     """**接线守卫**：gov/mof 写入侧必须调用分流（否则新数据仍会把正文当附件写入）。"""
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    for rel in ("modules/regulatory_scrapers/collectors/gov_collector.py",
-                "modules/regulatory_scrapers/collectors/gov_zhengceku.py",
-                "modules/regulatory_scrapers/collectors/mof_attachments.py",
-                "modules/regulatory_scrapers/collectors/supp_ingest_local_dir.py"):
+    for rel in ("modules/regulatory_scrapers/collectors/gov/collector.py",
+                "modules/regulatory_scrapers/collectors/gov/zhengceku.py",
+                "modules/regulatory_scrapers/collectors/mof/attachments.py",
+                "modules/regulatory_scrapers/collectors/supp/ingest_local_dir.py"):
         src = open(os.path.join(root, rel), encoding="utf-8").read()
         assert "body_docs" in src or "split_record_body_docs" in src, "%s 未接线分流" % rel

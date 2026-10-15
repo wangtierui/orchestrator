@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-supp_normalize.py —— 补充法规库字段一致化规则（supplementary_regulations_scraper）
+collectors/supp/normalize.py —— 补充法规库字段一致化规则（supplementary_regulations_scraper）
 
 定位：在统一清洗管道「cleaner 注入 N/A」之前，对原始记录做字段级规范化，
       消除 supplementary_regulations_scraper 数据中长期存在的 7 类不一致问题：
@@ -27,7 +27,7 @@ from __future__ import annotations
 import os as _os
 import sys as _sys
 
-_GUIDE_ROOT = _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "..", ".."))
+_GUIDE_ROOT = _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "..", "..", ".."))
 if _GUIDE_ROOT not in _sys.path:
     _sys.path.insert(0, _GUIDE_ROOT)
 del _GUIDE_ROOT, _os, _sys
@@ -309,4 +309,4 @@ if __name__ == "__main__":  # 离线自检
         o = normalize_raw(s)
         print(f"  {o['title'][:24]:26} | doc_no={o['document_number']!r:22} src={o['source']!r:10} "
               f"dt={o['doc_type']!r:12} cat={o['category']!r:16} st={o['status']!r}")
-    print("[supp_normalize] 离线自检通过")
+    print("[normalize] 离线自检通过")

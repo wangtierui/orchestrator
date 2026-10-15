@@ -549,8 +549,9 @@ s = se.split_sentences(text, level="strict")   # level ∈ {strict, loose}（受
 
 > **本节由 `tools/gen_flow_map.py` 机器生成并注入本 README**（受管块；事实源：`STEP_ORDER` + `_run` 调用点（AST）+ `config/schema/semantic_tools.json`）。**请勿手工编辑本节** —— 改链路请改源码后重跑 `python -m tools.gen_flow_map`。
 >
-> 步骤数：**32**；语义工具：**14**（可用 13，未装 1）
-
+> 步骤数：**32**；语义工具：**14**（生成时点实测：可用 5，未装 9）
+>
+> ⚠️ 上面的「可用/未装」是**本机当次运行的探针快照**（`semantic_tools.probe` 逐个import + 模型实测，**依赖本机已装包与模型/env**），随环境漂移——**不是回归信号**，更不是接线状态：接线事实以 8.2 表「命令」列与 `config/schema/semantic_tools.json` 的`wired` 为准（结构事实，不随环境变）。
 ### 8.1 链路总览（Mermaid：**含全部接入模型节点**）
 
 > 图中**每个接入模型都作为节点**挂在所属阶段（虚线=挂接关系，边标签为**具体步骤**）；**无论就绪与否均已入图**，样式区分：**实线绿=已接线**、**蓝色=已接线·默认关（env 开启）**、**虚线灰=未接线**（门面就绪，待业务节点接入）、**橙色=依赖或权重未就绪**。
@@ -565,19 +566,19 @@ flowchart TD
   E --> F["阶段6 条件步骤<br/>wiki:sync"]
   F --> G["链尾 门禁 gates（阻断）"]
 
-  B -.->|"classify:all"| M_bertopic["bertopic<br/>未接线"]
+  B -.->|"classify:all"| M_bertopic["bertopic<br/>未装"]
   B -.->|"semantic:assist"| M_bge_base_zh["bge_base_zh<br/>已接线·默认关"]
   B -.->|"relations:gen"| M_bge_base_zh_relations["bge_base_zh<br/>未接线"]
   B -.->|"relations:gen"| M_deepke["deepke<br/>未就绪"]
-  B -.->|"relations:gen"| M_hanlp["hanlp<br/>已接线·默认关"]
-  B -.->|"classify:all"| M_hdbscan["hdbscan<br/>未接线"]
-  A -.->|"clauses"| M_ltp["ltp<br/>已接线·默认关"]
-  D -.->|"OND"| M_paradedb["paradedb<br/>未就绪"]
-  A -.->|"semantic:search"| M_pgvector["pgvector<br/>已接线·默认关"]
+  B -.->|"relations:gen"| M_hanlp["hanlp<br/>未装"]
+  B -.->|"classify:all"| M_hdbscan["hdbscan<br/>未装"]
+  A -.->|"clauses"| M_ltp["ltp<br/>未装"]
+  D -.->|"OND"| M_paradedb["paradedb<br/>未装"]
+  A -.->|"semantic:search"| M_pgvector["pgvector<br/>未装"]
   B -.->|"relations:gen"| M_signalgraph["signalgraph<br/>未装"]
-  D -.->|"OND"| M_sqlite_vec["sqlite_vec<br/>按需节点"]
+  D -.->|"OND"| M_sqlite_vec["sqlite_vec<br/>未装"]
   B -.->|"semantic:assist"| M_text2vec["text2vec<br/>已接线·默认关"]
-  B -.->|"classify:all"| M_umap["umap<br/>未接线"]
+  B -.->|"classify:all"| M_umap["umap<br/>未装"]
   B -.->|"docreader:extract"| M_weknora_docreader["weknora_docreader<br/>已接线·默认关"]
   B -.->|"semantic:assist"| M_youtu_embedding["youtu_embedding<br/>已接线·默认关"]
   B -.->|"relations:gen"| M_youtu_embedding_relations["youtu_embedding<br/>未接线"]
@@ -586,14 +587,13 @@ flowchart TD
   classDef gated fill:#dbe9ff,stroke:#1565c0,stroke-width:1px
   classDef off fill:#f2f2f2,stroke:#8a8a8a,stroke-dasharray:4 2
   classDef notready fill:#ffe8cc,stroke:#e65100,stroke-width:1px
-  class M_bge_base_zh,M_hanlp,M_ltp,M_pgvector,M_text2vec,M_weknora_docreader,M_youtu_embedding gated
-  class M_bertopic,M_bge_base_zh_relations,M_hdbscan,M_umap,M_youtu_embedding_relations off
-  class M_sqlite_vec off
-  class M_deepke,M_paradedb notready
-  class M_signalgraph notready
+  class M_bge_base_zh,M_text2vec,M_weknora_docreader,M_youtu_embedding gated
+  class M_bge_base_zh_relations,M_youtu_embedding_relations off
+  class M_deepke notready
+  class M_bertopic,M_hanlp,M_hdbscan,M_ltp,M_paradedb,M_pgvector,M_signalgraph,M_sqlite_vec,M_umap notready
 ```
 
-图例：**已接线 0** ／ **已接线·默认关 7** ／ **未接线 6** ／ **未就绪（权重未预置或未装）3** —— **未接线/未就绪的模型同样作为节点存在**，便于在链路上定位其将来挂接的位置（原因见 §8.3）。
+图例：**已接线 0** ／ **已接线·默认关 4** ／ **未接线 2** ／ **未就绪（权重未预置或未装）10** —— **未接线/未就绪的模型同样作为节点存在**，便于在链路上定位其将来挂接的位置（原因见 §8.3）。
 
 ### 8.2 逐步骤表（顺序 = `STEP_ORDER`；命令由 **AST** 自源码抽取）
 
@@ -601,9 +601,9 @@ flowchart TD
 
 | 层 | kind | # | 步骤 | 作用 | 脚本/命令（AST 抽取） | 降级 / 失败语义 |
 |---|---|---|---|---|---|---|
-| `L1_ingest` | main | 1 | `collect:nfra_weekly`（调用点动态计算） | nfra 周报采集（按周触发） | `nfra_weekly.py` | 未到周度触发 → SKIP（rc=0）；超时按 COLLECT_TIMEOUT 配置 |
+| `L1_ingest` | main | 1 | `collect:nfra_weekly`（调用点动态计算） | nfra 周报采集（按周触发） | `weekly.py` | 未到周度触发 → SKIP（rc=0）；超时按 COLLECT_TIMEOUT 配置 |
 | `L1_ingest` | main | 2 | `collect:{src}`（调用点动态计算） | 各源原始采集（gov 拆 xzfgk/zhengceku 两个子源步骤；mof/nfra/pbc/supp） | `（argv 由变量构造，完整形态见源码）` | 失败即停；--no-scrape → SKIP（rc=0）；--resume 可从该步续跑 |
-| `L1_ingest` | main | 3 | `supp:ingest_batch` | 补充库批量摄取（backlog 驱动） | `supp_ingest_batch.py --backlog <args.supp_batch>` | backlog 为空 → SKIP（rc=0） |
+| `L1_ingest` | main | 3 | `supp:ingest_batch` | 补充库批量摄取（backlog 驱动） | `ingest_batch.py --backlog <args.supp_batch>` | backlog 为空 → SKIP（rc=0） |
 | `L2_transform` | main | 4 | `clean:{src}`（调用点动态计算） | 原始 → 清洗（6 态抽取 + 校验隔离） | `run_clean_pipeline.py --project <src> --raw <os.path.join(RAW_DIR, RAW_JSON[src])>` | **超时按源体量配置**（N-150；N-188 重标定 0.24~0.41 s/MB）；当日无 raw 变化 → SKIP（rc=0） |
 | `L2_transform` | side | 5 | `relevance:{src}` | 清洗产物监管相关性边界筛选（BOUNDARY 边界案例 → worklist 待办） | `filter_clean_relevance.py --source <src>` | **旁路分析件**：单源失败 WARN 不阻断主链；--stop-on-error 时中断 |
 | `L9_sync` | conditional | 6 | `timeliness:verify`（超时见 triggers.yaml） | 时效核验（北大法宝；Node 侧 MCP） | （条件步骤；触发项 `timeliness_verify`，判据见 `config/triggers.yaml`） | 无 token/工具缺失 → verification_state=unavailable（**不误标**）；配额耗尽自动停（断点续跑）；条件未触发 → SKIP（rc=0） |
@@ -648,24 +648,24 @@ flowchart TD
 
 | 模型 | 挂接链路节点 | 阶段 | 在该节点做什么 | 依赖/权重就绪度 | 链路接线 | 降级措施 |
 |---|---|---|---|---|---|---|
-| `bertopic` | `classify:all` | 阶段2 | **主题内子簇语义化**（P1-5，仅产出分析视图） | 就绪（依赖可用；无需外部权重） | 未接线（执行门面已就绪，待业务节点接入） | 不做子簇（仅影响分析视图，不产事实源） |
+| `bertopic` | `classify:all` | 阶段2 | **主题内子簇语义化**（P1-5，仅产出分析视图） | 未装 | 未接线（执行门面已就绪，待业务节点接入） | 不做子簇（仅影响分析视图，不产事实源） |
 | `bge_base_zh` | `semantic:assist` | 阶段2 | **全量首选嵌入**（P1-1 主题辅助裁定；`mode=full` 首选） | 就绪（依赖 + 权重实检通过） | **已接线**（`usage_policy.enabled=true`（配置开关）） | 降级 `text2vec`；再退关键词/规则判定（既有主题分类器） |
 | `bge_base_zh@relations`（`@`：同工具的第二用途） | `relations:gen` | 阶段2 | **关联语义档**（P1-2；`mode=full` 首选嵌入） | 就绪（依赖 + 权重实检通过） | 未接线（执行门面已就绪，待业务节点接入） | 降级 `text2vec`；再退既有正则关系抽取 |
 | `deepke` | `relations:gen` | 阶段2 | **知识抽取框架**（NER/关系抽取/属性抽取；P3-1，**替代原 aprcoie**） | **权重不可得**（框架/依赖就位，微调权重本环境未获得） | 未接线（执行门面已就绪，待业务节点接入） | 回退正则关系抽取（框架已就位但**微调权重未得**，见清单 `weights`；P3 可选，未启用不影响主链） |
-| `hanlp` | `relations:gen` | 阶段2 | 条文分句（P1-3 二选一后端之一；`split_sentences` 的 `prefer` **默认 `ltp`**） | 就绪（依赖 + 权重实检通过） | **已接线**（ML 分句**默认关闭**（`REG_ORCH_SEMANTIC_SPLIT=1` 才开）—— 改分句口径会改变条文/关系产物，须先在**可评样本**上量出 P/R（v2 纪律：无度量不上线）） | 用 `ltp`（默认）；两者皆不可用即回退确定性 `sentence_boundary.split_by` |
-| `hdbscan` | `classify:all` | 阶段2 | bertopic 的聚类依赖（**不单独使用**，无权重） | 就绪（依赖可用；无需外部权重） | 未接线（执行门面已就绪，待业务节点接入） | 随 bertopic 一并跳过 |
-| `ltp` | `clauses` | 阶段1 | 条文**分句增强**（分词锚切句；LTP 4.x 无原生分句 API，`basis_split=ltp_cws`） | 就绪（依赖 + 权重实检通过） | **已接线**（`REG_ORCH_SEMANTIC_SPLIT=1`（**默认关**）） | 回退 `sentence_boundary.split_by`（受控 SSOT，**逐字节对等**，零依赖） |
-| `paradedb` | **按需节点**（无独立链步骤；由 `pg:health` 披露、业务按需调用） | 阶段4 | 向量+BM25 混合检索（**已被 pgvector 替代**，可选外部后端） | **服务未部署** | 不适用（按需节点：无独立链步骤，由 `pg:health` 披露） | 使用 pgvector / sqlite_vec（**不建议随仓分发**：AGPL-3.0） |
-| `pgvector` | `semantic:search` | 阶段6.85 | **向量检索**后端（P2-2；`vec` schema，最小权限角色） | 就绪（依赖可用；无需外部权重） | **已接线**（env `PGVECTOR_DSN` 配置 + 嵌入链就绪（缺一即 rc0 降级披露）） | 降级 `sqlite_vec`（同库同源）→ 再退 SQLite FTS5 全文 |
+| `hanlp` | `relations:gen` | 阶段2 | 条文分句（P1-3 二选一后端之一；`split_sentences` 的 `prefer` **默认 `ltp`**） | 未装 | **已接线**（ML 分句**默认关闭**（`REG_ORCH_SEMANTIC_SPLIT=1` 才开）—— 改分句口径会改变条文/关系产物，须先在**可评样本**上量出 P/R（v2 纪律：无度量不上线）） | 用 `ltp`（默认）；两者皆不可用即回退确定性 `sentence_boundary.split_by` |
+| `hdbscan` | `classify:all` | 阶段2 | bertopic 的聚类依赖（**不单独使用**，无权重） | 未装 | 未接线（执行门面已就绪，待业务节点接入） | 随 bertopic 一并跳过 |
+| `ltp` | `clauses` | 阶段1 | 条文**分句增强**（分词锚切句；LTP 4.x 无原生分句 API，`basis_split=ltp_cws`） | 未装 | **已接线**（`REG_ORCH_SEMANTIC_SPLIT=1`（**默认关**）） | 回退 `sentence_boundary.split_by`（受控 SSOT，**逐字节对等**，零依赖） |
+| `paradedb` | **按需节点**（无独立链步骤；由 `pg:health` 披露、业务按需调用） | 阶段4 | 向量+BM25 混合检索（**已被 pgvector 替代**，可选外部后端） | 未装（可选外部后端） | 不适用（按需节点：无独立链步骤，由 `pg:health` 披露） | 使用 pgvector / sqlite_vec（**不建议随仓分发**：AGPL-3.0） |
+| `pgvector` | `semantic:search` | 阶段6.85 | **向量检索**后端（P2-2；`vec` schema，最小权限角色） | 未装 | **已接线**（env `PGVECTOR_DSN` 配置 + 嵌入链就绪（缺一即 rc0 降级披露）） | 降级 `sqlite_vec`（同库同源）→ 再退 SQLite FTS5 全文 |
 | `signalgraph` | `relations:gen` | 阶段2 | **零 Token 确定性图构建**（P3-2） | 未装 | 未接线（执行门面已就绪，待业务节点接入） | 回退关系三元组 → 既有图构件 |
-| `sqlite_vec` | **按需节点**（无独立链步骤；由 `pg:health` 披露、业务按需调用） | 阶段4 | 向量检索**降级后端**（与既有 SQLite FTS5 同库同源） | 就绪（依赖可用；无需外部权重） | 不适用（按需节点：无独立链步骤，由 `pg:health` 披露） | 回退 SQLite FTS5 全文检索（零服务依赖） |
+| `sqlite_vec` | **按需节点**（无独立链步骤；由 `pg:health` 披露、业务按需调用） | 阶段4 | 向量检索**降级后端**（与既有 SQLite FTS5 同库同源） | 未装（可选外部后端） | 不适用（按需节点：无独立链步骤，由 `pg:health` 披露） | 回退 SQLite FTS5 全文检索（零服务依赖） |
 | `text2vec` | `semantic:assist` | 阶段2 | 嵌入**降级备选**（768 维，与 bge 同维等价备份） | 就绪（依赖 + 权重实检通过） | **已接线**（`usage_policy.enabled=true`（配置开关）） | 优先 `bge_base_zh`（全量）/`youtu_embedding`（增量）；再退关键词规则 |
-| `umap` | `classify:all` | 阶段2 | bertopic 的降维依赖（**不单独使用**，无权重） | 就绪（依赖可用；无需外部权重） | 未接线（执行门面已就绪，待业务节点接入） | 随 bertopic 一并跳过 |
+| `umap` | `classify:all` | 阶段2 | bertopic 的降维依赖（**不单独使用**，无权重） | 未装 | 未接线（执行门面已就绪，待业务节点接入） | 随 bertopic 一并跳过 |
 | `weknora_docreader` | `docreader:extract` | 阶段2 | 文档**版面分析 + 段落级定位**（25+ 格式渲染；补正文抽取的**定位增量**） | 就绪（依赖 + 权重实检通过） | **已接线**（`docreader_bridge.self_test()` 通过（venv 解释器实跑；不可用则显式 SKIP）） | 回退 `crawler_common.extract_document_text`（既有 6 态，**仍是事实源**） |
 | `youtu_embedding` | `semantic:assist` | 阶段2 | **增量/指定场景嵌入**（`mode=incremental` 首选；2B/2048 维） | 就绪（依赖 + 权重实检通过） | **已接线**（`usage_policy.enabled=true` + `--mode incremental`） | 降级 `bge_base_zh` → `text2vec`；再退关键词/规则判定 |
 | `youtu_embedding@relations`（`@`：同工具的第二用途） | `relations:gen` | 阶段2 | **关联语义档**（P1-2：依据/废止关系的语义近似判定） | 就绪（依赖 + 权重实检通过） | 未接线（执行门面已就绪，待业务节点接入） | 降级 `bge_base_zh` → `text2vec`；再退正则关系抽取 |
 
-合计 **16** 个模型节点（**已接线 0** ／ **已接线·默认关 7** ／ **未接线 6** ／ **未就绪 3**）—— 均已入图（§8.1）。
+合计 **16** 个模型节点（**已接线 0** ／ **已接线·默认关 4** ／ **未接线 2** ／ **未就绪 10**）—— 均已入图（§8.1）。
 
 #### 8.3.1 ⚠️ 未就绪环节（**依赖或权重缺失，单独标记**）
 
@@ -673,9 +673,16 @@ flowchart TD
 
 | 工具 | 挂接节点 | 方案项 | 就绪度 | 处置 |
 |---|---|---|---|---|
+| `bertopic` | `classify:all` | v2 P1-5（主题内子簇语义化，可选） | 未装 | 按清单 `pypi`/`extra` 安装依赖（`pip install -e ".[semantic]"`） |
 | `deepke` | `relations:gen` | v2 P3-1（原 aprcoie 位；N-176：aprcoie 不再保留为降级方案） | **权重不可得**（框架/依赖就位，微调权重本环境未获得） | 在**可达环境**下载权重后**迁入** `external/models/`（清单以 `local_dir` 声明，`probe` **实检目录**）；`HF_HOME`/`HANLP_HOME` 为可选覆盖 |
-| `paradedb` | **按需节点**（无独立链步骤；由 `pg:health` 披露、业务按需调用） | v2 P2-2（**须先做零服务替代评估**；且须同时覆盖 search_internal） | **服务未部署** | 在**可达环境**下载权重后**迁入** `external/models/`（清单以 `local_dir` 声明，`probe` **实检目录**）；`HF_HOME`/`HANLP_HOME` 为可选覆盖 |
+| `hanlp` | `relations:gen` | v2 P1-3（分句/结构增强层） | 未装 | 按清单 `pypi`/`extra` 安装依赖（`pip install -e ".[semantic]"`） |
+| `hdbscan` | `classify:all` | v2 P1-5（随 BERTopic） | 未装 | 按清单 `pypi`/`extra` 安装依赖（`pip install -e ".[semantic]"`） |
+| `ltp` | `clauses` | v2 P1-3（分句/结构增强层） | 未装 | 按清单 `pypi`/`extra` 安装依赖（`pip install -e ".[semantic]"`） |
+| `paradedb` | **按需节点**（无独立链步骤；由 `pg:health` 披露、业务按需调用） | v2 P2-2（**须先做零服务替代评估**；且须同时覆盖 search_internal） | 未装（可选外部后端） | 按清单 `pypi`/`extra` 安装依赖（`pip install -e ".[semantic]"`） |
+| `pgvector` | `semantic:search` | v2 P2-2（检索语义化；替换 ParadeDB） | 未装 | 按清单 `pypi`/`extra` 安装依赖（`pip install -e ".[semantic]"`） |
 | `signalgraph` | `relations:gen` | v2 P3-2（可选；须先证明其**确定性**：同输入同输出） | 未装 | 按清单 `pypi`/`extra` 安装依赖（`pip install -e ".[semantic]"`） |
+| `sqlite_vec` | **按需节点**（无独立链步骤；由 `pg:health` 披露、业务按需调用） | v2 P2-2（检索语义化；与 SQLite FTS5 **同库共存**） | 未装（可选外部后端） | 按清单 `pypi`/`extra` 安装依赖（`pip install -e ".[semantic]"`） |
+| `umap` | `classify:all` | v2 P1-5（随 BERTopic，不单独使用） | 未装 | 按清单 `pypi`/`extra` 安装依赖（`pip install -e ".[semantic]"`） |
 
 - **受影响的链路环节**：`semantic:preflight` 的 `offline` 闸（**只对「已接线/已装」的后端**按**职责分组**判定：嵌入三选一、分句二选一——**不是**要求全部就绪）。
 - **不受影响**：主链（采集→清洗→条文→关系→报告→门禁）**不依赖任何模型权重**，全部走确定性正则/规则路径；本表全部模型均为**可选叠加**，缺失即按「降级措施」列回退。
@@ -721,6 +728,7 @@ flowchart TD
 显式 `model="…"` **覆盖 mode**（优先级最高）；分句增强由 env `REG_ORCH_SEMANTIC_SPLIT=1` 控制（**默认关**，见 §8.6 第 2 条）。
 
 <!-- END GENERATED: 全链数据流总图 -->
+
 
 
 
