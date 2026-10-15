@@ -49,6 +49,10 @@ schedule:
     - worklist_aged
     - doctor_fail
     - degraded_step
+    # W5（§13.3）：与 NOTIFY_EVENTS 同步扩展（SLI/SLO 与质量两个事件，
+    # 发送点分别是 tools/check_slo.py 与 tools/gen_quality_metrics.py）。
+    - slo_breach
+    - quality_regression
 
 # 触发项策略（与 `config/triggers.yaml` 一致）
 triggers:

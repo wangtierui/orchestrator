@@ -616,6 +616,56 @@ def _check_modules_manifest() -> tuple[list[str], dict, list[str]]:
 
 
 # --------------------------------------------------------------------------- #
+# J10. README 门禁计数 ≡ ALL_GATES（W5，2026-10-15）
+#
+# 背景：`gates/__init__.py` 的纪律写明「门禁**数量以 ALL_GATES 为准，禁止文本写死**」，
+# 但 README 有 8 处手写「29 道门禁」且**无任何机器校验** ⇒ 每新增一道门禁都要人肉同步，
+# 漏改即文档漂移（读者按过期数字判断覆盖率）。本判据把「文档声明数」与「注册表长度」
+# 双向对齐：文档里出现的 `N 道门禁` 必须等于 len(ALL_GATES)。
+# 实现形态用零转义原语构造（正则在本仓编辑链路上会被二次转义，见 W4 教训）。
+# --------------------------------------------------------------------------- #
+_README = os.path.join(ROOT, "README.md")
+
+
+def _check_readme_gate_count() -> tuple[list[str], dict]:
+    """J10：README 中所有「N 道门禁」声明 ≡ len(ALL_GATES)。"""
+    problems: list[str] = []
+    detail: dict = {}
+    if not os.path.exists(_README):
+        return ["J10: 缺少 README.md"], detail
+    from gates import ALL_GATES
+
+    n = len(ALL_GATES)
+    detail["all_gates"] = n
+    text = open(_README, encoding="utf-8", errors="replace").read()
+    found: dict[int, int] = {}
+    marker = "道门禁"
+    for ln in text.splitlines():
+        # 归一化：去掉 markdown 粗体/反引号与空白，使 `**29 道**门禁` ≡ `29道门禁`
+        norm = ln.replace("*", "").replace("`", "").replace(" ", "")
+        pos = 0
+        while True:
+            i = norm.find(marker, pos)
+            if i < 0:
+                break
+            j = i
+            while j > 0 and norm[j - 1].isdigit():
+                j -= 1
+            if j < i:
+                found[int(norm[j:i])] = found.get(int(norm[j:i]), 0) + 1
+            pos = i + len(marker)
+    detail["readme_counts"] = dict(sorted(found.items()))
+    wrong = sorted(k for k in found if k != n)
+    if wrong:
+        problems.append(
+            f"J10: README 声明的门禁数 {wrong} ≠ ALL_GATES 实际 {n} 道"
+            "（新增/删除门禁后须同步 README；或改用不写死数字的表述）")
+    if not found:
+        detail["note"] = "README 未出现「N 道门禁」表述（可接受：不写死数字）"
+    return problems, detail
+
+
+# --------------------------------------------------------------------------- #
 # S. 调度事实源一致性（v2 §3.9 / §3.13.6，P2-2）
 #    背景（v2 §3.13.1 M3）：手册定时表为**手抄**，与实测调度记录二义（01:00 vs 01:30、
 #    06:30 vs 06:00–06:37）。现 `config/schedule.yaml` 为唯一源、手册由工具反向生成，

@@ -91,6 +91,9 @@ _p.log
 # ===== reports 保留但忽略临时产物 =====
 reports/_tmp/
 _tmp_smoke/
+# W5（§13.4）：灾备演练的**恢复副本**（governance_restore.db ~30MB）——演练证据在
+# `data/run_state/dr_drill_log.jsonl`（入库），副本本身是可再生产物，不入库。
+reports/_dr/
 
 # ===== 发布件（Base Contract v1：JSONL/SQLite 为派生数据，`orchestrator base publish` 可重建；不入库）=====
 **/published/

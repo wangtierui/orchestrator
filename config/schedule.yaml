@@ -115,6 +115,19 @@ jobs:
 notify:
   # 无人值守的必要件（v2 §3.13.6）：现状编排器只有 run_log 与 stdout，失败无人知晓。
   kind: file            # none | file | webhook
-  "on": [failed_step, gate_fail, worklist_aged, doctor_fail, degraded_step]
+  # W5（§13.3）：新增两个 SLI/质量事件（受控域 NOTIFY_EVENTS 同步扩展，门禁 S3 双向守护）：
+  #   · slo_breach —— SLI 连续 2 个周期低于 SLO（链成功率/数据新鲜度），由 tools/check_slo.py 判定
+  #   · quality_regression —— DAMA 六维任一维环比劣化 >10%，由 tools/gen_quality_metrics.py 判定
+  "on": [failed_step, gate_fail, worklist_aged, doctor_fail, degraded_step,
+         slo_breach, quality_regression]
   file_dir: reports/_alerts     # 入库可审计（reports 已在门禁排除集，不新增盲区）
   # webhook 为可选：URL 只从环境变量 `REG_ORCH_NOTIFY_WEBHOOK` 读取，**禁止入库**
+  # SLI/SLO 定义（唯一事实源 = ADR-0012；本段仅为**声明**，阈值改动须走 ADR）：
+  #   sli_chain_success_rate  : 最近 N=7 次运行中 failed=0 的占比，  SLO ≥ 98%（月）
+  #   sli_data_freshness      : 关键产物水位 age ≤ 族阈值的占比，   SLO ≥ 95%
+  #   sli_gate_pass_rate      : 最近 N 次 gates 全绿占比 + 逐道通过率，SLO = 100%（准入门，非渐进）
+  # 错误预算 = 1 − SLO；预算耗尽 → 冻结非必需变更（单人团队由用户裁决，ADR-0012 §错误预算规则）
+  sli:
+    sli_chain_success_rate: {window: 7, slo: 0.98, source: "run_log/run_step"}
+    sli_data_freshness: {window: 7, slo: 0.95, source: "watermark.produced_at"}
+    sli_gate_pass_rate: {window: 7, slo: 1.0, source: "gate_result"}

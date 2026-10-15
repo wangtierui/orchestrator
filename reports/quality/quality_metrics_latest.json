@@ -1,0 +1,137 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-10-15T15:39:01+08:00",
+  "weights": {
+    "completeness": 1.0,
+    "uniqueness": 1.0,
+    "timeliness": 1.0,
+    "validity": 1.0,
+    "accuracy": 1.0,
+    "consistency": 1.0
+  },
+  "dimensions": {
+    "completeness": {
+      "score": 100.0,
+      "metrics": {
+        "index_total_files": 1340,
+        "index_entries": 0,
+        "watermarks": 28,
+        "watermark_by_kind": {
+          "analysis": 1,
+          "classify": 1,
+          "clauses": 5,
+          "clean_index": 1,
+          "cleaned": 5,
+          "internal_index": 1,
+          "merged_view": 1,
+          "published": 2,
+          "raw": 5,
+          "reconcile": 1,
+          "relations_index": 1,
+          "reports": 1,
+          "rfn_attr": 1,
+          "rfn_theme": 1,
+          "timeliness": 1
+        },
+        "kinds_present": [
+          "clauses",
+          "cleaned",
+          "published",
+          "raw"
+        ]
+      },
+      "source": "corpus 索引 + watermark 表"
+    },
+    "uniqueness": {
+      "score": 100.0,
+      "metrics": {
+        "documents": 2023,
+        "unique_doc_refs": 2023,
+        "duplicate_doc_ref_groups": 0,
+        "unique_docnos_disclosure": 1535,
+        "note": "唯一性口径 = doc_ref 主键唯一率；docno 跨源重复仅披露"
+      },
+      "source": "document 表 + gate_result"
+    },
+    "timeliness": {
+      "score": 100.0,
+      "metrics": {
+        "tracked": 17,
+        "untracked_keys": [
+          "analysis:manifest",
+          "classify:products",
+          "clean_index",
+          "internal_index",
+          "merged_view",
+          "reconcile:drift",
+          "relations_index",
+          "reports:classifier",
+          "rfn_attr",
+          "rfn_theme",
+          "timeliness:state"
+        ],
+        "age_days": {
+          "clauses:gov": 0.02,
+          "clauses:mof": 0.02,
+          "clauses:nfra": 0.02,
+          "clauses:pbc": 0.02,
+          "clauses:supp": 0.02,
+          "cleaned:gov": 0.02,
+          "cleaned:mof": 0.02,
+          "cleaned:nfra": 0.02,
+          "cleaned:pbc": 0.02,
+          "cleaned:supp": 0.02,
+          "published:external": 0.02,
+          "published:internal": 0.02,
+          "raw:gov": 0.02,
+          "raw:mof": 0.02,
+          "raw:nfra": 0.02,
+          "raw:pbc": 0.02,
+          "raw:supp": 0.02
+        },
+        "thresholds": {
+          "raw:{src}": 7,
+          "cleaned:{src}": 10,
+          "clauses:{src}": 30,
+          "published:external": 30
+        },
+        "note": "age 以 watermark.produced_at 计；阈值按产物族分档"
+      },
+      "source": "watermark 表 produced_at"
+    },
+    "validity": {
+      "score": 98.21,
+      "metrics": {
+        "quarantine_files": 0,
+        "documents": 2023,
+        "gate_runs_recorded": 1062,
+        "gate_failed_records": 19,
+        "note": "隔离率按 quarantine 文件数单列；综合分取门禁记录通过率"
+      },
+      "source": "quarantine 目录 + gate_result"
+    },
+    "accuracy": {
+      "score": 95.55,
+      "metrics": {
+        "required_fields": [
+          "docno_norm",
+          "title",
+          "source"
+        ],
+        "missing_cells": 270,
+        "documents": 2023
+      },
+      "source": "document 表必填字段"
+    },
+    "consistency": {
+      "score": 99.26,
+      "metrics": {
+        "sampled_records": 136,
+        "passed": 135
+      },
+      "source": "gate_result（一致性族）"
+    }
+  },
+  "health_score": 98.84,
+  "health_note": "**均权平均**（初始权重，ADR-0012 可调）；缺失维度**不计入分母**（不以 0 充数）"
+}

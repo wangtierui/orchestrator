@@ -199,7 +199,9 @@ def upsert(table: str, rows: list) -> int:
             for doc_id, vec in rows:
                 cur.execute(
                     f"INSERT INTO {SCHEMA}.{t}(doc_id, emb) VALUES (%s, %s::vector) "
-                    f"ON CONFLICT (doc_id) DO UPDATE SET emb = EXCLUDED.emb;",
+                    # 非 f-string：末段无插值（历史误加 f 前缀，触发 bandit B608 误报）；
+                    # 值一律占位符绑定，schema/表名经 _check_name 白名单校验。
+                    "ON CONFLICT (doc_id) DO UPDATE SET emb = EXCLUDED.emb;",
                     (str(doc_id), _vec_literal(vec)),
                 )
             c.commit()

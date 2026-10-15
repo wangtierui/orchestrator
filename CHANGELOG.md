@@ -1,5 +1,103 @@
 # Changelog
 
+## [Unreleased] 2026-10-15 — W5 第二批：SLI/SLO + DAMA 六维质量 + 灾备演练 + ADR-0012（第七十三批）
+
+> 方案 §13.3（可观测性 P1）、§13.4（灾备 P0）、§13.5（数据质量 P0）、§13.12（明确不做清单）。
+> 三件度量工具 + 两个新告警事件 + 首次灾备演练；门禁 30 道全绿、用例 817+ 全绿。
+
+### SLI/SLO 与错误预算（§13.3）
+- `tools/check_slo.py`：三 SLI 全部取自治理库既有台账（不新造检测逻辑）——
+  `sli_chain_success_rate`（最近 7 次运行 failed=0 占比，SLO ≥98%）/
+  `sli_data_freshness`（关键族水位 age ≤ 阈值占比，SLO ≥95%）/
+  `sli_gate_pass_rate`（最近 7 轮 gates 全绿占比，SLO = 100%，准入门非渐进）。
+- 阈值唯一事实源 = `config/schedule.yaml` 的 `notify.sli` 段；快照入
+  `data/run_state/slo_history.jsonl`（趋势可查）。**连续 2 个周期**低于 SLO ⇒ 发
+  `slo_breach`（防单点抖动误报）。首跑：三 SLI 均 100%，错误预算余额 2.00pp。
+- 事件 `slo_breach` 已登记入 `NOTIFY_EVENTS` + `notify.on` + `integrity_policy.notify_on`
+  三处（门禁 S3/E2 双向守护：声明必须有发送方、策略与受控域不得漂移）。
+
+### DAMA 六维 + 健康度评分（§13.5）
+- `tools/gen_quality_metrics.py` → `reports/quality/`：完备性/唯一性/及时性/有效性/准确性/
+  一致性六维，**全部指标取自既有机器判据输出**（corpus 索引、watermark、gate_result、
+  document 表、quarantine 区）。**缺失维度不计入分母**——不以 0 充数，否则数据源一断
+  评分就变成谎言。首跑：健康度 **98.84**（六维全部可用）。
+- 两处口径陷阱（实测修正，勿回退）：① `FRESH_DAYS` 键是模板 `raw:{src}`，真实水位键是
+  `raw:gov` ⇒ 必须按**族前缀**匹配（精确匹配只命中 1 条水位，及时性成假高分）；
+  ② 唯一性**不能用 `docno_norm` 判重**——同文号多源转载是业务常态，按文号判重把正常
+  数据误报为质量问题（实测假低分 75.88）；唯一性 = `doc_ref` 主键唯一率。
+- 任一维环比劣化 >10% ⇒ `quality_regression`（发送点在本工具，门禁 E2 要求）。
+- **评分只披露不阻断**：质量是渐变指标，用它当准入门会把夜间批处理挡在门外。
+
+### 灾备演练（§13.4）
+- `tools/dr_drill.py`：治理库与 raw 各一次「恢复 → 服务验证 → 全程计时」，记录落
+  `data/run_state/dr_drill_log.jsonl`（含 `rto_target_h` 与 **honesty 字段**：本地演练
+  验证的是**恢复路径可行性**与实操耗时，不等价于灾难现场 RTO 达标证明）。
+- 首跑实测抓到两处自我欺骗：① 治理库校验原本读的是**生产库**（未验证恢复副本）→
+  改用 `REG_ORCH_GOVERNANCE_DB` 注入并 reload，台账记 `api_is_restore_copy: true`；
+  ② raw 演练原本把 **480MB** 产物复制进 `reports/_dr/`（演练自身成了仓库负担）→ 改为
+  **原地只读**校验 + 备份源优先（无备份时显式标 `source_kind: working_copy`，不谎称验过备份）。
+
+### ADR 与纪律
+- **ADR-0012 入库**（`docs/adr/0012-SLI-SLO与灾备.md`）：SLI/SLO 定义与阈值、错误预算规则
+  （预算耗尽 → **建议**冻结非必需变更，裁决权在人）、RTO/RPO 分级表（对齐 §6.3.4 产物分级）、
+  季度演练制度、六维口径陷阱、**明确不做清单**（OpenTelemetry/atheris/TaskGroup/全仓变异
+  测试/uv-poetry/文档门户/质量评分自动阻断——各带复发条件）。
+- 三个新工具按**引导纪律**实现：`from bootstrap import bootstrap`（不自写 `sys.path.insert`
+  ——门禁 `gate_import_bootstrap` 判据「tools/ 注入数只减不增」当场拦下），运行方式为模块方式。
+- 手册定时表随 `notify.sli` 段变更同步（`python -m tools.gen_schedule_doc`；S4 判据发现漂移）。
+
+### 验证
+817 passed / 2 skipped、**30 道门禁 PASS**、ruff 0、mypy 0、bandit 0 问题。
+
+## [Unreleased] 2026-10-15 — W5 首批：供应链安全（锁/CVE/SBOM/登记簿）+ 新门禁 + J10（第七十二批）
+
+> 方案 §13.2 依赖管理与供应链安全（P0）+ §9.2 的 pip-audit/bandit 接线；ADR-0011 入库。
+> 门禁 29 → **30**（新增 `gate_dependency_audit`）；新增判据 J10（README 门禁计数 ≡ ALL_GATES）。
+
+### 依赖治理四件套
+- **`requirements.lock` 入库**（115 条）：`tools/gen_lock.py` 从 `pip freeze --all` 生成、
+  稳定排序（可评审）、剔除本地路径/VCS 直连；`--check` 供门禁 D1 与 CI 作业。
+  **锁强制纯 ASCII**——第三方工具（pip-audit）以 **locale 编码**读 requirements 文件，
+  含 CJK 的锁在 GBK/cp936 下直接 `UnicodeDecodeError`（rc=1 且**零行输出**：若不察会被
+  误读成"扫描通过、无漏洞"，**比不扫更坏的失效模式**）。
+- **漏洞扫描**（门禁 D4）：`pip-audit -r requirements.lock`，high/critical **零容忍**、
+  medium 披露；工具缺失或网络不可达 ⇒ **SKIP 披露而非 FAIL**（不把网络故障误报成供应链
+  问题）。首跑结论：**115 包零漏洞**。
+- **SBOM**（门禁 D5）：**裁定改由 lock 直生 CycloneDX 1.5**（`tools/gen_sbom.py`）——
+  syft 未安装、需外部二进制、且会扫全盘（含 `external/` 的 13GB 权重与 venv），而依赖
+  证据的权威来源就是锁；lock 直生可离线可复现，SBOM↔lock 用 sha256 断言。
+- **直接依赖登记簿** `config/dependency_policy.yaml`（门禁 D3 双向断言）：每个直接依赖
+  绑定 ADR 编号或 why。**首建即查出 3 个影子依赖**——`pytest-timeout`（pytest 入口
+  `--timeout=900`）、`bandit`、`pip-audit` 长期在用却从未声明（换机即失配、审计无从下手）；
+  已补进 `pyproject` dev extra 并重新冻结 lock。非 pip 安装的语义工具（DeepKE/SignalGraph/
+  docreader/ParadeDB）单列 `non_pip` 记录"为何不在依赖里"。
+
+### SAST（bandit）分层：真问题修、良性类带理由跳过
+- 首跑 444 项里绝大多数是噪音，但**挖出两个真问题**：
+  ① 编排器以裸 `python` 自重启（PATH 可能先命中另一解释器 ⇒ 台账命令与真实运行体不一致）
+  → 改 `sys.executable`，并加**门禁 D7**（AST 断言：子进程 argv 可执行位不得是裸
+  `python`/`py`）机器守护，防止回潮；
+  ② `vector_store` 的 SQL 串带**无插值 f 前缀** → 去掉 f 前缀。
+- 逐处核实后做**类级跳过**（每条附理由 + **复发条件**）：B101/B102/B103/B105/B110/B112/
+  B314/B310/B311/B324/B404/B405/B406/B603/B607/B608。未列出的检查项保持阻断。
+- **`trust_remote_code`（B615）受控风险**：自定义模型架构（Youtu UTUConfig）必需，但会执行
+  模型目录内的建模代码 ⇒ 风险面收敛三条并写死复发条件（本地已审核目录 + `local_files_only`
+  + manifest 登记许可状态）；改为直接 Hub 加载即失效并须改为阻断。
+- 实测坑：`[tool.bandit] exclude` **不被 bandit 解析**（只认 `skips`）——排除项的权威落点
+  是命令行 `--exclude`（已写入 ci_check），配置里明确标注"不视为生效配置"。
+
+### 新门禁与新判据
+- **`gates/gate_dependency_audit.py`（第 30 道）**：判据 D1 锁与环境一致 / D2 依赖可解析 /
+  D3 无影子依赖（双向）/ D4 CVE 扫描（分级）/ D5 SBOM 同步 / D6 锁的卫生 / D7 解释器路径。
+- **判据 J10**（`gate_config_integrity`）：README 里所有「N 道门禁」声明 ≡ `len(ALL_GATES)`
+  ——此前 8 处手写「29 道」且**无任何机器校验**，漏改即文档漂移。
+- `ci_check` 新增三作业：`lock` / `sbom` / `bandit`（工具缺失自报跳过，不产生假红）。
+- 新增测试 `tests/test_dependency_audit_gate.py` 9 项（D3 双向/缺 why、D7 正负例、
+  SBOM 同步、锁 ASCII、真实仓全绿）。
+
+### 验证
+808+ 用例全绿（本批 +9）、**30 道门禁 PASS**、ruff 0、mypy 0、bandit 0 问题 0 告警。
+
 ## [Unreleased] 2026-10-15 — W4 L1：collectors 按源建子包（源内四分层）（第七十一批）
 
 > 方案 §7.9.2 L1：`modules/regulatory_scrapers/collectors/` 由「单层拍平 + 源前缀命名」

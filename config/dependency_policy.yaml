@@ -1,0 +1,142 @@
+# config/dependency_policy.yaml — **直接依赖登记簿**（方案 §13.2-5；ADR-0011）
+#
+# 为什么需要（防影子依赖）：`pyproject.toml` 的 `dependencies` 只声明「装什么」，
+# 不回答「为什么装、谁批准」——任何人 `pip install X` 再加一行就进来了，评审无从下手。
+# 本文件把每个**直接依赖**与「ADR 编号 或 显式豁免理由」绑定，门禁
+# `gate_dependency_audit` 判据 D3 做双向断言：
+#   · pyproject 里有、这里没有  → 影子依赖（FAIL）
+#   · 这里有、pyproject 里没有  → 死登记（FAIL）
+#   · 登记项缺 why/adr 且无豁免 → FAIL
+#
+# 纪律：新增直接依赖 = 本文件加一行（含 ADR 或豁免理由）+ pyproject 加一行 + 重新生成
+# `requirements.lock` 与 SBOM，三者同一 PR；禁止「先装再说」。
+#
+# 首建实证（2026-10-15，第七十二批）：本文件第一次与 pyproject 双向对账即查出
+# **3 个影子依赖**——`pytest-timeout`/`bandit`/`pip-audit` 长期在用（pytest 入口
+# `--timeout=900`、ci_check 计划）却从未声明。已补进 pyproject dev extra 并重新冻结 lock。
+schema_version: "1.0"
+
+# ---- 核心直接依赖（pyproject [project].dependencies）----
+core:
+  requests:
+    why: 五源 HTTP 抓取（会话/重试/UA 轮换统一走 std_lib.scraper_std.http）
+    adr: ADR-0004
+  beautifulsoup4:
+    why: HTML 解析（详情页/列表页正文抽取）
+    adr: ADR-0004
+  PyYAML:
+    why: 全部配置事实源（schedule/triggers/sources/ocr）解析
+    adr: ADR-0002
+  lxml:
+    why: lxml.html 解析路径（BeautifulSoup 的解析器后端，性能与容错）
+    adr: ADR-0004
+  numpy:
+    why: 语义向量/聚类与表格算子（clean 统计与 classifier）
+    adr: ADR-0011
+  pytesseract:
+    why: 扫描件 OCR 兜底（附件抽取链声明的核心能力）
+    adr: ADR-0004
+  openpyxl:
+    why: xlsx 附件抽取与公文表格恢复
+    adr: ADR-0004
+  xlrd:
+    why: 旧版 xls 附件抽取（xlrd 2.x 仅支持 xls）
+    adr: ADR-0004
+  python-docx:
+    why: docx 附件/正文抽取（优于 PDF 载体，见项目记忆「载体选择纪律」）
+    adr: ADR-0004
+  pypdf:
+    why: PDF 文本层抽取（一级载体）
+    adr: ADR-0004
+  pdfplumber:
+    why: PDF 表格/版式抽取（pypdf 的补充路径）
+    adr: ADR-0004
+  chardet:
+    why: 编码嗅探（旧站 GBK/UTF-8 混杂）
+    adr: ADR-0004
+  Pillow:
+    why: 图像预处理（OCR 前处理、附件缩略图）
+    adr: ADR-0004
+  urllib3:
+    why: 连接池与重试策略（requests 底座，显式 pin 防隐式升级）
+    adr: ADR-0004
+  PyMuPDF:
+    why: PDF 文号/名称抽取首选（抽取顺序 pymupdf→pypdf→pdfplumber）；<2 上限为许可边界
+    adr: ADR-0004
+
+# ---- 可选栈直接依赖（pyproject [project.optional-dependencies]）----
+# 缺失不阻断（doctor 分级 SKIP；门禁只校验**登记完整性**，不校验已装）
+optional:
+  dev:
+    pytest:
+      why: 测试框架（contract/data 双标记分层）
+      adr: ADR-0011
+    coverage:
+      why: 覆盖率（pyproject fail_under 门槛）
+      adr: ADR-0011
+    ruff:
+      why: lint（行宽/导入/现代化规则集，CI 阻断项）
+      adr: ADR-0011
+    mypy:
+      why: 类型基线（0 error 为 CI 阻断项；1.x 锁定理由见 pyproject 注释）
+      adr: ADR-0011
+    types-PyYAML:
+      why: PyYAML 存根（mypy 全仓 0 error 的前置）
+      adr: ADR-0011
+    pytest-timeout:
+      why: 单测超时护栏（pytest 入口 --timeout=900，防挂死掩盖失败）
+      adr: ADR-0011
+    bandit:
+      why: SAST 代码坏味扫描（ci_check 作业，方案 §9.2）
+      adr: ADR-0011
+    pip-audit:
+      why: 依赖漏洞扫描（ci_check 作业 + 门禁判据 D4；high/critical 零容忍）
+      adr: ADR-0011
+  ocr:
+    paddleocr:
+      why: PaddleOCR 主栈（附件扫描件 OCR；锁主版本 <4）
+      adr: ADR-0004
+    paddlex:
+      why: PaddleX 推理底座（paddleocr 的依赖与配置体系）
+      adr: ADR-0004
+  semantic:
+    sentence-transformers:
+      why: 嵌入模型加载（semantic_models 直用；缺之即「装了等于没装」）
+      adr: ADR-0011
+    transformers:
+      why: 模型/tokenizer 底座（sentence-transformers 的上游）
+      adr: ADR-0011
+    torch:
+      why: 张量算子底座（嵌入与聚类的运行期硬用）
+      adr: ADR-0011
+    bertopic:
+      why: 主题发现（classify 可选节点；内含 sklearn HDBSCAN 故不另声明 hdbscan）
+      adr: ADR-0011
+    umap-learn:
+      why: 降维（聚类/确认台可视化可选节点）
+      adr: ADR-0011
+    text2vec:
+      why: 中文嵌入备选门面（与 sentence-transformers 二选一，按 manifest 选路）
+      adr: ADR-0011
+    ltp:
+      why: 中文分词/句法（clauses 可选节点；与 hanlp 二选一）
+      adr: ADR-0011
+    hanlp:
+      why: 中文 NLP 多任务（relations 可选节点；与 ltp 二选一）
+      adr: ADR-0011
+
+# ---- 非 pip 安装的语义工具（**刻意不进 extra**，登记以便审计可见）----
+# 依据 pyproject 注释「未列入本 extra 的工具（非 pip 安装，须人工/Docker 部署）」：
+#   DeepKE（源码树 + 独立 venv，N-176 起替代 aprcoie）、SignalGraph（源码库）、
+#   WeKnora docreader（gRPC 服务）、ParadeDB（PostgreSQL 扩展 + Docker）。
+# 它们由 `config/schema/semantic_tools.json` 统一登记（来源/用途/体积/离线性）并由 doctor
+# 分级披露；此处只做「为何不在 Python 依赖里」的显式记录（审计可追溯，不进 lock）。
+non_pip:
+  DeepKE: {kind: 源码树 + 独立 venv, why: 与主栈 requirements 冲突；框架内自产权重不可得}
+  SignalGraph: {kind: 源码库, why: 无 PyPI 分发；须人工部署}
+  weknora_docreader: {kind: gRPC 服务, why: 服务形态而非库；由 Node 侧托管}
+  ParadeDB: {kind: PostgreSQL 扩展 + Docker, why: pgvector 底座；容器化部署}
+
+# ---- 显式豁免（有意不登记 ADR 的依赖，须写清理由）----
+exemptions: {}
+  # 未来豁免格式：<包名>: {note: "<理由>"}

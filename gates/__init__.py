@@ -162,6 +162,14 @@ ALL_GATES: list[dict] = [
         "desc": "落地执行检视契约（规则表/登记/差距闭合/受控域）",
         "require_impl": True,
     },
+    {
+        # 供应链安全（方案 §13.2；ADR-0011）：锁存在且与环境一致 / 直接依赖无影子
+        # （policy 双向断言）/ pip-audit 漏洞（high·critical 零容忍，工具或网络缺失
+        # 按 SKIP 披露而非误报）/ SBOM 与 lock 的 sha256 同步 / 子进程解释器路径。
+        "module": "gates.gate_dependency_audit",
+        "desc": "依赖治理与供应链安全（锁/影子依赖/CVE/SBOM/解释器路径）",
+        "require_impl": True,
+    },
 ]
 
 

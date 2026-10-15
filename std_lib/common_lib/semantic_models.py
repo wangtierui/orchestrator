@@ -228,12 +228,24 @@ def _pooling_mode(path: str) -> dict:
 
 
 def _load_embedder_transformers(name: str, path: str) -> _Embedder:
-    """裸 transformers + **按声明池化**（自定义建模代码模型必走此路，如 Youtu-Embedding）。"""
+    """裸 transformers + **按声明池化**（自定义建模代码模型必走此路，如 Youtu-Embedding）。
+
+    ⚠️ `trust_remote_code=True` 的**受控风险**（ADR-0011 供应链裁定，bandit B615）：
+    该参数会**执行模型目录内的 Python 建模代码**（自定义架构如 UTUConfig 的必需项）。
+    风险面收敛到三条并逐条守住：
+      ① `local_files_only=True` + `path` 为**本地已审核目录**（`external/models/`，
+         权重经 §7.10 离线迁入通道）——不存在「运行时从 HF Hub 拉取并执行代码」的面；
+      ② 模型来源与许可状态由 `config/schema/semantic_tools.json` 逐项登记
+         （`license_pending` 显式标记未决项，由 doctor 披露）；
+      ③ 一旦改为**直接从 Hub 加载**，本裁定即失效并须改为阻断（复发条件写死）。
+    """
     import torch
     from transformers import AutoModel, AutoTokenizer
 
-    tok = AutoTokenizer.from_pretrained(path, local_files_only=True, trust_remote_code=True)
-    mdl = AutoModel.from_pretrained(path, local_files_only=True, trust_remote_code=True)
+    tok = AutoTokenizer.from_pretrained(  # nosec B615
+        path, local_files_only=True, trust_remote_code=True)
+    mdl = AutoModel.from_pretrained(  # nosec B615
+        path, local_files_only=True, trust_remote_code=True)
     mdl.eval()
     pool = _pooling_mode(path)
 

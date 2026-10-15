@@ -22,7 +22,7 @@
   - **语言/运行**：Python **≥ 3.13**（`requires-python`）；Windows 计划任务调度（`cli.py schedule`）
   - **数据存储**：文件产物（JSONL/CSV）+ **SQLite FTS5**（全文检索）+ **PostgreSQL/pgvector**（向量检索，可选）
   - **治理留痕**：`data/governance.db`（SQLite 治理库：水位/门禁结果/步骤台账）
-  - **质量工具**：`ruff`（Lint）/ `mypy`（类型）/ `pytest`（测试）/ 自研 **29 道门禁**（`cli.py gates`）
+  - **质量工具**：`ruff`（Lint）/ `mypy`（类型）/ `pytest`（测试）/ 自研 **30 道门禁**（`cli.py gates`）
   - **P1 语义增强（可选叠加，对应 `.[semantic]` extra）**：`sentence-transformers` / `transformers` /
     模型权重**随仓外置于 `external/models/`**（git 忽略）
   - **依赖管理**：`pyproject.toml`（PEP 621，含 `[dev]` `[ocr]` `[semantic]` 三个 extra）
@@ -45,7 +45,7 @@ regulatory_compliance_orchestrator/
 ├── pyproject.toml              # 【元数据】PEP 621 依赖与 extras（dev/ocr/semantic）
 ├── config/                     # 【常规流程】**配置唯一事实源**
 ├── interfaces/                 # 【常规流程】数据契约 + 四协议 + `*_api` 进程内接口层
-├── gates/                      # 【常规流程·门禁】ALL_GATES **29 道**交付门禁
+├── gates/                      # 【常规流程·门禁】ALL_GATES **30 道**交付门禁
 ├── commands/                   # 【常规流程】cli.py 子命令实现（自 cli.py 迁移）
 ├── modules/                    # 【常规流程】**业务模块**（五模块，单向依赖）
 ├── std_lib/                    # 【常规流程】**共享库**（scraper_std + common_lib）
@@ -70,7 +70,7 @@ regulatory_compliance_orchestrator/
 | `paths.py` | 文件 | **常规流程** | **路径唯一事实源**（含 `module_dir()` / `relations_index()` 等访问器） | 被全仓引用 |
 | `config/` | 目录 | **常规流程（配置 SSOT）** | `enums.py`（**31 个受控域**）/ `sources.yaml`（源清单）/ `schedule.yaml`（定时） / `triggers.yaml`（条件触发）/ `schema/*.json`（清单与契约） | 被 `interfaces/`、`modules/`、`gates/` 引用 |
 | `interfaces/` | 目录 | **常规流程（契约层）** | `contract.py`（字段契约）/ `protocols.py`（四协议）/ `*_api.py`（进程内接口，**跨模块唯一通道**） | 被 `modules/`、`tools/`、`gates/` 引用 |
-| `gates/` | 目录 | **常规流程（质量门禁）** | **29 道**门禁实现（`gate_*.py`）；**唯一注册表 = `gates/__init__.py:ALL_GATES`** | 由 `cli.py gates` / `tools/ci_check.py` 驱动 |
+| `gates/` | 目录 | **常规流程（质量门禁）** | **30 道**门禁实现（`gate_*.py`）；**唯一注册表 = `gates/__init__.py:ALL_GATES`** | 由 `cli.py gates` / `tools/ci_check.py` 驱动 |
 | `commands/` | 目录 | **常规流程** | 子命令实现（`gates.py` / `relations.py` / `schedule.py` …） | 被 `cli.py` 分发调用 |
 | `modules/regulatory_scrapers/` | 目录 | **常规流程** | 五源采集 + 清洗 + 条文 + 关系 + 时效核验（含 `collectors/` `clean/` `clause_index/` `clean_index/`） | 入口 `cli.py run`；产 `data/{raw,cleaned,clauses}` |
 | `modules/regulatory_classifier/` | 目录 | **常规流程** | 归属表/主题表底座链 + 明细表 + 桥表 + 关系产物消费 + `recall_audit` | 被 `cli.py classify` / `analysis` 调用 |
@@ -195,7 +195,7 @@ flowchart LR
     AT & MV & REL -->|gen_analysis_deliveries| AN[(docs/deliverables 17 项)]
     INBOX[(data/inbox)] -->|inbox_scan| WL[(worklist 决策项)]
     PUB -.->|sync_wiki_sources| KB[Obsidian vault]
-    C & CL & AT & REL & MV & PUB -->|**29 道门禁**| G8{gates}
+    C & CL & AT & REL & MV & PUB -->|**30 道门禁**| G8{gates}
     G8 -->|全绿| OK[交付]
     subgraph P1[P1 语义增强（可选叠加，默认不介入主链）]
         SE[["semantic_enhance<br/>执行门面"]]
@@ -249,7 +249,7 @@ flowchart TB
     LED["运行台账 run_log / audit_log / gate_result"]
   end
   subgraph QUAL["质量层"]
-    GATES["门禁 29 道（链尾阻断）"]
+    GATES["门禁 30 道（链尾阻断）"]
   end
   ACC --> SCHED --> CHAIN --> ART
   CHAIN --> GOV
@@ -296,7 +296,7 @@ flowchart TB
 | **Disclose 披露** | 运行态/能力 | 控制台 + `BENCHMARK.md` + 运行台账 | `retention:plan`（轮转计划·只移动）/ `quarantine:triage`（隔离体检）/ `semantic:preflight`（P1 五闸）/ `pg:health`（向量后端） | 各披露步骤 | **常规流程（只读披露·恒 rc=0）** |
 | **Knowledge 同步** | 发布件 | `<Obsidian vault>/监管法规库` | frontmatter 溯源 + 截断声明 + `--prune` | `tools/sync_wiki_sources.py` | **特殊工具** |
 | **Ingest 投放区** | `data/inbox` | worklist 决策项 | 按 `inbox_registry.yaml` 归类 → worklist | `tools/inbox_scan.py` | **常规流程** |
-| **Validate 门禁** | 全仓数据/代码 | 门禁报告（+ 治理库归档） | **29 道** `ALL_GATES`（契约/枚举/漂移/时效 SSOT/血缘/水位/跨模块/运行时卫生/调度触发一致性/运行台账…） | `cli.py gates` | **常规流程（阻断）** |
+| **Validate 门禁** | 全仓数据/代码 | 门禁报告（+ 治理库归档） | **30 道** `ALL_GATES`（契约/枚举/漂移/时效 SSOT/血缘/水位/跨模块/运行时卫生/调度触发一致性/运行台账…） | `cli.py gates` | **常规流程（阻断）** |
 
 ---
 
@@ -350,12 +350,15 @@ flowchart TB
 - **代码门禁**：`ruff` 零 Error；`mypy` 零 error；`pytest` 全绿；**引导纪律**（`gate_import_bootstrap`：
   `sys.path.insert` **只减不增**，新代码一律经 `bootstrap`）；**运行时卫生**（`gate_runtime_hygiene`：禁裸整数
   `return N`、禁无意图声明的宽泛吞异常、`interfaces/` 禁 `NotImplementedError` 空壳）。
-- **数据门禁（写入/交付拦截，**29 道**）**：契约清单一致性（`gate_contract`）/ 受控枚举（`gate_enum_values`）
+- **数据门禁（写入/交付拦截，**30 道**）**：契约清单一致性（`gate_contract`）/ 受控枚举（`gate_enum_values`）
   / 清洗契约（`gate_clean_schema`）/ 目录拍平（`gate_flat_layout`）/ 关系产物（`gate_relations`）
   / RFN 漂移与同步 / 血缘与水位 / 跨模块越权（`gate_no_cross_module_import`）/ 时效 SSOT
   / **运行台账（`gate_run_steps`：失败步骤的产物**若落在该步时间窗内 → FAIL**，可经人工确认降级为告警）**
   / 盘符硬编码 / 密钥扫描（`gate_secret_scan`）/ **条件观察对象（`gate_condition_observers`，T4）**
-  / **动态步骤运行时覆盖（`gate_dynamic_step_coverage`，R3：`{src}` 模板步骤台账五源覆盖）**…
+  / **动态步骤运行时覆盖（`gate_dynamic_step_coverage`，R3：`{src}` 模板步骤台账五源覆盖）**
+  / **依赖治理与供应链安全（`gate_dependency_audit`，W5：锁与一致性/影子依赖双向断言/
+     pip-audit 漏洞 high·critical 零容忍/SBOM 与 lock 的 sha256 同步/子进程解释器路径，
+     判据与取舍见 `docs/adr/0011-依赖治理与供应链安全.md`）**…
 - **发布门禁**：**人工闸门**保留在三处破坏性动作 —— `retention --apply`（归档）、`governance_sync --apply`
   （写治理库）、`acknowledged.json`（失败步骤知悉登记）；其余一律**机器判定**。
 - **提交后自动推送**：`.git/hooks/post-commit` 在每次提交后自动 `git push origin main`

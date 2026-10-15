@@ -41,7 +41,13 @@ from ._domains import (
     _check_semantic_manifest,
     _check_theme_coverage,
 )
-from ._manifest import _check_corpus, _check_modules_manifest, _check_tools, _check_worklist
+from ._manifest import (
+    _check_corpus,
+    _check_modules_manifest,
+    _check_readme_gate_count,
+    _check_tools,
+    _check_worklist,
+)
 from ._schedule import _check_schedule, _check_triggers
 
 # _chain_module 为**转供 re-export**（noqa F401）：消费方 gate_declaration_executor/
@@ -117,6 +123,11 @@ def run() -> tuple[bool, dict]:
     problems += p11
     detail.update(d11)
     warnings += w11
+
+    # 判据 J10（W5）：README 门禁计数 ≡ ALL_GATES（禁文本写死数量的机器对冲）
+    p12, d12 = _check_readme_gate_count()
+    problems += p12
+    detail.update(d12)
 
     if warnings:
         detail["warnings"] = warnings

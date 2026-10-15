@@ -29,8 +29,12 @@ import sys
 import paths
 
 # 受控事件值（与 config/schedule.yaml 的 notify.on 对齐）
+# W5（§13.3）：新增 `slo_breach`（SLI 连续低于 SLO）与 `quality_regression`（六维环比
+# 劣化 >10%）——两者由 `tools/gen_quality_metrics.py` / `tools/check_slo.py` 发出，
+# 阈值与错误预算规则见 ADR-0012。新增事件必须同时登记此处与 schedule.yaml（门禁 S3 守护）。
 NOTIFY_EVENTS = frozenset(
-    {"failed_step", "gate_fail", "worklist_aged", "doctor_fail", "degraded_step"}
+    {"failed_step", "gate_fail", "worklist_aged", "doctor_fail", "degraded_step",
+     "slo_breach", "quality_regression"}
 )
 NOTIFY_KINDS = ("none", "file", "webhook")
 DEFAULT_DIR = os.path.join(paths.ROOT, "reports", "_alerts")

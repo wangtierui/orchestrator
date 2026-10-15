@@ -1,0 +1,1 @@
+{"at": "2026-10-15T16:03:25+08:00", "sli": {"sli_chain_success_rate": {"value": 100.0, "n": 7, "ok": 7}, "sli_data_freshness": {"value": 100.0, "n": 17, "ok": 17}, "sli_gate_pass_rate": {"value": 100.0, "n": 7, "ok": 7}}, "targets": {"sli_chain_success_rate": 98.0, "sli_data_freshness": 95.0, "sli_gate_pass_rate": 100.0}}

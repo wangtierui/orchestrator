@@ -2284,8 +2284,10 @@ def main(argv=None) -> int:
         from std_lib.common_lib import governance_store as _gs
 
         _gs.init_db()  # 幂等；治理库仅放元数据/水位/审计（方案 §4.1）
+        # 台账记的是**实际启动命令**（argv[0] 语义）：原写死裸 `python`——若 PATH 上先命中
+        # 另一个解释器，台账命令与真实运行体不一致（复现/审计失真；亦是真缺陷）。
         run_id = _gs.run_start(
-            ["python", "tools/run_production_refresh.py"]
+            [sys.executable, os.path.join("tools", "run_production_refresh.py")]
             + (list(argv) if argv is not None else sys.argv[1:]),
             note="生产刷新链",
         )
