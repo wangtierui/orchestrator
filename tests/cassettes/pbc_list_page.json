@@ -1,0 +1,23 @@
+{
+  "interactions": [
+    {
+      "body": "<!DOCTYPE html>\n<html><body>\n<form><input name=\"article_paging_list_hidden\" moduleid=\"21885abc\"\n  modulekey=\"abc123\" totalpage=\"3\"></form>\n<div class=\"list\">\n  <a href=\"/tiaofasi/2024/202401/t20240105_1001.html\" title=\"中国人民银行公告〔2024〕第1号\">\n    中国人民银行公告〔2024〕第1号</a>\n  <a href=\"/tiaofasi/2024/202402/t20240211_1002.html\" title=\"中国人民银行公告〔2024〕第2号\">\n    中国人民银行公告〔2024〕第2号</a>\n</div>\n</body></html>\n",
+      "body_encoding": "utf-8",
+      "body_sha256": "924d2d05b6bc1169c05bcdd7a6c243c808b98f544cb2d41dd5386df59c840faf",
+      "headers": {
+        "Content-Type": "text/html; charset=utf-8"
+      },
+      "key": "c5ddab8ebfeb6860",
+      "method": "GET",
+      "normalized_url": "http://www.pbc.gov.cn/tiaofasi/144941/144951/index.html",
+      "reason": "OK",
+      "status": 200,
+      "url": "http://www.pbc.gov.cn/tiaofasi/144941/144951/index.html"
+    }
+  ],
+  "note": "人行条法司列表页（分页隐藏域 moduleid/totalpage + /tiaofasi/ 条目）",
+  "origin": "synthetic",
+  "recorded_at": "2026-10-15T00:00:00+08:00",
+  "schema_version": 1,
+  "source": "pbc"
+}

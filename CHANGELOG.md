@@ -1,5 +1,46 @@
 # Changelog
 
+## [Unreleased] 2026-10-15 — TD-1 处置：采集器录制-重放夹具 + 判据 J13（第七十六批）
+
+> 处置 `docs/tech_debt.md` 最高优先技术债（TD-1），并**解除**「>500 行采集文件按层拆分」
+> （方案 §7.8 D-遗留）的**前置阻塞**——没有可回放的稳定输入，就不敢动那些文件的内部结构。
+
+### 夹具层（`tests/http_cassette.py` + `tests/cassettes/`）
+- **回放优先、严格模式**：默认只回放夹具，未命中即 `CassetteMiss`（**绝不静默联网**——
+  联网会让回归网时通时不通）；`origin` ∈ {`recorded`, `synthetic`} 显式披露来源，不冒充真实抓取。
+- **URL 归一**：小写 host、去默认端口、去 fragment、剔易变参数（时间戳/追踪 id）、query 排序
+  ⇒ 同一逻辑请求无论线上带什么抖动都命中同一夹具（TD-1 的核心价值）。
+- **四类网络入口覆盖**（与调研一致——采集器并非全部经单栈）：`urllib.request.urlopen` /
+  `build_opener().open`（nfra 形态）/ `requests.Session.send`（gov 会话级 RobustSession，
+  ADR-0009 豁免）/ 单栈 `robust_get`。
+- **密钥脱敏**：Authorization/Cookie/token 类头落盘即 `***`（对齐 gate_secret_scan）。
+- **夹具不腐化**：逐条 `body_sha256` 校验 + `assert_all_used`（留死条目即报）；base64 支持二进制附件。
+- **可测性**：`CASSETTES_ROOT` 参数化根目录（运行期默认 `tests/cassettes`），门禁与负例测试共用
+  **同一校验实现**（`load_cassette`）——不复制校验逻辑，杜绝门禁与运行期口径漂移。
+
+### 回放用例（17 项，`tests/test_collector_replay.py`）
+- 夹具机制：URL 归一、严格未命中、脱敏、篡改检测、base64、空夹具拒绝、manifest 闭合；
+- 纯解析器（无 HTTP，最稳）：`pbc.parse_listing`（分页隐藏域 + /tiaofasi/ 条目 + 去重）、
+  `pbc.parse_detail`（ArticleTitle + #shijian + #zoom）、`listing_page_urls`（hex 栏目取
+  moduleid 前 8 位的历史 404 坑）、`gov` 文号/机关/日期抽取（**按各函数真实契约取形态**：
+  机关抽取只覆盖「X令第N号」令文、日期抽取返回原文不归一——两处差异均写入用例防「顺手统一」误改）；
+- 端到端回放：`urlopen` 与 `build_opener().open` 两形态各一条，跑真实采集器解析路径。
+
+### 门禁与工具
+- **新判据 J13**（`gates/gate_config_integrity/_cassette.py`，5 条）：manifest 双向闭合 /
+  摘要一致（防「手改夹具不更新摘要」）/ 结构与逐条摘要自校验 / 无凭据明文残留 / origin 受控。
+  **判据会失败才值得信任** ⇒ `tests/test_j13_cassette_gate.py` 7 项正负例（漏登记/幽灵登记/
+  摘要漂移/正文篡改/凭据残留/非法 origin）。
+- `tools/record_cassettes.py`（J1 登记为独立工具）：manifest 唯一重建入口。
+
+### 顺带修正
+- `request_key` 口径：请求体**只在非空时**参与（原实现把响应体计入⇒GET 变体不命中）。
+- `OpenerDirector.open` 是**实例属性**（`__init__` 内 `self.open = self._open`）⇒ 补丁须打
+  `_open`，且调用方在补丁生效后构造 opener（此点写入 harness docstring 契约）。
+
+### 验证
+30 道门禁 PASS、ruff 0、mypy 0。
+
 ## [Unreleased] 2026-10-15 — H 轨：本地 Web 确认台（P0–P8）+ 判据 J12（第七十五批）
 
 > 方案 §8（人机交互层）。`cli.py serve` 一个本地界面同时承载**待办闭环管理**（操作面）与

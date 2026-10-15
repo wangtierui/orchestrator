@@ -1,0 +1,37 @@
+{
+  "interactions": [
+    {
+      "body": "<!DOCTYPE html>\n<html><head><meta charset=\"utf-8\"><title>国务院政策文件库</title></head>\n<body>\n<ul class=\"news-list\">\n  <li><a href=\"/zhengce/content/2024-01/05/content_1.htm\"\n         title=\"国务院关于印发某某管理办法的通知\">国务院关于印发某某管理办法的通知</a>\n      <span class=\"date\">2024-01-05</span></li>\n  <li><a href=\"/zhengce/content/2024-02/11/content_2.htm\"\n         title=\"关于进一步优化营商环境的公告\">关于进一步优化营商环境的公告</a>\n      <span class=\"date\">2024-02-11</span></li>\n</ul>\n</body></html>\n",
+      "body_encoding": "utf-8",
+      "body_sha256": "cd05ce866ef908d0779e6a4377a670818e1e5675aedc2143905ac646e63573a4",
+      "headers": {
+        "Content-Type": "text/html; charset=utf-8"
+      },
+      "key": "1dc986bb16ff595a",
+      "method": "GET",
+      "normalized_url": "https://www.gov.cn/zhengce/zhengceku/home/index.htm",
+      "reason": "OK",
+      "status": 200,
+      "url": "https://www.gov.cn/zhengce/zhengceku/home/index.htm"
+    },
+    {
+      "body": "<!DOCTYPE html>\n<html><head><meta charset=\"utf-8\"><title>国务院政策文件库</title></head>\n<body>\n<ul class=\"news-list\">\n  <li><a href=\"/zhengce/content/2024-01/05/content_1.htm\"\n         title=\"国务院关于印发某某管理办法的通知\">国务院关于印发某某管理办法的通知</a>\n      <span class=\"date\">2024-01-05</span></li>\n  <li><a href=\"/zhengce/content/2024-02/11/content_2.htm\"\n         title=\"关于进一步优化营商环境的公告\">关于进一步优化营商环境的公告</a>\n      <span class=\"date\">2024-02-11</span></li>\n</ul>\n</body></html>\n",
+      "body_encoding": "utf-8",
+      "body_sha256": "cd05ce866ef908d0779e6a4377a670818e1e5675aedc2143905ac646e63573a4",
+      "headers": {
+        "Content-Type": "text/html; charset=utf-8"
+      },
+      "key": "1dc986bb16ff595a",
+      "method": "GET",
+      "normalized_url": "https://www.gov.cn/zhengce/zhengceku/home/index.htm",
+      "reason": "OK",
+      "status": 200,
+      "url": "https://www.gov.cn/zhengce/zhengceku/home/index.htm?_=1720000000"
+    }
+  ],
+  "note": "国务院政策文件库列表页（两条；含易变参数变体，验证 URL 归一命中同键）",
+  "origin": "synthetic",
+  "recorded_at": "2026-10-15T00:00:00+08:00",
+  "schema_version": 1,
+  "source": "gov"
+}

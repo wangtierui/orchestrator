@@ -1,0 +1,39 @@
+{
+  "cassettes": [
+    {
+      "interactions": 1,
+      "name": "gov_detail_page",
+      "note": "国务院政策详情页（title meta + pages_content 兜底容器 + 文号/发文机关/生效日期）",
+      "origin": "synthetic",
+      "sha256": "3303b5d5a28dc41743ec766d33ae0a4010885adebf6c3baa78e2f967dd5e4864",
+      "source": "gov"
+    },
+    {
+      "interactions": 2,
+      "name": "gov_list_page",
+      "note": "国务院政策文件库列表页（两条；含易变参数变体，验证 URL 归一命中同键）",
+      "origin": "synthetic",
+      "sha256": "5402916d08c4b498e453c6be4a4f5a663e9ed86d49b7ede372cf2cd079d8a983",
+      "source": "gov"
+    },
+    {
+      "interactions": 1,
+      "name": "pbc_detail_page",
+      "note": "人行详情页（ArticleTitle meta + #shijian + #zoom 正文）",
+      "origin": "synthetic",
+      "sha256": "24d3b9f3dcc0184b1585644950779ffc5be3dce436a205545f711f87c0006e4a",
+      "source": "pbc"
+    },
+    {
+      "interactions": 1,
+      "name": "pbc_list_page",
+      "note": "人行条法司列表页（分页隐藏域 moduleid/totalpage + /tiaofasi/ 条目）",
+      "origin": "synthetic",
+      "sha256": "8aa4541ee66fc954ca63cf92d572c247e9c721f2c0652a81aba5cc5900c6afaa",
+      "source": "pbc"
+    }
+  ],
+  "generated_at": "2026-10-15T18:26:17+0800",
+  "generated_by": "tools/record_cassettes.py --rebuild-manifest",
+  "schema_version": 1
+}

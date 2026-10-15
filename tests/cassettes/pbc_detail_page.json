@@ -1,0 +1,23 @@
+{
+  "interactions": [
+    {
+      "body": "<!DOCTYPE html>\n<html><head><meta charset=\"utf-8\">\n<meta name=\"ArticleTitle\" content=\"中国人民银行公告〔2024〕第1号\"></head>\n<body>\n<span id=\"shijian\">2024-01-05</span>\n<div id=\"zoom\">\n  <p>中国人民银行公告〔2024〕第1号</p>\n  <p>为做好某某工作，现予发布。</p>\n  <p>中国人民银行</p>\n  <p>2024年1月5日</p>\n</div>\n</body></html>\n",
+      "body_encoding": "utf-8",
+      "body_sha256": "1c81459d7dc6e1bcbbfa6b17dab858a3bf1d53a6d352c692ab2f4bc3adce07e6",
+      "headers": {
+        "Content-Type": "text/html; charset=utf-8"
+      },
+      "key": "b5e6538695efb1f3",
+      "method": "GET",
+      "normalized_url": "http://www.pbc.gov.cn/tiaofasi/2024/202401/t20240105_1001.html",
+      "reason": "OK",
+      "status": 200,
+      "url": "http://www.pbc.gov.cn/tiaofasi/2024/202401/t20240105_1001.html"
+    }
+  ],
+  "note": "人行详情页（ArticleTitle meta + #shijian + #zoom 正文）",
+  "origin": "synthetic",
+  "recorded_at": "2026-10-15T00:00:00+08:00",
+  "schema_version": 1,
+  "source": "pbc"
+}

@@ -61,3 +61,4 @@ python -m pytest -m contract        # 只跑契约类（门禁/导入面/产物�
   由 `gate_*` 的负例测试间接保证（每条判据都有"改一处必 FAIL"的负例）。
 - **安全测试**：`bandit` 入 CI（ADR-0011）+ 负例单测
   （`gate_secret_scan` 的假 token 负例；`gate_dependency_audit` 的影子依赖负例）。
+| C9 采集器回放（TD-1） | `tests/test_collector_replay.py` + `tests/cassettes/` | 夹具机制 + 纯解析器 + 端到端回放（urlopen / opener.open）；manifest 由 `python -m tools.record_cassettes --rebuild-manifest` 重建 | J13 |

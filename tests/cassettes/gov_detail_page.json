@@ -1,0 +1,23 @@
+{
+  "interactions": [
+    {
+      "body": "<!DOCTYPE html>\n<html><head><meta charset=\"utf-8\"><meta name=\"ArticleTitle\"\n  content=\"中华人民共和国国务院令第300号\"></head>\n<body>\n<div class=\"pages_content\">\n  <p>中华人民共和国国务院令第300号</p>\n  <p>《某某管理办法》已经2024年1月3日国务院第134次常务会议通过，现予公布。</p>\n  <p>自2024年3月1日起施行。</p>\n  <p>总理　某某</p>\n  <p>2024年1月5日</p>\n</div>\n</body></html>\n",
+      "body_encoding": "utf-8",
+      "body_sha256": "0ab768a806c12a67f87d18736a95597f43fdd8920e2af4863c7e858ff74c5c67",
+      "headers": {
+        "Content-Type": "text/html; charset=utf-8"
+      },
+      "key": "1f550a50015b7ff2",
+      "method": "GET",
+      "normalized_url": "https://www.gov.cn/zhengce/content/2024-01/05/content_1.htm",
+      "reason": "OK",
+      "status": 200,
+      "url": "https://www.gov.cn/zhengce/content/2024-01/05/content_1.htm"
+    }
+  ],
+  "note": "国务院政策详情页（title meta + pages_content 兜底容器 + 文号/发文机关/生效日期）",
+  "origin": "synthetic",
+  "recorded_at": "2026-10-15T00:00:00+08:00",
+  "schema_version": 1,
+  "source": "gov"
+}

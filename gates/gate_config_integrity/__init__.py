@@ -21,6 +21,8 @@ from __future__ import annotations
 
 import os
 
+from ._cassette import _check_cassette_manifest
+
 # 公共基础设施经 _common 单点定义，本门面**原样转供**（noqa F401）：保持既有
 # import 面（消费方/tests 经 `gates.gate_config_integrity.<name>` 访问不变）。
 from ._common import (  # noqa: F401
@@ -140,6 +142,12 @@ def run() -> tuple[bool, dict]:
     p14, d14 = _check_console_discipline(ROOT)
     problems += p14
     detail.update(d14)
+
+    # 判据 J13（TD-1）：采集器录制-重放夹具完整性——manifest 双向闭合/摘要一致/
+    # 结构自校验/无凭据残留/origin 受控（防「回放测试绿着说谎」）
+    p15, d15 = _check_cassette_manifest(ROOT)
+    problems += p15
+    detail.update(d15)
 
     if warnings:
         detail["warnings"] = warnings

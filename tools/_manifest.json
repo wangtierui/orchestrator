@@ -1,5 +1,312 @@
 {
-  "schema_version": "1.0",
+  "entries": [
+    {
+      "category": "tool",
+      "entry": "产物快照与启用前后差异对比（snapshot/diff；供「接入模型后产物变化」可复算）",
+      "file": "artifact_snapshot.py",
+      "independent": true,
+      "independent_why": "刻意独立：环境/一致性核验类工具，按需人工或 CI 执行，非 STEP_ORDER 链路节点"
+    },
+    {
+      "category": "tool",
+      "entry": "全链路健康审计（统一入口自动化/流程断点/门禁失效/数据源不唯一/数据阻塞/冗余/重复/硬编码）",
+      "file": "audit_health.py",
+      "independent": true,
+      "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
+    },
+    {
+      "category": "tool",
+      "entry": "EAST2.0 表格类监管文件 → supp backlog（§3.12.5 的 supp 通道）",
+      "file": "build_east_backlog.py",
+      "independent": true,
+      "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
+    },
+    {
+      "category": "tool",
+      "entry": "生成 data_migration_manifest.json（R22）；gate_hardcoded_paths 保留其 basename 豁免",
+      "file": "build_migration_manifest.py",
+      "independent": true,
+      "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
+    },
+    {
+      "category": "tool",
+      "entry": "llm_wiki 上游 Releases 监测（网络失败 rc=2）",
+      "file": "check_llm_wiki_upstream.py",
+      "independent": true,
+      "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
+    },
+    {
+      "category": "tool",
+      "entry": "镜像源核验与实测（--probe 真实拉包/取权重文件；核验逻辑在 std_lib.common_lib.mirrors）",
+      "file": "check_mirrors.py",
+      "independent": true,
+      "independent_why": "刻意独立：环境/一致性核验类工具，按需人工或 CI 执行，非 STEP_ORDER 链路节点"
+    },
+    {
+      "category": "tool",
+      "file": "check_slo.py",
+      "purpose": "SLI/SLO 判定与错误预算（方案 §13.3；阈值唯一事实源 = schedule.yaml notify.sli，连续 2 周期低于 SLO 发 slo_breach；快照入 data/run_state/slo_history.jsonl）"
+    },
+    {
+      "category": "tool",
+      "entry": "本地 CI 等价物：ruff → pytest → gates（+可选 coverage）",
+      "file": "ci_check.py",
+      "independent": true,
+      "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
+    },
+    {
+      "category": "tool",
+      "entry": "原件库冗余处置 + 跨层硬链接（A 侧只读）",
+      "file": "dedupe_original_storage.py",
+      "independent": true,
+      "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
+    },
+    {
+      "category": "tool",
+      "entry": "docreader 入链调用点（链步骤 docreader:extract；分析视图 + 与既有 6 态抽取的增量度量）",
+      "file": "docreader_extract.py",
+      "independent": false,
+      "step": "docreader:extract"
+    },
+    {
+      "category": "tool",
+      "entry": "docreader 解析驱动（**由 venv 解释器执行**，仅标准库；跨解释器边界的执行体）",
+      "file": "docreader_parse_driver.py",
+      "independent": true,
+      "independent_why": "刻意独立：由 venv 解释器执行的一次性驱动，非 STEP_ORDER 节点且不被主环境 import"
+    },
+    {
+      "category": "tool",
+      "file": "dr_drill.py",
+      "purpose": "灾备恢复演练（方案 §13.4；governance.db 与 raw 各一次，全程计时，记录落 data/run_state/dr_drill_log.jsonl；只读演练，不覆盖生产文件）"
+    },
+    {
+      "category": "pipeline",
+      "entry": "阶段 2.6 关系全量重抽（cli.py relations gen 的被调实现）",
+      "file": "extract_relations.py"
+    },
+    {
+      "category": "pipeline",
+      "entry": "阶段 6.8 五级分析交付库（17 项）",
+      "file": "gen_analysis_deliveries.py"
+    },
+    {
+      "category": "tool",
+      "entry": "审计发现判定台账生成（R-3/R-4/R-5 处置）",
+      "file": "gen_audit_ledger.py",
+      "independent": true,
+      "independent_why": "刻意独立：按需人工执行，非 STEP_ORDER 链路节点"
+    },
+    {
+      "category": "tool",
+      "entry": "BENCHMARK.md 回归对照基线生成",
+      "file": "gen_benchmark.py",
+      "independent": true,
+      "independent_why": "按需人工执行（报告/基线生成类）；批 63 补字段以消除归属不明"
+    },
+    {
+      "category": "tool",
+      "entry": "全链数据流总图生成并注入 README §8 受管块（AST 自源码抽命令；含降级链总表与模型就绪/接线状态）",
+      "file": "gen_flow_map.py",
+      "independent": true,
+      "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
+    },
+    {
+      "category": "tool",
+      "file": "gen_lock.py",
+      "purpose": "依赖树冻结：pip freeze → requirements.lock（方案 §13.2-1；--check 供门禁 D1/CI）"
+    },
+    {
+      "category": "tool",
+      "file": "gen_quality_metrics.py",
+      "purpose": "DAMA 六维数据质量度量 + 健康度评分（方案 §13.5；指标全部取自既有机器判据输出，缺失维度不计入分母；环比劣化 >10% 出 quality_regression）"
+    },
+    {
+      "category": "tool",
+      "file": "gen_sbom.py",
+      "purpose": "SBOM：requirements.lock → CycloneDX 1.5（方案 §13.2-3；--check 供门禁 D5/CI）"
+    },
+    {
+      "category": "tool",
+      "entry": "由 config/schedule.yaml 反向生成运行手册定时表与 crontab 片段（v2 §3.9，P2-2；--check 供门禁判据 S）",
+      "file": "gen_schedule_doc.py",
+      "independent": true,
+      "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
+    },
+    {
+      "category": "tool",
+      "entry": "supp 时效标注口径审计（只读）",
+      "file": "gen_supp_timeliness_audit.py",
+      "independent": true,
+      "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
+    },
+    {
+      "category": "tool",
+      "entry": "vault 主题 MOC 生成（--out 必填）",
+      "file": "gen_theme_moc.py",
+      "independent": true,
+      "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
+    },
+    {
+      "category": "tool",
+      "entry": "原件注册进治理库（阶段 1）",
+      "file": "governance_register_artifacts.py"
+    },
+    {
+      "category": "pipeline",
+      "entry": "阶段 3.5 元数据四表投影（cli.py governance sync 的被调实现）",
+      "file": "governance_sync.py"
+    },
+    {
+      "category": "tool",
+      "entry": "graph.html 的 vis-network 依赖本地化（被 graphify_sync 调用）",
+      "file": "graphify_offline_html.py",
+      "independent": true,
+      "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
+    },
+    {
+      "category": "tool",
+      "entry": "graphify 产物随提交同步（CODEBUDDY.md 指向）",
+      "file": "graphify_sync.py",
+      "independent": true,
+      "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
+    },
+    {
+      "category": "tool",
+      "entry": "投放区扫描与路由（v2 §3.12.6，P2-3b；按 config/inbox_registry.yaml 路由，落 _inbox_manifest.json）",
+      "file": "inbox_scan.py",
+      "independent": true,
+      "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
+    },
+    {
+      "category": "tool",
+      "entry": "外部语料归集（F-L05；§3.12 的归集入口）",
+      "file": "ingest_corpus.py",
+      "independent": true,
+      "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
+    },
+    {
+      "category": "tool",
+      "entry": "版本化 git 钩子安装与核验（--check 供 CI/审计）",
+      "file": "install_git_hooks.py",
+      "independent": true,
+      "independent_why": "刻意独立：环境初始化/核验类，按需人工或 CI 执行，非 STEP_ORDER 链路节点"
+    },
+    {
+      "category": "tool",
+      "entry": "由 config/schedule.yaml 生成/安装/校验 Windows 计划任务与 crontab（v2 §3.13.6，P2-6）",
+      "file": "install_schedule.py",
+      "independent": true,
+      "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
+    },
+    {
+      "category": "tool",
+      "file": "modern_features_report.py",
+      "purpose": "现代特性现状与迁移影响面报告（方案 §13.9）：受控域**实际形态**统计（实测为 frozenset/tuple 字面量而非 Enum 类 ⇒ StrEnum 迁移不适用）+ match/PEP604/注解现状基线，落 reports/refactors/modern_features_report.json"
+    },
+    {
+      "category": "tool",
+      "entry": "内部制度规范命名与归集（dry-run 前置 + 备份）",
+      "file": "normalize_internal_naming.py",
+      "independent": true,
+      "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
+    },
+    {
+      "category": "tool",
+      "entry": "清理孤儿 processed 记录（dry-run / --apply）",
+      "file": "prune_orphan_processed.py",
+      "independent": true,
+      "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
+    },
+    {
+      "category": "pipeline",
+      "entry": "阶段 6.6b 清洗隔离记录分类与处置登记（N-93；**零回写** → worklist，kind=clean_quarantine_triage）",
+      "file": "quarantine_triage.py"
+    },
+    {
+      "category": "tool",
+      "entry": "主索引路径 ↔ 原件库对账（gate_original_resolvable 指定的处置入口）",
+      "file": "reconcile_original_paths.py",
+      "independent": true,
+      "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
+    },
+    {
+      "category": "tool",
+      "entry": "数据生命周期与保留策略（v2 §3.10，P2-3；默认 dry-run，--apply 移动至 archive/ 并落台账）",
+      "file": "retention.py"
+    },
+    {
+      "category": "retired",
+      "file": "retired/flatten_collectors.py",
+      "note": "collectors 物理拍平（一次性）；替代物：无（映射保留在本文件）",
+      "since": "2026-09-13"
+    },
+    {
+      "category": "retired",
+      "file": "retired/migrate_collectors_p3b.py",
+      "note": "旧四仓复制（一次性，COPY_PLAN）；替代物：无（旧仓已冻结）",
+      "since": "2026-09-08"
+    },
+    {
+      "category": "tool",
+      "entry": "RFN 补登候选（关系线索 + 引用者主题投票）",
+      "file": "rfn_backlog.py",
+      "independent": true,
+      "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
+    },
+    {
+      "category": "pipeline",
+      "entry": "主链编排（25 步（原 22 步；N-46/N-52/N-53/N-63/N-73b 陆续入链））；v2 起由 cli.py run 调用（库形态）",
+      "file": "run_production_refresh.py"
+    },
+    {
+      "category": "tool",
+      "entry": "P1 语义增强**入链调用点**（嵌入→主题辅助裁定；只产分析视图，不写事实源）",
+      "file": "semantic_assist.py",
+      "independent": false,
+      "step": "semantic:assist"
+    },
+    {
+      "category": "tool",
+      "entry": "语义检索视图（W4 §6.4 pgvector 接线：17 项交付物 + 发布件记录限量嵌入；只读消费，A/B vs FTS5 披露）",
+      "file": "semantic_search.py",
+      "independent": false,
+      "step": "semantic:search"
+    },
+    {
+      "category": "tool",
+      "entry": "P1 语义模型冒烟自检（真实初始化 + 真实调用）",
+      "file": "smoke_semantic_models.py",
+      "independent": true,
+      "independent_why": "刻意独立：按需人工执行（模型加载耗时），非 STEP_ORDER 链路节点"
+    },
+    {
+      "category": "tool",
+      "entry": "非制度正文件隔离归置（misc/ ledgers/）",
+      "file": "split_internal_nonpolicy.py",
+      "independent": true,
+      "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
+    },
+    {
+      "category": "tool",
+      "file": "style_report.py",
+      "purpose": "风格规则现状报告（方案 §13.11 先报告后启用）：C901 复杂度、D100/D101/D103 docstring、行数分布；报告非门禁，启用决策看 report（落 reports/refactors/style_report.json）"
+    },
+    {
+      "category": "tool",
+      "entry": "发布件 → vault Markdown（SHA256 增量 + --prune）",
+      "file": "sync_wiki_sources.py",
+      "independent": true,
+      "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
+    },
+    {
+      "category": "independent",
+      "entry": "python -m tools.record_cassettes --rebuild-manifest",
+      "file": "record_cassettes.py",
+      "independent_why": "夹具 manifest 的唯一重建入口（judge J13 要求的 --rebuild-manifest 落点）。录制真实抓取亦经此（后续 --record 开关），故按 tools 既有形态登记为独立工具。",
+      "produced_by": "TD-1 夹具层维护（manifest 重建/夹具生成）"
+    }
+  ],
   "generated_at": "2026-09-30",
   "note": "tools/ 脚本语义分区清单（v2 §3.2 D-1 / §3.15.5）。category=retired 的文件必须位于 tools/retired/；本清单由 gates/gate_config_integrity.py 断言（J1–J5）。新增脚本必须登记，禁止遗漏。",
   "root_py_allowlist": [
@@ -8,305 +315,5 @@
     "file_list_watcher.py",
     "paths.py"
   ],
-  "entries": [
-    {
-      "file": "artifact_snapshot.py",
-      "category": "tool",
-      "entry": "产物快照与启用前后差异对比（snapshot/diff；供「接入模型后产物变化」可复算）",
-      "independent": true,
-      "independent_why": "刻意独立：环境/一致性核验类工具，按需人工或 CI 执行，非 STEP_ORDER 链路节点"
-    },
-    {
-      "file": "audit_health.py",
-      "category": "tool",
-      "entry": "全链路健康审计（统一入口自动化/流程断点/门禁失效/数据源不唯一/数据阻塞/冗余/重复/硬编码）",
-      "independent": true,
-      "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
-    },
-    {
-      "file": "build_east_backlog.py",
-      "category": "tool",
-      "entry": "EAST2.0 表格类监管文件 → supp backlog（§3.12.5 的 supp 通道）",
-      "independent": true,
-      "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
-    },
-    {
-      "file": "build_migration_manifest.py",
-      "category": "tool",
-      "entry": "生成 data_migration_manifest.json（R22）；gate_hardcoded_paths 保留其 basename 豁免",
-      "independent": true,
-      "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
-    },
-    {
-      "file": "check_llm_wiki_upstream.py",
-      "category": "tool",
-      "entry": "llm_wiki 上游 Releases 监测（网络失败 rc=2）",
-      "independent": true,
-      "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
-    },
-    {
-      "file": "check_mirrors.py",
-      "category": "tool",
-      "entry": "镜像源核验与实测（--probe 真实拉包/取权重文件；核验逻辑在 std_lib.common_lib.mirrors）",
-      "independent": true,
-      "independent_why": "刻意独立：环境/一致性核验类工具，按需人工或 CI 执行，非 STEP_ORDER 链路节点"
-    },
-    {
-      "file": "check_slo.py",
-      "category": "tool",
-      "purpose": "SLI/SLO 判定与错误预算（方案 §13.3；阈值唯一事实源 = schedule.yaml notify.sli，连续 2 周期低于 SLO 发 slo_breach；快照入 data/run_state/slo_history.jsonl）"
-    },
-    {
-      "file": "ci_check.py",
-      "category": "tool",
-      "entry": "本地 CI 等价物：ruff → pytest → gates（+可选 coverage）",
-      "independent": true,
-      "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
-    },
-    {
-      "file": "dedupe_original_storage.py",
-      "category": "tool",
-      "entry": "原件库冗余处置 + 跨层硬链接（A 侧只读）",
-      "independent": true,
-      "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
-    },
-    {
-      "file": "docreader_extract.py",
-      "category": "tool",
-      "entry": "docreader 入链调用点（链步骤 docreader:extract；分析视图 + 与既有 6 态抽取的增量度量）",
-      "independent": false,
-      "step": "docreader:extract"
-    },
-    {
-      "file": "docreader_parse_driver.py",
-      "category": "tool",
-      "entry": "docreader 解析驱动（**由 venv 解释器执行**，仅标准库；跨解释器边界的执行体）",
-      "independent": true,
-      "independent_why": "刻意独立：由 venv 解释器执行的一次性驱动，非 STEP_ORDER 节点且不被主环境 import"
-    },
-    {
-      "file": "dr_drill.py",
-      "category": "tool",
-      "purpose": "灾备恢复演练（方案 §13.4；governance.db 与 raw 各一次，全程计时，记录落 data/run_state/dr_drill_log.jsonl；只读演练，不覆盖生产文件）"
-    },
-    {
-      "file": "extract_relations.py",
-      "category": "pipeline",
-      "entry": "阶段 2.6 关系全量重抽（cli.py relations gen 的被调实现）"
-    },
-    {
-      "file": "gen_analysis_deliveries.py",
-      "category": "pipeline",
-      "entry": "阶段 6.8 五级分析交付库（17 项）"
-    },
-    {
-      "file": "gen_audit_ledger.py",
-      "category": "tool",
-      "entry": "审计发现判定台账生成（R-3/R-4/R-5 处置）",
-      "independent": true,
-      "independent_why": "刻意独立：按需人工执行，非 STEP_ORDER 链路节点"
-    },
-    {
-      "file": "gen_benchmark.py",
-      "category": "tool",
-      "entry": "BENCHMARK.md 回归对照基线生成",
-      "independent": true,
-      "independent_why": "按需人工执行（报告/基线生成类）；批 63 补字段以消除归属不明"
-    },
-    {
-      "file": "gen_flow_map.py",
-      "category": "tool",
-      "entry": "全链数据流总图生成并注入 README §8 受管块（AST 自源码抽命令；含降级链总表与模型就绪/接线状态）",
-      "independent": true,
-      "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
-    },
-    {
-      "file": "gen_lock.py",
-      "category": "tool",
-      "purpose": "依赖树冻结：pip freeze → requirements.lock（方案 §13.2-1；--check 供门禁 D1/CI）"
-    },
-    {
-      "file": "gen_quality_metrics.py",
-      "category": "tool",
-      "purpose": "DAMA 六维数据质量度量 + 健康度评分（方案 §13.5；指标全部取自既有机器判据输出，缺失维度不计入分母；环比劣化 >10% 出 quality_regression）"
-    },
-    {
-      "file": "gen_sbom.py",
-      "category": "tool",
-      "purpose": "SBOM：requirements.lock → CycloneDX 1.5（方案 §13.2-3；--check 供门禁 D5/CI）"
-    },
-    {
-      "file": "gen_schedule_doc.py",
-      "category": "tool",
-      "entry": "由 config/schedule.yaml 反向生成运行手册定时表与 crontab 片段（v2 §3.9，P2-2；--check 供门禁判据 S）",
-      "independent": true,
-      "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
-    },
-    {
-      "file": "gen_supp_timeliness_audit.py",
-      "category": "tool",
-      "entry": "supp 时效标注口径审计（只读）",
-      "independent": true,
-      "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
-    },
-    {
-      "file": "gen_theme_moc.py",
-      "category": "tool",
-      "entry": "vault 主题 MOC 生成（--out 必填）",
-      "independent": true,
-      "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
-    },
-    {
-      "file": "governance_register_artifacts.py",
-      "category": "tool",
-      "entry": "原件注册进治理库（阶段 1）"
-    },
-    {
-      "file": "governance_sync.py",
-      "category": "pipeline",
-      "entry": "阶段 3.5 元数据四表投影（cli.py governance sync 的被调实现）"
-    },
-    {
-      "file": "graphify_offline_html.py",
-      "category": "tool",
-      "entry": "graph.html 的 vis-network 依赖本地化（被 graphify_sync 调用）",
-      "independent": true,
-      "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
-    },
-    {
-      "file": "graphify_sync.py",
-      "category": "tool",
-      "entry": "graphify 产物随提交同步（CODEBUDDY.md 指向）",
-      "independent": true,
-      "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
-    },
-    {
-      "file": "inbox_scan.py",
-      "category": "tool",
-      "entry": "投放区扫描与路由（v2 §3.12.6，P2-3b；按 config/inbox_registry.yaml 路由，落 _inbox_manifest.json）",
-      "independent": true,
-      "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
-    },
-    {
-      "file": "ingest_corpus.py",
-      "category": "tool",
-      "entry": "外部语料归集（F-L05；§3.12 的归集入口）",
-      "independent": true,
-      "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
-    },
-    {
-      "file": "install_git_hooks.py",
-      "category": "tool",
-      "entry": "版本化 git 钩子安装与核验（--check 供 CI/审计）",
-      "independent": true,
-      "independent_why": "刻意独立：环境初始化/核验类，按需人工或 CI 执行，非 STEP_ORDER 链路节点"
-    },
-    {
-      "file": "install_schedule.py",
-      "category": "tool",
-      "entry": "由 config/schedule.yaml 生成/安装/校验 Windows 计划任务与 crontab（v2 §3.13.6，P2-6）",
-      "independent": true,
-      "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
-    },
-    {
-      "file": "modern_features_report.py",
-      "category": "tool",
-      "purpose": "现代特性现状与迁移影响面报告（方案 §13.9）：受控域**实际形态**统计（实测为 frozenset/tuple 字面量而非 Enum 类 ⇒ StrEnum 迁移不适用）+ match/PEP604/注解现状基线，落 reports/refactors/modern_features_report.json"
-    },
-    {
-      "file": "normalize_internal_naming.py",
-      "category": "tool",
-      "entry": "内部制度规范命名与归集（dry-run 前置 + 备份）",
-      "independent": true,
-      "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
-    },
-    {
-      "file": "prune_orphan_processed.py",
-      "category": "tool",
-      "entry": "清理孤儿 processed 记录（dry-run / --apply）",
-      "independent": true,
-      "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
-    },
-    {
-      "file": "quarantine_triage.py",
-      "category": "pipeline",
-      "entry": "阶段 6.6b 清洗隔离记录分类与处置登记（N-93；**零回写** → worklist，kind=clean_quarantine_triage）"
-    },
-    {
-      "file": "reconcile_original_paths.py",
-      "category": "tool",
-      "entry": "主索引路径 ↔ 原件库对账（gate_original_resolvable 指定的处置入口）",
-      "independent": true,
-      "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
-    },
-    {
-      "file": "retention.py",
-      "category": "tool",
-      "entry": "数据生命周期与保留策略（v2 §3.10，P2-3；默认 dry-run，--apply 移动至 archive/ 并落台账）"
-    },
-    {
-      "file": "retired/flatten_collectors.py",
-      "category": "retired",
-      "since": "2026-09-13",
-      "note": "collectors 物理拍平（一次性）；替代物：无（映射保留在本文件）"
-    },
-    {
-      "file": "retired/migrate_collectors_p3b.py",
-      "category": "retired",
-      "since": "2026-09-08",
-      "note": "旧四仓复制（一次性，COPY_PLAN）；替代物：无（旧仓已冻结）"
-    },
-    {
-      "file": "rfn_backlog.py",
-      "category": "tool",
-      "entry": "RFN 补登候选（关系线索 + 引用者主题投票）",
-      "independent": true,
-      "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
-    },
-    {
-      "file": "run_production_refresh.py",
-      "category": "pipeline",
-      "entry": "主链编排（25 步（原 22 步；N-46/N-52/N-53/N-63/N-73b 陆续入链））；v2 起由 cli.py run 调用（库形态）"
-    },
-    {
-      "file": "semantic_assist.py",
-      "category": "tool",
-      "entry": "P1 语义增强**入链调用点**（嵌入→主题辅助裁定；只产分析视图，不写事实源）",
-      "independent": false,
-      "step": "semantic:assist"
-    },
-    {
-      "file": "semantic_search.py",
-      "category": "tool",
-      "entry": "语义检索视图（W4 §6.4 pgvector 接线：17 项交付物 + 发布件记录限量嵌入；只读消费，A/B vs FTS5 披露）",
-      "independent": false,
-      "step": "semantic:search"
-    },
-    {
-      "file": "smoke_semantic_models.py",
-      "category": "tool",
-      "entry": "P1 语义模型冒烟自检（真实初始化 + 真实调用）",
-      "independent": true,
-      "independent_why": "刻意独立：按需人工执行（模型加载耗时），非 STEP_ORDER 链路节点"
-    },
-    {
-      "file": "split_internal_nonpolicy.py",
-      "category": "tool",
-      "entry": "非制度正文件隔离归置（misc/ ledgers/）",
-      "independent": true,
-      "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
-    },
-    {
-      "file": "style_report.py",
-      "category": "tool",
-      "purpose": "风格规则现状报告（方案 §13.11 先报告后启用）：C901 复杂度、D100/D101/D103 docstring、行数分布；报告非门禁，启用决策看 report（落 reports/refactors/style_report.json）"
-    },
-    {
-      "file": "sync_wiki_sources.py",
-      "category": "tool",
-      "entry": "发布件 → vault Markdown（SHA256 增量 + --prune）",
-      "independent": true,
-      "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
-    }
-  ]
+  "schema_version": "1.0"
 }
