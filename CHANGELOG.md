@@ -1,5 +1,107 @@
 # Changelog
 
+## [Unreleased] 2026-10-16 — C1 审计覆盖人工处置 + C2 分批裁决 + C3 schema 决策书（第七十九批）
+
+> 处置五阶段审查遗留的三项「待人工确认」：C1 与 C2 由负责人决策并本批落地；
+> C3（是否扩展 `run_step` schema）按负责人要求**出具优劣说明待确认**，本批不实施。
+
+### C1：审计面覆盖人工处置（已落地）
+
+- `governance_store.worklist_resolve()`（`std_lib/common_lib/governance_store/worklist.py:152`）
+  内补 `_audit_resolution()`：落`audit_log`（action=`worklist_resolved`/`worklist_dismissed`，
+  target=worklist、target_key=item_id、field=status、old=open→new、basis=处置理由、actor=处置人）。
+- 三条设计依据：
+  · **写在唯一写口**而非 `commands/worklist.py`/`web/snapshots.py` —— 后者只覆盖单一入口会漏；
+    CLI、确认台 P4、未来 MCP 全通道自动覆盖（表级唯一写方纪律）；
+  · **actor 与 `resolved_by` 同源**（同一份处置人，杜绝「台账说A、审计说B」双口径）；
+  · **审计失败不阻断处置**（旁路留痕：裁决是已发生的事实，不能因留痕失败而"当作没发生"，
+    否则会诱导调用方重试造成重复处置）。
+- 守卫`tests/test_c1_human_audit.py`（4 项 contract）：正例 resolve/dismiss 各写一条且要素齐全；
+  负例 ①未命中不得写审计（否则审计出现幽灵裁决）②审计不可用时处置仍须成功。
+- **端到端实证**：执行 B2 批次后 `audit_log` 从 **0 行 → 3 行**，处置数与审计数一致（3=3）。
+
+### C2：641 条 open 分批裁决（工具 + 首批执行）
+
+- 新工具 `tools/worklist_triage.py`（J1 登记）：`scan`（分批总览）/ `bundle`（导出裁决包）/
+  `apply`（受控执行）。
+- **按「裁决动作类型」切批，而非按数量平均切**（实测641 条的真实结构）：
+
+  | 批次 | kind | 条数 | 机器可判 | 需人工 | 依据 |
+  |---|---|---|---|---|---|
+  | B1 | trigger_manual_breakpoint | 23 | 5 | 18 | payload/subject 自证闭环（弱证据，须显式 opt-in） |
+  | B2 | relevance_boundary（汇总） | 3 | 3 | 0 | `summary:` 前缀，无裁决对象（明细在 relevance/*.jsonl） |
+  | B3 | relevance_boundary（明细） | 208 | 0 | 208 | 带 hits/snippet，证据齐全但需业务判定 |
+  | B4 | rfn_theme_uncertain | 324 | 0 | 324 | payload 无候选主题与票数；标题在归属表命中 0 |
+  | B5 | internal_unaligned | 66 | 0 | 66 | 补关键词或确认无对应主题 |
+  | B6/B7/B8 | drift_c2 / timeliness / quarantine | 17 | 0 | 17 | 数量小，产出裁决包或走既有工具 |
+
+  覆盖 **641/641 闭合**（批次是归口单位，机器可执行范围是批内子集——两者混同会漏归口）。
+- **三条安全硬约束**：默认只读（`apply` 须 `--execute`）；机器只判机器能判的
+  （业务判断批次一律拒绝代劳）；人工闸门（`--by` + `--reason` 必填，逐条落审计）。
+- **已执行B2（3 条 dismissed）**，依据入审计台账；其余批次产出 4 份裁决包
+  （`reports/worklist_batches/*.md|json`，含逐条证据摘要与建议动作）。
+- 守卫 `tests/test_worklist_triage.py`（12 项，含 6 条失态用例：默认只读 / 谓词边界 /
+  覆盖闭合 / dry-run / 缺 by·reason 拒绝 / 业务批次拒绝代劳 / 动作名受控域）。
+- **开发过程中被门禁与测试当场抓出并修复的缺陷**（4 处，均为受控域/分类逻辑类）：
+  ① B2 动作名写成 `dismiss`（受控域为 `dismissed`，写口 ValueError 拒绝——正面案例）；
+  ② B1 动作名同样越界（`resolve` ⇒ 由自建测试 `test_auto_actions_are_within_controlled_domain` 抓出）；
+  ③ B1 谓词只扫 payload漏扫 subject ⇒ 自证闭环条目假阴性（实测 5 条）；
+  ④ 分类按 batch_id 而非 kind 分支 ⇒ 汇总项被重复计入 B3（分批总数 214 > 实际 211）。
+
+### C3：`run_step` 是否扩展 schema（决策建议书，本批不实施）
+
+- 出具 `docs/adr/ADR-0014-run_step-时间列扩展决策.md`，结论 **分项决策**：
+  · **建议扩** `started_at` / `finished_at` 两列——主链**手上已有这两个值**
+    （`tools/run_production_refresh.py:563` `t0=time.time()`、`:670` `rec["ended_at"]` 已算出
+    但未落库），迁移机制现成（`_db.py:374` `ALTER TABLE ADD COLUMN`），写入点已是旁路
+    （`:1159-1173`「登记失败不得中断主链」）⇒ 约 6 行 / 3 文件，主链控制流零改动；
+    且 `recorded_at` 的误差 = 该步耗时（实测 `clean:gov` elapsed 15526s ≈ 4.3 小时），
+    缺这两列则根因分析没有时间窗基础；
+  · **建议不扩** `record_count`（可从 `clean_index_api.record_count()` 派生，实测五源 0.067s，
+    且产物侧才是权威，落库即制造第二事实源）；
+  · **建议不扩** `argv`（权威来源是代码调用点，可AST 抽取——`gen_flow_map` 已在做；
+    落库会随代码漂移）。
+- 待负责人确认的一点：老数据（5132 行）两列为空后，**建议不反推填充**
+  （反推值会被误当实测值引用，污染数据语义），并要求时间窗分析显式过滤 `started_at IS NOT NULL`。
+
+### 顺带修复：跨日失败的时间炸弹（执行途中发现即修）
+
+全量回归首次运行（2026-10-16 凌晨，日期刚从 10-15 跨到 10-16）报出
+`tests/test_w4_data_layer.py::test_clause_md_flag_defaults_off` 失败。根因是该用例
+**输入侧**已按门禁 N-3 要求改用动态日期（`datetime.date.today()`），**断言侧却仍硬编码
+按日快照文件名** ⇒ 写当天不可见、**跨日必现**。
+
+- 修复：断言侧改用同一个 `stamp` 变量贯穿（输入与断言同源）。
+- **判据收窄（防复发）**：`gates/gate_hardcoded_snapshots.PAT` 原只覆盖 `_cleaned_` 一族，
+  故 `_clauses_` 族的同类缺陷从未被拦下 ⇒ 模式扩到 `cleaned|clauses|raw` 三族
+  （这三族都是按日命名的快照产物，硬编码即定时炸弹；自检确认能命中当时的雷，
+  且仓内已无该形态残留）。
+- 守卫 `tests/test_n3_snapshot_date_literals.py`（5 项）：三族正例命中 +
+  **非快照族负例不命中**（保证零噪声——门禁一旦噪声化就会被整体忽略）+
+  模式结构断言 + 仓内无残留 + 动态写法为约定解法。
+- **插曲（记录以自省）**：该守卫首版在parametrize 里写了完整字面量，**被刚扩展的判据
+  当场拦下**——门禁对自己的测试文件生效，这正是判据可信的证据；已改为运行期拼接。
+
+### 顺带修复：跨日失败的时间炸弹（执行途中发现即修）
+
+全量回归首次运行（2026-10-16 凌晨，日期刚从 10-15 跨到 10-16）报出
+`tests/test_w4_data_layer.py::test_clause_md_flag_defaults_off` 失败。根因是该用例
+**输入侧**已按门禁 N-3 要求改用动态日期（`datetime.date.today()`），**断言侧却仍硬编码
+按日快照文件名** ⇒ 写当天不可见、**跨日必现**。
+
+- 修复：断言侧改用同一个 `stamp` 变量贯穿（输入与断言同源）。
+- **判据收窄（防复发）**：`gates/gate_hardcoded_snapshots.PAT` 原只覆盖 `_cleaned_` 一族，
+  故 `_clauses_` 族的同类缺陷从未被拦下 ⇒ 模式扩到 `cleaned|clauses|raw` 三族
+  （这三族都是按日命名的快照产物，硬编码即定时炸弹；自检确认能命中当时的雷，
+  且仓内已无该形态残留）。
+- 守卫 `tests/test_n3_snapshot_date_literals.py`（5 项）：三族正例命中 +
+  **非快照族负例不命中**（保证零噪声——门禁一旦噪声化就会被整体忽略）+
+  模式结构断言 + 仓内无残留 + 动态写法为约定解法。
+- **插曲（记录以自省）**：该守卫首版在 parametrize 里写了完整字面量，**被刚扩展的判据
+  当场拦下**——门禁对自己的测试文件生效，这正是判据可信的证据；已改为运行期拼接。
+
+### 验证
+
 ## [Unreleased] 2026-10-15 — 诊断能力五阶段审查 + 取证缺陷修复（第七十八批）
 
 > 对 `reports/refactors/基于腾讯云Agent根因定位实践的项目诊断能力增强方案.md`（878 行）

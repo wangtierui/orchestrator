@@ -155,22 +155,54 @@ def worklist_resolve(
     """处置一条待办（`resolved` = 已裁决；`dismissed` = 判为无需处置）。
 
     返回是否命中并更新（未命中返回 False，调用方据此提示）。
+
+    **人工处置审计**（2026-10-16 治理决策 C1：审计面须覆盖人工处置；此前 `audit_log`
+    只有 MCP 写级审计，导致 `resolved_by` 有人名/账号，但**为何如此裁决无处可查**）：
+
+    · 落点：本写口内（表级唯一写方 ⇒ CLI `cli.py worklist resolve`、确认台 P4
+      `POST /api/worklist/resolve`、未来 MCP 工具全通道自动覆盖，不漏入口）；
+    · actor 与 `resolved_by` **同源**（同一份处置人，避免双口径分叉）；
+    · 失败**不阻断**：审计是旁路留痕，裁决已发生的事实不能因留痕失败而"当作没发生"
+      （否则会诱导调用方重试，造成重复处置）。
     """
     if not enabled() or not item_id:
         return False
     if status not in ("resolved", "dismissed"):
         raise ValueError(f"非法 status={status!r}（仅 resolved / dismissed）")
+    actor = by or current_run_id() or "cli"
     conn = _ensure()
     try:
         cur = conn.execute(
             "UPDATE worklist SET status=?, resolved_by=?, resolved_at=?, resolution=?"
             " WHERE item_id=? AND status='open'",
-            (status, by or current_run_id() or "cli", now_iso(), resolution, item_id),
+            (status, actor, now_iso(), resolution, item_id),
         )
         conn.commit()
-        return cur.rowcount > 0
+        hit = cur.rowcount > 0
     finally:
         conn.close()
+    if hit:
+        _audit_resolution(item_id, resolution, actor=actor, status=status)
+    return hit
+
+
+def _audit_resolution(item_id: str, resolution: str, *, actor: str, status: str) -> None:
+    """写一条人工处置审计（旁路：任何异常都不得冒泡到处置调用方）。"""
+    try:
+        from .projections import log_audit
+
+        log_audit(
+            action=f"worklist_{status}",
+            target="worklist",
+            target_key=item_id,
+            field="status",
+            old="open",
+            new=status,
+            basis=resolution,
+            actor=actor,
+        )
+    except Exception:  # noqa: BLE001  旁路留痕：审计失败不阻断人工裁决（设计见函数 docstring）
+        pass
 
 
 def worklist_stats() -> dict:

@@ -1,0 +1,284 @@
+{
+  "generated_at": "2026-10-16T00:10:28+08:00",
+  "kind": "trigger_manual_breakpoint",
+  "batches": [
+    {
+      "batch_id": "B1",
+      "title": "历史技术决策待办（多条 payload 自证闭环）",
+      "count": 23,
+      "auto": 5,
+      "items": [
+        {
+          "item_id": "WL-20261008100903807-6108-df404e",
+          "subject": "ocr_dict_correction/dead-logic-decision",
+          "class": "human",
+          "payload": {
+            "待裁决": "① 删除该功能（判据不可用）；或 ② 换成**语域安全**判据（仅非条/款/项结构词 + 形近字映射表 + 要求 ratio==1.0 的别名等价），并在与事实源隔离的沙箱上量 P/R 后再启用",
+            "现状": "已用测试固化该语义（`tests/test_ocr_correction_equiv.py::test_dead_logic_is_actually_a_safety_guard_do_not_enable` 与 `test_repaired_logic_would_corrupt_article_numbers`），并已把该段加速 122×（等价、零行为变化）",
+            "缺陷1": "`best_d` 初值 99 与判据 `d > best_d`（ratio ≤ 1）构成**死逻辑** → 该功能**从未生效**（恒不替换）",
+            "缺陷2": "若把初值改为 0（'修好'），判据 `ratio ≥ 0.85` 在本域**不安全**：实测真实 gov 200 条中 **198 条被改**、2559 次替换，样例 `第十八条 → 第八条`（ratio 6/7=0.857）、`第二十条 → 第二条`；外推全量 13046/13178 条被改、~69 万字符 ⇒ **条文编号被系统性篡改**"
+          }
+        },
+        {
+          "item_id": "WL-20261008111927531-6036-5fc4d6",
+          "subject": "semantic_split/ml-backend-usability",
+          "class": "human",
+          "payload": {
+            "A/B数字": "25 条真实正文：确定性 1260 句 / 0.8s；ML-ltp 184 句 / 65.3s（且系截断所致，非口径差异）",
+            "HanLP缺陷": "MTL 配置 `encoder.truncate_long_sequences: false`（不截断）⇒ 长文本全序列前向、复杂度爆炸。实测：209 字 129.8s、310 字 50.1s、384 字 29.8s；13.8K 字 **>34 分钟未完成** ⇒ 外推 gov 全量 ≈ 数十小时",
+            "LTP缺陷": "**有静默长度上限**：输入 >~550 字后只处理前 ~276 token，其余整段合并为**单一 token**。实测同一正文：400 字→201 token/最长 7 字（正常）；600 字→276 token/最长 68 字；2000 字→**仍 276 token、最长 1468 字** ⇒ 长法规（本样本中位 2587 字）~85% 内容不切句",
+            "待裁决": "① 按 ≤500 字**分块**后再 ML 切句（需处理跨块句边界），并在沙箱量 P/R；② 或换支持长文本/自带分块的后端；③ 或明确**放弃** ML 分句（保留确定为唯一口径）",
+            "现状": "`REG_ORCH_SEMANTIC_SPLIT` **默认关闭**（正确）；本批首次给出两后端可用性实测"
+          }
+        },
+        {
+          "item_id": "WL-20261008111928422-6036-69246b",
+          "subject": "semantic_assist/baseline-dependency-edge",
+          "class": "human",
+          "payload": {
+            "待裁决": "在 `run_production_refresh` 的语义步骤声明 inputs（分类器产物），使其参与水位 stale 判定",
+            "残留": "分类器更新后，`semantic_assist` 仍可能在你未察觉时沿用旧基线（只是现在**看得见**了）",
+            "状态": "**部分处置（N-188，2026-10-08）**：产物已带 `baseline.files`（每文件 mtime + 条目数）⇒ 读者可**自证基线新鲜度**；但**水位依赖边仍未登记**"
+          }
+        },
+        {
+          "item_id": "WL-20261008192553166-35808-00f173",
+          "subject": "raw/gov_zhengceku.json orphan (2026-09-15 legacy single-source output)",
+          "class": "human",
+          "payload": {
+            "为何不直接删": "位于**事实源目录**且非空 —— 按本仓纪律（不静默删事实源邻近数据）先登记，由人工确认后再删；已核实其记录**大概率已被主库覆盖**（主库含 12573 条 zhengceku）",
+            "建议": "人工确认后删除；如需保留证据，先移入 `data/quarantine/` 或归档目录再删",
+            "推断": "2026-09-15 引入 zhengceku 时该子源的**单列输出残留**；此后改为（R-C 沿用的）**合并进同一 gov 主库 `gov_laws.json`** ⇒ 该文件无人消费",
+            "现状": "29568 B / mtime 2026-09-15 14:05 / **全仓引用数 0**；列表形态 + 旧字段名（`source_url`，非现行契约的 `detail_url`）"
+          }
+        },
+        {
+          "item_id": "WL-20261009123409694-17852-131c5f",
+          "subject": "【转交·其他用户】refactor/ 的 lint 与真 bug（本机不得修改该目录）",
+          "class": "human",
+          "payload": {
+            "另披露": "`mypy refactor/` 14 项类型错误（如 collector.py:352 赋值类型不兼容、None 联合属性访问）；不在 CI 的 mypy 路径内（已排除）⇒ 不阻断",
+            "待转交问题（ruff 44 项）": {
+              "F401 未用导入 ×18": "含 refactor/collectors/gov/collector.py 中已 import 未使用的 re-export 符号（提示该抽取**尚未接线完成**）",
+              "F821 真 bug ×2": "refactor/collectors/gov/net.py:168,189 使用 json.loads/json.dumps 但**未 import json** ⇒ 首次缓存命中或 JSON 请求即 NameError",
+              "I001 导入排序 ×15": "—",
+              "RUF100 冗余 noqa ×6": "E402 已全局 ignore",
+              "UP017 ×3": "datetime.UTC 别名"
+            },
+            "本机处置": "① 批 47 曾**误代为修正**（已回滚：`git checkout 7e863ee -- refactor/`，与用户版本 0 差异）；② `pyproject.toml` 已将 `refactor` 加入 ruff `extend-exclude` 与 mypy `exclude`；③ 门禁实测在其**未修改**前提下 **PASS**（无需为其改门禁）",
+            "范围限定": "用户 2026-10-09 明确：`refactor/` 属**其他用户**，本机**不得修改其任何文件**，视为独立模块"
+          }
+        },
+        {
+          "item_id": "WL-20261009123409697-17852-d63805",
+          "subject": "库层退役判据缺失（std_lib/**/retired/ 不受 J1~J4 保护）",
+          "class": "human",
+          "payload": {
+            "建议": "为库层 retired 建立同构判据（或把库层退役件一并登记进一个 repo 级 retired 清单），使「退役即零引用」对库层同样成立",
+            "现状": "`tools/retired/` 受 gate_config_integrity 的 J1~J4（清单双向相等 / category⟺路径 / **零仓内引用** / README 登记）保护；批 48 新设的 `std_lib/scraper_std/retired/` **无**对应判据，仅靠 ruff/mypy 的 `retired/` 名排除",
+            "风险": "库层退役物件的「零引用」无门禁保证（当前 raw_loader 已人工核验为零引用）"
+          }
+        },
+        {
+          "item_id": "WL-20261009123924870-15264-2272e0",
+          "subject": "oversized_record/gov/4d2bc0d8560e31c0f846eb9b52864b4f",
+          "class": "human",
+          "payload": {
+            "count": 1,
+            "max_chars": 292502787,
+            "note": "内存侧已由流式化解除放大；数据侧（记录级附件聚合字段阈值+外置）待产品决策",
+            "samples": [
+              {
+                "chars": 292502787,
+                "dedup_key": "4d2bc0d8560e31c0f846eb9b52864b4fe5a17990",
+                "title": "国家医保局关于公开发布第一批智能监管“两库”规则和知识点的公告"
+              }
+            ],
+            "source": "gov",
+            "threshold_chars": 33554432
+          }
+        },
+        {
+          "item_id": "WL-20261009151530064-29352-77cfc4",
+          "subject": "oversized_record/nfra/ea762c4935e4350fe271e1fe26981fdf",
+          "class": "human",
+          "payload": {
+            "count": 1,
+            "max_chars": 38760330,
+            "note": "内存侧已由流式化解除放大；数据侧（记录级附件聚合字段阈值+外置）待产品决策",
+            "samples": [
+              {
+                "chars": 38760330,
+                "dedup_key": "ea762c4935e4350fe271e1fe26981fdf703af809",
+                "title": "中国银保监会关于实施保险公司偿付能力监管规则（Ⅱ）有关事项的通知"
+              }
+            ],
+            "source": "nfra",
+            "threshold_chars": 33554432
+          }
+        },
+        {
+          "item_id": "WL-20261009154658182-24128-7042e8",
+          "subject": "N-208 已修复并完成历史数据补救（XLSX 空网格爆量）",
+          "class": "auto",
+          "payload": {
+            "修复": "① 逐行右裁空单元格 ② 连续空行视为表尾 ③ 单附件文本上限 2,000,000 字符（截断并显式标注）；excel_matrix._read_xlsx_bytes 同源问题一并修（按**有值单元格**求边界 + 硬上限）",
+            "效果": "同一文件 71,769,545 → **139,781** 字符（↓99.8%）；**有值单元格集合 5624==5624（缺失 0）**",
+            "数据补救": "raw 主库该条：attachments[5].text + 记录级 attachment_text 同步替换；旧文本 gzip 备份；原子改写；条数不变 + **幂等复核**（重跑后文件 sha 不变）。主库 943.6→670.4MB，该条记录 279.00→~1.4MB",
+            "根因": "crawler_common._extract_xlsx 按工作表**声明维度**逐行展开：某 xlsx 第 2 表声明 4374×16384=71,665,278 格，**有值仅 10,923**（非空率 0.015%）⇒ 抽出 71,769,545 字符（99.2% 为制表符）",
+            "用户假设判定": "**不是**'缺内容比对导致重复录入'——PDF/XLSX 各自内容不逐字相同（行集合交集≈0%，但有值单元格交集 84~96%）；真因是抽取按声明维度展开空网格。**跨格式去重判定为不做**（需语义级判据、且牺牲原件可追溯性；修复后量级已不成问题）"
+          }
+        },
+        {
+          "item_id": "WL-20261009154659040-24128-c3ebfa",
+          "subject": "`write_large_content_sidecar`（超大附件外置机制）为**死代码**",
+          "class": "human",
+          "payload": {
+            "建议": "① 接线（在 download_and_extract 后按 threshold 外置）；或 ② 明确废弃并删除该函数 + 同步文档。**需与契约口径一并决定**（外置后 attachment_content 变路径，属交付形态变更）",
+            "现状": "std_lib/scraper_std/attachments.py 定义了 `write_large_content_sidecar(threshold=200_000)`（>20 万字符 → 写同名 .txt + attachment_content_path/md5），**全仓无调用方** ⇒ 文档承诺的'超大附件折中'实际未生效",
+            "风险": "附件正文无上限直入记录（本次 279MB 条目的间接成因之一）"
+          }
+        },
+        {
+          "item_id": "WL-20261009154659807-24128-2051fb",
+          "subject": "历史脚本引入仓内依赖 ⇒ 会**激活**其严格门禁判据（N-210 教训）",
+          "class": "human",
+          "payload": {
+            "处置": "改用 `ExitCode.FAIL` ✓（门禁首轮 FAIL ⇒ 修复后 PASS）",
+            "现象": "批 49 为 7 个辅助脚本加 `from std_lib.scraper_std.pipeline import ...` 后，`gate_runtime_hygiene` 的严格判据（仅覆盖'有顶层仓内引导'的文件）**开始覆盖它们** ⇒ 暴露 pbc_recover.py 的裸 `return 1`（原不在严格集内）",
+            "通用教训": "对历史脚本做'最小改造'时，若引入仓内依赖，须**预判并同步**其退出码/异常/日志判据，否则会在门禁处集中爆出（本批即如此，且属**门禁有效**的正面案例）"
+          }
+        },
+        {
+          "item_id": "WL-20261009154659484-24128-5e82c4",
+          "subject": "同类风险巡检：其它附件是否存在'声明维度虚高'导致的抽取膨胀",
+          "class": "human",
+          "payload": {
+            "建议": "在 clean 的**超大记录守卫**（批 48 T-A，已会登记待办）之外，可加一条**附件级**体积巡检（复用 OVERSIZED 判据），对 `attachments[].text` 超阈者一并登记",
+            "本批": "仅处置已发现的那一条；N-208 已在抽取侧加上限（2M 字符）⇒ 同类文件不会再撑爆单条记录",
+            "残留": "历史 cleaned 产物中可能仍有旧抽取器留下的膨胀文本（未逐条巡检）"
+          }
+        },
+        {
+          "item_id": "WL-20261009154659299-24128-0e2138",
+          "subject": "记录级 `attachment_content` 与 `attachments[].text` 结构冗余（2×）",
+          "class": "human",
+          "payload": {
+            "建议": "如要瘦身：让记录级聚合字段**只存指针/摘要**或直接取消（须改交付口径）；否则维持现状",
+            "批 47/48 已查": "记录级 `attachment_content` **无下游消费者**（仅 clean mapper 写）；批 48 已勘误'逐字重复'假设（非逐字，长度差 18 = 9×2 分隔符）",
+            "现状": "采集侧 `attachment_text = '\\n\\n'.join(各附件 text)`，clean 映射为记录级 `attachment_content`；两者内容近乎重复 ⇒ 记录内同一批正文存 2 份",
+            "量级": "N-208 修复前 279MB（2× 显著）；**修复后该条 ~1.4MB ⇒ 不再构成风险**"
+          }
+        },
+        {
+          "item_id": "WL-20261009195838236-21708-69bb8e",
+          "subject": "写入侧「正文载体混入 attachments」已修复（分流 + 历史补救 + 去重）",
+          "class": "auto",
+          "payload": {
+            "交付侧": "cleaned：gov 附件 1282 条 / attachment_content 30.60M（修前 73.17M）；mof 246 条 / 25.78M（修前 40.20M）；契约**无变更**（body_docs 为 raw-only）",
+            "修复": "新增共享判据/分流助手（`body_version_role` 来源角色 + `is_body_version` 内容 + `covered_by_body`整体覆盖 + `split_record_body_docs` 记录级分流 + `dedupe_attachments` 去重），4 处写入点接线；mof 修复角色被表格字段覆盖的问题（`file_type/kind/role` 还原）",
+            "写入点": "gov_zhengceku.py:742/748-749/761、gov_collector.py:531-536、mof_attachments.py:150/337/543、supp_ingest_local_dir.py:183-188、supp_ingest.enrich_attachments（无去重 ⇒ 9 条重复）",
+            "历史补救": "四源 raw 流式补救（只改需改记录）：gov 968 记录 / 1625 载体（670.4→**531.1MB**）、mof 476/480（112.2→95.8MB）、nfra 1（−0.1MB）、supp 1 + 8 重复归并（6.5→5.1MB）；**内容守恒台账全部平衡** + 多遍幂等（sha 逐字节不变）",
+            "实测规模": "gov 2907 条附件中 **1625 条（55.9%）为正文载体**（占附件文本 59%）；mof **480/726（66.1%）**（fileType=90「下载文字版」/ 站点生成 html_disguised_doc）；supp 1 条（role=body 正文 PDF）+ **同记录 9 条完全相同条目**；nfra 1 条（站点侧清单含正文）；pbc 无 attachments 数组",
+            "用户命题": "五源写入 raw 时 attachments 混入大量并非公告附件的条目——实为**以 PDF/Word 储存的正文内容**"
+          }
+        },
+        {
+          "item_id": "WL-20261009195838645-21708-b8860a",
+          "subject": "爆量根因「五源覆盖」缺口已补齐：nfra/pbc 自建 XLSX 抽取统一到共享原语",
+          "class": "human",
+          "payload": {
+            "修复": "新增共享原语 `crawler_common.iter_xlsx_text_rows`（按内容右裁空列 + 连续空行视为表尾）与`cap_xlsx_text`（2,000,000 字符上限 + **显式截断标注**），nfra/pbc 改为复用",
+            "命题": "是否已在**根源（写入阶段）**依规则修复，确保五源不再产生同类异常附件",
+            "实证": "同一 167KB xlsx：gov/mof 139,781、nfra 139,782、pbc 144,128 字符（修前 **71,769,545**）；表格轨 excel_matrix 454KB JSON/2.09s",
+            "核实发现": "批 49 只修了**共享路径**（crawler_common._extract_xlsx / excel_matrix）；**nfra `nfra_attachments_extract.extract_xlsx` 与 N-208 同型缺陷且无上限**；pbc `pbc_parse.extract_xls_text` 自建（靠 `is not None` 过滤避开分隔符爆量，但按声明维度迭代 7,160 万格、无上限）；supp 自建为 PDF-only（无此风险）",
+            "结论": "**成立**——五源文本抽取与表格结构化均经共享原语，写入阶段不再产生同类爆量；残余仅非五源链路的 naive xlsx 读取（已登记）"
+          }
+        },
+        {
+          "item_id": "WL-20261009195839019-21708-b0dd2f",
+          "subject": "处置留痕被同名覆盖（已修：唯一命名 + 事后重建审计清单）",
+          "class": "auto",
+          "payload": {
+            "事故": "批 50 首遍补救留痕（2.4MB/1446 条，含载体文本长度与 sha256）因文件名**当天固定**，被随后的「去重遍」覆盖 ⇒ 精细审计粒度损失（载体文本仍可按 body_docs 的 local_path/sha256 从本地文件复原）",
+            "改进": "① 留痕文件名带**时分秒**（`body_docs_migration_<date>_<time>.jsonl.gz`）；② 按最终 `body_docs` 重建 `reports/body_docs_audit_<ts>.jsonl.gz`（1446 记录/2107 载体）作为入库审计件",
+            "通用教训": "**受控数据处置的留痕文件一律唯一命名**，禁止固定名（同日多遍会互相覆盖）"
+          }
+        },
+        {
+          "item_id": "WL-20261009195839278-21708-529597",
+          "subject": "正文并入后可能含重复内容（段落级去重为可选优化）",
+          "class": "human",
+          "payload": {
+            "建议": "如需彻底去重需**段落级模糊去重**（成本与误判风险高）；当前按「内容完整优先」处置",
+            "现状": "载体「未被整体覆盖」时并入正文（保内容）⇒ 正文可能含与网页正文重复的表格/格式内容",
+            "量化": "gov 28.97M / mof 14.28M 字符属此类（多来自 .doc 表格内容或格式差异）"
+          }
+        },
+        {
+          "item_id": "WL-20261009195839789-21708-e586f5",
+          "subject": "非五源链路的 naive xlsx 读取点（复用共享原语可消）",
+          "class": "human",
+          "payload": {
+            "建议": "纳入治理时改为 `crawler_common.iter_xlsx_text_rows`/`cap_xlsx_text`",
+            "影响": "不在五源 raw 写入链上 ⇒ 不影响「写入阶段不再爆量」结论；但同类文件仍可能在这些工具上付出高 CPU/内存",
+            "点位": "tools/build_east_backlog.py:122、modules/internal_policy_drafter/scripts/dump_related_systems.py 等直接 `openpyxl.load_workbook` + `iter_rows`（按声明维度展开）"
+          }
+        },
+        {
+          "item_id": "WL-20261009212600775-31452-00f081",
+          "subject": "W-A 历史 raw 双份未清 + W-B 生效时点 + 本轮未跑全量刷新",
+          "class": "human",
+          "payload": {
+            "W-M": "既有 raw 仍含记录级聚合副本（交付口径不受影响，属数据层冗余）⇒ 下次全量重采自然消除，或专项补救",
+            "W-P": "W-B 外置在 clean 阶段生效 ⇒ 现有 cleaned 快照仍含全文；下次 clean/refresh 后出现 attachment_content_path + data/docs/shared/attachment_text/*.txt",
+            "本轮取舍": "为控风险（raw/cleaned 均可由刷新重建）**未跑全量 clean/refresh**；代码+测试已就位，属性变化在下次刷新后可见"
+          }
+        },
+        {
+          "item_id": "WL-20261009212600312-31452-90d56e",
+          "subject": "W-A/W-B/W-D/W-I 已处置（去冗余 / 接线 / 零落盘 / 多格式抽取）",
+          "class": "auto",
+          "payload": {
+            "W-A": "写侧停写记录级聚合副本（gov_collector/gov_zhengceku/mof_attachments）+ cleaned 侧按**真附件**派生（unified_schema gov/mof）⇒ 交付口径不变、raw 双份消除（历史 raw 见 W-M）",
+            "W-B": "新增 attachments.sidecar_record_content（记录级、内容寻址 .txt、md5 列沿用既有语义存 sha256 并在 _metadata 明示）+ pipeline 映射后接入 ⇒ 原**死代码**「超大附件外置」承诺首次生效",
+            "W-D": "pbc_serve 新增 send_head 覆写：缺失 .json 由同目录 .jsonl **内存渲染**（BytesIO）⇒ 预览目录零落盘",
+            "W-I": "supp_parser 多格式：PDF 路径不变，非 PDF 委托 crawler_common.extract_document_text；**途中发现并修复**：`from supp_ocr_pdf import ocr_scanned` 在包式导入下必 ModuleNotFoundError⇒ 改 try/except 双形态导入（该模块首次可被测试与包内调用）"
+          }
+        },
+        {
+          "item_id": "WL-20261009212600448-31452-fec37c",
+          "subject": "W-H 部分完成：非五源 naive xlsx 已核实边界、未改码",
+          "class": "human",
+          "payload": {
+            "未做": "未改为 crawler_common.iter_xlsx_text_rows/cap_xlsx_text（预算与风险收敛）⇒ 登记 W-L",
+            "核实": "tools/build_east_backlog.py::extract_xlsx（read_only 流式 + 数据量小）与 modules/internal_policy_drafter/scripts/dump_related_systems.py::dump（read_only + max_lines 上限 + 300 字符截断）",
+            "结论": "**无 N-208 型内存爆量**（读侧流式、有上限），且**不在五源 raw 写入链上** ⇒ 不影响「写入阶段不再爆量」结论；按声明维度迭代有 CPU/耗时开销"
+          }
+        },
+        {
+          "item_id": "WL-20261009212600181-31452-80471f",
+          "subject": "表格结构化「保完整性」优化已落地（3 类静默丢失消除 + 省体积不冲突）",
+          "class": "auto",
+          "payload": {
+            "已修": "① **不裁行**（名录/分类/小计行保留，dimension_rows 覆盖全行）+ **紧凑投影（省略空值键）**⇒ 既不丢行也不产生 null 膨胀（原靠裁行消 null）；② 被裁稀疏列值留痕 meta.sparse_metric_values；③ 无指标回退改 fill≥1；④ ⑮ 路径右裁空单元格+连续空行视为表尾+XLSX_MAX_ROWS 上限；⑤ supp 收录改**合并**；⑥ 新增 meta.metric_row_count 双计",
+            "最优方案": "先保完整性、再控体积：完整性由「不裁行 + 值留痕」保证，体积由「紧凑投影（省空值键）」保证",
+            "测试": "tests/test_table_completeness.py 13 项（含 ⑮ 声明维度不展开、紧凑投影无 null、⑤ 不裁行直测）",
+            "评估": "9 类会丢表格数据，其中 4 类静默：⑤ 统计表无指标值行被裁（meta 无计数）、④ 稀疏指标列裁剪（值消失，仅计数）、⑥ 无指标回退 fill≥2 ⇒ 孤值列丢、⑮ .xlsm/.xlsb 矩阵轨按声明维度展开且无上限（与 N-208 同型）、⑩ supp 收录覆盖 table_structured、③ 矩阵截断无标记、⑧ 公式无缓存值无检测、⑦ 表头>4行语义漂移、⑨ 扫描 PDF 无表格"
+          }
+        },
+        {
+          "item_id": "WL-20261009212600606-31452-d3705c",
+          "subject": "表格轨残余三项（③ 截断标记 / ⑧ 公式缓存 / ⑦ 表头上限）改法已定未执行",
+          "class": "human",
+          "payload": {
+            "③": "excel_matrix 截断改回**可见元数据**（矩阵轨补 truncated:true + 原始维度）；现仅 WARNING",
+            "⑦": "表头 >4 行 / 注释行 >2 行时超出部分语义漂移 ⇒ detect_header 置 capped 标记并落 meta",
+            "⑧": "xlsx 公式无缓存值时 `data_only=True` 得 None 无检测 ⇒ 可经 zip XML `<f>` 计数落 meta.formula_cells + formula_values=cached（当前不还原公式）",
+            "定位": "均属极端文件/极端表头；改法风险低（只加 meta，不动 schema 语义），建议下次治理批次一并做"
+          }
+        }
+      ]
+    }
+  ]
+}

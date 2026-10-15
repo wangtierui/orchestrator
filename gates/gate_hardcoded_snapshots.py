@@ -3,8 +3,14 @@
 gates/gate_hardcoded_snapshots — 硬编码 cleaned 快照日期 lint（N-3 / 旧 lint_hardcoded_snapshots 迁移）
 
 P1 实装：扫描本仓 modules/* 与 std_lib 下全部 .py，发现形如
-``{src}_cleaned_{YYYYMMDD}.csv|.jsonl`` 的**文件路径字面量**即 FAIL，
+``{src}_{cleaned|clauses|raw}_{YYYYMMDD}.csv|.jsonl`` 的**文件路径字面量**即 FAIL，
 强制下游一律经 clean_index latest 动态取最新快照（杜绝重跑读旧快照回归）。
+
+覆盖范围扩展（2026-10-16，跨日失败实证）：原模式**只覆盖 `_cleaned_`**，
+而 `tests/test_w4_data_layer.py` 的断言硬编码了 `gov_clauses_20261015.jsonl`——
+输入侧已按N-3 要求改用动态日期（`datetime.date.today()`），**断言侧漏改**，
+日期一滚动（2026-10-16）即稳定失败。这类缺陷写当天不可见、跨日必现，
+且不被原模式覆盖⇒ 模式扩到三族（cleaned / clauses / raw），零噪声。
 
 排除（既定隔离，勿动）：
   - backups/ data/ cache/ logs/ reports/（非代码或历史）；
@@ -17,7 +23,12 @@ from __future__ import annotations
 import os
 import re
 
-PAT = re.compile(r"[A-Za-z]+_cleaned_\d{8}\.(?:csv|jsonl)", re.IGNORECASE)
+#: 按日命名的产物族（文件名必含**当日**日期 ⇒ 硬编码即跨日爆炸的定时炸弹）：
+#:   {src}_cleaned_{YYYYMMDD}.jsonl  （clean_index 快照）
+#:   {src}_clauses_{YYYYMMDD}.jsonl  （条文产物）
+#:   {src}_raw_{YYYYMMDD}.jsonl      （raw 产物）
+#: 2026-10-16 起含 `_clauses_`：实测该族曾漏判（tests/test_w4_data_layer.py 跨日失败）。
+PAT = re.compile(r"[A-Za-z]+_(?:cleaned|clauses|raw)_\d{8}\.(?:csv|jsonl)", re.IGNORECASE)
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # 构建产物目录亦排除（2026-09-13）：pip wheel / pip install . 会整树复制到 build/lib，
 # 其中的旧快照文件名会造成误报（这些目录 .gitignore 已忽略，非源码）。

@@ -282,14 +282,19 @@ def test_clause_md_flag_defaults_off(tmp_path, monkeypatch):
 
     res = clause_index.build_clause_index()  # 默认：不写 MD
     assert res["gov"]["built"] is True
-    assert (clause_dir / "gov_clauses_20261015.jsonl").exists(), "JSONL（事实源）必须照常产出"
-    assert not (clause_dir / "gov_clauses_20261015.md").exists(), "默认不得生成 MD 渲染视图"
+    # ⚠️ 断言侧也必须用**动态日期**（与输入侧同一个 stamp）：曾硬编码 `20261015`，
+    # 日期一滚动（2026-10-16）即稳定失败——输入侧遵守了 gate_hardcoded_snapshots N-3，
+    # 断言侧却漏改，属"写当天不可见、跨日必现"的时间炸弹。
+    out_jsonl = clause_dir / f"gov_clauses_{stamp}.jsonl"
+    out_md = clause_dir / f"gov_clauses_{stamp}.md"
+    assert out_jsonl.exists(), f"JSONL（事实源）必须照常产出：{out_jsonl.name}"
+    assert not out_md.exists(), f"默认不得生成 MD 渲染视图：{out_md.name}"
     state = json.loads((clause_dir / "state.json").read_text(encoding="utf-8"))
     assert state["gov"]["md_path"] == "", "state 须如实反映 MD 未生成"
 
     res2 = clause_index.build_clause_index(rebuild=True, with_md=True)  # 按需开启
     assert res2["gov"]["built"] is True
-    md = clause_dir / "gov_clauses_20261015.md"
+    md = out_md
     assert md.exists(), "--md/with_md=True 须按需生成"
     assert "第一条" in md.read_text(encoding="utf-8"), "MD 内容仍是渲染视图语义"
 
