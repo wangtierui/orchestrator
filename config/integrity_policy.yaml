@@ -54,6 +54,33 @@ schedule:
     - slo_breach
     - quality_regression
 
+# 单文件行数预算（方案 §13.11：行数管规模、C901 管结构，两者互补）
+
+# 为什么要有判据：方案 §7.8 的 D 类（>1200 行 4→0）是**一次性核对**，没有机器守门；
+# 之后 `tools/run_production_refresh.py` 又长到 2300+ 行（随 W0–W5 持续新增步骤/判据）
+# ⇒ **规模在无人盯防的情况下回涨**。本判据采用与 `gate_import_bootstrap` 相同的
+# **只减不增**基线纪律：不要求立刻拆完（采集层拆分需真实数据环境，见 docs/tech_debt.md
+# TD-1/D-遗留），但**禁止新增长超限文件**。
+file_budget:
+  max_lines: 800
+  scope: [std_lib, modules, tools, config, interfaces, gates, commands]
+  baseline:
+    - tools/run_production_refresh.py
+    - std_lib/scraper_std/document_structure.py
+    - tools/gen_analysis_deliveries.py
+    - std_lib/scraper_std/crawler_common.py
+    - tools/gen_flow_map.py
+    - tools/audit_health.py
+    - modules/regulatory_scrapers/collectors/gov/parse.py
+    - modules/regulatory_scrapers/collectors/gov/collector.py
+    - modules/regulatory_scrapers/collectors/gov/zhengceku.py
+    - modules/regulatory_classifier/recall_audit/run_retrieval_after_checks.py
+    - tools/gen_benchmark.py
+    - tools/extract_relations.py
+    - std_lib/scraper_std/excel_structure.py
+  # 判定口径：**超限集合**（lines > max_lines）必须 ⊆ baseline。
+  # 拆完一个就从 baseline 删一个（基线单调收缩）；新增超限文件即 FAIL。
+
 # 触发项策略（与 `config/triggers.yaml` 一致）
 triggers:
   # 作业超时上限（秒）；超过即判 FAIL（防"挂死式"作业）

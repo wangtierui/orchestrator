@@ -1,0 +1,178 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-10-15T16:28:15+08:00",
+  "enums": {
+    "total_domains": 72,
+    "form": "frozenset/tuple 字面量 + gate_enum_values 全仓值面校验（非 Enum 类）",
+    "frozenset_domains": [
+      "TIMELINESS_STATUS",
+      "BODY_SOURCE",
+      "CLAUSE_PARSE_MODES",
+      "CLAUSE_ISSUE_SEVERITY",
+      "CLAUSE_STRUCTURE_LEVELS",
+      "SOURCE_SET",
+      "INTERNAL_STATUS",
+      "INTERNAL_FILE_TYPE",
+      "INTERNAL_EXT",
+      "ALIGN_METHOD",
+      "REF_MATCH_METHOD",
+      "BRIDGE_RELATION",
+      "RELATION_KIND",
+      "RELATION_DOC_KIND",
+      "BASIS_TYPE",
+      "REPEAL_ACTION",
+      "REPEAL_SCOPE",
+      "RELATION_TARGET_CLASS",
+      "ARTICLE_PLACEMENT",
+      "ART_CHECK",
+      "RELATION_MATCH_METHOD",
+      "LEGAL_DOC_TYPES",
+      "REGULATORY_TYPES",
+      "CATEGORY_SET",
+      "STEP_KINDS",
+      "FAIL_SEMANTICS",
+      "FAILURE_ACTIONS",
+      "SCHEDULE_TRIGGER",
+      "SCHEDULE_JOB_KIND",
+      "FRAMEWORK_ID",
+      "REPORTING_CADENCE",
+      "ITEM_TYPE",
+      "MAP_METHOD",
+      "MAP_STATUS",
+      "EXEC_STATUS",
+      "GAP_CLASS",
+      "GAP_SEVERITY",
+      "EVIDENCE_KIND",
+      "WORKLIST_KIND",
+      "WORKLIST_STATUS"
+    ],
+    "tuple_domains": [],
+    "scalar_constants": [
+      "TIMELINESS_UNVERIFIED",
+      "IPN_PREFIX",
+      "BASIS_TYPE_SUBSTANTIVE",
+      "BASIS_TYPE_PROCEDURAL",
+      "REPEAL_ACTION_REPEAL",
+      "REPEAL_ACTION_INVALIDATE",
+      "REPEAL_ACTION_CEASE",
+      "REPEAL_ACTION_INAPPLICABLE",
+      "REPEAL_ACTION_CANCEL",
+      "REPEAL_SCOPE_WHOLE",
+      "REPEAL_SCOPE_PARTIAL",
+      "REPEAL_SCOPE_ATTACHMENT",
+      "ARTICLE_PLACEMENT_SRC_OFFSET",
+      "ARTICLE_PLACEMENT_SNIPPET",
+      "ARTICLE_PLACEMENT_SPAN",
+      "ART_CHECK_VERIFIED",
+      "ART_CHECK_OUT_OF_RANGE",
+      "ART_CHECK_IN_RANGE_UNMATCHED",
+      "ART_CHECK_NO_TABLE",
+      "CONSTITUTION",
+      "LAW",
+      "JUDICIAL_INTERPRETATION",
+      "ADMIN_REGULATION",
+      "LOCAL_REGULATION",
+      "AUTONOMOUS_REGULATION",
+      "DEPT_RULE",
+      "LOCAL_GOVERNMENT_RULE",
+      "STATE_COUNCIL_NORMATIVE",
+      "DEPT_NORMATIVE",
+      "LOCAL_GOVERNMENT_NORMATIVE",
+      "INDUSTRY_RULE",
+      "OTHER"
+    ],
+    "enum_classes": []
+  },
+  "consumers": {
+    "SOURCE_SET": {
+      "total": 29,
+      "files": 7
+    },
+    "TIMELINESS_STATUS": {
+      "total": 19,
+      "files": 7
+    },
+    "WORKLIST_KIND": {
+      "total": 18,
+      "files": 6
+    },
+    "REPEAL_ACTION_REPEAL": {
+      "total": 9,
+      "files": 2
+    },
+    "RELATION_DOC_KIND": {
+      "total": 8,
+      "files": 3
+    },
+    "EXEC_STATUS": {
+      "total": 8,
+      "files": 3
+    },
+    "EVIDENCE_KIND": {
+      "total": 8,
+      "files": 3
+    },
+    "RELATION_KIND": {
+      "total": 7,
+      "files": 4
+    },
+    "GAP_CLASS": {
+      "total": 7,
+      "files": 2
+    },
+    "MAP_METHOD": {
+      "total": 6,
+      "files": 2
+    },
+    "GAP_SEVERITY": {
+      "total": 6,
+      "files": 2
+    },
+    "BODY_SOURCE": {
+      "total": 5,
+      "files": 1
+    },
+    "CLAUSE_PARSE_MODES": {
+      "total": 5,
+      "files": 3
+    },
+    "RELATION_MATCH_METHOD": {
+      "total": 5,
+      "files": 3
+    },
+    "STEP_KINDS": {
+      "total": 5,
+      "files": 2
+    },
+    "FRAMEWORK_ID": {
+      "total": 5,
+      "files": 1
+    },
+    "REPORTING_CADENCE": {
+      "total": 5,
+      "files": 2
+    },
+    "ITEM_TYPE": {
+      "total": 5,
+      "files": 2
+    },
+    "MAP_STATUS": {
+      "total": 5,
+      "files": 2
+    },
+    "REPEAL_SCOPE_WHOLE": {
+      "total": 5,
+      "files": 1
+    }
+  },
+  "feature_baseline": {
+    "match_case": 0,
+    "pep604_union": 78,
+    "future_annotations": 257,
+    "dataclass": 16,
+    "type_alias": 0,
+    "files_scanned": 298,
+    "files_with_return_annotations": 0
+  },
+  "verdict": "StrEnum 迁移**不适用**（前提不成立）：本仓受控域不是 `str + Enum` 类，而是 `frozenset[str]`/`tuple[str, ...]` 字面量 + `gate_enum_values` 的**全仓字面量面校验**——没有任何 Enum 类可迁。进一步说，该形态**比 Enum 类更严**：① 值面由门禁遍历全仓校验（新增未登记值即 FAIL），Enum 类做不到这一点；② 消费点直接用字符串字面量，无 `str(X)` 样板可消除（见 consumers 的分布）。结论：不做迁移；若将来出现'枚举值误用字符串拼接'的真实缺陷，再按该缺陷的影响域局部引入 StrEnum 并同步收紧字面量面。"
+}

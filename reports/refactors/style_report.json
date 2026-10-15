@@ -1,0 +1,100 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-10-15T16:29:14+08:00",
+  "already_adopted": {
+    "E501": "行长度 100（ruff line-length=100 + lint ignore，格式器口径）",
+    "I001": "导入顺序（ruff select 含 I，isort 等价）",
+    "mypy": "类型基线 0 error + check_untyped_defs（pyproject [tool.mypy]，CI 阻断）",
+    "N801/N802/N803": "命名规则（§7.6 计划：先报告后启用，本次报告给出基线）"
+  },
+  "candidate_rules": {
+    "complexity_c901": {
+      "rule": "C901",
+      "threshold": 15,
+      "counts": {
+        "C901": 169
+      },
+      "total": 169
+    },
+    "docstring_d": {
+      "rules": [
+        "D100",
+        "D101",
+        "D103"
+      ],
+      "counts": {
+        "D103": 376,
+        "D101": 18
+      },
+      "total": 394
+    }
+  },
+  "file_size": {
+    "buckets": {
+      "<300": 216,
+      "300-500": 42,
+      "500-800": 28,
+      "800-1200": 10,
+      ">=1200": 3
+    },
+    "ge_800": [
+      {
+        "file": "tools/run_production_refresh.py",
+        "lines": 2338
+      },
+      {
+        "file": "std_lib/scraper_std/document_structure.py",
+        "lines": 1552
+      },
+      {
+        "file": "tools/gen_analysis_deliveries.py",
+        "lines": 1271
+      },
+      {
+        "file": "std_lib/scraper_std/crawler_common.py",
+        "lines": 1156
+      },
+      {
+        "file": "tools/gen_flow_map.py",
+        "lines": 1015
+      },
+      {
+        "file": "tools/audit_health.py",
+        "lines": 938
+      },
+      {
+        "file": "modules/regulatory_classifier/recall_audit/run_retrieval_after_checks.py",
+        "lines": 896
+      },
+      {
+        "file": "tools/gen_benchmark.py",
+        "lines": 896
+      },
+      {
+        "file": "tools/extract_relations.py",
+        "lines": 895
+      },
+      {
+        "file": "std_lib/scraper_std/excel_structure.py",
+        "lines": 847
+      },
+      {
+        "file": "modules/regulatory_scrapers/collectors/gov/parse.py",
+        "lines": 843
+      },
+      {
+        "file": "modules/regulatory_scrapers/collectors/gov/collector.py",
+        "lines": 841
+      },
+      {
+        "file": "modules/regulatory_scrapers/collectors/gov/zhengceku.py",
+        "lines": 802
+      }
+    ]
+  },
+  "verdict": {
+    "C901": "**建议启用**（阈值 15）：现状命中数见 candidate_rules；超限函数集中在历史层采集脚本，随接触拆分即下降。",
+    "D100/D101/D103": "**分层启用**：新代码与 owned 层（gates/commands/interfaces/std_lib/common_lib）启用，历史层走 per-file-ignores（同 E741 模式）——直接全局启用会产生数百条无害告警。",
+    "结论": "本报告为**量化依据**，非门禁；启用动作走 pyproject + ci_check 阻断。"
+  }
+}

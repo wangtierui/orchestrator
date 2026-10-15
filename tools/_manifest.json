@@ -209,6 +209,11 @@
       "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
     },
     {
+      "file": "modern_features_report.py",
+      "category": "tool",
+      "purpose": "现代特性现状与迁移影响面报告（方案 §13.9）：受控域**实际形态**统计（实测为 frozenset/tuple 字面量而非 Enum 类 ⇒ StrEnum 迁移不适用）+ match/PEP604/注解现状基线，落 reports/refactors/modern_features_report.json"
+    },
+    {
       "file": "normalize_internal_naming.py",
       "category": "tool",
       "entry": "内部制度规范命名与归集（dry-run 前置 + 备份）",
@@ -290,6 +295,11 @@
       "entry": "非制度正文件隔离归置（misc/ ledgers/）",
       "independent": true,
       "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
+    },
+    {
+      "file": "style_report.py",
+      "category": "tool",
+      "purpose": "风格规则现状报告（方案 §13.11 先报告后启用）：C901 复杂度、D100/D101/D103 docstring、行数分布；报告非门禁，启用决策看 report（落 reports/refactors/style_report.json）"
     },
     {
       "file": "sync_wiki_sources.py",

@@ -41,6 +41,7 @@ from ._domains import (
     _check_semantic_manifest,
     _check_theme_coverage,
 )
+from ._filebudget import _check_file_budget
 from ._manifest import (
     _check_corpus,
     _check_modules_manifest,
@@ -128,6 +129,11 @@ def run() -> tuple[bool, dict]:
     p12, d12 = _check_readme_gate_count()
     problems += p12
     detail.update(d12)
+
+    # 判据 J11（§13.11）：单文件行数预算（超限集合 ⊆ 策略基线，只减不增）
+    p13, d13 = _check_file_budget(ROOT)
+    problems += p13
+    detail.update(d13)
 
     if warnings:
         detail["warnings"] = warnings
