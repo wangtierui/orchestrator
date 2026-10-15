@@ -25,4 +25,4 @@
 ## 相关
 
 - 清单与判据：`tools/_manifest.json`、`gates/gate_config_integrity.py`
-- 决策与迁移程序：`reports/全链路重构方案_修订版_v2_20260926.md` §3.15
+- 决策与迁移程序：`reports/refactors/全链路重构方案_修订版_v2_20260926.md` §3.15

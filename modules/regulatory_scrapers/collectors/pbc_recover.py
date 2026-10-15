@@ -43,7 +43,8 @@ BASE = os.path.dirname(os.path.abspath(__file__))
 BAK = os.path.join(BASE, "backups", "pbc_laws.bak.json")
 JSON_OUT = os.path.join(BASE, "data", "raw", "pbc_laws.json")
 TESS = os.environ.get("OCR_TESSERACT_BIN", "")  # R17：由 config/ocr.yaml/env 提供，空则降级
-TESSD = os.path.join(BASE, "tessdata")
+# W4（§7.10 案例二）：原 `TESSD = os.path.join(BASE, "tessdata")` 是**死常量**
+# （全文件零使用）且指向不存在的目录（真实语言数据在仓根）——删除而非改引。
 SUMMARY_LEN = 200
 OCR_DPI = 200
 SAVE_EVERY = 20

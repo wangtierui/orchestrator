@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """dedupe_original_storage.py — 内部制度原件库「冗余处置 + 跨层硬链接 + 非正文标记」（P1/P2，2026-09-13）
 
-背景（`reports/内部制度原件双份存储与索引漂移分析_20260913.md` · §6.2 P1/P2）
+背景（`reports/scratch/内部制度原件双份存储与索引漂移分析_20260913.md` · §6.2 P1/P2）
 --------------------------------------------------------------------------
 同一批部门制度在仓内有两份物理副本：
   A `modules/regulatory_scrapers/data/corpus/dept_policies`（归集/审计层，306 MB）
@@ -63,7 +63,7 @@ CORPUS = os.path.join(ROOT, "data", "corpus", "dept_policies")
 BACKUP_ROOT = os.path.join(IPB, "backups")
 
 NON_POLICY_EXTS = {".xls", ".xlsx"}
-EXCLUDED_REASON = "非制度正文（检视台账/清单），内容已不在原件库；见 reports/内部制度原件双份存储与索引漂移分析_20260913.md §4.6"
+EXCLUDED_REASON = "非制度正文（检视台账/清单），内容已不在原件库；见 reports/scratch/内部制度原件双份存储与索引漂移分析_20260913.md §4.6"
 
 
 def _sha256(path: str) -> str:

@@ -31,8 +31,7 @@ SKIP_DIRS = {
     "data",
     "reports",
     "graphify-out",
-    "external",
-    "tessdata",
+    "external",  # 外部资产统一外置（含 tessdata：W4 §7.10 案例二已迁入 external/tessdata）
     "backups",
     ".ruff_cache",
     ".codebuddy",

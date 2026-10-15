@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """test_clean_index_portability.py —— clean_index 索引可移植性回归（2026-09-13 克隆检视修复）。
 
-背景（`reports/克隆可移植性检视报告_20260913.md` · CP-D02）：
+背景（`reports/scratch/克隆可移植性检视报告_20260913.md` · CP-D02）：
     `modules/regulatory_scrapers/clean_index/index.json` 原为**入库文件**且内容内嵌
     绝对路径（`scraper_root` + 各快照 `path`），而 `get_clean_index()` 只判"文件存在"
     即沿用 → 克隆副本（零数据）读到的是**原仓数据**，把"未核验"伪造成

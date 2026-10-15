@@ -110,12 +110,33 @@ def active_source_ids(refresh: bool = False) -> list[str]:
 
 # --------------------------------------------------------------------------- #
 # collector 路由（R15 补全）：sources.yaml「collector」字段消费
+#
+# W4（§7.2 A 类 / R-8）：supp_ingest 语义降级——sources.yaml 原把它登记为
+# `collector: collectors.supp_ingest`，但 COLLECT_CMD 无 supp 项、cli source 无
+# collect 执行分支 ⇒ **从不被运行的纸面 collector**（声明面先进、执行面缺失）。
+# 新增 `collector_kind` 两类语义：
+#   · `collector`（默认，省略即此）——链上采集步骤；gate_sources_config 断言其
+#     模块存在**且**在编排器 COLLECT_CMD/produced_by 有执行证据；
+#   · `ingest`——人工/触发器入口的归集工具（本地目录/多源合库），**无链上 collect
+#     步骤**；只断言模块存在 + 在 modules/_manifest.json 有独立登记。
 # --------------------------------------------------------------------------- #
 def collector_module(source_id: str, refresh: bool = False) -> str:
     """源 collector 模块名（collectors.gov_collector → gov_collector；无点原样返回）。"""
     cfg = load_sources(refresh).get(source_id) or {}
     v = (cfg.get("collector") or "").strip()
     return v.rsplit(".", 1)[-1] if "." in v else v
+
+
+def collector_kind(source_id: str, refresh: bool = False) -> str:
+    """源采集入口类别：`collector`（链上采集，默认）/ `ingest`（人工归集工具）。
+
+    未知值抛 ValueError（受控两类，防静默漂移成第三形态）。
+    """
+    cfg = load_sources(refresh).get(source_id) or {}
+    v = (cfg.get("collector_kind") or "collector").strip()
+    if v not in ("collector", "ingest"):
+        raise ValueError(f"{source_id}: collector_kind={v!r} 不受支持（collector|ingest）")
+    return v
 
 
 def collector_path(source_id: str, refresh: bool = False) -> str:

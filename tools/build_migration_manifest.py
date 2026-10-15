@@ -7,7 +7,7 @@ tools/build_migration_manifest.py — 生成 data_migration_manifest.json（P0 /
 
 **路径纪律（2026-09-13 修复）**：清单内全部 `path` 为**相对仓库根**的 POSIX 路径，绝不写绝对路径。
 原实现输出 `D:/WorkBuddy/...` 绝对路径（97 处），清单只在本机可执行、且登记的仍是已过期的
-0907 快照；异机（克隆后）完全无法使用（见 `reports/克隆可移植性检视报告_20260913.md` · CP-D03）。
+0907 快照；异机（克隆后）完全无法使用（见 `reports/scratch/克隆可移植性检视报告_20260913.md` · CP-D03）。
 
 范围（仅活跃数据，不含历史归档/backups/cache/published）：
   scrapers: data/cleaned 每源最新1版 csv+jsonl、data/raw 定长主库 json、

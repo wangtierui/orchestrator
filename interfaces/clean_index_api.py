@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """interfaces/clean_index_api — 五源 cleaned 快照索引**唯一访问接口**（阶段 3 实装，2026-09-18）
 
-背景（`reports/数据流转与存储交互优化方案_20260917.md` §6 阶段 3）
+背景（`reports/refactors/数据流转与存储交互优化方案_20260917.md` §6 阶段 3）
 ----------------------------------------------------------------
 此前 `clean_index/index.json` 被 classifier 的 **9 处**调用点各自 `sys.path.insert` +
 裸 `from clean_index import ...` 直连（`recall_audit/*`、`scripts/*`、`report_builders/*`），

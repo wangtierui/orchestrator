@@ -10,7 +10,7 @@ from config.exitcodes import ExitCode
 def run(argv):
     """analysis gen|status —— 规划 2.1 五级分析交付库（F-L01，2026-09-12）。
 
-    - gen    [--out <dir>] [--dry]：生成 **17 份**交付物（docs/reports/ + _manifest.json）
+    - gen    [--out <dir>] [--dry]：生成 **17 份**交付物（docs/deliverables/ + _manifest.json）
                                    （15 项 + 2026-09-14 追加的关系类 2 项：2.1.2.4/2.1.2.5）
     - status                  ：列交付库现状（manifest 概览 + 文件缺失检查）
     """
@@ -20,7 +20,7 @@ def run(argv):
     from bootstrap import bootstrap
 
     action = argv[0] if argv else ""
-    outdir = _os.path.join(paths.ROOT, "docs", "reports")
+    outdir = paths.DELIVERABLES_DIR
     if action == "gen":
         bootstrap(include_tools=True)
         from gen_analysis_deliveries import main as _gen

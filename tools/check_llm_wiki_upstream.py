@@ -8,7 +8,7 @@
   - 本项目与 llm_wiki 的耦合面**只有两处**：①`raw/sources/` 文件协议（md+frontmatter，
     由 tools/sync_wiki_sources.py 单向喂入）②可选本地 HTTP API（127.0.0.1:19828）；
   - 上游**小版本更新通常零适配**（文件协议稳定）；大版本变更时按
-    `reports/llm_wiki接入适配契约_20260912.md` 的核对清单人工确认 3 个适配点；
+    `reports/manuals/llm_wiki接入适配契约_20260912.md` 的核对清单人工确认 3 个适配点；
   - 本工具提供"发现新版本"的信号（建议并入月度巡检，见运行手册）。
 
 用法：
@@ -75,7 +75,7 @@ def main() -> int:
     else:
         print(f"[upstream] **发现新版本**：基线 v{known} → 最新 v{latest}")
         print(
-            "[upstream] 请按 reports/llm_wiki接入适配契约_20260912.md 的核对清单"
+            "[upstream] 请按 reports/manuals/llm_wiki接入适配契约_20260912.md 的核对清单"
             "确认 3 个适配点（文件协议/HTTP API/安装资产名）"
         )
     if args.record:

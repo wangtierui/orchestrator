@@ -28,8 +28,7 @@ _U_SCAN_SKIP = set(_SCAN_BASE_SKIP) | {
     "data",
     "reports",
     "archive",
-    "external",
-    "tessdata",
+    "external",  # 含 tessdata（W4 §7.10 案例二已迁入 external/tessdata）
     "node_modules",
     ".venv",
     "venv",

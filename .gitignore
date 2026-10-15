@@ -29,15 +29,15 @@ modules/regulatory_scrapers/clean_index/index.json
 
 # 治理库文本快照（阶段 2，2026-09-18）：`governance export` 产出的只读交换层，
 # 由治理库重建（`governance sync --apply --export`），非事实源 → 不入库。
-# 跨机审计链仍由 reports/ 与 docs/reports/ 承载（二者入库）。
+# 跨机审计链仍由 reports/ 与 docs/deliverables/ 承载（二者入库）。
 exports/
 
 # ===== OCR / 大文件 =====
 *.pdf
 *.doc
 *.docx
-tessdata/
-# OCR 本地部署（external/ 含 tesseract junction → 系统安装目录；2026-09-12）
+# OCR 本地部署（external/ 含 tesseract junction → 系统安装目录 + tessdata；2026-09-12，
+# W4 §7.10 案例二：tessdata 自仓根迁入 external/ 后由本规则统一覆盖）
 external/
 
 # ===== 运行状态 =====

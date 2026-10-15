@@ -11,7 +11,9 @@ clean_index — 五源 clean 产物结构化索引（单一事实源）
     regulatory_classifier/rfn/ 的 get_index() 单例模式——持久化索引 + 稳定访问层。
 
 持久化：
-    index.json（UTF-8，可直接被程序读取），由 build_clean_index.py 生成。
+    index.json（UTF-8，可直接被程序读取），由 get_clean_index() 在缺失/失陈时
+    **自愈重建并写入**（历史手工脚本 build_clean_index.py 已于 2026-10-15 退役——
+    零执行证据：无任何 import/subprocess 调用方）。
     get_clean_index() 优先加载 index.json（零扫描、稳定）；缺失时回退扫描并写入。
 
 可移植性纪律（2026-09-13）：
@@ -253,7 +255,7 @@ def build_index_dict(scraper_root: str = SCRAPER_ROOT, *, hash_files: bool = Tru
     return {
         "schema_version": SCHEMA_VERSION,
         "generated_at": _utc8_now(),
-        "generator": "regulatory_scrapers/clean_index/build_clean_index.py",
+        "generator": "regulatory_scrapers/clean_index/get_clean_index",
         "description": "五源 clean 产物结构化索引（单一事实源），供 regulatory_classifier 直接加载，无需额外转换。",
         "scraper_root": _as_posix(scraper_root),
         "sources": sources,

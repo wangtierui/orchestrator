@@ -8,7 +8,7 @@
   · `diff`：两份快照对比 → **新增 / 删除 / 内容变化 / 仅 mtime 变化** 四类，输出 Markdown。
 
 产物集合（**与链路产出对齐**，避免只比"想看的那几个文件"）：
-  cleaned（csv/jsonl）、分类明细表、关系事实源、主题/总览报告、`docs/reports` 分析交付 + manifest、
+  cleaned（csv/jsonl）、分类明细表、关系事实源、主题/总览报告、`docs/deliverables` 分析交付 + manifest、
   发布清单、语义分析视图（`reports/semantic/`）。
 
 用法
@@ -44,18 +44,19 @@ TARGETS = (
     "data/run_state",                             # 运行台账（步骤结果/水位）
     "reports/semantic",                           # P1 语义分析视图（本轮新增）
     "reports",
-    "docs/reports",                               # 分析交付库（17 项 + manifest）
+    "docs/deliverables",                      # 分析交付库（17 项 + manifest）
 )
 #: 单文件哈希上限（超过者只记 size/mtime —— 避免为 GB 级产物反复读盘）
 HASH_MAX = 64 * 1024 * 1024
 SKIP_NAME = ("__pycache__", ".gitkeep")
 #: 跳过**本次重构自身产出**的文档（否则"产物差异"会混入人工报告噪声）
+#: W4（§7.10 问题 3）：reports/ 三区分区后，重构自身产出整体落 refactors/ 与 scratch/
+#: （前缀随迁移更新；_tmp/_snap 为机器台账不变）。
 SKIP_PREFIX = (
     "reports/_tmp/",
     "reports/_snap/",
-    "reports/重构执行报告_",
-    "reports/重复实现台账_",
-    "reports/全链运行与模型权重可得性_",
+    "reports/refactors/",
+    "reports/scratch/",
 )
 
 

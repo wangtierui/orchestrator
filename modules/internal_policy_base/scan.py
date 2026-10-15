@@ -40,7 +40,7 @@ _SUPPORTED = {".pdf", ".doc", ".docx", ".xlsx", ".xls", ".xlsm"}
 # 本语料制度正文载体为 pdf/doc/docx；xls/xlsx 均为附表/台账（实测索引 102 条 xls/xlsx 无一为正文）。
 # 台账类（名称含下列关键词者）不再纳入制度索引——原实现会把「制度检视自查情况表」「制度清单」
 # 等台账当作制度摄入（实测 24 条最终成为"内容已不在原件库"的失效记录，见
-# reports/内部制度原件双份存储与索引漂移分析_20260913.md §4.6）。
+# reports/scratch/内部制度原件双份存储与索引漂移分析_20260913.md §4.6）。
 # 关闭开关：scan_directory(..., exclude_ledgers=False)
 _LEDGER_EXTS = {".xls", ".xlsx"}
 _LEDGER_HINTS = ("制度清单", "自查情况表", "台账", "统计表", "收集表", "制度检视", "清单")

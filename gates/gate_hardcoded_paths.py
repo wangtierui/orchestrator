@@ -11,7 +11,7 @@ gates/gate_hardcoded_paths — 盘符 / 跨仓 sys.path / 非代码文件硬编�
   原实现只遍历 `*.py`，导致**非代码文件中的盘符字面量完全不受检**。实证后果：
   `modules/regulatory_scrapers/clean_index/index.json` 内嵌 31 处本机绝对路径、
   `data_migration_manifest.json` 97 处——两者长期"门禁全绿"却异机不可用/误导恢复
-  （见 `reports/克隆可移植性检视报告_20260913.md` · CP-B02/CP-D02/CP-D03）。
+  （见 `reports/scratch/克隆可移植性检视报告_20260913.md` · CP-B02/CP-D02/CP-D03）。
   现扩至 SCAN_EXTS（代码 + 文档 + 配置），使"文档把本机路径当环境事实"同样被拦截。
 
 排除（三类，均非"入库的运行时源码"）：
@@ -58,9 +58,9 @@ EXCLUDE_DIRS = {
     "dist",
     # v2 §3.10（P2-3）：数据生命周期归档层（tools/retention.py 的目标；不入 git）
     "archive",
-    # 本地环境/agent 状态目录（均不入 git；external 为 PaddleOCR/Tesseract 第三方 junction）
+    # 本地环境/agent 状态目录（均不入 git；external 为 PaddleOCR/Tesseract 第三方 junction，
+    # 含 W4 §7.10 案例二迁入的 external/tessdata）
     "external",
-    "tessdata",
     ".codebuddy",
     # graphify 知识图谱产物（2026-09-20）：派生产物，由 `graphify extract` 在目标机重建，
     # 内容天然含本机绝对路径（graph.json 的 node label / converted/*.md 副本），不入库、不属硬编码违规

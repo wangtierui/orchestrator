@@ -41,6 +41,10 @@ _GUIDE_ROOT = _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(_
 if _GUIDE_ROOT not in _sys.path:
     _sys.path.insert(0, _GUIDE_ROOT)
 del _GUIDE_ROOT, _os, _sys
+# W4（§7.10 问题 5）：logs 落点改引 paths.LOGS_DIR（原为 CWD 相对 "logs" 自拼，
+# 链上 cwd=仓根时写仓根 logs/、standalone 时写 CWD/logs——两种语义隐式分叉）。
+# import paths 置于**仓根引导之后**（引导前 import 必 ModuleNotFoundError——
+# modules standalone 脚本的同款教训）；isort 将其归入 first-party 段（stdlib 之后）。
 import argparse
 import json
 import logging
@@ -51,6 +55,8 @@ import sys
 import time
 import urllib.parse
 from typing import Any
+
+import paths
 
 try:
     import requests
@@ -657,8 +663,8 @@ def main(argv=None) -> int:
     _init_cache(args.cache_dir or None, args.offline)
 
     os.makedirs(args.out_dir, exist_ok=True)
-    os.makedirs("logs", exist_ok=True)
-    log_file = args.log_file or os.path.join("logs", "scraper.log")
+    os.makedirs(paths.LOGS_DIR, exist_ok=True)
+    log_file = args.log_file or os.path.join(paths.LOGS_DIR, "scraper.log")
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s [%(levelname)s] %(message)s",
@@ -801,9 +807,9 @@ def main(argv=None) -> int:
         #   原路径 `merge_with_master(...)` 需把整表（1GB 级）读进内存 ⇒ 与 clean 同源的
         #   6× 瞬时峰值（实测 clean 侧 5.24~6.13GB）。
         merge_stat = merge_and_write(records, cfg, source_label=env_source, write_csv=args.csv)
-        paths = {"json": merge_stat["json"], "csv": merge_stat["csv"]}
+        out_paths = {"json": merge_stat["json"], "csv": merge_stat["csv"]}
     else:
-        paths = write_outputs(records, cfg, source_label=env_source, write_csv=args.csv)
+        out_paths = write_outputs(records, cfg, source_label=env_source, write_csv=args.csv)
     # N-192（2026-10-08）：主库**已原子落盘** → 清理子源的续跑暂存（其记录已并入主库）。
     # 不清的代价（实测）：每轮增量白付"载入 899.7MB / 12573 条 + 全量合并 ~10 分钟"且产出零变化。
     # 反例保护：若上一步写库失败/进程被杀，此处不会执行 ⇒ 暂存保留，下次仍可续跑。
@@ -812,7 +818,7 @@ def main(argv=None) -> int:
             _sc.clear_partial()
     _emit_stats()
     LOG.info("成功抓取 %d 条（子源：%s；失败：%s）。文件：%s",
-             len(records), ",".join(want), ",".join(failed) or "无", paths)
+             len(records), ",".join(want), ",".join(failed) or "无", out_paths)
     return ExitCode.OK
 
 if __name__ == "__main__":

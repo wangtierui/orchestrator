@@ -7419,42 +7419,42 @@
    "mtime": 1790767058.761,
    "sha16": "b7509d496c6ead83"
   },
-  "reports/2026-09-20_nfra条款产物_01_六类缺陷根因排查与修复方案.md": {
+  "reports/scratch/2026-09-20_nfra条款产物_01_六类缺陷根因排查与修复方案.md": {
    "size": 48846,
    "mtime": 1789910663.97,
    "sha16": "f3297b27cfb0c13d"
   },
-  "reports/C2漂移治理底稿_2026-09-08.md": {
+  "reports/scratch/C2漂移治理底稿_2026-09-08.md": {
    "size": 4627,
    "mtime": 1788851889.178,
    "sha16": "0d32dc888935b7df"
   },
-  "reports/F-L01_五级分析交付库专项报告_20260912.md": {
+  "reports/refactors/F-L01_五级分析交付库专项报告_20260912.md": {
    "size": 2900,
    "mtime": 1789223365.062,
    "sha16": "ebfa495220a74d7a"
   },
-  "reports/Obsidian_PoC_20260912.md": {
+  "reports/scratch/Obsidian_PoC_20260912.md": {
    "size": 3024,
    "mtime": 1789195771.9,
    "sha16": "0045ee0d95783f9b"
   },
-  "reports/README撰写规范与内容大纲.md": {
+  "reports/manuals/README撰写规范与内容大纲.md": {
    "size": 17677,
    "mtime": 1788868149.943,
    "sha16": "e2b992d4cafdc4e7"
   },
-  "reports/SSOT收敛专项报告_20260913.md": {
+  "reports/refactors/SSOT收敛专项报告_20260913.md": {
    "size": 5871,
    "mtime": 1789286313.916,
    "sha16": "f2f545f6228344ee"
   },
-  "reports/classifier交付物滞后归因与条款数据接入评估_20260927.md": {
+  "reports/scratch/classifier交付物滞后归因与条款数据接入评估_20260927.md": {
    "size": 19628,
    "mtime": 1790446612.234,
    "sha16": "470eb48df34656e1"
   },
-  "reports/collectors拆分专项报告_20260913.md": {
+  "reports/refactors/collectors拆分专项报告_20260913.md": {
    "size": 3956,
    "mtime": 1789237171.209,
    "sha16": "0b818c1623cf24c3"
@@ -7534,7 +7534,7 @@
    "mtime": 1790746920.383,
    "sha16": "d447b3225489d183"
   },
-  "reports/gov源相关性筛选报告_20260917.md": {
+  "reports/scratch/gov源相关性筛选报告_20260917.md": {
    "size": 6875,
    "mtime": 1789645009.508,
    "sha16": "d2c21199da45f8c8"
@@ -7544,22 +7544,22 @@
    "mtime": 1789218061.642,
    "sha16": "001ed24df105640f"
   },
-  "reports/llm_wiki接入适配契约_20260912.md": {
+  "reports/manuals/llm_wiki接入适配契约_20260912.md": {
    "size": 3729,
    "mtime": 1789218579.969,
    "sha16": "35e8a608fffd9d3f"
   },
-  "reports/orchestrator 全链路优化方案——引入工具与数据链条.md": {
+  "reports/refactors/orchestrator 全链路优化方案——引入工具与数据链条.md": {
    "size": 12754,
    "mtime": 1790571121.432,
    "sha16": "0f73918235400556"
   },
-  "reports/regulatory-compliance-orchestrator.md": {
+  "reports/scratch/regulatory-compliance-orchestrator.md": {
    "size": 5941,
    "mtime": 1789142836.588,
    "sha16": "4f0add38e5a8289b"
   },
-  "reports/regulatory_compliance_orchestrator 项目状况_20260922.md": {
+  "reports/scratch/regulatory_compliance_orchestrator 项目状况_20260922.md": {
    "size": 47625,
    "mtime": 1790077992.202,
    "sha16": "0e7f3629445fb718"
@@ -7579,47 +7579,47 @@
    "mtime": 1790746920.385,
    "sha16": "dad2c91f8d9b81b4"
   },
-  "reports/supp时效口径审计_20260908.md": {
+  "reports/scratch/supp时效口径审计_20260908.md": {
    "size": 1905,
    "mtime": 1788876246.263,
    "sha16": "5e048d721ffe730e"
   },
-  "reports/三项任务完成报告_20260912.md": {
+  "reports/scratch/三项任务完成报告_20260912.md": {
    "size": 4076,
    "mtime": 1789214218.485,
    "sha16": "0ad962fea06b063b"
   },
-  "reports/三项落地完成报告_20260912.md": {
+  "reports/scratch/三项落地完成报告_20260912.md": {
    "size": 4874,
    "mtime": 1789195883.763,
    "sha16": "f26a02c22f498fa3"
   },
-  "reports/中间产物衔接分析_20260912.md": {
+  "reports/scratch/中间产物衔接分析_20260912.md": {
    "size": 26409,
    "mtime": 1789143480.954,
    "sha16": "c69fbb576a1d9adb"
   },
-  "reports/主题分类脚本重构核查_20260908.md": {
+  "reports/scratch/主题分类脚本重构核查_20260908.md": {
    "size": 2374,
    "mtime": 1788842301.563,
    "sha16": "de9a0b2a24a795ed"
   },
-  "reports/五源时效核验续跑报告_20260914.md": {
+  "reports/scratch/五源时效核验续跑报告_20260914.md": {
    "size": 8800,
    "mtime": 1789384903.41,
    "sha16": "5aa7ae8b70bd9821"
   },
-  "reports/代码审查报告_20260911.md": {
+  "reports/scratch/代码审查报告_20260911.md": {
    "size": 39817,
    "mtime": 1789122887.34,
    "sha16": "2c4ed14dde73b010"
   },
-  "reports/依据与废止关系统一抽取_20260914.md": {
+  "reports/scratch/依据与废止关系统一抽取_20260914.md": {
    "size": 25617,
    "mtime": 1789388292.572,
    "sha16": "250ce4c12573727b"
   },
-  "reports/修复批次完成报告_20260912.md": {
+  "reports/scratch/修复批次完成报告_20260912.md": {
    "size": 6177,
    "mtime": 1789154110.703,
    "sha16": "22f04607badbd70a"
@@ -7629,152 +7629,152 @@
    "mtime": 1789500812.239,
    "sha16": "f2f26826eb6e9595"
   },
-  "reports/克隆可移植性检视报告_20260913.md": {
+  "reports/scratch/克隆可移植性检视报告_20260913.md": {
    "size": 39563,
    "mtime": 1789291906.116,
    "sha16": "bccb65f880975b4e"
   },
-  "reports/全流程审查与缺陷修复_20260926.md": {
+  "reports/scratch/全流程审查与缺陷修复_20260926.md": {
    "size": 4593,
    "mtime": 1790419042.782,
    "sha16": "56b47f41ee87b595"
   },
-  "reports/全链数据审计与基准字段排查_2026-09-08.md": {
+  "reports/scratch/全链数据审计与基准字段排查_2026-09-08.md": {
    "size": 11661,
    "mtime": 1788871773.307,
    "sha16": "ac4bfe1e767f5e65"
   },
-  "reports/全链路优化方案_v2_修正版_20260928.md": {
+  "reports/refactors/全链路优化方案_v2_修正版_20260928.md": {
    "size": 26596,
    "mtime": 1790575454.585,
    "sha16": "5436ba42e621f741"
   },
-  "reports/全链路优化方案可行性评估_20260928.md": {
+  "reports/refactors/全链路优化方案可行性评估_20260928.md": {
    "size": 25361,
    "mtime": 1790574883.948,
    "sha16": "52d6938ff8e48198"
   },
-  "reports/全链路数据流链路图_v2_20260926.md": {
+  "reports/manuals/全链路数据流链路图_v2_20260926.md": {
    "size": 65782,
    "mtime": 1790362804.086,
    "sha16": "50e85ce0d66ce278"
   },
-  "reports/全链路重构方案_20260924.md": {
+  "reports/refactors/全链路重构方案_20260924.md": {
    "size": 56378,
    "mtime": 1790222197.681,
    "sha16": "cb53d68305cd2fc8"
   },
-  "reports/全链路重构方案_修订版_v2_20260926.md": {
+  "reports/refactors/全链路重构方案_修订版_v2_20260926.md": {
    "size": 118186,
    "mtime": 1790362727.807,
    "sha16": "c631fad4fc62b68c"
   },
-  "reports/全链路重构方案_可行性评估_20260926.md": {
+  "reports/refactors/全链路重构方案_可行性评估_20260926.md": {
    "size": 55527,
    "mtime": 1790352731.232,
    "sha16": "231e21b2972e4de1"
   },
-  "reports/六项任务交付报告_2026-09-08.md": {
+  "reports/scratch/六项任务交付报告_2026-09-08.md": {
    "size": 6713,
    "mtime": 1788875668.86,
    "sha16": "cddc1645a1ca181c"
   },
-  "reports/内部制度原件双份存储与索引漂移分析_20260913.md": {
+  "reports/scratch/内部制度原件双份存储与索引漂移分析_20260913.md": {
    "size": 53957,
    "mtime": 1789313550.09,
    "sha16": "04a413e8f28b46fd"
   },
-  "reports/剩余任务完成报告_20260912.md": {
+  "reports/scratch/剩余任务完成报告_20260912.md": {
    "size": 2909,
    "mtime": 1789216773.196,
    "sha16": "9a2eadb3069fe041"
   },
-  "reports/双底座优化与知识库融入架构方案_20260912.md": {
+  "reports/refactors/双底座优化与知识库融入架构方案_20260912.md": {
    "size": 20669,
    "mtime": 1789149406.906,
    "sha16": "163799d67e5e7c7e"
   },
-  "reports/周调度增量审计_20260908.md": {
+  "reports/scratch/周调度增量审计_20260908.md": {
    "size": 3984,
    "mtime": 1788878677.626,
    "sha16": "be6717ef69ac3f1b"
   },
-  "reports/周调度增量执行报告_20260922.md": {
+  "reports/scratch/周调度增量执行报告_20260922.md": {
    "size": 10097,
    "mtime": 1790016174.648,
    "sha16": "be5ad923172dbaac"
   },
-  "reports/审计判定台账_20260930.md": {
+  "reports/scratch/审计判定台账_20260930.md": {
    "size": 15126,
    "mtime": 1790746920.571,
    "sha16": "f0ed688c39a92710"
   },
-  "reports/数据恢复演练_20260912.md": {
+  "reports/manuals/数据恢复演练_20260912.md": {
    "size": 5004,
    "mtime": 1789228894.316,
    "sha16": "8b058a244c6992d1"
   },
-  "reports/数据流转与基准审计报告_2026-09-08.md": {
+  "reports/scratch/数据流转与基准审计报告_2026-09-08.md": {
    "size": 7690,
    "mtime": 1788854773.945,
    "sha16": "bc52daa25d2ea1a6"
   },
-  "reports/数据流转与存储交互优化方案_20260917.md": {
+  "reports/refactors/数据流转与存储交互优化方案_20260917.md": {
    "size": 48743,
    "mtime": 1789650954.446,
    "sha16": "aebe7b4d0a08a982"
   },
-  "reports/整体重构方案_专项评估v2_20260907.md": {
+  "reports/refactors/整体重构方案_专项评估v2_20260907.md": {
    "size": 18554,
    "mtime": 1788790709.347,
    "sha16": "ca6d1faa28292a3b"
   },
-  "reports/整体重构方案_待确认_v1_20260907.md": {
+  "reports/refactors/整体重构方案_待确认_v1_20260907.md": {
    "size": 30639,
    "mtime": 1788787743.994,
    "sha16": "e910081fdc8fdff1"
   },
-  "reports/整体重构方案_评估v3_20260908.md": {
+  "reports/refactors/整体重构方案_评估v3_20260908.md": {
    "size": 20679,
    "mtime": 1788800246.074,
    "sha16": "8f5523a5f2a39c24"
   },
-  "reports/时效续跑专项报告_20260913.md": {
+  "reports/scratch/时效续跑专项报告_20260913.md": {
    "size": 4109,
    "mtime": 1789288004.642,
    "sha16": "a0e711301160e264"
   },
-  "reports/最终实施蓝图_v1.1_20260908.md": {
+  "reports/refactors/最终实施蓝图_v1.1_20260908.md": {
    "size": 7377,
    "mtime": 1788803597.113,
    "sha16": "264bce687efc0d0c"
   },
-  "reports/最终实施蓝图_v1_20260908.md": {
+  "reports/refactors/最终实施蓝图_v1_20260908.md": {
    "size": 13647,
    "mtime": 1788802058.413,
    "sha16": "9d56090aaa396b32"
   },
-  "reports/最终实施蓝图_检视报告_20260908.md": {
+  "reports/refactors/最终实施蓝图_检视报告_20260908.md": {
    "size": 20493,
    "mtime": 1788802129.02,
    "sha16": "d27ff3742b5864a2"
   },
-  "reports/最终版审查报告_20260912.md": {
+  "reports/scratch/最终版审查报告_20260912.md": {
    "size": 21132,
    "mtime": 1789150249.134,
    "sha16": "3eb1145f74bbcf3b"
   },
-  "reports/枚举缺口审查_20260908.md": {
+  "reports/scratch/枚举缺口审查_20260908.md": {
    "size": 4686,
    "mtime": 1788842398.482,
    "sha16": "1eb424936e73a1d1"
   },
-  "reports/流程图识别存储方案_20260909.md": {
+  "reports/scratch/流程图识别存储方案_20260909.md": {
    "size": 5300,
    "mtime": 1788928653.249,
    "sha16": "1629352a0e0b74f5"
   },
-  "reports/流程系统性深度分析_20260912.md": {
+  "reports/scratch/流程系统性深度分析_20260912.md": {
    "size": 24090,
    "mtime": 1789144184.96,
    "sha16": "7434053598d67d05"
@@ -7784,7 +7784,7 @@
    "mtime": 1789227799.532,
    "sha16": "e640d8d6d0db70df"
   },
-  "reports/目录规范_遗留排查_20260908.md": {
+  "reports/scratch/目录规范_遗留排查_20260908.md": {
    "size": 3962,
    "mtime": 1788842276.393,
    "sha16": "684a1b0634f1c171"
@@ -7794,7 +7794,7 @@
    "mtime": 1788786763.803,
    "sha16": "4f08c033cac12e7d"
   },
-  "reports/脚本数据流_20260923.md": {
+  "reports/manuals/脚本数据流_20260923.md": {
    "size": 115073,
    "mtime": 1790213953.686,
    "sha16": "b2352d7261604225"
@@ -7814,37 +7814,37 @@
    "mtime": 1790766876.864,
    "sha16": "fae846c371507aa6"
   },
-  "reports/语义模型导入与启用报告_20260930.md": {
+  "reports/scratch/语义模型导入与启用报告_20260930.md": {
    "size": 8911,
    "mtime": 1790746920.807,
    "sha16": "c9902ca55b77a517"
   },
-  "reports/运行手册_编排与定时_20260912.md": {
+  "reports/manuals/运行手册_编排与定时_20260912.md": {
    "size": 8463,
    "mtime": 1790448766.981,
    "sha16": "75400d5043ea3a73"
   },
-  "reports/遗留项完成报告_20260912.md": {
+  "reports/scratch/遗留项完成报告_20260912.md": {
    "size": 7080,
    "mtime": 1789157098.837,
    "sha16": "f177eb4d999d8c5d"
   },
-  "reports/遗留项完成报告_第二批_20260912.md": {
+  "reports/scratch/遗留项完成报告_第二批_20260912.md": {
    "size": 6427,
    "mtime": 1789192440.362,
    "sha16": "1c920ec68e5036bb"
   },
-  "reports/遗留项执行报告_第三批_20260912.md": {
+  "reports/scratch/遗留项执行报告_第三批_20260912.md": {
    "size": 2280,
    "mtime": 1789221999.28,
    "sha16": "c4feca0b3bcf4e45"
   },
-  "reports/遗留项检视_20260913.md": {
+  "reports/scratch/遗留项检视_20260913.md": {
    "size": 3751,
    "mtime": 1789242694.412,
    "sha16": "7e43c1a49cdecf04"
   },
-  "reports/项目全面审查报告_20260912.md": {
+  "reports/scratch/项目全面审查报告_20260912.md": {
    "size": 12990,
    "mtime": 1789228438.315,
    "sha16": "738ba321c68fd4bb"

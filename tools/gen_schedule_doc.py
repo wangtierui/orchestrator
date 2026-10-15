@@ -23,7 +23,9 @@ import paths
 from config.exitcodes import ExitCode
 
 SCHEDULE_YAML = os.path.join(paths.CONFIG_DIR, "schedule.yaml")
-MANUAL = os.path.join(paths.ROOT, "reports", "运行手册_编排与定时_20260912.md")
+# W4（§7.10 问题 3）：运行手册归入 reports/manuals/（长期手册类；分区口径见
+# reports/README.md）。判据 S4 由本常量派生——目录迁移后此处是唯一同步点。
+MANUAL = os.path.join(paths.ROOT, "reports", "manuals", "运行手册_编排与定时_20260912.md")
 # N-186（2026-10-08）：README §5.2 是**同一张定时表**，但此前**无人渲染**（本工具只写手册）
 #   ⇒ 手工副本必然漂移（实测：缺新作业，且仍是 N-51 之前的 `--only 6.9 / --only 21.5` 旧形态），
 #   而它**没有门禁守护**（判据 S4 只守手册）→ 读者据 README 会误判"哪个源没有采集"。

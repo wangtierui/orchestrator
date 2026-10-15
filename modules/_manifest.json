@@ -1,0 +1,133 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-10-15",
+  "note": "modules/ 脚本归属清单（W4 §7.2 A 类：零引用脚本处置的门禁化事实源）。三态：chain（编排器/接口/触发器消费——不在此登记）/ independent（刻意独立，按需人工执行，必须给 independent_why）/ retired（已退役，必须位于 <module>/retired/ 且零可执行引用）。判据 J9（gate_config_integrity）双向断言：modules/ 下每个 .py 要么有生产引用、要么在此登记；登记项不得是幽灵。",
+  "entries": [
+    {
+      "file": "internal_policy_drafter/scripts/dump_external_articles.py",
+      "category": "independent",
+      "entry": "外部条款正文一次性转储（依赖 env WIP_SALES_DIR 指向的旧仓工作区）",
+      "independent_why": "一次性迁移转储工具：源数据在旧仓工作区（env 注入），成果已入库；保留供复查/重放，不设链上步骤"
+    },
+    {
+      "file": "internal_policy_drafter/scripts/dump_related_systems.py",
+      "category": "independent",
+      "entry": "关联制度体系清单转储（依赖 env WIP_SALES_DIR；tests/test_table_completeness 读其源码）",
+      "independent_why": "一次性迁移转储工具：同上（旧仓工作区 + env 注入）；测试读源码锁定其解析口径"
+    },
+    {
+      "file": "regulatory_scrapers/collectors/pbc_recover.py",
+      "category": "independent",
+      "entry": "pbc 灾难恢复独立脚本（反向 importlib 载 pbc_backfill_pdfs 的下载/抽取工具，从本地 PDF 重建正文）",
+      "independent_why": "灾难恢复专用：仅在 pbc raw 损坏/误删时人工执行；反向动态加载避免与链上补全路径耦合"
+    },
+    {
+      "file": "regulatory_scrapers/collectors/supp_ingest_local_dir.py",
+      "category": "independent",
+      "entry": "supp 本地目录手动收录入口（把指定目录的法规文件归集进 supp raw）",
+      "independent_why": "人工归集入口：supp 无网站增量，本地素材收录按需人工执行（run_production_refresh --supp-batch 提示文本指向）"
+    },
+    {
+      "file": "regulatory_scrapers/collectors/supp_ingest.py",
+      "category": "independent",
+      "entry": "supp 多源合库归集工具（sources.yaml 登记为 collector_kind=ingest 的归集入口）",
+      "independent_why": "人工/触发器归集工具：链上无 collect:supp 步骤（COLLECT_CMD 无 supp 项）；语义已于 W4 从「纸面 collector」降级为 ingest（见 sources.yaml collector_kind）"
+    },
+    {
+      "file": "regulatory_scrapers/collectors/supp_parser.py",
+      "category": "independent",
+      "entry": "supp 文档解析封装（多格式文本提取；supp_ocr_pdf 的上层，OCR 回退链）",
+      "independent_why": "解析能力封装：生产链 supp 清洗走 unified_schema.map_supp 内置路径，本封装供 supp_ocr_pdf 复用契约与测试锁定（tests/test_table_completeness 读源码）"
+    },
+    {
+      "file": "regulatory_scrapers/collectors/supp_sanitize.py",
+      "category": "independent",
+      "entry": "supp 交付物错行修复（CSV/JSONL 字段换行归一的事后处置）",
+      "independent_why": "事后处置工具：交付物出现错行时按需人工执行；clean 链内已由 clean/sanitize 前置治理（ twin：clean/sanitize 为链内版、本文件为 supp 专项版）"
+    },
+    {
+      "file": "regulatory_scrapers/timeliness_review/sync_three_modules.py",
+      "category": "independent",
+      "entry": "三模块同步人工编排器（反向调用 cli gates / build_base_from_attr / verify_regulatory_citations）",
+      "independent_why": "人工一键编排：triggers/schedule 无其调度项（刻意——同步动作需人工确认时机）；保留供操作员单命令执行"
+    },
+    {
+      "file": "regulatory_scrapers/retired/nfra_prefetch.py",
+      "category": "retired",
+      "entry": "nfra 预热缓存脚本（零调用方；_warmup 已收敛 nfra_common）",
+      "independent_why": ""
+    },
+    {
+      "file": "regulatory_scrapers/retired/nfra_seed_cache.py",
+      "category": "retired",
+      "entry": "nfra 种子缓存 CLI（零调用方；缓存由 collector 自动维护）",
+      "independent_why": ""
+    },
+    {
+      "file": "regulatory_scrapers/retired/nfra_validate_cache.py",
+      "category": "retired",
+      "entry": "nfra 缓存只读校验 CLI（零调用方）",
+      "independent_why": ""
+    },
+    {
+      "file": "regulatory_scrapers/retired/pbc_fix_doc.py",
+      "category": "retired",
+      "entry": "pbc 6 条 .doc 专项修复（任务已完成）",
+      "independent_why": ""
+    },
+    {
+      "file": "regulatory_scrapers/retired/pbc_merge_scrape.py",
+      "category": "retired",
+      "entry": "pbc 历史合并抓取（零调用方；主库已 JSONL 化）",
+      "independent_why": ""
+    },
+    {
+      "file": "regulatory_scrapers/retired/pbc_run_batched.py",
+      "category": "retired",
+      "entry": "pbc 分批驱动壳（零调用方；软预算+流式合并已解决峰值）",
+      "independent_why": ""
+    },
+    {
+      "file": "regulatory_scrapers/retired/pbc_serve.py",
+      "category": "retired",
+      "entry": "pbc 调试预览 HTTP 服务器（零调用方）",
+      "independent_why": ""
+    },
+    {
+      "file": "regulatory_scrapers/retired/supp_downloader.py",
+      "category": "retired",
+      "entry": "supp 下载脚本（零调用方；自判死代码）",
+      "independent_why": ""
+    },
+    {
+      "file": "regulatory_scrapers/retired/supp_fix_raw_factual.py",
+      "category": "retired",
+      "entry": "supp 一次性事实修正（任务已完成）",
+      "independent_why": ""
+    },
+    {
+      "file": "regulatory_scrapers/retired/supp_mapper.py",
+      "category": "retired",
+      "entry": "supp 字段映射（零 import；幽灵注册点 clean/supp_runtime 不存在）",
+      "independent_why": ""
+    },
+    {
+      "file": "regulatory_scrapers/retired/build_clean_index.py",
+      "category": "retired",
+      "entry": "clean_index 手工重建 CLI（零执行证据；get_clean_index 自愈重建）",
+      "independent_why": ""
+    },
+    {
+      "file": "regulatory_classifier/retired/rfn_lookup.py",
+      "category": "retired",
+      "entry": "RFN 查询 CLI（零调用方；能力已被 cli.py rfn lookup 覆盖）",
+      "independent_why": ""
+    },
+    {
+      "file": "regulatory_classifier/retired/source_stats.py",
+      "category": "retired",
+      "entry": "源统计 CLI（零调用方；能力已被 cli.py source list 覆盖）",
+      "independent_why": ""
+    }
+  ]
+}

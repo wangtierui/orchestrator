@@ -20,7 +20,7 @@ run_production_refresh.py —— 生产五源全量数据刷新编排器（2026-
  6.5 watch baseline（变更监听基线记录，F-O02）
  6   gates    cli.py gates（**22 道**交付门禁，含 gate_watermark）—— **链尾**（P3-5：门禁须看到本轮全部产物）
 
-阶段 0/1 接线（2026-09-18；`reports/数据流转与存储交互优化方案_20260917.md` §6）：
+阶段 0/1 接线（2026-09-18；`reports/refactors/数据流转与存储交互优化方案_20260917.md` §6）：
   - **单实例锁**：本编排自身加 `ProcessLock`（此前只有各 collector 有锁，编排可并发重入）；
   - **run_log**：本次运行登记 `RUN-<ts>-<pid>`，经 `REG_ORCH_RUN_ID` 下传子进程
     （`cli.py gates` 据此把 22 道门禁结果归档进 `gate_result`）；
@@ -62,7 +62,6 @@ CLASSIFIER = os.path.join(ROOT, "modules", "regulatory_classifier")
 REVIEW = os.path.join(SCRAPERS, "timeliness_review")
 COLLECTORS = os.path.join(SCRAPERS, "collectors")
 IPB = os.path.join(ROOT, "modules", "internal_policy_base")
-DOCS_REPORTS = os.path.join(ROOT, "docs", "reports")
 
 # 本模块以 `python tools/run_production_refresh.py` 直跑时 sys.path[0] 是 tools/，
 # 需显式补仓根才能 import std_lib（阶段 0/1 治理库接线）。
@@ -71,6 +70,11 @@ if ROOT not in sys.path:
 import paths
 from config.enums import FAIL_SEMANTICS, SOURCE_ORDER, STEP_KINDS, failure_action
 from config.exitcodes import ExitCode
+
+# W4（§7.10 案例一）：分析交付库根（原 `docs/reports` → `docs/deliverables`，与
+# `reports/` 的同名撞车消除）。**必须放在仓根引导 + import paths 之后**（引导前引用必
+# ModuleNotFoundError——modules standalone 脚本的同款教训）。
+DOCS_REPORTS = paths.DELIVERABLES_DIR
 
 SOURCES = list(SOURCE_ORDER)
 # 各源采集命令（全量语义）。supp 无网站增量 → 由 clean 刷新即可。
@@ -171,7 +175,11 @@ GOV_ARTIFACTS: dict[str, dict] = {
     # （判据用 `round` = run_id，由 `_wm` 自动取 `current_run_id()`）。
     # ---- 观察型（无声明依赖；供下游 `inputs` 引用）----
     "clean_index": {
-        "produced_by": "regulatory_scrapers.clean_index.build_clean_index",
+        # W4（§7.2 A 类 / C2）：原 produced_by 指向 `build_clean_index.py`——该脚本
+        # **零执行证据**（从不被链/接口调用，README 声称的"被 __init__ 调用"无实证，
+        # 已退役入 modules/regulatory_scrapers/retired/）。实际生产者是包自身：
+        # `get_clean_index()` 在索引缺失/失陈（归属校验 + 存活性校验不过）时自愈重建。
+        "produced_by": "regulatory_scrapers.clean_index.get_clean_index",
         "stage": "1",
     },
     "rfn_attr": {"produced_by": "regulatory_classifier.rfn.registry._save_rows", "stage": "3"},
@@ -394,7 +402,8 @@ def _detail_tables() -> list[str]:
 
 
 def _classifier_reports() -> list[str]:
-    """报告类产物代表集：`docs/reports/` 下的 全景/主题分类/T0–T10 主题报告（13 份 md）。
+    """报告类产物代表集：`modules/regulatory_classifier/docs/reports/` 下的
+    全景/主题分类/T0–T10 主题报告（13 份 md）。
 
     N-46（2026-09-27）：与 `_detail_tables()` 同风格——取目录内交付级 md 作为版本代表集
     （体量小、覆盖两类报告），避免对全部底座 JSON 逐一哈希。
@@ -924,7 +933,7 @@ STEP_LAYERS: Final[dict[str, LayerSpec]] = {
                      degrade_note="发布清单是 wiki_sync 条件触发（publish_manifest_changed）的观察对象 —— "
                                   "可达性由门禁 T4 守护"),
             StepSpec("analysis:gen", "main", "abort",
-                     "分析交付物（docs/reports，含 17 项 manifest sha）", 600,
+                     "分析交付物（docs/deliverables，含 17 项 manifest sha）", 600,
                      produces=("analysis:manifest",)),
         ),
     ),
@@ -1882,7 +1891,7 @@ def _run_chain(args) -> int:
         record_count=_pub_count(os.path.join(PUB_INT, "publish_manifest.json")))
 
     # ---- 阶段 6.8：分析交付库刷新（F-L01）----
-    # 数据重建后刷新规划 §2.1 五级分析 17 项交付（docs/reports/）；classify 阶段已
+    # 数据重建后刷新规划 §2.1 五级分析 17 项交付（docs/deliverables/）；classify 阶段已
     # 自动触发一次，此处显式再跑确保 merged/publish 后数据面一致（幂等，~2s）。
     #
     # P3-5（2026-09-26）**顺序解耦**：本步与 6.5 已**前移到 gates 之前**。

@@ -15,7 +15,7 @@
 > ⚠️ **产出边界（N-191，2026-10-08 删除）**：本采集器**只写 JSON/CSV 事实源**，**不再写** `report.md`
 > （原实现写到 `os.path.dirname(--out)/reports/report.md` ⇒ `--out` 指向沙箱时会落到**仓外相对位置**，
 > 属 R-F 缺陷；按用户决定**改为删除该产出**而非改路径）。统计报告由**编排链汇总**统一产出
-> （`reports/_tmp/生产刷新汇总_*.json` + docs/reports），采集器侧不再重复造报告。
+> （`reports/_tmp/生产刷新汇总_*.json` + docs/deliverables），采集器侧不再重复造报告。
   - 依赖：标准库 + python-docx / pdfplumber / openpyxl（附件解析）；LibreOffice(headless)
     可选，启用后可将 .doc/.wps/.rtf/.ceb 转 docx 提取正文，否则该格式降级为保真下载；
   - 分页机制自适应：从列表页隐藏字段 `article_paging_list_hidden` 动态提取

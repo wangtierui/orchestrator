@@ -5,19 +5,53 @@ gates/gate_sources_config — 源目录配置一致性门禁（R15 补全，2026
 校验 sources.yaml 为唯一事实源被程序一致消费：
   1) enabled 外部源集合 == config.enums.SOURCE_SET（受控枚举与 yaml 双向一致；新增源须两处登记）；
   2) 每 enabled 源「collector」字段可解析且 modules/.../collectors/<模块>.py 存在（拍平后命名对齐）；
+     **W4（§7.2 A 类）按 collector_kind 分级**（config.loader.collector_kind）：
+       · `collector`（默认）——还须在编排器 `tools/run_production_refresh.py` 的
+         COLLECT_CMD/produced_by 有**执行证据**（argv 路径或点号路径引用）——
+         堵「纸面 collector」（supp_ingest 曾登记 13 天零执行）；
+       · `ingest`——人工/触发器归集工具，无链上 collect 步骤；只断言模块存在
+         + 在 `modules/_manifest.json` 有 independent 登记（J9 判据同源断言）；
   3) 每 enabled 源「clean_project」字段存在且 ∈ SOURCE_SET（供 clean 管道 --project 路由）；
   4) disabled 条目应给 disabled_reasons（透明告知，warning 级）。
 """
 
 from __future__ import annotations
 
+import json
 import os
 
 import paths
 from config.enums import SOURCE_SET
-from config.loader import active_source_ids, collector_module, load_sources
+from config.loader import active_source_ids, collector_kind, collector_module, load_sources
 
 _COLLECTORS_DIR = os.path.join(paths.MODULES_DIR, "regulatory_scrapers", "collectors")
+# 编排器（链上执行证据的唯一来源）：COLLECT_CMD argv + GOV_ARTIFACTS produced_by。
+_ORCHESTRATOR = os.path.join(paths.TOOLS_DIR, "run_production_refresh.py")
+# modules 独立登记清单（ingest 类 collector 的归属证据，与 J9 判据同源）。
+_MODULES_MANIFEST = os.path.join(paths.MODULES_DIR, "_manifest.json")
+
+
+def _chain_invoked(mod: str) -> bool:
+    """collector 模块是否在编排器有执行证据（argv 路径 `"<mod>.py"` 或点号 produced_by）。"""
+    try:
+        text = open(_ORCHESTRATOR, encoding="utf-8", errors="replace").read()
+    except OSError:
+        return False
+    return (mod + ".py") in text or ("." + mod) in text
+
+
+def _manifest_independent(mod: str) -> bool:
+    """ingest 模块是否在 modules/_manifest.json 登记为 independent。"""
+    try:
+        with open(_MODULES_MANIFEST, encoding="utf-8") as fh:
+            man = json.load(fh)
+    except (OSError, ValueError):
+        return False
+    for e in man.get("entries") or []:
+        f = str(e.get("file") or "")
+        if os.path.basename(f) == mod + ".py" and e.get("category") == "independent":
+            return True
+    return False
 
 
 def run():
@@ -32,7 +66,7 @@ def run():
             "（新增源需同步登记两处并重跑 assert_enum_bindings）"
         )
 
-    # 2/3) collector 与 clean_project 解析
+    # 2/3) collector 与 clean_project 解析（按 collector_kind 分级，W4 §7.2）
     for sid in sorted(active):
         cfg = srcs[sid]
         mod = collector_module(sid)
@@ -41,6 +75,19 @@ def run():
             continue
         if not os.path.exists(os.path.join(_COLLECTORS_DIR, mod + ".py")):
             problems.append(f"{sid}: collector 模块 {mod}.py 不存在（collectors/ 命名未对齐 yaml）")
+            continue
+        kind = collector_kind(sid)
+        if kind == "collector" and not _chain_invoked(mod):
+            problems.append(
+                f"{sid}: collector 模块 {mod}.py 在编排器无执行证据"
+                "（COLLECT_CMD/produced_by 均未引用——纸面 collector；"
+                "若为人工归集工具应在 sources.yaml 标 collector_kind: ingest）"
+            )
+        elif kind == "ingest" and not _manifest_independent(mod):
+            problems.append(
+                f"{sid}: ingest 模块 {mod}.py 未在 modules/_manifest.json 登记 independent"
+                "（人工归集工具须显式登记，J9 判据同源）"
+            )
         cp = (cfg.get("clean_project") or "").strip()
         if not cp:
             problems.append(f"{sid}: 缺 clean_project 字段（clean 管道 --project 路由）")
@@ -57,5 +104,6 @@ def run():
         "problems": problems[:30],
         "warnings": warns[:10],
         "active": sorted(active),
+        "collector_kinds": {sid: collector_kind(sid) for sid in sorted(active)},
         "collectors_dir": _COLLECTORS_DIR,
     }

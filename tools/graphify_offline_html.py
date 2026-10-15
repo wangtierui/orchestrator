@@ -40,7 +40,15 @@ import urllib.error
 import urllib.request
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # repo root
-GRAPH_DIR = os.path.join(ROOT, "graphify-out")
+# W4（§7.10 问题 5）：graphify-out 改引 paths.GRAPHIFY_OUT_DIR（原为自拼点）。
+# 本工具常被 graphify_sync 以 `python tools/graphify_offline_html.py` 子进程直调
+# ⇒ import paths 不可用时退回 __file__ 派生（同值；保零引导依赖可导入性）。
+try:
+    import paths as _paths
+
+    GRAPH_DIR = _paths.GRAPHIFY_OUT_DIR
+except ImportError:  # pragma: no cover — 无仓根引导上下文（子进程直调）
+    GRAPH_DIR = os.path.join(ROOT, "graphify-out")
 VENDOR_REL = "vendor/vis-network.min.js"
 
 # graphify/exporters/html.py:607 声明的 SRI —— 本地副本必须与其字节一致

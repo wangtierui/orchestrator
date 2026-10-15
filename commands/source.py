@@ -84,6 +84,7 @@ def run(argv):
         try:
             from config.loader import (
                 active_source_ids,
+                collector_kind,
                 collector_module,
                 collector_path,
                 load_sources,
@@ -101,7 +102,8 @@ def run(argv):
             if enabled and "." not in sid and sid != "internal":
                 mod = collector_module(sid)
                 ok = "✓" if collector_path(sid) else "✗缺模块"
-                line += f"  | collector={mod} {ok}"
+                kind = collector_kind(sid)
+                line += f"  | collector={mod}({kind}) {ok}"
             print(line)
         print(f"  [..] enums.SOURCE_SET={sorted(SOURCE_SET)} | yaml active={active_source_ids()}")
         return ExitCode.OK
@@ -118,12 +120,16 @@ def run(argv):
         print(
             "         collector: collectors.<{id}_collector|{id}_ingest>   # 与 collectors/ 拍平命名对齐"
         )
+        print(
+            "         collector_kind: collector   # collector=链上采集（默认，须有编排器执行证据）"
+            " | ingest=人工/触发器归集工具（无链 collect 步骤，须 independent 登记）"
+        )
         print(f"         clean_project: {a.id}")
         print("         note: …")
         print("         disabled_reasons: [待采集实现验证]")
         print("  2. config/enums.py SOURCE_SET 加值（受控变更；assert_enum_bindings 断言条数随动）")
         print(
-            "  3. 提供 collectors 模块并跑：python -m py_compile + nfra_validate_cache 式只读冒烟"
+            "  3. 提供 collectors 模块并跑：python -m py_compile + 只读冒烟（--help / 空参数退出）"
         )
         print(
             "  4. python cli.py gates（gate_sources_config 校验 collector 模块/clean_project/enums 一致）"

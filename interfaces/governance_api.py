@@ -3,7 +3,7 @@
 
 定位：
     本模块是「三轨制」治理轨的**只读消费面**（见
-    `reports/数据流转与存储交互优化方案_20260917.md` §4.1/§4.3）。
+    `reports/refactors/数据流转与存储交互优化方案_20260917.md` §4.1/§4.3）。
     唯一读写在 `std_lib/common_lib/governance_store.py`；本文件只做**归一与再导出**，
     供命令层（`cli.py governance`）、门禁层（`gates/gate_watermark.py`）与后续消费方
     （drafter/报告/审计）统一取数，避免各自拼 SQL。

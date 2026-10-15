@@ -39,7 +39,15 @@ if _REPO not in sys.path:
     sys.path.insert(0, _REPO)
 
 _TESSERACT_CMD = os.environ.get("OCR_TESSERACT_BIN", "")  # R17：env/config 提供，空则降级
-_TESSDATA = os.path.join(_REPO, "tessdata")
+# W4（§7.10）：tessdata 路径改引 `paths.TESSDATA_DIR`（仓根 external/tessdata 唯一事实源）。
+# 修正一处**潜在缺陷**：原为 `os.path.join(_REPO, "tessdata")`（模块内目录）——该目录
+# 不存在（真实语言数据在仓根），内联 Tesseract 回退路径实际从未找到语言包。
+try:
+    import paths as _paths
+
+    _TESSDATA = _paths.TESSDATA_DIR
+except Exception:  # noqa: BLE001  无仓根引导上下文：退回 env（空则由调用方降级）
+    _TESSDATA = os.environ.get("OCR_TESSDATA_DIR", "")
 
 # 相邻中文间误插空格清理（保留数字/英文单词间空格）
 import re

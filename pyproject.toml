@@ -24,7 +24,7 @@ dependencies = [
     # 2026-09-13 依赖归属修正：pypdf/pdfplumber 是 PDF **文本层**解析组件（不是 OCR），
     # 原先只声明在 [ocr] extra —— 按 README 只装 .[dev] 时，crawler_common._extract_pdf()
     # 两库皆缺会**静默**返回 extract_status="library_missing"，使 `internal index` 对 PDF
-    # 产出空正文（不报错、不被门禁拦截）。详见 reports/克隆可移植性检视报告_20260913.md · CP-A01。
+    # 产出空正文（不报错、不被门禁拦截）。详见 reports/scratch/克隆可移植性检视报告_20260913.md · CP-A01。
     "pypdf>=4.0",
     "pdfplumber>=0.11",
     # 编码探测（std_lib/scraper_std/encoding.py 惰性导入；缺失会静默降级为 gb18030→utf-8）
@@ -117,6 +117,10 @@ target-version = "py313"
 extend-exclude = ["data", "cache", "logs", "backups", "venv", "reports/_tmp", "_tmp_smoke",
                   # 2026-09-26（v2 §3.15.3 A4）：退役脚本隔离层不再维护风格
                   "tools/retired",
+                  # W4（§7.2 A 类，2026-10-15）：modules 侧退役隔离层同口径
+                  # （J9 判据保零引用；观察期后整体删除，勿在退役层做功风格整改）
+                  "modules/regulatory_scrapers/retired",
+                  "modules/regulatory_classifier/retired",
                   # 2026-10-09（批 48）：`refactor/` **属其他用户**（采集器抽取重构 WIP），
                   # 本机**不得修改其任何文件**，视为**独立模块** ⇒ 不纳入本仓风格检查。
                   # ⚠️ 注意：这不等于"它没有 lint 问题"——批 47 曾误代为修正（已回滚）；
@@ -214,4 +218,7 @@ pythonpath = ["."]
 # 而不必面对"11 个失败其实是数据缺失"的误判。
 markers = [
     "data: 依赖本机现行数据产物（cleaned 快照/归属表/底座/merged_view/发布件）的验收用例；无数据环境用 -m \"not data\" 排除",
+    # W5（方案 §9.3）：契约类用例（门禁判据正/负例、import 面、产物形态、传输行为）
+    # ——无数据环境可跑，与 data 标记互补（`-m "contract"` 单独收敛契约回归）。
+    "contract: 契约类用例（门禁正/负例、import 面、产物形态）——无数据环境可跑",
 ]

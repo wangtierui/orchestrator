@@ -32,6 +32,12 @@ external_sources:
   - id: supp
     enabled: true
     collector: collectors.supp_ingest
+    # W4（§7.2 A 类 / R-8）：supp 无网站增量采集——归集入口是**人工/触发器**的
+    # ingest 工具（supp_ingest.py 本地/多源合库），链上无 collect 步骤。原登记为
+    # 裸 collector 是「纸面 collector」（从不被运行）；此处显式降级为 ingest 语义，
+    # gate_sources_config 按类别分别断言（collector 须有链上执行证据；ingest 只断言
+    # 模块存在 + independent 登记）。
+    collector_kind: ingest
     clean_project: supp
     note: 补充法规库（多源归集；已入核验范围 N4）
 internal_source:

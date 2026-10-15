@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-10-15 02:40:53",
+ "generated_at": "2026-10-15 06:34:01",
  "out": "reports/semantic_search/semantic_search_20261015.json",
  "backend": "pgvector",
  "tables": [
@@ -8,7 +8,7 @@
  ],
  "inputs": {
   "delivery_docs": 17,
-  "published_records": 200
+  "published_records": 1000
  },
  "fingerprint": {
   "model": "bge_base_zh",
@@ -21,15 +21,15 @@
  "model": "bge_base_zh",
  "embedded": {
   "docs": 17,
-  "records": 200
+  "records": 1000
  },
  "ab": {
   "ok": true,
   "k": 10,
   "model": "bge_base_zh",
   "probes": 8,
-  "corpus": "索引子集 200 条（FTS 过滤到同子集后取 top-k）",
-  "mean_jaccard": 0.0191,
+  "corpus": "索引子集 1000 条（FTS 过滤到同子集后取 top-k）",
+  "mean_jaccard": 0.0261,
   "per_query": [
    {
     "query": "保险资金运用管理",
@@ -62,9 +62,9 @@
    {
     "query": "公司治理",
     "vec_k": 10,
-    "fts_k": 2,
-    "intersection": 0,
-    "jaccard": 0.0
+    "fts_k": 9,
+    "intersection": 2,
+    "jaccard": 0.1176
    },
    {
     "query": "股权管理",
@@ -76,16 +76,16 @@
    {
     "query": "再保险业务",
     "vec_k": 10,
-    "fts_k": 1,
+    "fts_k": 2,
     "intersection": 1,
-    "jaccard": 0.1
+    "jaccard": 0.0909
    },
    {
     "query": "行政处罚",
     "vec_k": 10,
     "fts_k": 10,
-    "intersection": 1,
-    "jaccard": 0.0526
+    "intersection": 0,
+    "jaccard": 0.0
    }
   ]
  },

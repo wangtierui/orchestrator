@@ -172,9 +172,13 @@ def test_w_b_sidecar_unit(tmp_path) -> None:
 
 
 def test_w_d_pbc_serve_zero_disk() -> None:
-    """W-D：pbc_serve 预览须内存响应（不得在预览目录落盘 .json 视图）。"""
+    """W-D：pbc_serve 预览须内存响应（不得在预览目录落盘 .json 视图）。
+
+    W4（2026-10-15）：pbc_serve 已退役入 `modules/regulatory_scrapers/retired/`
+    （§7.2 A 类）——守卫随文件迁移，观察期内继续断言该性质（防退役文件被移回时回潮）。
+    """
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    src = open(os.path.join(root, "modules/regulatory_scrapers/collectors/pbc_serve.py"),
+    src = open(os.path.join(root, "modules/regulatory_scrapers/retired/pbc_serve.py"),
                encoding="utf-8").read()
     assert "def send_head(" in src and "BytesIO" in src
     assert 'open(r, "w"' not in src, "translate_path 仍在落盘生成 .json 视图（W-D 回归）"

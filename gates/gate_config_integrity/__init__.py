@@ -41,7 +41,7 @@ from ._domains import (
     _check_semantic_manifest,
     _check_theme_coverage,
 )
-from ._manifest import _check_corpus, _check_tools, _check_worklist
+from ._manifest import _check_corpus, _check_modules_manifest, _check_tools, _check_worklist
 from ._schedule import _check_schedule, _check_triggers
 
 # _chain_module 为**转供 re-export**（noqa F401）：消费方 gate_declaration_executor/
@@ -110,6 +110,13 @@ def run() -> tuple[bool, dict]:
     p4, d4 = _check_corpus()
     problems += p4
     detail.update(d4)
+
+    # 判据 J9（W4 §7.2 A 类）：modules 脚本三态归属闭合
+    # （chain / independent 登记 / retired——零引用脚本 37 → 0 的门禁化）
+    p11, d11, w11 = _check_modules_manifest()
+    problems += p11
+    detail.update(d11)
+    warnings += w11
 
     if warnings:
         detail["warnings"] = warnings

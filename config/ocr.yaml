@@ -7,7 +7,7 @@ ocr:
   auto_fallback: true          # paddleocr 不可用 → tesseract
   paddleocr_root: "${OCR_PADDLE_ROOT:-${REG_ORCH_ROOT}/external/PaddleOCR-3.7.0}"
   tesseract_bin: "${OCR_TESSERACT_BIN:-${REG_ORCH_ROOT}/external/tesseract/tesseract.exe}"
-  tessdata_dir: "${REG_ORCH_ROOT}/tessdata"
+  tessdata_dir: "${REG_ORCH_ROOT}/external/tessdata"   # W4 §7.10：迁入 external/（外部资产统一外置）
   pdf_text_layer_first: true   # PDF 有文本层先用 pdfplumber；扫描件才走 OCR
   render_dpi: 200              # 2026-09-12：300→200（PaddleOCR 实测质量不变、耗时降约 6 倍）
 

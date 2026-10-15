@@ -41,8 +41,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import paths
 from config.exitcodes import ExitCode
 
-ARCHIVE_ROOT = os.path.join(paths.ROOT, "archive")
-LEDGER_DIR = os.path.join(paths.ROOT, "reports")
+# W4（§7.10 问题 5）：archive 根改引 paths.ARCHIVE_DIR（原为全仓自拼点之一）。
+ARCHIVE_ROOT = paths.ARCHIVE_DIR
+LEDGER_DIR = paths.REPORTS_DIR
 
 POLICY: tuple[dict, ...] = (
     {
@@ -154,7 +155,8 @@ SKIP_DIR_NAMES = {
     ".venv",
     "venv",
     ".codebuddy",
-    "tessdata",
+    # W4（§7.10 案例二）：tessdata 已迁入 external/tessdata，仓根平铺条目随之失效。
+    "external",
 }
 
 

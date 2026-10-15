@@ -173,7 +173,7 @@ class TestRelationDeliveriesWithData:
         rows, _stat = g._load_relations()
         if rows is None:
             pytest.skip("关系事实源缺失（无数据环境）")
-        mpath = os.path.join(ROOT, "docs", "reports", "_manifest.json")
+        mpath = os.path.join(ROOT, "docs", "deliverables", "_manifest.json")
         if not os.path.exists(mpath):
             pytest.skip("交付库未生成")
         m = json.load(open(mpath, encoding="utf-8"))
@@ -186,11 +186,11 @@ class TestRelationDeliveriesWithData:
 
     def test_manifest_sha_matches_disk_bytes(self):
         """17 项 manifest 的 `sha256_16` 必须等于**磁盘字节**哈希（口语径统一后可作判据）。"""
-        mpath = os.path.join(ROOT, "docs", "reports", "_manifest.json")
+        mpath = os.path.join(ROOT, "docs", "deliverables", "_manifest.json")
         if not os.path.exists(mpath):
             pytest.skip("交付库未生成")
         m = json.load(open(mpath, encoding="utf-8"))
-        outdir = os.path.join(ROOT, "docs", "reports")
+        outdir = os.path.join(ROOT, "docs", "deliverables")
         bad = [it["item"] for it in m["items"]
                if g._sha16(os.path.join(outdir, it["file"])) != it["sha256_16"]]
         assert bad == [], f"sha 与磁盘字节不一致：{bad}"
@@ -201,5 +201,5 @@ class TestRelationDeliveriesWithData:
         if rows is None:
             pytest.skip("关系事实源缺失（无数据环境）")
         er = g._relation_tool("extract_relations")
-        p = os.path.join(ROOT, "docs", "reports", "监管与制度依据废止关系图谱.md")
+        p = os.path.join(ROOT, "docs", "deliverables", "监管与制度依据废止关系图谱.md")
         assert _norm(open(p, encoding="utf-8").read()) == er.render_report(rows, stat)

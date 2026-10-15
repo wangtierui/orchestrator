@@ -70,7 +70,15 @@ def hooks_dir() -> str:
     except Exception:  # noqa: BLE001  git 不可用 → 退回默认目录
         pass
     return os.path.join(ROOT, ".git", "hooks")
-GRAPH_DIR = os.path.join(ROOT, "graphify-out")
+# W4（§7.10 问题 5）：graphify-out 改引 paths.GRAPHIFY_OUT_DIR（原为自拼点）。
+# 本工具由 git hook 以 `python tools/graphify_sync.py` 直调（script dir 入 sys.path、
+# 仓根不在）⇒ import paths 不可用时退回 __file__ 派生（同值；保零引导依赖可导入性）。
+try:
+    import paths as _paths
+
+    GRAPH_DIR = _paths.GRAPHIFY_OUT_DIR
+except ImportError:  # pragma: no cover — 无仓根引导上下文（hook 直调）
+    GRAPH_DIR = os.path.join(ROOT, "graphify-out")
 SYNC_LOG = os.path.join(GRAPH_DIR, "sync.log")
 PATCH_TOOL = os.path.join(ROOT, "tools", "graphify_offline_html.py")
 # graph.html 的节点上限：超过该值 graphify 会退化为社区聚合视图（丢全节点交互图），

@@ -40,5 +40,5 @@
   "mounts": [
     "source=${localWorkspaceFolder}/modules,target=${containerWorkspaceFolder}/modules,type=bind"
   ],
-  "postStartCommand": "echo '提示：数据（data/、published/）与 OCR 引擎不入容器——按 reports/数据恢复演练_20260912.md 场景 C 恢复；OCR 相关命令（internal reocr）需在宿主环境执行。'"
+  "postStartCommand": "echo '提示：数据（data/、published/）与 OCR 引擎不入容器——按 reports/manuals/数据恢复演练_20260912.md 场景 C 恢复；OCR 相关命令（internal reocr）需在宿主环境执行。'"
 }

@@ -14,6 +14,19 @@ paths.py — regulatory_compliance_orchestrator 路径唯一事实源（R4 落�
     SOURCES_YAML / OCR_YAML / TOOLS_DIR / TESTS_DIR / CORPUS_DIR
   - 预留（当前无消费方，保持 API 稳定，供后续接入）：CONFIG_DIR / INTERFACES_DIR /
     GATES_DIR / STD_LIB_DIR / ENUMS_FILE / SCHEMA_DIR / INBOX_DIR（P2-3b 接入）
+
+W4（方案 §7.10 目录 SSOT 收口，2026-10-15）：补八个顶层目录常量 +
+  EXTERNAL_DIR / TESSDATA_DIR / LOGS_DIR / BACKUPS_DIR / ARCHIVE_DIR / EXPORTS_DIR /
+  GRAPHIFY_OUT_DIR / DELIVERABLES_DIR——此前这些目录在全仓**自行拼接**（tessdata 5 处、
+  logs/archive/exports/graphify-out 各 2~6 处；交付库 docs/reports 15 处），
+  "目录一旦调整会漏改"（写入方与读取方静默分叉）。语义分工（§7.10 问题 6/7 的成文裁决）：
+  · `logs/` = 工具/采集器日志（git-autopush.log 等；retention `logs_stale` 14d 管）；
+  · `reports/_tmp/logs/` = **链步骤日志**（_run 的重定向落点；retention `reports_tmp` 7d 管）
+    ——两者**不合并**（保留策略不同；待人工确认项已按"明确分工"结案）；
+  · `backups/`（仓根）= retention 管理的 repo_baks；模块内 backups = 随数据迁移的
+    操作备份（两套体系分工见 §7.10 问题 6）；
+  · `external/` = 全部外部资产统一外置（模型权重/第三方源码/tessdata），仓根不再
+    平铺工具数据目录（tessdata 已迁入，同卷 rename）。
 """
 import os
 
@@ -29,7 +42,21 @@ MODULES_DIR = os.path.join(ROOT, "modules")
 REPORTS_DIR = os.path.join(ROOT, "reports")
 TOOLS_DIR = os.path.join(ROOT, "tools")
 TESTS_DIR = os.path.join(ROOT, "tests")
+DOCS_DIR = os.path.join(ROOT, "docs")            # 人类文档根（§7.10：docs/= 对外文档、reports/= 对内过程）
 DATA_DIR = os.path.join(ROOT, "data")          # 运行期数据（git 忽略）
+
+# ---- W4（§7.10）新增顶层目录常量（原为全仓自拼）----
+EXTERNAL_DIR = os.path.join(ROOT, "external")  # 外部资产统一外置（git 忽略、不分发）
+TESSDATA_DIR = os.path.join(EXTERNAL_DIR, "tessdata")  # Tesseract 语言数据（§7.10 案例二迁入）
+LOGS_DIR = os.path.join(ROOT, "logs")          # 工具/采集器日志（链步骤日志在 reports/_tmp/logs）
+BACKUPS_DIR = os.path.join(ROOT, "backups")    # retention repo_baks（模块内 backups 另计）
+ARCHIVE_DIR = os.path.join(ROOT, "archive")    # retention 归档（只移动不删除类目落点）
+EXPORTS_DIR = os.path.join(ROOT, "exports")    # 治理库文本快照（跨机审计链）
+GRAPHIFY_OUT_DIR = os.path.join(ROOT, "graphify-out")  # 图谱构建输出（git 忽略，225MB）
+# W4（§7.10 案例一）：分析交付库根。原 `docs/reports/` 与 `reports/` **同名同级子树**
+# （职责撞车：docs/= 对外交付物、reports/= 对内过程文档）→ 更名 `docs/deliverables/`，
+# 与 docs/adr/ 并列（docs/= 人类文档根）。
+DELIVERABLES_DIR = os.path.join(DOCS_DIR, "deliverables")
 
 # ---- 治理库（阶段 1，2026-09-18）----
 # 三轨制之「治理轨」：只放元数据/状态/关系/审计/水位（目标 < 50 MB），不含语料正文。

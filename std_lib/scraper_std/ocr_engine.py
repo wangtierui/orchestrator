@@ -67,7 +67,17 @@ _REPO = os.path.dirname(os.path.dirname(_HERE))  # orchestrator 仓库根（dirn
 # P1 去硬编码（R17）：Tesseract 路径不再默认写死安装目录。
 # 取值优先级：环境变量 OCR_TESSERACT_BIN > config/ocr.yaml（由 orchestrator cli 注入环境）> 空。
 # 空路径时 TesseractEngine.available() 判定不存在并降级到 paddle/文本层，不影响无 Tesseract 环境。
-_TESSDATA_DEFAULT = os.environ.get("OCR_TESSDATA_DIR") or os.path.join(_REPO, "tessdata")
+# W4（§7.10 案例二）：tessdata 迁入 `external/tessdata/`（外部资产统一外置）。此处经
+# `paths.TESSDATA_DIR` 取唯一事实源（import 失败——如被无仓根引导的上下文加载——则退回
+# __file__ 派生，保持本模块"零引导依赖"的可导入性）。
+try:
+    import paths as _paths
+
+    _TESSDATA_DEFAULT = os.environ.get("OCR_TESSDATA_DIR") or _paths.TESSDATA_DIR
+except Exception:  # noqa: BLE001  无仓根引导的上下文：退回 __file__ 派生（同目录语义）
+    _TESSDATA_DEFAULT = (
+        os.environ.get("OCR_TESSDATA_DIR") or os.path.join(_REPO, "external", "tessdata")
+    )
 _TESSERACT_DEFAULT = os.environ.get("OCR_TESSERACT_BIN", "")
 
 # OCR 引擎优先级（索引越小优先级越高）

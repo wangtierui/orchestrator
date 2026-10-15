@@ -1,7 +1,7 @@
 # 监管合规治理编排仓（regulatory_compliance_orchestrator）
 
 > **文档版本**：`v3.0.0`（覆盖式重写，2026-09-30）
-> **撰写依据**：`reports/README撰写规范与内容大纲.md`（七节结构 + 脚本分类 + 调用关系列）
+> **撰写依据**：`reports/manuals/README撰写规范与内容大纲.md`（七节结构 + 脚本分类 + 调用关系列）
 > **本仓定位**：**源码树编排工程**（Single-Repo Orchestrator）——以统一入口把
 > 「采集 → 清洗 → 时效核验 → 条文 → 归属/主题 → 关系 → 内部制度 → 发布 → 分析交付 → 门禁」
 > 串成**一条可复跑、可审计、可断点续跑**的生产链路。
@@ -51,11 +51,11 @@ regulatory_compliance_orchestrator/
 ├── std_lib/                    # 【常规流程】**共享库**（scraper_std + common_lib）
 ├── tools/                      # 【混合】编排与运维工具（**入口消费** + **刻意独立**两类）
 ├── tests/                      # 【常规流程】自动化测试
-├── docs/                       # 【特殊辅助】分析交付库 `docs/reports/`（17 项 + manifest）；**链路总图已并入 README §8**
-├── reports/                    # 【混合】每批重构报告 + 评测基线 + `_tmp` 运行台账
-├── external/                   # 【特殊辅助】**外部大资产**（git 忽略：PaddleOCR/tesseract/**models**）
+├── docs/                       # 【特殊辅助】人类文档根：`adr/`（架构决策）+ `deliverables/`（分析交付库 17 项 + manifest）；**链路总图已并入 README §8**
+├── reports/                    # 【混合】对内过程文档（refactors/manuals/scratch 三区，口径见 reports/README.md）+ 机器台账留根
+├── external/                   # 【特殊辅助】**外部大资产**（git 忽略：PaddleOCR/tesseract/**tessdata**/models——外部资产统一外置）
 ├── data/                       # 【运行期】governance.db / corpus / inbox（git 忽略）
-├── exports/ · archive/ · backups/ · logs/ · tessdata/   # 【运行期/辅助】（git 忽略或按规则）
+├── exports/ · archive/ · backups/ · logs/   # 【运行期/辅助】（git 忽略或按规则）
 ├── BENCHMARK.md                # 【生成物】**语义质量基线**（每轮全链刷新，勿手改）
 ├── CHANGELOG.md · CODEBUDDY.md · FILE_LIST.md
 └── README.md                   # 本文档
@@ -192,7 +192,7 @@ flowchart LR
     AT -->|reconcile 桥/漂移| BR[(rfn_clean_bridge)]
     AT -->|merged| MV[(merged_view)]
     C & CL & BR & AT & REL -->|base_publish| PUB[(published 发布件 + FTS5)]
-    AT & MV & REL -->|gen_analysis_deliveries| AN[(docs/reports 17 项)]
+    AT & MV & REL -->|gen_analysis_deliveries| AN[(docs/deliverables 17 项)]
     INBOX[(data/inbox)] -->|inbox_scan| WL[(worklist 决策项)]
     PUB -.->|sync_wiki_sources| KB[Obsidian vault]
     C & CL & AT & REL & MV & PUB -->|**29 道门禁**| G8{gates}
@@ -292,7 +292,7 @@ flowchart TB
 | **Index 内部对齐** | internal originals | `processed/*_clauses.{json,md}` + `merged_view` | OCR → 全文 → 条文结构 → 主题对齐 × RFN 引用 | `cli.py internal index/align/merged` | **常规流程** |
 | **Export 起草** | merged_view | `drafter/data/draft_clause/*.md` | 条款级对照素材（逐条链接 RFN / ⚠ 待核文号） | `cli.py draft` | **常规流程** |
 | **Publish 发布** | cleaned + merged | `published/external_*.jsonl` + internal 发布件 + FTS5 | 发布件构建（附件 7 字段契约 / 关系边汇聚） | `cli.py base publish` | **常规流程** |
-| **Analysis 交付库** | final × 明细 × 图 × 关系 | `docs/reports/`（**17 项 + `_manifest`**） | 五级分析结构（全数据驱动）；关系类复用**单源渲染** | `cli.py analysis gen` | **常规流程** |
+| **Analysis 交付库** | final × 明细 × 图 × 关系 | `docs/deliverables/`（**17 项 + `_manifest`**） | 五级分析结构（全数据驱动）；关系类复用**单源渲染** | `cli.py analysis gen` | **常规流程** |
 | **Disclose 披露** | 运行态/能力 | 控制台 + `BENCHMARK.md` + 运行台账 | `retention:plan`（轮转计划·只移动）/ `quarantine:triage`（隔离体检）/ `semantic:preflight`（P1 五闸）/ `pg:health`（向量后端） | 各披露步骤 | **常规流程（只读披露·恒 rc=0）** |
 | **Knowledge 同步** | 发布件 | `<Obsidian vault>/监管法规库` | frontmatter 溯源 + 截断声明 + `--prune` | `tools/sync_wiki_sources.py` | **特殊工具** |
 | **Ingest 投放区** | `data/inbox` | worklist 决策项 | 按 `inbox_registry.yaml` 归类 → worklist | `tools/inbox_scan.py` | **常规流程** |
@@ -404,7 +404,7 @@ flowchart TB
 
 ### 6.0 异机部署先决条件（必读）
 
-> 本仓为**源码树编排工程**：`data/`、`published/`、`external/`、`tessdata/` **均不入 git**。
+> 本仓为**源码树编排工程**：`data/`、`published/`、`external/`（含 `external/tessdata/`——W4 §7.10 起外部资产统一外置，仓根不再平铺工具数据目录）**均不入 git**。
 > 克隆后**代码可运行，但业务链路需按下表补齐前提**。
 
 | 前提 | 要求 | 缺失后果 |
@@ -521,10 +521,10 @@ s = se.split_sentences(text, level="strict")   # level ∈ {strict, loose}（受
 | :--- | :--- | :--- |
 | **链路事实源** | **本文档 §8**（受管生成块） | 机器生成：顺序 ←`STEP_ORDER`，命令 ←**AST** 抽 `_run` 调用点，**含全部接入模型节点、就绪/接线状态与降级链总表**；**勿手改** |
 | **质量基线** | `BENCHMARK.md` + `reports/评测基线_<date>.json` | 每轮全链刷新：主题/条文/关系定位/召回/清洗/增强能力（§6.6） |
-| **重构报告** | `reports/重构执行报告_第<N>批_<date>.md` | 每批任务清单、变更摘要、遗留风险 |
+| **重构报告** | `reports/refactors/重构执行报告_第<N>批_<date>.md` | 每批任务清单、变更摘要、遗留风险 |
 | **审计台账** | `reports/审计判定台账_<date>.md` | 九类审计发现的**逐条判定**（需修/待人工/接受），规则可复算 |
 | **数据迁移** | `data_migration_manifest.json` | 活跃数据清单（克隆后按此恢复） |
-| **填充规范** | `reports/README撰写规范与内容大纲.md` | 本文档的撰写依据（七节结构 + 脚本分类 + 调用关系） |
+| **填充规范** | `reports/manuals/README撰写规范与内容大纲.md` | 本文档的撰写依据（七节结构 + 脚本分类 + 调用关系） |
 | **代码索引** | `FILE_LIST.md` | 全仓文件树（含体积/时间戳），由 `file_list_watcher.py` 生成 |
 | **助手约定** | `CODEBUDDY.md` | 本仓的 AI 协作约定（入库） |
 | **变更日志** | `CHANGELOG.md` | 按批次的变更记录 |
@@ -624,7 +624,7 @@ flowchart TD
 | `L5_delivery` | main | 21 | `reports:theme` | 主题报告生成（T0–T10 × 11） | `build_theme_report.py` | **阻断**（失败即停；`--resume` 可从该步续跑） |
 | `L5_delivery` | main | 22 | `draft:clause` | 条款对照素材（drafter 视图） | `cli.py draft` | N-52：此前无任何调度导致滞后，故入链并置于 merged_view 之后 |
 | `L5_delivery` | main | 23 | `base:publish` | 底座发布（发布清单 publish_manifest） | `cli.py base publish` | 发布清单是 wiki_sync 条件触发（publish_manifest_changed）的观察对象 —— 可达性由门禁 T4 守护 |
-| `L5_delivery` | main | 24 | `analysis:gen` | 分析交付物（docs/reports，含 17 项 manifest sha） | `cli.py analysis gen` | **阻断**（失败即停；`--resume` 可从该步续跑） |
+| `L5_delivery` | main | 24 | `analysis:gen` | 分析交付物（docs/deliverables，含 17 项 manifest sha） | `cli.py analysis gen` | **阻断**（失败即停；`--resume` 可从该步续跑） |
 | `L8_enhancement` | enhancement | 25 | `semantic:search` | 分析交付库语义检索视图（pgvector 嵌入索引 + FTS5 A/B 披露） | `-m tools.semantic_search --build --records-limit 1000` | 后端/嵌入链不可用 → rc=0 显式披露（既有 FTS5 检索路径不受影响；无度量不扩大使用面——ADR-0003 延伸） |
 | `L6_governance` | side | 26 | `watch:baseline` | 观测基线快照（source diff --record） | `cli.py source diff --record` | **旁路**：失败告警，不阻断主链 |
 | `L7_disclosure` | disclosure | 27 | `retention:plan` | 数据生命周期只读披露（dry-run + 台账） | `retention.py` | 恒 rc=0（无待归档是合法状态）；`--apply` 才是人工闸门 |

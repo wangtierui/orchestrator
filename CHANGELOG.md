@@ -1,5 +1,47 @@
 # Changelog
 
+## [Unreleased] 2026-10-15 — W4 §7.10 目录 SSOT 收口 + §7.2 A 类死代码清零 + J9 门禁（第七十批）
+
+> 接第六十九批，收口 W4 最后两项结构性任务（方案 §7.10 目录体系 / §7.2 死代码专项）。
+> 验证：全量 pytest 待本轮末复跑、**29 道门禁 PASS**、ruff 0、mypy 0（CI 口径）。
+
+### W4 §7.10 目录体系 SSOT 收口（问题 1/2/3/4/5/6/7）
+- **paths.py 补八个顶层常量**（EXTERNAL/TESSDATA/LOGS/BACKUPS/ARCHIVE/EXPORTS/GRAPHIFY_OUT/DELIVERABLES）：
+  全仓自拼点改引（retention/audit_health/graphify_sync/graphify_offline_html/governance_sync/
+  gov_collector/nfra_collector 等）——「目录一调整漏改方」的静默分叉风险消除。
+- **tessdata 迁入 `external/tessdata/`**（同卷 rename，字节级核对一致）：ocr.yaml 默认值 +
+  doctor 检查项同步；**顺带修复两处潜在缺陷**——supp_ocr_pdf/pbc_recover 原指向
+  「模块内 tessdata」（该目录从不曾存在，内联 Tesseract 回退实际从未找到语言包）。
+  四道门禁跳过清单的仓根 `tessdata` 死条目清理（external 已覆盖）。
+- **交付库更名 `docs/reports/` → `docs/deliverables/`**（案例一命名撞车消除；docs/= 人类文档根，
+  与 docs/adr/ 并列）：15 处代码引用 + README/ADR-0013/manuals 引用同步；`.gitignore`
+  仓根 `tessdata/` 死规则清理。
+- **reports/ 三区分区**（refactors/manuals/scratch + 台账类留根）：140 个 .md 迁移
+  （62 批次报告 + 程序文档 → refactors；6 手册 → manuals；41 底稿 → scratch；机器台账留根），
+  284 处引用重写，**零残留校验通过**；分区口径成文 `reports/README.md`
+  （_snap/_wiki_sources「待人工确认」项按机器产物结案）；`gen_schedule_doc.MANUAL`
+  同步（S4 判据derive 点）。
+- 修复链等价 golden 的**数据依赖泄漏**：timeliness 步骤按日期选最新清单令 dry-run 指纹
+  每日漂移（10-15 实证 FAIL）——归入「汇总文件名 → 占位符」归一化类。
+
+### W4 §7.2 A 类死代码清零（21 → 0）+ supp_ingest 语义降级 + 新判据 J9
+- **退役 13**（三台阶之「移入」）：supp_mapper（幽灵注册点）/supp_downloader/supp_fix_raw_factual/
+  pbc_merge_scrape/pbc_serve/pbc_run_batched/pbc_fix_doc/nfra_seed_cache/nfra_prefetch/
+  nfra_validate_cache/rfn_lookup/source_stats/build_clean_index（纸面产生方——
+  `produced_by` 改指实际生产者 `get_clean_index`；README/脚本数据流/包 docstring 三处
+  「被 __init__ 调用」失实断言修正）。入 `<module>/retired/` + README 备案（原因/日期/替代物），
+  观察一个月检周期后删除。
+- **独立登记 8**（`modules/_manifest.json` 新建）：supp_parser/supp_sanitize/supp_ingest_local_dir/
+  pbc_recover/sync_three_modules/dump_external_articles/dump_related_systems（各带 independent_why）。
+- **supp_ingest 语义降级**（R-8）：sources.yaml 标 `collector_kind: ingest`（原为纸面 collector——
+  登记 13 天零执行）；`config.loader.collector_kind` 受控两类；`gate_sources_config` 判据 2
+  **分级**：collector 须有编排器执行证据（argv/produced_by），ingest 只断言模块存在 + 独立登记。
+- **新判据 J9**（gate_config_integrity）：modules 脚本三态归属闭合——chain（生产引用：
+  import/argv 形态，tests 不计）/ independent（清单登记）/ retired（零可执行引用 + README）。
+  9 项正负例单测（`tests/test_j9_modules_manifest.py`，临时目录猴子补丁构造失态场景）。
+  audit_health 与 J9 的分工成文（函数级死代码披露 vs 脚本级归属阻断）。
+- pytest 新增 `contract` 标记注册（§9.3 契约类用例分层）。
+
 ## [Unreleased] 2026-10-15 — W4 数据层强化 + pgvector 接线 + ADR 制度化（第六十九批）
 
 > 接第六十八批（W0-W3 + W4a）落地 W4 剩余出口判据（方案 §6.3~§6.5）与 ADR 制度化（§9.4 部分）。
@@ -62,9 +104,9 @@
   http.py 的 382 行差异化能力；方案 §6.1/权衡 #6/ADR-0009 已同步校正。
 - **refactor/ 归属方转交登记**：远程提交（其他用户）引入的明文数据库连接串（2 处
   CRITICAL）被 gate_secret_scan 拦下 → 按项目纪律排除出检查范围（与 mypy/ruff 同口径）
-  + `reports/refactor归属方转交登记_20261015.md` 转交（不代改）。
+  + `reports/refactors/refactor归属方转交登记_20261015.md` 转交（不代改）。
 
-## [Unreleased] 2026-10-13 ~ 10-15 — 架构重构五波落地（W0 缺陷修复 → W3 领域层 + W4 共享库收敛启动，依据 `reports/项目最优重构方案_20261012.md`）
+## [Unreleased] 2026-10-13 ~ 10-15 — 架构重构五波落地（W0 缺陷修复 → W3 领域层 + W4 共享库收敛启动，依据 `reports/refactors/项目最优重构方案_20261012.md`）
 
 > 两条主线：**① W0-W3 架构波次全部落地**（编排分层 / MCP 门面 / 领域层扩展 / 三处静默失效修复）；
 > **② W4 共享库收敛启动**（HTTP 单栈 / 公共原语 SSOT / 三个千行级大文件包化拆分）。
@@ -118,7 +160,7 @@
   （"Source file found twice"）直接中止检查 → 改裸名导入（conftest bootstrap 已注入 tools）。
 - **flowmap 漂移**：架构变更后 README §8 链路总图未重生成 → `gen_flow_map` 重注入（173 行受管块）。
 
-## [Unreleased] 2026-10-08 ~ 10-12 — 桌面干扰根治 + 声明面/死代码清剿（第五十六~六十五批，回链 `reports/重构执行报告_*.md`）
+## [Unreleased] 2026-10-08 ~ 10-12 — 桌面干扰根治 + 声明面/死代码清剿（第五十六~六十五批，回链 `reports/refactors/重构执行报告_*.md`）
 
 > 两条主线：**① 用户体感故障（复制粘贴失效/被抢占）的真凶定位与根治**；
 > **② “声明面先进、执行面缺失”的系统性清剿**（未接线脚本 / 死代码 / 未接线模型 / 调度失实 / README 失实）。
@@ -154,7 +196,7 @@
 - `tools/audit_health.check_readme_consistency` 增验：**步骤数**（复用门禁 `_step_order` SSOT）、**env 反向核验**
   （代码用到 ⇒ README §6.3 必须记载）、关键路径补 `.githooks/post-commit` ⇒ 文档漂移**由机器拦截**。
 - 本轮修正 README 漂移：门禁数 4 处 **23→24**、步骤数 **30→31**、新增 §5.4/§6.3（原 env 仅记 1/18 ✗）。
-## [Unreleased] 2026-09-24 ~ 09-26 — v2 全链路重构（九批，回链 `reports/重构执行报告_*.md`）
+## [Unreleased] 2026-09-24 ~ 09-26 — v2 全链路重构（九批，回链 `reports/refactors/重构执行报告_*.md`）
 
 > 依据《全链路重构方案_修订版_v2_20260926.md》落地，把采集→清洗→分类→对齐→起草→交付全链路收敛为
 > 可审计、可重建、可回归的单一数据管道。九批提交 `16e3c4f`…`427516b`。
@@ -296,7 +338,7 @@ python tools\run_production_refresh.py --no-scrape
 
 > 用户指令：针对 `nfra_clauses_20260919.{md,jsonl}` 的六类问题排查五源数据、锁定根因并出具修复方案；
 > 随后要求**自主推进全部修复至验证通过**（含相邻问题）。排查报告见
-> `reports/2026-09-20_nfra条款产物_01_六类缺陷根因排查与修复方案.md`（§9 实施结果）。
+> `reports/scratch/2026-09-20_nfra条款产物_01_六类缺陷根因排查与修复方案.md`（§9 实施结果）。
 
 ### 一、解析层修复（`std_lib/scraper_std/document_structure.py`）
 
@@ -497,7 +539,7 @@ validation`；新增 `CLAUSE_STRUCTURE_FIELDS`。`articles[]`/`chapters[]` **键
 
 ## [Unreleased] 2026-09-18 — 阶段 2/3/4：元数据投影 + DAO 收口 + 判据切换（ALL_GATES 17→18）
 
-> 承接同日「阶段 0 止血 + 阶段 1 治理库骨架」。方案见 `reports/数据流转与存储交互优化方案_20260917.md` §6。
+> 承接同日「阶段 0 止血 + 阶段 1 治理库骨架」。方案见 `reports/refactors/数据流转与存储交互优化方案_20260917.md` §6。
 
 ### 一、阶段 2 · 元数据迁入（双写期：文件仍是事实源）
 
@@ -572,7 +614,7 @@ validation`；新增 `CLAUSE_STRUCTURE_FIELDS`。`articles[]`/`chapters[]` **键
   `relations gen`）→ `gate_relations` **FAIL** 并报出 `cleaned:gov` 声明 `STALE-INJECTED-0000`
   vs 当前 `b53ec289c77708a7`；随后恢复治理库并复跑 PASS。
 
-## [Unreleased] 2026-09-18 — 阶段 0 止血 + 阶段 1 治理库骨架（`reports/数据流转与存储交互优化方案_20260917.md` §6）
+## [Unreleased] 2026-09-18 — 阶段 0 止血 + 阶段 1 治理库骨架（`reports/refactors/数据流转与存储交互优化方案_20260917.md` §6）
 
 ### 一、阶段 0 · 止血（5 项，均为"已定位缺陷"的定点修复）
 
@@ -672,7 +714,7 @@ validation`；新增 `CLAUSE_STRUCTURE_FIELDS`。`articles[]`/`chapters[]` **键
 
 ## [Unreleased] 2026-09-14 — F-L01 追加：关系类报告纳入 analysis 交付库（15 → 17 项）
 
-### 一、纳管（报告 `reports/依据与废止关系统一抽取_20260914.md` §10.4）
+### 一、纳管（报告 `reports/scratch/依据与废止关系统一抽取_20260914.md` §10.4）
 
 - **交付库 15 → 17 项**：`docs/reports/监管与制度依据废止关系图谱.md` 与 `RFN补登候选清单.md`
   此前**游离于交付库之外**（不随 `analysis gen` 刷新、不在 `_manifest` 口径内）→ 现登记为
@@ -701,7 +743,7 @@ validation`；新增 `CLAUSE_STRUCTURE_FIELDS`。`articles[]`/`chapters[]` **键
 
 ## [Unreleased] 2026-09-14 — 五源时效核验续跑（timeliness_review 家族三脚本）+ 2 处缺陷修复
 
-### 一、续跑执行（报告 `reports/五源时效核验续跑报告_20260914.md`）
+### 一、续跑执行（报告 `reports/scratch/五源时效核验续跑报告_20260914.md`）
 
 - **`verify_missing`（主体）**：mof `--retry-failed` **296 条新增 + 29 条失败重试** → 断点 401→**724 条**，
   判定 valid 103 / amended 6 / repealed 14；gov 15 / pbc 2 复核（零新查询，均 `nomatch`，0 变更）。
@@ -975,7 +1017,7 @@ validation`；新增 `CLAUSE_STRUCTURE_FIELDS`。`articles[]`/`chapters[]` **键
 - 验证：gates 15/15 PASS、pytest 242 全绿（`-m "not data"` 229 全绿）、ruff 0；
   `internal merged` 重建（index 变更触发 gate_citations 阻断 → 按提示重建）。
 
-## [Unreleased] 2026-09-13 — 内部制度原件路径治理 P0（`reports/内部制度原件双份存储与索引漂移分析_20260913.md`）
+## [Unreleased] 2026-09-13 — 内部制度原件路径治理 P0（`reports/scratch/内部制度原件双份存储与索引漂移分析_20260913.md`）
 
 - **修复（P0-A）ingest 幂等键加 `path_key` 维度**（`internal_policy_base/indexer.py`）：
   原幂等键仅内容 `sha256` + `prev.ipn == f.ipn`，同内容**换路径**（源目录重组/改名）被判
@@ -996,7 +1038,7 @@ validation`；新增 `CLAUSE_STRUCTURE_FIELDS`。`articles[]`/`chapters[]` **键
   `_ingest_state.json` 迁移至 v2（966 条含 `path_key`）；`internal merged` 重建（输入签名变化触发）。
 - **测试**：新增 `tests/test_internal_original_paths.py`（10 例，覆盖三项 P0）；用例 224 → **236**。
 
-## [Unreleased] 2026-09-13 — 克隆可移植性修复（`reports/克隆可移植性检视报告_20260913.md`）
+## [Unreleased] 2026-09-13 — 克隆可移植性修复（`reports/scratch/克隆可移植性检视报告_20260913.md`）
 
 ### 修复（阻断级）
 - **clean_index 索引出库 + 加载自愈**：`index.json` 原入库且内嵌本机绝对路径（31 处），
@@ -1058,7 +1100,7 @@ validation`；新增 `CLAUSE_STRUCTURE_FIELDS`。`articles[]`/`chapters[]` **键
 - `tools/ci_check.py`（ruff+pytest+gates 一键本地 CI）。
 
 ### 文档
-- 新增/更新：`reports/项目全面审查报告_20260912.md`、`F-L01_五级分析交付库专项报告_20260912.md`、`运行手册_编排与定时_20260912.md`、各批次遗留项报告。
+- 新增/更新：`reports/scratch/项目全面审查报告_20260912.md`、`F-L01_五级分析交付库专项报告_20260912.md`、`运行手册_编排与定时_20260912.md`、各批次遗留项报告。
 
 ## [0.1.0] - 2026-09-08
 

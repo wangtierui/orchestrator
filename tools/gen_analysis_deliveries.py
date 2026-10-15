@@ -3,14 +3,14 @@
 
 背景：规划 §2.1 定义"主题分类 → 纵向深化 → 横向整合 → 召回复核 → 全景分析"五级分析
 交付库（2.1.1.x / 2.1.2.x / 2.1.3.x），此前 0 项按结构产出（交付库不存在）。
-本工具把 classifier/published 的既有产物**按结构**生成 MD 交付物到 docs/reports/。
+本工具把 classifier/published 的既有产物**按结构**生成 MD 交付物到 docs/deliverables/。
 
 交付项 **17 项** = 2.1.1（5）+ 2.1.2（5）= 2.1.2.1~3 原有 + **2.1.2.4/2.1.2.5 关系类追加**
 （2026-09-14 纳管）+ 2.1.3（7）。关系类 2 项**复用各自工具的单源渲染器**、从已落盘关系产物
 重建（零重抽取），并在关系事实源缺失时**跳过并告警**（不写占位、不登记）。详见 §2.1.2 追加段。
 
 用法：
-  python tools/gen_analysis_deliveries.py                 # 全量生成到 docs/reports/
+  python tools/gen_analysis_deliveries.py                 # 全量生成到 docs/deliverables/
   python tools/gen_analysis_deliveries.py --out <dir>     # 自定义输出目录
   python tools/gen_analysis_deliveries.py --dry           # 仅统计不写盘
 
@@ -680,7 +680,7 @@ def d_212_3(names, finals, dry, manifest, outdir) -> None:
 # --------------------------------------------------------------------------- #
 # 2.1.2 追加（F-L01 纳管，2026-09-14）：关系类报告纳入交付库
 # --------------------------------------------------------------------------- #
-# 背景：`docs/reports/监管与制度依据废止关系图谱.md` 与 `RFN补登候选清单.md` 由**各自工具**产出
+# 背景：`docs/deliverables/监管与制度依据废止关系图谱.md` 与 `RFN补登候选清单.md` 由**各自工具**产出
 # （`tools/extract_relations.py --report` / `tools/rfn_backlog.py`），此前**游离于交付库之外**
 # ——不随 `analysis gen` 刷新、不在 `_manifest.json` 口径内、异机交付不完整。
 #
@@ -1213,7 +1213,7 @@ def d_213_7(names, finals, details, graphs, dry, manifest, outdir) -> None:
 # --------------------------------------------------------------------------- #
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="F-L01 规划 2.1 五级分析交付库生成器")
-    ap.add_argument("--out", default=os.path.join(ROOT, "docs", "reports"), help="输出目录")
+    ap.add_argument("--out", default=paths.DELIVERABLES_DIR, help="输出目录")
     ap.add_argument("--dry", action="store_true", help="仅统计不写盘")
     args = ap.parse_args(argv)
 

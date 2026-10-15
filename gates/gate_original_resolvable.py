@@ -2,7 +2,7 @@
 """
 gates/gate_original_resolvable — 内部制度「主索引 ↔ 原件库」路径可解析性门禁（2026-09-13）
 
-背景（`reports/内部制度原件双份存储与索引漂移分析_20260913.md` · §4.3/§4.4）
+背景（`reports/scratch/内部制度原件双份存储与索引漂移分析_20260913.md` · §4.3/§4.4）
 --------------------------------------------------------------------------
 `internal_policy_index.json` 的 `relative_path` 是**运行期回读原件**的定位依据
 （`internal_policy_base.extract.reocr_backfill` 按 `original_path = originals/<relative_path>`

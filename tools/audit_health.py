@@ -14,6 +14,13 @@
   · **可复跑**：同一代码同一数据 → 同一结论（无随机、无网络）；
   · **不静默**：无发现时也输出"0 项"（避免"没输出"被误读成"没跑"）；
   · **分级**：`HIGH`（会导致错误结论/阻断）/ `MED`（可维护性/一致性）/ `LOW`（提示）。
+
+与门禁的分工（W4 §7.2.3）
+-------------------------
+本工具的「代码冗余」判据（check_dead_public）覆盖 **modules/** 的公共**函数**级死代码
+（SCAN_DIRS 已含 modules）。**脚本**级零引用（整个 .py 无生产归属）由门禁
+`gate_config_integrity` 判据 **J9** 阻断（三态：chain / independent 登记 / retired）——
+脚本归属是准入性问题（放行即发布），故在门禁侧而非本披露工具侧。
 """
 
 from __future__ import annotations
@@ -742,7 +749,8 @@ def check_remote_sync() -> list:
 
     rc, out, _e = _git("rev-list", "--count", "origin/main..HEAD")
     ahead = int(out) if rc == 0 and out.isdigit() else -1
-    log_p = os.path.join(ROOT, "logs", "git-autopush.log")
+    # W4（§7.10 问题 5）：logs 根改引 paths.LOGS_DIR（原为全仓自拼点之一）。
+    log_p = os.path.join(paths.LOGS_DIR, "git-autopush.log")
     log_tail = ""
     if os.path.exists(log_p):
         lines = [x for x in _read(log_p).splitlines() if x.strip()]

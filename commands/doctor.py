@@ -126,7 +126,9 @@ def _c_tesseract() -> tuple[str, str, str]:
 
 
 def _c_tessdata() -> tuple[str, str, str]:
-    base = os.path.join(paths.ROOT, "tessdata")
+    # W4（§7.10 案例二）：tessdata 已迁入 `external/tessdata/`（external = 全部外部
+    # 资产统一外置；仓根不再平铺工具数据目录）。
+    base = paths.TESSDATA_DIR
     miss = [
         n
         for n in ("chi_sim", "eng", "osd")

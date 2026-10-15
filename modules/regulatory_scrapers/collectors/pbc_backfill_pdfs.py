@@ -20,7 +20,7 @@
     重跑自动跳过已处理项，且每处理一条即增量写盘。
   - 合规：仅抓取公开法规页，随机延迟 1~3s，遵守网络礼节；缺失字段不臆造。
 
-依赖：标准库 + pdfplumber（文本层解析）+ PyMuPDF（渲染）+ Tesseract/pytesseract（OCR，无需 onnxruntime，本环境兼容）；中文包 chi_sim/eng 置于工作区 tessdata/ 并由 TESSDATA_PREFIX 指向。
+依赖：标准库 + pdfplumber（文本层解析）+ PyMuPDF（渲染）+ Tesseract/pytesseract（OCR，无需 onnxruntime，本环境兼容）；中文包 chi_sim/eng 置于 external/tessdata/（W4 §7.10 案例二迁入）并由 TESSDATA_PREFIX 指向。
 """
 
 # ---- P3b 仓库引导（migrate_collectors_p3b.py 注入）：使 std_lib/config 可导入 ----

@@ -45,6 +45,9 @@ _GUIDE_ROOT = _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(_
 if _GUIDE_ROOT not in _sys.path:
     _sys.path.insert(0, _GUIDE_ROOT)
 del _GUIDE_ROOT, _os, _sys
+# W4（§7.10 问题 5）：logs 落点改引 paths.LOGS_DIR（原为 CWD 相对 "logs" 自拼，
+# 链上/standalone 语义分叉）。import paths 置于**仓根引导之后**（引导前 import 必
+# ModuleNotFoundError——modules standalone 脚本的同款教训）；isort 归 first-party 段。
 import argparse
 import csv
 import json
@@ -59,6 +62,7 @@ import urllib.parse
 import urllib.request
 from datetime import datetime
 
+import paths
 from std_lib.scraper_std.pipeline import (  # 批 49/T1：raw 统一 JSONL 读写助手
     read_raw_records,
     resolve_raw_path,
@@ -469,7 +473,7 @@ def scrape(args):
     opener = make_opener()
     out_dir = args.out_dir
     os.makedirs(out_dir, exist_ok=True)
-    os.makedirs("logs", exist_ok=True)
+    os.makedirs(paths.LOGS_DIR, exist_ok=True)
 
     print("[1/4] 获取政策法规子栏目结构 ...", flush=True)
     children = get_child_items(opener)
@@ -704,7 +708,7 @@ def main():
         import traceback
         tb = traceback.format_exc()
         sys.stderr.write("FATAL: %s\n%s\n" % (e, tb))
-        with open(os.path.join("logs", "FATAL.log"), "w", encoding="utf-8") as fh:
+        with open(os.path.join(paths.LOGS_DIR, "FATAL.log"), "w", encoding="utf-8") as fh:
             fh.write("FATAL: %s\n%s\n" % (e, tb))
         raise
 

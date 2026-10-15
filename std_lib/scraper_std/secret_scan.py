@@ -162,7 +162,8 @@ def scan_directory(root: str, include_ext: list[str] | None = None) -> list[Find
         ".git",
         "node_modules",
         "cache",
-        "tessdata",
+        # W4（§7.10 案例二）：tessdata 已迁入 external/tessdata，仓根平铺条目随之失效。
+        "external",
         "attachments",
         "output",
         "data",

@@ -30,7 +30,7 @@ gov CSV 实测 581MB），clauses 也双轨产出（`{src}_clauses_{date}.{jsonl
 - 全部条文消费方走 JSONL：base_publish/build_external、build_theme_report、
   clause_locator、dump_external_articles、clause_index_api、gate_clean_schema、
   gen_benchmark、extract_relations；
-- 人工报告（含 17 份 docs/reports 交付物）引条款产物时全部指向 JSONL；
+- 人工报告（含 17 份 docs/deliverables 交付物——2026-10-15 由 docs/reports 更名，§7.10）引条款产物时全部指向 JSONL；
 - MD 唯一定位是"人工审阅视图"，且**无任何文档佐证其被实际使用**
   （nfra 条款产物排查报告自述「仅 MD 渲染 + 计数」）。
 

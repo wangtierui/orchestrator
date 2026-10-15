@@ -23,7 +23,7 @@
 - `relations_index.jsonl`：**SSOT**，全部关系（三类混装，每行一关系）
 - `cross_basis.jsonl`：**派生视图**（类别 3），供 drafter/base 高频消费
 - `relations_stat.json`：生成元信息与质量指标（计数/解析率/未解析样例）
-- `docs/reports/监管与制度依据废止关系图谱.md`（`--report` 时）：人类可读摘要
+- `docs/deliverables/监管与制度依据废止关系图谱.md`（`--report` 时）：人类可读摘要
 
 消费方：`regulatory_classifier`（报告/明细）· `internal_policy_base`（merged 关联）·
 `internal_policy_drafter`（条款对照素材/引用核验）；统一读取入口 `interfaces/relations_api.py`。
@@ -88,7 +88,7 @@ GENERATED_BY = "tools/extract_relations.py"
 CLEANED_DIR = os.path.join(ROOT, "modules", "regulatory_scrapers", "data", "cleaned")
 IPB_DATA = os.path.join(ROOT, "modules", "internal_policy_base", "data")
 OUT_DIR = os.path.join(ROOT, "modules", "regulatory_classifier", "data", "relations")
-REPORT_PATH = os.path.join(ROOT, "docs", "reports", "监管与制度依据废止关系图谱.md")
+REPORT_PATH = os.path.join(paths.DELIVERABLES_DIR, "监管与制度依据废止关系图谱.md")
 
 # 解析方式 → 置信度（写入产物，供下游按阈值筛选）
 CONFIDENCE = {

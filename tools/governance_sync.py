@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """tools/governance_sync — 事实源 → 治理库「元数据投影器」（阶段 2，2026-09-18）
 
-定位（`reports/数据流转与存储交互优化方案_20260917.md` §6 阶段 2）
+定位（`reports/refactors/数据流转与存储交互优化方案_20260917.md` §6 阶段 2）
 ----------------------------------------------------------------
 把四类**元数据**从各自的事实源文件事务化投影进 `data/governance.db`，
 进入「**双写期**」：
@@ -362,7 +362,8 @@ def main(argv=None) -> int:
     result = gs.verify_projection(**payload)
     bad = _print_result(result)
     if args.export:
-        out = gs.export_snapshot(os.path.join(ROOT, "exports"))
+        # W4（§7.10 问题 5）：exports 根改引 paths.EXPORTS_DIR（原为全仓自拼点之一）。
+        out = gs.export_snapshot(paths.EXPORTS_DIR)
         LOG.info(
             f"[sync] 已导出快照：{out.get('out_dir')}"
             f"（{len(out.get('items') or [])} 张表；relation 不导出——已有事实源文件）"

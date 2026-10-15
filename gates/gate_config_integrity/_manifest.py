@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 """gates.gate_config_integrity._manifest — J 族判据（W4-c 五拆）。
 
-tools 清单一致性（J1-J6）/ worklist kind 双向闭合（J7）/ corpus 索引一致性。
+tools 清单一致性（J1-J6）/ worklist kind 双向闭合（J7）/ corpus 索引一致性（J8）/
+**modules 脚本归属（J9，W4 §7.2 A 类）**。
 公共基础设施（ROOT/_MANIFEST/_load_module_from_path）经 `._common`。
 """
 
@@ -374,8 +375,251 @@ def _check_corpus() -> tuple[list[str], dict]:
 
 
 # --------------------------------------------------------------------------- #
+# J9. modules 脚本归属（W4 §7.2 A 类：零引用脚本 37 → 0 的门禁化）
+#
+# 背景（D-10 / R-8）：tools/ 的 manifest 机制（J1–J6）不覆盖 modules/**——
+# 21 个 modules 脚本零引用却无登记机制（supp_ingest 更以「纸面 collector」
+# 形态在 sources.yaml 登记 13 天零执行）。本判据把同构机制扩展到 modules：
+#
+#   三态归属（每个 modules/*.py 必属其一）：
+#     · chain       —— 被生产消费（编排器 argv / 接口 import / 触发器 argv / 配置点号路径）；
+#     · independent —— modules/_manifest.json 登记（category=independent + independent_why）；
+#     · retired     —— 位于 <module>/retired/（清单登记 + 零可执行引用 + README 备案）。
+#
+#   口径说明：
+#     · `__init__.py`（包标记）不参与——包的存在即归属，其消费方 import 子模块；
+#     · 引用判定只认**可执行形态**（import 语句 / argv 路径），注释与文档中的历史
+#       提及只披露不阻断（与 J3 同构）；
+#     · tests/ 不计生产消费（单测读源码不构成生产归属——supp_parser 教训）；
+#     · 文本只加载一次（_load_prod_texts），J9.4/J9.6 共用（防逐文件重复读盘）。
+# --------------------------------------------------------------------------- #
+_MODULES_MANIFEST = os.path.join(paths.MODULES_DIR, "_manifest.json")
+_MODULES_DIR = paths.MODULES_DIR
+# retired/ 的 README 备案（J4 同构：存在 + 含退役日期）
+_MODULES_RETIRED_READMES = (
+    os.path.join(_MODULES_DIR, "regulatory_scrapers", "retired", "README.md"),
+    os.path.join(_MODULES_DIR, "regulatory_classifier", "retired", "README.md"),
+)
+
+
+def _modules_py() -> dict[str, str]:
+    """modules/ 全部 .py（排除 retired/ 与 __pycache__ 与包标记 __init__.py）→ 模块标识。
+
+    ⚠️ 返回的 rel 路径相对 **modules/**（与 modules/_manifest.json 的 file 字段同基准——
+    曾误用仓根基准致 independent 登记全部失配）。
+    """
+    out: dict[str, str] = {}
+    for dirpath, dirnames, filenames in os.walk(_MODULES_DIR):
+        dirnames[:] = [d for d in dirnames if d not in {"__pycache__", "retired"}]
+        for fn in filenames:
+            if not fn.endswith(".py") or fn == "__init__.py":
+                continue
+            fp = os.path.join(dirpath, fn)
+            rel = os.path.relpath(fp, _MODULES_DIR).replace("\\", "/")
+            out[rel] = os.path.splitext(fn)[0]
+    return out
+
+
+def _load_prod_texts() -> list[tuple[str, str]]:
+    """生产引用扫描范围：仓内 .py + yaml/toml 等（_REF_EXTS；**不含 .json**——
+    modules/ 下的 index.json 等是**派生产物**（gitignore），其路径字符串不是消费）。
+
+    排除：tests/（单测不构成生产归属）、retired/（退役层）、reports/（输出层——
+    含 _snap 快照与机器台账）、graphify-out/external/refactor/（派生与第三方，
+    其路径字符串是索引不是消费）、data/ 与各缓存。清单自身也排除（声明非消费）。
+    ⚠️ tools/ **不排除**——编排器（run_production_refresh）是 modules 脚本的
+    头号消费方（argv 形态），J3 跳 tools 的口径不适用 J9。文本一次性加载。
+    """
+    skip = _SCAN_BASE_SKIP | {
+        "tests",
+        "retired",
+        "reports",
+        "graphify-out",
+        "external",
+        "refactor",
+        "node_modules",
+        ".venv",
+        "venv",
+        "backups",
+        "archive",
+        ".ruff_cache",
+        "data",
+        ".codebuddy",
+    }
+    out: list[tuple[str, str]] = []
+    for dirpath, dirnames, filenames in os.walk(ROOT):
+        dirnames[:] = [d for d in dirnames if d not in skip]
+        for fn in filenames:
+            if not fn.endswith(_REF_EXTS):
+                continue
+            fp = os.path.join(dirpath, fn)
+            if os.path.abspath(fp) == os.path.abspath(_MODULES_MANIFEST):
+                continue
+            try:
+                out.append((os.path.relpath(fp, ROOT).replace("\\", "/"),
+                            open(fp, encoding="utf-8", errors="replace").read()))
+            except OSError:
+                continue
+    return out
+
+
+def _is_exec_ref(stem: str, line: str) -> bool:
+    """可执行引用判定（零转义原语构造——编辑链路会把正则反斜杠二次转义，故不用正则）。
+
+    四支形态：
+      ① argv：`"<stem>.py"` / 全相对路径尾段（triggers.yaml 的 argv 清单）
+      ② `import <stem>` / `import a.b.<stem>`
+      ③ `from a.b import <stem>`（被导入名在 import 子句）
+      ④ `from a.b.<stem> import …`（模块路径在 from 子句）
+    """
+    s = line.strip()
+    if s.startswith("#"):
+        return False
+    # ① argv 形态：行内含 `<stem>.py` 且紧随引号（防 "xx_stem.py" 前缀误配——stem
+    #    前的字符必须是路径分隔或引号，由 endswith 检查 + 调用方按行扫描保证）。
+    if (stem + ".py") in s and (stem + '.py"' in s or stem + ".py'" in s):
+        return True
+    # ②③ import 子句 token
+    i = s.find("import ")
+    if i < 0:
+        return False
+    head = s[:i].strip()
+    tail = s[i + 7:].split(" as ")[0].split("#")[0]
+    for tok in tail.replace(",", " ").split():
+        if tok == stem or tok.endswith("." + stem):
+            return True
+    # ④ from 子句模块路径（head 形如 `from a.b.<stem>`；兼容 `x; from a.b` 罕见形态）
+    if head.endswith("from") or head.startswith("from") or " from " in head:
+        for tok in head.replace("import", " ").split():
+            tok = tok.strip("();,=")
+            if tok == stem or tok.endswith("." + stem):
+                return True
+    return False
+
+
+def _check_modules_manifest() -> tuple[list[str], dict, list[str]]:
+    """J9：modules 脚本三态归属闭合。"""
+    problems: list[str] = []
+    warnings: list[str] = []
+    detail: dict = {}
+
+    if not os.path.exists(_MODULES_MANIFEST):
+        problems.append("J9: 缺少 modules/_manifest.json（W4 §7.2 A 类归属事实源）")
+        return problems, detail, warnings
+    try:
+        with open(_MODULES_MANIFEST, encoding="utf-8") as fh:
+            man = json.load(fh)
+    except (OSError, ValueError) as e:
+        problems.append(f"J9: modules/_manifest.json 不可解析（{type(e).__name__}: {e}）")
+        return problems, detail, warnings
+
+    entries = man.get("entries") or []
+    declared = {e.get("file", "") for e in entries}
+    by_file = {e.get("file", ""): e for e in entries}
+
+    # J9.1 清单条目必须存在（幽灵条目）。⚠️ 清单路径相对 **modules/**（与 tools
+    # 清单相对 tools/ 同构），存在性判定须 join _MODULES_DIR（曾误 join ROOT 致全量假 ghost）。
+    ghosts = sorted(f for f in declared if not os.path.exists(os.path.join(_MODULES_DIR, f)))
+    if ghosts:
+        problems.append(f"J9.1: modules/_manifest.json 幽灵条目 {ghosts}（文件不存在）")
+
+    # J9.2 retired 项必须位于 <module>/retired/ 且 category=retired（双向）
+    for f, entry in sorted(by_file.items()):
+        is_retired_path = "/retired/" in f
+        is_retired_cat = entry.get("category") == "retired"
+        if is_retired_cat != is_retired_path:
+            problems.append(
+                f"J9.2: {f} 的 category={entry.get('category')!r} 与路径不一致"
+                "（retired ⟺ <module>/retired/，双向）"
+            )
+    retired_files = sorted(f for f in declared if "/retired/" in f)
+    detail["modules_retired_count"] = len(retired_files)
+
+    # J9.3 retired/ 实际文件必须全部登记（漏登记即逃逸引用扫描）。
+    # 磁盘路径与清单同基准：相对 **modules/**。
+    on_disk_retired: list[str] = []
+    for dirpath, _dirnames, filenames in os.walk(_MODULES_DIR):
+        if os.path.basename(dirpath) != "retired":
+            continue
+        for fn in filenames:
+            if fn.endswith(".py"):
+                on_disk_retired.append(
+                    os.path.relpath(os.path.join(dirpath, fn), _MODULES_DIR).replace("\\", "/")
+                )
+    unregistered = sorted(set(on_disk_retired) - declared)
+    if unregistered:
+        problems.append(
+            f"J9.3: retired/ 存在未登记脚本 {unregistered}"
+            "（移入 retired/ 必须同步登记 modules/_manifest.json）"
+        )
+
+    texts = _load_prod_texts()
+
+    # J9.4 retired 项零**可执行**引用（J3 同构；注释行提及只披露）
+    refs: dict[str, list[str]] = {}
+    comment_hits: dict[str, list[str]] = {}
+    for f in retired_files:
+        stem = os.path.splitext(os.path.basename(f))[0]
+        if not stem:
+            continue
+        for rel, text in texts:
+            if stem not in text:
+                continue
+            code_hit = any(_is_exec_ref(stem, ln) for ln in text.splitlines())
+            if code_hit:
+                refs.setdefault(f, []).append(rel)
+            elif any(stem in ln for ln in text.splitlines()):
+                comment_hits.setdefault(f, []).append(rel)
+    for f, locs in refs.items():
+        problems.append(f"J9.4: 已退役脚本仍被**可执行引用** {f} <- {sorted(set(locs))[:5]}")
+    if comment_hits:
+        detail["retired_comment_mentions"] = {k: len(set(v)) for k, v in comment_hits.items()}
+
+    # J9.5 retired README 备案（存在 + 含退役日期；仅当该模块确有 retired 条目时要求）
+    for rm in _MODULES_RETIRED_READMES:
+        rel_dir = os.path.relpath(os.path.dirname(rm), ROOT).replace("\\", "/")
+        if not any(f.startswith(rel_dir + "/") for f in retired_files):
+            continue
+        if not os.path.exists(rm):
+            problems.append(f"J9.5: 存在 retired 项但缺少 {os.path.relpath(rm, ROOT)}")
+        else:
+            txt = open(rm, encoding="utf-8", errors="replace").read()
+            if not re.search(r"20\d{2}-\d{2}-\d{2}", txt):
+                problems.append(
+                    f"J9.5: {os.path.relpath(rm, ROOT)} 未登记退役日期（需 原因+日期+替代物）"
+                )
+
+    # J9.6 无归属清零：每个 modules .py = chain（生产引用）∨ independent（登记）
+    independent_files = {f for f, e in by_file.items() if e.get("category") == "independent"}
+    unowned: list[str] = []
+    for rel, stem in sorted(_modules_py().items()):
+        if rel in independent_files:
+            if not str(by_file[rel].get("independent_why") or "").strip():
+                problems.append(f"J9.6: independent 登记缺 independent_why {rel}")
+            continue
+        self_rel = "modules/" + rel  # 自指排除（文本清单是仓根基准）
+        for relf, text in texts:
+            if relf == self_rel or stem not in text:
+                continue
+            if any(_is_exec_ref(stem, ln) for ln in text.splitlines()):
+                break
+        else:
+            unowned.append(rel)
+    if unowned:
+        problems.append(
+            f"J9.6: modules/ 存在无归属脚本 {unowned}"
+            "（三选一：接入生产消费 / 登记 modules/_manifest.json independent / 移入 retired/）"
+        )
+    detail["modules_unowned"] = unowned
+    detail["modules_independent"] = sorted(independent_files)
+    return problems, detail, warnings
+
+
+# --------------------------------------------------------------------------- #
 # S. 调度事实源一致性（v2 §3.9 / §3.13.6，P2-2）
 #    背景（v2 §3.13.1 M3）：手册定时表为**手抄**，与实测调度记录二义（01:00 vs 01:30、
 #    06:30 vs 06:00–06:37）。现 `config/schedule.yaml` 为唯一源、手册由工具反向生成，
 #    本判据断言两者一致 —— 手改手册即 FAIL。
 # --------------------------------------------------------------------------- #
+
+

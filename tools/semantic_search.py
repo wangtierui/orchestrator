@@ -4,7 +4,7 @@
 定位（方案 §6.4 + ADR-0007 L-b 派生层）
 --------------------------------------
 把「素材就绪但无消费」的 pgvector 落到**低风险场景**：分析交付库的**只读**语义
-检索视图——对 17 项交付物（docs/reports/*.md）+ 发布件记录（限量）做嵌入索引，
+检索视图——对 17 项交付物（docs/deliverables/*.md）+ 发布件记录（限量）做嵌入索引，
 支持「按意思找交付物/记录」。三条边界纪律：
 
   1. **不触碰事实源**：只读消费交付物与发布件；向量索引是派生层（可随时重建）；
@@ -44,7 +44,7 @@ import paths
 from config.exitcodes import ExitCode
 
 OUT_DIR = os.path.join(paths.ROOT, "reports", "semantic_search")
-DELIVERY_DIR = os.path.join(paths.ROOT, "docs", "reports")
+DELIVERY_DIR = paths.DELIVERABLES_DIR
 
 #: 向量索引表名（`vec` schema 下；白名单校验见 vector_store._check_name）
 T_DOCS = "delivery_docs"

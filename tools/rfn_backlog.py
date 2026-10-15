@@ -24,7 +24,7 @@
 产物
 ----
 - `modules/regulatory_classifier/data/relations/rfn_backlog.csv`（机器可读候选清单）
-- `docs/reports/RFN补登候选清单.md`（人类可读，含来源与票数）
+- `docs/deliverables/RFN补登候选清单.md`（人类可读，含来源与票数）
 
 纪律：写入一律经 `rfn.register_doc`（registry 唯一写口；幂等 + 时效置 `pending`）；
       `--apply` 前自动备份归属表/主题表/索引；登记后需重跑 `relations gen` 与分类链。
@@ -60,7 +60,7 @@ CLEANED = os.path.join(ROOT, "modules", "regulatory_scrapers", "data", "cleaned"
 REL_DIR = os.path.join(CLS_DATA, "relations")
 REL_INDEX = paths.relations_index()
 OUT_CSV = os.path.join(REL_DIR, "rfn_backlog.csv")
-OUT_MD = os.path.join(ROOT, "docs", "reports", "RFN补登候选清单.md")
+OUT_MD = os.path.join(paths.DELIVERABLES_DIR, "RFN补登候选清单.md")
 BACKUP_ROOT = os.path.join(ROOT, "modules", "regulatory_classifier", "backups")
 
 from config.enums import SOURCE_ORDER

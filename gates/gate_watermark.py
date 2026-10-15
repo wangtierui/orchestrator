@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """gate_watermark —— 产物水位一致性（第 17 道门禁，阶段 1，2026-09-18）
 
-背景（`reports/数据流转与存储交互优化方案_20260917.md` §4.5）：
+背景（`reports/refactors/数据流转与存储交互优化方案_20260917.md` §4.5）：
     本仓原有的"产物新鲜度"判据依赖 **文件 mtime**（`gate_relations` 判据 8：
     `getmtime(产物) >= max(getmtime(输入)) + 2s`），存在两类误差：
       - **假阳**：touch / copy / 跨卷时间精度 → 误报陈旧；
