@@ -48,7 +48,6 @@ import argparse
 import csv
 import os
 import random
-import re
 import sys
 import time
 import urllib.error
@@ -105,6 +104,45 @@ safe_url = _parse.safe_url
 strip_tags = _parse.strip_tags
 
 
+# ---- 拆分（2026-10-15，D-遗留第一批；TD-1 夹具就位后执行）--------------------------
+# 迁出：列表页解析（parse_listing / listing_page_urls + RE_PAGING / RE_ENTRY）→ `listing.py`；
+#       详情页解析（parse_detail / extract_* + 详情页 RE_*）→ `detail.py`；
+#       共享常量（BASE / ISSUING_AUTHORITIES / ATTACH_EXT / RE_TAG / RE_WS）→ `constants.py`。
+# 依赖方向单向（constants ← listing / detail ← collector），无循环导入。
+# **re-export 保持外部调用面不变**（沿用 2026-09-13 P3 既有约定）：外部调用点（含
+# `tests/test_collector_replay.py` 的回放用例）仍从本模块取这些符号，无需改动。
+try:  # 包形态
+    from . import constants as _constants
+    from . import detail as _detail
+    from . import listing as _listing
+except ImportError:  # 脚本形态（python collectors/pbc/collector.py 直调）
+    import constants as _constants  # type: ignore[no-redef]
+    import detail as _detail  # type: ignore[no-redef]
+    import listing as _listing  # type: ignore[no-redef]
+
+# re-export（显式赋值，规避 F401/F405 与 mypy no-redef；外部调用面不变）
+ATTACH_EXT = _constants.ATTACH_EXT
+BASE = _constants.BASE
+ISSUING_AUTHORITIES = _constants.ISSUING_AUTHORITIES
+RE_TAG = _constants.RE_TAG
+RE_WS = _constants.RE_WS
+RE_ARTICLE_TITLE_META = _detail.RE_ARTICLE_TITLE_META
+RE_DOC_NUMBER = _detail.RE_DOC_NUMBER
+RE_EFFECTIVE = _detail.RE_EFFECTIVE
+RE_P = _detail.RE_P
+RE_SHIJIAN = _detail.RE_SHIJIAN
+RE_TITLE_H2 = _detail.RE_TITLE_H2
+RE_ZOOM = _detail.RE_ZOOM
+extract_doc_number = _detail.extract_doc_number
+extract_effective = _detail.extract_effective
+extract_issuing = _detail.extract_issuing
+parse_detail = _detail.parse_detail
+RE_ENTRY = _listing.RE_ENTRY
+RE_PAGING = _listing.RE_PAGING
+listing_page_urls = _listing.listing_page_urls
+parse_listing = _listing.parse_listing
+
+
 def _init_cache(path=None, offline=False):
     """统一缓存根绑定（缺省 cache_store.source_cache_root("pbc")，单物理根）；path 显式可覆盖。"""
     global _RESP_TEXT
@@ -130,7 +168,6 @@ from std_lib.scraper_std.cache_store import url_endpoint_key as _cache_ep
 # ----------------------------------------------------------------------------------
 # 栏目配置：仅需提供各栏目的列表首页 URL，分页参数运行时自动探测
 # ----------------------------------------------------------------------------------
-BASE = "https://www.pbc.gov.cn"
 
 # 产物目录统一（Plan B 阶段 2b + 2026-09-08 docs_root 统一根）
 SRC_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -146,13 +183,6 @@ CATEGORIES = [
 ]
 
 # 常见发文机关关键词（用于从正文启发式识别，按出现优先级排列）
-ISSUING_AUTHORITIES = [
-    "中国人民银行", "国务院", "全国人民代表大会常务委员会", "全国人民代表大会",
-    "中国银行保险监督管理委员会", "中国银行监督管理委员会", "中国保险监督管理委员会",
-    "国家外汇管理局", "财政部", "国家金融监督管理总局", "中国证券监督管理委员会",
-    "最高人民法院", "最高人民检察院",
-]
-
 # B1/W4（2026-10）：UA 池单栈——原本地 4 条池（Chrome 120/119 时代）删，改 SSOT
 # （crawler_common.USER_AGENTS → http.USER_AGENTS_PC；try-import + 单 UA 兜底降级）。
 try:
@@ -164,29 +194,6 @@ except ImportError:  # pragma: no cover
     ]
 
 # 正则表达式预编译
-RE_PAGING = re.compile(
-    r'name="article_paging_list_hidden"\s+moduleid="([^"]+)"\s+modulekey="[^"]*"\s+totalpage="(\d+)"'
-)
-RE_ENTRY = re.compile(
-    r'<a\s+href="(/tiaofasi/[^"]+)"[^>]*?\btitle="([^"]*)"[^>]*>(.*?)</a>',
-    re.IGNORECASE | re.DOTALL,
-)
-RE_ARTICLE_TITLE_META = re.compile(r'<meta\s+name="ArticleTitle"\s+content="([^"]*)"', re.IGNORECASE)
-RE_TITLE_H2 = re.compile(r'<h2[^>]*>(.*?)</h2>', re.IGNORECASE | re.DOTALL)
-RE_SHIJIAN = re.compile(r'<span\s+id="shijian"[^>]*>([^<]*)</span>', re.IGNORECASE)
-RE_ZOOM = re.compile(r'<div\s+id="zoom"[^>]*>(.*?)</div>', re.IGNORECASE | re.DOTALL)
-RE_P = re.compile(r'<p[^>]*>(.*?)</p>', re.IGNORECASE | re.DOTALL)
-RE_DOC_NUMBER = re.compile(
-    r'[〔【]\s*\d{4}\s*[〕】]\s*第?\s*\d+\s*号'                     # 〔2024〕1号 / 〔2024〕第1号
-    r'|(中国人民银行令|公告|银发|银监发|保监发|证监发|法释|法发|国发|国办发|'
-    r'财政部令|银保监会令|金融监管总局令|中国银行业监督管理委员会令|'
-    r'中国保险监督管理委员会令|中国证券监督管理委员会令)[^<〉】\s]{0,10}?第?\s*\d+\s*号'
-)
-RE_EFFECTIVE = re.compile(r'自\s*([\d]{4}\s*年\s*\d{1,2}\s*月\s*\d{1,2}\s*日)\s*起')
-RE_TAG = re.compile(r'<[^>]+>')
-RE_WS = re.compile(r'\s+')
-
-ATTACH_EXT = (".doc", ".docx", ".pdf", ".xls", ".xlsx", ".wps", ".ceb", ".rtf")
 
 # ----------------------------------------------------------------------------------
 # 附件解析：多格式路由 + LibreOffice 自动探测 + 优雅降级
@@ -300,164 +307,6 @@ class Fetcher:
 
 
 
-# ----------------------------------------------------------------------------------
-# 列表页解析
-# ----------------------------------------------------------------------------------
-def parse_listing(html_text, column_dir):
-    """
-    返回 (moduleid, totalpage, [(title, abs_url), ...])
-    column_dir: 栏目目录的绝对 URL（不含 /index.html）
-    """
-    paging = RE_PAGING.search(html_text)
-    moduleid, totalpage = (paging.group(1), int(paging.group(2))) if paging else (None, 1)
-
-    entries = []
-    seen = set()
-    for m in RE_ENTRY.finditer(html_text):
-        href = m.group(1)
-        title = clean_text(m.group(2)) or clean_text(strip_tags(m.group(3)))
-        if not title:
-            continue
-        abs_url = urllib.parse.urljoin(BASE + "/", href)
-        if abs_url in seen:
-            continue
-        seen.add(abs_url)
-        entries.append((title, abs_url))
-    return moduleid, totalpage, entries
-
-def listing_page_urls(index_url, moduleid, totalpage):
-    """
-    生成列表所有分页 URL（第 1 页为 index.html，后续为 {short}-{n}.html）。
-    关键修正：easysite 分页实际使用的是 moduleid 的前 8 位字符，而非隐藏字段里的
-    完整 moduleid。数字栏目（如 21885）前 8 位即自身，故原规律碰巧成立；
-    hex 栏目（如 3b3662a6db7145c0a025d2d410570ae1）必须用前 8 位 '3b3662a6' 拼接，
-    否则全部 404。统一截断前 8 位可同时覆盖两类栏目。
-    """
-    column_dir = index_url.rsplit("/index.html", 1)[0]
-    urls = [index_url]
-    if moduleid and totalpage > 1:
-        short = moduleid[:8]
-        for n in range(2, totalpage + 1):
-            urls.append(f"{column_dir}/{short}-{n}.html")
-    return urls
-
-# ----------------------------------------------------------------------------------
-# 详情页解析
-# ----------------------------------------------------------------------------------
-def parse_detail(html_text):
-    """从 HTML 详情页提取结构化字段。"""
-    # 标题
-    title = ""
-    mt = RE_ARTICLE_TITLE_META.search(html_text)
-    if mt:
-        title = clean_text(mt.group(1))
-    if not title:
-        mh = RE_TITLE_H2.search(html_text)
-        if mh:
-            title = clean_text(strip_tags(mh.group(1)))
-
-    # 发布日期
-    publish_date = None
-    ms = RE_SHIJIAN.search(html_text)
-    if ms:
-        raw = ms.group(1).strip()
-        dm = re.search(r"\d{4}[-/年]\d{1,2}[-/月]\d{1,2}", raw)
-        if dm:
-            publish_date = normalize_digits(dm.group(0)).replace("年", "-").replace("月", "-").replace("/", "-")
-
-    # 正文：优先 #zoom，回退到 <td class="content">
-    body_text = ""
-    zm = RE_ZOOM.search(html_text)
-    if zm:
-        paras = [strip_tags(p) for p in RE_P.findall(zm.group(1))]
-        body_text = "\n".join(p for p in paras if p).strip()
-    if not body_text:
-        # 兜底：尝试常见 gov CMS 正文容器（仅当上述选择器均落空时启用，
-        # 取含多个 <p> 段落的最长候选，避免抓取导航/页眉等短文本）。
-        for token in ("TRS_Editor", "content", "pages_content", "article",
-                      "fontarea", "zoom", "newscontent"):
-            m = re.search(
-                r'<(div|font|td|article|span)[^>]*\bclass="[^"]*%s[^"]*"[^>]*>(.*?)</\1>'
-                % re.escape(token), html_text, re.IGNORECASE | re.DOTALL)
-            if not m:
-                m = re.search(
-                    r'<(div|font|td|article|span)[^>]*\bid="%s"[^>]*>(.*?)</\1>'
-                    % re.escape(token), html_text, re.IGNORECASE | re.DOTALL)
-            if m:
-                paras = [strip_tags(p) for p in RE_P.findall(m.group(2))]
-                cand = "\n".join(p for p in paras if p).strip()
-                if len(cand) > len(body_text):
-                    body_text = cand
-
-    # 启发式提取：发文字号 / 发文机关 / 生效日期
-    # 注意：仅基于正文 body_text 抽取，避免页面页眉/导航中的"中国人民银行"等干扰。
-    doc_number = extract_doc_number(body_text)
-    issuing = extract_issuing(body_text)
-    effective = extract_effective(body_text)
-
-    return {
-        "title": title,
-        "publish_date": publish_date,
-        "document_number": doc_number,
-        "issuing_authority": issuing,
-        "effective_date": effective,
-        "content": body_text,
-    }
-
-def extract_doc_number(*texts):
-    """
-    启发式提取发文字号。仅匹配高置信模式（含年份六角括号 〔YYYY〕 或机关关键词+号），
-    刻意排除纯数字串（如页面追踪 ID '05073439号'），避免产生虚假发文字号。
-    注意：国家法律类等由人大通过的文本通常无"发文字号"，此时返回 None 属正常。
-    """
-    blob = "\n".join(t for t in texts if t)
-    # 2026-09-05：优先委托五源统一模块 doc_number（15+ 优先级正则 + 规范化）；
-    # 模块不可用/未命中时回退原 RE_DOC_NUMBER，并同样做规范化输出。
-    try:
-        try:
-            from std_lib.scraper_std.doc_number import extract_doc_number as _u
-            from std_lib.scraper_std.doc_number import normalize_doc_number as _n
-        except ImportError:
-            from std_lib.scraper_std.doc_number import extract_doc_number as _u
-            from std_lib.scraper_std.doc_number import normalize_doc_number as _n
-    except Exception:  # pragma: no cover  # noqa: BLE001
-        _u = _n = None  # type: ignore[assignment]
-    if _u is not None:
-        dn = _u(blob)
-        if dn:
-            return dn
-    m = RE_DOC_NUMBER.search(blob)
-    if m:
-        return _n(m.group(0)) if _n is not None else clean_text(m.group(0))   # N-67：显式非 None
-    return None
-
-def extract_issuing(*texts):
-    """
-    启发式识别发文机关。优先在前言/标题区（前 350 字）匹配，
-    并优先识别"X令"形式（部门规章/规范性文件典型）；法律类前言含
-    "全国人民代表大会常务委员会"，不会被正文中出现的"中国人民银行"误判。
-    """
-    blob = "\n".join(t for t in texts if t)
-    head = blob[:350]
-    m = re.search(
-        r'(中国人民银行|国务院|国家外汇管理局|财政部|国家金融监督管理总局|'
-        r'中国银行保险监督管理委员会|中国保险监督管理委员会|'
-        r'中国证券监督管理委员会|全国人民代表大会常务委员会|全国人民代表大会)\s*令', head)
-    if m:
-        return m.group(1)
-    for auth in ISSUING_AUTHORITIES:
-        if auth in head:
-            return auth
-    for auth in ISSUING_AUTHORITIES:
-        if auth in blob:
-            return auth
-    return None
-
-def extract_effective(body_text):
-    m = RE_EFFECTIVE.search(body_text)
-    if m:
-        return normalize_digits(clean_text(m.group(1))).replace(" ", "")
-    return None
 
 
 # ----------------------------------------------------------------------------------

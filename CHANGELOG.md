@@ -1,5 +1,41 @@
 # Changelog
 
+## [Unreleased] 2026-10-15 — D-遗留第一批：pbc 采集器按层拆分（第七十七批）
+
+> 承接 TD-1（上一批处置的录制-重放夹具）：夹具就位后才动大文件内部结构。
+> 拆分判据（按此挑选本轮目标）：**行数大 + 解析入口已被夹具覆盖 + 分层边界内聚**。
+> 十个≥400 行采集文件中，`pbc/collector.py` 命中 6 个夹具覆盖入口、13 处分层线索 ⇒ 首选。
+
+### 结构变更（依赖单向、无环）
+```
+pbc/constants.py   共享常量：BASE / ISSUING_AUTHORITIES / ATTACH_EXT / RE_TAG / RE_WS
+pbc/listing.py     列表层：RE_PAGING / RE_ENTRY / parse_listing / listing_page_urls
+pbc/detail.py      详情层：RE_*（7 条）/ parse_detail / extract_doc_number /
+                   extract_issuing / extract_effective
+pbc/collector.py   采集层：引导 / 缓存 / 配置 / UA / Fetcher / 主流程 / CLI
+                   729 → 541 行；**P3 写法显式 re-export** 保持外部调用面不变
+```
+- **为什么这么切**：`BASE`（列表层要）与 `ISSUING_AUTHORITIES`（详情层要）同被两层需要，
+  各复制一份必漏改其一 ⇒ 站点常量静默分叉（不报错，只是抓错/抽不出）⇒ 取公共上层；
+  `Fetcher`/缓存/主流程互相咬合，不宜再切（拆分是为了让解析层能被夹具直接驱动，不是为了行数好看）。
+- 函数体**逐字搬运**（含原注释），仅改依赖来源；每层文件保留「可独立脚本直调」的三行引导。
+
+### 等价性证据（两层，均可复跑）
+1. **夹具回放**：`tests/test_collector_replay.py` 17 项全绿——`pbc_list_page` / `pbc_detail_page`
+   夹具经**重构后**的 listing/detail 层解析，字段级断言不变；
+2. **重构前后逐字段比对**：加载拆分前的备份模块与拆分后的模块，在同一夹具输入上比对
+   `parse_listing` / `listing_page_urls`（hex 栏目 + 单页两种形态）/ `parse_detail` /
+   `extract_doc_number` / `extract_issuing` / `extract_effective` 共 7 组输出，
+   并校验 21 项迁出符号存在性与常量一致性 ⇒全等（DIFF: none）。
+
+### 顺带修正（三处「搬代码忘搬依赖」类缺陷，均只在运行期暴露）
+- `listing.py` / `detail.py` 补 `import re`（正则随块迁入、导入未随之迁）；
+- `listing.py` 补 `import urllib.parse`（`parse_listing` 用它解析绝对 URL）；
+- `detail.py` 去掉未用的 `RE_TAG` / `RE_WS`（二者仍是 constants 的公开常量，由 collector re-export）。
+
+### 验证
+30 道门禁 PASS、ruff 0、mypy 0、夹具回放 17 项 + 门禁与契约 91 项全绿。
+
 ## [Unreleased] 2026-10-15 — TD-1 处置：采集器录制-重放夹具 + 判据 J13（第七十六批）
 
 > 处置 `docs/tech_debt.md` 最高优先技术债（TD-1），并**解除**「>500 行采集文件按层拆分」
