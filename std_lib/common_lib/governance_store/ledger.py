@@ -93,10 +93,18 @@ def step_record(
     skipped: bool = False,
     note: str = "",
     run_id: str | None = None,
+    started_at: float = 0.0,
+    finished_at: float = 0.0,
+    is_dry_run: bool = False,
 ) -> None:
     """登记一个步骤的结果（**幂等 upsert**：同 (run_id, step) 覆盖）。
 
     由 `tools/run_production_refresh._run` 调用；治理库未启用时静默返回（不中断主链）。
+
+    C3（2026-10-16）：`started_at` / `finished_at` 是步骤**真实时间窗**（epoch 秒）。
+    老调用方不传时留 0（与迁移前的老数据同语义）——**不把 `recorded_at` 反推成时间窗**：
+    反推值 = 记录时刻 ∓ 耗时，与实测值语义不同，混用会污染根因分析的时间窗判定。
+    TD-3（2026-10-16）：`is_dry_run` 显式标记，SLI 依此排除非生产流量（不靠 note 文本）。
     """
     if not enabled() or not step:
         return
@@ -106,12 +114,17 @@ def step_record(
     conn = _ensure()
     try:
         conn.execute(
-            "INSERT INTO run_step(run_id,step,rc,exit_code,elapsed_s,skipped,note,recorded_at)"
-            " VALUES(?,?,?,?,?,?,?,?)"
+            "INSERT INTO run_step(run_id,step,rc,exit_code,elapsed_s,skipped,note,recorded_at,"
+            " started_at,finished_at,is_dry_run)"
+            " VALUES(?,?,?,?,?,?,?,?,?,?,?)"
             " ON CONFLICT(run_id,step) DO UPDATE SET rc=excluded.rc,"
             " exit_code=excluded.exit_code, elapsed_s=excluded.elapsed_s,"
-            " skipped=excluded.skipped, note=excluded.note, recorded_at=excluded.recorded_at",
-            (rid, step, int(rc), exit_code, float(elapsed_s), 1 if skipped else 0, note, now_iso()),
+            " skipped=excluded.skipped, note=excluded.note, recorded_at=excluded.recorded_at,"
+            " started_at=excluded.started_at, finished_at=excluded.finished_at,"
+            " is_dry_run=excluded.is_dry_run",
+            (rid, step, int(rc), exit_code, float(elapsed_s), 1 if skipped else 0, note,
+             now_iso(), float(started_at or 0.0), float(finished_at or 0.0),
+             1 if is_dry_run else 0),
         )
         conn.commit()
     except sqlite3.Error as e:

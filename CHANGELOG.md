@@ -1,5 +1,68 @@
 # Changelog
 
+## [Unreleased] 2026-10-16 — F1（§13.8）：步骤耗时性能基线（第八十四批）
+
+> 方案 §13.8 的最后一项。动机：`style_report`/J11 管住了**规模**，而**耗时**此前无任何基线
+> ——"这一步变慢了"只能人肉对比某次输出。
+
+### 工具 `tools/step_duration_baseline.py`（J1 登记）
+- 读治理库 `run_step`（只读）⇒ `data/run_state/step_duration_baseline.json`：
+  每步 `n / p50 / p90 / max / last / mean / skip_rate / fails` + 执行时间窗 + 判据来源披露。
+- **两条关键口径**（都是实测踩出来的）：
+  1. **dry-run 排除**——其 `elapsed_s` 是"列 argv"的进程耗时（<0.1s），混进分布会压平统计；
+  2. **resume 跳过样本不入分布**——`--resume` 跳过的步骤 `elapsed_s≈0`（未执行），
+     首版实现下 18 个步骤里**多数 p50=0.00**，基线失去判读价值；改为只统计 `skipped=0`
+     的样本，跳过率单列（它是"续跑效率"的另一项指标，不该混进耗时分布）。
+- **连接可注入**（`_collect_from(conn)`，`collect()` 只负责开真库）⇒ 口径可被内存库测，
+  不必"对真库跑一遍看起来对"。守卫 `tests/test_step_duration_baseline.py`（11 项）。
+
+### 首份基线（实测数据，30 次生产运行）
+| 观察 | 数据 | 判读 |
+|---|---|---|
+| 最慢单步 | `collect:mof` p50=**14401s**（4 小时）、失败 1 次 | 采集类步骤是长尾来源；后续优化优先级最高 |
+| 波动最大 | `clean:gov` p50=187s 但 p90=**6481s**、max=**15526s**（4.3 小时） | 耗时分布**长尾极重** ⇒ 单点对比会误判，须用分位数 |
+| 续跑效率 | 多数步骤 `skip_rate` **73–92%** | `--resume` 有效；但也说明"p50 低"可能是"没跑"而非"快" |
+| 时间窗 | **0 个步骤**有 started/finished_at | 全部为迁移前老数据（按口径不回填）⇒ 新列需下一次真实运行才有数据 |
+
+**结论**：耗时判读必须用**分位数 + 跳过率**双维度，且当前数据说明 `clean:gov` 与
+`collect:*` 是唯二值得做性能优化的步骤族（其余步骤 p90 均 < 230s）。
+
+### 验证
+30 道门禁 PASS、ruff 0、mypy 0；新增守卫 11 项全绿。
+
+## [Unreleased] 2026-10-16 — C3 + TD-3：run_step 增三列（时间窗 + dry_run 标记）（第八十三批）
+
+> 负责人 2026-10-16 决策：**C3 = 只扩 `started_at`/`finished_at`**（明确不扩 `record_count`
+> 与 `argv`）；**TD-3 = 加 `is_dry_run` 列**（根治 dry-run 台账污染）。
+
+### 三处改动（零主链控制流变更）
+- `governance_store/_db.py`：`run_step` DDL 增 `started_at REAL` / `finished_at REAL` /
+  `is_dry_run INTEGER`，并在 `_OBSERVATION_MIGRATIONS` 登记（**`_SCHEMA_INT` 5 → 6**）；
+- `governance_store/ledger.py::step_record`：接受并落库三字段（幂等 upsert，旧调用方不传即 0）；
+- `tools/run_production_refresh.py::_record_step`：传入 rec 里**本已算好**的时间窗
+  （`:581-582` / `:670` 一直在算，只是没落库）与 `_DRY_RUN` 标记。
+
+### 关键口径
+- **老数据不回填**（实测 5448 行三列均为 0）：`recorded_at ∓ elapsed_s` 反推出的时间窗
+  是**估算值**，混进实测列会让「产物是否落在执行窗内」的判定失真而**无从察觉**；
+  故时间窗分析须显式过滤 `started_at != 0`。
+- **`is_dry_run` 优先于 note 文本**：`sli_chain` 判据改为 `is_dry_run=1 OR note LIKE '%dry-run%'`
+  ——列为主（不受文案变更影响）、文本兜底（兼容未迁移的老库），并在结果里披露判据来源
+  （`dry_run_predicate` 字段）。老数据滚出统计窗口后可删文本项。
+- 实测：修后 `sli_chain_success_rate` 的 `n=7` 为**真实生产运行**，
+  `excluded_dry_run_total=109`（此前窗口内多为 dry-run，成功率恒 100%、SLO 永不触发）。
+
+### 过程缺陷（记录以自省）
+- **迁移键算错**：`误按「现有键最大 +1」取 4，而键语义是**目标 `_SCHEMA_INT`**（当时为 5）
+  ⇒ `v > cur` 判定跳过，**迁移静默不执行**（真库 user_version 停在 5、列未加）。
+  已修正为 6 并同步 `_SCHEMA_INT`；注释里写明该坑。
+- 守卫 `tests/test_run_step_schema_ext.py`（9 项）：迁移幂等、**不篡改数据**、
+  不回填、写入方三字段齐备、默认值为 0、SLI **列判据/文本兜底双态**各自验证、
+  列判据下真实失败仍被计入。
+
+### 验证
+30 道门禁 PASS、ruff 0、mypy 0、全量 923 passed/ 2 skipped。
+
 ## [Unreleased] 2026-10-16 — E2：gov/parse.py 按层拆分（config/extract/outputs）（第八十二批）
 
 > D-遗留第二批。承接第八十一批的 zhengceku 夹具（E1），本批拆分 `gov/parse.py`

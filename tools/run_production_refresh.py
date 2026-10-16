@@ -1168,6 +1168,12 @@ def _record_step(rec: dict) -> None:
             elapsed_s=rec.get("elapsed_s", 0),
             skipped=bool(rec.get("skipped")),
             note=(rec.get("note") or rec.get("tail", ""))[:200],
+            # C3：rec 里已算好的真实时间窗（此前算了却没落库）；触发器路径的 rec
+            # 可能未设这两个键，故用 `or 0.0` 兜底（语义 = 老数据，不反推）。
+            started_at=rec.get("started_at", 0.0) or 0.0,
+            finished_at=rec.get("ended_at", 0.0) or 0.0,
+            # TD-3：dry-run 显式标记（此前只能靠 note 文本识别）
+            is_dry_run=bool(_DRY_RUN),
         )
     except Exception:  # noqa: BLE001  旁路设施
         pass

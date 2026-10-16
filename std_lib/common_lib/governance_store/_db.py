@@ -25,7 +25,7 @@ SCHEMA_VERSION = "1.2"
 # 注意：投影表（document/theme_assign/relation/timeliness_history）版本落后时**DROP 重建**；
 #      观测表（run_log/watermark/artifact/audit_log/gate_result/worklist）一律 ALTER 增量迁移
 #      （新增整表由 `_DDL` 的 CREATE TABLE IF NOT EXISTS 完成，无需迁移项）。
-_SCHEMA_INT = 5
+_SCHEMA_INT = 6
 _TZ = timezone(timedelta(hours=8))  # Asia/Shanghai，与 clean_index 时间基准一致
 
 TABLES = (
@@ -194,6 +194,16 @@ CREATE TABLE IF NOT EXISTS run_step(
   skipped     INTEGER NOT NULL DEFAULT 0,
   note        TEXT NOT NULL DEFAULT '',
   recorded_at TEXT NOT NULL,
+  -- C3（2026-10-16 决策）：步骤**真实时间窗**（epoch 秒）。此前 rec 里已算好这两值
+  -- （run_production_refresh 的 rec['started_at'/'ended_at']），只是没落库 ⇒
+  -- recorded_at 的误差 = 该步耗时（实测 clean:gov 达 15526s ≈ 4.3 小时），
+  -- 根因分析没有可信时间窗。老数据留空，**不反推填充**（反推值会被误当实测值引用）。
+  started_at  REAL NOT NULL DEFAULT 0,
+  finished_at REAL NOT NULL DEFAULT 0,
+  -- TD-3（2026-10-16 决策）：dry-run 标记。dry-run 只列 argv 不执行，却与真实运行
+  -- 混在同一张表里（实测占 run_step 行数 65.4%），使 SLI「链成功率」被非生产流量
+  -- 稀释。此前只能靠 note 文本匹配，文案一改口径即失效 ⇒ 改为显式列。
+  is_dry_run  INTEGER NOT NULL DEFAULT 0,
   PRIMARY KEY(run_id, step)
 );
 CREATE INDEX IF NOT EXISTS ix_step_run ON run_step(run_id);
@@ -355,6 +365,14 @@ _OBSERVATION_MIGRATIONS: dict[int, tuple[tuple[str, str, str], ...]] = {
     3: (
         ("watermark", "round", "TEXT NOT NULL DEFAULT ''"),
         ("watermark", "stage", "TEXT NOT NULL DEFAULT ''"),
+    ),
+    # C3 + TD-3（2026-10-16，负责人决策）：run_step 增三列——时间窗两列 +
+    # dry-run 标记列。只 ADD COLUMN（观测表承载历史，不可 DROP 重建，见上方纪律）。
+    # ⚠️ 键 = **目标 `_SCHEMA_INT`**（本次随之 5 → 6），不是「现有键 +1」——取错会被 `v > cur` 跳过，迁移静默不执行（本批踩过）。
+    6: (
+        ("run_step", "started_at", "REAL NOT NULL DEFAULT 0"),
+        ("run_step", "finished_at", "REAL NOT NULL DEFAULT 0"),
+        ("run_step", "is_dry_run", "INTEGER NOT NULL DEFAULT 0"),
     ),
 }
 

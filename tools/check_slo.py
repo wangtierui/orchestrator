@@ -55,9 +55,14 @@ def _rows(conn, sql: str, args: tuple = ()) -> list[tuple]:
         return []
 
 
-#: dry-run 识别的 note 片段（与 `tools/run_production_refresh.py` 写入的文本一致）。
-#: 用既有 `note` 文本识别而非加列——零 schema 变更、零主链改动。
+#: dry-run 识别的 note 片段（**迁移期兜底**）。
+#:
+#: TD-3 根治（2026-10-16 决策）：`run_step` 已增 `is_dry_run` 列，主判据改为**列**；
+#: 保留文本项是为了兼容**老数据**（迁移前写的行该列为 0，但 note 里有标记）。
+#: 待老数据滚出统计窗口后可删除文本项（届时在此注明删除时点）。
 _DRY_RUN_NOTE = "%dry-run%"
+#: 列 + 文本双条件（列为主、文本兜底）；列存在性由调用方探测（老库未迁移时列不存在）。
+_DRY_RUN_PRED = "(is_dry_run=1 OR note LIKE ?)"
 
 
 def sli_chain(conn, window: int) -> dict | None:
@@ -70,14 +75,17 @@ def sli_chain(conn, window: int) -> dict | None:
     # 先在 SQL 侧取「**不含任何 dry-run 步骤**」的运行（= 生产运行），再取最近 N 个。
     # ⚠️ 不能"先取最近 N 个再逐个过滤"：实测最近 N 个常常全是 dry-run（gates 每次调用
     #产生 1 个 dry-run，占 run 数 74.5%），过滤后为空 ⇒ SLI 直接失效（比虚高更糟）。
+    # 列存在性探测（老库未迁移时降级为纯文本判据，保证读侧不因缺列而失败）
+    has_col = any(
+        r[1] == "is_dry_run" for r in conn.execute("PRAGMA table_info(run_step)"))
+    pred = _DRY_RUN_PRED if has_col else "note like ?"
     prod = [rid for (rid,) in _rows(
         conn,
-        "select r.run_id from run_log r where r.run_id not in ("
-        "  select run_id from run_step where note like ?) "
-        "order by r.started_at desc limit ?", (_DRY_RUN_NOTE, window))]
+        f"select r.run_id from run_log r where r.run_id not in ("
+        f"  select run_id from run_step where {pred}) "
+        f"order by r.started_at desc limit ?", (_DRY_RUN_NOTE, window))]
     dry_runs = _rows(
-        conn,
-        "select count(distinct run_id) from run_step where note like ?", (_DRY_RUN_NOTE,))
+        conn, f"select count(distinct run_id) from run_step where {pred}", (_DRY_RUN_NOTE,))
     n_dry = int(dry_runs[0][0]) if dry_runs else 0
     if not prod:
         return None
@@ -90,6 +98,8 @@ def sli_chain(conn, window: int) -> dict | None:
     out: dict = {"value": round(100.0 * ok / len(prod), 2), "n": len(prod), "ok": ok}
     if n_dry:
         out["excluded_dry_run_total"] = n_dry
+        src = "is_dry_run 列" if has_col else "note 文本（老库未迁移该列）"
+        out["dry_run_predicate"] = src
         out["note"] = f"全库 {n_dry} 次 dry-run 已排除（不计入运行；dry-run 不执行任何步骤）"
     return out
 

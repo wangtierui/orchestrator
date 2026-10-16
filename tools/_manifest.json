@@ -319,6 +319,13 @@
       "file": "signal_availability.py",
       "independent_why": "五阶段审查发现『告警从未真正送达』（reports/_alerts 目录不存在），即以告警为输入的诊断能力建立在未被验证的通道上。本工具实测各信号源（治理库各表行数与最后活动 / step_logs / _alerts）+ notify 通道可达性探针（写探针即删，不触发真实告警），产出 reports/diagnosis/signal_availability.json。",
       "produced_by": "诊断能力第 0 波：信号源可用性实测"
+    },
+    {
+      "category": "independent",
+      "entry": "python -m tools.step_duration_baseline --runs 30",
+      "file": "step_duration_baseline.py",
+      "independent_why": "把「某步变慢了」从人肉对比变成可复算的判读：读治理库 run_step（只读），按步骤产出 p50/p90/max/last + skip_rate + 执行时间窗，落data/run_state/step_duration_baseline.json。口径两条关键：① dry-run 已排除（is_dry_run 列判据）② resume 跳过样本不计入耗时分布（否则 p50 被 0 压平）。消费方 = 确认台 P1 与未来的 step_triage。",
+      "produced_by": "步骤耗时基线采集（§13.8 性能基线）"
     }
   ],
   "generated_at": "2026-09-30",
