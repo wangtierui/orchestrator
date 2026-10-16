@@ -85,8 +85,11 @@ import faulthandler
 
 faulthandler.enable()
 
+# **启动时依赖预检**（不是无用导入）：本模块不再直接用 `lxml`（`html_to_text`
+# 已随 E4 迁入 `nfra/extract.py`），但此处 import 的目的是**在启动时就校验依赖
+# 可用**、缺失即给安装提示——删掉会让"缺 lxml"从友好提示退化成下游的深栈 NameError。
 try:
-    import lxml.html
+    import lxml.html  # noqa: F401
 except ImportError as e:  # pragma: no cover
     sys.exit("缺少依赖 lxml，请先安装: pip install lxml\n%s" % e)
 

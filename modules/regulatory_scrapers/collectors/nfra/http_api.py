@@ -23,11 +23,24 @@ import ssl
 import time
 import urllib
 
+from std_lib.scraper_std.cache_store import OfflineMiss as _OfflineMiss
+
 # ⚠️ 导入以**拆分前备份原文**为准（不凭印象写）：`paths` 是**仓根模块**（非
 # `std_lib.scraper_std` 的子模块——写错会ImportError 且整层无法加载）；
 # `bind_source_cache` / `OfflineMiss` / `docs_root` 来自 `cache_store`
 # （`_init_cache` / `_cache_path` 依赖它们）。
 from std_lib.scraper_std.cache_store import bind_source_cache
+
+# 共享 UA 池（反爬轮换）；缺模块时回退单 UA，避免启动失败。
+# ⚠️ E4 拆分时**漏搬了这两条**（`USER_AGENTS` 与 `OfflineMiss`）——L94/L87 用了它们，
+#    但静态检查未覆盖到该文件 ⇒ **脚本形态下会 NameError**（第九十五批补齐）。
+try:
+    from std_lib.scraper_std.crawler_common import USER_AGENTS
+except ImportError:  # pragma: no cover
+    USER_AGENTS = [
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+        "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+    ]
 
 # 层间依赖（HTTP 层 → 解析层的常量；双形态）。
 # ⚠️ **必须放在常量区之前**：本层常量 `API = BASE + "/cbircweb"` 在**导入期**求值
