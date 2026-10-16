@@ -53,8 +53,6 @@ import csv
 import json
 import os
 import random
-import re
-import ssl
 import sys
 import time
 import urllib.error
@@ -93,209 +91,37 @@ except ImportError as e:  # pragma: no cover
     sys.exit("缺少依赖 lxml，请先安装: pip install lxml\n%s" % e)
 
 # ----------------------------- 配置 -----------------------------
-BASE = "https://www.nfra.gov.cn"
-API = BASE + "/cbircweb"
-PARENT_ITEM_ID = 926                      # 政策法规
-LIST_ENDPOINT = API + "/DocInfo/SelectDocByItemIdAndChild"
-CHILD_ENDPOINT = API + "/DocInfo/SelectItemAndDocByItemPId"
-DETAIL_ENDPOINT = API + "/DocInfo/SelectByDocId"
 
 PAGE_SIZE = 18  # 与官网前端保持一致
 
-DEFAULT_HEADERS = {
-    "User-Agent": (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-        "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
-    ),
-    "Accept": "application/json, text/javascript, */*; q=0.01",
-    "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
-    "X-Requested-With": "XMLHttpRequest",
-    "Referer": (
-        BASE + "/cn/view/pages/ItemList.html?itemPId=923&itemId=926"
-        "&itemUrl=ItemListRightMore.html&itemName=%E6%94%BF%E7%AD%96%E6%B3%95%E8%A7%84"
-    ),
-}
 
-_SSL_CTX = ssl.create_default_context()
 
 # 缓存目录（由 --cache-dir 设置）。命中缓存则跳过网络，便于断网/续跑/复现。
 # 2026-09-05 重构：核心缓存逻辑下沉至通用模块 std_lib/scraper_std/cache_store，
 # 五源统一复用，缓存产物统一落盘 regulatory_scrapers/cache/<source>/。
-from std_lib.scraper_std.cache_store import OfflineMiss, bind_source_cache, docs_root
+from std_lib.scraper_std.cache_store import OfflineMiss, docs_root
 
-_RESP = None  # ResponseCache 实例；None 表示未启用缓存
 # 兼容别名（旧代码/脚本引用 m._OfflineMiss）
 _OfflineMiss = OfflineMiss
 
 
-def _init_cache(path=None, offline=False):
-    """统一缓存根绑定（缺省 cache_store.source_cache_root("nfra")，单物理根）；path 显式可覆盖。"""
-    global _RESP
-    _RESP = bind_source_cache("nfra", "json", root=path)
-    if offline and _RESP is not None:
-        _RESP.set_offline(True)
 
 
-def set_cache_dir(path):
-    """兼容旧调用（同目录脚本）：仅设根，沿用当前离线态。"""
-    _init_cache(path)
 
 
-def set_offline(flag):
-    if _RESP is not None:
-        _RESP.set_offline(flag)
 
 
-def _cache_path(url, params):
-    """根据接口与参数生成确定性缓存文件名（委托通用模块，命名算法保持不变）。"""
-    if _RESP is None:
-        raise RuntimeError("缓存未初始化：请先调用 set_cache_dir(path)")
-    return _RESP.path(url, params)
 
 # ------------------------- 工具函数 -------------------------
-def make_opener():
-    """返回复用的 OpenerDirector（keep-alive 由 http.client 连接池处理）。"""
-    return urllib.request.build_opener(urllib.request.HTTPSHandler(context=_SSL_CTX))
 
-def http_get_json(opener, url, params, timeout=25, max_retries=4):
-    """带超时与重试退避的 JSON GET。
 
-    非 200、JSON 解析失败、网络异常均触发退避重试；连续失败抛异常由调用方处理。
-    若启用缓存（_RESP）且命中，则直接读取本地文件，跳过网络。
-    """
-    full = url + "?" + urllib.parse.urlencode(params)
 
-    # 1) 缓存命中：离线/续跑
-    if _RESP is not None:
-        cp = _cache_path(url, params)
-        if os.path.exists(cp):
-            try:
-                with open(cp, encoding="utf-8") as fh:
-                    return json.load(fh)
-            except Exception:  # noqa: BLE001  采集容错（字段/附件缺失不阻断采集）
-                pass  # 缓存损坏则重新请求
-        if _RESP.offline:
-            # 离线模式：缓存缺失直接跳过，避免无意义的联网重试
-            raise _OfflineMiss("%s ? %s" % (url, urllib.parse.urlencode(params)))
-
-    # 2) 实时请求
-    last_err = None
-    for attempt in range(1, max_retries + 1):
-        req = urllib.request.Request(full, headers=DEFAULT_HEADERS, method="GET")
-        # 反爬加固：每次请求轮换 UA（避免单一 UA 被风控聚类）
-        req.add_header("User-Agent", random.choice(USER_AGENTS))
-        try:
-            with opener.open(req, timeout=timeout) as resp:
-                status = resp.getcode()
-                raw = resp.read().decode("utf-8", errors="replace")
-            if status != 200:
-                # 限流 / 服务端错误 -> 退避后重试
-                raise urllib.error.HTTPError(full, status, "HTTP %d" % status, None, None)  # type: ignore[arg-type]
-            data = json.loads(raw)
-            if data.get("rptCode") != 200:
-                raise RuntimeError("接口返回非成功码 rptCode=%s msg=%s"
-                                   % (data.get("rptCode"), data.get("msg")))
-            # 写入缓存（仅成功响应）
-            if _RESP is not None:
-                try:
-                    _RESP.put(url, params, data)
-                except Exception:  # noqa: BLE001  采集容错（字段/附件缺失不阻断采集）
-                    pass
-            return data
-        except (TimeoutError, urllib.error.HTTPError, urllib.error.URLError, ConnectionError, json.JSONDecodeError, RuntimeError) as e:
-            last_err = e
-            if attempt < max_retries:
-                wait = 2 ** attempt + random.uniform(0, 1)
-                print("      [retry %d/%d] %s，%.1fs 后重试" % (attempt, max_retries, e, wait),
-                      flush=True)
-                time.sleep(wait)
-    raise RuntimeError("请求失败（已重试 %d 次）: %s" % (max_retries, last_err))
-
-def html_to_text(html):
-    """将正文 HTML（含 Word 命名空间）转为紧凑纯文本。"""
-    if not html:
-        return ""
-    try:
-        doc = lxml.html.fromstring(html)
-        # 去除脚本/样式
-        for bad in doc.xpath("//script | //style"):
-            bad.getparent().remove(bad)
-        text = doc.text_content()
-    except Exception:  # noqa: BLE001
-        text = re.sub(r"<[^>]+>", "\n", html)
-    # 折叠多余空行与首尾空白
-    lines = [ln.strip() for ln in text.splitlines()]
-    text = "\n".join(ln for ln in lines if ln)
-    return text
-
-_DOC_NO_RE = re.compile(r"[\u4e00-\u9fa5A-Za-z]+[〔\[]?\d{4}[〕\]]\d+号")
-_SHIXING_RE = re.compile(r"自\s*(\d{4}[-年./]\d{1,2}[-月./]\d{1,2})\s*[日]?\s*起施行")
 
 # 废止/失效引用语境校验：委托五源统一模块 doc_number.in_abolish_context（唯一事实源，
 # 2026-09-07 case 9 及同类 32 例）。详见 std_lib/scraper_std/doc_number.py。
 
-def extract_document_no(text):
-    """从正文中抽取发文字号，如 '金监规〔2024〕1号'。
 
-    2026-09-05：优先委托五源统一模块 doc_number（15+ 优先级正则 + 半角 [ ] → 全角〔〕
-    规范化 + 脏串清理）；模块不可用/未命中时回退原 _DOC_NO_RE，并对回退值做规范化。
-    2026-09-07（case 9）：抽取结果须经废止/失效引用语境校验——若该文号实为被本文件
-    废止的他文文号，则返回 None（本文件无字号时留空），禁止错配。
-    """
-    if not text:
-        return None
-    try:
-        try:
-            from std_lib.scraper_std.doc_number import extract_doc_number as _u
-            from std_lib.scraper_std.doc_number import in_abolish_context as _a
-            from std_lib.scraper_std.doc_number import normalize_doc_number as _n
-        except ImportError:
-            from std_lib.scraper_std.doc_number import extract_doc_number as _u
-            from std_lib.scraper_std.doc_number import in_abolish_context as _a
-            from std_lib.scraper_std.doc_number import normalize_doc_number as _n
-    except Exception:  # pragma: no cover  # noqa: BLE001
-        _u = _n = _a = None  # type: ignore[assignment]
-    dn = ""
-    if _u is not None:
-        dn = _u(text) or ""
-    if not dn:
-        m = _DOC_NO_RE.search(text)
-        dn = (_n(m.group(0)) if _n is not None else m.group(0)) if m else ""   # N-67：显式非 None（原 `if _n` 恒真）
-    if not dn:
-        return None
-    if _a is not None and _a(text, dn):
-        return None
-    return dn
 
-def extract_effective_date(text, builddate=None):
-    """优先从正文 '自 X 年 X 月 X 日起施行' 抽取施行日期；否则回退成文日期。"""
-    if text:
-        m = _SHIXING_RE.search(text)
-        if m:
-            nums = re.findall(r"\d+", m.group(1))
-            if len(nums) >= 3:
-                return "%s-%02d-%02d" % (nums[0], int(nums[1]), int(nums[2]))
-            return m.group(1)
-    if builddate:
-        return str(builddate).strip()
-    return None
-
-def make_summary(text, max_len=200):
-    """正文摘要：取开头若干有效句，截断到 max_len；首句超长时直接截断补齐。"""
-    if not text:
-        return ""
-    parts = re.split(r"[。\n！？]", text)
-    parts = [p.strip() for p in parts if p.strip()]
-    summary = ""
-    for p in parts:
-        if len(summary) + len(p) + 1 > max_len:
-            if not summary:           # 首句即超长：截断补齐
-                summary = p[:max_len]
-            break
-        summary += p + "。"
-        if len(summary) >= max_len:
-            break
-    return summary[:max_len]
 
 def sleep_between(delay_min, delay_max):
     if delay_max > delay_min:
@@ -304,6 +130,50 @@ def sleep_between(delay_min, delay_max):
         time.sleep(delay_min)
 
 # ------------------------- 抓取逻辑 -------------------------
+# --------------------------------------------------------------------------- #
+# E4 拆分（2026-10-16，D-遗留第四批）：解析层 / HTTP 层迁出
+#   解析层 → nfra/extract（html_to_text / 文号 / 生效日期 / 摘要 / 详情 URL）
+#   HTTP 层 → nfra/http_api（会话 / 缓存寻址 / JSON 接口取数）
+# 依赖方向：extract ← http_api ← collector（本模块）。
+#
+# **re-export 保持外部调用面不变**（P3 既有约定）：
+#   · `collectors/nfra/fetch_lists.py:34` 以 `from . import collector as m` 取
+#     `m.API` / `m._cache_path` / `m.set_cache_dir`；
+#   · `config/sources.yaml` 的 `collector: collectors.nfra.collector` 由编排器
+#     调 `main()`。
+try:  # 包形态
+    from . import extract as _extract
+    from . import http_api as _http
+except ImportError:  # 脚本形态
+    import extract as _extract  # type: ignore[no-redef]
+    import http_api as _http  # type: ignore[no-redef]
+
+# 解析层
+html_to_text = _extract.html_to_text
+extract_document_no = _extract.extract_document_no
+extract_effective_date = _extract.extract_effective_date
+make_summary = _extract.make_summary
+build_detail_url = _extract.build_detail_url
+_DOC_NO_RE = _extract._DOC_NO_RE
+_SHIXING_RE = _extract._SHIXING_RE
+BASE = _extract.BASE
+# HTTP 层
+API = _http.API
+DEFAULT_HEADERS = _http.DEFAULT_HEADERS
+make_opener = _http.make_opener
+http_get_json = _http.http_get_json
+_cache_path = _http._cache_path
+_init_cache = _http._init_cache
+set_cache_dir = _http.set_cache_dir
+set_offline = _http.set_offline
+_SSL_CTX = _http._SSL_CTX
+_RESP = _http._RESP
+PARENT_ITEM_ID = _http.PARENT_ITEM_ID
+LIST_ENDPOINT = _http.LIST_ENDPOINT
+CHILD_ENDPOINT = _http.CHILD_ENDPOINT
+DETAIL_ENDPOINT = _http.DETAIL_ENDPOINT
+
+
 def get_child_items(opener):
     """获取 政策法规 下的子栏目 [{itemId,itemName,type}]。"""
     data = http_get_json(opener, CHILD_ENDPOINT, {"itemId": PARENT_ITEM_ID, "pageSize": 50})
@@ -363,8 +233,6 @@ def get_detail(opener, doc_id, delay_min, delay_max):
         "pdf_file_url": (BASE + d["pdfFileUrl"]) if d.get("pdfFileUrl") else "",
     }
 
-def build_detail_url(doc_id, item_id):
-    return "%s/cn/view/pages/ItemDetail.html?docId=%s&itemId=%s" % (BASE, doc_id, item_id)
 
 # 附件产物根（统一 data/docs，2026-09-08 docs_root；与 collectors/nfra/fetch_attachments.py 一致）
 _ATT_DIR = docs_root("nfra", "attachments")

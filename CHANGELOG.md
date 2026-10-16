@@ -1,5 +1,53 @@
 # Changelog
 
+## [Unreleased] 2026-10-16 — E4：nfra/collector.py 按层拆分（extract/http_api）（第八十六批）
+
+> D-遗留第四批。选址依据（AST 实测）：十个候选中 `nfra/collector.py` 是**唯一**
+> 「19 个顶层函数 + 0 个类 + 16 个模块常量」的——`gov/collector.py`（841 行）有两个类
+> （`RobustSession`/`XzfgkScraper`）互相咬合，`pbc/collector.py` 同理，不宜先动。
+
+### 结构（依赖单向）
+```
+nfra/extract.py    解析层 115 行：html_to_text / extract_document_no /
+                           extract_effective_date / make_summary / build_detail_url
+                           —— **零外部依赖的纯函数层**（不触网/不落盘/不依赖全局缓存）
+nfra/http_api.py   HTTP 层 136 行：make_opener / http_get_json / _cache_path /
+                           _init_cache / set_cache_dir / set_offline + 8 项端点常量
+nfra/collector.py  编排层 543 行（原 716）：get_child_items / get_list_for_item /
+                           get_detail / load_attachments / download_original_doc /
+                           scrape / main + 全部迁出符号的显式 re-export
+```
+
+### 为什么这次**不需要补网络夹具**（比 E1–E3 的路径更强）
+解析层五个函数全是零外部依赖的纯函数 ⇒ 等价性可用「**重构前后逐字段比对**」锁死，
+不必依赖网络夹具形态假设。而 nfra 是**逆向前端 JS 接口**
+（`DocInfo/SelectDocByItemIdAndChild` 等），按真实接口形态造夹具成本高且极易猜错——
+这条路径在 E1 的 gov/pbc 上已付出过三次"想当然全错"的学费。
+⇒ 新建 `tests/test_nfra_extract.py`（17 项）把纯函数锁进长期回归。
+
+### 等价性证据
+- **重构前后逐字段比对**：5 个解析函数 × 共 17 组输入（含 script 剥离、空输入、
+  表格嵌套、半角括号、超长文本）+ 7 项外部调用面符号 + 10 项常量 ⇒ `DIFF: none`；
+- **回归测试**：17 项（`tests/test_nfra_extract.py`）；
+- 夹具回放 34 项 + 双形态启动全绿（未受影响）。
+
+### 过程中即时修复的缺陷（**含一个会静默给错结果的真实回归**）
+
+| 现象 | 根因 | 性质 |
+|---|---|---|
+| **`html_to_text` 行为变了**：`<script>` 内容不被剥离、正文多出换行 | `lxml.html` 未随迁 ⇒ 函数内 try 抛 NameError ⇒ **静默落到正则兜底** | 🔴 **真实回归**：函数不报错，只安静地给错结果。比对脚本当场抓出 |
+| `ImportError: cannot import name 'paths'` | 我按印象写 `from std_lib.scraper_std import paths`，实际 `paths` 是**仓根模块**；`bind_source_cache`/`docs_root` 来自 `cache_store` | 凭印象写导入路径的教训：**迁移 import 以备份原文为准** |
+| `NameError: BASE`（http_api 导入期） | 层间 import 放在文件末尾，而 `API = BASE + "/cbircweb"` 在**常量区** | **硬规则**：层间 import 必须放在**所有使用点之前**（Python 导入期即求值常量） |
+| `NameError: ssl` / `urllib.error` | stdlib 导入未随迁 | 常态 |
+| 校验脚本 4 项误报 | 我按"看起来应该"写断言（以为返回空串、以为日期返回原文） | 实测真实行为后修正：`None`/ISO 形态/补句号/半角归一 |
+
+**两条应升为硬规则的教训**（本次与 E3 各踩一次，同源）：
+① 层间 import 必须置于使用点之前；② **重构前后比对脚本本身也会错**
+（对象身份比较、签名假设、参数结构），它报 DIFF 时要先自证再改产品代码。
+
+### 验证
+30 道门禁 PASS、ruff 0、mypy 0；新增回归 17 项；全量测试见下。
+
 ## [Unreleased] 2026-10-16 — E3：gov/zhengceku.py 按层拆分（list/detail/attach）（第八十五批）
 
 > D-遗留第三批。zhengceku 夹具已在第八十一批（E1）就位，故本批可直接拆分。
