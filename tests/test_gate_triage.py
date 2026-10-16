@@ -124,16 +124,56 @@ def test_artifact_gate_with_declared_step_gets_runnable_command(conn) -> None:
         assert st in names, f"重跑建议给了非步骤名（多半是模块路径）：{st}"
 
 
-def test_artifact_without_step_declaration_gives_no_command(conn) -> None:
-    """负例：产物**无步骤声明** ⇒ 不给命令，报治理缺口（不拿模块路径冒充步骤名）。"""
+def test_artifact_without_step_declaration_gives_no_command(conn, monkeypatch) -> None:
+    """负例：产物**无步骤声明** ⇒ 不给命令，报治理缺口（不拿模块路径冒充步骤名）。
+
+    ⚠️ 用 monkeypatch **临时摘掉**声明，而不是依赖某个产物的当前状态——
+    本批已把 8 处治理缺口全部补上，靠状态写的断言会随治理进展而失效。
+    这里测的是**机制**：`StepSpec.produces` 缺声明时，工具必须退回"无命令 + 报缺口"。
+    """
+    import dataclasses
+
+    import tools.run_production_refresh as R
+
+    # ⚠️ **先捕获原始函数**再替换：若替换后的实现内部再调 `R.step_specs()`，
+    # 会无限递归；而 `_artifact_keys()` 的 `except Exception: return {}` 会把
+    # 递归错误静默伪装成"无数据"（排查成本极高）。
+    _real_specs = R.step_specs
+    target = next(s for s in _real_specs() if s.name == "internal:update")
+
+    def _stripped():
+        """returns 序列中 `internal:update` 的 produces 被摘掉 internal_index。"""
+        return tuple(
+            dataclasses.replace(s, produces=tuple(
+                p for p in s.produces if p != "internal_index"))
+            if s.name == "internal:update" else s
+            for s in _real_specs()
+        )
+
+    monkeypatch.setattr(R, "step_specs", _stripped)
     _fail(conn, "gates.gate_relations",
           problems=["关系产物陈旧：[{'dep': 'internal_index'}] 上游已推进但未重抽取"])
     t = T.triage("gates.gate_relations", con=conn)
     assert "internal_index" in t.artifacts
-    assert t.rerun_steps == (), f"不该给命令：{t.rerun_steps}"
+    assert t.rerun_steps == (), f"无声明却给了命令：{t.rerun_steps}"
     assert any("未声明生产步骤" in g for g in t.evidence_gaps)
     # 仍应报出生产模块，供人工定位
     assert any("internal_policy_base" in m for m in t.artifact_modules)
+    assert target.produces  # 断言真实声明未被改动（monkeypatch 已自动还原）
+
+
+def test_artifact_with_freshly_declared_step_gets_command(conn) -> None:
+    """正例：本批补齐的归属**立即生效**（`internal_index → internal:update`）。
+
+    这条锁的是治理补口的收益：补声明前该产物给不出重跑建议（只能报缺口）。
+    """
+    _fail(conn, "gates.gate_relations",
+          problems=["关系产物陈旧：[{'dep': 'internal_index'}] 上游已推进但未重抽取"])
+    t = T.triage("gates.gate_relations", con=conn)
+    assert "internal:update" in t.rerun_steps, f"补声明后仍给不出建议：{t}"
+    from tools.run_production_refresh import step_specs
+
+    assert "internal:update" in {s.name for s in step_specs()}
 
 
 def test_category_comes_from_registry_not_problem_text(conn) -> None:

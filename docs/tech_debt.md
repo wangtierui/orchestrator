@@ -62,11 +62,12 @@ W5 自身（约 8 个批次）即该预算的**首次实践**：W0–W4 的 A–
 | 编号 | 内容 | 影响面 | 风险 | 耦合 | 分 | 处置 |
 |---|---|---|---|---|---|---|
 | TD-1 | ~~采集器无录制-重放夹具~~ ⇒ **已处置**（2026-10-15 第七十六批） | 采集链 | 回归风险 | 0 | — | 夹具层 `tests/http_cassette.py` + `tests/cassettes/`（4 合成夹具）+ 17 项回放用例 + 判据 **J13**；**D-遗留（>500 行拆分）的前置阻塞已解除** |
-| TD-2 | 待办积压 641 条 open、处置率 2.1% | 治理 | 治理效率 | 638 | 3 | **分批裁决机制已落地**（2026-10-16 第七十九批：`tools/worklist_triage.py` 按裁决动作类型切 8 批、覆盖 641/641；已执行 B2 三条并落审计）；剩余 638 条需业务判断（B4 主题不确定 324 条实测无法机器判定） |
 | ~~D-遗留~~ | >500 行采集文件按层拆分 | 采集链 | 可维护性 | 1 | 4 | **第一批 + 第二批完成**（第一批 2026-10-15 第七十七批：pbc 729→541，拆出 constants/listing/detail，夹具回放 + 重构前后等价校验双证；**第二批 2026-10-16 第八十二批：gov/parse.py 843→210，拆出 scrape_config/extract/outputs**；**第三批 2026-10-16 第八十五批：gov/zhengceku.py 802→454，拆出 zhengceku_list/detail/attach**；**第四批 2026-10-16 第八十六批：nfra/collector.py 716→543，拆出 extract/http_api**（解析层零外部依赖⇒ 走纯函数回归 + 重构前后比对双证，17 项新建测试；过程抓出一个**静默给错结果**的真实回归：lxml 未随迁致 html_to_text 退化）（三层夹具回放 28 项 + 重构前后逐字段等价双证，J11 基线 13→11），前置补齐 zhengceku 夹具（第81 批，顺带修复 gov 中文名附件下载必崩缺陷）；剩余 gov/collector 841、nfra/fetch_attachments 710、夹具回放 + 重构前后等价校验双证）；剩余 gov/parse 843、gov/collector 841、gov/zhengceku 802、nfra/collector 716、nfra/fetch_attachments 710mof/collector 664、mof/attachments 641、supp/ingest 603、nfra/attachments_extract 518（**须先补对应夹具**再拆） |
 | TD-2 | 待办积压 641 条 open、处置率 2.1% | 治理 | 治理效率 | 638 | 3 | **分批裁决机制已落地**（2026-10-16 第七十九批：`tools/worklist_triage.py` 按裁决动作类型切 8 批、覆盖 641/641；已执行 B2 三条并落审计；其余 4 份裁决包在 `reports/worklist_batches/`）；**剩余 638 条需业务判断**（B4 主题不确定 324 条实测无法机器判定：标题在归属表命中 0）⇒ 需人工裁决或先定「是否纳入 RFN 体系」 |
 | TD-3 | 覆盖率门槛 20%（现状基线，非高覆盖） | 全仓 | 漏测 | 1 | 3 | 只升不降；新增代码应带测试（boy scout） |
 | TD-4 | 变异测试未做（全仓） | gates | 断言强度未知 | 1 | 2 | 有意不做（§13.12）；以判据负例单测间接保证 |
+| TD-5 | dry-run 演练写入生产台账 ⇒ SLI/统计被非生产流量稀释 | 可观测性 | **指标失真** | 中 | 中 | **2026-10-16 实测**：dry-run 占 run_step 行数 **65.4%**（3449/5270）、run 数 **74.5%**（105/141），每次 `cli.py gates` 产生 1 个 dry-run。**已修**：`sli_chain` 排除 dry-run（守卫 5 项，判据= `is_dry_run` 列 OR note 文本兜底）；**根治待决**：① dry-run 不写台账（须先确认链等价 golden 是否依赖它）② 或把 dry-run 标记列化（已落地为 `is_dry_run`）|
+| TD-6 | `StepSpec.depends_on` 声明稀疏（32 步仅 3 步声明） | 链声明面 | 可观测性 | 高 | 中 | **2026-10-16 实测**（诊断第 2 波）：覆盖率 <20% ⇒ `topology_api.upstream_chain` / `affected_nodes` 覆盖面天然有限（`clean:gov` 下游本就是空集——**事实，非缺陷**）。守卫 `test_dependency_declarations_are_sparse_known_limitation` 锁定现状。**未擅自补**：需逐个取证且会改变 R4-c 无环判定，补全时应同步更新守卫与本行 |
 
 ## 七、复核节奏
 

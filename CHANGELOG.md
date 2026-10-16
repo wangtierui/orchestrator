@@ -1,5 +1,101 @@
 # Changelog
 
+## [Unreleased] 2026-10-16 — 诊断第 2 波：步级失败取证 `tools/step_triage.py`（第八十九批）
+
+> 承接第 1 波（门禁归因）。本波解决"某一步失败了，怎么快速定位"。
+
+### 新增 `interfaces/topology_api.py`（只读门面，零写入）
+**解决五阶段审查的 B1 阻断级陷阱**：链拓扑是**双层标识**——
+声明面 `STEP_ORDER` 32 项含 4 个 `{src}` 模板，台账 `run_step.step` 48 个**互异值全是展开形态**
+（无模板形态）。若照字面实现"步骤名有来源、查不到即拒绝"，会在**每个真实失败场景**下自我拒绝
+（`clean:nfra` 在声明面不存在，只有 `clean:{src}`）。
+门面的职责是把两层**显式接上**，并如实返回 `matched_as`（`instance`/`spec`/`both`），
+不让调用方误以为二者同形。另提供 `neighbors` / `upstream_chain` / `affected_nodes` /
+`Topology.coverage`。
+
+### 新增 `tools/step_triage.py`（J1 登记）
+```
+python -m tools.step_triage --list-failures      # 近 N 天失败步骤概览
+python -m tools.step_triage <step>                # 取证某步（最近一次失败）
+python -m tools.step_triage <step> --run-id RUN-xxx --json
+```
+取证包七项（每项标注是否取到）：拓扑双层匹配 / `run_step` 执行事实 / `note` **原文** /
+步骤日志 tail（经统一取证入口）/ **产出物水位** / 耗时基线对照 / 拓扑邻接。
+
+### 关键取舍：**不做自动根因断言**
+原方案要"沿链自动归因 + 置信度"。本仓**无记录数列**（`run_step` 无 `record_count`），
+"穿透深度"无法量化 ⇒ 自动断言会产出**看似精确实则臆测**的结论。
+本波只做**证据聚合 + 怀疑排序**，每条怀疑**必须挂依据**，并**显式列出证据缺口**
+（缺口非空 ⇒ 结论须标「待人工确认」）。沿用 `argument-strength-evaluation` 的纪律。
+
+### 实测输出（真实失败 `collect:mof`）
+```
+拓扑：声明名 `collect:{src}`（匹配=instance，层=L1_ingest，kind=main，失败语义=abort）
+失败：run_id=… exit=TIMEOUT at=2026-10-14T05:00:17
+取证（7 项）：拓扑匹配 / rc=-1 exit=TIMEOUT耗时=14403.5s / note 原文 /
+             日志尾部 / 产出物水位 raw:mof@29ee8c5f / 耗时基线对照 / 拓扑邻接
+怀疑排序：①撞硬超时被强杀（依据：exit_code=TIMEOUT）②链首无上游（依据：上游链为空）
+          ③重跑该步即可修复产出（依据：raw:{src} 由本步生产）
+⚠ 证据缺口（1 项）：该次无执行时间窗（第八十三批新增列，老数据按口径不回填）
+```
+
+### 过程中即时修复的缺陷
+| 现象 | 根因 | 性质 |
+|---|---|---|
+| 产出物水位恒查不到，误报"均无水位记录" | 水位键是**展开形态**（`raw:mof`），`produces` 是**模板形态**（`raw:{src}`）⇒ **拓扑双层标识问题在水位侧同样存在** | 真实缺陷（与 B1 同源）。改为按实例名展开后查（规则与 `run_production_refresh.py:1301` 一致） |
+| 链首步骤输出"上游 0 层（无）已完成" | 上游为空时该怀疑项**不成立** | 自相矛盾。改为链首单列"无上游，直接查本步自身" |
+| 耗时基线 n=1 时报"显著高于 p90" | p90≈p50 时"高于 p90"是**噪声** | 误导。改为样本 <3 时明确标注"不足以做分位数对照" |
+| 门禁 `gate_enum_values` 拦下新测试 | 测试里写了 `SRC_SET = {"gov",...}` 字面量 | 判据正常工作。改 `from config.enums import SOURCE_ORDER` |
+
+### 新发现的声明面稀疏（已如实锁定，未擅自修）
+32 步里只有 **3 步**声明了 `depends_on`（`reports:theme` / `draft:clause` / …），
+其余全为空 ⇒ `upstream_chain` / `affected_nodes` 的覆盖面天然有限
+（`clean:gov` 的下游本就是空集——**事实，非缺陷**）。
+守卫 `test_dependency_declarations_are_sparse_known_limitation` 锁定该现状并写明：
+若日后有意补全，需同步更新守卫与台账。**补声明需逐个取证且会改变 R4-c 无环判定**，故不在本批。
+
+### 守卫
+`tests/test_step_triage.py`（17 项）：双层标识四类（实例反查/模板命中/未知返回 None/
+**台账每种实例形态都必须能反查**）、邻接与上游链**在有环图上终止**、取证证据齐全、
+证据缺口可见、怀疑项**必带依据**、链首不得声称上游完成、无失败记录不冒充成功、
+拓扑查不到不臆造依赖、产物归属闭合、JSON 结构稳定。
+
+## [Unreleased] 2026-10-16 — 治理缺口补齐：8 个产物的步骤归属 + 判据双向闭合（第八十八批）
+
+> 第 1 波实测发现：`GOV_ARTIFACTS` 19 个产物键只有 **11 个**在 `StepSpec.produces`
+> 声明了生产步骤 ⇒ 其余 8 个在门禁归因时**拿不到"重跑哪步"的建议**
+> （`produced_by` 只是模块路径，不是步骤名）。
+
+### 补齐的 8 处（每条都有取证，非按语义猜）
+| 产物 | 步骤 | 取证 |
+|---|---|---|
+| `raw:{src}` | `collect:{src}` | watermark 5 行 `produced_by=collectors.<src>.collector`，stage=0 |
+| `clean_index` | `apply:{src}` | 它是 cleaned 的**按需旁路索引**（produced_by 是 **getter** `get_clean_index`），而 `cleaned:{src}` 已归本步 |
+| `timeliness:state` | `timeliness:verify` | watermark `verification_state.save_state`；本步 purpose 即"时效核验" |
+| `rfn_attr` / `rfn_theme` | `classify:all` | watermark produced_by 均为 `rfn.registry._save*`（stage=3） |
+| `internal_index` | `internal:update` | watermark `internal_policy_base.indexer.ingest`；本步 purpose 即"内部制度索引更新" |
+| `reports:classifier` | `reports:build` | watermark `build_overview_report+build_theme_report`（概览为主） |
+| `wiki:sync` | `wiki:sync` | 步骤名与产物键同名 |
+
+### 补声明前先做的**影响面评估**（不盲改）
+`produces` 全仓仅 4 处消费：R4-c 无环检测、R4-d 血缘闭合、MCP 门面输出、
+以及 `run_production_refresh.py:1266` 的 `--resume` 跳过决策。
+**水位/血缘门禁（`gate_watermark` / `gate_provenance`）不读它** ⇒ 门禁语义不变。
+唯一行为变化：某步被判定可跳过后会额外核对其产物水位，未跟进则**取消跳过**（更严格= 更正确）；
+无水位记录者（`wiki:sync`）走 `get_watermark() → None → continue`，零影响。
+
+### 判据（双向闭合）
+`tests/test_artifact_step_ownership.py`（5 项）：与既有 R4-d（`produces ⊆ GOV_ARTIFACTS`）
+互补的**反向**判据——`GOV_ARTIFACTS` 的每个产物都必须有步骤归属；
+另锁：归属必须是链上**真实步骤名**（不是模块路径）、门禁归因与声明面**同源**（不得各写一份映射）、
+本批补的 7 处归属不被"顺手改错"。
+
+### 顺带修掉一处**静默降级**
+`tools/gate_triage._artifact_keys()` 的 `except Exception: return {}` 会把任何内部错误
+伪装成"无数据"（实测踩过：monkeypatch 造成的递归被它吞掉，症状是"产物未命中"，
+排查成本极高）⇒ 改为降级留痕（`LAST_ERROR`）并写进证据缺口，让
+「工具故障」与「产物无归属」可区分。
+
 ## [Unreleased] 2026-10-16 — 诊断第 1 波：门禁失败归因 `tools/gate_triage.py`（第八十七批）
 
 > 承接第八十批的第 0 波（信号源可用性自检）。诊断最优方案里"成本最低、收益最直接"的一项：

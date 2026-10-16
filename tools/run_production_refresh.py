@@ -858,6 +858,11 @@ STEP_LAYERS: Final[dict[str, LayerSpec]] = {
             StepSpec("collect:{src}", "main", "abort",
                      "各源原始采集（gov 拆 xzfgk/zhengceku 两个子源步骤；mof/nfra/pbc/supp）",
                      None,  # 按 COLLECT_TIMEOUT[src] 动态取
+                     # 2026-10-16 补声明（治理缺口：`GOV_ARTIFACTS.raw:{src}` 无步骤归属）。
+                     # 取证：watermark 的 `raw:gov/mof/nfra/pbc/supp`五行 produced_by
+                     # 均为 `collectors.<src>.collector` 且 stage=0 ⇒ 由本步生产。
+                     # `{src}` 模板在 resume 判定处按实例展开（run_production_refresh.py:1267）。
+                     produces=("raw:{src}",),
                      degrade_note="失败即停；--no-scrape → SKIP（rc=0）；--resume 可从该步续跑"),
             StepSpec("supp:ingest_batch", "main", "abort", "补充库批量摄取（backlog 驱动）", 1800,
                      degrade_note="backlog 为空 → SKIP（rc=0）"),
@@ -881,7 +886,13 @@ STEP_LAYERS: Final[dict[str, LayerSpec]] = {
                      produces=("timeliness:ledger",),
                      degrade_note="无核验输入 → 空汇总（rc=0）"),
             StepSpec("apply:{src}", "main", "abort", "时效核验结果回写清洗产物", 600,
-                     produces=("cleaned:{src}",),
+                     # 2026-10-16 补声明：`clean_index` 此前无步骤归属。
+                     # 取证：它是**清洗产物的按需旁路索引**——watermark 的 produced_by
+                     # 是 **getter** `clean_index.get_clean_index`（不是写入函数），
+                     # 而被索引的 `cleaned:{src}` 已归本步 ⇒ 索引与被索引产物同步骤。
+                     # ⚠️ 它按需构建且**当前无水位记录** ⇒ resume 判定走
+                     #    `get_watermark() → None → continue`，补声明零行为影响。
+                     produces=("cleaned:{src}", "clean_index"),
                      degrade_note="无核验结果可回写 → SKIP（rc=0）"),
         ),
         note="条件步骤 timeliness:verify 插在 clean/relevance 与 consolidate 之间（数据依赖："
@@ -893,7 +904,10 @@ STEP_LAYERS: Final[dict[str, LayerSpec]] = {
         fail_semantics="abort",
         steps=(
             StepSpec("classify:all", "main", "abort", "主题分类（_t*_base / _t*_final 派生）", 5400,
-                     produces=("classify:products",),
+                     # 2026-10-16 补声明：rfn_attr / rfn_theme此前无步骤归属。
+                     # 取证：watermark 两者 produced_by 均为 `rfn.registry._save_rows` /
+                     # `_save_theme_rows`（stage=3，分类阶段落盘）⇒ 同属本步。
+                     produces=("classify:products", "rfn_attr", "rfn_theme"),
                      degrade_note="断点幂等：输入未变自动跳过"),
             StepSpec("relations:gen", "main", "abort",
                      "关系抽取（依据/废止，含条款级定位：窗口优先 + 跨度退路）", 1800,
@@ -922,7 +936,14 @@ STEP_LAYERS: Final[dict[str, LayerSpec]] = {
         kind="main",
         fail_semantics="abort",
         steps=(
-            StepSpec("reports:build", "main", "abort", "总览报告生成", 1800),
+            StepSpec("reports:build", "main", "abort", "总览报告生成", 1800,
+                     # 2026-10-16 补声明：`reports:classifier` 此前无步骤归属。
+                     # 取证：watermark produced_by=`report_builders.build_overview_report
+                     # +build_theme_report`（stage=4.5）⇒ 总览与主题两份都由分类报告
+                     # 产出；`produces` 只能挂一个步骤，故挂概览主报告（`reports:build`），
+                     # 主题报告（`reports:theme`）同写该产物——此为**声明面的取舍**，
+                     # 真实产出来源见 `GOV_ARTIFACTS` 的 produced_by。
+                     produces=("reports:classifier",)),
             StepSpec("reports:theme", "main", "abort", "主题报告生成（T0–T10 × 11）", 1800,
                      depends_on=("classify:products",)),
             StepSpec("draft:clause", "main", "abort", "条款对照素材（drafter 视图）", 3600,
@@ -1005,6 +1026,11 @@ STEP_LAYERS: Final[dict[str, LayerSpec]] = {
             StepSpec("timeliness:verify", "conditional", "skip",
                      "时效核验（北大法宝；Node 侧 MCP）", None,
                      trigger_id="timeliness_verify",
+                     # 2026-10-16 补声明：`timeliness:state` 此前无步骤归属。
+                     # 取证：watermark produced_by=`verification_state.save_state`，
+                     # 且本步 purpose 即"时效核验"⇒ 状态由本步保存。
+                     # （`timeliness:ledger` 归 `timeliness:consolidate`，两者不同源）
+                     produces=("timeliness:state",),
                      degrade_note="无 token/工具缺失 → verification_state=unavailable（**不误标**）；"
                                   "配额耗尽自动停（断点续跑）；条件未触发 → SKIP（rc=0）"),
             StepSpec("inbox:drop", "conditional", "skip",
@@ -1015,10 +1041,18 @@ STEP_LAYERS: Final[dict[str, LayerSpec]] = {
             StepSpec("internal:update", "conditional", "skip",
                      "内部制度索引更新（原件同步）", None,
                      trigger_id="internal_update",
+                     # 2026-10-16 补声明：`internal_index` 此前无步骤归属。
+                     # 取证：watermark produced_by=`internal_policy_base.indexer.ingest`
+                     # （stage=3），且本步 purpose 即"内部制度索引更新"⇒ 同源。
+                     produces=("internal_index",),
                      degrade_note="原件库无未索引文件 → SKIP（rc=0）"),
             StepSpec("wiki:sync", "conditional", "skip",
                      "llm_wiki 源同步（发布件变化时执行）", None,
                      trigger_id="wiki_sync",
+                     # 2026-10-16 补声明：`wiki:sync` 产物此前无步骤归属。
+                     # 取证：步骤名与产物键同名；该产物当前**无watermark 记录**
+                     # ⇒ resume 判定时 `get_watermark() → None → continue`，零行为影响。
+                     produces=("wiki:sync",),
                      degrade_note="发布件未变化 / vault 不可达 → SKIP（rc=0）；on_fail=skip_and_warn；"
                                   "观察对象可达性由门禁 T4 守护（D-1 修复）"),
         ),

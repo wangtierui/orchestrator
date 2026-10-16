@@ -112,6 +112,9 @@ ACTION_BY_CLASS: dict[str, str] = {
     "review": "**人工复核**：本门禁是提示型判据，需业务判断；确认后可记入 worklist 留痕。",
 }
 
+#: 最近一次产物映射采集的异常（**降级留痕**：让"工具故障"与"无归属"可区分）
+LAST_ERROR = ""
+
 #: `文件:行号` 指针（Windows 盘符路径也算）
 _PTR = re.compile(r"([A-Za-z0-9_./\\-]+\.(?:py|json|ya?ml|md|csv|jsonl|txt))(?::(\d+))?")
 
@@ -195,6 +198,7 @@ def _artifact_keys() -> dict[str, tuple[str, str]]:
     实测：19 个产物中只有 11 个在 `StepSpec.produces` 声明；其余 8 个只有模块路径
     ⇒ 对这 8 个**不给命令**，只报模块路径并标注步骤归属待确认（不臆造映射）。
     """
+    global LAST_ERROR
     try:
         from tools.run_production_refresh import GOV_ARTIFACTS, step_specs
 
@@ -203,8 +207,13 @@ def _artifact_keys() -> dict[str, tuple[str, str]]:
         for k, v in GOV_ARTIFACTS.items():
             producer = (v or {}).get("produced_by", "") if isinstance(v, dict) else ""
             out[k] = (by_step.get(k, ""), producer or "")
+        LAST_ERROR = ""
         return out
-    except Exception:  # noqa: BLE001
+    except Exception as e:  # noqa: BLE001
+        # ⚠️ **降级必须可辨**：静默 `return {}` 会把任何内部错误伪装成"无数据"。
+        # 实测踩过：monkeypatch 造成的递归被这里吞掉，症状是"产物未命中"，
+        # 排查成本极高。改为留痕并由 `triage()` 写入证据缺口。
+        LAST_ERROR = f"{type(e).__name__}: {str(e)[:160]}"
         return {}
 
 
@@ -294,6 +303,10 @@ def triage(gate: str, run_id: str = "", con: sqlite3.Connection | None = None) -
 
     gaps: list[str] = []
     hint = ""
+    from tools.gate_triage import LAST_ERROR as _LE  # 同模块，取本轮采集的留痕
+
+    if _LE:
+        gaps.append(f"⚠ **产物映射采集失败**（工具故障，非「产物无归属」）：{_LE}")
     if not probs:
         # ⚠️ 无证据 ⇒ **不给类别**（否则报告自我否定：一边给结论一边说"不给结论"）。
         # 类别仍记在 `hint` 里供人工参考，但 `category` 留空 ⇒ 下游据此判定"结论未就绪"。
