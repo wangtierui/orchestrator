@@ -340,6 +340,13 @@
       "file": "step_triage.py",
       "independent_why": "读治理库 run_step + 步骤日志 + 产出物水位 + 耗时基线，为**失败步骤**聚合证据包。经 interfaces/topology_api 做**双层标识匹配**（台账实例名 ↔ 声明模板名）。**不做自动根因断言**（无记录数列 ⇒ 穿透深度无法量化，断言会产出臆测结论），只给「怀疑排序 + 依据」并**显式列出证据缺口**。",
       "produced_by": "步级失败取证（诊断第 2 波）"
+    },
+    {
+      "category": "independent",
+      "entry": "python -m tools.split_precheck <file.py> --move <名,...> | --survey",
+      "file": "split_precheck.py",
+      "independent_why": "只读静态检查待拆文件的依赖闭包：①每个待迁块缺失的 stdlib/仓内/三方 import②模块级引导块与 logger 与路径常量（**AST 闭包捕获不到**，E2/E4 的实际故障类别）③try-import 别名（赋值在 try 内）④跨层共享常量（复制两份必漏改其一）。已用已拆文件的备份验证能复现真实故障（E4 的 lxml 静默降级、E2 的 LOG 与 _unified_doc_number）。不代劳判断，只出人工检查清单。",
+      "produced_by": "拆分前置检查（把 E1-E4 的失败模式静态化）"
     }
   ],
   "generated_at": "2026-09-30",
