@@ -260,11 +260,16 @@ function viewAssets(d){
 
 /* ---------------- P3 指标 ---------------- */
 function barChart(data, labels, color){
-  const vals=Object.values(data||{});
-  const max=Math.max(1,...vals.map(Number));
+  // ⚠️ 2026-10-16 修正：**按 label 取值**，不按位置。
+  //    原实现 `Object.values(data)[i]` 依赖对象的键插入顺序，而 JSON 对象的键序
+  //    **无语义保证**（实测后端 `worklist_aging` 键序是字典序 `0-3,15+,4-7,8-14`，
+  //    与语义序 `0-3,4-7,8-14,15+` 不同）⇒ 标签与数值整片错位（时效三态曾把
+  //    valid 显示成 pending 的值、uncertain 显示成 valid 的值）。
+  const vals=labels.map(lb=>Number((data||{})[lb]||0));
+  const max=Math.max(1,...vals);
   let svg=`<svg viewBox="0 0 420 ${labels.length*22+14}" width="100%" height="${labels.length*22+14}">`;
   labels.forEach((lb,i)=>{
-    const v=Number((Object.values(data||{}))[i]||0), y=i*22+4, w=Math.round(300*v/max);
+    const v=vals[i]||0, y=i*22+4, w=Math.round(300*v/max);
     svg+=`<text x="0" y="${y+12}" fill="#98a2b3" font-size="11">${esc(lb)}</text>
       <rect x="110" y="${y+2}" width="${w}" height="14" rx="3" fill="${color}"/>
       <text x="${118+w}" y="${y+13}" fill="#e6e9ef" font-size="10.5">${num(v)}</text>`;});
@@ -313,14 +318,29 @@ function viewMetrics(d){
 function viewWorklist(d, kinds){
   if(!d.available) return unavail(d);
   const rows=(d.items||[]).map(it=>`<tr data-id="${esc(it.item_id)}">
+    <td><input type="checkbox" class="wlck" value="${esc(it.item_id)}"></td>
     <td>${esc(it.kind)}</td><td>${esc(it.subject||"")}</td>
     <td>${esc(it.stage||"—")}</td><td class="muted">${esc((it.payload&&(it.payload.detail||it.payload.note))||"")}</td>
     <td class="muted">${esc(it.suggestion||"")}</td>
     <td><button class="act" data-resolve="${esc(it.item_id)}">处置</button></td></tr>`).join("");
   const policy=(kinds&&kinds.action_policy)||"";
-  return card("待办闭环台", `${d.count} 条（${esc(d.status)}）`,
-    (rows?`<table><tr><th>kind</th><th>subject</th><th>stage</th><th>详情</th><th>生产者建议</th><th></th></tr>${rows}</table>`
+  // 2026-10-16：标题显示**真实总数**（此前 d.count=200 而真实 641 ⇒ 用户以为只有 200 条）
+  const total = (d.total!=null ? d.total : (d.count||0));
+  const shown = (d.items||[]).length;
+  const wtitle = total>shown
+    ? `${esc(d.status)}：共 <b>${total}</b> 条，本页 ${shown} 条（可按 kind 筛选 / 分页）`
+    : `${esc(d.status)}：共 ${total} 条`;
+  const bulk = `<div class="row" style="margin:8px 0">
+      <span class="muted">已选 <b id="wln">0</b> 条</span>
+      <select id="wlstatus"><option value="resolved">resolved（已处置）</option>
+        <option value="dismissed">dismissed（不适用）</option></select>
+      <input id="wlby" placeholder="操作者" value="confirm_console" size="14">
+      <input id="wlwhy" placeholder="批量处置理由（必填，进审计台账）" size="30">
+      <button class="act" id="wlbulk">批量处置</button></div>`;
+  return card("待办闭环台", wtitle,
+    (rows?`<table><tr><th style="width:28px"><input type="checkbox" id="wlall" title="全选本页"></th><th>kind</th><th>subject</th><th>stage</th><th>详情</th><th>生产者建议</th><th></th></tr>${rows}</table>`
       :'<div class="muted">当前无待办 ✓</div>')
+    + bulk
     + `<div class="muted" style="margin-top:8px;font-size:12px">写路径纪律：${esc(policy)}</div>
        <div id="resolvebox"></div>`, d.source, d.fetched_at);
 }
@@ -414,6 +434,40 @@ async function render(){
     v.innerHTML=({overview:viewOverview,flow:viewFlow,assets:viewAssets,metrics:viewMetrics,
       worklist:viewWorklist,governance:viewGovernance,search:viewSearch,publish:viewPublish,
       release:viewRelease}[CUR])(LAST[CUR]);
+    if(CUR==="flow"){
+      v.querySelectorAll("rect.fnode").forEach(r=>r.onclick=()=>openStep(r.dataset.step));
+    }
+    if(CUR==="worklist"){
+      const cks=[...v.querySelectorAll(".wlck")];
+      const upd=()=>{const n=$("#wln"); if(n) n.textContent=cks.filter(c=>c.checked).length;};
+      cks.forEach(c=>c.onchange=upd);
+      const all=$("#wlall");
+      if(all) all.onchange=()=>{cks.forEach(c=>c.checked=all.checked); upd();};
+      const bulk=$("#wlbulk");
+      if(bulk) bulk.onclick=async()=>{
+        const sel=cks.filter(c=>c.checked).map(c=>c.value);
+        if(!sel.length){ toast("未选择任何条目", true); return; }
+        const why=$("#wlwhy").value.trim();
+        if(!why){ toast("批量处置必须填理由（进审计台账）", true); return; }
+        const st=$("#wlstatus").value, by=$("#wlby").value.trim()||"confirm_console";
+        bulk.disabled=true;
+        // **逐条 POST**：复用唯一写路径 ⇒ 每条各自落审计（C1）；单条失败不阻断其余
+        let ok=0, bad=[];
+        for(const id of sel){
+          try{
+            const r=await api("/api/worklist/resolve",{method:"POST",
+              headers:{"Content-Type":"application/json"},
+              body:JSON.stringify({item_id:id, resolution:why, status:st, by})});
+            if(r.ok||r.available) ok++; else bad.push(id+":"+(r.reason||r.error||"失败"));
+          }catch(e){ bad.push(id+":异常"); }
+        }
+        bulk.disabled=false;
+        toast(ok===sel.length?("已批量处置 "+ok+" 条（逐条落审计）")
+                              :("完成 "+ok+"/"+sel.length+" 条；失败 "+bad.length+"："+bad.slice(0,3).join(",")),
+              ok!==sel.length);
+        render();
+      };
+    }
     if(CUR==="flow"&&$("#stepbtn")) $("#stepbtn").onclick=async()=>{
       const s=$("#stepsel").value; const d=await api("/api/flow/step?step="+encodeURIComponent(s));
       const row=(d.row||{});
@@ -424,6 +478,24 @@ async function render(){
   }catch(e){ v.innerHTML=card("渲染异常","",`<div class="bad">⚠ ${esc(String(e))}</div>`,"web 前端"); }
   $("#stamp").textContent = "最近抓取："+new Date().toLocaleTimeString();
 }
+async function openStep(step){
+  // P1 节点抽屉（2026-10-16：此前 SVG 节点无事件绑定 ⇒ 用户报"点击无反应"）
+  const out=$("#stepout")||$("#resolvebox");
+  if(!out) return;
+  out.innerHTML=card("步骤抽屉："+step,"加载中…","", "web");
+  const d=await api("/api/flow/step?step="+encodeURIComponent(step));
+  if(d.available===false){ out.innerHTML=card("步骤抽屉："+step,"",'<div class="unavail">⚠ '+
+    esc(d.reason||"不可用")+'</div>', d.source); return; }
+  const row=(d.row||{});
+  out.innerHTML=card("步骤抽屉："+step, esc(d.source||""),
+    kv("status", esc(row.status||"—")) + kv("rc", esc(row.rc!=null?row.rc:(row.exit_code||"—")))
+    + kv("耗时", esc((row.elapsed_s!=null?row.elapsed_s+"s":"—")))
+    + (row.note? '<div class="muted" style="margin-top:6px">note</div><pre>'
+        + esc(String(row.note).slice(0,600)) + "</pre>" : "")
+    + `<pre>${esc(d.log_tail||"(无日志)")}</pre>`, d.source, d.fetched_at);
+  out.scrollIntoView({behavior:"smooth", block:"nearest"});
+}
+
 function openResolve(id){
   const box=$("#resolvebox");
   box.innerHTML=`<div style="margin-top:10px;border-top:1px solid var(--line);padding-top:10px">

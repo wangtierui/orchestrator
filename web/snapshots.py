@@ -252,7 +252,14 @@ def overview() -> dict:
 def flow_graph() -> dict:
     """数据流转图：节点/边来自 STEP_ORDER + sources.yaml + triggers.yaml（前端零硬编码）。
 
-    边宽 = 该步骤**最近一次运行处理的记录数**（台账 `raw_size`/record_count，无则 0）。
+    边宽 = 该步骤处理的**产物记录数**（来源：**产物侧权威** `clean_index_api.record_count`）。
+
+    ⚠️ 2026-10-16 修正：此前读台账 `run_step` 的 `raw_size`/`record_count` 等列，
+    而该表**根本没有这些列**（实测列：run_id/step/rc/exit_code/elapsed_s/skipped/
+    note/recorded_at/started_at/finished_at/is_dry_run）⇒ `weights` 恒为空
+    ⇒ **桑基图不画任何边**（用户报"P1 未呈现数据流转"）。
+    依据 ADR-0014 的 C3 决策「产物侧才是权威，不扩 record_count 列」，改由
+    `interfaces/clean_index_api.record_count(src)` 取（实测 gov=13178/nfra=1934）。
     """
     try:
         def _load():
@@ -279,20 +286,35 @@ def flow_graph() -> dict:
                                      "conditions": item.get("conditions") or {}})
             except Exception:  # noqa: BLE001
                 triggers = []
-            # 边宽：最近一次运行的每步记录数（治理库台账）
+            # 边宽：**产物侧**记录数（权威来源）。
+            # ⚠️ 2026-10-16 修正：此前读台账行的大小类列（该表**根本没有那些列**，
+            #    实测列：run_id/step/rc/exit_code/elapsed_s/skipped/note/recorded_at/
+            #    started_at/finished_at/is_dry_run）⇒ `weights` 恒为空 dict
+            #    ⇒ **P1 桑基图不渲染任何边**。
+            #    依据 ADR-0014 的 C3 决策「产物侧才是权威，不扩record_count 列」，
+            #    改由 `clean_index_api.record_count(src)` 取（实测 gov=13178/nfra=1934）。
             weights: dict[str, int] = {}
             rcodes: dict[str, dict] = {}
+            try:
+                from interfaces import clean_index_api as _cia
+
+                for _src in srcs:
+                    try:
+                        n = int(_cia.record_count(_src) or 0)
+                    except Exception:  # noqa: BLE001 单源不可用不影响其余
+                        n = 0
+                    if n > 0:
+                        # 记到**展开形态**的步骤名（collect:gov / clean:gov…）
+                        for _pfx in ("collect", "clean", "apply"):
+                            weights[f"{_pfx}:{_src}"] = n
+            except Exception:  # noqa: BLE001
+                weights = {}
             try:
                 from std_lib.common_lib import governance_store as gs
 
                 _rid, steps_rows = gs.last_run_with_steps()
                 for s in steps_rows:
                     nm = str(s.get("step") or "")
-                    for k in ("raw_size", "record_count", "records", "output_count"):
-                        v = s.get(k)
-                        if isinstance(v, (int, float)) and v > 0:
-                            weights[nm] = int(v)
-                            break
                     rcodes[nm] = {"status": s.get("status"),
                                   "rc": s.get("exit_code") or s.get("rc"),
                                   "argv": s.get("argv")}
@@ -523,17 +545,24 @@ def slo() -> dict:
 # --------------------------------------------------------------------------- #
 # P4 待办闭环台
 # --------------------------------------------------------------------------- #
-def worklist_items(status: str = "open", kind: str = "", limit: int = 200) -> dict:
+def worklist_items(status: str = "open", kind: str = "", limit: int = 0,
+                   offset: int = 0) -> dict:
     """P4 待办列表（+ 每条的处置建议来自生产者写入的 suggestion）。"""
     try:
         def _load():
             from std_lib.common_lib import governance_store as gs
 
-            rows = gs.worklist_list(status=status, kind=kind, limit=limit)
+            # `limit=0` 取全部（`gs.worklist_list` 的 0 即无上限）；分页由**前端切片**做。
+            # 实测：641 条 open 只返回 200 是因 `limit=200` 硬编码（2026-10-16 修正）。
+            total_rows = gs.worklist_list(status=status, kind=kind, limit=0)
+            rows = total_rows[offset:] if offset else total_rows
+            if limit and limit > 0:
+                rows = rows[:limit]
             return {"available": True, "source": "governance_store.worklist_list",
                     "fetched_at": _now(), "status": status, "kind": kind,
-                    "count": len(rows), "items": rows}
-        return CACHE.get_or_call(f"worklist:{status}:{kind}:{limit}", _load)
+                    "count": len(rows), "total": len(total_rows),
+                    "offset": offset, "limit": limit, "items": rows}
+        return CACHE.get_or_call(f"worklist:{status}:{kind}:{limit}:{offset}", _load)
     except Exception as e:  # noqa: BLE001
         return _degrade("governance_store.worklist_list", e)
 

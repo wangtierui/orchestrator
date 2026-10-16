@@ -116,6 +116,82 @@ def _law_shape(title: str) -> bool:
     return bool(_LAW_SHAPE_RE.match(t))
 
 
+# ── 形态清洗与「不纳入 RFN」判定（2026-10-16，减产）────────────────────
+# 实测：324 条 uncertain 的 `_law_shape` 命中率 **0/324**，因标题带书名号、
+# 含 HTML 实体（`&lt;`/`&gt;`）、或尾随「废止」后缀；且 payload 的 reason
+# 完全相同（"无票 / 票数并列 / 形态不明"）⇒ 成因不可区分。
+_HTML_ENTITIES = {"&lt;": "<", "&gt;": ">", "&amp;": "&", "&quot;": '"',
+                  "&apos;": "'", "&nbsp;": " ", "&#39;": "'"}
+# ⚠️ 本模块的 `re` 是**函数内**导入（见 `_law_shape`），模块级没有 `re`
+#    ⇒ 正则必须**按需编译**（否则模块级 `re.compile` 直接 NameError）。
+_TRAIL_PATTERN = r"[（(]?(废止|修改|修订|施行|宣布失效|不再执行|失效)[)）]?\s*$"
+_EXCLUDED_PATTERN = (
+    r"^关于(?:废止|修改|修订|公布|印发)"
+    r"|(?:废止|宣布失效|不再执行)$"
+    r"|征求意见(?:稿|意见)?$"
+    r"|(?:通告|公告|复函|答复|批复)$"
+    # 2026-10-16 扩充（实测剩余 274 条的主体形态）：**通知/意见/决定**类不是规章本体
+    # ——它们是"转发/贯彻/适用意见"，不是现行有效的监管文件本体，入 RFN 会污染主题分布。
+    # 例：三部门关于印发…的通知 / …适用意见第12号 / …的决定
+    r"|(?:关于(?:印发|发布|做好|开展|组织).{0,40})?通知$"
+    r"|适用意见|实施意见|指导意见"
+    r"|的决定$"
+)
+_RX: dict[str, object] = {}
+
+
+def _rx(key: str, pattern: str):
+    """按需编译并缓存正则（模块级无 `re`）。"""
+    import re
+
+    got = _RX.get(key)
+    if got is None:
+        got = _RX[key] = re.compile(pattern)
+    return got
+
+#: **过程性文件**形态——不是现行有效的监管文件，本就不该进 RFN 登记体系。
+#: 依据：RFN 登记的前提是"现行有效"；过程性文件入体系会污染主题分布与统计。
+
+
+
+def clean_shape(title: str) -> str:
+    """形态清洗：HTML 实体 → 字符；剥离书名号；剥离「废止/修改/修订/施行」尾缀。
+
+    ⇒ 清洗后 `_law_shape` 才能识别出「本办法其实是部委规章」（实测原命中率 0/324）。
+    """
+    import re
+
+    s = title or ""
+    for ent, ch in _HTML_ENTITIES.items():
+        s = s.replace(ent, ch)
+    s = re.sub(r"[《》〈〉<>]", "", s)
+    return _rx("trail", _TRAIL_PATTERN).sub("", s).strip()
+
+
+def excluded_shape(title: str) -> str:
+    """是否「不纳入 RFN 登记」的过程性文件形态 ⇒ 返回形态名（空串=不排除）。
+
+    **这不是 dismiss，是判据前置过滤**：过程性文件不产生待办。
+
+    ⚠️ 判定顺序（2026-10-16 修正）：**先用原标题判"已废止/失效"**，
+    再做形态清洗。否则 `《X办法》废止` 会在清洗时被剥掉「废止」尾缀，
+    从而**丢失"该文件已废止"这一关键信息** ⇒ 已废止文件被当成现行有效文件
+    继续走投票/人工分支（实测残留此类）。
+    """
+    raw = title or ""
+    if _rx("excl", _EXCLUDED_PATTERN).search(raw):
+        return "过程性文件（废止/修改/决定/征求意见/通告公告/通知/适用意见）"
+    s = clean_shape(raw)
+    if _rx("excl", _EXCLUDED_PATTERN).search(s):
+        return "过程性文件（清洗后形态命中）"
+    # 原文含废止/失效标记但位置不固定（如"…办法废止"）⇒ 显式再判一次
+    if any(k in raw for k in ("废止", "失效", "不再执行")):
+        return "已废止/失效文件"
+    return ""
+    return ("过程性文件（废止/修改/决定/征求意见/通告公告）"
+            if _rx("excl", _EXCLUDED_PATTERN).search(s) else "")
+
+
 def load_theme_map() -> dict[str, str]:
     """`监管文件编号 → 主题`：经 **rfn 索引**（`rows()` 已把主题归属表合并进行内）——唯一事实源。"""
     try:
@@ -192,7 +268,12 @@ def build_backlog() -> dict:
         votes = it["voters"]
         top = votes.most_common()
         suggested, conf, theme_src = "uncertain", 0.0, "uncertain"
-        if _law_shape(title):
+        # 2026-10-16 减产：① 过程性文件**不纳入 RFN**（前置过滤，不产生待办）
+        # ② 形态清洗后再判法律形态（原代码用带书名号/HTML 实体的原title 判
+        #    `_law_shape`，实测 324 条命中 0 ⇒ 该分支形同虚设）
+        if excluded_shape(title):
+            continue
+        if _law_shape(clean_shape(title)):
             # ① 法律/行政法规 → **T0 上位法锚点**（体系语义优先）。
             #    注：此类**不能**用"引用者投票"——法律跨主题通用（实测《商业银行法》会被投成
             #    T1销售行为与消费者保护），投票在此失义。

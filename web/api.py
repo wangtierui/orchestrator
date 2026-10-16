@@ -103,8 +103,11 @@ def handle(method: str, path: str, qs: dict | None = None,
         status = _one(qs, "status", "open")
         if status not in ("open", "resolved", "dismissed", ""):
             raise ApiError(400, f"status 非法（open/resolved/dismissed）：{status!r}")
+        # 2026-10-16：`limit` 默认 0=全部（此前硬编码 200 ⇒ 641 条只显示 200，
+        # 用户报"列表不完整"）；传 `offset` 支持分页，`total` 由 snapshots 回填。
         return 200, S.worklist_items(status=status or "open", kind=_one(qs, "kind"),
-                                     limit=_int(qs, "limit", 200))
+                                     limit=_int(qs, "limit", 0),
+                                     offset=_int(qs, "offset", 0))
     if path == "/api/worklist/kinds":
         return 200, S.worklist_kinds()
     if path == "/api/worklist/resolve":
