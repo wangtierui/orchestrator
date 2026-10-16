@@ -30,145 +30,45 @@ import argparse
 import json
 import logging
 import os
-import re
 import sys
 import time
-from urllib.parse import urljoin
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
-_SRC_ROOT = os.path.dirname(_HERE)                                    # .../modules/regulatory_scrapers
-_REPO_ROOT = os.path.dirname(os.path.dirname(_SRC_ROOT))              # 仓库根
-for _p in (_SRC_ROOT, _REPO_ROOT):
+# 引导块**自包含**：原实现依赖后面才 re-export 的 `_SRC_ROOT`/`_REPO_ROOT`
+# ⇒ 引导先执行时 NameError（E3 拆分后暴露）。改为就地现算路径。
+_HERE = os.path.dirname(os.path.abspath(__file__))
+_SRC_ROOT_P = os.path.dirname(_HERE)
+_REPO_ROOT_P = os.path.dirname(_SRC_ROOT_P)
+for _p in (_HERE, _SRC_ROOT_P, _REPO_ROOT_P):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
 LOG = logging.getLogger("zhengceku")
 
 # 列表：首页无后缀，第 i 页为 home_{i}.htm（0-based，实测 nPageCount=629）
-LIST_BASE = "https://www.gov.cn/zhengce/zhengceku/bmwj/home.htm"
 CATEGORY = "部门文件"
 SUB_SOURCE = "zhengceku"
-UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-      "(KHTML, like Gecko) Chrome/126.0 Safari/537.36")
-
-CONTENT_SELECTORS = [
-    ".pages_content", ".article-content", "#UCAP-CONTENT", ".TRS_Editor",
-    ".content_box", ".article", "#content_body", ".pages-content", "#zoom",
-]
-_TAG = re.compile(r"<[^>]+>", re.DOTALL)
-_WS = re.compile(r"[ \t\u3000]{2,}")
-_BLANK = re.compile(r"\n{3,}")
-_A = re.compile(r'<a\b[^>]*\bhref="([^"]+)"[^>]*>(.*?)</a>', re.IGNORECASE | re.DOTALL)
-_LI = re.compile(r"<li\b[^>]*>(.*?)</li>", re.IGNORECASE | re.DOTALL)
-_DATE = re.compile(r"(20\d{2})[-/年](\d{1,2})[-/月](\d{1,2})")
-_META = re.compile(r"(发文字号|发文机关|成文日期|主题分类|公文种类|来\s*源|标\s*题)\s*[：:]", re.U)
 
 
-def list_page_url(index: int) -> str:
-    """第 index 页（0-based）的 URL。"""
-    return LIST_BASE if index == 0 else LIST_BASE.replace("home.htm", f"home_{index}.htm")
+
 
 
 #: 增量早停阈值缺省：连续 1 页无「新条目」即停（N-190，2026-10-08）
 DEFAULT_STOP_AFTER_EMPTY_PAGES = 1
 
 
-def should_stop_paging(empty_streak: int, stop_after_empty_pages: int, backfill: bool) -> bool:
-    """是否停止翻页（**纯函数**，便于单测；N-190）。
-
-    判据与依据：
-      · 列表按**发布日期倒序**（第 0 页最新）⇒ 一旦某页**无任何新条目**，其后各页只会更旧，
-        不可能再出现新条目 ⇒ 继续翻页是**纯空转**。
-      · 原实现 `for i in range(n_pages)` **恒扫全部 629 页**（每页 1 次请求 + `delay` 1.5s），
-        实测单轮 **~20+ 分钟**都花在"已知页"上；本函数让增量轮次在**首页无新**即结束。
-      · `backfill=True`（--backfill，历史存量补全）**不早停**：该模式的目的正是走完全部页、
-        把"在主库但尚无正文"的历史条目补齐（原设计的意图，现与"追新"分离、各自排程）。
-    """
-    if backfill:
-        return False
-    return empty_streak >= max(1, int(stop_after_empty_pages or 1))
 
 
-def total_pages(html: str) -> int:
-    """从列表页 JS 变量 `nPageCount` 取总页数（取不到返回 1）。"""
-    m = re.search(r"nPageCount\s*=\s*(\d+)", html or "")
-    return int(m.group(1)) if m else 1
 
 
-def _to_text(maybe) -> str:
-    """响应体 → 文本，兼容 ① 文本 ② 原始 bytes ③ **未解压的 gzip 体**。
-
-    ⚠️ 踩坑：`crawler_common.robust_get(binary=False)` 以 `errors="replace"` 解码响应体，
-    gzip magic 的 `0x8b` 会变成 U+FFFD，既无法按 magic 识别也无法解压 → HTML 解析全空
-    （表现为「正文 0 字、附件 0 个」却不报错）。故一律 binary=True 取原始字节后自行处理。
-    """
-    import gzip
-    import zlib
-    if isinstance(maybe, bytes):
-        b = maybe
-    elif isinstance(maybe, str) and maybe[:2] == "\x1f\x8b":
-        b = maybe.encode("latin-1", "ignore")
-    else:
-        return maybe if isinstance(maybe, str) else ""
-    if b[:2] == b"\x1f\x8b":
-        try:
-            b = gzip.decompress(b)
-        except Exception:  # noqa: BLE001
-            try:
-                b = zlib.decompress(b, 16 + zlib.MAX_WBITS)
-            except Exception:  # noqa: BLE001
-                pass
-    for enc in ("utf-8", "gb18030"):
-        try:
-            return b.decode(enc)
-        except Exception:  # noqa: BLE001
-            continue
-    return b.decode("utf-8", "replace")
 
 
-def fetch(url: str, binary: bool = False, referer: str | None = None, timeout: int = 35):
-    """HTTP GET。优先 crawler_common.robust_get，失败回退 urllib。"""
-    try:
-        if _REPO_ROOT not in sys.path:
-            sys.path.insert(0, _REPO_ROOT)
-        from std_lib.scraper_std.crawler_common import robust_get  # type: ignore
-        st, data = robust_get(url, binary=True, referer=referer or LIST_BASE, timeout=timeout)
-        if st == 200 and data:
-            if binary:
-                return data if isinstance(data, bytes) else data.encode("latin-1", "ignore")
-            txt = _to_text(data)
-            if txt and "<" in txt:
-                return txt
-    except Exception:  # noqa: BLE001
-        pass
-    import urllib.request
-    req = urllib.request.Request(url, headers={"User-Agent": UA, "Referer": referer or LIST_BASE})
-    with urllib.request.urlopen(req, timeout=timeout) as f:
-        b = f.read()
-    return b if binary else _to_text(b)
 
 
-def clean_html_text(html: str) -> str:
-    s = re.sub(r"(?is)<(script|style).*?</\1>", " ", html or "")
-    s = re.sub(r"(?i)<br\s*/?>", "\n", s)
-    s = re.sub(r"(?i)</(p|div|tr|li|h[1-6])>", "\n", s)
-    s = _TAG.sub("", s)
-    s = (s.replace("&nbsp;", " ").replace("&amp;", "&").replace("&lt;", "<")
-          .replace("&gt;", ">").replace("&quot;", '"').replace("&#39;", "'"))
-    s = _WS.sub(" ", s)
-    s = "\n".join(x.strip() for x in s.split("\n"))
-    return _BLANK.sub("\n\n", s).strip()
 
 
-def _iso(datestr: str) -> str:
-    m = _DATE.search(datestr or "")
-    return f"{int(m.group(1)):04d}-{int(m.group(2)):02d}-{int(m.group(3)):02d}" if m else ""
 
 
-def make_summary(full_text: str, length: int = 200) -> str:
-    """摘要：与 gov 主链 `parse.make_summary` 同口径（压缩空白后截断）。"""
-    s = re.sub(r"\s+", " ", full_text or "").strip()
-    return s if len(s) <= length else s[:length]
 
 
 # --------------------------------------------------------------------------- #
@@ -179,293 +79,106 @@ def make_summary(full_text: str, length: int = 200) -> str:
 # （均 322 KB/条），全量 1.22 万条约需 5.5 GB，内存压力是进程中断的首要嫌疑。
 # 默认关闭（保持常规增量采集行为不变）；如需附件原文，对目标条目用
 # `python collectors/gov/zhengceku.py <url>` 单条补录即可（该入口始终完整抽取）。
-_ATTACH_FAST = os.environ.get("ZC_ATTACH_FAST", "").strip().lower() in ("1", "true", "yes", "on")
-_FAST_MIN_BODY = int(os.environ.get("ZC_FAST_MIN_BODY", "200") or 200)
 _skipped = [0]                 # 本次运行跳过附件抽取的条目计数（供收尾日志）
 
 
 # --------------------------------------------------------------------------- #
 # 列表
 # --------------------------------------------------------------------------- #
-def scan_list(html: str, base_url: str = LIST_BASE):
-    """列表页 → [(绝对URL, 标题, 发布日期ISO)]。按 <li> 块提取，回退按 <a> 提取。"""
-    out, seen = [], set()
-    for li in _LI.findall(html or ""):
-        m = _A.search(li)
-        if not m or not re.search(r"content_\d+\.htm", m.group(1)):
-            continue
-        u = urljoin(base_url, m.group(1).strip())
-        if u in seen:
-            continue
-        seen.add(u)
-        out.append((u, clean_html_text(m.group(2)).replace("\n", " ").strip()[:160],
-                    _iso(clean_html_text(li))))
-    if out:
-        return out
-    for m in _A.finditer(html or ""):
-        href = m.group(1).strip()
-        if not re.search(r"content_\d+\.htm", href):
-            continue
-        u = urljoin(base_url, href)
-        if u in seen:
-            continue
-        seen.add(u)
-        out.append((u, clean_html_text(m.group(2)).replace("\n", " ").strip()[:160], ""))
-    return out
 
 
 # --------------------------------------------------------------------------- #
 # 详情页
 # --------------------------------------------------------------------------- #
 # 「值」其实是另一个字段标签时的识别（gov.cn 页面字段区相邻，取空值会串到下一标签）
-_LABEL_LIKE = re.compile(r"^\s*(发文字号|发文机关|成文日期|主题分类|公文种类|来\s*源|标\s*题)\s*[：:]")
 # 文号形态：〔2009〕68号 / 令〔2010〕4号 / 公告〔2026〕第9号 / 银保监办发〔2020〕118号 / 保监发〔2012〕87号
-_DOCNO_RE = re.compile(
-    r"[\u4e00-\u9fff]{2,12}(?:发|办|令|公告|函|字)?\s*[〔\[【]\s*(?:19|20)\d{2}\s*[〕\]】]\s*第?\s*\d+\s*号"
-    r"|[\u4e00-\u9fff]{2,12}令\s*第?\s*\d+\s*号")
 
 
-def _extract_docno(text: str) -> str:
-    """从标题/正文首部提取发文字号（`_meta_field` 取不到时的兜底）。"""
-    m = _DOCNO_RE.search(text or "")
-    return re.sub(r"\s+", "", m.group(0)) if m else ""
 
 
-def _meta_field(html: str, label: str, maxlen: int = 120) -> str:
-    for m in _META.finditer(html):
-        if m.group(1).replace(" ", "").replace("\u3000", "") != label.replace(" ", ""):
-            continue
-        frag = clean_html_text(html[m.end():m.end() + 400]).replace("|", " ").strip()
-        if not frag:
-            continue
-        val = frag.split("\n")[0].strip()
-        # ⚠️ 该页此字段为空时，窗口会滑到相邻标签 → 取到「来 源：」之类标签文本，
-        # 会污染 document_number/issue_organ 等字段（实测暂存中曾出现 document_number='来 源：'）。
-        if not val or _LABEL_LIKE.match(val) or len(val) > 160:
-            continue
-        return val[:maxlen]
-    return ""
 
 
-def pick_content_html(html: str) -> str:
-    for sel in CONTENT_SELECTORS:
-        cls, idv = sel[1:], sel[1:]
-        if sel.startswith("."):
-            m = re.search(r'<div[^>]*class="[^"]*\b' + re.escape(cls) + r'\b[^"]*"[^>]*>(.*?)</div>\s*(?:</div>|<div)',
-                          html, re.I | re.S)
-        else:
-            m = re.search(r'<div[^>]*id="' + re.escape(idv) + r'"[^>]*>(.*?)</div>\s*(?:</div>|<div)',
-                          html, re.I | re.S)
-        if m and len(clean_html_text(m.group(1))) > 120:
-            return m.group(1)
-    best, blen = "", 0
-    for m in re.finditer(r"<div[^>]*>(.*?)</div>", html, re.S):
-        t = clean_html_text(m.group(1))
-        if len(t) > blen:
-            best, blen = m.group(1), len(t)
-    return best
 
 
-def parse_detail(html: str, url: str) -> dict:
-    """详情页 → gov 主库契约的部分字段（不含附件）。"""
-    title = ""
-    m = re.search(r"(?is)<title>(.*?)</title>", html or "")
-    if m:
-        title = re.split(r"[_\-|]", _TAG.sub("", m.group(1)).strip())[0].strip()
-    for m in _META.finditer(html):
-        if m.group(1).replace(" ", "").replace("\u3000", "") == "标题":
-            t2 = clean_html_text(html[m.end():m.end() + 300]).split("\n")[0].strip()
-            if len(t2) > len(title):
-                title = t2
-            break
-    body = clean_html_text(pick_content_html(html))
-    pub = _iso(_meta_field(html, "成文日期", 40))
-    docno = _meta_field(html, "发文字号", 60)
-    if not docno:
-        # 兜底：部分部门文件页无「发文字号」标签（或标签后为空），但**标题/正文首部**载明文号。
-        docno = _extract_docno(title) or _extract_docno(body[:600])
-    return {
-        "title": title,
-        "detail_url": url,
-        "document_number": docno,
-        "issue_organ": _meta_field(html, "发文机关", 60),
-        "publish_date": pub,
-        "pub_date_original": _meta_field(html, "成文日期", 40),
-        "full_text": body,
-    }
 
 
 # --------------------------------------------------------------------------- #
 # 附件（下载 + 原文抽取；旧 .doc 优先 Word COM）
 # --------------------------------------------------------------------------- #
-_WORD_APP = None          # Word COM 单例（跨条目复用，避免每条目重启 Word 进程）
-_WORD_DEAD = False        # 单例失效标记（Word 崩溃/不可用后不再重试）
 
 
-def _word_app():
-    """获取（并缓存）Word.Application 单例；不可用返回 None。
-
-    ⚠️ 性能关键：`Dispatch` + `Quit` 每次约 2–3 秒。17,600 条级别采集若每条目启停
-    Word 会额外消耗十余小时，故全流程复用同一实例，仅在进程退出时释放
-    （`atexit` 注册）。实例失效则置 `_WORD_DEAD` 短路，回退通用抽取。
-    """
-    global _WORD_APP, _WORD_DEAD
-    # ⚠️ 短路修复（2026-09-16）：原写法 `return _WORD_APP` 在 _WORD_DEAD=True 且
-    # _WORD_APP 非 None 时**仍返回坏实例**，致 `_WORD_DEAD` 形同虚设（实测同一轮内
-    # Word COM 失败后仍被反复调用）。改为 True 时一律返回 None。
-    if _WORD_DEAD:
-        return None
-    if _WORD_APP is not None:
-        return _WORD_APP
-    if os.environ.get("ZC_NO_WORD_COM", "").strip().lower() in ("1", "true", "yes", "on"):
-        # 全量采集时 Office 文件阻止策略弹窗会让 Documents.Open 永久阻塞（隐藏窗口下无法关闭，
-        # 进程表现为「存活但无日志、CPU 极低」的僵死）。全量首轮可按需禁用，回退通用抽取。
-        LOG.info("Word COM 已按 ZC_NO_WORD_COM 禁用，.doc 走通用抽取")
-        _WORD_DEAD = True
-        return None
-    try:
-        import atexit
-
-        import win32com.client as wc  # type: ignore
-        if os.environ.get("RCO_ALLOW_OFFICE_COM", "").strip() not in ("1", "true", "True"):
-            # 批 56：**默认禁用 Office/WPS COM**（COM 实例与用户桌面会话交互，实测导致剪贴板/焦点被抢占；隐藏窗口下安全对话框还会永久阻塞）
-            # ⇒ 需要时显式置 RCO_ALLOW_OFFICE_COM=1 开启
-            return None
-        app = wc.Dispatch("Word.Application")
-        app.Visible = False
-        app.DisplayAlerts = False
-        _WORD_APP = app
-
-        def _quit():
-            global _WORD_APP
-            try:
-                if _WORD_APP is not None:
-                    _WORD_APP.Quit()
-            except Exception:  # noqa: BLE001
-                pass
-            _WORD_APP = None
-        atexit.register(_quit)
-    except Exception as e:  # noqa: BLE001
-        LOG.warning("Word COM 不可用，回退通用抽取：%s", e)
-        _WORD_DEAD = True
-    return _WORD_APP
 
 
-def extract_doc_via_word(path: str, timeout: float = 25.0) -> str:
-    """Word COM 抽取 .doc/.docx 正文（复用单例）；不可用/失败/超时返回空串（由调用方回退）。
-
-    ⚠️ **看门狗超时（2026-09-16）**：`Documents.Open` 在 Office 文件阻止策略弹窗时
-    会**永久阻塞**（`DisplayAlerts=False` 管不住安全对话框，且隐藏窗口下无人点关闭）。
-    实测该情形使采集进程僵死 4 小时 45 分（进程存活、内存 110 MB、日志与 CPU 停滞）。
-    故置入守护线程 + join(timeout)：超时即放弃并永久标记 `_WORD_DEAD`，主流程不中断。
-    卡住的线程为 daemon，不阻止进程退出；其残留的 Word 实例由系统回收。
-    """
-    global _WORD_DEAD
-    app = _word_app()
-    if app is None:
-        return ""
-    import threading
-    box: dict = {}
-
-    def _work() -> None:
-        doc = None
-        try:
-            doc = app.Documents.Open(os.path.abspath(path), ReadOnly=True,
-                                     AddToRecentFiles=False, Visible=False)
-            box["text"] = (doc.Content.Text or "").replace(
-                "\r\n", "\n").replace("\r", "\n").strip()
-        except Exception as e:  # noqa: BLE001
-            box["err"] = e
-        finally:
-            try:
-                if doc is not None:
-                    doc.Close(False)
-            except Exception:  # noqa: BLE001
-                pass
-
-    t = threading.Thread(target=_work, daemon=True)
-    t.start()
-    t.join(timeout)
-    if t.is_alive():
-        _WORD_DEAD = True
-        LOG.warning("Word COM 超时（%.0fs，疑 Office 阻止策略弹窗）→ 标记不可用并回退通用抽取：%s",
-                    timeout, path)
-        return ""
-    if "err" in box:
-        LOG.warning("Word COM 抽取失败 %s：%s", path, box["err"])
-        _WORD_DEAD = True          # 失败视为实例已坏，后续走通用抽取
-        return ""
-    return box.get("text", "")
 
 
-def _table_top_level(recs: list) -> dict:
-    """把附件记录中的表格结构化字段聚合到记录顶层（与 XzfgkScraper 同口径）。"""
-    ts, raw, meth = [], [], ""
-    for r in recs:
-        if r.get("table_structured"):
-            ts.append(r["table_structured"])
-        if r.get("table_raw_text"):
-            raw.append(r["table_raw_text"])
-        if not meth and r.get("table_recovery_method"):
-            meth = r["table_recovery_method"]
-    out = {}
-    if ts:
-        out["table_structured"] = ts[0] if len(ts) == 1 else ts
-    if raw:
-        out["table_raw_text"] = "\n\n".join(raw)
-    if meth:
-        out["table_recovery_method"] = meth
-    return out
 
 
-def _cjk_ratio(t: str) -> float:
-    if not t:
-        return 0.0
-    return sum(1 for c in t if "\u4e00" <= c <= "\u9fff") / len(t)
 
 
-def fetch_attachments(html: str, url: str, entry_id: str) -> tuple[list, str]:
-    """下载并抽取详情页附件；返回 (附件记录, 附件原文)。
-
-    对 .doc/.docx 用 Word COM **重抽并择优**：Word COM 交付的是 Word 自身渲染的正文
-    （段落完整、CJK 占比 ~0.9），而通用抽取对旧版 .doc 走 olefile，会把 OLE 二进制
-    噪声一并带出（实测同一文件：olefile 10895 字但 CJK 占比仅 0.398、全文挤在 1 行、
-    首尾均为乱码；Word COM 3099 字、CJK 占比 0.906、35 段落）。
-    **故择优规则以「文本洁净度」为主、长度为辅**，不能只比长度——否则会选中有噪声的长文本。
-    """
-    # W4（L1 重组）：import 双形态（包形态相对导入 / 脚本形态裸名）。
-    try:
-        from .attachments import fetch_gov_attachments  # type: ignore
-    except ImportError:  # pragma: no cover - 脚本形态
-        from attachments import fetch_gov_attachments  # type: ignore
-    recs, att_text = fetch_gov_attachments(
-        html, entry_id=entry_id, entry_title="", out_dir=None, base_url=url)
-    improved = 0
-    for r in recs:
-        lp = r.get("local_path") or ""
-        if not lp.lower().endswith((".doc", ".docx")):
-            continue
-        ap = lp if os.path.isabs(lp) else os.path.join(_SRC_ROOT, lp)
-        if not os.path.exists(ap):
-            continue
-        t2 = extract_doc_via_word(ap)
-        cur = r.get("text") or ""
-        if not t2:
-            continue
-        # 择优：Word COM 结果洁净（CJK 占比 ≥0.6）即采用；否则仅在明显更长时采用
-        if _cjk_ratio(t2) >= 0.6 or len(t2) > len(cur):
-            if t2 != cur:
-                r["text"], r["extracted"] = t2, True
-                r["extract_status"], r["extract_engine"] = "ok_word_com", "word_com"
-                improved += 1
-    if improved:
-        att_text = "\n\n".join(r["text"] for r in recs if r.get("extracted") and r.get("text"))
-    return recs, att_text
 
 
 # --------------------------------------------------------------------------- #
 # 采集器（与 XzfgkScraper 同构，供 collector 分发）
 # --------------------------------------------------------------------------- #
+# --------------------------------------------------------------------------- #
+# E3 拆分（2026-10-16，D-遗留第三批）：列表层 / 详情层 / 附件层迁出
+#   列表层 → zhengceku_list（分页 URL / 停翻页 / 总页数 / 列表抓取 / HTML 清洗 / 摘要）
+#   详情层 → zhengceku_detail（文号 / meta 字段 / 正文选择 / parse_detail）
+#   附件层 → zhengceku_attach（Word COM / 表格层级 / CJK 阈值 / 附件下载）
+# 依赖方向：detail → list；attach 独立；本模块（编排）依赖三者。
+# **re-export 保持外部调用面不变**（P3 既有约定）：`gov_collector.py` 从本模块取
+# `ZhengcekuScraper`；`tools/run_production_refresh.py` 的 N-190 判据引用
+# `zhengceku.should_stop_paging` —— 外部调用点一行未改。
+try:  # 包形态
+    from . import zhengceku_attach as _attach
+    from . import zhengceku_detail as _detail
+    from . import zhengceku_list as _list
+except ImportError:  # 脚本形态
+    import zhengceku_attach as _attach  # type: ignore[no-redef]
+    import zhengceku_detail as _detail  # type: ignore[no-redef]
+    import zhengceku_list as _list  # type: ignore[no-redef]
+
+# 列表层
+CONTENT_SELECTORS = _detail.CONTENT_SELECTORS
+LIST_BASE = _list.LIST_BASE
+UA = _list.UA
+_REPO_ROOT = _list._REPO_ROOT
+_TAG = _list._TAG
+_WS = _list._WS
+_BLANK = _list._BLANK
+_A = _list._A
+_LI = _list._LI
+_DATE = _list._DATE
+clean_html_text = _list.clean_html_text
+fetch = _list.fetch
+list_page_url = _list.list_page_url
+make_summary = _list.make_summary
+scan_list = _list.scan_list
+should_stop_paging = _list.should_stop_paging
+total_pages = _list.total_pages
+_iso = _list._iso
+_to_text = _list._to_text
+# 详情层
+_META = _detail._META
+_DOCNO_RE = _detail._DOCNO_RE
+_LABEL_LIKE = _detail._LABEL_LIKE
+parse_detail = _detail.parse_detail
+pick_content_html = _detail.pick_content_html
+_extract_docno = _detail._extract_docno
+_meta_field = _detail._meta_field
+# 附件层
+_SRC_ROOT = _attach._SRC_ROOT
+_WORD_APP = _attach._WORD_APP
+_WORD_DEAD = _attach._WORD_DEAD
+_ATTACH_FAST = _attach._ATTACH_FAST
+_FAST_MIN_BODY = _attach._FAST_MIN_BODY
+_word_app = _attach._word_app
+extract_doc_via_word = _attach.extract_doc_via_word
+_table_top_level = _attach._table_top_level
+_cjk_ratio = _attach._cjk_ratio
+fetch_attachments = _attach.fetch_attachments
+
+
 class ZhengcekuScraper:
     """国务院政策文件库·部门文件（bmwj）子采集器。"""
 

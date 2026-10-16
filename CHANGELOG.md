@@ -1,5 +1,77 @@
 # Changelog
 
+## [Unreleased] 2026-10-16 — E3：gov/zhengceku.py 按层拆分（list/detail/attach）（第八十五批）
+
+> D-遗留第三批。zhengceku 夹具已在第八十一批（E1）就位，故本批可直接拆分。
+> 依赖图（AST 实测）：`detail → list`；`attach` 独立；`zhengceku.py`（编排）依赖三者。
+
+### 结构
+```
+gov/zhengceku_list.py    列表层166 行：分页 URL / 停翻页判据 / 总页数 / 列表抓取与条目抽取 /
+                              HTML 清洗 / 摘要截取（纯函数 + 一次 HTTP，无详情、无落盘）
+gov/zhengceku_detail.py  详情层 108 行：文号抽取 / meta 字段 / 正文选择 / parse_detail
+gov/zhengceku_attach.py  附件层 191 行：Word COM 抽取 / 表格层级判定 / CJK 阈值 / 附件下载
+gov/zhengceku.py         编排层 454 行（原 802）：ZhengcekuScraper（暂存/断点/run/fetch_one）
+                              + build_record + main + re-export
+```
+- 常量随**主要消费层**下沉；路径常量（`_SRC_ROOT` / `_REPO_ROOT`）在各层**重复定义**
+  （值相同、都是 `__file__` 派生）——为共享一个路径常量而让最底层依赖别的层不值得。
+- `LOG` 随其唯一消费者迁入 attach 层，但**logger 名保持 `zhengceku` 不变**（handler 的
+  level/name 匹配依赖它）。
+- **外部调用面零变更**：`gov_collector.py` 的 `from…zhengceku import ZhengcekuScraper`、
+  `tools/run_production_refresh.py` 的 `zhengceku.should_stop_paging`（N-190 判据）
+  一行未改（经re-export保持）。
+
+### 等价性证据（两层）
+1. **夹具回放**：`test_collector_replay_zhengceku.py` + `test_collector_replay.py` 共 28 项全绿；
+2. **重构前后逐字段比对**：8 个函数（各多组参数，含 `scan_list` 两种调用形态与
+   `parse_detail(html, url)`）+ 7 项符号归属 + 10 项常量⇒ `DIFF: none`。
+
+### 过程中即时修复的缺陷（均为"搬代码忘搬依赖"类，只在运行期暴露）
+| 现象 | 根因 | 处置 |
+|---|---|---|
+| `NameError: _HERE` | 引导块 `del … _HERE`，而各层常量用它算路径 | 引导块保留 `_HERE`（只删循环变量） |
+| `NameError: _SRC_ROOT`（list 层） | `_REPO_ROOT` 由 `_SRC_ROOT` 派生，而后者被我归给 attach | 路径常量各层重复定义（list 是最底层，不该依赖 attach） |
+| `NameError: _SRC_ROOT`（编排层） | 引导块 `for _p in (_SRC_ROOT, _REPO_ROOT)` 依赖**后面才 re-export** 的常量 | 引导块改为自包含（就地现算路径） |
+| `AttributeError: CONTENT_SELECTORS` | 该常量只被 `pick_content_html` 用（详情层），我错配到 list | 归位到 detail + 修 re-export 指向 |
+| `NameError: LOG` / `logging` | `LOG` 原定义在编排层未随迁；`import logging` 被 ruff 当未使用删了| 迁入 attach（logger 名不变）+ 置于使用点之前 |
+
+**可复用的教训**：AST 抽取顶层定义时，**模块级的引导块与 logger/路径常量不属于任何函数闭包**，
+必须单独盘点——否则拆分后必现NameError，且只在运行期炸。
+
+### 台账
+- **J11 基线维护**：`gov/zhengceku.py` 已不超限 ⇒ 从 `file_budget.baseline` 移除
+  （13 → 12 → **11** 条，`config/integrity_policy.yaml` 仅 1 行删除）。
+- `docs/tech_debt.md` 的 D-遗留进展同步（第一批 + 第二批 + 第三批完成）。
+
+### 全量回归暴露的系统性脆弱点：**同名模块的裸名导入**（新判据 J14）
+
+E3 拆分后的全量回归在**收集期**报错
+（`tests/test_internal_policy_base.py`: `cannot import name 'normalize_text' from 'extract'`）。
+根因不是 E3 引入的 bug，而是一个**长期潜伏、被拆分触发**的脆弱点：
+
+- 仓内有**13 组同名模块**（`gov/extract.py` vs `internal_policy_base/extract.py`、
+  `pbc/constants.py` vs `config/constants.py` …）；
+- 采集器层为支持"可独立脚本直调"，脚本形态走**裸名** import（`import extract`），
+  把顶层模块名注册进 `sys.modules`；
+- 裸名 `from extract import X` 解析到哪一份，取决于**谁先被导入** ⇒
+  **全套件的导入结果依赖测试执行顺序**：同一天全绿、换个顺序就ImportError。
+
+处置：
+1. 三处测试改为**显式按路径加载**目标模块（`importlib.util.spec_from_file_location`，
+   与 `test_resource_hygiene._load` 同款）：`test_internal_policy_base.py`、
+   `test_ipb_deep.py`、`test_ipb_extract_file.py`；
+2. **新判据 J14**（`gates/gate_config_integrity/_homonym.py`）：测试中不得裸名导入
+   同名模块（AST 扫描 `tests/`，`refactor/` 属其他用户目录不在范围），须显式按路径加载。
+
+**教训**：采集器的"可独立脚本直调"纪律（裸名 import 双形态）与"仓内同名模块"是两个
+各自合理的约定，**组合起来**会产生依赖执行顺序的静默失效——这类交互缺陷只有门禁能防。
+
+### 验证
+30 道门禁 PASS（含新判据 J14）、ruff 0、mypy 0、夹具回放 28 项 + 等价性校验全绿。
+
+
+
 ## [Unreleased] 2026-10-16 — F1（§13.8）：步骤耗时性能基线（第八十四批）
 
 > 方案 §13.8 的最后一项。动机：`style_report`/J11 管住了**规模**，而**耗时**此前无任何基线

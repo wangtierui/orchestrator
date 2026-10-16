@@ -72,7 +72,6 @@ file_budget:
     - tools/gen_flow_map.py
     - tools/audit_health.py
     - modules/regulatory_scrapers/collectors/gov/collector.py
-    - modules/regulatory_scrapers/collectors/gov/zhengceku.py
     - modules/regulatory_classifier/recall_audit/run_retrieval_after_checks.py
     - tools/gen_benchmark.py
     - tools/extract_relations.py

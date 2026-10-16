@@ -45,6 +45,7 @@ from ._domains import (
     _check_theme_coverage,
 )
 from ._filebudget import _check_file_budget
+from ._homonym import _check_homonym_imports
 from ._manifest import (
     _check_corpus,
     _check_modules_manifest,
@@ -142,6 +143,12 @@ def run() -> tuple[bool, dict]:
     p14, d14 = _check_console_discipline(ROOT)
     problems += p14
     detail.update(d14)
+
+    # 判据 J14（2026-10-16）：测试不得裸名导入同名模块——解析结果依赖执行顺序
+    # （同名模块 32 组；采集器脚本形态会注册顶层名，致跨测试污染）
+    p15, d15 = _check_homonym_imports(ROOT)
+    problems += p15
+    detail.update(d15)
 
     # 判据 J13（TD-1）：采集器录制-重放夹具完整性——manifest 双向闭合/摘要一致/
     # 结构自校验/无凭据残留/origin 受控（防「回放测试绿着说谎」）

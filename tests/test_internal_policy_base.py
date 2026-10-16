@@ -10,12 +10,30 @@ import os
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-for p in (ROOT, os.path.join(ROOT, "modules", "internal_policy_base")):
-    if p not in sys.path:
-        sys.path.insert(0, p)
 
-from extract import normalize_text
-from scan import clean_title_noise, ipn_of, parse_filename
+# ⚠️ **不依赖裸名 import**（2026-10-16 修正）：仓内有 32 组同名模块
+#    （`gov/extract.py` 与 `internal_policy_base/extract.py` 等）。裸名
+#    `from extract import …` 解析到哪一份，取决于**谁先被导入**——全套件里
+#    采集器层（脚本形态直调）先注册了顶层 `extract`，本测试就会拿到错的那份。
+#    显式按路径加载：要测哪个模块就加载哪个，不看运气。
+def _load(rel_path: str, name: str):
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(name, os.path.join(ROOT, rel_path))
+    assert spec and spec.loader
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules[name] = mod
+    spec.loader.exec_module(mod)
+    return mod
+
+
+_ipb = _load(os.path.join("modules", "internal_policy_base", "extract.py"), "_ipb_extract")
+_scan = _load(os.path.join("modules", "internal_policy_base", "scan.py"), "_ipb_scan")
+
+normalize_text = _ipb.normalize_text
+clean_title_noise = _scan.clean_title_noise
+ipn_of = _scan.ipn_of
+parse_filename = _scan.parse_filename
 
 
 class TestParseFilename:

@@ -10,12 +10,25 @@ import os
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-for p in (ROOT, os.path.join(ROOT, "modules", "internal_policy_base")):
-    if p not in sys.path:
-        sys.path.insert(0, p)
 
-import extract as ex
-import scan as sc
+def _load_mod(rel_path: str, name: str):
+    """显式按路径加载（**不用裸名 import**：仓内 13 组同名模块，裸名解析结果取决于
+    谁先被导入；采集器脚本形态会注册顶层名，致跨测试污染 —— 判据 J14.1）。"""
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        name, os.path.join(ROOT, rel_path))
+    assert spec and spec.loader
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules[name] = mod
+    spec.loader.exec_module(mod)
+    return mod
+
+ex = _load_mod(os.path.join("modules", "internal_policy_base",
+                        "extract.py"), "_ipb_extract")
+sc = _load_mod(os.path.join("modules", "internal_policy_base",
+                        "scan.py"), "_ipb_scan")
+
 
 
 class TestNormalizeTextDeep:
