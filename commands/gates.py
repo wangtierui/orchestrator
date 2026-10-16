@@ -1,6 +1,11 @@
 # -*- coding: utf-8 -*-
 """commands.gates — orchestrator 命令：gates（自 cli.py 迁移，2026-09-13 审查 P3）。
 
+子选项（诊断第 1 波，2026-10-16）：
+  `--triage <gate>`  失败归因（只读，不跑门禁）⇒ `tools/gate_triage`
+  `--triage-list`    近N 天 FAIL 概览
+两者都不改变门禁语义与退出码：给了 `--triage` 走分析路径，否则跑门禁。
+
 阶段 1（2026-09-18）：门禁结果**归档到治理库** `gate_result` 表（按 run_id）。
   - run_id 由编排经 `REG_ORCH_RUN_ID` env 下传（`tools/run_production_refresh._run`）；
   - 治理库未启用或非编排运行（无 run_id）→ 静默跳过，**不影响门禁语义与退出码**；
@@ -25,6 +30,24 @@ def _archive(results) -> None:
 
 
 def run(argv):
+    # 归因模式（诊断第 1 波，2026-10-16）：`cli.py gates --triage <gate>`。
+    # **不跑门禁**、只做失败归因；不传该选项时下方逻辑逐字不变。
+    args = list(argv or [])
+    if "--triage" in args:
+        from tools import gate_triage as T
+
+        i = args.index("--triage")
+        gate = args[i + 1] if i + 1 < len(args) and not args[i + 1].startswith("-") else ""
+        run_id = ""
+        for j, a in enumerate(args):
+            if a == "--run-id" and j + 1 < len(args):
+                run_id = args[j + 1]
+        return T.main(args[:i] + [gate, "--run-id", run_id] if gate else ["--list"])
+    if "--triage-list" in args:
+        from tools import gate_triage as T
+
+        return T.main(["--list"])
+
     from gates import GatesRunner
 
     ok, results = GatesRunner().run()

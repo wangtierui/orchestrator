@@ -326,6 +326,13 @@
       "file": "step_duration_baseline.py",
       "independent_why": "把「某步变慢了」从人肉对比变成可复算的判读：读治理库 run_step（只读），按步骤产出 p50/p90/max/last + skip_rate + 执行时间窗，落data/run_state/step_duration_baseline.json。口径两条关键：① dry-run 已排除（is_dry_run 列判据）② resume 跳过样本不计入耗时分布（否则 p50 被 0 压平）。消费方 = 确认台 P1 与未来的 step_triage。",
       "produced_by": "步骤耗时基线采集（§13.8 性能基线）"
+    },
+    {
+      "category": "independent",
+      "entry": "python -m tools.gate_triage [list|<gate> --run-id <id> --json]",
+      "file": "gate_triage.py",
+      "independent_why": "读治理库 gate_result（只读）把门禁 FAIL 归因成「产物/结构/口径/环境/复核」五类并给出重跑或改码建议。类别按**门禁身份注册表**判定（不猜problems 文本——文本会变、身份稳定）；三条硬约束：①门禁名必须有来源（ALL_GATES ∪ 台账历史）②无 problems 证据**不给类别** ③重跑命令只对 StepSpec.produces 声明过的产物给（produced_by 是模块路径，不能当 --from 用）。",
+      "produced_by": "门禁失败归因（诊断第 1 波）"
     }
   ],
   "generated_at": "2026-09-30",

@@ -1,5 +1,65 @@
 # Changelog
 
+## [Unreleased] 2026-10-16 — 诊断第 1 波：门禁失败归因 `tools/gate_triage.py`（第八十七批）
+
+> 承接第八十批的第 0 波（信号源可用性自检）。诊断最优方案里"成本最低、收益最直接"的一项：
+> 近 90 天门禁FAIL **21 次**（实测），且 `gate_result.detail_json.problems` 已是
+> **结构化的中文判据 + `文件:行号`**（FAIL 样本 95% 带 `:` 指针）⇒ 归因原料齐备，
+> 不需要建监控系统，也不需要 LLM 推理。
+
+### 能力
+```
+python -m tools.gate_triage --list                # 近 N 天 FAIL 概览（含 problems 条数）
+python -m tools.gate_triage <gate>                  # 归因某门禁（最近一次 FAIL）
+python -m tools.gate_triage <gate> --run-id RUN-xxx  # 归因指定运行的那次
+python -m tools.gate_triage <gate> --json           # 机器可读
+cli.py gates --triage <gate> / --triage-list        # CLI 接线（**不新增命令**）
+```
+输出五段：判据身份 → 归因类别（五类）→ 建议动作 → **判据证据原文** → 指针与重跑建议。
+
+### 三条硬约束（把方案第三章「用强约束控制幻觉」按门禁场景落地）
+1. **门禁名有来源**：只接受 `ALL_GATES` 登记 ∪ 治理库历史出现过的名字（支持短名解析）；
+   查不到 ⇒ 报"未知门禁"并列候选，**不臆测**。
+2. **无证据不出结论**：`problems` 为空 ⇒ **不给归因类别**（只给 `category_hint`
+   说明"若补齐证据属哪类"）。实测 3/30 门禁不产出 `problems`
+   （`gate_import_bootstrap` / `gate_rfn_drift` / `gate_runtime_hygiene`）。
+3. **重跑命令只给有事实源声明的产物**：`StepSpec.produces` 里声明过的（11/19）
+   才给 `cli.py run --resume --from <步骤名>`；其余 8 个只有 `produced_by`
+   **模块路径**（不是步骤名）⇒ **不给命令**，报为**治理缺口**（血缘声明面与链声明面未对齐）。
+
+### 归因类别：按**门禁身份注册表**判定，不猜problems 文本
+`artifact`（重跑生产者）/ `structure`（改代码）/ `semantics`（补登记或走 ADR）/
+`environment`（修环境）/ `review`（人工判断）。
+**不猜文本的理由**：problems 文案会变、门禁身份稳定；且文本可被误读
+（`gate_secret_scan` 的 problems 里写"这看起来像产物水位问题"时，类别仍应是 environment）。
+
+### 实测输出示例（真实 FAIL）
+```
+[triage] gates.gate_secret_scan
+  归因类别：**environment** — 密钥或敏感值硬编码
+  判据证据（detail_json.problems 原文，1 条）：
+    1. …\std_lib\common_lib\vector_store.py:284 [CRITICAL] 数据库连接串明文口令
+       位置：…\vector_store.py:284
+```
+
+### 过程中即时修复的缺陷
+| 现象 | 根因 | 性质 |
+|---|---|---|
+| 重跑建议产出**跑不起来的命令**（`--from internal_policy_base.indexer.ingest`） | 把 `produced_by` **模块路径**当步骤名 | 真实缺陷。改为只认 `StepSpec.produces` 的声明 |
+| 注册表只对上 **10/30** 门禁 | 我按语义**猜** module 名（`gate_drafter`/`gate_column_registry`…） | 真实缺陷。按真实 `ALL_GATES` 重建，并把「注册表⇄ALL_GATES 名称一致」做成测试项 |
+| 报告**自我否定**（一边给类别、一边说"不给类别"） | 无 `problems` 时仍填 `category` | 一致性缺陷。改为 `category` 留空 + `category_hint` |
+| 门禁 N-3 拦下**我自己**的新测试 | 测试里写了 `gov_cleaned_20260930.jsonl` 完整字面量 | 判据正常工作。改运行期拼接 |
+| `main()` 只能连真库 ⇒ JSON 输出结构无法验证 | 缺连接注入 | 可测性缺陷。加 `con` 参数（同 `signal_availability` 款） |
+
+### 守卫
+`tests/test_gate_triage.py`（14 项，含 6 条失态用例）：注册表⇄`ALL_GATES` 双向一致、
+类别受控、未知门禁拒绝、无证据不给类别、非 JSON 不崩、无 FAIL 记录不冒充成功、
+有声明才给命令（且断言重跑目标是**链上真实步骤名**）、类别不被 problems 文本带偏、
+problems 原文不被改写、文件指针抽出、短名解析、JSON 结构稳定。
+
+### 验证
+30 道门禁PASS、ruff 0、mypy 0；新增守卫 14 项。
+
 ## [Unreleased] 2026-10-16 — E4：nfra/collector.py 按层拆分（extract/http_api）（第八十六批）
 
 > D-遗留第四批。选址依据（AST 实测）：十个候选中 `nfra/collector.py` 是**唯一**
