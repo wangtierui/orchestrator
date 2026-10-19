@@ -108,6 +108,33 @@ def handle(method: str, path: str, qs: dict | None = None,
         return 200, S.worklist_items(status=status or "open", kind=_one(qs, "kind"),
                                      limit=_int(qs, "limit", 0),
                                      offset=_int(qs, "offset", 0))
+
+    # ---- 诊断（第 4 波-A，2026-10-19）------------------------------------
+    # 复用 `mcp_server` 的同一份实现（MCP 与确认台口径必然一致，不复制判据）。
+    # **只读**：不提供处置入口——处置仍走 P4 的 POST /api/worklist/resolve
+    # （需人工填理由，C1 审计在写口内）。
+    if path == "/api/diagnose":
+        kind = (_one(qs, "kind") or "gate").strip()
+        name = (_one(qs, "name") or "").strip()
+        try:
+            from mcp_server.tools import diagnose_gate, diagnose_step
+
+            if kind == "step":
+                return 200, diagnose_step(name)
+            return 200, diagnose_gate(name)
+        except Exception as e:  # noqa: BLE001  降级必须可辨（不伪装成无数据）
+            return 200, {"available": False,
+                         "note": f"诊断不可用：{type(e).__name__}: {e}"}
+
+    if path == "/api/diagnose/backlog":
+        try:
+            from mcp_server.resources import _backlog_health
+
+            return 200, _backlog_health()
+        except Exception as e:  # noqa: BLE001
+            return 200, {"available": False,
+                         "note": f"积压诊断不可用：{type(e).__name__}: {e}"}
+
     if path == "/api/worklist/kinds":
         return 200, S.worklist_kinds()
     if path == "/api/worklist/resolve":

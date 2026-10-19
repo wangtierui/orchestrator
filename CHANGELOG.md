@@ -2269,3 +2269,124 @@ fetch_attachments  编排层   287 行  main / retry_doc_legacy_offline + classi
 
 ### 验证
 30 道门禁 PASS、ruff 0、mypy 0；双形态 42 项 + 既有 J13 14 项全绿。
+## [Unreleased] 2026-10-19 — 诊断第 3 波：待办积压治理回路（第九十六批）
+
+> 四波诊断里前三波都面向**低频故障**（第 0 波信号源、第 1 波门禁、第 2 波步级），
+> 而项目实况是「**低故障率 + 高积压**」：open 641 条、处置仅 3 条、
+> 产生速率约 330 条/月 ⇒ **净增长**。本波面向高频积压，核心不是"判得更准"，
+> 而是"**让回路持续转动**"：监控 → 判定 → 处置 → 度量。
+
+### 新增 `tools/backlog_governance.py`（J1 登记，清单 55 条）
+
+| 子命令 | 职责 | 写库 |
+|---|---|---|
+| `growth` | 积压增长监控（open/处置率/按月产生与处置/近 30 天净增/数据跨度），超阈值返回码 `FAIL` 供调度消费 | ❌ 只读 |
+| `selfclosed` | 机器判定「自证闭环」项（保守三条件 + 一护栏） | ❌ 只读 |
+| `apply` | 受控执行（默认 dry-run；须 `--execute --by --reason`） | ✅ 走唯一写口 |
+
+### 机器判定的边界（关键设计，实测定形）
+
+**只判「自证闭环」一类**，判据是**三条件 + 一护栏**，全满足才判：
+1. subject **含**闭环词（`已修复/已处置/已补齐/已修/已落地/已解除`）——
+   **句中匹配**，因为实测真实 subject 的宣告不在开头
+   （`N-208 已修复并完成历史数据补救`、`写入侧「正文载体混入 attachments」已修复`）；
+2. subject **不含**否定语境（`部分完成/未执行/未改码/改法已定/待执行/未清/残余`）；
+3. payload **无**待决键（`待裁决/待确认/待人工/待转交/待产品决策/建议`）。
+
+**宁可漏判，不可错判**：漏判的代价是留在堆里；错判是把真待办关掉、
+且审计显示"已处置"——**不可逆**。
+
+明确**不**判：主题归属（`rfn_theme_uncertain`，标题不在归属表内）、
+相关性边界（需业务口径）、"建议"类（payload 只有 `建议`、无闭环证据）。
+这些由 `worklist_triage bundle` 出裁决包人工处理。
+
+### 首批执行（真实数据）
+
+`dry-run` 列出 6 条 ⇒ 执行后 **6 条 dismissed、逐条落 `audit_log`**
+（`basis` 记录完整判据，可回溯），`open` **641 → 635**，
+`trigger_manual_breakpoint` open **23 → 17**。
+
+### 途中修的 4 处（两处是真实缺陷，两处是我的误判）
+
+| 现象 | 性质 |
+|---|---|
+| 时区比较：`created_at` 是 `+0800`（无冒号）而 `isoformat()` 给 `+08:00` ⇒ 字符串比较全中 | ⚠️ **我的误判**——实测两种格式都正确（1/2）。真相是**本仓待办历史只有 23 天**（`MIN(created_at)`=09-26），"近 30 天"天然≈全部。已加 `history_span` 披露防后人重犯 |
+| `selfclosed` 判 0 条 | 🔴 **真实缺陷**——原判据要求"subject **开头**是闭环词"，而真实宣告在句中 ⇒ 放宽为句中匹配 + 加否定护栏 |
+| 测试库缺 `resolved_by` 等列（`OperationalError`） | 🔴 测试自身问题——`_mkdb` 按**真实 DDL** 重建 |
+| `_connect()` 不认 `REG_ORCH_GOVERNANCE_DB`（与 `governance_store` 不同源） | 🔴 **一致性缺陷**——两处路径解析已统一，否则测试注入 env 只对一半生效 |
+
+另修 3 处**新工具自身的门禁合规**（判据正常工作）：J1 未登记、
+测试内 `sys.path.insert` 顶破注入基线（conftest 已 bootstrap，测试不需自注入）、
+裸 `int` 退出码（改 `config.exitcodes.ExitCode`）。
+
+### 守卫 `tests/test_backlog_governance.py`（15 项，含 6 条失态）
+
+判定边界（闭环词只在 payload 不算 / 有 `待裁决` 不算 / 否定语境不算 /
+`建议` 不算 / 非 open 不算 / payload 非 dict 不崩）、
+cutoff 格式与库内同构、窗口真实生效、数据跨度披露、阈值双向、空库不除零、
+dry-run 不写库、`--by/--reason` 必填、执行后逐条落审计。
+
+### 验证
+30 道门禁 PASS、ruff 0、mypy 0；新增守卫 15 项全绿。
+## [Unreleased] 2026-10-19 — 诊断第 4 波：能力出口（确认台 P9 + MCP 门面）（第九十七批）
+
+> 前三波把「能诊断」做出来了（门禁归因 / 步级取证 / 积压治理），但能力只在 CLI 里。
+> 本波解决**出口**问题：让诊断出现在人每天看的地方（确认台）与模型能调的地方（MCP）。
+
+### 第 4 波-A：确认台 P9
+
+新增两个**只读**端点：
+| 端点 | 内容 |
+|---|---|
+| `GET /api/diagnose?kind=gate&name=…` | 门禁归因（复用 `gate_triage`）；无 `name` ⇒ 近 90 天失败清单 |
+| `GET /api/diagnose?kind=step&name=…` | 步级取证（复用 `step_triage`），含拓扑双层 `matched_as` |
+| `GET /api/diagnose/backlog` | 积压健康度（复用 `backlog_governance`）+ 阈值判定 |
+
+**不复制判据**：三个端点直接调 `mcp_server` 侧的同一份实现 ⇒
+CLI / MCP / 确认台**口径必然一致**（这是本仓反复强调的"单一事实源"）。
+
+前端：P1 步骤抽屉里加「诊断这一步」按钮，展示 `matched_as` / 证据项数 /
+**怀疑（每条附依据）** / **证据缺口** / 渲染全文。
+**降级可辨**：诊断不可用时显示"⚠ 诊断不可用：<原因>"，
+**不伪装成"无数据"**——这条坑本仓踩过（曾把内部异常吞成"无数据"，
+导致排查困难翻倍）。
+
+### 第 4 波-B：MCP 门面
+
+新增两个**读级**工具 + 一个资源：
+| 名称 | 类型 | 说明 |
+|---|---|---|
+| `diagnose_gate` | tool（`tags=("diagnosis",)`, access=read） | 门禁归因；**无证据不出结论**（未知门禁 `found=False` 且 `category` 为空） |
+| `diagnose_step` | tool（同上） | 步级取证；`matched_as` 如实说明台账实例 vs 声明模板 |
+| `orch://backlog_health` | resource | 积压健康度（内容派生版本号，可作缓存键） |
+
+**明确不暴露处置入口**：MCP 工具面**没有** `apply`/`dismiss`/`resolve`
+类接口——处置必须由人显式发起（对齐 C1「人工处置须留痕可追」）。
+守卫里有一条负例专门断言这件事。
+
+### 途中修的 6 处（全是「按印象猜接口」）
+
+| 猜错的 | 真实形态 | 后果 |
+|---|---|---|
+| `tr.pointers` | 是 `problems: list[Problem]`，指针在 `p.evidence` | AttributeError |
+| `tr.gaps` | 叫 `evidence_gaps` | AttributeError（被 except 吞成"无数据"） |
+| `tr.rerun` | 叫 `rerun_steps`（tuple） | 同上 |
+| `StepTriage.evidence` 当 dict | 是 `list[Evidence]`（含 kind/ok/detail/data） | `.keys()` AttributeError |
+| `@tool` 挂 `__mcp_tags__` | 注册在 `registry._REGISTRY`（`dict[str, ToolSpec]`） | 守卫断言失败 |
+| `recent_failures` 返回 dataclass | 返回 `sqlite3.Row` | 全空字段 |
+
+**教训**：与本仓记忆里那条一致——**接口以源码为准，不凭印象**。
+这 6 处全部由「实测验证脚本」抓出，没有一处是靠读代码发现的——
+说明"写完必须真跑"比"写前认真读"更可靠。
+
+### 守卫
+`tests/test_mcp_diagnosis.py`（`12` 项）：
+工具注册与 `access=read`、**结果与直接调 triage 一致**（不复制判据）、
+未知门禁不给类别、证据是原文列表、双层标识受控、怀疑项必带依据、
+资源返回 `contents.metrics/verdict`、版本派生、
+**MCP 不得暴露处置入口**（负例）。
+
+### 验证
+30 道门禁 PASS、ruff 0、mypy 0；P9 三端点实测（`environment` 归因到
+`vector_store.py:284`、`matched_as=instance` 7 项证据 3 条怀疑、
+`open=635` 2 条告警）；MCP 资源与工具实测可取。

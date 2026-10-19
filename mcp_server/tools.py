@@ -180,6 +180,81 @@ def sources_list() -> list:
     ]
 
 
+@tool(tags=("diagnosis",))
+def diagnose_gate(module: str = "") -> dict:
+    """门禁失败归因（诊断第 1 波；复用 tools.gate_triage，不复制判据）。
+
+    `module` 留空 ⇒ 近 90 天失败清单；给出 `gates.gate_xxx` ⇒ 归因结果。
+    **无证据不出结论**：`problems` 为空时 `category` 留空、只给 `category_hint`。
+    """
+    from tools import gate_triage as T
+
+    con = T._open_conn()
+    if con is None:
+        return {"available": False, "note": "治理库不可读"}
+    try:
+        if not module:
+            rows = T.recent_failures(con=con)
+            out = []
+            for r in rows:
+                keys = r.keys() if hasattr(r, "keys") else []
+                out.append({k: (r[k] if k in keys else "")
+                            for k in ("gate", "run_id", "recorded_at", "descr")})
+            return {"available": True, "count": len(out), "recent_failures": out}
+        tr = T.triage(module, con=con)
+        return {
+            "available": True,
+            "found": tr.found,
+            "gate": tr.gate,
+            "category": tr.category,
+            "category_desc": tr.category_desc,
+            "category_hint": tr.category_hint,
+            "action": tr.action,
+            "evidence": [p.evidence for p in tr.problems],
+            "problem_count": len(tr.problems),
+            "artifacts": list(tr.artifacts),
+            "rerun_steps": list(tr.rerun_steps),
+            "evidence_gaps": list(tr.evidence_gaps),
+            "conclusion_ready": tr.conclusion_ready,
+            "rendered": T.render(tr),
+        }
+    finally:
+        con.close()
+
+
+@tool(tags=("diagnosis",))
+def diagnose_step(step: str, run_id: str = "") -> dict:
+    """步级失败取证（诊断第 2 波；复用 tools.step_triage）。
+
+    含**拓扑双层标识**：台账里是展开实例（`clean:nfra`），声明面可能是模板
+    （`clean:{src}`）⇒ `matched_as` 如实说明匹配到哪一层。
+    """
+    from tools import step_triage as S
+
+    con = S._open_conn()
+    if con is None:
+        return {"available": False, "note": "治理库不可读"}
+    try:
+        tr = S.triage(step, run_id=run_id, con=con)
+        node = tr.node
+        return {
+            "available": True,
+            "step": tr.step,
+            "found_failure": tr.found_failure,
+            "matched_as": getattr(node, "matched_as", "") if node else "",
+            "spec_step": getattr(node, "spec_step", "") if node else "",
+            "evidence": [{"kind": e.kind, "ok": e.ok,
+                          "detail": e.detail, "data": e.data} for e in tr.evidence],
+            "suspicions": [{"claim": c, "basis": b} for c, b in tr.suspicions],
+            "missing": list(tr.missing),
+            "run_id": tr.run_id,
+            "recorded_at": tr.recorded_at,
+            "rendered": S.render(tr),
+        }
+    finally:
+        con.close()
+
+
 @tool(tags=("config",))
 def step_layers() -> list:
     """链分层声明（STEP_LAYERS 派生）：层/步骤/kind/超时/产物——「现在该跑什么」。"""

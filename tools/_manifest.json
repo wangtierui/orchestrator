@@ -347,6 +347,13 @@
       "file": "split_precheck.py",
       "independent_why": "只读静态检查待拆文件的依赖闭包：①每个待迁块缺失的 stdlib/仓内/三方 import②模块级引导块与 logger 与路径常量（**AST 闭包捕获不到**，E2/E4 的实际故障类别）③try-import 别名（赋值在 try 内）④跨层共享常量（复制两份必漏改其一）。已用已拆文件的备份验证能复现真实故障（E4 的 lxml 静默降级、E2 的 LOG 与 _unified_doc_number）。不代劳判断，只出人工检查清单。",
       "produced_by": "拆分前置检查（把 E1-E4 的失败模式静态化）"
+    },
+    {
+      "category": "independent",
+      "entry": "python -m tools.backlog_governance growth | selfclosed | apply [--execute --by --reason]",
+      "file": "backlog_governance.py",
+      "independent_why": "三个子命令：growth（积压增长监控，只读，超阈值返回码 2 供 notify 消费）、selfclosed（机器判定「自证闭环」项，只读）、apply（受控执行，默认 dry-run）。机器判定边界保守：subject 含闭环词 + 无否定语境 + payload 无待决键，三者全满足才判（宁可漏判不可错判——错判不可逆）。写口一律走 governance_store.worklist_resolve（C1 审计在其内）。",
+      "produced_by": "诊断第 3 波：待办积压治理回路（增长监控 + 自证闭环判定）"
     }
   ],
   "generated_at": "2026-09-30",

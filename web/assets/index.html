@@ -492,8 +492,28 @@ async function openStep(step){
     + kv("耗时", esc((row.elapsed_s!=null?row.elapsed_s+"s":"—")))
     + (row.note? '<div class="muted" style="margin-top:6px">note</div><pre>'
         + esc(String(row.note).slice(0,600)) + "</pre>" : "")
-    + `<pre>${esc(d.log_tail||"(无日志)")}</pre>`, d.source, d.fetched_at);
+    + `<pre>${esc(d.log_tail||"(无日志)")}</pre>`
+    // P9（2026-10-19）：诊断入口 —— **只读**，复用 tools/step_triage 的同一份判据；
+    // 降级时显式说"不可用"而不伪装成"无数据"（本仓反复踩过的坑）。
+    + '<div style="margin-top:10px"><button id="dlgbtn" type="button">诊断这一步</button>'
+    + '<div id="diagbox" style="margin-top:8px"></div></div>', d.source, d.fetched_at);
   out.scrollIntoView({behavior:"smooth", block:"nearest"});
+  const _b=document.getElementById("dlgbtn");
+  if(_b) _b.onclick=()=>diagnoseStep(step);
+}
+async function diagnoseStep(step){
+  const box=document.getElementById("diagbox"); if(!box) return;
+  box.innerHTML='<div class="muted">诊断中…</div>';
+  const d=await api("/api/diagnose?kind=step&name="+encodeURIComponent(step));
+  if(d.available===false){ box.innerHTML='<div class="unavail">⚠ '+esc(d.note||"诊断不可用")+'</div>'; return; }
+  const sus=(d.suspicions||[]).map(s=>'<li>'+esc(s.claim)+' <span class="muted">— '+esc(s.basis)+'</span></li>').join("");
+  const gaps=(d.missing||[]).map(g=>'<li class="muted">'+esc(g)+'</li>').join("");
+  box.innerHTML = kv("匹配形态", esc(d.matched_as||"—"))
+    + kv("声明步骤", esc(d.spec_step||"—"))
+    + kv("证据项", esc(String((d.evidence||[]).length)))
+    + (sus? '<div class="muted" style="margin-top:6px">怀疑（每条附依据）</div><ul>'+sus+'</ul>' : "")
+    + (gaps? '<div class="muted" style="margin-top:6px">证据缺口</div><ul>'+gaps+'</ul>' : "")
+    + '<pre>'+esc((d.rendered||"").slice(0,4000))+'</pre>';
 }
 
 function openResolve(id){

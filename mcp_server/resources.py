@@ -114,10 +114,25 @@ def _governance_snapshot() -> dict:
 
 
 # 类型：`(描述, 读取函数)`——函数须显式标注为 Callable，否则 mypy 视为 `object` 不可调用。
+def _backlog_health() -> dict:
+    """待办积压健康度（诊断第 3 波；复用 tools.backlog_governance）。"""
+    from tools import backlog_governance as B
+
+    con = B._connect()
+    try:
+        g = B.collect_growth(con)
+    finally:
+        con.close()
+    return {"metrics": g,
+            "verdict": B.assess_growth(g, B.DEFAULT_WARN_OPEN,
+                                       B.DEFAULT_WARN_NET_PER_MONTH)}
+
+
 _RESOURCES: dict[str, tuple[str, Callable[[], dict]]] = {
     "chain_steps": ("链步骤全量（派生自 STEP_LAYERS；改一步 → 版本递增）", _chain_steps),
     "schedule_jobs": ("调度作业与触发项（派生自 schedule.yaml/triggers.yaml）", _schedule_jobs),
     "governance_snapshot": ("治理快照（水位陈旧/待办/台账）", _governance_snapshot),
+    "backlog_health": ("待办积压健康度（增长/处置率/净增/阈值判定）", _backlog_health),
 }
 
 
