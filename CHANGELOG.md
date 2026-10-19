@@ -2212,8 +2212,9 @@ note 解析仅作兜底。
 第九十四批的假说是「`refactor/collectors/tests/` 真包遮蔽」。本批**逐条否证**：
 `bootstrap` 不注入 refactor、cwd 无影响、`sys.modules` 无占位、子进程不复现。
 
-真正的证据在历史失败的**错误串**里：`(C:\Users\wangtierui-lhl\.workbuddy\binaries\python\`
-—— 生产调度用的是 **uv 管理的另一个解释器**（`.workbuddy/binaries/python/versions/3.13.12`，
+真正的证据在历史失败的**错误串**里：它含一个**我没用过的解释器路径**
+（`<用户目录>/.workbuddy/binaries/python/`）—— 生产调度用的是 **uv 管理的另一个解释器**
+（`.workbuddy/binaries/python/versions/3.13.12`，
 而我交互用的是 `Python314`）。用它一跑即复现：
 
 - 该解释器的 `site-packages/tests/` **真实存在**（`test_crf.py` + `__init__.py`）；
