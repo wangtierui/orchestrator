@@ -2202,3 +2202,69 @@ note 解析仅作兜底。
 
 ### 验证
 30 道门禁 PASS、ruff 0、mypy 0；J13 相关 14 项（新 7 + 既有 7）全绿。
+## [Unreleased] 2026-10-19 — T1：定位并消除三天门禁失败的真实根因 + E5 第二层（第九十五批）
+
+> 第九十四批修好了 J13.3/D1 的**表现**，但根因只确认了一个（D1 的 lock 未入库）。
+> 本批把 J13.3 的根因查到底，并继续推进 E5 第二层。
+
+### T1：J13.3 的真实根因是**第三方 `tests` 包遮蔽**（不是 refactor）
+
+第九十四批的假说是「`refactor/collectors/tests/` 真包遮蔽」。本批**逐条否证**：
+`bootstrap` 不注入 refactor、cwd 无影响、`sys.modules` 无占位、子进程不复现。
+
+真正的证据在历史失败的**错误串**里：`(C:\Users\wangtierui-lhl\.workbuddy\binaries\python\`
+—— 生产调度用的是 **uv 管理的另一个解释器**（`.workbuddy/binaries/python/versions/3.13.12`，
+而我交互用的是 `Python314`）。用它一跑即复现：
+
+- 该解释器的 `site-packages/tests/` **真实存在**（`test_crf.py` + `__init__.py`）；
+- Python 导入规则**真包优先于命名空间包** ⇒ `import tests` 解析到 site-packages 那个，
+  它没有 `http_cassette` ⇒ `cannot import name 'http_cassette' from 'tests'`（与历史逐字一致）；
+- 该目录是**孤儿**：无 dist-info 声称拥有、`pip show tests` 报未找到、无已装包 import 它
+  （典型的误装残留），且**不在 requirements**。
+
+**处置（两层，缺一不可）**：
+1. **消除根因**：删除该孤儿目录（已确认无包依赖、内容仅一个无关的 `test_crf.py`）；
+2. **保留防御**：第九十四批的按路径加载（`_load_cassette_module()`）不动——
+   它让判据对**任何**同名遮蔽免疫（含未来再出现同名包）。
+   两招并用：一个治当下的病，一个防复发。
+
+验证：用生产解释器跑 J13 判据 ⇒ `problems: none`（6 个夹具）；
+且该解释器下**连旧写法也能导入**（证明根因已除）。
+
+### E5 第二层：`fetch_attachments.py` 690 → 287 行
+
+```
+attachment_paths   路径常量层（新）  ATT_DIR / CACHE / DETAIL_GLOB / QUALITY_REPORT / HERE
+attachment_fetch   取数层   124 行  http_get_bytes / build_attachment_url + BASE/_SSL_CTX/DEFAULT_HEADERS
+attachment_process 落盘层   222 行  process_attachment / process_doc（触网+触磁盘）
+attachment_report  报表层   193 行  build_and_write_report / refresh_stats
+fetch_attachments  编排层   287 行  main / retry_doc_legacy_offline + classify_entry + 全部 re-export
+```
+
+**设计取舍（`ATT_DIR` 跨三层，三个候选）**：
+① 留编排层、各层反向 import ⇒ **成环**（编排层 import 各层做 re-export，实测果然炸）；
+② 每层各复制一份 ⇒ **必漏改其一**（路径改了不报错、只写错地方）；
+③ **下沉为最底层常量模块** ⇒ 依赖单向、单一事实源。✅ 选③。
+
+**`classify_entry` 的处理**：它依赖磁盘读 + 兄弟模块 `attachments_extract`，
+**不是纯判定** ⇒ 留编排层，report 层以**形参注入**（调用方显式传），
+并留延迟兜底（未注入时运行期 import）⇒ 既不破坏既有 `--report-only` 路径，也不成环。
+
+### 等价性证据
+① `build_attachment_url` 6 组输入逐字段比对（含空/特殊字符/中文/缺字段）⇒ none；
+② 14 项符号归属 + 编排层 re-export 可取（同一对象）；
+③ 8 项常量一致（`_SSL_CTX` 按类型比、`HERE` 按**定义语义**校验——
+   备份文件的 `HERE` 值是 `reports/_tmp`，与拆分无关）；
+④ 6 个函数源码 `difflib` 比对 ⇒ 5 个逐字一致，
+   `build_and_write_report` 的 diff **仅 4 处我有意新增**（形参/docstring/延迟兜底），
+   无任何意外变更。
+
+### 过程中的两次自我纠偏（都是校验脚本的错，不是产品的错）
+1. 等价性脚本先报 `HERE` DIFF —— 实为备份文件位置导致，改用**定义语义**校验；
+2. 报 4 个函数源码 DIFF —— 实为我的 `_body_lines()` 通用剥离逻辑**误删了内容**
+   （遇到 `if x is None:` 就进入跳过模式），改为仅对
+   `build_and_write_report` 生效；且判定从字符串相等改为 `difflib`
+   （`inspect.getsource` 跨模块的行边界细节会让 == 失真）。
+
+### 验证
+30 道门禁 PASS、ruff 0、mypy 0；双形态 42 项 + 既有 J13 14 项全绿。
