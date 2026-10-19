@@ -20,6 +20,22 @@ jobs:
     argv: ["cli.py", "run", "--no-scrape", "--resume"]
     on_miss: run_at_next_boot
     desc: "全链刷新（raw 已抓取，仅重清洗 + 全链；当日无 raw 变化时各阶段快跳）"
+  # ---- 待办积压治理（诊断第 3 波，2026-10-19）----
+  # 为什么需要独立作业：积压是**高频**问题（产生 ~330 条/月、处置率曾 2.6%），
+  # 而 `worklist_aged` 只报「单条超龄」、不报「总量净增长」——两者口径不同：
+  # 前者问"这条放了多久"，后者问"越积越多吗"。缺了后者，积压增长无人知晓。
+  # 设计取舍：
+  #   · **每日 07:30**（在 06:00 refresh 之后）：此时当日新待办已产生，
+  #     指标是最新的；不与 refresh 重叠（后者实测约 70 分钟）。
+  #   · 退出码 0=未超阈值 / 非 0=触发告警（作业失败即告警，不额外写状态文件）。
+  #   · 只读：不改任何待办状态（处置必须由人发起，见 backlog_governance 的边界说明）。
+  - id: backlog_growth
+    trigger: cron
+    kind: governance
+    when: "30 7 * * *"
+    argv: ["cli.py", "backlog", "growth", "--json"]
+    on_miss: skip
+    desc: "待办积压增长监控（open/净增/处置率；超阈值返回非 0 并告警）"
   - id: nfra_weekly
     trigger: cron
     kind: processing          # 作业角色（processing→链 main 层 / quality→gate 层 / governance→side 层 / agent_sync→conditional 层）
@@ -118,8 +134,8 @@ notify:
   # W5（§13.3）：新增两个 SLI/质量事件（受控域 NOTIFY_EVENTS 同步扩展，门禁 S3 双向守护）：
   #   · slo_breach —— SLI 连续 2 个周期低于 SLO（链成功率/数据新鲜度），由 tools/check_slo.py 判定
   #   · quality_regression —— DAMA 六维任一维环比劣化 >10%，由 tools/gen_quality_metrics.py 判定
-  "on": [failed_step, gate_fail, worklist_aged, doctor_fail, degraded_step,
-         slo_breach, quality_regression]
+  "on": [failed_step, gate_fail, worklist_aged, backlog_growth, doctor_fail,
+         degraded_step, slo_breach, quality_regression]
   file_dir: reports/_alerts     # 入库可审计（reports 已在门禁排除集，不新增盲区）
   # webhook 为可选：URL 只从环境变量 `REG_ORCH_NOTIFY_WEBHOOK` 读取，**禁止入库**
   # SLI/SLO 定义（唯一事实源 = ADR-0012；本段仅为**声明**，阈值改动须走 ADR）：

@@ -25,6 +25,7 @@ from typing import Any, cast
 
 import paths
 from commands import analysis as _m_analysis
+from commands import backlog as _m_backlog
 from commands import base as _m_base
 from commands import classify as _m_classify
 
@@ -69,6 +70,9 @@ COMMANDS = {
     "implaudit": _m_implaudit.run,
     # v2 §3.14.3（P1-6）：待办队列（链外节点决策自动化缺口的处置入口）
     "worklist": _m_worklist.run,
+    # 诊断第 3 波（2026-10-19）：待办积压治理回路（growth/selfclosed/decide/apply）。
+    # 走 cli 统一入口而非 `python -m tools.*`：门禁 S2 要求作业 argv[0] 是仓内可解析目标。
+    "backlog": _m_backlog.run,
     # v2 §3.13（P2-6）：统一执行入口 —— run 主链 / doctor 环境自检 / status 状态披露 /
     # schedule 调度事实源操作面；另加 §3.5（P2-1）的 triggers 条件触发面。
     "run": _m_run.run,
@@ -128,6 +132,8 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser("base", help="双底座发布件构建与统一查询（Base Contract v1；publish/query/search）")
     sub.add_parser("analysis", help="规划 2.1 五级分析交付库（F-L01；gen/status）")
     sub.add_parser("relations", help="依据/废止关系（R-F01；gen/status/show）——三类关系唯一事实源")
+    sub.add_parser(
+        "backlog", help="待办积压治理（诊断第 3 波；growth|selfclosed|decide|apply）")
     p_wl = sub.add_parser("worklist", help="待办队列（v2 §3.14.3；list/resolve/export/stats）")
     p_wl.add_argument("action", nargs="?", default="list",
                       choices=["list", "resolve", "export", "stats"],

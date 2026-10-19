@@ -49,6 +49,11 @@ schedule:
     - worklist_aged
     - doctor_fail
     - degraded_step
+    # 诊断第 3 波（2026-10-19）：待办积压**总量净增长**告警。
+    # 与 `worklist_aged` 口径不同（前者问"这条放了多久"，后者问"越积越多吗"），
+    # 发送点 `tools/backlog_governance.py`（经 `cli.py backlog growth` 由
+    # schedule 的 `backlog_growth` 作业每日触发）。
+    - backlog_growth
     # W5（§13.3）：与 NOTIFY_EVENTS 同步扩展（SLI/SLO 与质量两个事件，
     # 发送点分别是 tools/check_slo.py 与 tools/gen_quality_metrics.py）。
     - slo_breach
@@ -63,7 +68,8 @@ schedule:
 # TD-1/D-遗留），但**禁止新增长超限文件**。
 file_budget:
   max_lines: 800
-  scope: [std_lib, modules, tools, config, interfaces, gates, commands]
+  scope: [std_lib, modules, tools, config, interfaces, gates, commands, backlog_growth
+    ]
   baseline:
     - tools/run_production_refresh.py
     - std_lib/scraper_std/document_structure.py

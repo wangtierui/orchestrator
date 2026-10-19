@@ -1,0 +1,41 @@
+{
+ "event": "backlog_growth",
+ "title": "待办积压触发阈值：open=312，近 30 天净增 326",
+ "at": "2026-10-19T15:28:57",
+ "run_id": "",
+ "payload": {
+  "open": 312,
+  "disposal_rate_pct": 52.58,
+  "last_30d": {
+   "created": 658,
+   "resolved": 332,
+   "net": 326,
+   "cutoff": "2026-09-19T15:28:57+0800"
+  },
+  "open_by_kind": {
+   "relevance_boundary": 211,
+   "internal_unaligned": 66,
+   "trigger_manual_breakpoint": 17,
+   "rfn_clean_drift_c2": 12,
+   "timeliness_conflict": 3,
+   "clean_quarantine_triage": 2,
+   "rfn_theme_uncertain": 1
+  },
+  "alerts": [
+   {
+    "kind": "net_growth",
+    "detail": "近 30 天净增 326 条 （产生 658 / 处置 332） ≥ 阈值 100",
+    "evidence": {
+     "created": 658,
+     "resolved": 332,
+     "net": 326,
+     "cutoff": "2026-09-19T15:28:57+0800"
+    }
+   }
+  ],
+  "thresholds": {
+   "warn_open": 500,
+   "warn_net_per_month": 100
+  }
+ }
+}

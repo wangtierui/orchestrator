@@ -203,6 +203,28 @@ def attr_rows() -> list[dict]:
     return get_rfn_api().load_attr_rows()
 
 
+def theme_rows() -> list[dict]:
+    """**主题归属表**全量行（3 列：`监管文件编号` / `主题` / `判定依据`）。
+
+    ⚠️ 与 `theme_map()` 不是一回事：`theme_map()` 是**受控主题枚举**
+    （`T0..T10 → 主题名`，11 条）；**文件编号 → 主题** 的映射在本表里。
+    2026-10-19 新增：确认台 P3 的「主题分布」曾误用 `theme_map()` 去查编号
+    ⇒ 1162 条全部未归类、图表只剩一根柱（用户报「P3 渲染异常」即此）。
+    """
+    return get_rfn_api().load_theme_rows()
+
+
+def theme_by_doc() -> dict[str, str]:
+    """`监管文件编号 → 主题`（由主题归属表派生；供分布/统计类视图使用）。"""
+    out: dict[str, str] = {}
+    for r in theme_rows():
+        k = str(r.get("监管文件编号") or "").strip()
+        t = str(r.get("主题") or "").strip()
+        if k and t:
+            out[k] = t
+    return out
+
+
 def data_dir() -> str:
     """classifier 数据目录（`modules/regulatory_classifier/data`；I-3 新增访问器）。
 

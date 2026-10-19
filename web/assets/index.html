@@ -249,12 +249,22 @@ function viewAssets(d){
     ${card("产物清单","clean 索引", rows?`<table><tr><th>源</th><th>快照日</th><th>记录数</th></tr>${rows}</table>`
       :'<div class="muted">无产物</div>', d.source, d.fetched_at)}
     ${card("发布件状态","双底座", `<table><tr><th>底座</th><th>快照/版本</th><th>记录数</th></tr>${pubRows}</table>`, d.source, d.fetched_at)}
+    // 2026-10-19 修（用户报「P2 数据状态渲染异常」）：原实现读 `c.consistent`/
+    // `c.problems`/`c.stat`，但**真实字段是统计计数**（files/articles/chapters/
+    // structures/law/degraded/fallback/invalid/warned/parse_modes）⇒
+    // `c.consistent` 恒 undefined ⇒ 永远显示「不一致」，`c.stat` 恒 `{}`。
+    // 现按真实字段渲染，并把 degraded/invalid 作为**需关注项**显式列出。
     ${card("契约状态","条文 schema 自检",
-      kv("consistent", c.consistent===null?"—":(c.consistent?"通过":"<span class='bad'>不一致</span>"),
-         c.consistent?"ok":"bad")
-      + ((c.problems&&c.problems.length)?`<div class="bad" style="font-size:12px;margin-top:6px">${
-          c.problems.slice(0,5).map(p=>esc(p)).join("<br/>")}</div>`:"")
-      + kv("统计", esc(JSON.stringify(c.stat||{}).slice(0,160))), d.source, d.fetched_at)}
+      kv("覆盖文件", num(c.files)) + kv("条文", num(c.articles))
+      + kv("章节", num(c.chapters)) + kv("表格结构", num(c.structures))
+      + kv("法条类", num(c.law))
+      + kv("降级解析", num(c.degraded), c.degraded>0?"warn":"ok")
+      + kv("兜底解析", num(c.fallback))
+      + kv("无效", num(c.invalid), c.invalid>0?"bad":"ok")
+      + kv("告警", num(c.warned), c.warned>0?"warn":"ok")
+      + (c.parse_modes?`<div class="muted" style="font-size:11px;margin-top:6px">解析方式：${
+          esc(Object.entries(c.parse_modes).map(([k,v])=>k+"="+v).join(" / "))}</div>`:""),
+      d.source, d.fetched_at)}
   </div>`;
 }
 
@@ -330,7 +340,18 @@ function viewWorklist(d, kinds){
   const wtitle = total>shown
     ? `${esc(d.status)}：共 <b>${total}</b> 条，本页 ${shown} 条（可按 kind 筛选 / 分页）`
     : `${esc(d.status)}：共 ${total} 条`;
+  // 2026-10-19（用户报「不同 kind 不能批量处置」）：表头加 **kind 筛选**。
+  // 选中某 kind 后只显示该 kind，从而可对该 kind 全选批量处置
+  // （此前只有全量列表，混着 6 个 kind，「同 kind 批量」无从下手）。
+  const kd=(kinds&&(kinds.kinds||kinds.items))||[];
+  const curKind=(d.filter&&d.filter.kind)||"";
+  const kindOpts=['<option value="">全部 kind</option>'].concat(
+    (kd.length?kd.map(x=>x.kind||x):Object.keys(d.kind_counts||{}))
+      .map(k=>`<option value="${esc(k)}"${k===curKind?" selected":""}>${esc(k)}${
+        (d.kind_counts&&d.kind_counts[k])?"（"+d.kind_counts[k]+"）":""}</option>`)).join("");
   const bulk = `<div class="row" style="margin:8px 0">
+      <span class="muted">kind 筛选</span>
+      <select id="wlkind">${kindOpts}</select>
       <span class="muted">已选 <b id="wln">0</b> 条</span>
       <select id="wlstatus"><option value="resolved">resolved（已处置）</option>
         <option value="dismissed">dismissed（不适用）</option></select>
@@ -426,9 +447,15 @@ async function render(){
       const [m,q,s]=await Promise.all([api("/api/metrics"),api("/api/quality"),api("/api/slo")]);
       Object.assign(LAST.metrics,m); m.quality=q; m.slo=s; v.innerHTML=viewMetrics(m); return; }
     if(CUR==="worklist"){
-      const [wl,k]=await Promise.all([api("/api/worklist"),api("/api/worklist/kinds")]);
-      LAST.worklist=wl; v.innerHTML=viewWorklist(wl,k);
+      // 2026-10-19：kind 筛选（用户报「不同 kind 不能批量处置」）。
+      // 选中 kind 后只拉该 kind ⇒ 可整批全选后一次处置。
+      const qk=LAST._wlkind?("?kind="+encodeURIComponent(LAST._wlkind)):"";
+      const [wl,k]=await Promise.all([api("/api/worklist"+qk),api("/api/worklist/kinds")]);
+      LAST.worklist=wl; LAST._wlkinds=k;
+      v.innerHTML=viewWorklist(wl,k);
       v.querySelectorAll("button[data-resolve]").forEach(b=>b.onclick=()=>openResolve(b.dataset.resolve));
+      const ks=$("#wlkind");
+      if(ks) ks.onchange=()=>{ LAST._wlkind=ks.value; render(); };
       return; }
     LAST[CUR]=await api(map[CUR]||"/api/overview");
     v.innerHTML=({overview:viewOverview,flow:viewFlow,assets:viewAssets,metrics:viewMetrics,

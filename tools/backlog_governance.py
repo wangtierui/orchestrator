@@ -235,6 +235,29 @@ def cmd_growth(warn_open: int, warn_net: int, as_json: bool) -> int:
         conn.close()
     verdict = assess_growth(g, warn_open, warn_net)
     payload = {"metrics": g, "verdict": verdict}
+
+    # 告警产生方（2026-10-19，T2）：`schedule.yaml` 的 `backlog_growth` 作业
+    # 每日跑本命令 ⇒ 超阈值即送达（`notify.on` 与 `NOTIFY_EVENTS` 已同步登记）。
+    # **放在 `--json` 分叉之前**：调度用 `--json` 时也必须发告警，否则形同没有。
+    # 告警失败**不改**返回码（旁路留痕，不能让"没送达"伪装成"没超阈值"）。
+    if verdict["should_alert"]:
+        try:
+            from std_lib.common_lib import notify as _notify
+
+            _notify.notify(
+                "backlog_growth",
+                "待办积压触发阈值：open=%d，近 30 天净增 %d"
+                % (g["open"], g["last_30d"]["net"]),
+                {"open": g["open"],
+                 "disposal_rate_pct": g["disposal_rate_pct"],
+                 "last_30d": g["last_30d"],
+                 "open_by_kind": g["open_by_kind"],
+                 "alerts": verdict["alerts"],
+                 "thresholds": verdict["thresholds"]})
+        except Exception as e:  # noqa: BLE001
+            print(f"[backlog] WARN 告警发送失败（不影响返回码）: "
+                  f"{type(e).__name__}: {e}", file=sys.stderr)
+
     if as_json:
         print(json.dumps(payload, ensure_ascii=False, indent=2))
         return ExitCode.FAIL if verdict["should_alert"] else ExitCode.OK
@@ -254,8 +277,9 @@ def cmd_growth(warn_open: int, warn_net: int, as_json: bool) -> int:
     print("  最后活动：新待办 %s / 最后处置 %s"
           % (g["last_activity"]["newest_worklist"] or "（无）",
              g["last_activity"]["newest_resolution"] or "（无）"))
+    # 告警已在 `--json` 分叉之前统一发出（见上）⇒ 这里只做人类可读输出。
     if verdict["should_alert"]:
-        print("\n  ⚠ 触发告警：")
+        print("\n  ⚠ 触发告警（已发 notify：backlog_growth）：")
         for a in verdict["alerts"]:
             print(f"    · [{a['kind']}] {a['detail']}")
         return ExitCode.FAIL
@@ -281,6 +305,56 @@ def cmd_selfclosed(as_json: bool) -> int:
     if not items:
         print("  （无）")
     return ExitCode.OK
+
+
+def cmd_decide(kind: str, keep_subject: str, execute: bool, by: str,
+               reason: str, status: str = "dismissed") -> int:
+    """按 kind **批量裁决**（保留项不动）。
+
+    用途：业务方给出「某 kind 整体不纳入」这类**明确决策**后，一次性处置，
+    但不许碰到「决策里点名保留」的项（`keep_subject` 子串匹配）。
+
+    ⚠️ **不猜业务事实**：保留项需要登记进归属表时，须先指定**主题**才算完；
+    本命令只把它留在 open，不代填主题。
+    """
+    con = _connect()
+    try:
+        rows = con.execute(
+            "SELECT item_id, subject FROM worklist WHERE status='open' AND kind=? "
+            "ORDER BY created_at", (kind,)).fetchall()
+    finally:
+        con.close()
+    keep = [r for r in rows if keep_subject and keep_subject in (r[1] or "")]
+    todo = [r for r in rows if not (keep_subject and keep_subject in (r[1] or ""))]
+    if not execute:
+        print(f"[backlog] dry-run：kind={kind} 将 {status} {len(todo)} 条，"
+              f"保留 {len(keep)} 条（加 --execute --by --reason 才执行）")
+        for iid, subj in todo[:8]:
+            print(f"  - {iid}  {subj[:62]}")
+        if len(todo) > 8:
+            print(f"  … 共 {len(todo)} 条")
+        if keep:
+            print("  保留（不动）：")
+            for iid, subj in keep:
+                print(f"  * {iid}  {subj[:62]}")
+        return ExitCode.OK
+    if not by or not reason:
+        print("[backlog] 拒绝执行：--by 与 --reason 必填（审计要求，C1）",
+              file=sys.stderr)
+        return ExitCode.USAGE
+    ok = fail = 0
+    for iid, _ in todo:
+        try:
+            if worklist_resolve(iid, reason, by=by, status=status):
+                ok += 1
+            else:
+                fail += 1
+        except Exception as e:  # noqa: BLE001  单条失败不阻断其余
+            fail += 1
+            print(f"  [err] {iid}: {type(e).__name__}: {e}")
+    print(f"[backlog] 执行完毕：{status} {ok} 条 / 未命中 {fail} 条 / "
+          f"保留 {len(keep)} 条（by={by}）")
+    return ExitCode.OK if fail == 0 else ExitCode.FAIL
 
 
 def cmd_apply(execute: bool, by: str, reason: str) -> int:
@@ -335,11 +409,24 @@ def main(argv: list[str] | None = None) -> int:
     p_a.add_argument("--by", default="")
     p_a.add_argument("--reason", default="")
 
+    p_d = sub.add_parser("decide", help="按 kind 批量裁决（保留项不动；默认 dry-run）")
+    p_d.add_argument("--kind", required=True)
+    p_d.add_argument("--keep-subject", default="",
+                     help="含该子串的条目**不动**（业务决策点名保留的项）")
+    p_d.add_argument("--status", default="dismissed",
+                     choices=("dismissed", "resolved"))
+    p_d.add_argument("--execute", action="store_true")
+    p_d.add_argument("--by", default="")
+    p_d.add_argument("--reason", default="")
+
     a = ap.parse_args(argv)
     if a.cmd == "growth":
         return cmd_growth(a.warn_open, a.warn_net, a.json)
     if a.cmd == "selfclosed":
         return cmd_selfclosed(a.json)
+    if a.cmd == "decide":
+        return cmd_decide(a.kind, a.keep_subject, a.execute, a.by,
+                          a.reason, a.status)
     return cmd_apply(a.execute, a.by, a.reason)
 
 

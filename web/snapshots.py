@@ -491,14 +491,32 @@ def metrics() -> dict:
             except Exception:  # noqa: BLE001
                 out["relations"] = {"available": False}
             # 主题分布
+            # ⚠️ 2026-10-19 修：原实现从 `attr_rows()` 取 `主题` 列，但**归属表没有该列**
+            #    （实测列：监管文件编号/文件名称/发文字号/发布日期/文件来源/时效状态/
+            #      判定日期/编号备注）⇒ 1162 条全部落 `?` ⇒ 图表只有一个 `?` 柱
+            #    （用户报「P3 指标渲染异常」即此）。
+            #    正确来源：`theme_map()`（`监管文件编号 → 主题`，来自主题归属表）。
             try:
                 from interfaces import rfn_api
 
                 rows = rfn_api.attr_rows()
+                # ⚠️ 必须用 `theme_by_doc()`（**编号→主题**，来自主题归属表），
+                #    **不是** `theme_map()`（那是 `T0..T10 → 主题名` 的受控枚举，
+                #    拿它查编号 ⇒ 0/1162 命中）。
+                tmap = rfn_api.theme_by_doc()
                 dist: dict[str, int] = {}
+                unclassified = 0
                 for r in rows:
-                    t = str(r.get("主题") or r.get("theme") or "?")
+                    key = str(r.get("监管文件编号") or "").strip()
+                    t = str(r.get("主题") or r.get("theme")
+                            or tmap.get(key) or "").strip()
+                    if not t:
+                        unclassified += 1
+                        continue
                     dist[t] = dist.get(t, 0) + 1
+                # 未归类单列（用可读名而非 `?`——`?` 会被误读成渲染错误）
+                if unclassified:
+                    dist["未归类"] = unclassified
                 out["theme_dist"] = dist
             except Exception:  # noqa: BLE001
                 out["theme_dist"] = {}
@@ -558,8 +576,20 @@ def worklist_items(status: str = "open", kind: str = "", limit: int = 0,
             rows = total_rows[offset:] if offset else total_rows
             if limit and limit > 0:
                 rows = rows[:limit]
+            # 2026-10-19（用户报「不同 kind 不能批量处置」）：回填
+            # ① `filter.kind` 供前端回显选中项；② `kind_counts`（**全量口径**，
+            # 不受当前 kind 筛选影响）供下拉显示「某项有多少条」——
+            # 否则选中某 kind 后其它 kind 的计数会变成 0，用户会以为"没了"。
+            all_rows = total_rows if not kind else gs.worklist_list(
+                status=status, kind="", limit=0)
+            counts: dict[str, int] = {}
+            for r in all_rows:
+                k = str(r.get("kind") or "")
+                counts[k] = counts.get(k, 0) + 1
             return {"available": True, "source": "governance_store.worklist_list",
                     "fetched_at": _now(), "status": status, "kind": kind,
+                    "filter": {"status": status, "kind": kind},
+                    "kind_counts": counts,
                     "count": len(rows), "total": len(total_rows),
                     "offset": offset, "limit": limit, "items": rows}
         return CACHE.get_or_call(f"worklist:{status}:{kind}:{limit}:{offset}", _load)
