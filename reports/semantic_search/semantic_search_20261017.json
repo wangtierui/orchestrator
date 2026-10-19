@@ -1,0 +1,93 @@
+{
+ "generated_at": "2026-10-17 06:41:12",
+ "out": "reports/semantic_search/semantic_search_20261017.json",
+ "backend": "pgvector",
+ "tables": [
+  "delivery_docs",
+  "delivery_records"
+ ],
+ "inputs": {
+  "delivery_docs": 17,
+  "published_records": 1000
+ },
+ "fingerprint": {
+  "model": "bge_base_zh",
+  "dep_version": "6.1.0",
+  "weights": "971cc2b8ddcb4eec",
+  "ready": true
+ },
+ "ok": true,
+ "degraded": false,
+ "model": "bge_base_zh",
+ "embedded": {
+  "docs": 17,
+  "records": 1000
+ },
+ "ab": {
+  "ok": true,
+  "k": 10,
+  "model": "bge_base_zh",
+  "probes": 8,
+  "corpus": "索引子集 1000 条（FTS 过滤到同子集后取 top-k）",
+  "mean_jaccard": 0.0261,
+  "per_query": [
+   {
+    "query": "保险资金运用管理",
+    "vec_k": 10,
+    "fts_k": 0,
+    "intersection": 0,
+    "jaccard": 0.0
+   },
+   {
+    "query": "偿付能力风险管理",
+    "vec_k": 10,
+    "fts_k": 0,
+    "intersection": 0,
+    "jaccard": 0.0
+   },
+   {
+    "query": "关联交易管理",
+    "vec_k": 10,
+    "fts_k": 1,
+    "intersection": 0,
+    "jaccard": 0.0
+   },
+   {
+    "query": "互联网保险业务",
+    "vec_k": 10,
+    "fts_k": 0,
+    "intersection": 0,
+    "jaccard": 0.0
+   },
+   {
+    "query": "公司治理",
+    "vec_k": 10,
+    "fts_k": 9,
+    "intersection": 2,
+    "jaccard": 0.1176
+   },
+   {
+    "query": "股权管理",
+    "vec_k": 10,
+    "fts_k": 1,
+    "intersection": 0,
+    "jaccard": 0.0
+   },
+   {
+    "query": "再保险业务",
+    "vec_k": 10,
+    "fts_k": 2,
+    "intersection": 1,
+    "jaccard": 0.0909
+   },
+   {
+    "query": "行政处罚",
+    "vec_k": 10,
+    "fts_k": 10,
+    "intersection": 0,
+    "jaccard": 0.0
+   }
+  ]
+ },
+ "ab_note": "A/B 仅在**发布件记录**面进行（FTS5 索引只覆盖 records；交付物侧无全文索引可比）"
+}

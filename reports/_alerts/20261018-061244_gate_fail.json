@@ -1,0 +1,10 @@
+{
+ "event": "gate_fail",
+ "title": "门禁未通过（链尾 gates rc=1）",
+ "at": "2026-10-18T06:12:44",
+ "run_id": "RUN-20261018-060104-39288",
+ "payload": {
+  "step": "gates",
+  "rc": 1
+ }
+}
