@@ -92,6 +92,13 @@ optional:
     pip-audit:
       why: 依赖漏洞扫描（ci_check 作业 + 门禁判据 D4；high/critical 零容忍）
       adr: ADR-0011
+    esprima:
+      why: >-
+        内联 JS 语法体检（tools/js_syntax_lint.py + 门禁判据 J15）。本仓无 Node，
+        web/assets/index.html 的脚本一旦有语法错误即**整段不执行** ⇒ 页面停在初始态
+        （加载中… + SSE 连接中…）而服务端全绿 ⇒ 方向性误判（2026-10-19 实际发生）。
+        仅开发/CI 用，主链运行期不 import ⇒ 放 dev。
+      adr: ADR-0011
   ocr:
     paddleocr:
       why: PaddleOCR 主栈（附件扫描件 OCR；锁主版本 <4）

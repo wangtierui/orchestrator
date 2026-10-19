@@ -53,7 +53,15 @@ dev = ["pytest>=7.0.0", "coverage>=7.0.0", "ruff>=0.6", "mypy>=1.10,<2", "types-
        #   bandit：SAST（ci_check 作业，方案 §9.2）
        #   pip-audit：依赖漏洞扫描（ci_check 作业 + gate_dependency_audit 判据 D4）
        # 门禁 gate_dependency_audit 判据 D3 会拒绝「在用未声明」，故此处补齐（ADR-0011）。
-       "pytest-timeout>=2.1", "bandit>=1.7", "pip-audit>=2.5"]
+       "pytest-timeout>=2.1", "bandit>=1.7", "pip-audit>=2.5",
+       # 2026-10-19（内联 JS 语法守卫）：`web/assets/index.html` 的 `<script>` 一旦
+       # 有语法错误，**整段脚本不执行** ⇒ 页面停在初始态（`加载中…` + `SSE 连接中…`），
+       # 而服务端 HTTP 200、API 全绿、SSE 有 hello/ping ⇒ 极易误判成"后端/SSE 故障"
+       # （2026-10-19 实际发生过：模板字符串内注释含反引号 ⇒ 提前闭合 ⇒ 全站瘫痪）。
+       # 本仓无 Node，故用 **esprima**（纯 Python 的 ECMAScript 解析器）做真语法检查；
+       # `tools/js_syntax_lint.py` 在它不可用时降级为词法兜底（并**明确标注**降级）。
+       # 仅开发/CI 使用，主链运行期不 import ⇒ 放 dev extra 而非 base dependencies。
+       "esprima>=4.0"]
 # OCR extra（2026-09-12 审查补版本区间 D3：Paddle 生态变动快，锁主版本）
 # 2026-09-13：pypdf/pdfplumber 上移 base（非 OCR 组件）；PyMuPDF 下界修正见下。
 ocr = [

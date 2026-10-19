@@ -1,0 +1,1438 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.5",
+  "serialNumber": "urn:uuid:bc3b99997c77f536a5ffcf82fe3389a7",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2026-10-19T18:07:14+08:00",
+    "tools": [
+      {
+        "vendor": "regulatory_compliance_orchestrator",
+        "name": "tools/gen_sbom.py",
+        "version": "1.0"
+      }
+    ],
+    "component": {
+      "type": "application",
+      "name": "regulatory_compliance_orchestrator",
+      "bom-ref": "pkg:pypi/regulatory-compliance-orchestrator@local",
+      "description": "监管合规编排器（单机脚本链；依赖权威来源 = requirements.lock）"
+    },
+    "properties": [
+      {
+        "name": "lock:sha256",
+        "value": "e2dbe9742d3240dc50dcc83c5be5ff10982def249c123debf6509488828118ed"
+      },
+      {
+        "name": "lock:file",
+        "value": "requirements.lock"
+      },
+      {
+        "name": "generator:note",
+        "value": "由 lock 直生（非文件系统扫描）；文件级成分如需另引 syft"
+      }
+    ]
+  },
+  "components": [
+    {
+      "type": "library",
+      "name": "aiohappyeyeballs",
+      "version": "2.7.1",
+      "purl": "pkg:pypi/aiohappyeyeballs@2.7.1",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "aiohappyeyeballs==2.7.1"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "aiohttp",
+      "version": "3.14.5",
+      "purl": "pkg:pypi/aiohttp@3.14.5",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "aiohttp==3.14.5"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "aiosignal",
+      "version": "1.4.0",
+      "purl": "pkg:pypi/aiosignal@1.4.0",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "aiosignal==1.4.0"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "annotated-doc",
+      "version": "0.0.5",
+      "purl": "pkg:pypi/annotated-doc@0.0.5",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "annotated-doc==0.0.5"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "anyio",
+      "version": "4.15.1",
+      "purl": "pkg:pypi/anyio@4.15.1",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "anyio==4.15.1"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "ast_serialize",
+      "version": "0.13.0",
+      "purl": "pkg:pypi/ast-serialize@0.13.0",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "ast_serialize==0.13.0"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "attrs",
+      "version": "26.1.0",
+      "purl": "pkg:pypi/attrs@26.1.0",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "attrs==26.1.0"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "bandit",
+      "version": "1.9.4",
+      "purl": "pkg:pypi/bandit@1.9.4",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "bandit==1.9.4"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "beautifulsoup4",
+      "version": "4.15.0",
+      "purl": "pkg:pypi/beautifulsoup4@4.15.0",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "beautifulsoup4==4.15.0"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "boolean.py",
+      "version": "5.0",
+      "purl": "pkg:pypi/boolean.py@5.0",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "boolean.py==5.0"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "CacheControl",
+      "version": "0.14.4",
+      "purl": "pkg:pypi/cachecontrol@0.14.4",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "CacheControl==0.14.4"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "certifi",
+      "version": "2026.7.22",
+      "purl": "pkg:pypi/certifi@2026.7.22",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "certifi==2026.7.22"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "cffi",
+      "version": "2.1.1",
+      "purl": "pkg:pypi/cffi@2.1.1",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "cffi==2.1.1"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "chardet",
+      "version": "7.6.0",
+      "purl": "pkg:pypi/chardet@7.6.0",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "chardet==7.6.0"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "charset-normalizer",
+      "version": "3.5.2",
+      "purl": "pkg:pypi/charset-normalizer@3.5.2",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "charset-normalizer==3.5.2"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "click",
+      "version": "8.5.0",
+      "purl": "pkg:pypi/click@8.5.0",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "click==8.5.0"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "cloudpickle",
+      "version": "3.1.2",
+      "purl": "pkg:pypi/cloudpickle@3.1.2",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "cloudpickle==3.1.2"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "colorama",
+      "version": "0.4.6",
+      "purl": "pkg:pypi/colorama@0.4.6",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "colorama==0.4.6"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "cryptography",
+      "version": "50.0.2",
+      "purl": "pkg:pypi/cryptography@50.0.2",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "cryptography==50.0.2"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "cyclonedx-python-lib",
+      "version": "11.12.0",
+      "purl": "pkg:pypi/cyclonedx-python-lib@11.12.0",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "cyclonedx-python-lib==11.12.0"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "datasets",
+      "version": "5.1.0",
+      "purl": "pkg:pypi/datasets@5.1.0",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "datasets==5.1.0"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "defusedxml",
+      "version": "0.7.1",
+      "purl": "pkg:pypi/defusedxml@0.7.1",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "defusedxml==0.7.1"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "dill",
+      "version": "0.4.1",
+      "purl": "pkg:pypi/dill@0.4.1",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "dill==0.4.1"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "esprima",
+      "version": "4.0.1",
+      "purl": "pkg:pypi/esprima@4.0.1",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "esprima==4.0.1"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "et_xmlfile",
+      "version": "2.0.0",
+      "purl": "pkg:pypi/et-xmlfile@2.0.0",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "et_xmlfile==2.0.0"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "filelock",
+      "version": "4.1.1",
+      "purl": "pkg:pypi/filelock@4.1.1",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "filelock==4.1.1"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "frozenlist",
+      "version": "1.8.0",
+      "purl": "pkg:pypi/frozenlist@1.8.0",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "frozenlist==1.8.0"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "fsspec",
+      "version": "2026.7.0",
+      "purl": "pkg:pypi/fsspec@2026.7.0",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "fsspec==2026.7.0"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "h11",
+      "version": "0.16.0",
+      "purl": "pkg:pypi/h11@0.16.0",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "h11==0.16.0"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "hf-xet",
+      "version": "1.7.0",
+      "purl": "pkg:pypi/hf-xet@1.7.0",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "hf-xet==1.7.0"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "httpcore",
+      "version": "1.0.9",
+      "purl": "pkg:pypi/httpcore@1.0.9",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "httpcore==1.0.9"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "httpx",
+      "version": "0.28.1",
+      "purl": "pkg:pypi/httpx@0.28.1",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "httpx==0.28.1"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "huggingface_hub",
+      "version": "1.33.0",
+      "purl": "pkg:pypi/huggingface-hub@1.33.0",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "huggingface_hub==1.33.0"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "hypothesis",
+      "version": "6.169.0",
+      "purl": "pkg:pypi/hypothesis@6.169.0",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "hypothesis==6.169.0"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "idna",
+      "version": "3.20",
+      "purl": "pkg:pypi/idna@3.20",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "idna==3.20"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "iniconfig",
+      "version": "2.3.1",
+      "purl": "pkg:pypi/iniconfig@2.3.1",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "iniconfig==2.3.1"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "jieba",
+      "version": "0.42.1",
+      "purl": "pkg:pypi/jieba@0.42.1",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "jieba==0.42.1"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "Jinja2",
+      "version": "3.1.6",
+      "purl": "pkg:pypi/jinja2@3.1.6",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "Jinja2==3.1.6"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "joblib",
+      "version": "1.6.0",
+      "purl": "pkg:pypi/joblib@1.6.0",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "joblib==1.6.0"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "librt",
+      "version": "0.16.0",
+      "purl": "pkg:pypi/librt@0.16.0",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "librt==0.16.0"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "license-expression",
+      "version": "30.4.4",
+      "purl": "pkg:pypi/license-expression@30.4.4",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "license-expression==30.4.4"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "loguru",
+      "version": "0.7.3",
+      "purl": "pkg:pypi/loguru@0.7.3",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "loguru==0.7.3"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "lxml",
+      "version": "6.1.3",
+      "purl": "pkg:pypi/lxml@6.1.3",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "lxml==6.1.3"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "markdown-it-py",
+      "version": "4.2.0",
+      "purl": "pkg:pypi/markdown-it-py@4.2.0",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "markdown-it-py==4.2.0"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "MarkupSafe",
+      "version": "3.0.4",
+      "purl": "pkg:pypi/markupsafe@3.0.4",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "MarkupSafe==3.0.4"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "mdurl",
+      "version": "0.1.2",
+      "purl": "pkg:pypi/mdurl@0.1.2",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "mdurl==0.1.2"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "mpmath",
+      "version": "1.3.0",
+      "purl": "pkg:pypi/mpmath@1.3.0",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "mpmath==1.3.0"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "msgpack",
+      "version": "1.2.3",
+      "purl": "pkg:pypi/msgpack@1.2.3",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "msgpack==1.2.3"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "multidict",
+      "version": "7.1.0",
+      "purl": "pkg:pypi/multidict@7.1.0",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "multidict==7.1.0"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "multiprocess",
+      "version": "0.70.19",
+      "purl": "pkg:pypi/multiprocess@0.70.19",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "multiprocess==0.70.19"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "mypy",
+      "version": "1.20.2",
+      "purl": "pkg:pypi/mypy@1.20.2",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "mypy==1.20.2"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "mypy_extensions",
+      "version": "1.1.0",
+      "purl": "pkg:pypi/mypy-extensions@1.1.0",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "mypy_extensions==1.1.0"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "narwhals",
+      "version": "2.27.1",
+      "purl": "pkg:pypi/narwhals@2.27.1",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "narwhals==2.27.1"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "networkx",
+      "version": "3.7",
+      "purl": "pkg:pypi/networkx@3.7",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "networkx==3.7"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "numpy",
+      "version": "2.5.4",
+      "purl": "pkg:pypi/numpy@2.5.4",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "numpy==2.5.4"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "openpyxl",
+      "version": "3.1.5",
+      "purl": "pkg:pypi/openpyxl@3.1.5",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "openpyxl==3.1.5"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "packageurl-python",
+      "version": "0.17.6",
+      "purl": "pkg:pypi/packageurl-python@0.17.6",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "packageurl-python==0.17.6"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "packaging",
+      "version": "26.3",
+      "purl": "pkg:pypi/packaging@26.3",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "packaging==26.3"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "pandas",
+      "version": "3.0.6",
+      "purl": "pkg:pypi/pandas@3.0.6",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "pandas==3.0.6"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "pathspec",
+      "version": "1.1.1",
+      "purl": "pkg:pypi/pathspec@1.1.1",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "pathspec==1.1.1"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "pdfminer.six",
+      "version": "20260107",
+      "purl": "pkg:pypi/pdfminer.six@20260107",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "pdfminer.six==20260107"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "pdfplumber",
+      "version": "0.11.10",
+      "purl": "pkg:pypi/pdfplumber@0.11.10",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "pdfplumber==0.11.10"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "pillow",
+      "version": "12.3.0",
+      "purl": "pkg:pypi/pillow@12.3.0",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "pillow==12.3.0"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "pip",
+      "version": "26.2.1",
+      "purl": "pkg:pypi/pip@26.2.1",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "pip==26.2.1"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "pip-requirements-parser",
+      "version": "32.0.1",
+      "purl": "pkg:pypi/pip-requirements-parser@32.0.1",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "pip-requirements-parser==32.0.1"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "pip_api",
+      "version": "0.0.35",
+      "purl": "pkg:pypi/pip-api@0.0.35",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "pip_api==0.0.35"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "pip_audit",
+      "version": "2.10.1",
+      "purl": "pkg:pypi/pip-audit@2.10.1",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "pip_audit==2.10.1"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "platformdirs",
+      "version": "4.13.0",
+      "purl": "pkg:pypi/platformdirs@4.13.0",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "platformdirs==4.13.0"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "pluggy",
+      "version": "1.6.0",
+      "purl": "pkg:pypi/pluggy@1.6.0",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "pluggy==1.6.0"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "propcache",
+      "version": "0.5.4",
+      "purl": "pkg:pypi/propcache@0.5.4",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "propcache==0.5.4"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "py-serializable",
+      "version": "2.1.0",
+      "purl": "pkg:pypi/py-serializable@2.1.0",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "py-serializable==2.1.0"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "pyarrow",
+      "version": "26.0.0",
+      "purl": "pkg:pypi/pyarrow@26.0.0",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "pyarrow==26.0.0"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "pycparser",
+      "version": "3.11",
+      "purl": "pkg:pypi/pycparser@3.11",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "pycparser==3.11"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "Pygments",
+      "version": "2.21.0",
+      "purl": "pkg:pypi/pygments@2.21.0",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "Pygments==2.21.0"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "pymupdf",
+      "version": "1.28.2",
+      "purl": "pkg:pypi/pymupdf@1.28.2",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "pymupdf==1.28.2"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "pyparsing",
+      "version": "3.3.3",
+      "purl": "pkg:pypi/pyparsing@3.3.3",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "pyparsing==3.3.3"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "pypdf",
+      "version": "6.20.1",
+      "purl": "pkg:pypi/pypdf@6.20.1",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "pypdf==6.20.1"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "pypdfium2",
+      "version": "5.14.0",
+      "purl": "pkg:pypi/pypdfium2@5.14.0",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "pypdfium2==5.14.0"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "pytesseract",
+      "version": "0.3.13",
+      "purl": "pkg:pypi/pytesseract@0.3.13",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "pytesseract==0.3.13"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "pytest",
+      "version": "9.1.1",
+      "purl": "pkg:pypi/pytest@9.1.1",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "pytest==9.1.1"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "pytest-timeout",
+      "version": "2.4.0",
+      "purl": "pkg:pypi/pytest-timeout@2.4.0",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "pytest-timeout==2.4.0"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "python-dateutil",
+      "version": "2.9.0.post0",
+      "purl": "pkg:pypi/python-dateutil@2.9.0.post0",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "python-dateutil==2.9.0.post0"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "python-docx",
+      "version": "1.2.0",
+      "purl": "pkg:pypi/python-docx@1.2.0",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "python-docx==1.2.0"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "PyYAML",
+      "version": "6.0.3",
+      "purl": "pkg:pypi/pyyaml@6.0.3",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "PyYAML==6.0.3"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "regex",
+      "version": "2026.9.29",
+      "purl": "pkg:pypi/regex@2026.9.29",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "regex==2026.9.29"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "requests",
+      "version": "2.34.2",
+      "purl": "pkg:pypi/requests@2.34.2",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "requests==2.34.2"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "rich",
+      "version": "15.0.0",
+      "purl": "pkg:pypi/rich@15.0.0",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "rich==15.0.0"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "ruff",
+      "version": "0.17.0",
+      "purl": "pkg:pypi/ruff@0.17.0",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "ruff==0.17.0"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "safetensors",
+      "version": "0.8.0",
+      "purl": "pkg:pypi/safetensors@0.8.0",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "safetensors==0.8.0"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "scikit-learn",
+      "version": "1.9.1",
+      "purl": "pkg:pypi/scikit-learn@1.9.1",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "scikit-learn==1.9.1"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "scipy",
+      "version": "1.18.1",
+      "purl": "pkg:pypi/scipy@1.18.1",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "scipy==1.18.1"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "sentence-transformers",
+      "version": "6.1.0",
+      "purl": "pkg:pypi/sentence-transformers@6.1.0",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "sentence-transformers==6.1.0"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "setuptools",
+      "version": "84.0.0",
+      "purl": "pkg:pypi/setuptools@84.0.0",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "setuptools==84.0.0"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "shellingham",
+      "version": "1.5.4",
+      "purl": "pkg:pypi/shellingham@1.5.4",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "shellingham==1.5.4"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "six",
+      "version": "1.17.0",
+      "purl": "pkg:pypi/six@1.17.0",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "six==1.17.0"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "sortedcontainers",
+      "version": "2.4.0",
+      "purl": "pkg:pypi/sortedcontainers@2.4.0",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "sortedcontainers==2.4.0"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "soupsieve",
+      "version": "3.0.3",
+      "purl": "pkg:pypi/soupsieve@3.0.3",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "soupsieve==3.0.3"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "stevedore",
+      "version": "5.9.1",
+      "purl": "pkg:pypi/stevedore@5.9.1",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "stevedore==5.9.1"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "sympy",
+      "version": "1.14.0",
+      "purl": "pkg:pypi/sympy@1.14.0",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "sympy==1.14.0"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "text2vec",
+      "version": "1.3.8",
+      "purl": "pkg:pypi/text2vec@1.3.8",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "text2vec==1.3.8"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "threadpoolctl",
+      "version": "3.7.0",
+      "purl": "pkg:pypi/threadpoolctl@3.7.0",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "threadpoolctl==3.7.0"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "tokenizers",
+      "version": "0.23.3",
+      "purl": "pkg:pypi/tokenizers@0.23.3",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "tokenizers==0.23.3"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "tomli",
+      "version": "2.5.0",
+      "purl": "pkg:pypi/tomli@2.5.0",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "tomli==2.5.0"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "tomli_w",
+      "version": "1.2.0",
+      "purl": "pkg:pypi/tomli-w@1.2.0",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "tomli_w==1.2.0"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "torch",
+      "version": "2.14.1",
+      "purl": "pkg:pypi/torch@2.14.1",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "torch==2.14.1"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "tqdm",
+      "version": "4.70.1",
+      "purl": "pkg:pypi/tqdm@4.70.1",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "tqdm==4.70.1"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "transformers",
+      "version": "5.19.0",
+      "purl": "pkg:pypi/transformers@5.19.0",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "transformers==5.19.0"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "typer",
+      "version": "0.27.3",
+      "purl": "pkg:pypi/typer@0.27.3",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "typer==0.27.3"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "types-PyYAML",
+      "version": "6.0.12.20260906",
+      "purl": "pkg:pypi/types-pyyaml@6.0.12.20260906",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "types-PyYAML==6.0.12.20260906"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "typing_extensions",
+      "version": "4.16.0",
+      "purl": "pkg:pypi/typing-extensions@4.16.0",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "typing_extensions==4.16.0"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "tzdata",
+      "version": "2026.5",
+      "purl": "pkg:pypi/tzdata@2026.5",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "tzdata==2026.5"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "urllib3",
+      "version": "2.8.0",
+      "purl": "pkg:pypi/urllib3@2.8.0",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "urllib3==2.8.0"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "win32_setctime",
+      "version": "1.2.0",
+      "purl": "pkg:pypi/win32-setctime@1.2.0",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "win32_setctime==1.2.0"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "xlrd",
+      "version": "2.0.2",
+      "purl": "pkg:pypi/xlrd@2.0.2",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "xlrd==2.0.2"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "xxhash",
+      "version": "4.0.1",
+      "purl": "pkg:pypi/xxhash@4.0.1",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "xxhash==4.0.1"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "yarl",
+      "version": "1.25.1",
+      "purl": "pkg:pypi/yarl@1.25.1",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "yarl==1.25.1"
+        }
+      ]
+    }
+  ],
+  "vulnerabilities": [],
+  "externalReferences": [
+    {
+      "type": "vcs",
+      "url": "https://github.com/pypa/advisory-database",
+      "comment": "漏洞公告库（CVE）参照：https://github.com/pypa/advisory-database"
+    }
+  ]
+}

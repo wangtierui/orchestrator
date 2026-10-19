@@ -40,6 +40,38 @@ from .unified_schema import CORE_NULL_FIELDS, CSV_COLUMNS, MAPPERS, UNIFIED_SCHE
 
 LOG = logging.getLogger("scraper_std.pipeline")
 
+#: 「正文空但附件有文本」受控回填的**最小附件长度**（字符）。
+#: 取 200 的理由（实测依据，非拍脑袋）：
+#:   · 隔离区里可回填的那条附件文本 8727 字，远高于阈值；
+#:   · 而"页眉/水印/扫描件空白页"这类伪正文通常 <100 字
+#:     （实测 `quality_flags` 对空页的判据也是逐页长度）。
+#: 阈值偏保守（宁可漏回填，不可把水印当正文——后者会污染全文检索与语义切分）。
+_BODY_BACKFILL_MIN_CHARS = 200
+
+#: 回填时用于"确认附件即本文档正文"的标题片段长度（去掉书名号/空白后的前 N 字）。
+#: 取 12 的理由：中文标题前 12 字已足以区分同批次文件，又不至于因标题尾部
+#: 「（已废止）」这类状态尾缀或标点差异而匹配失败。
+_BODY_BACKFILL_TITLE_KEY = 12
+
+
+def _backfill_normalize(s: Any) -> str:
+    """回填判据用的极简归一：去书名号/引号/空白。
+
+    ⚠️ 不复用 `std_lib.common_lib.norm`：那里是**跨表匹配**口径（去尾注、
+    转小写、剥离 `N/A`），而这里只需"判断片段是否出现在长文本中"——
+    用激进归一会把 `（）` 也删掉，反而降低定位精度。
+    norm-specialization: 用途不同（子串定位 ≠ 跨表等价），故不复用 SSOT。
+    """
+    if s is None:
+        return ""
+    return re.sub(r"[《》〈〉“”\"'‘’\s\u3000]+", "", str(s))
+
+
+def _backfill_title_key(title: Any) -> str:
+    """取标题前 `_BODY_BACKFILL_TITLE_KEY` 字作为"本文档身份片段"。"""
+    t = _backfill_normalize(title)
+    return t[:_BODY_BACKFILL_TITLE_KEY]
+
 
 def load_raw_records(path: str) -> list[dict[str, Any]]:
     """读取原始数据（**.jsonl 与 .json 双格式；均流式解析**）。
@@ -537,6 +569,54 @@ def run_pipeline(
                 rec["body_text"] = result["text"]
                 meta["ocr_corrected"] = result["corrected"]
                 meta["ocr_dict_fixed"] = result["dict_fixed"]
+
+    # 4.9) **正文空但附件有文本 ⇒ 受控回填**（2026-10-19，T5）
+    #
+    # 实测背景：`nfra_cleaned_*.quarantine.jsonl` 每日固定 5 条，连续 9 天同一批
+    # （2026-10-09 → 10-19），`_metadata.validation_errors` 全部只有一条
+    # `body_text: required but null/empty`。其中 1 条
+    # （《中国银保监会关于印发商业银行预期信用损失法实施管理办法的通知》）
+    # **正文 0 字但 attachment_content 有 8727 字**——附件文本就是这份红头文件
+    # 的正文（开头即"中国银保监会文 件 银保监规〔2022〕号 …"）。
+    # ⇒ 它本可清洗，却被判为"校验失败"隔离，属于**逻辑缺陷**（不是数据缺失）。
+    #
+    # **三重判据**（缺一不回填，避免把"附件清单/其他附件"当正文）：
+    #   ① body_text 为空（**绝不覆盖**已有正文）；
+    #   ② attachment_content 长度 ≥ `_BODY_BACKFILL_MIN_CHARS`（太短多半是页眉/水印）；
+    #   ③ attachment_content 里能找到 **title 的核心片段**（去掉书名号/空白后取前 12 字）
+    #      ⇒ 证明这段附件文本就是本文档的正文，而非同页其它文件。
+    #
+    # 回填后 `body_source` 置 `downloaded_doc`（**受控枚举**
+    # `config/enums.BODY_SOURCE = {webpage, downloaded_doc, both}` 内的正确值：
+    # 附件来自下载的 doc/pdf），并在 `_metadata` 留痕：
+    # `body_backfilled_from="attachment_content"` + 原长度 + 判据版本 ⇒ 可追溯、可复核。
+    # 环境变量 `REG_ORCH_DISABLE_BODY_BACKFILL=1` 可**整体关闭**（回滚开关）。
+    _bf_n = 0
+    if os.environ.get("REG_ORCH_DISABLE_BODY_BACKFILL") != "1":
+        for rec in mapped:
+            if str(rec.get("body_text") or "").strip():
+                continue
+            att = str(rec.get("attachment_content") or "").strip()
+            if len(att) < _BODY_BACKFILL_MIN_CHARS:
+                continue
+            ttl = _backfill_title_key(rec.get("title"))
+            if not ttl or ttl not in _backfill_normalize(att):
+                continue
+            rec["body_text"] = att
+            rec["body_source"] = "downloaded_doc"
+            _md = rec.setdefault("_metadata", {})
+            _md["body_backfilled_from"] = "attachment_content"
+            _md["body_backfill_att_chars"] = len(att)
+            _md["body_backfill_rule"] = "body-empty+att>=min+title-key-in-att"
+            _bf_n += 1
+            if "_body_backfill_sample" not in locals():
+                _body_backfill_sample = (
+                    str(rec.get("title") or "")[:40], len(att))
+        if _bf_n:
+            metrics.inc("body_backfilled", _bf_n)
+            _smp = locals().get("_body_backfill_sample")
+            LOG.info("[%s] 正文空但附件有文本 ⇒ 受控回填 %d 条（样例：%s / %d 字）",
+                     project, _bf_n, _smp[0] if _smp else "", _smp[1] if _smp else 0)
 
     # 5) Schema 校验 + 空值阈值监测（第九节）
     #    expected_null_fields：已知源限制字段（如 gov flk 正文 OBS 不可达），

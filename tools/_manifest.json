@@ -354,6 +354,13 @@
       "file": "backlog_governance.py",
       "independent_why": "三个子命令：growth（积压增长监控，只读，超阈值返回码 2 供 notify 消费）、selfclosed（机器判定「自证闭环」项，只读）、apply（受控执行，默认 dry-run）。机器判定边界保守：subject 含闭环词 + 无否定语境 + payload 无待决键，三者全满足才判（宁可漏判不可错判——错判不可逆）。写口一律走 governance_store.worklist_resolve（C1 审计在其内）。",
       "produced_by": "诊断第 3 波：待办积压治理回路（增长监控 + 自证闭环判定）"
+    },
+    {
+      "category": "independent",
+      "entry": "python -m tools.js_syntax_lint [--json] [path]",
+      "file": "js_syntax_lint.py",
+      "independent_why": "web/assets/index.html 的内联 <script> 一旦有语法错误，**整段脚本不执行** ⇒ 页面停在 HTML 初始态（加载中… + SSE 连接中…），而服务端 HTTP 200、API 全绿、SSE 有 hello/ping ⇒ 极易被误判成后端/SSE 故障（2026-10-19 实际发生过：模板字符串内的注释含反引号 ⇒ 提前闭合）。本仓无 Node，故用 esprima（纯 Python ECMAScript 解析器）做真语法检查，不可用时降级为词法兜底并**明确标注降级**（词法兜底不支持嵌套模板，实测会误报）。只读、不改任何文件。",
+      "produced_by": "内联 JS 语法体检（防前端语法错误导致全站静默瘫痪）"
     }
   ],
   "generated_at": "2026-09-30",

@@ -1,10 +1,10 @@
 {
   "bomFormat": "CycloneDX",
   "specVersion": "1.5",
-  "serialNumber": "urn:uuid:a61d9bbf531406b3a93290dfa66c4a99",
+  "serialNumber": "urn:uuid:bc3b99997c77f536a5ffcf82fe3389a7",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-10-15T14:19:05+08:00",
+    "timestamp": "2026-10-19T18:07:14+08:00",
     "tools": [
       {
         "vendor": "regulatory_compliance_orchestrator",
@@ -21,7 +21,7 @@
     "properties": [
       {
         "name": "lock:sha256",
-        "value": "9a01900cea92a263a1e69fed6840027126b64f65d10a88beb9d3c3c17234d748"
+        "value": "e2dbe9742d3240dc50dcc83c5be5ff10982def249c123debf6509488828118ed"
       },
       {
         "name": "lock:file",
@@ -307,6 +307,18 @@
         {
           "name": "lock:entry",
           "value": "dill==0.4.1"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "esprima",
+      "version": "4.0.1",
+      "purl": "pkg:pypi/esprima@4.0.1",
+      "properties": [
+        {
+          "name": "lock:entry",
+          "value": "esprima==4.0.1"
         }
       ]
     },

@@ -245,15 +245,18 @@ function viewAssets(d){
       : `${esc(m.snapshot_date||m.snapshot||"—")}<br/><span class="muted" style="font-size:11px">${esc((m.schema_version)||"")} ${esc((m.sha256||"").slice(0,12))}</span>`}</td>
       <td>${num((m.count||m.records||m.record_count))}</td></tr>`;}).join("");
   const c=d.contract||{};
+  // 2026-10-19 修（用户报「P2 数据状态渲染异常」）：原实现只读 consistent/problems/stat，
+  // 而契约的真实字段是**统计计数**（files/articles/chapters/structures/law/
+  // degraded/fallback/invalid/warned/parse_modes）⇒ 统计那栏恒 `{}`。
+  // 现按真实字段渲染，并把 degraded/invalid 作为**需关注项**显式列出。
+  //
+  // ⚠️ 本注释必须留在**模板字符串之外**：注释含反引号（用于标注字段名），
+  //    若写在 `` `...` `` 内部会**提前闭合模板字符串** ⇒ 整段脚本语法错误 ⇒
+  //    页面停在初始态（`加载中…` + `SSE 连接中…`）。2026-10-19 实际发生过。
   return `<div class="grid">
     ${card("产物清单","clean 索引", rows?`<table><tr><th>源</th><th>快照日</th><th>记录数</th></tr>${rows}</table>`
       :'<div class="muted">无产物</div>', d.source, d.fetched_at)}
     ${card("发布件状态","双底座", `<table><tr><th>底座</th><th>快照/版本</th><th>记录数</th></tr>${pubRows}</table>`, d.source, d.fetched_at)}
-    // 2026-10-19 修（用户报「P2 数据状态渲染异常」）：原实现读 `c.consistent`/
-    // `c.problems`/`c.stat`，但**真实字段是统计计数**（files/articles/chapters/
-    // structures/law/degraded/fallback/invalid/warned/parse_modes）⇒
-    // `c.consistent` 恒 undefined ⇒ 永远显示「不一致」，`c.stat` 恒 `{}`。
-    // 现按真实字段渲染，并把 degraded/invalid 作为**需关注项**显式列出。
     ${card("契约状态","条文 schema 自检",
       kv("覆盖文件", num(c.files)) + kv("条文", num(c.articles))
       + kv("章节", num(c.chapters)) + kv("表格结构", num(c.structures))
@@ -325,14 +328,60 @@ function viewMetrics(d){
 }
 
 /* ---------------- P4 待办闭环 ---------------- */
+// 2026-10-19（用户反馈）：`subject` 各 kind 写法不统一（有的写文号、有的写名称）
+// ⇒ 业务无法判断"这条指哪份文件"。后端已为每条派生出 `fields`
+// （名称/文号/访问地址 + 各自来源），本函数按 kind **动态列示**：
+//   · needs_url 的三类（relevance_boundary / timeliness_conflict /
+//     rfn_theme_uncertain）⇒ 名称 + 文号 + 访问地址
+//   · internal_unaligned（及同类只给名称+文号）⇒ 名称 + 文号（其文号是 IPN）
+//   · 其它 kind ⇒ 沿用 subject 列
+// **空值必须可辨**：`not_found` 显示「未查到」、`not_applicable` 显示「—」、
+// `aggregate` 显示「汇总项」——绝不把"查不到"渲染成空白（本仓反复踩过的坑）。
+const WL_SRC_LABEL = {"not_found":"未查到","not_applicable":"—","aggregate":"汇总项",
+                      "ipn":"IPN","subject":"subject"};
+
+function wlCell(fieldName, f){
+  if(!f) return "—";
+  if(f.aggregate) return fieldName==="title" ? esc(f.title) : "—";
+  const v = f[fieldName];
+  const src = f[fieldName+"_src"] || "";
+  if(v) {
+    if(fieldName==="url"){
+      return `<a href="${esc(v)}" target="_blank" rel="noopener">打开</a>
+        <span class="muted" style="font-size:11px">(${esc(src)})</span>`;
+    }
+    const tag = (src==="ipn"||src==="subject")
+      ? ` <span class="muted" style="font-size:11px">(${esc(WL_SRC_LABEL[src]||src)})</span>` : "";
+    return esc(v)+tag;
+  }
+  const lab = WL_SRC_LABEL[src] || (src ? src : "—");
+  return `<span class="muted">${esc(lab)}</span>`;
+}
+
 function viewWorklist(d, kinds){
   if(!d.available) return unavail(d);
-  const rows=(d.items||[]).map(it=>`<tr data-id="${esc(it.item_id)}">
+  const needsUrl = ((d.fields_schema||{}).needs_url)||[];
+  // 当前列表里出现的 kind（用于决定表头；筛选时只有一种）
+  const kindsInView = [...new Set((d.items||[]).map(x=>x.kind))];
+  const showNameNo = kindsInView.length>0 && kindsInView.every(
+    k=>!needsUrl.includes(k)) && kindsInView.some(k=>k==="internal_unaligned");
+  const showUrl = kindsInView.some(k=>needsUrl.includes(k));
+  const rows=(d.items||[]).map(it=>{
+    const f=it.fields||{};
+    const detail=(it.payload&&(it.payload.detail||it.payload.note))||"";
+    const cols = showUrl
+      ? `<td>${wlCell("title",f)}</td><td>${wlCell("document_number",f)}</td>
+         <td>${wlCell("url",f)}</td>`
+      : (showNameNo
+        ? `<td>${wlCell("title",f)}</td><td>${wlCell("document_number",f)}</td>`
+        : `<td>${esc(it.subject||"")}</td>`);
+    return `<tr data-id="${esc(it.item_id)}">
     <td><input type="checkbox" class="wlck" value="${esc(it.item_id)}"></td>
-    <td>${esc(it.kind)}</td><td>${esc(it.subject||"")}</td>
-    <td>${esc(it.stage||"—")}</td><td class="muted">${esc((it.payload&&(it.payload.detail||it.payload.note))||"")}</td>
+    <td>${esc(it.kind)}</td>${cols}
+    <td class="muted">${esc(detail)}</td>
     <td class="muted">${esc(it.suggestion||"")}</td>
-    <td><button class="act" data-resolve="${esc(it.item_id)}">处置</button></td></tr>`).join("");
+    <td><button class="act" data-resolve="${esc(it.item_id)}">处置</button></td></tr>`;
+  }).join("");
   const policy=(kinds&&kinds.action_policy)||"";
   // 2026-10-16：标题显示**真实总数**（此前 d.count=200 而真实 641 ⇒ 用户以为只有 200 条）
   const total = (d.total!=null ? d.total : (d.count||0));
@@ -358,8 +407,13 @@ function viewWorklist(d, kinds){
       <input id="wlby" placeholder="操作者" value="confirm_console" size="14">
       <input id="wlwhy" placeholder="批量处置理由（必填，进审计台账）" size="30">
       <button class="act" id="wlbulk">批量处置</button></div>`;
+  // 表头与行**必须同构**（列数一致），否则表格错位——这是 2026-10-19 动态列引入后
+  // 最容易漏的一处，故与 `rows` 用同一组开关变量。
+  const head = showUrl
+    ? `<th>名称</th><th>文号</th><th>访问地址</th>`
+    : (showNameNo ? `<th>名称</th><th>文号</th>` : `<th>subject</th>`);
   return card("待办闭环台", wtitle,
-    (rows?`<table><tr><th style="width:28px"><input type="checkbox" id="wlall" title="全选本页"></th><th>kind</th><th>subject</th><th>stage</th><th>详情</th><th>生产者建议</th><th></th></tr>${rows}</table>`
+    (rows?`<table><tr><th style="width:28px"><input type="checkbox" id="wlall" title="全选本页"></th><th>kind</th>${head}<th>详情</th><th>生产者建议</th><th></th></tr>${rows}</table>`
       :'<div class="muted">当前无待办 ✓</div>')
     + bulk
     + `<div class="muted" style="margin-top:8px;font-size:12px">写路径纪律：${esc(policy)}</div>

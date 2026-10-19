@@ -46,6 +46,7 @@ from ._domains import (
 )
 from ._filebudget import _check_file_budget
 from ._homonym import _check_homonym_imports
+from ._js import _check_inline_js
 from ._manifest import (
     _check_corpus,
     _check_modules_manifest,
@@ -153,6 +154,13 @@ def run() -> tuple[bool, dict]:
     # 判据 J13（TD-1）：采集器录制-重放夹具完整性——manifest 双向闭合/摘要一致/
     # 结构自校验/无凭据残留/origin 受控（防「回放测试绿着说谎」）
     p15, d15 = _check_cassette_manifest(ROOT)
+    problems += p15
+    detail.update(d15)
+
+    # 判据 J15（2026-10-19）：前端内联 JS 语法体检——防「语法错误 ⇒ 整段脚本
+    # 不执行 ⇒ 页面停在初始态（加载中… + SSE 连接中…），而服务端全绿」这类
+    # **方向性误判**（实测发生过一次，排查第一轮全部指向错误方向）。
+    p15, d15 = _check_inline_js(ROOT)
     problems += p15
     detail.update(d15)
 

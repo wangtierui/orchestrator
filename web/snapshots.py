@@ -586,10 +586,24 @@ def worklist_items(status: str = "open", kind: str = "", limit: int = 0,
             for r in all_rows:
                 k = str(r.get("kind") or "")
                 counts[k] = counts.get(k, 0) + 1
+            # 2026-10-19（用户反馈）：`subject` 的写法各 kind 不统一（有的写文号、
+            # 有的写名称）⇒ 业务无法判断"这条指哪份文件"。给每条附加 `fields`
+            # （名称/文号/访问地址 + 各自来源），由 `interfaces.worklist_fields`
+            # 统一派生（**单一事实源**，MCP/CLI 也可复用）。
+            needs_url: list[str] = []
+            try:
+                from interfaces import worklist_fields as _wf
+
+                rows = _wf.decorate(rows)
+                needs_url = sorted(_wf.NEEDS_URL)
+            except Exception as e:  # noqa: BLE001  派生失败不阻断列表（但**可辨**）
+                for r in rows:
+                    r["fields"] = {"error": f"{type(e).__name__}: {e}"}
             return {"available": True, "source": "governance_store.worklist_list",
                     "fetched_at": _now(), "status": status, "kind": kind,
                     "filter": {"status": status, "kind": kind},
                     "kind_counts": counts,
+                    "fields_schema": {"needs_url": needs_url},
                     "count": len(rows), "total": len(total_rows),
                     "offset": offset, "limit": limit, "items": rows}
         return CACHE.get_or_call(f"worklist:{status}:{kind}:{limit}:{offset}", _load)

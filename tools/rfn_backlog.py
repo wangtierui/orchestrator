@@ -571,14 +571,52 @@ if __name__ == "__main__":
     sys.exit(main())
 
 
+#: **业务决策闸门**（2026-10-19 用户明确指示）：
+#:
+#:    「rfn_theme_uncertain 的 324 条中，仅《关于加强外资保险公司与关联企业从事
+#:      再保险交易信息披露工作的通知》进入归属表，其余均不纳入归属表」；
+#:    随后该通知**已登记**（RFN-d6063763945de936 / 主题 T4）。
+#:
+#: ⇒ 该类待办**已无处置对象**：业务口径是"除白名单外一律不纳入"，
+#:   而白名单里的那一条也已办结 ⇒ 再登记只会每天新增一批、每天被 dismiss
+#:   （实测 2026-10-19 一轮就新增 107 条）。
+#: ⇒ 故**停止登记**（不是"登记后自动 dismiss"——后者仍会污染审计日志与积压指标）。
+#:
+#: **恢复方式**（业务口径若变）：把本开关置回 `False`；或直接删掉这个常量。
+#: **白名单**仍保留：若将来业务指定新的"应入归属表"文件，登记它即可
+#:   （`uncertain` 待办本身不再产生，白名单仅作**文档化记录**）。
+_UN_CERTAIN_SUSPENDED = True
+
+#: 业务明确「应纳入归属表」的标题（已办结；见上）。
+#: 保留为**文档**而非代码路径：它的作用是让后人看到"为什么这个 kind 停了"。
+UNCERTAIN_WHITELIST = frozenset({
+    "关于加强外资保险公司与关联企业从事再保险交易信息披露工作的通知",
+})
+
+
 def _wl_uncertain(items) -> None:
     """P2-5（D1，v2 §3.14.3）：主题投票 `uncertain`（无票/票数并列/形态不明）登记待办。
 
     原状：仅标注 `uncertain` 并"不参与自动登记"，**无处置入口**（翻不回去）。
     现登记进 worklist，`cli.py worklist resolve` 即处置通道。旁路设施：失败降级。
+
+    **2026-10-19 起按业务决策暂停登记**（见 `_UN_CERTAIN_SUSPENDED` 的说明）：
+    该类已无处置对象，继续登记只会制造日常积压。白名单里的文件**已办结**，
+    故本函数在此前提下不产生任何待办；若业务口径变化需恢复，改开关即可。
     """
     try:
         from std_lib.common_lib import governance_store as _gs
+
+        if _UN_CERTAIN_SUSPENDED:
+            n_un = sum(1 for it in items if it.get("suggested_theme") == "uncertain")
+            if n_un:
+                print(
+                    f"[rfn_backlog] 按业务决策（2026-10-19）**不登记** uncertain 待办"
+                    f"（本轮识别 {n_un} 条；白名单 "
+                    f"{len(UNCERTAIN_WHITELIST)} 条已办结）。"
+                    f"如需恢复：置 `_UN_CERTAIN_SUSPENDED = False`"
+                )
+            return
 
         n = 0
         for it in items:

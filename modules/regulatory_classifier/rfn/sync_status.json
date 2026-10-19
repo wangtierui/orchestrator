@@ -16803,5 +16803,35 @@
         "updated_at": "2026-09-17 20:15:59"
       }
     }
+  },
+  "RFN-d6063763945de936": {
+    "status": "partial",
+    "layers": {
+      "文件归属表": {
+        "status": "ok",
+        "note": "归属表已写入（registry）",
+        "updated_at": "2026-10-19 17:38:32"
+      },
+      "数据底座": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-10-19 17:38:32"
+      },
+      "横向整合分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-10-19 17:38:32"
+      },
+      "纵向深化分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-10-19 17:38:33"
+      },
+      "全景分析报告": {
+        "status": "pending",
+        "note": "待 build 管线按层级顺序同步（register_doc 仅完成归属表+索引重建）",
+        "updated_at": "2026-10-19 17:38:33"
+      }
+    }
   }
 }
