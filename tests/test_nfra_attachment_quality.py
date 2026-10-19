@@ -18,7 +18,7 @@ import pytest
 
 pytestmark = pytest.mark.contract
 
-from modules.regulatory_scrapers.collectors.nfra.attachment_quality import (  # noqa: E402
+from modules.regulatory_scrapers.collectors.nfra.attachment_quality import (
     _COMMON_CN,
     quality_flags,
 )

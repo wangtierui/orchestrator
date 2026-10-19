@@ -2142,3 +2142,63 @@ J1 登记（清单 54 条）。
 
 ### 验证
 30 道门禁 PASS、ruff 0、mypy 0、新增守卫 10 项全绿。
+## [Unreleased] 2026-10-19 — 修三天连续门禁失败 + gate_fail 告警报文增强（第九十四批）
+
+> 接手时发现 10-17/18/19 **三天各 2 条判据失败**（`reports/_alerts/` 里三条 gate_fail），
+> 且告警载荷只有 `{{step, rc}}` ⇒ 收到告警仍要手动跑 gates 才知道挂在哪。
+> 本批逐一定位根因并修，同时把告警变成「可直接归因」。
+
+### 修的两处真实失败（都有代码证据）
+
+**① J13.3 `http_cassette 不可导入`（同名包遮蔽，三天连续 FAIL）**
+
+- 现象：`ImportError: cannot import name 'http_cassette' from 'tests'`
+- 根因：本仓 `tests/` 是**命名空间包**（无 `__init__.py`），而
+  `refactor/collectors/tests/` 是**真包**（有 `__init__.py`）。
+  Python 导入规则**真包优先于命名空间包** ⇒ 一旦 `refactor/collectors` 进入
+  `sys.path`（生产跑的 bootstrap 会扫到它），`import tests` 就解析到
+  那个没有 `http_cassette.py` 的目录。
+- 这与判据 **J14（同名模块裸名导入禁令）是同一类问题**，只是发生在**门禁自身**。
+- 修法：`_load_cassette_module()` **按文件路径显式加载**
+  （`spec_from_file_location`）——**不是** sys.path 注入（不违反
+  gate_import_bootstrap 的注入纪律），也完全绕开同名歧义。
+- **两级策略**：路径优先；`TESTS_DIR` 下找不到时**回退包导入**
+  （测试注入的临时树里只有 `cassettes/`、没有 `http_cassette.py`，
+  回退才能保持既有负例语义）。
+
+**② D1 `requirements.lock 与当前环境不一致`（锁从未入库）**
+
+- 现象：三天连续 FAIL，但本机 `gen_lock --check` 返回 0（一致）。
+- 根因：`.gitignore:45` 的通配符 `*.lock`（本意为忽略 Python 的
+  `.lock` 缓存文件）**把供应链关键件 `requirements.lock` 一并排除了** ⇒
+  `git log -- requirements.lock` **无任何记录**（从未入库）⇒
+  各环境各生成各的、无共同基准 ⇒ 环境一变 D1 必失败。
+  而 **ADR-0011 第 1 条明确要求「`requirements.lock` 入库」**
+  （换来换机可复现）⇒ 这是 **ADR 与 .gitignore 的直接冲突**。
+- 修法：加精确例外 `!requirements.lock`（不动通配符原意，其他 `.lock` 仍被忽略），
+  并把 lock 纳入版本控制。
+
+### gate_fail 告警报文增强（诊断第 1 波的落地延伸）
+
+原载荷 `{{step, rc}}` 无法归因。现在携带：失败判据清单（`gate`/`module`/
+`problem_count`/前 2 条 `problems`）+ `run_id` + 一条可直接执行的
+`gate_triage` 命令。
+
+**关键实现决策（实测纠偏）**：最初想从 `run_step.note` 解析 FAIL 明细，
+实测 note **只有归档提示 + 汇总行**（93 字，无明细）⇒ 改为**主路径读治理库
+`gate_result`**（结构化，`commands/gates.py:_archive` 已按 run_id 归档），
+note 解析仅作兜底。
+
+### 守卫
+`tests/test_j13_shadow_safe_import.py`（7 项）——**在同名遮蔽环境下**验证：
+- 环境**真的**被遮蔽（否则后面几条毫无意义）；
+- **旧写法必失败**（失态对照，证明修复必要性）；
+- 新写法仍成功、判据不报 J13.3、加载器**不做 sys.path 注入**；
+- 路径不存在时回退包导入、两级都不可用才返回 None。
+
+过程中修掉一个**测试顺序依赖**：`tests` 是命名空间包，被导入过之后
+`find_spec` 从缓存返回旧位置 ⇒ 单独跑绿、整套跑红。fixture 改为
+**清 `sys.modules` 里的 `tests` 及其子模块**。
+
+### 验证
+30 道门禁 PASS、ruff 0、mypy 0；J13 相关 14 项（新 7 + 既有 7）全绿。

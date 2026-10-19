@@ -558,6 +558,81 @@ def _exit_semantic(rc: int) -> str:
         return f"RAW({rc})"
 
 
+def _parse_gate_failures(note: str, limit: int = 5) -> list[dict]:
+    """从 `cli.py gates` 的 note 里解析 FAIL 行（**尽力而为**）。
+
+    ⚠️ 实测（2026-10-19）：`run_step.note` 只含归档提示 + 汇总行
+    （`[gates] 已归档 30 条…` + `FAIL: 存在未通过门禁`），**不含** FAIL 明细
+    ——明细在**治理库 `gate_result` 表**（结构化，含 `detail_json.problems`）。
+    故告警载荷的主路径是 `_gate_failures_from_db()`；本函数只作 note 里
+    恰好带明细时的兜底（解析失败返回空列表，绝不抛）。
+
+    输入形态（commands/gates.py:32）：
+        `  [FAIL]  <判据描述>  {'problems': [...]}`
+    输出：`[{"gate": 描述, "problem_count": N, "problems": 前 2 条}]`。
+    """
+    import json
+    import re
+
+    out: list[dict] = []
+    for m in re.finditer(r"^\s*\[FAIL\]\s+(.*?)\s+(\{.*\})\s*$", note, re.M):
+        desc, blob = m.group(1), m.group(2)
+        try:
+            detail = json.loads(blob)
+            probs = detail.get("problems") or []
+        except (ValueError, AttributeError):
+            probs = []
+        out.append({
+            "gate": desc,
+            "problem_count": len(probs),
+            "problems": [str(p)[:200] for p in probs[:2]],
+        })
+        if len(out) >= limit:
+            break
+    return out
+
+
+def _gate_failures_from_db(limit: int = 5) -> list[dict]:
+    """从治理库 `gate_result` 取本 run 的失败判据（**主路径**，结构化证据）。
+
+    数据源：`commands/gates.py:_archive` 在链尾把 30 条门禁结果写进 `gate_result`
+    （同一 run_id）⇒ 告警可直接引用，不必解析 stdout。
+    """
+    try:
+        import json as _json
+        import sqlite3 as _sqlite3
+
+        from std_lib.common_lib import governance_store as _gs
+
+        rid = _gs.current_run_id() or ""
+        if not rid:
+            return []
+        con = _sqlite3.connect("file:" + _gs.db_path() + "?mode=ro", uri=True)
+        try:
+            rows = con.execute(
+                "SELECT gate, descr, detail_json FROM gate_result "
+                "WHERE run_id=? AND passed=0 ORDER BY gate", (rid,)).fetchall()
+        finally:
+            con.close()
+        out: list[dict] = []
+        for gate, descr, dj in rows:
+            try:
+                probs = (_json.loads(dj or "{}") or {}).get("problems") or []
+            except ValueError:
+                probs = []
+            out.append({
+                "gate": descr or gate,
+                "module": gate,
+                "problem_count": len(probs),
+                "problems": [str(p)[:200] for p in probs[:2]],
+            })
+            if len(out) >= limit:
+                break
+        return out
+    except Exception:  # noqa: BLE001  告警不得因取数失败而失败
+        return []
+
+
 def _run(step: str, argv, cwd=ROOT, timeout: int | None = None) -> dict:
     global _FROM_HIT
     t0 = time.time()
@@ -2050,11 +2125,36 @@ def _run_chain(args) -> int:
     report.append(_gates_rec)
     if _gates_rec.get("rc"):
         # 批 61：补齐 `notify.on` 声明面的**发送者**（声明 4 类，此前仅 failed_step 有产生方 ✗）
+        # 批 94：载荷补**失败判据摘要**。此前 payload 只有 {step, rc} ⇒ 收到告警的人
+        # 还得自己跑一遍 `cli.py gates` 才知道哪条判据挂（实测 10-17/18/19 三天三条
+        # gate_fail 均如此）⇒ 告警"送达"了但不可用。现在从 `note` 解析 FAIL 行，
+        # 附 top-N 判据名 + 问题摘要，并给出一条可直连诊断工具的提示。
         try:
             from std_lib.common_lib import notify as _notify_g
 
-            _notify_g.notify("gate_fail", "门禁未通过（链尾 gates rc=%s）" % _gates_rec.get("rc"),
-                          {"step": "gates", "rc": _gates_rec.get("rc")})
+            # run_id 经治理库取（`_run_chain` 内无该局部变量；`current_run_id()` 与
+            # `_wm`/`record_gate_results` 同源 ⇒ 与 `gate_result` 归档口径一致）。
+            try:
+                from std_lib.common_lib import governance_store as _gs_rid
+
+                _rid = _gs_rid.current_run_id() or ""
+            except Exception:  # noqa: BLE001  治理库不可用 ⇒ 退化为空串
+                _rid = ""
+            # 失败判据：**主路径** = 治理库 `gate_result`（结构化证据）；
+            # **兜底** = note 里的 FAIL 明细（实测 note 通常没有，见函数 docstring）。
+            _fails = _gate_failures_from_db() or _parse_gate_failures(
+                _gates_rec.get("note") or "")
+            _notify_g.notify(
+                "gate_fail",
+                "门禁未通过（链尾 gates rc=%s，失败 %d 条判据）"
+                % (_gates_rec.get("rc"), len(_fails)),
+                {
+                    "step": "gates",
+                    "rc": _gates_rec.get("rc"),
+                    "run_id": _rid,
+                    "failed_gates": _fails,
+                    "triage": "python -m tools.gate_triage <gate> --run-id %s" % _rid,
+                })
         except Exception as e:  # noqa: BLE001  告警失败不得改变退出码
             print(f"[refresh] WARN 告警发送失败（不影响退出码）: {type(e).__name__}: {e}")
 
