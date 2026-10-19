@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
-"""Refactor 原生关系抽取：从 master_items 读 clean 文档 → RelationExtractor → rel_edges。
+"""Refactor 原生文档引用图抽取（docgraph）：从 master_items 读 clean 文档 → RelationExtractor → docgraph_edges。
 
 与旧管线（extract_relations.py 读 legacy 文件 + legacy 索引）的区别：
   - 源文档来自 master_items（默认 namespace='cleaned'），不是 legacy cleaned jsonl；
   - 实体解析索引由 master_items 自身构建（归一标题 → doc_id），未命中即外部引用 name:<canonical>；
   - 核心正则抽取逻辑 RelationExtractor 原样复用（源无关）。
 
-落点：rel_edges 6 列（edge_id/src_id/src_name/dst_id/dst_name/relation），与 schema.sql 一致。
-持久化由 refactor.collectors.storage.relations_loader 负责（本模块只做抽取，不碰存储）。
+落点：docgraph_edges 6 列（edge_id/src_id/src_name/dst_id/dst_name/relation），与 schema.sql 一致。
+持久化由 refactor.collectors.storage.docgraph_loader 负责（本模块只做抽取，不碰存储）。
 """
 import argparse
 import hashlib
@@ -25,9 +25,9 @@ sys.path.insert(0, _ROOT_STR)
 
 from std_lib.common_lib.relations import RelationExtractor  # 核心抽取逻辑（源无关）
 try:
-    from refactor.collectors.storage.relations_loader import load_rows
+    from refactor.collectors.storage.docgraph_loader import load_rows
 except ImportError:  # pragma: no cover - 作为脚本直接运行时
-    from relations_loader import load_rows  # type: ignore
+    from docgraph_loader import load_rows  # type: ignore
 
 
 def _norm(s: str) -> str:
@@ -128,7 +128,7 @@ def extract(db_url: str, namespaces=("cleaned",), limit: int = 0) -> list:
 
 
 def main(argv=None):
-    ap = argparse.ArgumentParser(description="Refactor-native relation extraction → rel_edges")
+    ap = argparse.ArgumentParser(description="Refactor-native relation extraction → docgraph_edges")
     ap.add_argument("--db-url", required=True)
     ap.add_argument("--namespaces", default="cleaned", help="逗号分隔的 master_items namespace")
     ap.add_argument("--limit", type=int, default=0, help="仅抽取前 N 篇（验证用）")
@@ -142,7 +142,7 @@ def main(argv=None):
         print("total edges:", len(rows))
         return
     n = load_rows(rows, args.db_url)
-    print(f"upserted {n} edges into rel_edges")
+    print(f"upserted {n} edges into docgraph_edges")
 
 
 if __name__ == "__main__":

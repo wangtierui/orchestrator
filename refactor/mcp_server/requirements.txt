@@ -1,0 +1,2 @@
+# MCP server 依赖（薄壳门面；registry/tools 本身不依赖它）
+mcp>=1.2
