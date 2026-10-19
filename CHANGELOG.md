@@ -2589,3 +2589,98 @@ ES2020 不得误报、降级**必须等长**、后端可辨、兜底能抓未闭
 
 ### 验证
 30 门禁 PASS（含新增 J15）、ruff 0、mypy 0；新增守卫 11 + 12 = 23 项全绿。
+## [Unreleased] 2026-10-19 — P3 渲染三处修复 + depends_on 补全（揭示双生产者缺陷）+ 业务裁定清单 + 全链实跑（第一百批）
+
+### ① P3 指标渲染异常：三处**真实的渲染缺陷**（数据层全对，问题在画法）
+
+核对方法：先打 `/api/metrics`、`/api/quality`、`/api/slo`，**六个图表的数据全部正常**
+（`gate_trend` 12 点、`worklist_aging` 键与 labels 逐一对应、DAMA 六维 score 齐备、
+SLI 有 value+target、时效三态齐备）⇒ 问题必在渲染层，逐行核对后确认三处：
+
+| 缺陷 | 现象 | 修复 |
+|---|---|---|
+| `barChart` 标签**无宽度约束** | 标签从 x=0 起、柱子从 x=110 起，而 `T1销售行为与消费者保护` 在 11px 下约 121px ⇒ **文字压在柱子上**（视觉上"糊在一起"） | 新增 `fitLabel()`：按**估算字宽**（ASCII 0.55×字号、中文 1×字号）截断到固定标签区，完整文本放 `<title>` 悬停可见 |
+| 主题分布 `slice(0,8)` **静默丢数据** | 11 个主题只画 8 个 ⇒ 图上合计 **888** 而归属表实有 **1163** ⇒ 读者会认为"数据错了" | 按值降序取前 7 + 其余合并为「其他（N 项）」⇒ **合计恒等于总数**；hint 披露主题数与总数，可自校验 |
+| `lineChart` 固定 ±5 边距 | 数据本身很稳（95.45~100）⇒ 曲线近乎水平，**看起来像"图没画出来"** | 边距按数据跨度自适应（跨度 <2 用 ±0.5），并在图上**显式标注 y 轴范围** `y 轴 95.45~100%`——平就是平，但要让人知道是数据稳而非图坏了 |
+
+另修一处可读性：SLI 键名直接显示 `sli_chain_success_rate` 等机器口径 ⇒ 加
+`SLI_LABEL` 展示映射（链成功率/数据新鲜度/门禁通过率），**不改数据键**
+（键是契约，改了会让 `check_slo` 与看板口径分叉）。
+
+### ② `depends_on` 补全：2/32 → **21/32**，并揭示一个**真实建模缺陷**
+
+据 purpose/produces 的**事实关系**逐条补声明（不猜），**未声明的 11 步**是
+有依据的"无上游/独立只读"，写入守卫的 `_NO_UPSTREAM` 表逐个注明理由。
+
+**补全过程中 R4-c 报出环**：
+`cleaned:{src} → apply:{src} → timeliness:ledger → timeliness:state → timeliness:verify → cleaned:{src}`
+
+**根因是建模缺陷，不是声明错误**：`cleaned:{src}` 被 `clean:{src}` 与
+`apply:{src}` **双重 produces**。而 `apply` 的实质是**消费 cleaned 并就地回写**
+（时效结论覆盖进清洗产物的时效字段），它的产出只有旁路索引 `clean_index`。
+
+**修复**：`cleaned:{src}` 从 `apply` 的 produces **移入 depends_on** ⇒
+语义更准（消费+回写）、产物主要生产者唯一、拓扑无环。
+**行为影响：无**——resume 判定读 watermark 的 `produced_by`（不读本声明），
+而 `clean_index` 本就无水位记录。
+
+**顺带解决决策 #3**：`semantic:assist` 的 `depends_on=("classify:products",)`
+——正是那条"语义步骤未声明 inputs 致水位 stale 漏判"的诉求。
+
+守卫 `test_step_triage.py` 从「锁定稀疏现状」改为「**守住改进**」：
+覆盖率不低于新基线 + 未声明集合必须等于"有依据的无上游表"（新增步骤忘声明会被抓出）
++ 有上游声明者必须能被 topology_api 反查。
+
+### ③ `doctor` 的 `token_fresh`：N-169 同类缺陷的**翻版**（只修了一半）
+
+实跑前置自检发现：`token` 项报"长度 36（来源 timeliness_review）"，
+而**紧邻的** `token_fresh` 项报"无 token，跳过时效探测"——**同一屏两行互相打脸**。
+
+根因：`_c_token_fresh` 硬编码仓根 `.pkulaw_token`，而 token 实际在
+`timeliness_review/`。这正是 `_c_token` docstring 里记录过的 N-169 缺陷，
+**同处代码只修了 `_c_token` 没修 `_c_token_fresh`**。
+
+修复：改用 `pkulaw_cli.load_token_any()` 的**同一事实源**（含 env 与多候选路径），
+并据**命中来源**取 mtime（env ⇒ 如实说"无 mtime 可查"，不拿仓根文件冒充）。
+修后两者一致：`token 最后更新 41 天前（来源 timeliness_review/.pkulaw_token）`。
+
+### ④ 新增 `tools/business_review_list.py`：业务裁定清单（J1 登记，清单 57）
+
+**为什么要聚类**：277 条机器不可判的待办直接甩给业务 = 没交付。
+
+- `relevance_boundary`（211）：按 payload 的 `hits`（四组关键词命中结果，
+  空数组=未命中）聚成 **6 个「命中模式」**——同模式的相关性不足**原因同类** ⇒ 可**按组批量裁定**。
+  实测分布：组3 **116** / 组3＋组4 35 / 组1＋组4 32 / 组1 20 / 组1＋组2＋组4 4 / 组1＋组2 1。
+- `internal_unaligned`（66）：payload 只有 `ipn/method/title`，**无机器维度**
+  ⇒ 按标题关键词聚类为 8 组，并**明确标注"仅供阅读、非判定依据"**
+  （未归类 35 / 财务费用 11 / 人事员工 8 / 业务核保 5 …）。
+
+输出 Markdown，每条列示名称/文号/**访问地址**（空值可辨：未查到 / —），
+并给每组一句**明确的裁定问题**（如"上述命中模式下该文件是否应纳入监管相关性体系"）。
+
+### ⑤ 全链实跑（`--collect all --triggers`）
+
+按用户要求：**全采、不跳过、含条件触发**。启动前 `--dry-run` 确认 argv
+（5 源全覆盖；supp 如实标注"无网络采集"）。
+**实跑进行中**（本批提交时为 `collect:mof`；日志见 `reports/_tmp/b100_run.log`）。
+实跑结果与沿途新发现问题见下一批。
+
+### 遗留：D-遗留 4 个大文件的**评估结论**（本批不拆，理由如下）
+
+| 文件 | 行数 | `split_precheck` 评估 | 本批处置 |
+|---|---|---|---|
+| `gov/collector.py` | 841 | 2 个 class（`RobustSession`、`XzfgkScraper`）**咬合**；模块级 `LOG` + try-import 别名（`requests`/`BeautifulSoup`）**AST 捕获不到** | 不拆：拆分需同时搬运 2 类咬合对象与 2 处不可见依赖，风险最高 |
+| `mof/collector.py` | 664 | 1 class + 13 函数（锁/签名/抓取/输出四组职责清晰）；但 **3 个 try-import 别名**（`CC_USER_AGENTS`/`extract_document_text`/`rich_object_fields`）需每层各自兜底 | 不拆：别名兜底易漏，且该文件正被实跑使用 |
+| `mof/attachments.py` | 641 | 32 块，**19 个模块级常量** + 少数函数 | **优先候选**（常量可下沉 `constants`，与既有 pbc 拆分同构） |
+| `supp/ingest.py` | 603 | 22 块，9 常量 + 9 函数（`build_records`/`enrich_*`/`land_doc` 可分层） | 次优候选（依赖 `_GUIDE_ROOT`/`_REGISTER_DOC`） |
+
+**不拆的理由（质量优先的取舍）**：四个文件都需「逐字搬运 + 等价性三重锁定 +
+守卫」的完整流程（E1–E5 的实测代价是每次 5–10 处"搬代码忘搬依赖"）；
+本批同时在进行**全链实跑**，而采集是**子进程**（`COLLECT_CMD` 形如
+`[python, <collector.py>]`）⇒ **改 collector 代码会影响尚未执行的采集步骤**，
+破坏实跑一致性。故本批只做评估并给出候选优先级，拆分留待实跑完成后单独一批，
+避免"代码改动 + 实跑验证"互相污染归因。
+
+### 验证
+30 门禁 PASS（含 J15）、ruff 0、mypy 0；`test_step_triage.py` 17 项全绿；
+P3 前端 JS 语法 OK（esprima）；业务清单已生成（`reports/business_review/`）。

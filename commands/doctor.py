@@ -177,14 +177,42 @@ def _c_token() -> tuple[str, str, str]:
 
 
 def _c_token_fresh() -> tuple[str, str, str]:
-    """token 时效：**无探测手段 → warn（不 FAIL）**——不假装能判定。"""
-    p = os.path.join(paths.ROOT, ".pkulaw_token")
-    if not os.path.exists(p):
-        return "warn", "无 token，跳过时效探测", ""
+    """token 时效：**无探测手段 → warn（不 FAIL）**——不假装能判定。
+
+    ⚠️ 2026-10-19 修（**N-169 同类缺陷的翻版**，同处代码此前只修了一半）：
+    原实现硬编码仓根 `.pkulaw_token`，而 token 实际在
+    `timeliness_review/.pkulaw_token` ⇒ 明明有 token 却报"无 token，跳过时效探测"，
+    与**紧邻的 `token` 项**（报"长度 36 / 来源 timeliness_review"）**自相矛盾**。
+    这种"同一屏两行互相打脸"的自检输出比缺项更有害——用户会不知道该信哪一行。
+
+    现改用 `pkulaw_cli.load_token_any()` 的**同一事实源**（N-169 已确立为唯一来源，
+    含 `env:PKULAW_TOKEN` 与 `token_paths()` 多候选），并据**命中来源**取 mtime：
+      · env ⇒ 无 mtime 可查（如实说明，不拿仓根文件的 mtime 冒充）；
+      · 文件 ⇒ 用**实际命中文件**的 mtime（而非猜测的路径）。
+    """
+    try:
+        from std_lib.scraper_std import pkulaw_cli as _pk
+
+        tok, src = _pk.load_token_any()
+    except Exception as e:  # noqa: BLE001  自检项不得因单点异常整体失败
+        return "warn", f"token 来源不可判定：{type(e).__name__}: {e}", ""
+    if not tok:
+        return ("warn",
+                "无 token（env PKULAW_TOKEN / 仓根 .pkulaw_token / "
+                "timeliness_review/.pkulaw_token 均未命中）⇒ 跳过时效探测", "")
+    if src.startswith("env:"):
+        return ("warn",
+                f"token 来自 {src}（**env 无 mtime 可查**，无法本地判定有效期）", "")
+    if not os.path.exists(src):
+        return "warn", f"token 命中来源 {src} 已消失（并发删除竞态）", ""
     import datetime
 
-    days = (datetime.datetime.now() - datetime.datetime.fromtimestamp(os.path.getmtime(p))).days
-    return "warn", f"token 最后更新 {days} 天前（**无法本地判定有效性**，以首次核验为准）", ""
+    days = (datetime.datetime.now()
+            - datetime.datetime.fromtimestamp(os.path.getmtime(src))).days
+    where = f"{os.path.basename(os.path.dirname(src))}/{os.path.basename(src)}"
+    return ("warn",
+            f"token 最后更新 {days} 天前（来源 {where}；"
+            "**无法本地判定有效性**，以首次核验为准）", "")
 
 
 def _c_gov_db() -> tuple[str, str, str]:

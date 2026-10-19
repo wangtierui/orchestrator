@@ -361,6 +361,13 @@
       "file": "js_syntax_lint.py",
       "independent_why": "web/assets/index.html 的内联 <script> 一旦有语法错误，**整段脚本不执行** ⇒ 页面停在 HTML 初始态（加载中… + SSE 连接中…），而服务端 HTTP 200、API 全绿、SSE 有 hello/ping ⇒ 极易被误判成后端/SSE 故障（2026-10-19 实际发生过：模板字符串内的注释含反引号 ⇒ 提前闭合）。本仓无 Node，故用 esprima（纯 Python ECMAScript 解析器）做真语法检查，不可用时降级为词法兜底并**明确标注降级**（词法兜底不支持嵌套模板，实测会误报）。只读、不改任何文件。",
       "produced_by": "内联 JS 语法体检（防前端语法错误导致全站静默瘫痪）"
+    },
+    {
+      "category": "independent",
+      "entry": "python -m tools.business_review_list [--out-dir D] [--json]",
+      "file": "business_review_list.py",
+      "independent_why": "待办里 relevance_boundary（相关性边界）与 internal_unaligned（内部制度未对齐）机器不可判，需业务口径。直接甩 277 条给业务等于没交付——本工具**先聚类再给裁定问题**：relevance_boundary 按其 payload 的 hits（四组关键词命中结果，空数组=未命中）聚成「命中模式」，同模式的相关性不足原因同类 ⇒ 可按组批量裁定；internal_unaligned 无机器维度，按标题关键词聚类并**明确标注「仅供阅读、非判定依据」**。输出 Markdown，每条列示名称/文号/访问地址（含空值可辨标注）。只读、不改任何数据。",
+      "produced_by": "生成业务裁定清单（按可裁定维度聚类，附判定依据与逐条字段）"
     }
   ],
   "generated_at": "2026-09-30",

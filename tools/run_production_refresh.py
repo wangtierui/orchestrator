@@ -950,24 +950,42 @@ STEP_LAYERS: Final[dict[str, LayerSpec]] = {
         steps=(
             StepSpec("clean:{src}", "main", "abort", "原始 → 清洗（6 态抽取 + 校验隔离）",
                      None,  # 调用点按 raw 体量动态计算：min(max(1800, MB×2), 21600)
+                     depends_on=("raw:{src}",),
                      produces=("cleaned:{src}", "clauses:{src}"),
                      degrade_note="**超时按源体量配置**（N-150；N-188 重标定 0.24~0.41 s/MB）；"
                                   "当日无 raw 变化 → SKIP（rc=0）"),
             StepSpec("relevance:{src}", "side", "warn",
                      "清洗产物监管相关性边界筛选（BOUNDARY 边界案例 → worklist 待办）", 900,
+                     depends_on=("cleaned:{src}",),
                      produces=("relevance:views",),
                      degrade_note="**旁路分析件**：单源失败 WARN 不阻断主链；--stop-on-error 时中断"),
             StepSpec("timeliness:consolidate", "main", "abort", "时效核验结果汇总", 600,
+                     depends_on=("timeliness:state",),
                      produces=("timeliness:ledger",),
                      degrade_note="无核验输入 → 空汇总（rc=0）"),
             StepSpec("apply:{src}", "main", "abort", "时效核验结果回写清洗产物", 600,
+                     # ⚠️ 2026-10-19（T4 补 depends_on 时由 R4-c 揭示的**真实建模缺陷**）：
+                     # 本步是**消费 `cleaned:{src}` 并就地回写**（时效结论覆盖进清洗产物的
+                     # 时效字段），**不是** cleaned 的生产者——它的产出只有旁路索引
+                     # `clean_index`。原实现把 `cleaned:{src}` 也列进 `produces`，
+                     # 造成同一产物被 `clean:{src}` 与本步**双重声明为生产者**；
+                     # 一旦本步声明任何上游依赖（时效台账 → consolidate → state →
+                     # verify → cleaned），在「步骤+产物」统一图上就**必然成环**：
+                     #   cleaned:{src} → apply:{src} → timeliness:ledger →
+                     #   timeliness:state → timeliness:verify → cleaned:{src}
+                     # （R4-c 实测报出该环）。
+                     # 修正：`cleaned:{src}` 从 produces 移入 depends_on ⇒ 语义更准
+                     # （消费+回写）、产物主要生产者唯一、拓扑无环。
+                     # 行为影响：无——resume 判定读 watermark 的 produced_by（不读本声明），
+                     # 而 `clean_index` 本就无水位记录（见下方原文注释）。
                      # 2026-10-16 补声明：`clean_index` 此前无步骤归属。
                      # 取证：它是**清洗产物的按需旁路索引**——watermark 的 produced_by
                      # 是 **getter** `clean_index.get_clean_index`（不是写入函数），
                      # 而被索引的 `cleaned:{src}` 已归本步 ⇒ 索引与被索引产物同步骤。
                      # ⚠️ 它按需构建且**当前无水位记录** ⇒ resume 判定走
                      #    `get_watermark() → None → continue`，补声明零行为影响。
-                     produces=("cleaned:{src}", "clean_index"),
+                     depends_on=("cleaned:{src}", "timeliness:ledger"),
+                     produces=("clean_index",),
                      degrade_note="无核验结果可回写 → SKIP（rc=0）"),
         ),
         note="条件步骤 timeliness:verify 插在 clean/relevance 与 consolidate 之间（数据依赖："
@@ -982,17 +1000,22 @@ STEP_LAYERS: Final[dict[str, LayerSpec]] = {
                      # 2026-10-16 补声明：rfn_attr / rfn_theme此前无步骤归属。
                      # 取证：watermark 两者 produced_by 均为 `rfn.registry._save_rows` /
                      # `_save_theme_rows`（stage=3，分类阶段落盘）⇒ 同属本步。
+                     depends_on=("cleaned:{src}", "clauses:{src}"),
                      produces=("classify:products", "rfn_attr", "rfn_theme"),
                      degrade_note="断点幂等：输入未变自动跳过"),
             StepSpec("relations:gen", "main", "abort",
                      "关系抽取（依据/废止，含条款级定位：窗口优先 + 跨度退路）", 1800,
+                     depends_on=("clauses:{src}",),
                      produces=("relations_index",),
                      degrade_note="失败即停；必须在 cleaned 写入后、下游消费者（base:publish）之前"),
             StepSpec("reconcile", "main", "abort", "清洗漂移对账（clean_drift）", 1200,
+                     depends_on=("cleaned:{src}", "rfn_attr"),
                      produces=("reconcile:drift",),
                      degrade_note="C2 漂移待人工 → worklist 待办，不阻断主链"),
             StepSpec("recall", "main", "abort", "召回复核与四门禁（clean/validity/contract/schema）",
-                     3600, degrade_note="四门禁不过即 FAIL，留人工"),
+                     3600,
+                     depends_on=("cleaned:{src}", "classify:products"),
+                     degrade_note="四门禁不过即 FAIL，留人工"),
         ),
     ),
     # ---- L4 内部制度（main）----
@@ -1002,6 +1025,7 @@ STEP_LAYERS: Final[dict[str, LayerSpec]] = {
         steps=(
             StepSpec("internal:merged", "main", "abort",
                      "内部制度合并视图（供条款对照与检索）", 1800,
+                     depends_on=("internal_index",),
                      produces=("merged_view",),
                      degrade_note="必须在 inbox:drop / internal:update（索引与原件同步）之后"),
         ),
@@ -1018,6 +1042,7 @@ STEP_LAYERS: Final[dict[str, LayerSpec]] = {
                      # 产出；`produces` 只能挂一个步骤，故挂概览主报告（`reports:build`），
                      # 主题报告（`reports:theme`）同写该产物——此为**声明面的取舍**，
                      # 真实产出来源见 `GOV_ARTIFACTS` 的 produced_by。
+                     depends_on=("classify:products", "relations_index"),
                      produces=("reports:classifier",)),
             StepSpec("reports:theme", "main", "abort", "主题报告生成（T0–T10 × 11）", 1800,
                      depends_on=("classify:products",)),
@@ -1025,11 +1050,13 @@ STEP_LAYERS: Final[dict[str, LayerSpec]] = {
                      depends_on=("merged_view",),
                      degrade_note="N-52：此前无任何调度导致滞后，故入链并置于 merged_view 之后"),
             StepSpec("base:publish", "main", "abort", "底座发布（发布清单 publish_manifest）", 1800,
+                     depends_on=("cleaned:{src}", "classify:products", "relations_index"),
                      produces=("published:external", "published:internal"),
                      degrade_note="发布清单是 wiki_sync 条件触发（publish_manifest_changed）的观察对象 —— "
                                   "可达性由门禁 T4 守护"),
             StepSpec("analysis:gen", "main", "abort",
                      "分析交付物（docs/deliverables，含 17 项 manifest sha）", 600,
+                     depends_on=("published:external", "published:internal"),
                      produces=("analysis:manifest",)),
         ),
     ),
@@ -1043,6 +1070,7 @@ STEP_LAYERS: Final[dict[str, LayerSpec]] = {
                                   "长期不刷新；治理库不可用为合法降级"),
             StepSpec("governance:sync", "side", "warn",
                      "治理库同步（run_log / gate_result / relation 等投影）", 900,
+                     depends_on=("reconcile:drift",),
                      degrade_note="N-64：投影后移到 internal:update **之后**（否则投影落后一轮）；"
                                   "库/文件摘要不一致 → 计入失败步骤（分叉判定）"),
             StepSpec("watch:baseline", "side", "warn", "观测基线快照（source diff --record）", 300),
@@ -1059,6 +1087,7 @@ STEP_LAYERS: Final[dict[str, LayerSpec]] = {
                      degrade_note="恒 rc=0（无待归档是合法状态）；`--apply` 才是人工闸门"),
             StepSpec("quarantine:triage", "disclosure", "rc0",
                      "清洗隔离件分类与处置登记（零回写 → worklist 待办）", 600,
+                     depends_on=("cleaned:{src}",),
                      degrade_note="恒 rc=0（零回写保证：不修复数据，只分类登记）"),
             StepSpec("semantic:preflight", "disclosure", "rc0",
                      "P1 语义增强启用前置披露（五道闸逐项）", 300,
@@ -1076,10 +1105,12 @@ STEP_LAYERS: Final[dict[str, LayerSpec]] = {
         steps=(
             StepSpec("semantic:assist", "enhancement", "rc0",
                      "P1 语义增强入链调用点（嵌入 → 主题辅助裁定；只产分析视图）", 1800,
+                     depends_on=("classify:products",),
                      degrade_note="未启用（usage_policy.enabled=false）或嵌入链不可用 → 显式 rc=0；"
                                   "**绝不写事实源**"),
             StepSpec("docreader:extract", "enhancement", "rc0",
                      "docreader 入链调用点（版面解析 + 段落级定位；只产分析视图）", 1800,
+                     depends_on=("cleaned:{src}",),
                      degrade_note="不可用/自检不过 → 显式 SKIP（rc=0），回退既有 6 态抽取；"
                                   "不替换抽取事实源（替换须先度量）"),
             # W4（方案 §6.4）：pgvector 落地的**唯一链上调用点**——语义检索视图
@@ -1088,6 +1119,7 @@ STEP_LAYERS: Final[dict[str, LayerSpec]] = {
             # 必须等 6.8 重建出终态再嵌。降级链（pgvector→sqlite_vec→none）披露。
             StepSpec("semantic:search", "enhancement", "rc0",
                      "分析交付库语义检索视图（pgvector 嵌入索引 + FTS5 A/B 披露）", 1800,
+                     depends_on=("analysis:manifest",),
                      degrade_note="后端/嵌入链不可用 → rc=0 显式披露（既有 FTS5 检索路径"
                                   "不受影响；无度量不扩大使用面——ADR-0003 延伸）"),
         ),
@@ -1100,6 +1132,7 @@ STEP_LAYERS: Final[dict[str, LayerSpec]] = {
         steps=(
             StepSpec("timeliness:verify", "conditional", "skip",
                      "时效核验（北大法宝；Node 侧 MCP）", None,
+                     depends_on=("cleaned:{src}",),
                      trigger_id="timeliness_verify",
                      # 2026-10-16 补声明：`timeliness:state` 此前无步骤归属。
                      # 取证：watermark produced_by=`verification_state.save_state`，
@@ -1123,6 +1156,7 @@ STEP_LAYERS: Final[dict[str, LayerSpec]] = {
                      degrade_note="原件库无未索引文件 → SKIP（rc=0）"),
             StepSpec("wiki:sync", "conditional", "skip",
                      "llm_wiki 源同步（发布件变化时执行）", None,
+                     depends_on=("published:external", "published:internal"),
                      trigger_id="wiki_sync",
                      # 2026-10-16 补声明：`wiki:sync` 产物此前无步骤归属。
                      # 取证：步骤名与产物键同名；该产物当前**无watermark 记录**

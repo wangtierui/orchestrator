@@ -105,25 +105,63 @@ def test_affected_nodes_reports_downstream() -> None:
     assert isinstance(aff, list) and aff == sorted(aff)
 
 
-def test_dependency_declarations_are_sparse_known_limitation() -> None:
-    """如实锁定现状：`depends_on` 声明**稀疏**（32 步里仅少数声明）。
+#: 2026-10-19（TD-6 处置后）的**新基线**：32 步里 21 步声明 depends_on。
+#: 未声明的 11 步是**有依据的无上游/独立只读**（见下方 `_NO_UPSTREAM`），
+#: 不是"漏了"——两者必须区分，否则后人无法判断该不该补。
+_DEPENDS_BASELINE = 21
 
-    这不是本批要修的（补声明需逐个取证 + 会改变 R4-c 无环判定），
-    但**必须显式记录**——否则下一个人会以为拓扑已完整而依赖 `upstream_chain`/
-    `affected_nodes` 得出"无影响面"的**错误结论**。
+#: 明确**无上游依赖**的步骤（补声明时刻意留空，附理由）。
+#: 断言这张表与"实际未声明的步骤集合"**完全相等** ⇒ 新增步骤若忘记声明会被抓出。
+_NO_UPSTREAM = {
+    "collect:nfra_weekly": "采集源（链的起点）",
+    "collect:{src}": "采集源（链的起点）",
+    "supp:ingest_batch": "补充库摄取（backlog 驱动，源头）",
+    "inbox:drop": "收件箱投放（人工投递，源头）",
+    "internal:update": "内部制度原件同步（源头）",
+    "watch:baseline": "观测基线快照（独立，不依赖主链产物）",
+    "retention:plan": "只读披露（dry-run 台账，不改产物）",
+    "semantic:preflight": "只读披露（启用前置五道闸）",
+    "pg:health": "只读健康检查（向量存储）",
+    "gates": "链尾终态门禁：依赖全链，声明会与全链成环（由 R4-e 计划完备守护）",
+    "governance:artifacts": "原件注册：扫描原件库，不依赖主链产物",
+}
+
+
+def test_dependency_declarations_cover_all_but_known_sources() -> None:
+    """`depends_on` 覆盖率**只升不降**，且未声明者必须逐个有理由。
+
+    历史（2026-10-16 诊断第 2 波）：32 步里仅 **2** 步声明，覆盖率 6%
+    ⇒ `upstream_chain` / `affected_nodes` 覆盖面天然有限，会让人得出
+    "无影响面"的**错误结论**。
+
+    2026-10-19（TD-6 处置）据 purpose/produces 的**事实关系**补至 **21/32**，
+    并在此过程中由 R4-c 揭示一个真实建模缺陷（`cleaned:{src}` 被
+    `clean:{src}` 与 `apply:{src}` 双重 produces ⇒ 必然成环，已修）。
+
+    本守卫的三条断言：
+      ① 覆盖率不低于新基线（防回退）；
+      ② **未声明的步骤集合 == `_NO_UPSTREAM` 键集**（新增步骤忘声明会被抓出，
+         且不会被"以为是源头"糊过去）；
+      ③ 有上游声明的步骤必须能被 `topology_api` 反查到（声明与图同源）。
     """
     specs = step_specs()
-    declared = [s.name for s in specs if s.depends_on]
-    ratio = len(declared) / len(specs)
-    assert ratio < 0.5, (
-        f"依赖声明覆盖率已升至 {ratio:.0%}——若是有意补全，请同步更新本守卫与"
-        f"`docs/tech_debt.md` 的登记项（当时覆盖率更低）")
-    # 已声明依赖的那几个必须能被反查命中
+    declared = {s.name for s in specs if s.depends_on}
+    assert len(declared) >= _DEPENDS_BASELINE, (
+        f"依赖声明覆盖率回退：{len(declared)}/{len(specs)} "
+        f"< 基线 {_DEPENDS_BASELINE}（补全后不得再减少）")
+
+    undeclared = {s.name for s in specs} - declared
+    assert undeclared == set(_NO_UPSTREAM), (
+        "未声明 depends_on 的步骤集合与「有依据的无上游表」不一致：\n"
+        f"  多出（忘了声明？）：{sorted(undeclared - set(_NO_UPSTREAM))}\n"
+        f"  少了（表里过时？）：{sorted(set(_NO_UPSTREAM) - undeclared)}")
+
+    # 有上游声明的步骤必须能被反查命中（声明面与拓扑图同源）
     for s in specs:
-        for d in s.depends_on:
-            if d in {x.produces and x.name for x in specs}:
-                up = T.neighbors(s.name)["upstream"]
-                assert any(u for u in up), f"{s.name} 的 depends_on={d} 未反映到 upstream"
+        if not s.depends_on:
+            continue
+        up = T.neighbors(s.name)["upstream"]
+        assert up, f"{s.name} 声明了 depends_on={s.depends_on} 但 upstream 为空"
 
 
 # --------------------------------------------------------------------------- #

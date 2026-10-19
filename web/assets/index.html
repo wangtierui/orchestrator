@@ -272,6 +272,26 @@ function viewAssets(d){
 }
 
 /* ---------------- P3 指标 ---------------- */
+//: 条形图标签区的**固定宽度**（像素）与字号。柱子从 `LB_W` 起画。
+//: 为什么固定：标签若按内容自然宽度延伸，长标签（如 `T1销售行为与消费者保护`
+//: 11 个中文字 × 11px ≈ 121px）会**越过 110px 的柱子起点、直接压在柱子上**
+//: ——2026-10-19 用户报「P3 指标仍显示渲染异常」即此（视觉上像"文字和图形糊在一起"）。
+const BAR_LB_W = 110, BAR_LB_FS = 11;
+
+//: 按**估算字宽**把标签截断到 `maxW` 内（SVG `<text>` 无 CSS ellipsis，只能手算）。
+//: 字宽估算：ASCII ≈ 0.55×字号、其它（中文/全角）≈ 1×字号。
+//: 这不是精确排版（真实字体有 kerning），但**足以保证不越界**——
+//: 而"越界"才是本问题的本质；精确宽度用 `<title>` 兜底（悬停看全文）。
+function fitLabel(s, maxW, fs){
+  let w=0, out="";
+  for(const ch of String(s==null?"":s)){
+    const cw = /[\x00-\xff]/.test(ch) ? fs*0.55 : fs;
+    if(w+cw > maxW){ return out+"…"; }
+    w+=cw; out+=ch;
+  }
+  return out;
+}
+
 function barChart(data, labels, color){
   // ⚠️ 2026-10-16 修正：**按 label 取值**，不按位置。
   //    原实现 `Object.values(data)[i]` 依赖对象的键插入顺序，而 JSON 对象的键序
@@ -280,40 +300,87 @@ function barChart(data, labels, color){
   //    valid 显示成 pending 的值、uncertain 显示成 valid 的值）。
   const vals=labels.map(lb=>Number((data||{})[lb]||0));
   const max=Math.max(1,...vals);
+  //: 可用条形长度 = 总宽 − 标签区 − 数值文字预留（否则长数字会画出画布）
+  const BAR_MAX = 420 - BAR_LB_W - 56;
   let svg=`<svg viewBox="0 0 420 ${labels.length*22+14}" width="100%" height="${labels.length*22+14}">`;
   labels.forEach((lb,i)=>{
-    const v=vals[i]||0, y=i*22+4, w=Math.round(300*v/max);
-    svg+=`<text x="0" y="${y+12}" fill="#98a2b3" font-size="11">${esc(lb)}</text>
-      <rect x="110" y="${y+2}" width="${w}" height="14" rx="3" fill="${color}"/>
-      <text x="${118+w}" y="${y+13}" fill="#e6e9ef" font-size="10.5">${num(v)}</text>`;});
+    const v=vals[i]||0, y=i*22+4, w=Math.max(v>0?2:0, Math.round(BAR_MAX*v/max));
+    // 悬停 `<title>` 给**完整**标签：截断只为不越界，信息不丢。
+    svg+=`<text x="0" y="${y+12}" fill="#98a2b3" font-size="${BAR_LB_FS}">${
+        esc(fitLabel(lb, BAR_LB_W-6, BAR_LB_FS))}<title>${esc(lb)}：${num(v)}</title></text>
+      <rect x="${BAR_LB_W}" y="${y+2}" width="${w}" height="14" rx="3" fill="${color}"/>
+      <text x="${BAR_LB_W+8+w}" y="${y+13}" fill="#e6e9ef" font-size="10.5">${num(v)}</text>`;});
   return svg+"</svg>";
 }
 function lineChart(rows, color){
   if(!rows||rows.length<2) return '<div class="muted">数据点不足（需 ≥2 个运行）</div>';
   const W=420,H=140,pad=26;
   const vals=rows.map(r=>Number(r.rate||0));
-  const min=Math.min(...vals)-5, max=Math.max(...vals)+5, span=(max-min)||1;
+  const lo=Math.min(...vals), hi=Math.max(...vals);
+  // ⚠️ 2026-10-19：原实现固定 ±5 的边距 ⇒ 当数据本身很稳（实测 95.45~100）
+  //    曲线几乎是水平直线，读者会误以为"图没画出来 / 渲染坏了"。
+  //    **不**为了"好看"而放大波动（那是失真）；改为
+  //    ① 边距按**数据跨度自适应**（跨度 <2 时用 ±0.5，避免把 0.1 的抖动画成悬崖）；
+  //    ② 在图上**显式标注 y 轴范围**（min~max），让"平"这个事实可读——
+  //       平就是平，但要让人知道这是数据稳，不是图坏了。
+  const spanRaw = hi-lo;
+  const margin = spanRaw < 2 ? 0.5 : Math.max(1, spanRaw*0.25);
+  const min=lo-margin, max=hi+margin, span=(max-min)||1;
   const pts=rows.map((r,i)=>[pad+i*(W-2*pad)/(rows.length-1), H-pad-((Number(r.rate)-min)/span)*(H-2*pad)]);
   let svg=`<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}">
     <polyline fill="none" stroke="${color}" stroke-width="2" points="${pts.map(p=>p.join(",")).join(" ")}"/>`;
   rows.forEach((r,i)=>{svg+=`<circle cx="${pts[i][0]}" cy="${pts[i][1]}" r="2.5" fill="${color}">
     <title>${esc(r.run_id)}：${r.rate}%</title></circle>`;});
+  // y 轴范围披露（右上角）—— 防"平线=坏图"的误读
+  svg+=`<text x="${W}" y="12" fill="#98a2b3" font-size="10" text-anchor="end">y 轴 ${lo}~${hi}%</text>`;
   return svg+`<text x="0" y="${H-6}" fill="#98a2b3" font-size="10">${esc(rows[0].run_id)}</text>
     <text x="${W}" y="${H-6}" fill="#98a2b3" font-size="10" text-anchor="end">${esc(rows[rows.length-1].run_id)}</text></svg>`;
 }
+//: SLI 键名 → 中文标签。后端键名是机器口径（`sli_chain_success_rate`），
+//: 直接显示给业务读者等于没解释；这里只做**展示映射**，不改数据键
+//: （键是契约的一部分，改了会让 `check_slo` 与看板口径分叉）。
+const SLI_LABEL = {
+  "sli_chain_success_rate":"链成功率",
+  "sli_data_freshness":"数据新鲜度",
+  "sli_gate_pass_rate":"门禁通过率",
+};
+
 function viewMetrics(d){
   if(!d.available) return unavail(d);
   const q=d.quality||{}, s=d.slo||{};
   const qd=(q.doc&&q.doc.dimensions)||{};
   const dims=Object.entries(qd).map(([k,v])=>({k,v:v.score==null?"—":v.score}));
+  // ⚠️ 2026-10-19（用户报「P3 仍渲染异常」之二）：原实现标签从 x=0 起、
+  //    条形从 x=100 起，而 `completeness`/`uniqueness` 等键名在 11px 字号下
+  //    宽度接近 100px ⇒ 长键名**压到条形上**。改为固定标签区 + 估算截断，
+  //    完整键名放 `<title>`（悬停可见）。
+  const DAMA_LB_W=100, DAMA_FS=11;
   const qSvg=`<svg viewBox="0 0 420 ${dims.length*20+10}" width="100%" height="${dims.length*20+10}">`+
-    dims.map((x,i)=>{const val=x.v==="—"?0:Number(x.v), y=i*20+3, w=Math.round(300*val/100);
-      return `<text x="0" y="${y+12}" fill="#98a2b3" font-size="11">${esc(x.k)}</text>
-      <rect x="100" y="${y+1}" width="${w}" height="13" rx="3" fill="${val>=90?"#2fbf71":(val>=70?"#f2b53b":"#ef5f5f")}"/>
-      <text x="${106+w}" y="${y+12}" fill="#e6e9ef" font-size="10.5">${x.v}</text>`;}).join("")+"</svg>";
+    dims.map((x,i)=>{const val=x.v==="—"?0:Number(x.v), y=i*20+3,
+      w=Math.max(val>0?2:0, Math.round((420-DAMA_LB_W-56)*val/100));
+      return `<text x="0" y="${y+12}" fill="#98a2b3" font-size="${DAMA_FS}">${
+          esc(fitLabel(x.k, DAMA_LB_W-6, DAMA_FS))}<title>${esc(x.k)}：${x.v}</title></text>
+      <rect x="${DAMA_LB_W}" y="${y+1}" width="${w}" height="13" rx="3" fill="${val>=90?"#2fbf71":(val>=70?"#f2b53b":"#ef5f5f")}"/>
+      <text x="${DAMA_LB_W+6+w}" y="${y+12}" fill="#e6e9ef" font-size="10.5">${x.v}</text>`;}).join("")+"</svg>";
   const lastSLI=(s.last&&s.last.sli)||{}, tgt=(s.last&&s.last.targets)||{};
-  const sliRows=Object.keys(lastSLI).map(k=>kv(k, (lastSLI[k].value??"—")+"%（SLO "+(tgt[k]!=null?Math.round(tgt[k]):"—")+"%）",
+  const sliRows=Object.keys(lastSLI).map(k=>kv(SLI_LABEL[k]||k,
+      (lastSLI[k].value??"—")+"%（SLO "+(tgt[k]!=null?Math.round(tgt[k]):"—")+"%）",
       (lastSLI[k].value!=null&&tgt[k]!=null&&lastSLI[k].value<tgt[k])?"bad":"ok")).join("");
+  // ⚠️ 2026-10-19（用户报「P3 仍渲染异常」之三）：主题分布原实现
+  //    `entries.slice(0,8)` 直接截断 ⇒ 11 个主题只画 8 个，**图上数字合计
+  //    888 而归属表实有 1163** ⇒ 读者会认为"数据错了/图没画全"。
+  //    改为：按值**降序**取前 7 + 其余合并为「其他（N 项）」⇒ 合计恒等于总数，
+  //    hint 里披露真实主题数与总数（数字可自校验）。
+  const tEntries=Object.entries(d.theme_dist||{}).sort((a,b)=>b[1]-a[1]);
+  const TOP_N=7;
+  const tDist={}, tLabels=[];
+  tEntries.slice(0,TOP_N).forEach(([k,v])=>{ tDist[k]=v; tLabels.push(k); });
+  const restSum=tEntries.slice(TOP_N).reduce((a,[,v])=>a+v,0);
+  if(restSum>0){
+    const nm=`其他（${tEntries.length-TOP_N} 项）`;
+    tDist[nm]=restSum; tLabels.push(nm);
+  }
+  const tTotal=tEntries.reduce((a,[,v])=>a+v,0);
   return `<div class="grid">
     ${card("门禁通过率趋势","逐轮", lineChart(d.gate_trend,"#4f9cf9"), d.source, d.fetched_at)}
     ${card("待办 aging","未处置天数分布", barChart(d.worklist_aging,["0-3","4-7","8-14","15+"],"#f2b53b"), d.source, d.fetched_at)}
@@ -322,8 +389,12 @@ function viewMetrics(d){
     ${card("SLI/SLO","最近快照", sliRows||'<div class="muted">尚无快照（python -m tools.check_slo）</div>',
       s.source, s.fetched_at)}
     ${card("时效三态","valid/pending/uncertain", barChart(d.timeliness_tri,["valid","pending","uncertain"],"#2fbf71"), d.source, d.fetched_at)}
-    ${card("主题分布","RFN 归属表", barChart(Object.fromEntries(Object.entries(d.theme_dist||{}).slice(0,8)),
-      Object.keys(d.theme_dist||{}).slice(0,8), "#9b7cf9"), d.source, d.fetched_at)}
+    ${card("主题分布",`${tEntries.length} 个主题 / 合计 ${num(tTotal)}`,
+      barChart(tDist, tLabels, "#9b7cf9")
+      + `<div class="muted" style="font-size:11px;margin-top:6px">`+
+        `显示前 ${Math.min(TOP_N,tEntries.length)} 项`+
+        (restSum>0?`，其余 ${tEntries.length-TOP_N} 项合并为「其他」`:"")+
+        `；各条合计 = ${num(tTotal)}（可自行核对）</div>`, d.source, d.fetched_at)}
   </div>`;
 }
 
