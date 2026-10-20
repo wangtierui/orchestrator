@@ -1,0 +1,406 @@
+{
+  "_note": "mof/collector.py 拆分等价性基线（结构快照，非 hash）",
+  "_source_path": "modules/regulatory_scrapers/collectors/mof/collector.py",
+  "class_methods": {
+    "OfflineMiss": {},
+    "RateLimiter": {
+      "__init__": [
+        "self",
+        "min_delay",
+        "max_delay",
+        "max_cooldown"
+      ],
+      "penalize": [
+        "self",
+        "extra"
+      ],
+      "wait": [
+        "self"
+      ]
+    },
+    "_OfflineMiss": {}
+  },
+  "cli": {
+    "count": 16,
+    "options": [
+      {
+        "action": "help",
+        "default": "==SUPPRESS==",
+        "flags": [
+          "-h",
+          "--help"
+        ],
+        "required": false
+      },
+      {
+        "action": "store",
+        "default": "['1000000000000300000', '1000000000000400000']",
+        "flags": [
+          "--categories"
+        ],
+        "required": false
+      },
+      {
+        "action": "store",
+        "default": null,
+        "flags": [
+          "--names"
+        ],
+        "required": false
+      },
+      {
+        "action": "store",
+        "default": "<ROOT>\\modules\\regulatory_scrapers\\data\\raw",
+        "flags": [
+          "--outdir"
+        ],
+        "required": false
+      },
+      {
+        "action": "store",
+        "default": "50",
+        "flags": [
+          "--size"
+        ],
+        "required": false
+      },
+      {
+        "action": "store",
+        "default": "0.3",
+        "flags": [
+          "--delay-min"
+        ],
+        "required": false
+      },
+      {
+        "action": "store",
+        "default": "0.7",
+        "flags": [
+          "--delay-max"
+        ],
+        "required": false
+      },
+      {
+        "action": "store_true",
+        "default": null,
+        "flags": [
+          "--no-detail"
+        ],
+        "required": false
+      },
+      {
+        "action": "store_true",
+        "default": null,
+        "flags": [
+          "--no-attachments"
+        ],
+        "required": false
+      },
+      {
+        "action": "store_true",
+        "default": null,
+        "flags": [
+          "--refetch-attachments"
+        ],
+        "required": false
+      },
+      {
+        "action": "store",
+        "default": null,
+        "flags": [
+          "--max-items"
+        ],
+        "required": false
+      },
+      {
+        "action": "store",
+        "default": "0",
+        "flags": [
+          "--max-seconds"
+        ],
+        "required": false
+      },
+      {
+        "action": "store",
+        "default": "30",
+        "flags": [
+          "--timeout"
+        ],
+        "required": false
+      },
+      {
+        "action": "store",
+        "default": "",
+        "flags": [
+          "--cache-dir"
+        ],
+        "required": false
+      },
+      {
+        "action": "store_true",
+        "default": null,
+        "flags": [
+          "--offline"
+        ],
+        "required": false
+      },
+      {
+        "action": "store_true",
+        "default": null,
+        "flags": [
+          "--csv"
+        ],
+        "required": false
+      }
+    ]
+  },
+  "const_digest": {
+    "ATTACHMENTS_DIR": {
+      "head": "<ROOT>\\modul",
+      "kind": "str",
+      "len": 121
+    },
+    "ATTACH_PATH": {
+      "head": "/file/f/get",
+      "kind": "str",
+      "len": 11
+    },
+    "BASE": {
+      "head": "/dev",
+      "kind": "str",
+      "len": 4
+    },
+    "CC_USER_AGENTS": {
+      "items": [
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, lik",
+        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/12"
+      ],
+      "kind": "seq",
+      "len": 5
+    },
+    "DEFAULT_CATEGORIES": {
+      "keys": [
+        "1000000000000300000",
+        "1000000000000400000"
+      ],
+      "kind": "dict",
+      "len": 2
+    },
+    "HEADERS": {
+      "keys": [
+        "Accept",
+        "Accept-Language",
+        "Origin",
+        "Referer",
+        "User-Agent",
+        "X-Requested-With"
+      ],
+      "kind": "dict",
+      "len": 6
+    },
+    "HOST": {
+      "head": "http://fgk.m",
+      "kind": "str",
+      "len": 21
+    },
+    "SCRAPERS_ROOT": {
+      "head": "<ROOT>\\modul",
+      "kind": "str",
+      "len": 75
+    },
+    "SRC_DIR": {
+      "head": "<ROOT>\\modul",
+      "kind": "str",
+      "len": 90
+    },
+    "_ATTACH_KIND": {
+      "keys": [
+        "0",
+        "90"
+      ],
+      "kind": "dict",
+      "len": 2
+    },
+    "_LOCKS": {
+      "keys": [],
+      "kind": "dict",
+      "len": 0
+    },
+    "_SCRAPERS_ROOT": {
+      "head": "<ROOT>\\modul",
+      "kind": "str",
+      "len": 75
+    },
+    "_STYLE_RE": {
+      "flags": 50,
+      "kind": "regex",
+      "pattern": "<(style|script)[^>]*>.*?</\\1>"
+    },
+    "_TAG_RE": {
+      "flags": 32,
+      "kind": "regex",
+      "pattern": "<[^>]+>"
+    },
+    "_WS_RE": {
+      "flags": 32,
+      "kind": "regex",
+      "pattern": "\\s+"
+    }
+  },
+  "module_names": {
+    "expected": [
+      "ATTACHMENTS_DIR",
+      "ATTACH_PATH",
+      "BASE",
+      "CC_USER_AGENTS",
+      "DEFAULT_CATEGORIES",
+      "HEADERS",
+      "HOST",
+      "OfflineMiss",
+      "RateLimiter",
+      "SCRAPERS_ROOT",
+      "SRC_DIR",
+      "UTC",
+      "_ATTACH_KIND",
+      "_LOCKS",
+      "_OfflineMiss",
+      "_RESP",
+      "_SCRAPERS_ROOT",
+      "_STYLE_RE",
+      "_TAG_RE",
+      "_WS_RE",
+      "_att",
+      "_canon_law_id",
+      "_finalize_attachment",
+      "_init_cache",
+      "_mof_cache_key",
+      "_pid_alive",
+      "_read_lock_pid",
+      "_request",
+      "_sig_current",
+      "_sig_eq",
+      "_sig_prev",
+      "acquire_lock",
+      "argparse",
+      "bind_source_cache",
+      "build_entry",
+      "collect_attachments",
+      "csv",
+      "datetime",
+      "docs_root",
+      "download_attachment",
+      "extract_document_text",
+      "fetch_attachments",
+      "fetch_category_records",
+      "fetch_detail",
+      "fetch_list_page",
+      "fs_lock",
+      "html",
+      "html_to_text",
+      "io",
+      "json",
+      "logger",
+      "logging",
+      "main",
+      "normalize_date",
+      "os",
+      "random",
+      "re",
+      "read_raw_records",
+      "release_lock",
+      "resolve_raw_path",
+      "rich_object_fields",
+      "safe_filename",
+      "save_csv",
+      "save_html_report",
+      "save_json",
+      "set_cache_dir",
+      "set_offline",
+      "structured_table_fields",
+      "sys",
+      "threading",
+      "time",
+      "write_raw_jsonl",
+      "write_status"
+    ],
+    "missing": [],
+    "present": [
+      "ATTACHMENTS_DIR",
+      "ATTACH_PATH",
+      "BASE",
+      "CC_USER_AGENTS",
+      "DEFAULT_CATEGORIES",
+      "HEADERS",
+      "HOST",
+      "OfflineMiss",
+      "RateLimiter",
+      "SCRAPERS_ROOT",
+      "SRC_DIR",
+      "UTC",
+      "_ATTACH_KIND",
+      "_LOCKS",
+      "_OfflineMiss",
+      "_RESP",
+      "_SCRAPERS_ROOT",
+      "_STYLE_RE",
+      "_TAG_RE",
+      "_WS_RE",
+      "_att",
+      "_canon_law_id",
+      "_finalize_attachment",
+      "_init_cache",
+      "_mof_cache_key",
+      "_pid_alive",
+      "_read_lock_pid",
+      "_request",
+      "_sig_current",
+      "_sig_eq",
+      "_sig_prev",
+      "acquire_lock",
+      "argparse",
+      "bind_source_cache",
+      "build_entry",
+      "collect_attachments",
+      "csv",
+      "datetime",
+      "docs_root",
+      "download_attachment",
+      "extract_document_text",
+      "fetch_attachments",
+      "fetch_category_records",
+      "fetch_detail",
+      "fetch_list_page",
+      "fs_lock",
+      "html",
+      "html_to_text",
+      "io",
+      "json",
+      "logger",
+      "logging",
+      "main",
+      "normalize_date",
+      "os",
+      "random",
+      "re",
+      "read_raw_records",
+      "release_lock",
+      "resolve_raw_path",
+      "rich_object_fields",
+      "safe_filename",
+      "save_csv",
+      "save_html_report",
+      "save_json",
+      "set_cache_dir",
+      "set_offline",
+      "structured_table_fields",
+      "sys",
+      "threading",
+      "time",
+      "write_raw_jsonl",
+      "write_status"
+    ]
+  }
+}

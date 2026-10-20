@@ -2965,3 +2965,85 @@ supp 目录下**另有 3 个脚本各自派生路径**，其中 2 个仍少上�
 ### 验证
 30 门禁 PASS、ruff 0、mypy 0、**28 项新守卫全绿**（supp 13 + gov 15）、
 基线自检一致、supp/pbc 端到端真跑通过、全量测试零失败。
+## [Unreleased] 2026-10-20 — gov/mof 采集器四层拆分 + `local_path` 跨源统一 + 基线工具泛化（第一百零五批）
+
+### ① gov/collector **841 → 451 行**（四层架构，零咬合）
+
+AST 依赖实测推翻了此前的"2 类咬合"判断：`RobustSession` 与 `XzfgkScraper`
+**互不依赖**（前者用 `_RESP_TEXT`，后者只经构造参数拿会话实例）。
+
+| 文件 | 行数 | 职责 |
+|---|---|---|
+| `gov_constants.py` | 208 | 引导 + 6 处 try-import 别名 + 全部常量 |
+| **`gov_session.py`** | 209 | `_RESP_TEXT` + `_OfflineMiss` + 3 个缓存函数 + `RobustSession` |
+| **`gov_scraper.py`** | 336 | `XzfgkScraper` |
+| `collector.py` | **451** | `main` + re-export |
+
+**关键约束**：`_RESP_TEXT`（可变全局）必须与 `RobustSession`/`_init_cache` **同处**
+—— 分开会造成"两处状态、缓存开关静默失效"（不报错，只是永不命中）。
+
+### ② mof/collector **800 → 632 行**（五层）
+
+| 文件 | 行数 | 职责 |
+|---|---|---|
+| `mof_constants.py` | 174 | 引导 + 常量 + `_RESP` + 3 个缓存函数 + 附件 re-export |
+| `mof_sig.py` | 97 | 增量比对的 4 个纯函数 |
+| `mof_lock.py` | 77 | `_LOCKS` + 4 个锁函数（**状态与函数同处**） |
+| `mof_io.py` | 121 | 状态/JSON/CSV/HTML 四类产物写出 |
+| `limits.py` | 156 | （上批）早停/熔断/沿用 |
+| `collector.py` | **632** | `main` + `RateLimiter` + `fetch_detail` + re-export |
+
+### ③ 基线工具**泛化 + 三处设计缺陷修正**
+
+新增 `tests/collector_baseline.py`（`--source gov|mof|pbc|nfra`），替代只支持 gov 的
+旧工具。修正三处会让基线**形同虚设**的缺陷：
+
+| # | 缺陷 | 后果 |
+|---|---|---|
+| 1 | `expected` 每次从**当前文件** AST 重算 | 拆分后自动缩水 ⇒ `missing` 恒空 ⇒ **漏搬抓不到** |
+| 2 | `MOD_DEFS` 只扫顶层节点 | `try/except` 导入块里的名字（`MasterView`/`requests`/`Retry`）全被漏掉 |
+| 3 | 比对用"集合完全相同" | 拆分后 AST 自然多/少导入名 ⇒ 假失败 |
+
+修正为：`expected` 固化在基线 JSON 里 + 递归 `ast.Try` + **单向包含**比对
+（"拆分前有的，现在还得有且值一致"）。另加三类**噪声过滤**（标准库模块名、
+内部 import 别名、非本仓定义的类 —— 后者会因 `datetime`/`Any` 是 `isclass`
+而被误当业务类）。
+
+### ④ `local_path` **跨源基准统一为仓根**（2911 条迁移）
+
+**第 5 处同类缺陷**：`gov/attachments.py` 的 `REPO_ROOT = dirname(SRC_DIR)`
+只上溯一级 ⇒ `collectors`（注释写 `regulatory_scrapers`）⇒ 重跑会写 `../data/…`。
+
+统一动作：
+· `gov` 的 `REPO_ROOT` → `paths.ROOT`；`supp` 新增 `WS_ROOT` 并改 `relpath` 基准；
+· `tools/migrate_local_path.py` 迁移 **2911 条**历史值；
+· 保留 1 条**不可验证**（文件不存在）原样不动 —— 保留旧值比改写成一个打不开的
+  路径更诚实，且守卫会断言"该例外必须指向不存在的文件"，防它掩盖真漏迁。
+
+**迁移工具的两处缺口**（实测发现）：
+1. 只扫 `attachments`，**漏了 `body_docs`**（批 50 起正文载体从中分出）
+   ⇒ 首轮只迁了 1282 条，漏 1627 条；
+2. 只认 `../data/` 前缀，不认 `data/docs/`（SCRAPERS 基准本身）。
+
+最终五源：仓根 3572 条 / 非仓根 **1** 条（合法例外），解析可达率 99.97%。
+
+### ⑤ 途中踩到并修正的六次自身失误（如实记录）
+
+1. **AST 依赖分析漏注解**：`visit_arg` 未遍历 `annotation`（`ScrapeConfig` 被漏）；
+2. **`MOD_DEFS` 不递归 `try`**：漏掉 `MasterView`/`requests`/`Retry` 等 6 个依赖；
+3. **手工猜行号**：`RobustSession` 末行猜成 L274，实际 L275 ⇒ 断言拦住后改 AST 取值；
+4. **插入点落在 `try:` 体内**：破坏 try/except 结构 ⇒ `SyntaxError`；
+5. **`RobustSession` 误列进 `gov_constants` 导入名单**（它在 `gov_session`）
+   ⇒ 脚本形态 `ImportError`；
+6. **`fs_lock`/`WS_ROOT` 被 ruff 当未使用删掉**（re-export 需 `as X` 或进 `__all__`）。
+
+### ⑥ 门禁调整（拆分带来的必要变更，已写理由）
+
+| 判据 | 变更 |
+|---|---|
+| sys.path | `modules` 128 → **134**（6 个新文件各需自己的仓根引导，互不继承） |
+| R4 盘符 | 基线的 `const_digest` 字符串摘要也做仓根归一（`head` 曾含本机绝对路径前缀） |
+
+### 验证
+30 门禁 PASS、ruff 0、mypy 0、**94 项相关守卫全绿**（10 个测试文件）、
+两源基线一致（gov 56 符号 / mof 73 符号，含类方法签名）。

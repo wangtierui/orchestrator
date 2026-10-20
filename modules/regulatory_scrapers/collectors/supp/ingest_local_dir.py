@@ -52,9 +52,9 @@ if HERE not in _sys.path:
     _sys.path.insert(0, HERE)
 del _sys
 try:
-    from .supp_constants import RAW_OUT, SCRAPERS_ROOT
+    from .supp_constants import RAW_OUT, SCRAPERS_ROOT, WS_ROOT
 except ImportError:  # pragma: no cover  脚本形态
-    from supp_constants import RAW_OUT, SCRAPERS_ROOT
+    from supp_constants import RAW_OUT, SCRAPERS_ROOT, WS_ROOT
 
 if SCRAPERS_ROOT not in sys.path:
     sys.path.insert(0, SCRAPERS_ROOT)
@@ -207,7 +207,10 @@ def main(argv=None):
         dst = os.path.join(docs_dir, target)
         shutil.copy2(src, dst)
         sha = _sha256(dst)
-        rel = os.path.relpath(dst, SCRAPERS_ROOT).replace("\\", "/")   # data/docs/...
+        # ⚠️ 基准改为**仓根**（`WS_ROOT`）：与 mof/pbc/gov 统一（2026-10-20 第一百零五批）。
+        # 原用 `SCRAPERS_ROOT` ⇒ 写成 `data/docs/…`（与其它源不一致）；
+        # 更早的实现（未修 REPO_ROOT 时）会写成 `../data/docs/…` 脏路径。
+        rel = os.path.relpath(dst, WS_ROOT).replace("\\", "/")
         item = {"name": f, "kind": kind, "bytes": os.path.getsize(dst),
                 "status": "collected", "local_path": rel, "sha256": sha}
         if num:

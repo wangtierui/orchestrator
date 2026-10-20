@@ -3,7 +3,7 @@
 
 内容由脚本从 `collector.py` **按行区间逐字提取**（2026-10-20 第一百零四批），
 不是手抄——实测手抄会把 4 个常量的值全写错（`_ORGAN_KW` / `_NOISE_CLASS_HINTS` /
-`_SCHEME_UPGRADE_RE` / `CSV_COLUMNS`）。等价性由 `tests/gov_collector_baseline.py`
+`_SCHEME_UPGRADE_RE` / `CSV_COLUMNS`）。等价性由 `tests/collector_baseline.py --source gov`
 的结构快照（模块名 / 常量摘要 / 方法签名 / CLI 选项）锁定。
 
 为什么拆：`collector.py` 841 行里前 204 行几乎全是被 `RobustSession`(99) /

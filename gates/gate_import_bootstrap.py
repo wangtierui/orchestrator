@@ -55,7 +55,11 @@ BASELINE: dict[str, int] = {
     # 它需要**自己的仓根引导**才能 import `std_lib`/`paths`（`collector.py` 里那份
     # 引导只在其自身进程内生效；两个文件各自被独立 import 时互不继承）。
     # 这是"拆分带来的必要增加"，非新增缺陷；`collector.py` 原计入不变。
-    "modules": 128,
+        # 2026-10-20（第一百零五批）：**+6** —— gov/mof 采集器各拆出三层，新文件
+    # 各自需要仓根引导才能 import `std_lib`/`paths`（互不继承 sys.path 状态）：
+    # gov_session / gov_scraper / mof_constants / mof_sig / mof_lock / mof_io。
+    # 这是"拆分带来的必要增加"，非新增缺陷。
+    "modules": 134,
     "std_lib": 9,
     "tests": 33,
     # 14 → 17（2026-09-26，P2-1/2/3b/6）：新增 3 个工具各自带 1 处仓根引导

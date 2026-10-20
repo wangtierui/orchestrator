@@ -53,9 +53,24 @@ for _p in (HERE, SCRAPERS_ROOT):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+# ⚠️ `as WS_ROOT` 且列入 `__all__` 是**必需的**：单纯 `from paths import ROOT as WS_ROOT`
+# 在本文件内"未被使用"（只是供其它模块导入）⇒ ruff F401 会把它**删掉**
+# （实测踩到：`supp_constants.WS_ROOT` 变成 AttributeError）。
+from paths import ROOT as WS_ROOT
 from std_lib.scraper_std.cache_store import docs_root
 
 REPO_ROOT = SCRAPERS_ROOT  # 数据根 = modules/regulatory_scrapers（拍平后单层上溯一次即到）
+
+#: **`local_path` 的基准**（2026-10-20 第一百零五批统一）。
+#:
+#: 与 `REPO_ROOT`（数据根，用于 `data/raw` 等**落盘位置**）**刻意分开**：
+#:   · 落盘位置 ⇒ `regulatory_scrapers/data/…`（`REPO_ROOT`）
+#:   · `local_path` ⇒ **仓根**（`WS_ROOT`），与 mof/pbc/gov 统一
+#: 全仓统一为仓根后，下游只需 `os.path.join(paths.ROOT, local_path)` 即可，
+#: 不必再猜基准（`std_lib.scraper_std.local_paths.resolve_local_path` 仍兼容旧值）。
+
+# 历史 supp 记录（7 条）是 `data/docs/…`（旧基准）；新写入改为仓根后由
+# `tools/migrate_local_path.py --allow-scrapers-to-repo` 一次性迁移，保证源内一致。
 # 5b 补全（2026-09-04）：supp ingest 收敛至统一 data/（此前写 per-source data/raw 与统一副本分裂；
 # _sources 源文本随迁统一 data/raw/_sources；content_ref / OCR 缓存引用在统一后相对 REPO_ROOT 解析一致）
 SRC_DIR = os.path.join(REPO_ROOT, "data", "raw", "_sources")
@@ -72,4 +87,4 @@ LOCAL_PDFS = {
 }
 
 __all__ = ["DOCS_DIR", "HERE", "LOCAL_PDFS", "RAW_OUT", "REPO_ROOT",
-           "SCRAPERS_ROOT", "SRC_DIR", "STATE_DIR", "docs_root"]
+           "SCRAPERS_ROOT", "SRC_DIR", "STATE_DIR", "WS_ROOT", "docs_root"]

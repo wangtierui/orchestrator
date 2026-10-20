@@ -162,7 +162,10 @@ def test_collector_extractors_delegate_to_shared_primitives() -> None:
 def test_write_side_call_sites_wire_split(field: str) -> None:
     """**接线守卫**：gov/mof 写入侧必须调用分流（否则新数据仍会把正文当附件写入）。"""
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    for rel in ("modules/regulatory_scrapers/collectors/gov/collector.py",
+    # ⚠️ 2026-10-20（第一百零五批）：`XzfgkScraper` 已从 `gov/collector.py` 拆到
+    # `gov/gov_scraper.py`（分流调用点 `split_record_body_docs` 随之迁走）
+    # ⇒ 目标路径必须跟随，否则守卫会因"文件里搜不到符号"而误报（实测踩到）。
+    for rel in ("modules/regulatory_scrapers/collectors/gov/gov_scraper.py",
                 "modules/regulatory_scrapers/collectors/gov/zhengceku.py",
                 "modules/regulatory_scrapers/collectors/mof/attachments.py",
                 "modules/regulatory_scrapers/collectors/supp/ingest_local_dir.py"):

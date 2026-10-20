@@ -54,11 +54,6 @@ if _GUIDE_ROOT not in _sys.path:
     _sys.path.insert(0, _GUIDE_ROOT)
 del _GUIDE_ROOT, _os, _sys
 import argparse
-import csv
-import html
-import io
-import json
-import logging
 import os
 import random
 import re
@@ -67,134 +62,140 @@ import threading
 import time
 from datetime import UTC, datetime
 
-from std_lib.scraper_std.pipeline import (  # 批 49/T1：raw 统一 JSONL 读写助手
-    read_raw_records,
-    resolve_raw_path,
-    write_raw_jsonl,
-)
+# `fs_lock` 的使用点已全部下沉（锁在 `mof_lock`、原子写在 `mof_io`），`main` 不再
+# 直接用它（grep 实测 0 次）。此处保留 **re-export**：① 拆分前基线里它是模块级
+# 名字，保留让"拆分未丢符号"这条断言继续成立；② 外部 `from collector import
+# fs_lock` 不会断。`as fs_lock` 是 ruff 认可的显式 re-export 写法
+# （单纯 `import fs_lock` 会被 F401 当成未使用删掉——实测踩到）。
+from std_lib.common_lib import fs_lock as fs_lock
 
-# B7（W4，2026-10）：原子写 SSOT = std_lib.common_lib.fs_lock（本文件下方「运行锁」段
-# 已有 `from std_lib.common_lib import fs_lock` 模块级 import；原本地 `_atomic_write`
-# 私造已删，状态/报告写入一律 `fs_lock.atomic_write_text`——差异仅是 mkstemp+fsync
-# 加固（更安全，语义不变：同目录临时文件 + os.replace 原子替换 + 目录自动创建）。
-
-# 共享加固工具层（UA 池、文档文本抽取、魔数纠正命名、表格结构化）
+# ---- 签名/锁/输出三层：**已下沉**（2026-10-20）----
+# `mof_sig` 纯函数 / `mof_lock`（`_LOCKS` 与锁函数同处）/ `mof_io` 原子写产物。
 try:
-    from std_lib.scraper_std.crawler_common import USER_AGENTS as CC_USER_AGENTS
-    from std_lib.scraper_std.crawler_common import extract_document_text
-    from std_lib.scraper_std.rich_object import rich_object_fields
-    from std_lib.scraper_std.table_recovery import structured_table_fields
-except ImportError:  # pragma: no cover
-    CC_USER_AGENTS = [
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-        "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
-    ]
-    def extract_document_text(data, name="", **kw):  # type: ignore[misc]
-        return {"text": "", "kind": "unknown", "extracted": False,
-                "extract_status": "library_missing", "sha256": "",
-                "needs_ocr": False, "garble_ratio": 0.0, "size_bytes": len(data)}
-    def structured_table_fields(data, name="", *, kind=None):  # type: ignore[misc]
-        return {}
-    def rich_object_fields(data, name="", *, image_dir=None, rec_key=""):  # type: ignore[misc]
-        return {}
+    from .mof_io import (
+        save_csv,
+        save_html_report,
+        save_json,
+        write_status,
+    )
+    from .mof_lock import (
+        _LOCKS,
+        _pid_alive,
+        _read_lock_pid,
+        acquire_lock,
+        release_lock,
+    )
+    from .mof_sig import (
+        _canon_law_id,
+        _sig_current,
+        _sig_eq,
+        _sig_prev,
+    )
+except ImportError:  # pragma: no cover  脚本形态
+    from mof_io import (  # type: ignore[no-redef]  # noqa: F401
+        save_csv,
+        save_html_report,
+        save_json,
+        write_status,
+    )
+    from mof_lock import (  # type: ignore[no-redef]  # noqa: F401
+        _LOCKS,
+        _pid_alive,
+        _read_lock_pid,
+        acquire_lock,
+        release_lock,
+    )
+    from mof_sig import (  # type: ignore[no-redef]
+        _canon_law_id,
+        _sig_current,
+        _sig_eq,
+        _sig_prev,
+    )
 
-# --------------------------------------------------------------------------- #
-# 配置
-# --------------------------------------------------------------------------- #
-# 通用缓存模块（五源统一抽象层：std_lib/scraper_std/cache_store，2026-09-05）
-# mof 接口均返回 JSON → 委托 ResponseCache；命中读盘跳过网络、离线缺失抛 OfflineMiss、
-# 仅成功响应（code==200）落盘，不缓存错误/拦截页。
+
+# ---- 依赖/常量/缓存状态：**已下沉到 `mof_constants.py`**（2026-10-20）----
+# 这是"零依赖叶子层"：`mof_io`/`mof_lock`/`mof_sig` 都从这里取 `HOST`/`logger`，
+# 若留在本文件会与它们形成循环导入。
+# ⚠️ `_RESP` 是**可变全局**，真实状态在 `mof_constants`；此处 re-export 取到的是
+#    导入时的引用快照（`main()` 只调 `_init_cache()`，不直接读它，AST 已确认）。
 try:
-    from std_lib.scraper_std.cache_store import OfflineMiss, bind_source_cache
-except ImportError:  # pragma: no cover
-    from std_lib.scraper_std.cache_store import OfflineMiss, bind_source_cache
+    from .mof_constants import (
+        _RESP,
+        ATTACHMENTS_DIR,
+        BASE,
+        CC_USER_AGENTS,
+        DEFAULT_CATEGORIES,
+        HEADERS,
+        HOST,
+        SCRAPERS_ROOT,
+        SRC_DIR,
+        OfflineMiss,
+        _finalize_attachment,
+        _init_cache,
+        _mof_cache_key,
+        _OfflineMiss,
+        _request,
+        bind_source_cache,
+        build_entry,
+        collect_attachments,
+        docs_root,
+        download_attachment,
+        extract_document_text,
+        fetch_attachments,
+        fetch_category_records,
+        fetch_list_page,
+        html_to_text,
+        logger,
+        normalize_date,
+        read_raw_records,
+        resolve_raw_path,
+        rich_object_fields,
+        safe_filename,
+        set_cache_dir,
+        set_offline,
+        structured_table_fields,
+        write_raw_jsonl,
+    )
+except ImportError:  # pragma: no cover  脚本形态
+    from mof_constants import (  # type: ignore[no-redef]  # noqa: F401
+        _RESP,
+        ATTACHMENTS_DIR,
+        BASE,
+        CC_USER_AGENTS,
+        DEFAULT_CATEGORIES,
+        HEADERS,
+        HOST,
+        SCRAPERS_ROOT,
+        SRC_DIR,
+        OfflineMiss,
+        _finalize_attachment,
+        _init_cache,
+        _mof_cache_key,
+        _OfflineMiss,
+        _request,
+        bind_source_cache,
+        build_entry,
+        collect_attachments,
+        docs_root,
+        download_attachment,
+        extract_document_text,
+        fetch_attachments,
+        fetch_category_records,
+        fetch_list_page,
+        html_to_text,
+        logger,
+        normalize_date,
+        read_raw_records,
+        resolve_raw_path,
+        rich_object_fields,
+        safe_filename,
+        set_cache_dir,
+        set_offline,
+        structured_table_fields,
+        write_raw_jsonl,
+    )
 
-_RESP = None  # ResponseCache 实例；None 表示未启用缓存
-_OfflineMiss = OfflineMiss  # 兼容别名
 
-
-# ---- 拆分（2026-09-13，P3）：下列符号迁 mof/attachments，re-export 保持外部调用兼容 ----
-# W4（L1 重组）：import 双形态（包形态相对导入 / 脚本形态裸名）。经**模块对象**取符号
-# ⇒ 名单只此一份（两形态各写一遍名单必然漂移）。
-try:
-    from . import attachments as _att
-except ImportError:  # pragma: no cover - 脚本形态
-    import attachments as _att  # type: ignore[no-redef]
-
-# re-export（显式赋值，规避 F401/F405；外部调用面不变）
-_finalize_attachment = _att._finalize_attachment
-_mof_cache_key = _att._mof_cache_key
-_request = _att._request
-build_entry = _att.build_entry
-collect_attachments = _att.collect_attachments
-download_attachment = _att.download_attachment
-fetch_attachments = _att.fetch_attachments
-fetch_category_records = _att.fetch_category_records
-fetch_list_page = _att.fetch_list_page
-html_to_text = _att.html_to_text
-normalize_date = _att.normalize_date
-safe_filename = _att.safe_filename
-
-
-def _init_cache(path=None, offline=False):
-    """统一缓存根绑定（缺省 cache_store.source_cache_root("mof")，单物理根）；path 显式可覆盖。"""
-    global _RESP
-    _RESP = bind_source_cache("mof", "json", root=path)
-    if offline and _RESP is not None:
-        _RESP.set_offline(True)
-
-
-def set_cache_dir(path):
-    """兼容旧调用（同目录脚本）：仅设根，沿用当前离线态。"""
-    _init_cache(path)
-
-
-def set_offline(flag):
-    if _RESP is not None:
-        _RESP.set_offline(flag)
-
-HOST = "http://fgk.mof.gov.cn"
-BASE = "/dev"  # 接口基础路径：/dev/lawFile/list 等
-
-# 产物目录统一（Plan B 阶段 2b + 5b 收敛 + 2026-09-08 docs_root 统一根）
-SRC_DIR = os.path.dirname(os.path.abspath(__file__))
-# ⚠️ 2026-10-20 修（实测）：原 `REPO_ROOT = dirname(SRC_DIR)` 只上溯**一级**
-# ⇒ 实际是 `.../collectors`（注释却写 "regulatory_scrapers"）⇒ `--outdir` 默认值
-# 落到 `.../collectors/data/raw`，而**主库在 `.../regulatory_scrapers/data/raw`**
-# ⇒ 裸跑会静默写到错位置、白跑，且不报错（实测踩到）。
-# **注意区分两个基准**（不能共用一个常量）：
-#   · `outdir`（本文件）⇒ 主库 = `regulatory_scrapers/data/raw`（上溯两级）
-#   · `local_path` 基准（attachments.py 的 REPO_ROOT）⇒ **仓根**（历史数据实测如此）
-SCRAPERS_ROOT = os.path.dirname(os.path.dirname(SRC_DIR))  # modules/regulatory_scrapers
-from std_lib.scraper_std.cache_store import docs_root
-
-ATTACHMENTS_DIR = docs_root("mof", "attachments")
-
-# 两个目标 URL 对应的类别（lfgccId -> 展示名称）
-DEFAULT_CATEGORIES = {
-    "1000000000000300000": "财政法律法规（财政部规章）",
-    "1000000000000400000": "财政部规范性文件",
-}
-
-# 浏览器化请求头，降低被反爬拦截概率
-HEADERS = {
-    "User-Agent": (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-        "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
-    ),
-    "Accept": "application/json, text/plain, */*",
-    "Accept-Language": "zh-CN,zh;q=0.9",
-    "X-Requested-With": "XMLHttpRequest",
-    "Origin": HOST,
-    "Referer": HOST + "/ui/start/",
-}
-
-logger = logging.getLogger("mof_scraper")
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-    datefmt="%H:%M:%S",
-)
 
 # --------------------------------------------------------------------------- #
 # 网络层（带重试 / 退避 / 限速）
@@ -285,59 +286,9 @@ _ATTACH_KIND = {"0": "attachment", "90": "text_version"}
 
 
 
-def _sig_current(rec):
-    """当前列表记录的变更指纹（用于增量 diff：标题/正文/日期/文号/机关/题注）。"""
-    return (
-        rec.get("title"),
-        html_to_text(rec.get("lcontent") or ""),
-        normalize_date(rec.get("lBuDate")),
-        normalize_date(rec.get("lSsDate")),
-        rec.get("lwh"),
-        rec.get("lbbdw"),
-        rec.get("lcaption"),
-    )
 
-def _sig_prev(entry):
-    """历史存储条目的变更指纹（与 _sig_current 口径对齐）。"""
-    return (
-        entry.get("title"),
-        entry.get("content_text"),
-        entry.get("publish_date"),
-        entry.get("effective_date"),
-        entry.get("doc_no"),
-        entry.get("issue_org"),
-        entry.get("summary"),
-    )
 
-def _sig_eq(a, b):
-    """指纹等价比较：把 None 归一为 '' 后再比。
 
-    背景（2026-09-22 周调度**P0 定位**）：`_sig_current` 对列表侧缺失/不可解析的
-    `lSsDate` 走 `normalize_date` → **None**，而主库历史值多为 **''**；`None != ''`
-    使 **254 条/周**被误判为"变更" → 触发无谓的详情+附件重抓（附件为本地重抽取，
-    单条数秒级）→ 整轮跑不完、主库长期不更新。该字段在列表接口中本就不可得，
-    排除其 null 形态差异不损失任何真实可检测的变更能力。
-    """
-    return (tuple("" if x is None else x for x in a)
-            == tuple("" if x is None else x for x in b))
-
-def _canon_law_id(v):
-    """法规主键统一到**单一类型**（主库既有约定：纯数字 → int）。
-
-    背景（2026-09-22 周调度**P0 定位**）：`fgk.mof.gov.cn` 列表接口现以**字符串**
-    返回 `id`，而主库历史条目为 **int**（同一数值）。原实现 `prev_by_id.get(rid)`
-    按原类型取值 → 恒不命中 → **每一条都被判为 "added"**，记录级指纹增量彻底失效，
-    表现为每周对全部 ~870 条重抓详情+附件（数小时），主库因此长期停留在旧日期。
-    实测：`OVERLAP_raw=0 / OVERLAP_str=90`（100% 同值异型）。
-    """
-    if v is None:
-        return None
-    if isinstance(v, bool):
-        return int(v)
-    if isinstance(v, int):
-        return v
-    s = str(v).strip()
-    return int(s) if s.lstrip("-").isdigit() else s
 
 # --------------------------------------------------------------------------- #
 # 输出
@@ -353,130 +304,15 @@ def _canon_law_id(v):
 _SCRAPERS_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if _SCRAPERS_ROOT not in sys.path:
     sys.path.insert(0, _SCRAPERS_ROOT)
-from std_lib.common_lib import fs_lock
 
-_LOCKS: dict = {}   # lock_path -> fs_lock.ProcessLock（release_lock 需释放同一实例）
 
-def _read_lock_pid(lock_path):
-    """读取锁文件首段（PID）。格式：PID|ISO|token。失败返回 None。"""
-    try:
-        with open(lock_path, encoding="utf-8") as f:
-            first = f.readline().strip()
-    except OSError:
-        return None
-    try:
-        return int(first.split("|")[0])
-    except (ValueError, IndexError):
-        return None
 
-def _pid_alive(pid):
-    """跨平台进程存活检测（Windows/Linux 均可用 os.kill(pid, 0)）。"""
-    if not pid or pid <= 0:
-        return False
-    try:
-        os.kill(pid, 0)
-        return True
-    except (ProcessLookupError, OSError):
-        return False
 
-def acquire_lock(lock_path, max_age_sec=3 * 3600):
-    """基于 PID 存活校验的运行锁（实现统一委托 fs_lock.ProcessLock，N-8）。
 
-    - 判定逻辑（PID 存活 + max_age 陈旧兜底）仅在 fs_lock 公共库一份，四源共用；
-    - 锁存在且其中 PID 仍在运行 -> 返回 False（并发重复，调用方跳过本次）；
-    - PID 已死 / 锁损坏 / 超龄 -> 覆盖抢占。
 
-    注：保留本函数签名仅为兼容既有调用方与测试；新代码请直接用 fs_lock.ProcessLock。
-    """
-    lk = fs_lock.ProcessLock(lock_path, max_age_sec=max_age_sec)
-    if lk.acquire():
-        _LOCKS[lock_path] = lk
-        return True
-    return False
 
-def release_lock(lock_path):
-    """释放由 acquire_lock 获取的锁（幂等；未持有则无操作）。"""
-    lk = _LOCKS.pop(lock_path, None)
-    if lk is not None:
-        lk.release()
 
-def write_status(outdir, status):
-    """记录抓取状态（成功 / 异常），供调度与监控读取，保留异常状态处理能力。"""
-    fs_lock.atomic_write_text(os.path.join(os.path.dirname(outdir), "state", "status.json"),
-                  json.dumps(status, ensure_ascii=False, indent=2))
 
-def save_json(entries, path):
-    fs_lock.atomic_write_text(path, json.dumps({
-        "source": HOST,
-        "captured_at": datetime.now(UTC).isoformat(),
-        "count": len(entries),
-        "items": entries,
-    }, ensure_ascii=False, indent=2))
-
-def save_csv(entries, path):
-    cols = [
-        "id", "title", "category_name", "category_id", "publish_date",
-        "effective_date", "issue_org", "doc_no", "summary", "content_text",
-        "content_length", "status", "create_dept", "file_count",
-        "attachment_count", "attachment_names", "attachments",
-        "active", "change", "removed_at",
-        "detail_link", "api_link", "source", "fetch_time",
-    ]
-    buf = io.StringIO()
-    w = csv.DictWriter(buf, fieldnames=cols, quoting=csv.QUOTE_ALL, lineterminator="\n")
-    w.writeheader()
-    for e in entries:
-        w.writerow({c: e.get(c, "") for c in cols})
-    # 前置 BOM，保证 Excel 正确识别 UTF-8
-    fs_lock.atomic_write_text(path, "\ufeff" + buf.getvalue())
-
-def save_html_report(entries, path):
-    """生成可读的离线 HTML 报告（自包含，无外部依赖）。"""
-    items_html = []
-    for i, e in enumerate(entries, 1):
-        att_cell = ""
-        for a in (e.get("attachments") or []):
-            lp = a.get("local_path")
-            fn = html.escape(str(a.get("file_name", "")))
-            att_cell += (f'<a href="{html.escape(lp)}" target="_blank">{fn}</a><br>'
-                         if lp else fn + "<br>")
-        if not att_cell:
-            att_cell = "—"
-        items_html.append(f"""
-        <tr>
-          <td>{i}</td>
-          <td><a href="{e.get('detail_link','')}" target="_blank">{html.escape(str(e.get('title','')))}</a></td>
-          <td>{html.escape(str(e.get('category_name','')))}</td>
-          <td>{html.escape(str(e.get('publish_date','')))}</td>
-          <td>{html.escape(str(e.get('effective_date','')))}</td>
-          <td>{html.escape(str(e.get('issue_org','')))}</td>
-          <td>{html.escape(str(e.get('doc_no','')))}</td>
-          <td>{html.escape(str(e.get('summary',''))[:160])}</td>
-          <td>{html.escape(str(e.get('content_length','')))}</td>
-          <td>{att_cell}</td>
-          <td>{'有效' if e.get('active') else '已移除'}</td>
-          <td>{html.escape(str(e.get('change','')))}</td>
-        </tr>""")
-    doc = f"""<!DOCTYPE html>
-<html lang="zh-CN"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>财政部法规数据库抓取结果</title>
-<style>
- body{{font-family:-apple-system,"Microsoft YaHei",sans-serif;margin:24px;color:#222}}
- h1{{font-size:20px}} table{{border-collapse:collapse;width:100%;font-size:13px}}
- th,td{{border:1px solid #ddd;padding:6px 8px;text-align:left;vertical-align:top}}
- th{{background:#f5f7fa}} tr:nth-child(even){{background:#fafafa}}
- a{{color:#1E6FD9;text-decoration:none}}
- .meta{{color:#888;font-size:12px;margin-bottom:12px}}
-</style></head><body>
-<h1>财政部法规数据库抓取结果</h1>
-<div class="meta">来源：{HOST} ｜ 条目数：{len(entries)} ｜ 生成时间：{datetime.now().isoformat(timespec='seconds')}</div>
-<table>
-<thead><tr><th>#</th><th>标题</th><th>类别</th><th>公布日期</th><th>生效日期</th>
-<th>发文机关</th><th>发文字号</th><th>内容摘要</th><th>正文字数</th><th>附件</th><th>状态</th><th>变更</th></tr></thead>
-<tbody>{''.join(items_html)}</tbody>
-</table></body></html>"""
-    fs_lock.atomic_write_text(path, doc)
 
 # --------------------------------------------------------------------------- #
 # 主程序
@@ -783,7 +619,10 @@ def main():
         logger.info("   JSON : %s", json_path)
         logger.info("   CSV  : %s", csv_path)
         logger.info("   HTML : %s", html_path)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
+        # 意图声明（本仓规范）：**采集失败必须记入 status 并保留上次成功结果，
+        # 而不是让进程崩掉** —— 崩溃会让调度层拿不到任何现场（连 last_error 都没有）。
+        # 故此处是按设计隔离的宽泛捕获，不是漏收窄。
         # —— 异常状态处理：记录错误，保留上一次成功结果（不覆盖）——
         status["last_error"] = f"{type(e).__name__}: {e}"
         status["last_error_time"] = datetime.now(UTC).isoformat()

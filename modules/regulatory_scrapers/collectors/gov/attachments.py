@@ -37,7 +37,16 @@ if _ROOT not in sys.path:
 # 产物目录统一（Plan B 阶段 2b + 5b 收敛 + 2026-09-08 docs_root 统一根）：
 # 附件统一落盘 docs_root("gov","attachments")
 SRC_DIR = os.path.dirname(os.path.abspath(__file__))
-REPO_ROOT = os.path.dirname(SRC_DIR)  # regulatory_scrapers（统一数据根）
+# ⚠️ 2026-10-20 修（第一百零五批，**同类 bug 的第 5 处**，与 mof/pbc/supp 同源）：
+# 原 `dirname(SRC_DIR)` 只上溯**一级** ⇒ 实际是 `.../collectors`
+# （注释却写 "regulatory_scrapers"，两者不符）⇒ `local_path` 会写成
+# `../data/docs/…` 这种**带 `..` 的脏路径**（只在 cwd=collectors 时能解析）。
+# 统一为**仓根**（与 mof/pbc 一致；`_GUIDE_ROOT` 已把仓根放进 sys.path，故可 import）。
+# 历史 gov 数据（1189 条 `data/docs/…`，旧代码/别的基准写的）由
+# `tools/migrate_local_path.py --allow-scrapers-to-repo` 一次性迁移。
+from paths import ROOT as _WS_ROOT
+
+REPO_ROOT = _WS_ROOT
 from std_lib.scraper_std.cache_store import docs_root
 
 ATTACHMENTS_DIR = docs_root("gov", "attachments")

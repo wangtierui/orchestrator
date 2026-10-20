@@ -114,7 +114,10 @@ def migrate_file(name: str, *, execute: bool,
                     else:
                         stat["unverifiable"].append(str(lp)[:90])
             # 附件级 local_path
-            for a in (d.get("attachments") or []):
+            # ⚠️ 除 `attachments` 外还有 **`body_docs`**（正文载体，批 50 起由
+            # `split_record_body_docs` 从 attachments 分出）——v1 只扫 attachments
+            # ⇒ supp 的 1 条 body_doc 被漏掉，迁移后仍留旧基准（实测发现）。
+            for a in ((d.get("attachments") or []) + (d.get("body_docs") or [])):
                 if not isinstance(a, dict):
                     continue
                 alp = a.get("local_path")

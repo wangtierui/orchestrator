@@ -1,6 +1,24 @@
 {
   "_note": "gov/collector.py 拆分等价性基线（结构快照，非 hash）",
+  "_source_path": "modules/regulatory_scrapers/collectors/gov/collector.py",
   "class_methods": {
+    "ExitCode": {},
+    "MasterView": {
+      "__init__": [
+        "self",
+        "out_dir"
+      ],
+      "_read_index": [
+        "self"
+      ],
+      "keys": [
+        "self"
+      ],
+      "records": [
+        "self"
+      ]
+    },
+    "OfflineMiss": {},
     "RobustSession": {
       "__init__": [
         "self",
@@ -33,6 +51,29 @@
         "referer"
       ]
     },
+    "ScrapeConfig": {
+      "__init__": [
+        "self",
+        "source",
+        "base_url",
+        "category",
+        "out_dir",
+        "max_pages",
+        "max_items",
+        "fetch_details",
+        "details_limit",
+        "resume",
+        "delay_min",
+        "delay_max",
+        "timeout",
+        "retries",
+        "summary_len",
+        "checkpoint_every",
+        "stop_after_empty_pages",
+        "backfill",
+        "max_seconds"
+      ]
+    },
     "XzfgkScraper": {
       "__init__": [
         "self",
@@ -59,7 +100,8 @@
       "run": [
         "self"
       ]
-    }
+    },
+    "_OfflineMiss": {}
   },
   "cli": {
     "count": 25,
@@ -281,6 +323,7 @@
         ".TRS_Editor",
         "div.content"
       ],
+      "kind": "seq",
       "len": 10
     },
     "CSV_COLUMNS": {
@@ -296,6 +339,7 @@
         "summary",
         "source"
       ],
+      "kind": "seq",
       "len": 10
     },
     "DEFAULT_HEADERS": {
@@ -306,7 +350,16 @@
         "Connection",
         "Upgrade-Insecure-Requests"
       ],
+      "kind": "dict",
       "len": 5
+    },
+    "SOURCES": {
+      "keys": [
+        "xzfgk",
+        "zhengceku"
+      ],
+      "kind": "dict",
+      "len": 2
     },
     "TITLE_SELECTORS": {
       "items": [
@@ -316,6 +369,18 @@
         ".title",
         "h2"
       ],
+      "kind": "seq",
+      "len": 5
+    },
+    "USER_AGENTS": {
+      "items": [
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, lik",
+        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/12"
+      ],
+      "kind": "seq",
       "len": 5
     },
     "_NOISE_CLASS_HINTS": {
@@ -329,67 +394,48 @@
         "qr",
         "vconsole"
       ],
+      "kind": "seq",
       "len": 8
     },
     "_ORGAN_KW": {
       "head": "(?:国务院|部|委员会",
+      "kind": "str",
       "len": 32
     },
     "_SCHEME_UPGRADE_RE": {
       "flags": 34,
+      "kind": "regex",
       "pattern": "targetProtocol\\s*=\\s*[\"\\']https:"
+    },
+    "_SCRAPERS_ROOT": {
+      "head": "<ROOT>\\modul",
+      "kind": "str",
+      "len": 75
+    },
+    "_STD_LIB_ROOT": {
+      "head": "<ROOT>\\modul",
+      "kind": "str",
+      "len": 75
     }
   },
   "module_names": {
     "expected": [
-      "_OfflineMiss",
-      "_ORGAN_KW",
-      "_NOISE_CLASS_HINTS",
-      "_RESP_TEXT",
-      "_SCHEME_UPGRADE_RE",
-      "_SCRAPERS_ROOT",
-      "_STD_LIB_ROOT",
-      "_init_cache",
-      "_is_https_scheme_upgrade",
-      "_longest_text_block",
-      "build_config",
-      "clean_text",
-      "decode_html",
-      "extract_date",
-      "extract_doc_number",
-      "extract_issue_organ",
-      "fetch_gov_attachments",
-      "load_resume",
-      "LOG",
-      "main",
-      "make_summary",
-      "MasterView",
-      "merge_and_write",
-      "merge_with_master",
-      "RobustSession",
-      "ScrapeConfig",
-      "set_cache_dir",
-      "set_offline",
-      "SOURCES",
-      "TITLE_SELECTORS",
-      "write_collect_stats",
-      "write_outputs",
-      "XzfgkScraper",
-      "CONTENT_SELECTORS",
-      "CSV_COLUMNS",
-      "DEFAULT_HEADERS"
-    ],
-    "missing": [],
-    "present": [
+      "Any",
+      "BeautifulSoup",
       "CONTENT_SELECTORS",
       "CSV_COLUMNS",
       "DEFAULT_HEADERS",
+      "ExitCode",
+      "HTTPAdapter",
       "LOG",
       "MasterView",
+      "OfflineMiss",
+      "Retry",
       "RobustSession",
       "SOURCES",
       "ScrapeConfig",
       "TITLE_SELECTORS",
+      "USER_AGENTS",
       "XzfgkScraper",
       "_NOISE_CLASS_HINTS",
       "_ORGAN_KW",
@@ -398,9 +444,15 @@
       "_SCHEME_UPGRADE_RE",
       "_SCRAPERS_ROOT",
       "_STD_LIB_ROOT",
+      "_cache_ep",
       "_init_cache",
       "_is_https_scheme_upgrade",
       "_longest_text_block",
+      "_unified_doc_number",
+      "annotations",
+      "argparse",
+      "atexit",
+      "bind_source_cache",
       "build_config",
       "clean_text",
       "decode_html",
@@ -408,13 +460,79 @@
       "extract_doc_number",
       "extract_issue_organ",
       "fetch_gov_attachments",
+      "fs_lock",
       "load_resume",
+      "logging",
       "main",
       "make_summary",
       "merge_and_write",
       "merge_with_master",
+      "os",
+      "paths",
+      "requests",
       "set_cache_dir",
       "set_offline",
+      "sys",
+      "time",
+      "write_collect_stats",
+      "write_outputs"
+    ],
+    "missing": [],
+    "present": [
+      "Any",
+      "BeautifulSoup",
+      "CONTENT_SELECTORS",
+      "CSV_COLUMNS",
+      "DEFAULT_HEADERS",
+      "ExitCode",
+      "HTTPAdapter",
+      "LOG",
+      "MasterView",
+      "OfflineMiss",
+      "Retry",
+      "RobustSession",
+      "SOURCES",
+      "ScrapeConfig",
+      "TITLE_SELECTORS",
+      "USER_AGENTS",
+      "XzfgkScraper",
+      "_NOISE_CLASS_HINTS",
+      "_ORGAN_KW",
+      "_OfflineMiss",
+      "_RESP_TEXT",
+      "_SCHEME_UPGRADE_RE",
+      "_SCRAPERS_ROOT",
+      "_STD_LIB_ROOT",
+      "_cache_ep",
+      "_init_cache",
+      "_is_https_scheme_upgrade",
+      "_longest_text_block",
+      "_unified_doc_number",
+      "annotations",
+      "argparse",
+      "atexit",
+      "bind_source_cache",
+      "build_config",
+      "clean_text",
+      "decode_html",
+      "extract_date",
+      "extract_doc_number",
+      "extract_issue_organ",
+      "fetch_gov_attachments",
+      "fs_lock",
+      "load_resume",
+      "logging",
+      "main",
+      "make_summary",
+      "merge_and_write",
+      "merge_with_master",
+      "os",
+      "paths",
+      "requests",
+      "set_cache_dir",
+      "set_offline",
+      "sys",
+      "time",
       "write_collect_stats",
       "write_outputs"
     ]

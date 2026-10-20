@@ -9,7 +9,7 @@
 2026-10-20 把常量层下沉到 `gov_constants.py`（206 行）⇒ `collector.py` **701 行**
 （回到 J11 的 800 行预算内），`collector` 仍 re-export 全部符号。
 
-**等价性基线**（`tests/gov_collector_baseline.py` + `tests/cassettes/
+**等价性基线**（`tests/collector_baseline.py --source gov` + `tests/baselines/
 gov_collector_baseline.json`）锁定四段结构快照：
 
   1. 模块级名字全集（36 个，按名）
@@ -66,13 +66,18 @@ class TestBaselineIdentical:
     """A. 结构快照必须与基线逐项一致。"""
 
     def test_baseline_matches(self) -> None:
-        """调 `tests.gov_collector_baseline` 的比对（**单一实现**，不在此重复逻辑）。"""
-        from tests import gov_collector_baseline as B
+        """调 `tests.collector_baseline` 的比对（**单一实现**，不在此重复逻辑）。
 
-        assert B.main([]) == 0, (
-            "结构快照与基线不一致（模块名/常量/方法签名/CLI 选项之一漂移）——"
-            "若是有意变更，请 `python -m tests.gov_collector_baseline --write` "
-            "并在 CHANGELOG 说明原因")
+        ⚠️ 第一百零五批把基线工具**泛化为多源**（`--source gov|mof|…`）并改用
+        AST 自动收集 + 单向包含比对，旧 `tests/gov_collector_baseline.py` 已删除
+        （两份实现必然分叉：旧版 `expected` 每次从当前文件重算 ⇒ 漏搬抓不到）。
+        """
+        from tests import collector_baseline as B
+
+        diffs = B.compare("gov")
+        assert not diffs, (
+            f"结构快照与基线不一致: {diffs} ——若是有意变更，请 "
+            "`python -m tests.collector_baseline --source gov --write` 并在 CHANGELOG 说明")
 
     def test_baseline_file_exists(self) -> None:
         """基线在 `tests/baselines/` 而**非** `tests/cassettes/`。

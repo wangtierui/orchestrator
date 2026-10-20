@@ -127,8 +127,13 @@ def test_legacy_xlsx_path_bounded(tmp_path) -> None:
 # 接线守卫（W-A / W-B / W-D / W-I）
 # --------------------------------------------------------------------------- #
 @pytest.mark.parametrize("rel,needle", [
-    ("modules/regulatory_scrapers/collectors/gov/collector.py", 'd["attachment_text"] = att_text'),
-    ("modules/regulatory_scrapers/collectors/gov/zhengceku.py", '"attachment_text": att_text'),
+    # ⚠️ 2026-10-20（第一百零五批）：`XzfgkScraper` 已拆到 `gov/gov_scraper.py`，
+    # 该写侧的 `attachment_text` 赋值点随之迁走 ⇒ 目标路径必须跟随
+    # （否则守卫在旧文件里搜不到，会误判为"已合规"——那是最危险的假绿）。
+    ("modules/regulatory_scrapers/collectors/gov/gov_scraper.py",
+     'd["attachment_text"] = att_text'),
+    ("modules/regulatory_scrapers/collectors/gov/zhengceku.py",
+     '"attachment_text": att_text'),
 ])
 def test_w_a_raw_writers_do_not_duplicate(rel: str, needle: str) -> None:
     """W-A：gov 写侧不得再写记录级聚合副本（attachments[].text 为唯一权威）。
