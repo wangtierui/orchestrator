@@ -436,9 +436,17 @@ def _finalize_attachment(att, data, fname, law_id, dest):
 def download_attachment(att, law_id, outdir, rate, timeout=60, max_retries=6):
     """下载单个附件到 data/docs/mof_regulations_scraper/attachments/<law_id>/，返回带本地相对路径与大小的元数据；失败返回 None。
 
-    增量策略（2026-09-10，附件主机 502 环境）：
+    增量策略（2026-09-10，附件主机 502 环境；2026-10-20 TD-11 修订）：
       - **幂等复用**：本地已存在非空副本 → 直接本地重抽（不再请求，规避重复下载/502 空转）；
-      - **502 熔断**：502/503 仅重试 2 次即跳过，连续 8 次 502 熔断，本次运行后续附件全部跳过；
+      - **主机不可用熔断**：502/503 仅重试 2 次即跳过；**网络异常（超时/连接拒绝/
+        DNS 失败）与 502 共用同一连续计数**，连续 8 次即熔断，本次运行后续附件全部
+        跳过；**任一次成功即清零**（熔断语义是"连续"不可用，不清零会把健康主机的
+        偶发抖动累积成误熔断）。
+        ```
+        为什么把网络异常也计入（TD-11 实测）：
+          原实现只计 502 ⇒ 主机**超时**时永不熔断 ⇒ 每附件走满 6 次退避 ≈150s，
+          序列无限延续 ⇒ 全链实跑 14419.7s（4h 硬上限）仍跑不完，mof raw 停滞 10 天。
+        ```
       - 429/500 保留指数退避重试；404 等不可恢复直接放弃。
     """
     global _ATT_502_STREAK, _ATT_CIRCUIT_OPEN
@@ -466,6 +474,9 @@ def download_attachment(att, law_id, outdir, rate, timeout=60, max_retries=6):
             req.add_header("User-Agent", random.choice(CC_USER_AGENTS))
             with urllib.request.urlopen(req, timeout=timeout) as r:
                 data = r.read()
+            # 成功即**清零**连续失败计数：熔断的语义是"**连续**不可用"，
+            # 若不清零，一天里的偶发抖动会跨小时累积到 8 次 ⇒ 把健康主机误熔断。
+            _ATT_502_STREAK = 0
             return _finalize_attachment(att, data, fname, law_id, dest)
         except urllib.error.HTTPError as e:
             last_err = e
@@ -503,10 +514,26 @@ def download_attachment(att, law_id, outdir, rate, timeout=60, max_retries=6):
             return None
         except (urllib.error.URLError, TimeoutError, ConnectionError) as e:
             last_err = e
+            # ⚠️ TD-11（2026-10-20）**这是 4h 硬上限被耗尽的真正主因**：
+            # 原实现只把 **502/503** 计入熔断（`_ATT_502_STREAK`），而**网络异常
+            # （超时 / 连接拒绝 / DNS 失败）不计入、也永不熔断** ⇒ 附件主机
+            # 不可达时，每个附件都走满 `max_retries=6` 次、每次退避 ≤30+1s
+            # ≈ **150s/附件**，且序列永不终止（实测全链实跑 14419.7s 仍跑不完，
+            # 使 mof raw 停滞 10 天）。
+            # 修法：网络异常**与 502 共用同一条熔断计数**——二者都是"主机不可用"
+            # 的同义信号，分开计会让任一单独出现时都熔不断。
+            _ATT_502_STREAK += 1
+            if _ATT_502_STREAK >= _MAX_ATT_502_STREAK:
+                _ATT_CIRCUIT_OPEN = True
+                logger.error(
+                    "附件主机连续 %d 次不可用（含网络异常），熔断：本次运行剩余附件跳过。",
+                    _ATT_502_STREAK)
+                return None
             backoff = min(2 ** attempt * 1.5, 30) + random.uniform(0, 1)
             logger.warning(
-                "附件下载网络异常 (尝试 %d/%d)：%s，%ss 后重试",
-                attempt, max_retries, e, round(backoff, 1),
+                "附件下载网络异常 (尝试 %d/%d，熔断计数 %d/%d)：%s，%ss 后重试",
+                attempt, max_retries, _ATT_502_STREAK, _MAX_ATT_502_STREAK,
+                e, round(backoff, 1),
             )
             time.sleep(backoff)
             continue

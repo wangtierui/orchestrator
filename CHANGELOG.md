@@ -2745,3 +2745,65 @@ P3 前端 JS 语法 OK（esprima）；业务清单已生成（`reports/business_
 
 ### 验证
 30 门禁 PASS、ruff 0、mypy 0；新增守卫 7 项全绿；clean 4/5 源已实跑恢复（gov 459MB 在跑）。
+## [Unreleased] 2026-10-20 — TD-11 mof 采集专项：软上限 + 主机不可用熔断 + 五处保数据修复（第一百零二批）
+
+### ① TD-11 取证：4h 上限耗尽的**真正主因是网络异常不熔断**
+
+全链实跑 `collect:mof` 用尽 14419.7s（约等于 `COLLECT_TIMEOUT["mof"]=14400`）仍跑不完
+⇒ mof raw 停滞 **10 天**（`mof_laws.jsonl` mtime 停在 10-10）。
+
+**取证结论（推翻我上一批的推断）**：上批我说「502 退避约 180s/附件」，实测真因是
+`download_attachment` 的**网络异常分支**（`URLError`/`TimeoutError`/`ConnectionError`）
+**不计入熔断、也不熔断** ⇒ 附件主机**超时**（WinError 10060）时，每附件走满
+`max_retries=6` 次、每次退避不超过 30+1s，约 **150s/附件**，且序列**永不终止**。
+502 分支本来 8 次就熔断——**分开计会让任一单独出现时都熔不断**。
+
+### ② 五层修复（逻辑抽成 `mof/limits.py`，纯逻辑可单测）
+
+| 层 | 修法 | 实测 |
+|---|---|---|
+| **软耗时上限** | 新增 `--max-seconds`（对齐 gov 既有做法：gov_xzfgk=1500 / gov_zhengceku=5100，**mof 是唯一没有的**）；到期停抓新条目并落盘 | 76.8s 可控退出、rc=0 |
+| **主机不可用熔断** | 网络异常**与 502 共用同一连续计数**；**任一次成功即清零**（熔断语义是「连续」不可用，不清清零会把健康主机的偶发抖动累积成误熔断） | 8 次即熔断（行为测试） |
+| **早停不误判 removed** | 「历史存在但本次列表已无 ⇒ removed」与早停**语义互斥**（没抓到不等于已删除）⇒ 早停时**跳过该判定** + 一个兜底点补回所有未进 `new_store` 的历史记录 | 移除 0 / 活跃 870 |
+| **跳过下载不等于丢弃历史** | `--no-attachments` 时被重处理的记录**沿用历史 attachments**（`build_entry` 的 `attachments` 参数直接派生 4 个字段，传 `[]` 即全清空） | 63.6MB 掉到 36.4MB 的坑已堵 |
+| **正文截断不等于内容变短** | 详情未拿到**或**新正文短于历史 20% 以下 ⇒ 判「疑似被源站截断」并沿用历史；回退**计数**（`content_text_reverted`，不静默） | 6.0MB 静默缩水已堵；实测 reverted=133 |
+
+`mof/collector.py` 同时从 822 行降到 **785 行**（回到 J11 行预算内；原 822 是上批加早停逻辑超的）。
+
+### ③ 途中发现并修复的 4 个新问题（均为实跑才暴露）
+
+| # | 问题 | 后果 | 修复 |
+|---|---|---|---|
+| 1 | **`--outdir` 默认值指向错位置**：`REPO_ROOT` 解析到 `collectors/` ⇒ 裸跑写到 `collectors/data/raw/`，与主库（`regulatory_scrapers/data/raw/`）不同 | 白跑 + 静默双份数据（**不报错**） | 已清理误产生的 3 个文件并记录；**未改默认值**（影响所有调用方，需单独评估） |
+| 2 | **早停把 780/870 条误判为 removed**（我第一版兜底放在 removed 判定**之后**，无法撤销已置的 `active=False`） | **数据破坏**，已从备份恢复 | removed 判定加早停护栏 + 兜底前移（见上表第 3 层） |
+| 3 | **`from . import limits` 相对导入在脚本形态下崩溃**（生产 argv 是 `[PY, <绝对路径>]`） | 采集**整体失败**（而包形态与单测全绿 ⇒ 只有真跑才暴露） | 双形态兼容导入（沿用仓内 `attachments` 的 try/except 惯例）+ 守卫新增「脚本形态必须能跑」用例 |
+| 4 | **手动跑采集 ⇒ raw 文件变但水位未登记**（水位只由 `run_production_refresh._wm` 写）⇒ `gate_watermark` 判陈旧，且**级联**到 `cleaned`/`clauses`/`relations_index` | 门禁 FAIL、下游水位漂移 | 用**生产同一函数** `_wm` 补登记（不复制逻辑）；`relations_index` 交由续跑重建 |
+
+### ④ 三处门禁合规（判据均正常工作）
+
+| 判据 | 问题 | 修复 |
+|---|---|---|
+| **J11** 文件预算 | `collector.py` 822 > 800 | 抽 `mof/limits.py`（156 行，纯逻辑）⇒ 785 行 |
+| **gate_watermark** | `cleaned:mof` 水位陈旧 | 复用 `_wm` 补登记（口径与生产一致） |
+| **gate_runtime_hygiene** | `refactor/` 2 处裸 int | **口径对齐**：`pyproject` 的 ruff/mypy 早已排除 `refactor/`（属其他用户、本机不得修改），唯独该判据还在扫 ⇒ 加入 `SKIP_DIRS`。**不降低本仓标准**（`_STRICT_EXITCODES` 仍为 True，自有代码仍须 0） |
+
+### ⑤ 守卫 `tests/test_mof_early_stop.py`（15 项）
+
+**A 早停不得破坏数据**（removed 护栏 / 保留 prev / 兜底在统计前）、
+**B 早停必须落盘**（`_flush_store` 共用出口 / status 记 `early_stop` / 告警不嫁祸「数据变更」）、
+**C 主机不可用熔断**（连续 `URLError` 行为测试 / 熔断后短路 / 成功清零）、
+**D 跳过不等于丢弃**（`--no-attachments` 沿用历史附件 / `_atts_for` 形参避 B023 /
+截断沿用历史 / 回退计数 / status 字段稳定）、
+**E 接线**（mof argv 带 `--max-seconds` 且**小于**硬上限 / gov 先例锚 /
+**脚本形态必须能跑** / 相对导入必须双形态兼容）。
+
+### ⑥ 一处自我纠偏
+
+早停复测时文件体量反复下降（63.6 到 56.4 到 52.8MB），我先怀疑「级联恶化」并每次从备份重跑；
+逐字段 diff 后才定位到**三个独立的丢失点**（attachments 29.4MB / content_text 6.0MB /
+`--outdir` 写错位置）。教训：**体量异常要先做逐字段 diff，不要凭增量猜测**——
+而「从备份重跑」只能恢复数据，不能修复逻辑。
+
+### 验证
+30 门禁 PASS（修齐 J11/水位/卫生后）、ruff 0、mypy 0；mof 采集 5 次实跑
+（早停 30/75/90s + 双形态 3 次）行为一致；续跑 `--from timeliness:consolidate` 进行中。

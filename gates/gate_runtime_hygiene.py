@@ -37,6 +37,14 @@ SKIP_DIRS = {
     ".codebuddy",
     "retired",
     "archive",
+    # ⚠️ 2026-10-20 补：`refactor/` **属其他用户**（用户 2026-10-09 明确「本机不得
+    # 修改其任何文件，视为独立模块」）。本仓不得为它改代码，也不该为它背判据：
+    #   · `pyproject.toml` 的 ruff `extend-exclude` 与 mypy `exclude` **早已排除**它；
+    #   · 本判据此前仍在扫 ⇒ 同一目录三种静态检查**两种口径**（实测：该目录 2 处
+    #     裸整数 return 让本判据 FAIL，而本仓自有代码其实是 0）。
+    # 排除只为**口径一致**，不降低本仓标准：`_STRICT_EXITCODES` 仍为 True，
+    # 自有代码仍须 0 裸整数 return。
+    "refactor",
 }  # v2 §3.10（P2-3）：归档层不参与运行时卫生计数
 
 PAT_RETURN_INT = re.compile(r"^\s*return\s+[1-9]\d*\s*(?:#.*)?$", re.M)

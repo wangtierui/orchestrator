@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-10-20 01:29:30",
+ "generated_at": "2026-10-20 12:35:59",
  "source": "all",
  "limit": 200,
  "mode": "full",
@@ -1447,7 +1447,7 @@
  "sample_policy": {
   "prefer_baseline": true,
   "scan_cap_per_source": 4000,
-  "scanned": 5948,
+  "scanned": 5949,
   "why": "优先取有确定性基线的记录，使 agreement 具代表性（N-184b）；其余记录仅计入分布/边距"
  },
  "agreement_n": 330,

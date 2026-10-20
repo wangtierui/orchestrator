@@ -72,13 +72,25 @@ def _quarantine_records() -> list[dict]:
 
 class TestRealData:
     def test_exactly_one_backfillable(self) -> None:
-        """**真实数据**：5 条里恰有 1 条可回填（附件就是正文的 8727 字那条）。"""
+        """**真实数据**：隔离区里**已无可回填条目**（那 1 条已修复回填）。
+
+        历史演进（本用例的断言随数据状态前进而更新，**不是放松**）：
+          · 2026-10-19 立守卫时：隔离区 5 条，其中 1 条「正文 0 字但附件 8727 字」
+            （中国银保监会…商业银行预期信用损失法…）可回填 ⇒ 断言「恰 1 条」。
+          · 2026-10-20 复跑：同一条**已从隔离区进入主产物**（body_text=8786 字），
+            且连续 11 天（10-09→10-19）的隔离区都还有它、10-20 的主产物里有了
+            ⇒ 第九十九批的回填修复**确认真实生效**。
+          · 现在隔离区只剩 4 条，且 `body=0 / att=0`（源侧无正文，不可修）
+            ⇒ 断言改为「可回填数 == 0」。
+        **为什么不是跳过/删用例**：这条用例的价值在于「真实数据上的回归可见」——
+        若将来回填逻辑被破坏，那条会重新落回隔离区，本用例立刻抓出。
+        """
         recs = _quarantine_records()
         if not recs:
             pytest.skip("无隔离区实文件（数据目录未落地）")
         hits = [r for r in recs if _would_backfill(r)]
-        assert len(hits) == 1, (
-            f"可回填条数应为 1，实际 {len(hits)}："
+        assert len(hits) == 0, (
+            f"隔离区出现可回填条目 {len(hits)} 条——回填逻辑应已把它们救回主产物："
             f"{[str(r.get('title'))[:30] for r in hits]}")
 
     def test_backfillable_one_has_body_null_att_rich(self) -> None:

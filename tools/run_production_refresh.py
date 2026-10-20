@@ -112,7 +112,13 @@ COLLECT_CMD = {
     ],
     # mof 附件主机 10.1.60.36:8888 曾实测 100% HTTP 502：默认全量会空转数十小时，
     # 可用环境 MOF_COLLECT_ARGS="--no-attachments" 追加逃生参数（仍会抓详情正文）。
-    "mof": [PY, os.path.join(COLLECTORS, "mof", "collector.py")],
+    "mof": [PY, os.path.join(COLLECTORS, "mof", "collector.py"),
+        # TD-11（2026-10-20）：软耗时上限——对齐 gov 的既有做法（gov_xzfgk=1500 / gov_zhengceku=5100）。
+        # 实测（全链 2026-10-19）：mof 附件主机不可用时每附件重试退避可达 150~186s，
+        # 4h 硬上限（COLLECT_TIMEOUT['mof']=14400）被用尽仍跑不完，mof raw 停滞 10 天。
+        # 取 7200（2h）：主数据约需 500s（实测 130 条/75s），余下留给附件；未抓完的下次增量续抓。
+        "--max-seconds", "7200",
+    ],
     # nfra 全量：原文（doc/pdf）已默认下载（2026-09-09 五源统一完整文档内容）。
     "nfra": [PY, os.path.join(COLLECTORS, "nfra", "collector.py")],
     "pbc": [PY, os.path.join(COLLECTORS, "pbc", "collector.py")],

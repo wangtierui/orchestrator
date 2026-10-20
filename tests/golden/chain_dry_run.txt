@@ -5,7 +5,7 @@ warning: The `
 [step:collect:gov_xzfgk] SKIP（--dry-run（只列 argv，不执行））
 [collect] gov_zhengceku argv=['<PY>', '<ROOT>\\modules\\regulatory_scrapers\\collectors\\gov\\collector.py', '--source', 'zhengceku', '--max-seconds', '5100', '--env-source', 'gov', '--env-category', '行政法规+部门文件', '--out-dir', '<ROOT>\\modules\\regulatory_scrapers\\data\\raw']
 [step:collect:gov_zhengceku] SKIP（--dry-run（只列 argv，不执行））
-[collect] mof argv=['<PY>', '<ROOT>\\modules\\regulatory_scrapers\\collectors\\mof\\collector.py', '--outdir', '<ROOT>\\modules\\regulatory_scrapers\\data\\raw']
+[collect] mof argv=['<PY>', '<ROOT>\\modules\\regulatory_scrapers\\collectors\\mof\\collector.py', '--max-seconds', '7200', '--outdir', '<ROOT>\\modules\\regulatory_scrapers\\data\\raw']
 [step:collect:mof] SKIP（--dry-run（只列 argv，不执行））
 [collect] nfra argv=['<PY>', '<ROOT>\\modules\\regulatory_scrapers\\collectors\\nfra\\collector.py', '--out-dir', '<ROOT>\\modules\\regulatory_scrapers\\data\\raw']
 [step:collect:nfra] SKIP（--dry-run（只列 argv，不执行））
@@ -110,7 +110,7 @@ semantic:preflight       0         0.0
 pg:health                0         0.0
 wiki:sync                0         0.0
 gates                    0         0.0
-raw: gov=13178条/458.6MB | mof=870条/63.6MB | nfra=1939条/90.3MB | pbc=571条/2.6MB | supp=60条/13.8MB
+raw: gov=13178条/458.6MB | mof=870条/63.5MB | nfra=1939条/90.3MB | pbc=571条/2.6MB | supp=60条/13.8MB
 总耗时 <x>s | 失败步骤 0
 汇总已落盘: <ROOT>\reports\_tmp\生产刷新汇总_<ts>.json
 [run_state] 稳定运行台账已更新: <ROOT>\data\run_state\last_run_steps.json

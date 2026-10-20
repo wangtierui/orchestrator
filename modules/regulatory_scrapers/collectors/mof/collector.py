@@ -493,6 +493,14 @@ def main():
     ap.add_argument("--refetch-attachments", action="store_true",
                     help="强制重新抓取并下载全部条目的附件（用于补抓历史条目附件，默认仅新增/变更条目抓附件）")
     ap.add_argument("--max-items", type=int, default=None, help="每类别最多抓取条目数（验证用）")
+    ap.add_argument(
+        "--max-seconds", type=float, default=0,
+        help="**软耗时上限**（秒，默认 0=不限）。到期后**停止继续抓取新条目**，"
+             "但会把已抓进度与未处理条目一并落盘（未处理者保留历史记录、标 "
+             "`unchanged`），并在 status 里标 `early_stop`。"
+             "为什么需要（TD-11，2026-10-20 全链实跑实测）：附件主机不可用时"
+             "（超时/502）每附件重试退避可达 150~186s，4h 硬上限被用尽仍跑不完，"
+             "导致 mof raw 停滞 10 天。软上限让**主数据先落地**，附件下次续抓。")
     ap.add_argument("--timeout", type=int, default=30, help="单请求超时(秒)")
     ap.add_argument("--cache-dir", default="",
                     help="请求缓存目录（显式覆盖）：缺省由 cache_store.source_cache_root(mof) 统一解析"
@@ -528,12 +536,50 @@ def main():
         "active_count": None,
         "expected_count": None,
         "added": 0, "updated": 0, "removed": 0, "unchanged": 0,
+        # TD-11：本次运行中「新正文疑似被源站截断 ⇒ 沿用历史」的条数。
+        # **不静默**：回退是保守决策，必须可查（事后若确认源站真的删减了内容，
+        # 据此逐条复核）。未触发时为 0（字段始终存在，下游可无条件读）。
+        "content_text_reverted": 0,
+        # TD-11（2026-10-20）：软耗时上限到期时的现场（未到期保持 None ⇒ 字段稳定，
+        # 下游可无条件读。**不静默**：早停是"本次不完整"的事实，必须可查）。
+        "early_stop": None,
         "warning": None,
         "last_error": None,
         "last_error_time": None,
     }
     try:
         rate = RateLimiter(args.delay_min, args.delay_max)
+        # TD-11（2026-10-20）：软耗时上限守卫 + 三条"保数据"原语。
+        # 逻辑本体在 `mof/limits.py`（纯逻辑、无 IO、可单测）；本文件只做装配。
+        # ⚠️ 导入必须**双形态兼容**：本文件既被包内引用，也被调度/CLI 以**脚本形态**
+        # 直接跑（`COLLECT_CMD` 形如 `[PY, <绝对路径>, …]`）⇒ 相对导入在脚本形态下
+        # 抛 `attempted relative import with no known parent package`。
+        # 本仓既有惯例见上方 `attachments` 的 try/except 双导入；`limits` 同理。
+        # （实测踩到：只写 `from . import limits` 时，生产 argv 一跑即崩。）
+        try:
+            from . import limits as _limits
+        except ImportError:
+            import limits as _limits  # type: ignore[no-redef]
+
+        _stopped_logged = False   # 早停日志只打一次（否则每条 warning 刷屏）
+        _guard = _limits.EarlyStopGuard(getattr(args, "max_seconds", 0))
+        _CONTENT_SHRINK_RATIO = _limits.CONTENT_SHRINK_RATIO
+
+        def _flush_store() -> str:
+            """落盘（正常结束与早停**共用**同一条出口）。
+
+            ⚠️ 为什么必须共用：原实现把落盘内联在 try 末尾，早停若直接 `break`
+            就**不会落盘** ⇒ 已抓的进度全丢（等于白跑）。抽成一个出口后，
+            早停也能落地。
+            """
+            p = write_raw_jsonl(store_path, new_store, source=HOST)
+            if getattr(args, "csv", False):          # 默认仅 JSON 主库（2026-09-09 规范）
+                save_csv(new_store, os.path.join(args.outdir, "mof_laws.csv"))
+            save_html_report(
+                new_store,
+                os.path.join(os.path.dirname(args.outdir), "reports",
+                             "mof_laws_report.html"))
+            return p
         fetch_detail_enabled = not args.no_detail
 
         # —— 载入历史存储（mof_laws.json 本身即为持久化存储）——
@@ -556,6 +602,11 @@ def main():
         added = updated = unchanged = 0
 
         for lfgcc in args.categories:
+            # 早停后**不再发起列表请求**（连列表分页也省掉——网络已不可用时
+            # 每次分页都要等超时）；未抓类别的历史记录由下方"补全"步骤兜住。
+            if _guard.stopped:
+                logger.warning("已早停 ⇒ 跳过类别 %s 的列表抓取（历史记录保留）", lfgcc)
+                continue
             raw_records, exp = fetch_category_records(
                 lfgcc, cat_map.get(lfgcc, lfgcc),
                 size=args.size, rate=rate, max_items=args.max_items,
@@ -564,16 +615,49 @@ def main():
             refetch_att = args.refetch_attachments and fetch_detail_enabled
             # 附件主机不可用时可整体跳过附件（--no-attachments），保障主数据全量不被拖垮
             fetch_att = fetch_detail_enabled and not args.no_attachments
+
+            def _atts_for(rid_key, prev_entry, do_fetch: bool):
+                """本次要写入的附件元数据。
+
+                **「跳过下载」≠「丢弃历史」**：`build_entry(..., attachments=[])`
+                会把 `attachments`/`attachment_count`/`table_structured`/
+                `table_raw_text` 四字段整体清空。实测 `--no-attachments` 补抓时
+                被重处理的 130 条把主库 63.6MB→36.4MB（差 ≈29.4MB，正是其体量）。
+                原语见 `limits.merge_attachments`；`do_fetch` 走形参是为避开
+                ruff B023（闭包捕获循环变量 `fetch_att` 的延迟绑定坑）。
+                """
+                fetched = collect_attachments(rid_key, rate) if do_fetch else []
+                return _limits.merge_attachments(
+                    fetched, (prev_entry or {}).get("attachments"), do_fetch)
             for rec in raw_records:
                 rid = rec.get("id")
                 # 网络调用仍用**接口原样 id**；仅比对/记账键做规范化，避免影响请求语义与缓存键
                 current_raw_by_id[str(rid)] = rec
+                # ── TD-11（2026-10-20）：软耗时上限。到期后**不再发起详情/附件请求**，
+                #    但本条仍要进 `current_raw_by_id`（上面已做）——否则它会被
+                #    后面的「历史存在但本次列表已无」逻辑误判为已移除。
+                if _guard.check() and not _stopped_logged:
+                    _stopped_logged = True
+                    logger.warning(
+                        "达到软耗时上限 %.0fs ⇒ 停止抓取详情/附件；已处理 %d 条，"
+                        "剩余条目保留历史记录（标 unchanged）后落盘。",
+                        _guard.max_seconds, len(new_store))
                 prev = prev_by_id.get(str(rid))
+                # ── 早停后：**不再抓详情/附件**，按 `prev` 原样保留 ──
+                # 逻辑在 `limits.EarlyStopGuard.keep_prev`（保数据的第一道闸：
+                # 跳过而非保留，会让这些 id 被下方 removed 逻辑判成"已移除"）。
+                if _guard.stopped:
+                    _keep = _guard.keep_prev(prev)
+                    if _keep is not None:
+                        new_store.append(_keep)
+                        unchanged += 1
+                    _guard.skipped_in_run += 1
+                    continue
                 sig_changed = prev is not None and not _sig_eq(_sig_current(rec), _sig_prev(prev))
                 if prev is None:
                     # 新增：抓详情以补全字段 + 抓附件
                     detail = fetch_detail(rid, rate) if fetch_detail_enabled else None
-                    atts = collect_attachments(rid, rate) if fetch_att else []
+                    atts = _atts_for(rid, None, fetch_att)
                     entry = build_entry(rec, detail, lfgcc, cat_map.get(lfgcc, lfgcc),
                                        fetch_detail_enabled, attachments=atts)
                     entry["id"] = _canon_law_id(entry.get("id"))
@@ -583,9 +667,24 @@ def main():
                 elif sig_changed:
                     # 变更：重新抓详情与附件
                     detail = fetch_detail(rid, rate) if fetch_detail_enabled else None
-                    atts = collect_attachments(rid, rate) if fetch_att else []
+                    atts = _atts_for(rid, prev, fetch_att)
                     entry = build_entry(rec, detail, lfgcc, cat_map.get(lfgcc, lfgcc),
                                        fetch_detail_enabled, attachments=atts)
+                    # ⚠️ TD-11：**「正文疑似被源站截断」时沿用历史**。
+                    # 实测（直连接口，非缓存）：源站对长文返回截断内容
+                    # （6562 vs 27548 / 14409 vs 50772）⇒ 129 条正文静默缩水 6.0MB。
+                    # 判据与权衡见 `limits.content_should_revert`；回退**计数**
+                    # （不静默：保守决策须可事后复核）。
+                    if prev is not None and _limits.content_should_revert(
+                            entry.get("content_text") or "",
+                            prev.get("content_text") or "",
+                            detail is None):
+                        _hist = prev.get("content_text") or ""
+                        if len(_hist) > len(entry.get("content_text") or ""):
+                            entry["content_text"] = _hist
+                            entry["content_length"] = len(_hist)
+                            status["content_text_reverted"] = (
+                                status.get("content_text_reverted", 0) + 1)
                     entry["id"] = _canon_law_id(entry.get("id"))
                     entry["active"] = True
                     entry["change"] = "updated"
@@ -605,35 +704,65 @@ def main():
                 new_store.append(entry)
 
         # —— 历史中存在但本次列表已无 -> 视为已移除（保留记录，标记 inactive）——
+        # ⚠️ TD-11（2026-10-20）：**早停时禁止执行本段**，二者语义互斥。
+        # 实测踩到的严重 bug（已从备份恢复数据）：早停跳过了第 2 个类别（780 条），
+        # 那 780 条的 id 自然不在 `current_raw_by_id` ⇒ 被本段判为「已移除」
+        # ⇒ 主库 870 条里 **780 条 active 被置 False**。这是**数据破坏**：
+        # 「本次列表里没有」有两种完全不同的原因，早停场景下无法区分：
+        #   ① 源站真的删了（应当 removed）；
+        #   ② 我们根本没抓（绝不能判 removed）。
         removed = 0
-        for rid, prev in prev_by_id.items():
-            if rid not in current_raw_by_id:
-                rec = dict(prev)   # N-67：原用 `e`（与 except 变量同名，mypy misc 告警）
-                rec["active"] = False
-                rec["change"] = "removed"
-                rec["removed_at"] = datetime.now(UTC).isoformat()
-                new_store.append(rec)
-                removed += 1
+        if _guard.stopped:
+            logger.warning(
+                "早停 ⇒ **跳过「已移除」判定**（未抓取的类别里不能把条目当作已删除；"
+                "未进本次结果的 %d 条历史记录将按原样保留）", len(prev_by_id))
+        else:
+            for rid, prev in prev_by_id.items():
+                if rid not in current_raw_by_id:
+                    rec = dict(prev)   # N-67：原用 `e`（与 except 变量同名，mypy misc 告警）
+                    rec["active"] = False
+                    rec["change"] = "removed"
+                    rec["removed_at"] = datetime.now(UTC).isoformat()
+                    new_store.append(rec)
+                    removed += 1
+
+        # ── 早停兜底：把**任何**未进 `new_store` 的历史记录补回来 ──
+        # 一个兜底点覆盖三种现场：① 内层已停但被跳过的类别；② 外层直接 continue
+        # 的类别；③ `fetch_category_records` 中途异常。三者都会让某些历史 id 缺席，
+        # 而不兜底它们就会被下方 removed 逻辑判成已移除。逻辑在 `limits`。
+        _restored = _guard.restore_missing(prev_by_id, new_store)
+        if _restored:
+            unchanged += _restored
+            logger.warning("早停兜底：%d 条历史记录按原样保留（未刷新，不再判定为移除）",
+                           _restored)
+        if _guard.stopped:
+            status["early_stop"] = _guard.summary()
 
         active_count = sum(1 for e in new_store if e.get("active"))
 
         # —— 漏抓自检：活跃条数应与当前列表预期总量一致（验证模式除外）——
         if expected_total and not args.max_items and active_count != expected_total:
-            status["warning"] = (
-                f"活跃条目 {active_count} 与预期 {expected_total} 不一致，"
-                "可能抓取期间数据发生变更，建议复核。"
-            )
+            if _guard.stopped:
+                # 早停导致的不完整是**已知且预期**的 ⇒ 不能说成"数据变更建议复核"
+                # （那会把运维引向错误的排查方向）。要如实说明"是我们没抓完"。
+                status["warning"] = (
+                    f"早停：活跃 {active_count} 与预期 {expected_total} 不一致——"
+                    f"因达到软耗时上限（{_guard.at_s:.0f}s / {_guard.reason}），"
+                    "未抓取的类别待下次续跑；未抓条目的历史记录已按原样保留，"
+                    "**未判定为已移除**。")
+            else:
+                status["warning"] = (
+                    f"活跃条目 {active_count} 与预期 {expected_total} 不一致，"
+                    "可能抓取期间数据发生变更，建议复核。")
             logger.warning(status["warning"])
 
         # —— 原子写输出（失败时不覆盖上一次成功结果）——
-        json_path = store_path
-        csv_path = os.path.join(args.outdir, "mof_laws.csv")
-        html_path = os.path.join(os.path.dirname(args.outdir), "reports", "mof_laws_report.html")
         # 批 49/T1：改**流式 JSONL** 落盘（原 `save_json` 整表 json.dumps：115MB 主库会多一份整表字符串）
-        json_path = write_raw_jsonl(store_path, new_store, source=HOST)
-        if getattr(args, "csv", False):            # 默认仅 JSON 主库（2026-09-09 规范）
-            save_csv(new_store, csv_path)
-        save_html_report(new_store, html_path)
+        # TD-11：统一走 `_flush_store()`（正常结束与早停共用同一出口，避免"早停不落盘"）。
+        json_path = _flush_store()
+        csv_path = os.path.join(args.outdir, "mof_laws.csv")
+        html_path = os.path.join(os.path.dirname(args.outdir), "reports",
+                                 "mof_laws_report.html")
 
         status.update({
             "last_success_time": datetime.now(UTC).isoformat(),
