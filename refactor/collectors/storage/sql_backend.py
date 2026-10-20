@@ -3,11 +3,13 @@
 
 仅在 backend=postgres 时由 factory 惰性导入，因此未安装 SQLAlchemy/psycopg 不影响 file 路径。
 
-Schema（幂等建表 + 兼容迁移）：
-  master_runs(id, namespace, captured_at, count)
-  master_items(id, run_id, namespace, key_md5, url, payload JSONB)
-  —— (namespace, key_md5) 唯一（key_md5 非空时，部分唯一索引允许多个 NULL）；
-     key_md5 由 detail_url/url/detail_link/api_link 归一计算，缺省按源自然主键去重。
+Schema（按阶段分表，幂等建表 + 兼容迁移）：
+  master_runs(id, namespace, captured_at, count)       共享运行批次账本
+  raw_items(id, run_id, namespace, key_md5, url, payload JSONB)   采集阶段（各源信封，namespace=源）
+  cleaned_items(...)                                   clean 阶段（统一 schema）
+  clauses(...)                                         clause 阶段（条文结构）
+  —— 各 item 表 (namespace, key_md5) 唯一；key_md5 由 detail_url/url/detail_link/api_link
+     归一计算，缺省按源自然主键去重。
 """
 import hashlib
 from datetime import datetime, timezone
@@ -45,16 +47,34 @@ RUNS = Table(
     Column("count", Integer, nullable=False),
     Column("created_at", DateTime(timezone=True), server_default=text("now()")),
 )
-ITEMS = Table(
-    "master_items",
-    _metadata,
-    Column("id", BigInteger, primary_key=True),
-    Column("run_id", Integer, ForeignKey("master_runs.id"), nullable=False, index=True),
-    Column("namespace", String(64), nullable=False, index=True),
-    Column("key_md5", String(32), nullable=True, index=True),
-    Column("url", Text, nullable=True),
-    Column("payload", JSON, nullable=False),
-)
+def _item_table(name: str) -> Table:
+    return Table(
+        name,
+        _metadata,
+        Column("id", BigInteger, primary_key=True),
+        Column("run_id", Integer, ForeignKey("master_runs.id"), nullable=False, index=True),
+        Column("namespace", String(64), nullable=False, index=True),
+        Column("key_md5", String(32), nullable=True, index=True),
+        Column("url", Text, nullable=True),
+        Column("payload", JSON, nullable=False),
+    )
+
+
+# 阶段 → 物理表：cleaned / clauses 各有专属表；其余 namespace（各采集源
+# gov/mof/nfra/pbc/internal…）统一落 raw_items，以 namespace 列区分源。
+_ITEM_TABLES = {
+    "raw_items": _item_table("raw_items"),
+    "cleaned_items": _item_table("cleaned_items"),
+    "clauses": _item_table("clauses"),
+}
+
+
+def _physical_table(namespace: str) -> str:
+    if namespace == "cleaned":
+        return "cleaned_items"
+    if namespace == "clauses":
+        return "clauses"
+    return "raw_items"
 
 
 def _extract_key(item, keys=("detail_url", "url", "detail_link", "api_link")):
@@ -83,6 +103,7 @@ class SqlStore:
         self._engine = None
         self._normalizer = normalizer
         self._on_conflict = on_conflict
+        self._table = _ITEM_TABLES[_physical_table(namespace)]
 
     @property
     def engine(self):
@@ -91,38 +112,30 @@ class SqlStore:
         return self._engine
 
     def init_schema(self) -> None:
-        """幂等建表 + 兼容已有库（旧 schema 列名 source→namespace、补 key_md5/created_at）。"""
+        """幂等建表 + 兼容迁移（三张阶段表各自确保 key_md5 列与唯一索引）。"""
         _metadata.create_all(self.engine)
         insp = inspect(self.engine)
-        item_cols = [c["name"] for c in insp.get_columns("master_items")]
-        run_cols = [c["name"] for c in insp.get_columns("master_runs")]
         with self.engine.begin() as conn:
-            # 兼容旧 schema：列名 source -> namespace
-            if "source" in item_cols and "namespace" not in item_cols:
-                conn.execute(
-                    text("ALTER TABLE master_items RENAME COLUMN source TO namespace")
-                )
-                conn.execute(
-                    text("ALTER TABLE master_runs RENAME COLUMN source TO namespace")
-                )
-                item_cols = [c["name"] for c in insp.get_columns("master_items")]
-                run_cols = [c["name"] for c in insp.get_columns("master_runs")]
-            if "key_md5" not in item_cols:
-                conn.execute(
-                    text("ALTER TABLE master_items ADD COLUMN key_md5 TEXT")
-                )
-            if "created_at" not in run_cols:
+            if "created_at" not in [c["name"] for c in insp.get_columns("master_runs")]:
                 conn.execute(
                     text(
                         "ALTER TABLE master_runs ADD COLUMN created_at TIMESTAMPTZ DEFAULT now()"
                     )
                 )
-            conn.execute(
-                text(
-                    "CREATE UNIQUE INDEX IF NOT EXISTS uq_master_ns_key "
-                    "ON master_items (namespace, key_md5)"
+            for tname, uq in (
+                ("raw_items", "uq_raw_items_ns_key"),
+                ("cleaned_items", "uq_cleaned_items_ns_key"),
+                ("clauses", "uq_clauses_ns_key"),
+            ):
+                cols = [c["name"] for c in insp.get_columns(tname)]
+                if "key_md5" not in cols:
+                    conn.execute(text(f"ALTER TABLE {tname} ADD COLUMN key_md5 TEXT"))
+                conn.execute(
+                    text(
+                        f"CREATE UNIQUE INDEX IF NOT EXISTS {uq} "
+                        f"ON {tname} (namespace, key_md5)"
+                    )
                 )
-            )
 
     def save(
         self,
@@ -162,7 +175,7 @@ class SqlStore:
             if rows:
                 for r in rows:
                     r["run_id"] = run_id
-                stmt = pg_insert(ITEMS).values(rows)
+                stmt = pg_insert(self._table).values(rows)
                 if oc == "update":
                     stmt = stmt.on_conflict_do_update(
                         index_elements=["namespace", "key_md5"],
@@ -211,8 +224,8 @@ class SqlStore:
             # 必须并集才能给出完整语料；下游 clean 依赖完整集。
             payloads = (
                 conn.execute(
-                    select(ITEMS.c.payload).where(
-                        ITEMS.c.namespace == self.namespace
+                    select(self._table.c.payload).where(
+                        self._table.c.namespace == self.namespace
                     )
                 )
                 .scalars()

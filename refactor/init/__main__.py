@@ -97,7 +97,9 @@ def cmd_init(args) -> int:
             # 2) 表 + 索引（按依赖顺序；全部 IF NOT EXISTS）
             table_checks = [
                 ("master_runs", ddl_mod.MASTER_RUNS_DDL),
-                ("master_items", ddl_mod.MASTER_ITEMS_DDL),
+                ("raw_items", ddl_mod.RAW_ITEMS_DDL),
+                ("cleaned_items", ddl_mod.CLEANED_ITEMS_DDL),
+                ("clauses", ddl_mod.CLAUSES_DDL),
                 ("docgraph_edges", ddl_mod.DOCGRAPH_EDGES_DDL),
             ]
             for tname, tsql in table_checks:

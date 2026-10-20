@@ -89,6 +89,7 @@ UNIFIED_SCHEMA: dict[str, Any] = {
     "source_url": {"type": "url"},
     # 枚举字段一律绑定上方受控常量（S-3）：禁止在此处写字面量，防枚举漂移
     "source": {"type": "enum", "enum_values": sorted(SOURCE_SET)},
+    "scope": {"type": "string"},  # 文档内/外部标记（internal / external）
     "body_text": {"type": "string", "required": True},
     "summary": {"type": "string"},
     "data_format": {"type": "string"},
@@ -411,6 +412,7 @@ CSV_COLUMNS = [
     "document_number",
     "source_url",
     "source",
+    "scope",
     "body_text",
     "body_text_webpage",
     "body_text_doc",

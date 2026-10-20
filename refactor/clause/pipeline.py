@@ -47,6 +47,7 @@ _IDENTITY_FIELDS = (
     "summary",
     "source_url",
     "issue_organ",
+    "scope",
 )
 
 

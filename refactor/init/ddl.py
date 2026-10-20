@@ -34,9 +34,13 @@ CREATE TABLE IF NOT EXISTS master_runs (
 CREATE INDEX IF NOT EXISTS ix_master_runs_namespace ON master_runs (namespace);
 """
 
-# 数据主体：每条记录 = 一行，整条字典塞进 payload（JSON）。
-MASTER_ITEMS_DDL = """
-CREATE TABLE IF NOT EXISTS master_items (
+# 数据主体（按阶段分表）：每条记录 = 一行，整条字典塞进 payload（JSON）。
+#  - raw_items   ：采集阶段产出（各源信封，源以 namespace 区分：gov/mof/nfra/pbc/internal…）
+#  - cleaned_items：clean 阶段产出（统一 schema）
+#  - clauses     ：clause 阶段产出（条文结构）
+# 旧的单表 master_items（仅靠 namespace 分区）已废弃，不再创建。
+RAW_ITEMS_DDL = """
+CREATE TABLE IF NOT EXISTS raw_items (
     id           BIGSERIAL    PRIMARY KEY,
     run_id       INTEGER      NOT NULL REFERENCES master_runs (id),
     namespace    VARCHAR(64)  NOT NULL,
@@ -44,11 +48,43 @@ CREATE TABLE IF NOT EXISTS master_items (
     url          TEXT         NULL,
     payload      JSON         NOT NULL
 );
-CREATE INDEX IF NOT EXISTS ix_master_items_run_id     ON master_items (run_id);
-CREATE INDEX IF NOT EXISTS ix_master_items_namespace ON master_items (namespace);
-CREATE INDEX IF NOT EXISTS ix_master_items_key_md5   ON master_items (key_md5);
-CREATE UNIQUE INDEX IF NOT EXISTS uq_master_ns_key
-    ON master_items (namespace, key_md5);
+CREATE INDEX IF NOT EXISTS ix_raw_items_run_id     ON raw_items (run_id);
+CREATE INDEX IF NOT EXISTS ix_raw_items_namespace ON raw_items (namespace);
+CREATE INDEX IF NOT EXISTS ix_raw_items_key_md5   ON raw_items (key_md5);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_raw_items_ns_key
+    ON raw_items (namespace, key_md5);
+"""
+
+CLEANED_ITEMS_DDL = """
+CREATE TABLE IF NOT EXISTS cleaned_items (
+    id           BIGSERIAL    PRIMARY KEY,
+    run_id       INTEGER      NOT NULL REFERENCES master_runs (id),
+    namespace    VARCHAR(64)  NOT NULL,
+    key_md5      VARCHAR(32)  NULL,
+    url          TEXT         NULL,
+    payload      JSON         NOT NULL
+);
+CREATE INDEX IF NOT EXISTS ix_cleaned_items_run_id     ON cleaned_items (run_id);
+CREATE INDEX IF NOT EXISTS ix_cleaned_items_namespace ON cleaned_items (namespace);
+CREATE INDEX IF NOT EXISTS ix_cleaned_items_key_md5   ON cleaned_items (key_md5);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_cleaned_items_ns_key
+    ON cleaned_items (namespace, key_md5);
+"""
+
+CLAUSES_DDL = """
+CREATE TABLE IF NOT EXISTS clauses (
+    id           BIGSERIAL    PRIMARY KEY,
+    run_id       INTEGER      NOT NULL REFERENCES master_runs (id),
+    namespace    VARCHAR(64)  NOT NULL,
+    key_md5      VARCHAR(32)  NULL,
+    url          TEXT         NULL,
+    payload      JSON         NOT NULL
+);
+CREATE INDEX IF NOT EXISTS ix_clauses_run_id     ON clauses (run_id);
+CREATE INDEX IF NOT EXISTS ix_clauses_namespace ON clauses (namespace);
+CREATE INDEX IF NOT EXISTS ix_clauses_key_md5   ON clauses (key_md5);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_clauses_ns_key
+    ON clauses (namespace, key_md5);
 """
 
 # 文档引用边（最小图模型；与 Apache AGE 图查询共用同一份数据）。
@@ -66,5 +102,12 @@ CREATE INDEX IF NOT EXISTS ix_docgraph_edges_dst       ON docgraph_edges (dst_id
 CREATE INDEX IF NOT EXISTS ix_docgraph_edges_relation  ON docgraph_edges (relation);
 """
 
-# 完整 DDL（按依赖顺序：runs → items → edges → 向量表）。
-FULL_DDL = MASTER_RUNS_DDL + MASTER_ITEMS_DDL + DOCGRAPH_EDGES_DDL + VECTOR_DDL
+# 完整 DDL（按依赖顺序：runs → raw_items → cleaned_items → clauses → edges → 向量表）。
+FULL_DDL = (
+    MASTER_RUNS_DDL
+    + RAW_ITEMS_DDL
+    + CLEANED_ITEMS_DDL
+    + CLAUSES_DDL
+    + DOCGRAPH_EDGES_DDL
+    + VECTOR_DDL
+)

@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS master_runs (
 );
 CREATE INDEX IF NOT EXISTS ix_master_runs_namespace ON master_runs (namespace);
 
-CREATE TABLE IF NOT EXISTS master_items (
+CREATE TABLE IF NOT EXISTS raw_items (
     id           BIGSERIAL    PRIMARY KEY,
     run_id       INTEGER      NOT NULL REFERENCES master_runs (id),
     namespace    VARCHAR(64)  NOT NULL,
@@ -26,11 +26,39 @@ CREATE TABLE IF NOT EXISTS master_items (
     url          TEXT         NULL,
     payload      JSON         NOT NULL
 );
-CREATE INDEX IF NOT EXISTS ix_master_items_run_id     ON master_items (run_id);
-CREATE INDEX IF NOT EXISTS ix_master_items_namespace ON master_items (namespace);
-CREATE INDEX IF NOT EXISTS ix_master_items_key_md5   ON master_items (key_md5);
-CREATE UNIQUE INDEX IF NOT EXISTS uq_master_ns_key
-    ON master_items (namespace, key_md5);
+CREATE INDEX IF NOT EXISTS ix_raw_items_run_id     ON raw_items (run_id);
+CREATE INDEX IF NOT EXISTS ix_raw_items_namespace ON raw_items (namespace);
+CREATE INDEX IF NOT EXISTS ix_raw_items_key_md5   ON raw_items (key_md5);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_raw_items_ns_key
+    ON raw_items (namespace, key_md5);
+
+CREATE TABLE IF NOT EXISTS cleaned_items (
+    id           BIGSERIAL    PRIMARY KEY,
+    run_id       INTEGER      NOT NULL REFERENCES master_runs (id),
+    namespace    VARCHAR(64)  NOT NULL,
+    key_md5      VARCHAR(32)  NULL,
+    url          TEXT         NULL,
+    payload      JSON         NOT NULL
+);
+CREATE INDEX IF NOT EXISTS ix_cleaned_items_run_id     ON cleaned_items (run_id);
+CREATE INDEX IF NOT EXISTS ix_cleaned_items_namespace ON cleaned_items (namespace);
+CREATE INDEX IF NOT EXISTS ix_cleaned_items_key_md5   ON cleaned_items (key_md5);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_cleaned_items_ns_key
+    ON cleaned_items (namespace, key_md5);
+
+CREATE TABLE IF NOT EXISTS clauses (
+    id           BIGSERIAL    PRIMARY KEY,
+    run_id       INTEGER      NOT NULL REFERENCES master_runs (id),
+    namespace    VARCHAR(64)  NOT NULL,
+    key_md5      VARCHAR(32)  NULL,
+    url          TEXT         NULL,
+    payload      JSON         NOT NULL
+);
+CREATE INDEX IF NOT EXISTS ix_clauses_run_id     ON clauses (run_id);
+CREATE INDEX IF NOT EXISTS ix_clauses_namespace ON clauses (namespace);
+CREATE INDEX IF NOT EXISTS ix_clauses_key_md5   ON clauses (key_md5);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_clauses_ns_key
+    ON clauses (namespace, key_md5);
 
 CREATE TABLE IF NOT EXISTS docgraph_edges (
     edge_id   TEXT PRIMARY KEY,                      -- 复用抽取产物 relation_id（幂等去重）

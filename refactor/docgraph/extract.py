@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
-"""Refactor 原生文档引用图抽取（docgraph）：从 master_items 读 clean 文档 → RelationExtractor → docgraph_edges。
+"""Refactor 原生文档引用图抽取（docgraph）：从 cleaned_items 读 clean 文档 → RelationExtractor → docgraph_edges。
 
 与旧管线（extract_relations.py 读 legacy 文件 + legacy 索引）的区别：
-  - 源文档来自 master_items（默认 namespace='cleaned'），不是 legacy cleaned jsonl；
-  - 实体解析索引由 master_items 自身构建（归一标题 → doc_id），未命中即外部引用 name:<canonical>；
+  - 源文档来自 cleaned_items（namespace 恒为 'cleaned'），不是 legacy cleaned jsonl；
+  - 实体解析索引由 cleaned_items 语料构建（归一标题 → doc_id），未命中即外部引用 name:<canonical>；
   - 核心正则抽取逻辑 RelationExtractor 原样复用（源无关）。
 
 落点：docgraph_edges 6 列（edge_id/src_id/src_name/dst_id/dst_name/relation），与 schema.sql 一致。
@@ -40,7 +40,7 @@ def _doc_id(payload: dict) -> str:
 
 
 def load_corpus(db_url: str, namespaces=("cleaned",), limit: int = 0) -> list:
-    """从 master_items 读出文档 (doc_id, title, source, text)。"""
+    """从 cleaned_items 读出文档 (doc_id, title, source, text)。"""
     try:
         from psycopg import connect
     except ImportError:  # pragma: no cover
@@ -51,7 +51,7 @@ def load_corpus(db_url: str, namespaces=("cleaned",), limit: int = 0) -> list:
         with conn.cursor() as cur:
             for ns in namespaces:
                 cur.execute(
-                    "SELECT payload FROM master_items WHERE namespace = %s", (ns,)
+                    "SELECT payload FROM cleaned_items WHERE namespace = %s", (ns,)
                 )
                 for (pl,) in cur.fetchall():
                     p = dict(pl) if not isinstance(pl, dict) else pl
@@ -87,7 +87,7 @@ def _resolve(name: str, index: dict):
 
 
 def extract(db_url: str, namespaces=("cleaned",), limit: int = 0) -> list:
-    """从 master_items 抽全部关系边，返回 6 列 dict 列表。"""
+    """从 cleaned_items 抽全部关系边，返回 6 列 dict 列表。"""
     docs = load_corpus(db_url, namespaces=namespaces, limit=limit)
     index = build_index(docs)
     ext = RelationExtractor()
@@ -130,7 +130,7 @@ def extract(db_url: str, namespaces=("cleaned",), limit: int = 0) -> list:
 def main(argv=None):
     ap = argparse.ArgumentParser(description="Refactor-native relation extraction → docgraph_edges")
     ap.add_argument("--db-url", required=True)
-    ap.add_argument("--namespaces", default="cleaned", help="逗号分隔的 master_items namespace")
+    ap.add_argument("--namespaces", default="cleaned", help="逗号分隔的源 namespace（默认 cleaned_items 的 cleaned）")
     ap.add_argument("--limit", type=int, default=0, help="仅抽取前 N 篇（验证用）")
     ap.add_argument("--dry-run", action="store_true", help="只打印不落库")
     args = ap.parse_args(argv)
