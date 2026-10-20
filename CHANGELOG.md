@@ -2684,3 +2684,64 @@ SLI 有 value+target、时效三态齐备）⇒ 问题必在渲染层，逐行�
 ### 验证
 30 门禁 PASS（含 J15）、ruff 0、mypy 0；`test_step_triage.py` 17 项全绿；
 P3 前端 JS 语法 OK（esprima）；业务清单已生成（`reports/business_review/`）。
+## [Unreleased] 2026-10-20 — 全链实跑暴露的三处**瘫痪级**缺陷（第一百零一批）
+
+> 全链实跑（`--collect all --triggers`）跑完 **42 步**、`gates` 也 **PASS**，
+> 但暴露了三处**门禁与单测都抓不到**的缺陷——因为它们只在"整链真跑"时出现。
+
+### ① `run_clean_pipeline` 的 argparse help 含裸 `%` ⇒ **clean 5 源全瘫痪**
+
+**症状**：clean 的 **5 个源全部 rc=1**，耗时 0.6~2.6s（远非超时），
+且 `stderr` 字节数**完全相同（1785B）**——**等长 stderr 是"与数据无关的启动期崩溃"的指纹**。
+
+**根因**：`help=f"…默认 {SCHEMA_FAIL_RATE_MAX:.2%}）"` 求值得到 `…默认 2.00%）`，
+而 `argparse` 会对 help 做一次 `help_string % params` ⇒ 裸 `%` 触发
+`ValueError: unsupported format character '?' (0xff09)` ⇒ **脚本启动即崩**。
+
+**修**：f-string 后 `.replace("%", "%%")`（argparse 会还原成单个 `%`）。
+**验证**：`clean:pbc` rc=0/5.0s、`clean:mof` 18.8s、`clean:nfra` 24.7s、`clean:supp` 2.2s（全部恢复）。
+
+### ② `_c_token_exists` 硬编码仓根 ⇒ **时效核验永远不执行**
+
+**症状**（日志自相矛盾）：
+`SKIP（token_exists=True → 不满足（token 存在=False（.pkulaw_token））；…）`
+第一段是**声明期望**，括号里才是实测——而实测用了错路径。
+
+**根因**：只查仓根 `.pkulaw_token`，token 实际在 `timeliness_review/`。
+**这是 N-169 同类缺陷的第 3 处**（前两处是 `doctor` 的 `token`/`token_fresh`）。
+后果：**北大法宝预算再足也跑不到核验**（条件恒不满足）。
+
+**修**：改用 `pkulaw_cli.load_token_any()`（唯一事实源，含 env 与全部候选路径），
+说明里给出**命中来源**。验证：`token_exists(True) → True（timeliness_review/.pkulaw_token）`。
+
+### ③ 条件步骤的占位符分支 return 残缺 rec ⇒ **整链在最后一屏崩**
+
+**症状**：42 步全跑完、`gates` PASS，日志末尾却是
+`[refresh] 主链异常终止: KeyError: 'elapsed_s'`。
+
+**根因**：`_run_conditional` 的 `UnresolvedPlaceholder` 分支只 return
+`{step, rc, skipped, reason}` 四字段（缺 `elapsed_s`）且**不写台账**
+⇒ 汇总打印 `r['elapsed_s']` 抛 KeyError；且该步在 `run_step` 里**无记录**（不可追溯）。
+实测触发者就是日志里的 `wiki:sync`（`{vault}` 缺值）。
+
+**修（两层）**：
+1. 该分支走**与其他分支同一条出口**：补齐 rec + `_record_step` + return rec；
+2. 汇总打印改 `.get()` + **缺失显式告警**（`[WARN] … 缺 elapsed_s（按 ? 显示而非中断链路）`）
+   —— 汇总表是**观测面**，不该成为链路可靠性的单点。
+
+### ④ `collect:mof` 跑不完（4h 上限用尽）——**配置正常，问题在采集效率**
+
+实测 `elapsed=14419.7s` ≈ `COLLECT_TIMEOUT["mof"]=14400` ⇒ **超时机制正常工作**。
+该值是批 55/F2 有意放宽的（当时 7200s 用尽）。
+**结论**：不是"缺上限"，而是 mof「列表+详情+附件」三段抓取（附件主机 429/500 退避至 60s、
+502 连续 8 次熔断）**在 4h 内做不完**。登记 TD-11；**不再放宽**（会让每日链失控），
+正确方向是分档（正文必成 / 附件增量可延后）或让 mof 支持 `--max-seconds` 早停并保证早停后数据可用。
+
+### 守卫 `tests/test_chain_reliability_fixes.py`（7 项）
+
+① help 里无裸 `%`（含**行为断言**：`--help` 必须 rc=0）；
+② `_c_token_exists` 必须用 `load_token_any` + 披露命中来源 + want 互斥；
+③ 占位符分支必须补 `elapsed_s` 且写台账 + 汇总打印不得用直接下标且缺失要告警。
+
+### 验证
+30 门禁 PASS、ruff 0、mypy 0；新增守卫 7 项全绿；clean 4/5 源已实跑恢复（gov 459MB 在跑）。

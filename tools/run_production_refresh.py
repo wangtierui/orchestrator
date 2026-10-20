@@ -805,7 +805,25 @@ def _run_conditional(step: str, tid: str) -> dict:
             # 绝不把字面量 `{vault}` 传给脚本（旧实现会造出字面目录 ✗）。
             print(f"[step:{step}] SKIP（占位符缺值：{e}；请设 REG_ORCH_VAULT 或 config/vault.yaml 的 vault_dir）",
                   flush=True)
-            return {"step": step, "rc": 0, "skipped": True, "reason": "占位符缺值: %s" % e}   # 由调用点 append ✓
+            # ⚠️ 2026-10-20 修（**实跑里让整链末尾崩溃的真实缺陷**）：原实现只 return
+            # `{step, rc, skipped, reason}` 四个字段，且**不调 `_record_step`** ——
+            # 后果有两层：
+            #   ① 汇总打印处 `r['elapsed_s']` 直接下标 ⇒ `KeyError: 'elapsed_s'`
+            #      ⇒ **整条链在"打印汇总"这一步异常终止**（42 步都跑完了，却在最后一屏崩；
+            #      日志末尾是 `主链异常终止: KeyError: 'elapsed_s'`）。
+            #   ② 该步骤在 `run_step` 台账里**完全没有记录** ⇒ 事后无法从库判断
+            #      "它到底跑了没、为什么跳"（本仓一贯要求"降级可辨"）。
+            # 修法：走与其他分支**同一条出口**——补齐 rec 字段 + `_record_step` + return rec。
+            rec.update({
+                "rc": 0,
+                "exit_code": "SKIP",
+                "skipped": True,
+                "note": f"占位符缺值：{e}（请设 REG_ORCH_VAULT 或 "
+                        f"config/vault.yaml 的 vault_dir）",
+                "elapsed_s": round(time.time() - t0, 1),
+            })
+            _record_step(rec)
+            return rec
         if res.get("status") in ("failed", "partial"):
             _rp = trg.resume_path(tid)
             if _rp:
@@ -2210,8 +2228,25 @@ def _run_chain(args) -> int:
     print("生产全量刷新汇总")
     print("=" * 72)
     print(f"{'step':<22}{'rc':>4}{'elapsed_s':>12}")
+    # ⚠️ 2026-10-20 修：原实现 `r['step']/r['rc']/r['elapsed_s']` 全用**直接下标**
+    # ⇒ 任何一处产生方漏字段，就在"打印汇总"这一步抛 KeyError 让**整链异常终止**
+    # （实测：42 步全跑完、`gates` 都 PASS 了，却在最后一屏崩）。
+    # 汇总表是**观测面**，不该成为链路可靠性的单点 —— 故：
+    #   ① 取值一律 `.get()`，缺失显示 `?`（不崩）；
+    #   ② 收集缺失项并**显式告警**（不静默吞：缺字段本身是上游缺陷，必须可见）。
+    _miss_fields: list[str] = []
     for r in report:
-        print(f"{r['step']:<22}{r['rc']:>4}{r['elapsed_s']:>12}")
+        _st = r.get("step", "?")
+        _rc = r.get("rc")
+        _el = r.get("elapsed_s")
+        if _el is None:
+            _miss_fields.append(str(_st))
+        print(f"{str(_st):<22}"
+              f"{'?' if _rc is None else _rc:>4}"
+              f"{'?' if _el is None else _el:>12}")
+    if _miss_fields:
+        print(f"[WARN] 以下步骤的汇总记录缺 elapsed_s（产生方未写全字段，"
+              f"已按 ? 显示而非中断链路）：{_miss_fields}", flush=True)
     print(
         "raw: "
         + " | ".join(

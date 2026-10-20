@@ -119,7 +119,17 @@ def main(argv=None) -> int:
                     help="逃生阀：校验失败记录仍进入交付（兼容旧行为；默认关闭）")
     ap.add_argument("--schema-fail-rate-max", type=float, default=SCHEMA_FAIL_RATE_MAX,
                     dest="schema_fail_rate_max",
-                    help=f"校验失败率阈值（超过则 rc=2；默认 {SCHEMA_FAIL_RATE_MAX:.2%}）")
+                    # ⚠️ 2026-10-20 修（**瘫痪级真实 bug**）：`argparse` 会对 `help`
+                    # 文本做一次 `help_string % params` 格式化 ⇒ 文本里出现的**字面 `%`**
+                    # 必须写成 `%%`，否则在 `add_argument()` 当场抛
+                    # `ValueError: unsupported format character '?' (0xff09)`
+                    # ⇒ 脚本**启动即崩**。
+                    # 实测后果：全链实跑里 clean 的 **5 个源全部 rc=1**，
+                    # 且 stderr 字节数**完全相同（1785B）**——因为报错与数据无关，
+                    # 是参数解析阶段炸的（各源耗时 0.6~2.6s，远非超时）。
+                    # 该 bug 与具体数据无关，故对本行 `%` 统一转义是最小且彻底的修法。
+                    help=(f"校验失败率阈值（超过则 rc=2；默认 "
+                          f"{SCHEMA_FAIL_RATE_MAX:.2%}）").replace("%", "%%"))
     # v2 §2.3.2（P8，2026-09-26）：dedup_key 唯一性校验**转严格**——此前仅有非空断言，
     # 跨记录去重键冲突无人发现（下游按 dedup_key 建索引会静默覆盖）。默认重复即 rc=2。
     ap.add_argument("--allow-dup-dedup-key", action="store_true", dest="allow_dup_dedup_key",

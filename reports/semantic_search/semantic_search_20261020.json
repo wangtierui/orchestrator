@@ -1,0 +1,22 @@
+{
+ "generated_at": "2026-10-20 01:39:00",
+ "out": "reports/semantic_search/semantic_search_20261020.json",
+ "backend": "none",
+ "tables": [
+  "delivery_docs",
+  "delivery_records"
+ ],
+ "inputs": {
+  "delivery_docs": 17,
+  "published_records": 1000
+ },
+ "ok": false,
+ "degraded": true,
+ "note": "未安装 psycopg[binary] → 降级 sqlite_vec；本次未建索引（既有 FTS5 检索路径不受影响）",
+ "fingerprint": {
+  "model": "bge_base_zh",
+  "dep_version": "6.1.0",
+  "weights": "971cc2b8ddcb4eec",
+  "ready": true
+ }
+}

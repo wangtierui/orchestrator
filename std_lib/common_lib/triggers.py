@@ -118,12 +118,27 @@ def load_triggers() -> dict:
 # 条件实现（每个条件返回 (bool, 证据)；缺实现 → 视为 False + 原因，绝不默认 True）
 # --------------------------------------------------------------------------- #
 def _c_token_exists(want: bool, _ctx: dict) -> tuple[bool, str]:
-    ok = os.path.exists(_PKULAW_TOKEN) and bool(
-        open(_PKULAW_TOKEN, encoding="utf-8", errors="replace").read().strip()
-        if os.path.exists(_PKULAW_TOKEN)
-        else ""
-    )
-    return (ok == bool(want)), f"token 存在={ok}（{os.path.basename(_PKULAW_TOKEN)}）"
+    """pkulaw token 是否存在（**唯一事实源** = `pkulaw_cli.load_token_any()`）。
+
+    ⚠️ 2026-10-20 修（**N-169 同类缺陷第 3 处**）：原实现只查硬编码的仓根
+    `_PKULAW_TOKEN`，而 token 实际在 `timeliness_review/.pkulaw_token`
+    ⇒ 全链实跑里 `timeliness:verify` 被判 SKIP，日志自相矛盾：
+        `SKIP（token_exists=True → 不满足（token 存在=False（.pkulaw_token））；…）`
+    第一段 `token_exists=True` 是**声明期望**，括号里才是实测——而实测用了错路径。
+    后果：**时效核验从来不会自动执行**（北大法宝预算再足也跑不到）。
+
+    改用 `load_token_any()`（含 `env:PKULAW_TOKEN` 与 `token_paths()` 全部候选），
+    与 `doctor` 的 `token`/`token_fresh` 两项、三个核验脚本**同源**。
+    """
+    try:
+        from std_lib.scraper_std import pkulaw_cli as _pk
+
+        tok, src = _pk.load_token_any()
+    except Exception as e:  # noqa: BLE001  条件判定不得因单点异常拖垮链
+        return False, f"token 来源不可判定：{type(e).__name__}"
+    ok = bool(tok)
+    where = src or "（未命中 env/仓根/timeliness_review 任一候选）"
+    return (ok == bool(want)), f"token 存在={ok}（{where}）"
 
 
 def _c_days_since(days: int, _ctx: dict) -> tuple[bool, str]:
