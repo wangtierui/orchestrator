@@ -158,7 +158,14 @@ BASE = "/dev"  # 接口基础路径：/dev/lawFile/list 等
 
 # 产物目录统一（Plan B 阶段 2b + 5b 收敛 + 2026-09-08 docs_root 统一根）
 SRC_DIR = os.path.dirname(os.path.abspath(__file__))
-REPO_ROOT = os.path.dirname(SRC_DIR)  # regulatory_scrapers（统一数据根）
+# ⚠️ 2026-10-20 修（实测）：原 `REPO_ROOT = dirname(SRC_DIR)` 只上溯**一级**
+# ⇒ 实际是 `.../collectors`（注释却写 "regulatory_scrapers"）⇒ `--outdir` 默认值
+# 落到 `.../collectors/data/raw`，而**主库在 `.../regulatory_scrapers/data/raw`**
+# ⇒ 裸跑会静默写到错位置、白跑，且不报错（实测踩到）。
+# **注意区分两个基准**（不能共用一个常量）：
+#   · `outdir`（本文件）⇒ 主库 = `regulatory_scrapers/data/raw`（上溯两级）
+#   · `local_path` 基准（attachments.py 的 REPO_ROOT）⇒ **仓根**（历史数据实测如此）
+SCRAPERS_ROOT = os.path.dirname(os.path.dirname(SRC_DIR))  # modules/regulatory_scrapers
 from std_lib.scraper_std.cache_store import docs_root
 
 ATTACHMENTS_DIR = docs_root("mof", "attachments")
@@ -480,7 +487,7 @@ def main():
                     help="要抓取的类别 lfgccId 列表（默认两个目标 URL 对应的类别）")
     ap.add_argument("--names", nargs="*", default=None,
                     help="与 --categories 对应的展示名称（可选）")
-    ap.add_argument("--outdir", default=os.path.join(REPO_ROOT, "data", "raw"),
+    ap.add_argument("--outdir", default=os.path.join(SCRAPERS_ROOT, "data", "raw"),
                     help="输出目录（默认统一 data/raw/：regulatory_scrapers/data/raw）")
     ap.add_argument("--size", type=int, default=50, help="列表每页条数（默认50）")
     ap.add_argument("--delay-min", type=float, default=0.3, help="请求最小间隔(秒)")

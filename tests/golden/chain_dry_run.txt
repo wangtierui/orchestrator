@@ -110,7 +110,7 @@ semantic:preflight       0         0.0
 pg:health                0         0.0
 wiki:sync                0         0.0
 gates                    0         0.0
-raw: gov=13178条/458.6MB | mof=870条/63.5MB | nfra=1939条/90.3MB | pbc=571条/2.6MB | supp=60条/13.8MB
+raw: gov=13178条/<mb>MB | mof=870条/<mb>MB | nfra=1939条/<mb>MB | pbc=571条/<mb>MB | supp=60条/<mb>MB
 总耗时 <x>s | 失败步骤 0
 汇总已落盘: <ROOT>\reports\_tmp\生产刷新汇总_<ts>.json
 [run_state] 稳定运行台账已更新: <ROOT>\data\run_state\last_run_steps.json

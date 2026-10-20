@@ -48,6 +48,13 @@ def _normalize(text: str) -> list[str]:
     # 10-14，10-15 链运行产生 _20261015 清单即 FAIL）。归入「汇总文件名 → 占位符」类。
     t = re.sub(r"时效性标注结果清单_全量_\d{8}", "时效性标注结果清单_全量_<date>", t)
     t = re.sub(r"总耗时 [\d.]+s", "总耗时 <x>s", t)
+    # **raw 体量的 MB 尾数是纯噪声，不是行为指纹**（2026-10-20 修）：
+    # raw 里含 `fetch_time` 等时间戳字段 ⇒ 同一批数据重跑也会让字节数抖 ±0.1MB
+    # （实测 mof 63.6→63.5MB 只因重跑采集，内容未变），而 golden 固化了它
+    # ⇒ 每次采集都可能让本测试假失败（第一百零二批就因此失败过一次）。
+    # **只归一化 MB、保留条数**：条数变化意味着数据状态真的变了（值得 FAIL），
+    # MB 尾数变化不携带行为信息（归一化掉）。这是"保留信息量最大维度、消除纯噪声"。
+    t = re.sub(r"(\d+)条/[\d.]+MB", r"\1条/<mb>MB", t)
     t = re.sub(r"fitz.*deprecated.*", "", t)
     # 环境相关噪声归一（非行为指纹）：
     #  · doctor 摘要的 warn 计数随环境变（node 缺失/OCR 未配/无 token/残留锁文件）；
@@ -80,6 +87,22 @@ def test_list_steps_matches_golden():
     assert cur == _read_golden(LIST_STEPS), (
         "--list-steps 与 golden 不一致——STEP_LAYERS 派生的 STEP_ORDER 漂移"
     )
+
+
+def test_size_suffix_is_normalized_not_fingerprinted() -> None:
+    """**防回退**：raw 体量的 MB 尾数必须被归一化掉（它不是行为指纹）。
+
+    实测背景（2026-10-20）：同一批数据重跑采集，mof raw 63.6→63.5MB（仅
+    `fetch_time` 之类时间戳字段变化）⇒ golden 固化的尾数让本测试**假失败**。
+    修法是"只归一化 MB、保留条数"——条数变化意味着数据状态真的变了。
+    """
+    a = _normalize("raw: gov=1条/1.0MB | mof=2条/63.6MB")
+    b = _normalize("raw: gov=1条/999.9MB | mof=2条/63.5MB")
+    assert a == b, f"MB 尾数未被归一化（会假失败）：{a} vs {b}"
+    # 条数必须**保留**（数据状态变化应当被看见）
+    c = _normalize("raw: mof=3条/63.5MB")
+    assert c != a, "条数也被归一化掉了 ⇒ 数据状态变化将不可见"
+    assert any("2条" in ln for ln in a), a
 
 
 def test_dry_run_argv_sequence_matches_golden():

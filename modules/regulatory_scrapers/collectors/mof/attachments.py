@@ -53,18 +53,13 @@ _GUIDE_ROOT = _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(_
 if _GUIDE_ROOT not in _sys.path:
     _sys.path.insert(0, _GUIDE_ROOT)
 del _GUIDE_ROOT, _os, _sys
-import html
 import json
-import logging
 import os
 import random
-import re
-import sys
 import time
 import urllib.error
 import urllib.parse
 import urllib.request
-from datetime import UTC, datetime
 
 # 共享加固工具层（UA 池、文档文本抽取、魔数纠正命名、表格结构化）
 try:
@@ -93,7 +88,7 @@ except ImportError:  # pragma: no cover
 # mof 接口均返回 JSON → 委托 ResponseCache；命中读盘跳过网络、离线缺失抛 OfflineMiss、
 # 仅成功响应（code==200）落盘，不缓存错误/拦截页。
 try:
-    from std_lib.scraper_std.cache_store import OfflineMiss, bind_source_cache  # noqa: F401
+    from std_lib.scraper_std.cache_store import OfflineMiss, bind_source_cache
 except ImportError:  # pragma: no cover
     from std_lib.scraper_std.cache_store import OfflineMiss
 
@@ -102,102 +97,100 @@ _OfflineMiss = OfflineMiss  # 兼容别名
 
 
 
-HOST = "http://fgk.mof.gov.cn"
-
-BASE = "/dev"  # 接口基础路径：/dev/lawFile/list 等
-
-SRC_DIR = os.path.dirname(os.path.abspath(__file__))
-
-REPO_ROOT = os.path.dirname(SRC_DIR)  # regulatory_scrapers（统一数据根）
-
-from std_lib.scraper_std.cache_store import docs_root
-
-ATTACHMENTS_DIR = docs_root("mof", "attachments")
-
-DEFAULT_CATEGORIES = {
-    "1000000000000300000": "财政法律法规（财政部规章）",
-    "1000000000000400000": "财政部规范性文件",
-}
-
-HEADERS = {
-    "User-Agent": (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-        "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
-    ),
-    "Accept": "application/json, text/plain, */*",
-    "Accept-Language": "zh-CN,zh;q=0.9",
-    "X-Requested-With": "XMLHttpRequest",
-    "Origin": HOST,
-    "Referer": HOST + "/ui/start/",
-}
-
-logger = logging.getLogger("mof_scraper")
-
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-    datefmt="%H:%M:%S",
-)
-
-_TAG_RE = re.compile(r"<[^>]+>")
-
-_STYLE_RE = re.compile(r"<(style|script)[^>]*>.*?</\1>", re.IGNORECASE | re.DOTALL)
-
-_WS_RE = re.compile(r"\s+")
-
-ATTACH_PATH = "/file/f/get"  # GET ?infoId=<id>&fileType=0(相关附件)/90(文字版)
-
-_ATTACH_KIND = {"0": "attachment", "90": "text_version"}
-
-#: 批 55/F1：旧二进制格式（OLE2 系）是否执行表格/富内容轨 —— **默认 False，与 gov 对齐**
-#: （LibreOffice 转换约 6.5s/附件、多数产出为空 ⇒ 采集步耗时主因之一）；置 True 恢复完整能力。
-ENRICH_LEGACY = False
-
-#: 旧二进制 kind 集合（**单一事实源在共享库**；此处按需导入，避免重复定义）
+# --------------------------------------------------------------------------- #
+# 常量与依赖别名：**单一出处已下沉到 `att_constants.py`**
+# --------------------------------------------------------------------------- #
+# 2026-10-20（D-遗留拆分第三批）：本文件原有 19 个常量 + 8 处 try-import 别名，
+# 与 12 个函数混在 668 行里。常量/别名下沉后在本文件**仍需可达**
+# （`mof/attachments.py` 是兄弟模块与外部脚本的共同入口）⇒ 显式 re-export。
+#
+# ⚠️ **双形态导入**：`collector.py` 有两条进入本模块的路径——包形态
+# （`from . import attachments`）与**脚本形态**（`import attachments`，生产
+# `COLLECT_CMD` 就是这样调的）。后者没有包上下文，相对导入会抛
+# `attempted relative import with no known parent package` ⇒ 必须兜底。
 try:
-    from std_lib.scraper_std.crawler_common import LEGACY_KINDS
-except Exception:  # noqa: BLE001  采集容错：常量缺失时退化为"不跳过"
-    LEGACY_KINDS = frozenset()
+    from .att_constants import (
+        _ATTACH_KIND,
+        _MAX_ATT_502_STREAK,
+        _STYLE_RE,
+        _TAG_RE,
+        _WS_RE,
+        ATTACH_PATH,
+        ATTACHMENTS_DIR,
+        BASE,
+        CC_USER_AGENTS,
+        DEFAULT_CATEGORIES,
+        ENRICH_LEGACY,
+        HEADERS,
+        HOST,
+        LEGACY_KINDS,
+        REPO_ROOT,
+        SRC_DIR,
+        OfflineMiss,
+        bind_source_cache,
+        docs_root,
+        extract_document_text,
+        logger,
+        rich_object_fields,
+        structured_table_fields,
+    )
+except ImportError:  # pragma: no cover  脚本形态（生产调度）
+    from att_constants import (  # type: ignore[no-redef]  # noqa: F401  re-export
+        _ATTACH_KIND,
+        _MAX_ATT_502_STREAK,
+        _STYLE_RE,
+        _TAG_RE,
+        _WS_RE,
+        ATTACH_PATH,
+        ATTACHMENTS_DIR,
+        BASE,
+        CC_USER_AGENTS,
+        DEFAULT_CATEGORIES,
+        ENRICH_LEGACY,
+        HEADERS,
+        HOST,
+        LEGACY_KINDS,
+        REPO_ROOT,
+        SRC_DIR,
+        OfflineMiss,
+        bind_source_cache,
+        docs_root,
+        extract_document_text,
+        logger,
+        rich_object_fields,
+        structured_table_fields,
+    )
+
+# 纯变换层（html→text / 日期归一 / 文件名安全 / 缓存键 / 条目组装）同样下沉，
+# 本文件 re-export 以保持既有导入点（`from mof.attachments import build_entry`）不变。
+try:
+    from .att_extract import (
+        _mof_cache_key,
+        build_entry,
+        html_to_text,
+        normalize_date,
+        safe_filename,
+    )
+except ImportError:  # pragma: no cover  脚本形态
+    from att_extract import (  # type: ignore[no-redef]
+        _mof_cache_key,
+        build_entry,
+        html_to_text,
+        normalize_date,
+        safe_filename,
+    )
+
+# --------------------------------------------------------------------------- #
+# **本文件保留的可变状态**（刻意不下沉：跨调用可变的全局不能搬，否则
+# `global` 语义跨模块、变成两处状态 ⇒ 熔断失效且难查）
+# --------------------------------------------------------------------------- #
+_RESP = None  # ResponseCache 实例；None 表示未启用缓存
+_OfflineMiss = OfflineMiss  # 兼容别名
 
 _ATT_502_STREAK = 0
-
 _ATT_CIRCUIT_OPEN = False
 
-_MAX_ATT_502_STREAK = 8
-
-_SCRAPERS_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-if _SCRAPERS_ROOT not in sys.path:
-    sys.path.insert(0, _SCRAPERS_ROOT)
-
-
 _LOCKS: dict = {}   # lock_path -> fs_lock.ProcessLock（release_lock 需释放同一实例）
-
-def _mof_cache_key(method, path, payload):
-    """为 _request 生成确定性缓存键 (endpoint, params)。
-
-    - POST：endpoint = HOST+path，params = payload（嵌套 dict/list 值用 JSON 序列化，
-      保证 urlencode 安全且确定性；mof 列表 payload 含 queryMap 嵌套，必须此处理）。
-    - GET：若 path 含查询串则拆出 query 作为 params；否则 params={}。
-    键交给 ResponseCache.path()（与 nfra 命名算法逐字一致，仅扩展名 .json）。
-    """
-    full_url = HOST + path
-    if method == "GET" and "?" in path:
-        ep, q = path.split("?", 1)
-        params = dict(urllib.parse.parse_qsl(q))
-        endpoint = HOST + ep
-    elif method == "POST":
-        endpoint = full_url
-        params = dict(payload or {})
-    else:
-        endpoint = full_url
-        params = {}
-    # 嵌套值（dict/list）JSON 序列化，标量保持原样（urlencode 安全 + 确定性）
-    flat = {}
-    for k, v in params.items():
-        flat[k] = json.dumps(v, sort_keys=True, ensure_ascii=False) if isinstance(v, (dict, list)) else v
-    return endpoint, flat
-
 
 def _request(method, path, payload=None, *, rate=None, timeout=30,
              max_retries=4):
@@ -275,42 +268,6 @@ def _request(method, path, payload=None, *, rate=None, timeout=30,
     raise RuntimeError(f"请求失败（已达最大重试）：{path} -> {last_err}")
 
 
-def html_to_text(s):
-    """将正文 HTML 转为纯文本。"""
-    if not s or not isinstance(s, str):
-        return ""
-    s = _STYLE_RE.sub(" ", s)
-    s = _TAG_RE.sub(" ", s)
-    s = html.unescape(s)
-    s = _WS_RE.sub(" ", s)
-    return s.strip()
-
-
-# norm-specialization: 字段规范化型日期（B3/W4 登记，norm.py 日期分层第三类）——
-# 与解析层 cleaner.normalize_date 的真实语义差异：入参为**字段值**（list [y,m,d] /
-# datetime 字符串 / None），输出 None 语义（缺省 vs 空串分化）；抽取型（crawler_common）
-# 入参为长文本。三类各有契约，不合并。
-def normalize_date(v):
-    """规范化日期字段（兼容 '2024-11-03 00:00:00' / [2024,11,3,0,0] / 'None'）。"""
-    if v is None:
-        return None
-    if isinstance(v, list) and len(v) >= 3:
-        try:
-            return f"{int(v[0]):04d}-{int(v[1]):02d}-{int(v[2]):02d}"
-        except Exception:  # noqa: BLE001
-            return None
-    if isinstance(v, str):
-        v = v.strip()
-        if v in ("", "None", "null", "[]"):
-            return None
-        # 截取日期部分（去时间）
-        m = re.match(r"(\d{4})[-/年.](\d{1,2})[-/月.](\d{1,2})", v)
-        if m:
-            return f"{int(m.group(1)):04d}-{int(m.group(2)):02d}-{int(m.group(3)):02d}"
-        return v.split(" ")[0] if " " in v else v
-    return str(v)
-
-
 def fetch_list_page(lfgcc, page, size, rate):
     """抓取某一页列表，返回 (records, total, pages)。"""
     payload = {
@@ -329,23 +286,6 @@ def fetch_list_page(lfgcc, page, size, rate):
         except (TypeError, ValueError):
             return default
     return d.get("records", []), _to_int(d.get("total")), _to_int(d.get("pages"))
-
-
-def safe_filename(name, ext, fallback):
-    """生成安全的本地文件名（去除非法字符、补扩展名、限长）。
-
-    （共享库对齐审计 阶段 1）核心逻辑（去非法字符 / 限长）委托
-    ``crawler_common.safe_filename``；本函数保留 mof 原有语义：
-    **无 URL 参与哈希**、第三参 ``fallback`` 兜底、末补扩展名（共享库版不补扩展名）。
-    """
-    repo_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    if repo_root not in sys.path:
-        sys.path.insert(0, repo_root)
-    from std_lib.scraper_std.crawler_common import safe_filename as _cc_safe_filename
-    name = _cc_safe_filename(name or fallback, "", 120)
-    if ext and not name.lower().endswith("." + ext.lower()):
-        name = f"{name}.{ext}"
-    return name
 
 
 def fetch_attachments(law_id, rate, file_types=("0", "90"), timeout=20):
@@ -558,79 +498,6 @@ def collect_attachments(law_id, rate, timeout=60):
         if d:
             result.append(d)
     return result
-
-
-def build_entry(rec, detail, category_id, category_name, fetch_detail_enabled, attachments=None):
-    """将列表记录 + 详情合并为结构化条目。"""
-    # 正文优先用详情接口（列表里通常也已包含），兜底用列表字段
-    content_html = ""
-    if fetch_detail_enabled and detail:
-        content_html = detail.get("lcontent") or ""
-    if not content_html:
-        content_html = rec.get("lcontent") or ""
-    content_text = html_to_text(content_html)
-
-    # 摘要：题注优先，否则取正文前若干字符
-    summary = (detail or rec).get("lcaption") if fetch_detail_enabled else rec.get("lcaption")
-    if not summary:
-        summary = content_text[:200]
-
-    law_id = rec.get("id") or (detail or {}).get("id")
-
-    rec_out = {
-        "id": law_id,
-        "title": rec.get("title"),
-        "category_id": category_id,
-        "category_name": category_name or rec.get("ltflbName"),
-        "publish_date": normalize_date((detail or rec).get("lBuDate") if fetch_detail_enabled else rec.get("lBuDate")),
-        "effective_date": normalize_date((detail or rec).get("lSsDate") if fetch_detail_enabled else rec.get("lSsDate")),
-        "issue_org": (detail or rec).get("lbbdw") if fetch_detail_enabled else rec.get("lbbdw"),
-        "doc_no": (detail or rec).get("lwh") if fetch_detail_enabled else rec.get("lwh"),
-        "summary": summary,
-        "content_text": content_text,
-        "content_length": len(content_text),
-        "status": (detail or rec).get("lstate") if fetch_detail_enabled else rec.get("lstate"),
-        "create_dept": rec.get("createDeptName"),
-        "file_count": rec.get("fileCount"),
-        "expire_date": normalize_date((detail or rec).get("expireDate") if fetch_detail_enabled else rec.get("expireDate")),
-        "abolish_date": normalize_date((detail or rec).get("abolishDate") if fetch_detail_enabled else rec.get("abolishDate")),
-        "detail_link": f"{HOST}/ui/src/views/law_html/{law_id}.html" if law_id else None,
-        "api_link": f"{BASE}/lawFile/get/{law_id}" if law_id else None,
-        "source": "fgk.mof.gov.cn",
-        "fetch_time": datetime.now(UTC).isoformat(),
-        "attachments": attachments or [],
-        "attachment_count": len(attachments or []),
-        # 批 51/W-A：记录级聚合副本不再写（attachments[].text 为唯一权威；cleaned 侧派生）
-        "table_structured": [t for a in (attachments or [])
-                             for t in (a.get("table_structured") or [])] or [],
-        "table_raw_text": "\n\n".join(
-            a.get("table_raw_text") for a in (attachments or []) if a.get("table_raw_text")
-        ),
-        "table_recovery_method": "structured" if any(
-            a.get("table_structured") for a in (attachments or [])) else "",
-        "rich_structured": [o for a in (attachments or [])
-                            for o in (a.get("rich_structured") or [])] or [],
-        "rich_text": "\n".join(
-            a.get("rich_text") for a in (attachments or []) if a.get("rich_text")),
-        "rich_count": sum((a.get("rich_count") or 0) for a in (attachments or [])),
-        "attachment_names": "; ".join(
-            (a.get("file_name") or "") for a in (attachments or [])
-        ),
-        }
-    # 批 50：`attachments` 只保留**真实附件**；正文载体（fileType=90「下载文字版」/ 站点生成的
-    # 「HTML 冒充 .doc」文字版）移入 `body_docs`；其文本若未被正文覆盖则**并入正文字段**（不丢内容）
-    from std_lib.scraper_std.attachments import split_record_body_docs
-    split_record_body_docs(rec_out)
-    _all_atts = list(rec_out.get("attachments") or []) + list(rec_out.get("body_docs") or [])
-    rec_out["table_structured"] = [t for a in _all_atts
-                                   for t in (a.get("table_structured") or [])] or []
-    rec_out["table_raw_text"] = "\n""\n".join(
-        a.get("table_raw_text") for a in _all_atts if a.get("table_raw_text"))
-    rec_out["table_recovery_method"] = "structured" if any(
-        a.get("table_structured") for a in _all_atts) else ""
-    rec_out["rich_structured"] = [o for a in _all_atts
-                                  for o in (a.get("rich_structured") or [])] or []
-    return rec_out
 
 
 def fetch_category_records(lfgcc, category_name, *, size=50, rate, max_items=None):

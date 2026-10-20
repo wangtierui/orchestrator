@@ -171,7 +171,14 @@ from std_lib.scraper_std.cache_store import url_endpoint_key as _cache_ep
 
 # 产物目录统一（Plan B 阶段 2b + 2026-09-08 docs_root 统一根）
 SRC_DIR = os.path.dirname(os.path.abspath(__file__))
-REPO_ROOT = os.path.dirname(SRC_DIR)  # regulatory_scrapers（统一数据根）
+# ⚠️ 2026-10-20 修（实测）：原 `dirname(SRC_DIR)` 只上溯**一级** ⇒ `.../collectors`
+# （注释却写 "regulatory_scrapers"）。它被用于 `os.path.relpath(fpath, REPO_ROOT)`
+# 生成记录里的 `local_path` ⇒ 落库成 `../data/docs/pbc…/attachments/…`（实测
+# 13 条里 10 条是这种**带 `..` 的脏路径**，换 cwd 解析必错）。
+# 正确基准 = **仓根**（与 mof 口径统一：mof 现存 local_path 以仓根拼接后文件真实存在）。
+from paths import ROOT as _WS_ROOT
+
+REPO_ROOT = _WS_ROOT
 from std_lib.scraper_std.cache_store import docs_root
 
 ATTACHMENTS_DIR = docs_root("pbc", "attachments")

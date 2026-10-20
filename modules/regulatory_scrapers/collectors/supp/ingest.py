@@ -43,52 +43,53 @@ scripts/run_clean_pipeline.py 消费。
 
 from __future__ import annotations
 
-# ---- P3b 仓库引导（migrate_collectors_p3b.py 注入）：使 std_lib/config 可导入 ----
-import os as _os
-import sys as _sys
+# ---- 常量与引导：**单一出处已下沉到 `supp_constants.py`** ----
+# 2026-10-20（D-遗留拆分第三批）：本文件原有 9 个常量 + 一段**有顺序依赖**的引导
+# （先算 HERE/SCRAPERS_ROOT → 再注入 sys.path → 才能 import 仓内模块）。
+# 那段顺序依赖混在 13 个函数之间很难看清，抽到 `supp_constants` 后成为文件级事实。
+#
+# ⚠️ **必须在任何仓内 import 之前导入本模块**（它负责 sys.path 注入）。
+# ⚠️ **双形态**：本文件既被包内引用，也被调度/CLI 以**脚本形态**直接跑
+#    （`python collectors/supp/ingest.py`）⇒ 相对导入需兜底。
+try:
+    from .supp_constants import (
+        DOCS_DIR,
+        HERE,
+        LOCAL_PDFS,
+        RAW_OUT,
+        REPO_ROOT,
+        SCRAPERS_ROOT,
+        SRC_DIR,
+        STATE_DIR,
+        docs_root,
+    )
+except ImportError:  # pragma: no cover  脚本形态（生产调度）
+    from supp_constants import (  # type: ignore[no-redef]  # noqa: F401  re-export
+        DOCS_DIR,
+        HERE,
+        LOCAL_PDFS,
+        RAW_OUT,
+        REPO_ROOT,
+        SCRAPERS_ROOT,
+        SRC_DIR,
+        STATE_DIR,
+        docs_root,
+    )
 
-_GUIDE_ROOT = _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "..", "..", ".."))
-if _GUIDE_ROOT not in _sys.path:
-    _sys.path.insert(0, _GUIDE_ROOT)
-del _GUIDE_ROOT, _os, _sys
 import datetime as _dt
 import hashlib
 import json
 import os
 import re
 import shutil
-import sys
 
-from std_lib.scraper_std.pipeline import (  # 批 49/T1：raw 统一 JSONL 读写助手
+from config.exitcodes import ExitCode
+from std_lib.scraper_std.naming import standard_filename
+from std_lib.scraper_std.pipeline import (
     read_raw_records,
     write_raw_jsonl,
 )
 
-HERE = os.path.dirname(os.path.abspath(__file__))          # modules/regulatory_scrapers/collectors
-SCRAPERS_ROOT = os.path.dirname(HERE)                        # modules/regulatory_scrapers（统一数据根）
-for _p in (HERE, SCRAPERS_ROOT):
-    if _p not in sys.path:
-        sys.path.insert(0, _p)
-
-from config.exitcodes import ExitCode
-from std_lib.scraper_std.naming import standard_filename
-
-REPO_ROOT = SCRAPERS_ROOT  # 数据根 = modules/regulatory_scrapers（拍平后单层上溯一次即到）
-# 5b 补全（2026-09-04）：supp ingest 收敛至统一 data/（此前写 per-source data/raw 与统一副本分裂；
-# _sources 源文本随迁统一 data/raw/_sources；content_ref / OCR 缓存引用在统一后相对 REPO_ROOT 解析一致）
-SRC_DIR = os.path.join(REPO_ROOT, "data", "raw", "_sources")
-RAW_OUT = os.path.join(REPO_ROOT, "data", "raw", "supplementary_regulations.json")
-from std_lib.scraper_std.cache_store import docs_root
-
-DOCS_DIR = docs_root("supp")
-STATE_DIR = os.path.join(REPO_ROOT, "data", "state")
-
-# 用户提供的本地 PDF 源文件（仅读取，不移动）。
-# P3b 去硬编码：由环境变量提供（LOCAL_PDF_F15 / LOCAL_PDF_F17），未设置则为空（跳过该来源）。
-LOCAL_PDFS = {
-    "F15": os.environ.get("LOCAL_PDF_F15", ""),
-    "F17": os.environ.get("LOCAL_PDF_F17", ""),
-}
 
 def md5(path: str) -> str:
     h = hashlib.sha256()

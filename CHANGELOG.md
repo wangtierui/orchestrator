@@ -2807,3 +2807,74 @@ P3 前端 JS 语法 OK（esprima）；业务清单已生成（`reports/business_
 ### 验证
 30 门禁 PASS（修齐 J11/水位/卫生后）、ruff 0、mypy 0；mof 采集 5 次实跑
 （早停 30/75/90s + 双形态 3 次）行为一致；续跑 `--from timeliness:consolidate` 进行中。
+## [Unreleased] 2026-10-20 — 采集器路径基准修正（4 处同类 bug）+ golden 体量归一化 + mof/supp 拆分（第一百零三批）
+
+### ① `--outdir` 默认值 / `local_path` 基准：**同一类 bug 共 4 处**
+
+根因统一：`REPO_ROOT = os.path.dirname(SRC_DIR)` 只上溯**一级**，而采集器在
+`modules/regulatory_scrapers/collectors/<src>/`（两级）⇒ 实际得到 `.../collectors`
+（**注释却都写 "regulatory_scrapers"**，两者不符）。分两类后果：
+
+| 位置 | 后果 | 修法 |
+|---|---|---|
+| `mof/collector.py` 的 `--outdir` 默认值 | 落到 `collectors/data/raw`，而主库在 `regulatory_scrapers/data/raw` ⇒ **裸跑静默写错位置、白跑且不报错** | 新增 `SCRAPERS_ROOT`（上溯两级）专供 outdir |
+| `mof/attachments.py` 的 `REPO_ROOT` | 用作 `local_path` 基准 ⇒ 新写入会变成 `../../data/docs/…` **脏路径** | 改用 `paths.ROOT`（**仓根**） |
+| `pbc/collector.py` 的 `REPO_ROOT` | 同上，且**实测 13 条 `local_path` 里 10 条已是脏的** | 改用 `paths.ROOT` |
+| `supp/ingest.py` 的 `SCRAPERS_ROOT` | `SRC_DIR`/`RAW_OUT`/`STATE_DIR` 全落到 `collectors/data/…` ⇒ **supp 采集白跑** | 上溯两级到 `regulatory_scrapers` |
+
+**关键设计（两处基准不能混用）**：
+· `outdir` ⇒ 主库 = `regulatory_scrapers/data/raw`（上溯两级）
+· `local_path` ⇒ **仓根**（实测 mof 现存 246 条 `local_path` 以 `paths.ROOT`
+  拼接后**文件真实存在** ⇒ 历史数据本就是仓根基准，修正是**回到既有口径**）
+
+**历史数据迁移**：新增 `tools/migrate_local_path.py`（J1 登记，清单 58），把 pbc 的
+10 条脏 `local_path` 迁到仓根基准。安全设计：只改一个字段、只替换**已知脏前缀**
+（不猜任意 `..`）、**每条先验证新路径拼仓根后文件真实存在**（验证不过则原样保留
+并报告）、备份后原子替换、默认 dry-run。实测：10 条脏、10 条可修、**0 条不可验证**。
+
+### ② golden 的体量归一化（消掉反复出现的尾数脆弱点）
+
+`raw: … mof=870条/63.5MB …` 这行的 **MB 尾数是纯噪声**（raw 含 `fetch_time` 等
+时间戳，同批数据重跑也抖 ±0.1MB），而 golden 固化了它 ⇒ 每次采集都可能假失败
+（第一百零二批就因此失败过一次）。
+
+**修法**：`_normalize` 加 `(\d+)条/[\d.]+MB → \1条/<mb>MB` —— **只归一化 MB、
+保留条数**。理由：条数变化意味着数据状态真的变了（应当 FAIL 让人知道）；
+MB 尾数不携带行为信息（归一化掉）。这是「保留信息量最大维度、消除纯噪声」。
+
+### ③ 拆分：`mof/attachments.py` 668→535，`supp/ingest.py` 603→565
+
+**mof（三层）**：
+| 文件 | 行数 | 职责 |
+|---|---|---|
+| `att_constants.py` | 169 | **纯常量 + 8 处 try-import 别名**（无逻辑、无可变状态） |
+| `att_extract.py` | 206 | **纯变换**（html→text / 日期归一 / 文件名 / 缓存键 / 条目组装） |
+| `attachments.py` | 535 | 网络 + 下载 + 熔断 + 编排，**re-export** 前两层 |
+
+**刻意不搬**：`_ATT_502_STREAK`/`_ATT_CIRCUIT_OPEN` 是**跨调用可变全局**
+（`download_attachment` 用 `global` 修改）。搬走会让 `global` 语义跨模块、
+熔断变成两处状态（失效且难查）⇒ 留在使用处。
+
+**supp（两层）**：`supp_constants.py`（52 行）承载 9 常量 + 一段**隐式顺序依赖**
+（先算 `HERE`/`SCRAPERS_ROOT` → 再 `sys.path.insert` → 才能 `import config/std_lib`）。
+那段依赖混在 13 个函数之间完全看不出来，抽出后成为文件级事实。
+
+**等价性双证（两个拆分都做了）**：
+· 符号可达（旧公开面一个不缺，`attachments`/`ingest` 仍导出全部）
+· 纯变换函数是**同一对象**（不是复制）；常量同值
+· 双形态：**脚本形态**（生产 argv 形态）实跑通过（`collector.py --help` rc=0、
+  `ingest` 的 import 探针 rc=0）
+· **行为**：mof 真实采集跑了一次（45s 早停，`移除 0 / 活跃 870 / 63.5MB`，零丢失）
+
+### ④ 途中踩到并修正的两次自身失误（如实记录）
+
+1. **删除脚本区间重叠**：为带走 `normalize_date` 上方的注释块而向上扩展起点，
+   导致与 `html_to_text` 的区间**重叠** ⇒ 删出 `IndentationError`（已从备份恢复）。
+   修法：区间只按 `def → next-def` 界定，并加**区间不重叠断言**。
+2. **备份恢复回滚了已做的替换**：v2 从 `.bak_split` 恢复时，把第一步的「常量区替换」
+   一起回滚了（只剩「删函数」生效）⇒ 常量未下沉、函数已删 ⇒ ruff 报 `F821`。
+   教训：**多步改造中，"恢复"必须明确恢复到哪一步**，否则会静默回滚前序成果。
+
+### 验证
+30 门禁 PASS、ruff 0、mypy 0；新增守卫 `test_outdir_and_paths.py`(8) +
+`test_mof_split.py`(11) + `test_supp_split.py`(11) + golden 归一化用例(1)。
