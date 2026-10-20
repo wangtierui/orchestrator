@@ -51,22 +51,37 @@ RAW_DIR = os.path.join(paths.ROOT, "modules", "regulatory_scrapers", "data", "ra
 _DIRTY_PREFIX = "../data/"
 _CLEAN_PREFIX = "modules/regulatory_scrapers/data/"
 
+#: **第二种形态**（2026-10-20 第一百零四批补充）：`data/docs/...`（**SCRAPERS 基准**）
+#: → `modules/regulatory_scrapers/data/docs/...`（**仓根基准**）。
+#:
+#: 为什么需要：同一源内出现两种基准是**真实缺陷**（实测 mof 有 243 条仓根基准 +
+#: 3 条 SCRAPERS 基准，后者是旧代码/别工具写的）。源内不一致比跨源不一致更糟——
+#: 读者无法用单一规则解析。
+#:
+#: **⚠️ 只对「该源多数记录已是仓根基准」的场景使用**：若整源都是 SCRAPERS 基准
+#: （如 gov 1189 条 / supp 7 条），那是**既成口径**，迁移会制造新的不一致
+#: 且无功能收益（`local_path` 目前不被任何代码拼成路径打开，仅作元数据）。
+#: 故本形态需显式 `--allow-scrapers-to-repo` 才启用，避免误伤。
+_SCRAPERS_TO_REPO = ("data/docs/", "modules/regulatory_scrapers/data/docs/")
 
-def _fix_one(lp: str) -> tuple[str, bool]:
+
+def _fix_one(lp: str, *, allow_scrapers: bool = False) -> tuple[str, bool]:
     """返回 `(新值, 是否改动)`。非脏值原样返回。"""
     s = str(lp or "")
-    if not s.startswith(".."):
-        return s, False
-    if not s.startswith(_DIRTY_PREFIX):
-        return s, False          # 未知形态的 `..`：不动，交给报告
-    return _CLEAN_PREFIX + s[len(_DIRTY_PREFIX):], True
+    if s.startswith(_DIRTY_PREFIX):
+        return _CLEAN_PREFIX + s[len(_DIRTY_PREFIX):], True
+    if allow_scrapers and s.startswith(_SCRAPERS_TO_REPO[0]):
+        return _SCRAPERS_TO_REPO[1] + s[len(_SCRAPERS_TO_REPO[0]):], True
+    # 其余（含未知形态的 `..` 与已是目标基准的值）：不动，交给报告
+    return s, False
 
 
 def _exists_at_repo(lp: str) -> bool:
     return os.path.exists(os.path.join(paths.ROOT, lp.replace("/", os.sep)))
 
 
-def migrate_file(name: str, *, execute: bool) -> dict:
+def migrate_file(name: str, *, execute: bool,
+                 allow_scrapers: bool = False) -> dict:
     """处理一个 raw 文件；返回统计。"""
     path = os.path.join(RAW_DIR, name)
     if not os.path.exists(path):
@@ -90,7 +105,7 @@ def migrate_file(name: str, *, execute: bool) -> dict:
             # 记录级 local_path
             lp = d.get("local_path")
             if lp:
-                new, did = _fix_one(lp)
+                new, did = _fix_one(lp, allow_scrapers=allow_scrapers)
                 if did:
                     stat["dirty"] += 1
                     if _exists_at_repo(new):
@@ -105,7 +120,7 @@ def migrate_file(name: str, *, execute: bool) -> dict:
                 alp = a.get("local_path")
                 if not alp:
                     continue
-                new, did = _fix_one(alp)
+                new, did = _fix_one(alp, allow_scrapers=allow_scrapers)
                 if not did:
                     continue
                 stat["dirty"] += 1
@@ -133,6 +148,12 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="迁移 raw 里带 .. 的脏 local_path")
     ap.add_argument("--file", default="", help="只处理该文件名（默认全部 *.jsonl）")
     ap.add_argument("--execute", action="store_true", help="真正写入（默认 dry-run）")
+    ap.add_argument(
+        "--allow-scrapers-to-repo", action="store_true",
+        help="同时把 `data/docs/...`（SCRAPERS 基准）归一为 "
+             "`modules/regulatory_scrapers/data/docs/...`。"
+             "**仅当该源多数记录已是仓根基准时使用**（源内不一致才需归一）；"
+             "整源都是 SCRAPERS 基准的（如 gov/supp）属既成口径，不要用本开关")
     a = ap.parse_args(argv)
 
     if a.file:
@@ -143,7 +164,8 @@ def main(argv: list[str] | None = None) -> int:
     print(f"[migrate] {'执行' if a.execute else 'dry-run'}；仓根={paths.ROOT}")
     total_fix = total_dirty = 0
     for n in names:
-        s = migrate_file(n, execute=a.execute)
+        s = migrate_file(n, execute=a.execute,
+                         allow_scrapers=a.allow_scrapers_to_repo)
         if s.get("skipped"):
             continue
         total_fix += s["fixed"]

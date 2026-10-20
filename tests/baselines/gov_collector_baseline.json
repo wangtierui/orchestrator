@@ -1,0 +1,422 @@
+{
+  "_note": "gov/collector.py 拆分等价性基线（结构快照，非 hash）",
+  "class_methods": {
+    "RobustSession": {
+      "__init__": [
+        "self",
+        "cfg"
+      ],
+      "_headers": [
+        "self",
+        "referer"
+      ],
+      "_sleep": [
+        "self"
+      ],
+      "get": [
+        "self",
+        "url",
+        "referer",
+        "params",
+        "is_json"
+      ],
+      "get_text": [
+        "self",
+        "url",
+        "referer",
+        "params"
+      ],
+      "post_json": [
+        "self",
+        "url",
+        "json_body",
+        "referer"
+      ]
+    },
+    "XzfgkScraper": {
+      "__init__": [
+        "self",
+        "cfg",
+        "client",
+        "master_view"
+      ],
+      "_fetch_detail": [
+        "self",
+        "url"
+      ],
+      "_list_page": [
+        "self",
+        "page_index"
+      ],
+      "_parse_detail": [
+        "self",
+        "html"
+      ],
+      "_parse_list": [
+        "self",
+        "html"
+      ],
+      "run": [
+        "self"
+      ]
+    }
+  },
+  "cli": {
+    "count": 25,
+    "options": [
+      {
+        "action": "help",
+        "default": "==SUPPRESS==",
+        "flags": [
+          "-h",
+          "--help"
+        ],
+        "required": false
+      },
+      {
+        "action": "store",
+        "default": "all",
+        "flags": [
+          "--source"
+        ],
+        "required": false
+      },
+      {
+        "action": "store",
+        "default": "<ROOT>\\modules\\regulatory_scrapers\\data\\raw",
+        "flags": [
+          "--out-dir"
+        ],
+        "required": false
+      },
+      {
+        "action": "store",
+        "default": "0",
+        "flags": [
+          "--max-pages"
+        ],
+        "required": false
+      },
+      {
+        "action": "store",
+        "default": "0",
+        "flags": [
+          "--max-items"
+        ],
+        "required": false
+      },
+      {
+        "action": "store_true",
+        "default": null,
+        "flags": [
+          "--no-details"
+        ],
+        "required": false
+      },
+      {
+        "action": "store",
+        "default": "0",
+        "flags": [
+          "--details-limit"
+        ],
+        "required": false
+      },
+      {
+        "action": "store_true",
+        "default": null,
+        "flags": [
+          "--resume"
+        ],
+        "required": false
+      },
+      {
+        "action": "store_true",
+        "default": null,
+        "flags": [
+          "--full"
+        ],
+        "required": false
+      },
+      {
+        "action": "store",
+        "default": "1.5",
+        "flags": [
+          "--delay-min"
+        ],
+        "required": false
+      },
+      {
+        "action": "store",
+        "default": "3.5",
+        "flags": [
+          "--delay-max"
+        ],
+        "required": false
+      },
+      {
+        "action": "store",
+        "default": "30",
+        "flags": [
+          "--timeout"
+        ],
+        "required": false
+      },
+      {
+        "action": "store",
+        "default": "4",
+        "flags": [
+          "--retries"
+        ],
+        "required": false
+      },
+      {
+        "action": "store",
+        "default": "200",
+        "flags": [
+          "--summary-len"
+        ],
+        "required": false
+      },
+      {
+        "action": "store",
+        "default": "",
+        "flags": [
+          "--cache-dir"
+        ],
+        "required": false
+      },
+      {
+        "action": "store_true",
+        "default": null,
+        "flags": [
+          "--offline"
+        ],
+        "required": false
+      },
+      {
+        "action": "store_true",
+        "default": null,
+        "flags": [
+          "--csv"
+        ],
+        "required": false
+      },
+      {
+        "action": "store_true",
+        "default": null,
+        "flags": [
+          "--stop-on-error"
+        ],
+        "required": false
+      },
+      {
+        "action": "store",
+        "default": "200",
+        "flags": [
+          "--checkpoint-every"
+        ],
+        "required": false
+      },
+      {
+        "action": "store",
+        "default": "1",
+        "flags": [
+          "--stop-after-empty-pages"
+        ],
+        "required": false
+      },
+      {
+        "action": "store_true",
+        "default": null,
+        "flags": [
+          "--backfill"
+        ],
+        "required": false
+      },
+      {
+        "action": "store",
+        "default": "0.0",
+        "flags": [
+          "--max-seconds"
+        ],
+        "required": false
+      },
+      {
+        "action": "store",
+        "default": "",
+        "flags": [
+          "--env-source"
+        ],
+        "required": false
+      },
+      {
+        "action": "store",
+        "default": "",
+        "flags": [
+          "--env-category"
+        ],
+        "required": false
+      },
+      {
+        "action": "store",
+        "default": "",
+        "flags": [
+          "--log-file"
+        ],
+        "required": false
+      }
+    ]
+  },
+  "const_digest": {
+    "CONTENT_SELECTORS": {
+      "items": [
+        ".law-chapter",
+        "#content",
+        "#UCAP-CONTENT",
+        ".content-text",
+        ".pages_content",
+        ".article",
+        "#zoom",
+        "#article-content",
+        ".TRS_Editor",
+        "div.content"
+      ],
+      "len": 10
+    },
+    "CSV_COLUMNS": {
+      "items": [
+        "title",
+        "category",
+        "publish_date",
+        "pub_date_original",
+        "effective_date",
+        "issue_organ",
+        "document_number",
+        "detail_url",
+        "summary",
+        "source"
+      ],
+      "len": 10
+    },
+    "DEFAULT_HEADERS": {
+      "keys": [
+        "Accept",
+        "Accept-Encoding",
+        "Accept-Language",
+        "Connection",
+        "Upgrade-Insecure-Requests"
+      ],
+      "len": 5
+    },
+    "TITLE_SELECTORS": {
+      "items": [
+        "h1",
+        ".article-title",
+        "#title",
+        ".title",
+        "h2"
+      ],
+      "len": 5
+    },
+    "_NOISE_CLASS_HINTS": {
+      "items": [
+        "download",
+        "fold",
+        "historical",
+        "tip",
+        "btn",
+        "share",
+        "qr",
+        "vconsole"
+      ],
+      "len": 8
+    },
+    "_ORGAN_KW": {
+      "head": "(?:国务院|部|委员会",
+      "len": 32
+    },
+    "_SCHEME_UPGRADE_RE": {
+      "flags": 34,
+      "pattern": "targetProtocol\\s*=\\s*[\"\\']https:"
+    }
+  },
+  "module_names": {
+    "expected": [
+      "_OfflineMiss",
+      "_ORGAN_KW",
+      "_NOISE_CLASS_HINTS",
+      "_RESP_TEXT",
+      "_SCHEME_UPGRADE_RE",
+      "_SCRAPERS_ROOT",
+      "_STD_LIB_ROOT",
+      "_init_cache",
+      "_is_https_scheme_upgrade",
+      "_longest_text_block",
+      "build_config",
+      "clean_text",
+      "decode_html",
+      "extract_date",
+      "extract_doc_number",
+      "extract_issue_organ",
+      "fetch_gov_attachments",
+      "load_resume",
+      "LOG",
+      "main",
+      "make_summary",
+      "MasterView",
+      "merge_and_write",
+      "merge_with_master",
+      "RobustSession",
+      "ScrapeConfig",
+      "set_cache_dir",
+      "set_offline",
+      "SOURCES",
+      "TITLE_SELECTORS",
+      "write_collect_stats",
+      "write_outputs",
+      "XzfgkScraper",
+      "CONTENT_SELECTORS",
+      "CSV_COLUMNS",
+      "DEFAULT_HEADERS"
+    ],
+    "missing": [],
+    "present": [
+      "CONTENT_SELECTORS",
+      "CSV_COLUMNS",
+      "DEFAULT_HEADERS",
+      "LOG",
+      "MasterView",
+      "RobustSession",
+      "SOURCES",
+      "ScrapeConfig",
+      "TITLE_SELECTORS",
+      "XzfgkScraper",
+      "_NOISE_CLASS_HINTS",
+      "_ORGAN_KW",
+      "_OfflineMiss",
+      "_RESP_TEXT",
+      "_SCHEME_UPGRADE_RE",
+      "_SCRAPERS_ROOT",
+      "_STD_LIB_ROOT",
+      "_init_cache",
+      "_is_https_scheme_upgrade",
+      "_longest_text_block",
+      "build_config",
+      "clean_text",
+      "decode_html",
+      "extract_date",
+      "extract_doc_number",
+      "extract_issue_organ",
+      "fetch_gov_attachments",
+      "load_resume",
+      "main",
+      "make_summary",
+      "merge_and_write",
+      "merge_with_master",
+      "set_cache_dir",
+      "set_offline",
+      "write_collect_stats",
+      "write_outputs"
+    ]
+  }
+}

@@ -24,11 +24,27 @@ if _GUIDE_ROOT not in _sys.path:
 del _GUIDE_ROOT, _os, _sys
 import os
 import re
+import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-PROJECT_ROOT = os.path.dirname(HERE)
-SRC_DIR = os.path.join(PROJECT_ROOT, "data", "raw", "_sources")
-DOCS_DIR = os.path.join(SRC_DIR, "_docs")  # 原始 .doc 二进制落盘处
+
+# ⚠️ 2026-10-20 修（第一百零四批，**同一根因的第 5 处**）：
+# 原实现 `PROJECT_ROOT = os.path.dirname(HERE)` 只上溯**一级**（HERE 是 `collectors/supp`）
+# ⇒ 得到 `.../collectors`（注释却写 "modules/regulatory_scrapers"）⇒ `SRC_DIR` 指向
+# `collectors/data/raw/_sources`（**不存在**）⇒ 本脚本提取的正文写到错位置，
+# 而 `ingest.py` 的 `enrich_placeholder_records` 从**正确位置**读 ⇒ 永远读不到。
+#
+# 修法：**统一到单一事实源** `supp_constants`（supp 目录下所有脚本共用一套路径），
+# 不再各自派生。双形态导入（脚本形态下本文件被裸名执行）。
+if HERE not in sys.path:
+    sys.path.insert(0, HERE)
+try:
+    from .supp_constants import SRC_DIR
+except ImportError:  # pragma: no cover  脚本形态
+    from supp_constants import SRC_DIR
+
+#: 原始 .doc 二进制落盘处（**supp 特化子目录**，故不放进 `supp_constants`）
+DOCS_DIR = os.path.join(SRC_DIR, "_docs")
 # 提取出的正文/附件文本写入 _sources/ 根（与 enrich_placeholder_records /
 # enrich_attachments 读取路径一致），文件名匹配 <key>_body.txt / <key>_附件N.txt
 

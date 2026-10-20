@@ -29,21 +29,39 @@ del _GUIDE_ROOT, _os
 import argparse
 import datetime as _dt
 import hashlib
-import json
 import os
 import re
 import shutil
 import subprocess
 import sys
 
-HERE = os.path.dirname(os.path.abspath(__file__))            # modules/regulatory_scrapers/collectors
-SCRAPERS_ROOT = os.path.dirname(HERE)                        # modules/regulatory_scrapers
-for _p in (HERE, SCRAPERS_ROOT):
-    if _p not in _sys.path:
-        _sys.path.insert(0, _p)
-del _sys
+HERE = os.path.dirname(os.path.abspath(__file__))            # …/collectors/supp
 
-RAW_PATH = os.path.join(SCRAPERS_ROOT, "data", "raw", "supplementary_regulations.json")
+# ⚠️ 2026-10-20 修（第一百零四批，**同一根因的第 7 处**）：原
+# `SCRAPERS_ROOT = os.path.dirname(HERE)` 只上溯**一级** ⇒ `.../collectors`
+# （注释却写 "modules/regulatory_scrapers"）。它被用于四处，**四处全错**：
+#   ① `RAW_PATH` ⇒ `collectors/data/raw/…`（不存在）⇒ L149 `open()` 必然
+#      `FileNotFoundError`（**本脚本根本跑不起来**）；
+#   ② `relpath(dst, SCRAPERS_ROOT)` ⇒ `../data/docs/…` **带 `..` 的脏路径**
+#      （与 pbc 同病：只在 cwd=collectors 时解析正确）；
+#   ③ `clean/run_clean_pipeline.py` 拼成 `collectors/clean/…`（不存在）；
+#   ④ `cwd=SCRAPERS_ROOT` 工作目录也错。
+#
+# 修法：**统一到单一事实源** `supp_constants`。双形态导入（可能被脚本形态执行）。
+if HERE not in _sys.path:
+    _sys.path.insert(0, HERE)
+del _sys
+try:
+    from .supp_constants import RAW_OUT, SCRAPERS_ROOT
+except ImportError:  # pragma: no cover  脚本形态
+    from supp_constants import RAW_OUT, SCRAPERS_ROOT
+
+if SCRAPERS_ROOT not in sys.path:
+    sys.path.insert(0, SCRAPERS_ROOT)
+
+# 2026-10-20：`RAW_PATH` 改为**直接复用** `supp_constants.RAW_OUT`（单一事实源）。
+# 二者字面量本就相同，此前是两处独立派生 ⇒ 一处修了上溯层级另一处没修就静默分叉。
+RAW_PATH = RAW_OUT
 
 # 6.4 标准命名：<文号>_正文_<标题片段>_<YYYYMMDD>.<ext> / <文号>_附件<编号>_<短名>_<YYYYMMDD>.<ext>
 _TITLE_STRIP_PREFIX = "金融监管总局保险业监管数据标准化规范（人身保险公司2024版）"
@@ -146,8 +164,21 @@ def main(argv=None):
         print("   %s %s\n      → %s" % ("[正文]" if is_body else f"[附件{num or '?'}]", f, target))
 
     # 读 raw 并定位记录
-    with open(RAW_PATH, encoding="utf-8") as fh:
-        rows = json.load(fh)
+    #
+    # ⚠️ 2026-10-20 修（第一百零四批，**实跑才暴露的第 8 处**）：原实现
+    #     `with open(RAW_PATH) as fh: rows = json.load(fh)`
+    # 有两处必然失败：
+    #   ① `RAW_PATH` 字面量是 `.json`，而批 49/T1 起主库实际落盘是 `.jsonl`
+    #      ⇒ `FileNotFoundError`（实测）；
+    #   ② 即便文件存在，主库是 **JSONL**（首行 `_meta` 信封 + 一行一记录），
+    #      `json.load` 会抛 `JSONDecodeError: Extra data: line 2 column 1`（实测）。
+    # ⇒ 本脚本在修复前**从未跑通过**。改用与其余脚本**同一套助手**：
+    #    `resolve_raw_path` 解析逻辑路径到实际文件（兼容历史 `.json` 名），
+    #    `read_raw_records` 双格式读取（.jsonl 逐行 / 旧 .json 整条）。
+    from std_lib.scraper_std.pipeline import read_raw_records, resolve_raw_path
+
+    _rp = resolve_raw_path(RAW_PATH)
+    rows = read_raw_records(_rp) if os.path.exists(_rp) else []
     rec = None
     for r in rows:
         if (r.get("task_index") or "") == args.task_index:
@@ -223,10 +254,19 @@ def main(argv=None):
     rf["collect_tool"] = "ingest_local_dir.py"
     rec["_raw_fields"] = rf
 
-    tmp = RAW_PATH + ".tmp"
-    with open(tmp, "w", encoding="utf-8") as fh:
-        json.dump(rows, fh, ensure_ascii=False, indent=2)
-    os.replace(tmp, RAW_PATH)
+    # ⚠️ 2026-10-20 修（第一百零四批，**第 9 处**）：原实现
+    #     `tmp = RAW_PATH + ".tmp"; json.dump(rows, ...); os.replace(tmp, RAW_PATH)`
+    # 三处都不对：
+    #   ① `RAW_PATH` 是 `.json` 字面量 ⇒ 会**新建**一个 `.json` 与主库 `.jsonl`
+    #      **分叉**（下游只读 `.jsonl` ⇒ 写进去等于没写）；
+    #   ② 写成 **JSON 数组**，而全仓 raw 规范是 **JSONL + 首行 `_meta` 信封**
+    #      （批 49/T1）⇒ 格式不合规，`read_raw_records` 虽兼容但下游其它读者未必；
+    #   ③ 手写 `.tmp` + `os.replace` 未做 fsync，异常时可能留半截文件。
+    # ⇒ 改用 `write_raw_jsonl`（自动把 `.json` 规范化成 `.jsonl`、原子写 + 信封）。
+    from std_lib.scraper_std.pipeline import write_raw_jsonl
+
+    _written = write_raw_jsonl(RAW_PATH, rows, source="supp")
+    print("[收录] raw 已写入:", _written)
     print("[收录] 已登记 %d 附件 | 正文: %s | v2 结构化: %d 个 workbook 对象" % (
         len(atts), body_path or "(未识别)", len(v2_list)))
 

@@ -2878,3 +2878,90 @@ MB 尾数不携带行为信息（归一化掉）。这是「保留信息量最�
 ### 验证
 30 门禁 PASS、ruff 0、mypy 0；新增守卫 `test_outdir_and_paths.py`(8) +
 `test_mof_split.py`(11) + `test_supp_split.py`(11) + golden 归一化用例(1)。
+## [Unreleased] 2026-10-20 — supp 采集端到端打通（**10 处同类缺陷**）+ local_path 跨基准解析 + gov/collector 常量层下沉（第一百零四批）
+
+### ① 实跑 supp 采集暴露 **10 处缺陷**（全部同一根因的不同表现）
+
+上一批我把 `supp_constants.SCRAPERS_ROOT` 修对了，但**只覆盖 `ingest.py`** ——
+supp 目录下**另有 3 个脚本各自派生路径**，其中 2 个仍少上溯一级：
+
+| # | 位置 | 后果 |
+|---|---|---|
+| 5 | `extract_doc_text.py` 的 `PROJECT_ROOT` | `SRC_DIR` 错位 ⇒ 提取的正文写错位置，`enrich_placeholder_records` 永远读不到 |
+| 6 | `ingest_batch.py` 的 `SCRAPERS_ROOT` | `RAW_LOGICAL_PATH` 错位 + `--run-clean` 拼成不存在的 `collectors/clean/` |
+| 7 | `ingest_local_dir.py` 的 `SCRAPERS_ROOT` | `RAW_PATH` 不存在 ⇒ **`FileNotFoundError`（脚本根本跑不起来）**；`relpath` 产出 `../data/…` 脏路径；`--run-clean` 脚本路径错 |
+| 8 | `ingest_local_dir.py` 用 `json.load()` 读主库 | 主库是 **JSONL** ⇒ `JSONDecodeError: Extra data: line 2 column 1` |
+| 9 | `ingest_local_dir.py` 用 `json.dump()` 写 raw | 写成 **JSON 数组**到 `.json` ⇒ 与主库 `.jsonl` **分叉**且格式不合规 |
+| 10 | `local_path` **基准跨源分裂** | 见下 |
+
+**修法（架构级）**：三者**统一从 `supp_constants` 导入**（单一事实源），不再各自派生；
+`RAW_PATH`/`RAW_LOGICAL_PATH` 改为**直接复用 `RAW_OUT`**；读写统一走
+`read_raw_records` / `write_raw_jsonl`（JSONL + `_meta` 信封 + 原子写）。
+
+**实跑验证（真跑，非 dry-run）**：`ingest_local_dir.py` 端到端 —— rc=0、
+记录 60→60（不丢）、仍是 JSONL+`_meta`、docs 文件 19→20、**未创建 `.json` 分叉**、
+`local_path` 不带 `..`。
+
+### ② `local_path` **基准跨源分裂**（实测取证）
+
+| 源 | 基准 | 条数 |
+|---|---|---|
+| `mof` | **仓根**（`modules/…`） | 243 |
+| `pbc` | **仓根** | 13 |
+| `gov` | `modules/regulatory_scrapers`（`data/…`） | **1189** |
+| `supp` | 同上 | 7 |
+
+**关键取证**：全仓**没有任何代码**把 `local_path` 拼成路径打开文件
+（`contract.py` 只做字段映射、`build_fts.py` 只存 SQLite 元数据、前端不用）
+⇒ 这是**口径不一致**而非功能故障，**1199 条大规模迁移的收益不抵风险**。
+
+**处置（质量最高 + 风险最低）**：
+· **mof 源内 3 条**（同一记录的 3 个附件，旧代码写成了 `data/…`）⇒ 用
+  `tools/migrate_local_path.py --allow-scrapers-to-repo` **归一为仓根**（mof 内部 100% 一致）；
+· **跨源不强行统一**，改为提供**唯一正确解析方式**
+  `std_lib/scraper_std/local_paths.resolve_local_path()`（自动识别两种基准，
+  先验存在性再回退；`must_exist=True` 时解析不到返**空串**而非给错路径）。
+· 实测解析可达率：mof **246/246**、pbc **13/13**、gov **1260/1261（99.9%）**、supp **4/4**。
+
+### ③ `gov/collector.py` 常量层下沉：**841 → 701 行**
+
+**"补夹具"的实质是等价性基线**（而不是再加 HTTP cassette）：拆分风险是
+「漏搬/搬错/签名漂移」，cassette 覆盖的是行为。新增
+`tests/gov_collector_baseline.py` + `tests/baselines/gov_collector_baseline.json`，
+锁定四段**结构快照**：模块级名字全集（36）、常量摘要（容器长度+排序键 / 字符串
+长度+前 12 字 / 正则 pattern+flags）、两个类的方法→参数名、`main()` 的 argparse
+选项与默认值（25 个）。
+
+**拆法（脚本按行区间逐字提取，零手抄）**：`gov_constants.py`（206 行）承接
+引导 + 6 处 try-import 别名 + 全部常量；`collector.py` 保留
+`_RESP_TEXT`（跨调用可变全局，`_init_cache` 用 `global` 改它）+ 三个缓存函数 +
+`RobustSession`/`XzfgkScraper`/`main`，并 **re-export** 全部符号。
+
+**基线当场抓到两次真实失误**（这是基线存在的意义）：
+1. v1 把**标准库导入**（`sys`/`argparse`/`re`/…）一起搬走 ⇒ `cli.count` **25→0**、
+   脚本形态 `NameError: name 'sys' is not defined`；
+2. v2 把**仓库引导**一起搬走 ⇒ `ModuleNotFoundError: No module named 'paths'`
+   （`collector.py` 保留的 `import paths` 需要它）。
+   结论：**引导是每个文件的运行前提，不是"常量"** ⇒ 两份并存（`if not in sys.path` 幂等）。
+
+### ④ 途中修正的三处自身失误（如实记录）
+
+1. **手工写常量值全错**：我凭记忆写 `_ORGAN_KW`/`_NOISE_CLASS_HINTS`/
+   `_SCHEME_UPGRADE_RE`/`CSV_COLUMNS`，与原文件**完全不同** ⇒ 改为脚本按行区间
+   **逐字提取**（零手抄）。
+2. **结构快照误放 `tests/cassettes/`**：那是 **HTTP 夹具**目录，J13 会按夹具 schema
+   校验 ⇒ `CassetteError: 夹具 schema 不支持` ⇒ 移到 `tests/baselines/`。
+3. **`sys.path.insert` 顶破 `tests/` 基线**（33→34）⇒ 去掉（`python -m` 时 cwd=仓根，
+   天然可导入）。
+
+### ⑤ 门禁调整（均为"拆分带来的必要变更"，已写明理由）
+
+| 判据 | 变更 |
+|---|---|
+| J11 | 从 baseline **移除** `gov/collector.py`（拆分达标 701<800，基线**单调收缩**） |
+| sys.path | `modules` 127→**128**（`gov_constants.py` 需要自己的仓根引导；`collector.py` 原计入不变） |
+| R4 盘符字面量 | 基线 JSON 的 CLI default 归一化为 `<ROOT>`（`--out-dir` 默认是绝对路径） |
+
+### 验证
+30 门禁 PASS、ruff 0、mypy 0、**28 项新守卫全绿**（supp 13 + gov 15）、
+基线自检一致、supp/pbc 端到端真跑通过、全量测试零失败。

@@ -39,20 +39,39 @@ from std_lib.scraper_std.pipeline import (  # 批 49/T1：raw 统一 JSONL 读�
     write_raw_jsonl,
 )
 
-HERE = os.path.dirname(os.path.abspath(__file__))            # modules/regulatory_scrapers/collectors
-SCRAPERS_ROOT = os.path.dirname(HERE)                          # modules/regulatory_scrapers
-for _p in (HERE, SCRAPERS_ROOT):
-    if _p not in sys.path:
-        sys.path.insert(0, _p)
+HERE = os.path.dirname(os.path.abspath(__file__))            # …/collectors/supp
+
+# ⚠️ 2026-10-20 修（第一百零四批，**同一根因的第 6 处**）：原
+# `SCRAPERS_ROOT = os.path.dirname(HERE)` 只上溯**一级** ⇒ 得到 `.../collectors`
+# （注释却写 "modules/regulatory_scrapers"）。它被用于三处，**三处全错**：
+#   ① `RAW_LOGICAL_PATH` ⇒ 指向 `collectors/data/raw/…`（不存在）⇒ 读不到主库；
+#   ② `os.path.join(SCRAPERS_ROOT, "clean", "run_clean_pipeline.py")` ⇒
+#      `collectors/clean/` **不存在** ⇒ `--run-clean` 必然失败；
+#   ③ `subprocess.run(..., cwd=SCRAPERS_ROOT)` ⇒ 工作目录也错。
+#
+# 修法：**统一到单一事实源** `supp_constants`（supp 目录下所有脚本共用一套路径）。
+# 双形态导入（生产调度以脚本形态直接跑本文件）。
+if HERE not in sys.path:
+    sys.path.insert(0, HERE)
+try:
+    from .supp_constants import RAW_OUT, SCRAPERS_ROOT
+except ImportError:  # pragma: no cover  脚本形态
+    from supp_constants import RAW_OUT, SCRAPERS_ROOT
+
+if SCRAPERS_ROOT not in sys.path:
+    sys.path.insert(0, SCRAPERS_ROOT)
 
 # W0-4（2026-10-13，C8）：原常量字面量为 `supplementary_regulations.json`，而批 49 起实际
 # 落盘是 `.jsonl`——「常量说 .json、实际写 .jsonl」的迁移遗留漂移（易误导读者按字面量拼路径）。
 # 保留历史名作**逻辑路径**（resolve_raw_path/read_raw_records/write_raw_jsonl 三助手都接受
 # 历史名并解析到实际文件，双向兼容是既定设计），但**改名明示角色**：一律经助手访问，
 # 禁止按字面量 open()。
-RAW_LOGICAL_PATH = os.path.join(
-    SCRAPERS_ROOT, "data", "raw", "supplementary_regulations.json"
-)
+# 2026-10-20：改为**直接复用** `supp_constants.RAW_OUT`（单一事实源）。
+# 二者字面量本就相同（`…/data/raw/supplementary_regulations.json`），此前是
+# **两处独立派生**——一旦某处修了上溯层级、另一处没修就会静默分叉（本批正是
+# 从「`SCRAPERS_ROOT` 少上溯一级」这个分叉里发现的）。保留 `RAW_LOGICAL_PATH`
+# 这个名字是因为本模块全程按「逻辑路径 + 助手解析」访问（见上条注释）。
+RAW_LOGICAL_PATH = RAW_OUT
 
 def _norm_date(s: str) -> str:
     s = (s or "").strip()

@@ -58,98 +58,97 @@ from typing import Any
 
 import paths
 
+# ---- 常量与依赖别名：**单一出处已下沉到 `gov_constants.py`**（2026-10-20）----
+# 本文件仍 re-export 全部符号（`collector` 是兄弟模块/外部脚本的共同入口）。
+# ⚠️ **双形态**：包形态 / **脚本形态**（生产 `COLLECT_CMD` 形态）。后者无包上下文，
+#    相对导入会抛 `attempted relative import with no known parent package` ⇒ 必须兜底。
 try:
-    import requests
-    from bs4 import BeautifulSoup
-    from requests.adapters import HTTPAdapter
-    from urllib3.util.retry import Retry
-except ImportError as e:  # pragma: no cover
-    sys.stderr.write(
-        "缺少依赖，请先执行：\n"
-        "  pip install requests beautifulsoup4 lxml\n"
-        f"原始错误：{e}\n"
+    from .gov_constants import (
+        _NOISE_CLASS_HINTS,
+        _ORGAN_KW,
+        _SCHEME_UPGRADE_RE,
+        _SCRAPERS_ROOT,
+        _STD_LIB_ROOT,
+        CONTENT_SELECTORS,
+        CSV_COLUMNS,
+        DEFAULT_HEADERS,
+        LOG,
+        SOURCES,
+        TITLE_SELECTORS,
+        USER_AGENTS,
+        BeautifulSoup,
+        HTTPAdapter,
+        MasterView,
+        OfflineMiss,
+        Retry,
+        ScrapeConfig,
+        _cache_ep,
+        _is_https_scheme_upgrade,
+        _longest_text_block,
+        _unified_doc_number,
+        bind_source_cache,
+        build_config,
+        clean_text,
+        decode_html,
+        extract_date,
+        extract_doc_number,
+        extract_issue_organ,
+        fetch_gov_attachments,
+        load_resume,
+        make_summary,
+        merge_and_write,
+        merge_with_master,
+        requests,
+        write_collect_stats,
+        write_outputs,
     )
-    sys.exit(2)
+except ImportError:  # pragma: no cover  脚本形态
+    from gov_constants import (  # type: ignore[no-redef]  # noqa: F401
+        _NOISE_CLASS_HINTS,
+        _ORGAN_KW,
+        _SCHEME_UPGRADE_RE,
+        _SCRAPERS_ROOT,
+        _STD_LIB_ROOT,
+        CONTENT_SELECTORS,
+        CSV_COLUMNS,
+        DEFAULT_HEADERS,
+        LOG,
+        SOURCES,
+        TITLE_SELECTORS,
+        USER_AGENTS,
+        BeautifulSoup,
+        HTTPAdapter,
+        MasterView,
+        OfflineMiss,
+        Retry,
+        ScrapeConfig,
+        _cache_ep,
+        _is_https_scheme_upgrade,
+        _longest_text_block,
+        _unified_doc_number,
+        bind_source_cache,
+        build_config,
+        clean_text,
+        decode_html,
+        extract_date,
+        extract_doc_number,
+        extract_issue_organ,
+        fetch_gov_attachments,
+        load_resume,
+        make_summary,
+        merge_and_write,
+        merge_with_master,
+        requests,
+        write_collect_stats,
+        write_outputs,
+    )
 
-# 附件下载 + 文本抽取（修复：gov 此前完全不抓附件）
-# W4（L1 重组）：兄弟模块 import 双形态——包形态（相对导入）/ 脚本形态
-# （`python collectors/gov/collector.py` 直调时本目录为 sys.path[0]）。
-try:
-    from .attachments import fetch_gov_attachments
-except ImportError:  # pragma: no cover
-    try:
-        from attachments import fetch_gov_attachments  # type: ignore[no-redef]
-    except ImportError:
-        def fetch_gov_attachments(*a, **k):  # type: ignore[no-redef,misc]
-            return [], ""
 
-LOG = logging.getLogger("gov_scraper")
-
-# --------------------------------------------------------------------------- #
-# 配置
-# --------------------------------------------------------------------------- #
-
-# 常用桌面浏览器 UA 池（轮换以降低被识别为脚本的概率）
-# （共享库对齐审计 阶段 4）实测：本文件原有 UA 池与 ``crawler_common.USER_AGENTS``
-# **逐字相同**（md5 一致、n=5），故改为复用共享库，消除重复副本；
-# 沿用 nfra 既有「try 导入 + 缺模块回退单 UA」降级样板，避免缺依赖时启动失败。
-_STD_LIB_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-if _STD_LIB_ROOT not in sys.path:
-    sys.path.insert(0, _STD_LIB_ROOT)
-try:
-    from std_lib.scraper_std.crawler_common import USER_AGENTS
-except ImportError:  # pragma: no cover
-    USER_AGENTS = [
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-        "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-    ]
-
-# 统一文号提取器（2026-09-05 五源共享：doc_number 模块，15+ 优先级正则 + 规范化）
-try:
-    from std_lib.scraper_std.doc_number import extract_doc_number as _unified_doc_number
-except ImportError:  # pragma: no cover
-    _unified_doc_number = None  # type: ignore[assignment]
-
-# 默认请求头（模拟真实浏览器）
-# 通用缓存模块（五源统一抽象层：std_lib/scraper_std/cache_store，2026-09-05）
-# gov xzfgk 列表/详情页均为服务端渲染 HTML → 委托 TextResponseCache（存储 HTML 文本）；
-# 命中读盘跳过网络、离线缺失抛 OfflineMiss、仅成功响应（非空）落盘，不缓存错误/拦截页。
-try:
-    from std_lib.scraper_std.cache_store import OfflineMiss, bind_source_cache
-except ImportError:  # pragma: no cover
-    from std_lib.scraper_std.cache_store import OfflineMiss, bind_source_cache
 
 _RESP_TEXT = None  # TextResponseCache 实例；None 表示未启用缓存
 _OfflineMiss = OfflineMiss  # 兼容别名
 
 
-# ---- 拆分（2026-09-13，P3）：下列符号迁 gov/parse，re-export 保持外部调用兼容 ----
-# W4（L1 重组）：兄弟模块 import 双形态——包形态（相对导入）/ 脚本形态（裸名，
-# 此时 collectors/gov/ 为 sys.path[0]）。经**模块对象**再取符号 ⇒ 名单只此一份
-# （双份名单 = 双份维护点，双形态各写一遍 import 名单必然漂移）。
-try:
-    from . import parse as _parse
-except ImportError:  # pragma: no cover - 脚本形态
-    import parse as _parse  # type: ignore[no-redef]
-
-# re-export（显式赋值，规避 F401/F405；外部调用面不变）
-SOURCES = _parse.SOURCES  # 子源登记表唯一事实源在 gov/parse（2026-09-15 收敛，勿在别处重复定义）
-MasterView = _parse.MasterView
-ScrapeConfig = _parse.ScrapeConfig
-_is_https_scheme_upgrade = _parse._is_https_scheme_upgrade
-_longest_text_block = _parse._longest_text_block
-build_config = _parse.build_config
-clean_text = _parse.clean_text
-decode_html = _parse.decode_html
-extract_date = _parse.extract_date
-extract_doc_number = _parse.extract_doc_number
-extract_issue_organ = _parse.extract_issue_organ
-load_resume = _parse.load_resume
-make_summary = _parse.make_summary
-merge_and_write = _parse.merge_and_write
-merge_with_master = _parse.merge_with_master
-write_collect_stats = _parse.write_collect_stats
-write_outputs = _parse.write_outputs
 
 
 def _init_cache(path=None, offline=False):
@@ -169,39 +168,6 @@ def set_offline(flag):
     if _RESP_TEXT is not None:
         _RESP_TEXT.set_offline(flag)
 
-# N-167：`_cache_ep` 的**唯一实现**在 `std_lib/scraper_std/cache_store.py`
-# （原 gov/pbc 两源各写一份逐字相同的实现 → 改一漏一即缓存键算法分叉，且**不会报错**）。
-# 别名导入保持全部调用点不变。
-from std_lib.scraper_std.cache_store import url_endpoint_key as _cache_ep
-
-DEFAULT_HEADERS = {
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,"
-    "application/json;q=0.8,*/*;q=0.7",
-    "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
-    # 注意：不要包含 br（brotli）。本机 urllib3 未安装 brotli 解码器，
-    # 一旦服务器回 brotli 压缩，resp.content 会是未解压乱码字节，
-    # decode_html 解出乱码 → 选择器全部落空 → 详情正文=0（海量 gov 子站因此被误判为空）。
-    # 去掉 br 后服务器回退 gzip，urllib3 可正常解压。
-    "Accept-Encoding": "gzip, deflate",
-    "Connection": "keep-alive",
-    "Upgrade-Insecure-Requests": "1",
-}
-
-# 详情页正文候选容器选择器（按优先级尝试）
-CONTENT_SELECTORS = [
-    ".law-chapter",        # 司法部行政法规详情正文
-    "#content",
-    "#UCAP-CONTENT",
-    ".content-text",
-    ".pages_content",
-    ".article",
-    "#zoom",
-    "#article-content",
-    ".TRS_Editor",
-    "div.content",
-]
-
-TITLE_SELECTORS = ["h1", ".article-title", "#title", ".title", "h2"]
 
 
 # --------------------------------------------------------------------------- #
@@ -315,19 +281,8 @@ class RobustSession:
 
 
 
-# 发文机关关键词（用于从『X令第N号』中定位机关名）
-_ORGAN_KW = r"(?:国务院|部|委员会|局|人民政府|政府|厅|署|中央军委)"
-
-# 详情页需剔除的噪声元素（下载条 / 历史沿革 / 按钮等）
-_NOISE_CLASS_HINTS = ["download", "fold", "historical", "tip", "btn", "share", "qr", "vconsole"]
 
 
-
-
-
-# http 站点正文页仅返回「JS 协议升级」脚本（window.location.href="https:"+...），
-# requests 不执行 JS → 拿不到正文。检测到该模式后改用 https 重抓。
-_SCHEME_UPGRADE_RE = re.compile(r'targetProtocol\s*=\s*["\']https:', re.I)
 
 
 
@@ -584,12 +539,6 @@ class XzfgkScraper:
 # --------------------------------------------------------------------------- #
 # --------------------------------------------------------------------------- #
 
-# --------------------------------------------------------------------------- #
-# CSV 表格列（2026-09-04：随 FlkScraper 段删除时被误删，已从备份恢复）
-CSV_COLUMNS = [
-    "title", "category", "publish_date", "pub_date_original", "effective_date",
-    "issue_organ", "document_number", "detail_url", "summary", "source",
-]
 
 
 # --------------------------------------------------------------------------- #
@@ -602,9 +551,6 @@ CSV_COLUMNS = [
 # —— 运行锁统一实现（N-8）：判定逻辑收敛到 regulatory_scrapers/fs_lock.py，四源共用 ——
 import atexit
 
-_SCRAPERS_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-if _SCRAPERS_ROOT not in sys.path:
-    sys.path.insert(0, _SCRAPERS_ROOT)
 from config.exitcodes import ExitCode
 from std_lib.common_lib import fs_lock
 
@@ -751,7 +697,10 @@ def main(argv=None) -> int:
             else:
                 scraper = ZhengcekuScraper(scfg, client, seen_urls, known_urls)
             recs = scraper.run()
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
+            # 意图声明（本仓规范）：**单个子源失败不得拖垮整条 gov 采集**
+            # ——其余子源仍应产出，失败者记入 `failed` 并在退出码/统计里体现。
+            # 故此处是「按设计隔离」的宽泛捕获，不是忘记收窄。
             LOG.exception("子源 %s 抓取过程发生致命错误：%s", s, e)
             failed.append(s)
             continue

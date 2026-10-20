@@ -51,7 +51,11 @@ BASELINE: dict[str, int] = {
     # 待 P1-3 后续 / P2-x 逐步收敛
     "interfaces": 11,
     # 127（P1-6 的 consolidate_timeliness `_wl_add` +1；新口径下再减）
-    "modules": 127,
+        # 2026-10-20（第一百零四批）：**+1** —— `gov/gov_constants.py` 是拆分出的新文件，
+    # 它需要**自己的仓根引导**才能 import `std_lib`/`paths`（`collector.py` 里那份
+    # 引导只在其自身进程内生效；两个文件各自被独立 import 时互不继承）。
+    # 这是"拆分带来的必要增加"，非新增缺陷；`collector.py` 原计入不变。
+    "modules": 128,
     "std_lib": 9,
     "tests": 33,
     # 14 → 17（2026-09-26，P2-1/2/3b/6）：新增 3 个工具各自带 1 处仓根引导

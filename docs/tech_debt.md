@@ -77,6 +77,8 @@ W5 自身（约 8 个批次）即该预算的**首次实践**：W0–W4 的 A–
 
 | TD-12 | ~~`REPO_ROOT`/`--outdir` 只上溯一级 ⇒ 写错位置~~ ⇒ **已处置**（2026-10-20 第一百零三批） | 采集链 | 交付位置正确性 | 0 | — | **同类 bug 共 4 处**（全部同一根因：采集器在 `collectors/<src>/` 两级，而 `dirname` 只上溯一级 ⇒ 得到 `collectors`，注释却写 `regulatory_scrapers`）：① mof 的 `--outdir` 默认值（裸跑静默写错位置、白跑不报错）；② mof/attachments 的 `REPO_ROOT`（`local_path` 变 `../../data/…` 脏路径）；③ pbc 的 `REPO_ROOT`（实测 13 条 local_path 里 **10 条已脏**）；④ supp 的 `SCRAPERS_ROOT`（`SRC_DIR`/`RAW_OUT`/`STATE_DIR` 全错位 ⇒ 采集白跑）。**关键区分**：`outdir` 基准 = `regulatory_scrapers/data/raw`（上溯两级）；`local_path` 基准 = **仓根**（实测 mof 246 条以 `paths.ROOT` 拼接后文件真实存在）——两者**不能共用一个常量**。历史脏数据由新工具 `tools/migrate_local_path.py` 迁移（只改一字段、只替换已知脏前缀、逐条验证文件可达、备份后原子替换、默认 dry-run），pbc 10 条已迁完 |
 
+| TD-13 | `local_path` **基准跨源分裂**（mof/pbc = 仓根；gov 1189 / supp 7 = `modules/regulatory_scrapers`） | 采集链 | 交付口径一致性 | 1189 | 2 | **2026-10-20 实测**（第一百零四批）：全仓**无代码**把 `local_path` 拼成路径打开（`contract.py` 只映射字段、`build_fts.py` 只存 SQLite、前端不用）⇒ 是**口径不一致**而非功能故障，**1199 条迁移收益不抵风险**。已做：① mof 源内 3 条混用记录归一为仓根（源内 100% 一致）；② 提供**唯一正确解析** `std_lib/scraper_std/local_paths.resolve_local_path()`（自动识别两种基准，`must_exist=True` 时解析不到返空串而非给错路径），实测可达率 mof 246/246、pbc 13/13、gov 1260/1261、supp 4/4。**若将来要统一**：应一次性迁移 gov 1189 条 + 让所有采集器**新写入**统一为仓根基准（`tools/migrate_local_path.py` 已支持`--allow-scrapers-to-repo`） |
+
 ## 七、复核节奏
 
 - **每 Wave 出口**：更新本文件（新增债登记、已偿标记闭环）。
