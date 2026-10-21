@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 import tempfile
 import time
 from typing import IO
@@ -92,11 +93,90 @@ def _pid_alive(pid):
 
 
 def _read_lock_pid(lock_path):
+    """读锁里的 PID（**兼容两种格式**：新 JSON 身份 / 旧裸 PID）。"""
+    meta = _read_lock_meta(lock_path)
+    if meta is not None:
+        pid = meta.get("pid")
+        return pid if isinstance(pid, int) else None
     try:
         with open(lock_path, encoding="utf-8") as fh:
             return int(fh.read().strip())
     except (OSError, ValueError):
         return None
+
+
+def _read_lock_meta(lock_path):
+    """读锁文件的**身份元数据**（JSON）；旧格式（裸 PID）或损坏 → `None`。
+
+    兼容性：老锁文件内容是 `"3992"`，新格式是
+    `{"pid": 3992, "started": 1759..., "exe": "python.exe"}`。读到旧格式返回
+    `None` ⇒ 调用方退回"PID + 超龄"判定（行为与升级前完全一致，不会误抢占）。
+    """
+    try:
+        raw = open(lock_path, encoding="utf-8").read().strip()
+    except OSError:
+        return None
+    if not raw.startswith("{"):
+        return None
+    try:
+        d = json.loads(raw)
+    except ValueError:
+        return None
+    return d if isinstance(d, dict) else None
+
+
+def _proc_start_time(pid):
+    """进程**创建时刻**（epoch 秒）；不可得 → `None`。
+
+    为什么需要（2026-10-21 第一百零六批实测）：Windows 重启后 **PID 会被复用**。
+    蓝屏重启后 `data/run_production_refresh.lock` 里残留 `3992`，而重启后
+    3992 已被 `svchost.exe`（AudioEndpointBuilder）占用 ⇒ 只校验"PID 是否存在"
+    会判"锁被占用"，**主链静默拒绝运行**，且提示"等待 PID 退出"（永远等不到）。
+
+    进程身份 = PID + 创建时刻（二者同时匹配才算同一进程）。
+    """
+    if not pid or pid <= 0 or os.name != "nt":
+        return None
+    import ctypes
+    from ctypes import wintypes
+
+    kernel32 = ctypes.windll.kernel32
+    PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
+    handle = kernel32.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, pid)
+    if not handle:
+        return None
+    try:
+        created, exited, kern, user = (wintypes.FILETIME() for _ in range(4))
+        ok = kernel32.GetProcessTimes(handle, ctypes.byref(created),
+                                      ctypes.byref(exited), ctypes.byref(kern),
+                                      ctypes.byref(user))
+        if not ok:
+            return None
+        ft = (created.dwHighDateTime << 32) | created.dwLowDateTime
+        # FILETIME(100ns since 1601-01-01) → epoch 秒
+        return ft / 1e7 - 11644473600.0
+    except Exception:  # noqa: BLE001  取不到就当未知（退回 PID 判定）
+        return None
+    finally:
+        kernel32.CloseHandle(handle)
+
+
+def _lock_is_reused_pid(meta):
+    """锁里记录的进程**已不是当初那个**（PID 被复用）⇒ True。
+
+    判据：锁有 `started` 且能取到该 PID 的创建时刻，二者相差 > 5 秒。
+    容差 5s 是给"写锁与取创建时刻之间的正常间隔"留余量。
+    """
+    if not meta:
+        return False
+    pid = meta.get("pid")
+    started = meta.get("started")
+    if not isinstance(pid, int) or not isinstance(started, (int, float)):
+        return False
+    real = _proc_start_time(pid)
+    if real is None:
+        return False      # 取不到 → 不臆断（保守：仍按占用处理）
+    return abs(real - float(started)) > 5.0
 
 
 class ProcessLock:
@@ -117,26 +197,47 @@ class ProcessLock:
         self._acquired = False
 
     def acquire(self):
-        """尝试获取锁：成功 True；被其他存活进程占用 → False（不抛异常）。"""
+        """尝试获取锁：成功 True；被其他存活进程占用 → False（不抛异常）。
+
+        **陈旧判定（4 条任一即陈旧，可抢占）**：
+          ① 内容损坏（读不出 PID）；
+          ② PID 已死；
+          ③ **PID 被复用**（锁里的 PID 现在属于另一个进程 —— 用创建时刻识别，
+             2026-10-21 新增，起因见 `_proc_start_time` 的说明）；
+          ④ 超过 `max_age_sec`。
+        """
         if os.path.exists(self.lock_path):
             pid = _read_lock_pid(self.lock_path)
+            meta = _read_lock_meta(self.lock_path)
             stale = False
-            if pid is None:  # 内容损坏 → 可抢占
+            if pid is None:  # ① 内容损坏 → 可抢占
                 stale = True
-            elif not _pid_alive(pid):  # PID 已死 → 可抢占
+            elif not _pid_alive(pid):  # ② PID 已死 → 可抢占
+                stale = True
+            elif _lock_is_reused_pid(meta):  # ③ PID 被复用 → 可抢占
                 stale = True
             else:
                 try:
                     age = time.time() - os.path.getmtime(self.lock_path)
                 except OSError:
                     age = 0
-                if age > self.max_age_sec:  # 超龄 → 可抢占
+                if age > self.max_age_sec:  # ④ 超龄 → 可抢占
                     stale = True
             if not stale:
                 return False  # 被占用
         os.makedirs(os.path.dirname(os.path.abspath(self.lock_path)), exist_ok=True)
+        # 写**身份元数据**（PID + 创建时刻 + 可执行名）：仅靠 PID 无法区分
+        # "同一进程"与"重启后复用了同一 PID 的系统进程"。
+        import json
+
+        started = _proc_start_time(self.own_pid)
+        payload = {
+            "pid": self.own_pid,
+            "started": started if started is not None else round(time.time(), 3),
+            "exe": os.path.basename(sys.executable or "python"),
+        }
         with open(self.lock_path, "w", encoding="utf-8") as fh:
-            fh.write(str(self.own_pid))
+            fh.write(json.dumps(payload, ensure_ascii=False))
             fh.flush()
             os.fsync(fh.fileno())
         self._acquired = True

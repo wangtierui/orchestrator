@@ -408,8 +408,11 @@ function viewMetrics(d){
 //   · 其它 kind ⇒ 沿用 subject 列
 // **空值必须可辨**：`not_found` 显示「未查到」、`not_applicable` 显示「—」、
 // `aggregate` 显示「汇总项」——绝不把"查不到"渲染成空白（本仓反复踩过的坑）。
+// 2026-10-21：新增 `warming` —— 反查索引（要扫 1.6GB clean 产物）**仍在后台构建**中。
+// 必须与 `not_found` 明确区分：前者是"还没查完"（稍后刷新即有），后者是"确实没有"。
+// 混为一谈会让用户以为数据缺失（这是比慢更严重的误导）。
 const WL_SRC_LABEL = {"not_found":"未查到","not_applicable":"—","aggregate":"汇总项",
-                      "ipn":"IPN","subject":"subject"};
+                      "warming":"统计中…","ipn":"IPN","subject":"subject"};
 
 function wlCell(fieldName, f){
   if(!f) return "—";

@@ -481,11 +481,18 @@ def download_attachment(att, law_id, outdir, rate, timeout=60, max_retries=6):
     return None
 
 
-def collect_attachments(law_id, rate, timeout=60):
+def collect_attachments(law_id, rate, timeout=60, deadline=None):
     """抓取并下载某条法规的全部附件，返回带本地路径的元数据列表。
 
     timeout 透传至 download_attachment，便于调用方在慢速/限流场景下收紧超时。
     附件主机熔断（连续 502）后不再尝试下载。
+
+    `deadline`（`time.time()` 绝对时刻；None=不限）—— **软耗时上限的可靠落点**。
+    为什么必须细到这里（2026-10-21 第一百零六批实测）：`--max-seconds` 原先只在
+    **每条记录开始时**检查一次 ⇒ "单条记录很重"时上限完全失效：实测
+    `--max-seconds 7200` 实际跑到 **13113s（超 82%）**，最后被父进程 4h 硬超时
+    杀掉（`rc=-1 TIMEOUT`）—— 把"可控早停"变成了"被强杀"。一条记录的耗时主要在
+    附件（下载 + PDF/表格解析），故检查点必须落到附件循环内。
     """
     if _ATT_CIRCUIT_OPEN:
         return []
@@ -494,6 +501,9 @@ def collect_attachments(law_id, rate, timeout=60):
         return []
     result = []
     for att in meta:
+        if deadline is not None and time.time() > deadline:
+            logger.warning("附件下载达软耗时上限 ⇒ 本条剩余附件跳过（下次续抓）")
+            break
         d = download_attachment(att, law_id, ATTACHMENTS_DIR, rate, timeout=timeout)
         if d:
             result.append(d)

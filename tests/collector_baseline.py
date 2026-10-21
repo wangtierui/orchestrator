@@ -65,6 +65,40 @@ def _module_path(source: str) -> str:
 _GUIDE_TMP = {"_GUIDE_ROOT", "_os", "_sys"}
 
 
+def _ast_imported_names(path: str) -> set[str]:
+    """`path` 里**仅由 import 引入**的顶层名字（`import x` / `from m import y`）。
+
+    与 `_ast_module_names` 配合得出「本仓定义」：
+        `定义 = 全量名字 - 导入名`
+    这个区分是 T2 的核心 —— 删一个**导入名**（本模块不再用它）可能无害；
+    删一个**本仓符号**（`def`/`class`/赋值）必然打断外部导入点。
+    """
+    names: set[str] = set()
+
+    def walk(stmts) -> None:
+        for n in stmts:
+            if isinstance(n, ast.Import):
+                for a in n.names:
+                    names.add(a.asname or a.name.split(".")[0])
+            elif isinstance(n, ast.ImportFrom):
+                for a in n.names:
+                    if a.name == "*":
+                        continue
+                    names.add(a.asname or a.name)
+            elif isinstance(n, ast.Try):
+                walk(n.body)
+                walk(n.orelse)
+                walk(n.finalbody)
+                for h in n.handlers:
+                    walk(h.body)
+
+    try:
+        walk(ast.parse(open(path, encoding="utf-8").read()).body)
+    except (OSError, SyntaxError):
+        return set()
+    return names
+
+
 def _is_noise(name: str) -> bool:
     """判断是否为"AST 采集噪声"（不是需要守护的模块符号）。
 
@@ -274,32 +308,65 @@ def compare(source: str) -> list[str]:
     # 否则 expected 每次从当前文件重算，拆分后自动缩水 ⇒ missing 恒空 ⇒ 漏搬抓不到。
     # 同时**过滤噪声**（老基线用旧规则生成，含 `import logging`/`_att` 这类
     # 模块名与内部别名，它们在拆分后必然"消失"但并非漏搬）。
-    exp = [n for n in (base.get("module_names", {}).get("expected") or [])
-           if not _is_noise(n)]
-    cur = build(source, expected=exp)
-    diffs: list[str] = []
+    rep = compare_report(source)
+    return list(rep["fails"])
 
-    # ── module_names：**单向包含**（拆分前有的，现在还得有）──
-    # 不比"集合完全相同"：拆分后 AST 会自然多/少一些导入名（如多出 re-export 目标），
-    # 那既不表示漏搬也不表示漂移。真正的信号是 **missing 非空**。
-    if cur["module_names"]["missing"]:
-        diffs.append("module_names")
 
-    # ── const_digest：基线里每个常量，现在必须一致（子集检查）──
+def compare_report(source: str) -> dict:
+    """比对并**分类**返回：`{"fails": [...], "warnings": [...]}`。
+
+    `fails`   —— 必须修（原来的语义：本仓符号缺失 / 常量值变 / 签名变 / CLI 变）
+    `warnings`—— **不阻断但必须可见**：基线里有、现在没有、且它只是一个
+                 **导入名**（标准库/三方模块/内部别名）。
+
+    为什么要分类（T2 的核心）：
+      · 删「本仓符号」（函数/类/常量）⇒ 外部 `from collector import X` 会
+        `ImportError` ⇒ **必须 FAIL**（原逻辑已覆盖）；
+      · 删「导入名」（如 `import csv`）⇒ 本模块不再用它，功能无影响，
+        但外部若有 `from collector import csv` 仍会断 ⇒ **不该静默**。
+        过去 `_is_noise` 把它整个过滤掉 ⇒ 删了**毫无提示**（这是真实盲区）。
+      现在：既不误判为 FAIL（那会让拆分变得寸步难行），也不静默（那会藏住破坏）。
+
+    **额外提升**：若某个"噪声名"缺失，但**当前模块仍定义/赋值了同名对象**
+    （如自定义了 `json()` 函数后删掉），说明它其实是本仓符号 ⇒ **提升为 FAIL**。
+    这条补上了"标准库同名符号"的盲区。
+    """
+    base = json.load(open(baseline_path(source), encoding="utf-8"))
+    exp_all: list[str] = list(base.get("module_names", {}).get("expected") or [])
+    exp_sym = [n for n in exp_all if not _is_noise(n)]      # 本仓符号
+    exp_noise = [n for n in exp_all if _is_noise(n)]        # 导入名/别名
+    cur = build(source, expected=exp_all)
+    present = set(cur["module_names"]["present"])
+    defined_now = set(cur.get("defined_names") or [])
+
+    fails: list[str] = []
+    warnings: list[str] = []
+
+    # ── 本仓符号缺失 ⇒ FAIL ──
+    for n in exp_sym:
+        if n not in present:
+            fails.append(f"module_names:{n}")
+
+    # ── 导入名缺失 ⇒ 告警；若当前仍定义同名对象 ⇒ 提升为 FAIL ──
+    for n in exp_noise:
+        if n in present:
+            continue
+        if n in defined_now:
+            fails.append(f"module_names:{n}(定义型)")
+        else:
+            warnings.append(n)
+
+    # ── 其余三段（常量/类签名/CLI）保持原语义（缺一即 FAIL）──
     for k, v in (base.get("const_digest") or {}).items():
         if cur["const_digest"].get(k) != v:
-            diffs.append(f"const:{k}")
-
-    # ── class_methods：基线里的类，现在必须可取得且方法签名一致（子集检查）──
+            fails.append(f"const:{k}")
     cur_cm = cur.get("class_methods") or {}
     for cname, msig in (base.get("class_methods") or {}).items():
         if cur_cm.get(cname) != msig:
-            diffs.append(f"class:{cname}")
-
-    # ── cli：必须完全一致（调度依赖选项名与默认值）──
+            fails.append(f"class:{cname}")
     if base.get("cli") != cur.get("cli"):
-        diffs.append("cli")
-    return diffs
+        fails.append("cli")
+    return {"fails": fails, "warnings": warnings}
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -331,14 +398,26 @@ def main(argv: list[str] | None = None) -> int:
               f"常量摘要 {len(cur['const_digest'])} 项")
         return 0
 
-    diffs = compare(a.source)
+    rep = compare_report(a.source)
+    diffs = rep["fails"]
+    # **告警**（不阻断）：基线里有、现在没有、且只是"导入名"的符号。
+    # 它们不影响本模块功能（模块不再用它），但外部若 `from collector import X`
+    # 会断 ⇒ **必须可见**，不能像过去那样被 `_is_noise` 静默吞掉（T2）。
+    if rep["warnings"]:
+        # 汇总成**一行**：拆分后一次可能少 5~8 个导入名，逐行打印会淹没真正的
+        # FAIL 信息；但**不能不说**（那正是 T2 要消灭的静默）。
+        print(f"[baseline:{a.source}] 提示：以下 {len(rep['warnings'])} 个"
+              f"**导入名**已不再由本模块提供（不影响功能，但外部 "
+              f"`from collector import X` 会断；若属有意删除请同步 CHANGELOG）："
+              f"{sorted(rep['warnings'])}")
     if diffs:
         print(f"[baseline:{a.source}] **不一致** 段落: {diffs}")
         base = json.load(open(p, encoding="utf-8"))
         for k in diffs:
             print(f"--- {k}")
-            print("  基线:", json.dumps(base.get(k), ensure_ascii=False)[:600])
-            print("  当前:", json.dumps(cur.get(k), ensure_ascii=False)[:600])
+            key = k.split(":")[0] if ":" in k else k
+            print("  基线:", json.dumps(base.get(key), ensure_ascii=False)[:600])
+            print("  当前:", json.dumps(cur.get(key), ensure_ascii=False)[:600])
         return 1
     print(f"[baseline:{a.source}] 一致 ✓（模块名/常量/方法签名/CLI 选项）")
     return 0

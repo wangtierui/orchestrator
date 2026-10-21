@@ -55,6 +55,20 @@ class EarlyStopGuard:
         self.started_at = time.time()
         self.stopped = False
         self.at_s = 0.0
+
+    @property
+    def deadline(self) -> float | None:
+        """软上限的**绝对时刻**（`time.time()` 尺度）；`None` = 不限。
+
+        为什么需要它（2026-10-21 第一百零六批实测）：`--max-seconds` 原先只在
+        **每条记录开始时**检查 ⇒ "单条记录很重"时上限完全失效：实测设 7200s
+        却跑到 **13113s（超 82%）**，最终被父进程 4h 硬超时杀掉（`rc=-1`）。
+        一条记录的耗时主要在**附件**（下载 + PDF/表格解析）⇒ 必须把绝对 deadline
+        下传给 `collect_attachments`，让它**在附件循环内**逐个子项检查。
+        """
+        if self.max_seconds <= 0:
+            return None
+        return self.started_at + self.max_seconds
         self.reason = ""
         self.skipped_in_run = 0
         self.restored_from_history = 0

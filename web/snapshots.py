@@ -33,23 +33,99 @@ def _now() -> str:
 
 
 class _Cache:
-    """极简 TTL 缓存（线程安全）。缓存的是**派生结果**，不缓存异常。"""
+    """TTL 缓存（线程安全）。缓存**派生结果**，不缓存异常。
+
+    2026-10-21（第一百零六批）增强三处，起因是 `/api/overview` **冷态 22s**
+    让 `tests/test_confirm_console.py` 的 20s 超时**必然**被撞破（表现为"偶发"，
+    实为冷/热态差异）：
+
+      1. **per-key TTL**：默认 2s，但个别键（如扫 13.8GB 外部模型目录）允许更长；
+      2. **stale-while-revalidate**：过期时**先返回旧值**、后台刷新
+         ⇒ 请求永不因"正在重算"而阻塞（这是"可用性优先于毫米级新鲜度"的取舍：
+         存储占用是**展示型**指标，最多旧 600s，但页面必须立刻出来）；
+      3. **防重入**：同一键只允许一个后台刷新线程（否则并发请求会各起一个，
+         反而放大 IO 压力 —— 这正是慢指标最怕的）。
+
+    **不缓存异常**：`fn()` 抛错照常抛给调用方，由 `_degrade` 降级（可辨）。
+    """
 
     def __init__(self, ttl: float = CACHE_TTL_S) -> None:
         self._ttl = ttl
         self._d: dict[str, tuple[float, object]] = {}
+        self._inflight: set[str] = set()
         self._lock = threading.Lock()
 
-    def get_or_call(self, key: str, fn):
+    def get_or_call(self, key: str, fn, *, ttl: float | None = None):
+        """取缓存或计算。`ttl=None` 用全局默认。"""
+        eff = self._ttl if ttl is None else ttl
         now = time.time()
         with self._lock:
             hit = self._d.get(key)
-            if hit and now - hit[0] < self._ttl:
+        if hit is not None:
+            age = now - hit[0]
+            if age < eff:
                 return hit[1]
+            # 过期：**先返回旧值**，后台刷新（不阻塞本次请求）。
+            self._refresh_async(key, fn, eff)
+            return hit[1]
+        # 无旧值 ⇒ 只能同步算（首次）。慢键由 `warm()` 预热以避免走到这里。
         val = fn()
         with self._lock:
-            self._d[key] = (now, val)
+            self._d[key] = (time.time(), val)
         return val
+
+    def _refresh_async(self, key: str, fn, ttl: float) -> None:
+        with self._lock:
+            if key in self._inflight:
+                return
+            self._inflight.add(key)
+
+        def _worker() -> None:
+            try:
+                val = fn()
+            except Exception:  # noqa: BLE001  后台刷新失败就保留旧值（不污染缓存）
+                return
+            finally:
+                with self._lock:
+                    self._inflight.discard(key)
+            with self._lock:
+                self._d[key] = (time.time(), val)
+
+        threading.Thread(target=_worker, name=f"cache-refresh:{key}",
+                         daemon=True).start()
+
+    def warm(self, key: str, fn, *, ttl: float | None = None) -> bool:
+        """**预热**：后台算一次并写入缓存；已有值则不重复算。
+
+        返回"是否已就绪"（供调用方决定要不要标 `warming`）。
+        """
+        with self._lock:
+            if key in self._d:
+                return True
+            if key in self._inflight:
+                return False
+            self._inflight.add(key)
+
+        def _worker() -> None:
+            try:
+                val = fn()
+            except Exception:  # noqa: BLE001
+                return
+            finally:
+                with self._lock:
+                    self._inflight.discard(key)
+            with self._lock:
+                self._d[key] = (time.time(), val)
+
+        threading.Thread(target=_worker, name=f"cache-warm:{key}",
+                         daemon=True).start()
+        return False
+
+    def peek(self, key: str):
+        """只看缓存（不触发计算）；无值返回 `None`。"""
+        with self._lock:
+            hit = self._d.get(key)
+        return None if hit is None else hit[1]
 
     def clear(self) -> None:
         with self._lock:
@@ -202,38 +278,98 @@ def freshness() -> dict:
         return _degrade("governance_api.edges", e)
 
 
+#: 外部模型目录的**独立长 TTL**（秒）。
+#:
+#: 为什么单独定 600s（实测依据，2026-10-21）：`external/` 有 **19320 个文件 /
+#: 13.8 GB**，扫一遍 `os.walk + getsize` 要 **4053 ms（冷态更高）**，
+#: 而其余 4 个目录合计只 **8 ms**。它撑起了 `/api/overview` 的全部耗时
+#: （冷态 22s ⇒ 撞破 `test_confirm_console` 的 20s 超时，表现为"偶发失败"）。
+#: 而这个目录的变化频率以**天**计（模型/权重文件），600s 的新鲜度完全够用。
+_STORAGE_HEAVY_TTL_S = 600.0
+
+#: 外部模型目录的缓存键（`storage_usage` 与预热共用）
+_STORAGE_HEAVY_KEY = "storage_usage:external"
+
+
+def _dir_size(p: str) -> int:
+    """目录/文件的字节数（跳过 `__pycache__`；单个文件 stat 失败则跳过）。"""
+    if os.path.isfile(p):
+        try:
+            return os.path.getsize(p)
+        except OSError:
+            return 0
+    if not os.path.isdir(p):
+        return 0
+    total = 0
+    for dirpath, dirnames, filenames in os.walk(p):
+        dirnames[:] = [d for d in dirnames if d != "__pycache__"]
+        for fn in filenames:
+            try:
+                total += os.path.getsize(os.path.join(dirpath, fn))
+            except OSError:
+                pass
+    return total
+
+
+def _scan_external() -> int:
+    """扫外部模型目录（**4s 级**，只应经长 TTL 缓存或预热调用）。"""
+    return _dir_size(paths.EXTERNAL_DIR)
+
+
+def warm_storage() -> bool:
+    """**预热**外部模型目录大小（后台线程，进程启动时调一次）。
+
+    返回"是否已就绪"。未就绪时 `storage_usage()` 会返回 `heavy_ready=False`
+    并在 `note` 里说明"统计中"——**绝不为了等它而阻塞首屏**。
+    """
+    return CACHE.warm(_STORAGE_HEAVY_KEY, _scan_external,
+                      ttl=_STORAGE_HEAVY_TTL_S)
+
+
 def storage_usage() -> dict:
-    """存储占用条：各资产实测体积（目录扫描，只读）。"""
+    """存储占用条：各资产实测体积（目录扫描，只读）。
+
+    2026-10-21 重构（**分级**）：把"轻量 4 目录 + DB"（8ms）与"外部模型 13.8GB"
+    （4053ms）分开 —— 前者 2s TTL，后者 600s TTL + 启动预热。
+    未就绪时 `heavy_ready=False`，前端显示"统计中…"而不是转圈等到超时。
+    """
     try:
-        def _load():
+        def _light() -> dict[str, int]:
             targets = {
-                "raw": os.path.join(paths.MODULES_DIR, "regulatory_scrapers", "data", "raw"),
-                "cleaned": os.path.join(paths.MODULES_DIR, "regulatory_scrapers", "data", "cleaned"),
-                "clauses": os.path.join(paths.MODULES_DIR, "regulatory_scrapers", "data", "clauses"),
-                "external_models": paths.EXTERNAL_DIR,
+                "raw": os.path.join(paths.MODULES_DIR, "regulatory_scrapers",
+                                    "data", "raw"),
+                "cleaned": os.path.join(paths.MODULES_DIR, "regulatory_scrapers",
+                                        "data", "cleaned"),
+                "clauses": os.path.join(paths.MODULES_DIR, "regulatory_scrapers",
+                                        "data", "clauses"),
                 "governance_db": os.path.join(paths.DATA_DIR, "governance.db"),
             }
-            out: dict[str, int] = {}
-            for name, p in targets.items():
-                if os.path.isfile(p):
-                    out[name] = os.path.getsize(p)
-                elif os.path.isdir(p):
-                    total = 0
-                    for dirpath, dirnames, filenames in os.walk(p):
-                        dirnames[:] = [d for d in dirnames if d != "__pycache__"]
-                        for fn in filenames:
-                            fp = os.path.join(dirpath, fn)
-                            try:
-                                total += os.path.getsize(fp)
-                            except OSError:
-                                pass
-                    out[name] = total
-            total_all = sum(out.values()) or 1
-            return {"available": True, "source": "目录扫描（paths 常量）", "fetched_at": _now(),
-                    "bytes": out,
-                    "ratio": {k: round(100.0 * v / total_all, 2) for k, v in out.items()},
-                    "total_bytes": total_all}
-        return CACHE.get_or_call("storage_usage", _load)
+            return {name: _dir_size(p) for name, p in targets.items()}
+
+        out = dict(CACHE.get_or_call("storage_usage:light", _light))
+        # 重量部分：**只读缓存，不在此触发 4s 扫描**（首次交给 warm_storage 预热）。
+        heavy = CACHE.peek(_STORAGE_HEAVY_KEY)
+        heavy_ready = heavy is not None
+        if heavy_ready:
+            out["external_models"] = int(heavy)
+        total_all = sum(out.values()) or 1
+        ratio = {k: round(100.0 * v / total_all, 2) for k, v in out.items()}
+        if not heavy_ready:
+            # 预热：首次调用时顺手启动一次（幂等，已在跑则不重复）。
+            CACHE.warm(_STORAGE_HEAVY_KEY, _scan_external,
+                       ttl=_STORAGE_HEAVY_TTL_S)
+        return {
+            "available": True,
+            "source": "目录扫描（paths 常量）",
+            "fetched_at": _now(),
+            "bytes": out,
+            "ratio": ratio,
+            "total_bytes": total_all,
+            "heavy_ready": heavy_ready,
+            "note": ("" if heavy_ready else
+                     "外部模型目录（约 13.8GB / 1.9 万文件）统计中，"
+                     "首次启动约需数秒；其余资产已统计"),
+        }
     except Exception as e:  # noqa: BLE001
         return _degrade("paths 目录扫描", e)
 
@@ -383,36 +519,75 @@ def step_detail(step: str) -> dict:
 # --------------------------------------------------------------------------- #
 # P2 数据状态
 # --------------------------------------------------------------------------- #
-def assets() -> dict:
-    """P2：产物清单（clean 索引）+ 水位矩阵 + 契约状态 + 发布件状态。"""
+def _assets_load() -> dict:
+    """`assets()` 的计算体（**提取为模块级**，以便 `warm_assets()` 预热）。
+
+    冷态实测 **5965 ms**：主要耗时在 `clause_index_api.validate_schema()`
+    要遍历 clauses 产物（约 959MB）做 schema 自检。
+    """
+    from interfaces import clause_index_api, clean_index_api
+
+    src_ids = clean_index_api.source_ids()
+    files: list[dict] = []
+    for sid in src_ids:
+        d = clean_index_api.latest(sid) or {}
+        files.append({"source": sid, "date": clean_index_api.latest_date(sid),
+                      "records": clean_index_api.record_count(sid),
+                      "index": d})
+    pub: dict = {}
     try:
-        def _load():
-            from interfaces import clause_index_api, clean_index_api
+        from interfaces import base_api
 
-            src_ids = clean_index_api.source_ids()
-            files: list[dict] = []
-            for sid in src_ids:
-                d = clean_index_api.latest(sid) or {}
-                files.append({"source": sid, "date": clean_index_api.latest_date(sid),
-                              "records": clean_index_api.record_count(sid),
-                              "index": d})
-            pub: dict = {}
-            try:
-                from interfaces import base_api
+        for base in ("external", "internal"):
+            pub[base] = base_api.manifest(base)
+    except Exception as e:  # noqa: BLE001 发布件未生成属常态
+        pub = {"error": f"{type(e).__name__}: {str(e)[:120]}"}
+    contract: dict = {"consistent": None, "problems": []}
+    try:
+        contract = clause_index_api.validate_schema()
+    except Exception:  # noqa: BLE001
+        pass
+    return {"available": True,
+            "source": "clean_index_api + clause_index_api + base_api",
+            "fetched_at": _now(), "sources": src_ids, "files": files,
+            "publish": pub, "contract": contract}
 
-                for base in ("external", "internal"):
-                    pub[base] = base_api.manifest(base)
-            except Exception as e:  # noqa: BLE001 发布件未生成属常态
-                pub = {"error": f"{type(e).__name__}: {str(e)[:120]}"}
-            contract: dict = {"consistent": None, "problems": []}
-            try:
-                contract = clause_index_api.validate_schema()
-            except Exception:  # noqa: BLE001
-                pass
-            return {"available": True, "source": "clean_index_api + clause_index_api + base_api",
-                    "fetched_at": _now(), "sources": src_ids, "files": files,
-                    "publish": pub, "contract": contract}
-        return CACHE.get_or_call("assets", _load)
+
+def warm_assets() -> bool:
+    """**预热** P2 产物清单（后台，进程启动时调一次）。返回是否已就绪。"""
+    return CACHE.warm("assets", _assets_load)
+
+
+def _assets_warming() -> dict:
+    """`assets()` 预热中的**占位**（结构完整、明示未就绪）。
+
+    为什么不直接返回 `available: False`：那会让前端显示"不可用"，把
+    "正在统计"误报成"坏了"（本仓一贯要求降级可辨）。故保持 `available: True`
+    + `warming: True` + 空集合 + `note`，前端据 `warming` 显示"统计中…"。
+    """
+    return {"available": True, "warming": True, "source": "预热中",
+            "fetched_at": _now(), "sources": [], "files": [], "publish": {},
+            "contract": {"consistent": None, "problems": []},
+            "note": "产物清单统计中（首次约 6s，之后读缓存）"}
+
+
+def assets() -> dict:
+    """P2：产物清单（clean 索引）+ 水位矩阵 + 契约状态 + 发布件状态。
+
+    2026-10-21：逻辑提取为 `_assets_load()` 并由 `build_server` **预热** ——
+    冷态 6s 会拖慢首屏该卡片；预热后首次请求直接读缓存（0ms）。
+
+    ⚠️ **必须用 `peek` 而非 `get_or_call`**：后者在"后台预热尚未完成"时会
+    **自己再算一遍**，于是预热线程与请求线程同时扫 959MB clauses 产物
+    ⇒ **缓存击穿**，实测反而从 5965ms 恶化到 **11667ms**（两份计算互相争抢 IO）。
+    现改为：有缓存就用；没有就触发后台预热并立即返回占位（0ms）。
+    """
+    try:
+        hit = CACHE.peek("assets")
+        if hit is not None:
+            return hit
+        CACHE.warm("assets", _assets_load)
+        return _assets_warming()
     except Exception as e:  # noqa: BLE001
         return _degrade("clean_index_api", e)
 

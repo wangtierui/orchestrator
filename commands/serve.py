@@ -15,7 +15,14 @@ bootstrap("all")
 
 
 def run(argv: list[str] | None = None) -> int:
-    """`cli.py serve [--host] [--port] [--open]`。"""
+    """`cli.py serve [--host] [--port] [--open] [--verbose] [--pid-file] [--log-file]
+    [--single-instance]`。
+
+    后三个是**开机自启动**用的（`tools/workbench_service.py` 的计划任务会传）：
+      · `--single-instance` 同时只跑一个实例（计划任务每次登录都触发）；
+      · `--log-file` 日志落盘（无控制台时唯一可查）；
+      · `--pid-file` 锁路径（默认 data/state/workbench.lock）。
+    """
     argv = list(argv if argv is not None else [])
     ap = argparse.ArgumentParser(
         prog="orchestrator serve",
@@ -23,13 +30,21 @@ def run(argv: list[str] | None = None) -> int:
     )
     ap.add_argument("--host", default="127.0.0.1",
                     help="绑定地址（默认回环；非回环会打印安全告警——控制台无鉴权）")
-    ap.add_argument("--port", type=int, default=8765, help="端口（默认 8765，被占用时换端口）")
+    ap.add_argument("--port", type=int, default=8765,
+                    help="端口（默认 8765；被占用时有限递增换端口）")
     ap.add_argument("--open", action="store_true", help="启动后打开默认浏览器")
     ap.add_argument("--verbose", action="store_true", help="打印逐请求日志")
+    ap.add_argument("--pid-file", default="",
+                    help="单实例锁路径（默认 data/state/workbench.lock）")
+    ap.add_argument("--log-file", default="",
+                    help="日志文件（缺省仅控制台；开机自启动**必须**给，否则无日志可查）")
+    ap.add_argument("--single-instance", action="store_true",
+                    help="单实例模式：已有实例在跑则本次直接退出（幂等）")
     a = ap.parse_args(argv)
 
     import web
 
     # `open_browser`/`verbose` 均显式透传（web.serve 的关键字参数名）
-    return web.serve(host=a.host, port=a.port,
-                    open_browser=a.open, verbose=a.verbose)
+    return web.serve(host=a.host, port=a.port, open_browser=a.open,
+                     verbose=a.verbose, pid_file=a.pid_file or None,
+                     log_file=a.log_file or None, single_instance=a.single_instance)

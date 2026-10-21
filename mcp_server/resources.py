@@ -18,9 +18,34 @@ from collections.abc import Callable
 
 from mcp_server.registry import SCHEMA_DIALECT
 
+#: **易变字段**：它们描述"本次生成时刻"，不是"事实源状态"。
+#:
+#: 为什么必须排除（2026-10-21 实测的**时序 flake**）：
+#: `_backlog_health()` 的 payload 里含 `generated_at = datetime.now().isoformat(
+#: timespec="seconds")`。`resources/list` 与 `resources/read` 各调一次计算函数，
+#: **若两次跨过秒边界**，payload 就差一个字段 ⇒ `_sha12` 不同 ⇒
+#: `tests/test_mcp_server.py::test_list_and_read_versions_agree` 偶发失败
+#: （实测：`assert '51d83b29df1e' == '7c02881bef71'`，uri=orch://backlog_health）。
+#:
+#: 语义上"版本"回答的是"**事实源**变了吗"（agent 据此判断缓存是否过期）：
+#: 时间戳每次都在变，把它算进去会让版本永远不稳，缓存机制失去意义。
+_VOLATILE_KEYS = frozenset({"generated_at", "as_of", "fetched_at", "computed_at",
+                            "now", "timestamp", "read_at", "updated_at"})
+
+
+def _stable_for_version(obj):
+    """递归剔除易变字段，得到**只反映事实源状态**的结构（供版本哈希）。"""
+    if isinstance(obj, dict):
+        return {k: _stable_for_version(v) for k, v in obj.items()
+                if k not in _VOLATILE_KEYS}
+    if isinstance(obj, (list, tuple)):
+        return [_stable_for_version(v) for v in obj]
+    return obj
+
 
 def _sha12(obj) -> str:
-    payload = json.dumps(obj, ensure_ascii=False, sort_keys=True, default=str)
+    payload = json.dumps(_stable_for_version(obj), ensure_ascii=False,
+                         sort_keys=True, default=str)
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:12]
 
 

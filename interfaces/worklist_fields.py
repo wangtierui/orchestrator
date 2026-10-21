@@ -29,6 +29,7 @@
 """
 from __future__ import annotations
 
+import threading
 from typing import Any
 
 #: **归一化单一事实源**（`std_lib/common_lib/norm.py`）。
@@ -75,6 +76,13 @@ def _norm_docno(s: str) -> str:
     return _S_norm_docno(s)
 
 
+#: 保护 `_Bridge._building` 的**模块级**短锁。
+#: 放模块级而非类体：在类体里写 `_lock = threading.Lock()` 时，`threading` 是
+#: 类作用域的名称查找（类体不参与闭包），会 NameError —— 这是 Python 类作用域的
+#: 经典坑，也是本文件为什么要用模块级锁的原因。
+_BRIDGE_LOCK = threading.Lock()
+
+
 class _Bridge:
     """访问地址反查索引（懒加载 + 一次建索引，避免 N 次全表扫）。
 
@@ -90,6 +98,10 @@ class _Bridge:
 
     _by_title: dict[str, str] | None = None
     _by_docno: dict[str, str] | None = None
+    #: 后台构建中（防重入：多个请求同时触发时只允许一个线程扫 1.6GB）
+    _building: bool = False
+    #: 保护 `_building` 的短锁（**不保护整段构建**：那会把后台线程变成串行阻塞）
+    _lock = _BRIDGE_LOCK
 
     @classmethod
     def _add(cls, by_t: dict[str, str], by_d: dict[str, str],
@@ -158,15 +170,53 @@ class _Bridge:
         cls._by_title, cls._by_docno = by_t, by_d
 
     @classmethod
+    def is_ready(cls) -> bool:
+        """索引是否已可用（`False` 表示"还在建"或"建失败"）。"""
+        return cls._by_title is not None
+
+    @classmethod
+    def build_async(cls) -> None:
+        """**后台**建索引（幂等；已在建则不重复）。
+
+        为什么需要（2026-10-21，第一百零六批实测）：索引要扫 **16 个 clean 产物
+        共 1.6GB**，冷态 **6513 ms**。若在请求线程里同步建，首个 `/api/worklist`
+        要等 6.5 秒（页面首屏的待办卡片空白），且会让"URL 未找到"与"索引还没建好"
+        混为一谈 —— **后者是假阴性**，比慢更糟。
+        """
+        import threading
+
+        with cls._lock:
+            if cls._by_title is not None or cls._building:
+                return
+            cls._building = True
+
+        def _worker() -> None:
+            try:
+                cls._build()
+            except Exception:  # noqa: BLE001  建失败 ⇒ 视为"无索引"（退化为未找到）
+                cls._by_title = cls._by_title or {}
+            finally:
+                with cls._lock:
+                    cls._building = False
+
+        threading.Thread(target=_worker, name="worklist-fields-build",
+                         daemon=True).start()
+
+    @classmethod
     def url_for(cls, title: str, docno: str) -> tuple[str, str]:
-        """返回 `(url, 依据)`；依据 ∈ {bridge:title, bridge:docno,
-        clean:title, clean:docno, ''}。
+        """返回 `(url, 依据)`；依据 ∈ {bridge:docno, bridge:title, warming, ''}。
 
         先按**文号**匹配（比标题稳定：标题常有书名号/废止尾缀差异），
         再按标题。桥表与 clean 合并成同一索引 ⇒ 无需区分优先级，
         但依据里保留来源以便追溯。
+
+        ⚠️ **不阻塞**：索引未就绪时触发后台构建并返回 `("", "warming")`
+        —— 调用方据此显示"统计中…"，而不是把"还没建好"误报成"查不到"。
         """
-        cls._build()
+        if cls._by_title is None:
+            cls.build_async()
+            if cls._by_title is None:
+                return "", "warming"
         t = _norm_title(title)
         d = _norm_docno(docno)
         if d and cls._by_docno and d in cls._by_docno:
@@ -179,6 +229,8 @@ class _Bridge:
     def reset(cls) -> None:
         """清索引（测试用；桥表/clean 更新后需重建）。"""
         cls._by_title = cls._by_docno = None
+        with cls._lock:
+            cls._building = False
 
 
 def _payload(item: dict[str, Any]) -> dict:

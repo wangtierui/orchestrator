@@ -3047,3 +3047,124 @@ AST 依赖实测推翻了此前的"2 类咬合"判断：`RobustSession` 与 `Xzf
 ### 验证
 30 门禁 PASS、ruff 0、mypy 0、**94 项相关守卫全绿**（10 个测试文件）、
 两源基线一致（gov 56 符号 / mof 73 符号，含类方法签名）。
+## [Unreleased] 2026-10-21 — 确认台"偶发失败"根治 + 开机自启动 + 蓝屏排查 + 全链实跑（第一百零六批）
+
+### ① 确认台"偶发 flake"根治：`/api/overview` 冷态 **22163ms → 118ms**
+
+`tests/test_confirm_console.py::test_routes_return_json[/api/overview]` 曾**两次**
+在全量跑中失败、单独复跑又通过 —— 一直被当"偶发 flake"。**实测是冷/热态差异**：
+
+| 路由 | 冷态（修复前） | 热态 | 冷态（修复后） |
+|---|---|---|---|
+| `/api/overview` | **22163 ms**（撞破测试 20s 超时 ⇒ 必然失败） | 3963 ms | **118 ms** |
+| `/api/worklist` | **7613 ms** | 0 ms | **107 ms** |
+| `/api/assets` | **5965 ms** | 0 ms | **3.5 ms** |
+
+**根因**：`overview()` 串行组合 6 个子快照，其中 `storage_usage()` 每次都
+`os.walk` 扫 `external/`（**19320 文件 / 13.8 GB**，单次 4053ms；其余 4 目录仅 8ms）。
+
+**三级修复**：
+1. `_Cache` 支持 **per-key TTL**（外部模型 600s，其余 2s）+ **`warm()` 后台预热**
+   + **`peek()` 只读不触发**；
+2. `assets` / `worklist_fields._Bridge` 同样预热，未就绪时返回 `warming`
+   （**绝不把"还没算完"误报成"查不到"** —— 后者会让用户以为数据缺失）；
+3. **防缓存击穿**：一律 `peek` + `warm`，**不在无缓存时同步算**。
+   （实测踩到：预热线程与请求线程同时扫 959MB ⇒ 反而恶化到 **11667ms**。）
+
+守卫 `tests/test_console_perf_flake.py`（10 项，含"冷态必须 < 5s"的性能阈值）；
+稳定性实测：`test_confirm_console.py` **连跑 5 次全绿**。
+
+### ② 「删符号」语义：从**静默**变**显式告警**（用户提问的落地）
+
+`tests/collector_baseline.py` 的比对是**单向包含**（"拆分前有的，现在还得有且值一致"）。
+精确语义（已用可执行断言固化在 `tests/test_baseline_delete_semantics.py`）：
+
+| 被删的符号类型 | 例子 | 后果 |
+|---|---|---|
+| **本仓符号**（`def`/`class`/赋值） | `main` / `RobustSession` / `HOST` | `missing` 非空 ⇒ **FAIL** |
+| **导入名**（标准库/三方/内部别名） | `csv` / `Any` / `_att` | 过去**完全静默** ⇒ 现**显式汇总告警**（不阻断） |
+
+**为什么导入名不判 FAIL**：拆分后 `csv`/`html` 本就该迁走；若判 FAIL 等于"拆分必须
+保留所有无用导入"，最终会被 `# noqa` 绕过（比没有守卫更糟）。
+**为什么不能静默**：`from collector import csv` 是合法调用，删了就断，而原来毫无提示。
+
+**补盲区**：若被删的"导入名"当前**仍被本模块定义**（如自定义了 `json()` 函数），
+说明它其实是本仓符号 ⇒ **提升为 FAIL**（`build()` 新增 `defined_names`，用
+`_ast_imported_names` 区分"定义"与"导入"）。
+
+**不受本工具保护的部分**：单向包含**不检查新增**（拆分后 AST 自然多出 re-export
+目标）。"改名"若表现为"删旧名 + 加新名"，只有删旧名会被抓；**新名语义是否正确**
+由具体业务守卫负责。
+
+### ③ 开机自启动（`tools/workbench_service.py`）+ **乱码事故修复**
+
+`install` / `uninstall` / `status`（任务·进程·健康·日志四项）/ `verify`（触发并探活）。
+方案选**计划任务 ONLOGON**（用户级零提权、可查询/卸载、可延迟），而非启动文件夹
+（无查询/卸载）或 Windows 服务（需管理员 + 第三方）。
+
+**为自启动补的三个运行期能力**（缺任一都会翻车）：
+`--single-instance`（计划任务每次登录都触发，无保护会起多进程互相踩踏）/
+`--log-file`（`pythonw` 无控制台，`print` 全丢 ⇒ `_log()` 双写 + `RotatingFileHandler`）/
+`--pid-file`。
+
+**实测事故（蓝屏重启后发现）**：登录时命令行报
+`'氭寔涔咃細閲嶈窇' 不是内部或外部命令`。根因：`.cmd` 用 **UTF-8** 写且含中文注释，
+而 `cmd.exe` 按 **CP936/GBK** 读 ⇒ 乱码中部分字节被当命令分隔符、`rem` 行被截断。
+**修法**：注释全英文 + `encoding="ascii"`（混入非 ASCII 直接抛错）+ 守卫
+`test_start_cmd_is_ascii_only`。验证：非 ASCII 字节 **0**、执行 `rc=0`、无乱码。
+
+**顺带修**：`serve --help` 一直写"端口被占用时换端口"，但代码直接 `OSError`
+⇒ 文档与代码不符。新增 `_bind_free_port`（**有限递增** 20 次；不用 `port=0`
+是避免 URL 每次都变，不利于收藏地址）。
+
+### ④ 蓝屏排查（`reports/refactors/incident_20261021_bsod.md`）
+
+**结论：不是本项目导致**。依据：①纯用户态 Python 无法破坏内核结构（`0x139` 的定义是
+内核数据结构一致性校验失败）；②**5 次崩溃、4 种不同 BugCheck**
+（`0x3B`/`0x139`×2/`0xA`/`0x1A`）、跨度 40 天 ⇒ 不符合单一软件缺陷特征（那会反复同一码）；
+③最早一次 `2026-09-11` **早于本项目重负载**，`0x139` 在 10-13 也发生过；
+④崩溃前 4 分钟的应用层事件是第三方 `HotKeyServiceDSU.exe` 的 .NET Runtime 错误。
+
+**但本项目是"加重因素"**：mof 采集进程峰值 **6.26 GB**（机器 16GB，崩溃后空闲仅 2.9GB）。
+极端内存压力会把潜伏的 RAM/驱动缺陷"压出来"。
+**6.26GB 的成因（tracemalloc 定位，非泄漏）**：基线 `read_raw_records` 仅 **197MB**；
+峰值来自**超大单条**（最大 31.3MB / 正文 23.57MB，Top5 占全库 59.2%）在
+"去标签/正则/签名/序列化"每步产生 20–30MB 临时字符串，Windows 上 Python 高水位不归还 OS。
+
+**建议**（报告 §4）：MemTest86（头号嫌疑）→ 排查 `HotKeyServiceDSU.exe` 与驱动 →
+`WinDbg !analyze -v` 看 dump 的 `MODULE_NAME`。
+
+### ⑤ 全链实跑暴露并修复的两个新缺陷
+
+**(a) `--max-seconds` 粒度不足**：mof 设 7200s 却跑到 **13113s（超 82%）**，最终被父进程
+4h 硬超时**强杀**（`rc=-1 TIMEOUT`）。原因：检查点只在"每条记录开始时"，而单条记录的
+附件（下载 + PDF/表格解析）可能吃掉数小时。
+**修法**：`EarlyStopGuard.deadline` 属性 + `collect_attachments(deadline=)` ⇒
+**在附件循环内逐个子项检查**。
+
+**(b) 陈旧锁 + PID 复用导致主链静默拒绝运行**：蓝屏重启后锁残留 `3992`，
+而重启后 **PID 3992 已被 `svchost.exe` 复用** ⇒ `ProcessLock` 只校验"PID 是否存在"
+⇒ 判"被占用" ⇒ `cli.py run` 直接退出（提示"等待 PID 退出"，永远等不到）。
+**修法**：锁文件从裸 PID 升级为**进程身份** `{"pid", "started", "exe"}`，
+`acquire()` 陈旧判定扩到 4 条（内容损坏 / PID 已死 / **PID 被复用** / 超龄）；
+**向后兼容**：旧格式退回"PID + 超龄"逻辑，不误抢占。
+守卫 `tests/test_lock_pid_reuse.py`（8 项）。
+
+### ⑥ README 覆写（v3.0.0 → **v4.0.0**）
+
+- 目录树补 **`web/`**、`tests/baselines/`；§2.2 补 `web/`、`workbench_service.py`、
+  `tests/baselines/`，`STEP_ORDER` **31 → 32**；
+- **§6.5** 补 `--single-instance`/`--pid-file`/`--log-file` + 端口递增 + 性能治理表；
+- **新增 §6.6 开机自启动**（方案选型表 + 三件套 + 三层验证 + `/DELAY` 格式坑）；
+- **新增 §6.7 运维要点**（7 条实测教训：`.cmd` 纯 ASCII、`/DELAY` 格式、mof 耗时结构、
+  mof 内存峰值、异常重启后清陈旧锁、手跑采集会让水位陈旧、慢路由已治理）；
+- **§8 与 §4.1 由 `tools/gen_flow_map.py` 重新生成**（受管块，勿手改）⇒ §8.2 步骤表
+  **32 行 = 代码 32 步**；
+- **`tools/audit_health` 的 2 个 HIGH 漂移已清零**：门禁数 `29 → 30`；
+  补 3 个未记载环境变量（`REG_ORCH_MCP_TOKEN_FILE` / `REG_ORCH_DISABLE_BODY_BACKFILL` /
+  `REG_ORCH_SEMANTIC_SEARCH_LIMIT`）。
+
+### 验证
+30 门禁 PASS、ruff 0、mypy 0、守卫新增 **34 项**（确认台 10 + 删符号 7 + 自启动 16 + 锁 8，
+其中自启动本批从 16 项扩到 17 项）、`test_confirm_console` 连跑 5 次全绿、
+全链实跑 `collect`5 源 + `clean`5 源 + 续跑 11 步全部 rc=0。

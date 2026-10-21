@@ -469,7 +469,12 @@ def main():
                 原语见 `limits.merge_attachments`；`do_fetch` 走形参是为避开
                 ruff B023（闭包捕获循环变量 `fetch_att` 的延迟绑定坑）。
                 """
-                fetched = collect_attachments(rid_key, rate) if do_fetch else []
+                # ⚠️ 传 `deadline`（软上限的绝对时刻）：仅在"每条记录开始"检查
+                # `--max-seconds` 是不够的 —— 单条记录的附件（下载 + PDF/表格解析）
+                # 可能吃掉数小时，实测让 7200s 上限跑到 13113s 并被父进程强杀。
+                fetched = (collect_attachments(
+                    rid_key, rate, deadline=_guard.deadline)
+                    if do_fetch else [])
                 return _limits.merge_attachments(
                     fetched, (prev_entry or {}).get("attachments"), do_fetch)
             for rec in raw_records:

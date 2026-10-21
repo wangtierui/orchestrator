@@ -1,10 +1,19 @@
 # 监管合规治理编排仓（regulatory_compliance_orchestrator）
 
-> **文档版本**：`v3.0.0`（覆盖式重写，2026-09-30）
+> **文档版本**：`v4.0.0`（覆盖式更新，2026-10-21）
 > **撰写依据**：`reports/manuals/README撰写规范与内容大纲.md`（七节结构 + 脚本分类 + 调用关系列）
 > **本仓定位**：**源码树编排工程**（Single-Repo Orchestrator）——以统一入口把
 > 「采集 → 清洗 → 时效核验 → 条文 → 归属/主题 → 关系 → 内部制度 → 发布 → 分析交付 → 门禁」
 > 串成**一条可复跑、可审计、可断点续跑**的生产链路。
+>
+> **v4.0.0 相对 v3.0.0 的主要变更**（细节见 `CHANGELOG.md` 第 99–106 批）：
+> ① **本地确认台**（`web/`）从"未记录"补入目录结构，并新增 **§6.6 开机自启动**；
+> ② **采集器分层**落地：`gov/collector` 841→451 行（常量/会话/抓取/编排四层）、
+>    `mof/collector` 800→632 行（五层），等价性由 `tests/baselines/` 的结构快照守护；
+> ③ **`local_path` 基准统一为仓根**（2911 条历史值迁移，此前 gov/supp 用另一种基准）；
+> ④ **工作台三个已知缺陷修复**：`/api/overview` 冷态 22s（撞破契约测试 20s 超时，
+>    表现为"偶发 flake"）已治理为 118ms；`--outdir` 默认值曾指向错误目录；
+> ⑤ **`local_path` 解析统一入口** `std_lib.scraper_std.local_paths.resolve_local_path`。
 
 ---
 
@@ -50,10 +59,11 @@ regulatory_compliance_orchestrator/
 ├── modules/                    # 【常规流程】**业务模块**（五模块，单向依赖）
 ├── std_lib/                    # 【常规流程】**共享库**（scraper_std + common_lib）
 ├── tools/                      # 【混合】编排与运维工具（**入口消费** + **刻意独立**两类）
-├── tests/                      # 【常规流程】自动化测试
+├── tests/                      # 【常规流程】自动化测试 + `baselines/`（采集器拆分等价性结构快照）
 ├── docs/                       # 【特殊辅助】人类文档根：`adr/`（架构决策）+ `deliverables/`（分析交付库 17 项 + manifest）；**链路总图已并入 README §8**
 ├── reports/                    # 【混合】对内过程文档（refactors/manuals/scratch 三区，口径见 reports/README.md）+ 机器台账留根
 ├── external/                   # 【特殊辅助】**外部大资产**（git 忽略：PaddleOCR/tesseract/**tessdata**/models——外部资产统一外置）
+├── web/                        # 【常规流程】**本地确认台**（H 轨）：server/api/snapshots/sse + assets 单文件前端（零 CDN）
 ├── data/                       # 【运行期】governance.db / corpus / inbox（git 忽略）
 ├── exports/ · archive/ · backups/ · logs/   # 【运行期/辅助】（git 忽略或按规则）
 ├── BENCHMARK.md                # 【生成物】**语义质量基线**（每轮全链刷新，勿手改）
@@ -79,7 +89,7 @@ regulatory_compliance_orchestrator/
 | `modules/base_publish/` | 目录 | **常规流程（交付层）** | 双底座发布件 + FTS5 索引（`write_jsonl` 为**包级唯一实现**） | 被 `cli.py base publish` 调用 |
 | `std_lib/scraper_std/` | 目录 | **常规流程（共享库）** | 采集/清洗通用能力（`crawler_common` / `unified_schema` / `sentence_split` / `attachments` …） | 被 `modules/regulatory_scrapers` 引用 |
 | `std_lib/common_lib/` | 目录 | **常规流程（共享库）** | 跨模块公共能力：`relations`（关系抽取）/ `sentence_boundary`（**句读 SSOT**）/ `semantic_tools`（探测）/ `semantic_models`（加载）/ **`semantic_enhance`（执行门面）** / `governance_store` / `vector_store` … | 被 `modules/`、`tools/`、`gates/` 引用 |
-| `tools/run_production_refresh.py` | 文件 | **常规流程（编排）** | **全链编排器**：`STEP_ORDER` **31 项**（机器核验：`audit_health`）、按源展开执行、`--resume` 续跑、稳定运行台账 | 被 `cli.py run` / 计划任务调用 |
+| `tools/run_production_refresh.py` | 文件 | **常规流程（编排）** | **全链编排器**：`STEP_ORDER` **32 项**（机器核验：`audit_health`）、按源展开执行、`--resume` 续跑、稳定运行台账 | 被 `cli.py run` / 计划任务调用 |
 | `tools/ci_check.py` | 文件 | **常规流程（CI）** | 六项阻断检查：ruff / mypy / schedule / pytest / gates / coverage | 被人工/CI 调用 |
 | `tools/smoke_semantic_models.py` | 文件 | **特殊工具** | P1 模型**真实初始化 + 真实调用**冒烟自检 | 按需人工执行 |
 | `tools/audit_health.py` | 文件 | **特殊工具** | **九类缺陷机器化审计**（统一入口/断点/门禁/数据源/阻塞/冗余/重复/硬编码/README 一致性） | 按需人工执行 |
@@ -87,6 +97,9 @@ regulatory_compliance_orchestrator/
 | `tools/gen_benchmark.py` | 文件 | **常规流程** | 刷新 `BENCHMARK.md`（语义质量基线，含 §6.3 定位正确性、§6.6 增强能力） | 全链 `analysis:gen` 后 |
 | `tools/retention.py` | 文件 | **常规流程（披露）** | 产物轮转计划（**只移动不删除**；`--apply` 为人工闸门） | 全链 `retention:plan` |
 | `tools/governance_sync.py` | 文件 | **常规流程** | 治理库同步（`--apply` 人工闸门） | 全链 `governance:sync` |
+| `web/` | 目录 | **常规流程（观测/操作面）** | 本地确认台：`server.py`（HTTP + 单实例/日志/端口递增）、`snapshots.py`（分级 TTL + 预热 + 防击穿的快照层）、`api.py`（路由）、`sse.py`（事件流）、`assets/`（单文件前端，**零 CDN**） | 由 `cli.py serve` 启动；**不在主链上**（故障不影响采集/清洗） |
+| `tools/workbench_service.py` | 文件 | **特殊工具** | 确认台**开机自启动**：`install`（计划任务 ONLOGON，用户级零提权）/ `uninstall` / `status`（任务·进程·健康·日志四项）/ `verify`（触发并探活） | 见 §6.6；被人工调用 |
+| `tests/baselines/` | 目录 | **常规流程（守卫）** | 采集器**拆分等价性结构快照**（模块名/常量摘要/类方法签名/CLI 选项）；由 `tests/collector_baseline.py --source <src>` 生成与比对 | 被 `test_gov_collector_split` / `test_mof_split` / `test_baseline_delete_semantics` 使用 |
 | `tools/gen_schedule_doc.py` / `install_schedule.py` | 文件 | **特殊工具** | 由 `schedule.yaml` **反向生成**手册定时表 / 安装计划任务 | 按需人工执行 |
 | `tests/` | 目录 | **常规流程** | 单元/集成/E2E（`-m "not data"` 可跑纯代码集） | `pytest` / `tools/ci_check.py` |
 | `README.md` **§8**（受管块） | 区块 | **生成物** | 链路事实源（顺序 ←`STEP_ORDER`；命令 ←**AST** 抽 `_run` 调用点；含降级链总表） | 由 `gen_flow_map` **注入**，**勿手改该块** |
@@ -226,7 +239,7 @@ flowchart TB
     MCP["mcp_server/<br/>计划 W2 · MCP tool 面"]
   end
   subgraph SCHED["调度层（唯一事实源 schedule.yaml + triggers.yaml）"]
-    JOB["7 cron + 2 event 作业<br/>角色：agent_sync · processing · quality"]
+    JOB["8 cron + 2 event 作业<br/>角色：agent_sync · governance · processing · quality"]
     TRG["5 条件触发项"]
   end
   subgraph CHAIN["处理链层（STEP_LAYERS 分层声明 · W1）"]
@@ -310,7 +323,7 @@ flowchart TB
 | **mypy** | 提交前 / CI | `mypy std_lib modules tools config interfaces gates commands` | 阻断；按文件报类型错误 |
 | **schedule** | CI | 比对已装计划任务与 `schedule.yaml` | 阻断；列出差异 |
 | **pytest** | CI | `pytest -q`（含 `data` 标记用例） | 阻断；输出失败用例 |
-| **gates** | CI | `cli.py gates`（**29 道**） | 阻断；输出未过门禁清单 |
+| **gates** | CI | `cli.py gates`（**30 道**） | 阻断；输出未过门禁清单 |
 | **coverage** | CI | `pytest --cov`（当前 ≈42%） | 阻断；输出 TOTAL |
 
 ### 5.2 定时与事件驱动任务清单（**唯一事实源 = `config/schedule.yaml` + `config/triggers.yaml`**）
@@ -511,6 +524,9 @@ s = se.split_sentences(text, level="strict")   # level ∈ {strict, loose}（受
 | `REG_ORCH_SEMANTIC_ASSIST_LIMIT` | `代码默认` | `semantic:assist` 入链步骤的条数上限 |
 | `REG_ORCH_DOCREADER_LIMIT` | `代码默认` | `docreader:extract` 步骤的条数上限 |
 | `REG_ORCH_NOTIFY_WEBHOOK` | `（空）` | 告警 webhook URL（仅 `notify.kind=webhook` 时使用；**禁止入库**） |
+| `REG_ORCH_MCP_TOKEN_FILE` | `（空）` | MCP 门面的 token 文件路径覆盖（默认取仓根 `.mcp_token`；**禁止入库、禁止硬编码**，由 `gate_secret_scan` 守护） |
+| `REG_ORCH_DISABLE_BODY_BACKFILL` | `（空）` | 置 `1` **整体关闭**正文回填（`pipeline.py` 的回滚开关：回填逻辑若在某批数据上误判，可一键退回旧行为） |
+| `REG_ORCH_SEMANTIC_SEARCH_LIMIT` | `1000` | `semantic:search`（含链内调用与 `tools/semantic_search.py`）的默认返回条数上限 |
 | `REG_ORCH_RUN_ID` | `自动` | 运行标识（链/门禁/治理库/告警共享，用于串联台账） |
 | `REG_ORCH_JSON_LOGS` | `代码默认` | 是否输出 JSON 结构化日志（`common_lib/logging.py`） |
 | `REG_ORCH_GOVERNANCE_DB` | `派生` | 治理库路径（默认由 `paths.py` 派生） |
@@ -525,9 +541,41 @@ s = se.split_sentences(text, level="strict")   # level ∈ {strict, loose}（受
 
 ```bash
 python cli.py serve                 # 默认 http://127.0.0.1:8765/（仅回环，无鉴权）
-python cli.py serve --port 9000     # 换端口
+python cli.py serve --port 9000     # 换端口（被占用时**有限递增**，见下）
 python cli.py serve --open          # 启动后打开浏览器
+python cli.py serve --verbose       # 逐请求日志
 ```
+
+**开机自启动专用三参数**（由 §6.6 的计划任务传入，手工调试一般不用）：
+
+| 参数 | 作用 |
+|---|---|
+| `--single-instance` | 单实例模式：已有实例在跑则本次**直接退出**（返回 0，幂等） |
+| `--pid-file <p>` | 单实例锁路径（缺省 `data/state/workbench.lock`） |
+| `--log-file <p>` | 日志同时落盘（`pythonw` 无控制台时**唯一可查**，5MB×3 轮转） |
+
+> **为什么端口"被占用时换端口"**：`--help` 一直这么写，但早前实现直接
+> `ThreadingHTTPServer((host, port), …)` ⇒ 占用即 `OSError`，**文档与代码不符**。
+> 2026-10-21 补齐：`_bind_free_port` 从 `port` 起**有限递增**（最多 20 次）
+> 找可用端口。不用 `port=0`（OS 随机）是因为那会让 URL 每次启动都变，
+> 对"开机自启动 + 用户收藏地址"极不友好；不用无限循环是为了把"被长期占用"
+> 这种配置错误立刻暴露，而不是拖成挂起。
+
+**性能治理（2026-10-21，曾表现为"契约测试偶发失败"）**
+
+`/api/overview` 冷态实测 **22163ms**，撞破 `tests/test_confirm_console.py` 的
+20s 超时 ⇒ 该用例表现为"偶发 flake"（单独复跑又绿）。真因是
+`storage_usage()` 每次都 `os.walk` 扫 `external/`（**19320 个文件 / 13.8GB**，
+单次 4053ms，其余 4 个目录合计仅 8ms）。三级修复：
+
+| 手段 | 说明 |
+|---|---|
+| **分级 TTL** | 轻量 4 目录保持 2s；外部模型目录独立 **600s**（它以"天"为周期变化） |
+| **后台预热** | `build_server` 起守护线程预热，**首次请求不阻塞**；未就绪时返回 `heavy_ready=False` + `note` |
+| **防缓存击穿** | `assets()`/`worklist_fields` 一律 `peek` + `warm`，**不在无缓存时同步算**（实测"预热线程与请求线程同时扫 959MB"反而恶化到 11667ms） |
+
+治理后冷态：`/api/overview` **118ms**、`/api/worklist` **107ms**（原 7613ms）、
+`/api/assets` **3.5ms**（原 5965ms）。守卫 `tests/test_console_perf_flake.py`。
 
 | 页 | 内容 | 数据源（**全部经 `interfaces/` 只读门面**） |
 |---|---|---|
@@ -554,6 +602,86 @@ python cli.py serve --open          # 启动后打开浏览器
 | 机器守护 | 判据 **J12**（`gate_config_integrity`）：禁裸 SQL 写、禁自写 `sys.path`、禁外链 CDN、`serve` 必须注册、响应必须脱敏；契约测试 `tests/test_confirm_console.py` 26 项 |
 
 **明确不做**（§8.2.1 非目标）：不触发主链（执行权归 `run`/计划任务）、不做业务逻辑、不引外部资产、不做多租户/权限、不替代 CLI。
+
+### 6.6 开机自启动（`tools/workbench_service.py`）
+
+一条命令把确认台配成**登录后自动启动**；零提权、可查询、可卸载、可立即验证。
+
+```bash
+python -m tools.workbench_service install    # 安装（计划任务 ONLOGON，延迟 30s）
+python -m tools.workbench_service status     # 四项状态：任务 / 进程 / 健康 / 日志
+python -m tools.workbench_service verify     # 触发一次并探活（装完立刻可验成败）
+python -m tools.workbench_service uninstall  # 卸载（只删任务，保留日志备查）
+```
+
+**方案选型**（三种，按质量排序）：
+
+| 方案 | 需管理员 | 免登录启动 | 可查询/卸载 | 结论 |
+|---|---|---|---|---|
+| **计划任务 ONLOGON** | 否（用户级） | 否（需登录） | 是 | **选用** |
+| 启动文件夹快捷方式 | 否 | 否 | 否 | 备选（无 schtasks 时降级） |
+| Windows 服务（nssm/sc.exe） | 是 | 是 | 是 | 不选：引入第三方依赖 + 提权 |
+
+选计划任务的理由：**零提权**、**可查询/可卸载**、**可延迟**（避开开机 IO 高峰）、
+不依赖第三方工具。代价是"需先登录"——对本地单用户工作台完全可接受；
+若要"免登录启动"，须改用服务（需管理员 + 第三方）。
+
+**可靠性三件套**（缺任一都会在真实使用中翻车）：
+
+| 机制 | 防的是什么 |
+|---|---|
+| `--single-instance`（`fs_lock.ProcessLock`） | 计划任务**每次登录都触发**，无保护会起多个进程互相踩踏（各自占端口、读同一份 SQLite） |
+| `--log-file`（`RotatingFileHandler` 5MB×3） | `pythonw.exe` **无控制台** ⇒ `print` 全部丢失，排障只能靠猜 |
+| `pythonw.exe` | 否则每次登录都弹一个黑框 |
+
+**启动方式**：下次登录时自动运行（延迟 30 秒）；也可随时手动触发
+`schtasks /Run /TN WorkBuddyRegulatoryConsole`。
+
+**验证方式**（三层，逐层递进）：
+
+```bash
+# ① 静态：任务是否登记
+schtasks /Query /TN WorkBuddyRegulatoryConsole /FO LIST
+
+# ② 语义：任务 + 进程 + 健康 + 日志 四项（任一缺失即指出）
+python -m tools.workbench_service status
+
+# ③ 行为：真的触发一次，等它起来并探活（最可靠——不用重启验证）
+python -m tools.workbench_service verify --wait 45
+```
+
+> `status` 全绿的样子：
+> ```
+>   计划任务  已安装         WorkBuddyRegulatoryConsole
+>   进程    在跑          pid=21060 存活
+>   健康    通           http://127.0.0.1:8765/api/health → 200
+>   日志    有           …/data/state/workbench.log
+> 结论：就绪（开机自启动可用）
+> ```
+> 实测：重复触发计划任务时**进程数仍为 1**（单实例生效）；日志文件有启动
+> URL/pid/lock 三条记录（`_log()` 双写控制台 + logger）。
+
+**安装过程中踩到的坑**（已写成守卫 `tests/test_workbench_service.py`）：
+`schtasks /DELAY` 的格式是 **`mmmm:ss`（分钟:秒）**，不是 `HHMM` ——
+写成 HHMM 会报「值无效（应该是 mmmm:ss 格式）」（rc=2147500037）。
+
+### 6.7 运维要点（**都是实测踩过的**，2026-10-21 汇总）
+
+| 要点 | 事实与做法 |
+|---|---|
+| **`.cmd` / `.bat` 必须纯 ASCII** | `cmd.exe` 按系统 OEM 代码页（简体中文 = **CP936/GBK**）读脚本。UTF-8 中文注释会变乱码，其中部分字节被当命令分隔符 ⇒ `rem` 行被截断、后半段被执行。实测登录后弹出 `'氭寔涔咃細閲嶈窇' 不是内部或外部命令…`。**生成脚本时用 `encoding="ascii"`**（混入非 ASCII 直接抛错），注释写英文 |
+| **`schtasks /DELAY` 格式是 `mmmm:ss`** | 不是 `HHMM`。写成 HHMM 会报「值无效（应该是 mmmm:ss 格式）」（rc=2147500037）。30 秒 ⇒ `0000:30` |
+| **`mof` 采集的耗时结构** | 调度参数 `--max-seconds 7200`（2h 软上限），父进程硬超时 `COLLECT_TIMEOUT['mof']=14400`（4h）。**软上限必须显著小于硬超时**，否则等于没有软上限（实测曾设 7200 却跑到 13113s，被 4h 强杀 → `rc=-1 TIMEOUT`）。软上限的检查点必须细到**附件循环内部**（详见 `limits.EarlyStopGuard.deadline`） |
+| **`mof` 的内存峰值** | 实测 **6.26 GB** WorkingSet（16 GB 机器）。**不是泄漏**：基线 `read_raw_records` 仅 197 MB；峰值来自**超大单条**（最大 31.3 MB，正文 23.57 MB，Top5 占全库 59.2%）在"去标签/正则/签名/序列化"各步产生的 20–30 MB 临时字符串，叠加 Windows 上 Python 高水位不归还 OS。**改进方向**：对巨型记录做正文截断/分段存储 |
+| **异常重启后先清陈旧锁** | 蓝屏/断电/强杀后 `data/run_production_refresh.lock` 会残留。**且 PID 可能被系统进程复用**（实测锁内 `3992` 重启后变成 `svchost.exe`）⇒ `ProcessLock` 只看"PID 是否存在"会误判"锁被占用"，主链**静默拒绝运行**。当前须手工确认 `cli.py run` 进程数为 0 后删除该锁；**修复方案**：锁文件记录"PID + 进程创建时刻 + 可执行名"三者校验（见 eports/refactors/incident_20261021_bsod.md\ §5.2） |
+| **手动跑采集会让水位变陈旧** | 水位只在 `run_production_refresh._wm` 里登记。手工执行 `collectors/*/collector.py` 改了 raw 但没登记 ⇒ `gate_watermark` 判陈旧并级联到 cleaned/clauses。**要么走 `cli.py run`，要么事后用 `_wm` 补登记**（不要复制逻辑） |
+| **确认台慢路由已治理** | `/api/overview` 冷态曾 **22163 ms**（扫 13.8 GB 外部模型目录）⇒ 撞破契约测试 20 s 超时、表现为"偶发 flake"。现为 **118 ms**（分级 TTL + 后台预热 + 防击穿），守卫 `tests/test_console_perf_flake.py` |
+
+> **蓝屏事件排查**（`KERNEL_SECURITY_CHECK_FAILURE` 等 4 种 BugCheck）见
+> `reports/refactors/incident_20261021_bsod.md`：结论是**非本项目导致**
+> （纯用户态 Python 无法破坏内核结构；4 种不同码 + 40 天跨度 + 最早一次早于重负载
+> ⇒ 硬件/驱动画像），但本项目 mof 的 6.26 GB 峰值是**加重因素**；
+> 建议先 MemTest86 + 排查第三方 `HotKeyServiceDSU.exe` 与驱动。
 
 ## 7. 附录与延伸阅读
 
@@ -768,6 +896,7 @@ flowchart TD
 显式 `model="…"` **覆盖 mode**（优先级最高）；分句增强由 env `REG_ORCH_SEMANTIC_SPLIT=1` 控制（**默认关**，见 §8.6 第 2 条）。
 
 <!-- END GENERATED: 全链数据流总图 -->
+
 
 
 

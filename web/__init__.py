@@ -31,11 +31,15 @@ DEFAULT_PORT = 8765
 
 
 def serve(host: str = DEFAULT_HOST, port: int = DEFAULT_PORT, *,
-          open_browser: bool = False, verbose: bool = False):
+          open_browser: bool = False, verbose: bool = False,
+          pid_file: str | None = None, log_file: str | None = None,
+          single_instance: bool = False):
     """启动确认台（阻塞直到 Ctrl-C）。薄封装，实现见 `web.server`。"""
     from .server import serve as _serve
 
-    return _serve(host=host, port=port, open_browser=open_browser, verbose=verbose)
+    return _serve(host=host, port=port, open_browser=open_browser,
+                  verbose=verbose, pid_file=pid_file, log_file=log_file,
+                  single_instance=single_instance)
 
 
 def build_server(host: str = DEFAULT_HOST, port: int = DEFAULT_PORT):

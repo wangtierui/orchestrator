@@ -1,0 +1,3869 @@
+{
+ "mode": "dry-run",
+ "plan": {
+  "plan": [
+   {
+    "file": "modules/regulatory_classifier/backups/_upper_laws_20261010_023821.json",
+    "size": 1959111,
+    "age_days": 12.5,
+    "reason": "超出保留量 10（第 11 新）",
+    "category": "classifier_backups",
+    "move_to": "archive/classifier_backups"
+   },
+   {
+    "file": "modules/regulatory_classifier/backups/_upper_laws_20261009_061225.json",
+    "size": 1959111,
+    "age_days": 13.1,
+    "reason": "超出保留量 10（第 12 新）",
+    "category": "classifier_backups",
+    "move_to": "archive/classifier_backups"
+   },
+   {
+    "file": "modules/regulatory_classifier/backups/_upper_laws_20261008_135722.json",
+    "size": 1959111,
+    "age_days": 14.5,
+    "reason": "超出保留量 10（第 13 新）",
+    "category": "classifier_backups",
+    "move_to": "archive/classifier_backups"
+   },
+   {
+    "file": "modules/regulatory_classifier/backups/_upper_laws_20261007_061316.json",
+    "size": 1959111,
+    "age_days": 15.6,
+    "reason": "超出保留量 10（第 14 新）",
+    "category": "classifier_backups",
+    "move_to": "archive/classifier_backups"
+   },
+   {
+    "file": "modules/regulatory_classifier/backups/_upper_laws_20261006_015313.json",
+    "size": 1959111,
+    "age_days": 17.5,
+    "reason": "超出保留量 10（第 15 新）",
+    "category": "classifier_backups",
+    "move_to": "archive/classifier_backups"
+   },
+   {
+    "file": "modules/regulatory_classifier/backups/_upper_laws_20261004_061132.json",
+    "size": 1959111,
+    "age_days": 21.8,
+    "reason": "超出保留量 10（第 16 新）",
+    "category": "classifier_backups",
+    "move_to": "archive/classifier_backups"
+   },
+   {
+    "file": "modules/regulatory_classifier/backups/_upper_laws_20260929_220115.json",
+    "size": 1959111,
+    "age_days": 22.0,
+    "reason": "超出保留量 10（第 17 新）",
+    "category": "classifier_backups",
+    "move_to": "archive/classifier_backups"
+   },
+   {
+    "file": "modules/regulatory_classifier/backups/_upper_laws_20260929_174350.json",
+    "size": 1959111,
+    "age_days": 22.2,
+    "reason": "超出保留量 10（第 18 新）",
+    "category": "classifier_backups",
+    "move_to": "archive/classifier_backups"
+   },
+   {
+    "file": "modules/regulatory_classifier/backups/_upper_laws_20260929_125556.json",
+    "size": 1959111,
+    "age_days": 22.6,
+    "reason": "超出保留量 10（第 19 新）",
+    "category": "classifier_backups",
+    "move_to": "archive/classifier_backups"
+   },
+   {
+    "file": "modules/regulatory_classifier/backups/_upper_laws_20260929_015048.json",
+    "size": 1959111,
+    "age_days": 22.7,
+    "reason": "超出保留量 10（第 20 新）",
+    "category": "classifier_backups",
+    "move_to": "archive/classifier_backups"
+   },
+   {
+    "file": "modules/regulatory_classifier/backups/_upper_laws_20260929_004113.json",
+    "size": 1959111,
+    "age_days": 22.9,
+    "reason": "超出保留量 10（第 21 新）",
+    "category": "classifier_backups",
+    "move_to": "archive/classifier_backups"
+   },
+   {
+    "file": "reports/_tmp/aa1.out",
+    "size": 3834,
+    "age_days": 11.0,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/aa2.out",
+    "size": 2286,
+    "age_days": 11.0,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/aa3.out",
+    "size": 7071,
+    "age_days": 11.0,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/aa4.out",
+    "size": 13354,
+    "age_days": 11.0,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/ac2.out",
+    "size": 3037,
+    "age_days": 10.9,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/bc1.out",
+    "size": 420,
+    "age_days": 10.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/bl1.out",
+    "size": 1549,
+    "age_days": 10.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/br1.out",
+    "size": 1612,
+    "age_days": 10.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/bs1.out",
+    "size": 794,
+    "age_days": 10.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/bt1.out",
+    "size": 1162,
+    "age_days": 10.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/bu1.out",
+    "size": 299,
+    "age_days": 10.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/bv1.out",
+    "size": 11683,
+    "age_days": 10.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/cb1.out",
+    "size": 5120,
+    "age_days": 10.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/cd1.out",
+    "size": 5171,
+    "age_days": 10.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/ce1.out",
+    "size": 1058,
+    "age_days": 10.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/cf1.out",
+    "size": 4494,
+    "age_days": 10.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/cg1.out",
+    "size": 7861,
+    "age_days": 9.3,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/cj1.out",
+    "size": 433,
+    "age_days": 9.3,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/cl1.out",
+    "size": 471,
+    "age_days": 9.3,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/cn1.out",
+    "size": 2143,
+    "age_days": 9.3,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/de1.out",
+    "size": 3079,
+    "age_days": 9.2,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/ea1.out",
+    "size": 11786,
+    "age_days": 9.1,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/eb1.out",
+    "size": 19441,
+    "age_days": 9.1,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/ed1.out",
+    "size": 525,
+    "age_days": 9.1,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/ee1.out",
+    "size": 10311,
+    "age_days": 9.1,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/ef1.out",
+    "size": 1690,
+    "age_days": 9.1,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/mof_laws_before_td11.jsonl",
+    "size": 66641280,
+    "age_days": 11.2,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/n208_backup_20261009_150610.jsonl.gz",
+    "size": 248304,
+    "age_days": 12.1,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/r9.out",
+    "size": 1071,
+    "age_days": 11.9,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/s1.out",
+    "size": 23095,
+    "age_days": 11.8,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/s8.out",
+    "size": 9268,
+    "age_days": 11.7,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/supp_before_20261020_164548.jsonl",
+    "size": 14441614,
+    "age_days": 11.2,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/v1.out",
+    "size": 2508,
+    "age_days": 11.7,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/w1.out",
+    "size": 2303,
+    "age_days": 11.3,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/x1.out",
+    "size": 11666,
+    "age_days": 11.3,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/y1.out",
+    "size": 2002,
+    "age_days": 11.2,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/y2.out",
+    "size": 3379,
+    "age_days": 11.2,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/y3.out",
+    "size": 7508,
+    "age_days": 11.2,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/y8.out",
+    "size": 2871,
+    "age_days": 11.2,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/z1.out",
+    "size": 5929,
+    "age_days": 11.1,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/z2.out",
+    "size": 4942,
+    "age_days": 11.1,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/_ac1.err",
+    "size": 0,
+    "age_days": 10.9,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/_ac1b.err",
+    "size": 0,
+    "age_days": 10.9,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/_chain52.err",
+    "size": 0,
+    "age_days": 11.7,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/_chain52b.err",
+    "size": 0,
+    "age_days": 11.7,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/_ci51.err",
+    "size": 0,
+    "age_days": 11.8,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/_ci53.err",
+    "size": 0,
+    "age_days": 11.7,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/_ci54.err",
+    "size": 0,
+    "age_days": 11.3,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/_ci56.err",
+    "size": 0,
+    "age_days": 11.0,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/_ci57.err",
+    "size": 0,
+    "age_days": 11.0,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/_ci58.err",
+    "size": 0,
+    "age_days": 10.9,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/_ci59.err",
+    "size": 0,
+    "age_days": 10.8,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/_ci60.err",
+    "size": 0,
+    "age_days": 10.8,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/_ci61.err",
+    "size": 0,
+    "age_days": 10.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/_ci62.err",
+    "size": 0,
+    "age_days": 10.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/_ci64.err",
+    "size": 0,
+    "age_days": 9.3,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/_ci65.err",
+    "size": 0,
+    "age_days": 9.2,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/_ci67.err",
+    "size": 0,
+    "age_days": 9.1,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/_full66.err",
+    "size": 0,
+    "age_days": 9.1,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/_full67.err",
+    "size": 0,
+    "age_days": 9.1,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/_mof2.err",
+    "size": 0,
+    "age_days": 11.2,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/_mof3.err",
+    "size": 0,
+    "age_days": 11.1,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/_mof5.err",
+    "size": 0,
+    "age_days": 10.9,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/_mof6.err",
+    "size": 0,
+    "age_days": 10.9,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/_mof_recover.err",
+    "size": 0,
+    "age_days": 11.3,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/_probe_clean_gov.out",
+    "size": 101560,
+    "age_days": 11.9,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/_probe_clean_mof.out",
+    "size": 5932,
+    "age_days": 11.9,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/_probe_clean_nfra.out",
+    "size": 8187,
+    "age_days": 11.9,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/_probe_clean_pbc.out",
+    "size": 83191,
+    "age_days": 11.9,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/_probe_clean_supp.out",
+    "size": 4494,
+    "age_days": 11.9,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/_probe_clean_supp2.out",
+    "size": 4493,
+    "age_days": 11.9,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/_u4run.err",
+    "size": 0,
+    "age_days": 13.2,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/ae1_带svp/e72927fe_下载文字版.doc",
+    "size": 64512,
+    "age_days": 10.9,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/ae1_带svp/e72927fe_下载文字版.docx",
+    "size": 28954,
+    "age_days": 10.9,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/ae1_无svp/e72927fe_下载文字版.doc",
+    "size": 64512,
+    "age_days": 10.9,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/ae1_无svp/e72927fe_下载文字版.docx",
+    "size": 28954,
+    "age_days": 10.9,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/bb1_case/e72927fe_下载文字版.doc",
+    "size": 64512,
+    "age_days": 10.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/bb1_case/e72927fe_下载文字版.docx",
+    "size": 28954,
+    "age_days": 10.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/bc1_case/e72927fe_下载文字版.doc",
+    "size": 64512,
+    "age_days": 10.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/bc1_case/probe_helper.py",
+    "size": 1743,
+    "age_days": 10.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/be1_case/e72927fe_下载文字版.doc",
+    "size": 64512,
+    "age_days": 10.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/be1_case/e72927fe_下载文字版.docx",
+    "size": 28954,
+    "age_days": 10.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/cn1_case/附件1：金融监管总局保险业监管数据标准化规范（人身保险公司2024版）.doc",
+    "size": 7455232,
+    "age_days": 9.3,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/cn1_case/附件1：金融监管总局保险业监管数据标准化规范（人身保险公司2024版）.docx",
+    "size": 713928,
+    "age_days": 9.3,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/state/status.json",
+    "size": 360,
+    "age_days": 13.2,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/analysis_gen_1791498164.err.log",
+    "size": 0,
+    "age_days": 12.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/analysis_gen_1791498164.out.log",
+    "size": 1129,
+    "age_days": 12.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/analysis_gen_1791571662.err.log",
+    "size": 0,
+    "age_days": 11.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/analysis_gen_1791571662.out.log",
+    "size": 1129,
+    "age_days": 11.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/analysis_gen_1791671271.err.log",
+    "size": 0,
+    "age_days": 10.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/analysis_gen_1791671271.out.log",
+    "size": 1129,
+    "age_days": 10.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/analysis_gen_1791827787.err.log",
+    "size": 0,
+    "age_days": 8.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/analysis_gen_1791827787.out.log",
+    "size": 1129,
+    "age_days": 8.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/analysis_gen_1791926555.err.log",
+    "size": 0,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/analysis_gen_1791926555.out.log",
+    "size": 1129,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/apply_gov_1791497186.err.log",
+    "size": 0,
+    "age_days": 12.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/apply_gov_1791497186.out.log",
+    "size": 558,
+    "age_days": 12.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/apply_gov_1791570775.err.log",
+    "size": 0,
+    "age_days": 11.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/apply_gov_1791570775.out.log",
+    "size": 558,
+    "age_days": 11.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/apply_gov_1791670063.err.log",
+    "size": 0,
+    "age_days": 10.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/apply_gov_1791670063.out.log",
+    "size": 558,
+    "age_days": 10.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/apply_gov_1791826332.err.log",
+    "size": 0,
+    "age_days": 8.7,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/apply_gov_1791826332.out.log",
+    "size": 558,
+    "age_days": 8.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/apply_gov_1791925698.err.log",
+    "size": 0,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/apply_gov_1791925698.out.log",
+    "size": 558,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/apply_mof_1791497292.err.log",
+    "size": 0,
+    "age_days": 12.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/apply_mof_1791497292.out.log",
+    "size": 558,
+    "age_days": 12.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/apply_mof_1791570873.err.log",
+    "size": 0,
+    "age_days": 11.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/apply_mof_1791570873.out.log",
+    "size": 558,
+    "age_days": 11.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/apply_mof_1791670196.err.log",
+    "size": 0,
+    "age_days": 10.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/apply_mof_1791670196.out.log",
+    "size": 558,
+    "age_days": 10.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/apply_mof_1791826491.err.log",
+    "size": 0,
+    "age_days": 8.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/apply_mof_1791826491.out.log",
+    "size": 558,
+    "age_days": 8.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/apply_mof_1791925787.err.log",
+    "size": 0,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/apply_mof_1791925787.out.log",
+    "size": 558,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/apply_nfra_1791497317.err.log",
+    "size": 0,
+    "age_days": 12.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/apply_nfra_1791497317.out.log",
+    "size": 558,
+    "age_days": 12.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/apply_nfra_1791570898.err.log",
+    "size": 0,
+    "age_days": 11.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/apply_nfra_1791570898.out.log",
+    "size": 558,
+    "age_days": 11.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/apply_nfra_1791670234.err.log",
+    "size": 0,
+    "age_days": 10.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/apply_nfra_1791670234.out.log",
+    "size": 558,
+    "age_days": 10.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/apply_nfra_1791826531.err.log",
+    "size": 0,
+    "age_days": 8.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/apply_nfra_1791826531.out.log",
+    "size": 558,
+    "age_days": 8.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/apply_nfra_1791925812.err.log",
+    "size": 0,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/apply_nfra_1791925812.out.log",
+    "size": 558,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/apply_pbc_1791497345.err.log",
+    "size": 0,
+    "age_days": 12.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/apply_pbc_1791497345.out.log",
+    "size": 558,
+    "age_days": 12.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/apply_pbc_1791570921.err.log",
+    "size": 0,
+    "age_days": 11.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/apply_pbc_1791570921.out.log",
+    "size": 558,
+    "age_days": 11.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/apply_pbc_1791670269.err.log",
+    "size": 0,
+    "age_days": 10.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/apply_pbc_1791670269.out.log",
+    "size": 558,
+    "age_days": 10.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/apply_pbc_1791826567.err.log",
+    "size": 0,
+    "age_days": 8.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/apply_pbc_1791826567.out.log",
+    "size": 558,
+    "age_days": 8.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/apply_pbc_1791925835.err.log",
+    "size": 0,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/apply_pbc_1791925835.out.log",
+    "size": 558,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/apply_supp_1791497365.err.log",
+    "size": 0,
+    "age_days": 12.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/apply_supp_1791497365.out.log",
+    "size": 558,
+    "age_days": 12.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/apply_supp_1791570937.err.log",
+    "size": 0,
+    "age_days": 11.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/apply_supp_1791570937.out.log",
+    "size": 558,
+    "age_days": 11.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/apply_supp_1791670289.err.log",
+    "size": 0,
+    "age_days": 10.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/apply_supp_1791670289.out.log",
+    "size": 558,
+    "age_days": 10.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/apply_supp_1791826595.err.log",
+    "size": 0,
+    "age_days": 8.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/apply_supp_1791826595.out.log",
+    "size": 558,
+    "age_days": 8.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/apply_supp_1791925851.err.log",
+    "size": 0,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/apply_supp_1791925851.out.log",
+    "size": 558,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/base_publish_1791498071.err.log",
+    "size": 0,
+    "age_days": 12.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/base_publish_1791498071.out.log",
+    "size": 627,
+    "age_days": 12.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/base_publish_1791571563.err.log",
+    "size": 0,
+    "age_days": 11.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/base_publish_1791571563.out.log",
+    "size": 627,
+    "age_days": 11.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/base_publish_1791671120.err.log",
+    "size": 0,
+    "age_days": 10.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/base_publish_1791671120.out.log",
+    "size": 627,
+    "age_days": 10.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/base_publish_1791827568.err.log",
+    "size": 0,
+    "age_days": 8.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/base_publish_1791827568.out.log",
+    "size": 627,
+    "age_days": 8.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/base_publish_1791926452.err.log",
+    "size": 0,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/base_publish_1791926452.out.log",
+    "size": 627,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/classify_all_1791497389.err.log",
+    "size": 258,
+    "age_days": 12.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/classify_all_1791497389.out.log",
+    "size": 40142,
+    "age_days": 12.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/classify_all_1791570956.err.log",
+    "size": 258,
+    "age_days": 11.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/classify_all_1791570956.out.log",
+    "size": 42011,
+    "age_days": 11.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/classify_all_1791670311.err.log",
+    "size": 0,
+    "age_days": 10.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/classify_all_1791670311.out.log",
+    "size": 11893,
+    "age_days": 10.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/classify_all_1791826626.err.log",
+    "size": 0,
+    "age_days": 8.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/classify_all_1791826626.out.log",
+    "size": 11893,
+    "age_days": 8.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/classify_all_1791925870.err.log",
+    "size": 0,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/classify_all_1791925870.out.log",
+    "size": 11893,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/clean_gov_1791496804.err.log",
+    "size": 580,
+    "age_days": 12.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/clean_gov_1791496804.out.log",
+    "size": 100944,
+    "age_days": 12.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/clean_gov_1791570423.err.log",
+    "size": 580,
+    "age_days": 11.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/clean_gov_1791570423.out.log",
+    "size": 101079,
+    "age_days": 11.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/clean_gov_1791669604.err.log",
+    "size": 580,
+    "age_days": 10.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/clean_gov_1791669604.out.log",
+    "size": 101079,
+    "age_days": 10.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/clean_gov_1791825877.err.log",
+    "size": 580,
+    "age_days": 8.7,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/clean_gov_1791825877.out.log",
+    "size": 101078,
+    "age_days": 8.7,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/clean_gov_1791925236.err.log",
+    "size": 580,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/clean_gov_1791925236.out.log",
+    "size": 101079,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/clean_mof_1791497050.err.log",
+    "size": 580,
+    "age_days": 12.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/clean_mof_1791497050.out.log",
+    "size": 5605,
+    "age_days": 12.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/clean_mof_1791570655.err.log",
+    "size": 580,
+    "age_days": 11.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/clean_mof_1791570655.out.log",
+    "size": 5450,
+    "age_days": 11.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/clean_mof_1791669869.err.log",
+    "size": 580,
+    "age_days": 10.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/clean_mof_1791669869.out.log",
+    "size": 5450,
+    "age_days": 10.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/clean_mof_1791826138.err.log",
+    "size": 580,
+    "age_days": 8.7,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/clean_mof_1791826138.out.log",
+    "size": 5450,
+    "age_days": 8.7,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/clean_mof_1791925469.err.log",
+    "size": 580,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/clean_mof_1791925469.out.log",
+    "size": 5449,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/clean_nfra_1791497083.err.log",
+    "size": 580,
+    "age_days": 12.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/clean_nfra_1791497083.out.log",
+    "size": 6847,
+    "age_days": 12.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/clean_nfra_1791570694.err.log",
+    "size": 580,
+    "age_days": 11.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/clean_nfra_1791570694.out.log",
+    "size": 6983,
+    "age_days": 11.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/clean_nfra_1791669922.err.log",
+    "size": 580,
+    "age_days": 10.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/clean_nfra_1791669922.out.log",
+    "size": 6983,
+    "age_days": 10.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/clean_nfra_1791826189.err.log",
+    "size": 580,
+    "age_days": 8.7,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/clean_nfra_1791826189.out.log",
+    "size": 6983,
+    "age_days": 8.7,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/clean_nfra_1791925508.err.log",
+    "size": 580,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/clean_nfra_1791925508.out.log",
+    "size": 6983,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/clean_pbc_1791497131.err.log",
+    "size": 580,
+    "age_days": 12.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/clean_pbc_1791497131.out.log",
+    "size": 82575,
+    "age_days": 12.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/clean_pbc_1791570734.err.log",
+    "size": 580,
+    "age_days": 11.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/clean_pbc_1791570734.out.log",
+    "size": 82709,
+    "age_days": 11.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/clean_pbc_1791669976.err.log",
+    "size": 580,
+    "age_days": 10.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/clean_pbc_1791669976.out.log",
+    "size": 82708,
+    "age_days": 10.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/clean_pbc_1791826241.err.log",
+    "size": 580,
+    "age_days": 8.7,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/clean_pbc_1791826241.out.log",
+    "size": 82709,
+    "age_days": 8.7,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/clean_pbc_1791925549.err.log",
+    "size": 580,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/clean_pbc_1791925549.out.log",
+    "size": 82709,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/clean_supp_1791497156.err.log",
+    "size": 580,
+    "age_days": 12.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/clean_supp_1791497156.out.log",
+    "size": 3878,
+    "age_days": 12.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/clean_supp_1791570754.err.log",
+    "size": 580,
+    "age_days": 11.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/clean_supp_1791570754.out.log",
+    "size": 4012,
+    "age_days": 11.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/clean_supp_1791670007.err.log",
+    "size": 580,
+    "age_days": 10.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/clean_supp_1791670007.out.log",
+    "size": 4013,
+    "age_days": 10.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/clean_supp_1791826266.err.log",
+    "size": 580,
+    "age_days": 8.7,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/clean_supp_1791826266.out.log",
+    "size": 4013,
+    "age_days": 8.7,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/clean_supp_1791925569.err.log",
+    "size": 580,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/clean_supp_1791925569.out.log",
+    "size": 4013,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/collect_gov_xzfgk_1791562885.err.log",
+    "size": 0,
+    "age_days": 11.7,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/collect_gov_xzfgk_1791562885.out.log",
+    "size": 1464,
+    "age_days": 11.7,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/collect_gov_xzfgk_1791910805.err.log",
+    "size": 0,
+    "age_days": 7.7,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/collect_gov_xzfgk_1791910805.out.log",
+    "size": 1464,
+    "age_days": 7.7,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/collect_gov_zhengceku_1791562945.err.log",
+    "size": 0,
+    "age_days": 11.7,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/collect_gov_zhengceku_1791562945.out.log",
+    "size": 1475,
+    "age_days": 11.7,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/collect_gov_zhengceku_1791910811.err.log",
+    "size": 0,
+    "age_days": 7.7,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/collect_gov_zhengceku_1791910811.out.log",
+    "size": 1475,
+    "age_days": 7.7,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/collect_mof_1791562948.err.log",
+    "size": 211506,
+    "age_days": 11.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/collect_mof_1791562948.out.log",
+    "size": 73,
+    "age_days": 11.7,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/collect_mof_1791596114.err.log",
+    "size": 125860,
+    "age_days": 11.3,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/collect_mof_1791596114.out.log",
+    "size": 73,
+    "age_days": 11.3,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/collect_mof_1791606521.err.log",
+    "size": 771912,
+    "age_days": 11.1,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/collect_mof_1791606521.out.log",
+    "size": 0,
+    "age_days": 11.2,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/collect_mof_1791618718.err.log",
+    "size": 664712,
+    "age_days": 10.9,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/collect_mof_1791618718.out.log",
+    "size": 0,
+    "age_days": 11.1,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/collect_mof_1791910813.err.log",
+    "size": 39049060,
+    "age_days": 7.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/collect_mof_1791910813.out.log",
+    "size": 0,
+    "age_days": 7.7,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/collect_nfra_1791570149.err.log",
+    "size": 0,
+    "age_days": 11.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/collect_nfra_1791570149.out.log",
+    "size": 874,
+    "age_days": 11.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/collect_nfra_weekly_1791824404.err.log",
+    "size": 0,
+    "age_days": 8.7,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/collect_nfra_weekly_1791824404.out.log",
+    "size": 106452,
+    "age_days": 8.7,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/collect_pbc_1791570397.err.log",
+    "size": 357,
+    "age_days": 11.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/collect_pbc_1791570397.out.log",
+    "size": 2769,
+    "age_days": 11.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/collect_pbc_1791925217.err.log",
+    "size": 339,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/collect_pbc_1791925217.out.log",
+    "size": 1152,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/docreader_extract_1791497744.err.log",
+    "size": 0,
+    "age_days": 12.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/docreader_extract_1791497744.out.log",
+    "size": 379,
+    "age_days": 12.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/docreader_extract_1791571279.err.log",
+    "size": 0,
+    "age_days": 11.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/docreader_extract_1791571279.out.log",
+    "size": 379,
+    "age_days": 11.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/docreader_extract_1791670797.err.log",
+    "size": 0,
+    "age_days": 10.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/docreader_extract_1791670797.out.log",
+    "size": 379,
+    "age_days": 10.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/docreader_extract_1791827168.err.log",
+    "size": 0,
+    "age_days": 8.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/docreader_extract_1791827168.out.log",
+    "size": 379,
+    "age_days": 8.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/docreader_extract_1791926161.err.log",
+    "size": 0,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/docreader_extract_1791926161.out.log",
+    "size": 379,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/draft_clause_1791498034.err.log",
+    "size": 0,
+    "age_days": 12.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/draft_clause_1791498034.out.log",
+    "size": 166381,
+    "age_days": 12.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/draft_clause_1791571544.err.log",
+    "size": 0,
+    "age_days": 11.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/draft_clause_1791571544.out.log",
+    "size": 166381,
+    "age_days": 11.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/draft_clause_1791671088.err.log",
+    "size": 0,
+    "age_days": 10.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/draft_clause_1791671088.out.log",
+    "size": 0,
+    "age_days": 10.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/draft_clause_1791827538.err.log",
+    "size": 0,
+    "age_days": 8.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/draft_clause_1791827538.out.log",
+    "size": 0,
+    "age_days": 8.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/draft_clause_1791926426.err.log",
+    "size": 0,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/draft_clause_1791926426.out.log",
+    "size": 0,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/gates_1791498196.err.log",
+    "size": 0,
+    "age_days": 12.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/gates_1791498196.out.log",
+    "size": 19060,
+    "age_days": 12.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/gates_1791571685.err.log",
+    "size": 0,
+    "age_days": 11.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/gates_1791571685.out.log",
+    "size": 19266,
+    "age_days": 11.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/gates_1791671310.err.log",
+    "size": 0,
+    "age_days": 10.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/gates_1791671310.out.log",
+    "size": 19933,
+    "age_days": 10.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/gates_1791827844.err.log",
+    "size": 0,
+    "age_days": 8.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/gates_1791827844.out.log",
+    "size": 19712,
+    "age_days": 8.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/gates_1791926585.err.log",
+    "size": 0,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/gates_1791926585.out.log",
+    "size": 22262,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/governance_artifacts_1791497978.err.log",
+    "size": 0,
+    "age_days": 12.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/governance_artifacts_1791497978.out.log",
+    "size": 413,
+    "age_days": 12.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/governance_artifacts_1791571501.err.log",
+    "size": 0,
+    "age_days": 11.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/governance_artifacts_1791571501.out.log",
+    "size": 413,
+    "age_days": 11.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/governance_artifacts_1791671031.err.log",
+    "size": 0,
+    "age_days": 10.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/governance_artifacts_1791671031.out.log",
+    "size": 413,
+    "age_days": 10.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/governance_artifacts_1791827473.err.log",
+    "size": 0,
+    "age_days": 8.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/governance_artifacts_1791827473.out.log",
+    "size": 413,
+    "age_days": 8.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/governance_artifacts_1791926368.err.log",
+    "size": 0,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/governance_artifacts_1791926368.out.log",
+    "size": 413,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/governance_sync_1791498017.err.log",
+    "size": 0,
+    "age_days": 12.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/governance_sync_1791498017.out.log",
+    "size": 429,
+    "age_days": 12.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/governance_sync_1791571528.err.log",
+    "size": 0,
+    "age_days": 11.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/governance_sync_1791571528.out.log",
+    "size": 429,
+    "age_days": 11.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/governance_sync_1791671057.err.log",
+    "size": 0,
+    "age_days": 10.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/governance_sync_1791671057.out.log",
+    "size": 429,
+    "age_days": 10.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/governance_sync_1791827502.err.log",
+    "size": 0,
+    "age_days": 8.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/governance_sync_1791827502.out.log",
+    "size": 429,
+    "age_days": 8.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/governance_sync_1791926392.err.log",
+    "size": 0,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/governance_sync_1791926392.out.log",
+    "size": 429,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/internal_merged_1791498020.err.log",
+    "size": 0,
+    "age_days": 12.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/internal_merged_1791498020.out.log",
+    "size": 102,
+    "age_days": 12.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/internal_merged_1791571531.err.log",
+    "size": 0,
+    "age_days": 11.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/internal_merged_1791571531.out.log",
+    "size": 102,
+    "age_days": 11.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/internal_merged_1791671061.err.log",
+    "size": 0,
+    "age_days": 10.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/internal_merged_1791671061.out.log",
+    "size": 102,
+    "age_days": 10.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/internal_merged_1791827506.err.log",
+    "size": 0,
+    "age_days": 8.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/internal_merged_1791827506.out.log",
+    "size": 102,
+    "age_days": 8.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/internal_merged_1791926394.err.log",
+    "size": 0,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/internal_merged_1791926394.out.log",
+    "size": 102,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/pg_health_1791498194.err.log",
+    "size": 0,
+    "age_days": 12.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/pg_health_1791498194.out.log",
+    "size": 233,
+    "age_days": 12.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/pg_health_1791571683.err.log",
+    "size": 0,
+    "age_days": 11.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/pg_health_1791571683.out.log",
+    "size": 233,
+    "age_days": 11.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/pg_health_1791671307.err.log",
+    "size": 0,
+    "age_days": 10.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/pg_health_1791671307.out.log",
+    "size": 233,
+    "age_days": 10.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/pg_health_1791827842.err.log",
+    "size": 0,
+    "age_days": 8.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/pg_health_1791827842.out.log",
+    "size": 233,
+    "age_days": 8.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/pg_health_1791926583.err.log",
+    "size": 0,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/pg_health_1791926583.out.log",
+    "size": 233,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/quarantine_triage_1791498178.err.log",
+    "size": 712,
+    "age_days": 12.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/quarantine_triage_1791498178.out.log",
+    "size": 0,
+    "age_days": 12.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/quarantine_triage_1791571671.err.log",
+    "size": 229,
+    "age_days": 11.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/quarantine_triage_1791571671.out.log",
+    "size": 0,
+    "age_days": 11.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/quarantine_triage_1791671297.err.log",
+    "size": 298,
+    "age_days": 10.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/quarantine_triage_1791671297.out.log",
+    "size": 0,
+    "age_days": 10.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/quarantine_triage_1791827824.err.log",
+    "size": 367,
+    "age_days": 8.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/quarantine_triage_1791827824.out.log",
+    "size": 0,
+    "age_days": 8.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/quarantine_triage_1791926566.err.log",
+    "size": 436,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/quarantine_triage_1791926566.out.log",
+    "size": 0,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/recall_1791497842.err.log",
+    "size": 0,
+    "age_days": 12.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/recall_1791497842.out.log",
+    "size": 588,
+    "age_days": 12.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/recall_1791571383.err.log",
+    "size": 0,
+    "age_days": 11.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/recall_1791571383.out.log",
+    "size": 588,
+    "age_days": 11.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/recall_1791670914.err.log",
+    "size": 0,
+    "age_days": 10.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/recall_1791670914.out.log",
+    "size": 588,
+    "age_days": 10.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/recall_1791827281.err.log",
+    "size": 0,
+    "age_days": 8.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/recall_1791827281.out.log",
+    "size": 588,
+    "age_days": 8.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/recall_1791926269.err.log",
+    "size": 0,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/recall_1791926269.out.log",
+    "size": 588,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/reconcile_1791497822.err.log",
+    "size": 0,
+    "age_days": 12.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/reconcile_1791497822.out.log",
+    "size": 814,
+    "age_days": 12.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/reconcile_1791571363.err.log",
+    "size": 0,
+    "age_days": 11.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/reconcile_1791571363.out.log",
+    "size": 814,
+    "age_days": 11.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/reconcile_1791670887.err.log",
+    "size": 0,
+    "age_days": 10.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/reconcile_1791670887.out.log",
+    "size": 814,
+    "age_days": 10.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/reconcile_1791827256.err.log",
+    "size": 0,
+    "age_days": 8.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/reconcile_1791827256.out.log",
+    "size": 814,
+    "age_days": 8.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/reconcile_1791926249.err.log",
+    "size": 0,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/reconcile_1791926249.out.log",
+    "size": 814,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/relations_gen_1791497598.err.log",
+    "size": 0,
+    "age_days": 12.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/relations_gen_1791497598.out.log",
+    "size": 428,
+    "age_days": 12.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/relations_gen_1791571146.err.log",
+    "size": 0,
+    "age_days": 11.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/relations_gen_1791571146.out.log",
+    "size": 428,
+    "age_days": 11.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/relations_gen_1791670714.err.log",
+    "size": 0,
+    "age_days": 10.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/relations_gen_1791670714.out.log",
+    "size": 428,
+    "age_days": 10.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/relations_gen_1791827033.err.log",
+    "size": 0,
+    "age_days": 8.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/relations_gen_1791827033.out.log",
+    "size": 428,
+    "age_days": 8.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/relations_gen_1791926010.err.log",
+    "size": 0,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/relations_gen_1791926010.out.log",
+    "size": 428,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/relevance_gov_1791925589.err.log",
+    "size": 0,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/relevance_gov_1791925589.out.log",
+    "size": 818,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/relevance_mof_1791925647.err.log",
+    "size": 0,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/relevance_mof_1791925647.out.log",
+    "size": 803,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/relevance_nfra_1791925664.err.log",
+    "size": 0,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/relevance_nfra_1791925664.out.log",
+    "size": 832,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/relevance_pbc_1791925678.err.log",
+    "size": 0,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/relevance_pbc_1791925678.out.log",
+    "size": 793,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/relevance_supp_1791670034.err.log",
+    "size": 0,
+    "age_days": 10.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/relevance_supp_1791670034.out.log",
+    "size": 802,
+    "age_days": 10.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/relevance_supp_1791826296.err.log",
+    "size": 0,
+    "age_days": 8.7,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/relevance_supp_1791826296.out.log",
+    "size": 802,
+    "age_days": 8.7,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/relevance_supp_1791925688.err.log",
+    "size": 0,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/relevance_supp_1791925688.out.log",
+    "size": 803,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/reports_build_1791498032.err.log",
+    "size": 0,
+    "age_days": 12.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/reports_build_1791498032.out.log",
+    "size": 307,
+    "age_days": 12.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/reports_build_1791571541.err.log",
+    "size": 0,
+    "age_days": 11.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/reports_build_1791571541.out.log",
+    "size": 307,
+    "age_days": 11.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/reports_build_1791671079.err.log",
+    "size": 0,
+    "age_days": 10.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/reports_build_1791671079.out.log",
+    "size": 307,
+    "age_days": 10.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/reports_build_1791827529.err.log",
+    "size": 0,
+    "age_days": 8.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/reports_build_1791827529.out.log",
+    "size": 307,
+    "age_days": 8.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/reports_build_1791926423.err.log",
+    "size": 0,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/reports_build_1791926423.out.log",
+    "size": 307,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/reports_theme_1791498033.err.log",
+    "size": 0,
+    "age_days": 12.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/reports_theme_1791498033.out.log",
+    "size": 1762,
+    "age_days": 12.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/reports_theme_1791571541.err.log",
+    "size": 0,
+    "age_days": 11.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/reports_theme_1791571541.out.log",
+    "size": 1762,
+    "age_days": 11.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/reports_theme_1791671080.err.log",
+    "size": 0,
+    "age_days": 10.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/reports_theme_1791671080.out.log",
+    "size": 1762,
+    "age_days": 10.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/reports_theme_1791827529.err.log",
+    "size": 0,
+    "age_days": 8.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/reports_theme_1791827529.out.log",
+    "size": 1762,
+    "age_days": 8.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/reports_theme_1791926423.err.log",
+    "size": 0,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/reports_theme_1791926423.out.log",
+    "size": 1762,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/retention_plan_1791498175.err.log",
+    "size": 0,
+    "age_days": 12.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/retention_plan_1791498175.out.log",
+    "size": 2382,
+    "age_days": 12.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/retention_plan_1791571670.err.log",
+    "size": 0,
+    "age_days": 11.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/retention_plan_1791571670.out.log",
+    "size": 1219,
+    "age_days": 11.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/retention_plan_1791671294.err.log",
+    "size": 0,
+    "age_days": 10.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/retention_plan_1791671294.out.log",
+    "size": 1754,
+    "age_days": 10.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/retention_plan_1791827812.err.log",
+    "size": 0,
+    "age_days": 8.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/retention_plan_1791827812.out.log",
+    "size": 2059,
+    "age_days": 8.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/retention_plan_1791926564.err.log",
+    "size": 0,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/retention_plan_1791926564.out.log",
+    "size": 2184,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/semantic_assist_1791497674.err.log",
+    "size": 149,
+    "age_days": 12.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/semantic_assist_1791497674.out.log",
+    "size": 286,
+    "age_days": 12.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/semantic_assist_1791571218.err.log",
+    "size": 149,
+    "age_days": 11.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/semantic_assist_1791571218.out.log",
+    "size": 286,
+    "age_days": 11.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/semantic_assist_1791670791.err.log",
+    "size": 0,
+    "age_days": 10.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/semantic_assist_1791670791.out.log",
+    "size": 1728,
+    "age_days": 10.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/semantic_assist_1791827158.err.log",
+    "size": 0,
+    "age_days": 8.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/semantic_assist_1791827158.out.log",
+    "size": 1728,
+    "age_days": 8.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/semantic_assist_1791926087.err.log",
+    "size": 149,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/semantic_assist_1791926087.out.log",
+    "size": 286,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/semantic_preflight_1791498178.err.log",
+    "size": 0,
+    "age_days": 12.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/semantic_preflight_1791498178.out.log",
+    "size": 736,
+    "age_days": 12.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/semantic_preflight_1791571672.err.log",
+    "size": 0,
+    "age_days": 11.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/semantic_preflight_1791571672.out.log",
+    "size": 736,
+    "age_days": 11.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/semantic_preflight_1791671297.err.log",
+    "size": 0,
+    "age_days": 10.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/semantic_preflight_1791671297.out.log",
+    "size": 736,
+    "age_days": 10.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/semantic_preflight_1791827824.err.log",
+    "size": 0,
+    "age_days": 8.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/semantic_preflight_1791827824.out.log",
+    "size": 736,
+    "age_days": 8.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/semantic_preflight_1791926567.err.log",
+    "size": 0,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/semantic_preflight_1791926567.out.log",
+    "size": 736,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/timeliness_consolidate_1791497183.err.log",
+    "size": 0,
+    "age_days": 12.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/timeliness_consolidate_1791497183.out.log",
+    "size": 299,
+    "age_days": 12.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/timeliness_consolidate_1791570773.err.log",
+    "size": 0,
+    "age_days": 11.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/timeliness_consolidate_1791570773.out.log",
+    "size": 299,
+    "age_days": 11.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/timeliness_consolidate_1791670061.err.log",
+    "size": 0,
+    "age_days": 10.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/timeliness_consolidate_1791670061.out.log",
+    "size": 299,
+    "age_days": 10.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/timeliness_consolidate_1791826330.err.log",
+    "size": 0,
+    "age_days": 8.7,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/timeliness_consolidate_1791826330.out.log",
+    "size": 299,
+    "age_days": 8.7,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/timeliness_consolidate_1791925697.err.log",
+    "size": 0,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/timeliness_consolidate_1791925697.out.log",
+    "size": 299,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/watch_baseline_1791498175.err.log",
+    "size": 0,
+    "age_days": 12.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/watch_baseline_1791498175.out.log",
+    "size": 836,
+    "age_days": 12.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/watch_baseline_1791571670.err.log",
+    "size": 0,
+    "age_days": 11.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/watch_baseline_1791571670.out.log",
+    "size": 836,
+    "age_days": 11.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/watch_baseline_1791671294.err.log",
+    "size": 0,
+    "age_days": 10.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/watch_baseline_1791671294.out.log",
+    "size": 836,
+    "age_days": 10.4,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/watch_baseline_1791827811.err.log",
+    "size": 0,
+    "age_days": 8.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/watch_baseline_1791827811.out.log",
+    "size": 836,
+    "age_days": 8.6,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/watch_baseline_1791926564.err.log",
+    "size": 0,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "reports/_tmp/step_logs/watch_baseline_1791926564.out.log",
+    "size": 836,
+    "age_days": 7.5,
+    "reason": "超过 7 天",
+    "category": "reports_tmp",
+    "move_to": "archive/reports_tmp"
+   },
+   {
+    "file": "logs/2026-09-26.log",
+    "size": 196948,
+    "age_days": 25.0,
+    "reason": "超过 14 天",
+    "category": "logs_stale",
+    "delete": true
+   },
+   {
+    "file": "logs/2026-09-27.log",
+    "size": 751424,
+    "age_days": 24.5,
+    "reason": "超过 14 天",
+    "category": "logs_stale",
+    "delete": true
+   },
+   {
+    "file": "logs/2026-09-28.log",
+    "size": 2066418,
+    "age_days": 22.9,
+    "reason": "超过 14 天",
+    "category": "logs_stale",
+    "delete": true
+   },
+   {
+    "file": "logs/2026-09-29.log",
+    "size": 953707,
+    "age_days": 21.8,
+    "reason": "超过 14 天",
+    "category": "logs_stale",
+    "delete": true
+   },
+   {
+    "file": "logs/2026-09-30.log",
+    "size": 198190,
+    "age_days": 20.9,
+    "reason": "超过 14 天",
+    "category": "logs_stale",
+    "delete": true
+   },
+   {
+    "file": "logs/2026-10-01.log",
+    "size": 109349,
+    "age_days": 20.4,
+    "reason": "超过 14 天",
+    "category": "logs_stale",
+    "delete": true
+   },
+   {
+    "file": "logs/2026-10-04.log",
+    "size": 93563,
+    "age_days": 17.5,
+    "reason": "超过 14 天",
+    "category": "logs_stale",
+    "delete": true
+   },
+   {
+    "file": "logs/2026-10-05.log",
+    "size": 99684,
+    "age_days": 16.5,
+    "reason": "超过 14 天",
+    "category": "logs_stale",
+    "delete": true
+   },
+   {
+    "file": "logs/2026-10-06.log",
+    "size": 193247,
+    "age_days": 15.6,
+    "reason": "超过 14 天",
+    "category": "logs_stale",
+    "delete": true
+   },
+   {
+    "file": "logs/2026-10-07.log",
+    "size": 193250,
+    "age_days": 14.5,
+    "reason": "超过 14 天",
+    "category": "logs_stale",
+    "delete": true
+   },
+   {
+    "file": "logs/metrics_20260926.json",
+    "size": 1032,
+    "age_days": 25.0,
+    "reason": "超过 14 天",
+    "category": "logs_stale",
+    "delete": true
+   },
+   {
+    "file": "logs/metrics_20260927.json",
+    "size": 1033,
+    "age_days": 24.5,
+    "reason": "超过 14 天",
+    "category": "logs_stale",
+    "delete": true
+   },
+   {
+    "file": "logs/metrics_20260928.json",
+    "size": 1033,
+    "age_days": 22.9,
+    "reason": "超过 14 天",
+    "category": "logs_stale",
+    "delete": true
+   },
+   {
+    "file": "logs/metrics_20260929.json",
+    "size": 1034,
+    "age_days": 21.8,
+    "reason": "超过 14 天",
+    "category": "logs_stale",
+    "delete": true
+   },
+   {
+    "file": "logs/metrics_20261001.json",
+    "size": 1034,
+    "age_days": 20.4,
+    "reason": "超过 14 天",
+    "category": "logs_stale",
+    "delete": true
+   },
+   {
+    "file": "logs/metrics_20261004.json",
+    "size": 1033,
+    "age_days": 17.5,
+    "reason": "超过 14 天",
+    "category": "logs_stale",
+    "delete": true
+   },
+   {
+    "file": "logs/metrics_20261005.json",
+    "size": 1041,
+    "age_days": 16.5,
+    "reason": "超过 14 天",
+    "category": "logs_stale",
+    "delete": true
+   },
+   {
+    "file": "logs/metrics_20261006.json",
+    "size": 1033,
+    "age_days": 15.6,
+    "reason": "超过 14 天",
+    "category": "logs_stale",
+    "delete": true
+   },
+   {
+    "file": "logs/metrics_20261007.json",
+    "size": 1033,
+    "age_days": 14.5,
+    "reason": "超过 14 天",
+    "category": "logs_stale",
+    "delete": true
+   },
+   {
+    "file": "modules/regulatory_scrapers/data/cleaned/nfra_cleaned_20261020.quarantine.jsonl",
+    "size": 6468,
+    "age_days": 1.3,
+    "reason": "超出**分组**保留量 1（组 nfra）",
+    "category": "clean_quarantine_stale",
+    "move_to": "archive/clean_quarantine"
+   },
+   {
+    "file": "modules/regulatory_scrapers/data/cleaned/nfra_cleaned_20261019.quarantine.jsonl",
+    "size": 58827,
+    "age_days": 2.5,
+    "reason": "超出**分组**保留量 1（组 nfra）",
+    "category": "clean_quarantine_stale",
+    "move_to": "archive/clean_quarantine"
+   },
+   {
+    "file": "modules/regulatory_scrapers/data/cleaned/nfra_cleaned_20261017.quarantine.jsonl",
+    "size": 58827,
+    "age_days": 4.5,
+    "reason": "超出**分组**保留量 1（组 nfra）",
+    "category": "clean_quarantine_stale",
+    "move_to": "archive/clean_quarantine"
+   },
+   {
+    "file": "modules/regulatory_scrapers/data/cleaned/nfra_cleaned_20261016.quarantine.jsonl",
+    "size": 58827,
+    "age_days": 5.5,
+    "reason": "超出**分组**保留量 1（组 nfra）",
+    "category": "clean_quarantine_stale",
+    "move_to": "archive/clean_quarantine"
+   },
+   {
+    "file": "modules/regulatory_scrapers/data/cleaned/nfra_cleaned_20261015.quarantine.jsonl",
+    "size": 58827,
+    "age_days": 6.5,
+    "reason": "超出**分组**保留量 1（组 nfra）",
+    "category": "clean_quarantine_stale",
+    "move_to": "archive/clean_quarantine"
+   },
+   {
+    "file": "modules/regulatory_scrapers/data/cleaned/nfra_cleaned_20261014.quarantine.jsonl",
+    "size": 58827,
+    "age_days": 7.5,
+    "reason": "超出**分组**保留量 1（组 nfra）",
+    "category": "clean_quarantine_stale",
+    "move_to": "archive/clean_quarantine"
+   },
+   {
+    "file": "modules/regulatory_scrapers/data/cleaned/nfra_cleaned_20261013.quarantine.jsonl",
+    "size": 58827,
+    "age_days": 8.7,
+    "reason": "超出**分组**保留量 1（组 nfra）",
+    "category": "clean_quarantine_stale",
+    "move_to": "archive/clean_quarantine"
+   },
+   {
+    "file": "modules/regulatory_scrapers/data/cleaned/nfra_cleaned_20261011.quarantine.jsonl",
+    "size": 58827,
+    "age_days": 10.5,
+    "reason": "超出**分组**保留量 1（组 nfra）",
+    "category": "clean_quarantine_stale",
+    "move_to": "archive/clean_quarantine"
+   },
+   {
+    "file": "modules/regulatory_scrapers/data/cleaned/nfra_cleaned_20261010.quarantine.jsonl",
+    "size": 58827,
+    "age_days": 11.6,
+    "reason": "超出**分组**保留量 1（组 nfra）",
+    "category": "clean_quarantine_stale",
+    "move_to": "archive/clean_quarantine"
+   },
+   {
+    "file": "modules/regulatory_scrapers/data/cleaned/nfra_cleaned_20261009.quarantine.jsonl",
+    "size": 58827,
+    "age_days": 11.9,
+    "reason": "超出**分组**保留量 1（组 nfra）",
+    "category": "clean_quarantine_stale",
+    "move_to": "archive/clean_quarantine"
+   }
+  ],
+  "stats": {
+   "classifier_backups": {
+    "exists": true,
+    "total": 21,
+    "kept": 10,
+    "incident_kept": 0
+   },
+   "ipb_backups": {
+    "exists": true,
+    "total": 1,
+    "kept": 1,
+    "incident_kept": 0
+   },
+   "reports_tmp": {
+    "exists": true,
+    "total": 1662,
+    "older_than_days": 7
+   },
+   "timeliness_err": {
+    "exists": true,
+    "total": 0
+   },
+   "retention_ledgers": {
+    "exists": true,
+    "total": 17,
+    "kept": 17,
+    "incident_kept": 0
+   },
+   "logs_stale": {
+    "exists": true,
+    "total": 45,
+    "older_than_days": 14
+   },
+   "scrapers_backups": {
+    "exists": true,
+    "total": 10,
+    "groups": 10,
+    "kept": 10
+   },
+   "clean_quarantine_stale": {
+    "exists": true,
+    "total": 12,
+    "kept": 2,
+    "incident_kept": 0
+   },
+   "published_tmp_ext": {
+    "exists": true,
+    "total": 0,
+    "older_than_days": 1
+   },
+   "published_tmp_int": {
+    "exists": true,
+    "total": 0,
+    "older_than_days": 1
+   },
+   "repo_baks": {
+    "total": 66,
+    "included": false
+   }
+  },
+  "bytes": 159886193
+ },
+ "applied": null
+}

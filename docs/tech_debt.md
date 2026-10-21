@@ -81,6 +81,11 @@ W5 自身（约 8 个批次）即该预算的**首次实践**：W0–W4 的 A–
 
 | TD-14 | `local_path` **跨源基准仍分裂**（mof/pbc=仓根；gov 1189 / supp 7 = `data/…`） | 采集链 | 交付口径一致性 | 0 | — | **已闭环**（2026-10-20 第一百零五批）：统一为**仓根**。① 修第 5 处同类缺陷 `gov/attachments.py` 的 `REPO_ROOT`（`dirname` 只上溯一级 ⇒ `collectors`）；② `supp` 新增 `WS_ROOT` 并改 `ingest_local_dir` 的 `relpath` 基准；③ `tools/migrate_local_path.py` 迁移 **2911 条**历史值（工具修了两处缺口：漏扫 `body_docs` 导致首轮少迁 1627 条；只认 `../data/` 不认 `data/docs/`）；④ 保留 **1 条**不可验证项原样不动——迁移工具按「验证不过则原样保留」的规则处理，守卫会断言「该例外必须指向不存在的文件」防它掩盖真漏迁。**注意区分两个概念**：`local_path` 基准=仓根，而 `outdir`/`REPO_ROOT`（落盘位置）仍为 `regulatory_scrapers`——守卫 D 类专门钉住这一点 |
 
+| TD-15 | `mof --max-seconds` **粒度不足**（只在每条记录开始时检查 ⇒ 设 7200s 实跑 13113s，超 82%，被 4h 硬超时强杀） | 采集链 | 可控性 | 0 | — | **已闭环**（2026-10-21）：`EarlyStopGuard.deadline` + `collect_attachments(deadline=)` ⇒ 检查点落到**附件循环内部** |
+| TD-16 | `ProcessLock` 只校验 **PID 存在性**；Windows 重启后 PID 被系统进程复用 （实测锁内 3992 → `svchost.exe`）⇒ 主链**静默拒绝运行**，提示"等待 PID 退出"（永远等不到） | 基础设施 | 可用性 | 0 | — | **已闭环**（2026-10-21）：锁文件升级为**进程身份** `{pid, started, exe}`，陈旧判定扩到 4 条（含 **PID 复用**）；旧格式向后兼容；守卫 `tests/test_lock_pid_reuse.py`(8) |
+| TD-17 | `mof` 采集 **内存峰值 6.26 GB**（16GB 机器）：超大单条（最大 31.3 MB / 正文 23.57 MB，Top5 占全库 59.2%）在去标签/正则/签名/序列化各步产生 20–30 MB 临时串，Windows 上 Python 高水位不归还 OS | 采集链 | 稳定性（加重硬件压力） | 6.26GB | 3 | **已定位未优化**（2026-10-21）：基线 `read_raw_records` 仅 197 MB（非泄漏）。**改进方向**：对巨型记录做**正文截断/分段存储**（`content_text` 23.57 MB 显然是把整本制度全文塞进一条），或按块流式处理；改前须评估下游（条文切分/语义）依赖 |
+| TD-18 | 开机自启动 `.cmd` 用 UTF-8 写中文注释 ⇒ `cmd.exe` 按 CP936 读成乱码，`rem` 行被截断、后半段被执行（登录弹出 `'氭寔涔咃細閲嶈窇' 不是内部或外部命令`） | 工具链 | 可用性 | 0 | — | **已闭环**（2026-10-21）：注释全英文 + `encoding="ascii"`（非 ASCII 直接抛错）+ 守卫 `test_start_cmd_is_ascii_only` |
+| TD-19 | `tools/audit_health` 有 **2 个 LOW 误报**：`LAYER_EXEC_PLAN`（§8 受管块里的**变量名**，非 env）与 `REG_ORCH_MCP_TOKEN_FILE`（在 `mcp_server/auth.py:18` 是**常量字符串** `ENV_PATH`，未被 `os.environ.get` 直接使用 ⇒ 收集器识别不到） | 工具链 | 可维护性 | 2 | 1 | **已记录未修**：属审计器的识别口径问题（非文档缺失）。修法：让收集器同时识别`os.environ.get("X")` 与 `ENV_* = "X"` 两种形态；或在 §8 生成器里排除非 env 标识 |
 ## 七、复核节奏
 
 - **每 Wave 出口**：更新本文件（新增债登记、已偿标记闭环）。

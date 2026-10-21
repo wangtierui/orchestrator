@@ -375,6 +375,13 @@
       "file": "migrate_local_path.py",
       "independent_why": "采集器的 local_path 由 relpath(文件, REPO_ROOT) 生成；历史上 REPO_ROOT 只从采集器目录上溯一级（得到 collectors，而注释写 regulatory_scrapers）⇒ 落库成`../data/docs/…` 这种带 .. 的脏路径，只在 cwd=collectors 时解析正确，下游按仓根拼接就找不到文件（实测 pbc 13 条里 10 条是脏的）。修了代码只能让**新写入**变干净，历史数据仍需迁移。安全设计：只改一个字段、只替换已知脏前缀（不猜任意 ..）、每条先验证新路径拼仓根后文件真实存在（验证不过则原样保留并报告）、备份后用原子替换、默认 dry-run 须 --execute 才写。只写 raw，不碰其他产物。",
       "produced_by": "把 raw 记录里带 `..` 的脏 local_path 迁到仓根基准（dry-run 优先）"
+    },
+    {
+      "category": "independent",
+      "entry": "python -m tools.workbench_service install|uninstall|status|verify",
+      "file": "workbench_service.py",
+      "independent_why": "用户要求「配置为开机自启动，并说明启动方式与验证方式」。若只把做法写在文档里，三个问题答不了：怎么验证真装上了（status）、装错了怎么撤（uninstall）、怎么保证只有一个实例（serve --single-instance）。故做成可执行工具。**方案选型**：计划任务 ONLOGON（用户级、**零提权**、可查询/可卸载、可延迟）优于启动文件夹（无查询/卸载）与 Windows 服务（需管理员 + 第三方 nssm）。可靠性三件套：单实例锁（计划任务每次登录都触发，无保护会起多进程互相踩踏）、日志落盘（pythonw 无控制台，print 全丢 ⇒ 改 logger + RotatingFileHandler）、pythonw 无窗口。只操作本用户自己的计划任务与 data/state/ 下文件，不碰数据库、不改仓内代码。",
+      "produced_by": "本地确认台的开机自启动：install / uninstall / status / verify"
     }
   ],
   "generated_at": "2026-09-30",
