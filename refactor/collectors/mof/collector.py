@@ -289,13 +289,6 @@ class MofCollector(CollectorPipeline):
         rec["removed_at"] = datetime.now(UTC).isoformat()
         return rec
 
-    def run(self, out_dir: str, **opts) -> str:
-        ctx = self.build_context(out_dir, **opts)
-        records = self._collect(ctx)
-        locator = self.save(records, ctx)
-        self._last_records = records
-        return locator
-
     # ----------------------------- SourceCollector 协议入口 -----------------------------
     def collect(self, out_dir: str, *, categories=None, max_items=None,
                 no_detail=False, no_attachments=False, refetch_attachments=False,
@@ -308,8 +301,7 @@ class MofCollector(CollectorPipeline):
 
         os.makedirs(out_dir, exist_ok=True)
         self._setup(args)
-
-        status = {
+        self._status = {
             "last_run_time": datetime.now(UTC).isoformat(),
             "mode": "incremental",
             "last_success_time": None, "last_success_count": None,
@@ -319,39 +311,41 @@ class MofCollector(CollectorPipeline):
         }
         try:
             locator = self.run(out_dir)
-            records = getattr(self, "_last_records", [])
-
-            added = sum(1 for e in records if e.get("change") == "added")
-            updated = sum(1 for e in records if e.get("change") == "updated")
-            removed = sum(1 for e in records if e.get("change") == "removed")
-            unchanged = sum(1 for e in records if e.get("change") == "unchanged")
-            active_count = sum(1 for e in records if e.get("active"))
-
-            # ── 治理步骤（采集边界，非采集逻辑）：漏抓自检闸门 ──
-            status["warning"] = _audit_missing_captures(active_count, self._expected_total, max_items)
-            if status["warning"]:
-                logger.warning(status["warning"])
-
-            status.update({
-                "last_success_time": datetime.now(UTC).isoformat(),
-                "last_success_count": len(records),
-                "active_count": active_count,
-                "expected_count": self._expected_total,
-                "added": added, "updated": updated, "removed": removed, "unchanged": unchanged,
-            })
-            logger.info("✅ 增量更新完成：新增 %d / 更新 %d / 移除 %d / 未变 %d；活跃 %d 条。",
-                        added, updated, removed, unchanged, active_count)
-            logger.info("   JSON : %s", locator)
+            self._governance_sidecar(locator)
         except Exception as e:  # noqa: BLE001
-            status["last_error"] = f"{type(e).__name__}: {e}"
-            status["last_error_time"] = datetime.now(UTC).isoformat()
+            self._status["last_error"] = f"{type(e).__name__}: {e}"
+            self._status["last_error_time"] = datetime.now(UTC).isoformat()
             logger.exception("抓取失败：%s", e)
-        finally:
-            write_status(out_dir, status)
-
-        if status["last_error"]:
+            write_status(out_dir, self._status)
             sys.exit(1)
         return locator
+
+    def _governance_sidecar(self, locator: str) -> None:
+        """采集完成后的治理副作用（采集边界，非采集逻辑）：写 status.json + 漏抓自检闸口。"""
+        records = getattr(self, "_last_records", [])
+        st = self._status
+        added = sum(1 for e in records if e.get("change") == "added")
+        updated = sum(1 for e in records if e.get("change") == "updated")
+        removed = sum(1 for e in records if e.get("change") == "removed")
+        unchanged = sum(1 for e in records if e.get("change") == "unchanged")
+        active_count = sum(1 for e in records if e.get("active"))
+
+        st["warning"] = _audit_missing_captures(
+            active_count, self._expected_total, getattr(self._args, "max_items", None))
+        if st["warning"]:
+            logger.warning(st["warning"])
+
+        st.update({
+            "last_success_time": datetime.now(UTC).isoformat(),
+            "last_success_count": len(records),
+            "active_count": active_count,
+            "expected_count": self._expected_total,
+            "added": added, "updated": updated, "removed": removed, "unchanged": unchanged,
+        })
+        logger.info("✅ 增量更新完成：新增 %d / 更新 %d / 移除 %d / 未变 %d；活跃 %d 条。",
+                    added, updated, removed, unchanged, active_count)
+        logger.info("   JSON : %s", locator)
+        write_status(self._args.out_dir, st)
 
 
 def main():

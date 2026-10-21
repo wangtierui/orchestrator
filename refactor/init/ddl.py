@@ -23,12 +23,119 @@ EXTENSIONS: list[tuple[str, str]] = [
 #   );
 VECTOR_DDL = ""
 
+# ── 采集阶段抓取状态机（单一事实来源）──
+# 所有源共用同一组 fetch_status；取值须与 collectors/lib/fetch_status.py 的
+# FETCH_STATUS_VALUES 逐字一致（下方 CHECK 约束在 PG 侧强制）。
+FETCH_STATUS_VALUES = (
+    "pending", "ok", "no_content", "parse_error", "fetch_failed",
+    "download_failed", "attachment_skipped", "attachment_failed",
+    "attachment_saved", "skipped_existing", "title_link_only", "offline_missing",
+)
+_FETCH_STATUS_CHECK = ", ".join(f"'{v}'" for v in FETCH_STATUS_VALUES)
+
+# ── 采集阶段范式化 schema：主表公共列 + 各源副表（doc_id 关联）──
+# 取代 raw_items 的整行 JSON 方案；raw_items 暂保留以兼容存量代码，迁移完成后移除。
+RAW_DOCS_DDL = """
+CREATE TABLE IF NOT EXISTS raw_docs (
+    id             BIGSERIAL    PRIMARY KEY,
+    run_id         INTEGER      NOT NULL REFERENCES master_runs (id),
+    namespace      VARCHAR(64)  NOT NULL,
+    key_md5        VARCHAR(32)  NULL,
+    title          TEXT         NULL,
+    detail_url     TEXT         NULL,
+    publish_date   DATE         NULL,
+    effective_date DATE         NULL,
+    issuing_authority TEXT       NULL,
+    category       TEXT         NULL,
+    doc_no         TEXT         NULL,
+    summary        TEXT         NULL,
+    fetch_status   TEXT         NOT NULL
+                                CHECK (fetch_status IN (__FS_VALUES__)),
+    captured_at    TIMESTAMPTZ  DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS ix_raw_docs_run_id     ON raw_docs (run_id);
+CREATE INDEX IF NOT EXISTS ix_raw_docs_namespace  ON raw_docs (namespace);
+CREATE INDEX IF NOT EXISTS ix_raw_docs_key_md5    ON raw_docs (key_md5);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_raw_docs_ns_key
+    ON raw_docs (namespace, key_md5);
+""".replace("__FS_VALUES__", _FETCH_STATUS_CHECK)
+
+RAW_MOF_DDL = """
+CREATE TABLE IF NOT EXISTS raw_mof (
+    doc_id        BIGINT       PRIMARY KEY REFERENCES raw_docs (id),
+    law_id        TEXT,
+    category_id   TEXT,
+    create_dept   TEXT,
+    file_count    INTEGER,
+    expire_date   DATE,
+    abolish_date  DATE,
+    status        TEXT,
+    change        TEXT,
+    active        BOOLEAN,
+    api_link      TEXT,
+    content_text  TEXT,
+    attachments   JSONB,
+    extra         JSONB
+);
+"""
+
+RAW_GOV_DDL = """
+CREATE TABLE IF NOT EXISTS raw_gov (
+    doc_id           BIGINT       PRIMARY KEY REFERENCES raw_docs (id),
+    page             INTEGER,
+    source_sub       TEXT,
+    content_text     TEXT,
+    attachment_text  TEXT,
+    attachments      JSONB,
+    extra            JSONB
+);
+"""
+
+RAW_PBC_DDL = """
+CREATE TABLE IF NOT EXISTS raw_pbc (
+    doc_id             BIGINT       PRIMARY KEY REFERENCES raw_docs (id),
+    link_type          TEXT,
+    file_type          TEXT,
+    local_path         TEXT,
+    error              TEXT,
+    attachment_status  TEXT,
+    attachment_errors  JSONB,
+    content_text       TEXT,
+    attachments        JSONB,
+    extra              JSONB
+);
+"""
+
+RAW_NFRA_DDL = """
+CREATE TABLE IF NOT EXISTS raw_nfra (
+    doc_id         BIGINT       PRIMARY KEY REFERENCES raw_docs (id),
+    src_doc_id     TEXT,
+    build_date     TEXT,
+    index_no       TEXT,
+    doc_file_url   TEXT,
+    pdf_file_url   TEXT,
+    content_text   TEXT,
+    attachments    JSONB,
+    extra          JSONB
+);
+"""
+
+RAW_INTERNAL_DDL = """
+CREATE TABLE IF NOT EXISTS raw_internal (
+    doc_id        BIGINT       PRIMARY KEY REFERENCES raw_docs (id),
+    content_text  TEXT,
+    attachments   JSONB,
+    extra         JSONB
+);
+"""
+
 MASTER_RUNS_DDL = """
 CREATE TABLE IF NOT EXISTS master_runs (
     id           SERIAL       PRIMARY KEY,
     namespace    VARCHAR(64)  NOT NULL,
     captured_at  TIMESTAMPTZ  NOT NULL,
     count        INTEGER      NOT NULL,
+    meta         JSONB        NULL,
     created_at   TIMESTAMPTZ  DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS ix_master_runs_namespace ON master_runs (namespace);
@@ -102,10 +209,17 @@ CREATE INDEX IF NOT EXISTS ix_docgraph_edges_dst       ON docgraph_edges (dst_id
 CREATE INDEX IF NOT EXISTS ix_docgraph_edges_relation  ON docgraph_edges (relation);
 """
 
-# 完整 DDL（按依赖顺序：runs → raw_items → cleaned_items → clauses → edges → 向量表）。
+# 完整 DDL（按依赖顺序：runs → raw_items(兼容) → raw_docs + 各源副表 →
+#              cleaned_items → clauses → edges → 向量表）。
 FULL_DDL = (
     MASTER_RUNS_DDL
     + RAW_ITEMS_DDL
+    + RAW_DOCS_DDL
+    + RAW_MOF_DDL
+    + RAW_GOV_DDL
+    + RAW_PBC_DDL
+    + RAW_NFRA_DDL
+    + RAW_INTERNAL_DDL
     + CLEANED_ITEMS_DDL
     + CLAUSES_DDL
     + DOCGRAPH_EDGES_DDL

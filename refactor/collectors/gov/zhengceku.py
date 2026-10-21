@@ -433,18 +433,18 @@ class ZhengcekuScraper:
             items = self._parse_list(html, self._list_url(i))
             new_in_page = 0
             for u, t, d in items:
-                # 只读判重：主库已知 → 跳过（由 merge 保活）；本轮已列 → 跳过
-                if u in ctx.tracker.known or u in seen:
-                    continue
+                # 只读判重（不跳过）：交给基类 classify 路由；仅用于"无新即停"早停计数。
+                is_new = u not in ctx.tracker.known and u not in seen
                 seen.add(u)
                 yield {"title": t, "detail_url": u, "publish_date": d,
                        "pub_date_original": "", "effective_date": "",
                        "issue_organ": "", "document_number": "",
                        "category": CATEGORY, "source": SUB_SOURCE, "page": i}
-                new_in_page += 1
-                yielded += 1
-                if max_items and yielded >= max_items:
-                    return
+                if is_new:
+                    new_in_page += 1
+                    yielded += 1
+                    if max_items and yielded >= max_items:
+                        return
             if new_in_page:
                 empty_streak = 0
             else:

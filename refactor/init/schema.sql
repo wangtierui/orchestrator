@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS master_runs (
     namespace    VARCHAR(64)  NOT NULL,
     captured_at  TIMESTAMPTZ  NOT NULL,
     count        INTEGER      NOT NULL,
+    meta         JSONB        NULL,
     created_at   TIMESTAMPTZ  DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS ix_master_runs_namespace ON master_runs (namespace);
@@ -31,6 +32,88 @@ CREATE INDEX IF NOT EXISTS ix_raw_items_namespace ON raw_items (namespace);
 CREATE INDEX IF NOT EXISTS ix_raw_items_key_md5   ON raw_items (key_md5);
 CREATE UNIQUE INDEX IF NOT EXISTS uq_raw_items_ns_key
     ON raw_items (namespace, key_md5);
+
+CREATE TABLE IF NOT EXISTS raw_docs (
+    id             BIGSERIAL    PRIMARY KEY,
+    run_id         INTEGER      NOT NULL REFERENCES master_runs (id),
+    namespace      VARCHAR(64)  NOT NULL,
+    key_md5        VARCHAR(32)  NULL,
+    title          TEXT         NULL,
+    detail_url     TEXT         NULL,
+    publish_date   DATE         NULL,
+    effective_date DATE         NULL,
+    issuing_authority TEXT       NULL,
+    category       TEXT         NULL,
+    doc_no         TEXT         NULL,
+    summary        TEXT         NULL,
+    fetch_status   TEXT         NOT NULL
+                                CHECK (fetch_status IN ('pending', 'ok', 'no_content', 'parse_error', 'fetch_failed', 'download_failed', 'attachment_skipped', 'attachment_failed', 'attachment_saved', 'skipped_existing', 'title_link_only', 'offline_missing')),
+    captured_at    TIMESTAMPTZ  DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS ix_raw_docs_run_id     ON raw_docs (run_id);
+CREATE INDEX IF NOT EXISTS ix_raw_docs_namespace  ON raw_docs (namespace);
+CREATE INDEX IF NOT EXISTS ix_raw_docs_key_md5    ON raw_docs (key_md5);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_raw_docs_ns_key
+    ON raw_docs (namespace, key_md5);
+
+CREATE TABLE IF NOT EXISTS raw_mof (
+    doc_id        BIGINT       PRIMARY KEY REFERENCES raw_docs (id),
+    law_id        TEXT,
+    category_id   TEXT,
+    create_dept   TEXT,
+    file_count    INTEGER,
+    expire_date   DATE,
+    abolish_date  DATE,
+    status        TEXT,
+    change        TEXT,
+    active        BOOLEAN,
+    api_link      TEXT,
+    content_text  TEXT,
+    attachments   JSONB,
+    extra         JSONB
+);
+
+CREATE TABLE IF NOT EXISTS raw_gov (
+    doc_id           BIGINT       PRIMARY KEY REFERENCES raw_docs (id),
+    page             INTEGER,
+    source_sub       TEXT,
+    content_text     TEXT,
+    attachment_text  TEXT,
+    attachments      JSONB,
+    extra            JSONB
+);
+
+CREATE TABLE IF NOT EXISTS raw_pbc (
+    doc_id             BIGINT       PRIMARY KEY REFERENCES raw_docs (id),
+    link_type          TEXT,
+    file_type          TEXT,
+    local_path         TEXT,
+    error              TEXT,
+    attachment_status  TEXT,
+    attachment_errors  JSONB,
+    content_text       TEXT,
+    attachments        JSONB,
+    extra              JSONB
+);
+
+CREATE TABLE IF NOT EXISTS raw_nfra (
+    doc_id         BIGINT       PRIMARY KEY REFERENCES raw_docs (id),
+    src_doc_id     TEXT,
+    build_date     TEXT,
+    index_no       TEXT,
+    doc_file_url   TEXT,
+    pdf_file_url   TEXT,
+    content_text   TEXT,
+    attachments    JSONB,
+    extra          JSONB
+);
+
+CREATE TABLE IF NOT EXISTS raw_internal (
+    doc_id        BIGINT       PRIMARY KEY REFERENCES raw_docs (id),
+    content_text  TEXT,
+    attachments   JSONB,
+    extra         JSONB
+);
 
 CREATE TABLE IF NOT EXISTS cleaned_items (
     id           BIGSERIAL    PRIMARY KEY,

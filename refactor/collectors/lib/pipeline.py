@@ -180,4 +180,5 @@ class CollectorPipeline(abc.ABC):
     def run(self, out_dir: str, **opts) -> str:
         ctx = self.build_context(out_dir, **opts)
         records = self._collect(ctx)
+        self._last_records = records
         return self.save(records, ctx)

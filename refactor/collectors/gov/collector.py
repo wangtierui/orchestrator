@@ -181,9 +181,9 @@ class XzfgkScraper:
             new_in_page = 0
             for it in items:
                 key = it["detail_url"]
-                # 只读判重：主库已知 → 跳过（由 merge 保活）；本轮已列 → 跳过
-                if key in tracker.known or key in seen:
-                    continue
+                # 只读判重（不跳过）：交给基类 classify 路由 known→复用 / new→抓详情；
+                # 仅用于本页"无新即停"早停计数，不动基类 tracker 状态（避免重复 classify）。
+                is_new = key not in tracker.known and key not in seen
                 seen.add(key)
                 yield {
                     "title": it["title"], "detail_url": it["detail_url"],
@@ -192,10 +192,11 @@ class XzfgkScraper:
                     "document_number": it.get("document_number", ""),
                     "category": self.cfg.category, "source": "xzfgk", "page": page,
                 }
-                new_in_page += 1
-                yielded += 1
-                if max_items and yielded >= max_items:
-                    return
+                if is_new:
+                    new_in_page += 1
+                    yielded += 1
+                    if max_items and yielded >= max_items:
+                        return
             if new_in_page == 0:
                 LOG.info("xzfgk 第 %d 页无新增条目，停止翻页", page)
                 break

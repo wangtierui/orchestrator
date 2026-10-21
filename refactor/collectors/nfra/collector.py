@@ -443,6 +443,7 @@ class NfraCollector(CollectorPipeline):
                 "issuing_authority": "", "category_type": "",
                 "summary": "", "content": "",
                 "detail_url": entry["title_link"],
+                "fetch_status": "title_link_only",
                 "doc_file_url": entry["doc_file_url"], "pdf_file_url": entry["pdf_file_url"],
             }
         else:
@@ -468,6 +469,7 @@ class NfraCollector(CollectorPipeline):
                     "detail_url": build_detail_url(did, entry["item_id"]),
                     "doc_file_url": det["doc_file_url"] or entry["doc_file_url"],
                     "pdf_file_url": det["pdf_file_url"] or entry["pdf_file_url"],
+                    "fetch_status": "ok",
                 }
             except _OfflineMiss:
                 rec = {
@@ -477,6 +479,7 @@ class NfraCollector(CollectorPipeline):
                     "issuing_authority": "", "category_type": "",
                     "summary": "", "content": "",
                     "detail_url": build_detail_url(did, entry["item_id"]),
+                    "fetch_status": "offline_missing",
                     "doc_file_url": entry["doc_file_url"], "pdf_file_url": entry["pdf_file_url"],
                 }
                 print("      [offline] docId=%s 详情未缓存，仅列表面板" % did, flush=True)
