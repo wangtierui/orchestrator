@@ -29,8 +29,14 @@ from mcp_server.registry import SCHEMA_DIALECT
 #:
 #: 语义上"版本"回答的是"**事实源**变了吗"（agent 据此判断缓存是否过期）：
 #: 时间戳每次都在变，把它算进去会让版本永远不稳，缓存机制失去意义。
-_VOLATILE_KEYS = frozenset({"generated_at", "as_of", "fetched_at", "computed_at",
-                            "now", "timestamp", "read_at", "updated_at"})
+_VOLATILE_KEYS = frozenset({
+    "generated_at", "as_of", "fetched_at", "computed_at", "now", "timestamp",
+    "read_at", "updated_at",
+    # `cutoff`：`backlog_health.metrics.last_30d.cutoff = now - 30d` —— 同样是
+    # **派生自当前时刻**的边界值，每秒都变（实测漂移：19:13:50 → 19:13:51）。
+    # 它不反映"待办数据变了"，只反映"查询发生在什么时候"⇒ 不算事实源状态。
+    "cutoff",
+})
 
 
 def _stable_for_version(obj):
