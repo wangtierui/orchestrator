@@ -239,10 +239,10 @@ def parse_detail(html: str, url: str) -> dict:
         "title": title,
         "detail_url": url,
         "document_number": docno,
-        "issue_organ": _meta_field(html, "发文机关", 60),
+        "issuing_authority": _meta_field(html, "发文机关", 60),
         "publish_date": pub,
         "pub_date_original": _meta_field(html, "成文日期", 40),
-        "full_text": body,
+        "content": body,
     }
 
 
@@ -438,7 +438,7 @@ class ZhengcekuScraper:
                 seen.add(u)
                 yield {"title": t, "detail_url": u, "publish_date": d,
                        "pub_date_original": "", "effective_date": "",
-                       "issue_organ": "", "document_number": "",
+                       "issuing_authority": "", "document_number": "",
                        "category": CATEGORY, "source": SUB_SOURCE, "page": i}
                 if is_new:
                     new_in_page += 1
@@ -465,7 +465,7 @@ class ZhengcekuScraper:
         if not d["publish_date"]:
             d["publish_date"] = date_hint
         try:
-            if _ATTACH_FAST and len(d["full_text"]) >= _FAST_MIN_BODY:
+            if _ATTACH_FAST and len(d["content"]) >= _FAST_MIN_BODY:
                 atts: list = []
                 att_text: str = ""
                 _skipped[0] += 1
@@ -474,7 +474,7 @@ class ZhengcekuScraper:
         except Exception as e:  # noqa: BLE001
             LOG.warning("附件处理失败 %s：%s", url, e)
             atts, att_text = [], ""
-        body = d["full_text"]
+        body = d["content"]
         if len(body) < 200 and len(att_text) > len(body):
             body = att_text
         rec = {
@@ -483,11 +483,11 @@ class ZhengcekuScraper:
             "publish_date": d["publish_date"],
             "pub_date_original": d["pub_date_original"],
             "effective_date": "",
-            "issue_organ": d["issue_organ"],
+            "issuing_authority": d["issuing_authority"],
             "document_number": d["document_number"],
             "category": CATEGORY,
             "source": SUB_SOURCE,
-            "full_text": body,
+            "content": body,
             "attachments": atts,
             "attachment_text": att_text,
             "attachment_count": len(atts),

@@ -7,7 +7,7 @@
   - content_sha256 字符串 sha256（clean 的 content_hash 与 collectors 的
                     content_sha256 同义，现统一）
   - doc_number     文号抽取/规范化（原 collectors/lib/doc_number 与 clean/core/doc_number
-                    两份 near-identical 副本，现统一到本包，envelope 落库即规范化）
+                    两份 near-identical 副本，现统一到本包，规范记录 落库即规范化）
 
 注意：本包只放"真正跨包共用"的纯函数，不包含 collectors 专属逻辑
 （http/ocr/pipeline/incremental/paths… 仍留在 collectors/lib）。

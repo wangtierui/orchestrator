@@ -11,13 +11,12 @@ pbc 的特殊步骤均表达为钩子：
   - max_items：调试上限；save：storage + 可选 CSV。
 """
 import argparse
-import csv
-import io
 import os
 import sys
 import time
 
-from ..base import REPO_ROOT, SourceCollector, atomic_write
+from ..base import REPO_ROOT, SourceCollector
+from ..lib.cli import add_common_args, is_full_mode, make_known_pred_full
 from . import net, parse
 from ..lib.pipeline import CollectorPipeline
 
@@ -67,22 +66,6 @@ def listing_page_urls(index_url, moduleid, totalpage):
     return urls
 
 
-def save_csv(records, out_dir):
-    """CSV 为辅助产物，始终保持本地文件（不入库）。"""
-    os.makedirs(out_dir, exist_ok=True)
-    csv_path = os.path.join(out_dir, "pbc_laws.csv")
-    fields = ["category", "title", "detail_url", "link_type", "file_type", "local_path",
-              "publish_date", "document_number", "issuing_authority",
-              "effective_date", "content", "summary", "fetch_status", "error"]
-    buf = io.StringIO()
-    w = csv.DictWriter(buf, fieldnames=fields)
-    w.writeheader()
-    for r in records:
-        w.writerow(r)
-    atomic_write(csv_path, "\ufeff" + buf.getvalue())  # 与原 utf-8-sig 一致（含 BOM）
-    return csv_path
-
-
 class PbcCollector(CollectorPipeline):
     """中国人民银行法规爬虫；继承通用管线，特殊步骤表达为钩子。"""
 
@@ -102,6 +85,8 @@ class PbcCollector(CollectorPipeline):
         return getattr(self._args, "max_items", 0) or 0
 
     def _setup(self, args):
+        if is_full_mode(args):
+            self.known_pred = make_known_pred_full()
         min_d = max(0.4, args.delay * 0.8)
         max_d = args.delay * 1.6
         self._fetcher = net.Fetcher(min_delay=min_d, max_delay=max_d, timeout=30, retries=3)
@@ -195,6 +180,10 @@ class PbcCollector(CollectorPipeline):
             "error": None,
         }
 
+        if args.no_detail:
+            rec["fetch_status"] = "title_link_only"
+            return rec
+
         if rec["link_type"] == "html":
             st, dtxt = self._fetcher.get(url, referer=index_url)
             if st == 200 and dtxt:
@@ -286,36 +275,28 @@ class PbcCollector(CollectorPipeline):
         return rec
 
     def save(self, records, ctx):
-        locator = ctx.storage.save_master(records, extra=self.build_extra(ctx, records))
-        if getattr(self._args, "csv", False):
-            save_csv(records, self._args.out_dir)
-        return locator
+        return ctx.storage.save_master(records, extra=self.build_extra(ctx, records))
 
     # ----------------------------- SourceCollector 协议入口 -----------------------------
-    def collect(self, out_dir: str, *, category=None, max_items=0, delay=1.0,
-                no_attachments=False, csv=False) -> str:
+    def collect(self, out_dir: str, *, category="", mode="incremental", delay=1.0,
+                limit=0, no_detail=False, no_attachments=False) -> str:
         args = argparse.Namespace(
-            out_dir=out_dir, category=category, max_items=max_items,
-            delay=delay, no_attachments=no_attachments, csv=csv)
+            out_dir=out_dir, category=category, max_items=limit,
+            delay=delay, no_detail=no_detail, no_attachments=no_attachments, csv=False)
         self._setup(args)
         return self.run(out_dir)
 
 
 def main():
     ap = argparse.ArgumentParser(description="中国人民银行条法司法规抓取脚本")
-    ap.add_argument("--category", help="仅抓取指定栏目名称（如 国家法律）")
-    ap.add_argument("--max-items", type=int, default=0, help="限制总条目数（调试用）")
-    ap.add_argument("--delay", type=float, default=1.0, help="平均请求间隔（秒）")
-    ap.add_argument("--out", default=DEFAULT_OUT, help="输出目录（默认统一 data/raw/）")
-    ap.add_argument("--no-attachments", action="store_true", help="不下载附件正文，仅记录链接")
-    ap.add_argument("--csv", action="store_true",
-                    help="额外输出 CSV（默认仅写 JSON 主库，2026-09-09 规范）")
+    add_common_args(ap, with_category=True, with_mode=True, with_delay=True,
+                    with_limit=True, with_detail=True, with_attachments=True,
+                    default_out=DEFAULT_OUT)
     args = ap.parse_args()
-
-    json_path = PbcCollector().collect(
-        args.out, category=args.category, max_items=args.max_items, delay=args.delay,
-        no_attachments=args.no_attachments, csv=args.csv)
-    return json_path
+    PbcCollector().collect(
+        args.out_dir, category=args.category, mode=args.mode, delay=args.delay,
+        limit=args.limit, no_detail=args.no_detail,
+        no_attachments=args.no_attachments)
 
 
 if __name__ == "__main__":

@@ -5,7 +5,7 @@
 
 Schema（按阶段分表，幂等建表 + 兼容迁移）：
   master_runs(id, namespace, captured_at, count)       共享运行批次账本
-  raw_items(id, run_id, namespace, key_md5, url, payload JSONB)   采集阶段（各源信封，namespace=源）
+  raw_items(id, run_id, namespace, key_md5, url, payload JSONB)   采集阶段（各源规范记录，namespace=源）
   cleaned_items(...)                                   clean 阶段（统一 schema）
   clauses(...)                                         clause 阶段（条文结构）
   —— 各 item 表 (namespace, key_md5) 唯一；key_md5 由 detail_url/url/detail_link/api_link

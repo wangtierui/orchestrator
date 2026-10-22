@@ -89,7 +89,7 @@ def test_pbc_pipeline_migration():
          mock.patch.object(pbc_mod.parse, "is_attachment", lambda url: False), \
          mock.patch.object(fb.FileStore, "save_master", spy_save):
         locator = PbcCollector().collect(
-            tmp, max_items=0, no_attachments=True, csv=False, delay=1.0)
+            tmp, limit=0, no_attachments=True, delay=1.0)
 
     with open(locator, encoding="utf-8") as f:
         data = json.load(f)

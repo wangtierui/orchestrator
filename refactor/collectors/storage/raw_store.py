@@ -5,7 +5,7 @@
 落实"公共列显式（raw_docs）+ 各源私有列显式（raw_{ns}）+ 可选 JSON(extra) "的范式建模：
 
   raw_docs(id, run_id, namespace, key_md5, title, detail_url, publish_date,
-           effective_date, issuing_authority, category, doc_no, summary,
+           effective_date, issuing_authority, category, document_number, summary,
            fetch_status, captured_at)
   raw_{ns}(doc_id FK→raw_docs.id, 源特有列…, content_text, attachments JSONB, extra JSONB)
 
@@ -45,7 +45,6 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from .base import StoredRecord
 from ..lib.fetch_status import normalize as _norm_fetch_status
-from common.doc_number import normalize_doc_number
 
 UTC = timezone.utc
 RAW_METADATA = MetaData()
@@ -75,7 +74,7 @@ RAW_DOCS = Table(
     Column("effective_date", String(32), nullable=True),
     Column("issuing_authority", Text, nullable=True),
     Column("category", Text, nullable=True),
-    Column("doc_no", Text, nullable=True),
+    Column("document_number", Text, nullable=True),
     Column("summary", Text, nullable=True),
     Column("fetch_status", String(32), nullable=False),
     Column("captured_at", DateTime(timezone=True), server_default=text("now()")),
@@ -187,7 +186,7 @@ CHILD_ID_RENAME = {"mof": ("law_id", "id"), "nfra": ("src_doc_id", "doc_id")}
 
 RAW_COMMON_FIELDS = {
     "title", "detail_url", "publish_date", "effective_date",
-    "issuing_authority", "category", "doc_no", "summary", "fetch_status",
+    "issuing_authority", "category", "document_number", "summary", "fetch_status",
 }
 
 
@@ -220,6 +219,15 @@ class RawStore:
         return self._engine
 
     def init_schema(self) -> None:
+        insp = inspect(self.engine)
+        existing = set(insp.get_table_names())
+        # 兼容迁移：旧库列名 doc_no → document_number（统一规范名）
+        if "raw_docs" in existing:
+            rd_cols = [c["name"] for c in insp.get_columns("raw_docs")]
+            if "doc_no" in rd_cols and "document_number" not in rd_cols:
+                with self.engine.begin() as conn:
+                    conn.execute(text(
+                        "ALTER TABLE raw_docs RENAME COLUMN doc_no TO document_number"))
         RAW_METADATA.create_all(self.engine)
         insp = inspect(self.engine)
         cols = [c["name"] for c in insp.get_columns("master_runs")]
@@ -239,16 +247,15 @@ class RawStore:
         if not isinstance(item, dict):
             return None
         content = _first(item, "content", "full_text", "content_text", "rich_text") or ""
+        # 入参已被 canonicalize 规范化为统一字段名；此处仅按规范名取值，不再做源别名映射。
         common = {
             "title": item.get("title") or "",
-            "detail_url": _first(item, "detail_url", "url", "detail_link", "api_link") or "",
+            "detail_url": item.get("detail_url") or "",
             "publish_date": item.get("publish_date") or "",
             "effective_date": item.get("effective_date") or "",
-            "issuing_authority": _first(
-                item, "issuing_authority", "issue_organ", "issue_org", "doc_source") or "",
-            "category": _first(item, "category", "category_name", "category_type") or "",
-            "doc_no": normalize_doc_number(
-                _first(item, "doc_no", "document_no", "document_number") or ""),
+            "issuing_authority": item.get("issuing_authority") or "",
+            "category": item.get("category") or "",
+            "document_number": item.get("document_number") or "",
             "summary": item.get("summary") or "",
             "fetch_status": _norm_fetch_status(
                 item.get("fetch_status")
@@ -278,6 +285,10 @@ class RawStore:
         oc = on_conflict or self._on_conflict
         ns = self.namespace
         child_t = self._child
+        # 落库前统一套 canonicalize（单一映射源）；_split 之后只按规范字段名取值。
+        norm = normalizer or self._normalizer
+        if norm:
+            items = [norm(ns, it) for it in items]
         parsed = [p for p in (self._split(it, ns) for it in items) if p is not None]
 
         with self.engine.begin() as conn:
@@ -408,7 +419,7 @@ class RawStore:
         rec: Dict[str, Any] = {}
         # 公共字段（含 content_ref 指针，仅透传，最终 pop）
         for k in ("title", "detail_url", "publish_date", "effective_date",
-                  "issuing_authority", "category", "doc_no", "summary",
+                  "issuing_authority", "category", "document_number", "summary",
                   "fetch_status", "content_ref"):
             if k in row and row[k] is not None:
                 rec[k] = row[k]

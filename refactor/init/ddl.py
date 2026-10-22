@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS raw_docs (
     effective_date DATE         NULL,
     issuing_authority TEXT       NULL,
     category       TEXT         NULL,
-    doc_no         TEXT         NULL,
+    document_number TEXT         NULL,
     summary        TEXT         NULL,
     fetch_status   TEXT         NOT NULL
                                 CHECK (fetch_status IN (__FS_VALUES__)),
@@ -142,7 +142,7 @@ CREATE INDEX IF NOT EXISTS ix_master_runs_namespace ON master_runs (namespace);
 """
 
 # 数据主体（按阶段分表）：每条记录 = 一行，整条字典塞进 payload（JSON）。
-#  - raw_items   ：采集阶段产出（各源信封，源以 namespace 区分：gov/mof/nfra/pbc/internal…）
+#  - raw_items   ：采集阶段产出（各源规范记录，源以 namespace 区分：gov/mof/nfra/pbc/internal…）
 #  - cleaned_items：clean 阶段产出（统一 schema）
 #  - clauses     ：clause 阶段产出（条文结构）
 # 旧的单表 master_items（仅靠 namespace 分区）已废弃，不再创建。

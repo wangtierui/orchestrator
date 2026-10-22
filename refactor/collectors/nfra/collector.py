@@ -9,8 +9,8 @@ import 全部收口到 refactor/collectors 内部（自包含，不依赖外部 
 """
 
 import argparse
-import csv
 import json
+from ..lib.cli import add_common_args, is_full_mode, make_known_pred_full
 import os
 import random
 import re
@@ -259,11 +259,11 @@ def get_detail(opener, doc_id, delay_min, delay_max):
         "title": d.get("docSubtitle") or d.get("docTitle") or "",
         "publish_date": (d.get("publishDate") or "")[:10],
         "build_date": d.get("builddate") or "",
-        "document_no": document_no,
+        "document_number": document_no,
         "effective_date": effective,
         "index_no": d.get("indexNo") or "",
         "issuing_authority": issuing,
-        "category_type": d.get("interviewTypeName") or "",
+        "category": d.get("interviewTypeName") or "",
         "summary": summary,
         "content": text,
         "doc_file_url": (BASE + d["docFileUrl"]) if d.get("docFileUrl") else "",
@@ -369,7 +369,7 @@ class NfraCollector(CollectorPipeline):
       - handle_new：抓详情（含 title_link / offline / 失败三分支）+ 附件 + 原文下载；
       - handle_known（基类默认）：主库已有 → 直接复用旧记录（跳过详情）；
       - preserve_missing_master=True：主库并集保护（列表缺失的 doc_id 重新并入）；
-      - build_extra / save：errors 信封 + 可选 CSV。
+      - build_extra / save：errors 规范记录 + 可选 CSV。
     """
 
     source_id = "nfra"
@@ -380,6 +380,8 @@ class NfraCollector(CollectorPipeline):
         return item.get("doc_id")
 
     def _setup(self, args):
+        if is_full_mode(args):
+            self.known_pred = make_known_pred_full()
         # 站点级准备（缓存/opener/落盘目录），在 run() 之前完成。
         _init_cache(args.cache_dir or None, args.offline)
         self._opener = make_opener()
@@ -439,17 +441,28 @@ class NfraCollector(CollectorPipeline):
             rec = {
                 "doc_id": did, "title": entry["title"], "category": entry["category"],
                 "publish_date": entry["publish_date"], "build_date": "",
-                "document_no": "", "effective_date": "", "index_no": "",
-                "issuing_authority": "", "category_type": "",
+                "document_number": "", "effective_date": "", "index_no": "",
+                "issuing_authority": "", "category": "",
                 "summary": "", "content": "",
                 "detail_url": entry["title_link"],
                 "fetch_status": "title_link_only",
                 "doc_file_url": entry["doc_file_url"], "pdf_file_url": entry["pdf_file_url"],
             }
+        elif args.no_detail:
+            # 仅列表模式：用列表已有字段产出 title_link_only 占位记录，
+            # 不再静默丢弃（旧实现 raise skip-detail 导致 0 条入库）。
+            rec = {
+                "doc_id": did, "title": entry["title"], "category": entry["category"],
+                "publish_date": entry["publish_date"], "build_date": "",
+                "document_number": "", "effective_date": "", "index_no": "",
+                "issuing_authority": "", "category": entry["category"],
+                "summary": "", "content": "",
+                "detail_url": build_detail_url(did, entry["item_id"]),
+                "doc_file_url": entry["doc_file_url"], "pdf_file_url": entry["pdf_file_url"],
+                "fetch_status": "title_link_only",
+            }
         else:
             try:
-                if args.no_detail:
-                    raise RuntimeError("skip-detail")
                 det = get_detail(self._opener, did, args.delay_min, args.delay_max)
                 if det is None:
                     raise RuntimeError("详情为空")
@@ -459,11 +472,11 @@ class NfraCollector(CollectorPipeline):
                     "category": entry["category"],
                     "publish_date": det["publish_date"] or entry["publish_date"],
                     "build_date": det["build_date"],
-                    "document_no": det["document_no"] or "",
+                    "document_number": det["document_number"] or "",
                     "effective_date": det["effective_date"] or "",
                     "index_no": det["index_no"],
                     "issuing_authority": det["issuing_authority"],
-                    "category_type": det["category_type"],
+                    "category": det["category"],
                     "summary": det["summary"],
                     "content": det["content"],
                     "detail_url": build_detail_url(did, entry["item_id"]),
@@ -475,8 +488,8 @@ class NfraCollector(CollectorPipeline):
                 rec = {
                     "doc_id": did, "title": entry["title"], "category": entry["category"],
                     "publish_date": entry["publish_date"], "build_date": "",
-                    "document_no": "", "effective_date": "", "index_no": "",
-                    "issuing_authority": "", "category_type": "",
+                    "document_number": "", "effective_date": "", "index_no": "",
+                    "issuing_authority": "", "category": "",
                     "summary": "", "content": "",
                     "detail_url": build_detail_url(did, entry["item_id"]),
                     "fetch_status": "offline_missing",
@@ -498,51 +511,30 @@ class NfraCollector(CollectorPipeline):
     def preserve_missing_master(self, ctx):
         return True
 
-        # ── 治理步骤（采集边界，非采集逻辑）：错误副产物挂主库 envelope ──
+        # ── 治理步骤（采集边界，非采集逻辑）：错误副产物挂主库 规范记录 ──
     def build_extra(self, ctx, records):
         return {"errors": self._errors}
 
     def save(self, records, ctx):
-        locator = ctx.storage.save_master(records, extra=self.build_extra(ctx, records))
-        args = self._args
-        if getattr(args, "csv", False):
-            csv_path = os.path.join(args.out_dir, "nfra_regulations.csv")
-            fields = ["doc_id", "title", "category", "publish_date", "build_date", "document_no",
-                      "effective_date", "index_no", "issuing_authority", "category_type",
-                      "summary", "detail_url", "doc_file_url", "pdf_file_url",
-                      "attachment_count", "attachment_total_pages", "attachment_total_chars",
-                      "attachment_text"]
-            with open(csv_path, "w", encoding="utf-8-sig", newline="") as f:
-                w = csv.DictWriter(f, fieldnames=fields, extrasaction="ignore")
-                w.writeheader()
-                for r in records:
-                    row = dict(r)
-                    row["summary"] = (row.get("summary") or "").replace("\n", " ")
-                    atts = r.get("attachments") or []
-                    row["attachment_count"] = len(atts)
-                    row["attachment_total_pages"] = sum((a.get("page_count") or 0) for a in atts)
-                    row["attachment_total_chars"] = sum((a.get("char_count") or 0) for a in atts)
-                    row["attachment_text"] = " ".join(
-                        (a.get("text") or "").replace("\n", " ") for a in atts)
-                    w.writerow(row)
-        return locator
+        return ctx.storage.save_master(records, extra=self.build_extra(ctx, records))
 
     # ----------------------------- SourceCollector 协议入口 -----------------------------
-    def collect(self, out_dir: str, *, limit: int = 0, no_detail: bool = False,
-                download_originals: bool = True, csv: bool = False, cache_dir: str = "",
-                offline: bool = False, delay_min: float = 1.5, delay_max: float = 3.0) -> str:
+    def collect(self, out_dir: str, *, limit: int = 0, mode: str = "incremental",
+                no_detail: bool = False, cache_dir: str = "",
+                offline: bool = False, delay: float = 1.5) -> str:
         args = argparse.Namespace(
             out_dir=out_dir,
             page_size=PAGE_SIZE,
             limit=limit,
             no_detail=no_detail,
-            no_originals=not download_originals,
-            download_originals=download_originals,
-            csv=csv,
+            # 原 download_originals/no_originals/csv 已移除 CLI；保留内部读数维持默认行为
+            no_originals=False,
+            download_originals=True,
+            csv=False,
             cache_dir=cache_dir,
             offline=offline,
-            delay_min=delay_min,
-            delay_max=delay_max,
+            delay_min=max(0.4, delay * 0.8),
+            delay_max=delay * 1.6,
         )
         self._setup(args)
         return self.run(out_dir)
@@ -552,43 +544,29 @@ def scrape(args):
     """兼容入口（同目录脚本 / CLI）：映射参数后委托 NfraCollector。"""
     return NfraCollector().collect(
         args.out_dir,
-        limit=args.limit,
-        no_detail=args.no_detail,
-        download_originals=getattr(args, "download_originals",
-                                  not getattr(args, "no_originals", False)),
-        csv=getattr(args, "csv", False),
-        cache_dir=args.cache_dir,
-        offline=args.offline,
-        delay_min=args.delay_min,
-        delay_max=args.delay_max,
+        limit=getattr(args, "limit", 0),
+        mode=getattr(args, "mode", "incremental"),
+        no_detail=getattr(args, "no_detail", False),
+        cache_dir=getattr(args, "cache_dir", ""),
+        offline=getattr(args, "offline", False),
+        delay=getattr(args, "delay", 1.5),
     )
 
 
 def main():
     ap = argparse.ArgumentParser(description="国家金融监督管理总局 政策法规 全量抓取")
-    ap.add_argument("--out-dir",
-                    default=os.path.join(SCRAPERS_ROOT, "data", "raw"))
-    ap.add_argument("--page-size", type=int, default=PAGE_SIZE)
-    ap.add_argument("--delay-min", type=float, default=1.5, help="请求最小间隔(秒)")
-    ap.add_argument("--delay-max", type=float, default=3.0, help="请求最大间隔(秒)")
-    ap.add_argument("--limit", type=int, default=0,
-                    help="仅抓取前 N 篇（0=全部，用于快速验证）")
-    ap.add_argument("--no-detail", action="store_true",
-                    help="仅抓取列表、跳过详情页（用于快速验证列表遍历）")
-    ap.add_argument("--no-originals", action="store_true",
-                    help="跳过正文原文下载")
-    ap.add_argument("--download-originals", action="store_true",
-                    help="[兼容保留] 旧旗标（原文下载已默认开启，本参数为 no-op）")
-    ap.add_argument("--csv", action="store_true",
-                    help="额外输出 CSV 表格（默认仅写 JSON 主库）")
+    add_common_args(ap, with_category=False, with_attachments=False,
+                    default_out=os.path.join(SCRAPERS_ROOT, "data", "raw"))
     ap.add_argument("--cache-dir", default="",
                     help="请求缓存目录（显式覆盖）")
     ap.add_argument("--offline", action="store_true",
                     help="纯离线模式：仅读取 --cache-dir 缓存，缓存缺失即跳过（不联网）")
     args = ap.parse_args()
-    args.download_originals = not getattr(args, "no_originals", False)
     try:
-        scrape(args)
+        NfraCollector().collect(
+            args.out_dir, limit=args.limit, mode=args.mode, no_detail=args.no_detail,
+            cache_dir=args.cache_dir, offline=args.offline, delay=args.delay,
+        )
     except Exception as e:  # 顶层兜底，避免现场丢失
         import traceback
         tb = traceback.format_exc()

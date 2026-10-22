@@ -40,9 +40,9 @@ Z2_URL = "https://www.gov.cn/zhengce/zhengceku/bmwj/content_222.htm"
 def _seed_master(out_dir):
     path = os.path.join(out_dir, "gov_laws.json")
     items = [
-        {"title": "法规K1", "detail_url": K1_URL, "full_text": "旧正文K1",
+        {"title": "法规K1", "detail_url": K1_URL, "content": "旧正文K1",
          "category": "行政法规", "source": "xzfgk", "publish_date": "2020-01-01"},
-        {"title": "法规Z1", "detail_url": Z1_URL, "full_text": "旧正文Z1",
+        {"title": "法规Z1", "detail_url": Z1_URL, "content": "旧正文Z1",
          "category": "部门文件", "source": "zhengceku", "publish_date": "2020-03-01"},
     ]
     with open(path, "w", encoding="utf-8") as f:
@@ -102,10 +102,7 @@ def test_gov_pipeline_migration():
          mock.patch.object(gov_mod, "fetch_gov_attachments", lambda *a, **k: ([], "")), \
          mock.patch.object(att_mod, "fetch_gov_attachments", lambda *a, **k: ([], "")):
         GovCollector().collect(
-            tmp, source="all", max_pages=0, max_items=0, no_details=False,
-            details_limit=0, full=False, resume=None, delay_min=0, delay_max=0,
-            timeout=30, retries=1, summary_len=200, csv=False,
-            stop_after_empty_pages=1, backfill=False, max_seconds=0.0)
+            tmp, source="all", limit=0, no_detail=False, delay=0)
 
     path = os.path.join(tmp, "gov_laws.json")
     with open(path, encoding="utf-8") as f:
@@ -117,11 +114,11 @@ def test_gov_pipeline_migration():
     assert set(by_url) == {K1_URL, X1_URL, Z1_URL, Z2_URL}, set(by_url)
 
     # 新条目正文来自详情
-    assert by_url[X1_URL]["full_text"] == "正文X1", by_url[X1_URL]["full_text"]
-    assert by_url[Z2_URL]["full_text"] == "正文Z2", by_url[Z2_URL]["full_text"]
+    assert by_url[X1_URL]["content"] == "正文X1", by_url[X1_URL]["content"]
+    assert by_url[Z2_URL]["content"] == "正文Z2", by_url[Z2_URL]["content"]
     # 已知条目未被重抓，保留主库旧正文（merge 保活）
-    assert by_url[K1_URL]["full_text"] == "旧正文K1", by_url[K1_URL]["full_text"]
-    assert by_url[Z1_URL]["full_text"] == "旧正文Z1", by_url[Z1_URL]["full_text"]
+    assert by_url[K1_URL]["content"] == "旧正文K1", by_url[K1_URL]["content"]
+    assert by_url[Z1_URL]["content"] == "旧正文Z1", by_url[Z1_URL]["content"]
     # 子源标记保留
     assert by_url[X1_URL]["source"] == "xzfgk"
     assert by_url[Z2_URL]["source"] == "zhengceku"

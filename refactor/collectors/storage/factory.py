@@ -23,7 +23,7 @@ def get_store(
     settings 缺省时从环境变量加载（默认 FileStore，零风险保留现状）。
     backend=postgres 时惰性导入 SqlStore / RawStore（避免未装 SQLAlchemy 拖累 file 路径）。
     仅采集源（RAW_SOURCES）在 postgres 下使用 RawStore + canon_raw 归一器；cleaned/clauses
-    继续使用 SqlStore + canonicalize 信封（JSON payload），互不干扰。
+    继续使用 SqlStore + canonicalize 规范记录（JSON payload），互不干扰。
     """
     settings = settings or StorageSettings.load()
     if settings.is_postgres():

@@ -23,7 +23,7 @@ if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
 from collectors.storage import get_store  # noqa: E402
-from collectors.storage.envelope import canonicalize  # noqa: E402
+from collectors.storage.canonical import canonicalize  # noqa: E402
 
 from .adapter import to_clean  # noqa: E402
 from .config import CleanSettings  # noqa: E402
@@ -45,7 +45,7 @@ class LoadStage:
     def process(self, records: list[dict], ctx: "Any") -> list[dict]:
         if ctx.raw_path:
             # --raw 显式文件：采集侧未走 storage（未套 canonicalize），
-            # 此处补齐规范信封，使其与 storage 路径（已 canonicalize）同构，消除 P4 漂移。
+            # 此处补齐规范规范记录，使其与 storage 路径（已 canonicalize）同构，消除 P4 漂移。
             data = [canonicalize(ctx.source, r) for r in load_raw_records(ctx.raw_path)]
         else:
             store = get_store(ctx.source)
@@ -56,7 +56,7 @@ class LoadStage:
 
 
 # --------------------------------------------------------------------------- #
-# 适配：信封 → clean 统一 schema（源无关单点）
+# 适配：规范记录 → clean 统一 schema（源无关单点）
 # --------------------------------------------------------------------------- #
 class AdaptStage:
     name = "adapt"

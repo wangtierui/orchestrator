@@ -5,8 +5,8 @@
 validate_clauses → 写 storage(namespace="clauses")。
 
 注意：clean 阶段产物使用自身 schema（正文=body_text、链接=source_url、
-发文机关=issue_organ），并非采集器信封名（content / detail_url /
-issuing_authority）。本管线以 clean 实际字段为准，并兼容信封名回退。
+发文机关=issue_organ），并非采集器规范前字段名（content / detail_url /
+issuing_authority）。本管线以 clean 实际字段为准，并兼容规范前字段名回退。
 
 设计要点：
   - 源无关、backend-agnostic（file / postgres 通吃，统一走 collectors.storage.get_store）；
@@ -32,7 +32,7 @@ from clause.core.document_structure import parse_document, validate_clauses
 
 
 # clause 行从 cleaned 记录透传的身份/元数据字段。
-# clean 阶段用自身 schema：链接=source_url、发文机关=issue_organ（非信封名 detail_url/issuing_authority）。
+# clean 阶段用自身 schema：链接=source_url、发文机关=issue_organ（非规范前字段名 detail_url/issuing_authority）。
 # ⚠️ 这些字段同时是"将来 rfn 投影"的 join 句柄（方向 A：rfn 暂缺，锚点键先透传）：
 #   dedup_key / source_url(=detail_url) → RFN↔clean 桥表锚点；
 #   document_number / title             → 归属表兜底命中键。
@@ -54,7 +54,7 @@ _IDENTITY_FIELDS = (
 def _identity_fields(rec: Dict[str, Any]) -> Dict[str, Any]:
     """从 cleaned 记录抽取 clause 行必备的身份/元数据字段。
 
-    clean 产物用 source_url / issue_organ；采集器信封用 detail_url / issuing_authority。
+    clean 产物用 source_url / issue_organ；采集器规范记录用 detail_url / issuing_authority。
     两者统一为同义字段透传（供 PG 去重键派生与 rfn 锚点），并保留 issue_organ 溯源。
     """
     row = {k: (rec.get(k) or "") for k in _IDENTITY_FIELDS}

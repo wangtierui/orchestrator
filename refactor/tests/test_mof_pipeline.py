@@ -4,7 +4,7 @@
 monkeypatch 网络层（net._request / net.RateLimiter / collect_attachments /
 write_status / 锁），预置主库，跑通 collect()，
 断言 mof 的"变更指纹 diff"被钩子正确表达：
-  - 列表新增(1002) → added（抓详情，content_text 来自详情）；
+  - 列表新增(1002) → added（抓详情，content 来自详情）；
   - 主库已有且指纹未变(1001) → unchanged（复用旧记录）；
   - 主库已有且指纹变更 → updated（重抓）；本用例未触发，但分支存在；
   - 主库有但列表缺失(1003) → removed（active=False）。
@@ -76,13 +76,13 @@ def test_mof_pipeline_migration():
     tmp = tempfile.mkdtemp(prefix="mof_test_")
     # 主库：1001（指纹未变 → unchanged）、1003（列表缺失 → removed）
     _seed_master(tmp, [
-        {"id": 1001, "title": "法规A", "content_text": "A内容",
+        {"id": 1001, "title": "法规A", "content": "A内容",
          "publish_date": "2024-01-01", "effective_date": "2024-03-01",
-         "issue_org": "财政部", "doc_no": "财令〔2024〕1号", "summary": "题注A",
+         "issuing_authority": "财政部", "document_number": "财令〔2024〕1号", "summary": "题注A",
          "active": True, "change": "added"},
-        {"id": 1003, "title": "法规C", "content_text": "C内容",
-         "publish_date": "2024-05-05", "effective_date": "", "issue_org": "财政部",
-         "doc_no": "财令〔2024〕3号", "summary": "题注C", "active": True, "change": "added"},
+        {"id": 1003, "title": "法规C", "content": "C内容",
+         "publish_date": "2024-05-05", "effective_date": "",          "issuing_authority": "财政部",
+         "document_number": "财令〔2024〕3号", "summary": "题注C", "active": True, "change": "added"},
     ])
 
     with mock.patch.object(mof_mod.net, "RateLimiter", FakeRateLimiter), \
@@ -90,9 +90,9 @@ def test_mof_pipeline_migration():
          mock.patch.object(mof_mod, "collect_attachments", lambda rid, rate: []), \
          mock.patch.object(mof_mod, "write_status", lambda *a, **k: None):
         MofCollector().collect(
-            tmp, categories=["1000000000000300000"], max_items=None,
+            tmp, category="1000000000000300000", limit=None,
             no_detail=False, no_attachments=False, refetch_attachments=False,
-            size=50, delay_min=0, delay_max=0)
+            delay=0)
 
     path = os.path.join(tmp, "mof_laws.json")
     with open(path, encoding="utf-8") as f:
@@ -103,14 +103,14 @@ def test_mof_pipeline_migration():
     # 1002 列表新增 → added，正文来自详情
     b = items[1002]
     assert b["change"] == "added", b["change"]
-    assert b["content_text"] == "正文1002", b["content_text"]
-    assert b["detail_link"] and "1002" in b["detail_link"]
+    assert b["content"] == "正文1002", b["content"]
+    assert b["detail_url"] and "1002" in b["detail_url"]
     assert b["active"] is True
 
     # 1001 主库已有且指纹未变 → unchanged（复用旧记录内容）
     a = items[1001]
     assert a["change"] == "unchanged", a["change"]
-    assert a["content_text"] == "A内容", a["content_text"]
+    assert a["content"] == "A内容", a["content"]
     assert a["active"] is True
 
     # 1003 主库有但列表缺失 → removed

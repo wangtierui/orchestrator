@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""adapter — raw/信封记录 → clean 统一 schema 的映射入口（**源无关**）。
+"""adapter — raw/规范记录 → clean 统一 schema 的映射入口（**源无关**）。
 
 Phase 2：消除旧版五源 ``map_*`` 的 5× 重复（每个源各写一整套 39 字段字面量）。
 现在所有源共用同一个 ``_build_record`` 装配器，源之间的差异收敛为 ``_SPECS``
@@ -9,8 +9,8 @@ Phase 2：消除旧版五源 ``map_*`` 的 5× 重复（每个源各写一整套
 （nfra 正文去噪、pbc 的 local_path、gov/mof 的索引号回退）留在 ``_SPECS``。
 
 设计要点（保证对账零漂移）：
-  - adapter 读取的是采集侧**保留的原始字段**（信封 canonicalize 会保留原始字段），
-    因此无论输入是裸 raw 还是信封，映射结果一致；
+  - adapter 读取的是采集侧**保留的原始字段**（规范记录 canonicalize 会保留原始字段），
+    因此无论输入是裸 raw 还是规范记录，映射结果一致；
   - body / detail_url 读统一字段（canonicalize 产出），issue_organ / category 按源
     方言读（canonicalize 的 unified 列表未覆盖这些原始别名，强改会丢已入库旧值）；
   - 装配逻辑、字段读取顺序、dedup_key 配方与旧 ``map_*`` 逐字段等价；
@@ -240,7 +240,7 @@ def to_clean(
     clean_version: str = "v1.0.0",
     captured_at: str = "",
 ) -> dict[str, Any]:
-    """把一条 raw/信封记录映射为 clean 统一 schema 记录（源无关）。"""
+    """把一条 raw/规范记录映射为 clean 统一 schema 记录（源无关）。"""
     # 未知 source（如内部文档）自动走 _DEFAULT_DIALECT（统一字段 + 默认方言），
     # 无需在 _SPECS 登记字段映射。
     spec = _SPECS.get(source, _DEFAULT_DIALECT)

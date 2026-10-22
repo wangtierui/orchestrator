@@ -4,9 +4,9 @@
 锁定 2026-10-13 收敛动作，防止再度漂移：
   - SSOT：clean.core.doc_number / collectors.lib.doc_number 不得各自实现，
     必须再导出 common.doc_number（三者 normalize_doc_number 同一对象）。
-  - envelope.canonicalize 落库时即规范化 document_number（不再留未规范化原文）。
+  - canonical.canonicalize 落库时即规范化 document_number（不再留未规范化原文）。
   - 等价链：raw → canonicalize → clean.schema._resolve_doc_number 得到的
-    document_number 必须一致（P0 真问题：信封未规范化 / 清洗才规范化 的分裂）。
+    document_number 必须一致（P0 真问题：规范记录未规范化 / 清洗才规范化 的分裂）。
 
 不触网、不落盘，纯函数级断言。
 """
@@ -24,7 +24,7 @@ if "collectors.storage.sql_backend" not in sys.modules:
     sys.modules["collectors.storage.sql_backend"] = _stub
 
 from collectors.lib.doc_number import normalize_doc_number as norm_collectors
-from collectors.storage.envelope import canonicalize
+from collectors.storage.canonical import canonicalize
 from clean.core.doc_number import normalize_doc_number as norm_clean
 from clean.schema import _resolve_doc_number
 from common.doc_number import normalize_doc_number as norm_common
@@ -38,7 +38,7 @@ def test_ssot_single_implementation():
 
 
 def test_canonicalize_normalizes_document_number():
-    """envelope 落库即规范化：半角 [ ] → 全角〔〕，且去头部残渣。"""
+    """规范记录 落库即规范化：半角 [ ] → 全角〔〕，且去头部残渣。"""
     cases = [
         ("金规[2026]4号", "金规〔2026〕4号"),
         ("银发[1999]407号", "银发〔1999〕407号"),
@@ -68,8 +68,8 @@ def test_raw_canonicalize_resolve_equivalence():
         env = canonicalize("pbc", rec)
         resolved = _resolve_doc_number(env)
         assert env["document_number"] == resolved, (
-            f"信封与清洗侧 document_number 不一致: "
-            f"envelope={env['document_number']!r} vs resolve={resolved!r} (raw={raw})"
+            f"规范记录与清洗侧 document_number 不一致: "
+            f"规范记录={env['document_number']!r} vs resolve={resolved!r} (raw={raw})"
         )
     print("test_raw_canonicalize_resolve_equivalence OK")
 

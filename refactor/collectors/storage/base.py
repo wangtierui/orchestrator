@@ -8,7 +8,7 @@ RecordStore，按 ``(namespace, key)`` 写入 / 读回记录。``namespace`` 即
 设计要点：
 - 写一次（默认 on_conflict="nothing"）：已存在 (namespace, key) 的行不插入；
 - 覆盖（on_conflict="update"）：冲突时覆盖，用于确有"更新/作废"语义的源（如 mof）；
-- 规范化（normalizer）：落盘前把异构 payload 映射为统一信封（见 envelope.py）。
+- 规范化（normalizer）：落盘前把异构 payload 映射为统一规范记录（见 canonical.py）。
 """
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Protocol, runtime_checkable
@@ -25,7 +25,7 @@ class StoredRecord:
     extra: dict | None = None
 
 
-# 规范化函数签名：把某 namespace 的异构 payload 映射为统一信封。
+# 规范化函数签名：把某 namespace 的异构 payload 映射为统一规范记录。
 RecordNormalizer = Callable[[str, dict], dict]
 
 
@@ -46,7 +46,7 @@ class RecordStore(Protocol):
     ) -> str:
         """写入一批条目，返回可定位标识（文件路径 / run_id）。
 
-        normalizer : 覆盖实例默认规范化器（落盘前将 payload 映射为统一信封）。
+        normalizer : 覆盖实例默认规范化器（落盘前将 payload 映射为统一规范记录）。
         on_conflict: "nothing"（默认，写一次）| "update"（冲突覆盖）。
         """
         ...

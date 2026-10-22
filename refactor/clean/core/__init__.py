@@ -13,7 +13,7 @@
   doc_number.py         文号抽取/规范化 —— 现仅再导出 common.doc_number（唯一事实源）
   load.py               load_raw_records（双格式载入，供 stages.LoadStage）
 
-映射层（raw/信封 → clean 统一 schema）在 clean.adapter，契约定义在 clean.schema。
+映射层（raw/规范记录 → clean 统一 schema）在 clean.adapter，契约定义在 clean.schema。
 极简 clean（见 clean.pipeline）只做"洗脏数据"：载入 → 适配 → 日期/正文/OCR/去重 → 写出。
 交付闸门、隔离、sidecar、history、CSV 治理等不属本包（不属于清洗）。
 """

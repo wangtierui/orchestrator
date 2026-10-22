@@ -67,9 +67,9 @@ def test_nfra_pipeline_migration():
         return {
             "doc_id": doc_id, "title": "D%d标题" % doc_id,
             "publish_date": "2024-02-02", "build_date": "2024-02-01",
-            "document_no": "令〔2024〕%d号" % doc_id, "effective_date": "2024-03-01",
+            "document_number": "令〔2024〕%d号" % doc_id, "effective_date": "2024-03-01",
             "index_no": "索引%d" % doc_id, "issuing_authority": "总局",
-            "category_type": "", "summary": "摘要%d" % doc_id,
+            "category": "", "summary": "摘要%d" % doc_id,
             "content": "正文内容%d" % doc_id, "doc_file_url": "", "pdf_file_url": "",
         }
 
@@ -82,8 +82,7 @@ def test_nfra_pipeline_migration():
          mock.patch.object(nfra_mod, "download_original_doc", return_value=""), \
          mock.patch.object(nfra_mod.os, "makedirs", lambda p, exist_ok=False: None):
         locator = NfraCollector().collect(
-            tmp, limit=0, no_detail=False, download_originals=False,
-            csv=False, cache_dir="", offline=False)
+            tmp, limit=0, no_detail=False, cache_dir="", offline=False)
 
     with open(locator, encoding="utf-8") as f:
         data = json.load(f)

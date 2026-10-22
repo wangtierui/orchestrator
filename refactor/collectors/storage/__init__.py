@@ -2,7 +2,7 @@
 """采集器专用的 storage 薄封装。
 
 在通用 RecordStore 之上注入：
-1) 统一信封规范化（canonicalize）—— 各源异构 payload 在入库入口统一；
+1) 入库规范化（canonicalize）（canonicalize）—— 各源异构 payload 在入库入口统一；
 2) 按源选择冲突策略 —— pbc/gov/nfra 官方文档不可变 → 写一次(nothing)；
    mof 含有效性/废止变更 → 覆盖(update)，以保留其增量/作废追踪。
 
@@ -11,7 +11,7 @@
 """
 from .base import RecordNormalizer, RecordStore, StoredRecord
 from .config import StorageSettings
-from .envelope import canonicalize
+from .canonical import canonicalize
 from .factory import get_store, open_store
 
 # 各源默认冲突策略

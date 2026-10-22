@@ -14,8 +14,8 @@
 HTML 解析（_parse_list/_parse_detail/scan_list/parse_detail/fetch_attachments）逐字保留。
 """
 import argparse
-import csv
 import logging
+from ..lib.cli import add_common_args, is_full_mode, make_known_pred_full
 import os
 import re
 import sys
@@ -27,7 +27,6 @@ from ..lib.text_utils import flatten_attachment_extras
 from .parse import (
     SOURCES,
     ScrapeConfig,
-    CSV_COLUMNS,
     build_config,
     clean_text,
     decode_html,
@@ -94,7 +93,7 @@ class XzfgkScraper:
                 "detail_url": href,
                 "publish_date": extract_date(pub.get_text()) if pub else "",
                 "effective_date": extract_date(impl.get_text()) if impl else "",
-                "issue_organ": "",
+                "issuing_authority": "",
                 "document_number": "",
             })
         return items
@@ -130,9 +129,9 @@ class XzfgkScraper:
         pub_orig = m.group(1) if m else ""
         return {
             "title": title,
-            "full_text": full_text,
+            "content": full_text,
             "document_number": doc_no,
-            "issue_organ": organ,
+            "issuing_authority": organ,
             "effective_date": eff,
             "pub_date_original": pub_orig,
         }
@@ -188,7 +187,7 @@ class XzfgkScraper:
                 yield {
                     "title": it["title"], "detail_url": it["detail_url"],
                     "publish_date": it["publish_date"], "effective_date": it["effective_date"],
-                    "issue_organ": it.get("issue_organ", ""),
+                    "issuing_authority": it.get("issuing_authority", ""),
                     "document_number": it.get("document_number", ""),
                     "category": self.cfg.category, "source": "xzfgk", "page": page,
                 }
@@ -212,28 +211,28 @@ class XzfgkScraper:
                 self._detail_fetched += 1
                 rec.update(self._fetch_detail(entry["detail_url"]))
             else:
-                rec.setdefault("full_text", "")
+                rec.setdefault("content", "")
         else:
-            rec.setdefault("full_text", "")
+            rec.setdefault("content", "")
             rec.setdefault("attachments", [])
             rec.setdefault("attachment_text", "")
             rec.setdefault("attachment_count", 0)
-        rec["summary"] = make_summary(rec.get("full_text", ""), cfg.summary_len)
+        rec["summary"] = make_summary(rec.get("content", ""), cfg.summary_len)
         return rec
 
     def _fetch_detail(self, url: str) -> dict:
         detail_html = self.client.get_text(url, referer=self.LIST_URL)
         if not detail_html:
             LOG.warning("xzfgk 详情获取失败：%s", url)
-            return {"full_text": "", "document_number": "",
-                    "issue_organ": "", "effective_date": "",
+            return {"content": "", "document_number": "",
+                    "issuing_authority": "", "effective_date": "",
                     "attachments": [], "attachment_text": "", "attachment_count": 0}
         try:
             d: dict = self._parse_detail(detail_html)
         except Exception as e:  # noqa: BLE001
             LOG.warning("xzfgk 详情解析失败 %s：%s", url, e)
-            d = {"full_text": "", "document_number": "",
-                 "issue_organ": "", "effective_date": ""}
+            d = {"content": "", "document_number": "",
+                 "issuing_authority": "", "effective_date": ""}
         try:
             atts, att_text = fetch_gov_attachments(
                 detail_html, entry_id=url, entry_title=d.get("title", ""),
@@ -256,18 +255,6 @@ class XzfgkScraper:
 from ..lib.pipeline import CollectorPipeline  # noqa: E402
 
 
-def _write_csv(records: list, out_dir: str) -> str:
-    csv_path = os.path.join(out_dir, "gov_laws.csv")
-    tmp = csv_path + ".tmp"
-    with open(tmp, "w", encoding="utf-8-sig", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=CSV_COLUMNS, extrasaction="ignore")
-        writer.writeheader()
-        for r in records:
-            writer.writerow({k: r.get(k, "") for k in CSV_COLUMNS})
-    os.replace(tmp, csv_path)
-    return csv_path
-
-
 class GovCollector(CollectorPipeline):
     """gov 双子源爬虫；继承通用管线，双子源编排表达为 iter_list/handle_new。"""
 
@@ -278,6 +265,8 @@ class GovCollector(CollectorPipeline):
         return item.get("detail_url")
 
     def _setup(self, args):
+        if is_full_mode(args):
+            self.known_pred = make_known_pred_full()
         self._args = args
         os.makedirs(args.out_dir, exist_ok=True)
         # 两子源各自 cfg（base_url/category 由 SOURCES 决定）
@@ -310,31 +299,40 @@ class GovCollector(CollectorPipeline):
 
     def save(self, records, ctx):
         merged = merge_with_master(records, ctx.out_dir, storage=ctx.storage)
-        cat = self._args.env_category or (
-            "行政法规+部门文件" if self._args.source == "all" else self._cfg_xz.category)
-        locator = ctx.storage.save_master(merged, extra={"category": cat})
-        if getattr(self._args, "csv", False):
-            _write_csv(merged, ctx.out_dir)
-        return locator
+        cat = ("行政法规+部门文件" if self._args.source == "all" else self._cfg_xz.category)
+        return ctx.storage.save_master(merged, extra={"category": cat})
 
     # ----------------------------- SourceCollector 协议入口 -----------------------------
-    def collect(self, out_dir: str, *, source="all", max_pages=0, max_items=0,
-                no_details=False, details_limit=0, full=False, resume=None,
-                delay_min=1.5, delay_max=3.5, timeout=30, retries=4,
-                summary_len=200, cache_dir="", offline=False, csv=False,
-                stop_on_error=False, checkpoint_every=200, stop_after_empty_pages=1,
-                backfill=False, max_seconds=0.0, env_source="", env_category="",
-                log_file="") -> str:
-        _resume = (not full) if resume is None else resume
+    def collect(self, out_dir: str, *, source="all", mode="incremental", delay=1.5,
+                limit=0, no_detail=False, backfill=False, cache_dir="",
+                offline=False) -> str:
+        full = (mode == "full")
+        resume = (mode != "full")
         args = argparse.Namespace(
-            source=source, out_dir=out_dir, max_pages=max_pages, max_items=max_items,
-            no_details=no_details, details_limit=details_limit, full=full,
-            resume=_resume, delay_min=delay_min, delay_max=delay_max, timeout=timeout,
-            retries=retries, summary_len=summary_len, cache_dir=cache_dir, offline=offline,
-            csv=csv, stop_on_error=stop_on_error, checkpoint_every=checkpoint_every,
-            stop_after_empty_pages=stop_after_empty_pages, backfill=backfill,
-            max_seconds=max_seconds, env_source=env_source, env_category=env_category,
-            log_file=log_file,
+            source=source, out_dir=out_dir,
+            # 以下为内部既有配置属性（debris 参数已降级为常量，保持 build_config/net 读数不变）
+            max_pages=0,
+            max_items=limit,
+            no_details=no_detail,
+            details_limit=0,
+            full=full,
+            resume=resume,
+            delay_min=max(0.4, delay * 0.8),
+            delay_max=delay * 1.6,
+            timeout=30,
+            retries=4,
+            summary_len=200,
+            cache_dir=cache_dir,
+            offline=offline,
+            csv=False,
+            stop_on_error=False,
+            checkpoint_every=200,
+            stop_after_empty_pages=1,
+            backfill=backfill,
+            max_seconds=0.0,
+            override_source="",
+            override_category="",
+            log_file="",
         )
         self._setup(args)
         return self.run(out_dir)
@@ -343,39 +341,15 @@ class GovCollector(CollectorPipeline):
 def main():
     parser = argparse.ArgumentParser(
         description="抓取 gov.cn 行政法规库（xzfg.moj.gov.cn）+ 国务院政策文件库·部门文件")
-    parser.add_argument("--source", choices=["xzfgk", "zhengceku", "all"], default="all",
-                        help="数据源（默认 all）")
-    parser.add_argument("--out-dir", default=DEFAULT_OUT, help="输出目录（默认统一 data/raw/）")
-    parser.add_argument("--max-pages", type=int, default=0, help="最大翻页数（0=不限制）")
-    parser.add_argument("--max-items", type=int, default=0, help="最大条目数（0=不限制）")
-    parser.add_argument("--no-details", action="store_true", help="不抓取详情页")
-    parser.add_argument("--details-limit", type=int, default=0, help="仅对前 N 条抓取详情正文")
-    parser.add_argument("--resume", action="store_true", help="增量续抓")
-    parser.add_argument("--full", action="store_true", help="全量重抓")
-    parser.add_argument("--delay-min", type=float, default=1.5, help="请求最小延时（秒）")
-    parser.add_argument("--delay-max", type=float, default=3.5, help="请求最大延时（秒）")
-    parser.add_argument("--timeout", type=int, default=30, help="请求超时（秒）")
-    parser.add_argument("--retries", type=int, default=4, help="重试次数")
-    parser.add_argument("--summary-len", type=int, default=200, help="内容摘要字数")
-    parser.add_argument("--csv", action="store_true", help="额外输出 CSV")
-    parser.add_argument("--stop-on-error", action="store_true", help="多子源抓取时任一失败即中止")
-    parser.add_argument("--checkpoint-every", type=int, default=200, help="详情阶段断点落盘间隔")
-    parser.add_argument("--stop-after-empty-pages", type=int, default=1, help="（仅 zhengceku）连续 N 页无新条目即停")
-    parser.add_argument("--backfill", action="store_true", help="（仅 zhengceku）历史存量补全")
-    parser.add_argument("--max-seconds", type=float, default=0.0, help="详情阶段软预算（秒）")
-    parser.add_argument("--env-source", default="", help="覆盖写主库信封 source")
-    parser.add_argument("--env-category", default="", help="覆盖写主库信封 category")
-    parser.add_argument("--log-file", default="", help="日志文件路径")
+    add_common_args(parser, with_category=False, with_source=True, with_mode=True,
+                    with_delay=True, with_limit=True, with_detail=True, with_attachments=False)
+    parser.add_argument("--backfill", action="store_true",
+                        help="（仅 zhengceku）历史存量补全")
     args = parser.parse_args()
     GovCollector().collect(
-        args.out_dir, source=args.source, max_pages=args.max_pages, max_items=args.max_items,
-        no_details=args.no_details, details_limit=args.details_limit, full=args.full,
-        resume=args.resume, delay_min=args.delay_min, delay_max=args.delay_max,
-        timeout=args.timeout, retries=args.retries, summary_len=args.summary_len, csv=args.csv,
-        stop_on_error=args.stop_on_error, checkpoint_every=args.checkpoint_every,
-        stop_after_empty_pages=args.stop_after_empty_pages, backfill=args.backfill,
-        max_seconds=args.max_seconds, env_source=args.env_source, env_category=args.env_category,
-        log_file=args.log_file,
+        args.out_dir, source=args.source, mode=args.mode, delay=args.delay,
+        limit=args.limit, no_detail=args.no_detail, backfill=args.backfill,
+        cache_dir="", offline=False,
     )
 
 

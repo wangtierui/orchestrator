@@ -17,6 +17,8 @@ import os
 import sys
 from typing import Any
 
+from ..lib.cli import add_common_args
+
 # 仓库根入路径，使 collectors 可被导入（与既有采集器同约定）
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _ROOT = os.path.dirname(os.path.dirname(_HERE))
@@ -25,7 +27,7 @@ if _ROOT not in sys.path:
 
 from collectors.lib.text_utils import extract_document_text
 from collectors.storage import get_store
-from collectors.storage.envelope import canonicalize
+from collectors.storage.canonical import canonicalize
 
 LOG = logging.getLogger("internal_collector")
 
@@ -106,10 +108,11 @@ def collect(
 
 def main() -> None:
     ap = argparse.ArgumentParser(description="采集本地内部制度文档（PDF/Word）入库")
+    add_common_args(ap, with_category=False, with_detail=False, with_attachments=False,
+                    with_mode=True, with_delay=True, with_limit=True)
     ap.add_argument("--in-dir", required=True, help="含 PDF/Word 的本地目录")
     ap.add_argument("--org", default="", help="发文机构（可选，默认空）")
-    ap.add_argument("--category", default="", help="分类（可选，默认空）")
-    ap.add_argument("--limit", type=int, default=0, help="最多处理 N 个文件（0=不限制）")
+    ap.add_argument("--category", default="", help="分类（可选，默认空，作为录入元数据）")
     args = ap.parse_args()
     logging.basicConfig(
         level=logging.INFO, format="%(levelname)s %(name)s: %(message)s"

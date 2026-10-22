@@ -29,6 +29,7 @@ from ..base import (
 from ..storage import get_storage, StorageSettings, open_storage
 from ..lib.pipeline import CollectorPipeline
 from ..lib.incremental import KnownTracker
+from ..lib.cli import add_common_args, is_full_mode, make_known_pred_full
 from . import net
 from ..lib.text_utils import flatten_attachment_extras
 from .attachments import collect_attachments
@@ -118,20 +119,20 @@ def build_entry(rec, detail, category_id, category_name, fetch_detail_enabled, a
         "id": law_id,
         "title": rec.get("title"),
         "category_id": category_id,
-        "category_name": category_name or rec.get("ltflbName"),
+        "category": category_name or rec.get("ltflbName"),
         "publish_date": net.normalize_date((detail or rec).get("lBuDate") if fetch_detail_enabled else rec.get("lBuDate")),
         "effective_date": net.normalize_date((detail or rec).get("lSsDate") if fetch_detail_enabled else rec.get("lSsDate")),
-        "issue_org": (detail or rec).get("lbbdw") if fetch_detail_enabled else rec.get("lbbdw"),
-        "doc_no": (detail or rec).get("lwh") if fetch_detail_enabled else rec.get("lwh"),
+        "issuing_authority": (detail or rec).get("lbbdw") if fetch_detail_enabled else rec.get("lbbdw"),
+        "document_number": (detail or rec).get("lwh") if fetch_detail_enabled else rec.get("lwh"),
         "summary": summary,
-        "content_text": content_text,
+        "content": content_text,
         "content_length": len(content_text),
         "status": (detail or rec).get("lstate") if fetch_detail_enabled else rec.get("lstate"),
         "create_dept": rec.get("createDeptName"),
         "file_count": rec.get("fileCount"),
         "expire_date": net.normalize_date((detail or rec).get("expireDate") if fetch_detail_enabled else rec.get("expireDate")),
         "abolish_date": net.normalize_date((detail or rec).get("abolishDate") if fetch_detail_enabled else rec.get("abolishDate")),
-        "detail_link": f"{net.HOST}/ui/src/views/law_html/{law_id}.html" if law_id else None,
+        "detail_url": f"{net.HOST}/ui/src/views/law_html/{law_id}.html" if law_id else None,
         "api_link": f"{net.BASE}/lawFile/get/{law_id}" if law_id else None,
         "source": "fgk.mof.gov.cn",
         "fetch_time": datetime.now(UTC).isoformat(),
@@ -218,6 +219,8 @@ class MofCollector(CollectorPipeline):
         return True  # 主库有但列表缺失 → handle_missing 标 removed
 
     def _setup(self, args):
+        if is_full_mode(args):
+            self.known_pred = make_known_pred_full()
         self._args = args
         self._categories = list(args.categories or DEFAULT_CATEGORIES.keys())
         self._cat_map = {k: DEFAULT_CATEGORIES.get(k, k) for k in self._categories}
@@ -290,14 +293,21 @@ class MofCollector(CollectorPipeline):
         return rec
 
     # ----------------------------- SourceCollector 协议入口 -----------------------------
-    def collect(self, out_dir: str, *, categories=None, max_items=None,
-                no_detail=False, no_attachments=False, refetch_attachments=False,
-                size=50, delay_min=0.3, delay_max=0.7, timeout=30) -> str:
+    def collect(self, out_dir: str, *, category="", mode="incremental", delay=1.5,
+                limit=0, no_detail=False, no_attachments=False,
+                refetch_attachments=False) -> str:
         args = argparse.Namespace(
-            out_dir=out_dir, categories=categories, max_items=max_items,
-            no_detail=no_detail, no_attachments=no_attachments,
-            refetch_attachments=refetch_attachments, size=size,
-            delay_min=delay_min, delay_max=delay_max, timeout=timeout)
+            out_dir=out_dir,
+            categories=[category] if category else None,
+            size=50,
+            delay_min=max(0.2, delay * 0.8),
+            delay_max=delay * 1.6,
+            no_detail=no_detail,
+            no_attachments=no_attachments,
+            refetch_attachments=refetch_attachments,
+            max_items=limit,
+            timeout=30,
+        )
 
         os.makedirs(out_dir, exist_ok=True)
         self._setup(args)
@@ -350,23 +360,15 @@ class MofCollector(CollectorPipeline):
 
 def main():
     ap = argparse.ArgumentParser(description="财政部法规数据库自动抓取（重构版·增量 diff）")
-    ap.add_argument("--categories", nargs="*", default=list(DEFAULT_CATEGORIES.keys()))
-    ap.add_argument("--outdir", default=DATA_RAW)
-    ap.add_argument("--size", type=int, default=50, help="列表每页条数（默认50）")
-    ap.add_argument("--delay-min", type=float, default=0.3, help="请求最小间隔(秒)")
-    ap.add_argument("--delay-max", type=float, default=0.7, help="请求最大间隔(秒)")
-    ap.add_argument("--no-detail", action="store_true", help="仅抓列表，不逐条请求详情页（同时跳过附件下载）")
-    ap.add_argument("--no-attachments", action="store_true", help="跳过附件下载（仅主数据全量）")
-    ap.add_argument("--refetch-attachments", action="store_true", help="强制重新抓取并下载全部条目的附件")
-    ap.add_argument("--max-items", type=int, default=None, help="每类别最多抓取条目数（验证用）")
-    ap.add_argument("--timeout", type=int, default=30, help="单请求超时(秒)")
+    add_common_args(ap, with_category=True, with_mode=True, with_delay=True,
+                    with_limit=True, with_detail=True, with_attachments=True,
+                    default_out=DATA_RAW)
     args = ap.parse_args()
     MofCollector().collect(
-        args.outdir, categories=args.categories, max_items=args.max_items,
-        no_detail=args.no_detail, no_attachments=args.no_attachments,
-        refetch_attachments=args.refetch_attachments, size=args.size,
-        delay_min=args.delay_min, delay_max=args.delay_max,
-        timeout=args.timeout,
+        args.out_dir, category=args.category, mode=args.mode, delay=args.delay,
+        limit=args.limit, no_detail=args.no_detail,
+        no_attachments=args.no_attachments,
+        refetch_attachments=args.refetch_attachments,
     )
 
 
