@@ -158,6 +158,32 @@ def handle(method: str, path: str, qs: dict | None = None,
     if path == "/api/search":
         return 200, S.search(_one(qs, "q"), kind=_one(qs, "kind", "records"),
                              limit=min(100, _int(qs, "limit", 20)))
+    if path == "/api/records":
+        # 「政策法规」页签：**服务端**分页/筛选/排序（16607 行不能整包下发）
+        return 200, S.records_page(
+            q=_one(qs, "q"), q_title=_one(qs, "q_title"),
+            q_docno=_one(qs, "q_docno"), q_rfn=_one(qs, "q_rfn"),
+            source=_one(qs, "source"),
+            theme=_one(qs, "theme"), timeliness=_one(qs, "timeliness"),
+            sort=_one(qs, "sort", "publish_date"),
+            desc=_one(qs, "desc", "1") not in ("0", "false", ""),
+            page=_int(qs, "page", 1), size=_int(qs, "size", 50))
+    if path == "/api/records/facets":
+        return 200, S.records_facets()
+    if path == "/api/rules":
+        # 「公司制度」页签：861 行，同样走服务端分页（口径与政策法规一致）
+        return 200, S.rules_page(
+            q=_one(qs, "q"), q_title=_one(qs, "q_title"),
+            q_docno=_one(qs, "q_docno"), q_ipn=_one(qs, "q_ipn"),
+            theme=_one(qs, "theme"),
+            sort=_one(qs, "sort", "title"),
+            desc=_one(qs, "desc", "0") not in ("0", "false", ""),
+            page=_int(qs, "page", 1), size=_int(qs, "size", 50))
+    if path == "/api/rules/facets":
+        return 200, S.rules_facets()
+    if path == "/api/relations":
+        # 「关系图谱」页签：以 ref（RFN/IPN）为中心的一跳邻域
+        return 200, S.relation_graph(_one(qs, "ref"))
     if path == "/api/publish":
         return 200, S.publish_board()
     if path == "/api/release":

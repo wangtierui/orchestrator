@@ -260,8 +260,8 @@ flowchart LR
 ```mermaid
 flowchart TB
   subgraph ACC[接入层（L6）]
-    CLI[cli.py · 19 命令 · 唯一入口]
-    WEB[web/ 本地确认台 · loopback · 8 页]
+    CLI[cli.py · 23 命令 · 唯一入口]
+    WEB[web/ 本地确认台 · loopback · 10 页]
     MCP[mcp_server/ · 计划 W2 · MCP tool 面]
   end
   subgraph SCHED[调度层（唯一事实源 schedule.yaml + triggers.yaml）]
@@ -607,6 +607,11 @@ python cli.py serve --verbose       # 逐请求日志
 > **并入总览**——它们的读者与"总览"是同一批人（"我的产物在哪、发出去了没"），
 > 单开两页只会让"看全一眼"变成三次点击。总览现分三段：
 > **关键指标 → 运行与风险 → 产物与发布**。
+>
+> **2026-10-23（第一百一十批）新增 3 页 = 10 页**：「政策法规」「公司制度」「关系图谱」。
+> 前两页是**全量列表**（16607 / 861 条），与待办闭环的区别是：待办只有"待处理"的几十条，
+> 而这两页要能**检索任意一份文件**；关系图谱紧邻它们，因为列表的"关系·查看"要跳过去。
+> 三页都遵循同一条纪律：**取数只经 `interfaces/`，分页/排序/筛选在服务端**。
 
 | 页 | 内容 | 数据源（**全部经 `interfaces/` 只读门面**） |
 |---|---|---|
@@ -614,13 +619,23 @@ python cli.py serve --verbose       # 逐请求日志
 | **数据流转** | **分层 DAG**（L1→L10 每层一列）：48 节点 / 40 条边，节点带**真实记录数**与状态色，边宽 ∝ √记录数；悬停看状态/rc/耗时/作用，点击开抽屉（含日志尾 + 诊断入口） | `STEP_ORDER` + **`StepSpec.produces/depends_on`**（按**产物**连边）+ `clean_index_api` + 运行台账 |
 | **指标** | 门禁通过率趋势、待办 aging、**DAMA 六维质量**、**SLI/SLO**、时效三态、主题分布（条形图用 **CSS 网格**，标签不可能压柱） | `governance_api` / `rfn_api` / `timeliness_api` + W5 度量产物 |
 | **待办闭环** | 表格列：**操作（勾选+处置，固定最左）/ kind / 唯一标识号 / 名称 / 文号 / 访问地址 / 详情**；处置**就地展开在该行下方**；地址带来源标注（桥表文号/桥表名称/本地文件/未查到/**不匹配**） | `governance_store.worklist_list` / **`worklist_resolve`（唯一写路径）** / `worklist_fields`（能力矩阵 + 一致性校验） |
+| **政策法规** | 五源监管文件全量（**16607 条**）：**主题 / 唯一标识号(RFN) / 名称 / 文号 / 时效 / 源 / 访问地址 / 关系**；表头**逐列筛选 + 点击排序**，**服务端分页**（50/页） | `base_api.list_external_page` / `external_facets`（SQL 与白名单只在 `interfaces` 内） |
+| **公司制度** | 内部制度全量（**861 条**）：**主题 / 唯一标识号(IPN) / 名称 / 文号 / 访问地址 / 关系**；访问地址**直接打开本地文件**（PDF 内联 / Office 下载） | `base_api.list_internal_page` / `internal_facets` + `worklist_fields.local_for` |
+| **关系图谱** | 以某文件为中心的**一跳关系图**：依据（实线）/ 废止（虚线），中心 + 邻居环形布局；点任一节点**换中心继续看**；下方给关系明细表（方向/对方/文号/匹配方式/置信度） | `relations_api.ego`（`by_src` + `by_dst`，弱线索显式计数） |
 | **治理审计** | 最近运行 + 审计日志尾部 | `governance_store.list_runs` / `governance_api.audit` |
-| **文档检索** | FTS5 全文检索（external → internal 自动回退）+ **访问地址列**；**<3 字查询自动走 LIKE 兜底**并标注方式 | `base_api.search_external/search_internal/like` + `worklist_fields.lookup` |
+| **文档检索** | FTS5 全文检索（external → internal 自动回退）+ **访问地址列**；**按词元判定短词**（含 2 字词元自动走 LIKE 兜底）+ **多词 AND** + **bm25 相关性排序** + 同标题多版标注 | `base_api.search_external/search_internal/like`（`fts_capable`/`fts_query`）+ `worklist_fields.lookup` |
 | **发布事件** | **全量**提交流（点开看**完整变更**：文件清单 + 完整提交说明 + 原始 `git show`）+ SBOM 组件数/锁哈希 + 契约版本 | `git log` / `git show` + `reports/_sbom/` + `contract_manifest.json` |
 
 **新增只读路由**：`GET /api/commit?sha=`（单提交完整变更）、
 `GET /api/local/file?path=`（**白名单内**的本地文件由浏览器打开/下载；
-四重校验见 §6.7，**不拉起本机程序**——那会夺焦点，本仓明令禁止）。
+四重校验见 §6.7，**不拉起本机程序**——那会夺焦点，本仓明令禁止）、
+`GET /api/records`（政策法规分页：`q_title/q_docno/q_rfn/source/theme/timeliness/sort/desc/page/size`）、
+`GET /api/records/facets`、`GET /api/rules`（公司制度分页：`q_title/q_docno/q_ipn/theme/...`）、
+`GET /api/rules/facets`、`GET /api/relations?ref=`（关系图谱）。
+
+> **排序白名单**：`sort` 只接受 `EXTERNAL_SORT_COLS` / `INTERNAL_SORT_COLS` 里的列名，
+> 其余一律回退默认列 —— 列名是直接拼进 SQL 的，不白名单就是注入面
+> （守卫 `test_sort_is_whitelisted` 会拿 `title; DROP TABLE records--` 去试）。
 
 **纪律（与全仓一致，方案 §8.2.2）**
 
@@ -941,6 +956,8 @@ flowchart TD
 显式 `model="…"` **覆盖 mode**（优先级最高）；分句增强由 env `REG_ORCH_SEMANTIC_SPLIT=1` 控制（**默认关**，见 §8.6 第 2 条）。
 
 <!-- END GENERATED: 全链数据流总图 -->
+
+
 
 
 

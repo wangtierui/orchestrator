@@ -996,6 +996,141 @@ def governance() -> dict:
         return _degrade("governance_store", e)
 
 
+def _theme_label(v: str) -> str:
+    """主题码/全名 → 展示用名称（统一口径）。
+
+    双体系（2026-10-23 实测）：**外部**底座存的是全名（`T1销售行为与消费者保护`），
+    **内部**底座存的是代号（`T1`），另有 `UNALIGNED`/空。三处不归一，同一页签里
+    就会出现"T1"和"T1销售行为与消费者保护"两种写法，读者会以为是两个主题。
+    """
+    v = (v or "").strip()
+    if not v:
+        return ""
+    if v == "UNALIGNED":
+        return "未对齐"
+    try:
+        from interfaces.theme_api import THEME_MAP_P0
+    except Exception:  # noqa: BLE001  引导缺失时退化为原值（不阻断列表）
+        return v
+    return THEME_MAP_P0.get(v, v)
+
+
+def _facets_with_labels(facets: dict) -> dict:
+    """给 facet 的每个候选补 `label`（值仍原样保留，供筛选回传）。"""
+    out = {}
+    for key, items in (facets or {}).items():
+        # `key=key` 显式绑定循环变量（否则闭包晚绑定，ruff B023：所有分支共用最后一个 key）
+        def _label(v: str, key: str = key) -> str:
+            v = v or ""
+            if key == "themes":
+                # 空主题不是"没有"，而是"还没定主题"（外部 15471 条 / 内部 UNALIGNED）
+                return _theme_label(v) or "（未定主题）"
+            if key == "timeliness":
+                return v or "（未核验）"
+            return v or "（未标注）"
+
+        out[key] = [{"value": it.get("value", ""), "label": _label(it.get("value", "")),
+                     "count": it.get("count", 0)} for it in items]
+    return out
+
+
+def records_page(*, q: str = "", q_title: str = "", q_docno: str = "",
+                 q_rfn: str = "", source: str = "", theme: str = "",
+                 timeliness: str = "", sort: str = "publish_date",
+                 desc: bool = True, page: int = 1, size: int = 50) -> dict:
+    """「政策法规」页签：外部五源监管文件的**分页列表**（经 `base_api`）。"""
+    try:
+        from interfaces import base_api
+
+        d = base_api.list_external_page(q=q, q_title=q_title, q_docno=q_docno,
+                                        q_rfn=q_rfn, source=source, theme=theme,
+                                        timeliness=timeliness, sort=sort,
+                                        desc=desc, page=page, size=size)
+        for it in d.get("items") or []:
+            it["theme_label"] = _theme_label(it.get("theme", ""))
+            # 访问地址已在底座（`url` 列，16602/16607 有值）；空值由前端显示"未查到"
+        d["fetched_at"] = _now()
+        d["source_name"] = "base_api.list_external_page"
+        return d
+    except Exception as e:  # noqa: BLE001
+        return _degrade("base_api.list_external_page", e)
+
+
+def records_facets() -> dict:
+    """「政策法规」页签的筛选候选（源/主题/时效，带计数）。"""
+    try:
+        from interfaces import base_api
+
+        d = _facets_with_labels(base_api.external_facets())
+        d["fetched_at"] = _now()
+        return d
+    except Exception as e:  # noqa: BLE001
+        return _degrade("base_api.external_facets", e)
+
+
+def rules_page(*, q: str = "", q_title: str = "", q_docno: str = "",
+               q_ipn: str = "", theme: str = "", sort: str = "title",
+               desc: bool = False, page: int = 1, size: int = 50) -> dict:
+    """「公司制度」页签：内部制度列表（含**本地文件**访问地址）。"""
+    try:
+        from interfaces import base_api
+        from interfaces import worklist_fields as wf
+
+        d = base_api.list_internal_page(q=q, q_title=q_title, q_docno=q_docno,
+                                        q_ipn=q_ipn, theme=theme, sort=sort,
+                                        desc=desc, page=page, size=size)
+        for it in d.get("items") or []:
+            it["theme_label"] = _theme_label(it.get("primary_theme", ""))
+            # 本地文件：复用 `worklist_fields.local_for`（IPN→仓内相对路径的唯一实现，
+            # 内含 178ms 首次建索引 + mtime 缓存；不在这里另写一套路径拼接）
+            it["local_path"] = wf.local_for(str(it.get("ipn") or ""))
+            raw = it.get("associated_rfns") or "[]"
+            try:
+                it["associated_rfns"] = json.loads(raw)
+            except (TypeError, ValueError):
+                it["associated_rfns"] = []
+        d["fetched_at"] = _now()
+        d["source_name"] = "base_api.list_internal_page"
+        return d
+    except Exception as e:  # noqa: BLE001
+        return _degrade("base_api.list_internal_page", e)
+
+
+def rules_facets() -> dict:
+    """「公司制度」页签的筛选候选（主题，带计数）。"""
+    try:
+        from interfaces import base_api
+
+        d = _facets_with_labels(base_api.internal_facets())
+        d["fetched_at"] = _now()
+        return d
+    except Exception as e:  # noqa: BLE001
+        return _degrade("base_api.internal_facets", e)
+
+
+def relation_graph(ref: str) -> dict:
+    """「关系图谱」页签：以 `ref` 为中心的一跳关系图（经 `relations_api.ego`）。
+
+    图数据全部来自 `interfaces.relations_api`（事实源 `relations_index.jsonl` /
+    治理库 `relation` 表）；本函数只做**展示补全**（主题标签、时间线着色所需字段），
+    不改变关系语义。
+    """
+    try:
+        from interfaces import relations_api
+
+        d = relations_api.ego(ref)
+        if d.get("available"):
+            for nd in d.get("nodes") or []:
+                nd["kind_label"] = ("监管文件" if nd.get("kind") == "regulatory"
+                                    else "公司制度" if nd.get("kind") == "internal"
+                                    else "")
+            d["fetched_at"] = _now()
+            d["source_name"] = "relations_api.ego"
+        return d
+    except Exception as e:  # noqa: BLE001
+        return _degrade("relations_api.ego", e)
+
+
 def search(q: str, *, kind: str = "records", limit: int = 20) -> dict:
     """P6 文档检索：走 base_api 的 FTS5 门面（不裸读 sqlite）。"""
     try:
@@ -1010,14 +1145,17 @@ def search(q: str, *, kind: str = "records", limit: int = 20) -> dict:
             # `q_len < 3` 时**直接走 LIKE 兜底**：FTS5 trigram 只索引 3 字窗口，
             # 双字词（保险/银行/监管）`MATCH` 必然 0 行 —— 实测确认。
             # 这不是"没数据"，而是"检索器不支持这么短的词"，必须换路径而不是显示空。
-            short = len((q or "").strip()) < 3
+            # 判定必须按**词元**（2026-10-23 修）：`len(q) < 3` 只看整串长度，
+            # 于是"保险公司 营销"（9 字）被判为可走 FTS，但切词后含 2 字词元时
+            # FTS 仍 0 命中 ⇒ 用户看到"搜了没结果"。
+            short = not base_api.fts_capable(q)
             try:
                 if short:
                     out["results"] = base_api.search_external_like(q, limit=limit)
                     out["backend"] = "external"
                     out["mode"] = "like"
-                    out["note"] = ("检索词 <3 字：FTS5 trigram 不支持，已改用标题/文号模糊匹配"
-                                   "（不扫正文）")
+                    out["note"] = ("检索词含 2 字以内词元：FTS5 trigram 无法匹配，"
+                                   "已改用标题/文号模糊匹配（多词按 AND，不扫正文）")
                 else:
                     out["results"] = base_api.search_external(q, limit=limit, kind=kind)
                     out["backend"] = "external"
@@ -1054,11 +1192,18 @@ def search(q: str, *, kind: str = "records", limit: int = 20) -> dict:
                         continue
                     title = str(r.get("title") or "")
                     docno = str(r.get("document_number") or "")
-                    res = _wf.lookup(title, docno)
-                    r["url"] = res["url"]
-                    r["url_src"] = res["how"]
-                    if res.get("note"):
-                        r["url_note"] = res["note"]
+                    r["theme_label"] = _theme_label(r.get("theme") or r.get("primary_theme") or "")
+                    if r.get("url"):
+                        # 底座自带官方地址（`records.url`，16602/16607 有值）——
+                        # **优先用它**。原先一律走桥表反查，而桥表只覆盖已登记 RFN 的
+                        # 一部分 ⇒ 大量结果明明有官方链接却显示"未查到"（实测复现）。
+                        r["url_src"] = "base"
+                    else:
+                        res = _wf.lookup(title, docno)
+                        r["url"] = res["url"]
+                        r["url_src"] = res["how"]
+                        if res.get("note"):
+                            r["url_note"] = res["note"]
                     # 内部制度（无 source_url）⇒ 给本地文件
                     ipn = str(r.get("ipn") or "")
                     if not r["url"] and ipn:
@@ -1067,6 +1212,20 @@ def search(q: str, *, kind: str = "records", limit: int = 20) -> dict:
                             r["local_path"] = lp
             except Exception as e:  # noqa: BLE001  补地址失败不影响检索本身
                 out["url_error"] = f"{type(e).__name__}: {str(e)[:120]}"
+            # 同标题多版标注（2026-10-23）：同一部法可能真有多版（如《保险公司偿付能力
+            # 管理规定》2008/2021 两个文号），也可能同一文件被两源重复收录。
+            # **不静默合并**（合并会藏掉版本），改为标 `title_variants=N`，
+            # 前端显示"同标题 N 版" —— 让读者判断是"版本"还是"重复"，而不是
+            # 自己面对两条一模一样的标题去猜"这是检索垃圾吗"。
+            _cnt: dict[str, int] = {}
+            for r in out["results"]:
+                t = str(r.get("title") or "")
+                if t:
+                    _cnt[t] = _cnt.get(t, 0) + 1
+            for r in out["results"]:
+                t = str(r.get("title") or "")
+                if t and _cnt.get(t, 1) > 1:
+                    r["title_variants"] = _cnt[t]
             return out
         return CACHE.get_or_call(f"search:{q}:{kind}:{limit}", _load)
     except Exception as e:  # noqa: BLE001

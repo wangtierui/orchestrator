@@ -193,6 +193,147 @@ def summary() -> dict:
     }
 
 
+#: 关系类型 → 中文标签（唯一处；前端不再自建映射，避免"依据/引用"两套说法）
+RELATION_LABELS = {"basis": "依据", "repeal": "废止"}
+
+
+def ego(ref: str, *, limit: int = 200, include_weak: bool = False) -> dict:
+    """某实体的**自我中心关系图**（1 跳）：出边 + 入边 → `{nodes, edges, counts}`。
+
+    为什么需要（2026-10-23，确认台「关系图谱」页签）
+    ------------------------------------------------
+    关系事实早已存在（4197 条），但确认台只能看"某条待办"，看不到"这份文件
+    依据了谁 / 被谁依据"。页签要的是**一张图**，即"以选中文件为中心的一跳邻域"，
+    而 `by_src`/`by_dst` 各给一半（出边/入边）⇒ 需要在这里合成并**去重编号**。
+
+    参数
+    ----
+    ref : RFN / IPN
+    limit : 边数上限（默认 200）。**必须设上限**：个别上位法被上千份文件依据，
+        全量返回会让前端一次画上千条边（不可读也没必要）。
+    include_weak : 是否包含"仅 `dst_key` 命中"的弱线索（已采集未登记 RFN）。
+        默认排除——弱线索的 `dst_ref` 为空，画成节点会把"未登记"伪装成"已定位"。
+
+    返回::
+
+        {"available": bool, "ref": str, "center": {…},
+         "nodes": [{"id","kind","name","docno","center","is_weak"}…],
+         "edges": [{"id","from","to","relation","label","confidence",
+                    "matched_by","snippet","is_weak"}…],
+         "counts": {"out": n, "in": n, "basis": n, "repeal": n,
+                    "truncated": bool},
+         "labels": {"basis": "依据", "repeal": "废止"}}
+    """
+    if not ref:
+        return {"available": False, "reason": "缺 ref", "ref": "",
+                "nodes": [], "edges": [], "counts": {}}
+
+    def _keep(row: dict) -> bool:
+        """弱线索（dst_ref 为空且靠 dst_key 命中）是否保留。"""
+        if include_weak:
+            return True
+        return bool(row.get("dst_ref"))
+
+    raw = [r for r in by_src(ref) if _keep(r)] + [r for r in by_dst(ref) if _keep(r)]
+    truncated = len(raw) > limit
+    raw = raw[:limit]
+
+    nodes: dict[str, dict] = {}
+
+    def _node(nid: str, kind: str, name: str, docno: str, *, center=False,
+              weak=False) -> str:
+        if not nid:
+            return ""
+        cur = nodes.get(nid)
+        if cur is None:
+            nodes[nid] = {"id": nid, "kind": kind or "", "name": name or "",
+                          "docno": docno or "", "center": center, "is_weak": weak}
+        else:
+            # 同一节点在出/入边里可能只带片面信息（某边缺 dst_docno）⇒ 逐字段补全。
+            # ⚠️ `kind` 也必须补：中心节点是先以空 kind 占位的（`_node(ref, "", …)`），
+            #    若这里只补 name/docno，中心节点的 kind 会永远为空 —— 前端无法区分
+            #    "监管文件"与"公司制度"（实测踩到）。
+            if not cur.get("kind") and kind:
+                cur["kind"] = kind
+            if not cur.get("name") and name:
+                cur["name"] = name
+            if not cur.get("docno") and docno:
+                cur["docno"] = docno
+        return nid
+
+    _node(ref, "", "", "", center=True)
+
+    edges: list[dict] = []
+    seen: set[str] = set()
+    for r in raw:
+        rid = str(r.get("relation_id") or "")
+        if rid and rid in seen:
+            continue
+        if rid:
+            seen.add(rid)
+        dst_ref = str(r.get("dst_ref") or "")
+        dst_key = str(r.get("dst_key") or "")
+        weak = not dst_ref and bool(dst_key)
+        to_id = _node(dst_ref, str(r.get("dst_kind") or ""),
+                      str(r.get("dst_name") or ""), str(r.get("dst_docno") or ""),
+                      weak=weak)
+        if weak:
+            # 弱线索没有 RFN：用 `key:` 前缀造稳定 id（同名文件多次出现仍指向同一节点）
+            to_id = "key:" + dst_key
+            _node(to_id, "regulatory", str(r.get("dst_name") or ""),
+                  str(r.get("dst_docno") or ""), weak=True)
+        from_id = _node(str(r.get("src_ref") or ""), str(r.get("src_kind") or ""),
+                        str(r.get("src_name") or ""), str(r.get("src_docno") or ""))
+        if not to_id or not from_id:
+            continue
+        rel = str(r.get("relation") or "")
+        edges.append({
+            "id": rid or f"{from_id}->{to_id}:{rel}",
+            "from": from_id, "to": to_id, "relation": rel,
+            "label": RELATION_LABELS.get(rel, rel),
+            "confidence": r.get("confidence", ""),
+            "matched_by": r.get("matched_by", ""),
+            "snippet": (r.get("source_snippet") or "")[:120],
+            "is_weak": weak,
+        })
+
+    # 中心节点信息从任一条关系里补（relation 行同时带 src_name/src_docno）
+    center = nodes.get(ref, {"id": ref, "kind": "", "name": "", "docno": "",
+                             "center": True, "is_weak": False})
+    for r in raw:
+        if str(r.get("src_ref") or "") == ref and not center.get("name"):
+            center["name"] = str(r.get("src_name") or "")
+            center["docno"] = str(r.get("src_docno") or "")
+            center["kind"] = str(r.get("src_kind") or "")
+        if str(r.get("dst_ref") or "") == ref and not center.get("name"):
+            center["name"] = str(r.get("dst_name") or "")
+            center["docno"] = str(r.get("dst_docno") or "")
+            center["kind"] = str(r.get("dst_kind") or "")
+    nodes[ref] = center
+
+    out_all = by_src(ref)
+    in_all = by_dst(ref)
+    drawn_out = sum(1 for e in edges if e["from"] == ref)
+    drawn_in = sum(1 for e in edges if e["to"] == ref)
+    return {
+        "available": True, "ref": ref, "center": center,
+        "nodes": list(nodes.values()), "edges": edges,
+        "counts": {
+            # 口径：**实际画出**的边数（不是原始查询条数）——
+            # 否则"图上 4 条边、计数说 13"会让读者以为渲染丢了边。
+            "out": drawn_out, "in": drawn_in,
+            "basis": sum(1 for e in edges if e["relation"] == "basis"),
+            "repeal": sum(1 for e in edges if e["relation"] == "repeal"),
+            # 被排除的弱线索（仅 dst_key 命中、无 dst_ref）——**显式披露**，不静默丢
+            "weak_skipped": (0 if include_weak else
+                             sum(1 for r in out_all + in_all if not r.get("dst_ref"))),
+            "raw_out": len(out_all), "raw_in": len(in_all),
+            "truncated": truncated,
+        },
+        "labels": dict(RELATION_LABELS),
+    }
+
+
 if __name__ == "__main__":  # 离线自检
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
     print(json.dumps(summary(), ensure_ascii=False, indent=2))

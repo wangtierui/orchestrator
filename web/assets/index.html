@@ -145,12 +145,45 @@ pre{background:var(--alt);border:1px solid var(--line);border-radius:var(--r-md)
 details>summary{cursor:pointer;color:var(--primary);font-size:13px}
 .foot{color:var(--fg3);font-size:11.5px;text-align:center;padding:var(--s6) 0 var(--s3)}
 .scrollx{overflow-x:auto;padding-bottom:var(--s2)}
+/* ---------- 政策法规 / 公司制度：可筛选 + 可排序的表头（2026-10-23） ---------- */
+/* 两行表头：第一行筛选控件、第二行列名（点击排序）。
+ * 为什么不做"一个搜索框搜全部"：用户明确要求"表头可筛选"，逐列筛才能表达
+ * "只看 mof 的已废止"这种组合意图；而排序指示（▴/▾）必须与列名同格，否则
+ * 读者不知道当前是按哪一列排的。 */
+tr.filters th{padding:4px 6px;background:var(--card);position:static;border-bottom:1px solid var(--line)}
+tr.filters input,tr.filters select{width:100%;font-size:12px;padding:4px 6px;
+  border:1px solid var(--line);border-radius:var(--r-sm);background:var(--card);color:var(--fg)}
+tr.filters input:focus,tr.filters select:focus{outline:none;border-color:var(--primary);
+  box-shadow:0 0 0 2px var(--primary-l)}
+th.sortable{cursor:pointer;user-select:none;white-space:nowrap}
+th.sortable:hover,th.sortable.on{color:var(--primary)}
+th.sortable .arw{font-size:10px;opacity:.85}
+.pager{display:flex;gap:var(--s3);align-items:center;justify-content:flex-end;
+  margin-top:var(--s3);font-size:13px;color:var(--fg2)}
+.pager button{padding:4px 10px;border:1px solid var(--line2);border-radius:var(--r-sm);
+  background:var(--card);cursor:pointer;font-size:13px}
+.pager button:disabled{opacity:.45;cursor:default}
+.tag{display:inline-block;padding:1px 7px;border-radius:999px;font-size:11px;
+  border:1px solid var(--line);background:var(--alt);color:var(--fg2);white-space:nowrap}
+.mono{font-family:var(--mono);font-size:11.5px;color:var(--fg2)}
+.ttl{max-width:420px}
+/* ---------- 关系图谱 ---------- */
+.gwrap{overflow:auto;border:1px solid var(--line);border-radius:var(--r-md);background:var(--card)}
+.gnode{cursor:pointer}
+.gnode:hover circle{stroke:var(--primary);stroke-width:2.5}
+.gnode text{font-size:11px;fill:var(--fg2);paint-order:stroke;stroke:var(--card);
+  stroke-width:3px;stroke-linejoin:round;pointer-events:none}
+.glegend{display:flex;gap:var(--s4);font-size:12px;color:var(--fg2);margin:var(--s2) 0}
+.glegend i{display:inline-block;width:18px;height:3px;border-radius:2px;margin-right:5px;
+  vertical-align:middle}
+.brand .logo{width:20px;height:20px;fill:currentColor;margin-right:8px;opacity:.92;flex:none}
 </style>
 </head>
 <body>
 <header>
   <div class="hbar">
-    <div class="brand"><i></i>监管合规编排器<small>本地确认台</small></div>
+    <div class="brand"><svg class="logo" viewBox="0 0 16 16" aria-hidden="true"
+      focusable="false"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>监管合规编排器<small>本地确认台</small></div>
     <div class="hstat">
       <span class="badge" id="live">连接中…</span>
       <span class="badge" id="gates">门禁 —</span>
@@ -187,6 +220,12 @@ const TABS = [
   {id:"flow",     name:"数据流转"},
   {id:"metrics",  name:"指标"},
   {id:"worklist", name:"待办闭环"},
+  /* 2026-10-23 新增三页：政策法规 / 公司制度 / 关系图谱。
+   * 为什么放在待办闭环之后：读者动线是"看总量 → 查具体文件 → 看它的来龙去脉"，
+   * 而"关系图谱"必须紧邻两个列表（点列表里的"查看"要跳过去）。 */
+  {id:"laws",     name:"政策法规"},
+  {id:"rules",    name:"公司制度"},
+  {id:"graph",    name:"关系图谱"},
   {id:"governance",name:"治理审计"},
   {id:"search",   name:"文档检索"},
   {id:"release",  name:"发布事件"},
@@ -744,6 +783,35 @@ async function render(){
       v.innerHTML=viewFlow(STATE.flow);
       bindFlow(); return;
     }
+    if(CUR==="laws"){
+      /* 表格状态用 `Object.assign` 兜底：首次进入给默认值，之后**沿用用户的选择**
+       * （翻到第 3 页、按文号筛过，再切回本页时不该被重置）。 */
+      const st = STATE.laws = Object.assign(
+        {page:1, size:50, sort:"publish_date", desc:true,
+         theme:"", source:"", timeliness:"", q_title:"", q_docno:"", q_rfn:""},
+        obj(STATE.laws));
+      if(!STATE.laws_f) STATE.laws_f = await api("/api/records/facets");
+      const d = await api("/api/records?" + toQuery(st));
+      v.innerHTML = viewLaws(d, st, obj(STATE.laws_f));
+      bindLaws(); return;
+    }
+    if(CUR==="rules"){
+      const st = STATE.rules = Object.assign(
+        {page:1, size:50, sort:"title", desc:false,
+         theme:"", q_title:"", q_docno:"", q_ipn:""},
+        obj(STATE.rules));
+      if(!STATE.rules_f) STATE.rules_f = await api("/api/rules/facets");
+      const d = await api("/api/rules?" + toQuery(st));
+      v.innerHTML = viewRules(d, st, obj(STATE.rules_f));
+      bindRules(); return;
+    }
+    if(CUR==="graph"){
+      const ref = obj(STATE.graph).ref || "";
+      if(!ref){ v.innerHTML = viewGraphEmpty(); return; }
+      const d = await api("/api/relations?ref=" + encodeURIComponent(ref));
+      v.innerHTML = viewGraph(d);
+      bindGraph(); return;
+    }
     if(CUR==="governance"){
       STATE.governance=await api("/api/governance");
       v.innerHTML=viewGovernance(STATE.governance); return;
@@ -898,6 +966,312 @@ async function openCommit(sha){
        <pre>${esc(String(d.raw||"").slice(0,12000))}</pre></details>`,
     d.source, d.fetched_at);
   box.scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+
+/* ============================================================
+ * 政策法规 / 公司制度 / 关系图谱（2026-10-23 第一百一十批）
+ * ------------------------------------------------------------
+ * 三页共用一套"**服务端**分页 + 表头筛选 + 表头排序"的表格骨架：
+ *   · 分页必须在服务端：政策法规 16607 行，整包下发 4MB+ 且首屏必卡
+ *     （这与上一批 `/api/overview` 22s 的教训同源：**别把全量搬进浏览器**）；
+ *   · 排序/筛选参数一律交给 `interfaces/base_api` 白名单校验，前端不做任何 SQL
+ *     拼接，也不在前端"取了 50 条再本地排序"（那会让排序结果只覆盖当前页）；
+ *   · 条件存 `STATE`，翻页/排序/改筛选后**不丢条件**。
+ * ============================================================ */
+const toQuery = o => Object.entries(o)
+  .filter(([, v]) => v !== "" && v != null && v !== undefined)
+  .map(([k, v]) => k + "=" + encodeURIComponent(v)).join("&");
+
+function thSort(key, label, st){
+  const on = st.sort === key;
+  const arw = on ? `<span class="arw">${st.desc ? "▾" : "▴"}</span>` : "";
+  return `<th class="sortable${on ? " on" : ""}" data-sort="${key}"
+    title="点击按「${esc(label)}」排序">${esc(label)}${arw}</th>`;
+}
+function fInput(key, st, ph){
+  return `<input data-f="${key}" data-mode="enter" value="${esc(st[key] || "")}"
+    placeholder="${esc(ph || "")}" title="输入后按回车筛选">`;
+}
+function fSelect(key, st, items, ph){
+  const cur = st[key] || "";
+  const opts = [`<option value="">${esc(ph || "全部")}</option>`]
+    .concat(arr(items).map(it => {
+      const v = it.value || "";
+      return `<option value="${esc(v)}"${v === cur ? " selected" : ""}>` +
+        `${esc(it.label || v || "（空）")}（${num(it.count)}）</option>`;
+    }));
+  return `<select data-f="${key}" data-mode="change">${opts.join("")}</select>`;
+}
+function pager(d, id){
+  const total = Number(d.total) || 0, pages = Number(d.pages) || 1,
+        page = Number(d.page) || 1;
+  return `<div class="pager" id="${id}">
+    <span>共 <b>${num(total)}</b> 条 · 第 ${page} / ${pages} 页</span>
+    <button data-pg="1" ${page <= 1 ? "disabled" : ""}>« 首页</button>
+    <button data-pg="${page - 1}" ${page <= 1 ? "disabled" : ""}>‹ 上一页</button>
+    <button data-pg="${page + 1}" ${page >= pages ? "disabled" : ""}>下一页 ›</button>
+    <button data-pg="${pages}" ${page >= pages ? "disabled" : ""}>末页 »</button>
+  </div>`;
+}
+function relBtn(ref){
+  if (!ref) return '<span class="muted">—</span>';
+  return `<button class="link" data-rel="${esc(ref)}"
+    title="在「关系图谱」中查看 ${esc(ref)}">查看</button>`;
+}
+function themeCell(t){
+  return t ? `<span class="tag">${esc(t)}</span>` : '<span class="muted">—</span>';
+}
+function timeCell(v){
+  /* 时效状态用**中文**呈现：底座存的是受控枚举（valid/amended/…），
+   * 直接显示英文枚举会让读者以为"没翻译完"（上一批 P4 已统一过这个口径）。 */
+  const map = {valid:["现行有效","ok"], amended:["已修订","warn"],
+               repealed:["已废止","bad"], expired:["已失效","bad"],
+               pending:["待核验",""]};
+  if (!v) return '<span class="muted">未核验</span>';
+  const m = map[v];
+  return m ? pill(m[0], m[1]) : pill(v, "");
+}
+function addrCell(it){
+  if (it.url) {
+    return `<a href="${esc(it.url)}" target="_blank" rel="noopener">打开原文</a>`;
+  }
+  return '<span class="muted">未查到</span>';
+}
+
+function viewLaws(d, st, f){
+  if (!d || d.available === false) return unavail(obj(d), "政策法规");
+  const items = arr(d.items);
+  const rows = items.map(it => `<tr>
+      <td>${themeCell(it.theme_label)}</td>
+      <td class="mono">${esc(it.rfn || "—")}</td>
+      <td class="ttl">${esc(it.title || "")}</td>
+      <td class="mono">${esc(it.document_number || "—")}</td>
+      <td>${timeCell(it.timeliness_status)}</td>
+      <td><span class="tag">${esc(it.source || "—")}</span></td>
+      <td>${addrCell(it)}</td>
+      <td>${relBtn(it.rfn)}</td></tr>`).join("")
+    || '<tr><td colspan="8" class="muted">无匹配记录（放宽筛选条件再试）</td></tr>';
+  const body = `
+    <div class="scrollx"><table>
+      <thead>
+        <tr class="filters">
+          <th>${fSelect("theme", st, arr(f.themes), "全部主题")}</th>
+          <th>${fInput("q_rfn", st, "RFN 前缀")}</th>
+          <th>${fInput("q_title", st, "名称包含…")}</th>
+          <th>${fInput("q_docno", st, "文号包含…")}</th>
+          <th>${fSelect("timeliness", st, arr(f.timeliness), "全部时效")}</th>
+          <th>${fSelect("source", st, arr(f.sources), "全部来源")}</th>
+          <th></th><th></th>
+        </tr>
+        <tr>
+          ${thSort("theme", "主题", st)}
+          ${thSort("rfn", "唯一标识号", st)}
+          ${thSort("title", "名称", st)}
+          ${thSort("document_number", "文号", st)}
+          ${thSort("timeliness_status", "时效", st)}
+          ${thSort("source", "源", st)}
+          <th>访问地址</th><th>关系</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table></div>
+    ${pager(d, "lawsPager")}`;
+  return card("政策法规", `${num(d.total)} 条 / ${d.pages} 页`, body,
+    d.source_name || "base_api.list_external_page", d.fetched_at);
+}
+
+function viewRules(d, st, f){
+  if (!d || d.available === false) return unavail(obj(d), "公司制度");
+  const items = arr(d.items);
+  const rows = items.map(it => `<tr>
+      <td>${themeCell(it.theme_label)}</td>
+      <td class="mono">${esc(it.ipn || "—")}</td>
+      <td class="ttl">${esc(it.title || "")}</td>
+      <td class="mono">${esc(it.docno || "—")}</td>
+      <td>${it.local_path
+        ? `<a href="/api/local/file?path=${encodeURIComponent(it.local_path)}"
+             target="_blank" rel="noopener" title="打开/下载：${esc(it.local_path)}">打开本地文件</a>`
+        : '<span class="muted">未查到</span>'}</td>
+      <td>${relBtn(it.ipn)}</td></tr>`).join("")
+    || '<tr><td colspan="6" class="muted">无匹配记录（放宽筛选条件再试）</td></tr>';
+  const body = `
+    <div class="scrollx"><table>
+      <thead>
+        <tr class="filters">
+          <th>${fSelect("theme", st, arr(f.themes), "全部主题")}</th>
+          <th>${fInput("q_ipn", st, "IPN 前缀")}</th>
+          <th>${fInput("q_title", st, "名称包含…")}</th>
+          <th>${fInput("q_docno", st, "文号包含…")}</th>
+          <th></th><th></th>
+        </tr>
+        <tr>
+          ${thSort("primary_theme", "主题", st)}
+          ${thSort("ipn", "唯一标识号", st)}
+          ${thSort("title", "名称", st)}
+          ${thSort("docno", "文号", st)}
+          <th>访问地址</th><th>关系</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table></div>
+    ${pager(d, "rulesPager")}`;
+  return card("公司制度", `${num(d.total)} 条 / ${d.pages} 页`, body,
+    d.source_name || "base_api.list_internal_page", d.fetched_at);
+}
+
+function viewGraphEmpty(){
+  return card("关系图谱", "从列表进入", `<div class="note">
+    在「政策法规」或「公司制度」列表点某行的 <b>关系 · 查看</b>，
+    这里会显示该文件为中心的**依据 / 废止**关系图。</div>
+    <div class="muted">关系事实源：<code>relations_index.jsonl</code>
+    （依据 3131 条 / 废止 1066 条，覆盖 4055 条监管↔监管、19 条制度↔制度、
+    123 条制度→监管）。</div>`, "interfaces.relations_api");
+}
+
+function viewGraph(d){
+  if (!d || d.available === false) return unavail(obj(d), "关系图谱");
+  const nodes = arr(d.nodes), edges = arr(d.edges), center = obj(d.center);
+  const c = obj(d.counts);
+  const head = `<div class="toolbar">
+    <span class="tag">${esc(center.kind_label || "中心")}</span>
+    <b>${esc(center.name || d.ref)}</b>
+    <span class="mono">${esc(d.ref)}</span>
+    <span class="muted">${esc(center.docno || "")}</span>
+    <span class="muted">出 ${num(c.out)} · 入 ${num(c.in)} ·
+      依据 ${num(c.basis)} · 废止 ${num(c.repeal)}</span>
+    ${c.weak_skipped ? `<span class="tag">已隐藏 ${num(c.weak_skipped)} 条弱线索（未登记 RFN）</span>` : ""}
+    ${c.truncated ? '<span class="tag">结果已截断（上限 200 条）</span>' : ""}
+  </div>`;
+  if (!edges.length) {
+    return card("关系图谱", esc(d.ref),
+      head + '<div class="note">该文件暂无「依据 / 废止」关系记录。</div>',
+      d.source_name || "relations_api.ego", d.fetched_at);
+  }
+  /* 环形布局：中心 + 邻居均匀分布在圆周。
+   * 确定性布局（无随机抖动、无第三方库）：同一份数据每次打开图都一样，
+   * 便于对照讨论；节点文字放在**圆外下方**，避免"字号估不准被裁"
+   * （这是上一批条形图改 CSS 网格的同一个教训）。 */
+  const W = 1000, H = 580, cx = W / 2, cy = H / 2, R = Math.min(W, H) / 2 - 110;
+  const others = nodes.filter(n => n.id !== d.ref);
+  const pos = {}; pos[d.ref] = {x: cx, y: cy};
+  others.forEach((n, i) => {
+    const a = -Math.PI / 2 + i * 2 * Math.PI / Math.max(1, others.length);
+    pos[n.id] = {x: cx + R * Math.cos(a), y: cy + R * Math.sin(a)};
+  });
+  const cut = (s, n) => { s = String(s || ""); return s.length > n ? s.slice(0, n) + "…" : s; };
+  const edgeSvg = edges.map(e => {
+    const a = pos[e.from], b = pos[e.to];
+    if (!a || !b) return "";
+    const repeal = e.relation === "repeal";
+    return `<line x1="${a.x.toFixed(1)}" y1="${a.y.toFixed(1)}"
+      x2="${b.x.toFixed(1)}" y2="${b.y.toFixed(1)}"
+      stroke="${repeal ? "var(--bad)" : "var(--primary)"}" stroke-width="1.6"
+      opacity=".5"${repeal ? ' stroke-dasharray="5 4"' : ""}>
+      <title>${esc(e.label)}${e.confidence ? "（" + esc(e.confidence) + "）" : ""}</title></line>`;
+  }).join("");
+  const nodeSvg = nodes.map(n => {
+    const p = pos[n.id] || {x: cx, y: cy};
+    const isC = n.id === d.ref;
+    const r = isC ? 44 : 28;
+    const fill = isC ? "var(--primary)"
+      : (n.kind === "internal" ? "var(--primary-l)" : "var(--alt)");
+    const stroke = isC ? "var(--primary)"
+      : (n.kind === "internal" ? "var(--primary)" : "var(--line2)");
+    const inside = isC ? "中心" : (n.kind === "internal" ? "制度" : "监管");
+    return `<g class="gnode" data-ref="${esc(n.id)}">
+      <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${r}"
+        fill="${fill}" stroke="${stroke}" stroke-width="1.5"/>
+      <text x="${p.x.toFixed(1)}" y="${(p.y + 4).toFixed(1)}" text-anchor="middle"
+        style="fill:${isC ? "#fff" : "var(--fg2)"};font-size:11px">${inside}</text>
+      <text x="${p.x.toFixed(1)}" y="${(p.y + r + 15).toFixed(1)}" text-anchor="middle"
+        style="font-size:11px;fill:var(--fg)">${esc(cut(n.name || n.id, 16))}</text>
+      <title>${esc(n.name || n.id)}
+${esc(n.docno || "")}
+点击以此为中新查看</title>
+    </g>`;
+  }).join("");
+  const edgeRows = edges.map(e => {
+    const outbound = e.from === d.ref;
+    const peerId = outbound ? e.to : e.from;
+    const peer = nodes.find(n => n.id === peerId) || {};
+    return `<tr>
+      <td>${pill(e.label, e.relation === "repeal" ? "bad" : "ok")}</td>
+      <td class="muted">${outbound ? "本文件 →" : "← 本文件"}</td>
+      <td class="ttl">${esc(peer.name || peerId)}</td>
+      <td class="mono">${esc(peer.docno || "—")}</td>
+      <td class="muted">${esc(e.matched_by || "—")}</td>
+      <td class="muted">${esc(String(e.confidence ?? "—"))}</td></tr>`;
+  }).join("");
+  const body = `${head}
+    <div class="glegend">
+      <span><i style="background:var(--primary)"></i>依据</span>
+      <span><i style="background:var(--bad)"></i>废止（虚线）</span>
+      <span class="muted">点任一节点 → 以它为新中心继续查看</span>
+    </div>
+    <div class="gwrap"><svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}"
+      role="img" aria-label="关系图谱">${edgeSvg}${nodeSvg}</svg></div>
+    <h3 style="margin:var(--s4) 0 var(--s2)"><span>关系明细</span>
+      <span class="hint">${edges.length} 条</span></h3>
+    <div class="scrollx"><table><thead><tr>
+      <th>关系</th><th>方向</th><th>对方文件</th><th>对方文号</th>
+      <th>匹配方式</th><th>置信度</th></tr></thead>
+      <tbody>${edgeRows}</tbody></table></div>`;
+  return card("关系图谱", `${nodes.length} 节点 / ${edges.length} 边`, body,
+    d.source_name || "relations_api.ego", d.fetched_at);
+}
+
+/** 表头排序 + 筛选 + 翻页的**共用绑定**（两个表格行为必须一致）。 */
+function bindTable(st, pagerId){
+  const v = $("#view");
+  $$("th.sortable", v).forEach(th => {
+    th.onclick = () => {
+      const k = th.dataset.sort;
+      if (st.sort === k) st.desc = !st.desc;
+      else { st.sort = k; st.desc = false; }   // 首次点列：升序（标题/编号类更自然）
+      st.page = 1;
+      render();
+    };
+  });
+  $$("[data-f]", v).forEach(el => {
+    const k = el.dataset.f;
+    if (el.dataset.mode === "change") {
+      el.onchange = () => { st[k] = el.value; st.page = 1; render(); };
+    } else {
+      // 文本框只在回车时提交：onchange（失焦）会在每次点击别处时重渲染、抢焦点
+      el.onkeydown = e => {
+        if (e.key === "Enter") { st[k] = el.value; st.page = 1; render(); }
+      };
+    }
+  });
+  const pg = $("#" + pagerId, v);
+  if (pg) {
+    $$("[data-pg]", pg).forEach(b => {
+      b.onclick = () => {
+        const n = Number(b.dataset.pg) || 1;
+        if (n === Number(st.page)) return;
+        st.page = n; render();
+      };
+    });
+  }
+  $$("[data-rel]", v).forEach(b => { b.onclick = () => goGraph(b.dataset.rel); });
+}
+
+function bindLaws(){ bindTable(STATE.laws, "lawsPager"); }
+function bindRules(){ bindTable(STATE.rules, "rulesPager"); }
+
+function bindGraph(){
+  const v = $("#view");
+  $$("g.gnode", v).forEach(g => { g.onclick = () => goGraph(g.dataset.ref); });
+}
+
+/** 跳到「关系图谱」页签并以 `ref` 为中心。
+ *  不直接 `render()`：先改 hash，让 hashchange 统一负责 CUR/导航高亮/渲染，
+ *  避免"手改 CUR + 再触发 hashchange"造成**渲染两次**（闪一下）。 */
+function goGraph(ref){
+  if (!ref) return;
+  STATE.graph = Object.assign({}, obj(STATE.graph), {ref: ref});
+  if (location.hash.slice(1) === "graph") { CUR = "graph"; render(); }
+  else { location.hash = "graph"; }
 }
 
 function applyHash(){

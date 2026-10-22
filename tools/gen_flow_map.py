@@ -850,10 +850,28 @@ def _arch_facts() -> dict:
     except Exception as e:  # noqa: BLE001
         facts["errors"].append(f"链声明不可读（{type(e).__name__}）")
         facts["layers"], facts["n_steps"], facts["artifacts"] = [], 0, []
+    # 接入层计数（2026-10-23）：原为硬编码 `19 命令 · 8 页`，实测早已漂移成
+    # **23 命令 / 10 页**（新增政策法规/公司制度/关系图谱三页）—— 硬编码的计数
+    # 必然过期，故与"节点全部派生"同一立意，改为从**源码**数出来。
+    try:
+        _cli = open(os.path.join(paths.ROOT, "cli.py"), encoding="utf-8").read()
+        # COMMANDS 字典的键（4 空格缩进的 `"name": handler,`）
+        facts["cli_cmds"] = len(set(re.findall(r'^    "([a-z0-9_]+)":\s', _cli, re.M)))
+    except Exception as e:  # noqa: BLE001
+        facts["errors"].append(f"cli.py 不可读（{type(e).__name__}）")
+        facts["cli_cmds"] = 0
+    try:
+        _html = open(os.path.join(paths.ROOT, "web", "assets", "index.html"),
+                     encoding="utf-8").read()
+        # 前端页签数组 TABS 里的 `{id:"xxx"` 个数 = 页签数
+        facts["web_pages"] = len(re.findall(r'\{id:"([a-z0-9]+)"', _html))
+    except Exception as e:  # noqa: BLE001
+        facts["errors"].append(f"web/assets/index.html 不可读（{type(e).__name__}）")
+        facts["web_pages"] = 0
     # 调度层
     try:
         sc = yaml.safe_load(open(os.path.join(paths.ROOT, "config", "schedule.yaml"),
-                                encoding="utf-8")) or {}
+                                 encoding="utf-8")) or {}
         jobs = sc.get("jobs") or []
         facts["cron"] = sum(1 for j in jobs if j.get("trigger") == "cron")
         facts["event"] = sum(1 for j in jobs if j.get("trigger") == "event")
@@ -971,8 +989,9 @@ def render_arch_map() -> str:
     L.append("```mermaid")
     L.append("flowchart TB")
     L.append('  subgraph ACC["接入层（L6）"]')
-    L.append('    CLI["cli.py<br/>19 命令 · 唯一入口"]')
-    L.append('    WEB["web/ 本地确认台<br/>loopback · 8 页"]')
+    # 计数取自 `_arch_facts()`（不可读时渲染 `?`，并在块首给出告警）
+    L.append(f'    CLI["cli.py<br/>{f.get("cli_cmds") or "?"} 命令 · 唯一入口"]')
+    L.append(f'    WEB["web/ 本地确认台<br/>loopback · {f.get("web_pages") or "?"} 页"]')
     L.append('    MCP["mcp_server/<br/>计划 W2 · MCP tool 面"]')
     L.append("  end")
     L.append('  subgraph SCHED["调度层（唯一事实源 schedule.yaml + triggers.yaml）"]')
