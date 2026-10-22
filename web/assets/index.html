@@ -1143,8 +1143,20 @@ function viewGraph(d){
     ${c.truncated ? '<span class="tag">结果已截断（上限 200 条）</span>' : ""}
   </div>`;
   if (!edges.length) {
-    return card("关系图谱", esc(d.ref),
-      head + '<div class="note">该文件暂无「依据 / 废止」关系记录。</div>',
+    /* 空图分两种，"暂无关系"这个说法只对第一种成立（2026-10-23 补）：
+     *   · 真的没有关系；
+     *   · **有关系，但对方未登记 RFN**（只有 `dst_key`）⇒ 画不出节点，默认过滤掉。
+     * 全库实测 4197 条关系里有 2462 条（58.6%）属于后者。若一律显示"暂无"，
+     * 读者会以为"这份文件没有依据关系"，而事实是"关系存在、只是没能定位到具体文件"。
+     * 所以这里**把过滤掉的条数说清楚**，并给出可操作建议（补登记 RFN 后即可上图）。 */
+    const weak = Number(c.weak_skipped) || 0;
+    const note = weak
+      ? `<div class="pill warn">⚠ 有 ${num(weak)} 条关系指向<b>未登记文件</b>，故未画图</div>
+         <div class="note">这些关系的对方只有「文号 / 标题线索」，尚未登记为 RFN，
+         无法作为图节点定位（不会把它们伪造成"已定位"）。</div>
+         <div class="muted">处置：先在归属表补登记对方文件（生成 RFN），再回到本页查看。</div>`
+      : '<div class="note">该文件暂无「依据 / 废止」关系记录。</div>';
+    return card("关系图谱", esc(d.ref), head + note,
       d.source_name || "relations_api.ego", d.fetched_at);
   }
   /* 环形布局：中心 + 邻居均匀分布在圆周。

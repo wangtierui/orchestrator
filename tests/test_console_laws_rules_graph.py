@@ -263,6 +263,31 @@ class TestRelationGraph:
         assert e["available"] is True
         assert e["edges"] == []
 
+    def test_weak_only_file_shows_no_fake_edges(self) -> None:
+        """"只有弱线索"的文件：**不画边**，但必须披露条数。
+
+        实测：有关系的 340 个实体里，**180 个（53%）**的关系全部指向未登记文件
+        （只有 `dst_key`）。若图上一律显示"暂无关系"，读者会以为"这份文件没有依据关系"，
+        而事实是"关系存在、只是对方没登记 RFN"——两种结论对合规判断完全不同。
+        """
+        from interfaces import relations_api as R
+
+        rows = R.load("all")
+        stat: dict[str, list[int]] = {}
+        for r in rows:
+            s = str(r.get("src_ref") or "")
+            if not s:
+                continue
+            stat.setdefault(s, [0, 0])
+            stat[s][0] += 1
+            if r.get("dst_ref"):
+                stat[s][1] += 1
+        weak_only = [k for k, (tot, strong) in stat.items() if tot and not strong]
+        assert weak_only, "样本缺失（应存在仅弱线索的实体）"
+        e = R.ego(weak_only[0])
+        assert e["edges"] == [], "弱线索被当成边画出（会把'未定位'伪装成'已定位'）"
+        assert e["counts"]["weak_skipped"] > 0, "未披露被过滤的弱线索条数"
+
 
 class TestWebLayer:
     """E. web 层补全（标签归一 / 本地文件 / kind_label）。"""
