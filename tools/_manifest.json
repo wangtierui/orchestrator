@@ -382,6 +382,27 @@
       "file": "workbench_service.py",
       "independent_why": "用户要求「配置为开机自启动，并说明启动方式与验证方式」。若只把做法写在文档里，三个问题答不了：怎么验证真装上了（status）、装错了怎么撤（uninstall）、怎么保证只有一个实例（serve --single-instance）。故做成可执行工具。**方案选型**：计划任务 ONLOGON（用户级、**零提权**、可查询/可卸载、可延迟）优于启动文件夹（无查询/卸载）与 Windows 服务（需管理员 + 第三方 nssm）。可靠性三件套：单实例锁（计划任务每次登录都触发，无保护会起多进程互相踩踏）、日志落盘（pythonw 无控制台，print 全丢 ⇒ 改 logger + RotatingFileHandler）、pythonw 无窗口。只操作本用户自己的计划任务与 data/state/ 下文件，不碰数据库、不改仓内代码。",
       "produced_by": "本地确认台的开机自启动：install / uninstall / status / verify"
+    },
+    {
+      "category": "independent",
+      "entry": "python -m tools.mermaid_lint [--file README.md]",
+      "file": "mermaid_lint.py",
+      "independent_why": "用户报 README 的 ER/数据流/链路图全部显示 Unable to render rich display。本机无 node（跑不了 mermaid-cli）、mermaid.ink 在线渲染接口在网络策略下不可达 ⇒ 无法用真实解析器定位，只能把图收敛到跨版本稳定的保守方言（禁 <br/>、禁引号、禁分号与 & 串联、禁非矩形外形、classDef 单值…），并用本工具做静态机器校验，防止生成器或手写再次漂移。只读 README，不改任何数据。",
+      "produced_by": "README 的 Mermaid 图保守方言静态检查（离线，可进 CI）"
+    },
+    {
+      "category": "independent",
+      "entry": "python -m tools.dead_code_audit [--only A|B|C|D] [--json out.json]",
+      "file": "dead_code_audit.py",
+      "independent_why": "用户要求排查「已明确废弃删除的代码是否仍留在脚本内」与「是否存在只增不减的冗余」。四类判据全部静态可复跑；B 类（只定义不引用）已排除 pytest 自动收集、已允许模块.函数() 的点号访问、已补扫根目录 .py（否则 bootstrap/paths 里的使用会被漏掉，产出假死代码）。**只报告不改代码**：删除必须人工判断（动态调用无法静态判定）。实测本仓：真死代码 18 项（已删并清零）、死分支 0、大段注释代码 0；40 项「可疑命名」经人工核验均为正当业务命名（ipn_old / enrich_legacy / self._old）。",
+      "produced_by": "废弃/冗余代码审计：废弃标记 / 只定义不引用 / 只增不减痕迹 / 大段注释代码"
+    },
+    {
+      "category": "independent",
+      "entry": "python -m tools.backfill_extract_version [--apply] [--file mof_laws.jsonl]",
+      "file": "backfill_extract_version.py",
+      "independent_why": "collect:mof 的耗时修复依赖「本地副本未变 + extract_version 一致」才复用抽取结果；存量 raw 的 246 个附件没有该字段 ⇒ 升级后第一次运行仍会全量重抽（小时级）。本工具把既有抽取结果盖上官方的 EXTRACT_VERSION，让复用从下一次运行起生效。安全依据：复用等于沿用已有产物（数据本来就在，下游一直按它工作），盖章不引入新的不准确，只是把「要不要重抽」的决定权收敛为「抽取器升级时显式做一次」。默认 dry-run，加 --apply 才写且自动备份。",
+      "produced_by": "给历史附件盖抽取版本号（一次性迁移，默认 dry-run）"
     }
   ],
   "generated_at": "2026-09-30",

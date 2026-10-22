@@ -68,13 +68,6 @@ FILES = {
 }
 
 
-def _latest_supp_jsonl():
-    import glob as _glob
-    cand = sorted(_glob.glob(os.path.join(ROOT, "supplementary_regulations_scraper",
-                                          "data", "cleaned", "supp_cleaned_*.jsonl")))
-    return cand[-1] if cand else None
-
-
 from config.enums import SOURCE_ORDER
 from std_lib.common_lib.norm import norm_docno as _norm_docno  # A-10：SSOT 收敛（标准层）
 

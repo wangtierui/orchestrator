@@ -661,7 +661,12 @@ def check_readme_consistency() -> list:
         # 窄正则仍会漏（实测 `OCR_PADDLE_ROOT` 即以非标准形态取用）。
         for p in _pyfiles():
             for src_line in _read(p).splitlines():  # 注意：勿复用 `line`（上文已绑定为 int 行号）
-                if re.search(r"environ|getenv|\benv\b", src_line, re.I):
+                # 2026-10-22（TD-19 修正之一）：还要覆盖**常量形态** —— 本仓有
+                # `ENV_PATH = "REG_ORCH_MCP_TOKEN_FILE"`（`mcp_server/auth.py`）这类
+                # "把 env 名存进常量再取用"的写法；原正则 `environ|getenv|\benv\b`
+                # 匹配不到 `ENV_PATH`（`\benv\b` 在 `ENV_PATH` 里后面是 `_`，不算边界）
+                # ⇒ 该 env 被漏收 ⇒ README 明明记载了却被判"未记载"（假 LOW）。
+                if re.search(r"environ|getenv|\benv\b|ENV", src_line):
                     declared |= set(re.findall(r'["\']([A-Z][A-Z0-9_]{3,})["\']', src_line))
         # 配置里的 env 常以**占位符**出现（`${OCR_PADDLE_ROOT:-默认}`）→ 须同时收集
         # **值**中的占位符名（只看键会漏，实测 `OCR_PADDLE_ROOT` 即由此漏掉）。
@@ -671,7 +676,13 @@ def check_readme_consistency() -> list:
         declared |= {"PGVECTOR_DSN", "PGVECTOR_APP_PWD", "PKULAW_NODE_EXE", "PKULAW_PKG_DIR"}
         for m in re.finditer(r"`([A-Z][A-Z0-9_]{3,})`", txt):
             name = m.group(1)
-            if not any(k in name for k in ("_HOME", "_DIR", "_DSN", "_BIN", "_TOKEN", "_EXE", "_ROOT", "_OFFLINE", "_PWD")):
+            # 2026-10-22（TD-19 修正之二）：判据从"**包含**后缀"改为"**以后缀结尾**"。
+            # 原因：`_EXE` 是 `LAYER_EXEC_PLAN`（README §8 里提到的**变量名**，不是 env）
+            # 的子串 ⇒ 被误当 env 报 LOW；`_TOKEN` 同理命中 `…_TOKEN_FILE`。
+            # env 命名的**约定是后缀**（`*_ROOT` / `*_DIR` / `*_EXE` …），用 endswith 才准。
+            if not any(name.endswith(k) for k in (
+                    "_HOME", "_DIR", "_DSN", "_BIN", "_TOKEN", "_EXE", "_ROOT",
+                    "_OFFLINE", "_PWD")):
                 continue
             if name in declared:
                 continue

@@ -104,17 +104,6 @@ def plan_theme(theme: str):
     ]
 
 
-def _upper_dirty(state: dict, themes_done: list[str]) -> bool:
-    """upper 依赖明细 + 归属表；本批有任一主题明细重建则需重跑 upper。"""
-    if not themes_done:
-        return False
-    for t in themes_done:
-        for s in state.get("themes", {}).get(t, []):
-            if s["step"] == "detail" and s.get("ran"):
-                return True
-    return False
-
-
 def run(theme: str = "", themes: list[str] | None = None, only_steps: set[str] | None = None,
         dry_run: bool = False) -> dict:
     state = {}

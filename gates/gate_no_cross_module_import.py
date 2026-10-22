@@ -72,11 +72,6 @@ _RE_ASSIGN = re.compile(r"^(\w+)\s*=\s*.+$")
 _RE_IMPORT = re.compile(r"^\s*(?:from\s+([\w.]+)\s+import|import\s+([\w.]+))")
 
 
-def _own_module(rel: str) -> str:
-    parts = rel.replace("\\", "/").split("/")
-    return parts[1] if len(parts) > 1 and parts[0] == "modules" else ""
-
-
 def _scan_file(fp: str, rel: str, own: str) -> list[tuple[int, str, str]]:
     """返回 [(lineno, pattern, line)]。"""
     try:

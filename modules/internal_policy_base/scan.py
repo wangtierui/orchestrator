@@ -273,37 +273,6 @@ def _pick_title_candidate(picks: list[str], fallback: str) -> str:
     return max(subs, key=len) if subs else picks[0]
 
 
-def _earliest_kw_end(cand: str, *, lo: int = 6, hi: int = 80) -> int:
-    """返回 `cand` 中**标题结束位置**（制度类关键词结尾，含紧跟的括注），无则 -1。
-
-    2026-09-13（用户报告案例）：原实现对"前 80/120 字"只校验**末尾**是否为关键词，
-    于是"标题与正文连写"的文档会把正文一并吞进标题——实测
-    `员工周转房入住协议我同意阳光人寿保险股份有限公司《周转房管理办法`、
-    `保全档案归档清单阳光人寿个险保全扫描清单统计日期：…客户号`。
-
-    判据（**首个可行结尾即采用**）：标题天然在开头结束，第一个"关键词（＋紧跟括注）"且
-    其后不再是 `的××` 接续的位置即标题结尾。实测反例：
-      · `员工周转房入住协议我同意…《周转房管理办法` → 在 `协议` 处截断（其后为正文，长度 > tail_tol）；
-      · `…管理办法（2022年修订版）制定本办法` → 在**版本括注**后截断（首获即止，不再向后吞到"本办法"）；
-      · `关于印发《X办法》的通知` → `办法》的` 命中 `的××` 延长标记 → 跳过，落到 `通知`。
-    """
-    for m in _TITLE_KW_ANY.finditer(cand):
-        end = m.end()
-        mv = _TITLE_VER_PAREN.match(cand[end:]) or re.match(r"版", cand[end:])
-        if mv:
-            end += mv.end()
-        if not (lo <= end <= hi):
-            continue
-        if _TITLE_TAIL_EXT.match(cand[end:]):
-            continue                      # "的通知/的函" → 标题未完，继续
-        # 弱关键词（表/单/书）须后继很短才算结尾——`管理类劳动合同书领用及用印管理办法》的通知`
-        # 若在 `书` 处截断会丢掉半截标题（实测用户报告第 3 例）。
-        if m.group(0) in _TITLE_KW_WEAK and len(cand) - end > _WEAK_TAIL_TOL:
-            continue
-        return end
-    return -1
-
-
 def _trim_self_repeat(s: str) -> str:
     """消解"公司名+标题+公司名 发布/编制…"自重复（如"XX公司内部控制指引XX公司 发布"）：
     找首段（8-30 字）的复现位置，截到复现起点（保留 [公司名+标题]）。"""

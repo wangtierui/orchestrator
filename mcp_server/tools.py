@@ -132,37 +132,6 @@ def base_search(text: str, base: str = "external", limit: int = 10) -> list:
     return ba.search_external(text, limit=max(1, int(limit)))
 
 
-@tool(tags=("data",))
-def base_record(record_id: str) -> dict:
-    """按 record_id 取单条外部监管记录（含正文）——检索结果的详情面。"""
-    from interfaces import base_api as ba
-
-    r = ba.get_external(record_id)
-    if not r:
-        return {"found": False, "record_id": record_id}
-    return {"found": True, "record": r}
-
-
-@tool(tags=("data",))
-def timeliness_summary() -> dict:
-    """时效核验三态汇总（success/partial/unavailable）+ 最近核验时间——R13 口径。"""
-    import glob
-    import json
-    import os
-
-    import paths
-
-    d = os.path.join(paths.MODULES_DIR, "regulatory_scrapers", "timeliness_review")
-    cands = sorted(glob.glob(os.path.join(d, "verify_summary_*.json")))
-    if not cands:
-        return {"found": False}
-    try:
-        with open(cands[-1], encoding="utf-8") as fh:
-            return {"found": True, "latest": os.path.basename(cands[-1]), **json.load(fh)}
-    except (OSError, ValueError):
-        return {"found": False, "error": "摘要不可解析"}
-
-
 # --------------------------------------------------------------------------- #
 # 配置事实源（只读回显，供 agent 自证「事实源在哪」）
 # --------------------------------------------------------------------------- #

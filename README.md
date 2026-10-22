@@ -119,20 +119,27 @@ regulatory_compliance_orchestrator/
 
 ```mermaid
 erDiagram
-    RAW ||--o{ CLEANED : "清洗（39列契约+隔离）"
-    CLEANED ||--o{ CLAUSE : "条文结构（条/款/项）"
-    CLEANED ||--o{ VERIFICATION : "时效核验（北大法宝）"
-    CLEANED ||--o{ ENTRY : "归属表（RFN 权威）"
-    ENTRY ||--o{ THEME : "主题表（底座）"
-    ENTRY ||--o{ DETAIL : "明细表（11 份）"
-    ENTRY ||--o{ BRIDGE : "RFN↔clean 桥"
-    CLAUSE ||--o{ RELATION : "依据/废止关系"
-    ENTRY ||--o{ MERGED : "内部制度对齐（制度↔RFN）"
-    CLEANED ||--o{ PUBLISHED : "发布件（外部底座）"
-    ENTRY ||--o{ PUBLISHED : "发布件（内部底座）"
-    RELATION ||--o{ ANALYSIS : "分析交付（17 项）"
-    THEME ||--o{ ANALYSIS : "五级分析结构"
+    RAW ||--o{ CLEANED : 清洗
+    CLEANED ||--o{ CLAUSE : 条文
+    CLEANED ||--o{ VERIFICATION : 时效
+    CLEANED ||--o{ ENTRY : 归属
+    ENTRY ||--o{ THEME : 主题
+    ENTRY ||--o{ DETAIL : 明细
+    ENTRY ||--o{ BRIDGE : 桥表
+    CLAUSE ||--o{ RELATION : 关系
+    ENTRY ||--o{ MERGED : 对齐
+    CLEANED ||--o{ PUBLISHED : 外发
+    ENTRY ||--o{ PUBLISHED : 内发
+    RELATION ||--o{ ANALYSIS : 分析
+    THEME ||--o{ ANALYSIS : 结构
 ```
+
+> **关系语义**（上图标签为单字缩写）：Mermaid 的 `erDiagram` 关系标签只接受**无空格、
+> 无标点的单词**，因此图中用单字，完整含义在此列示 ——
+> **清洗**=39 列契约 + 校验隔离 · **条文**=条/款/项结构 · **时效**=北大法宝核验 ·
+> **归属**=RFN 权威归属表 · **主题**=主题底座 · **明细**=11 份明细表 ·
+> **桥表**=RFN↔clean 桥 · **关系**=依据/废止关系 · **对齐**=内部制度↔RFN 对齐 ·
+> **外发/内发**=外部/内部双底座发布件 · **分析**=17 项分析交付 · **结构**=五级分析结构。
 
 ### 3.2 核心数据对象定义
 
@@ -190,36 +197,55 @@ erDiagram
 ```mermaid
 flowchart LR
     subgraph SRC[五源官网]
-        G[gov] ; M[mof] ; N[nfra] ; P[pbc] ; S[supp]
+        G[gov]
+        M[mof]
+        N[nfra]
+        P[pbc]
+        S[supp]
     end
-    G & M & N & P & S -->|collectors 采集| RAW[(data/raw)]
-    RAW -->|run_clean_pipeline 清洗| C[(cleaned<br/>39列双轨+隔离)]
-    C -->|clause_index 条文| CL[(clauses)]
-    C -->|clean_index 快照索引| CIDX[clean_index/index.json]
-    V[北大法宝核验] -.->|verify R13三态| STV[(verification_state)]
-    STV -->|consolidate/apply 回写| C
-    C -->|classify 底座链| AT[(归属表/主题表)]
-    C -->|extract_relations| REL[(relations_index<br/>+source_span 披露)]
-    INT[内部制度 originals] -->|scan/extract OCR| PC[(processed)]
+    G -->|collectors 采集| RAW[data/raw]
+    M -->|collectors 采集| RAW
+    N -->|collectors 采集| RAW
+    P -->|collectors 采集| RAW
+    S -->|collectors 采集| RAW
+    RAW -->|run_clean_pipeline 清洗| C[cleaned 39 列双轨 校验隔离]
+    C -->|clause_index 条文| CL[clauses]
+    C -->|clean_index 快照索引| CIDX[clean_index index.json]
+    V[北大法宝核验] -.->|verify R13 三态| STV[verification_state]
+    STV -->|consolidate apply 回写| C
+    C -->|classify 底座链| AT[归属表 主题表]
+    C -->|extract_relations| REL[relations_index 含 source_span]
+    INT[内部制度 originals] -->|scan extract OCR| PC[processed]
     PC -->|extract_relations| REL
-    AT -->|reconcile 桥/漂移| BR[(rfn_clean_bridge)]
-    AT -->|merged| MV[(merged_view)]
-    C & CL & BR & AT & REL -->|base_publish| PUB[(published 发布件 + FTS5)]
-    AT & MV & REL -->|gen_analysis_deliveries| AN[(docs/deliverables 17 项)]
-    INBOX[(data/inbox)] -->|inbox_scan| WL[(worklist 决策项)]
+    AT -->|reconcile 桥 漂移| BR[rfn_clean_bridge]
+    AT -->|merged| MV[merged_view]
+    C -->|base_publish| PUB[published 发布件 FTS5]
+    CL -->|base_publish| PUB
+    BR -->|base_publish| PUB
+    AT -->|base_publish| PUB
+    REL -->|base_publish| PUB
+    AT -->|gen_analysis_deliveries| AN[docs/deliverables 17 项]
+    MV -->|gen_analysis_deliveries| AN
+    REL -->|gen_analysis_deliveries| AN
+    INBOX[data/inbox] -->|inbox_scan| WL[worklist 决策项]
     PUB -.->|sync_wiki_sources| KB[Obsidian vault]
-    C & CL & AT & REL & MV & PUB -->|**30 道门禁**| G8{gates}
+    C -->|30 道门禁| G8[gates]
+    CL -->|30 道门禁| G8
+    AT -->|30 道门禁| G8
+    REL -->|30 道门禁| G8
+    MV -->|30 道门禁| G8
+    PUB -->|30 道门禁| G8
     G8 -->|全绿| OK[交付]
-    subgraph P1[P1 语义增强（可选叠加，默认不介入主链）]
-        SE[["semantic_enhance<br/>执行门面"]]
-        SE -.->|"split(默认关)"| REL
-        SE -.->|"embed(bge→text2vec / 增量 youtu)"| AT
-        SE -.->|"embed"| AN
+    subgraph P1[P1 语义增强 可选叠加 默认不介入主链]
+        SE[semantic_enhance 执行门面]
+        SE -.->|split 默认关| REL
+        SE -.->|embed bge 到 text2vec 增量 youtu| AT
+        SE -.->|embed| AN
     end
     classDef src fill:#e1d5e7
     classDef store fill:#d5e8d4
     classDef ext fill:#ede7f6
-    classDef enh fill:#fff2cc,stroke-dasharray:4 3
+    classDef enh fill:#fff2cc
     class G,M,N,P,S src
     class RAW,C,CL,CIDX,STV,AT,REL,PC,BR,MV,PUB,AN,WL store
     class V,INT,INBOX,KB ext
@@ -233,36 +259,36 @@ flowchart LR
 
 ```mermaid
 flowchart TB
-  subgraph ACC["接入层（L6）"]
-    CLI["cli.py<br/>19 命令 · 唯一入口"]
-    WEB["web/ 本地确认台<br/>loopback · 8 页"]
-    MCP["mcp_server/<br/>计划 W2 · MCP tool 面"]
+  subgraph ACC[接入层（L6）]
+    CLI[cli.py · 19 命令 · 唯一入口]
+    WEB[web/ 本地确认台 · loopback · 8 页]
+    MCP[mcp_server/ · 计划 W2 · MCP tool 面]
   end
-  subgraph SCHED["调度层（唯一事实源 schedule.yaml + triggers.yaml）"]
-    JOB["8 cron + 2 event 作业<br/>角色：agent_sync · governance · processing · quality"]
-    TRG["5 条件触发项"]
+  subgraph SCHED[调度层（唯一事实源 schedule.yaml + triggers.yaml）]
+    JOB[8 cron + 2 event 作业 · 角色：agent_sync · governance · processing · quality]
+    TRG[5 条件触发项]
   end
-  subgraph CHAIN["处理链层（STEP_LAYERS 分层声明 · W1）"]
-    L1ingest["L1_ingest<br/>3 步 · 主链"]
-    L2transform["L2_transform<br/>4 步 · 主链"]
-    L9sync["L9_sync<br/>4 步 · 条件"]
-    L3knowledge["L3_knowledge<br/>4 步 · 主链"]
-    L8enhancement["L8_enhancement<br/>3 步 · 增强"]
-    L6governance["L6_governance<br/>3 步 · 旁路"]
-    L4internal["L4_internal<br/>1 步 · 主链"]
-    L5delivery["L5_delivery<br/>5 步 · 主链"]
-    L7disclosure["L7_disclosure<br/>4 步 · 披露"]
-    L10gate["L10_gate<br/>1 步 · 门禁"]
+  subgraph CHAIN[处理链层（STEP_LAYERS 分层声明 · W1）]
+    L1ingest[L1_ingest · 3 步 · 主链]
+    L2transform[L2_transform · 4 步 · 主链]
+    L9sync[L9_sync · 4 步 · 条件]
+    L3knowledge[L3_knowledge · 4 步 · 主链]
+    L8enhancement[L8_enhancement · 3 步 · 增强]
+    L6governance[L6_governance · 3 步 · 旁路]
+    L4internal[L4_internal · 1 步 · 主链]
+    L5delivery[L5_delivery · 5 步 · 主链]
+    L7disclosure[L7_disclosure · 4 步 · 披露]
+    L10gate[L10_gate · 1 步 · 门禁]
   end
-  subgraph ART["产物层（GOV_ARTIFACTS 血缘声明）"]
-    ARTN["19 类产物键<br/>analysis:manifest … wiki:sync"]
+  subgraph ART[产物层（GOV_ARTIFACTS 血缘声明）]
+    ARTN[19 类产物键 · analysis:manifest … wiki:sync]
   end
-  subgraph GOV["治理层（governance.db · 旁路观测）"]
-    WL["待办队列 worklist<br/>12 类 kind"]
-    LED["运行台账 run_log / audit_log / gate_result"]
+  subgraph GOV[治理层（governance.db · 旁路观测）]
+    WL[待办队列 worklist · 12 类 kind]
+    LED[运行台账 run_log / audit_log / gate_result]
   end
-  subgraph QUAL["质量层"]
-    GATES["门禁 30 道（链尾阻断）"]
+  subgraph QUAL[质量层]
+    GATES[门禁 30 道（链尾阻断）]
   end
   ACC --> SCHED --> CHAIN --> ART
   CHAIN --> GOV
@@ -332,9 +358,9 @@ flowchart TB
 > （**勿手改**；漂移由 `gate_config_integrity` 判据 **S4** 阻断）。含「脚本分类 / 失败处理」
 > 的完整视图见 `reports/运行手册_编排与定时_*.md`。
 
-| 频率 | cron | 命令 | 说明 |
-| :--- | :--- | :--- | :--- |
 <!-- SCHED:AUTO -->
+| 频率 | cron | 角色 | 命令 | 说明 |
+| :--- | :--- | :--- | :--- | :--- |
 | **每月 3 日 01:00** | `0 1 3 * *` | processing | `cli.py run --collect gov_zhengceku_backfill --only collect:gov_zhengceku_backfill,clean:gov,apply:gov` | zhengceku 历史存量补全（月度；扫全 629 页，仅跑 clean/apply:gov） |
 | **每周三 01:00** | `0 1 * * 3` | processing | `cli.py run --collect gov,mof,pbc` | 周度增量：gov（**已拆为 xzfgk/zhengceku 两个独立步骤**）+ mof + pbc，随后全链出报告；supp 走投放区（inbox_drop 触发） |
 | **每周二 01:00** | `0 1 * * 2` | processing | `cli.py run --collect nfra-weekly` | nfra 周报增量链（单实例锁 / 顶部窗口 / 断点续跑） |
@@ -675,7 +701,12 @@ python -m tools.workbench_service verify --wait 45
 | **`mof` 的内存峰值** | 实测 **6.26 GB** WorkingSet（16 GB 机器）。**不是泄漏**：基线 `read_raw_records` 仅 197 MB；峰值来自**超大单条**（最大 31.3 MB，正文 23.57 MB，Top5 占全库 59.2%）在"去标签/正则/签名/序列化"各步产生的 20–30 MB 临时字符串，叠加 Windows 上 Python 高水位不归还 OS。**改进方向**：对巨型记录做正文截断/分段存储 |
 | **异常重启后先清陈旧锁** | 蓝屏/断电/强杀后 `data/run_production_refresh.lock` 会残留。**且 PID 可能被系统进程复用**（实测锁内 `3992` 重启后变成 `svchost.exe`）⇒ `ProcessLock` 只看"PID 是否存在"会误判"锁被占用"，主链**静默拒绝运行**。当前须手工确认 `cli.py run` 进程数为 0 后删除该锁；**修复方案**：锁文件记录"PID + 进程创建时刻 + 可执行名"三者校验（见 eports/refactors/incident_20261021_bsod.md\ §5.2） |
 | **手动跑采集会让水位变陈旧** | 水位只在 `run_production_refresh._wm` 里登记。手工执行 `collectors/*/collector.py` 改了 raw 但没登记 ⇒ `gate_watermark` 判陈旧并级联到 cleaned/clauses。**要么走 `cli.py run`，要么事后用 `_wm` 补登记**（不要复制逻辑） |
-| **确认台慢路由已治理** | `/api/overview` 冷态曾 **22163 ms**（扫 13.8 GB 外部模型目录）⇒ 撞破契约测试 20 s 超时、表现为"偶发 flake"。现为 **118 ms**（分级 TTL + 后台预热 + 防击穿），守卫 `tests/test_console_perf_flake.py` |
+| **确认台慢路由已治理** | `/api/overview` 冷态曾 **22163 ms**（扫 13.8 GB 外部模型目录）⇒ 撞破契约测试 20 s 超时、表现为"偶发 flake"。现为 **118 ms**（分级 TTL + 后台预热 + 防击穿） |
+| **Mermaid 图必须走保守方言** | README 的 4 张图曾**全部**在 GitHub 显示 “Unable to render rich display”。本机无 node、mermaid.ink 亦不可达 ⇒ 无法用真实解析器定位；改为收敛到跨版本稳定的写法：**禁 `<br/>`、禁双引号、禁 `;` 与 `&` 串联、禁非矩形外形、`classDef` 单值**。生成器 `gen_flow_map.py` 统一过 `_mm_sanitize_block()`，`python -m tools.mermaid_lint` 静态校验（可进 CI） |
+| **Markdown 表格必须连续** | GFM 表格是**连续块**：表头与表体之间插入任何非表格行（含 `<!-- -->` 注释）都会**终止表格**，后续 `\| … \|` 退化成普通段落（§5.2 定时表即因此显示异常）。另：表头列数必须与表体一致（原表头 4 列 / 表体 5 列）。现由 `gen_schedule_doc` **连表头一起生成**，标记置于表头之前；`tests/test_readme_render.py` 守卫 |
+| **`mof` 附件抽取会复用，不再每轮重解析** | 一轮 `collect:mof` 曾 **13113s（3.64h）/ 峰值 6.26GB**，瓶颈不是网络而是"本地已有副本仍重跑 `extract_document_text`"。现按「磁盘大小未变 + `extract_version` 一致」**整段复用**历史抽取结果（实测单记录 9/10 复用、0.9s）。存量数据用 `python -m tools.backfill_extract_version --apply` 盖章后即可生效；改抽取逻辑时**必须递增 `EXTRACT_VERSION`** |
+| **确认台支持 hash 深链** | `#metrics` / `#worklist` / `#flow` … 可直接打开对应页（原来只能落到 P0 再点）。既是可用性改进（可收藏/分享），也让**无头浏览器可按 URL 定位页面** |
+| **废弃/冗余代码可审计** | `python -m tools.dead_code_audit`（四类判据，只报告）。本仓实测：真死代码 18 项（已删清零）、`if False` 死分支 0、大段注释代码 0 |
 
 > **蓝屏事件排查**（`KERNEL_SECURITY_CHECK_FAILURE` 等 4 种 BugCheck）见
 > `reports/refactors/incident_20261021_bsod.md`：结论是**非本项目导致**
@@ -726,34 +757,34 @@ python -m tools.workbench_service verify --wait 45
 
 ```mermaid
 flowchart TD
-  S(["cli.py run"]) --> A["阶段1 采集/清洗/条文"]
-  A --> B["阶段2 分类/关系/召回"]
-  B --> C["阶段3 治理库/内部制度/条款"]
-  C --> D["阶段4 发布/报告/分析/基线"]
-  D --> E["阶段5 只读披露<br/>retention:plan / semantic:preflight / pg:health"]
-  E --> F["阶段6 条件步骤<br/>wiki:sync"]
-  F --> G["链尾 门禁 gates（阻断）"]
+  S[cli.py run] --> A[阶段1 采集/清洗/条文]
+  A --> B[阶段2 分类/关系/召回]
+  B --> C[阶段3 治理库/内部制度/条款]
+  C --> D[阶段4 发布/报告/分析/基线]
+  D --> E[阶段5 只读披露 · retention:plan / semantic:preflight / pg:health]
+  E --> F[阶段6 条件步骤 · wiki:sync]
+  F --> G[链尾 门禁 gates（阻断）]
 
-  B -.->|"classify:all"| M_bertopic["bertopic<br/>未装"]
-  B -.->|"semantic:assist"| M_bge_base_zh["bge_base_zh<br/>已接线·默认关"]
-  B -.->|"relations:gen"| M_bge_base_zh_relations["bge_base_zh<br/>未接线"]
-  B -.->|"relations:gen"| M_deepke["deepke<br/>未就绪"]
-  B -.->|"relations:gen"| M_hanlp["hanlp<br/>未装"]
-  B -.->|"classify:all"| M_hdbscan["hdbscan<br/>未装"]
-  A -.->|"clauses"| M_ltp["ltp<br/>未装"]
-  D -.->|"OND"| M_paradedb["paradedb<br/>未装"]
-  A -.->|"semantic:search"| M_pgvector["pgvector<br/>未装"]
-  B -.->|"relations:gen"| M_signalgraph["signalgraph<br/>未装"]
-  D -.->|"OND"| M_sqlite_vec["sqlite_vec<br/>未装"]
-  B -.->|"semantic:assist"| M_text2vec["text2vec<br/>已接线·默认关"]
-  B -.->|"classify:all"| M_umap["umap<br/>未装"]
-  B -.->|"docreader:extract"| M_weknora_docreader["weknora_docreader<br/>已接线·默认关"]
-  B -.->|"semantic:assist"| M_youtu_embedding["youtu_embedding<br/>已接线·默认关"]
-  B -.->|"relations:gen"| M_youtu_embedding_relations["youtu_embedding<br/>未接线"]
+  B -.->|classify:all| M_bertopic[bertopic · 未装]
+  B -.->|semantic:assist| M_bge_base_zh[bge_base_zh · 已接线·默认关]
+  B -.->|relations:gen| M_bge_base_zh_relations[bge_base_zh · 未接线]
+  B -.->|relations:gen| M_deepke[deepke · 未就绪]
+  B -.->|relations:gen| M_hanlp[hanlp · 未装]
+  B -.->|classify:all| M_hdbscan[hdbscan · 未装]
+  A -.->|clauses| M_ltp[ltp · 未装]
+  D -.->|OND| M_paradedb[paradedb · 未装]
+  A -.->|semantic:search| M_pgvector[pgvector · 未装]
+  B -.->|relations:gen| M_signalgraph[signalgraph · 未装]
+  D -.->|OND| M_sqlite_vec[sqlite_vec · 未装]
+  B -.->|semantic:assist| M_text2vec[text2vec · 已接线·默认关]
+  B -.->|classify:all| M_umap[umap · 未装]
+  B -.->|docreader:extract| M_weknora_docreader[weknora_docreader · 已接线·默认关]
+  B -.->|semantic:assist| M_youtu_embedding[youtu_embedding · 已接线·默认关]
+  B -.->|relations:gen| M_youtu_embedding_relations[youtu_embedding · 未接线]
 
   classDef on fill:#d7f2df,stroke:#2e7d32,stroke-width:1px
   classDef gated fill:#dbe9ff,stroke:#1565c0,stroke-width:1px
-  classDef off fill:#f2f2f2,stroke:#8a8a8a,stroke-dasharray:4 2
+  classDef off fill:#f2f2f2,stroke:#8a8a8a,stroke-dasharray:4
   classDef notready fill:#ffe8cc,stroke:#e65100,stroke-width:1px
   class M_bge_base_zh,M_text2vec,M_weknora_docreader,M_youtu_embedding gated
   class M_bge_base_zh_relations,M_youtu_embedding_relations off
@@ -896,6 +927,9 @@ flowchart TD
 显式 `model="…"` **覆盖 mode**（优先级最高）；分句增强由 env `REG_ORCH_SEMANTIC_SPLIT=1` 控制（**默认关**，见 §8.6 第 2 条）。
 
 <!-- END GENERATED: 全链数据流总图 -->
+
+
+
 
 
 

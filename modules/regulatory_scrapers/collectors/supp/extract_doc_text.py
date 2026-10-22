@@ -102,41 +102,10 @@ def keep_individual(c: str) -> bool:
 
 KEEP_INDIV = keep_individual  # 兼容别名
 
-def _is_cjk(seg: str) -> bool:
-    """判断 out 中的片段是否为被保留的真实中文文本片（CJK 串以汉字起头）。"""
-    return bool(seg) and (0x3400 <= ord(seg[0]) <= 0x9FFF or 0x20000 <= ord(seg[0]) <= 0x2A6DF)
 
 def _is_cjk_char(c: str) -> bool:
     return 0x3400 <= ord(c) <= 0x9FFF or 0x20000 <= ord(c) <= 0x2A6DF
 
-def _keep_longest_dense_span(text: str, win: int = 100, thresh: float = 0.20) -> str:
-    """（保留备用）返回 text 中 CJK 密度≥阈值的「最长连续区间」。"""
-    n = len(text)
-    if n == 0:
-        return text
-    best_len = best_start = best_end = 0
-    i = 0
-    while i < n:
-        seg = text[i:i + win]
-        cjk = sum(1 for c in seg if _is_cjk_char(c))
-        if (cjk / max(1, len(seg))) >= thresh:
-            j = i
-            while j < n:
-                seg2 = text[j:j + win]
-                cjk2 = sum(1 for c in seg2 if _is_cjk_char(c))
-                if (cjk2 / max(1, len(seg2))) >= thresh:
-                    j += 1
-                else:
-                    break
-            length = j - i
-            if length > best_len:
-                best_len, best_start, best_end = length, i, j
-            i = j
-        else:
-            i += 1
-    if best_len == 0:
-        return text
-    return text[best_start:best_end]
 
 # Word 内部样式名/结构名标记（绝不出现于真实法规正文），用于界定正文终点
 _STYLE_MARKERS = (

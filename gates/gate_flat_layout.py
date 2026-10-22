@@ -21,7 +21,8 @@ import paths
 #   - internal_policy_base: originals/processed（原始件副本 + 结构化正文，P6 数据随仓）
 ALLOWED_DATA_SUBDIRS = {
     # docs：五源正文原文/附件统一根（docs_root(source) → data/docs/<scraper_slug>/）
-    # reports/state：collector 运行产物（mof_laws_report.html 等报告、status.json/运行时锁，
+    # reports/state：collector 运行产物（status.json/运行时锁等；**HTML 报告已于
+    # 2026-10-22 第一百零七批按用户要求整体移除**，不再生成）,
     #   2026-09-09 mof 全量轮实证创建，写入位置=dirname(outdir) 下的 reports/state）
     # 注：`corpus` 曾在此白名单（F-L05 外部语料归集根）。v2 §3.12（P2-3a，2026-09-26）已把
     #   语料本体统一到**仓根 `data/corpus/<domain>/`**（该层同时服务 classifier 的 recall 与

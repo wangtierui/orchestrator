@@ -65,7 +65,6 @@ def find_libreoffice(bin: str | None = None) -> str | None:
     return None
 
 
-
 #: 批 57/W-AB：正式模块 logger。**不以 `import logging` 语句引入**（本文件历史上无该导入，中途插入会触发 E402 "module level import not at top"）⇒ 用 `__import__` 取得同一对象。
 LOG = __import__("logging").getLogger(__name__)
 
@@ -94,27 +93,6 @@ def _pids_by_profile(profile_url: str) -> set[int]:
         for ln in out.splitlines():
             if ln.strip().isdigit():
                 pids.add(int(ln.strip()))
-    except Exception:  # noqa: BLE001  查询失败不阻断
-        pass
-    return pids
-
-
-def _soffice_pids() -> set[int]:
-    """当前 soffice/soffice.bin 进程 PID 集合（批 56：用于兜底清理，避免遗留进程与用户会话纠缠）。"""
-    pids: set[int] = set()
-    if os.name != "nt":
-        return pids
-    try:
-        out = subprocess.run(["tasklist", "/FI", "IMAGENAME eq soffice.exe", "/FO", "CSV", "/NH"],
-                             capture_output=True, text=True, encoding="utf-8",
-                             errors="replace", timeout=20).stdout or ""
-        out += subprocess.run(["tasklist", "/FI", "IMAGENAME eq soffice.bin", "/FO", "CSV", "/NH"],
-                              capture_output=True, text=True, encoding="utf-8",
-                              errors="replace", timeout=20).stdout or ""
-        for ln in out.splitlines():
-            parts = [x.strip('"') for x in ln.split(",")]
-            if len(parts) > 1 and parts[1].isdigit():
-                pids.add(int(parts[1]))
     except Exception:  # noqa: BLE001  查询失败不阻断
         pass
     return pids

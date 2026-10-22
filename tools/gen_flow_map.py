@@ -28,6 +28,7 @@ from __future__ import annotations
 import ast
 import io
 import os
+import re
 import sys
 
 # 引导：**必须经 `bootstrap`（唯一引导点，v2 §3.1.2）** —— `gate_import_bootstrap` 断言
@@ -748,7 +749,7 @@ def build() -> str:
         "`REG_ORCH_SEMANTIC_SPLIT=1` 控制（**默认关**，见 §8.6 第 2 条）。"
     )
     L.append("")
-    return "\n".join(L) + "\n"
+    return _mm_sanitize_block("\n".join(L) + "\n")
 
 
 def inject_into_readme(text: str) -> tuple:
@@ -885,6 +886,79 @@ def _arch_facts() -> dict:
     return facts
 
 
+def _mm(text) -> str:
+    """把任意文案消毒成 **Mermaid 保守方言**可用的裸标签。
+
+    为什么需要（2026-10-22，第一百零七批）：README 的 4 张图**全部**在 GitHub 上
+    显示 "Unable to render rich display"。本机无 node（跑不了 mermaid-cli）、
+    mermaid.ink 在线接口也不可达 ⇒ 无法用真实解析器定位，于是把图收敛到
+    **跨版本稳定**的保守方言，并用 `tools/mermaid_lint.py` 做静态机器校验。
+
+    消毒规则（与 lint 的 R1/R2/R3/R7 一一对应）：
+      · `<br/>` 等 HTML → ` · `（换行改成分隔符）；
+      · 双引号/`**` 去掉（引号形态 Mermaid 8.x 不支持，9.4+ 才稳）；
+      · `()` `[]` `{}` `|` `<` `>` `#` → 空格（这些是图元/样式记号）。
+    """
+    s = str(text or "")
+    s = re.sub(r"<\s*/?\s*[A-Za-z][^>]*>", " · ", s)
+    s = s.replace("**", "").replace("__", "")
+    s = re.sub(r'[()\[\]{}|<>#"\']', " ", s)
+    s = re.sub(r"\s+", " ", s).strip()
+    return s
+
+
+def _mm_sanitize_block(text: str) -> str:
+    """对整篇文本里**每个 mermaid 块**做保守方言消毒（围栏外原样不动）。
+
+    只改写 `[...]` 与 `|...|` **内部**的标签文本，以及三类结构收敛：
+      ① `([x])` / `[[x]]` / `[(x)]` → `[x]`（外形统一矩形，各版本支持面最广）；
+      ② `classDef` 里 `stroke-dasharray:4 2` 的空格值 → 单值（否则被当两个属性）；
+      ③ 行内 `;` 语句分隔 → 换行（一行一句）。
+    结构记号 `-->` / `-.->` / `subgraph` / `end` / `class` **一律不碰**。
+    """
+    out: list[str] = []
+    in_mm = False
+    for ln in text.split("\n"):
+        st = ln.strip()
+        if st.startswith("```mermaid"):
+            in_mm = True
+            out.append(ln)
+            continue
+        if in_mm and st == "```":
+            in_mm = False
+            out.append(ln)
+            continue
+        if not in_mm:
+            out.append(ln)
+            continue
+        s = ln
+        # ① 外形收敛
+        s = s.replace("([", "[").replace("])", "]")
+        s = s.replace("[[", "[").replace("]]", "]")
+        s = s.replace("[(", "[").replace(")]", "]")
+        # ② classDef 的空格值
+        if s.strip().startswith("classDef"):
+            s = re.sub(r"(stroke-dasharray:\s*\S+)\s+\S+\s*$", r"\1", s)
+        # ③ 行内分号 → 拆行
+        if ";" in s and not s.strip().startswith("%%"):
+            parts = [x for x in s.split(";") if x.strip()]
+            for k, x in enumerate(parts):
+                seg = _mm_fix_labels(x)
+                out.append(seg if k == 0 else "  " + seg.strip())
+            continue
+        # 标签内消毒
+        s = _mm_fix_labels(s)
+        out.append(s)
+    return "\n".join(out)
+
+
+def _mm_fix_labels(s: str) -> str:
+    """只消毒 `[...]` 与 `|...|` 内部的文本（结构记号不动）。"""
+    s = re.sub(r"\[([^\[\]]*)\]", lambda m: "[" + _mm(m.group(1)) + "]", s)
+    s = re.sub(r"\|([^|]*)\|", lambda m: "|" + _mm(m.group(1)) + "|", s)
+    return s
+
+
 def render_arch_map() -> str:
     """渲染架构共识图（mermaid）。计数与节点全部派生——手写图必漂移，这是本块的立意。"""
     f = _arch_facts()
@@ -944,7 +1018,7 @@ def render_arch_map() -> str:
         "**计数由生成器派生，勿手改**；`python -m tools.gen_flow_map --check` 核验一致性。"
     )
     L.append(ARCH_END)
-    return "\n".join(L)
+    return _mm_sanitize_block("\n".join(L))
 
 
 def _inject_arch(txt: str) -> str:

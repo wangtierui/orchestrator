@@ -72,8 +72,31 @@ def _clock_key(job: dict) -> tuple:
     return (0, hh, mi, job.get("id", ""))
 
 
+#: README 定时表的**表头**（含分隔行）。
+#:
+#: 为什么表头也要由生成器输出（2026-10-22，第一百零七批实测缺陷）：
+#: 原设计把表头写死在 README 里、只生成**表体**，而 `<!-- SCHED:AUTO -->` 标记
+#: 恰好落在**表头与表体之间**。GFM 的表格必须是**连续块**——任何非表格行（含 HTML
+#: 注释）都会**终止表格** ⇒ 表体那些 `| … |` 行退化成普通段落，页面上显示成
+#: 一堆竖线（用户报「5.2 内的列表未正常显示」）。
+#: 修法：标记移到表头**之前**，表头随表体一起生成 ⇒ 整张表是一个连续块，
+#: 且不再存在"手工维护的表头副本"（少一处漂移源）。
+TABLE_HEADER = ("| 频率 | cron | 角色 | 命令 | 说明 |\n"
+                "| :--- | :--- | :--- | :--- | :--- |")
+
+
+def render_table_block(jobs: list[dict]) -> str:
+    """**表头 + 表体**（受管区的完整内容，单一实现）。
+
+    2026-10-22：`write_readme` 与 `gates/gate_config_integrity/_schedule.py` 的 S4
+    **必须用同一个函数**——此前 S4 直接调 `render_table`（只有表体），而我给
+    `write_readme` 加了表头 ⇒ 两者渲染结果不同 ⇒ S4 恒报"不一致"（假 FAIL）。
+    """
+    return TABLE_HEADER + "\n" + render_table(jobs)
+
+
 def render_table(jobs: list[dict]) -> str:
-    """渲染定时表（markdown 表体，不含表头分隔行——表头由手册模板固定）。"""
+    """渲染定时表（markdown 表体，不含表头——表头见 `TABLE_HEADER`）。"""
     rows = []
     for j in sorted(jobs, key=_clock_key):
         if j.get("trigger") == "cron":
@@ -142,13 +165,18 @@ def write_manual(check: bool = False) -> tuple[bool, str]:
 
 def write_readme(check: bool = False) -> tuple[bool, str]:
     """写/比对 README 定时表自动段（N-186：与手册**同一渲染源**，消灭手工副本）。"""
-    table, _cron, _data = build_blocks()
+    _table, _cron, data = build_blocks()
+    jobs = data.get("jobs") or []
     if not os.path.exists(README):
         return True, "（缺 README：跳过）"
     with open(README, encoding="utf-8") as fh:
         text = fh.read()
     try:
-        new = _replace_block(text, TABLE_START, TABLE_END, table)
+        # 表头 + 表体**一起**进受管区（标记必须在表头之前，否则 HTML 注释会打断 GFM 表格）。
+        # 用 `render_table_block` 而非 `render_table`：S4 判据也用同一个函数，
+        # 两边渲染必须逐字一致，否则判据恒报不一致（假 FAIL）。
+        new = _replace_block(text, TABLE_START, TABLE_END,
+                             render_table_block(jobs))
     except LookupError as e:
         return False, f"README 定时表缺自动段标记对：{e}"
     if new == text:

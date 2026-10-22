@@ -1254,14 +1254,6 @@ def step_by_name() -> dict[str, StepSpec]:
     return {s.name: s for s in step_specs()}
 
 
-def step_layer_of(name: str) -> str:
-    """步骤 → 所属层键（派生；README 分层渲染与 E-3 作业归属断言共用）。"""
-    for layer_key, names in LAYER_EXEC_PLAN:
-        if name in names:
-            return layer_key
-    raise KeyError(name)
-
-
 # 兼容视图（派生）：**现行 `STEP_ORDER` 语义逐项保留** —— `--from`/`--only`/`--list-steps`
 # 与门禁判据 R 全部按此消费（类型仍是 tuple[str, ...]，调用方零改动）。
 STEP_ORDER: Final[tuple[str, ...]] = tuple(s.name for s in step_specs())
@@ -1271,18 +1263,6 @@ STEP_ORDER: Final[tuple[str, ...]] = tuple(s.name for s in step_specs())
 #    模块 docstring 的阶段编号（6 gates / 6.5 watch / 6.8 analysis）为旧口径，
 #    已在第四批报告 N-29 与第五批报告登记。
 #    `{src}` 为动态步骤（五源循环），匹配按前缀进行。
-
-
-def _step_index(step: str) -> int:
-    """步骤在 `STEP_ORDER` 中的序号（动态步骤按 `{src}` 前缀匹配）；未登记 → -1。"""
-    for i, pat in enumerate(STEP_ORDER):
-        if "{src}" in pat:
-            head = pat.split("{src}")[0]
-            if step.startswith(head) and step != head:
-                return i
-        elif step == pat:
-            return i
-    return -1
 
 
 def _step_matches(step: str, sel: str) -> bool:
@@ -1462,17 +1442,6 @@ def _resume_inputs_changed(skip: set[str], gs) -> tuple[set[str], list[dict]]:
         else:
             out.add(step)
     return out, delta
-
-
-def _raw_records(data) -> int | None:
-    """兼容 raw 主库形态：list / {records|items: [...]} / {meta, records}。"""
-    if isinstance(data, list):
-        return len(data)
-    if isinstance(data, dict):
-        for k in ("records", "items"):
-            if isinstance(data.get(k), list):
-                return len(data[k])
-    return None
 
 
 # W0-3（2026-10-13，D-2）：raw 记录数**流式双格式计数**。

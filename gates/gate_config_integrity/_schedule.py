@@ -129,7 +129,11 @@ def _check_schedule() -> tuple[list[str], dict]:
     if os.path.exists(readme):
         rtext = open(readme, encoding="utf-8", errors="replace").read()
         try:
-            rwant = gsd._replace_block(rtext, gsd.TABLE_START, gsd.TABLE_END, gsd.render_table(jobs))
+            # ⚠️ 必须用 `render_table_block`（表头 + 表体），与 `write_readme` **同一个**
+            # 函数：2026-10-22 给 README 的表头挪进受管区后，这里仍调 `render_table`
+            # （只有表体）⇒ 两者渲染结果不同 ⇒ S4 恒报"不一致"（假 FAIL，实测踩到）。
+            rwant = gsd._replace_block(rtext, gsd.TABLE_START, gsd.TABLE_END,
+                                       gsd.render_table_block(jobs))
         except LookupError as e:
             problems.append(f"S4: README 定时表缺自动段标记对：{e}")
             rwant = rtext

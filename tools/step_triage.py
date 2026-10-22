@@ -96,10 +96,6 @@ def _open_conn() -> sqlite3.Connection | None:
     return con
 
 
-def _is_failure(r: sqlite3.Row) -> bool:
-    return (r["rc"] not in (0,)) or (str(r["exit_code"]) not in ("0", "OK", "SKIP"))
-
-
 def _baseline_for(step: str) -> dict | None:
     """取该步的耗时基线（p50/p90）——判「是否变慢」的唯一量化依据。"""
     if not os.path.exists(BASELINE):

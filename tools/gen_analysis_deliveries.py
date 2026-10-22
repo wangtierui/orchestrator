@@ -121,11 +121,6 @@ def _load_upper_laws() -> dict:
     return _load_json(os.path.join(CDATA, "_upper_laws.json"), default={})
 
 
-def _load_published_counts() -> dict:
-    m = _load_json(os.path.join(PUBLISH, "publish_manifest.json"), default={})
-    return (m.get("counts") or {}) if isinstance(m, dict) else {}
-
-
 def _norm_year(v) -> int:
     try:
         y = int(str(v)[:4])

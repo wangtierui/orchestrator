@@ -324,6 +324,62 @@ def fetch_attachments(law_id, rate, file_types=("0", "90"), timeout=20):
     return items
 
 
+#: 抽取逻辑的**版本标记**。凡改动 `extract_document_text` / `structured_table_fields`
+#: / `rich_object_fields` 的语义，必须递增它 —— 否则"复用上次抽取结果"会保留旧口径
+#: 的产物（静默劣化，比慢更糟）。
+EXTRACT_VERSION = "v1"
+
+#: 复用/重抽计数（供 status 披露；本仓要求"降级/优化可辨"，不静默）。
+REUSE_STATS = {"reused": 0, "extracted": 0}
+
+#: 允许从历史记录**整段复用**的键（都是"文件字节 → 派生物"，与抓取时刻无关）。
+_REUSE_KEYS = ("text", "extracted", "extract_status", "attachment_kind",
+               "attachment_sniff", "sha256", "needs_ocr", "garble_ratio",
+               "table_structured", "table_raw_text", "table_recovery_method",
+               "rich_objects", "diagram_files", "kind", "file_type", "role",
+               "attachment_count")
+
+
+def _reuse_extraction(att, prev_att, dest):
+    """本地副本**未变**时，复用上次抽取结果；不可复用返回 `None`。
+
+    为什么这是最大的一处耗时（2026-10-22 实测定位，第一百零七批 T4）：
+    原实现在"本地已有副本"分支里**仍然 `_finalize_attachment` 重抽**（注释写
+    "仅本地重抽"）。于是每轮对**每条变更记录的全部附件**重跑
+    `extract_document_text` + `structured_table_fields` + `rich_object_fields`：
+    实测一轮 182 条变更 × 约 5 附件 ≈ 900 次 PDF/表格解析 ⇒
+    **采集耗时 3.64 小时**（13113s）、**峰值内存 6.26 GB**（大表格 PDF 解析）。
+    而附件字节根本没说变（记录变更可能是因为生效日期/文号），复用是等价且安全的。
+
+    安全条件（三者同时满足才复用，任一不满足就老实重抽）：
+      ① 磁盘文件大小与历史 `size_bytes` **完全相等**（同一份字节）；
+      ② 历史记录带 `extract_version` 且**等于当前** `EXTRACT_VERSION`；
+      ③ 历史记录里确有抽取结果字段（`text` 或 `extracted` 存在）。
+    """
+    if not prev_att or not os.path.exists(dest):
+        return None
+    try:
+        size = os.path.getsize(dest)
+    except OSError:
+        return None
+    if prev_att.get("size_bytes") != size:
+        return None
+    if prev_att.get("extract_version") != EXTRACT_VERSION:
+        return None
+    if "text" not in prev_att and "extracted" not in prev_att:
+        return None
+    out = dict(att)                      # 抓取侧身份（file_url/file_name/...）
+    for k in _REUSE_KEYS:
+        if k in prev_att:
+            out[k] = prev_att[k]
+    out["local_path"] = os.path.relpath(dest, REPO_ROOT).replace("\\", "/")
+    out["size_bytes"] = size
+    out["extract_version"] = EXTRACT_VERSION
+    out["extract_reused"] = True
+    REUSE_STATS["reused"] += 1
+    return out
+
+
 def _finalize_attachment(att, data, fname, law_id, dest):
     """附件字节 → 落盘 + 文本/表格/富内容抽取，回填 att（下载与本地复用共用）。"""
     with open(dest, "wb") as f:
@@ -370,10 +426,14 @@ def _finalize_attachment(att, data, fname, law_id, dest):
         logger.warning("附件文本抽取异常 %s：%s", att.get("file_url"), e)
         att["extracted"] = False
         att["extract_status"] = "extract_error"
+    att["extract_version"] = EXTRACT_VERSION
+    att["extract_reused"] = False
+    REUSE_STATS["extracted"] += 1
     return att
 
 
-def download_attachment(att, law_id, outdir, rate, timeout=60, max_retries=6):
+def download_attachment(att, law_id, outdir, rate, timeout=60, max_retries=6,
+                        prev_att=None):
     """下载单个附件到 data/docs/mof_regulations_scraper/attachments/<law_id>/，返回带本地相对路径与大小的元数据；失败返回 None。
 
     增量策略（2026-09-10，附件主机 502 环境；2026-10-20 TD-11 修订）：
@@ -397,8 +457,14 @@ def download_attachment(att, law_id, outdir, rate, timeout=60, max_retries=6):
     fname = safe_filename(att.get("file_name"), att.get("extension"),
                           f"{law_id}_{att.get('file_type')}")
     dest = os.path.join(attach_dir, fname)
-    # 幂等复用：本地已有非空副本 → 不再下载，仅本地重抽（增量续跑核心）
+    # 幂等复用：本地已有非空副本 → 不再下载。
+    # 2026-10-22（T4）：**先尝试复用历史抽取结果**（文件大小与抽取版本都未变时），
+    # 只有不可复用才回退"读盘重抽"。原实现**无条件重抽** ⇒ 每轮几百次 PDF 解析，
+    # 采集 3.64h、峰值内存 6.26GB（详见 `_reuse_extraction` 的说明）。
     if os.path.exists(dest) and os.path.getsize(dest) > 0:
+        reused = _reuse_extraction(att, prev_att, dest)
+        if reused is not None:
+            return reused
         try:
             with open(dest, "rb") as f:
                 return _finalize_attachment(att, f.read(), fname, law_id, dest)
@@ -481,7 +547,14 @@ def download_attachment(att, law_id, outdir, rate, timeout=60, max_retries=6):
     return None
 
 
-def collect_attachments(law_id, rate, timeout=60, deadline=None):
+def _att_key(a: dict) -> tuple:
+    """附件匹配键（同一份附件跨轮次的身份）。"""
+    return (str(a.get("file_name") or "").strip(),
+            str(a.get("file_type") or "").strip(),
+            str(a.get("extension") or "").strip().lower())
+
+
+def collect_attachments(law_id, rate, timeout=60, deadline=None, prev_atts=None):
     """抓取并下载某条法规的全部附件，返回带本地路径的元数据列表。
 
     timeout 透传至 download_attachment，便于调用方在慢速/限流场景下收紧超时。
@@ -499,12 +572,16 @@ def collect_attachments(law_id, rate, timeout=60, deadline=None):
     meta = fetch_attachments(law_id, rate, timeout=timeout)
     if not meta:
         return []
+    # 历史附件按"身份键"索引：用于**复用抽取结果**（文件未变时不重解析）
+    prev_map = {_att_key(a): a for a in (prev_atts or []) if isinstance(a, dict)}
     result = []
     for att in meta:
         if deadline is not None and time.time() > deadline:
             logger.warning("附件下载达软耗时上限 ⇒ 本条剩余附件跳过（下次续抓）")
             break
-        d = download_attachment(att, law_id, ATTACHMENTS_DIR, rate, timeout=timeout)
+        d = download_attachment(att, law_id, ATTACHMENTS_DIR, rate,
+                                timeout=timeout,
+                                prev_att=prev_map.get(_att_key(att)))
         if d:
             result.append(d)
     return result

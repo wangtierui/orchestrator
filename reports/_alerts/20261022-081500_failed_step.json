@@ -1,0 +1,32 @@
+{
+ "event": "failed_step",
+ "title": "生产刷新失败步骤 2 个",
+ "at": "2026-10-22T08:15:00",
+ "run_id": "RUN-20261022-060011-28332",
+ "payload": {
+  "summary_json": "D:\\WorkBuddy\\regulatory_compliance_orchestrator\\reports\\_tmp\\生产刷新汇总_20261022_081500.json",
+  "total_elapsed_s": 8081.6,
+  "failed": [
+   {
+    "step": "timeliness:verify",
+    "rc": 2,
+    "exit_code": "DATA",
+    "elapsed_s": 4662.6,
+    "stderr_tail_len": 182,
+    "tail": "token_exists=True → 满足（token 存在=True（D:\\WorkBuddy\\regulatory_compliance_orchestrator\\modules\\regulatory_scrapers\\timeliness_review\\.pkulaw_token））；days_since=7 → 满足（距上次核验 21 天（阈值 7））"
+   },
+   {
+    "step": "gates",
+    "rc": 1,
+    "exit_code": "FAIL",
+    "elapsed_s": 528.9,
+    "stderr_tail_len": 0,
+    "tail": "[gates] 已归档 30 条门禁结果到治理库（run_id=RUN-20261022-060011-28332）\n====================\nFAIL: 存在未通过门禁"
+   }
+  ],
+  "evidence": [
+   "timeliness:verify rc=2(DATA) token_exists=True → 满足（token 存在=True（D:\\WorkBuddy\\regulatory_compliance_orchestrator\\modules\\regulatory_scrapers\\timeliness_review\\.pkulaw_token））；days_since=7 → 满足（距上次核验 ",
+   "gates rc=1(FAIL) [gates] 已归档 30 条门禁结果到治理库（run_id=RUN-20261022-060011-28332）\n====================\nFAIL: 存在未通过门禁"
+  ]
+ }
+}

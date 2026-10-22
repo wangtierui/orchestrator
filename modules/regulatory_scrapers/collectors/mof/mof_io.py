@@ -20,7 +20,6 @@ if _GUIDE_ROOT not in _sys.path:
 del _GUIDE_ROOT, _os, _sys
 
 import csv
-import html
 import io
 import json
 import os
@@ -69,53 +68,4 @@ def save_csv(entries, path):
     fs_lock.atomic_write_text(path, "\ufeff" + buf.getvalue())
 
 
-def save_html_report(entries, path):
-    """生成可读的离线 HTML 报告（自包含，无外部依赖）。"""
-    items_html = []
-    for i, e in enumerate(entries, 1):
-        att_cell = ""
-        for a in (e.get("attachments") or []):
-            lp = a.get("local_path")
-            fn = html.escape(str(a.get("file_name", "")))
-            att_cell += (f'<a href="{html.escape(lp)}" target="_blank">{fn}</a><br>'
-                         if lp else fn + "<br>")
-        if not att_cell:
-            att_cell = "—"
-        items_html.append(f"""
-        <tr>
-          <td>{i}</td>
-          <td><a href="{e.get('detail_link','')}" target="_blank">{html.escape(str(e.get('title','')))}</a></td>
-          <td>{html.escape(str(e.get('category_name','')))}</td>
-          <td>{html.escape(str(e.get('publish_date','')))}</td>
-          <td>{html.escape(str(e.get('effective_date','')))}</td>
-          <td>{html.escape(str(e.get('issue_org','')))}</td>
-          <td>{html.escape(str(e.get('doc_no','')))}</td>
-          <td>{html.escape(str(e.get('summary',''))[:160])}</td>
-          <td>{html.escape(str(e.get('content_length','')))}</td>
-          <td>{att_cell}</td>
-          <td>{'有效' if e.get('active') else '已移除'}</td>
-          <td>{html.escape(str(e.get('change','')))}</td>
-        </tr>""")
-    doc = f"""<!DOCTYPE html>
-<html lang="zh-CN"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>财政部法规数据库抓取结果</title>
-<style>
- body{{font-family:-apple-system,"Microsoft YaHei",sans-serif;margin:24px;color:#222}}
- h1{{font-size:20px}} table{{border-collapse:collapse;width:100%;font-size:13px}}
- th,td{{border:1px solid #ddd;padding:6px 8px;text-align:left;vertical-align:top}}
- th{{background:#f5f7fa}} tr:nth-child(even){{background:#fafafa}}
- a{{color:#1E6FD9;text-decoration:none}}
- .meta{{color:#888;font-size:12px;margin-bottom:12px}}
-</style></head><body>
-<h1>财政部法规数据库抓取结果</h1>
-<div class="meta">来源：{HOST} ｜ 条目数：{len(entries)} ｜ 生成时间：{datetime.now().isoformat(timespec='seconds')}</div>
-<table>
-<thead><tr><th>#</th><th>标题</th><th>类别</th><th>公布日期</th><th>生效日期</th>
-<th>发文机关</th><th>发文字号</th><th>内容摘要</th><th>正文字数</th><th>附件</th><th>状态</th><th>变更</th></tr></thead>
-<tbody>{''.join(items_html)}</tbody>
-</table></body></html>"""
-    fs_lock.atomic_write_text(path, doc)
-
-
-__all__ = ['save_csv', 'save_html_report', 'save_json', 'write_status']
+__all__ = ['save_csv', 'save_json', 'write_status']

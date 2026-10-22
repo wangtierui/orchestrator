@@ -292,25 +292,62 @@ function fitLabel(s, maxW, fs){
   return out;
 }
 
+//: 估算文本宽度（与 `fitLabel` 同一套字宽假设：ASCII 0.55×字号、其余 1×）。
+//: 用于**数值标签的越界判断**——它可能比标签更长（如 `14752（94.5%）`）。
+function txtW(s, fs){
+  let w=0;
+  for(const ch of String(s==null?"":s)){ w += /[\x00-\xff]/.test(ch) ? fs*0.55 : fs; }
+  return w;
+}
 function barChart(data, labels, color){
   // ⚠️ 2026-10-16 修正：**按 label 取值**，不按位置。
   //    原实现 `Object.values(data)[i]` 依赖对象的键插入顺序，而 JSON 对象的键序
-  //    **无语义保证**（实测后端 `worklist_aging` 键序是字典序 `0-3,15+,4-7,8-14`，
+  //    **无语义保证**（实测 `worklist_aging` 键序是字典序 `0-3,15+,4-7,8-14`，
   //    与语义序 `0-3,4-7,8-14,15+` 不同）⇒ 标签与数值整片错位（时效三态曾把
   //    valid 显示成 pending 的值、uncertain 显示成 valid 的值）。
+  //
+  // 2026-10-22（第一百零七批）用户再报「P3 渲染异常」，逐项核对后确认**数据全对**，
+  // 问题在两处**画法**（都会让图"看起来坏了"）：
+  //   ① **数值标签会跑出画布**：`x=BAR_LB_W+8+w` 只留了 56px 余量，而
+  //      `num(14752)+百分比` 明显更宽 ⇒ 文字被裁掉一半（像渲染坏了）；
+  //   ② **分布高度集中**时（实测 `timeliness_tri` pending=14752 / valid=643 /
+  //      uncertain=209，差 23 倍；`worklist_aging` 8-14=225 / 0-3=4，差 56 倍）
+  //      线性比例让小值只剩 2px 细线 ⇒ 读者以为"没画出来"。
+  // 修法：数值标签**带占比**并做**越界回退**（放进条形内部右对齐）；当极值比 ≥20
+  // 时**显式说明"这是真实分布、不是图坏"**（不为了好看做对数轴/截断——那会失真）。
   const vals=labels.map(lb=>Number((data||{})[lb]||0));
+  const total=vals.reduce((a,b)=>a+b,0);
   const max=Math.max(1,...vals);
-  //: 可用条形长度 = 总宽 − 标签区 − 数值文字预留（否则长数字会画出画布）
+  //: 可用条形长度 = 总宽 − 标签区 − 数值文字预留
   const BAR_MAX = 420 - BAR_LB_W - 56;
+  // 空数据：给**明确说明**，不画空画布（空 SVG 会被误读成渲染失败）
+  if(!labels.length || total===0) return '<div class="muted">暂无数据（该维度全为 0）</div>';
   let svg=`<svg viewBox="0 0 420 ${labels.length*22+14}" width="100%" height="${labels.length*22+14}">`;
   labels.forEach((lb,i)=>{
     const v=vals[i]||0, y=i*22+4, w=Math.max(v>0?2:0, Math.round(BAR_MAX*v/max));
+    const pct=total>0?(v/total*100):0;
+    const txt=num(v)+(total>0?`（${pct.toFixed(pct>=10?0:1)}%）`:"");
+    const tw=txtW(txt,10.5);
+    let tx=BAR_LB_W+8+w, anchor="", fill="#e6e9ef";
+    if(tx+tw>418){                       // 会出画布 ⇒ 放进条形内部，右对齐
+      anchor=' text-anchor="end"';
+      tx=Math.max(BAR_LB_W+4, BAR_LB_W+w-6);
+      fill="#101827";
+    }
     // 悬停 `<title>` 给**完整**标签：截断只为不越界，信息不丢。
     svg+=`<text x="0" y="${y+12}" fill="#98a2b3" font-size="${BAR_LB_FS}">${
-        esc(fitLabel(lb, BAR_LB_W-6, BAR_LB_FS))}<title>${esc(lb)}：${num(v)}</title></text>
+        esc(fitLabel(lb, BAR_LB_W-6, BAR_LB_FS))}<title>${esc(lb)}：${num(v)}（${pct.toFixed(1)}%）</title></text>
       <rect x="${BAR_LB_W}" y="${y+2}" width="${w}" height="14" rx="3" fill="${color}"/>
-      <text x="${BAR_LB_W+8+w}" y="${y+13}" fill="#e6e9ef" font-size="10.5">${num(v)}</text>`;});
-  return svg+"</svg>";
+      <text x="${tx}" y="${y+13}" fill="${fill}" font-size="10.5"${anchor}>${txt}</text>`;});
+  const others=vals.filter(v=>v>0&&v<max);
+  const minPos=others.length?Math.min(...others):0;
+  let note="";
+  if(minPos>0 && max/minPos>=20){
+    note=`<div class="muted" style="font-size:11px;margin-top:6px">`+
+      `分布高度集中（最大 ${num(max)} / 最小非零 ${num(minPos)}，约 ${Math.round(max/minPos)} 倍）：`+
+      `小值条形按线性比例会接近不可见，**数值与占比均已标注**——这是真实分布，不是图坏。</div>`;
+  }
+  return svg+"</svg>"+note;
 }
 function lineChart(rows, color){
   if(!rows||rows.length<2) return '<div class="muted">数据点不足（需 ≥2 个运行）</div>';
@@ -355,13 +392,19 @@ function viewMetrics(d){
   //    宽度接近 100px ⇒ 长键名**压到条形上**。改为固定标签区 + 估算截断，
   //    完整键名放 `<title>`（悬停可见）。
   const DAMA_LB_W=100, DAMA_FS=11;
-  const qSvg=`<svg viewBox="0 0 420 ${dims.length*20+10}" width="100%" height="${dims.length*20+10}">`+
-    dims.map((x,i)=>{const val=x.v==="—"?0:Number(x.v), y=i*20+3,
-      w=Math.max(val>0?2:0, Math.round((420-DAMA_LB_W-56)*val/100));
-      return `<text x="0" y="${y+12}" fill="#98a2b3" font-size="${DAMA_FS}">${
-          esc(fitLabel(x.k, DAMA_LB_W-6, DAMA_FS))}<title>${esc(x.k)}：${x.v}</title></text>
+  // 空态显式说明（空 SVG 会被误读成"渲染失败"）；数值标签同样做越界回退。
+  const qSvg=dims.length===0
+    ? '<div class="muted">暂无质量快照（python -m tools.gen_quality_metrics）</div>'
+    : `<svg viewBox="0 0 420 ${dims.length*20+10}" width="100%" height="${dims.length*20+10}">`+
+      dims.map((x,i)=>{const val=x.v==="—"?0:Number(x.v), y=i*20+3,
+        w=Math.max(val>0?2:0, Math.round((420-DAMA_LB_W-56)*val/100));
+        const txt=String(x.v), tw=txtW(txt,10.5);
+        let tx=DAMA_LB_W+6+w, anchor="", fill="#e6e9ef";
+        if(tx+tw>418){ anchor=' text-anchor="end"'; tx=Math.max(DAMA_LB_W+4, DAMA_LB_W+w-6); fill="#101827"; }
+        return `<text x="0" y="${y+12}" fill="#98a2b3" font-size="${DAMA_FS}">${
+            esc(fitLabel(x.k, DAMA_LB_W-6, DAMA_FS))}<title>${esc(x.k)}：${x.v}</title></text>
       <rect x="${DAMA_LB_W}" y="${y+1}" width="${w}" height="13" rx="3" fill="${val>=90?"#2fbf71":(val>=70?"#f2b53b":"#ef5f5f")}"/>
-      <text x="${DAMA_LB_W+6+w}" y="${y+12}" fill="#e6e9ef" font-size="10.5">${x.v}</text>`;}).join("")+"</svg>";
+      <text x="${tx}" y="${y+12}" fill="${fill}" font-size="10.5"${anchor}>${txt}</text>`;}).join("")+"</svg>";
   const lastSLI=(s.last&&s.last.sli)||{}, tgt=(s.last&&s.last.targets)||{};
   const sliRows=Object.keys(lastSLI).map(k=>kv(SLI_LABEL[k]||k,
       (lastSLI[k].value??"—")+"%（SLO "+(tgt[k]!=null?Math.round(tgt[k]):"—")+"%）",
@@ -690,14 +733,29 @@ function openResolve(id){
     else toast("处置失败："+(r.reason||r.error||"未知"), true);
   };
 }
+//: **hash 深链**（2026-10-22 第一百零七批）：`#metrics` / `#worklist` 等可直接打开对应页。
+//: 为什么加：① 用户可收藏/分享具体页（原来只能落到 P0 再点）② 无头浏览器截图验证
+//: 需要**能按 URL 定位页面**（否则 P3 的渲染无法机器取证，只能靠肉眼）。
+function applyHash(){
+  const id=(location.hash||"").replace(/^#\/?/,"").trim();
+  if(!id) return false;
+  const t=TABS.find(x=>x.id===id);
+  if(!t) return false;
+  [...$("#nav").children].forEach(x=>x.classList.toggle("on", x.dataset.id===id));
+  CUR=id;
+  return true;
+}
 function initNav(){
   const nav=$("#nav");
   TABS.forEach(t=>{const b=document.createElement("button");
     b.textContent=t.name; b.dataset.id=t.id;
     b.onclick=()=>{ [...nav.children].forEach(x=>x.classList.remove("on")); b.classList.add("on");
-      CUR=t.id; render(); };
+      CUR=t.id; if(location.hash.slice(1)!==t.id) location.hash=t.id; render(); };
     nav.appendChild(b);});
   nav.firstChild.classList.add("on");
+  window.addEventListener("hashchange", ()=>{ if(applyHash()) render(); });
+  // 返回 true 表示已按 hash 定位（调用方不必再默认渲染 P0）
+  return applyHash();
 }
 function initLive(){
   const badge=$("#live");
@@ -714,7 +772,7 @@ async function initGates(){
   try{ const h=await api("/api/health");
     $("#gates").textContent="门禁 "+h.gates_registered+" 道"; }catch(e){}
 }
-initNav(); render(); initLive(); initGates();
+const HASH_ROUTED=initNav(); if(!HASH_ROUTED) render(); initLive(); initGates();
 setInterval(()=>{ if(!window._poll) render(); }, 10000);
 </script>
 </body>

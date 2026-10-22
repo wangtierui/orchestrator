@@ -74,7 +74,6 @@ from std_lib.common_lib import fs_lock as fs_lock
 try:
     from .mof_io import (
         save_csv,
-        save_html_report,
         save_json,
         write_status,
     )
@@ -94,7 +93,6 @@ try:
 except ImportError:  # pragma: no cover  脚本形态
     from mof_io import (  # type: ignore[no-redef]  # noqa: F401
         save_csv,
-        save_html_report,
         save_json,
         write_status,
     )
@@ -278,6 +276,14 @@ _ATTACH_KIND = {"0": "attachment", "90": "text_version"}
 # 据此认为"改了却没生效"。故**删除**该副本，并**刻意不做 re-export** ——
 # `int`/`bool` 的导入绑定**不会跟随原模块的后续更新**，再导出只会制造"看起来是活的"假象
 # （那正是要消除的隐患）。需要观察熔断状态请直接 `import attachments` 后取其同名属性。
+#
+# 同理（2026-10-22，T4）：附件**抽取复用计数** `REUSE_STATS` 也在 attachments 里，
+# 这里显式持有**模块对象**（不是 `from … import dict` —— dict 是不可变绑定，
+# 取到的是快照，测量会永远显示 0）。
+try:
+    from . import attachments as _att_mod
+except ImportError:  # pragma: no cover  脚本形态
+    pass
 
 
 
@@ -418,10 +424,6 @@ def main():
             p = write_raw_jsonl(store_path, new_store, source=HOST)
             if getattr(args, "csv", False):          # 默认仅 JSON 主库（2026-09-09 规范）
                 save_csv(new_store, os.path.join(args.outdir, "mof_laws.csv"))
-            save_html_report(
-                new_store,
-                os.path.join(os.path.dirname(args.outdir), "reports",
-                             "mof_laws_report.html"))
             return p
         fetch_detail_enabled = not args.no_detail
 
@@ -473,7 +475,8 @@ def main():
                 # `--max-seconds` 是不够的 —— 单条记录的附件（下载 + PDF/表格解析）
                 # 可能吃掉数小时，实测让 7200s 上限跑到 13113s 并被父进程强杀。
                 fetched = (collect_attachments(
-                    rid_key, rate, deadline=_guard.deadline)
+                    rid_key, rate, deadline=_guard.deadline,
+                    prev_atts=(prev_entry or {}).get("attachments"))
                     if do_fetch else [])
                 return _limits.merge_attachments(
                     fetched, (prev_entry or {}).get("attachments"), do_fetch)
@@ -541,7 +544,8 @@ def main():
                     # 未变：保留历史记录（含历史 attachments），跳过详情与附件抓取
                     entry = dict(prev)
                     if refetch_att and fetch_att:
-                        atts = collect_attachments(rid, rate)
+                        atts = collect_attachments(
+                            rid, rate, prev_atts=prev.get("attachments"))
                         entry["attachments"] = atts
                         entry["attachment_count"] = len(atts)
                         entry["attachment_names"] = "; ".join(
@@ -609,8 +613,6 @@ def main():
         # TD-11：统一走 `_flush_store()`（正常结束与早停共用同一出口，避免"早停不落盘"）。
         json_path = _flush_store()
         csv_path = os.path.join(args.outdir, "mof_laws.csv")
-        html_path = os.path.join(os.path.dirname(args.outdir), "reports",
-                                 "mof_laws_report.html")
 
         status.update({
             "last_success_time": datetime.now(UTC).isoformat(),
@@ -618,12 +620,17 @@ def main():
             "active_count": active_count,
             "expected_count": expected_total,
             "added": added, "updated": updated, "removed": removed, "unchanged": unchanged,
+            # 附件抽取的"复用 vs 重抽"计数（**优化必须可辨**：复用率高说明这轮几乎没做
+            # PDF 解析，这正是采集从 3.6h 降下来的原因；也便于判断是否需要 bump
+            # EXTRACT_VERSION 强制重抽）。
+            "attachments_reused": _att_mod.REUSE_STATS.get("reused", 0),
+            "attachments_extracted": _att_mod.REUSE_STATS.get("extracted", 0),
         })
         logger.info("✅ 增量更新完成：新增 %d / 更新 %d / 移除 %d / 未变 %d；活跃 %d 条。",
                     added, updated, removed, unchanged, active_count)
         logger.info("   JSON : %s", json_path)
-        logger.info("   CSV  : %s", csv_path)
-        logger.info("   HTML : %s", html_path)
+        if getattr(args, "csv", False):
+            logger.info("   CSV  : %s", csv_path)
     except Exception as e:  # noqa: BLE001
         # 意图声明（本仓规范）：**采集失败必须记入 status 并保留上次成功结果，
         # 而不是让进程崩掉** —— 崩溃会让调度层拿不到任何现场（连 last_error 都没有）。

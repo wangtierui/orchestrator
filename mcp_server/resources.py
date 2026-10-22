@@ -16,8 +16,6 @@ import json
 import os
 from collections.abc import Callable
 
-from mcp_server.registry import SCHEMA_DIALECT
-
 #: **易变字段**：它们描述"本次生成时刻"，不是"事实源状态"。
 #:
 #: 为什么必须排除（2026-10-21 实测的**时序 flake**）：
@@ -207,16 +205,3 @@ def read_resource(uri: str) -> dict:
     }
 
 
-def schema_of_resources() -> dict:
-    """资源面的 schema 声明（供门禁断言字段形态稳定）。"""
-    return {
-        "$schema": SCHEMA_DIALECT,
-        "type": "object",
-        "properties": {
-            "uri": {"type": "string"},
-            "version": {"type": "string"},
-            "available": {"type": "boolean"},
-            "contents": {"type": "object"},
-        },
-        "required": ["uri", "version"],
-    }

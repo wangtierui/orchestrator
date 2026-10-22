@@ -188,11 +188,3 @@ def handle_request(method: str, raw_path: str, raw_body: bytes = b"") -> tuple[i
     return status, _scrub(payload)
 
 
-def route_table() -> list[str]:
-    """路由清单（自省用：页面底部展示 + 契约测试断言不漏路由）。"""
-    return [
-        "/api/health", "/api/overview", "/api/flow", "/api/flow/step", "/api/assets",
-        "/api/metrics", "/api/quality", "/api/slo", "/api/worklist", "/api/worklist/kinds",
-        "/api/worklist/resolve", "/api/governance", "/api/search", "/api/publish",
-        "/api/release",
-    ]

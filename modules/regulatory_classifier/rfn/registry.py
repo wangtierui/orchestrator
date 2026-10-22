@@ -371,10 +371,6 @@ def rebuild_index():
     return len(rows)
 
 
-def _sync_status_path():
-    return _sync_path()
-
-
 def _sync_status_read(rfn=None):
     data = {}
     sp = _sync_path()
