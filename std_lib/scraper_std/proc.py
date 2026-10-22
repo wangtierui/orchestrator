@@ -52,10 +52,58 @@ def hidden_kwargs() -> dict[str, Any]:
     return kw
 
 
+def _inject_inherited_stdio(kw: dict[str, Any]) -> None:
+    """把父进程的 stdin/stdout/stderr **显式**传给子进程（就地修改 `kw`）。
+
+    ⚠️ 为什么必须这么做（2026-10-22 实测定位，问题项 P-2）
+    ----------------------------------------------------
+    `CREATE_NO_WINDOW` 会给子进程创建**一个新的隐藏控制台**；此时若不显式指定
+    标准流，子进程的 stdout/stderr 指向那个隐藏控制台，而**不是**父进程的
+    文件/管道 ⇒ **子进程输出全部丢失**。
+
+    实测矩阵（父进程重定向到文件）：
+
+    | 组合 | 子进程输出 |
+    |---|---|
+    | 裸 `subprocess.run` | ✅ 可见 |
+    | 仅 `STARTUPINFO(SW_HIDE)` | ✅ 可见 |
+    | 仅 `CREATE_NO_WINDOW` | ❌ **全丢** |
+    | `CREATE_NO_WINDOW` + `STARTUPINFO(SW_HIDE)` | ❌ **全丢** |
+    | `CREATE_NO_WINDOW` + `stdout=sys.stdout` | ✅ 可见 |
+
+    影响面：`install_global_defaults()` 把 `run/Popen/check_output/check_call/call`
+    全部包了一层 ⇒ **任何"不捕获输出"的 spawn 都会静默丢日志**。
+    实证：`cli.py timeliness verify --source gov --dry-run` 跑 5.5s、rc=0、
+    **零字节输出**（同一命令直接跑脚本则有 897 字节）。
+
+    为什么不干脆去掉 `CREATE_NO_WINDOW`：它解决的是"每次 spawn 闪一个黑框"，
+    在无控制台的 `pythonw` 场景下仍然必要。所以保留它，改为**显式继承**标准流。
+
+    跳过条件（任一即不注入，避免与调用方意图冲突）：
+      · 调用方已显式给了该流（含 `subprocess.PIPE`/`DEVNULL`）；
+      · 调用方用了 `capture_output=True`（与显式 stdout 互斥，会 ValueError）；
+      · 父进程该流为 `None` 或没有真实 `fileno()`（如 `io.StringIO` 被测试替换）。
+    """
+    if kw.get("capture_output"):
+        return
+    for name in ("stdin", "stdout", "stderr"):
+        if name in kw:
+            continue
+        stream = getattr(sys, name, None)
+        if stream is None:
+            continue
+        try:
+            stream.fileno()
+        except (AttributeError, OSError, ValueError):
+            continue
+        kw[name] = stream
+
+
 def run(argv, **kw: Any):
     """`subprocess.run` 的隐藏窗口版本（调用方显式参数优先）。"""
     for k, v in hidden_kwargs().items():
         kw.setdefault(k, v)
+    _inject_inherited_stdio(kw)
     return subprocess.run(argv, **kw)
 
 
@@ -63,6 +111,7 @@ def popen(argv, **kw: Any):
     """`subprocess.Popen` 的隐藏窗口版本（调用方显式参数优先）。"""
     for k, v in hidden_kwargs().items():
         kw.setdefault(k, v)
+    _inject_inherited_stdio(kw)
     return subprocess.Popen(argv, **kw)
 
 
@@ -87,17 +136,29 @@ def install_global_defaults() -> bool:
         if inspect.isclass(orig):
             setattr(subprocess, name, _wrap_class(orig))
         else:
-            setattr(subprocess, name, _wrap_func(orig))
+            # `check_output` 的 stdout 由 stdlib 固定为 PIPE 且禁止外部再传
+            # ⇒ 只对它关闭"继承标准流"注入（其余函数都要注入，见 _inject_inherited_stdio）。
+            setattr(subprocess, name,
+                    _wrap_func(orig, inherit_stdio=(name != "check_output")))
     setattr(subprocess, _HIDDEN_FLAG, True)
     return True
 
 
-def _wrap_func(func: Any) -> Any:
-    """函数形态包装（run/call/check_output/check_call）。"""
+def _wrap_func(func: Any, inherit_stdio: bool = True) -> Any:
+    """函数形态包装（run/call/check_output/check_call）。
+
+    `inherit_stdio=False` 用于 **`check_output`**：stdlib 实现内部把 stdout 固定成
+    PIPE 并显式校验"不允许再给 stdout"⇒ 注入会 `ValueError: stdout argument not
+    allowed, it will be overridden`（实测踩到）。它本就不需要注入。
+    """
 
     def wrapper(*args, **kwargs):
         for k, v in hidden_kwargs().items():
             kwargs.setdefault(k, v)
+        # 全局包装器覆盖的正是"不捕获输出"的调用；若不显式继承标准流，
+        # CREATE_NO_WINDOW 会让子进程的输出写进它的隐藏控制台 ⇒ 静默丢失。
+        if inherit_stdio:
+            _inject_inherited_stdio(kwargs)
         return func(*args, **kwargs)
 
     wrapper._rco_hidden = True  # type: ignore[attr-defined]
@@ -115,6 +176,7 @@ def _wrap_class(cls: type) -> type:
         def __init__(self, *args: Any, **kwargs: Any) -> None:
             for k, v in hidden_kwargs().items():
                 kwargs.setdefault(k, v)
+            _inject_inherited_stdio(kwargs)
             super().__init__(*args, **kwargs)
 
     wrapper.__doc__ = cls.__doc__

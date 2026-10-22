@@ -554,9 +554,18 @@ def execute_queries(
     retry_failed: bool = False,
     pause: float = 0.2,
     log: Callable[[str], None] = print,
+    meta: dict[str, Any] | None = None,
 ) -> dict[str, dict[str, Any]]:
     """并发断点查询引擎。checkpoint 即查询 JSONL（逐条 append，可中断续跑）。
-    安全参数：workers≤2、间隔≥0.2s（实测 6 并发 ~760 次即触发网关拦截/配额耗尽）。"""
+    安全参数：workers≤2、间隔≥0.2s（实测 6 并发 ~760 次即触发网关拦截/配额耗尽）。
+
+    `meta`（可选，**出参**）：把"这次是不是被配额/拦截打断的"回传给调用方。
+    为什么必须回传（2026-10-22，TD-21 排查中的实测缺陷）：原实现只在日志里打
+    `[配额] …`，调用方拿不到任何信号 ⇒ 它把"没查成"的候选一律当成"查了但无同名命中"
+    写进 SSOT（`status=pending` + `last_checked_at=now`）⇒ 这些记录会**被当成已核验、
+    90 天内不再优先重试**，一次配额耗尽就能把覆盖率静默打穿。
+    出参字段：`stopped` / `reason`(quota|auth) / `attempted` / `total` / `remaining`。
+    """
     done = load_checkpoint(checkpoint_path)
     if retry_failed:
         todo = [it for it in plan if done.get(it["key"], {}).get("message") != "成功"]
@@ -564,6 +573,9 @@ def execute_queries(
     else:
         todo = [it for it in plan if it["key"] not in done]
         mode_txt = "新增"
+    if meta is not None:
+        meta.update({"stopped": False, "reason": "", "attempted": 0,
+                     "total": len(todo), "remaining": 0})
     if not todo:
         log("checkpoint 无需%s查询" % mode_txt)
         return done
@@ -604,6 +616,10 @@ def execute_queries(
                         log("[配额] 北大法宝积分用尽(90001)，停止新增查询")
                         _wl_quota("90001", it)
                         stop = True
+                        if meta is not None:
+                            meta.update({"stopped": True, "reason": "quota",
+                                         "attempted": n,
+                                         "remaining": max(0, len(todo) - n)})
                         break
                     if "认证失败" in obj["message"]:
                         consec_auth_fail += 1
@@ -614,6 +630,10 @@ def execute_queries(
                             )
                             _wl_quota("auth_fail", it)
                             stop = True
+                            if meta is not None:
+                                meta.update({"stopped": True, "reason": "auth",
+                                             "attempted": n,
+                                             "remaining": max(0, len(todo) - n)})
                             break
                     else:
                         consec_auth_fail = 0

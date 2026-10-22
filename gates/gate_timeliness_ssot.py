@@ -55,8 +55,11 @@ except Exception as e:  # noqa: BLE001
 
 
 from config.enums import SOURCE_ORDER
-from std_lib.common_lib.norm import norm_docno as _norm_docno  # A-10：SSOT 收敛（标准层）
-from std_lib.common_lib.norm import norm_title_strict as _norm_title  # A-10：SSOT 收敛（保守层）
+
+# 层1 的匹配/权威性判据**唯一实现**（2026-10-22，TD-21）：
+# 原实现在本文件内联，而"回填归属表"的命令需要同一套判据 —— 两份必然分叉。
+# 共享后语义不变，但"门禁认为算漂移"与"命令会去改"永远指向同一批行。
+from std_lib.common_lib.timeliness_ssot import drift_pairs
 
 
 def _load_attr_rows():
@@ -64,15 +67,9 @@ def _load_attr_rows():
         return list(csv.DictReader(fh))
 
 
-def _is_fresh_rec(rec):
-    """state 记录核验是否 ≤ 90 日（fresh 才作为 SSOT 断言依据；陈旧由下次 verify 刷新，不阻断）。"""
-    try:
-        from datetime import datetime, timedelta
-
-        last = datetime.strptime(rec.get("last_checked_at", ""), "%Y-%m-%d %H:%M:%S")
-        return (datetime.now() - last) <= timedelta(days=90)
-    except Exception:  # noqa: BLE001
-        return False
+# 说明（2026-10-22，TD-21）：原 `_is_fresh_rec()` 已随层1 判据下沉到
+# `std_lib.common_lib.timeliness_ssot._is_fresh()` —— 那里是唯一实现，
+# **不要在本文件重建副本**（那正是本次要消除的"两份判据分叉"）。
 
 
 def run():
@@ -93,45 +90,27 @@ def run():
             "state": None,
         }
     state = json.load(open(_STATE_JSON, encoding="utf-8"))
-    # 快速索引：docno 归一 → rec（含状态 + 核验时间）
-    st_docno = {}
-    st_title = {}
-    for k, rec in state.items():
-        if k.startswith("doc:"):
-            st_docno[k[4:]] = rec
-        elif k.startswith("title:"):
-            st_title[k[6:]] = rec
 
     rows = _load_attr_rows()
-    attr_by_rfn = {}
-    layer1_checked = layer1_skip = 0
+    attr_by_rfn = {r.get("监管文件编号", ""): r for r in rows}
+
+    # ── 层1：SSOT→归属表 ──
+    # 受控枚举校验仍在此做（它属于"归属表字段合法性"，不是漂移判定）。
     for r in rows:
-        rfn = r.get("监管文件编号", "")
-        attr_by_rfn[rfn] = r
-        st = (r.get("时效状态") or "").strip()
-        if st and st not in _ENUM:
-            problems.append(f"归属表 {rfn} 时效状态非受控枚举: {st!r}")
-        nd = _norm_docno(r.get("发文字号", ""))
-        rec = st_docno.get(nd) if nd and len(nd) >= 5 else None
-        if rec is None:
-            nt = _norm_title(r.get("文件名称", ""))
-            rec = st_title.get(nt[:40])
-        if rec is None:
-            layer1_skip += 1
-            continue
-        layer1_checked += 1
-        rec_st = rec.get("status", "")
-        # pending/uncertain = 核验占位（非结论），归属表以人工判定为权威，不判漂移；
-        # state 陈旧（核验超 90 日，未及重验）也不阻断——归属表可能已人工更新，待下次 verify 刷新。
-        if rec_st in ("pending", "uncertain") or not _is_fresh_rec(rec):
-            continue
-        # "无同名命中（维持原标注）"/"规则判断" = 核验未形成法宝权威结论（仅记录原值），
-        # 不作为 SSOT 断言依据（否则 1439 条非结论记录会与人工归属表产生假漂移；2026-09-11 修复）。
-        vsrc = rec.get("verification_source", "") or ""
-        if ("无同名命中" in vsrc) or ("规则判断" in vsrc):
-            continue
-        if st and rec_st != st:
-            problems.append(f"SSOT→归属表漂移 {rfn}: state={rec_st} vs 归属表={st}")
+        st_r = (r.get("时效状态") or "").strip()
+        if st_r and st_r not in _ENUM:
+            problems.append(
+                f"归属表 {r.get('监管文件编号', '')} 时效状态非受控枚举: {st_r!r}")
+    # 漂移判定走共享实现（见文件头 import 的说明）。语义与原内联实现逐字一致：
+    #   · 匹配：文号归一（≥5 字）优先、标题归一前 40 字兜底；都不中 ⇒ 跳过（未核验）
+    #   · 权威性：非 pending/uncertain、未超 90 日、来源不含"无同名命中/规则判断"
+    #   · 漂移：归属表非空且与 SSOT 结论不同
+    _rep = drift_pairs(rows, state)
+    layer1_checked = _rep["checked"]
+    layer1_skip = _rep["no_state"]
+    for x in _rep["pairs"]:
+        problems.append(
+            f"SSOT→归属表漂移 {x['rfn']}: state={x['state']} vs 归属表={x['attr']}")
 
     # 层2：底座 eff_status == 归属表时效
     layer2_checked = 0
@@ -208,13 +187,25 @@ def run():
                                 f"归属表→cleaned 提示 {rfn}({src}): 归属表={a_st} vs clean={cst}"
                             )
 
+    # ⚠️ 2026-10-22（TD-21 排查中的实测缺陷）：原实现返回 `problems[:40]`，
+    # 而**不返回总条数** —— 于是"到底漂移多少条"无从得知：TD-21 登记为"40 条"
+    # 正是这个切片的产物（实测真实层1 漂移是 **44** 条，被切掉了 4 条）。
+    # 一个门禁在报告层静默截断，等于让"严重程度"不可观测 —— 修法：
+    # ① 显式给出 `problem_count`（**全量**计数，不受切片影响）；
+    # ② 切片上限提高到 200（仍保留上限，避免极端情况把 payload 撑爆）；
+    # ③ 增加 `problems_truncated`，让"看到的不是全部"这件事本身可辨。
+    _MAX_LISTED = 200
     return (not problems), {
         "state_records": len(state),
         "layer1_ssot_to_attr": {"checked": layer1_checked, "no_state_skip": layer1_skip},
         "layer2_attr_to_base": {"checked": layer2_checked},
         "layer3_attr_to_clean_via_bridge": {"checked": bridge_ok, "warn": len(warn)},
-        "problems": problems[:40],
+        "problem_count": len(problems),
+        "problems": problems[:_MAX_LISTED],
+        "problems_truncated": len(problems) > _MAX_LISTED,
+        "warning_count": len(warn),
         "warnings": warn[:10],
+        "warnings_truncated": len(warn) > 10,
     }
 
 

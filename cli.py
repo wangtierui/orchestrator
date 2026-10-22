@@ -124,8 +124,10 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser("classify", help="主题底座强序重建（R8，--theme/--all/--steps/--dry-run）")
     p_tl = sub.add_parser("timeliness", help="时效核验（R13 三态：success/partial/unavailable）")
     p_tl.add_argument("action", choices=["verify", "sync", "summary"],
-                      help="verify 效力缺失核验（透传 --source/--dry-run/--probe/--workers/--token-file）| "
-                           "sync 变更台账→归属表时效同步(F-C03) | summary 读最新 verify_summary_*.json")
+                       help="verify 效力缺失核验（透传 --source/--dry-run/--probe/--workers/"
+                            "--token-file/--max-items）| sync 变更台账→归属表时效同步(F-C03)；"
+                            "加 --from-state 改为**直接从 SSOT 回填**（verify 失败/配额耗尽时"
+                            "仍可消漂移；改完须重建基座）| summary 读最新 verify_summary_*.json")
     p_draft = sub.add_parser("draft", help="条款级对照素材端到端编排（P8：merged_view × R21 clauses）")
     p_draft.add_argument("--ipn", default="", help="单制度 IPN-xxx（默认全部）")
     sub.add_parser("rfn", help="RFN 登记/查询（registry 唯一写口，F-C01；register/lookup）")

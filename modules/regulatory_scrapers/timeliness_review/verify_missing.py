@@ -88,6 +88,28 @@ def collect_missing(source: str):
     return rows, missing
 
 
+def _priority_key(c: dict, idx: tuple) -> tuple:
+    """候选核验优先级（**越小越先查**）。
+
+    `(last_checked_at 升序, publish_date 降序, title)`
+      · 空 `last_checked_at`（SSOT 从无记录）排最前 —— 从未核验的最该查；
+      · 其余按上次核验时间**由老到新**；
+      · 同档按公布日期**由新到旧**（新文件的时效对合规判断更关键）。
+
+    核验成功/无命中都会刷新 `last_checked_at` ⇒ 被查过的自然沉到队尾，
+    形成"轮转"，**不需要额外的游标文件**（游标容易与数据漂移，状态本身就是进度）。
+    """
+    from std_lib.common_lib import timeliness_ssot as _ssot
+
+    row = {"发文字号": c.get("document_number", ""),
+           "文件名称": c.get("title", "")}
+    rec = _ssot.match_row(row, idx[0], idx[1]) or {}
+    last = rec.get("last_checked_at") or ""
+    d = (c.get("publish_date") or "").replace("-", "")[:8]
+    neg_date = -int(d) if d.isdigit() else 0
+    return (last, neg_date, c.get("title", ""))
+
+
 def _summary_record(source, status, **kw):
     rec = {"source": source, "status": status,
            "ts": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
@@ -102,6 +124,11 @@ def run_source(source: str, args) -> dict:
     （cleaned 效力留空即待核验位，等同 needs_review 语义），不将"未核验"误标为 valid。
     """
     state = vstate.load_state()
+    # SSOT 索引（供优先级排序复用；`index_state` 是共享判据的一部分，
+    # 不要在这里另写一套"怎么算上次核验时间"）
+    from std_lib.common_lib import timeliness_ssot as _ssot_idx
+
+    _idx = _ssot_idx.index_state(state)
     try:
         rows, missing = collect_missing(source)
     except FileNotFoundError as e:
@@ -112,12 +139,32 @@ def run_source(source: str, args) -> dict:
         print(f"[verify_missing:{source}] 无效力缺失记录，跳过")
         return _summary_record(source, S_SUCCESS, missing=0, queried=0, ok=0,
                                nomatch=0, fail=0, degraded=0, changed=0)
+    # ── 增量策略：优先级排序 + 每轮预算（2026-10-22，T3）──
+    # 为什么需要排序（实测依据）：配额一旦耗尽，`execute_queries` 会 stop，
+    # 只有**排在前面**的候选能被查。原实现按 cleaned CSV 的自然顺序（≈入库顺序）
+    # 依次查 → 每次都从同一段开始，尾部的记录**永远轮不到**。
+    # 现按"最需要核验"排序，保证任何配额规模下每轮都在推进最有价值的记录：
+    #   ① 从未核验（SSOT 无记录）优先；
+    #   ② 其次按 `last_checked_at` 升序（越久没核越优先）；
+    #   ③ 同档按 `publish_date` 降序（新文件时效更关键）。
+    # 因为核验成功会刷新 `last_checked_at`，被查过的自然沉到后面 ⇒ **无需额外游标**，
+    # 天然形成"轮转"，且状态本身就是进度（不会出现"游标与数据不一致"）。
+    # ⚠️ 排序必须在 `dry-run` 之前：dry-run 的意义就是"让我看看**会按什么顺序**查"。
+    missing.sort(key=lambda c: _priority_key(c, _idx))
+    budget = int(getattr(args, "max_items", 0) or 0)
+    total_missing = len(missing)
+    if budget and total_missing > budget:
+        print(f"[verify_missing:{source}] 预算截断：{total_missing} → {budget} 条"
+              "（其余按优先级留待下轮）")
+        missing = missing[:budget]
+
     if args.dry_run:
         for c in missing:
             print(f"  待查: {c['document_number'] or '(无文号)':<24} | {c['title'][:40]}")
         print(f"[verify_missing:{source}] dry-run：未发起任何北大法宝查询")
-        return _summary_record(source, S_SUCCESS, missing=len(missing), queried=0, ok=0,
-                               nomatch=0, fail=0, degraded=0, changed=0, dry_run=True)
+        return _summary_record(source, S_SUCCESS, missing=total_missing, queried=0, ok=0,
+                               nomatch=0, fail=0, degraded=0, changed=0, dry_run=True,
+                               truncated=max(0, total_missing - len(missing)))
 
     cli = pk.find_cli()
     token = pk.load_token(args.token_file) or pk.load_token_any()[0]  # N-169：兜底路径改用 pkulaw_cli 的**唯一解析**（env → 仓根 → timeliness_review）
@@ -134,24 +181,45 @@ def run_source(source: str, args) -> dict:
         plan = plan[:args.probe]
     executed = {p.get("key", p.get("title")) for p in plan}
     print(f"[verify_missing:{source}] 查询计划 {len(plan)} 项（CLI 就绪，workers={args.workers}）")
+    meta: dict = {}
     done = pk.execute_queries(plan, cli, token, checkpoint, workers=args.workers,
-                              retry_failed=args.retry_failed, pause=0.2, log=print)
+                              retry_failed=args.retry_failed, pause=0.2, log=print,
+                              meta=meta)
+    if meta.get("stopped"):
+        print(f"[verify_missing:{source}] ⚠️ 查询被中止（{meta.get('reason')}）："
+              f"已执行 {meta.get('attempted')}，剩余 {meta.get('remaining')} 未查"
+              "—— 未查项**不写任何判定**，下轮按优先级续跑")
 
     today = datetime.datetime.now().strftime("%Y%m%d")
     ledger_out = os.path.join(OUT_DIR, f"时效核验_{source}变更台账_{today}.csv")
     changed = []
     stats = {"valid": 0, "amended": 0, "repealed": 0, "expired": 0, "nomatch": 0, "fail": 0}
+    not_attempted = 0
     for i, c in enumerate(missing):
         it = cand2item[i]
         if it is None or it.get("key", it.get("title")) not in executed:
             continue
         obj = done.get(it["key"]) or done.get(it["title"])
-        if obj is None or obj.get("message") != "成功" or not obj.get("data"):
-            stats["nomatch" if obj and obj.get("message") == "成功" else "fail"] += 1
-            c["verification_note"] = ("北大法宝查询失败: " + str(obj.get("message"))[:120]
-                                      if obj and obj.get("message") != "成功"
-                                      else "北大法宝 get_law_list 无命中(0条)")
-            # 无命中但已核验 → 如实登记 pending，避免污染
+        if obj is None:
+            # **未执行**（配额/拦截中止、或预算截断）⇒ 不写 state
+            not_attempted += 1
+            c["verification_note"] = "本轮未执行（配额/拦截或预算截断），保持待核验"
+            continue
+        if obj.get("message") != "成功":
+            # **查询失败**（配额/网络/认证）⇒ 不写 state
+            # ⚠️ 这是本轮修掉的关键缺陷：原实现把失败也记为
+            # `pending + vsource="无同名命中"` + `last_checked_at=now`
+            # ⇒ 该记录会被当成"刚核验过、结论是无命中"，90 天内不再优先重试
+            #   （一次配额耗尽即可把覆盖率静默打穿，且 gate 因'非权威来源'跳过而
+            #   看不出问题）。失败就是失败，必须留待重试。
+            stats["fail"] += 1
+            c["verification_note"] = ("北大法宝查询失败（不计入结论）: "
+                                      + str(obj.get("message"))[:120])
+            continue
+        if not obj.get("data"):
+            # 查成功但 0 条 = **真实无命中** ⇒ 如实登记 pending（这是合法结论）
+            stats["nomatch"] += 1
+            c["verification_note"] = "北大法宝 get_law_list 无命中(0条)"
             state, _, _ = vstate.mark_checked(docno=c.get("document_number", ""), title=c.get("title", ""),
                                               status="pending", replacement="",
                                               vsource="北大法宝（无同名命中，维持原判定）", state=state)
@@ -181,16 +249,25 @@ def run_source(source: str, args) -> dict:
         if ledger_new:
             w.writeheader()
         w.writerows(changed)
-    print(f"[verify_missing:{source}] 判定统计: {stats} | 本批变更 {len(changed)} 条 | 台账(追加) {ledger_out}")
+    print(f"[verify_missing:{source}] 判定统计: {stats} | 本批变更 {len(changed)} 条 | "
+          f"未执行 {not_attempted} | 台账(追加) {ledger_out}")
     print(f"[verify_missing:{source}] 状态已写入 verification_state.json")
-    # R13 三态：fail>0 或部分候选未完成 → partial（可断点续跑）；否则 success
+    # R13 三态（2026-10-22 修订口径）：
+    #   · `partial` = **需要重试**（有查询失败 / 被配额或拦截中止）；
+    #   · 仅"预算截断"导致的未执行**不算 partial** —— 那是本轮的**计划内完成**
+    #     （operator 显式设了 --max-items），剩余项下轮按优先级继续。
+    #     否则一旦设预算，链上每次都会 rc=2，等于把"有预算"变成"永远失败"。
     queried = sum(stats.values())
-    failed = stats["fail"] + stats["nomatch"]
-    status = S_SUCCESS if failed == 0 else S_PARTIAL
-    return _summary_record(source, status, missing=len(missing), queried=queried,
+    needs_retry = stats["fail"] > 0 or bool(meta.get("stopped"))
+    status = S_PARTIAL if needs_retry else S_SUCCESS
+    return _summary_record(source, status, missing=total_missing, queried=queried,
                            ok=stats["valid"] + stats["amended"] + stats["repealed"] + stats["expired"],
                            nomatch=stats["nomatch"], fail=stats["fail"],
-                           degraded=failed, changed=len(changed), detail=stats)
+                           not_attempted=not_attempted,
+                           quota_stopped=bool(meta.get("stopped")),
+                           stop_reason=meta.get("reason", ""),
+                           truncated=max(0, total_missing - len(missing)),
+                           degraded=stats["fail"], changed=len(changed), detail=stats)
 
 
 def _overall(sources_sum: list[dict]) -> str:
@@ -207,6 +284,9 @@ def main() -> int:
     ap.add_argument("--source", default="nfra", help="源: nfra/mof/pbc/gov 或 all")
     ap.add_argument("--dry-run", action="store_true", help="仅列出候选，不查询")
     ap.add_argument("--probe", type=int, default=0, help="只查前 N 条（冒烟，各源分别生效）")
+    ap.add_argument("--max-items", type=int, default=0,
+                    help="每源本轮**预算**条数（0=不限）。超出部分按优先级留待下轮；"
+                         "预算截断记 truncated（不算失败），查询失败/配额中止才判 partial")
     ap.add_argument("--workers", type=int, default=2, help="并发数（风控 ≤2）")
     ap.add_argument("--retry-failed", action="store_true", help="重试 checkpoint 失败查询")
     ap.add_argument("--token-file", default="", help="北大法宝 token 文件")

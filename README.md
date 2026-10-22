@@ -88,7 +88,7 @@ regulatory_compliance_orchestrator/
 | `modules/internal_policy_drafter/` | 目录 | **常规流程** | 条款级对照素材（`draft_clause`） | 被 `cli.py draft` 调用 |
 | `modules/base_publish/` | 目录 | **常规流程（交付层）** | 双底座发布件 + FTS5 索引（`write_jsonl` 为**包级唯一实现**） | 被 `cli.py base publish` 调用 |
 | `std_lib/scraper_std/` | 目录 | **常规流程（共享库）** | 采集/清洗通用能力（`crawler_common` / `unified_schema` / `sentence_split` / `attachments` …） | 被 `modules/regulatory_scrapers` 引用 |
-| `std_lib/common_lib/` | 目录 | **常规流程（共享库）** | 跨模块公共能力：`relations`（关系抽取）/ `sentence_boundary`（**句读 SSOT**）/ `semantic_tools`（探测）/ `semantic_models`（加载）/ **`semantic_enhance`（执行门面）** / `governance_store` / `vector_store` … | 被 `modules/`、`tools/`、`gates/` 引用 |
+| `std_lib/common_lib/` | 目录 | **常规流程（共享库）** | 跨模块公共能力：`relations`（关系抽取）/ `sentence_boundary`（**句读 SSOT**）/ `semantic_tools`（探测）/ `semantic_models`（加载）/ **`semantic_enhance`（执行门面）** / `governance_store` / `vector_store` / **`timeliness_ssot`（时效 SSOT 的匹配+权威性**唯一实现**，门禁与回填命令同源）** / `fs_lock`（跨进程锁，含 **PID 复用**识别）… | 被 `modules/`、`tools/`、`gates/`、`commands/` 引用 |
 | `tools/run_production_refresh.py` | 文件 | **常规流程（编排）** | **全链编排器**：`STEP_ORDER` **32 项**（机器核验：`audit_health`）、按源展开执行、`--resume` 续跑、稳定运行台账 | 被 `cli.py run` / 计划任务调用 |
 | `tools/ci_check.py` | 文件 | **常规流程（CI）** | 六项阻断检查：ruff / mypy / schedule / pytest / gates / coverage | 被人工/CI 调用 |
 | `tools/smoke_semantic_models.py` | 文件 | **特殊工具** | P1 模型**真实初始化 + 真实调用**冒烟自检 | 按需人工执行 |
@@ -707,6 +707,10 @@ python -m tools.workbench_service verify --wait 45
 | **`mof` 附件抽取会复用，不再每轮重解析** | 一轮 `collect:mof` 曾 **13113s（3.64h）/ 峰值 6.26GB**，瓶颈不是网络而是"本地已有副本仍重跑 `extract_document_text`"。现按「磁盘大小未变 + `extract_version` 一致」**整段复用**历史抽取结果（实测单记录 9/10 复用、0.9s）。存量数据用 `python -m tools.backfill_extract_version --apply` 盖章后即可生效；改抽取逻辑时**必须递增 `EXTRACT_VERSION`** |
 | **确认台支持 hash 深链** | `#metrics` / `#worklist` / `#flow` … 可直接打开对应页（原来只能落到 P0 再点）。既是可用性改进（可收藏/分享），也让**无头浏览器可按 URL 定位页面** |
 | **废弃/冗余代码可审计** | `python -m tools.dead_code_audit`（四类判据，只报告）。本仓实测：真死代码 18 项（已删清零）、`if False` 死分支 0、大段注释代码 0 |
+| **时效漂移可回填（不依赖 verify 成功）** | `python cli.py timeliness sync --from-state [--dry-run]`：直接读 `verification_state` 回填归属表，**判据与门禁同源**（`std_lib/common_lib/timeliness_ssot.py`）。⚠️ 回填后**必须重建基座**：`classify --steps base --all` 再 `--steps cluster --all`，否则漂移只是从层1 转到层2（门禁会立刻抓到，不会静默） |
+| **配额耗尽绝不写 SSOT** | `verify` 只对**成功**结果写判定（0 条=真实无命中⇒pending；有数据⇒judge）。**查询失败/未执行一律不写** —— 否则记录会伪装成"刚核验过、无同名命中"并冻结 90 天（一次配额耗尽即可静默打穿覆盖率）。优先级：从未核验 → 最久未核 → 新公布优先；`--max-items` 为每源预算（截断记 `truncated`，**不算失败**） |
+| **子进程输出不会被吞** | `std_lib/scraper_std/proc` 的全局包装器注入 `CREATE_NO_WINDOW`，它会给子进程**新建隐藏控制台**⇒ 父进程重定向到文件/管道时子输出**全丢**（实测 `cli.py timeliness verify --dry-run` 零字节）。现由 `_inject_inherited_stdio()` 显式继承父 std；`check_output` 例外（stdlib 禁止外传 stdout） |
+| **没上 Dash（有实测依据）** | 评估见 `reports/refactors/工作台前端选型评估_Dash_20261022.md`：`dash==4.4.1` 新增 **16 个运行时包 / ≈18.6 MB**、前端运行时载荷 **6–8 MB**（现状单文件 46.9 KB）。结论：保留零依赖骨架；需要交互图表时**只加 `plotly`**（本地托管 `plotly.min.js`），不引 Flask/Dash |
 
 > **蓝屏事件排查**（`KERNEL_SECURITY_CHECK_FAILURE` 等 4 种 BugCheck）见
 > `reports/refactors/incident_20261021_bsod.md`：结论是**非本项目导致**

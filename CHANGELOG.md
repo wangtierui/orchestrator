@@ -3275,3 +3275,110 @@ AST 依赖实测推翻了此前的"2 类咬合"判断：`RobustSession` 与 `Xzf
 ### 验证
 30 门禁 PASS、ruff 0、mypy 0、全量测试零失败；本批新增守卫 **22 项**
 （README 渲染 7 + P3 契约 7 + 附件复用 8）。
+## [Unreleased] 2026-10-22 — 时效 SSOT 漂移根治 + 配额安全增量 + spawn 输出修复 + Dash 评估（第一百零八批）
+
+### ① TD-21 时效 SSOT 漂移：从「无法自愈」到**可回填且判据同源**
+
+**真实条数不是 40，是 44** —— 门禁原返回 `problems[:40]` 且**不给总条数**，
+TD-21 被登记成"40 条"正是这个切片的产物。已新增 `problem_count` /
+`problems_truncated` / `warning_count`（**报告层静默截断本身就是缺陷**：让严重程度不可观测）。
+
+**根因（两段）**：
+1. 传播链只走「`verify` 产变更台账 → `timeliness sync` **只读最新一份台账**」；
+   `verify` 一旦因**配额耗尽**失败（当日实证：跑 4662s 后 rc=2），台账不产出 ⇒
+   44 条权威结论**永远进不了归属表**；
+2. `classify` 重建归属表时把「时效状态」重置为 `pending`，**没有任何步骤从 state
+   反向回填** ⇒ 只要 verify 停一次，漂移就永久留存。
+
+**修法三件套（判据同源）**：
+- 新增 `std_lib/common_lib/timeliness_ssot.py`：匹配（文号归一 ≥5 字优先、标题归一
+  前 40 字兜底）+ **权威性四条件**（非 pending/uncertain、未超 90 日、来源不含
+  「无同名命中/规则判断」、归属表非空）的**唯一实现**；
+- 新增 `verification_state.apply_status_by_rfn()`：**按 RFN 精确写**归属表
+  （不用标题子串猜，避免误配），复用既有备份 + 原子替换 + `utf-8-sig` 纪律；
+- 新增 `cli.py timeliness sync --from-state [--dry-run]`：把"能否回填"与
+  "verify 是否成功"**解耦**。
+
+**门禁层1 切到共享实现**（删掉内联的 `st_docno`/`_norm_docno`/`_is_fresh_rec` 副本）——
+两份判据必然分叉：门禁不算漂移的，命令却去改 ⇒ 覆盖人工判定；反之则永远修不掉。
+
+**执行结果**：回填 44 条（amended 23 / valid 18 / repealed 3，未匹配 0；
+跳过 placeholder 948 / 非权威来源 66）→ 层1 清零；随后**漂移如预期转到层2**
+（16 条 base）→ `classify --steps base --all` → 8 条（final）→
+`classify --steps cluster --all` → **判据 PASS（0 problems）**。
+> 这条链路本身证明了"只改归属表会把漂移推到下一层"——所以命令收尾**强制**提示
+> "下一步必须重建基座"，而不是让人以为已经修完。
+
+### ② 配额安全：失败绝不写进 SSOT（T3 核心）
+
+**原实现把"没查成"当成"查了但无同名命中"写进 SSOT**：
+`mark_checked(status="pending", vsource="北大法宝（无同名命中，维持原判定）")`
+且 `last_checked_at` 刷新为**当前时刻**。后果四重：
+① 语义被篡改；② 记录被视为**新鲜 90 天**、不再优先重试；③ 门禁因"非权威来源"
+跳过它 ⇒ **一次配额耗尽即可静默打穿覆盖率**；④ 从结果上看不出异常。
+
+**修法**：
+- **查询失败**（message ≠ 成功）/ **未执行**（配额中止、预算截断）⇒ **不写 state**；
+- **真实无命中**（成功且 0 条）与「规则判断」⇒ 仍登记 pending（合法结论不能一起取消）；
+- `execute_queries(..., meta=)` 新增**出参**回传 `stopped/reason(quota|auth)/attempted/
+  remaining`（原来只在日志打 `[配额]`，调用方拿不到任何信号）；
+- 摘要新增 `failed / not_attempted / quota_stopped / stop_reason / truncated`。
+
+### ③ 增量策略：优先级 + 预算，**不需要游标**
+
+- **优先级**：从未核验（SSOT 无记录）→ `last_checked_at` 最旧的 → 同档 `publish_date` 最新的；
+- 核验后 `last_checked_at` 被刷新 ⇒ 自动沉到队尾 ⇒ **天然轮转**；
+  且"状态本身就是进度"（游标文件容易与数据漂移，故**不引入**）；
+- 新增 `--max-items`（每源预算，0=不限）。**口径**：预算截断记 `truncated`、
+  **不算 partial** —— 否则一设预算，链上每次 rc=2，"有预算"变成"永远失败"；
+  只有**查询失败 / 配额中止**才判 `partial`（可重试）；
+- 排序移到 `dry-run` **之前**：dry-run 的意义就是"让我看看会按什么顺序查"。
+
+### ④ 全局 spawn 包装器**静默吞掉子进程输出**（新发现）
+
+`std_lib/scraper_std/proc.install_global_defaults()` 给 `run/Popen/check_output/
+check_call/call` 注入 `CREATE_NO_WINDOW`；它为子进程创建**新的隐藏控制台**，
+父进程重定向到文件/管道时，子进程输出**全部写进那个隐藏控制台**⇒ 丢失。
+
+**实测矩阵**（父进程重定向到文件）：
+
+| 组合 | 子进程输出 |
+|---|---|
+| 裸 `subprocess.run` | 可见 |
+| 仅 `STARTUPINFO(SW_HIDE)` | 可见 |
+| 仅 `CREATE_NO_WINDOW` | **全丢** |
+| `CREATE_NO_WINDOW` + `STARTUPINFO` | **全丢** |
+| `CREATE_NO_WINDOW` + `stdout=sys.stdout` | 可见 |
+
+**实证影响**：`cli.py timeliness verify --source gov --dry-run` 跑 5.5s、rc=0、
+**零字节输出**（同一命令直接跑脚本有 897 字节）。
+
+**修法**：新增 `_inject_inherited_stdio()` —— 保留隐藏窗口效果，但在调用方
+**未显式指定流**时把父进程 `stdin/stdout/stderr` 传下去。跳过条件：调用方已给该流 /
+用了 `capture_output=True`（与显式 stdout 互斥）/ 父流无真实 `fileno()`。
+**`check_output` 例外**：stdlib 固定 stdout=PIPE 且禁止外传
+（否则 `ValueError: stdout argument not allowed`，实测踩到）。
+
+### ⑤ 工作台引入 Dash 的评估（结论：不引入）
+
+实测（`pip --dry-run --report` + wheel 解包）：`dash==4.4.1` 全树 **28 包**，
+相对现有锁**新增 16 个**（Flask/Werkzeug/plotly/pydantic/pydantic_core/janus/
+nest-asyncio/retrying/…），安装载荷 **≈18.6 MB**（dash 8.53 + plotly 9.24），
+dash wheel 内 JS **33.21 MB**、plotly 内 JS **18.58 MB**，前端运行时需加载
+`plotly.min.js`(4.59 MB) 等 **6–8 MB** —— 对比现状单文件 **46.9 KB**（约 130–170 倍）。
+
+**结论：不引入 Dash 作为框架**（决策矩阵加权：现状 4.45 / 方案 C 4.05 / Dash 2.10）。
+最优方案 C：保留零依赖骨架，需要交互图表时**只加 `plotly` 一个库**并本地托管
+`plotly.min.js`（不引 Flask/Dash，SSE/单实例/脱敏/写路径全部不动）。
+评估文档：`reports/refactors/工作台前端选型评估_Dash_20261022.md`（含矩阵、
+迁移 6 项前置、验收标准）。
+
+### ⑥ Mermaid（TD-20 闭环）
+
+用户侧确认 GitHub 渲染正常（4 张图）。机器侧 `tools/mermaid_lint`（11 条判据）与
+`tests/test_readme_render.py`(7) 继续守；TD-20 标记闭环，残余风险"本机无法回归真实渲染"
+写入台账（改图时应在有 node 处复核，或提交预生成 SVG）。
+
+### 验证
+**30 门禁 PASS**（TD-21 的 FAIL 消除）、ruff 0、mypy 0；
+本批新增守卫 **29 项**（时效回填 20 + 配额增量 9），全绿。

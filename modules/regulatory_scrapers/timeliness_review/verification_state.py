@@ -164,6 +164,71 @@ def mark_checked(docno=None, title="", status="", replacement="", vsource="", st
     return state, changed, key
 
 
+def apply_status_by_rfn(pairs, dry_run=False):
+    """按**监管文件编号精确写**归属表「时效状态」列（TD-21 回填入口）。
+
+    与 `sync_to_classifier` 的分工
+    ------------------------------
+    · `sync_to_classifier`：输入是**变更台账行**（只有文号/标题，需要"去找哪一行"），
+      匹配用"文号优先、标题**子串**兜底" —— 对台账够用，但对"回填"不够精确：
+      子串可能命中另一行（例如标题 A 是标题 B 的前缀）。
+    · 本函数：输入是**已确定 RFN 的配对**（由 `timeliness_ssot.drift_pairs` 算出），
+      直接按主键写，**不存在误配**。两条路径共用同一份 CSV 写盘纪律
+      （备份 + 原子替换 + `utf-8-sig`）。
+
+    参数
+    ----
+    pairs : list[dict]  每项至少含 `{"rfn": ..., "state": "valid|repealed|..."}`
+    dry_run : bool      只算不写（默认 False）
+
+    返回 `(改动数, 未命中数, 路径)`。
+    """
+    csv_path = os.path.abspath(CLASSIFIER_CSV)
+    if not os.path.exists(csv_path):
+        return 0, len(pairs), None
+
+    with open(csv_path, encoding="utf-8-sig", newline="") as fh:
+        rows = list(csv.DictReader(fh))
+        fieldnames = list(rows[0].keys()) if rows else []
+    if "时效状态" not in fieldnames:
+        return 0, len(pairs), csv_path
+
+    by_rfn = {r.get("监管文件编号", ""): r for r in rows}
+    changed = unmatched = 0
+    for p in pairs:
+        rfn = p.get("rfn", "")
+        st = (p.get("state") or "").strip()
+        if st not in STATUS_SET:
+            unmatched += 1
+            continue
+        row = by_rfn.get(rfn)
+        if row is None:
+            unmatched += 1
+            continue
+        if (row.get("时效状态") or "").strip() == st:
+            continue
+        if not dry_run:
+            row["时效状态"] = st
+        changed += 1
+
+    if not dry_run and changed:
+        bak = csv_path + ".bak_" + datetime.now().strftime("%Y%m%d_%H%M%S")
+        shutil.copy2(csv_path, bak)
+        tmp = csv_path + ".tmp"
+        with open(tmp, "w", encoding="utf-8-sig", newline="") as fh:
+            w = csv.DictWriter(fh, fieldnames=fieldnames)
+            w.writeheader()
+            w.writerows(rows)
+        try:
+            os.replace(tmp, csv_path)
+        except OSError:
+            with open(csv_path, "w", encoding="utf-8-sig", newline="") as fh:
+                w = csv.DictWriter(fh, fieldnames=fieldnames)
+                w.writeheader()
+                w.writerows(rows)
+    return changed, unmatched, csv_path
+
+
 def sync_to_classifier(changed_records, dry_run=False):
     """规范 ⑤：效力变更 → 同步 regulatory_classifier 归属表"时效状态"列（按文号/标题匹配）。
     changed_records: list of {title, document_number, timeliness_status/new_status, ...}
