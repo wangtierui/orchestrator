@@ -15,7 +15,6 @@ from __future__ import annotations
 
 import inspect
 import os
-import re
 import sys
 
 import pytest
@@ -119,13 +118,19 @@ def test_flow_weights_are_actually_populated() -> None:
 # ② P3 barChart 按 label 取值
 # --------------------------------------------------------------------------- #
 def test_bar_chart_reads_by_label_not_by_position() -> None:
-    """正例：`barChart` 按 **label** 取值（不按 `Object.values` 的位置）。"""
+    """正例：条形图按 **label** 取值（不按 `Object.values` 的位置）。
+
+    2026-10-22：条形图从手绘 SVG（`barChart`）改为 CSS 网格（`bars`）——
+    换的是实现，**守的是同一个缺陷**：按位置取值会让标签与数值整片错位
+    （JSON 对象键序无语义保证，实测 `worklist_aging` 键序是字典序）。
+    """
     src = _src(*HTML)
-    i = src.find("function barChart(")
-    seg = _code_only(src[i:i + 1200])
+    i = src.find("function bars(")
+    assert i > 0, "找不到 bars() 实现"
+    seg = _code_only(src[i:i + 1800])
     assert "Object.values(data" not in seg, (
-        "barChart 仍在按位置取值 ⇒ 标签与数值错位（P3 渲染异常复发）")
-    assert re.search(r"\)\s*\[\s*lb\s*\]", seg), "barChart 未按 label 取值"
+        "bars 仍在按位置取值 ⇒ 标签与数值错位（P3 渲染异常复发）")
+    assert "Object.entries(obj(data))" in seg, "bars 未按 label 取值"
 
 
 # --------------------------------------------------------------------------- #
@@ -166,11 +171,15 @@ def test_console_exposes_bulk_selection() -> None:
 
 
 def test_console_flow_nodes_are_clickable() -> None:
-    """正例：P1 节点带 `data-step` 且有事件绑定（此前"点击无反应"）。"""
+    """正例：P1 节点带 `data-step` 且有事件绑定（此前"点击无反应"）。
+
+    2026-10-22：节点从 `<rect class="fnode">` 改为 `<g class="fnode">`（组内 rect+text）。
+    整组可点比"只有矩形能点"更好用（点在文字上也算），故断言随之改为 `g.fnode`。
+    """
     src = _src(*HTML)
     assert "fnode" in src, "P1 节点缺 class=fnode（无法绑定点击）"
     assert "openStep" in src, "缺 openStep()（节点抽屉入口）"
-    assert "rect.fnode" in src, "P1 节点未绑定 click"
+    assert "g.fnode" in src, "P1 节点未绑定 click"
 
 
 def test_console_shows_real_total() -> None:

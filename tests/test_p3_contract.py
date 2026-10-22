@@ -94,31 +94,45 @@ class TestFieldContract:
 
 
 class TestGeometryGuards:
-    """B. P3 两类画法缺陷的实现级断言（防止重构退回去）。"""
+    """B. P3 画法缺陷的实现级断言（防止重构退回去）。
 
-    def test_value_label_has_overflow_fallback(self) -> None:
+    2026-10-22（第一百零九批）：条形图从**手绘 SVG 改为 CSS 网格**。
+    原因不是"换个好看"——而是**几何问题在 SVG 里无法根治**：SVG `<text>`
+    没有 ellipsis，标签/数值宽度只能靠 `txtW()` 估算，估偏就溢出（用户三次报
+    "渲染异常"，两次根因都是它）。改用 `grid-template-columns` 后：
+      · 标签在自己的格子里，`text-overflow:ellipsis` 保证**永不压到柱子**；
+      · 数值在固定右列，`tabular-nums` 保证对齐；
+      · 结构上不存在"算出坐标再判断越界"这一步 ⇒ 该类缺陷被消除而非绕过。
+
+    断言随之**从"检查坐标判断"改为"检查结构约束"**——保证的是同一个意图：
+    **标签不越界、分布集中要说明、空态要显式**。
+    """
+
+    def test_label_cannot_overflow_into_bar(self) -> None:
         src = open(HTML, encoding="utf-8").read()
-        assert "function txtW(" in src, "缺少文本宽度估算函数 `txtW`"
-        # barChart 里必须有越界判断 + 回退
-        i = src.find("function barChart(")
+        # 条形列表用网格：标签列 / 柱体列 / 数值列（顺序固定，标签不可能压到柱子上）
+        assert "function bars(" in src, "缺少条形列表实现 `bars()`"
+        i = src.find("function bars(")
         seg = src[i:i + 3000]
-        assert "tx+tw>418" in seg, "barChart 数值标签未做越界判断（会被裁掉）"
-        assert 'text-anchor="end"' in seg, "barChart 越界后未回退到条形内部（右对齐）"
+        assert ".brow" in src and "grid-template-columns" in src, (
+            "条形列表未用网格布局（回到绝对定位/坐标计算就会重新出现越界）")
+        assert "ellipsis" in src, "标签未做省略号截断（长标签会挤压柱体）"
+        assert "title=" in seg, "截断后必须用 title 给出完整文本（信息不丢）"
 
     def test_dominance_is_explained_not_hidden(self) -> None:
         """极值比 ≥20 时必须**说明**而非美化（禁止对数轴/截断掩盖真实分布）。"""
         src = open(HTML, encoding="utf-8").read()
-        i = src.find("function barChart(")
+        i = src.find("function bars(")
         seg = src[i:i + 3000]
         assert "max/minPos>=20" in seg, "未检测分布高度集中"
         assert "真实分布" in seg, "未向读者说明「这是真实分布，不是图坏」"
-        # 明确禁止的失真手段
+        # 明确禁止的失真手段（全文件层面禁止，不限于某个函数）
         for bad in ("Math.log(", "log10("):
-            assert bad not in seg, f"barChart 使用了 {bad}（对数轴会失真，本仓禁止）"
+            assert bad not in src, f"使用了 {bad}（对数轴会失真，本仓禁止）"
 
     def test_empty_state_is_explicit(self) -> None:
         src = open(HTML, encoding="utf-8").read()
-        i = src.find("function barChart(")
+        i = src.find("function bars(")
         seg = src[i:i + 3000]
         assert "暂无数据" in seg, "空数据时未给明确说明（空画布会被误读成渲染失败）"
         assert "暂无质量快照" in src, "DAMA 空态未给说明"

@@ -89,7 +89,14 @@ def run():
             "SSOT 一致性未实检，不得视为通过",
             "state": None,
         }
-    state = json.load(open(_STATE_JSON, encoding="utf-8"))
+    # ⚠️ 2026-10-22：剥离 `_meta` 版本键（写侧注入 / 读侧剥离，F-D14）。
+    # 不剥离会让本判据报 `state_records=15604` 而所有消费方（`load_state()`）看到 15603
+    # ⇒ 两个口径对不上，排查时以为"少了一条记录"（本次遗留风险之一就是它）。
+    # **判据报的数字必须与消费方看到的一致**，否则"可观测"变成"可误导"。
+    _raw_state = json.load(open(_STATE_JSON, encoding="utf-8"))
+    if isinstance(_raw_state, dict):
+        _raw_state.pop("_meta", None)
+    state = _raw_state
 
     rows = _load_attr_rows()
     attr_by_rfn = {r.get("监管文件编号", ""): r for r in rows}

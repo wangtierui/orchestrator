@@ -9,6 +9,68 @@ import paths
 from config.exitcodes import ExitCode
 
 
+def _print_state_summary() -> None:
+    """打印 SSOT（`verification_state.json`）的**分布与年龄**。
+
+    为什么加（2026-10-22，处置遗留风险"948 条 pending placeholder"）：
+    这些记录是历次 `verify` 判定"法宝查无同名命中"的**合法结论**（不是脏数据），
+    但它们在 `status` 上仍记 `pending`，于是：
+      · 从 `status` 看不出"是没查过、还是查过没命中"；
+      · 运维无法判断"948 条要不要人工裁决"。
+    本函数按 **status × 权威性原因 × 年龄** 三维摊开，让"这批到底是什么"可读。
+    判据（`authority()`）与回填命令**同源**，不另写一套。
+    """
+    import collections
+    from datetime import datetime
+
+    from bootstrap import bootstrap
+
+    bootstrap("regulatory_scrapers",
+              extra=("modules/regulatory_scrapers/timeliness_review",))
+    import verification_state as _vstate
+
+    from std_lib.common_lib import timeliness_ssot as _ssot
+
+    state = _vstate.load_state() or {}
+    if not state:
+        print("[timeliness] verification_state.json 为空或缺失")
+        return
+    by_status: collections.Counter = collections.Counter()
+    by_reason: collections.Counter = collections.Counter()
+    by_age: collections.Counter = collections.Counter()
+    placeholder: list[tuple[str, str]] = []
+    for k, rec in state.items():
+        if not isinstance(rec, dict):
+            continue
+        st = str(rec.get("status") or "")
+        by_status[st] += 1
+        _ok, why = _ssot.authority(rec)
+        by_reason[why] += 1
+        last = str(rec.get("last_checked_at") or "")
+        try:
+            days = (datetime.now() - datetime.strptime(last, "%Y-%m-%d %H:%M:%S")).days
+        except ValueError:
+            days = -1
+        bucket = "从未核验" if days < 0 else (
+            "≤30 天" if days <= 30 else ("31–90 天" if days <= 90 else ">90 天"))
+        by_age[bucket] += 1
+        if why == "non_authoritative_source" and len(placeholder) < 5:
+            placeholder.append((k, str(rec.get("verification_source") or "")[:40]))
+
+    print(f"\n[timeliness] SSOT 记录 {len(state)}")
+    print("  按状态：" + " / ".join(f"{k or '(空)'}={v}"
+                                for k, v in sorted(by_status.items(), key=lambda x: -x[1])))
+    print("  按可用性：" + " / ".join(f"{k}={v}"
+                                 for k, v in sorted(by_reason.items(), key=lambda x: -x[1])))
+    print("  按核验年龄：" + " / ".join(f"{k}={v}" for k, v in by_age.items()))
+    n_na = by_reason.get("non_authoritative_source", 0)
+    if n_na:
+        print(f"  说明：其中 {n_na} 条为「法宝查无同名命中/规则判断」——**核验已完成、只是无权威结论**，"
+              "不会覆盖归属表；它们在 90 天后会自动回到高优先级队列重查。")
+        for k, vsrc in placeholder:
+            print(f"    样例 {k} ← {vsrc}")
+
+
 def _sync_from_state(dry_run: bool) -> int:
     """`timeliness sync --from-state`：**直接从 SSOT 回填归属表**（TD-21 入口）。
 
@@ -125,6 +187,8 @@ def run(argv):
     if argv[0] == "summary":
         import glob as _glob
         import json as _json
+
+        _print_state_summary()
 
         files = sorted(_glob.glob(os.path.join(_rev, "verify_summary_*.json")))
         if not files:

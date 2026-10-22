@@ -422,15 +422,13 @@ def flow_graph() -> dict:
                                      "conditions": item.get("conditions") or {}})
             except Exception:  # noqa: BLE001
                 triggers = []
-            # 边宽：**产物侧**记录数（权威来源）。
-            # ⚠️ 2026-10-16 修正：此前读台账行的大小类列（该表**根本没有那些列**，
-            #    实测列：run_id/step/rc/exit_code/elapsed_s/skipped/note/recorded_at/
-            #    started_at/finished_at/is_dry_run）⇒ `weights` 恒为空 dict
-            #    ⇒ **P1 桑基图不渲染任何边**。
-            #    依据 ADR-0014 的 C3 决策「产物侧才是权威，不扩record_count 列」，
-            #    改由 `clean_index_api.record_count(src)` 取（实测 gov=13178/nfra=1934）。
+            # ── 展开 `{src}`：模板步骤 → 每个源一个真实节点 ──────────────
+            # 2026-10-22（用户报「P1 始终无任何显示」）：原实现把 `collect:{src}`
+            # 这类**模板名**直接当节点画，而边匹配用 `srcs.includes(m[1])`
+            # ⇒ `src` 不等于任何真实源 ⇒ **一条边都连不出来**；
+            # 权重表里却存的是**展开后**的名字（`collect:gov`）⇒ 节点上也读不到数字。
+            # 结果就是"两列灰方块、无流向、无数据量"。
             weights: dict[str, int] = {}
-            rcodes: dict[str, dict] = {}
             try:
                 from interfaces import clean_index_api as _cia
 
@@ -440,30 +438,154 @@ def flow_graph() -> dict:
                     except Exception:  # noqa: BLE001 单源不可用不影响其余
                         n = 0
                     if n > 0:
-                        # 记到**展开形态**的步骤名（collect:gov / clean:gov…）
-                        for _pfx in ("collect", "clean", "apply"):
+                        for _pfx in ("collect", "clean", "relevance", "apply"):
                             weights[f"{_pfx}:{_src}"] = n
             except Exception:  # noqa: BLE001
                 weights = {}
+            rcodes: dict[str, dict] = {}
+            run_id = ""
             try:
                 from std_lib.common_lib import governance_store as gs
 
-                _rid, steps_rows = gs.last_run_with_steps()
+                run_id, steps_rows = gs.last_run_with_steps()
                 for s in steps_rows:
                     nm = str(s.get("step") or "")
                     rcodes[nm] = {"status": s.get("status"),
                                   "rc": s.get("exit_code") or s.get("rc"),
+                                  "elapsed_s": s.get("elapsed_s"),
                                   "argv": s.get("argv")}
-            except Exception:  # noqa: BLE001 台账不可用 → 状态桑基（无流量语义）
+            except Exception:  # noqa: BLE001 台账不可用 → 状态图（无流量语义）
                 pass
+
+            # ── 真实 DAG：由 `StepSpec.produces / depends_on` **按产物连边** ──
+            dags = _build_flow_dag(steps, srcs, weights, rcodes)
             return {"available": True, "fetched_at": _now(),
-                    "source": "STEP_ORDER + sources.yaml + triggers.yaml + 运行台账",
+                    "source": "STEP_ORDER + StepSpec(produces/depends_on) + "
+                              "clean_index_api + 运行台账",
+                    "run_id": run_id,
                     "steps": steps, "sources": srcs, "triggers": triggers,
                     "weights": weights, "step_status": rcodes,
-                    "mode": "flow" if weights else "status"}
+                    **dags,
+                    "mode": "flow" if dags["edges"] else "status"}
         return CACHE.get_or_call("flow_graph", _load)
     except Exception as e:  # noqa: BLE001
         return _degrade("STEP_ORDER/triggers", e)
+
+
+def _build_flow_dag(steps: list[str], srcs: list[str],
+                    weights: dict[str, int],
+                    rcodes: dict[str, dict]) -> dict:
+    """把「模板步骤 + 产物依赖」展开成**可直接渲染的分层 DAG**。
+
+    返回 `{layers, nodes, edges, totals}`：
+
+      · `nodes[i] = {id, label, layer, layer_name, kind, status, rc, elapsed_s,
+                     volume, degraded, purpose}`
+      · `edges[i] = {from, to, artifact, volume}`
+
+    连边依据是 **产物（artifact）** 而非"步骤名包含关系"：
+    `StepSpec.produces` 声明产出的产物 id、`depends_on` 声明消费的产物 id，
+    于是"某产物由谁产出、被谁消费"就能连出真实数据流。这比按名字猜边可靠得多
+    （原来靠 `collect:` 前缀正则，只能连采集→清洗一条，其余 20+ 条全丢）。
+    """
+    import importlib
+
+    chain = importlib.import_module("tools.run_production_refresh")
+    specs = {s.name: s for s in chain.step_specs()}
+    layer_order: list[str] = []
+    layer_names: dict[str, str] = {}
+    for s in specs.values():
+        if s.layer and s.layer not in layer_order:
+            layer_order.append(s.layer)
+            layer_names[s.layer] = str(getattr(s, "layer_name", "") or s.layer)
+    try:  # 层名优先取人工可读字典（若存在）
+        from config.enums import STEP_LAYER_LABELS as _LBL  # type: ignore
+
+        layer_names.update({k: str(v) for k, v in _LBL.items()})
+    except Exception:  # noqa: BLE001 没有该字典就用 id
+        pass
+
+    # 模板 → 展开实例（含 `{src}` 的按源展开；其余原样）
+    inst: list[dict] = []
+    for name in steps:
+        if "{src}" in name:
+            for src in srcs:
+                inst.append({"id": name.replace("{src}", src), "tpl": name,
+                             "src": src})
+        else:
+            inst.append({"id": name, "tpl": name, "src": ""})
+
+    def _expand(a: str, src: str) -> str:
+        return a.replace("{src}", src) if src else a
+
+    # 产物 → 生产者 / 消费者（同一产物按源隔离：raw:gov 只连 gov 的采集）
+    prod: dict[str, str] = {}
+    cons: dict[str, list[str]] = {}
+    for it in inst:
+        spec = specs.get(it["tpl"])
+        if spec is None:
+            continue
+        for a in getattr(spec, "produces", ()) or ():
+            prod.setdefault(_expand(a, it["src"]), it["id"])
+        for a in getattr(spec, "depends_on", ()) or ():
+            cons.setdefault(_expand(a, it["src"]), []).append(it["id"])
+
+    edges: list[dict] = []
+    seen: set[tuple[str, str]] = set()
+    for art, consumers in cons.items():
+        maker = prod.get(art)
+        if not maker:
+            continue
+        for c in consumers:
+            if c == maker or (maker, c) in seen:
+                continue
+            seen.add((maker, c))
+            edges.append({"from": maker, "to": c, "artifact": art,
+                          "volume": int(weights.get(maker, 0) or 0)})
+    # 采集 → 清洗这一跳：`raw:{src}` 既由 collect 产出又被 clean 消费，已由上循环连好。
+    # 额外补「同源顺序跳」（relevance/apply 未声明 depends_on 的源级步骤）：
+    for src in srcs:
+        chain_seq = [f"collect:{src}", f"clean:{src}", f"relevance:{src}",
+                     f"apply:{src}"]
+        for a, b in zip(chain_seq, chain_seq[1:], strict=False):
+            if (a, b) in seen:
+                continue
+            if any(n["id"] == a for n in inst) and any(n["id"] == b for n in inst):
+                seen.add((a, b))
+                edges.append({"from": a, "to": b, "artifact": f"src:{src}",
+                              "volume": int(weights.get(a, 0) or 0)})
+
+    nodes: list[dict] = []
+    for it in inst:
+        spec = specs.get(it["tpl"])
+        st = rcodes.get(it["id"]) or rcodes.get(it["tpl"]) or {}
+        status = str(st.get("status") or ("idle" if not st else "unknown"))
+        rc = st.get("rc")
+        if rc == "SKIP" or rc == "skip":
+            status = "skip"
+        elif rc not in (None, 0, "0", "OK") and status in ("", "unknown", None):
+            status = "failed"
+        nodes.append({
+            "id": it["id"], "label": it["id"], "tpl": it["tpl"],
+            "src": it["src"],
+            "layer": (spec.layer if spec else ""),
+            "kind": (spec.kind if spec else ""),
+            "purpose": (str(getattr(spec, "purpose", "") or "")[:120] if spec else ""),
+            "status": status, "rc": rc,
+            "elapsed_s": st.get("elapsed_s"),
+            "volume": int(weights.get(it["id"], 0) or 0),
+            "degraded": (str(getattr(spec, "fail_semantics", "") or "")[:80]
+                         if spec else ""),
+        })
+    idx = {n["id"]: n for n in nodes}
+    edges = [e for e in edges if e["from"] in idx and e["to"] in idx]
+    return {"layers": [{"id": lid, "name": layer_names.get(lid, lid)}
+                       for lid in layer_order],
+            "nodes": nodes, "edges": edges,
+            "totals": {"nodes": len(nodes), "edges": len(edges),
+                       "volume": sum(int(weights.get(f"{p}:{s}", 0) or 0)
+                                     for s in srcs for p in ("collect",)),
+                       "sources": len(srcs)}}
 
 
 #: 步骤日志目录（写入方 = tools/run_production_refresh.py 的 `_run`，命名
@@ -765,12 +887,16 @@ def worklist_items(status: str = "open", kind: str = "", limit: int = 0,
             # 有的写名称）⇒ 业务无法判断"这条指哪份文件"。给每条附加 `fields`
             # （名称/文号/访问地址 + 各自来源），由 `interfaces.worklist_fields`
             # 统一派生（**单一事实源**，MCP/CLI 也可复用）。
-            needs_url: list[str] = []
+            schema: dict = {"needs_url": []}
             try:
                 from interfaces import worklist_fields as _wf
 
                 rows = _wf.decorate(rows)
-                needs_url = sorted(_wf.NEEDS_URL)
+                # 2026-10-22：列契约交给后端（**前端不硬编码 kind 语义**）。
+                # 原来只给 `needs_url` 一个开关，前端遂以"本页出现过 needs_url 的 kind"
+                # 决定**所有行**的列 ⇒ 混合列表里 rfn_clean_drift_c2 被渲染成
+                # "名称=RFN / 文号=未查到 / 地址=—"（用户报的列内容错位）。
+                schema = _wf.columns()
             except Exception as e:  # noqa: BLE001  派生失败不阻断列表（但**可辨**）
                 for r in rows:
                     r["fields"] = {"error": f"{type(e).__name__}: {e}"}
@@ -778,7 +904,7 @@ def worklist_items(status: str = "open", kind: str = "", limit: int = 0,
                     "fetched_at": _now(), "status": status, "kind": kind,
                     "filter": {"status": status, "kind": kind},
                     "kind_counts": counts,
-                    "fields_schema": {"needs_url": needs_url},
+                    "fields_schema": schema,
                     "count": len(rows), "total": len(total_rows),
                     "offset": offset, "limit": limit, "items": rows}
         return CACHE.get_or_call(f"worklist:{status}:{kind}:{limit}:{offset}", _load)
@@ -871,19 +997,66 @@ def search(q: str, *, kind: str = "records", limit: int = 20) -> dict:
                         "query": q, "results": [], "note": "空查询"}
             out: dict = {"available": True, "fetched_at": _now(), "query": q,
                          "source": "base_api.search_external / search_internal"}
+            # `q_len < 3` 时**直接走 LIKE 兜底**：FTS5 trigram 只索引 3 字窗口，
+            # 双字词（保险/银行/监管）`MATCH` 必然 0 行 —— 实测确认。
+            # 这不是"没数据"，而是"检索器不支持这么短的词"，必须换路径而不是显示空。
+            short = len((q or "").strip()) < 3
             try:
-                out["results"] = base_api.search_external(q, limit=limit, kind=kind)
-                out["backend"] = "external"
+                if short:
+                    out["results"] = base_api.search_external_like(q, limit=limit)
+                    out["backend"] = "external"
+                    out["mode"] = "like"
+                    out["note"] = ("检索词 <3 字：FTS5 trigram 不支持，已改用标题/文号模糊匹配"
+                                   "（不扫正文）")
+                else:
+                    out["results"] = base_api.search_external(q, limit=limit, kind=kind)
+                    out["backend"] = "external"
+                    out["mode"] = "fts"
             except Exception as e:  # noqa: BLE001 external 不可用 → 回退 internal
                 out["error_external"] = f"{type(e).__name__}: {str(e)[:120]}"
                 try:
                     out["results"] = base_api.search_internal(
                         q, limit=limit, kind="policies" if kind == "records" else "clauses")
                     out["backend"] = "internal"
+                    out["mode"] = "fts"
                 except Exception as e2:  # noqa: BLE001
                     out["available"] = False
                     out["reason"] = f"{type(e2).__name__}: {str(e2)[:160]}"
                     out["results"] = []
+            # 长词 FTS 0 命中时也给一次 LIKE 兜底（正文里没有、但标题里有）
+            if (not short) and not out["results"]:
+                try:
+                    alt = base_api.search_external_like(q, limit=limit)
+                    if alt:
+                        out["results"] = alt
+                        out["mode"] = "like"
+                        out["note"] = "全文索引 0 命中，已回退标题/文号模糊匹配"
+                except Exception:  # noqa: BLE001
+                    pass
+            # 2026-10-22（用户要求 P6 列表增加"访问地址"）：逐条补 `url`。
+            # **复用** `worklist_fields._Bridge.lookup`（带一致性校验）——
+            # 不另写一套匹配，否则同一份文件在 P4 与 P6 会给出不同链接。
+            try:
+                from interfaces import worklist_fields as _wf
+
+                for r in out["results"]:
+                    if not isinstance(r, dict):
+                        continue
+                    title = str(r.get("title") or "")
+                    docno = str(r.get("document_number") or "")
+                    res = _wf.lookup(title, docno)
+                    r["url"] = res["url"]
+                    r["url_src"] = res["how"]
+                    if res.get("note"):
+                        r["url_note"] = res["note"]
+                    # 内部制度（无 source_url）⇒ 给本地文件
+                    ipn = str(r.get("ipn") or "")
+                    if not r["url"] and ipn:
+                        lp = _wf.local_for(ipn)
+                        if lp:
+                            r["local_path"] = lp
+            except Exception as e:  # noqa: BLE001  补地址失败不影响检索本身
+                out["url_error"] = f"{type(e).__name__}: {str(e)[:120]}"
             return out
         return CACHE.get_or_call(f"search:{q}:{kind}:{limit}", _load)
     except Exception as e:  # noqa: BLE001
@@ -913,27 +1086,37 @@ def publish_board() -> dict:
         return _degrade("base_api.manifest", e)
 
 
-def release_stream(limit: int = 20) -> dict:
-    """P8 发布事件流：git 提交（近 N 条）+ SBOM + 版本契约，全部只读。"""
+def release_stream(limit: int = 0) -> dict:
+    """P8 发布事件流：git 提交 + SBOM + 版本契约，全部只读。
+
+    2026-10-22（用户要求"变更记录应展示全部，不应仅展示近 20 条"）：
+    `limit=0`（**新默认**）= 不截断。原默认 20 是硬编码上限，历史提交看不到。
+    前端仍可传 `limit` 做窗口化，但**默认给全量**——"少给"必须以显式参数表达，
+    不能由后端替用户决定"看 20 条就够"。
+    """
     try:
         def _load():
             import subprocess
 
             out: dict = {"available": True, "fetched_at": _now(),
                          "source": "git log + reports/_sbom + contract_manifest"}
+            args = ["git", "log", "--date=short", "--pretty=%h|%ad|%s"]
+            if limit and limit > 0:
+                args.insert(2, f"-{limit}")
             try:
-                r = subprocess.run(["git", "log", f"-{limit}", "--date=short",
-                                    "--pretty=%h|%ad|%s"],
-                                   cwd=paths.ROOT, capture_output=True, text=True,
-                                   encoding="utf-8", errors="replace", timeout=20)
+                r = subprocess.run(args, cwd=paths.ROOT, capture_output=True,
+                                   text=True, encoding="utf-8", errors="replace",
+                                   timeout=60)
                 commits = []
                 for ln in (r.stdout or "").splitlines():
                     parts = ln.split("|", 2)
                     if len(parts) == 3:
                         commits.append({"sha": parts[0], "date": parts[1], "subject": parts[2]})
                 out["commits"] = commits
+                out["commit_total"] = len(commits)
             except Exception as e:  # noqa: BLE001 git 不可用（非 git 检出）
                 out["commits"] = []
+                out["commit_total"] = 0
                 out["git_error"] = f"{type(e).__name__}: {str(e)[:120]}"
             sbom = os.path.join(paths.REPORTS_DIR, "_sbom", "sbom_latest.json")
             if os.path.exists(sbom):
@@ -958,3 +1141,142 @@ def release_stream(limit: int = 20) -> dict:
         return CACHE.get_or_call("release_stream", _load)
     except Exception as e:  # noqa: BLE001
         return _degrade("git/SBOM", e)
+
+
+def commit_detail(sha: str) -> dict:
+    """P8 单次提交的**完整变更**（`git show`：元信息 + 逐文件增删 + 完整提交说明）。
+
+    用户报「点击提交，对应的主题应展示完整变更」——原来点提交**什么都不发生**
+    （前端根本没绑定事件），而列表只给 20 条。现在：全量列表 + 点开看完整变更。
+
+    只读、限时（60s）、`--no-color`（避免 ANSI 污染 JSON）。
+    """
+    sha = (sha or "").strip()
+    # 只接受 7~40 位十六进制（防把任意字符串拼进 argv）
+    import re
+
+    if not re.fullmatch(r"[0-9a-fA-F]{7,40}", sha):
+        return {"available": False, "reason": f"非法 sha：{sha[:20]!r}"}
+    try:
+        def _load():
+            import subprocess
+
+            fmt = "%H%n%an%n%ad%n%s%n%b"
+            meta_r = subprocess.run(
+                ["git", "show", "-s", "--no-color", "--date=iso",
+                 f"--pretty=format:{fmt}", sha],
+                cwd=paths.ROOT, capture_output=True, text=True,
+                encoding="utf-8", errors="replace", timeout=60)
+            if meta_r.returncode != 0:
+                return {"available": False,
+                        "reason": (meta_r.stderr or "").strip()[:200] or "git show 失败"}
+            lines = (meta_r.stdout or "").splitlines()
+            meta = {"sha": lines[0] if lines else sha,
+                    "author": lines[1] if len(lines) > 1 else "",
+                    "date": lines[2] if len(lines) > 2 else "",
+                    "subject": lines[3] if len(lines) > 3 else "",
+                    "body": "\n".join(lines[4:]).strip()}
+            # 文件清单**单独一次调用**：`--stat` 与 `--name-status` 同用时，
+            # 输出段之间**没有** `---` 分隔（实测），靠切分隔符必然拿到空列表
+            # （初版 file_count 恒为 0 就是这么来的）。分开取最稳。
+            files_r = subprocess.run(
+                ["git", "show", "--no-color", "--pretty=format:", "--name-status", sha],
+                cwd=paths.ROOT, capture_output=True, text=True,
+                encoding="utf-8", errors="replace", timeout=60)
+            files = []
+            for ln in (files_r.stdout or "").splitlines():
+                parts = ln.split("\t")
+                if len(parts) >= 2 and re.match(r"^[AMDRTCU]\d*$", parts[0]):
+                    files.append({"status": parts[0][0], "path": parts[-1].strip()})
+            raw_r = subprocess.run(
+                ["git", "show", "--no-color", "--stat", "--date=iso",
+                 f"--pretty=format:{fmt}", sha],
+                cwd=paths.ROOT, capture_output=True, text=True,
+                encoding="utf-8", errors="replace", timeout=60)
+            return {"available": True, "fetched_at": _now(),
+                    "source": f"git show {sha[:12]}", **meta,
+                    "files": files, "file_count": len(files),
+                    "raw": (raw_r.stdout or "")[:20000]}
+        return CACHE.get_or_call(f"commit:{sha}", _load, ttl=600.0)
+    except Exception as e:  # noqa: BLE001
+        return _degrade("git show", e)
+
+
+#: `/api/local/open` 允许打开的**根目录前缀**（仓内相对 POSIX 路径）。
+#: 白名单而非黑名单：确认台能用系统默认程序打开文件，等于"以当前用户权限执行一次打开"，
+#: 绝不能让它成为任意文件打开器。
+_LOCAL_ALLOW = (
+    "modules/internal_policy_base/",
+    "modules/regulatory_scrapers/data/docs/",
+    "data/docs/",
+    "reports/",
+)
+#: 允许的扩展名（可执行/脚本类一律拒绝，避免"点开一个 .exe"）。
+_LOCAL_EXT = frozenset({".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx",
+                        ".txt", ".md", ".csv", ".json", ".html"})
+
+#: 允许**浏览器内联显示**的扩展名 → MIME。
+#: ⚠️ 刻意**不含** `.html` / `.svg`：它们会在确认台**同源**下执行脚本（存储型 XSS），
+#: 而确认台是"无鉴权、可写待办"的面板 ⇒ 一旦被注入就能借用户身份点处置按钮。
+#: 这类文件一律走 `attachment` 强制下载（见 `local_file`）。
+_LOCAL_INLINE = {
+    ".pdf": "application/pdf",
+    ".txt": "text/plain; charset=utf-8",
+    ".md": "text/markdown; charset=utf-8",
+    ".csv": "text/csv; charset=utf-8",
+    ".json": "application/json; charset=utf-8",
+}
+
+
+def local_file(rel_path: str) -> dict:
+    """读取仓内文件供**浏览器**打开/下载（**不**拉起本机程序）。
+
+    为什么不用「系统默认程序打开」（2026-10-22 的关键取舍）
+    ------------------------------------------------
+    最初实现调用系统默认程序让 Word/PDF 阅读器直接弹出。但本仓
+    `tests/test_no_desktop_interference.py` 把该类调用列入**黑名单**
+    （与「抢前台窗口」「模拟键鼠」同类：**会夺走用户焦点**；具体名单见该测试的
+    黑名单常量，此处刻意不复述）。
+    该纪律是硬约束，且理由成立——确认台是"后台观测面"，不该在你打字时弹窗口。
+
+    改为**由服务端提供字节、浏览器自己处理**：
+      · `.pdf/.txt/.md/.csv/.json` → `inline`（浏览器原生查看器，新标签页打开）；
+      · 其余（`.docx/.xlsx/.pptx` 等）→ `attachment`（下载到"下载"目录，用户自行点开）。
+    既满足"点一下就能看内容"，又不夺焦点、不引入外部程序依赖。
+
+    安全边界（四重，任一不满足即拒绝并**给出可读原因**）：
+      ① 必须是**仓内相对路径**（拒绝绝对路径/盘符）；
+      ② 解析后必须仍在**仓根之下**（`..` 逃逸拒绝）；
+      ③ 必须命中 `_LOCAL_ALLOW` 白名单目录；
+      ④ 必须存在、是普通文件、扩展名在 `_LOCAL_EXT` 内。
+
+    返回 `{ok, body, ctype, filename, disposition, path}` 或 `{ok:false, reason}`。
+    """
+    import os as _os
+
+    raw = (rel_path or "").strip().replace("\\", "/")
+    if not raw:
+        return {"ok": False, "reason": "缺 path"}
+    if raw.startswith("/") or ":" in raw.split("/")[0]:
+        return {"ok": False, "reason": "只接受仓内相对路径"}
+    root_abs = _os.path.abspath(paths.ROOT)
+    abs_path = _os.path.abspath(_os.path.join(root_abs, raw))
+    if _os.path.commonpath([abs_path, root_abs]) != root_abs:
+        return {"ok": False, "reason": "路径越界（不在仓内）"}
+    rel = _os.path.relpath(abs_path, root_abs).replace("\\", "/")
+    if not any(rel.startswith(pre) for pre in _LOCAL_ALLOW):
+        return {"ok": False, "reason": f"该目录不在允许范围内：{rel.split('/')[0]}/…"}
+    if not _os.path.isfile(abs_path):
+        return {"ok": False, "reason": "文件不存在（可能已被移动/清理）"}
+    ext = _os.path.splitext(abs_path)[1].lower()
+    if ext not in _LOCAL_EXT:
+        return {"ok": False, "reason": f"不支持该类型：{ext or '(无扩展名)'}"}
+    try:
+        with open(abs_path, "rb") as fh:
+            body = fh.read()
+    except OSError as e:
+        return {"ok": False, "reason": f"读取失败：{type(e).__name__}: {e}"}
+    return {"ok": True, "body": body,
+            "ctype": _LOCAL_INLINE.get(ext, "application/octet-stream"),
+            "disposition": "inline" if ext in _LOCAL_INLINE else "attachment",
+            "filename": _os.path.basename(abs_path), "path": rel}

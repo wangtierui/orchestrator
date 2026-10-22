@@ -120,6 +120,38 @@ def search_external(text: str, limit: int = 20, kind: str = "records") -> list[d
         return [dict(r) for r in c.execute(sql, (q, int(limit)))]
 
 
+def search_external_like(text: str, limit: int = 20) -> list[dict]:
+    """**短词兜底检索**（`LIKE`）：FTS5 trigram 的已知限制。
+
+    为什么需要（2026-10-22 实测）：`records_fts` 用 **trigram** 分词，只索引 3 字窗口，
+    因此 `MATCH '"保险"'`（2 字）**必然返回 0 行** —— 实测：
+    `保险`→0、`银行`→0、`监管`→0，而 `保险公司`→3、`保险集团`→3。
+    中文双字词恰恰是最常见的检索词 ⇒ 页面表现为"搜什么都是空"。
+
+    兜底范围**只限结构化短字段**（title/document_number/rfn），不扫正文：
+    正文在 1.6GB 级产物里，`LIKE '%x%'` 全表扫会让首屏卡死（这是**有意的取舍**，
+    并在返回里用 `mode:"like"` 让调用方把它标出来，不伪装成全文检索）。
+    """
+    like = f"%{text or ''}%"
+    with _conn("external") as c:
+        rows = c.execute(
+            "SELECT record_id, rfn, title, document_number, publish_date, "
+            "timeliness_status, source, body_len FROM records "
+            "WHERE title LIKE ? OR document_number LIKE ? OR rfn LIKE ? LIMIT ?",
+            (like, like, like, int(limit)))
+        return [dict(r) for r in rows]
+
+
+def search_internal_like(text: str, limit: int = 20) -> list[dict]:
+    """内部底座的短词兜底（同 `search_external_like` 的理由）。"""
+    like = f"%{text or ''}%"
+    with _conn("internal") as c:
+        rows = c.execute(
+            "SELECT * FROM policies WHERE title LIKE ? OR docno LIKE ? OR ipn LIKE ? "
+            "LIMIT ?", (like, like, like, int(limit)))
+        return [dict(r) for r in rows]
+
+
 def get_external(record_id: str) -> dict | None:
     with _conn("external") as c:
         row = c.execute("SELECT * FROM records WHERE record_id=?", (record_id,)).fetchone()

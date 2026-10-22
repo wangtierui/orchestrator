@@ -2,778 +2,951 @@
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>监管合规编排器 · 本地确认台</title>
-<!-- 零 CDN：全部原生 JS + 手绘 SVG（§8.4 纪律） -->
+<!-- 零 CDN / 零构建：原生 JS + CSS + 手绘 SVG（§8.4 纪律）。 -->
 <style>
+/* ============================================================
+ * 设计令牌（2026-10-22 第一百零九批重设计）
+ * 参照 idataserch.com 的 B2B 信息型语法：**浅底白卡 + 深蓝主色 + 数字背书**。
+ * 为什么换成浅色：确认台是"每天要读数字"的工作台，浅底白卡在长时间阅读、
+ * 打印/截图归档、以及和 Excel/公文并排时都更稳（深色系在投影与外发截图里会失真）。
+ * 令牌全部集中在此，页面里不写死色值/圆角/间距 —— 改主题只改这一处。
+ * ============================================================ */
 :root{
-  --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --line:#2a2f3a;
-  --fg:#e6e9ef; --dim:#98a2b3; --ok:#2fbf71; --warn:#f2b53b; --bad:#ef5f5f;
-  --accent:#4f9cf9; --accent2:#9b7cf9;
+  --primary:#1A5FB4; --primary-h:#144A8F; --primary-l:#E8F1FB;
+  --accent:#2F7CF6; --ai:#6C5CE7;
+  --ok:#12855A; --ok-l:#E6F6EF; --warn:#B26A00; --warn-l:#FFF6E5;
+  --bad:#C0392B; --bad-l:#FDECEA;
+  --fg:#1D2129; --fg2:#4E5969; --fg3:#86909C; --fg4:#C9CDD4;
+  --bg:#F7F8FA; --card:#FFFFFF; --alt:#F2F4F7;
+  --line:#E5E6EB; --line2:#D0D5DD;
+  --r-sm:4px; --r-md:8px; --r-lg:12px; --r-xl:16px;
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:32px; --s7:48px;
+  --shadow:0 1px 2px rgba(29,33,41,.04), 0 2px 8px rgba(29,33,41,.06);
+  --shadow-h:0 4px 16px rgba(29,33,41,.10);
+  --mono:ui-monospace,"Cascadia Mono","Consolas",monospace;
 }
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--fg);
-  font:14px/1.55 "Microsoft YaHei UI","Segoe UI",system-ui,sans-serif}
-header{display:flex;align-items:center;gap:14px;padding:10px 16px;
-  background:var(--panel);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:9}
-header h1{font-size:15px;margin:0;font-weight:600;letter-spacing:.4px}
-.badge{font-size:12px;color:var(--dim);border:1px solid var(--line);
-  border-radius:999px;padding:2px 10px}
-.badge.live{color:var(--ok);border-color:#205c3d}
-.badge.off{color:var(--warn);border-color:#5c4a20}
-nav{display:flex;gap:2px;padding:8px 12px;background:var(--panel2);
-  border-bottom:1px solid var(--line);flex-wrap:wrap}
-nav button{background:transparent;border:0;border-bottom:2px solid transparent;
-  color:var(--dim);padding:7px 12px;cursor:pointer;font:inherit;border-radius:6px 6px 0 0}
-nav button:hover{color:var(--fg);background:#232836}
-nav button.on{color:var(--fg);border-bottom-color:var(--accent)}
-main{padding:14px;max-width:1500px;margin:0 auto}
-.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(330px,1fr))}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
-.card h3{margin:0 0 8px;font-size:13px;color:var(--fg);font-weight:600;
-  display:flex;justify-content:space-between;align-items:center;gap:8px}
-.card h3 .hint{font-size:11px;color:var(--dim);font-weight:400}
-.kv{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px dashed #232836}
+html,body{margin:0;background:var(--bg);color:var(--fg)}
+body{font:15px/1.6 -apple-system,"PingFang SC","Microsoft YaHei UI","Segoe UI",system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased}
+a{color:var(--primary);text-decoration:none}
+a:hover{text-decoration:underline}
+code,.mono{font-family:var(--mono);font-size:12.5px}
+
+/* ---------- 顶栏 ---------- */
+header{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line)}
+.hbar{display:flex;align-items:center;gap:var(--s4);padding:10px var(--s5);max-width:1560px;margin:0 auto}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:16px;letter-spacing:.2px}
+.brand i{width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg,var(--primary),var(--accent));
+  display:inline-block}
+.brand small{font-weight:400;color:var(--fg3);font-size:12px;margin-left:2px}
+.hstat{display:flex;gap:var(--s2);align-items:center;margin-left:auto;flex-wrap:wrap}
+.badge{font-size:12px;color:var(--fg2);border:1px solid var(--line);background:var(--alt);
+  border-radius:999px;padding:3px 10px;white-space:nowrap}
+.badge.live{color:var(--ok);background:var(--ok-l);border-color:#BFE6D6}
+.badge.off{color:var(--warn);background:var(--warn-l);border-color:#F0DCB4}
+.badge.bad{color:var(--bad);background:var(--bad-l);border-color:#F3C9C2}
+
+/* ---------- 页签 ---------- */
+nav{background:#fff;border-bottom:1px solid var(--line)}
+.nwrap{display:flex;gap:var(--s1);padding:0 var(--s5);max-width:1560px;margin:0 auto;overflow-x:auto}
+nav button{background:none;border:0;border-bottom:2px solid transparent;color:var(--fg2);
+  padding:11px 14px;cursor:pointer;font:inherit;font-weight:500;white-space:nowrap}
+nav button:hover{color:var(--fg);background:var(--alt)}
+nav button.on{color:var(--primary);border-bottom-color:var(--primary);font-weight:600}
+
+main{max-width:1560px;margin:0 auto;padding:var(--s5)}
+
+/* ---------- 卡片 ---------- */
+.grid{display:grid;gap:var(--s4);grid-template-columns:repeat(auto-fit,minmax(340px,1fr))}
+.grid.two{grid-template-columns:repeat(auto-fit,minmax(460px,1fr))}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r-lg);
+  padding:var(--s5);box-shadow:var(--shadow)}
+.card>h3{margin:0 0 var(--s3);font-size:15px;font-weight:600;display:flex;
+  justify-content:space-between;align-items:baseline;gap:var(--s2)}
+.card>h3 .hint{font-size:12px;color:var(--fg3);font-weight:400}
+.card .src{margin-top:var(--s3);padding-top:var(--s2);border-top:1px dashed var(--line);
+  font-size:11.5px;color:var(--fg3)}
+.section{margin:var(--s6) 0 var(--s3);display:flex;align-items:baseline;gap:var(--s3)}
+.section h2{margin:0;font-size:19px;font-weight:600}
+.section .desc{color:var(--fg3);font-size:13px}
+.section .no{font-family:var(--mono);color:var(--primary);font-weight:700}
+
+/* ---------- KPI ---------- */
+.kpi{display:flex;flex-direction:column;gap:2px}
+.kpi .n{font-size:28px;font-weight:700;line-height:1.15;font-variant-numeric:tabular-nums}
+.kpi .u{font-size:13px;color:var(--fg3);font-weight:400;margin-left:4px}
+.kpi .l{font-size:12.5px;color:var(--fg2)}
+.kpibar{display:flex;gap:var(--s4);flex-wrap:wrap}
+.kv{display:flex;justify-content:space-between;gap:var(--s3);padding:5px 0;
+  border-bottom:1px dashed var(--line);font-size:13px}
 .kv:last-child{border-bottom:0}
-.kv b{font-weight:600}
-.muted{color:var(--dim)}
-.ok{color:var(--ok)} .warn{color:var(--warn)} .bad{color:var(--bad)}
-.unavail{color:var(--warn);font-size:12px}
-table{width:100%;border-collapse:collapse;font-size:12.5px}
-th,td{text-align:left;padding:5px 6px;border-bottom:1px solid var(--line);vertical-align:top}
-th{color:var(--dim);font-weight:600;position:sticky;top:0;background:var(--panel)}
-tr:hover td{background:#1b1f28}
-.bar{height:8px;background:#232836;border-radius:4px;overflow:hidden;display:flex}
-.bar i{display:block;height:100%}
-.pill{font-size:11px;padding:1px 8px;border-radius:999px;border:1px solid var(--line)}
-.pill.ok{border-color:#205c3d} .pill.warn{border-color:#5c4a20}
-.pill.bad{border-color:#6b2626}
-input,select,textarea,button.act{font:inherit;background:#12151b;color:var(--fg);
-  border:1px solid var(--line);border-radius:6px;padding:6px 8px}
-textarea{width:100%;min-height:56px;resize:vertical}
-button.act{cursor:pointer;background:#1d3a5c;border-color:#2c5a8c}
-button.act:hover{background:#24486f}
-button.act.ghost{background:#12151b;border-color:var(--line)}
-.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-svg{display:block;max-width:100%}
-.legend{font-size:11px;color:var(--dim);display:flex;gap:12px;flex-wrap:wrap;margin-top:6px}
-.legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:4px}
-.foot{color:var(--dim);font-size:11.5px;margin-top:16px;padding:8px 2px;border-top:1px solid var(--line)}
-.toast{position:fixed;right:14px;bottom:14px;background:var(--panel2);border:1px solid var(--line);
-  border-radius:8px;padding:9px 13px;font-size:12.5px;opacity:0;transition:opacity .2s;z-index:20}
-.toast.on{opacity:1}
-details summary{cursor:pointer;color:var(--accent);font-size:12.5px}
-pre{background:#0c0e12;border:1px solid var(--line);border-radius:6px;padding:8px;
-  overflow:auto;font-size:11.5px;max-height:240px}
+.kv .k{color:var(--fg2)}
+.kv .v{font-weight:600;font-variant-numeric:tabular-nums;text-align:right}
+
+/* ---------- 状态色 ---------- */
+.ok{color:var(--ok)} .warn{color:var(--warn)} .bad{color:var(--bad)} .muted{color:var(--fg3)}
+.pill{display:inline-block;font-size:11.5px;padding:1px 8px;border-radius:999px;
+  border:1px solid var(--line2);background:var(--alt);color:var(--fg2);white-space:nowrap}
+.pill.ok{color:var(--ok);background:var(--ok-l);border-color:#BFE6D6}
+.pill.warn{color:var(--warn);background:var(--warn-l);border-color:#F0DCB4}
+.pill.bad{color:var(--bad);background:var(--bad-l);border-color:#F3C9C2}
+
+/* ---------- 表格 ---------- */
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--fg2);font-weight:600;background:var(--alt);position:sticky;top:0;z-index:1;
+  font-size:12.5px;white-space:nowrap}
+tbody tr:hover td{background:#FAFBFC}
+td.num{font-variant-numeric:tabular-nums;text-align:right}
+td.id{font-family:var(--mono);font-size:12px;color:var(--fg2);word-break:break-all}
+.tblwrap{max-height:640px;overflow:auto;border:1px solid var(--line);border-radius:var(--r-md)}
+.trunc{max-width:520px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+tr.detail>td{background:var(--primary-l);border-bottom:1px solid var(--line2)}
+
+/* ---------- 控件 ---------- */
+input,select,textarea{font:inherit;background:#fff;color:var(--fg);border:1px solid var(--line2);
+  border-radius:var(--r-md);padding:7px 10px}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--primary-l);border-color:var(--primary)}
+textarea{width:100%;min-height:60px;resize:vertical}
+.row{display:flex;gap:var(--s2);align-items:center;flex-wrap:wrap}
+button.act{font:inherit;font-weight:500;cursor:pointer;border-radius:var(--r-md);
+  border:1px solid var(--primary);background:var(--primary);color:#fff;padding:7px 14px}
+button.act:hover{background:var(--primary-h)}
+button.act.ghost{background:#fff;color:var(--primary);border-color:var(--line2)}
+button.act.ghost:hover{background:var(--primary-l);border-color:var(--primary)}
+button.link{background:none;border:0;color:var(--primary);cursor:pointer;font:inherit;padding:0}
+button.link:hover{text-decoration:underline}
+button[disabled]{opacity:.5;cursor:not-allowed}
+
+/* ---------- 条形（用 flex 而非 SVG：从结构上消灭"标签溢出画布"） ---------- */
+.bars{display:flex;flex-direction:column;gap:7px}
+.brow{display:grid;grid-template-columns:minmax(88px,150px) 1fr 96px;gap:var(--s2);align-items:center;
+  font-size:12.5px}
+.brow .bl{color:var(--fg2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.brow .bt{background:var(--alt);border-radius:var(--r-sm);height:16px;position:relative;overflow:hidden}
+.brow .bf{height:100%;border-radius:var(--r-sm);transition:width .25s}
+.brow .bv{text-align:right;font-variant-numeric:tabular-nums;color:var(--fg);font-weight:600}
+.note{font-size:11.5px;color:var(--fg3);margin-top:var(--s2)}
+
+/* ---------- 图例/工具条 ---------- */
+.legend{display:flex;gap:var(--s4);flex-wrap:wrap;margin-top:var(--s3);font-size:11.5px;color:var(--fg3)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.toolbar{display:flex;gap:var(--s2);align-items:center;flex-wrap:wrap;margin-bottom:var(--s3)}
+.toast{position:fixed;right:var(--s5);bottom:var(--s5);background:var(--fg);color:#fff;
+  border-radius:var(--r-md);padding:10px 14px;font-size:13px;opacity:0;transform:translateY(6px);
+  transition:all .2s;z-index:50;max-width:min(520px,90vw);pointer-events:none}
+.toast.on{opacity:1;transform:none}
+.toast.bad{background:var(--bad)}
+pre{background:var(--alt);border:1px solid var(--line);border-radius:var(--r-md);padding:10px;
+  overflow:auto;font-size:12px;max-height:280px;font-family:var(--mono)}
+details>summary{cursor:pointer;color:var(--primary);font-size:13px}
+.foot{color:var(--fg3);font-size:11.5px;text-align:center;padding:var(--s6) 0 var(--s3)}
+.scrollx{overflow-x:auto;padding-bottom:var(--s2)}
 </style>
 </head>
 <body>
 <header>
-  <h1>监管合规编排器 · 本地确认台</h1>
-  <span class="badge" id="live">SSE 连接中…</span>
-  <span class="badge" id="gates">门禁 —</span>
-  <span class="muted" style="margin-left:auto;font-size:12px" id="stamp">—</span>
+  <div class="hbar">
+    <div class="brand"><i></i>监管合规编排器<small>本地确认台</small></div>
+    <div class="hstat">
+      <span class="badge" id="live">连接中…</span>
+      <span class="badge" id="gates">门禁 —</span>
+      <span class="badge" id="stamp">—</span>
+    </div>
+  </div>
+  <nav><div class="nwrap" id="nav"></div></nav>
 </header>
 
-<nav id="nav"></nav>
 <main id="view"><div class="card">加载中…</div></main>
+<div class="foot">本地只读确认台 · loopback-only · 无鉴权 · 零外链</div>
 <div class="toast" id="toast"></div>
 
 <script>
 "use strict";
 /* ============================================================
- * 确认台前端（原生 JS + 手绘 SVG，零外链）
- * 纪律：① 每张卡都渲染「数据源 + 抓取时刻」；② 不可用即显示原因（不白屏）；
- *      ③ EventSource 失败自动降级为 5s 轮询。
+ * 确认台前端
+ * 纪律：① 每张卡披露「数据源 + 抓取时刻」；② 不可用即显示**原因**（不白屏）；
+ *      ③ SSE 失败自动降级为 5s 轮询；④ 零外链、零构建。
+ *
+ * 2026-10-22（第一百零九批）修的用户可见缺陷：
+ *   · P3 报 TypeError: Cannot convert undefined or null to object
+ *     —— 根因是 `Object.assign(LAST.metrics, m)` 而 `LAST.metrics` 首次为 undefined。
+ *     现改为**新建对象**，并新增 `obj()` 兜底所有 `Object.entries/keys`。
+ *   · P1 无任何显示 —— 后端已改为"展开 {src} + 按产物连边的真实 DAG"，
+ *     前端改为**分层列布局**（此前两列灰块、无连线无数字）。
+ *   · P4 列与内容错位 / 地址错配 / 本地文件打不开 / 处置在列表最下方
+ *     —— 见各函数内注释。
+ *   · P2/P7 并入总览；P6 增访问地址列；P8 全量提交 + 点开完整变更。
  * ============================================================ */
+
 const TABS = [
-  {id:"overview", name:"P0 总览"},
-  {id:"flow",     name:"P1 数据流转"},
-  {id:"assets",   name:"P2 数据状态"},
-  {id:"metrics",  name:"P3 指标"},
-  {id:"worklist", name:"P4 待办闭环"},
-  {id:"governance",name:"P5 治理审计"},
-  {id:"search",   name:"P6 文档检索"},
-  {id:"publish",  name:"P7 投放看板"},
-  {id:"release",  name:"P8 发布事件流"},
+  {id:"overview", name:"总览"},
+  {id:"flow",     name:"数据流转"},
+  {id:"metrics",  name:"指标"},
+  {id:"worklist", name:"待办闭环"},
+  {id:"governance",name:"治理审计"},
+  {id:"search",   name:"文档检索"},
+  {id:"release",  name:"发布事件"},
 ];
 
-const $ = (s,r=document)=>r.querySelector(s);
+const $  = (s,r=document)=>r.querySelector(s);
+const $$ = (s,r=document)=>[...r.querySelectorAll(s)];
 const esc = s => String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-const num = n => (n==null?"—":(typeof n==="number"?(n.toLocaleString? n.toLocaleString():n):n));
-const kb  = b => { if(b==null) return "—"; const u=["B","KB","MB","GB","TB"]; let i=0,v=Number(b);
-  while(v>=1024&&i<u.length-1){v/=1024;i++;} return v.toFixed(v<10?1:0)+" "+u[i]; };
+const num = n => (n==null||n==="")?"—":(typeof n==="number"?(n.toLocaleString?n.toLocaleString():String(n)):String(n));
+const kb  = b => { if(b==null) return "—"; const u=["B","KB","MB","GB","TB"]; let i=0,v=Number(b)||0;
+  while(v>=1024&&i<u.length-1){v/=1024;i++;} return (v<10?v.toFixed(1):v.toFixed(0))+" "+u[i]; };
+/*: `obj()` —— 把"可能为 null/undefined/非对象"的值安全转成对象。
+ * 为什么需要：`Object.entries(null)` 会抛 TypeError（本次 P3 的报错文案就是它）。
+ * 后端已保证字段齐全，但**前端不能把"后端某天少给一个字段"变成整页白屏**。 */
+const obj = x => (x && typeof x==="object" && !Array.isArray(x)) ? x : {};
+const arr = x => Array.isArray(x) ? x : [];
+
+/*: 字段来源标签 —— 让"这个值从哪来"对读者可见（本仓一贯要求"降级可辨"）。 */
+const SRC_LABEL = {
+  "payload:title":"待办载荷", "payload:document_number":"待办载荷", "payload:url":"待办载荷",
+  "bridge:docno":"桥表(文号)", "bridge:title":"桥表(名称)",
+  "local:file":"本地文件", "ipn":"IPN", "subject":"subject",
+  "not_found":"未查到", "mismatch":"地址不匹配", "warming":"统计中…",
+  "not_applicable":"不适用", "aggregate":"汇总项",
+};
 
 function toast(msg, bad){
   const t=$("#toast"); t.textContent=msg; t.className="toast on"+(bad?" bad":"");
-  clearTimeout(t._h); t._h=setTimeout(()=>t.className="toast",3200);
+  clearTimeout(t._h); t._h=setTimeout(()=>t.className="toast",3600);
 }
 
 async function api(path, opts){
   const r = await fetch(path, Object.assign({headers:{"Accept":"application/json"}}, opts||{}));
   const ct = r.headers.get("content-type")||"";
-  if(!ct.includes("json")){ return {available:false, reason:"非 JSON 响应（HTTP "+r.status+"）"}; }
-  const j = await r.json();
-  if(!r.ok) return Object.assign({available:false}, j, {httpStatus:r.status});
+  if(!ct.includes("json")) return {available:false, reason:"非 JSON 响应（HTTP "+r.status+"）"};
+  let j={}; try{ j = await r.json(); }catch(e){ return {available:false, reason:"响应不是合法 JSON"}; }
+  if(!r.ok) return Object.assign({available:false}, obj(j), {httpStatus:r.status});
   return j;
 }
 
-/* 卡片外壳：统一渲染 source + fetched_at（可观测披露纪律） */
-function card(title, hint, body, src){
-  return `<div class="card"><h3><span>${esc(title)}</span><span class="hint">${esc(hint||"")}</span></h3>${body}
-    <div class="foot" style="padding:5px 0 0;border:0">数据源：${esc(src||"—")}${
-      arguments[4]? " ｜ 抓取："+esc(arguments[4]) : ""}</div></div>`;
+function card(title, hint, body, src, at){
+  return `<div class="card"><h3><span>${esc(title)}</span><span class="hint">${esc(hint||"")}</span></h3>
+    ${body}<div class="src">数据源：${esc(src||"—")}${at?(" ｜ 抓取："+esc(at)):""}</div></div>`;
 }
 function unavail(d, why){
-  return card(why||"卡片", "", `<div class="unavail">⚠ 不可用：${esc(d.reason||d.error||"未知原因")}</div>`,
-              d.source);
+  return card(why||"卡片","",`<div class="pill warn">⚠ 不可用</div>
+    <div class="note">${esc(d.reason||d.error||"未知原因")}</div>`, d.source);
 }
-function kv(k,v,cls){ return `<div class="kv"><span class="muted">${esc(k)}</span><b class="${cls||""}">${v}</b></div>`; }
-function pill(txt,cls){ return `<span class="pill ${cls||""}">${esc(txt)}</span>`; }
+const kv = (k,v,cls)=>`<div class="kv"><span class="k">${esc(k)}</span><span class="v ${cls||""}">${v}</span></div>`;
+const pill = (t,c)=>`<span class="pill ${c||""}">${esc(t)}</span>`;
+const kpi = (label,value,unit,cls)=>
+  `<div class="kpi"><div class="n ${cls||""}">${value}${unit?`<span class="u">${esc(unit)}</span>`:""}</div>
+   <div class="l">${esc(label)}</div></div>`;
 
-/* ---------------- P0 总览 ---------------- */
-function viewOverview(d){
+/*: 条形列表（**用 flex 而非 SVG**）
+ * 用户三次报"图表渲染异常"，其中两次的根因都是 SVG 里**文字按估算宽度排版会溢出画布**
+ * （标签压柱、数值被裁）。CSS 网格 + `text-overflow` 从结构上消除了这类问题：
+ * 文字只在它自己的格子里，永远不会跑到柱子上。 */
+function bars(data, color, unit){
+  const e = Object.entries(obj(data));
+  if(!e.length) return '<div class="muted">暂无数据</div>';
+  const max = Math.max(1, ...e.map(([,v])=>Number(v)||0));
+  const total = e.reduce((a,[,v])=>a+(Number(v)||0),0);
+  const rows = e.map(([k,v])=>{
+    const n=Number(v)||0, pct=max?Math.max(n>0?1.5:0, n/max*100):0;
+    const share=total?(n/total*100):0;
+    return `<div class="brow" title="${esc(k)}：${num(n)}${unit||""}（占 ${share.toFixed(1)}%）">
+      <div class="bl">${esc(k)}</div>
+      <div class="bt"><div class="bf" style="width:${pct}%;background:${color}"></div></div>
+      <div class="bv">${num(n)}${unit?" "+esc(unit):""}<span class="muted" style="font-weight:400"> · ${share.toFixed(share>=10?0:1)}%</span></div>
+    </div>`;}).join("");
+  const pos=e.map(([,v])=>Number(v)||0).filter(v=>v>0);
+  const minPos=pos.length?Math.min(...pos):0;
+  const note = (minPos>0 && max/minPos>=20)
+    ? `<div class="note">分布高度集中（最大 ${num(max)} / 最小非零 ${num(minPos)}，约 ${Math.round(max/minPos)} 倍）：
+        小值条形按线性比例接近不可见，**数值与占比均已标注**——这是真实分布，不是图坏了。</div>` : "";
+  return `<div class="bars">${rows}</div>${note}`;
+}
+
+/* ---------------- 总览（P0 + P2 + P7 合并） ---------------- */
+function viewOverview(d, assets, publish){
   if(!d.available) return unavail(d);
-  const rh=d.run_health||{}, gs=d.gate_status||{}, wl=d.worklist||{},
-        al=d.alerts||{}, fr=d.freshness||{}, st=d.storage||{};
-  const counts = rh.counts||{};
+  const rh=obj(d.run_health), gs=obj(d.gate_status), wl=obj(d.worklist),
+        al=obj(d.alerts), fr=obj(d.freshness), st=obj(d.storage);
+  const counts=obj(rh.counts);
+  const okN=Number(counts.ok||0), failN=Number(counts.failed||counts.error||0);
+
+  /* 顶部 KPI：先给"最该一眼看到"的 4 个数 */
+  const kpis = `<div class="card"><h3><span>关键指标</span>
+      <span class="hint">最近运行 ${esc(rh.run_id||"—")}</span></h3>
+    <div class="kpibar">
+      ${kpi("门禁通过", `${num(gs.passed)}<span class="u">/ ${num(gs.total)}</span>`,
+            "", Number(gs.failed&&gs.failed.length)?"bad":"ok")}
+      ${kpi("待办未处置", num(wl.open_total), "条", Number(wl.open_total)>0?"warn":"ok")}
+      ${kpi("链步成功", num(okN), `步${failN?` · 失败 ${failN}`:""}`, failN?"bad":"ok")}
+      ${kpi("存储占用", kb(st.total_bytes), "", "")}
+    </div>
+    <div class="note">四项分别回答：能不能交付 / 有没有欠账 / 链跑得怎样 / 数据多大。</div>
+    <div class="src">数据源：治理库台账 + worklist + paths 目录扫描</div></div>`;
+
   const runHtml = rh.available
     ? kv("run_id", esc(rh.run_id||"—")) + kv("总步数", num(rh.steps))
-      + kv("状态分布", Object.entries(counts).map(([k,v])=>pill(`${esc(k)} ${v}`,
-          k==="ok"?"ok":(k==="failed"||k==="error"?"bad":"warn"))).join(" "))
+      + kv("状态分布", Object.entries(counts).map(([k,v])=>pill(`${k} ${v}`,
+          k==="ok"?"ok":((k==="failed"||k==="error")?"bad":"warn"))).join(" "))
       + kv("累计耗时", (rh.total_elapsed_s??"—")+" s")
       + kv("最近运行", esc(rh.run_at||"—"))
-    : `<div class="unavail">⚠ ${esc(rh.reason||"无运行台账")}</div>`;
+    : `<div class="note">⚠ ${esc(rh.reason||"无运行台账")}</div>`;
   const gateHtml = gs.available
     ? kv("最近一轮", esc(gs.run_id||"—"))
-      + kv("通过", `${num(gs.passed)}/${num(gs.total)}`, gs.failed&&gs.failed.length?"bad":"ok")
-      + (gs.failed&&gs.failed.length
-          ? `<div style="margin-top:6px">${gs.failed.map(f=>`<div class="bad" style="font-size:12px">● ${esc(f.gate)} — ${esc(f.descr||"")}</div>`).join("")}</div>`
+      + kv("通过", `${num(gs.passed)}/${num(gs.total)}`, Number(gs.failed&&gs.failed.length)?"bad":"ok")
+      + (arr(gs.failed).length
+          ? `<div style="margin-top:6px">${arr(gs.failed).map(f=>`<div class="bad" style="font-size:12px">● ${esc(f.gate)} — ${esc(f.descr||"")}</div>`).join("")}</div>`
           : `<div class="ok" style="margin-top:6px;font-size:12px">✓ 全部通过</div>`)
-    : `<div class="unavail">⚠ ${esc(gs.reason||"无门禁记录")}</div>`;
+    : `<div class="note">⚠ ${esc(gs.reason||"无门禁记录")}</div>`;
   const wlHtml = wl.available
-    ? kv("open 总数", num(wl.open_total), wl.open_total>0?"warn":"ok")
-      + kv("最老未处置", (wl.oldest_open_days??"—")+" 天", wl.oldest_open_days>7?"bad":"")
-      + kv("按 kind", Object.entries(wl.by_kind||{}).map(([k,v])=>pill(`${esc(k)} ${v}`)).join(" "))
-    : `<div class="unavail">⚠ ${esc(wl.reason||"待办不可用")}</div>`;
-  const alHtml = (al.alerts&&al.alerts.length)
-    ? `<table><tr><th>事件</th><th>时间</th></tr>`+al.alerts.slice(0,8).map(a=>
-        `<tr><td>${esc(a.event||a.title||"—")}</td><td class="muted">${esc(a.at||a.ts||"")}</td></tr>`).join("")+`</table>`
+    ? kv("open 总数", num(wl.open_total), Number(wl.open_total)>0?"warn":"ok")
+      + kv("最老未处置", (wl.oldest_open_days??"—")+" 天", Number(wl.oldest_open_days)>7?"bad":"")
+      + kv("按 kind", Object.entries(obj(wl.by_kind)).map(([k,v])=>pill(`${k} ${v}`)).join(" "))
+    : `<div class="note">⚠ ${esc(wl.reason||"待办不可用")}</div>`;
+  const alHtml = arr(al.alerts).length
+    ? `<div class="tblwrap" style="max-height:220px"><table><thead><tr><th>事件</th><th>时间</th></tr></thead><tbody>`
+      + arr(al.alerts).slice(0,8).map(a=>`<tr><td>${esc(a.event||a.title||"—")}</td>
+        <td class="muted">${esc(a.at||a.ts||"")}</td></tr>`).join("")+`</tbody></table></div>`
     : `<div class="muted">无近期告警（${esc(al.count??0)} 条记录）</div>`;
   const frHtml = fr.available
-    ? kv("边状态", Object.entries(fr.by_status||{}).map(([k,v])=>pill(`${k} ${v}`,
+    ? kv("边状态", Object.entries(obj(fr.by_status)).map(([k,v])=>pill(`${k} ${v}`,
         k==="stale"?"bad":(k==="ok"?"ok":"warn"))).join(" "))
-      + (fr.stale&&fr.stale.length? `<div style="margin-top:6px;font-size:12px">${
-          fr.stale.slice(0,5).map(s=>`<div class="bad">● ${esc(s.artifact)} ← ${esc(s.dep)}（建议重跑上游链）</div>`).join("")}</div>`:"")
-    : `<div class="unavail">⚠ ${esc(fr.reason||"水位不可用")}</div>`;
+      + (arr(fr.stale).length ? `<div style="margin-top:6px;font-size:12px">${
+          arr(fr.stale).slice(0,5).map(s=>`<div class="bad">● ${esc(s.artifact)} ← ${esc(s.dep)}（建议重跑上游链）</div>`).join("")}</div>`:"")
+    : `<div class="note">⚠ ${esc(fr.reason||"水位不可用")}</div>`;
   const stHtml = st.available
-    ? Object.entries(st.bytes||{}).map(([k,v])=>kv(k, kb(v)+" · "+((st.ratio||{})[k]||0)+"%")).join("")
-      + `<div class="bar" style="margin-top:8px">`+Object.entries(st.ratio||{}).map(([k,v],i)=>
-        `<i style="width:${v}%;background:${["#4f9cf9","#9b7cf9","#2fbf71","#f2b53b","#ef5f5f"][i%5]}"></i>`).join("")+`</div>`
-    : `<div class="unavail">⚠ ${esc(st.reason||"存储扫描不可用")}</div>`;
-  return `<div class="grid">
+    ? Object.entries(obj(st.bytes)).map(([k,v])=>kv(k, kb(v)+" · "+((obj(st.ratio)[k])||0)+"%")).join("")
+      + (st.heavy_ready===false?`<div class="note">${esc(st.note||"外部模型目录统计中")}</div>`:"")
+    : `<div class="note">⚠ ${esc(st.reason||"存储扫描不可用")}</div>`;
+
+  /* P2 产物清单（并入总览） */
+  let assetsHtml;
+  if(!assets || assets.available===false) assetsHtml = `<div class="note">⚠ ${esc((assets||{}).reason||"不可用")}</div>`;
+  else if(assets.warming) assetsHtml = `<div class="note">${esc(assets.note||"统计中…")}</div>`;
+  else {
+    const rows = arr(assets.files).map(f=>`<tr><td>${esc(f.source)}</td>
+      <td class="muted">${esc(f.date||"—")}</td><td class="num">${num(f.records)}</td></tr>`).join("");
+    const c = obj(assets.contract);
+    const pub = obj(assets.publish);
+    const pubRows = ["external","internal"].map(b=>{const m=obj(pub[b]);
+      return `<tr><td>${esc(b)}</td><td>${m.available===false?`<span class="bad">${esc(m.reason||"未发布")}</span>`
+        :`${esc(m.snapshot_date||m.snapshot||"—")}<br><span class="muted" style="font-size:11px">${esc(m.schema_version||"")} ${esc(String(m.sha256||"").slice(0,12))}</span>`}</td>
+        <td class="num">${num(m.count||m.records||m.record_count)}</td></tr>`;}).join("");
+    assetsHtml = `<div class="grid two">
+      ${card("产物清单","clean 索引", rows?`<div class="tblwrap"><table><thead><tr><th>源</th><th>快照日</th><th>记录数</th></tr></thead><tbody>${rows}</tbody></table></div>`
+        :'<div class="muted">无产物</div>', assets.source, assets.fetched_at)}
+      ${card("发布件状态","双底座", `<div class="tblwrap"><table><thead><tr><th>底座</th><th>快照/版本</th><th>记录数</th></tr></thead><tbody>${pubRows}</tbody></table></div>`, assets.source, assets.fetched_at)}
+      ${card("条文契约自检","clause schema",
+        kv("覆盖文件",num(c.files))+kv("条文",num(c.articles))+kv("章节",num(c.chapters))
+        +kv("表格结构",num(c.structures))+kv("法条类",num(c.law))
+        +kv("降级解析",num(c.degraded),Number(c.degraded)>0?"warn":"ok")
+        +kv("无效",num(c.invalid),Number(c.invalid)>0?"bad":"ok")
+        +kv("告警",num(c.warned),Number(c.warned)>0?"warn":"ok"), assets.source, assets.fetched_at)}
+    </div>`;
+  }
+  /* P7 投放看板（并入总览） */
+  let pubHtml="";
+  if(publish && publish.available!==false){
+    const w=obj(publish.wiki_sources);
+    pubHtml = card("投放看板","wiki 投放源",
+      kv("目录", esc(w.dir||"—"))+kv("存在", w.exists?"是":"否", w.exists?"ok":"warn")
+      +kv("文件数", num(w.files)), publish.source, publish.fetched_at);
+  }
+
+  return `${kpis}
+  <div class="section"><span class="no">01</span><h2>运行与风险</h2>
+    <span class="desc">六张卡回答"现在健康吗、有没有欠账"</span></div>
+  <div class="grid">
     ${card("运行健康","最近一次运行",runHtml,rh.source,rh.fetched_at)}
     ${card("门禁状态","逐道结果",gateHtml,gs.source,gs.fetched_at)}
     ${card("待办","worklist open",wlHtml,wl.source,wl.fetched_at)}
     ${card("告警","reports/_alerts",alHtml,al.source,al.fetched_at)}
     ${card("数据新鲜度","水位边状态",frHtml,fr.source,fr.fetched_at)}
     ${card("存储占用","实测体积",stHtml,st.source,st.fetched_at)}
-  </div>`;
+  </div>
+  <div class="section"><span class="no">02</span><h2>产物与发布</h2>
+    <span class="desc">P2 数据状态 + P7 投放看板（已并入总览）</span></div>
+  ${assetsHtml}
+  <div class="grid">${pubHtml}</div>`;
 }
 
-/* ---------------- P1 数据流转（手绘 SVG 桑基） ---------------- */
+/* ---------------- P1 数据流转（分层 DAG） ---------------- */
+/*: 每层一条竖列；同层节点纵向堆叠。为什么不用桑基：
+ * 桑基要求"每个节点进出守恒"，而本链有大量**多进多出**与**旁路/条件**步骤
+ * （gates/reports/retention…），强行守恒会把数据改成假的。分层 DAG 只表达
+ * "谁依赖谁 + 流量多少"，语义上忠实。 */
 function viewFlow(d){
   if(!d.available) return unavail(d);
-  const steps=d.steps||[], srcs=d.sources||[], w=d.weights||{}, st=d.step_status||{};
-  const N = steps.length + srcs.length;
-  if(!N) return card("数据流转","",'<div class="unavail">⚠ 链路为空（STEP_ORDER 未加载）</div>', d.source);
-  const W=1200, rowH=26, padTop=30, padLeft=150, gap=10;
-  const H = padTop + N*(rowH+gap) + 20;
-  // 布局：左侧源列 → 右侧步骤列（边为贝塞尔流量带，边宽 ∝ √记录数）
-  const colSrcX=padLeft, colStepX=W-260;
-  const srcY=i=>padTop+i*(rowH+26);
-  const stY=i=>padTop+i*(rowH+gap);
-  let svg=`<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}">`;
-  // 步骤列节点
-  steps.forEach((s,i)=>{
-    const y=stY(i), info=st[s]||{}, stat=info.status||"idle";
-    const fill = stat==="ok"?"#1d3a5c":(stat==="failed"?"#5c1f1f":(stat==="degraded"?"#5c4a20":"#20242d"));
-    svg+=`<rect x="${colStepX}" y="${y}" width="230" height="${rowH}" rx="5" fill="${fill}" stroke="#2a2f3a"/>
-      <text x="${colStepX+8}" y="${y+17}" fill="#e6e9ef" font-size="11.5">${esc(s)}</text>`;
-    if(w[s]) svg+=`<text x="${colStepX+222}" y="${y+17}" fill="#98a2b3" font-size="10.5" text-anchor="end">${num(w[s])}</text>`;
-    if(stat==="failed") svg+=`<circle cx="${colStepX-8}" cy="${y+rowH/2}" r="4" fill="#ef5f5f"/>`;
-    // 边：源 → 步骤（collect:{src} 前缀的步骤连到该源）
-    const m=s.match(/^collect:\{?(\w+)\}?/);
-    if(m && srcs.includes(m[1])){
-      const si=srcs.indexOf(m[1]);
-      const x1=colSrcX+90, y1=srcY(si)+rowH/2, x2=colStepX, y2=y+rowH/2;
-      const bw=Math.max(1.5, Math.min(22, Math.sqrt(w[s]||1)/12));
-      svg+=`<path d="M${x1},${y1} C${x1+90},${y1} ${x2-90},${y2} ${x2},${y2}"
-        fill="none" stroke="#4f9cf9" stroke-opacity="0.34" stroke-width="${bw}"/>`;
-    }
-  });
-  // 源列节点
-  srcs.forEach((s,i)=>{
-    const y=srcY(i);
-    svg+=`<rect x="${colSrcX-90}" y="${y}" width="180" height="${rowH}" rx="5" fill="#1d3a2c" stroke="#2fbf71" stroke-opacity=".5"/>
-      <text x="${colSrcX-80}" y="${y+17}" fill="#e6e9ef" font-size="11.5">${esc(s)}</text>`;
-  });
-  svg+=`<text x="${colSrcX-90}" y="${padTop-12}" fill="#98a2b3" font-size="11">源</text>
-        <text x="${colStepX}" y="${padTop-12}" fill="#98a2b3" font-size="11">步骤（点击看抽屉）</text></svg>`;
-  const legend=`<div class="legend">
-    <span><i style="background:#1d3a5c"></i>ok</span>
-    <span><i style="background:#5c4a20"></i>degraded</span>
-    <span><i style="background:#5c1f1f"></i>failed</span>
-    <span><i style="background:#20242d"></i>未运行</span>
-    <span>边宽 ∝ √(最近一次处理记录数)；模式：<b>${esc(d.mode)}</b></span></div>`;
-  return card("数据流转（状态/流量桑基）",
-    `${steps.length} 步骤 · ${srcs.length} 源`, svg+legend+
-    `<div class="row" style="margin-top:8px"><span class="muted">节点抽屉：</span>
-      <select id="stepsel">${steps.map(s=>`<option>${esc(s)}</option>`).join("")}</select>
-      <button class="act ghost" id="stepbtn">查看</button></div>
-     <div id="stepout"></div>`, d.source, d.fetched_at);
-}
+  const nodes=arr(d.nodes), edges=arr(d.edges), layers=arr(d.layers);
+  if(!nodes.length) return card("数据流转","",'<div class="pill warn">⚠ 链路为空</div>'
+    +'<div class="note">STEP_ORDER 未加载</div>', d.source, d.fetched_at);
 
-/* ---------------- P2 数据状态 ---------------- */
-function viewAssets(d){
-  if(!d.available) return unavail(d);
-  const rows=(d.files||[]).map(f=>`<tr><td>${esc(f.source)}</td><td>${esc(f.date||"—")}</td>
-    <td>${num(f.records)}</td></tr>`).join("");
-  const pub=d.publish||{};
-  const pubRows=["external","internal"].map(b=>{
-    const m=pub[b]||{};
-    return `<tr><td>${esc(b)}</td><td>${m.available===false?`<span class="bad">${esc(m.reason||"未发布")}</span>`
-      : `${esc(m.snapshot_date||m.snapshot||"—")}<br/><span class="muted" style="font-size:11px">${esc((m.schema_version)||"")} ${esc((m.sha256||"").slice(0,12))}</span>`}</td>
-      <td>${num((m.count||m.records||m.record_count))}</td></tr>`;}).join("");
-  const c=d.contract||{};
-  // 2026-10-19 修（用户报「P2 数据状态渲染异常」）：原实现只读 consistent/problems/stat，
-  // 而契约的真实字段是**统计计数**（files/articles/chapters/structures/law/
-  // degraded/fallback/invalid/warned/parse_modes）⇒ 统计那栏恒 `{}`。
-  // 现按真实字段渲染，并把 degraded/invalid 作为**需关注项**显式列出。
-  //
-  // ⚠️ 本注释必须留在**模板字符串之外**：注释含反引号（用于标注字段名），
-  //    若写在 `` `...` `` 内部会**提前闭合模板字符串** ⇒ 整段脚本语法错误 ⇒
-  //    页面停在初始态（`加载中…` + `SSE 连接中…`）。2026-10-19 实际发生过。
-  return `<div class="grid">
-    ${card("产物清单","clean 索引", rows?`<table><tr><th>源</th><th>快照日</th><th>记录数</th></tr>${rows}</table>`
-      :'<div class="muted">无产物</div>', d.source, d.fetched_at)}
-    ${card("发布件状态","双底座", `<table><tr><th>底座</th><th>快照/版本</th><th>记录数</th></tr>${pubRows}</table>`, d.source, d.fetched_at)}
-    ${card("契约状态","条文 schema 自检",
-      kv("覆盖文件", num(c.files)) + kv("条文", num(c.articles))
-      + kv("章节", num(c.chapters)) + kv("表格结构", num(c.structures))
-      + kv("法条类", num(c.law))
-      + kv("降级解析", num(c.degraded), c.degraded>0?"warn":"ok")
-      + kv("兜底解析", num(c.fallback))
-      + kv("无效", num(c.invalid), c.invalid>0?"bad":"ok")
-      + kv("告警", num(c.warned), c.warned>0?"warn":"ok")
-      + (c.parse_modes?`<div class="muted" style="font-size:11px;margin-top:6px">解析方式：${
-          esc(Object.entries(c.parse_modes).map(([k,v])=>k+"="+v).join(" / "))}</div>`:""),
-      d.source, d.fetched_at)}
-  </div>`;
+  const byLayer = {};
+  layers.forEach(l=>{ byLayer[l.id]=[]; });
+  nodes.forEach(n=>{ (byLayer[n.layer]||(byLayer[n.layer]=[])).push(n); });
+  const lids = layers.length?layers.map(l=>l.id):Object.keys(byLayer);
+
+  const COLW=186, GAPX=54, ROWH=30, GAPY=8, PADX=16, PADY=34;
+  const colX={}; lids.forEach((l,i)=>{ colX[l]=PADX+i*(COLW+GAPX); });
+  const maxRows = Math.max(1, ...lids.map(l=>(byLayer[l]||[]).length));
+  const W = PADX*2 + lids.length*(COLW+GAPX) - GAPX;
+  const H = PADY + maxRows*(ROWH+GAPY) + 18;
+  const pos={};
+  lids.forEach(l=>{ (byLayer[l]||[]).forEach((n,i)=>{
+    const x=colX[l], y=PADY+i*(ROWH+GAPY);
+    pos[n.id]={x,y,cx:x+COLW/2,cy:y+ROWH/2}; }); });
+
+  const STATUS_FILL={ok:"#E6F6EF",failed:"#FDECEA",skip:"#F2F4F7",
+                     degraded:"#FFF6E5",idle:"#FFFFFF",unknown:"#FFFFFF"};
+  const STATUS_STROKE={ok:"#12855A",failed:"#C0392B",skip:"#D0D5DD",
+                       degraded:"#B26A00",idle:"#D0D5DD",unknown:"#D0D5DD"};
+  let svg=`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img">`;
+  // 层标题带
+  lids.forEach(l=>{
+    const nm=(layers.find(x=>x.id===l)||{}).name||l;
+    svg+=`<text x="${colX[l]}" y="20" fill="#86909C" font-size="11.5" font-weight="600">${esc(nm)}</text>`;
+  });
+  // 边（先画，压在节点下方）
+  edges.forEach(e=>{
+    const a=pos[e.from], b=pos[e.to];
+    if(!a||!b) return;
+    const x1=a.x+COLW, y1=a.cy, x2=b.x, y2=b.cy;
+    const dx=Math.max(24,(x2-x1)/2);
+    const w=Math.max(1.2, Math.min(16, Math.sqrt(Number(e.volume)||1)/3.2));
+    svg+=`<path d="M${x1},${y1} C${x1+dx},${y1} ${x2-dx},${y2} ${x2},${y2}"
+      fill="none" stroke="#2F7CF6" stroke-opacity="0.30" stroke-width="${w}">
+      <title>${esc(e.from)} → ${esc(e.to)}（${esc(e.artifact)}，${num(e.volume)} 条）</title></path>`;
+  });
+  // 节点
+  lids.forEach(l=>{
+    (byLayer[l]||[]).forEach(n=>{
+      const p=pos[n.id];
+      const st=n.status||"idle";
+      const vol=Number(n.volume)||0;
+      const label=n.label.length>26?n.label.slice(0,25)+"…":n.label;
+      svg+=`<g class="fnode" data-step="${esc(n.id)}" style="cursor:pointer">
+        <rect x="${p.x}" y="${p.y}" width="${COLW}" height="${ROWH}" rx="6"
+          fill="${STATUS_FILL[st]||"#fff"}" stroke="${STATUS_STROKE[st]||"#D0D5DD"}"/>
+        <text x="${p.x+8}" y="${p.y+19}" font-size="11.5" fill="#1D2129">${esc(label)}</text>
+        ${vol?`<text x="${p.x+COLW-7}" y="${p.y+19}" font-size="10.5" fill="#4E5969"
+          text-anchor="end">${num(vol)}</text>`:""}
+        <title>${esc(n.id)}
+层：${esc((layers.find(x=>x.id===n.layer)||{}).name||n.layer)}
+状态：${esc(st)}${n.rc!=null?"（rc="+esc(n.rc)+"）":""}${n.elapsed_s!=null?"  耗时 "+n.elapsed_s+"s":""}
+记录数：${vol?num(vol):"（该步骤无记录数语义）"}
+${n.purpose?("作用："+esc(n.purpose)):""}</title>
+      </g>`;
+    });
+  });
+  svg+="</svg>";
+
+  const legend=`<div class="legend">
+    <span><i style="background:#E6F6EF;border:1px solid #12855A"></i>ok</span>
+    <span><i style="background:#FFF6E5;border:1px solid #B26A00"></i>degraded</span>
+    <span><i style="background:#FDECEA;border:1px solid #C0392B"></i>failed</span>
+    <span><i style="background:#F2F4F7;border:1px solid #D0D5DD"></i>skip/未运行</span>
+    <span>连线宽度 ∝ √记录数；悬停看详情，点击看抽屉</span></div>`;
+  const t=obj(d.totals);
+  return card("全链数据流（分层 DAG）",
+    `${num(t.nodes)} 节点 · ${num(t.edges)} 条边 · ${num(t.sources)} 源`,
+    `<div class="scrollx">${svg}</div>${legend}
+     <div class="toolbar" style="margin-top:10px">
+       <span class="muted">节点抽屉：</span>
+       <select id="stepsel">${nodes.map(n=>`<option>${esc(n.id)}</option>`).join("")}</select>
+       <button class="act ghost" id="stepbtn">查看</button>
+       <span class="muted">最近运行：${esc(d.run_id||"—")}</span>
+     </div><div id="stepout"></div>`, d.source, d.fetched_at);
 }
 
 /* ---------------- P3 指标 ---------------- */
-//: 条形图标签区的**固定宽度**（像素）与字号。柱子从 `LB_W` 起画。
-//: 为什么固定：标签若按内容自然宽度延伸，长标签（如 `T1销售行为与消费者保护`
-//: 11 个中文字 × 11px ≈ 121px）会**越过 110px 的柱子起点、直接压在柱子上**
-//: ——2026-10-19 用户报「P3 指标仍显示渲染异常」即此（视觉上像"文字和图形糊在一起"）。
-const BAR_LB_W = 110, BAR_LB_FS = 11;
-
-//: 按**估算字宽**把标签截断到 `maxW` 内（SVG `<text>` 无 CSS ellipsis，只能手算）。
-//: 字宽估算：ASCII ≈ 0.55×字号、其它（中文/全角）≈ 1×字号。
-//: 这不是精确排版（真实字体有 kerning），但**足以保证不越界**——
-//: 而"越界"才是本问题的本质；精确宽度用 `<title>` 兜底（悬停看全文）。
-function fitLabel(s, maxW, fs){
-  let w=0, out="";
-  for(const ch of String(s==null?"":s)){
-    const cw = /[\x00-\xff]/.test(ch) ? fs*0.55 : fs;
-    if(w+cw > maxW){ return out+"…"; }
-    w+=cw; out+=ch;
-  }
-  return out;
-}
-
-//: 估算文本宽度（与 `fitLabel` 同一套字宽假设：ASCII 0.55×字号、其余 1×）。
-//: 用于**数值标签的越界判断**——它可能比标签更长（如 `14752（94.5%）`）。
-function txtW(s, fs){
-  let w=0;
-  for(const ch of String(s==null?"":s)){ w += /[\x00-\xff]/.test(ch) ? fs*0.55 : fs; }
-  return w;
-}
-function barChart(data, labels, color){
-  // ⚠️ 2026-10-16 修正：**按 label 取值**，不按位置。
-  //    原实现 `Object.values(data)[i]` 依赖对象的键插入顺序，而 JSON 对象的键序
-  //    **无语义保证**（实测 `worklist_aging` 键序是字典序 `0-3,15+,4-7,8-14`，
-  //    与语义序 `0-3,4-7,8-14,15+` 不同）⇒ 标签与数值整片错位（时效三态曾把
-  //    valid 显示成 pending 的值、uncertain 显示成 valid 的值）。
-  //
-  // 2026-10-22（第一百零七批）用户再报「P3 渲染异常」，逐项核对后确认**数据全对**，
-  // 问题在两处**画法**（都会让图"看起来坏了"）：
-  //   ① **数值标签会跑出画布**：`x=BAR_LB_W+8+w` 只留了 56px 余量，而
-  //      `num(14752)+百分比` 明显更宽 ⇒ 文字被裁掉一半（像渲染坏了）；
-  //   ② **分布高度集中**时（实测 `timeliness_tri` pending=14752 / valid=643 /
-  //      uncertain=209，差 23 倍；`worklist_aging` 8-14=225 / 0-3=4，差 56 倍）
-  //      线性比例让小值只剩 2px 细线 ⇒ 读者以为"没画出来"。
-  // 修法：数值标签**带占比**并做**越界回退**（放进条形内部右对齐）；当极值比 ≥20
-  // 时**显式说明"这是真实分布、不是图坏"**（不为了好看做对数轴/截断——那会失真）。
-  const vals=labels.map(lb=>Number((data||{})[lb]||0));
-  const total=vals.reduce((a,b)=>a+b,0);
-  const max=Math.max(1,...vals);
-  //: 可用条形长度 = 总宽 − 标签区 − 数值文字预留
-  const BAR_MAX = 420 - BAR_LB_W - 56;
-  // 空数据：给**明确说明**，不画空画布（空 SVG 会被误读成渲染失败）
-  if(!labels.length || total===0) return '<div class="muted">暂无数据（该维度全为 0）</div>';
-  let svg=`<svg viewBox="0 0 420 ${labels.length*22+14}" width="100%" height="${labels.length*22+14}">`;
-  labels.forEach((lb,i)=>{
-    const v=vals[i]||0, y=i*22+4, w=Math.max(v>0?2:0, Math.round(BAR_MAX*v/max));
-    const pct=total>0?(v/total*100):0;
-    const txt=num(v)+(total>0?`（${pct.toFixed(pct>=10?0:1)}%）`:"");
-    const tw=txtW(txt,10.5);
-    let tx=BAR_LB_W+8+w, anchor="", fill="#e6e9ef";
-    if(tx+tw>418){                       // 会出画布 ⇒ 放进条形内部，右对齐
-      anchor=' text-anchor="end"';
-      tx=Math.max(BAR_LB_W+4, BAR_LB_W+w-6);
-      fill="#101827";
-    }
-    // 悬停 `<title>` 给**完整**标签：截断只为不越界，信息不丢。
-    svg+=`<text x="0" y="${y+12}" fill="#98a2b3" font-size="${BAR_LB_FS}">${
-        esc(fitLabel(lb, BAR_LB_W-6, BAR_LB_FS))}<title>${esc(lb)}：${num(v)}（${pct.toFixed(1)}%）</title></text>
-      <rect x="${BAR_LB_W}" y="${y+2}" width="${w}" height="14" rx="3" fill="${color}"/>
-      <text x="${tx}" y="${y+13}" fill="${fill}" font-size="10.5"${anchor}>${txt}</text>`;});
-  const others=vals.filter(v=>v>0&&v<max);
-  const minPos=others.length?Math.min(...others):0;
-  let note="";
-  if(minPos>0 && max/minPos>=20){
-    note=`<div class="muted" style="font-size:11px;margin-top:6px">`+
-      `分布高度集中（最大 ${num(max)} / 最小非零 ${num(minPos)}，约 ${Math.round(max/minPos)} 倍）：`+
-      `小值条形按线性比例会接近不可见，**数值与占比均已标注**——这是真实分布，不是图坏。</div>`;
-  }
-  return svg+"</svg>"+note;
-}
-function lineChart(rows, color){
-  if(!rows||rows.length<2) return '<div class="muted">数据点不足（需 ≥2 个运行）</div>';
-  const W=420,H=140,pad=26;
-  const vals=rows.map(r=>Number(r.rate||0));
-  const lo=Math.min(...vals), hi=Math.max(...vals);
-  // ⚠️ 2026-10-19：原实现固定 ±5 的边距 ⇒ 当数据本身很稳（实测 95.45~100）
-  //    曲线几乎是水平直线，读者会误以为"图没画出来 / 渲染坏了"。
-  //    **不**为了"好看"而放大波动（那是失真）；改为
-  //    ① 边距按**数据跨度自适应**（跨度 <2 时用 ±0.5，避免把 0.1 的抖动画成悬崖）；
-  //    ② 在图上**显式标注 y 轴范围**（min~max），让"平"这个事实可读——
-  //       平就是平，但要让人知道这是数据稳，不是图坏了。
-  const spanRaw = hi-lo;
-  const margin = spanRaw < 2 ? 0.5 : Math.max(1, spanRaw*0.25);
-  const min=lo-margin, max=hi+margin, span=(max-min)||1;
-  const pts=rows.map((r,i)=>[pad+i*(W-2*pad)/(rows.length-1), H-pad-((Number(r.rate)-min)/span)*(H-2*pad)]);
-  let svg=`<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}">
-    <polyline fill="none" stroke="${color}" stroke-width="2" points="${pts.map(p=>p.join(",")).join(" ")}"/>`;
-  rows.forEach((r,i)=>{svg+=`<circle cx="${pts[i][0]}" cy="${pts[i][1]}" r="2.5" fill="${color}">
-    <title>${esc(r.run_id)}：${r.rate}%</title></circle>`;});
-  // y 轴范围披露（右上角）—— 防"平线=坏图"的误读
-  svg+=`<text x="${W}" y="12" fill="#98a2b3" font-size="10" text-anchor="end">y 轴 ${lo}~${hi}%</text>`;
-  return svg+`<text x="0" y="${H-6}" fill="#98a2b3" font-size="10">${esc(rows[0].run_id)}</text>
-    <text x="${W}" y="${H-6}" fill="#98a2b3" font-size="10" text-anchor="end">${esc(rows[rows.length-1].run_id)}</text></svg>`;
-}
-//: SLI 键名 → 中文标签。后端键名是机器口径（`sli_chain_success_rate`），
-//: 直接显示给业务读者等于没解释；这里只做**展示映射**，不改数据键
-//: （键是契约的一部分，改了会让 `check_slo` 与看板口径分叉）。
 const SLI_LABEL = {
   "sli_chain_success_rate":"链成功率",
   "sli_data_freshness":"数据新鲜度",
   "sli_gate_pass_rate":"门禁通过率",
 };
-
+function lineChart(rows, color){
+  rows=arr(rows);
+  if(rows.length<2) return '<div class="muted">数据点不足（需 ≥2 个运行）</div>';
+  const W=560,H=150,pad=30;
+  const vals=rows.map(r=>Number(r.rate)||0);
+  const lo=Math.min(...vals), hi=Math.max(...vals);
+  const spanRaw=hi-lo, margin=spanRaw<2?0.5:Math.max(1,spanRaw*0.25);
+  const min=lo-margin, max=hi+margin, span=(max-min)||1;
+  const pts=rows.map((r,i)=>[pad+i*(W-2*pad)/Math.max(1,rows.length-1),
+    H-pad-((Number(r.rate)||0)-min)/span*(H-2*pad)]);
+  let svg=`<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}">
+    <line x1="${pad}" y1="${H-pad}" x2="${W-pad}" y2="${H-pad}" stroke="#E5E6EB"/>`;
+  svg+=`<polyline fill="none" stroke="${color}" stroke-width="2" points="${pts.map(p=>p.join(",")).join(" ")}"/>`;
+  rows.forEach((r,i)=>{svg+=`<circle cx="${pts[i][0]}" cy="${pts[i][1]}" r="3" fill="#fff"
+    stroke="${color}" stroke-width="2"><title>${esc(r.run_id)}：${r.rate}%</title></circle>`;});
+  svg+=`<text x="${W-pad}" y="14" fill="#86909C" font-size="10.5" text-anchor="end">y 轴 ${lo}~${hi}%</text>`;
+  svg+=`<text x="${pad}" y="${H-10}" fill="#86909C" font-size="10.5">${esc(rows[0].run_id||"")}</text>
+    <text x="${W-pad}" y="${H-10}" fill="#86909C" font-size="10.5" text-anchor="end">${esc(rows[rows.length-1].run_id||"")}</text></svg>`;
+  return svg;
+}
 function viewMetrics(d){
   if(!d.available) return unavail(d);
-  const q=d.quality||{}, s=d.slo||{};
-  const qd=(q.doc&&q.doc.dimensions)||{};
-  const dims=Object.entries(qd).map(([k,v])=>({k,v:v.score==null?"—":v.score}));
-  // ⚠️ 2026-10-19（用户报「P3 仍渲染异常」之二）：原实现标签从 x=0 起、
-  //    条形从 x=100 起，而 `completeness`/`uniqueness` 等键名在 11px 字号下
-  //    宽度接近 100px ⇒ 长键名**压到条形上**。改为固定标签区 + 估算截断，
-  //    完整键名放 `<title>`（悬停可见）。
-  const DAMA_LB_W=100, DAMA_FS=11;
-  // 空态显式说明（空 SVG 会被误读成"渲染失败"）；数值标签同样做越界回退。
-  const qSvg=dims.length===0
+  const q=obj(d.quality), s=obj(d.slo);
+  const qd=obj(obj(q.doc).dimensions);
+  const dims=Object.entries(qd).map(([k,v])=>({k, v:obj(v).score==null?"—":obj(v).score}));
+  const qHtml = dims.length===0
     ? '<div class="muted">暂无质量快照（python -m tools.gen_quality_metrics）</div>'
-    : `<svg viewBox="0 0 420 ${dims.length*20+10}" width="100%" height="${dims.length*20+10}">`+
-      dims.map((x,i)=>{const val=x.v==="—"?0:Number(x.v), y=i*20+3,
-        w=Math.max(val>0?2:0, Math.round((420-DAMA_LB_W-56)*val/100));
-        const txt=String(x.v), tw=txtW(txt,10.5);
-        let tx=DAMA_LB_W+6+w, anchor="", fill="#e6e9ef";
-        if(tx+tw>418){ anchor=' text-anchor="end"'; tx=Math.max(DAMA_LB_W+4, DAMA_LB_W+w-6); fill="#101827"; }
-        return `<text x="0" y="${y+12}" fill="#98a2b3" font-size="${DAMA_FS}">${
-            esc(fitLabel(x.k, DAMA_LB_W-6, DAMA_FS))}<title>${esc(x.k)}：${x.v}</title></text>
-      <rect x="${DAMA_LB_W}" y="${y+1}" width="${w}" height="13" rx="3" fill="${val>=90?"#2fbf71":(val>=70?"#f2b53b":"#ef5f5f")}"/>
-      <text x="${tx}" y="${y+12}" fill="${fill}" font-size="10.5"${anchor}>${txt}</text>`;}).join("")+"</svg>";
-  const lastSLI=(s.last&&s.last.sli)||{}, tgt=(s.last&&s.last.targets)||{};
-  const sliRows=Object.keys(lastSLI).map(k=>kv(SLI_LABEL[k]||k,
-      (lastSLI[k].value??"—")+"%（SLO "+(tgt[k]!=null?Math.round(tgt[k]):"—")+"%）",
-      (lastSLI[k].value!=null&&tgt[k]!=null&&lastSLI[k].value<tgt[k])?"bad":"ok")).join("");
-  // ⚠️ 2026-10-19（用户报「P3 仍渲染异常」之三）：主题分布原实现
-  //    `entries.slice(0,8)` 直接截断 ⇒ 11 个主题只画 8 个，**图上数字合计
-  //    888 而归属表实有 1163** ⇒ 读者会认为"数据错了/图没画全"。
-  //    改为：按值**降序**取前 7 + 其余合并为「其他（N 项）」⇒ 合计恒等于总数，
-  //    hint 里披露真实主题数与总数（数字可自校验）。
-  const tEntries=Object.entries(d.theme_dist||{}).sort((a,b)=>b[1]-a[1]);
-  const TOP_N=7;
-  const tDist={}, tLabels=[];
-  tEntries.slice(0,TOP_N).forEach(([k,v])=>{ tDist[k]=v; tLabels.push(k); });
-  const restSum=tEntries.slice(TOP_N).reduce((a,[,v])=>a+v,0);
-  if(restSum>0){
-    const nm=`其他（${tEntries.length-TOP_N} 项）`;
-    tDist[nm]=restSum; tLabels.push(nm);
-  }
-  const tTotal=tEntries.reduce((a,[,v])=>a+v,0);
+    : `<div class="bars">${dims.map(x=>{
+        const val = x.v==="—"?0:Number(x.v);
+        const color = val>=90?"var(--ok)":(val>=70?"var(--warn)":"var(--bad)");
+        return `<div class="brow" title="${esc(x.k)}：${esc(x.v)}">
+          <div class="bl">${esc(x.k)}</div>
+          <div class="bt"><div class="bf" style="width:${Math.max(val>0?1.5:0,val)}%;background:${color}"></div></div>
+          <div class="bv">${esc(x.v)}</div></div>`;}).join("")}</div>
+      <div class="note">健康度 ${esc(obj(q.doc).health_score??"—")}（均权；缺失维度不计入分母）</div>`;
+
+  const lastSLI=obj(obj(s.last).sli), tgt=obj(obj(s.last).targets);
+  const sliRows=Object.keys(lastSLI).map(k=>{
+    const v=Number(obj(lastSLI[k]).value), g=Number(tgt[k]);
+    const bad = !Number.isNaN(v)&&!Number.isNaN(g)&&v<g;
+    return kv(SLI_LABEL[k]||k, `${v}%（SLO ${Number.isNaN(g)?"—":Math.round(g)}%）`, bad?"bad":"ok");
+  }).join("");
+
+  const tEntries=Object.entries(obj(d.theme_dist)).sort((a,b)=>(Number(b[1])||0)-(Number(a[1])||0));
+  const TOP_N=7, tDist={};
+  tEntries.slice(0,TOP_N).forEach(([k,v])=>{tDist[k]=v;});
+  const restSum=tEntries.slice(TOP_N).reduce((a,[,v])=>a+(Number(v)||0),0);
+  if(restSum>0) tDist[`其他（${tEntries.length-TOP_N} 项）`]=restSum;
+  const tTotal=tEntries.reduce((a,[,v])=>a+(Number(v)||0),0);
+
   return `<div class="grid">
-    ${card("门禁通过率趋势","逐轮", lineChart(d.gate_trend,"#4f9cf9"), d.source, d.fetched_at)}
-    ${card("待办 aging","未处置天数分布", barChart(d.worklist_aging,["0-3","4-7","8-14","15+"],"#f2b53b"), d.source, d.fetched_at)}
-    ${card("DAMA 六维","健康度 "+(q.doc&&q.doc.health_score!=null?q.doc.health_score:"—"), qSvg
-      + kv("加权说明","均权；缺失维度不计入分母"), q.source, q.fetched_at)}
-    ${card("SLI/SLO","最近快照", sliRows||'<div class="muted">尚无快照（python -m tools.check_slo）</div>',
-      s.source, s.fetched_at)}
-    ${card("时效三态","valid/pending/uncertain", barChart(d.timeliness_tri,["valid","pending","uncertain"],"#2fbf71"), d.source, d.fetched_at)}
+    ${card("门禁通过率趋势","逐轮", lineChart(d.gate_trend,"#2F7CF6"), d.source, d.fetched_at)}
+    ${card("待办 aging","未处置天数分布", bars(d.worklist_aging,"#B26A00","条"), d.source, d.fetched_at)}
+    ${card("DAMA 六维","质量快照", qHtml, q.source, q.fetched_at)}
+    ${card("SLI / SLO","最近快照", sliRows||'<div class="muted">尚无快照（python -m tools.check_slo）</div>', s.source, s.fetched_at)}
+    ${card("时效三态","valid / pending / uncertain", bars(d.timeliness_tri,"#12855A","条"), d.source, d.fetched_at)}
     ${card("主题分布",`${tEntries.length} 个主题 / 合计 ${num(tTotal)}`,
-      barChart(tDist, tLabels, "#9b7cf9")
-      + `<div class="muted" style="font-size:11px;margin-top:6px">`+
-        `显示前 ${Math.min(TOP_N,tEntries.length)} 项`+
-        (restSum>0?`，其余 ${tEntries.length-TOP_N} 项合并为「其他」`:"")+
-        `；各条合计 = ${num(tTotal)}（可自行核对）</div>`, d.source, d.fetched_at)}
+      bars(tDist,"#6C5CE7","条")
+      + `<div class="note">显示前 ${Math.min(TOP_N,tEntries.length)} 项${restSum>0?`，其余 ${tEntries.length-TOP_N} 项合并为「其他」`:""}；各条合计 = ${num(tTotal)}（可自行核对）</div>`,
+      d.source, d.fetched_at)}
   </div>`;
 }
 
 /* ---------------- P4 待办闭环 ---------------- */
-// 2026-10-19（用户反馈）：`subject` 各 kind 写法不统一（有的写文号、有的写名称）
-// ⇒ 业务无法判断"这条指哪份文件"。后端已为每条派生出 `fields`
-// （名称/文号/访问地址 + 各自来源），本函数按 kind **动态列示**：
-//   · needs_url 的三类（relevance_boundary / timeliness_conflict /
-//     rfn_theme_uncertain）⇒ 名称 + 文号 + 访问地址
-//   · internal_unaligned（及同类只给名称+文号）⇒ 名称 + 文号（其文号是 IPN）
-//   · 其它 kind ⇒ 沿用 subject 列
-// **空值必须可辨**：`not_found` 显示「未查到」、`not_applicable` 显示「—」、
-// `aggregate` 显示「汇总项」——绝不把"查不到"渲染成空白（本仓反复踩过的坑）。
-// 2026-10-21：新增 `warming` —— 反查索引（要扫 1.6GB clean 产物）**仍在后台构建**中。
-// 必须与 `not_found` 明确区分：前者是"还没查完"（稍后刷新即有），后者是"确实没有"。
-// 混为一谈会让用户以为数据缺失（这是比慢更严重的误导）。
-const WL_SRC_LABEL = {"not_found":"未查到","not_applicable":"—","aggregate":"汇总项",
-                      "warming":"统计中…","ipn":"IPN","subject":"subject"};
-
-function wlCell(fieldName, f){
-  if(!f) return "—";
-  if(f.aggregate) return fieldName==="title" ? esc(f.title) : "—";
-  const v = f[fieldName];
-  const src = f[fieldName+"_src"] || "";
-  if(v) {
-    if(fieldName==="url"){
-      return `<a href="${esc(v)}" target="_blank" rel="noopener">打开</a>
-        <span class="muted" style="font-size:11px">(${esc(src)})</span>`;
-    }
-    const tag = (src==="ipn"||src==="subject")
-      ? ` <span class="muted" style="font-size:11px">(${esc(WL_SRC_LABEL[src]||src)})</span>` : "";
-    return esc(v)+tag;
+/*: 单元格渲染：值 / 来源标签 / "不确定"说明三态。
+ * 铁律：`not_found`（查不到）与 `not_applicable`（该 kind 没这个概念）**必须分开**，
+ * 且 `mismatch`（命中的不是同一份文件）要**明说**——用户就是被"看起来能点、
+ * 点开却是另一份文件"坑过。 */
+function cellVal(v, src, note){
+  if(v) return esc(v);
+  const lab = SRC_LABEL[src] || (src ? src : "—");
+  const cls = (src==="mismatch")?"bad":((src==="not_found")?"muted":"muted");
+  return `<span class="${cls}" title="${esc(note||lab)}">${esc(lab)}</span>`;
+}
+function cellUrl(f){
+  if(f.url){
+    return `<a href="${esc(f.url)}" target="_blank" rel="noopener">打开</a>
+      <span class="muted" style="font-size:11px">(${esc(SRC_LABEL[f.url_src]||f.url_src||"")})</span>`;
   }
-  const lab = WL_SRC_LABEL[src] || (src ? src : "—");
-  return `<span class="muted">${esc(lab)}</span>`;
+  if(f.local_path){
+    /* 本地文件走 `GET /api/local/file`：PDF/TXT 浏览器内联打开，Office 文档下载。
+     * **不**由服务端拉起 Word（那会夺焦点，本仓明令禁止）。 */
+    return `<a href="/api/local/file?path=${encodeURIComponent(f.local_path)}"
+      target="_blank" rel="noopener" title="打开/下载：${esc(f.local_path)}">打开本地文件</a>
+      <span class="muted" style="font-size:11px">(本地)</span>`;
+  }
+  const lab = SRC_LABEL[f.url_src] || (f.url_src||"—");
+  if(f.url_src==="mismatch"){
+    return `<span class="bad" title="${esc(f.url_note||"")}">地址不匹配</span>
+      <div class="muted" style="font-size:11px;max-width:280px;white-space:normal">${esc(f.url_note||"命中记录与本条不是同一份文件，已停止提供链接")}</div>`;
+  }
+  return `<span class="muted" title="${esc(f.url_note||"")}">${esc(lab)}</span>`;
 }
 
 function viewWorklist(d, kinds){
   if(!d.available) return unavail(d);
-  const needsUrl = ((d.fields_schema||{}).needs_url)||[];
-  // 当前列表里出现的 kind（用于决定表头；筛选时只有一种）
-  const kindsInView = [...new Set((d.items||[]).map(x=>x.kind))];
-  const showNameNo = kindsInView.length>0 && kindsInView.every(
-    k=>!needsUrl.includes(k)) && kindsInView.some(k=>k==="internal_unaligned");
-  const showUrl = kindsInView.some(k=>needsUrl.includes(k));
-  const rows=(d.items||[]).map(it=>{
-    const f=it.fields||{};
-    const detail=(it.payload&&(it.payload.detail||it.payload.note))||"";
-    const cols = showUrl
-      ? `<td>${wlCell("title",f)}</td><td>${wlCell("document_number",f)}</td>
-         <td>${wlCell("url",f)}</td>`
-      : (showNameNo
-        ? `<td>${wlCell("title",f)}</td><td>${wlCell("document_number",f)}</td>`
-        : `<td>${esc(it.subject||"")}</td>`);
-    return `<tr data-id="${esc(it.item_id)}">
-    <td><input type="checkbox" class="wlck" value="${esc(it.item_id)}"></td>
-    <td>${esc(it.kind)}</td>${cols}
-    <td class="muted">${esc(detail)}</td>
-    <td class="muted">${esc(it.suggestion||"")}</td>
-    <td><button class="act" data-resolve="${esc(it.item_id)}">处置</button></td></tr>`;
-  }).join("");
-  const policy=(kinds&&kinds.action_policy)||"";
-  // 2026-10-16：标题显示**真实总数**（此前 d.count=200 而真实 641 ⇒ 用户以为只有 200 条）
-  const total = (d.total!=null ? d.total : (d.count||0));
-  const shown = (d.items||[]).length;
+  const schema=obj(d.fields_schema), caps=obj(schema.kinds);
+  const items=arr(d.items);
+  const total = (d.total!=null?d.total:(d.count||0));
+  const shown = items.length;
   const wtitle = total>shown
-    ? `${esc(d.status)}：共 <b>${total}</b> 条，本页 ${shown} 条（可按 kind 筛选 / 分页）`
+    ? `${esc(d.status)}：共 <b>${total}</b> 条，本页 ${shown} 条（可按 kind 筛选）`
     : `${esc(d.status)}：共 ${total} 条`;
-  // 2026-10-19（用户报「不同 kind 不能批量处置」）：表头加 **kind 筛选**。
-  // 选中某 kind 后只显示该 kind，从而可对该 kind 全选批量处置
-  // （此前只有全量列表，混着 6 个 kind，「同 kind 批量」无从下手）。
-  const kd=(kinds&&(kinds.kinds||kinds.items))||[];
+
+  /* 行：**操作列在最左**（勾选 + 处置）。
+   * 用户报"处置在列表最下方，交互不合理"——原来点行尾按钮，表单出现在**整张表之后**，
+   * 长列表里等于"点完要滚到页底才能填"。现在处置表单**就地插在该行下方**，
+   * 且勾选/操作固定在左列，阅读动线是"选 → 处置 → 填 → 提交"。 */
+  const rows = items.map((it, idx)=>{
+    const f=obj(it.fields), kind=String(it.kind||"");
+    const cap=obj(caps[kind]);
+    const detail=[f.note, it.suggestion].filter(Boolean).join(" ｜ ");
+    return `<tr data-id="${esc(it.item_id)}" data-idx="${idx}">
+      <td style="white-space:nowrap">
+        <input type="checkbox" class="wlck" value="${esc(it.item_id)}" title="选择本条">
+        <button class="act" style="padding:4px 10px;font-size:12px" data-resolve="${esc(it.item_id)}">处置</button>
+      </td>
+      <td><code>${esc(kind)}</code></td>
+      <td class="id">${cellVal(f.identity, f.identity_src)}</td>
+      <td>${f.aggregate? esc(f.title) : cellVal(f.title, f.title_src)}</td>
+      <td class="mono">${cap.docno ? cellVal(f.document_number, f.document_number_src) : '<span class="muted">不适用</span>'}</td>
+      <td>${cellUrl(f)}</td>
+      <td class="muted"><div class="trunc" title="${esc(detail)}">${esc(detail||"—")}</div></td>
+    </tr>`;
+  }).join("");
+
+  const kd = arr(kinds&&(kinds.kinds||kinds.items));
   const curKind=(d.filter&&d.filter.kind)||"";
   const kindOpts=['<option value="">全部 kind</option>'].concat(
-    (kd.length?kd.map(x=>x.kind||x):Object.keys(d.kind_counts||{}))
+    (kd.length?kd.map(x=>x.kind||x):Object.keys(obj(d.kind_counts)))
       .map(k=>`<option value="${esc(k)}"${k===curKind?" selected":""}>${esc(k)}${
-        (d.kind_counts&&d.kind_counts[k])?"（"+d.kind_counts[k]+"）":""}</option>`)).join("");
-  const bulk = `<div class="row" style="margin:8px 0">
-      <span class="muted">kind 筛选</span>
-      <select id="wlkind">${kindOpts}</select>
+        (obj(d.kind_counts)[k])?"（"+obj(d.kind_counts)[k]+"）":""}</option>`)).join("");
+
+  const toolbar = `<div class="toolbar">
+      <span class="muted">kind</span><select id="wlkind">${kindOpts}</select>
       <span class="muted">已选 <b id="wln">0</b> 条</span>
       <select id="wlstatus"><option value="resolved">resolved（已处置）</option>
         <option value="dismissed">dismissed（不适用）</option></select>
       <input id="wlby" placeholder="操作者" value="confirm_console" size="14">
       <input id="wlwhy" placeholder="批量处置理由（必填，进审计台账）" size="30">
-      <button class="act" id="wlbulk">批量处置</button></div>`;
-  // 表头与行**必须同构**（列数一致），否则表格错位——这是 2026-10-19 动态列引入后
-  // 最容易漏的一处，故与 `rows` 用同一组开关变量。
-  const head = showUrl
-    ? `<th>名称</th><th>文号</th><th>访问地址</th>`
-    : (showNameNo ? `<th>名称</th><th>文号</th>` : `<th>subject</th>`);
+      <button class="act" id="wlbulk">批量处置</button>
+      <span class="muted" style="margin-left:auto">写路径纪律：${esc((kinds&&kinds.action_policy)||"worklist_resolve")}</span>
+    </div>`;
+
+  // 操作列固定最左，且**带全选**：批量处置前要先能"一次勾完"。
+  // 2026-10-22 重写时漏过一次（旧守卫 test_console_exposes_bulk_selection 抓到）。
+  const head = `<tr><th style="width:150px">
+      <label style="cursor:pointer"><input type="checkbox" id="wlall" title="全选本页"> 操作</label>
+    </th><th style="width:190px">kind</th>
+    <th style="width:170px">唯一标识号</th><th>名称</th><th style="width:170px">文号</th>
+    <th style="width:200px">访问地址</th><th>详情 / 生产者建议</th></tr>`;
   return card("待办闭环台", wtitle,
-    (rows?`<table><tr><th style="width:28px"><input type="checkbox" id="wlall" title="全选本页"></th><th>kind</th>${head}<th>详情</th><th>生产者建议</th><th></th></tr>${rows}</table>`
-      :'<div class="muted">当前无待办 ✓</div>')
-    + bulk
-    + `<div class="muted" style="margin-top:8px;font-size:12px">写路径纪律：${esc(policy)}</div>
-       <div id="resolvebox"></div>`, d.source, d.fetched_at);
+    toolbar + (rows
+      ? `<div class="tblwrap"><table><thead>${head}</thead><tbody>${rows}</tbody></table></div>`
+      : '<div class="muted">当前无待办 ✓</div>')
+    + `<div class="note">列含义：唯一标识号 = 该条的机器身份（RFN/IPN/文号）；
+        文号仅对"有外部文号"的 kind 显示，其余标「不适用」；
+        访问地址标「未查到」= 库里确实没有，「不匹配」= 命中的不是同一份文件（已停止提供链接）。</div>`,
+    d.source, d.fetched_at);
 }
 
 /* ---------------- P5 治理审计 ---------------- */
 function viewGovernance(d){
   if(!d.available) return unavail(d);
-  const runs=(d.runs||[]).slice(0,10).map(r=>`<tr><td>${esc(r.run_id)}</td><td class="muted">${esc(r.started_at||"")}</td>
-    <td>${esc(r.finished_at||"—")}</td><td>${esc(r.status||"")}</td></tr>`).join("");
-  const audit=(d.audit||[]).slice(0,15).map(a=>`<tr><td class="muted">${esc(a.at||a.ts||"")}</td>
+  const runs=arr(d.runs).slice(0,20).map(r=>`<tr><td class="mono">${esc(r.run_id)}</td>
+    <td class="muted">${esc(r.started_at||"")}</td><td>${esc(r.finished_at||"—")}</td>
+    <td>${esc(r.status||"")}</td></tr>`).join("");
+  const audit=arr(d.audit).slice(0,30).map(a=>`<tr><td class="muted">${esc(a.at||a.ts||"")}</td>
     <td>${esc(a.actor||a.by||"")}</td><td>${esc(a.action||a.event||"")}</td>
     <td class="muted">${esc((a.target||"")+" "+(a.target_key||""))}</td></tr>`).join("");
-  return `<div class="grid" style="grid-template-columns:1fr 1fr">
-    ${card("最近运行","run_log", runs?`<table><tr><th>run_id</th><th>开始</th><th>结束</th><th>状态</th></tr>${runs}</table>`
+  return `<div class="grid two">
+    ${card("最近运行","run_log（近 20）", runs?`<div class="tblwrap"><table><thead><tr><th>run_id</th><th>开始</th><th>结束</th><th>状态</th></tr></thead><tbody>${runs}</tbody></table></div>`
       :'<div class="muted">无运行记录</div>', d.source, d.fetched_at)}
-    ${card("审计日志","audit_log 尾部", audit?`<table><tr><th>时间</th><th>操作者</th><th>动作</th><th>对象</th></tr>${audit}</table>`
+    ${card("审计日志","audit_log（近 30）", audit?`<div class="tblwrap"><table><thead><tr><th>时间</th><th>操作者</th><th>动作</th><th>对象</th></tr></thead><tbody>${audit}</tbody></table></div>`
       :'<div class="muted">无审计记录</div>', d.source, d.fetched_at)}
   </div>`;
 }
 
 /* ---------------- P6 文档检索 ---------------- */
 function viewSearch(d){
-  if(!d.available && d.reason) return card("文档检索","", `<div class="unavail">⚠ ${esc(d.reason)}</div>`, d.source);
-  const rows=(d.results||[]).map(r=>`<tr><td>${esc(r.rfn||r.ipn||"—")}</td>
-    <td>${esc(r.title||"")}</td><td>${esc(r.document_number||"")}</td>
-    <td class="muted">${esc(r.timeliness_status||"")}</td></tr>`).join("");
+  const isUn = d.available===false && d.reason;
+  const rows=arr(d.results).map(r=>{
+    const url = r.url
+      ? `<a href="${esc(r.url)}" target="_blank" rel="noopener">打开</a>
+         <span class="muted" style="font-size:11px">(${esc(SRC_LABEL[r.url_src]||r.url_src||"")})</span>`
+      : (r.local_path
+        ? `<a href="/api/local/file?path=${encodeURIComponent(r.local_path)}"
+             target="_blank" rel="noopener">打开本地文件</a>
+           <span class="muted" style="font-size:11px">(本地)</span>`
+        : (r.url_src==="mismatch"
+          ? `<span class="bad" title="${esc(r.url_note||"")}">地址不匹配</span>`
+          : `<span class="muted">${esc(SRC_LABEL[r.url_src]||r.url_src||"—")}</span>`));
+    return `<tr><td class="id">${esc(r.rfn||r.ipn||"—")}</td>
+      <td>${esc(r.title||"")}</td><td class="mono">${esc(r.document_number||"")}</td>
+      <td>${esc(r.timeliness_status||"")}</td><td>${url}</td></tr>`;}).join("");
   return card("文档检索","base_api FTS5",
-    `<div class="row" style="margin-bottom:8px">
-      <input id="q" placeholder="输入关键词（标题/文号/正文）" value="${esc(d.query||"")}" style="flex:1">
+    `<div class="toolbar">
+      <input id="q" placeholder="输入关键词（标题/文号/正文）" value="${esc(d.query||"")}" style="flex:1;min-width:260px">
       <select id="kind"><option value="records">记录</option><option value="clauses">条文</option></select>
-      <button class="act" id="qbtn">检索</button></div>
-    ${d.error_external?`<div class="muted" style="font-size:12px">external 底座不可用，已回退 internal：${esc(d.error_external)}</div>`:""}
-    ${rows?`<table><tr><th>RFN/IPN</th><th>标题</th><th>文号</th><th>时效</th></tr>${rows}</table>`
-      :'<div class="muted">无命中</div>'}`, (d.source||"base_api"), d.fetched_at);
-}
-
-/* ---------------- P7 投放看板 ---------------- */
-function viewPublish(d){
-  if(!d.available) return unavail(d);
-  const rows=["external","internal"].map(b=>{const m=d[b]||{};
-    return `<tr><td>${esc(b)}</td><td>${m.available===false?`<span class="bad">${esc(m.reason||"未发布")}</span>`:pill("已发布","ok")}</td>
-    <td>${esc(m.snapshot_date||m.snapshot||"—")}</td><td>${num(m.count||m.records||m.record_count)}</td></tr>`;}).join("");
-  const w=d.wiki_sources||{};
-  return `<div class="grid">
-    ${card("双底座发布件","base_api.manifest",
-      `<table><tr><th>底座</th><th>状态</th><th>快照日</th><th>记录数</th></tr>${rows}</table>`, d.source, d.fetched_at)}
-    ${card("wiki 投放源","reports/_wiki_sources",
-      kv("目录", esc(w.dir||"—")) + kv("存在", w.exists?"是":"否", w.exists?"ok":"warn")
-      + kv("文件数", num(w.files)), d.source, d.fetched_at)}
-  </div>`;
+      <button class="act" id="qbtn">检索</button>
+      <span class="muted">后端：${esc(d.backend||"—")} · 方式：${
+        d.mode==="like"?"模糊匹配（短词）":(d.mode==="fts"?"全文索引":"—")}</span>
+    </div>
+    ${d.error_external?`<div class="note">external 底座不可用，已回退 internal：${esc(d.error_external)}</div>`:""}
+    ${d.note?`<div class="note">${esc(d.note)}</div>`:""}
+    ${isUn?`<div class="pill warn">⚠ ${esc(d.reason)}</div>`:""}
+    ${rows?`<div class="tblwrap"><table><thead><tr><th style="width:150px">唯一标识号</th><th>标题</th>
+       <th style="width:170px">文号</th><th style="width:100px">时效</th><th style="width:190px">访问地址</th></tr></thead>
+       <tbody>${rows}</tbody></table></div>`
+      :'<div class="muted">无命中（换个关键词，或确认底座已发布）</div>'}`, (d.source||"base_api"), d.fetched_at);
 }
 
 /* ---------------- P8 发布事件流 ---------------- */
 function viewRelease(d){
   if(!d.available) return unavail(d);
-  const commits=(d.commits||[]).map(c=>`<tr><td class="muted">${esc(c.date)}</td>
-    <td class="muted">${esc(c.sha)}</td><td>${esc(c.subject)}</td></tr>`).join("");
-  const sb=d.sbom||{};
-  return `<div class="grid">
-    ${card("提交流","git log（近 20 条）",
-      commits?`<table><tr><th>日期</th><th>sha</th><th>主题</th></tr>${commits}</table>`
+  const commits=arr(d.commits);
+  const sb=obj(d.sbom);
+  const rows=commits.map(c=>`<tr data-sha="${esc(c.sha)}" style="cursor:pointer">
+    <td class="muted" style="white-space:nowrap">${esc(c.date)}</td>
+    <td class="mono">${esc(c.sha)}</td><td>${esc(c.subject)}</td>
+    <td><button class="link" data-sha="${esc(c.sha)}">变更</button></td></tr>`).join("");
+  return `<div class="grid two">
+    ${card("提交流",`git log 全量 ${commits.length} 条${d.commit_total?"（total "+d.commit_total+"）":""}`,
+      commits?`<div class="tblwrap" style="max-height:560px"><table><thead><tr><th style="width:96px">日期</th>
+        <th style="width:92px">sha</th><th>主题</th><th style="width:64px"></th></tr></thead><tbody>${rows}</tbody></table></div>
+        <div class="note">点「变更」看该提交的**完整**改动（文件清单 + 完整提交说明）。</div>`
         :`<div class="muted">git 不可用${d.git_error?("："+esc(d.git_error)):""}</div>`, d.source, d.fetched_at)}
     ${card("发布物证据","SBOM + 契约版本",
-      kv("SBOM 组件数", num(sb.components)) + kv("lock sha256", esc((sb.lock_sha256||"").slice(0,16)))
+      kv("SBOM 组件数", num(sb.components)) + kv("lock sha256", esc(String(sb.lock_sha256||"").slice(0,16)))
       + kv("契约版本", esc(d.contract_version||"—")), d.source, d.fetched_at)}
-  </div>`;
+  </div>
+  <div id="commitbox" style="margin-top:16px"></div>`;
 }
 
-/* ---------------- 调度 + 交互 ---------------- */
-let CUR="overview", LAST={};
+/* ---------------- 交互 ---------------- */
+let CUR="overview", STATE={};
+
 async function render(){
-  const map={overview:"/api/overview", flow:"/api/flow", assets:"/api/assets",
-    metrics:"/api/metrics", worklist:"/api/worklist", governance:"/api/governance",
-    publish:"/api/publish", release:"/api/release"};
   const v=$("#view");
   try{
-    if(CUR==="search"){ const q=$("#q")?$("#q").value:""; const kind=$("#kind")?$("#kind").value:"records";
-      LAST.search=await api(`/api/search?q=${encodeURIComponent(q)}&kind=${kind}`); v.innerHTML=viewSearch(LAST.search);
-      if($("#qbtn")) $("#qbtn").onclick=()=>render();
-      if($("#q")) $("#q").onkeydown=e=>{if(e.key==="Enter")render();};
-      return; }
+    if(CUR==="overview"){
+      const [o,a,p]=await Promise.all([api("/api/overview"),api("/api/assets"),api("/api/publish")]);
+      STATE.overview=o; v.innerHTML=viewOverview(o,a,p); return;
+    }
     if(CUR==="metrics"){
       const [m,q,s]=await Promise.all([api("/api/metrics"),api("/api/quality"),api("/api/slo")]);
-      Object.assign(LAST.metrics,m); m.quality=q; m.slo=s; v.innerHTML=viewMetrics(m); return; }
+      /* ⚠️ 2026-10-22 修 P3 的 TypeError：原实现 `Object.assign(LAST.metrics, m)`，
+       * 而首次进入时 `LAST.metrics` 是 undefined ⇒
+       * `TypeError: Cannot convert undefined or null to object`（用户看到的就是这句）。
+       * 改为**新建对象**，永不向 undefined 上赋值。 */
+      STATE.metrics = Object.assign({}, obj(m), {quality:q, slo:s});
+      v.innerHTML=viewMetrics(STATE.metrics); return;
+    }
     if(CUR==="worklist"){
-      // 2026-10-19：kind 筛选（用户报「不同 kind 不能批量处置」）。
-      // 选中 kind 后只拉该 kind ⇒ 可整批全选后一次处置。
-      const qk=LAST._wlkind?("?kind="+encodeURIComponent(LAST._wlkind)):"";
+      const qk=STATE._wlkind?("?kind="+encodeURIComponent(STATE._wlkind)):"";
       const [wl,k]=await Promise.all([api("/api/worklist"+qk),api("/api/worklist/kinds")]);
-      LAST.worklist=wl; LAST._wlkinds=k;
+      STATE.worklist=wl; STATE._wlkinds=k;
       v.innerHTML=viewWorklist(wl,k);
-      v.querySelectorAll("button[data-resolve]").forEach(b=>b.onclick=()=>openResolve(b.dataset.resolve));
-      const ks=$("#wlkind");
-      if(ks) ks.onchange=()=>{ LAST._wlkind=ks.value; render(); };
-      return; }
-    LAST[CUR]=await api(map[CUR]||"/api/overview");
-    v.innerHTML=({overview:viewOverview,flow:viewFlow,assets:viewAssets,metrics:viewMetrics,
-      worklist:viewWorklist,governance:viewGovernance,search:viewSearch,publish:viewPublish,
-      release:viewRelease}[CUR])(LAST[CUR]);
+      bindWorklist(v); return;
+    }
+    if(CUR==="search"){
+      const q=$("#q")?$("#q").value:"";
+      const kind=$("#kind")?$("#kind").value:"records";
+      STATE.search=await api(`/api/search?q=${encodeURIComponent(q)}&kind=${kind}`);
+      v.innerHTML=viewSearch(STATE.search);
+      bindSearch(); return;
+    }
+    if(CUR==="release"){
+      STATE.release=await api("/api/release");
+      v.innerHTML=viewRelease(STATE.release);
+      bindRelease(); return;
+    }
     if(CUR==="flow"){
-      v.querySelectorAll("rect.fnode").forEach(r=>r.onclick=()=>openStep(r.dataset.step));
+      STATE.flow=await api("/api/flow");
+      v.innerHTML=viewFlow(STATE.flow);
+      bindFlow(); return;
     }
-    if(CUR==="worklist"){
-      const cks=[...v.querySelectorAll(".wlck")];
-      const upd=()=>{const n=$("#wln"); if(n) n.textContent=cks.filter(c=>c.checked).length;};
-      cks.forEach(c=>c.onchange=upd);
-      const all=$("#wlall");
-      if(all) all.onchange=()=>{cks.forEach(c=>c.checked=all.checked); upd();};
-      const bulk=$("#wlbulk");
-      if(bulk) bulk.onclick=async()=>{
-        const sel=cks.filter(c=>c.checked).map(c=>c.value);
-        if(!sel.length){ toast("未选择任何条目", true); return; }
-        const why=$("#wlwhy").value.trim();
-        if(!why){ toast("批量处置必须填理由（进审计台账）", true); return; }
-        const st=$("#wlstatus").value, by=$("#wlby").value.trim()||"confirm_console";
-        bulk.disabled=true;
-        // **逐条 POST**：复用唯一写路径 ⇒ 每条各自落审计（C1）；单条失败不阻断其余
-        let ok=0, bad=[];
-        for(const id of sel){
-          try{
-            const r=await api("/api/worklist/resolve",{method:"POST",
-              headers:{"Content-Type":"application/json"},
-              body:JSON.stringify({item_id:id, resolution:why, status:st, by})});
-            if(r.ok||r.available) ok++; else bad.push(id+":"+(r.reason||r.error||"失败"));
-          }catch(e){ bad.push(id+":异常"); }
-        }
-        bulk.disabled=false;
-        toast(ok===sel.length?("已批量处置 "+ok+" 条（逐条落审计）")
-                              :("完成 "+ok+"/"+sel.length+" 条；失败 "+bad.length+"："+bad.slice(0,3).join(",")),
-              ok!==sel.length);
-        render();
-      };
+    if(CUR==="governance"){
+      STATE.governance=await api("/api/governance");
+      v.innerHTML=viewGovernance(STATE.governance); return;
     }
-    if(CUR==="flow"&&$("#stepbtn")) $("#stepbtn").onclick=async()=>{
-      const s=$("#stepsel").value; const d=await api("/api/flow/step?step="+encodeURIComponent(s));
-      const row=(d.row||{});
-      $("#stepout").innerHTML=card("步骤抽屉："+s,
-        esc(d.source||""),
-        kv("status",esc(row.status||"—")) + kv("rc",esc(row.rc||row.exit_code||"—"))
-        + `<pre>${esc(d.log_tail||"(无日志)")}</pre>`, d.source, d.fetched_at);};
-  }catch(e){ v.innerHTML=card("渲染异常","",`<div class="bad">⚠ ${esc(String(e))}</div>`,"web 前端"); }
-  $("#stamp").textContent = "最近抓取："+new Date().toLocaleTimeString();
+  }catch(e){
+    v.innerHTML=card("渲染异常","",`<div class="pill bad">⚠ 前端异常</div>
+      <div class="note">${esc(String(e&&e.stack?e.stack:String(e)))}</div>`,"web 前端");
+  }finally{
+    $("#stamp").textContent = "抓取 "+new Date().toLocaleTimeString();
+  }
+}
+
+/*: 本地文件打开：POST（有副作用，不适合 GET）+ 失败原因必须显示出来。 */
+
+function bindFlow(){
+  const v=$("#view");
+  $$("g.fnode",v).forEach(g=>{ g.onclick=()=>openStep(g.dataset.step); });
+  const btn=$("#stepbtn");
+  if(btn) btn.onclick=()=>{ const s=$("#stepsel").value; if(s) openStep(s); };
 }
 async function openStep(step){
-  // P1 节点抽屉（2026-10-16：此前 SVG 节点无事件绑定 ⇒ 用户报"点击无反应"）
-  const out=$("#stepout")||$("#resolvebox");
-  if(!out) return;
-  out.innerHTML=card("步骤抽屉："+step,"加载中…","", "web");
+  const out=$("#stepout"); if(!out) return;
+  out.innerHTML=card("步骤抽屉："+step,"加载中…","","web");
   const d=await api("/api/flow/step?step="+encodeURIComponent(step));
-  if(d.available===false){ out.innerHTML=card("步骤抽屉："+step,"",'<div class="unavail">⚠ '+
-    esc(d.reason||"不可用")+'</div>', d.source); return; }
-  const row=(d.row||{});
+  if(d.available===false){
+    out.innerHTML=card("步骤抽屉："+step,"",`<div class="pill warn">⚠ ${esc(d.reason||"不可用")}</div>`,d.source);
+    return;
+  }
+  const row=obj(d.row);
   out.innerHTML=card("步骤抽屉："+step, esc(d.source||""),
     kv("status", esc(row.status||"—")) + kv("rc", esc(row.rc!=null?row.rc:(row.exit_code||"—")))
-    + kv("耗时", esc((row.elapsed_s!=null?row.elapsed_s+"s":"—")))
+    + kv("耗时", esc(row.elapsed_s!=null?row.elapsed_s+"s":"—"))
     + (row.note? '<div class="muted" style="margin-top:6px">note</div><pre>'
-        + esc(String(row.note).slice(0,600)) + "</pre>" : "")
-    + `<pre>${esc(d.log_tail||"(无日志)")}</pre>`
-    // P9（2026-10-19）：诊断入口 —— **只读**，复用 tools/step_triage 的同一份判据；
-    // 降级时显式说"不可用"而不伪装成"无数据"（本仓反复踩过的坑）。
-    + '<div style="margin-top:10px"><button id="dlgbtn" type="button">诊断这一步</button>'
-    + '<div id="diagbox" style="margin-top:8px"></div></div>', d.source, d.fetched_at);
-  out.scrollIntoView({behavior:"smooth", block:"nearest"});
-  const _b=document.getElementById("dlgbtn");
-  if(_b) _b.onclick=()=>diagnoseStep(step);
+        + esc(String(row.note).slice(0,800)) + "</pre>" : "")
+    + `<pre>${esc(d.log_tail||"(无日志)")}</pre>
+       <div style="margin-top:10px"><button class="act ghost" id="dlgbtn" type="button">诊断这一步</button>
+       <div id="diagbox" style="margin-top:8px"></div></div>`, d.source, d.fetched_at);
+  const b=$("#dlgbtn"); if(b) b.onclick=()=>diagnoseStep(step);
+  out.scrollIntoView({behavior:"smooth",block:"nearest"});
 }
 async function diagnoseStep(step){
   const box=document.getElementById("diagbox"); if(!box) return;
   box.innerHTML='<div class="muted">诊断中…</div>';
   const d=await api("/api/diagnose?kind=step&name="+encodeURIComponent(step));
-  if(d.available===false){ box.innerHTML='<div class="unavail">⚠ '+esc(d.note||"诊断不可用")+'</div>'; return; }
-  const sus=(d.suspicions||[]).map(s=>'<li>'+esc(s.claim)+' <span class="muted">— '+esc(s.basis)+'</span></li>').join("");
-  const gaps=(d.missing||[]).map(g=>'<li class="muted">'+esc(g)+'</li>').join("");
-  box.innerHTML = kv("匹配形态", esc(d.matched_as||"—"))
-    + kv("声明步骤", esc(d.spec_step||"—"))
-    + kv("证据项", esc(String((d.evidence||[]).length)))
-    + (sus? '<div class="muted" style="margin-top:6px">怀疑（每条附依据）</div><ul>'+sus+'</ul>' : "")
-    + (gaps? '<div class="muted" style="margin-top:6px">证据缺口</div><ul>'+gaps+'</ul>' : "")
-    + '<pre>'+esc((d.rendered||"").slice(0,4000))+'</pre>';
+  if(d.available===false){ box.innerHTML=`<div class="pill warn">⚠ ${esc(d.note||"诊断不可用")}</div>`; return; }
+  const sus=arr(d.suspicions).map(s=>`<li>${esc(s.claim)} <span class="muted">— ${esc(s.basis)}</span></li>`).join("");
+  const gaps=arr(d.missing).map(g=>`<li class="muted">${esc(g)}</li>`).join("");
+  box.innerHTML = kv("匹配形态", esc(d.matched_as||"—")) + kv("声明步骤", esc(d.spec_step||"—"))
+    + kv("证据项", esc(String(arr(d.evidence).length)))
+    + (sus?`<div class="muted" style="margin-top:6px">怀疑（每条附依据）</div><ul>${sus}</ul>`:"")
+    + (gaps?`<div class="muted" style="margin-top:6px">证据缺口</div><ul>${gaps}</ul>`:"")
+    + `<pre>${esc(String(d.rendered||"").slice(0,4000))}</pre>`;
 }
 
-function openResolve(id){
-  const box=$("#resolvebox");
-  box.innerHTML=`<div style="margin-top:10px;border-top:1px solid var(--line);padding-top:10px">
+function bindWorklist(v){
+  const cks=$$(".wlck",v);
+  const upd=()=>{const n=$("#wln"); if(n) n.textContent=cks.filter(c=>c.checked).length;};
+  cks.forEach(c=>c.onchange=upd);
+  const all=$("#wlall");
+  if(all) all.onchange=()=>{ cks.forEach(c=>{ c.checked=all.checked; }); upd(); };
+  const ks=$("#wlkind");
+  if(ks) ks.onchange=()=>{ STATE._wlkind=ks.value; render(); };
+  // 行内处置：表单插在**该行下方**（不再跑到整张表之后）
+  $$("button[data-resolve]",v).forEach(b=>{
+    b.onclick=()=>openResolveInline(b.closest("tr"), b.dataset.resolve);
+  });
+  const bulk=$("#wlbulk");
+  if(bulk) bulk.onclick=async()=>{
+    const sel=cks.filter(c=>c.checked).map(c=>c.value);
+    if(!sel.length){ toast("未选择任何条目", true); return; }
+    const why=$("#wlwhy").value.trim();
+    if(!why){ toast("批量处置必须填理由（进审计台账）", true); return; }
+    const st=$("#wlstatus").value, by=$("#wlby").value.trim()||"confirm_console";
+    bulk.disabled=true;
+    let ok=0; const bad=[];
+    for(const id of sel){
+      try{
+        const r=await api("/api/worklist/resolve",{method:"POST",
+          headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({item_id:id, resolution:why, status:st, by})});
+        if(r.ok||r.available) ok++; else bad.push(id+":"+(r.reason||r.error||"失败"));
+      }catch(e){ bad.push(id+":异常"); }
+    }
+    bulk.disabled=false;
+    toast(ok===sel.length?`已批量处置 ${ok} 条（逐条落审计）`
+      :`完成 ${ok}/${sel.length}；失败 ${bad.length}：${bad.slice(0,3).join(",")}`, ok!==sel.length);
+    render();
+  };
+}
+
+function openResolveInline(tr, id){
+  if(!tr) return;
+  const next=tr.nextElementSibling;
+  if(next && next.classList.contains("detail")){ next.remove(); return; }  // 再点收起
+  const tr2=document.createElement("tr");
+  tr2.className="detail";
+  tr2.innerHTML=`<td colspan="7">
     <div class="row"><b>处置 ${esc(id)}</b>
       <select id="rstatus"><option value="resolved">resolved（已处置）</option>
         <option value="dismissed">dismissed（不适用）</option></select>
       <input id="rby" placeholder="操作者" value="confirm_console" size="14">
       <button class="act" id="rok">提交</button>
       <button class="act ghost" id="rcancel">取消</button></div>
-    <textarea id="rwhy" placeholder="处置理由（必填，进入审计台账）"></textarea></div>`;
-  $("#rcancel").onclick=()=>box.innerHTML="";
+    <textarea id="rwhy" placeholder="处置理由（必填，进入审计台账）"></textarea>
+    <div class="note">写路径：<code>worklist_resolve</code>（唯一写口，逐条落审计）。</div>
+  </td>`;
+  tr.after(tr2);
+  const box=$("#rwhy"); if(box) box.focus();
+  $("#rcancel").onclick=()=>tr2.remove();
   $("#rok").onclick=async()=>{
-    const payload={item_id:id, resolution:$("#rwhy").value, status:$("#rstatus").value, by:$("#rby").value};
+    const why=$("#rwhy").value.trim();
+    if(!why){ toast("必须填处置理由", true); return; }
     const r=await api("/api/worklist/resolve",{method:"POST",
-      headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload)});
-    if(r.ok||r.available){ toast("已处置："+id+"（写路径：worklist_resolve）"); box.innerHTML=""; render(); }
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({item_id:id, resolution:why, status:$("#rstatus").value, by:$("#rby").value})});
+    if(r.ok||r.available){ toast("已处置："+id); tr2.remove(); render(); }
     else toast("处置失败："+(r.reason||r.error||"未知"), true);
   };
 }
-//: **hash 深链**（2026-10-22 第一百零七批）：`#metrics` / `#worklist` 等可直接打开对应页。
-//: 为什么加：① 用户可收藏/分享具体页（原来只能落到 P0 再点）② 无头浏览器截图验证
-//: 需要**能按 URL 定位页面**（否则 P3 的渲染无法机器取证，只能靠肉眼）。
+
+function bindSearch(){
+  const btn=$("#qbtn"); if(btn) btn.onclick=()=>render();
+  const q=$("#q"); if(q) q.onkeydown=e=>{ if(e.key==="Enter") render(); };
+}
+
+function bindRelease(){
+  $$("tr[data-sha]").forEach(tr=>{
+    tr.onclick=(e)=>{
+      // 点行或点「变更」都展开（按钮的默认行为不额外触发）
+      openCommit(tr.dataset.sha);
+    };
+  });
+}
+async function openCommit(sha){
+  const box=$("#commitbox"); if(!box) return;
+  box.innerHTML=card("提交变更："+sha,"加载中…","","git show");
+  const d=await api("/api/commit?sha="+encodeURIComponent(sha));
+  if(d.available===false){
+    box.innerHTML=card("提交变更："+sha,"",`<div class="pill warn">⚠ ${esc(d.reason||"不可用")}</div>`,d.source);
+    return;
+  }
+  const files=arr(d.files).map(f=>`<tr><td>${pill(f.status||"?")}</td>
+    <td class="mono" style="word-break:break-all">${esc(f.path)}</td></tr>`).join("");
+  box.innerHTML=card(`提交变更：${esc(String(d.sha||"").slice(0,12))}`,
+    `${num(d.file_count)} 个文件 · ${esc(d.author||"")} · ${esc(d.date||"")}`,
+    `<div class="row" style="margin-bottom:8px"><b>${esc(d.subject||"")}</b></div>
+     ${d.body?`<pre>${esc(d.body)}</pre>`:""}
+     ${files?`<div class="tblwrap" style="max-height:420px"><table><thead><tr>
+       <th style="width:60px">类型</th><th>文件</th></tr></thead><tbody>${files}</tbody></table></div>`
+      :'<div class="muted">该提交无文件变更（可能是空提交/合并提交）</div>'}
+     <details style="margin-top:8px"><summary>原始 git show 输出</summary>
+       <pre>${esc(String(d.raw||"").slice(0,12000))}</pre></details>`,
+    d.source, d.fetched_at);
+  box.scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+
 function applyHash(){
   const id=(location.hash||"").replace(/^#\/?/,"").trim();
   if(!id) return false;
   const t=TABS.find(x=>x.id===id);
   if(!t) return false;
-  [...$("#nav").children].forEach(x=>x.classList.toggle("on", x.dataset.id===id));
-  CUR=id;
-  return true;
+  $$("#nav button").forEach(x=>x.classList.toggle("on", x.dataset.id===id));
+  CUR=id; return true;
 }
 function initNav(){
   const nav=$("#nav");
-  TABS.forEach(t=>{const b=document.createElement("button");
+  TABS.forEach(t=>{
+    const b=document.createElement("button");
     b.textContent=t.name; b.dataset.id=t.id;
-    b.onclick=()=>{ [...nav.children].forEach(x=>x.classList.remove("on")); b.classList.add("on");
-      CUR=t.id; if(location.hash.slice(1)!==t.id) location.hash=t.id; render(); };
-    nav.appendChild(b);});
-  nav.firstChild.classList.add("on");
+    b.onclick=()=>{ $$("#nav button").forEach(x=>x.classList.remove("on"));
+      b.classList.add("on"); CUR=t.id;
+      if(location.hash.slice(1)!==t.id) location.hash=t.id;
+      render(); };
+    nav.appendChild(b);
+  });
   window.addEventListener("hashchange", ()=>{ if(applyHash()) render(); });
-  // 返回 true 表示已按 hash 定位（调用方不必再默认渲染 P0）
-  return applyHash();
+  if(!applyHash()) nav.firstChild.classList.add("on");
 }
-function initLive(){
-  const badge=$("#live");
+
+/* SSE：失败自动降级为 5s 轮询（旁路纪律：确认台自身不可用绝不影响主链）。 */
+function initSSE(){
+  const live=$("#live");
+  const setLive=(txt,cls)=>{ live.textContent=txt; live.className="badge "+(cls||""); };
   try{
     const es=new EventSource("/api/events");
-    es.addEventListener("hello",()=>{badge.textContent="SSE 实时";badge.className="badge live";});
-    es.addEventListener("changed",()=>{ render(); });
-    es.onerror=()=>{ badge.textContent="轮询降级 5s"; badge.className="badge off";
-      if(!window._poll){ window._poll=setInterval(render,5000); } };
-  }catch(e){ badge.textContent="轮询降级 5s"; badge.className="badge off";
-    window._poll=setInterval(render,5000); }
+    es.onopen=()=>setLive("实时","live");
+    es.addEventListener("hello",()=>setLive("实时","live"));
+    es.addEventListener("steps",e=>{ try{ const d=JSON.parse(e.data||"{}");
+      setLive(`实时 · ${d.step||""}`, "live"); }catch(_){} });
+    es.onerror=()=>{ setLive("轮询回退","off"); };
+  }catch(e){ setLive("轮询","off"); }
+  // 无论 SSE 是否可用都做一次轻量健康探测（让"门禁"徽标有数据）
+  api("/api/health").then(h=>{
+    const g=$("#gates");
+    g.textContent = h.ok? `门禁 ${h.gates_registered} 道` : "门禁 不可用";
+    g.className = h.ok? "badge" : "badge bad";
+  }).catch(()=>{});
+  setInterval(()=>{ if(CUR==="overview"||CUR==="worklist") render(); }, 60000);
 }
-async function initGates(){
-  try{ const h=await api("/api/health");
-    $("#gates").textContent="门禁 "+h.gates_registered+" 道"; }catch(e){}
-}
-const HASH_ROUTED=initNav(); if(!HASH_ROUTED) render(); initLive(); initGates();
-setInterval(()=>{ if(!window._poll) render(); }, 10000);
+
+initNav();
+initSSE();
+render();
 </script>
 </body>
 </html>

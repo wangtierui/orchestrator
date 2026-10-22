@@ -8,7 +8,7 @@
 | `/api/overview` | P0 | `snapshots.overview()`（6 张卡） |
 | `/api/flow` | P1 桑基 | `snapshots.flow_graph()` |
 | `/api/flow/step?step=` | P1 抽屉 | `snapshots.step_detail()` |
-| `/api/assets` | P2 | `snapshots.assets()` |
+| `/api/assets` | P0（原 P2，已并入总览） | `snapshots.assets()` |
 | `/api/metrics` | P3 | `snapshots.metrics()` |
 | `/api/quality` | P3 | `snapshots.quality()`（六维） |
 | `/api/slo` | P3 | `snapshots.slo()` |
@@ -161,7 +161,16 @@ def handle(method: str, path: str, qs: dict | None = None,
     if path == "/api/publish":
         return 200, S.publish_board()
     if path == "/api/release":
-        return 200, S.release_stream(limit=min(50, _int(qs, "limit", 20)))
+        # `limit=0`（默认）= **全量**（用户要求"变更记录应展示全部，不应仅近 20 条"）
+        return 200, S.release_stream(limit=_int(qs, "limit", 0))
+    if path == "/api/commit":
+        sha = _one(qs, "sha").strip()
+        if not sha:
+            raise ApiError(400, "缺参数 sha")
+        return 200, S.commit_detail(sha)
+    # 本地文件**不在此层**：`GET /api/local/file?path=` 由 `web/server.py` 直接
+    # 返回字节（带 `Content-Type`/`Content-Disposition`），因为它不是 JSON。
+    # 校验逻辑在 `snapshots.local_file`（四重边界），本层不重复实现。
     raise ApiError(404, f"未知路由 {path}")
 
 

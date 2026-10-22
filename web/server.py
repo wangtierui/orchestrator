@@ -78,7 +78,9 @@ class Handler(BaseHTTPRequestHandler):
         logging.getLogger("web.server").info(msg)
 
     # -- 输出helpers -------------------------------------------------------- #
-    def _send(self, status: int, body: bytes, ctype: str = "application/json; charset=utf-8") -> None:
+    def _send(self, status: int, body: bytes,
+              ctype: str = "application/json; charset=utf-8",
+              disposition: str = "") -> None:
         self.send_response(status)
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(body)))
@@ -87,6 +89,10 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("X-Frame-Options", "DENY")
         self.send_header("Referrer-Policy", "no-referrer")
         self.send_header("Cache-Control", "no-store")
+        if disposition:
+            # `inline` 交给浏览器原生查看器（PDF/TXT）；其余强制下载——
+            # **绝不用 inline 提供 .html/.svg**：同源下会执行脚本（见 snapshots.local_file）。
+            self.send_header("Content-Disposition", disposition)
         self.end_headers()
         try:
             self.wfile.write(body)
@@ -105,6 +111,27 @@ class Handler(BaseHTTPRequestHandler):
             return self._send(200, body, ctype)
         if path == "/api/events":
             return self._sse()
+        if path == "/api/local/file":
+            # 本地文件由**服务端提供字节、浏览器自己打开/下载**（不拉起本机程序）：
+            # 本仓 `tests/test_no_desktop_interference.py` 禁止"夺焦点"的打开方式。
+            # 该校验实现在 `snapshots.local_file`（四重边界），此层只负责带正确的
+            # `Content-Type` / `Content-Disposition` 把字节发出去。
+            from urllib.parse import parse_qs
+
+            from web import snapshots as _snap
+
+            q = parse_qs(u.query)
+            rel = (q.get("path") or [""])[0]
+            r = _snap.local_file(rel)
+            if not r.get("ok"):
+                return self._json(404, {"ok": False, "reason": r.get("reason", "")})
+            disp = r["disposition"]
+            fname = str(r.get("filename") or "file")
+            # 中文文件名需 RFC 5987 编码；ASCII 兜底名供老浏览器用
+            from urllib.parse import quote
+
+            cd = f"{disp}; filename*=UTF-8''{quote(fname)}"
+            return self._send(200, r["body"], r["ctype"], disposition=cd)
         if path.startswith("/api/"):
             try:
                 status, payload = handle_request("GET", self.path)

@@ -603,17 +603,24 @@ python cli.py serve --verbose       # 逐请求日志
 治理后冷态：`/api/overview` **118ms**、`/api/worklist` **107ms**（原 7613ms）、
 `/api/assets` **3.5ms**（原 5965ms）。守卫 `tests/test_console_perf_flake.py`。
 
+> **2026-10-22（第一百零九批）页签收敛为 7 个**：P2（数据状态）与 P7（投放看板）
+> **并入总览**——它们的读者与"总览"是同一批人（"我的产物在哪、发出去了没"），
+> 单开两页只会让"看全一眼"变成三次点击。总览现分三段：
+> **关键指标 → 运行与风险 → 产物与发布**。
+
 | 页 | 内容 | 数据源（**全部经 `interfaces/` 只读门面**） |
 |---|---|---|
-| **P0 总览** | 运行健康 / 门禁状态 / 待办 / 告警 / 数据新鲜度 / 存储占用 六卡 | 治理库台账、`run_state`、`reports/_alerts/`、`paths` 目录扫描 |
-| **P1 数据流转** | 手绘 SVG 桑基图（源 → 步骤），边宽 ∝ √最近处理记录数；节点抽屉含 argv/rc/日志尾 | `STEP_ORDER` + `sources.yaml` + `triggers.yaml` + 运行台账 |
-| **P2 数据状态** | 五源产物清单（记录数/快照日）+ 双底座发布件 + 条文契约自检 | `clean_index_api` / `base_api` / `clause_index_api` |
-| **P3 指标** | 门禁通过率趋势、待办 aging、**DAMA 六维质量**、**SLI/SLO**、时效三态、主题分布 | `governance_api` / `rfn_api` / `timeliness_api` + W5 度量产物 |
-| **P4 待办闭环** | worklist 列表 → 处置（选项 + **必填理由**）→ 状态即时回读 | `governance_store.worklist_list` / **`worklist_resolve`（唯一写路径）** |
-| **P5 治理审计** | 最近运行 + 审计日志尾部 | `governance_store.list_runs` / `governance_api.audit` |
-| **P6 文档检索** | FTS5 全文检索（external → internal 自动回退） | `base_api.search_external/search_internal` |
-| **P7 投放看板** | 双底座发布件状态 + wiki 投放源 | `base_api.manifest` |
-| **P8 发布事件流** | 提交流 + SBOM 组件数/锁哈希 + 契约版本 | `git log` + `reports/_sbom/` + `contract_manifest.json` |
+| **总览** | ① 四个 KPI（门禁通过/待办未处置/链步成功/存储占用）② 六卡（运行健康·门禁·待办·告警·新鲜度·存储）③ **产物清单 + 双底座发布件 + 条文契约自检**（原 P2）④ **wiki 投放源**（原 P7） | 治理库台账、`run_state`、`reports/_alerts/`、`paths` 扫描、`clean_index_api` / `base_api` / `clause_index_api` |
+| **数据流转** | **分层 DAG**（L1→L10 每层一列）：48 节点 / 40 条边，节点带**真实记录数**与状态色，边宽 ∝ √记录数；悬停看状态/rc/耗时/作用，点击开抽屉（含日志尾 + 诊断入口） | `STEP_ORDER` + **`StepSpec.produces/depends_on`**（按**产物**连边）+ `clean_index_api` + 运行台账 |
+| **指标** | 门禁通过率趋势、待办 aging、**DAMA 六维质量**、**SLI/SLO**、时效三态、主题分布（条形图用 **CSS 网格**，标签不可能压柱） | `governance_api` / `rfn_api` / `timeliness_api` + W5 度量产物 |
+| **待办闭环** | 表格列：**操作（勾选+处置，固定最左）/ kind / 唯一标识号 / 名称 / 文号 / 访问地址 / 详情**；处置**就地展开在该行下方**；地址带来源标注（桥表文号/桥表名称/本地文件/未查到/**不匹配**） | `governance_store.worklist_list` / **`worklist_resolve`（唯一写路径）** / `worklist_fields`（能力矩阵 + 一致性校验） |
+| **治理审计** | 最近运行 + 审计日志尾部 | `governance_store.list_runs` / `governance_api.audit` |
+| **文档检索** | FTS5 全文检索（external → internal 自动回退）+ **访问地址列**；**<3 字查询自动走 LIKE 兜底**并标注方式 | `base_api.search_external/search_internal/like` + `worklist_fields.lookup` |
+| **发布事件** | **全量**提交流（点开看**完整变更**：文件清单 + 完整提交说明 + 原始 `git show`）+ SBOM 组件数/锁哈希 + 契约版本 | `git log` / `git show` + `reports/_sbom/` + `contract_manifest.json` |
+
+**新增只读路由**：`GET /api/commit?sha=`（单提交完整变更）、
+`GET /api/local/file?path=`（**白名单内**的本地文件由浏览器打开/下载；
+四重校验见 §6.7，**不拉起本机程序**——那会夺焦点，本仓明令禁止）。
 
 **纪律（与全仓一致，方案 §8.2.2）**
 
@@ -711,6 +718,9 @@ python -m tools.workbench_service verify --wait 45
 | **配额耗尽绝不写 SSOT** | `verify` 只对**成功**结果写判定（0 条=真实无命中⇒pending；有数据⇒judge）。**查询失败/未执行一律不写** —— 否则记录会伪装成"刚核验过、无同名命中"并冻结 90 天（一次配额耗尽即可静默打穿覆盖率）。优先级：从未核验 → 最久未核 → 新公布优先；`--max-items` 为每源预算（截断记 `truncated`，**不算失败**） |
 | **子进程输出不会被吞** | `std_lib/scraper_std/proc` 的全局包装器注入 `CREATE_NO_WINDOW`，它会给子进程**新建隐藏控制台**⇒ 父进程重定向到文件/管道时子输出**全丢**（实测 `cli.py timeliness verify --dry-run` 零字节）。现由 `_inject_inherited_stdio()` 显式继承父 std；`check_output` 例外（stdlib 禁止外传 stdout） |
 | **没上 Dash（有实测依据）** | 评估见 `reports/refactors/工作台前端选型评估_Dash_20261022.md`：`dash==4.4.1` 新增 **16 个运行时包 / ≈18.6 MB**、前端运行时载荷 **6–8 MB**（现状单文件 46.9 KB）。结论：保留零依赖骨架；需要交互图表时**只加 `plotly`**（本地托管 `plotly.min.js`），不引 Flask/Dash |
+| **FTS5 trigram 不支持 <3 字查询** | `records_fts` 用 **trigram** 分词，只索引 3 字窗口 ⇒ `MATCH '"保险"'`（2 字）**必然 0 行**（实测 保险/银行/监管 全 0，保险公司/保险集团 才有）。中文双字词最常见 ⇒ 短词必须走 `LIKE` 兜底（**只扫标题/文号/RFN**，不扫 1.6GB 正文）并在响应里标 `mode="like"` + `note` |
+| **本地文件由浏览器打开，不由服务端"打开"** | 初版用系统默认程序弹出（`os.startfile` 一类），被 `tests/test_no_desktop_interference.py` 拦下——**那会夺走用户焦点**，与"抢前台窗口/模拟键鼠"同属黑名单。现改为 `GET /api/local/file?path=` 由服务端提供字节：`.pdf/.txt/.md/.csv/.json` **inline**（浏览器查看器），其余 **attachment**（下载）。**四重边界**：① 仓内相对路径 ② 解析后仍在仓根之下（`..` 拒绝）③ 命中白名单目录（制度原件/清洗产物/报告）④ 存在 + 扩展名白名单；且 `.html`/`.svg` **绝不 inline**（同源存储型 XSS 会借用户身份点处置）。**另注**：`internal_policy_index.json` 的 `original_path` 相对 `source_root` 的**父目录**，直接拼会让 861 条全部解析不到（逐个候选试存在性后 861/861） |
+| **图表条形用 CSS 网格，不用手绘 SVG** | SVG `<text>` 没有 ellipsis，标签/数值宽度只能估算，估偏就溢出（三次"渲染异常"里两次的根因）。CSS 网格把标签/柱体/数值分到固定三列 ⇒ **结构上不存在越界**。凡"布局类缺陷"，优先换布局机制而不是调坐标 |
 
 > **蓝屏事件排查**（`KERNEL_SECURITY_CHECK_FAILURE` 等 4 种 BugCheck）见
 > `reports/refactors/incident_20261021_bsod.md`：结论是**非本项目导致**
