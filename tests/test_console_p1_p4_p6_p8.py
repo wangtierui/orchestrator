@@ -135,6 +135,31 @@ class TestP1RealFlow:
         d = S.flow_graph()
         assert len(d.get("layers") or []) >= 5, "缺分层信息，前端无法按层布局"
 
+    def test_flow_status_is_normalized(self) -> None:
+        """节点状态必须来自**退出码**归一，且不得整片 `unknown`。
+
+        实测背景：台账里 36 条 OK 行的 `status` 为空，只有 `exit_code="OK"`
+        ⇒ 原实现把它们全画成 unknown，看图的人只会觉得"没有状态"。
+        """
+        from web import snapshots as S
+
+        d = S.flow_graph()
+        nodes = d.get("nodes") or []
+        unknown = [n["id"] for n in nodes if n.get("status") == "unknown"]
+        assert len(unknown) <= max(3, len(nodes) // 5), (
+            f"{len(unknown)}/{len(nodes)} 个节点状态未知 —— 退出码未归一")
+        assert any(n.get("status") == "ok" for n in nodes), "没有任何 ok 节点，状态映射失效"
+
+    def test_last_run_skips_dry_run(self) -> None:
+        """`last_run_with_steps()` 默认必须**跳过 dry-run**。
+
+        否则一次 `run --dry-run` 会把 P1 的 48 个节点全刷成 skip（实测发生）。
+        """
+        src = _code_only(os.path.join(
+            ROOT, "std_lib", "common_lib", "governance_store", "ledger.py"))
+        assert "include_dry_run" in src, "缺 dry-run 过滤开关"
+        assert "is_dry_run" in src, "查询未按 is_dry_run 过滤"
+
 
 class TestP4KindSpec:
     """C. 逐 kind 的取值契约。"""

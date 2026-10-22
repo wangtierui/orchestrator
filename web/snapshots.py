@@ -448,9 +448,19 @@ def flow_graph() -> dict:
                 from std_lib.common_lib import governance_store as gs
 
                 run_id, steps_rows = gs.last_run_with_steps()
+                # 状态归一：台账里的 `status` 常为空、真正有语义的是 `exit_code`
+                # （实测：36 条 OK 行的 status 全是 None ⇒ P1 全画成 unknown，
+                #  看图的人只会觉得"没状态"）。按退出码补齐，未知才留 unknown。
+                _MAP = {"OK": "ok", "SKIP": "skip", "FAIL": "failed",
+                        "DATA": "failed", "ENV": "failed",
+                        "NOT_SOURCE_TREE": "failed"}
                 for s in steps_rows:
                     nm = str(s.get("step") or "")
-                    rcodes[nm] = {"status": s.get("status"),
+                    _ex = str(s.get("exit_code") or "").upper()
+                    _st = str(s.get("status") or "").strip().lower()
+                    if _st in ("", "unknown", "none"):
+                        _st = _MAP.get(_ex, "unknown")
+                    rcodes[nm] = {"status": _st,
                                   "rc": s.get("exit_code") or s.get("rc"),
                                   "elapsed_s": s.get("elapsed_s"),
                                   "argv": s.get("argv")}

@@ -149,15 +149,31 @@ def steps_of(run_id: str) -> list[dict]:
         return []
 
 
-def last_run_with_steps() -> tuple[str, list[dict]]:
-    """最近一次**有步骤记录**的运行 → (run_id, steps)。无则 ("", [])。"""
+def last_run_with_steps(*, include_dry_run: bool = False) -> tuple[str, list[dict]]:
+    """最近一次**有步骤记录**的运行 → (run_id, steps)。无则 ("", [])。
+
+    2026-10-22（第一百零九批）：默认**跳过 dry-run**。
+    起因：一次 `cli.py run … --dry-run` 会把每条 `run_step` 记成 `SKIP`，
+    而本函数取"最近 run_id"不分真假 ⇒ 确认台 P1 的 48 个节点**全部显示 skip**
+    （实测踩到），读者会误判"链一直没跑"。dry-run 是"只列 argv 不执行"，
+    它的状态没有任何执行语义，**不该冒充最近一次运行**。
+    真需要看时传 `include_dry_run=True`。
+    """
     if not enabled():
         return "", []
     try:
         with connect(readonly=True) as c:
-            row = c.execute(
-                "SELECT run_id FROM run_step GROUP BY run_id ORDER BY MAX(recorded_at) DESC LIMIT 1"
-            ).fetchone()
+            if include_dry_run:
+                row = c.execute(
+                    "SELECT run_id FROM run_step GROUP BY run_id "
+                    "ORDER BY MAX(recorded_at) DESC LIMIT 1"
+                ).fetchone()
+            else:
+                row = c.execute(
+                    "SELECT run_id FROM run_step GROUP BY run_id "
+                    "HAVING MAX(COALESCE(is_dry_run, 0)) = 0 "
+                    "ORDER BY MAX(recorded_at) DESC LIMIT 1"
+                ).fetchone()
             if not row:
                 return "", []
             rid = row["run_id"]
