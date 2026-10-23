@@ -123,7 +123,8 @@ class TestServerEnforcement:
     """B. 服务端真的拦得住（用**本机内网 IP** 连，TCP 对端即非回环）。"""
 
     @pytest.fixture(scope="class")
-    def lan_server(self):
+    def lan_server(self, tmp_path_factory):
+        import os
         import subprocess
         import sys
         import time
@@ -135,8 +136,23 @@ class TestServerEnforcement:
         if not ips:
             pytest.skip("无内网 IP，无法模拟内网来源")
         port = 8813
+        # ⚠️ 必须给**临时治理库**：该测试会真的 POST 一条留言，若沿用默认路径就写进
+        # **生产库**（实测踩到：守卫自身让看板多了 5 条测试留言）。
+        tmp_db = str(tmp_path_factory.mktemp("gov") / "governance.db")
+        env = dict(os.environ, REG_ORCH_GOVERNANCE_DB=tmp_db)
+        from std_lib.common_lib import governance_store as gs
+
+        old = os.environ.get("REG_ORCH_GOVERNANCE_DB")
+        os.environ["REG_ORCH_GOVERNANCE_DB"] = tmp_db
+        try:
+            gs.init_db()          # 先把表建好，服务端起来就能写
+        finally:
+            if old is None:
+                os.environ.pop("REG_ORCH_GOVERNANCE_DB", None)
+            else:
+                os.environ["REG_ORCH_GOVERNANCE_DB"] = old
         proc = subprocess.Popen([sys.executable, "cli.py", "serve", "--lan",
-                                 "--port", str(port)], cwd=ROOT,
+                                 "--port", str(port)], cwd=ROOT, env=env,
                                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         base = f"http://{ips[0]}:{port}"
         for _ in range(60):
