@@ -226,6 +226,8 @@ def summary() -> dict:
 
 
 if __name__ == "__main__":  # 离线自检
-    sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
+    import sys as _sys  # 局部导入：本模块主体**不需要** sys（门禁禁新增引导）
+
+    _sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
     print(json.dumps({"stat": load_stat(), "sample": load()[:1]},
                      ensure_ascii=False, indent=2))
