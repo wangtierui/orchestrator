@@ -30,6 +30,10 @@ def run(argv: list[str] | None = None) -> int:
     )
     ap.add_argument("--host", default="127.0.0.1",
                     help="绑定地址（默认回环；非回环会打印安全告警——控制台无鉴权）")
+    ap.add_argument("--lan", action="store_true",
+                    help="对公司内网开放（等价 --host 0.0.0.0）。**只读**："
+                         "待办处置/留言处置/本地文件/宿主诊断/提交详情按来源 IP 拒绝"
+                         "（见 web/policy.py）")
     ap.add_argument("--port", type=int, default=8765,
                     help="端口（默认 8765；被占用时有限递增换端口）")
     ap.add_argument("--open", action="store_true", help="启动后打开默认浏览器")
@@ -44,7 +48,8 @@ def run(argv: list[str] | None = None) -> int:
 
     import web
 
+    host = "0.0.0.0" if a.lan else a.host
     # `open_browser`/`verbose` 均显式透传（web.serve 的关键字参数名）
-    return web.serve(host=a.host, port=a.port, open_browser=a.open,
+    return web.serve(host=host, port=a.port, open_browser=a.open,
                      verbose=a.verbose, pid_file=a.pid_file or None,
                      log_file=a.log_file or None, single_instance=a.single_instance)

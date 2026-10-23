@@ -65,7 +65,7 @@ def _pythonw() -> str:
     return cand if os.path.exists(cand) else exe
 
 
-def _write_start_cmd(port: int = DEFAULT_PORT) -> str:
+def _write_start_cmd(port: int = DEFAULT_PORT, lan: bool = True) -> str:
     """生成启动包装器（**幂等**：内容确定则不改写，保留 mtime 便于判断）。
 
     ⚠️ **本文件必须是纯 ASCII（纯英文注释）** —— 这是 2026-10-21 蓝屏后重启
@@ -90,7 +90,8 @@ def _write_start_cmd(port: int = DEFAULT_PORT) -> str:
         "rem so UTF-8 Chinese comments get garbled and can break the script.",
         "cd /d %s" % repo,
         'if not exist "%s" mkdir "%s"' % (state_dir, state_dir),
-        '"%s" cli.py serve --host 127.0.0.1 --port %d ^' % (_pythonw(), port),
+        '"%s" cli.py serve %s --port %d ^' % (
+            _pythonw(), "--lan" if lan else "--host 127.0.0.1", port),
         '  --single-instance --pid-file "%s" --log-file "%s"' % (PID_FILE,
                                                                  LOG_FILE),
     ]
@@ -132,17 +133,22 @@ def _is_windows() -> bool:
     return os.name == "nt"
 
 
-def install(*, port: int = DEFAULT_PORT, delay: int = 30) -> int:
+def install(*, port: int = DEFAULT_PORT, delay: int = 30, lan: bool = True) -> int:
     """安装开机自启动（计划任务 ONLOGON，用户级、**不需管理员**）。
 
     `delay`：登录后延迟多少秒再启动（避开开机 IO 高峰；`schtasks` 的
     `/DELAY` 只支持 ONSTART/ONLOGON 触发器，格式 `HHMM` 或 `mm:ss`）。
+
+    `lan`：是否对公司内网开放（默认 True，2026-10-23 起）。
+    **只开放只读能力**；待办处置/留言处置/本地文件/宿主诊断/提交详情
+    仍由 `web/policy` 按来源 IP 拒绝（不是靠前端隐藏）。
+    如需只让本机用，`install --local`。
     """
     if not _is_windows():
         sys.stderr.write(
             "本工具仅支持 Windows（计划任务）。Linux/macOS 请用 launchd/systemd。\n")
         return ExitCode.ENV
-    cmd_path = _write_start_cmd(port=port)
+    cmd_path = _write_start_cmd(port=port, lan=lan)
     trig = "ONLOGON"
     args = [
         "/Create", "/TN", TASK_NAME, "/SC", trig,
@@ -171,6 +177,16 @@ def install(*, port: int = DEFAULT_PORT, delay: int = 30) -> int:
     print(f"            schtasks /Run /TN {TASK_NAME}")
     print("  验证方式：python -m tools.workbench_service status")
     print("            python -m tools.workbench_service verify")
+    if lan:
+        from web.policy import lan_ipv4
+
+        print("  访问范围：**公司内网只读**（待办处置/留言处置/本地文件/宿主诊断/"
+              "提交详情仍仅限本机）")
+        for ip in lan_ipv4():
+            print(f"            内网地址 http://{ip}:{port}/")
+        print("  ⚠️ 若同事打不开：多为 Windows 防火墙未放行该端口（见 README §6.8）")
+    else:
+        print("  访问范围：仅本机（127.0.0.1）")
     return ExitCode.OK
 
 
@@ -293,10 +309,13 @@ def main(argv: list[str] | None = None) -> int:
                     help="登录后延迟多少秒启动（默认 30，避开开机 IO 高峰）")
     ap.add_argument("--wait", type=int, default=20,
                     help="verify 时最长等待秒数（默认 20）")
+    ap.add_argument("--local", action="store_true",
+                    help="install 时**只绑 127.0.0.1**（默认对公司内网开放只读；"
+                         "详见 web/policy.py 的分级策略）")
     a = ap.parse_args(argv)
 
     if a.action == "install":
-        return install(port=a.port, delay=a.delay)
+        return install(port=a.port, delay=a.delay, lan=not a.local)
     if a.action == "uninstall":
         return uninstall()
     if a.action == "status":

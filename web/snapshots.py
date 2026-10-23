@@ -1118,17 +1118,60 @@ def relation_graph(ref: str) -> dict:
     try:
         from interfaces import relations_api
 
-        d = relations_api.ego(ref)
+        # 未指定中心 ⇒ **全局视图**（2026-10-23：不再显示"请从列表进入"的空页）
+        d = relations_api.global_graph() if not ref else relations_api.ego(ref)
         if d.get("available"):
             for nd in d.get("nodes") or []:
                 nd["kind_label"] = ("监管文件" if nd.get("kind") == "regulatory"
                                     else "公司制度" if nd.get("kind") == "internal"
                                     else "")
+            bp = d.get("bipartite") or {}
+            for side in ("left", "right"):
+                for nd in bp.get(side) or []:
+                    nd["kind_label"] = ("公司制度" if side == "left" else "监管文件")
             d["fetched_at"] = _now()
-            d["source_name"] = "relations_api.ego"
+            d["source_name"] = ("relations_api.global_graph" if not ref
+                                else "relations_api.ego")
         return d
     except Exception as e:  # noqa: BLE001
-        return _degrade("relations_api.ego", e)
+        return _degrade("relations_api", e)
+
+
+def feedback_items(*, status: str = "", kind: str = "", limit: int = 200) -> dict:
+    """「留言板」页签：列出使用者反馈（含计数与中文标签）。"""
+    try:
+        from interfaces import feedback_api as FB
+
+        d = FB.items(status=status, kind=kind, limit=limit)
+        d["fetched_at"] = _now()
+        d["source_name"] = "interfaces.feedback_api"
+        return d
+    except Exception as e:  # noqa: BLE001
+        return _degrade("interfaces.feedback_api.items", e)
+
+
+def regstats() -> dict:
+    """「监管统计（EAST）」页签：**只呈现资料指针**，不做字段级校验。
+
+    设计立场（2026-10-23）：库内与 EAST 直接相关的文件只有 **1 条**
+    （金非银检函〔2025〕82号，保险业监管数据标准化规范），"监管统计"口径 3 条、
+    "统计指标与报送" 8 条、金融统计制度 26 条。
+    资料这么少的情况下，**硬造图表只会误导**（把 1 条数据画成趋势图等于撒谎）。
+    因此本页定位为：**清单 + 覆盖度披露 + 缺口说明**，并明确写"项目尚未接入
+    EAST 报文/字段级校验"。
+    """
+    try:
+        from interfaces import base_api
+
+        d = base_api.regstats_docs()
+        for cat in d.get("categories") or []:
+            for it in cat.get("items") or []:
+                it["theme_label"] = _theme_label(it.get("theme", ""))
+        d["fetched_at"] = _now()
+        d["source_name"] = "base_api.regstats_docs"
+        return d
+    except Exception as e:  # noqa: BLE001
+        return _degrade("base_api.regstats_docs", e)
 
 
 def search(q: str, *, kind: str = "records", limit: int = 20) -> dict:

@@ -56,9 +56,18 @@ def _asset(name: str) -> tuple[bytes, str]:
     ctype = {".html": "text/html; charset=utf-8",
              ".js": "application/javascript; charset=utf-8",
              ".css": "text/css; charset=utf-8",
-             ".svg": "image/svg+xml"}.get(os.path.splitext(name)[1], "text/plain; charset=utf-8")
+             ".svg": "image/svg+xml"}.get(os.path.splitext(name)[1],
+                                          "text/plain; charset=utf-8")
     with open(p, "rb") as fh:
         return fh.read(), ctype
+
+
+#: 访问分级策略（**单一事实源**在 web/policy.py：server 拦截 + api 回答 health 共用）
+from .policy import (
+    access_scope,
+    lan_ipv4,
+    route_is_local_only,
+)
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -103,9 +112,53 @@ class Handler(BaseHTTPRequestHandler):
         self._send(status, json.dumps(payload, ensure_ascii=False).encode("utf-8"))
 
     # -- 路由 --------------------------------------------------------------- #
+    # -- 访问分级 ------------------------------------------------------------- #
+    def _ctx(self) -> dict:
+        """本次请求的可信上下文（**逐请求构造**，不放全局 —— 服务是多线程的）。"""
+        from interfaces.feedback_api import header_user
+
+        return {
+            "scope": access_scope(self.client_address[0]),
+            "client_ip": self.client_address[0],
+            "user_agent": (self.headers.get("User-Agent") or "")[:300],
+            # 访问者域账号：本仓未接 Windows 集成认证 ⇒ 一般为空，
+            # 留言改由填写者自报（`account_src='self'`）。接了反向代理才非空。
+            "header_user": header_user(dict(self.headers)),
+        }
+
+    def _guard(self, method: str, path: str) -> bool:
+        """分级闸门：本机全放行；内网/未知来源只放行"只读且非本机专属"的路由。
+
+        返回 `False` 表示**已回 403**，调用方应立即 return。
+        为什么要在**服务端**拦：前端隐藏页签只是"别让人误点"，不是安全边界 ——
+        内网任何机器都能直接 `curl` 那些路由。
+        """
+        ctx = self._ctx()
+        if ctx["scope"] == "local":
+            return True
+        if not route_is_local_only(method, path):
+            return True
+        p = (path or "").split("?", 1)[0]
+        logging.getLogger("web.server").warning(
+            "[serve] 拒绝越权访问 ip=%s scope=%s %s %s", ctx["client_ip"],
+            ctx["scope"], method, p)
+        self._json(403, {
+            "ok": False,
+            "error": "该功能仅限本机访问",
+            "route": p,
+            "scope": ctx["scope"],
+            "client_ip": ctx["client_ip"],
+            "hint": "待办处置 / 本地文件 / 宿主诊断 / 提交详情属本机专属；"
+                    "内网可使用总览、数据流转、指标、政策法规、公司制度、"
+                    "关系图谱、治理审计、文档检索、监管统计、留言板。",
+        })
+        return False
+
     def do_GET(self) -> None:
         u = urlparse(self.path)
         path = unquote(u.path)
+        if not self._guard("GET", path):
+            return
         if path in ("/", "", f"/{_INDEX}"):
             body, ctype = _asset(_INDEX)
             return self._send(200, body, ctype)
@@ -134,7 +187,7 @@ class Handler(BaseHTTPRequestHandler):
             return self._send(200, r["body"], r["ctype"], disposition=cd)
         if path.startswith("/api/"):
             try:
-                status, payload = handle_request("GET", self.path)
+                status, payload = handle_request("GET", self.path, ctx=self._ctx())
             except ApiError as e:
                 return self._json(e.status, {"error": e.msg})
             except Exception as e:  # noqa: BLE001 旁路：任何异常都降级为 JSON
@@ -150,13 +203,18 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:
         # 路径解析交给 api.handle_request（单一解析口，避免两处解析漂移）
+        if not self._guard("POST", unquote(urlparse(self.path).path)):
+            return
         try:
             n = int(self.headers.get("Content-Length") or 0)
         except (TypeError, ValueError):
             n = 0
-        raw = self.rfile.read(n) if 0 < n <= 8192 else b""
+        # 上限 8192 → 放宽到 64KB：留言正文最长 4000 字符（UTF-8 三字节中文 ≈ 12KB），
+        # 8KB 会把中文长留言**静默截断**（服务端读到半截 JSON ⇒ 报"正文非法"）。
+        raw = self.rfile.read(n) if 0 < n <= 65536 else b""
         try:
-            status, payload = handle_request("POST", self.path, raw_body=raw)
+            status, payload = handle_request("POST", self.path, raw_body=raw,
+                                             ctx=self._ctx())
         except ApiError as e:
             return self._json(e.status, {"error": e.msg})
         except Exception as e:  # noqa: BLE001
@@ -198,6 +256,15 @@ def build_server(host: str = DEFAULT_HOST, port: int = DEFAULT_PORT,
         sys.stderr.write(
             f"[serve][安全告警] 绑定 {host}（非回环）——本控制台**无鉴权**，"
             "仅可在可信局域网内使用；默认请用 127.0.0.1。\n")
+        # 2026-10-23：非回环 = 对内网开放**只读**。写路径/本地文件/宿主诊断已在
+        # `web/policy` 里按来源 IP 拒绝，这里把"开放了什么/没开放什么"打在启动日志里
+        # （排障时不用翻代码猜边界）。
+        sys.stderr.write(
+            "[serve] 访问分级：内网可读（总览/流转/指标/法规/制度/图谱/审计/检索/"
+            "监管统计/留言板）；"
+            "仅本机可用（待办处置/留言处置/本地文件/宿主诊断/提交详情）。\n")
+        for ip in lan_ipv4():
+            sys.stderr.write(f"[serve] 内网访问地址：http://{ip}:{port}/\n")
     HUB.start()
     # 预热"重量级"快照（外部模型目录 13.8GB / 1.9 万文件，扫一遍 4s 级）。
     # **后台线程**、非阻塞：不预热的话首个 `/api/overview` 会同步扫完才返回
@@ -361,6 +428,9 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="本地确认台（方案 §8；推荐经 cli.py serve 启动）")
     ap.add_argument("--host", default=DEFAULT_HOST,
                     help=f"绑定地址（默认 {DEFAULT_HOST}；非回环会告警）")
+    ap.add_argument("--lan", action="store_true",
+                    help="对公司内网开放（等价 --host 0.0.0.0）。**只读**："
+                         "待办处置/留言处置/本地文件/宿主诊断/提交详情仍仅限本机")
     ap.add_argument("--port", type=int, default=DEFAULT_PORT,
                     help="端口（默认 %d；被占用时有限递增换端口）" % DEFAULT_PORT)
     ap.add_argument("--open", action="store_true", help="启动后打开浏览器")
@@ -373,7 +443,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--single-instance", action="store_true",
                     help="单实例模式：已有实例在跑则本次直接退出（幂等）")
     a = ap.parse_args(argv)
-    return serve(a.host, a.port, open_browser=a.open, verbose=a.verbose,
+    host = "0.0.0.0" if a.lan else a.host
+    return serve(host, a.port, open_browser=a.open, verbose=a.verbose,
                  pid_file=a.pid_file or None, log_file=a.log_file or None,
                  single_instance=a.single_instance)
 

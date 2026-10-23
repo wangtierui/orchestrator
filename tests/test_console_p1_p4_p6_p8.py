@@ -136,19 +136,36 @@ class TestP1RealFlow:
         assert len(d.get("layers") or []) >= 5, "缺分层信息，前端无法按层布局"
 
     def test_flow_status_is_normalized(self) -> None:
-        """节点状态必须来自**退出码**归一，且不得整片 `unknown`。
+        """节点状态必须来自**退出码**归一，且**与台账一致**。
 
-        实测背景：台账里 36 条 OK 行的 `status` 为空，只有 `exit_code="OK"`
-        ⇒ 原实现把它们全画成 unknown，看图的人只会觉得"没有状态"。
+        实测背景（两件都要防）：
+        ① 台账里 OK 行的 `status` 为空、只有 `exit_code="OK"` ⇒ 原实现全画成 unknown；
+        ② `--resume` 型运行时**几乎全部步骤 SKIP**（实测 2026-10-23 06:00 那次
+           40 SKIP + 1 FAIL）⇒ 若断言"必须存在 ok 节点"就是**数据依赖的脆弱断言**，
+           每次 resume 跑完测试就会红。故改为"**与台账逐项对齐**"。
         """
+        from std_lib.common_lib import governance_store as gs
         from web import snapshots as S
 
+        _rid, rows = gs.last_run_with_steps()
         d = S.flow_graph()
-        nodes = d.get("nodes") or []
-        unknown = [n["id"] for n in nodes if n.get("status") == "unknown"]
+        nodes = {n["id"]: n for n in (d.get("nodes") or [])}
+        unknown = [k for k, n in nodes.items() if n.get("status") == "unknown"]
         assert len(unknown) <= max(3, len(nodes) // 5), (
             f"{len(unknown)}/{len(nodes)} 个节点状态未知 —— 退出码未归一")
-        assert any(n.get("status") == "ok" for n in nodes), "没有任何 ok 节点，状态映射失效"
+
+        # 逐项对齐：台账 OK/SKIP/FAIL 必须分别映到 ok/skip/failed
+        mapping = {"OK": "ok", "SKIP": "skip", "FAIL": "failed", "DATA": "failed",
+                   "ENV": "failed"}
+        checked = 0
+        for r in rows:
+            exp = mapping.get(str(r.get("exit_code") or "").upper())
+            got = (nodes.get(str(r.get("step"))) or {}).get("status")
+            if not exp or not got:
+                continue
+            checked += 1
+            assert got == exp, f"{r.get('step')}: 台账 {r.get('exit_code')} → 图 {got}"
+        assert checked >= 5, f"逐项对齐样本过少（{checked}），判据失效"
 
     def test_last_run_skips_dry_run(self) -> None:
         """`last_run_with_steps()` 默认必须**跳过 dry-run**。

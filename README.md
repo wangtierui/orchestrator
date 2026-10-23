@@ -261,7 +261,7 @@ flowchart LR
 flowchart TB
   subgraph ACC[接入层（L6）]
     CLI[cli.py · 23 命令 · 唯一入口]
-    WEB[web/ 本地确认台 · loopback · 10 页]
+    WEB[web/ 本地确认台 · loopback · 12 页]
     MCP[mcp_server/ · 计划 W2 · MCP tool 面]
   end
   subgraph SCHED[调度层（唯一事实源 schedule.yaml + triggers.yaml）]
@@ -622,6 +622,8 @@ python cli.py serve --verbose       # 逐请求日志
 | **政策法规** | 五源监管文件全量（**16607 条**）：**主题 / 唯一标识号(RFN) / 名称 / 文号 / 时效 / 源 / 访问地址 / 关系**；表头**逐列筛选 + 点击排序**，**服务端分页**（50/页） | `base_api.list_external_page` / `external_facets`（SQL 与白名单只在 `interfaces` 内） |
 | **公司制度** | 内部制度全量（**861 条**）：**主题 / 唯一标识号(IPN) / 名称 / 文号 / 访问地址 / 关系**；访问地址**直接打开本地文件**（PDF 内联 / Office 下载） | `base_api.list_internal_page` / `internal_facets` + `worklist_fields.local_for` |
 | **关系图谱** | 以某文件为中心的**一跳关系图**：依据（实线）/ 废止（虚线），中心 + 邻居环形布局；点任一节点**换中心继续看**；下方给关系明细表（方向/对方/文号/匹配方式/置信度） | `relations_api.ego`（`by_src` + `by_dst`，弱线索显式计数） |
+| **监管统计** | **EAST 资料指针**：覆盖度 KPI（EAST 直接相关 **1** 条 / 合计 35 条 / 无官方链接 1 条 / 字段级校验 **未接入**）+ 4 个受控分类清单（EAST·监管统计·指标报送·金融统计制度）。**不画图**（1 条数据画趋势等于撒谎） | `base_api.regstats_docs`（标题受控关键词 + 跨类去重） |
+| **留言板** | 使用者提交问题（分类/严重度/页面/说明/域账号）+ 列表 + 本机处置（ack/closed）。IP/UA/时间由**服务端**记录；域账号**自报**且来源可分辨；**只追加不删** | `interfaces.feedback_api` 到 `governance_store.feedback`（内网唯一允许的写口） |
 | **治理审计** | 最近运行 + 审计日志尾部 | `governance_store.list_runs` / `governance_api.audit` |
 | **文档检索** | FTS5 全文检索（external → internal 自动回退）+ **访问地址列**；**按词元判定短词**（含 2 字词元自动走 LIKE 兜底）+ **多词 AND** + **bm25 相关性排序** + 同标题多版标注 | `base_api.search_external/search_internal/like`（`fts_capable`/`fts_query`）+ `worklist_fields.lookup` |
 | **发布事件** | **全量**提交流（点开看**完整变更**：文件清单 + 完整提交说明 + 原始 `git show`）+ SBOM 组件数/锁哈希 + 契约版本 | `git log` / `git show` + `reports/_sbom/` + `contract_manifest.json` |
@@ -742,6 +744,40 @@ python -m tools.workbench_service verify --wait 45
 > （纯用户态 Python 无法破坏内核结构；4 种不同码 + 40 天跨度 + 最早一次早于重负载
 > ⇒ 硬件/驱动画像），但本项目 mof 的 6.26 GB 峰值是**加重因素**；
 > 建议先 MemTest86 + 排查第三方 `HotKeyServiceDSU.exe` 与驱动。
+
+
+### 6.8 对内网开放（只读）与防火墙
+
+```bash
+python cli.py serve --lan                            # 绑 0.0.0.0（等价 --host 0.0.0.0）
+python -m tools.workbench_service install            # 开机自启动，**默认对内网开放**
+python -m tools.workbench_service install --local    # 退回仅本机
+```
+
+**开放什么、不开放什么**（单一事实源 `web/policy.py`，服务端按**来源 IP** 判定）：
+
+| 路由 | 本机 | 内网 | 为什么 |
+|---|---|---|---|
+| 各只读页签接口（总览/流转/指标/法规/制度/图谱/统计/审计/检索/发布/留言读） | 可以 | 可以 | 看数据是开放的初衷 |
+| `POST /api/feedback` | 可以 | 可以 | 任何使用者都要能报问题 |
+| `POST /api/worklist/resolve` | 可以 | **403** | 处置是**管理动作**，内网可改等于没有审计主体 |
+| `POST /api/feedback/resolve` | 可以 | **403** | 同上 |
+| `GET /api/local/file` | 可以 | **403** | 制度原件字节，内网可下即资料外泄 |
+| `GET /api/diagnose` / `GET /api/commit` | 可以 | **403** | 主机指纹 / 研发内部信息 |
+
+纪律：**deny by default**（非 GET 一律只限本机，除白名单）｜**只信 TCP 对端**
+（绝不看 `X-Forwarded-For`，客户端可伪造）｜**前端隐藏页签不等于安全**（边界是 403）。
+
+**同事打不开时的排查顺序**（按命中率）：
+
+1. **Windows 防火墙**：首次 `--lan` 启动会弹「是否允许」，点取消就不再放行。手工放行：
+   `netsh advfirewall firewall add rule name="RegConsole" dir=in action=allow protocol=TCP localport=8765`
+   （**需要管理员**；无管理员权限则请 IT 统一下发）
+2. **确认不是还绑在回环**：启动日志里应有 `[serve] 内网访问地址：http://<ip>:8765/`；
+   没有这行说明 `--lan` 没生效。
+3. **确认地址**：`python -m tools.workbench_service status` 与启动日志都会打印内网 IP；
+   多网卡机器（VPN/虚拟网卡）会打印多个，挑与同事同网段的那个。
+4. **代理**：浏览器若走公司代理，需把该地址加入**代理例外**（否则请求被代理拦掉）。
 
 ## 7. 附录与延伸阅读
 
@@ -956,6 +992,7 @@ flowchart TD
 显式 `model="…"` **覆盖 mode**（优先级最高）；分句增强由 env `REG_ORCH_SEMANTIC_SPLIT=1` 控制（**默认关**，见 §8.6 第 2 条）。
 
 <!-- END GENERATED: 全链数据流总图 -->
+
 
 
 

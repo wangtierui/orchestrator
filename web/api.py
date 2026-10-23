@@ -74,14 +74,31 @@ def _int(qs: dict, key: str, default: int) -> int:
 
 
 def handle(method: str, path: str, qs: dict | None = None,
-           body: dict | None = None) -> tuple[int, dict]:
-    """返回 `(http_status, payload)`。"""
+           body: dict | None = None, ctx: dict | None = None) -> tuple[int, dict]:
+    """返回 `(http_status, payload)`。
+
+    `ctx`：**请求上下文**（`scope` / `client_ip` / `user_agent`），由 `web/server` 逐请求
+    构造后透传。为什么用参数而不是全局/线程局部：服务是 `ThreadingHTTPServer`，
+    全局变量会在并发请求间串味（A 的内网 IP 记到 B 的留言上）。
+    """
     qs = qs or {}
+    ctx = ctx or {}
+    scope = str(ctx.get("scope") or "local")
     if path == "/api/health":
         from gates import ALL_GATES
+        from web.policy import LOCAL_ONLY_ROUTES, REMOTE_POST_ALLOW
 
-        return 200, {"ok": True, "gates_registered": len(ALL_GATES),
-                     "snapshot_ttl_s": S.CACHE_TTL_S}
+        return 200, {
+            "ok": True,
+            "gates_registered": len(ALL_GATES),
+            "snapshot_ttl_s": S.CACHE_TTL_S,
+            # 前端据此隐藏「待办闭环」（仅本机可见的功能不该让内网误点）
+            "scope": scope,
+            "client_ip": ctx.get("client_ip", ""),
+            "local_only": scope == "local",
+            "local_only_routes": list(LOCAL_ONLY_ROUTES),
+            "remote_post_allow": list(REMOTE_POST_ALLOW),
+        }
     if path == "/api/overview":
         return 200, S.overview()
     if path == "/api/flow":
@@ -184,6 +201,33 @@ def handle(method: str, path: str, qs: dict | None = None,
     if path == "/api/relations":
         # 「关系图谱」页签：以 ref（RFN/IPN）为中心的一跳邻域
         return 200, S.relation_graph(_one(qs, "ref"))
+    if path == "/api/feedback":
+        if method == "POST":
+            # 留言板是**内网唯一允许的写口**（见 web/policy.REMOTE_POST_ALLOW）：
+            # 只追加、不改既有数据；账号/来源字段由本层从 ctx 取，前端传什么都不采信。
+            from interfaces import feedback_api as FB
+
+            out = FB.add(body or {},
+                         ip=str(ctx.get("client_ip") or ""),
+                         user_agent=str(ctx.get("user_agent") or ""),
+                         header_account=str(ctx.get("header_user") or ""))
+            return (200 if out.get("ok") else 400), out
+        return 200, S.feedback_items(status=_one(qs, "status"),
+                                     kind=_one(qs, "kind"),
+                                     limit=min(500, _int(qs, "limit", 200)))
+    if path == "/api/feedback/resolve":
+        if method != "POST":
+            raise ApiError(405, "留言处置只接受 POST")
+        from interfaces import feedback_api as FB
+
+        b = body or {}
+        out = FB.resolve(str(b.get("fid") or ""),
+                         handling=str(b.get("handling") or ""),
+                         by=str(b.get("by") or ""),
+                         status=str(b.get("status") or "closed"))
+        return (200 if out.get("ok") else 400), out
+    if path == "/api/regstats":
+        return 200, S.regstats()
     if path == "/api/publish":
         return 200, S.publish_board()
     if path == "/api/release":
@@ -200,7 +244,8 @@ def handle(method: str, path: str, qs: dict | None = None,
     raise ApiError(404, f"未知路由 {path}")
 
 
-def handle_request(method: str, raw_path: str, raw_body: bytes = b"") -> tuple[int, dict]:
+def handle_request(method: str, raw_path: str, raw_body: bytes = b"",
+                   ctx: dict | None = None) -> tuple[int, dict]:
     """把原始请求转成 `(status, payload)`；内部异常统一降级为 200 + available=false。
 
     **旁路纪律**：确认台自身出错只影响本请求，绝不冒泡成主链故障。
@@ -219,7 +264,7 @@ def handle_request(method: str, raw_path: str, raw_body: bytes = b"") -> tuple[i
             body = parsed
         except (UnicodeDecodeError, ValueError) as e:
             raise ApiError(400, f"body 解析失败：{e}") from e
-    status, payload = handle(method, u.path, parse_qs(u.query), body)
+    status, payload = handle(method, u.path, parse_qs(u.query), body, ctx=ctx)
     return status, _scrub(payload)
 
 

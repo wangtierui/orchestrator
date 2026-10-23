@@ -298,6 +298,41 @@ CREATE TABLE IF NOT EXISTS timeliness_history(
   UNIQUE(state_key, status, last_checked_at)      -- 幂等：重复投影不追加重复观测
 );
 CREATE INDEX IF NOT EXISTS ix_th_key ON timeliness_history(state_key);
+
+-- ================= feedback：确认台留言板（第一百一十一批，对内网开放后的问题收集口）===
+-- 定位：**使用者反馈的事实源**。确认台对公司内网开放只读后，"同事用出问题"必须有个
+-- 落地入口，否则只能靠口头/聊天，无法统计、无法回归、无法证明已修。
+--
+-- 为什么这些列必须留着（审计要求）：
+--   · `account`：记录者域账号。**由填写者提供**（`account_src='self'`）；若将来接
+--     反向代理/Windows 集成认证，改由可信头注入（`account_src='header'`）——
+--     两种来源必须可分辨，否则"谁报的"这件事说不清。
+--   · `ip` / `user_agent` / `host_user`：**服务端记录**，不可由前端伪造。
+--     `host_user` 是服务进程账号，用于交叉核对（同一台机器上多人共用时尤其有用）。
+--   · `created_at`：服务端时间（不信客户端时钟）。
+-- 纪律：**只追加**。处置只改 status/handled_*，不删行（删了就失去"问题曾经存在"的证据）。
+CREATE TABLE IF NOT EXISTS feedback(
+  fid         TEXT PRIMARY KEY,
+  kind        TEXT NOT NULL DEFAULT 'bug',      -- bug | data | feature | other
+  severity    TEXT NOT NULL DEFAULT 'normal',   -- low | normal | high | blocker
+  page        TEXT NOT NULL DEFAULT '',          -- 出问题的页签（自报）
+  title       TEXT NOT NULL,
+  detail      TEXT NOT NULL DEFAULT '',
+  account     TEXT NOT NULL DEFAULT '',          -- 域账号（见 account_src）
+  account_src TEXT NOT NULL DEFAULT 'self',      -- self（填写）| header（可信代理注入）
+  ip          TEXT NOT NULL DEFAULT '',
+  user_agent  TEXT NOT NULL DEFAULT '',
+  host_user   TEXT NOT NULL DEFAULT '',
+  created_at  TEXT NOT NULL,
+  status      TEXT NOT NULL DEFAULT 'open',      -- open | ack | closed
+  handled_by  TEXT NOT NULL DEFAULT '',
+  handled_at  TEXT NOT NULL DEFAULT '',
+  handling    TEXT NOT NULL DEFAULT ''
+);
+CREATE INDEX IF NOT EXISTS ix_fb_status  ON feedback(status);
+CREATE INDEX IF NOT EXISTS ix_fb_created ON feedback(created_at);
+CREATE INDEX IF NOT EXISTS ix_fb_ip      ON feedback(ip);
+CREATE INDEX IF NOT EXISTS ix_fb_kind    ON feedback(kind);
 """
 
 

@@ -186,6 +186,7 @@ th.sortable .arw{font-size:10px;opacity:.85}
       focusable="false"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>监管合规编排器<small>本地确认台</small></div>
     <div class="hstat">
       <span class="badge" id="live">连接中…</span>
+      <span class="badge" id="scope" title="访问范围">—</span>
       <span class="badge" id="gates">门禁 —</span>
       <span class="badge" id="stamp">—</span>
     </div>
@@ -226,10 +227,16 @@ const TABS = [
   {id:"laws",     name:"政策法规"},
   {id:"rules",    name:"公司制度"},
   {id:"graph",    name:"关系图谱"},
+  {id:"regstats", name:"监管统计"},
   {id:"governance",name:"治理审计"},
   {id:"search",   name:"文档检索"},
   {id:"release",  name:"发布事件"},
+  {id:"feedback", name:"留言板"},
 ];
+
+/*: 仅本机可见的页签（服务端已按来源 IP 拒绝其接口，这里是**避免误点**）。
+ * 判定来自 `/api/health.local_only`，**不是**前端猜测 —— 隐藏不构成安全边界。 */
+const LOCAL_ONLY_TABS = ["worklist"];
 
 const $  = (s,r=document)=>r.querySelector(s);
 const $$ = (s,r=document)=>[...r.querySelectorAll(s)];
@@ -806,11 +813,22 @@ async function render(){
       bindRules(); return;
     }
     if(CUR==="graph"){
+      /* 未指定中心 ⇒ **全局视图**（2026-10-23 用户要求：不再叫用户"先从列表进入"）。 */
       const ref = obj(STATE.graph).ref || "";
-      if(!ref){ v.innerHTML = viewGraphEmpty(); return; }
-      const d = await api("/api/relations?ref=" + encodeURIComponent(ref));
+      const d = await api("/api/relations" +
+        (ref ? "?ref=" + encodeURIComponent(ref) : ""));
       v.innerHTML = viewGraph(d);
       bindGraph(); return;
+    }
+    if(CUR==="regstats"){
+      STATE.regstats = await api("/api/regstats");
+      v.innerHTML = viewRegstats(STATE.regstats); return;
+    }
+    if(CUR==="feedback"){
+      const q = STATE._fbq || {};
+      STATE.feedback = await api("/api/feedback?" + toQuery(q));
+      v.innerHTML = viewFeedback(STATE.feedback);
+      bindFeedback(); return;
     }
     if(CUR==="governance"){
       STATE.governance=await api("/api/governance");
@@ -1119,20 +1137,91 @@ function viewRules(d, st, f){
     d.source_name || "base_api.list_internal_page", d.fetched_at);
 }
 
-function viewGraphEmpty(){
-  return card("关系图谱", "从列表进入", `<div class="note">
-    在「政策法规」或「公司制度」列表点某行的 <b>关系 · 查看</b>，
-    这里会显示该文件为中心的**依据 / 废止**关系图。</div>
-    <div class="muted">关系事实源：<code>relations_index.jsonl</code>
-    （依据 3131 条 / 废止 1066 条，覆盖 4055 条监管↔监管、19 条制度↔制度、
-    123 条制度→监管）。</div>`, "interfaces.relations_api");
+/*: 全局关系图（未指定中心时默认展示）。
+ *
+ * 为什么是"二部图 + 枢纽榜"而不是"把 4197 条边全画出来"
+ * ------------------------------------------------------
+ * 监管↔监管的 4055 条是典型的**中心辐射**结构（大量文件依据同一部上位法），
+ * 全量上屏只会得到一张不可读的黑网。而「制度→监管」这部分实测**只有 24 条
+ * 可定位的边（17 制度 ↔ 17 监管）**，可以完整画出来 —— 它恰好回答本项目最
+ * 关心的问题："我们的制度踩在哪些监管要求上"。
+ * 所以：**能全画的全画（24 条，不抽样）；画不下的给枢纽榜（点进去看局部图）**。 */
+function viewGraphGlobal(d){
+  const bp = obj(d.bipartite), c = obj(d.counts);
+  const L = arr(bp.left), R = arr(bp.right), E = arr(bp.edges), hubs = arr(d.hubs);
+  const head = `<div class="toolbar">
+    <span class="pill ok">全局视图</span>
+    <span class="muted">制度 ${L.length} · 监管 ${R.length} · 关系 ${E.length} 条
+      （可定位的「制度→监管」**全部**画出，未抽样）</span>
+  </div>
+  <div class="muted" style="margin-bottom:8px">
+    全库关系 ${num(c.total_relations)} 条：监管↔监管 ${num(c.regulatory_relations)} ·
+    制度↔制度 ${num(c.internal_relations)} · 制度→监管 ${num(c.cross_relations)}；
+    **${num(c.unresolved)} 条**因对方未登记 RFN 无法定位（故不入图）。
+  </div>`;
+  if(!E.length){
+    return card("关系图谱", "全局", head +
+      '<div class="note">当前没有可定位的「制度→监管」关系。</div>',
+      d.source_name || "relations_api.global_graph", d.fetched_at);
+  }
+  const W = 1040, rowH = 30, n = Math.max(L.length, R.length);
+  const H = Math.max(360, 60 + n * rowH);
+  const xL = 300, xR = W - 300;
+  const yOf = (i) => 40 + (n <= 1 ? (H - 80) / 2 : i * (H - 80) / (n - 1));
+  const pos = {};
+  L.forEach((nd, i) => { pos[nd.id] = {x: xL, y: yOf(i)}; });
+  R.forEach((nd, i) => { pos[nd.id] = {x: xR, y: yOf(i)}; });
+  const cut = (s, k) => { s = String(s || ""); return s.length > k ? s.slice(0, k) + "…" : s; };
+  const edgeSvg = E.map(e => {
+    const a = pos[e.from], b = pos[e.to];
+    if (!a || !b) return "";
+    const mx = (a.x + b.x) / 2;
+    const repeal = e.relation === "repeal";
+    return `<path d="M${a.x + 8},${a.y} C${mx},${a.y} ${mx},${b.y} ${b.x - 8},${b.y}"
+      fill="none" stroke="${repeal ? "var(--bad)" : "var(--primary)"}"
+      stroke-width="1.3" opacity=".45"${repeal ? ' stroke-dasharray="5 4"' : ""}>
+      <title>${esc(e.label)}${e.matched_by ? "（" + esc(e.matched_by) + "）" : ""}</title></path>`;
+  }).join("");
+  const nodeSvg = (list, side) => list.map(nd => {
+    const p = pos[nd.id]; if (!p) return "";
+    const isL = side === "left";
+    return `<g class="gnode" data-ref="${esc(nd.id)}">
+      <circle cx="${p.x}" cy="${p.y}" r="7" fill="${isL ? "var(--primary-l)" : "var(--alt)"}"
+        stroke="${isL ? "var(--primary)" : "var(--line2)"}" stroke-width="1.5"/>
+      <text x="${isL ? p.x - 16 : p.x + 16}" y="${p.y + 4}"
+        text-anchor="${isL ? "end" : "start"}"
+        style="font-size:11.5px;fill:var(--fg)">${esc(cut(nd.name || nd.id, isL ? 26 : 30))}</text>
+      <title>${esc(nd.name || nd.id)}
+${esc(nd.docno || "")}
+点击查看以它为中心的关系</title></g>`;
+  }).join("");
+  const hubChips = hubs.map(h => `<button class="link" data-ref="${esc(h.ref)}"
+      title="被 ${num(h.degree)} 份文件依据">${esc(cut(h.name || h.ref, 22))}
+      <span class="muted">${num(h.degree)}</span></button>`).join("");
+  const body = `${head}
+    <div class="glegend">
+      <span><i style="background:var(--primary)"></i>依据</span>
+      <span><i style="background:var(--bad)"></i>废止（虚线）</span>
+      <span class="muted">左：公司制度 · 右：监管文件 · 点任一节点查看局部图</span>
+    </div>
+    <div class="gwrap"><svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}"
+      role="img" aria-label="全局关系图谱">
+      ${edgeSvg}${nodeSvg(L, "left")}${nodeSvg(R, "right")}</svg></div>
+    <h3 style="margin:var(--s4) 0 var(--s2)"><span>监管文件枢纽 Top ${hubs.length}</span>
+      <span class="hint">按"被依据次数"排序，点开看局部图</span></h3>
+    <div style="display:flex;flex-wrap:wrap;gap:var(--s2)">${hubChips}</div>
+    <div class="muted" style="margin-top:var(--s3)">${esc(d.note || "")}</div>`;
+  return card("关系图谱", "全局", body,
+    d.source_name || "relations_api.global_graph", d.fetched_at);
 }
 
 function viewGraph(d){
   if (!d || d.available === false) return unavail(obj(d), "关系图谱");
+  if (d.mode === "global") return viewGraphGlobal(d);   // 无中心 ⇒ 全局视图
   const nodes = arr(d.nodes), edges = arr(d.edges), center = obj(d.center);
   const c = obj(d.counts);
   const head = `<div class="toolbar">
+    <button class="link" id="gback" title="回到全局视图">← 全局视图</button>
     <span class="tag">${esc(center.kind_label || "中心")}</span>
     <b>${esc(center.name || d.ref)}</b>
     <span class="mono">${esc(d.ref)}</span>
@@ -1274,6 +1363,16 @@ function bindRules(){ bindTable(STATE.rules, "rulesPager"); }
 function bindGraph(){
   const v = $("#view");
   $$("g.gnode", v).forEach(g => { g.onclick = () => goGraph(g.dataset.ref); });
+  // 枢纽榜（全局视图）也是入口
+  $$("[data-ref]", v).forEach(el => {
+    if (el.tagName === "G") return;              // 图节点上面已绑
+    el.onclick = () => goGraph(el.dataset.ref);
+  });
+  const back = $("#gback", v);
+  if (back) back.onclick = () => {
+    STATE.graph = {};                             // 清空中心 ⇒ 下次渲染走全局
+    CUR = "graph"; render();
+  };
 }
 
 /** 跳到「关系图谱」页签并以 `ref` 为中心。
@@ -1284,6 +1383,174 @@ function goGraph(ref){
   STATE.graph = Object.assign({}, obj(STATE.graph), {ref: ref});
   if (location.hash.slice(1) === "graph") { CUR = "graph"; render(); }
   else { location.hash = "graph"; }
+}
+
+/*: 「监管统计（EAST）」—— **只呈现资料指针，不造图**
+ *
+ * 立场：库内与 EAST 直接相关的文件只有 **1 条**、监管统计 3 条。把 1 条数据画成
+ * 趋势图/仪表盘是**用图表撒谎**。所以这页的形态是：覆盖度结论 → 分类清单 →
+ * 口径与缺口说明，并**明确写出项目尚未接入 EAST 报文/字段级校验**。 */
+function viewRegstats(d){
+  if (!d || d.available === false) return unavail(obj(d), "监管统计");
+  const cats = arr(d.categories), cov = obj(d.coverage);
+  const kpiRow = `<div class="kpibar">
+    ${kpi("EAST 直接相关", num(cov.east_direct), "条")}
+    ${kpi("监管统计资料", num(d.total), "条")}
+    ${kpi("无官方链接", num(cov.without_url), "条")}
+    ${kpi("字段级校验", cov.east_field_validation ? "已接入" : "未接入", "")}
+  </div>`;
+  const gapNote = `<div class="note" style="margin:var(--s3) 0">
+    <b>能力边界（如实说明）</b>：${esc(cov.note || "")}
+    本页用于**定位资料**（哪份文件规定了什么口径、什么时候发的），
+    不产出任何 EAST 报送数据、也不校验报文字段。</div>`;
+  const sections = cats.map(cat => {
+    const items = arr(cat.items);
+    const rows = items.map(it => `<tr>
+        <td class="ttl">${esc(it.title || "")}</td>
+        <td class="mono">${esc(it.document_number || "—")}</td>
+        <td>${timeCell(it.timeliness_status)}</td>
+        <td><span class="tag">${esc(it.source || "—")}</span></td>
+        <td>${addrCell(it)}</td>
+        <td>${relBtn(it.rfn)}</td></tr>`).join("")
+      || '<tr><td colspan="6" class="muted">该类暂无资料</td></tr>';
+    return `<h3 style="margin:var(--s4) 0 var(--s2)">
+        <span>${esc(cat.label)} <span class="tag">${num(cat.count)} 条</span></span>
+        <span class="hint">${esc(cat.note || "")}</span></h3>
+      <div class="scrollx"><table><thead><tr>
+        <th>名称</th><th>文号</th><th>时效</th><th>源</th><th>访问地址</th><th>关系</th>
+      </tr></thead><tbody>${rows}</tbody></table></div>`;
+  }).join("");
+  const body = `${kpiRow}${gapNote}${sections}
+    <div class="muted" style="margin-top:var(--s3)">${esc(d.note || "")}</div>`;
+  return card("监管统计（EAST 资料）", `${num(d.total)} 条 / ${cats.length} 类`, body,
+    d.source_name || "base_api.regstats_docs", d.fetched_at);
+}
+
+/*: 「留言板」—— 使用者反馈的**唯一入口**（对内网开放后必须有）
+ *
+ * 三条如实告知（写在表单上，不藏在文档里）：
+ *   1. 域账号由**填写者自报**（服务端拿不到访问者的 Windows 账号，除非接集成认证）；
+ *   2. IP / UA / 提交时间由**服务端记录**，前端改不了；
+ *   3. 留言**只追加不删除**，处置只改状态（保留"问题曾经存在"的证据）。 */
+function viewFeedback(d){
+  if (!d || d.available === false) return unavail(obj(d), "留言板");
+  const items = arr(d.items), st = obj(d.stats);
+  const kinds = arr(d.kinds), sevs = arr(d.severities);
+  const kindOpt = kinds.map(k => `<option value="${esc(k)}">${
+    ({bug:"缺陷",data:"数据质量",feature:"功能缺失",other:"其他"})[k] || esc(k)}</option>`).join("");
+  const sevOpt = sevs.map(s => `<option value="${esc(s)}"${
+    s === "normal" ? " selected" : ""}>${
+    ({low:"轻微",normal:"一般",high:"严重",blocker:"阻塞"})[s] || esc(s)}</option>`).join("");
+  const pageOpt = TABS.map(t => `<option value="${esc(t.name)}">${esc(t.name)}</option>`).join("");
+  const form = `<div class="card" style="box-shadow:none;border-style:dashed">
+    <h3><span>记录一个问题</span><span class="hint">想改什么、哪里不对、缺什么功能</span></h3>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:var(--s2)">
+      <label class="muted">分类<select id="fbkind">${kindOpt}</select></label>
+      <label class="muted">严重度<select id="fbsev">${sevOpt}</select></label>
+      <label class="muted">页面<select id="fbpage">${pageOpt}</select></label>
+      <label class="muted">域账号<input id="fbacc" placeholder="本机/域账号，如 zhangsan"
+        maxlength="64" autocomplete="username"></label>
+    </div>
+    <label class="muted" style="display:block;margin-top:var(--s2)">标题
+      <input id="fbtitle" maxlength="120" placeholder="一句话说清问题（≥4 字）"></label>
+    <label class="muted" style="display:block;margin-top:var(--s2)">详细说明（可选）
+      <textarea id="fbdetail" rows="3" maxlength="4000"
+        placeholder="复现步骤 / 期望结果 / 实际结果；数据问题请带上 RFN 或文号"></textarea></label>
+    <div class="toolbar" style="margin-top:var(--s2)">
+      <button class="primary" id="fbsubmit">提交</button>
+      <span class="muted" style="font-size:12px">
+        域账号为**自报**；IP / 浏览器 / 提交时间由服务端记录且不可篡改；留言只追加不删除。</span>
+    </div></div>`;
+  const rows = items.map(it => `<tr>
+      <td class="mono">${esc((it.created_at || "").replace("T", " ").slice(0, 19))}</td>
+      <td class="mono">${esc(it.fid || "")}</td>
+      <td><span class="tag">${esc(it.kind_label || it.kind || "")}</span></td>
+      <td>${pill(it.severity_label || it.severity || "",
+        it.severity === "high" || it.severity === "blocker" ? "bad"
+        : (it.severity === "low" ? "" : "warn"))}</td>
+      <td>${esc(it.page || "—")}</td>
+      <td class="ttl">${esc(it.title || "")}${
+        it.detail ? `<details><summary>展开说明</summary><div class="muted"
+          style="white-space:pre-wrap">${esc(it.detail)}</div></details>` : ""}</td>
+      <td>${esc(it.account || "—")}
+        <span class="muted" style="font-size:11px">（${esc(it.account_src_label || "")}）</span></td>
+      <td class="mono">${esc(it.ip || "—")}</td>
+      <td>${pill(it.status_label || it.status || "",
+        it.status === "closed" ? "ok" : (it.status === "ack" ? "warn" : ""))}</td>
+      <td>${STATE.health && STATE.health.local_only
+        ? `<button class="link" data-fbx="${esc(it.fid)}">处置</button>` : '<span class="muted">—</span>'}</td>
+    </tr>`).join("")
+    || '<tr><td colspan="10" class="muted">还没有留言。发现问题就写在上面 —— 每一条都会进入改进清单。</td></tr>';
+  const body = `${form}
+    <div class="toolbar" style="margin-top:var(--s4)">
+      <b>共 ${num(st.total || 0)} 条</b>
+      <span class="muted">待处置 ${num(obj(st.by_status).open)} · 已受理 ${
+        num(obj(st.by_status).ack)} · 已闭环 ${num(obj(st.by_status).closed)}</span>
+      <select id="fbfilter"><option value="">全部状态</option>
+        <option value="open">待处置</option><option value="ack">已受理</option>
+        <option value="closed">已闭环</option></select>
+    </div>
+    <div class="scrollx"><table><thead><tr>
+      <th>时间</th><th>编号</th><th>分类</th><th>严重度</th><th>页面</th><th>标题 / 说明</th>
+      <th>记录者</th><th>IP</th><th>状态</th><th>操作</th>
+    </tr></thead><tbody>${rows}</tbody></table></div>`;
+  return card("留言板", "发现问题就记一条", body,
+    d.source_name || "interfaces.feedback_api", d.fetched_at);
+}
+
+function bindFeedback(){
+  const v = $("#view");
+  const sub = $("#fbsubmit", v);
+  if (sub) sub.onclick = async () => {
+    const payload = {
+      kind: ($("#fbkind", v) || {}).value || "bug",
+      severity: ($("#fbsev", v) || {}).value || "normal",
+      page: ($("#fbpage", v) || {}).value || "",
+      account: (($("#fbacc", v) || {}).value || "").trim(),
+      title: (($("#fbtitle", v) || {}).value || "").trim(),
+      detail: (($("#fbdetail", v) || {}).value || "").trim(),
+    };
+    sub.disabled = true;
+    try {
+      const r = await api("/api/feedback", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(payload),
+      });
+      if (r && r.ok) {
+        toast("已记录：" + r.fid);
+        render();
+      } else {
+        toast("提交失败：" + ((r && r.reason) || "未知原因"), true);
+        sub.disabled = false;
+      }
+    } catch (e) {
+      toast("提交失败：" + String(e), true);
+      sub.disabled = false;
+    }
+  };
+  const flt = $("#fbfilter", v);
+  if (flt) {
+    flt.value = (STATE._fbq || {}).status || "";
+    flt.onchange = () => {
+      STATE._fbq = Object.assign({}, obj(STATE._fbq), {status: flt.value});
+      render();
+    };
+  }
+  $$("[data-fbx]", v).forEach(b => {
+    b.onclick = async () => {
+      const fid = b.dataset.fbx;
+      const handling = prompt("处置说明（闭环必填，≥4 字）：\n" + fid, "已核验并修复");
+      if (handling == null) return;
+      const r = await api("/api/feedback/resolve", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({fid: fid, handling: handling, status: "closed"}),
+      });
+      if (r && r.ok) { toast("已闭环 " + fid); render(); }
+      else toast("处置失败：" + ((r && r.reason) || "未知原因"), true);
+    };
+  });
 }
 
 function applyHash(){
@@ -1323,9 +1590,27 @@ function initSSE(){
   }catch(e){ setLive("轮询","off"); }
   // 无论 SSE 是否可用都做一次轻量健康探测（让"门禁"徽标有数据）
   api("/api/health").then(h=>{
+    STATE.health = obj(h);
     const g=$("#gates");
     g.textContent = h.ok? `门禁 ${h.gates_registered} 道` : "门禁 不可用";
     g.className = h.ok? "badge" : "badge bad";
+    /* 访问范围徽标 + **隐藏本机专属页签**（2026-10-23）。
+     * 只隐藏、不做别的：真正的边界在服务端（403）。隐藏只是别让同事点了才知错。 */
+    const scope = String(h.scope || "local");
+    const local = h.local_only === true || scope === "local";
+    const sc = $("#scope");
+    if (sc) {
+      sc.textContent = local ? "本机" : "内网只读";
+      sc.className = "badge " + (local ? "" : "warn");
+      sc.title = local ? "全部功能可用（含待办处置）"
+        : `内网访问（${scope}）：待办处置/留言处置/本地文件/宿主诊断/提交详情仅限本机`;
+    }
+    if (!local) {
+      $$("#nav button").forEach(b => {
+        if (LOCAL_ONLY_TABS.indexOf(b.dataset.id) >= 0) b.style.display = "none";
+      });
+      if (LOCAL_ONLY_TABS.indexOf(CUR) >= 0) { location.hash = "overview"; }
+    }
   }).catch(()=>{});
   setInterval(()=>{ if(CUR==="overview"||CUR==="worklist") render(); }, 60000);
 }

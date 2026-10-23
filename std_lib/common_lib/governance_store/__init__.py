@@ -41,6 +41,12 @@ from ._db import (  # noqa: F401
     now_iso,
     repo_root,
 )
+from .feedback import (  # 第一百一十一批：确认台留言板（对内网开放后的问题收集口）
+    feedback_add,
+    feedback_list,
+    feedback_resolve,
+    feedback_stats,
+)
 from .ledger import (
     current_run_id,
     file_version,
@@ -84,6 +90,10 @@ from .worklist import (
 
 __all__ = [
     "SCHEMA_VERSION",
+    "feedback_add",
+    "feedback_list",
+    "feedback_resolve",
+    "feedback_stats",
     "TABLES",
     "WORKLIST_OPEN_UNIQUE",
     "repo_root",

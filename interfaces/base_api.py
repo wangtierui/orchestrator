@@ -474,6 +474,82 @@ def internal_facets() -> dict:
     return out
 
 
+#: 「监管统计 / EAST」资料分类（**写死在这里，不接受外部输入** ⇒ 无注入面）。
+#:
+#: 为什么用 `LIKE` 而不是 FTS：这一页要的是"**受控口径**的清单"，不是相关性排序。
+#: 实测 FTS 查 `EAST` 会把正文里顺带提到 EAST 的财政部/海关公告一起捞出来（5 条里
+#: 4 条无关）；而按标题分类后每类都干净可核对。**资料少时，可核对比"多召回"重要。**
+REGSTATS_CATEGORIES: tuple[tuple[str, str, str, str], ...] = (
+    ("east", "EAST / 监管数据标准化",
+     "保险业监管数据标准化规范（EAST）及其修订 —— **当前库内仅 1 条**",
+     "title LIKE '%监管数据标准化%' OR title LIKE '%EAST%'"),
+    ("stat_rule", "监管统计制度",
+     "监管统计的管理办法 / 并表统计制度 / 报送频率要求",
+     "title LIKE '%监管统计%'"),
+    ("metric", "统计指标与报送",
+     "具体统计指标的定义、口径与报送内容调整",
+     "title LIKE '%统计指标%' OR title LIKE '%报送频率%'"),
+    ("fin_stat", "金融统计制度（保险/银行）",
+     "保险、银行领域的专项统计制度（含外汇结售汇等跨部门）",
+     "title LIKE '%统计制度%' AND (title LIKE '%保险%' OR title LIKE '%银行%' "
+     "OR source IN ('nfra','pbc'))"),
+)
+
+
+def regstats_docs(*, per_category: int = 60) -> dict:
+    """「监管统计（EAST）」清单：按**受控分类**取标题命中，跨类去重（先命中者归属）。
+
+    返回 `{available, categories:[{key,label,note,count,items}], total, coverage, note}`。
+
+    诚实披露（本模块的立场）
+    ------------------------
+    `coverage` 明确给出："项目**尚未**接入 EAST 报文/字段级校验"——本函数只产出
+    **资料指针**。把"有 1 条相关文件"渲染成趋势图/仪表盘，是**用图表撒谎**；
+    所以前端也只做清单 + 缺口说明。
+    """
+    seen: set[str] = set()
+    cats: list[dict] = []
+    try:
+        with _conn("external") as c:
+            for key, label, note, where in REGSTATS_CATEGORIES:
+                rows = [dict(r) for r in c.execute(
+                    "SELECT rfn, title, document_number, publish_date,"
+                    " timeliness_status, source, url, theme FROM records "
+                    f"WHERE ({where}) ORDER BY publish_date DESC, rfn LIMIT ?",
+                    (int(per_category),))]
+                items = []
+                for r in rows:
+                    rid = str(r.get("rfn") or "")
+                    if rid and rid in seen:
+                        continue
+                    if rid:
+                        seen.add(rid)
+                    items.append(r)
+                cats.append({"key": key, "label": label, "note": note,
+                             "count": len(items), "items": items})
+    except sqlite3.Error as e:
+        return {"available": False, "reason": f"{type(e).__name__}: {str(e)[:200]}",
+                "categories": [], "total": 0}
+
+    total = sum(x["count"] for x in cats)
+    no_url = sum(1 for x in cats for it in x["items"] if not (it.get("url") or ""))
+    return {
+        "available": True,
+        "categories": cats,
+        "total": total,
+        "coverage": {
+            "east_direct": cats[0]["count"],
+            "documents": total,
+            "without_url": no_url,
+            # 能力边界：本仓**没有** EA​ST 报文解析/字段校验，只有资料
+            "east_field_validation": False,
+            "note": "项目当前**未接入** EAST 报文与字段级校验；本页只呈现**资料指针**。",
+        },
+        "note": ("资料按标题的受控关键词分类（每类口径写在卡片说明里），"
+                 "跨类重复的同一文件归入**靠前**类别。"),
+    }
+
+
 def search_internal(text: str, limit: int = 20, kind: str = "policies") -> list[dict]:
     """内部全文检索（FTS5 trigram，**按相关性排序**）。kind=policies|clauses。
 

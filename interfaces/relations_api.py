@@ -334,6 +334,102 @@ def ego(ref: str, *, limit: int = 200, include_weak: bool = False) -> dict:
     }
 
 
+def global_graph(*, top_hubs: int = 12) -> dict:
+    """**全局关系图谱**（未指定中心时展示，2026-10-23）。
+
+    为什么不是"把 4197 条边全画出来"
+    --------------------------------
+    全量画出来是**一坨**：监管↔监管 4055 条里，大量是"某通知依据《保险法》"这类
+    中心辐射型结构，同屏上千条边只会得到一张不可读的黑网。所以全局视图分两块：
+
+    1. **二部图「公司制度 → 监管依据」**（`bipartite`）：这部分**数据量刚好**
+       —— 实测可定位的 cross 关系只有 **24 条**（17 份制度 ↔ 17 份监管文件），
+       可以**完整**画出来，而且它回答的是本项目最关心的问题：
+       "我们的制度踩在哪些监管要求上"。**不做抽样**（24 条抽什么）。
+    2. **枢纽文件 Top N**（`hubs`）：监管↔监管的 4055 条按"被依据次数"取头部，
+       点进去看 ego（以它为中心的局部图）。
+
+    诚实披露：`counts.unresolved` 是"关系存在但对方未登记 RFN"的条数（实测 2462 条，
+    占 58.6%）——它们**画不进图**，必须在页面上写明，否则读者会以为"关系就这么多"。
+    """
+    cross = [r for r in load("cross") if r.get("src_ref") and r.get("dst_ref")]
+    # 去重：同一 (src,dst,relation) 可能因多次抽取产生多行（relation_id 不同）
+    uniq: dict[tuple[str, str, str], dict] = {}
+    for r in cross:
+        key = (str(r["src_ref"]), str(r["dst_ref"]), str(r.get("relation") or ""))
+        uniq.setdefault(key, r)
+
+    left: dict[str, dict] = {}
+    right: dict[str, dict] = {}
+    edges: list[dict] = []
+    for (src, dst, rel), r in uniq.items():
+        left.setdefault(src, {"id": src, "kind": "internal",
+                              "name": str(r.get("src_name") or ""),
+                              "docno": str(r.get("src_docno") or "")})
+        right.setdefault(dst, {"id": dst, "kind": "regulatory",
+                               "name": str(r.get("dst_name") or ""),
+                               "docno": str(r.get("dst_docno") or "")})
+        edges.append({"from": src, "to": dst, "relation": rel,
+                      "label": RELATION_LABELS.get(rel, rel),
+                      "confidence": r.get("confidence", ""),
+                      "matched_by": r.get("matched_by", "")})
+
+    # 枢纽：监管文件"被依据"次数（dst 侧），并补名称
+    name_of: dict[str, str] = {}
+    docno_of: dict[str, str] = {}
+    deg: dict[str, int] = {}
+    for r in load("regulatory"):
+        d = str(r.get("dst_ref") or "")
+        if not d:
+            continue
+        deg[d] = deg.get(d, 0) + 1
+        if d not in name_of and r.get("dst_name"):
+            name_of[d] = str(r["dst_name"])
+        if d not in docno_of and r.get("dst_docno"):
+            docno_of[d] = str(r["dst_docno"])
+    for node in right.values():
+        name_of.setdefault(node["id"], node["name"])
+        docno_of.setdefault(node["id"], node["docno"])
+
+    hubs = [{"ref": k, "name": name_of.get(k, ""), "docno": docno_of.get(k, ""),
+             "degree": n, "kind": "regulatory"}
+            for k, n in sorted(deg.items(), key=lambda kv: -kv[1])[:top_hubs]]
+
+    s = stat() or {}
+    res = s.get("resolution") or {}
+    # ⚠️ `stat()["relations"]` 的形状是 `{total, by_kind, by_cross}`，
+    # 不是 `{regulatory: n, cross: n}`（实测踩到：按后者取会全是 0，
+    # 于是页面写着"监管关系 0 条"——比不显示更糟，因为它看起来像事实）。
+    rel = s.get("relations") or {}
+    by_cross = rel.get("by_cross") or {}
+    unresolved = int(res.get("unresolved") or 0)
+    return {
+        "available": True,
+        "mode": "global",
+        "ref": "",
+        "bipartite": {"left": sorted(left.values(), key=lambda x: x["name"]),
+                      "right": sorted(right.values(), key=lambda x: x["name"]),
+                      "edges": edges},
+        "hubs": hubs,
+        "counts": {
+            "documents": len(left) + len(right),
+            "edges": len(edges),
+            "hubs": len(hubs),
+            "unresolved": unresolved,
+            "regulatory_relations": int(by_cross.get("regulatory->regulatory") or 0),
+            "internal_relations": int(by_cross.get("internal->internal") or 0),
+            "cross_relations": int(by_cross.get("internal->regulatory") or 0),
+            "total_relations": int(rel.get("total") or 0),
+        },
+        "stats": {"resolution": res,
+                  "resolved_to_entity_ratio": s.get("resolved_to_entity_ratio")},
+        "labels": dict(RELATION_LABELS),
+        "note": ("全局视图 = 「公司制度 → 监管依据」二部图（可定位的 cross 关系**全部**画出）"
+                 "+ 监管文件枢纽 Top N。"
+                 f"另有 {unresolved} 条关系因对方未登记 RFN 无法定位，未画入。"),
+    }
+
+
 if __name__ == "__main__":  # 离线自检
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
     print(json.dumps(summary(), ensure_ascii=False, indent=2))
