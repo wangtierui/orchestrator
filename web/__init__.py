@@ -33,13 +33,22 @@ DEFAULT_PORT = 8765
 def serve(host: str = DEFAULT_HOST, port: int = DEFAULT_PORT, *,
           open_browser: bool = False, verbose: bool = False,
           pid_file: str | None = None, log_file: str | None = None,
-          single_instance: bool = False):
-    """启动确认台（阻塞直到 Ctrl-C）。薄封装，实现见 `web.server`。"""
+          single_instance: bool = False, auth_mode: str = "",
+          trusted_proxies: tuple[str, ...] = (),
+          tls_cert: str = "", tls_key: str = ""):
+    """启动确认台（阻塞直到 Ctrl-C）。薄封装，实现见 `web.server`。
+
+    ⚠️ 新增参数**必须同时加到这里**：`commands/serve.py` 经本函数透传，
+    漏加会得到 `TypeError: serve() got an unexpected keyword argument`（实测踩到，
+    表现为"服务起不来且只有一行 TypeError"）。
+    """
     from .server import serve as _serve
 
     return _serve(host=host, port=port, open_browser=open_browser,
                   verbose=verbose, pid_file=pid_file, log_file=log_file,
-                  single_instance=single_instance)
+                  single_instance=single_instance, auth_mode=auth_mode,
+                  trusted_proxies=tuple(trusted_proxies or ()),
+                  tls_cert=tls_cert, tls_key=tls_key)
 
 
 def build_server(host: str = DEFAULT_HOST, port: int = DEFAULT_PORT):

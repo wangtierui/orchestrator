@@ -1284,6 +1284,24 @@ _ONLY_STEPS: tuple[str, ...] = ()
 _FROM_STEP = ""
 _FROM_HIT = False
 _DRY_RUN = False
+#: 本轮被 `ALWAYS_RUN_STEPS` 从 resume 跳过集中**救回**的步骤（写进汇总/台账，可审计）
+_FORCED_BY_ALWAYS: set[str] = set()
+#: 本轮是否**一个步骤都没执行**（全 SKIP）——由 `_run_chain` 置位，`main` 写进运行台账
+_ALL_SKIPPED = False
+
+#: **`--resume` 也必须执行的步骤**（2026-10-23，TD-27）。
+#:
+#: 为什么需要：`--resume` 的判据是"上次该步 rc=0 且水位无 stale"，它回答的是
+#: 「**产物**还需要重算吗」，回答不了「**周期性检查**做过了吗」。实测 2026-10-23 06:00
+#: 的计划任务：41 步里 40 步 SKIP，唯独 `gates` 跑了 —— 而 `gates` 没被跳过**只是因为它
+#: 上次 rc≠0**。反过来说：**如果昨天门禁也 PASS，今天就会连门禁一起被跳过**，
+#: 日检形同虚设；`timeliness:verify` 同理（核验结论有 90 天保质期，跳过＝让结论悄悄过期）。
+#:
+#: 用**常量而非 StepSpec 字段**：StepSpec 的字段面被 README 契约表与
+#: `gate_config_integrity` 派生/校验，为一条运行时行为加字段会牵动两处契约；
+#: 而"哪些步骤必须周期执行"本质是**编排策略**，放这里更贴合、也更好守（见守卫
+#: `test_resume_always_run`）。
+ALWAYS_RUN_STEPS: tuple[str, ...] = ("gates", "timeliness:verify")
 
 
 def _skip_reason(step: str) -> str:
@@ -1299,6 +1317,10 @@ def _skip_reason(step: str) -> str:
     if _DRY_RUN:
         return "--dry-run（只列 argv，不执行）"
     if step in _RESUME_SKIP:
+        if any(_step_matches(step, s) for s in ALWAYS_RUN_STEPS):
+            # TD-27：**周期性检查不得被 --resume 跳过**（见 ALWAYS_RUN_STEPS 说明）。
+            _FORCED_BY_ALWAYS.add(step)
+            return ""
         return "--resume：上次 rc=0 且水位无 stale/未登记"
     return ""
 
@@ -2339,7 +2361,21 @@ def _run_chain(args) -> int:
             )
         except Exception as e:  # noqa: BLE001  告警失败不得改变退出码
             print(f"[refresh] WARN 告警发送失败（不影响退出码）: {type(e).__name__}: {e}")
-    return 0 if not summary["failed"] else 2
+    # ---- 退出码语义（TD-27 第二项）------------------------------------------ #
+    # 原实现 `return 0 if not failed else 2`：**任何**失败都报 2（DATA），于是
+    # 「门禁没通过」被报成"数据问题"，而 `rc=2` 在台账里又无法与"真的数据异常"区分
+    # （实测 2026-10-23 06:00 的 run：40 SKIP + gates FAIL，run_log 却写 rc=2(DATA)）。
+    # 现按 config.exitcodes 的语义分层：链路性失败（FAIL/ENV）→ 1；纯数据类 → 2。
+    global _ALL_SKIPPED
+    _ALL_SKIPPED = bool(report) and all(bool(r.get("skipped")) for r in report)
+    if _ALL_SKIPPED:
+        print("[refresh] 本轮**全部步骤跳过**（--resume：上次 rc=0 且水位无 stale/未登记）"
+              f"；被 always_run 强制执行的步骤：{sorted(_FORCED_BY_ALWAYS) or '无'}",
+              flush=True)
+    if not summary["failed"]:
+        return 0
+    _codes = {str(f.get("exit_code") or "").upper() for f in summary["failed"]}
+    return 1 if (_codes & {"FAIL", "ENV"}) else 2
 
 
 def main(argv=None) -> int:
@@ -2494,7 +2530,12 @@ def main(argv=None) -> int:
         try:
             # X4（P1-5）：run_log.note 带**语义化**退出码（原为裸数字，2 的四义无法区分）；
             # 逐步骤的 exit_code / stderr_tail_len 见汇总 JSON（路径随本次输出打印）。
-            gs.run_finish(run_id, rc == 0, note=f"rc={rc}({_exit_semantic(rc)})")
+            _note = f"rc={rc}({_exit_semantic(rc)})"
+            if _ALL_SKIPPED:
+                # 全跳过的 run **仍然是成功**（没做事 ≠ 做错事），但必须在台账里
+                # 写清楚"这轮什么都没跑"，否则看板会把它当普通成功运行（TD-27）。
+                _note += "；本轮全部步骤跳过（--resume）"
+            gs.run_finish(run_id, rc == 0, note=_note)
         except Exception as e:  # noqa: BLE001
             print(f"[refresh] WARN 运行台账收尾失败: {type(e).__name__}: {e}")
     return rc

@@ -38,6 +38,7 @@ std_lib.common_lib.norm — 归一化唯一实现（专项三；A-10 分层收�
 from __future__ import annotations
 
 import re
+import unicodedata
 
 _NULL_TOKENS = {"", "n/a", "na", "无", "-", "none", "null", "未注明", "不详"}
 # ASCII null 占位大小写不敏感判定（N/A、Null、NONE 等）
@@ -89,6 +90,127 @@ def norm_title_strict(title) -> str:
     return _TITLE_STRICT_CLEAN.sub("", t)
 
 
+# ===========================================================================
+# 关系解析增强层（2026-10-23，第一百一十二批）
+# ---------------------------------------------------------------------------
+# 为什么需要独立一层：关系抽取面对的文本是**正文引用**（不是清洗后的字段），
+# 噪声形态和"字段比对"完全不同——HTML 实体残留、尖括号、各类引号、
+# 版本后缀（2022年修订版）、全角数字、文号前的标题残渣。
+#
+# 为什么**不改** norm_title_strict / norm_docno：那两个是归属表/RFN 索引等
+# 「字段精确匹配」面的 SSOT，保真是有意设计；放宽会波及 1000+ 既有行的匹配语义
+# （归一化分叉的教训：单侧改动造成新失配）。故本层是**新增的、只用于关系解析**的实现，
+# 且调用方必须**索引侧与查询侧同时使用**（只改一侧＝单边失配）。
+# ===========================================================================
+_HTML_ENT = re.compile(r"&(lt|gt|amp|quot|apos|nbsp);", re.I)
+_HTML_MAP = {"lt": "<", "gt": ">", "amp": "&", "quot": '"', "apos": "'", "nbsp": " "}
+#: 关系语境噪声：尖括号/书名号外的一切引号与反引号（正文引用常带）
+_REL_TITLE_JUNK = re.compile(r"[<>〈〉“”‘’\u2032`]")
+#: 版本/版次/稿别后缀：(2022年修订版) （2023版） (试行) （暂行） V2 …
+_REL_VERSION = re.compile(
+    r"(?:[（(]\s*(?:(?:19|20)\d{2}\s*年?\s*)?"
+    r"(?:修订版?|修正版?|版|年修订|年修正|试行|暂行|征求意见稿|草案|送审稿)"
+    r"\s*[)）])"
+    r"|(?:[-_\s]?[Vv]\d+(?:\.\d+)*)$"
+)
+#: "令第X号"里的中文序号（国务院令第二百六十二号）
+_CN_SEQ = re.compile(r"第([零一二三四五六七八九十百]+)号")
+_CN_DIGIT = {"零": 0, "一": 1, "二": 2, "三": 3, "四": 4,
+             "五": 5, "六": 6, "七": 7, "八": 8, "九": 9}
+#: 文号尾部形态（用于剥掉正文/标题残渣）：`…〔2021〕64号` / `…令第262号`
+_DOCNO_TAIL_BRACKET = re.compile(
+    r"([^〔\[（(，。；\s]{1,24}[〔\[（(]\s*\d{4}\s*[〕\]）)]\s*\d+\s*号?)$")
+_DOCNO_TAIL_ORDER = re.compile(r"([^，。；\s]{1,24}令第\d+号)$")
+
+
+def _cn_seq_to_int(txt: str) -> str:
+    """中文序号 → 阿拉伯（仅处理 0~999 的常规写法；无法识别则原样返回）。"""
+    if not txt or not re.fullmatch(r"[零一二三四五六七八九十百]+", txt):
+        return txt
+    section, num, total = 0, 0, 0
+    for ch in txt:
+        if ch == "百":
+            section += (num or 1) * 100
+            num = 0
+        elif ch == "十":
+            section += (num or 1) * 10
+            num = 0
+        else:
+            num = _CN_DIGIT.get(ch, 0)
+    total = section + num
+    return str(total) if total else txt
+
+
+def _halfwidth(s: str) -> str:
+    """全角数字/字母 → 半角（NFKC）。**仅用于文号**，不用于中文标题。"""
+    return unicodedata.normalize("NFKC", s)
+
+
+def strip_title_version(title) -> str:
+    """剥掉版本/版次/稿别后缀（可叠加，最多 4 轮）。空输入返回空串。"""
+    if not title:
+        return ""
+    t = str(title).strip()
+    for _ in range(4):
+        prev = t
+        t = _REL_VERSION.sub("", t).strip()
+        if t == prev:
+            break
+    return t
+
+
+def drop_cn_prefix(title: str) -> str:
+    """去掉「中华人民共和国」/「中国」前缀（用于"公司法""保险法"这类法定简称）。
+
+    只在**剩余长度 ≥ 2** 时剥（防 `中国` 这类词被剥成空）；无前缀原样返回。
+    """
+    t = (title or "").strip()
+    for p in ("中华人民共和国", "中国"):
+        if t.startswith(p) and len(t) > len(p) + 1:
+            return t[len(p):]
+    return t
+
+
+def norm_title_rel(title) -> str:
+    """关系解析专用标题归一：解 HTML 实体 → 去尖括号/引号 → 去空白 → `norm_title_strict`。
+
+    注意：**不剥版本后缀、不剥国名前缀**——那两步是独立的可组合步骤
+    （`strip_title_version` / `drop_cn_prefix`），因为它们在索引侧要**各自建键**
+    （精确键、去版本键、去前缀键是三种不同强度的匹配）。
+    """
+    if not title:
+        return ""
+    t = _HTML_ENT.sub(lambda m: _HTML_MAP[m.group(1).lower()], str(title)).strip()
+    t = _REL_TITLE_JUNK.sub("", t)
+    t = re.sub(r"\s+", "", t)
+    return norm_title_strict(t)
+
+
+def norm_docno_strong(docno) -> str:
+    """关系解析专用文号归一：解实体 → 全角转半角 → 去空白 → 中文序号转阿拉伯
+    → `norm_docno`。
+
+    与 `norm_docno` 的差异（两类，都是正文引用引入、且**判定安全**的形态）：
+      ① `财教〔２０２１〕６４号`（全角数字）—— `norm_docno` 不转，会与库内半角值失配；
+      ② `中华人民共和国国务院令第二百六十二号`（中文序号）—— 无法与 `…第262号` 对齐。
+
+    **刻意不做"剥离文号前残渣"**（2026-10-23 实测后撤回）：
+      正文里确有 `保险机构参与中国金融期货证监会公告〔2020〕12号` 这种"前后夹着正文"的形态，
+      但"从哪里截"没有可靠判据 —— 机关代字可长可短（`证监会` / `中国银行保险监督管理委员会`），
+      任何按长度或按分隔符的启发式都会**切掉合法机关代字**，把两个不同文号归成一个
+      （错配比未匹配更糟）。这类形态由**签名层** `docno_signature`（取"四位年+序号数字尾"）
+      处理，它天然不受前缀影响。守卫 `test_no_residue_stripping` 固定这个决定。
+    不做括号形态归一（`〔〕[]（）`）——`norm_docno` 已统一去除。
+    """
+    if not docno:
+        return ""
+    t = _HTML_ENT.sub(lambda m: _HTML_MAP[m.group(1).lower()], str(docno)).strip()
+    t = _halfwidth(t)
+    t = re.sub(r"\s+", "", t)
+    t = _CN_SEQ.sub(lambda m: "第" + _cn_seq_to_int(m.group(1)) + "号", t)
+    return norm_docno(t)
+
+
 if __name__ == "__main__":  # 离线自检
     assert norm_docno("银保监办发〔2019〕19号") == "银保监办发201919"
     assert norm_title("《保险销售行为管理办法》（试行）") == "保险销售行为管理办法"
@@ -97,4 +219,17 @@ if __name__ == "__main__":  # 离线自检
         == "中国银保监会办公厅关于A、B事项的通知"
     )
     assert norm_title_strict("《XX办法》（试行）") == "XX办法"
+    # 关系解析增强层（2026-10-23）
+    assert norm_title_rel("关于印发<阳光保险集团工会经费收支管理规范>的通知") == \
+        "关于印发阳光保险集团工会经费收支管理规范的通知"
+    # 关系层刻意**不**在 norm_title_rel 里剥版本（版本键是独立一档），需显式组合
+    assert strip_title_version(norm_title_rel("阳光人寿实物资产管理办法（2021版）")) == \
+        "阳光人寿实物资产管理办法"
+    assert strip_title_version("X管理办法(2022年修订版)") == "X管理办法"
+    assert strip_title_version("X管理办法（试行）") == "X管理办法"
+    assert drop_cn_prefix("中华人民共和国公司法") == "公司法"
+    assert drop_cn_prefix("中华人民共和国保险法") == "保险法"
+    assert drop_cn_prefix("保险公司股权管理办法") == "保险公司股权管理办法"
+    assert norm_docno_strong("阳光人寿发〔２０２３〕２０７ 号") == "阳光人寿发2023207"
+    assert norm_docno_strong("银监发[2014]35号") == "银监发201435"
     print("[common_lib.norm] 自检通过")

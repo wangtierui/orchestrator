@@ -37,6 +37,7 @@ import os
 import subprocess
 import sys
 import time
+import urllib.error
 import urllib.request
 
 from bootstrap import bootstrap
@@ -225,7 +226,13 @@ def _proc_running() -> tuple[bool, str]:
 
 
 def _health_ok(port: int = DEFAULT_PORT) -> tuple[bool, str]:
-    """探活：`/api/health` 200 + JSON 含 ok/available。"""
+    """探活：`/api/health` 200 + JSON 含 ok/available；**401 也算"活着"**。
+
+    ⚠️ 2026-10-23：认证上线后，未带凭据的探活会拿到 **401**。原实现只认 200
+    ⇒ `status`/`verify` 会把**健康的**服务报成"不通"，计划任务自检也跟着误判
+    （实测：进程存活、内网可登录，而 `status` 说"8765~8784 均无响应"）。
+    401 恰恰证明"HTTP 服务在跑、只是要登录"，应判为可达并标注需要认证。
+    """
     for p in range(port, port + 20):
         url = f"http://127.0.0.1:{p}/api/health"
         try:
@@ -236,6 +243,10 @@ def _health_ok(port: int = DEFAULT_PORT) -> tuple[bool, str]:
                 d = json.loads(r.read().decode("utf-8", "replace"))
                 if isinstance(d, dict) and ("ok" in d or "available" in d):
                     return True, f"{url} → 200"
+        except urllib.error.HTTPError as e:
+            if e.code in (401, 403):
+                return True, f"{url} → {e.code}（服务在跑，需登录）"
+            continue
         except Exception:  # noqa: BLE001  端口未监听就换下一个
             continue
     return False, f"127.0.0.1:{port}~{port + 19} 均无响应"

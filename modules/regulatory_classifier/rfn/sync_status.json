@@ -16833,5 +16833,1425 @@
         "updated_at": "2026-10-19 17:38:33"
       }
     }
+  },
+  "RFN-6cb01fcb9d52b817": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-6cb01fcb9d52b817",
+        "updated_at": "2026-10-23 14:33:18"
+      }
+    }
+  },
+  "RFN-651d52f763c6da54": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-651d52f763c6da54",
+        "updated_at": "2026-10-23 14:33:18"
+      }
+    }
+  },
+  "RFN-c336eb73a18557b0": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-c336eb73a18557b0",
+        "updated_at": "2026-10-23 14:33:18"
+      }
+    }
+  },
+  "RFN-6c5b78b078e277a9": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-6c5b78b078e277a9",
+        "updated_at": "2026-10-23 14:33:18"
+      }
+    }
+  },
+  "RFN-91c7260b7c738964": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-91c7260b7c738964",
+        "updated_at": "2026-10-23 14:33:18"
+      }
+    }
+  },
+  "RFN-c9dbf88d1de209e8": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-c9dbf88d1de209e8",
+        "updated_at": "2026-10-23 14:33:18"
+      }
+    }
+  },
+  "RFN-b91390589fc90132": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-b91390589fc90132",
+        "updated_at": "2026-10-23 14:33:18"
+      }
+    }
+  },
+  "RFN-b721e3132683fb4a": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-b721e3132683fb4a",
+        "updated_at": "2026-10-23 14:33:18"
+      }
+    }
+  },
+  "RFN-e2921422d982b29e": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-e2921422d982b29e",
+        "updated_at": "2026-10-23 14:33:18"
+      }
+    }
+  },
+  "RFN-a1f64b1f3dacf0ba": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-a1f64b1f3dacf0ba",
+        "updated_at": "2026-10-23 14:33:18"
+      }
+    }
+  },
+  "RFN-88eb66479b674960": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-88eb66479b674960",
+        "updated_at": "2026-10-23 14:33:18"
+      }
+    }
+  },
+  "RFN-a823a44909219de1": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-a823a44909219de1",
+        "updated_at": "2026-10-23 14:33:18"
+      }
+    }
+  },
+  "RFN-2b6c849eef240994": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-2b6c849eef240994",
+        "updated_at": "2026-10-23 14:33:19"
+      }
+    }
+  },
+  "RFN-468d6ea8d6147a9f": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-468d6ea8d6147a9f",
+        "updated_at": "2026-10-23 14:33:19"
+      }
+    }
+  },
+  "RFN-2358e0edec61ee00": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-2358e0edec61ee00",
+        "updated_at": "2026-10-23 14:33:19"
+      }
+    }
+  },
+  "RFN-8b049313ecc4a92d": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-8b049313ecc4a92d",
+        "updated_at": "2026-10-23 14:33:19"
+      }
+    }
+  },
+  "RFN-824c1a8adddaa43e": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-824c1a8adddaa43e",
+        "updated_at": "2026-10-23 14:33:19"
+      }
+    }
+  },
+  "RFN-c24ee8aa576e12a4": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-c24ee8aa576e12a4",
+        "updated_at": "2026-10-23 14:33:19"
+      }
+    }
+  },
+  "RFN-26e253da19a87f45": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-26e253da19a87f45",
+        "updated_at": "2026-10-23 14:33:19"
+      }
+    }
+  },
+  "RFN-33cd311dd4a77d32": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-33cd311dd4a77d32",
+        "updated_at": "2026-10-23 14:33:19"
+      }
+    }
+  },
+  "RFN-f9edb1c3a7d10d74": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-f9edb1c3a7d10d74",
+        "updated_at": "2026-10-23 14:33:19"
+      }
+    }
+  },
+  "RFN-0184ac34df7677ca": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-0184ac34df7677ca",
+        "updated_at": "2026-10-23 14:33:20"
+      }
+    }
+  },
+  "RFN-5564ffb0183c2a08": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-5564ffb0183c2a08",
+        "updated_at": "2026-10-23 14:33:20"
+      }
+    }
+  },
+  "RFN-3b4d197939d8475c": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-3b4d197939d8475c",
+        "updated_at": "2026-10-23 14:33:20"
+      }
+    }
+  },
+  "RFN-2bb1ef1c09bb93e1": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-2bb1ef1c09bb93e1",
+        "updated_at": "2026-10-23 14:33:20"
+      }
+    }
+  },
+  "RFN-991c6005ac1223a4": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-991c6005ac1223a4",
+        "updated_at": "2026-10-23 14:33:20"
+      }
+    }
+  },
+  "RFN-ddd48a75d5acbf31": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-ddd48a75d5acbf31",
+        "updated_at": "2026-10-23 14:33:20"
+      }
+    }
+  },
+  "RFN-8dd4188e6978ade3": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-8dd4188e6978ade3",
+        "updated_at": "2026-10-23 14:33:20"
+      }
+    }
+  },
+  "RFN-99da5291acb40eda": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-99da5291acb40eda",
+        "updated_at": "2026-10-23 14:33:20"
+      }
+    }
+  },
+  "RFN-3d5b5fc2590e4844": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-3d5b5fc2590e4844",
+        "updated_at": "2026-10-23 14:33:20"
+      }
+    }
+  },
+  "RFN-b1ba7b88ea8d9ca0": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-b1ba7b88ea8d9ca0",
+        "updated_at": "2026-10-23 14:33:20"
+      }
+    }
+  },
+  "RFN-b47386a123dff39b": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-b47386a123dff39b",
+        "updated_at": "2026-10-23 14:33:20"
+      }
+    }
+  },
+  "RFN-57ec59515ccb78c1": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-57ec59515ccb78c1",
+        "updated_at": "2026-10-23 14:33:20"
+      }
+    }
+  },
+  "RFN-fdb317132b1fa3a6": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-fdb317132b1fa3a6",
+        "updated_at": "2026-10-23 14:33:21"
+      }
+    }
+  },
+  "RFN-247690eff690e760": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-247690eff690e760",
+        "updated_at": "2026-10-23 14:33:21"
+      }
+    }
+  },
+  "RFN-f549ab31cd294d6e": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-f549ab31cd294d6e",
+        "updated_at": "2026-10-23 14:33:21"
+      }
+    }
+  },
+  "RFN-1a966c2ad09e4d72": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-1a966c2ad09e4d72",
+        "updated_at": "2026-10-23 14:33:21"
+      }
+    }
+  },
+  "RFN-14b87baa68f9a37e": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-14b87baa68f9a37e",
+        "updated_at": "2026-10-23 14:33:21"
+      }
+    }
+  },
+  "RFN-685dcfa2ede98334": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-685dcfa2ede98334",
+        "updated_at": "2026-10-23 14:33:21"
+      }
+    }
+  },
+  "RFN-336f37b261c88432": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-336f37b261c88432",
+        "updated_at": "2026-10-23 14:33:21"
+      }
+    }
+  },
+  "RFN-49905b614cd24115": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-49905b614cd24115",
+        "updated_at": "2026-10-23 14:33:21"
+      }
+    }
+  },
+  "RFN-8c3ec38be167fb09": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-8c3ec38be167fb09",
+        "updated_at": "2026-10-23 14:33:21"
+      }
+    }
+  },
+  "RFN-cae07090e3b4e549": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-cae07090e3b4e549",
+        "updated_at": "2026-10-23 14:33:21"
+      }
+    }
+  },
+  "RFN-2294993fbeddf9a8": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-2294993fbeddf9a8",
+        "updated_at": "2026-10-23 14:33:21"
+      }
+    }
+  },
+  "RFN-c8c7923af68bd8f5": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-c8c7923af68bd8f5",
+        "updated_at": "2026-10-23 14:33:21"
+      }
+    }
+  },
+  "RFN-9b029354ac46bf11": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-9b029354ac46bf11",
+        "updated_at": "2026-10-23 14:33:22"
+      }
+    }
+  },
+  "RFN-6f277802cf4b90ca": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-6f277802cf4b90ca",
+        "updated_at": "2026-10-23 14:33:22"
+      }
+    }
+  },
+  "RFN-1fb4d101f3beed3d": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-1fb4d101f3beed3d",
+        "updated_at": "2026-10-23 14:33:22"
+      }
+    }
+  },
+  "RFN-2a8c1d66080511f8": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-2a8c1d66080511f8",
+        "updated_at": "2026-10-23 14:33:22"
+      }
+    }
+  },
+  "RFN-74a3cef1a5cc103d": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-74a3cef1a5cc103d",
+        "updated_at": "2026-10-23 14:33:22"
+      }
+    }
+  },
+  "RFN-6185cdd7ffee277c": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-6185cdd7ffee277c",
+        "updated_at": "2026-10-23 14:33:22"
+      }
+    }
+  },
+  "RFN-17cacb70cf35c648": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-17cacb70cf35c648",
+        "updated_at": "2026-10-23 14:33:22"
+      }
+    }
+  },
+  "RFN-0208363f9cca2322": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-0208363f9cca2322",
+        "updated_at": "2026-10-23 14:33:22"
+      }
+    }
+  },
+  "RFN-175467b9ccd86ddd": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-175467b9ccd86ddd",
+        "updated_at": "2026-10-23 14:33:22"
+      }
+    }
+  },
+  "RFN-ee0b212d53f71a24": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-ee0b212d53f71a24",
+        "updated_at": "2026-10-23 14:33:22"
+      }
+    }
+  },
+  "RFN-db4361886a7284da": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-db4361886a7284da",
+        "updated_at": "2026-10-23 14:33:22"
+      }
+    }
+  },
+  "RFN-32267207325d8673": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-32267207325d8673",
+        "updated_at": "2026-10-23 14:33:22"
+      }
+    }
+  },
+  "RFN-65e8deb1f4275086": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-65e8deb1f4275086",
+        "updated_at": "2026-10-23 14:33:22"
+      }
+    }
+  },
+  "RFN-6d41a3204c6d0353": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-6d41a3204c6d0353",
+        "updated_at": "2026-10-23 14:33:23"
+      }
+    }
+  },
+  "RFN-16a4c5fd4739866b": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-16a4c5fd4739866b",
+        "updated_at": "2026-10-23 14:33:23"
+      }
+    }
+  },
+  "RFN-3c300068a0aad2d9": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-3c300068a0aad2d9",
+        "updated_at": "2026-10-23 14:33:23"
+      }
+    }
+  },
+  "RFN-a89267dc864bb84b": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-a89267dc864bb84b",
+        "updated_at": "2026-10-23 14:33:23"
+      }
+    }
+  },
+  "RFN-72c1da6d3cfc2598": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-72c1da6d3cfc2598",
+        "updated_at": "2026-10-23 14:33:23"
+      }
+    }
+  },
+  "RFN-715826ca4add63d3": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-715826ca4add63d3",
+        "updated_at": "2026-10-23 14:33:23"
+      }
+    }
+  },
+  "RFN-888f4958e639010a": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-888f4958e639010a",
+        "updated_at": "2026-10-23 14:33:23"
+      }
+    }
+  },
+  "RFN-275c3f036ea47996": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-275c3f036ea47996",
+        "updated_at": "2026-10-23 14:33:23"
+      }
+    }
+  },
+  "RFN-4fa2f1d7a1c837a0": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-4fa2f1d7a1c837a0",
+        "updated_at": "2026-10-23 14:33:23"
+      }
+    }
+  },
+  "RFN-4b55d93bce7ddd80": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-4b55d93bce7ddd80",
+        "updated_at": "2026-10-23 14:33:23"
+      }
+    }
+  },
+  "RFN-9fd1020b6f54a0b8": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-9fd1020b6f54a0b8",
+        "updated_at": "2026-10-23 14:33:24"
+      }
+    }
+  },
+  "RFN-d5e1d17ab567aa08": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-d5e1d17ab567aa08",
+        "updated_at": "2026-10-23 14:33:24"
+      }
+    }
+  },
+  "RFN-32098da1e73da96d": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-32098da1e73da96d",
+        "updated_at": "2026-10-23 14:33:24"
+      }
+    }
+  },
+  "RFN-39cf9c14e238cd49": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-39cf9c14e238cd49",
+        "updated_at": "2026-10-23 14:33:24"
+      }
+    }
+  },
+  "RFN-1c1f2ad64ff01985": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-1c1f2ad64ff01985",
+        "updated_at": "2026-10-23 14:33:24"
+      }
+    }
+  },
+  "RFN-ffa865f722c94ede": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-ffa865f722c94ede",
+        "updated_at": "2026-10-23 14:33:24"
+      }
+    }
+  },
+  "RFN-4a3a67ebb78a8a72": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-4a3a67ebb78a8a72",
+        "updated_at": "2026-10-23 14:33:25"
+      }
+    }
+  },
+  "RFN-609f5317f79902b1": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-609f5317f79902b1",
+        "updated_at": "2026-10-23 14:33:25"
+      }
+    }
+  },
+  "RFN-8f23d54090518c17": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-8f23d54090518c17",
+        "updated_at": "2026-10-23 14:33:25"
+      }
+    }
+  },
+  "RFN-f9dd4fc4e803d664": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-f9dd4fc4e803d664",
+        "updated_at": "2026-10-23 14:33:25"
+      }
+    }
+  },
+  "RFN-68011532f1dd7c11": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-68011532f1dd7c11",
+        "updated_at": "2026-10-23 14:33:25"
+      }
+    }
+  },
+  "RFN-f95c96d9c34a5abc": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-f95c96d9c34a5abc",
+        "updated_at": "2026-10-23 14:33:26"
+      }
+    }
+  },
+  "RFN-5f988398695f3c22": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-5f988398695f3c22",
+        "updated_at": "2026-10-23 14:33:27"
+      }
+    }
+  },
+  "RFN-5af44755671a9e09": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-5af44755671a9e09",
+        "updated_at": "2026-10-23 14:33:27"
+      }
+    }
+  },
+  "RFN-61c4309ea9298ed8": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-61c4309ea9298ed8",
+        "updated_at": "2026-10-23 14:33:27"
+      }
+    }
+  },
+  "RFN-37ca66bed0cb708a": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-37ca66bed0cb708a",
+        "updated_at": "2026-10-23 14:33:27"
+      }
+    }
+  },
+  "RFN-db774ed75ff850e6": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-db774ed75ff850e6",
+        "updated_at": "2026-10-23 14:33:27"
+      }
+    }
+  },
+  "RFN-e918a9c0f5bb7afe": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-e918a9c0f5bb7afe",
+        "updated_at": "2026-10-23 14:33:27"
+      }
+    }
+  },
+  "RFN-e4d46e0390f9903a": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-e4d46e0390f9903a",
+        "updated_at": "2026-10-23 14:33:27"
+      }
+    }
+  },
+  "RFN-9f2f5d1cad173148": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-9f2f5d1cad173148",
+        "updated_at": "2026-10-23 14:33:28"
+      }
+    }
+  },
+  "RFN-f4a472f6d0eaed4a": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-f4a472f6d0eaed4a",
+        "updated_at": "2026-10-23 14:33:28"
+      }
+    }
+  },
+  "RFN-495198b6d830b8be": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-495198b6d830b8be",
+        "updated_at": "2026-10-23 14:33:28"
+      }
+    }
+  },
+  "RFN-cc8eb07c79eb6ee7": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-cc8eb07c79eb6ee7",
+        "updated_at": "2026-10-23 14:33:28"
+      }
+    }
+  },
+  "RFN-c6d0c18472886a37": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-c6d0c18472886a37",
+        "updated_at": "2026-10-23 14:33:28"
+      }
+    }
+  },
+  "RFN-ccc894b0f995982b": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-ccc894b0f995982b",
+        "updated_at": "2026-10-23 14:33:28"
+      }
+    }
+  },
+  "RFN-b9299d89da9dbd39": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-b9299d89da9dbd39",
+        "updated_at": "2026-10-23 14:33:29"
+      }
+    }
+  },
+  "RFN-5cf03fc63415524b": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-5cf03fc63415524b",
+        "updated_at": "2026-10-23 14:33:29"
+      }
+    }
+  },
+  "RFN-59f5a59e0e1da52e": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-59f5a59e0e1da52e",
+        "updated_at": "2026-10-23 14:33:29"
+      }
+    }
+  },
+  "RFN-082b8bd50f5ff4af": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-082b8bd50f5ff4af",
+        "updated_at": "2026-10-23 14:33:29"
+      }
+    }
+  },
+  "RFN-4facb19bca8dd261": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-4facb19bca8dd261",
+        "updated_at": "2026-10-23 14:33:29"
+      }
+    }
+  },
+  "RFN-88dee827a35a075b": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-88dee827a35a075b",
+        "updated_at": "2026-10-23 14:33:29"
+      }
+    }
+  },
+  "RFN-4cd670e1779bdf0e": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-4cd670e1779bdf0e",
+        "updated_at": "2026-10-23 14:33:30"
+      }
+    }
+  },
+  "RFN-c995857a2f292be7": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-c995857a2f292be7",
+        "updated_at": "2026-10-23 14:33:30"
+      }
+    }
+  },
+  "RFN-274ad07431543748": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-274ad07431543748",
+        "updated_at": "2026-10-23 14:33:30"
+      }
+    }
+  },
+  "RFN-430de7fe29e66288": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-430de7fe29e66288",
+        "updated_at": "2026-10-23 14:33:30"
+      }
+    }
+  },
+  "RFN-1e4fe0670ce74931": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-1e4fe0670ce74931",
+        "updated_at": "2026-10-23 14:33:30"
+      }
+    }
+  },
+  "RFN-f43e37880deb6b6f": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-f43e37880deb6b6f",
+        "updated_at": "2026-10-23 14:33:30"
+      }
+    }
+  },
+  "RFN-96249e24c4e1a2da": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-96249e24c4e1a2da",
+        "updated_at": "2026-10-23 14:33:31"
+      }
+    }
+  },
+  "RFN-37559729806b108b": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-37559729806b108b",
+        "updated_at": "2026-10-23 14:33:31"
+      }
+    }
+  },
+  "RFN-d9258dbe83d3f723": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-d9258dbe83d3f723",
+        "updated_at": "2026-10-23 14:33:31"
+      }
+    }
+  },
+  "RFN-814143bb326c5b28": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-814143bb326c5b28",
+        "updated_at": "2026-10-23 14:33:31"
+      }
+    }
+  },
+  "RFN-a39b9265037ee758": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-a39b9265037ee758",
+        "updated_at": "2026-10-23 14:33:31"
+      }
+    }
+  },
+  "RFN-4bfdc878957890c2": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-4bfdc878957890c2",
+        "updated_at": "2026-10-23 14:33:31"
+      }
+    }
+  },
+  "RFN-8cdfc5ac2651d28b": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-8cdfc5ac2651d28b",
+        "updated_at": "2026-10-23 14:33:32"
+      }
+    }
+  },
+  "RFN-0d9e55906ec246f0": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-0d9e55906ec246f0",
+        "updated_at": "2026-10-23 14:33:32"
+      }
+    }
+  },
+  "RFN-e068ff71eab8d62e": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-e068ff71eab8d62e",
+        "updated_at": "2026-10-23 14:33:32"
+      }
+    }
+  },
+  "RFN-f768cc789933644b": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-f768cc789933644b",
+        "updated_at": "2026-10-23 14:33:32"
+      }
+    }
+  },
+  "RFN-f4a0bfa2d19496be": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-f4a0bfa2d19496be",
+        "updated_at": "2026-10-23 14:33:32"
+      }
+    }
+  },
+  "RFN-45d4bfd7a167a475": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-45d4bfd7a167a475",
+        "updated_at": "2026-10-23 14:33:32"
+      }
+    }
+  },
+  "RFN-31cffaf97f34ca22": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-31cffaf97f34ca22",
+        "updated_at": "2026-10-23 14:33:33"
+      }
+    }
+  },
+  "RFN-463fdc70552e2873": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-463fdc70552e2873",
+        "updated_at": "2026-10-23 14:33:33"
+      }
+    }
+  },
+  "RFN-e62736e01c1be89d": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-e62736e01c1be89d",
+        "updated_at": "2026-10-23 14:33:33"
+      }
+    }
+  },
+  "RFN-c0bd334bc4e12600": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-c0bd334bc4e12600",
+        "updated_at": "2026-10-23 14:33:33"
+      }
+    }
+  },
+  "RFN-14db8beec4a8f1a9": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-14db8beec4a8f1a9",
+        "updated_at": "2026-10-23 14:33:33"
+      }
+    }
+  },
+  "RFN-922b60d36da007ee": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-922b60d36da007ee",
+        "updated_at": "2026-10-23 14:33:33"
+      }
+    }
+  },
+  "RFN-da922534ae082715": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-da922534ae082715",
+        "updated_at": "2026-10-23 14:33:33"
+      }
+    }
+  },
+  "RFN-6bbde5b63d2fda7a": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-6bbde5b63d2fda7a",
+        "updated_at": "2026-10-23 14:33:33"
+      }
+    }
+  },
+  "RFN-c6506317a32fb77f": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-c6506317a32fb77f",
+        "updated_at": "2026-10-23 14:33:33"
+      }
+    }
+  },
+  "RFN-683b86ad80853514": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-683b86ad80853514",
+        "updated_at": "2026-10-23 14:33:33"
+      }
+    }
+  },
+  "RFN-1b739004d7f6b746": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-1b739004d7f6b746",
+        "updated_at": "2026-10-23 14:33:33"
+      }
+    }
+  },
+  "RFN-e54c3b02fd983ca8": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-e54c3b02fd983ca8",
+        "updated_at": "2026-10-23 14:33:33"
+      }
+    }
+  },
+  "RFN-c9db8111ae53c711": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-c9db8111ae53c711",
+        "updated_at": "2026-10-23 14:33:34"
+      }
+    }
+  },
+  "RFN-80d35334fd1cacef": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-80d35334fd1cacef",
+        "updated_at": "2026-10-23 14:33:34"
+      }
+    }
+  },
+  "RFN-3c3207126963d972": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-3c3207126963d972",
+        "updated_at": "2026-10-23 14:33:34"
+      }
+    }
+  },
+  "RFN-7eb7512739eafda2": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-7eb7512739eafda2",
+        "updated_at": "2026-10-23 14:33:34"
+      }
+    }
+  },
+  "RFN-0f2953c19dca5040": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-0f2953c19dca5040",
+        "updated_at": "2026-10-23 14:33:34"
+      }
+    }
+  },
+  "RFN-7dfd77bf9b3a6e37": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-7dfd77bf9b3a6e37",
+        "updated_at": "2026-10-23 14:33:34"
+      }
+    }
+  },
+  "RFN-51ae448ad53dfdb5": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-51ae448ad53dfdb5",
+        "updated_at": "2026-10-23 14:33:34"
+      }
+    }
+  },
+  "RFN-5489bf2e1b348db4": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-5489bf2e1b348db4",
+        "updated_at": "2026-10-23 14:33:34"
+      }
+    }
+  },
+  "RFN-b2d9b2e1cde5c373": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-b2d9b2e1cde5c373",
+        "updated_at": "2026-10-23 14:33:34"
+      }
+    }
+  },
+  "RFN-ec255858c71dbb66": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-ec255858c71dbb66",
+        "updated_at": "2026-10-23 14:33:34"
+      }
+    }
+  },
+  "RFN-51acfa4117219f54": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-51acfa4117219f54",
+        "updated_at": "2026-10-23 14:33:35"
+      }
+    }
+  },
+  "RFN-3a6ceb2d91a0c4ea": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-3a6ceb2d91a0c4ea",
+        "updated_at": "2026-10-23 14:33:35"
+      }
+    }
+  },
+  "RFN-5bf8672721fa5e2b": {
+    "status": "pending",
+    "layers": {
+      "registry": {
+        "status": "reused",
+        "note": "去重键值命中复用（监管文件编号）: RFN-5bf8672721fa5e2b",
+        "updated_at": "2026-10-23 14:33:35"
+      }
+    }
   }
 }

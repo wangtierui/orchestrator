@@ -20,6 +20,7 @@ import json
 import logging
 import os
 import queue
+import secrets
 import socket
 import sys
 import threading
@@ -34,7 +35,7 @@ from config.exitcodes import ExitCode
 bootstrap("all")
 
 
-from . import DEFAULT_HOST, DEFAULT_PORT
+from . import DEFAULT_HOST, DEFAULT_PORT, auth
 from .api import ApiError, handle_request
 from .sse import SseHub, format_sse
 
@@ -44,6 +45,10 @@ _LOOPBACK = ("127.0.0.1", "localhost", "::1")
 
 #: 单页入口（浏览器只请求这一个文件 + 三个静态资源）
 _INDEX = "index.html"
+
+
+#: 认证相关路由（**免认证**：登录本身不能要求已登录）
+_AUTH_ROUTES = ("/api/auth/login", "/api/auth/status", "/api/auth/logout")
 
 
 def _asset(name: str) -> tuple[bytes, str]:
@@ -89,10 +94,12 @@ class Handler(BaseHTTPRequestHandler):
     # -- 输出helpers -------------------------------------------------------- #
     def _send(self, status: int, body: bytes,
               ctype: str = "application/json; charset=utf-8",
-              disposition: str = "") -> None:
+              disposition: str = "", extra_headers: list[tuple[str, str]] | None = None) -> None:
         self.send_response(status)
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(body)))
+        for k, v in (extra_headers or []):
+            self.send_header(k, v)
         # 安全头（本地控制台也戴：禁嗅探/嵌入，防被外站嵌入点击劫持）
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("X-Frame-Options", "DENY")
@@ -108,23 +115,174 @@ class Handler(BaseHTTPRequestHandler):
         except (BrokenPipeError, ConnectionResetError):
             pass  # 客户端早退（旁路：不记为错误）
 
-    def _json(self, status: int, payload: dict) -> None:
-        self._send(status, json.dumps(payload, ensure_ascii=False).encode("utf-8"))
+    def _json(self, status: int, payload: dict,
+              extra_headers: list[tuple[str, str]] | None = None) -> None:
+        self._send(status, json.dumps(payload, ensure_ascii=False).encode("utf-8"),
+                   extra_headers=extra_headers)
 
     # -- 路由 --------------------------------------------------------------- #
     # -- 访问分级 ------------------------------------------------------------- #
     def _ctx(self) -> dict:
         """本次请求的可信上下文（**逐请求构造**，不放全局 —— 服务是多线程的）。"""
         from interfaces.feedback_api import header_user
+        from web import auth as _auth
 
+        ident = getattr(self, "_ident", None) or _auth.identity(
+            cookies=_auth.parse_cookies(self.headers.get("Cookie") or ""),
+            client_ip=self.client_address[0], headers=dict(self.headers),
+            mode=getattr(self.server, "auth_mode", "off"),
+            trusted_proxies=tuple(getattr(self.server, "trusted_proxies", ()) or ()),
+            lan=bool(getattr(self.server, "lan", False)),
+        )
         return {
             "scope": access_scope(self.client_address[0]),
             "client_ip": self.client_address[0],
             "user_agent": (self.headers.get("User-Agent") or "")[:300],
-            # 访问者域账号：本仓未接 Windows 集成认证 ⇒ 一般为空，
-            # 留言改由填写者自报（`account_src='self'`）。接了反向代理才非空。
-            "header_user": header_user(dict(self.headers)),
+            # 访问者域账号：**已认证身份优先**（会话/可信代理）；
+            # 未认证时才回落到代理头（兼容"有代理但没开会话"的部署）。
+            "header_user": (ident.get("user") or "") if ident.get("authenticated")
+            else header_user(dict(self.headers)),
+            "identity_user": ident.get("user", ""),
+            "identity_src": ident.get("src", "none"),
+            "authenticated": bool(ident.get("authenticated")),
         }
+
+    # -- 认证 ------------------------------------------------------------------ #
+    def _auth_mode(self) -> str:
+        return str(getattr(self.server, "auth_mode", "off") or "off")
+
+    def _identify(self) -> dict:
+        from web import auth as _auth
+
+        self._ident = _auth.identity(
+            cookies=_auth.parse_cookies(self.headers.get("Cookie") or ""),
+            client_ip=self.client_address[0], headers=dict(self.headers),
+            mode=self._auth_mode(),
+            trusted_proxies=tuple(getattr(self.server, "trusted_proxies", ()) or ()),
+            lan=bool(getattr(self.server, "lan", False)),
+        )
+        return self._ident
+
+    def _guard_auth(self, method: str, path: str) -> bool:
+        """认证闸门 → `False` 表示已回 401/403（调用方 return）。
+
+        范围：`auth_mode != off` 时，除 `/api/auth/*` 外的**所有 `/api/*`** 都要求已认证。
+        首页与静态资源不拦（SPA 会自己渲染登录卡片）—— 页面本身不含数据，
+        拦它只会让"登录失败"变成白屏。
+        """
+        from web import auth as _auth
+
+        if self._auth_mode() == "off":
+            self._ident = {"user": "", "src": "none", "authenticated": True,
+                           "mode": "off"}
+            return True
+        ident = self._identify()
+        if path in _AUTH_ROUTES:
+            return True
+        if not path.startswith("/api/"):
+            return True
+        if not ident.get("authenticated"):
+            self._json(401, {
+                "ok": False, "error": "未认证", "need_login": True,
+                "mode": self._auth_mode(),
+                "hint": "请先登录（共享口令或账号）；认证方式见启动日志/README §6.9",
+            })
+            return False
+        # CSRF：**所有写请求**必须带与 cookie 一致的 `X-CSRF`（防跨站提交）。
+        # ⚠️ 2026-10-23 修：原实现只在"cookie 里有 token"时才校验 ⇒ **可信代理认证**
+        # 路径没有任何 cookie，于是完全跳过校验（实测：代理身份下免 CSRF 直接写入）。
+        # 现在改为"**没有 token 也拒绝**"，token 由 `/api/auth/status` 首次访问时下发。
+        if method.upper() != "GET":
+            need = _auth.parse_cookies(self.headers.get("Cookie") or "").get(
+                _auth.COOKIE_CSRF, "")
+            got = self.headers.get("X-CSRF") or ""
+            import hmac as _hmac
+
+            if not need:
+                self._json(403, {"ok": False,
+                                 "error": "缺少 CSRF 令牌：请先加载页面（状态接口会下发）"})
+                return False
+            if not _hmac.compare_digest(need, got):
+                self._json(403, {"ok": False, "error": "CSRF 校验失败（缺 X-CSRF 或不匹配）"})
+                return False
+        return True
+
+    def _auth_login(self, raw: bytes) -> None:
+        """`POST /api/auth/login`：token 模式验口令；basic 模式验账号+口令。"""
+        import json as _json
+
+        from web import auth as _auth
+
+        ip = self.client_address[0]
+        wait = _auth.throttled(ip)
+        if wait:
+            self._json(429, {"ok": False,
+                             "error": f"登录失败次数过多，请 {wait} 秒后再试"})
+            return
+        try:
+            body = _json.loads(raw.decode("utf-8") or "{}")
+        except (UnicodeDecodeError, ValueError):
+            self._json(400, {"ok": False, "error": "请求体须为 JSON"})
+            return
+        import hmac as _hmac
+
+        user = str(body.get("user") or "").strip()
+        pw = str(body.get("password") or "")
+        mode = self._auth_mode()
+        ok = False
+        shown = ""
+        if mode == "token":
+            # 常数时间比较：口令错误与正确都要走同样的比较路径
+            ok = _hmac.compare_digest(pw, _auth.access_token())
+            shown = "内网共享口令用户"
+        elif mode == "basic":
+            rec = (_auth.load_users() or {}).get(user) or {}
+            ok = bool(rec) and _auth.verify_password(pw, str(rec.get("password") or ""))
+            shown = user
+        if not ok:
+            allow, wait2 = _auth.note_failure(ip)
+            _auth.audit("console_login_fail", user=user, ip=ip, note=f"mode={mode}")
+            self._json(401, {"ok": False,
+                             "error": ("口令错误" if mode == "token" else "账号或口令错误")
+                                      + ("" if allow else f"；已限频，请 {wait2} 秒后再试")})
+            return
+        _auth.clear_failures(ip)
+        cookie, csrf, exp = _auth.issue_session(shown or "user", src="session")
+        secure = bool(getattr(self.server, "tls", False))
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Set-Cookie", _auth.cookie_header(
+            _auth.COOKIE_SESS, cookie, max_age=_auth.SESSION_TTL_S, secure=secure))
+        self.send_header("Set-Cookie", _auth.cookie_header(
+            _auth.COOKIE_CSRF, csrf, max_age=_auth.SESSION_TTL_S, secure=secure,
+            http_only=False))   # double-submit：页面脚本必须能读到它
+        self.send_header("X-CSRF", csrf)
+        body_out = _json.dumps({"ok": True, "user": shown,
+                                "csrf": csrf, "exp": exp},
+                               ensure_ascii=False).encode("utf-8")
+        self.send_header("Content-Length", str(len(body_out)))
+        self.end_headers()
+        self.wfile.write(body_out)
+        _auth.audit("console_login_ok", user=shown, ip=ip, note=f"mode={mode}")
+
+    def _auth_logout(self) -> None:
+        from web import auth as _auth
+
+        ident = getattr(self, "_ident", None) or {}
+        cookies = [
+            _auth.cookie_header(_auth.COOKIE_SESS, "", max_age=0),
+            _auth.cookie_header(_auth.COOKIE_CSRF, "", max_age=0),
+        ]
+        payload = b'{"ok": true}'
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        for c in cookies:
+            self.send_header("Set-Cookie", c)
+        self.send_header("Content-Length", str(len(payload)))
+        self.end_headers()
+        self.wfile.write(payload)
+        _auth.audit("console_logout", user=str(ident.get("user") or ""),
+                    ip=self.client_address[0])
 
     def _guard(self, method: str, path: str) -> bool:
         """分级闸门：本机全放行；内网/未知来源只放行"只读且非本机专属"的路由。
@@ -159,6 +317,32 @@ class Handler(BaseHTTPRequestHandler):
         path = unquote(u.path)
         if not self._guard("GET", path):
             return
+        if not self._guard_auth("GET", path):
+            return
+        if path == "/api/auth/status":
+            ident = getattr(self, "_ident", None) or {}
+            hdrs: list[tuple[str, str]] = []
+            authed = bool(ident.get("authenticated"))
+            # **CSRF 令牌下发点**：已认证但还没有 `wb_csrf`（典型是可信代理认证，
+            # 从没走过登录）⇒ 这里补一个，否则前端所有写请求都会 403。
+            if authed:
+                ck = auth.parse_cookies(self.headers.get("Cookie") or "")
+                if not ck.get(auth.COOKIE_CSRF):
+                    hdrs.append(("Set-Cookie", auth.cookie_header(
+                        auth.COOKIE_CSRF, secrets.token_hex(16),
+                        max_age=auth.SESSION_TTL_S,
+                        secure=bool(getattr(self.server, "tls", False)),
+                        http_only=False)))
+            return self._json(200, {
+                "ok": True,
+                "mode": self._auth_mode(),
+                "authenticated": authed,
+                "user": ident.get("user", ""),
+                "src": ident.get("src", "none"),
+                "need_login": self._auth_mode() != "off" and not authed,
+                "user_source": {"proxy": "网关认证", "session": "登录会话",
+                                "none": "未认证"}.get(ident.get("src", "none"), ""),
+            }, extra_headers=hdrs)
         if path in ("/", "", f"/{_INDEX}"):
             body, ctype = _asset(_INDEX)
             return self._send(200, body, ctype)
@@ -203,7 +387,8 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:
         # 路径解析交给 api.handle_request（单一解析口，避免两处解析漂移）
-        if not self._guard("POST", unquote(urlparse(self.path).path)):
+        path = unquote(urlparse(self.path).path)
+        if not self._guard("POST", path):
             return
         try:
             n = int(self.headers.get("Content-Length") or 0)
@@ -212,6 +397,14 @@ class Handler(BaseHTTPRequestHandler):
         # 上限 8192 → 放宽到 64KB：留言正文最长 4000 字符（UTF-8 三字节中文 ≈ 12KB），
         # 8KB 会把中文长留言**静默截断**（服务端读到半截 JSON ⇒ 报"正文非法"）。
         raw = self.rfile.read(n) if 0 < n <= 65536 else b""
+        # 认证路由必须在**读体之后**处理（登录要读口令），且先于通用鉴权闸门
+        # （否则"登录"这个动作本身会被 401 挡掉）。
+        if path == "/api/auth/login":
+            return self._auth_login(raw)
+        if path == "/api/auth/logout":
+            return self._auth_logout()
+        if not self._guard_auth("POST", path):
+            return
         try:
             status, payload = handle_request("POST", self.path, raw_body=raw,
                                              ctx=self._ctx())
@@ -247,11 +440,18 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def build_server(host: str = DEFAULT_HOST, port: int = DEFAULT_PORT,
-                 verbose: bool = False) -> ThreadingHTTPServer:
+                 verbose: bool = False, *, auth_mode: str = "off",
+                 trusted_proxies: tuple[str, ...] = (),
+                 tls: bool = False) -> ThreadingHTTPServer:
     """构造 HTTP 服务（契约测试直接用它起在随机端口）。"""
     srv = ThreadingHTTPServer((host, port), Handler)
     srv.daemon_threads = True
     srv.verbose = verbose  # type: ignore[attr-defined]
+    # 认证上下文挂在 server 上（Handler 每请求读；不放全局 —— 多线程安全）
+    srv.auth_mode = auth_mode            # type: ignore[attr-defined]
+    srv.trusted_proxies = tuple(trusted_proxies)   # type: ignore[attr-defined]
+    srv.tls = bool(tls)                  # type: ignore[attr-defined]
+    srv.lan = host not in _LOOPBACK      # type: ignore[attr-defined]
     if host not in _LOOPBACK:
         # ⚠️ 一律走 `_log()`（logger 落盘 + 控制台），**不要**直接写 `sys.stderr`：
         # 开机自启动用 `pythonw.exe`，stderr 无去处 ⇒ 这些关键提示（绑定范围、内网地址）
@@ -365,7 +565,9 @@ def _setup_file_logging(log_file: str) -> bool:
 def serve(host: str = DEFAULT_HOST, port: int = DEFAULT_PORT, *,
           open_browser: bool = False, verbose: bool = False,
           pid_file: str | None = None, log_file: str | None = None,
-          single_instance: bool = False) -> int:
+          single_instance: bool = False,
+          auth_mode: str = "", trusted_proxies: tuple[str, ...] = (),
+          tls_cert: str = "", tls_key: str = "") -> int:
     """阻塞式启动（Ctrl-C 退出）。
 
     2026-10-21（第一百零六批）为「开机自启动」补三个运行期能力：
@@ -398,8 +600,19 @@ def serve(host: str = DEFAULT_HOST, port: int = DEFAULT_PORT, *,
                  " ⇒ 本次不再启动（单实例模式）。")
             return 0
 
+    # ---- 认证模式（对内网开放 ⇒ 不允许"无认证"）------------------------------ #
+    # 规则：显式 `--auth` 优先；否则 `--lan` 自动升级为 token（否则就是"谁都能读"）。
+    _mode = (auth_mode or "").strip().lower()
+    if _mode not in ("off", "token", "basic"):
+        _mode = "token" if host not in _LOOPBACK else "off"
+    if host not in _LOOPBACK and _mode == "off":
+        _mode = "token"
+    use_tls = bool(tls_cert and tls_key)
+
     try:
-        srv = build_server(host=host, port=port, verbose=verbose)
+        srv = build_server(host=host, port=port, verbose=verbose,
+                           auth_mode=_mode, trusted_proxies=tuple(trusted_proxies),
+                           tls=use_tls)
     except OSError as e:
         msg = f"[serve] 绑定 {host}:{port} 失败：{e}"
         sys.stderr.write(msg + "\n")
@@ -408,10 +621,37 @@ def serve(host: str = DEFAULT_HOST, port: int = DEFAULT_PORT, *,
             lk.release()
         return ExitCode.FAIL
 
-    url = f"http://{host}:{port}/"
+    if use_tls:
+        import ssl
+
+        ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        ctx.load_cert_chain(tls_cert, tls_key)
+        srv.socket = ctx.wrap_socket(srv.socket, server_side=True)
+
+    scheme = "https" if use_tls else "http"
+    url = f"{scheme}://{host}:{port}/"
     _log(f"[serve] 确认台已启动：{url}")
     _log(f"[serve] pid={os.getpid()} lock={lock_path or '(未启用)'}")
-    _log("[serve] 无鉴权，请勿暴露到非可信网络；Ctrl-C 退出。")
+    if _mode == "off":
+        _log("[serve] 认证：off（仅回环，无鉴权）；Ctrl-C 退出。")
+    else:
+        _log(f"[serve] 认证：{_mode}；Ctrl-C 退出。")
+        if _mode == "token":
+            _log(f"[serve] 内网共享口令：{auth.access_token()}"
+                 "（文件 data/state/console_token.txt；--auth-rotate 可更换）")
+        elif _mode == "basic":
+            users = auth.load_users()
+            _log(f"[serve] 账号模式：已配置 {len(users)} 个账号"
+                 f"（{auth.USERS_PATH}）；新增：python -m web.auth adduser")
+            if not users:
+                _log("[serve][warn] 未配置任何账号 ⇒ **无人能登录**"
+                     "（这比放行所有人安全；请先 adduser）")
+            if not use_tls:
+                _log("[serve][warn] basic 模式未启用 TLS：口令以 base64 明文过网，"
+                     "请仅在内网可信网段使用，或加 --tls-cert/--tls-key")
+        if trusted_proxies:
+            _log(f"[serve] 受信代理：{list(trusted_proxies)}"
+                 "（仅这些 IP 的 X-Remote-User 被采信）")
     if open_browser:
         threading.Timer(0.6, lambda: webbrowser.open(url)).start()
     try:
@@ -444,11 +684,29 @@ def main(argv: list[str] | None = None) -> int:
                     help="日志文件（缺省仅控制台；开机自启动**必须**给，否则无日志可查）")
     ap.add_argument("--single-instance", action="store_true",
                     help="单实例模式：已有实例在跑则本次直接退出（幂等）")
+    # ---- 认证（2026-10-23）：对内网开放时**不允许无认证** -------------------- #
+    ap.add_argument("--auth", default="",
+                    choices=["", "off", "token", "basic"],
+                    help="认证方式：off（仅回环）/ token（共享口令）/ basic（账号）；"
+                         "缺省时 --lan 自动用 token")
+    ap.add_argument("--auth-rotate", action="store_true",
+                    help="token 模式：重新生成共享口令")
+    ap.add_argument("--trust-proxy", action="store_true",
+                    help="采信受信代理注入的 X-Remote-User（集成认证）")
+    ap.add_argument("--trusted-proxies", default="",
+                    help="受信代理 IP 列表（逗号分隔）；配合 --trust-proxy")
+    ap.add_argument("--tls-cert", default="", help="HTTPS 证书（PEM）")
+    ap.add_argument("--tls-key", default="", help="HTTPS 私钥（PEM）")
     a = ap.parse_args(argv)
     host = "0.0.0.0" if a.lan else a.host
+    if a.auth_rotate:
+        print(f"新共享口令：{auth.access_token(rotate=True)}")
+    proxies = tuple(p.strip() for p in (a.trusted_proxies or "").split(",") if p.strip())
     return serve(host, a.port, open_browser=a.open, verbose=a.verbose,
                  pid_file=a.pid_file or None, log_file=a.log_file or None,
-                 single_instance=a.single_instance)
+                 single_instance=a.single_instance, auth_mode=a.auth,
+                 trusted_proxies=proxies if a.trust_proxy else (),
+                 tls_cert=a.tls_cert, tls_key=a.tls_key)
 
 
 if __name__ == "__main__":

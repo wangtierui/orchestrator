@@ -177,6 +177,18 @@ th.sortable .arw{font-size:10px;opacity:.85}
 .glegend i{display:inline-block;width:18px;height:3px;border-radius:2px;margin-right:5px;
   vertical-align:middle}
 .brand .logo{width:20px;height:20px;fill:currentColor;margin-right:8px;opacity:.92;flex:none}
+/* ---------- 关系图谱：四视图切换 + 全览卡片 ---------- */
+.gtabs{gap:var(--s1);margin-bottom:var(--s3)}
+.gbtn{padding:5px 12px;border:1px solid var(--line2);background:var(--card);
+  border-radius:999px;cursor:pointer;font-size:13px;color:var(--fg2)}
+.gbtn:hover{border-color:var(--primary);color:var(--primary)}
+.gbtn.on{background:var(--primary);border-color:var(--primary);color:#fff;font-weight:600}
+.ggrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:var(--s3)}
+.gcard{border:1px solid var(--line);border-radius:var(--r-md);padding:var(--s3);
+  background:var(--card);cursor:pointer;transition:box-shadow .15s,border-color .15s}
+.gcard:hover{border-color:var(--primary);box-shadow:var(--shadow-h)}
+.gcard-h{display:flex;justify-content:space-between;align-items:center;gap:var(--s2)}
+.gnode text{pointer-events:none}
 </style>
 </head>
 <body>
@@ -187,6 +199,7 @@ th.sortable .arw{font-size:10px;opacity:.85}
     <div class="hstat">
       <span class="badge" id="live">连接中…</span>
       <span class="badge" id="scope" title="访问范围">—</span>
+      <span class="badge" id="auth" title="登录身份">—</span>
       <span class="badge" id="gates">门禁 —</span>
       <span class="badge" id="stamp">—</span>
     </div>
@@ -264,11 +277,31 @@ function toast(msg, bad){
   clearTimeout(t._h); t._h=setTimeout(()=>t.className="toast",3600);
 }
 
+/*: CSRF 令牌：优先用登录响应里给的，其次读 `wb_csrf` cookie（double-submit）。
+ * 为什么必须回落到 cookie：**可信代理认证**从不走登录接口，令牌只由
+ * `/api/auth/status` 下发成 cookie，前端拿不到它就无法写（实测踩到）。 */
+function csrfToken(){
+  if(STATE.csrf) return STATE.csrf;
+  const m = (document.cookie || "").match(/(?:^|;\s*)wb_csrf=([^;]+)/);
+  return m ? decodeURIComponent(m[1]) : "";
+}
+
 async function api(path, opts){
-  const r = await fetch(path, Object.assign({headers:{"Accept":"application/json"}}, opts||{}));
+  const o = Object.assign({headers:{}}, opts||{});
+  o.headers = Object.assign({"Accept":"application/json"}, obj(opts && opts.headers));
+  // CSRF：写请求必须带与 cookie 一致的 `X-CSRF`（服务端强制校验）
+  const ctk = csrfToken();
+  if(ctk) o.headers["X-CSRF"] = ctk;
+  const r = await fetch(path, o);
   const ct = r.headers.get("content-type")||"";
   if(!ct.includes("json")) return {available:false, reason:"非 JSON 响应（HTTP "+r.status+"）"};
   let j={}; try{ j = await r.json(); }catch(e){ return {available:false, reason:"响应不是合法 JSON"}; }
+  // 401 ⇒ 会话失效/未登录：置状态并让 render 切到登录卡片（不白屏）
+  if(r.status === 401 && j && j.need_login){
+    STATE.auth = {authenticated:false, mode:j.mode || ""};
+    HEALTH_P = null;
+    if(CUR !== "__login") render();
+  }
   if(!r.ok) return Object.assign({available:false}, obj(j), {httpStatus:r.status});
   return j;
 }
@@ -748,11 +781,122 @@ function viewRelease(d){
 }
 
 /* ---------------- 交互 ---------------- */
-let CUR="overview", STATE={};
+let CUR="overview", STATE={}, HEALTH_P=null;
+
+/*: 认证前置：**每次渲染前**确认身份（缓存一次，401 时由 `api()` 置空重取）。
+ * 为什么不在页面加载时判一次就够：会话 8 小时过期，长时间开着的页面可能在
+ * 中间失效；每页渲染前取一次状态最省事也最准。 */
+function ensureHealth(){
+  if(!HEALTH_P){
+    // 先取 auth/status：代理认证场景下它是**唯一**的下发 CSRF 令牌的入口
+    HEALTH_P = api("/api/auth/status").catch(()=>obj({})).then(st=>{
+      STATE.authStatus = obj(st);
+      return api("/api/health");
+    }).then(h=>{
+      STATE.health = obj(h);
+      STATE.auth = {
+        authenticated: h.authenticated === true,
+        user: String(h.user || ""),
+        user_source: String(h.user_source || ""),
+        mode: String(h.auth_mode || "off"),
+      };
+      applyScope(h);
+      return STATE.auth;
+    }).catch(()=>obj({authenticated:false, mode:""}));
+  }
+  return HEALTH_P;
+}
+
+/*: 访问范围徽标 + 本机专属页签隐藏（原有逻辑，抽出来供 ensureHealth 调用）。 */
+function applyScope(h){
+  const scope = String(h.scope || "local");
+  const local = h.local_only === true || scope === "local";
+  const sc = $("#scope");
+  if(sc){
+    sc.textContent = local ? "本机" : "内网只读";
+    sc.className = "badge " + (local ? "" : "warn");
+    sc.title = local ? "全部功能可用（含待办处置）"
+      : `内网访问（${scope}）：本地文件/宿主诊断/提交详情仅限本机`;
+  }
+  if(!local){
+    $$("#nav button").forEach(b=>{
+      if(LOCAL_ONLY_TABS.indexOf(b.dataset.id) >= 0) b.style.display = "none";
+    });
+  }
+  const au = $("#auth");
+  if(au){
+    const a = obj(STATE.auth);
+    au.textContent = a.authenticated && a.user ? `已登录 ${a.user}` : "未登录";
+    au.className = "badge " + (a.authenticated ? "" : "bad");
+  }
+}
+
+/*: 登录卡片：token 模式只填口令；basic 模式填账号+口令。
+ * 登录成功后服务端同时下发 `wb_sess` 与 `wb_csrf`，后者用于所有写请求的 CSRF 校验。 */
+function viewLogin(){
+  const mode = String(obj(STATE.auth).mode || "");
+  const userField = mode === "basic"
+    ? `<label class="muted" style="display:block;margin-bottom:8px">账号
+         <input id="lguser" autocomplete="username" placeholder="域账号"></label>` : "";
+  return `<div class="card" style="max-width:460px;margin:8vh auto">
+    <h3><span>登录确认台</span><span class="hint">${mode === "basic" ? "账号口令" : "内网共享口令"}</span></h3>
+    <div class="note">本确认台已启用访问认证（对内网开放后**不再允许匿名读取**）。
+      口令由管理员通过启动日志或 <code>python -m web.auth token</code> 获取。</div>
+    ${userField}
+    <label class="muted" style="display:block">${mode === "basic" ? "口令" : "共享口令"}
+      <input id="lgpw" type="password" autocomplete="current-password"
+        placeholder="${mode === "basic" ? "你的口令" : "XXXX-XXXX-XXXX-XXXX"}"></label>
+    <div class="toolbar" style="margin-top:var(--s3)">
+      <button class="primary" id="lgbtn">登录</button>
+      <span class="muted" id="lgmsg" style="font-size:12px"></span>
+    </div>
+  </div>`;
+}
+
+function bindLogin(){
+  const v = $("#view");
+  const btn = $("#lgbtn", v);
+  const go = async () => {
+    const pw = (($("#lgpw", v) || {}).value || "").trim();
+    const user = (($("#lguser", v) || {}).value || "").trim();
+    const msg = $("#lgmsg", v);
+    if(!pw){ if(msg) msg.textContent = "请输入口令"; return; }
+    btn.disabled = true;
+    try{
+      const r = await api("/api/auth/login", {
+        method: "POST", headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({user: user, password: pw}),
+      });
+      if(r && r.ok){
+        STATE.csrf = String(r.csrf || "");
+        STATE.auth = {authenticated:true, user:String(r.user||""), mode:String(obj(STATE.auth).mode||"")};
+        HEALTH_P = null;
+        toast("已登录：" + (r.user || ""));
+        render();
+      }else{
+        if(msg) msg.textContent = (r && (r.error || r.reason)) || "登录失败";
+        btn.disabled = false;
+      }
+    }catch(e){
+      if(msg) msg.textContent = "登录失败：" + String(e);
+      btn.disabled = false;
+    }
+  };
+  if(btn) btn.onclick = go;
+  const pw = $("#lgpw", v);
+  if(pw) pw.onkeydown = (e) => { if(e.key === "Enter") go(); };
+}
 
 async function render(){
   const v=$("#view");
   try{
+    // 认证闸门：未登录且服务端开了认证 ⇒ 只渲染登录卡片（不请求任何数据接口）
+    const au = await ensureHealth();
+    if(au && au.authenticated === false && au.mode && au.mode !== "off"){
+      CUR="__login";
+      v.innerHTML = viewLogin(); bindLogin(); return;
+    }
+    if(CUR==="__login") CUR="overview";
     if(CUR==="overview"){
       const [o,a,p]=await Promise.all([api("/api/overview"),api("/api/assets"),api("/api/publish")]);
       STATE.overview=o; v.innerHTML=viewOverview(o,a,p); return;
@@ -1137,50 +1281,98 @@ function viewRules(d, st, f){
     d.source_name || "base_api.list_internal_page", d.fetched_at);
 }
 
-/*: 全局关系图（未指定中心时默认展示）。
+/*: 全局关系图 —— **四视图**（2026-10-23 用户要求：四类关系都要能看见）。
  *
- * 为什么是"二部图 + 枢纽榜"而不是"把 4197 条边全画出来"
- * ------------------------------------------------------
- * 监管↔监管的 4055 条是典型的**中心辐射**结构（大量文件依据同一部上位法），
- * 全量上屏只会得到一张不可读的黑网。而「制度→监管」这部分实测**只有 24 条
- * 可定位的边（17 制度 ↔ 17 监管）**，可以完整画出来 —— 它恰好回答本项目最
- * 关心的问题："我们的制度踩在哪些监管要求上"。
- * 所以：**能全画的全画（24 条，不抽样）；画不下的给枢纽榜（点进去看局部图）**。 */
+ * 为什么不是一个"全量图"
+ * ----------------------
+ * 5281 条关系里监管↔监管 5139、制度↔制度 24、制度→监管 118：全量同屏是不可读的黑网。
+ * 但"画不下"不等于"不显示"。四类关系各自给最合适的呈现：
+ *   ① 制度→监管：可定位的**全画**（25 条，不抽样）
+ *   ② 监管↔监管：**枢纽星型**（Top15 按被引次数定大小，枢纽间直连边照画）
+ *   ③ 制度↔制度：**全画**（24 条，数字编号 + 图例表，避免长名字互相压字）
+ *   ④ 主题关系：**二部图**（主题 → 被其制度引用最多的监管文件）
+ * 未定位的关系**不伪造节点**，但每个视图都显式给出条数（"找不到"≠"不存在"）。
+ */
+const GRAPH_VIEWS = [
+  {key: "overview", name: "全览"},
+  {key: "internal_to_regulatory", name: "制度 → 监管"},
+  {key: "regulatory_to_regulatory", name: "监管 ↔ 监管"},
+  {key: "internal_to_internal", name: "制度 ↔ 制度"},
+  {key: "theme", name: "主题关系"},
+];
+
+function _gTab(cur){
+  return `<div class="toolbar gtabs">` + GRAPH_VIEWS.map(v =>
+    `<button class="gbtn${v.key === cur ? " on" : ""}" data-gview="${v.key}">${
+      esc(v.name)}</button>`).join("") + `</div>`;
+}
+
+function _gCut(s, n){ s = String(s || ""); return s.length > n ? s.slice(0, n) + "…" : s; }
+
 function viewGraphGlobal(d){
+  const cur = (obj(STATE.graph).view) || "overview";
+  const body = cur === "internal_to_regulatory" ? _gBipartite(d)
+    : cur === "regulatory_to_regulatory" ? _gRegulatory(d)
+    : cur === "internal_to_internal" ? _gInternal(d)
+    : cur === "theme" ? _gTheme(d)
+    : _gOverview(d);
+  return card("关系图谱", "全局", _gTab(cur) + body,
+    d.source_name || "relations_api.global_graph", d.fetched_at);
+}
+
+function _gOverview(d){
+  const c = obj(d.counts), vs = arr(d.views), uv = obj(c.unresolved_by_view);
+  const cards = vs.map((v, i) => {
+    const b = obj(uv[v.key]);
+    return `<div class="gcard" data-gview="${esc(v.key)}">
+      <div class="gcard-h"><b>${esc(v.label)}</b>
+        <span class="tag">${num(v.total)} 条</span></div>
+      <div class="kpibar" style="margin:8px 0">
+        ${kpi("可定位(实体)", num(b.entity), "条", b.entity ? "ok" : "")}
+        ${kpi("语料内未登记", num(b.corpus), "条", b.corpus ? "warn" : "")}
+        ${kpi("未定位", num(b.unresolved), "条", "")}
+      </div>
+      <div class="muted" style="font-size:12px">${esc(v.note || "")}</div>
+      <div class="muted" style="font-size:12px;margin-top:6px">
+        本视图绘制 ${num(v.edges)} 条边 / ${num(v.nodes)} 个节点 ⇒ 点击展开</div>
+    </div>`;
+  }).join("");
+  const ratio = (x) => `${(Number(x || 0) * 100).toFixed(1)}%`;
+  return `<div class="kpibar" style="margin-bottom:var(--s3)">
+      ${kpi("关系总数", num(c.total_relations), "条")}
+      ${kpi("文件类定位率", ratio(c.file_resolved_ratio), "",
+            Number(c.file_resolved_ratio) >= 0.5 ? "ok" : "warn")}
+      ${kpi("文件类可达率", ratio(c.file_located_ratio), "")}
+      ${kpi("分母（剔除机关名）", num(c.file_denominator), "条")}
+    </div>
+    <div class="muted" style="margin-bottom:var(--s3)">${esc(d.note || "")}</div>
+    <div class="ggrid">${cards}</div>`;
+}
+
+function _gBipartite(d){
   const bp = obj(d.bipartite), c = obj(d.counts);
-  const L = arr(bp.left), R = arr(bp.right), E = arr(bp.edges), hubs = arr(d.hubs);
-  const head = `<div class="toolbar">
-    <span class="pill ok">全局视图</span>
-    <span class="muted">制度 ${L.length} · 监管 ${R.length} · 关系 ${E.length} 条
-      （可定位的「制度→监管」**全部**画出，未抽样）</span>
-  </div>
-  <div class="muted" style="margin-bottom:8px">
-    全库关系 ${num(c.total_relations)} 条：监管↔监管 ${num(c.regulatory_relations)} ·
-    制度↔制度 ${num(c.internal_relations)} · 制度→监管 ${num(c.cross_relations)}；
-    **${num(c.unresolved)} 条**因对方未登记 RFN 无法定位（故不入图）。
-  </div>`;
-  if(!E.length){
-    return card("关系图谱", "全局", head +
-      '<div class="note">当前没有可定位的「制度→监管」关系。</div>',
-      d.source_name || "relations_api.global_graph", d.fetched_at);
-  }
-  const W = 1040, rowH = 30, n = Math.max(L.length, R.length);
+  const L = arr(bp.left), R = arr(bp.right), E = arr(bp.edges);
+  const b = obj(obj(c.unresolved_by_view).internal_to_regulatory);
+  const head = `<div class="muted" style="margin-bottom:8px">
+    制度 ${L.length} · 监管 ${R.length} · 可定位关系 ${E.length} 条（**全部画出，未抽样**）；
+    另有 ${num(b.corpus)} 条已匹配到语料但对方未登记 RFN、${num(b.unresolved)} 条目标不在库内
+    —— 它们**不伪造节点**，故不入图。</div>`;
+  if (!E.length) return head + '<div class="note">当前没有可定位的「制度→监管」关系。</div>';
+  const W = 1040, rowH = 30, n = Math.max(L.length, R.length, 1);
   const H = Math.max(360, 60 + n * rowH);
   const xL = 300, xR = W - 300;
   const yOf = (i) => 40 + (n <= 1 ? (H - 80) / 2 : i * (H - 80) / (n - 1));
   const pos = {};
   L.forEach((nd, i) => { pos[nd.id] = {x: xL, y: yOf(i)}; });
   R.forEach((nd, i) => { pos[nd.id] = {x: xR, y: yOf(i)}; });
-  const cut = (s, k) => { s = String(s || ""); return s.length > k ? s.slice(0, k) + "…" : s; };
   const edgeSvg = E.map(e => {
-    const a = pos[e.from], b = pos[e.to];
-    if (!a || !b) return "";
-    const mx = (a.x + b.x) / 2;
-    const repeal = e.relation === "repeal";
-    return `<path d="M${a.x + 8},${a.y} C${mx},${a.y} ${mx},${b.y} ${b.x - 8},${b.y}"
-      fill="none" stroke="${repeal ? "var(--bad)" : "var(--primary)"}"
-      stroke-width="1.3" opacity=".45"${repeal ? ' stroke-dasharray="5 4"' : ""}>
-      <title>${esc(e.label)}${e.matched_by ? "（" + esc(e.matched_by) + "）" : ""}</title></path>`;
+    const a = pos[e.from], b2 = pos[e.to];
+    if (!a || !b2) return "";
+    const mx = (a.x + b2.x) / 2, repeal = e.relation === "repeal";
+    return `<path d="M${a.x + 8},${a.y} C${mx},${a.y} ${mx},${b2.y} ${b2.x - 8},${b2.y}"
+      fill="none" stroke="${repeal ? "var(--bad)" : "var(--primary)"}" stroke-width="1.3"
+      opacity=".45"${repeal ? ' stroke-dasharray="5 4"' : ""}>
+      <title>${esc(e.label)}</title></path>`;
   }).join("");
   const nodeSvg = (list, side) => list.map(nd => {
     const p = pos[nd.id]; if (!p) return "";
@@ -1189,30 +1381,193 @@ function viewGraphGlobal(d){
       <circle cx="${p.x}" cy="${p.y}" r="7" fill="${isL ? "var(--primary-l)" : "var(--alt)"}"
         stroke="${isL ? "var(--primary)" : "var(--line2)"}" stroke-width="1.5"/>
       <text x="${isL ? p.x - 16 : p.x + 16}" y="${p.y + 4}"
-        text-anchor="${isL ? "end" : "start"}"
-        style="font-size:11.5px;fill:var(--fg)">${esc(cut(nd.name || nd.id, isL ? 26 : 30))}</text>
-      <title>${esc(nd.name || nd.id)}
-${esc(nd.docno || "")}
-点击查看以它为中心的关系</title></g>`;
+        text-anchor="${isL ? "end" : "start"}" style="font-size:11.5px;fill:var(--fg)"
+        >${esc(_gCut(nd.name || nd.id, isL ? 26 : 30))}</text>
+      <title>${esc(nd.name || nd.id)}${"\n"}${esc(nd.docno || "")}${"\n"}点击查看以它为中心</title>
+    </g>`;
   }).join("");
-  const hubChips = hubs.map(h => `<button class="link" data-ref="${esc(h.ref)}"
-      title="被 ${num(h.degree)} 份文件依据">${esc(cut(h.name || h.ref, 22))}
-      <span class="muted">${num(h.degree)}</span></button>`).join("");
-  const body = `${head}
-    <div class="glegend">
+  return head + `<div class="glegend">
       <span><i style="background:var(--primary)"></i>依据</span>
       <span><i style="background:var(--bad)"></i>废止（虚线）</span>
-      <span class="muted">左：公司制度 · 右：监管文件 · 点任一节点查看局部图</span>
+      <span class="muted">左：公司制度 · 右：监管文件 · 点节点看局部图</span>
     </div>
     <div class="gwrap"><svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}"
-      role="img" aria-label="全局关系图谱">
-      ${edgeSvg}${nodeSvg(L, "left")}${nodeSvg(R, "right")}</svg></div>
-    <h3 style="margin:var(--s4) 0 var(--s2)"><span>监管文件枢纽 Top ${hubs.length}</span>
-      <span class="hint">按"被依据次数"排序，点开看局部图</span></h3>
-    <div style="display:flex;flex-wrap:wrap;gap:var(--s2)">${hubChips}</div>
-    <div class="muted" style="margin-top:var(--s3)">${esc(d.note || "")}</div>`;
-  return card("关系图谱", "全局", body,
-    d.source_name || "relations_api.global_graph", d.fetched_at);
+      role="img" aria-label="制度到监管关系图">
+      ${edgeSvg}${nodeSvg(L, "left")}${nodeSvg(R, "right")}</svg></div>`;
+}
+
+function _gRegulatory(d){
+  const g = obj(d.regulatory), nodes = arr(g.nodes), edges = arr(g.edges);
+  const c = obj(d.counts);
+  const b = obj(obj(c.unresolved_by_view).regulatory_to_regulatory);
+  const head = `<div class="muted" style="margin-bottom:8px">
+    监管↔监管共 ${num(g.total_edges)} 条 / ${num(b.entity + b.corpus + b.unresolved)} 条关系；
+    这里按**被依据次数**取 Top ${nodes.length} 枢纽（节点大小 ∝ √度数），
+    枢纽之间的 ${num(edges.length)} 条直连边照画。
+    其余 ${num(b.entity - edges.length > 0 ? b.entity : 0)} 条已定位关系在局部图里看。</div>`;
+  if (!nodes.length) return head + '<div class="note">暂无枢纽数据。</div>';
+  const W = 1000, H = 640, cx = W / 2, cy = H / 2, R = 250;
+  const maxDeg = Math.max(1, ...nodes.map(n => Number(n.degree) || 0));
+  const pos = {};
+  nodes.forEach((n, i) => {
+    const a = -Math.PI / 2 + i * 2 * Math.PI / nodes.length;
+    pos[n.id] = {x: cx + R * Math.cos(a), y: cy + R * Math.sin(a)};
+  });
+  const spokes = nodes.map(n => {
+    const p = pos[n.id];
+    const w = 1 + 5 * Math.sqrt((Number(n.degree) || 0) / maxDeg);
+    return `<line x1="${cx}" y1="${cy}" x2="${p.x.toFixed(1)}" y2="${p.y.toFixed(1)}"
+      stroke="var(--primary)" stroke-width="${w.toFixed(1)}" opacity=".22">
+      <title>被依据 ${num(n.degree)} 次（依据 ${num(n.basis)} / 废止 ${num(n.repeal)}）</title></line>`;
+  }).join("");
+  const chords = edges.map(e => {
+    const a = pos[e.from], b2 = pos[e.to];
+    if (!a || !b2) return "";
+    const mx = (a.x + b2.x) / 2 + (cy - (a.y + b2.y) / 2) * 0.35;
+    const my = (a.y + b2.y) / 2 + (cx - (a.x + b2.x) / 2) * 0.35;
+    const repeal = e.relation === "repeal";
+    return `<path d="M${a.x.toFixed(1)},${a.y.toFixed(1)} Q${mx.toFixed(1)},${my.toFixed(1)}
+      ${b2.x.toFixed(1)},${b2.y.toFixed(1)}" fill="none"
+      stroke="${repeal ? "var(--bad)" : "var(--primary)"}" stroke-width="1.6" opacity=".6"
+      ${repeal ? ' stroke-dasharray="5 4"' : ""}><title>${esc(e.label)}</title></path>`;
+  }).join("");
+  const nodesSvg = nodes.map(n => {
+    const p = pos[n.id];
+    const r = 14 + 16 * Math.sqrt((Number(n.degree) || 0) / maxDeg);
+    return `<g class="gnode" data-ref="${esc(n.id)}">
+      <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${r.toFixed(1)}"
+        fill="var(--primary-l)" stroke="var(--primary)" stroke-width="1.5"/>
+      <text x="${p.x.toFixed(1)}" y="${(p.y + 4).toFixed(1)}" text-anchor="middle"
+        style="font-size:11px;fill:var(--primary)">${num(n.degree)}</text>
+      <text x="${p.x.toFixed(1)}" y="${(p.y + r + 15).toFixed(1)}" text-anchor="middle"
+        style="font-size:11px;fill:var(--fg)">${esc(_gCut(n.name || n.id, 12))}</text>
+      <title>${esc(n.name || n.id)}
+${esc(n.docno || "")}
+被依据 ${num(n.degree)} 次（依据 ${num(n.basis)} / 废止 ${num(n.repeal)}）
+点击查看局部图</title></g>`;
+  }).join("");
+  const rows = nodes.map(n => `<tr>
+      <td class="ttl">${esc(n.name || n.id)}</td>
+      <td class="mono">${esc(n.docno || "—")}</td>
+      <td>${pill(num(n.degree), "ok")}</td>
+      <td class="muted">${num(n.basis)} / ${num(n.repeal)}</td>
+      <td><button class="link" data-ref="${esc(n.id)}">查看</button></td></tr>`).join("");
+  return head + `<div class="glegend">
+      <span><i style="background:var(--primary)"></i>被依据（线宽 ∝ √次数）</span>
+      <span><i style="background:var(--bad)"></i>废止（虚线）</span>
+      <span class="muted">圆心为汇聚点；点节点看局部图</span></div>
+    <div class="gwrap"><svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}"
+      role="img" aria-label="监管文件枢纽图">${spokes}${chords}${nodesSvg}</svg></div>
+    <div class="scrollx"><table><thead><tr><th>监管文件</th><th>文号</th>
+      <th>被依据</th><th>依据/废止</th><th>操作</th></tr></thead>
+      <tbody>${rows}</tbody></table></div>`;
+}
+
+function _gInternal(d){
+  const g = obj(d.internal), nodes = arr(g.nodes), edges = arr(g.edges);
+  if (!edges.length) {
+    return '<div class="note">当前没有可定位的「制度↔制度」关系。</div>';
+  }
+  const W = 860, H = 620, cx = W / 2, cy = H / 2, R = 240;
+  const pos = {}, idx = {};
+  nodes.forEach((n, i) => {
+    idx[n.id] = i + 1;
+    const a = -Math.PI / 2 + i * 2 * Math.PI / nodes.length;
+    pos[n.id] = {x: cx + R * Math.cos(a), y: cy + R * Math.sin(a)};
+  });
+  const edgeSvg = edges.map(e => {
+    const a = pos[e.from], b2 = pos[e.to];
+    if (!a || !b2) return "";
+    const mx = (a.x + b2.x) / 2 + (cy - (a.y + b2.y) / 2) * 0.32;
+    const my = (a.y + b2.y) / 2 + (cx - (a.x + b2.x) / 2) * 0.32;
+    const repeal = e.relation === "repeal";
+    return `<path d="M${a.x.toFixed(1)},${a.y.toFixed(1)} Q${mx.toFixed(1)},${my.toFixed(1)}
+      ${b2.x.toFixed(1)},${b2.y.toFixed(1)}" fill="none"
+      stroke="${repeal ? "var(--bad)" : "var(--primary)"}" stroke-width="1.5" opacity=".55"
+      ${repeal ? ' stroke-dasharray="5 4"' : ""}>
+      <title>${idx[e.from]} → ${idx[e.to]} ${esc(e.label)}</title></path>`;
+  }).join("");
+  const nodeSvg = nodes.map(n => {
+    const p = pos[n.id];
+    return `<g class="gnode" data-ref="${esc(n.id)}">
+      <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="15"
+        fill="var(--primary-l)" stroke="var(--primary)" stroke-width="1.3"/>
+      <text x="${p.x.toFixed(1)}" y="${(p.y + 4).toFixed(1)}" text-anchor="middle"
+        style="font-size:10.5px;fill:var(--primary)">${idx[n.id]}</text>
+      <title>${esc(n.name || n.id)}
+${esc(n.docno || "")}
+点击查看局部图</title></g>`;
+  }).join("");
+  const rows = edges.map(e => `<tr>
+      <td class="mono">${idx[e.from]}</td>
+      <td>${pill(e.label, e.relation === "repeal" ? "bad" : "ok")}</td>
+      <td class="mono">${idx[e.to]}</td>
+      <td class="ttl">${esc(_gCut(nodes[idx[e.from] - 1].name, 30))}</td>
+      <td class="ttl">${esc(_gCut(nodes[idx[e.to] - 1].name, 30))}</td>
+      <td><button class="link" data-ref="${esc(e.from)}">查看</button></td></tr>`).join("");
+  return `<div class="muted" style="margin-bottom:8px">
+    制度↔制度共 ${num(edges.length)} 条（全部可定位）：
+    <b>${num(edges.filter(e => e.relation === "repeal").length)}</b> 条废止（新版废止旧版）·
+    <b>${num(edges.filter(e => e.relation !== "repeal").length)}</b> 条依据。
+    圆圈里的数字对应下方表格（长标题直接标在图上会互相压字）。</div>
+    <div class="glegend">
+      <span><i style="background:var(--primary)"></i>依据</span>
+      <span><i style="background:var(--bad)"></i>废止（虚线）</span></div>
+    <div class="gwrap"><svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}"
+      role="img" aria-label="制度间关系图">${edgeSvg}${nodeSvg}</svg></div>
+    <div class="scrollx"><table><thead><tr>
+      <th>#</th><th>关系</th><th>#</th><th>源制度</th><th>目标制度</th><th>操作</th>
+      </tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+
+function _gTheme(d){
+  const g = obj(d.theme), themes = arr(g.themes), docs = arr(g.docs), edges = arr(g.edges);
+  if (!edges.length) {
+    return '<div class="note">当前没有可定位的「主题→监管」关系（主题边只计已定位）。</div>';
+  }
+  const W = 1040, n = Math.max(themes.length, docs.length, 1);
+  const rowH = 40, H = Math.max(360, 70 + n * rowH);
+  const xL = 330, xR = W - 330;
+  const yOf = (i, tot) => 45 + (tot <= 1 ? (H - 90) / 2 : i * (H - 90) / (tot - 1));
+  const pos = {};
+  themes.forEach((t, i) => { pos["T:" + t.code] = {x: xL, y: yOf(i, themes.length)}; });
+  docs.forEach((x, i) => { pos["D:" + x.id] = {x: xR, y: yOf(i, docs.length)}; });
+  const maxCount = Math.max(1, ...edges.map(e => Number(e.count) || 1));
+  const edgeSvg = edges.map(e => {
+    const a = pos["T:" + e.theme], b = pos["D:" + e.ref];
+    if (!a || !b) return "";
+    const mx = (a.x + b.x) / 2;
+    const w = 1 + 3.5 * Math.sqrt((Number(e.count) || 1) / maxCount);
+    return `<path d="M${a.x + 8},${a.y} C${mx},${a.y} ${mx},${b.y} ${b.x - 8},${b.y}"
+      fill="none" stroke="var(--primary)" stroke-width="${w.toFixed(1)}" opacity=".4">
+      <title>引用 ${num(e.count)} 次</title></path>`;
+  }).join("");
+  const left = themes.map((t, i) => {
+    const p = pos["T:" + t.code];
+    return `<g class="gnode" data-theme="${esc(t.code)}">
+      <circle cx="${p.x}" cy="${p.y}" r="9" fill="var(--primary-l)"
+        stroke="var(--primary)" stroke-width="1.5"/>
+      <text x="${p.x - 18}" y="${p.y + 4}" text-anchor="end"
+        style="font-size:11.5px;fill:var(--fg)">${esc(_gCut(t.label, 22))}</text>
+      <text x="${p.x - 18}" y="${p.y + 18}" text-anchor="end"
+        style="font-size:10px;fill:var(--fg3)">${num(t.policies)} 份制度</text></g>`;
+  }).join("");
+  const right = docs.map(x => {
+    const p = pos["D:" + x.id];
+    return `<g class="gnode" data-ref="${esc(x.id)}">
+      <circle cx="${p.x}" cy="${p.y}" r="7" fill="var(--alt)"
+        stroke="var(--line2)" stroke-width="1.5"/>
+      <text x="${p.x + 16}" y="${p.y + 4}" text-anchor="start"
+        style="font-size:11.5px;fill:var(--fg)">${esc(_gCut(x.name || x.id, 26))}</text>
+      <title>${esc(x.name || x.id)}
+被 ${num(x.degree)} 次引用
+点击查看局部图</title></g>`;
+  }).join("");
+  return `<div class="muted" style="margin-bottom:8px">
+    主题（${themes.length} 个）→ 被该主题制度引用最多的监管文件（Top ${docs.length}），
+    线宽 ∝ 引用次数。**只统计已定位**的关系 —— 未定位的不会把主题之间"虚连"起来。</div>
+    <div class="gwrap"><svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}"
+      role="img" aria-label="主题关系图">${edgeSvg}${left}${right}</svg></div>`;
 }
 
 function viewGraph(d){
@@ -1362,8 +1717,19 @@ function bindRules(){ bindTable(STATE.rules, "rulesPager"); }
 
 function bindGraph(){
   const v = $("#view");
+  // 视图切换（全览 / 四类关系）——**只切视图、不换中心**，条件保留在 STATE
+  $$("[data-gview]", v).forEach(el => {
+    el.onclick = (ev) => {
+      const key = el.dataset.gview;
+      if (!key) return;
+      // 卡片里可能嵌了图表按钮，避免冒泡重复触发
+      ev.stopPropagation();
+      STATE.graph = Object.assign({}, obj(STATE.graph), {view: key});
+      CUR = "graph"; render();
+    };
+  });
   $$("g.gnode", v).forEach(g => { g.onclick = () => goGraph(g.dataset.ref); });
-  // 枢纽榜（全局视图）也是入口
+  // 表格/枢纽榜里的"查看"也是入口
   $$("[data-ref]", v).forEach(el => {
     if (el.tagName === "G") return;              // 图节点上面已绑
     el.onclick = () => goGraph(el.dataset.ref);
@@ -1436,6 +1802,20 @@ function viewFeedback(d){
   if (!d || d.available === false) return unavail(obj(d), "留言板");
   const items = arr(d.items), st = obj(d.stats);
   const kinds = arr(d.kinds), sevs = arr(d.severities);
+  /* 身份已确定时**不再要人填域账号**（2026-10-23，用户要求"集成认证后去除自报"）：
+   * 记录者来自登录会话（`session`）或可信代理（`proxy`），服务端写入、前端改不了。
+   * 未认证（如仅本机 off 模式）才回落到自报，并在提示里如实说明。 */
+  const au = obj(STATE.auth);
+  const known = au.authenticated ? String(au.user || "") : "";
+  const whoCell = known
+    ? `<div class="muted" style="align-self:end;padding-bottom:2px">
+         记录者：<b>${esc(known)}</b>
+         <span class="tag">${esc(au.user_source || "登录身份")}</span></div>`
+    : `<label class="muted">域账号<input id="fbacc" placeholder="本机/域账号，如 zhangsan"
+         maxlength="64" autocomplete="username"></label>`;
+  const whoNote = known
+    ? "记录者取自**登录身份**（服务端写入，不可篡改）。"
+    : "域账号为**自报**（当前未启用登录认证）；IP / 浏览器 / 提交时间由服务端记录。";
   const kindOpt = kinds.map(k => `<option value="${esc(k)}">${
     ({bug:"缺陷",data:"数据质量",feature:"功能缺失",other:"其他"})[k] || esc(k)}</option>`).join("");
   const sevOpt = sevs.map(s => `<option value="${esc(s)}"${
@@ -1448,8 +1828,7 @@ function viewFeedback(d){
       <label class="muted">分类<select id="fbkind">${kindOpt}</select></label>
       <label class="muted">严重度<select id="fbsev">${sevOpt}</select></label>
       <label class="muted">页面<select id="fbpage">${pageOpt}</select></label>
-      <label class="muted">域账号<input id="fbacc" placeholder="本机/域账号，如 zhangsan"
-        maxlength="64" autocomplete="username"></label>
+      ${whoCell}
     </div>
     <label class="muted" style="display:block;margin-top:var(--s2)">标题
       <input id="fbtitle" maxlength="120" placeholder="一句话说清问题（≥4 字）"></label>
@@ -1459,7 +1838,7 @@ function viewFeedback(d){
     <div class="toolbar" style="margin-top:var(--s2)">
       <button class="primary" id="fbsubmit">提交</button>
       <span class="muted" style="font-size:12px">
-        域账号为**自报**；IP / 浏览器 / 提交时间由服务端记录且不可篡改；留言只追加不删除。</span>
+        ${esc(whoNote)} 留言只追加不删除，处置只改状态。</span>
     </div></div>`;
   const rows = items.map(it => `<tr>
       <td class="mono">${esc((it.created_at || "").replace("T", " ").slice(0, 19))}</td>
@@ -1589,28 +1968,13 @@ function initSSE(){
     es.onerror=()=>{ setLive("轮询回退","off"); };
   }catch(e){ setLive("轮询","off"); }
   // 无论 SSE 是否可用都做一次轻量健康探测（让"门禁"徽标有数据）
-  api("/api/health").then(h=>{
-    STATE.health = obj(h);
+  ensureHealth().then(()=>{
+    const h = obj(STATE.health);
     const g=$("#gates");
     g.textContent = h.ok? `门禁 ${h.gates_registered} 道` : "门禁 不可用";
     g.className = h.ok? "badge" : "badge bad";
-    /* 访问范围徽标 + **隐藏本机专属页签**（2026-10-23）。
-     * 只隐藏、不做别的：真正的边界在服务端（403）。隐藏只是别让同事点了才知错。 */
-    const scope = String(h.scope || "local");
-    const local = h.local_only === true || scope === "local";
-    const sc = $("#scope");
-    if (sc) {
-      sc.textContent = local ? "本机" : "内网只读";
-      sc.className = "badge " + (local ? "" : "warn");
-      sc.title = local ? "全部功能可用（含待办处置）"
-        : `内网访问（${scope}）：待办处置/留言处置/本地文件/宿主诊断/提交详情仅限本机`;
-    }
-    if (!local) {
-      $$("#nav button").forEach(b => {
-        if (LOCAL_ONLY_TABS.indexOf(b.dataset.id) >= 0) b.style.display = "none";
-      });
-      if (LOCAL_ONLY_TABS.indexOf(CUR) >= 0) { location.hash = "overview"; }
-    }
+    const local = h.local_only === true || String(h.scope || "local") === "local";
+    if (!local && LOCAL_ONLY_TABS.indexOf(CUR) >= 0) { location.hash = "overview"; }
   }).catch(()=>{});
   setInterval(()=>{ if(CUR==="overview"||CUR==="worklist") render(); }, 60000);
 }

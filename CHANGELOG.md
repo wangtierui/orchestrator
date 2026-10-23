@@ -3643,3 +3643,94 @@ README §4.1 架构图的 `19 命令 · 8 页` 实际已漂移成 **23 命令 / 
 留言板 14 + 全局图谱 6 + 监管统计 4 + 前端契约 5）全绿；
 **真实内网验证**：用本机内网 IP `10.64.22.13` 连真实服务，5 个本机专属路由全部 **403**、
 6 个只读路由 **200**、留言提交 **200**、本机处置 **200**。
+## [Unreleased] 2026-10-23 — 关系定位率 20.9%→50.3% + 关系四视图 + 认证闭环（第一百一十二批）
+
+### ① 关系定位率：三个层次同时修（用户：补登记 RFN）
+
+**结论**：文件类目标定位率 **20.9% → 50.3%**（分母剔除机关名后；总口径
+`resolved_to_entity_ratio` 0.209 → **0.405**）；关系条数 4197 → **5281**。
+
+**(a) nfra 源整体失联（真 bug，影响最大）**
+`_latest_cleaned_jsonl` 用 `sorted(glob)[-1]` 取「最新 cleaned」，而
+`nfra_cleaned_<date>.jsonl` 与 `nfra_cleaned_<date>.quarantine.jsonl` 并存时，
+字典序 `…22.jsonl` < `…22.quarantine.jsonl`（`j` < `q`）⇒ 取到**隔离文件**；
+其每行 `body_text` 为空、迭代器直接 `continue` ⇒ **nfra 全域 1935 份文件 /
+111,970 条条款对关系链零贡献**，而日志只写「正文可抽取 0 份」，看不出取错文件。
+修法：排除辅助产物（`.quarantine/.bad/.bak/.partial`）+ 「抽到 0 份」改**告警**。
+
+**(b) 归一化增强层（`std_lib/common_lib/norm.py`）**
+新增 `norm_docno_strong`（全角数字、中文序号「令第两百六十二号」）/
+`norm_title_rel`（HTML 实体 `&lt;`、尖括号、引号）/ `strip_title_version`
+（(2022年修订版)/(2023版)/(试行)…）/ `drop_cn_prefix`（中华人民共和国）。
+**索引侧与查询侧同时使用**（`_add_entity` 与 `resolve_target`），否则单边失配。
+新增「仅唯一可用」键：去版本/去国名前缀的键若对应多个实体，**登记为多义并跳过**
+——选错实体比未定位更糟。
+
+**(c) 补登记 RFN（正式通道）**
+`tools/rfn_backlog.py --apply --theme-mode suggested` ⇒ 登记 **142** 条
+（T0 上位法锚点，含备份），`corpus` 类关系 931 → **509**、`entity` 1718 → **2140**。
+
+> 顺带修 `rfn_backlog.py` 两个真 bug：
+> ① `_wl_uncertain` 定义在 `if __name__ == "__main__"` **之后** ⇒ 脚本运行必
+>    `NameError`（dry-run 直接崩）；
+> ② `sync_timeliness` 把 SSOT 的**非权威占位**（14752 条 `pending`，来源写着
+>    「无同名命中，维持原判定」）写回归属表 ⇒ 一次 `--apply` 让 **592 行已知状态
+>    （valid/repealed/expired）被降级为 pending**，`gate_timeliness_ssot` 立刻报
+>    1156 条漂移。改用 `timeliness_ssot.authority()` 判定，只传播权威结论
+>    （41 行、跳过 1120 行）。
+
+**刻意不做**：剥离「文号前残渣」（`保险机构参与…证监会公告〔2020〕12号`）——
+从哪里截没有可靠判据，硬截会切掉合法机关代字，把两个不同文号归成一个。这类形态由
+签名层 `docno_signature`（四位年+序号数字尾）处理。
+
+### ② 关系图谱：四类关系**各自有视图**（用户：四类「并未显示」）
+
+| # | 视图 | 数据 | 呈现 |
+|---|---|---|---|
+| 1 | 制度 → 监管 | 118（可定位 25） | 二部图**全画**，未定位只计数 |
+| 2 | 监管 ↔ 监管 | 5139 / 417 节点 | **枢纽星型**：Top15 按被引次数定大小（最大 181 次），枢纽间直连边照画 |
+| 3 | 制度 ↔ 制度 | 24（可定位 **24/24**） | 弦图**全画** + 数字图例表（长标题不压字） |
+| 4 | 主题关系 | 11 主题 × 12 文件 / 18 边 | 二部图（主题 → 被其制度引用最多的监管文件） |
+
+原「全局图」只有一张制度→监管二部图，其余三类**没有入口**；现在顶部可切换视图，
+且每个视图都**逐项披露未定位**（entity/corpus/unresolved 三桶）。
+
+### ③ TD-27：`--resume` 语义
+
+- **`ALWAYS_RUN_STEPS = (gates, timeliness:verify)`**：周期性检查不得被 resume 跳过。
+  实测 06:00 那次 41 步里 SKIP 40 步，`gates` 之所以跑了**只是因为它上次 rc≠0** ——
+  若昨天门禁也 PASS，今天连门禁都会被跳过，日检形同虚设。
+- **退出码分层**：原 `return 0 if not failed else 2` 把「门禁没通过」报成 `rc=2(DATA)`；
+  现按语义分 `FAIL/ENV → 1`、纯数据类 `→ 2`。
+- **全 SKIP 显式标注**：`run_log` 写「本轮全部步骤跳过（--resume）」，不再伪装成普通成功。
+
+### ④ 认证闭环（TD-27 另一项：无鉴权 + 内网开放）
+
+新增 `web/auth.py` + `--auth {off,token,basic}`：
+
+- **`--lan` 自动升级为 token**（不允许「对外且无认证」）；
+- **会话**：无状态 HMAC 签名 cookie（密钥落 `data/state/console_secret.key`，重启不掉线）；
+- **CSRF 双重提交**：`wb_csrf` cookie（**非 HttpOnly**，页面脚本须能读）+ `X-CSRF` 头；
+- **登录失败限频**（同 IP 10 分钟 10 次）+ **常数时间比较**；
+- **basic 模式**口令存 PBKDF2-SHA256；可选 `--tls-cert/--tls-key`；
+- **审计到人**：登录成功/失败/登出写 `audit_log`。
+
+> 途中修掉两个「假安全」：
+> ① 登录路由被「本机专属」闸门挡成 403 ⇒ **开了认证谁也登录不进来**
+>    （已加入 `REMOTE_POST_ALLOW`）；
+> ② CSRF 校验原为 `if need and not compare(...)` ⇒ **可信代理认证**没有 cookie，
+>    整个校验被跳过（实测免 CSRF 直接写入）。现改为「没有 token 也拒绝」。
+
+### ⑤ 留言板：接入认证后**去除自报域账号**
+
+身份优先级：**已认证会话/可信代理 > 可信头 > 自报**，`account_src` 记
+`session`/`proxy`/`header`/`self`。已认证时表单**不再渲染域账号输入框**，
+显示「记录者：<user>（登录身份）」。实测：登录后提交 →
+`account=内网共享口令用户`、`account_src_label=登录身份`。
+
+### 验证
+**30 门禁 PASS**；本批新增守卫 **51 项**（关系 25 + 认证 26）全绿；
+真实 HTTP：未登录 401 / 错误口令 401 / 登录 200 / 无 CSRF 403 / 带 CSRF 200 /
+本机专属路由内网 403 / 代理认证身份生效且免 CSRF 被拒；
+关系实测：`relations_stat` nfra 归队（1935 份）、`resolved_to_entity_ratio 0.405`、
+`file_resolved_ratio 0.503`、`internal→internal 24/24 全定位`。

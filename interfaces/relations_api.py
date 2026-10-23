@@ -334,99 +334,238 @@ def ego(ref: str, *, limit: int = 200, include_weak: bool = False) -> dict:
     }
 
 
-def global_graph(*, top_hubs: int = 12) -> dict:
-    """**全局关系图谱**（未指定中心时展示，2026-10-23）。
+def _nmaps(rows: list[dict]) -> tuple[dict[str, str], dict[str, str]]:
+    """从关系行里收集 `ref → (名称, 文号)`（同一实体在多行里可能只带片面信息）。"""
+    name, docno = {}, {}
+    for r in rows:
+        for side in ("src", "dst"):
+            ref = str(r.get(f"{side}_ref") or "")
+            if not ref:
+                continue
+            if r.get(f"{side}_name") and ref not in name:
+                name[ref] = str(r[f"{side}_name"])
+            if r.get(f"{side}_docno") and ref not in docno:
+                docno[ref] = str(r[f"{side}_docno"])
+    return name, docno
 
-    为什么不是"把 4197 条边全画出来"
-    --------------------------------
-    全量画出来是**一坨**：监管↔监管 4055 条里，大量是"某通知依据《保险法》"这类
-    中心辐射型结构，同屏上千条边只会得到一张不可读的黑网。所以全局视图分两块：
 
-    1. **二部图「公司制度 → 监管依据」**（`bipartite`）：这部分**数据量刚好**
-       —— 实测可定位的 cross 关系只有 **24 条**（17 份制度 ↔ 17 份监管文件），
-       可以**完整**画出来，而且它回答的是本项目最关心的问题：
-       "我们的制度踩在哪些监管要求上"。**不做抽样**（24 条抽什么）。
-    2. **枢纽文件 Top N**（`hubs`）：监管↔监管的 4055 条按"被依据次数"取头部，
-       点进去看 ego（以它为中心的局部图）。
+def global_graph(*, top_hubs: int = 15, top_theme_docs: int = 12) -> dict:
+    """**全局关系图谱**：四类关系各给一个可读视图（2026-10-23 重构）。
 
-    诚实披露：`counts.unresolved` 是"关系存在但对方未登记 RFN"的条数（实测 2462 条，
-    占 58.6%）——它们**画不进图**，必须在页面上写明，否则读者会以为"关系就这么多"。
+    为什么不是一个"全量图"
+    ----------------------
+    实测 5281 条关系里：监管↔监管 **5139**、制度↔制度 **24**、制度→监管 **118**。
+    全量同屏 = 一张不可读的黑网（且多数是"某通知依据《保险法》"的中心辐射）。
+    但"画不下"不等于"不显示"——**四类关系都必须能被看见**，只是呈现方式不同：
+
+    | # | 视图 | 数据量 | 呈现策略 |
+    |---|---|---|---|
+    | 1 | 制度 → 监管 | 118（可定位 25） | **全画**（25 条不抽样）+ 未定位条数显式披露 |
+    | 2 | 监管 ↔ 监管 | 5139 / 417 节点 | **枢纽星型**：Top N 枢纽按被引次数定大小，枢纽间直连边照画 |
+    | 3 | 制度 ↔ 制度 | 24 | **全画**（弦图布局，24 条可读） |
+    | 4 | 主题关系 | 10 主题 × 12 文件 | **二部图**：主题 → 被其制度引用最多的监管文件 |
+
+    诚实纪律（不变）：`dst_ref` 为空的关系**不伪造节点**，但**条数必须显式给出**
+    ——"未定位"与"不存在"是两件事，混为一谈会让读者得出错误结论。
     """
-    cross = [r for r in load("cross") if r.get("src_ref") and r.get("dst_ref")]
-    # 去重：同一 (src,dst,relation) 可能因多次抽取产生多行（relation_id 不同）
-    uniq: dict[tuple[str, str, str], dict] = {}
-    for r in cross:
-        key = (str(r["src_ref"]), str(r["dst_ref"]), str(r.get("relation") or ""))
-        uniq.setdefault(key, r)
+    from interfaces import base_api as _B
 
+    reg_rows = load("regulatory")
+    int_rows = load("internal")
+    cross_rows = load("cross")
+
+    reg_name, reg_docno = _nmaps(reg_rows)
+    int_name, int_docno = _nmaps(int_rows)
+    all_name = {**reg_name, **int_name}
+    all_docno = {**reg_docno, **int_docno}
+
+    def _uniq(rows: list[dict]) -> dict[tuple[str, str, str], dict]:
+        out: dict[tuple[str, str, str], dict] = {}
+        for r in rows:
+            s, d = str(r.get("src_ref") or ""), str(r.get("dst_ref") or "")
+            if not s or not d:
+                continue
+            out.setdefault((s, d, str(r.get("relation") or "")), r)
+        return out
+
+    # ---- 视图 1：制度 → 监管（全画）----
+    cross_edges: list[dict] = []
     left: dict[str, dict] = {}
     right: dict[str, dict] = {}
-    edges: list[dict] = []
-    for (src, dst, rel), r in uniq.items():
-        left.setdefault(src, {"id": src, "kind": "internal",
-                              "name": str(r.get("src_name") or ""),
-                              "docno": str(r.get("src_docno") or "")})
-        right.setdefault(dst, {"id": dst, "kind": "regulatory",
-                               "name": str(r.get("dst_name") or ""),
-                               "docno": str(r.get("dst_docno") or "")})
-        edges.append({"from": src, "to": dst, "relation": rel,
-                      "label": RELATION_LABELS.get(rel, rel),
-                      "confidence": r.get("confidence", ""),
-                      "matched_by": r.get("matched_by", "")})
+    for (s, d, rel), r in _uniq(cross_rows).items():
+        left.setdefault(s, {"id": s, "kind": "internal",
+                            "name": all_name.get(s, ""), "docno": all_docno.get(s, "")})
+        right.setdefault(d, {"id": d, "kind": "regulatory",
+                             "name": all_name.get(d, ""), "docno": all_docno.get(d, "")})
+        cross_edges.append({"from": s, "to": d, "relation": rel,
+                            "label": RELATION_LABELS.get(rel, rel),
+                            "confidence": r.get("confidence", ""),
+                            "matched_by": r.get("matched_by", "")})
+    # 三桶口径（2026-10-23）：把「未定位」与「语料内但未登记 RFN」分开 ——
+    # 前者是**找不到**（对方不在库里），后者是**找到了没登记**（可补登）。
+    # 混在一起会让读者以为三千多条都无从下手，其实其中一部分只差一次登记。
+    def _buckets(rows: list[dict]) -> dict[str, int]:
+        ent = sum(1 for r in rows if r.get("dst_ref"))
+        corp = sum(1 for r in rows if not r.get("dst_ref") and r.get("dst_key"))
+        unres = sum(1 for r in rows if not r.get("dst_ref") and not r.get("dst_key"))
+        return {"entity": ent, "corpus": corp, "unresolved": unres}
 
-    # 枢纽：监管文件"被依据"次数（dst 侧），并补名称
-    name_of: dict[str, str] = {}
-    docno_of: dict[str, str] = {}
+    cross_b, reg_b, int_b = _buckets(cross_rows), _buckets(reg_rows), _buckets(int_rows)
+    cross_unresolved = cross_b["unresolved"] + cross_b["corpus"]
+
+    # ---- 视图 2：监管 → 监管（枢纽星型）----
     deg: dict[str, int] = {}
-    for r in load("regulatory"):
+    deg_kind: dict[str, dict[str, int]] = {}
+    for r in reg_rows:
         d = str(r.get("dst_ref") or "")
         if not d:
             continue
         deg[d] = deg.get(d, 0) + 1
-        if d not in name_of and r.get("dst_name"):
-            name_of[d] = str(r["dst_name"])
-        if d not in docno_of and r.get("dst_docno"):
-            docno_of[d] = str(r["dst_docno"])
-    for node in right.values():
-        name_of.setdefault(node["id"], node["name"])
-        docno_of.setdefault(node["id"], node["docno"])
+        k = deg_kind.setdefault(d, {"basis": 0, "repeal": 0})
+        k[str(r.get("relation") or "basis")] = k.get(str(r.get("relation") or "basis"), 0) + 1
+    hub_ids = [k for k, _ in sorted(deg.items(), key=lambda kv: -kv[1])[:top_hubs]]
+    hub_set = set(hub_ids)
+    hub_nodes = [{"id": h, "kind": "regulatory", "name": all_name.get(h, ""),
+                  "docno": all_docno.get(h, ""), "degree": deg.get(h, 0),
+                  "basis": deg_kind.get(h, {}).get("basis", 0),
+                  "repeal": deg_kind.get(h, {}).get("repeal", 0)} for h in hub_ids]
+    hub_edges = [{"from": s, "to": d, "relation": rel,
+                  "label": RELATION_LABELS.get(rel, rel)}
+                 for (s, d, rel) in _uniq(reg_rows) if s in hub_set and d in hub_set]
+    reg_unresolved = reg_b["unresolved"] + reg_b["corpus"]
 
-    hubs = [{"ref": k, "name": name_of.get(k, ""), "docno": docno_of.get(k, ""),
-             "degree": n, "kind": "regulatory"}
-            for k, n in sorted(deg.items(), key=lambda kv: -kv[1])[:top_hubs]]
+    # ---- 视图 3：制度 ↔ 制度（全画）----
+    ii_edges: list[dict] = []
+    ii_nodes: dict[str, dict] = {}
+    for (s, d, rel), r in _uniq(int_rows).items():
+        ii_nodes.setdefault(s, {"id": s, "kind": "internal",
+                                "name": all_name.get(s, ""), "docno": all_docno.get(s, "")})
+        ii_nodes.setdefault(d, {"id": d, "kind": "internal",
+                                "name": all_name.get(d, ""), "docno": all_docno.get(d, "")})
+        ii_edges.append({"from": s, "to": d, "relation": rel,
+                         "label": RELATION_LABELS.get(rel, rel),
+                         "confidence": r.get("confidence", "")})
+    ii_unresolved = int_b["unresolved"] + int_b["corpus"]
+
+    # ---- 视图 4：主题关系（主题 → 被其制度引用最多的监管文件）----
+    # 口径：内部制度 `primary_theme`（T1/T9/… 或 UNALIGNED）→ 其"依据"关系指向的监管文件。
+    # 只在**已定位**（dst_ref 非空）时计数；未定位的不计入主题边（否则主题间会被
+    # 同一批"未定位"虚连，看着像真有关系）。
+    theme_of: dict[str, str] = {}
+    try:
+        # ⚠️ `limit=0` 返回 **0 行**（不是"不限"）—— 实测踩到，主题视图整页空白。
+        for p in _B.query_internal(limit=2000):
+            ipn = str(p.get("ipn") or "")
+            if ipn:
+                theme_of[ipn] = str(p.get("primary_theme") or "") or "UNALIGNED"
+    except Exception:  # noqa: BLE001  主题视图失败不影响其它三视图
+        theme_of = {}
+    theme_label_map: dict[str, str] = {}
+    try:
+        from interfaces.theme_api import THEME_MAP_P0
+
+        theme_label_map = dict(THEME_MAP_P0)
+    except Exception:  # noqa: BLE001
+        theme_label_map = {}
+
+    pair: dict[tuple[str, str], int] = {}
+    for r in cross_rows:
+        if not r.get("dst_ref"):
+            continue
+        t = theme_of.get(str(r.get("src_ref") or ""))
+        if not t:
+            continue
+        pair[(t, str(r["dst_ref"]))] = pair.get((t, str(r["dst_ref"])), 0) + 1
+    doc_freq: dict[str, int] = {}
+    for (_t, d), n in pair.items():
+        doc_freq[d] = doc_freq.get(d, 0) + n
+    top_docs = [d for d, _ in sorted(doc_freq.items(), key=lambda kv: -kv[1])[:top_theme_docs]]
+    keep_docs = set(top_docs)
+    theme_edges = [{"theme": t, "ref": d, "count": n, "label": RELATION_LABELS["basis"]}
+                   for (t, d), n in sorted(pair.items(), key=lambda kv: -kv[1])
+                   if d in keep_docs]
+    theme_counts: dict[str, int] = {}
+    for t in theme_of.values():
+        theme_counts[t] = theme_counts.get(t, 0) + 1
+    themes = [{"code": t, "label": theme_label_map.get(t, t), "policies": n}
+              for t, n in sorted(theme_counts.items(), key=lambda kv: -kv[1])]
 
     s = stat() or {}
     res = s.get("resolution") or {}
-    # ⚠️ `stat()["relations"]` 的形状是 `{total, by_kind, by_cross}`，
-    # 不是 `{regulatory: n, cross: n}`（实测踩到：按后者取会全是 0，
-    # 于是页面写着"监管关系 0 条"——比不显示更糟，因为它看起来像事实）。
     rel = s.get("relations") or {}
     by_cross = rel.get("by_cross") or {}
-    unresolved = int(res.get("unresolved") or 0)
+    counts = {
+        "documents": len(left) + len(right) + len(ii_nodes),
+        "edges": len(cross_edges) + len(ii_edges),
+        "hubs": len(hub_nodes),
+        "unresolved": int(res.get("unresolved") or 0),
+        "regulatory_relations": int(by_cross.get("regulatory->regulatory") or 0),
+        "internal_relations": int(by_cross.get("internal->internal") or 0),
+        "cross_relations": int(by_cross.get("internal->regulatory") or 0),
+        "total_relations": int(rel.get("total") or 0),
+        # 各视图的"未定位"条数（**必须逐视图披露**：总盘子的 2462 条对读者没意义）
+        "unresolved_by_view": {
+            "internal_to_regulatory": cross_b,
+            "regulatory_to_regulatory": reg_b,
+            "internal_to_internal": int_b,
+        },
+        # 口径：分母剔除 organ/generic（机关名/泛指词不是文件）
+        "file_denominator": int(s.get("file_level_denominator") or 0),
+        "file_resolved_ratio": s.get("file_resolved_ratio"),
+        "file_located_ratio": s.get("file_located_ratio"),
+        "resolved_to_entity_ratio": s.get("resolved_to_entity_ratio"),
+        "located_in_corpus_ratio": s.get("located_in_corpus_ratio"),
+    }
+    views = [
+        {"key": "internal_to_regulatory", "label": "公司制度 → 监管依据",
+         "edges": len(cross_edges), "nodes": len(left) + len(right),
+         "total": counts["cross_relations"], "unresolved": cross_unresolved,
+         "note": "可定位的全部画出（不抽样）；未定位的只计数不伪造节点"},
+        {"key": "regulatory_to_regulatory", "label": "监管文件 → 监管文件",
+         "edges": len(hub_edges), "nodes": len(hub_nodes),
+         "total": counts["regulatory_relations"], "unresolved": reg_unresolved,
+         "note": f"5139 条里按被依据次数取 Top {len(hub_nodes)} 枢纽；"
+                 f"枢纽间直连 {len(hub_edges)} 条照画，其余用度数（节点大小）表达"},
+        {"key": "internal_to_internal", "label": "公司制度 → 公司制度",
+         "edges": len(ii_edges), "nodes": len(ii_nodes),
+         "total": counts["internal_relations"], "unresolved": ii_unresolved,
+         "note": "全部画出（24 条可读）——含 16 条废止（新版废止旧版）"},
+        {"key": "theme", "label": "主题关系",
+         "edges": len(theme_edges), "nodes": len(themes) + len(keep_docs),
+         "total": sum(n for (_t, d), n in pair.items() if d in keep_docs),
+         "unresolved": sum(1 for r in cross_rows if not r.get("dst_ref")),
+         "note": "主题 → 被该主题制度引用最多的监管文件（只计已定位）"},
+    ]
     return {
         "available": True,
         "mode": "global",
         "ref": "",
+        "views": views,
         "bipartite": {"left": sorted(left.values(), key=lambda x: x["name"]),
                       "right": sorted(right.values(), key=lambda x: x["name"]),
-                      "edges": edges},
-        "hubs": hubs,
-        "counts": {
-            "documents": len(left) + len(right),
-            "edges": len(edges),
-            "hubs": len(hubs),
-            "unresolved": unresolved,
-            "regulatory_relations": int(by_cross.get("regulatory->regulatory") or 0),
-            "internal_relations": int(by_cross.get("internal->internal") or 0),
-            "cross_relations": int(by_cross.get("internal->regulatory") or 0),
-            "total_relations": int(rel.get("total") or 0),
-        },
+                      "edges": cross_edges},
+        "regulatory": {"nodes": hub_nodes, "edges": hub_edges,
+                       "total_edges": counts["regulatory_relations"]},
+        "internal": {"nodes": sorted(ii_nodes.values(), key=lambda x: x["name"]),
+                     "edges": ii_edges},
+        "theme": {"themes": themes,
+                  "docs": [{"id": d, "kind": "regulatory", "name": all_name.get(d, ""),
+                            "docno": all_docno.get(d, ""), "degree": doc_freq.get(d, 0)}
+                           for d in top_docs],
+                  "edges": theme_edges},
+        "hubs": hub_nodes,
+        "counts": counts,
         "stats": {"resolution": res,
-                  "resolved_to_entity_ratio": s.get("resolved_to_entity_ratio")},
+                  "resolved_to_entity_ratio": s.get("resolved_to_entity_ratio"),
+                  "file_resolved_ratio": s.get("file_resolved_ratio")},
         "labels": dict(RELATION_LABELS),
-        "note": ("全局视图 = 「公司制度 → 监管依据」二部图（可定位的 cross 关系**全部**画出）"
-                 "+ 监管文件枢纽 Top N。"
-                 f"另有 {unresolved} 条关系因对方未登记 RFN 无法定位，未画入。"),
+        "note": (f"全库 {counts['total_relations']} 条关系：监管↔监管 "
+                 f"{counts['regulatory_relations']}、制度↔制度 "
+                 f"{counts['internal_relations']}、制度→监管 "
+                 f"{counts['cross_relations']}。"
+                 f"文件类目标定位率 {round((counts['file_resolved_ratio'] or 0) * 100, 1)}%"
+                 f"（分母 {counts['file_denominator']}，已剔除机关名/泛指词）。"
+                 f"未定位 {counts['unresolved']} 条在四个视图里逐项披露。"),
     }
 
 

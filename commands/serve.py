@@ -44,12 +44,31 @@ def run(argv: list[str] | None = None) -> int:
                     help="日志文件（缺省仅控制台；开机自启动**必须**给，否则无日志可查）")
     ap.add_argument("--single-instance", action="store_true",
                     help="单实例模式：已有实例在跑则本次直接退出（幂等）")
+    # ---- 认证（2026-10-23）：对内网开放时**不允许无认证** -------------------- #
+    ap.add_argument("--auth", default="", choices=["", "off", "token", "basic"],
+                    help="认证方式：off / token（共享口令）/ basic（账号）；"
+                         "缺省时 --lan 自动用 token")
+    ap.add_argument("--auth-rotate", action="store_true", help="token 模式：重新生成口令")
+    ap.add_argument("--trust-proxy", action="store_true",
+                    help="采信受信代理注入的 X-Remote-User（集成认证）")
+    ap.add_argument("--trusted-proxies", default="",
+                    help="受信代理 IP 列表（逗号分隔）")
+    ap.add_argument("--tls-cert", default="", help="HTTPS 证书（PEM）")
+    ap.add_argument("--tls-key", default="", help="HTTPS 私钥（PEM）")
     a = ap.parse_args(argv)
 
     import web
 
     host = "0.0.0.0" if a.lan else a.host
+    if a.auth_rotate:
+        from web import auth as _auth
+
+        print(f"新共享口令：{_auth.access_token(rotate=True)}")
+    proxies = tuple(p.strip() for p in (a.trusted_proxies or "").split(",") if p.strip())
     # `open_browser`/`verbose` 均显式透传（web.serve 的关键字参数名）
     return web.serve(host=host, port=a.port, open_browser=a.open,
                      verbose=a.verbose, pid_file=a.pid_file or None,
-                     log_file=a.log_file or None, single_instance=a.single_instance)
+                     log_file=a.log_file or None, single_instance=a.single_instance,
+                     auth_mode=a.auth,
+                     trusted_proxies=proxies if a.trust_proxy else (),
+                     tls_cert=a.tls_cert, tls_key=a.tls_key)

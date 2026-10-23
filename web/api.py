@@ -98,6 +98,13 @@ def handle(method: str, path: str, qs: dict | None = None,
             "local_only": scope == "local",
             "local_only_routes": list(LOCAL_ONLY_ROUTES),
             "remote_post_allow": list(REMOTE_POST_ALLOW),
+            # 认证状态（前端据此渲染登录卡片、并**隐藏留言板的域账号输入**）
+            "authenticated": bool(ctx.get("authenticated", True)),
+            "user": str(ctx.get("identity_user") or ""),
+            "user_source": {"proxy": "网关认证", "session": "登录会话",
+                            "none": "未认证"}.get(
+                                str(ctx.get("identity_src") or "none"), ""),
+            "auth_mode": str(ctx.get("auth_mode") or "off"),
         }
     if path == "/api/overview":
         return 200, S.overview()
@@ -210,7 +217,10 @@ def handle(method: str, path: str, qs: dict | None = None,
             out = FB.add(body or {},
                          ip=str(ctx.get("client_ip") or ""),
                          user_agent=str(ctx.get("user_agent") or ""),
-                         header_account=str(ctx.get("header_user") or ""))
+                         header_account=str(ctx.get("header_user") or ""),
+                         # 已认证身份（会话/可信代理）优先 ⇒ 留言板上不再需要自报
+                         identity_user=str(ctx.get("identity_user") or ""),
+                         identity_src=str(ctx.get("identity_src") or "none"))
             return (200 if out.get("ok") else 400), out
         return 200, S.feedback_items(status=_one(qs, "status"),
                                      kind=_one(qs, "kind"),

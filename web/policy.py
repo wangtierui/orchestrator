@@ -40,8 +40,17 @@ LOCAL_ONLY_ROUTES: tuple[str, ...] = (
     "/api/commit",
 )
 
-#: 允许**内网**调用 POST 的路由（留言板：任何使用者都要能提交问题）
-REMOTE_POST_ALLOW: tuple[str, ...] = ("/api/feedback",)
+#: 允许**内网**调用 POST 的路由。
+#:
+#: - `/api/feedback`：留言板（任何使用者都要能提交问题）
+#: - `/api/auth/login` / `/api/auth/logout`：登录/登出**必须内网可达**，否则
+#:   "开了认证"等于"内网谁也登录不进来"（实测踩到：登录被本机专属闸门挡成 403）。
+#:   它们的保护不靠来源 IP，靠**口令校验 + 失败限频**（见 `web/auth.py`）。
+REMOTE_POST_ALLOW: tuple[str, ...] = (
+    "/api/feedback",
+    "/api/auth/login",
+    "/api/auth/logout",
+)
 
 
 def _norm(ip: str) -> str:

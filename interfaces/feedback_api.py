@@ -95,8 +95,16 @@ def header_user(headers: dict | None) -> str:
 
 
 def add(payload: dict, *, ip: str = "", user_agent: str = "",
-        header_account: str = "") -> dict:
-    """校验 + 落库。返回 `{ok, fid}` 或 `{ok:False, reason}`（**不抛异常**）。"""
+        header_account: str = "", identity_user: str = "",
+        identity_src: str = "none") -> dict:
+    """校验 + 落库。返回 `{ok, fid}` 或 `{ok:False, reason}`（**不抛异常**）。
+
+    身份来源优先级（2026-10-23，接入认证后）：
+      ① `identity_user`（**已认证**：登录会话或可信代理）→ 直接采信，
+         `account_src` 记为 `session` / `proxy`，**不再要求填写域账号**；
+      ② `header_account`（未开会话但走代理）→ `header`；
+      ③ 都没有 → 回落到**自报**（`self`）并做格式校验（保留兼容与离线场景）。
+    """
     from std_lib.common_lib import governance_store as gs
 
     p = payload or {}
@@ -115,9 +123,12 @@ def add(payload: dict, *, ip: str = "", user_agent: str = "",
         return {"ok": False,
                 "reason": f"严重度非法：{severity!r}（可选 {list(gs.feedback.SEVERITIES)}）"}
 
-    # 域账号：优先用可信头（将来接代理），否则用自报值
-    if header_account:
-        account, account_src = header_account, "header"
+    # 域账号：**已认证身份 > 可信头 > 自报**
+    if identity_user:
+        account = _clean(identity_user, limit=MAX_ACCOUNT)
+        account_src = "proxy" if str(identity_src) == "proxy" else "session"
+    elif header_account:
+        account, account_src = _clean(header_account, limit=MAX_ACCOUNT), "header"
     else:
         account_src = "self"
         if not account:
@@ -163,8 +174,12 @@ def items(*, status: str = "", kind: str = "", limit: int = 200) -> dict:
         r["kind_label"] = KINDS.get(r.get("kind", ""), r.get("kind", ""))
         r["severity_label"] = SEV.get(r.get("severity", ""), r.get("severity", ""))
         r["status_label"] = STATUS.get(r.get("status", ""), r.get("status", ""))
-        r["account_src_label"] = ("网关认证" if r.get("account_src") == "header"
-                                  else "填写者自报")
+        r["account_src_label"] = {
+            "proxy": "网关认证",        # 可信代理注入的 X-Remote-User
+            "session": "登录身份",      # 口令/账号登录后的会话身份
+            "header": "网关认证",       # 兼容旧数据（曾用 header 表示代理）
+            "self": "填写者自报",       # 未接认证时的回落
+        }.get(str(r.get("account_src") or ""), "填写者自报")
     return {"available": True, "items": rows, "total": len(rows),
             "stats": st, "kinds": list(gs.feedback.KINDS),
             "severities": list(gs.feedback.SEVERITIES),

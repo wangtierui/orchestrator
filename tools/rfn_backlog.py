@@ -468,11 +468,14 @@ def sync_timeliness(*, dry_run: bool = False, only_rfns: set[str] | None = None)
     try:
         from rfn import registry
         from timeliness_review.verification_state import load_state, state_key
+
+        from std_lib.common_lib.timeliness_ssot import authority
     except Exception as e:  # noqa: BLE001
         print(f"[backlog] 时效同步跳过（导入失败: {e!r}）")
         return {"changed": 0, "scanned": 0}
     st = load_state() or {}
     fh = registry._lock()
+    skipped: dict[str, int] = {}
     try:
         rows = registry._load_rows()
         changed = 0
@@ -481,8 +484,19 @@ def sync_timeliness(*, dry_run: bool = False, only_rfns: set[str] | None = None)
             if only_rfns is not None and rfn not in only_rfns:
                 continue
             rec = st.get(state_key(r.get("发文字号", ""), r.get("文件名称", ""))) or {}
+            # ⚠️ **只传播"权威"结论**（2026-10-23 实测事故的根因）。
+            #   SSOT 里有 14752 条 `pending`，其 `verification_source` 写着
+            #   "北大法宝（无同名命中，维持原判定）" —— 这是**没核验成功**的占位，
+            #   不是结论。原实现 `if s and s != 当前` 把它写回归属表 ⇒ 一次 --apply
+            #   让 **592 行已知状态（valid/repealed/expired）被降级成 pending**，
+            #   `gate_timeliness_ssot` 层2 立刻报 1156 条漂移。
+            #   判据**复用** `timeliness_ssot.authority()`（占位/过期/来源非权威三类）。
+            ok, why = authority(rec)
+            if not ok:
+                skipped[why] = skipped.get(why, 0) + 1
+                continue
             s = (rec.get("status") or "").strip()
-            if s and s != (r.get("时效状态") or "").strip():
+            if s != (r.get("时效状态") or "").strip():
                 if not dry_run:
                     r["时效状态"] = s
                 changed += 1
@@ -500,9 +514,10 @@ def sync_timeliness(*, dry_run: bool = False, only_rfns: set[str] | None = None)
         registry._unlock(fh)
     print(
         f"[backlog] 时效同步（键精确）：SSOT {len(st)} 条 → 归属表改动 {changed} 行"
+        f"；非权威跳过 {sum(skipped.values())} 行 {skipped or ''}"
         f"{'（dry-run）' if dry_run else ''}"
     )
-    return {"changed": changed, "scanned": len(rows)}
+    return {"changed": changed, "scanned": len(rows), "skipped": skipped}
 
 
 def main() -> int:
@@ -567,8 +582,11 @@ def main() -> int:
     return ExitCode.OK
 
 
-if __name__ == "__main__":
-    sys.exit(main())
+#: ⚠️ `if __name__ == "__main__"` **必须放在文件最末**（2026-10-23 修）。
+#: 原实现把它写在 `_wl_uncertain()`/`_UN_CERTAIN_SUSPENDED` **之前** ⇒ 以脚本方式运行时
+#: `main() → ... → render_md() → _wl_uncertain()` 会在函数定义之前执行，
+#: 必然 `NameError: name '_wl_uncertain' is not defined`（实测 dry-run 直接崩）。
+#: 同理，任何"在入口块之后追加函数"的编辑都会再次踩到这个坑。
 
 
 #: **业务决策闸门**（2026-10-19 用户明确指示）：
@@ -646,3 +664,7 @@ def _wl_uncertain(items) -> None:
             )
     except Exception:  # noqa: BLE001  旁路设施：登记失败不得中断生成
         pass
+
+
+if __name__ == "__main__":
+    sys.exit(main())

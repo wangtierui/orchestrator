@@ -124,12 +124,14 @@ class TestServerEnforcement:
 
     @pytest.fixture(scope="class")
     def lan_server(self, tmp_path_factory):
+        import json as _json
         import os
         import subprocess
         import sys
         import time
         import urllib.request
 
+        from web import auth
         from web.policy import lan_ipv4
 
         ips = lan_ipv4()
@@ -152,16 +154,32 @@ class TestServerEnforcement:
             else:
                 os.environ["REG_ORCH_GOVERNANCE_DB"] = old
         proc = subprocess.Popen([sys.executable, "cli.py", "serve", "--lan",
-                                 "--port", str(port)], cwd=ROOT, env=env,
+                                 "--auth", "token", "--port", str(port)],
+                                cwd=ROOT, env=env,
                                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         base = f"http://{ips[0]}:{port}"
         for _ in range(60):
             try:
-                urllib.request.urlopen(base + "/api/health", timeout=3).read()
+                urllib.request.urlopen(base + "/api/auth/status", timeout=3).read()
                 break
             except Exception:  # noqa: BLE001
                 time.sleep(0.5)
-        yield base
+
+        # 2026-10-23：对内网开放后**必须登录**（`--lan` 自动 token 模式）。
+        # 用共享口令换会话 + CSRF，后续请求带上 —— 否则一律 401/403。
+        req = urllib.request.Request(
+            base + "/api/auth/login",
+            data=_json.dumps({"password": auth.access_token()}).encode(),
+            method="POST", headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=20) as r:
+            body = _json.loads(r.read().decode("utf-8"))
+            raw = r.headers.get_all("Set-Cookie") or []
+        sess = next((c.split(";")[0] for c in raw if c.startswith("wb_sess=")), "")
+        csrf_ck = next((c.split(";")[0].split("=", 1)[1]
+                        for c in raw if c.startswith("wb_csrf=")), "")
+        cookie = sess + ("; wb_csrf=" + csrf_ck if csrf_ck else "")
+        yield {"base": base, "cookie": cookie,
+               "csrf": str(body.get("csrf") or csrf_ck)}
         proc.terminate()
         try:
             proc.wait(timeout=10)
@@ -169,14 +187,16 @@ class TestServerEnforcement:
             proc.kill()
 
     @staticmethod
-    def _get(base: str, path: str, method: str = "GET", body: dict | None = None):
+    def _get(srv, path: str, method: str = "GET", body: dict | None = None):
         import json
         import urllib.error
         import urllib.request
 
         data = json.dumps(body).encode() if body is not None else None
-        req = urllib.request.Request(base + path, data=data, method=method,
-                                     headers={"Content-Type": "application/json"})
+        headers = {"Content-Type": "application/json",
+                   "Cookie": srv["cookie"], "X-CSRF": srv["csrf"]}
+        req = urllib.request.Request(srv["base"] + path, data=data,
+                                     method=method, headers=headers)
         try:
             with urllib.request.urlopen(req, timeout=30) as r:
                 return r.status, json.loads(r.read().decode("utf-8"))
@@ -343,8 +363,13 @@ class TestGlobalGraph:
         from interfaces import relations_api as R
 
         g = R.global_graph()
-        assert g["counts"]["unresolved"] > 0, "应披露未定位条数（实测 2462）"
-        assert "未登记" in g["note"] or "无法定位" in g["note"]
+        assert g["counts"]["unresolved"] > 0, "应披露未定位条数"
+        # 2026-10-23 起改成**逐视图三桶披露**（entity/corpus/unresolved）：
+        # 只有总数对读者没意义（"2642 条没定位" 里有一部分只差一次 RFN 登记）。
+        uv = g["counts"]["unresolved_by_view"]
+        assert uv and all({"entity", "corpus", "unresolved"} <= set(v)
+                          for v in uv.values()), uv
+        assert "未定位" in g["note"]
 
     def test_hubs_sorted_by_degree(self) -> None:
         from interfaces import relations_api as R

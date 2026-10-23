@@ -779,6 +779,35 @@ python -m tools.workbench_service install --local    # 退回仅本机
    多网卡机器（VPN/虚拟网卡）会打印多个，挑与同事同网段的那个。
 4. **代理**：浏览器若走公司代理，需把该地址加入**代理例外**（否则请求被代理拦掉）。
 
+
+### 6.9 认证（内网开放后**不再允许匿名读取**）
+
+```bash
+python cli.py serve --lan --auth token        # 内网 + 共享口令（--lan 缺省即此模式）
+python cli.py serve --lan --auth basic        # 内网 + 每人一账号（config/console_users.yaml）
+python -m web.auth token --rotate             # 换共享口令
+python -m web.auth adduser --user zhangsan    # 加账号（交互输入口令，存 PBKDF2 哈希）
+python cli.py serve --lan --auth basic --tls-cert c.pem --tls-key k.pem   # 加 HTTPS
+```
+
+| 模式 | 适用 | 说明 |
+|---|---|---|
+| `off` | 仅回环 | 默认；`--lan` 时**自动升级**为 `token`（不允许「对外且无认证」） |
+| `token` | 内网共享口令 | 口令在启动日志与 `data/state/console_token.txt`；输入一次换 8 小时会话 |
+| `basic` | 每人一账号 | 审计到人；**明文 HTTP 会暴露口令**，请配 TLS 或仅可信网段 |
+
+**集成认证（推荐）**：`--trust-proxy --trusted-proxies <代理IP>`
+⇒ 只有**来自受信 IP** 的 `X-Remote-User` 被采信，请求直接视为已登录
+（留言板随即**不再要人填域账号**，`account_src=proxy`）。**绝不**采信
+`X-Forwarded-User` 之类的野生头。
+
+**安全要点**（详见 `web/auth.py` 注释）：会话是无状态 HMAC cookie（密钥落盘，
+重启不掉线）｜CSRF 双重提交（`wb_csrf` **非 HttpOnly** + `X-CSRF` 头）｜
+登录失败限频 10 次/10 分钟｜常数时间比较｜口令只存 PBKDF2 哈希｜登录/失败/登出写审计。
+
+**排障**：`401 未认证` ⇒ 没登录或会话过期（8h）；`403 缺少 CSRF 令牌` ⇒ 页面没加载完
+就发写请求（先刷新）；`429` ⇒ 口令试错过多，等窗口过去。
+
 ## 7. 附录与延伸阅读
 
 | 资源 | 位置 | 说明 |
@@ -992,6 +1021,7 @@ flowchart TD
 显式 `model="…"` **覆盖 mode**（优先级最高）；分句增强由 env `REG_ORCH_SEMANTIC_SPLIT=1` 控制（**默认关**，见 §8.6 第 2 条）。
 
 <!-- END GENERATED: 全链数据流总图 -->
+
 
 
 

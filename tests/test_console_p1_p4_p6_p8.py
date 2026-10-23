@@ -385,11 +385,11 @@ class TestHtmlWiring:
         api_src = _code_only(API)
         paths = set(re.findall(r'"(/api/[a-z/]+)', html))
         known = set(re.findall(r'"(/api/[a-z/]+)"', api_src))
-        # `/api/events` 是 **HTTP 层**路由（SSE，见 web/server.py 的 `_sse`），
-        # 不经过 `api.handle` —— 白名单里显式列出，避免误报。
-        # `/api/events`（SSE）与 `/api/local/file`（文件字节）都是 **HTTP 层**路由，
-        # 不走 `api.handle` ⇒ 白名单里显式列出，避免误报。
-        known |= {"/api/events", "/api/local/file"}
+        # 以下都是 **HTTP 层**路由，不走 `api.handle` ⇒ 白名单显式列出，避免误报：
+        #   `/api/events`（SSE，`_sse`）、`/api/local/file`（文件字节）、
+        #   `/api/auth/*`（登录要写 `Set-Cookie`，`api.handle` 只返回 `(status, payload)`）。
+        known |= {"/api/events", "/api/local/file",
+                  "/api/auth/login", "/api/auth/status", "/api/auth/logout"}
         unknown = {p for p in paths if p not in known}
         assert not unknown, f"前端调用了后端没有的路由：{unknown}"
 

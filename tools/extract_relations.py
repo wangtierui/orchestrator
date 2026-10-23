@@ -68,7 +68,14 @@ from std_lib.common_lib.clause_locator import (
     locate_dst_article,
     locate_src_article,
 )
-from std_lib.common_lib.norm import norm_docno, norm_title_strict
+from std_lib.common_lib.norm import (
+    drop_cn_prefix,
+    norm_docno,
+    norm_docno_strong,
+    norm_title_rel,
+    norm_title_strict,
+    strip_title_version,
+)
 from std_lib.common_lib.relations import (
     EXTRACTOR_VERSION,
     SCHEMA_VERSION,
@@ -122,22 +129,62 @@ from base_publish import write_jsonl
 
 
 def _empty_index() -> dict:
-    """实体索引容器。
+    """实体索引容器（**多档键**，强度递减）。
 
     - **强索引**（`by_*`）：归属表/主索引 → RFN / IPN（可 join 底座与门禁）
     - **弱索引**（`weak_*`）：cleaned 全集 → `dedup_key`（"已采集但未登记 RFN"的线索；
-      关系抽取中大量目标是法律/行政法规，不在 1060 份归属表内，弱索引可避免全部落入 unresolved）
+      关系抽取中大量目标是法律/行政法规，不在归属表内，弱索引可避免全部落入 unresolved）
+
+    分档说明（2026-10-23 新增后三档，见 `std_lib/common_lib/norm.py` 关系增强层）：
+
+    | 键 | 归一化 | 用途 |
+    |---|---|---|
+    | `by_docno` | `norm_docno` | 标准文号精确 |
+    | `by_docno_strong` | `norm_docno_strong` | 全角数字 / 中文序号 / 正文残渣 |
+    | `by_title` | `norm_title_strict` | 标准标题精确 |
+    | `by_title_rel` | `norm_title_rel` | 去 HTML 实体 / 尖括号 / 引号 |
+    | `by_title_ver` | `+ strip_title_version` | 去版本后缀（**仅唯一键可用**） |
+    | `by_title_short` | `+ drop_cn_prefix` | 去「中华人民共和国」（**仅唯一键可用**） |
+
+    `amb_*` 记录**多义键**（同一键对应多个实体）：这类键**不得用于解析**
+    ——选错实体会把关系挂到错误的文件上，比"未定位"更糟（臆造的反面）。
     """
     return {
         "by_sig": {},
         "by_docno": {},
+        "by_docno_strong": {},
         "by_title": {},
+        "by_title_rel": {},
+        "by_title_ver": {},
+        "by_title_short": {},
         "title_list": [],
+        "title_rel_list": [],
         "refs": {},
         "weak_docno": {},
+        "weak_docno_strong": {},
         "weak_title": {},
+        "weak_title_rel": {},
+        "weak_title_ver": {},
+        "weak_title_short": {},
         "weak_list": [],
+        "weak_list_rel": [],
+        # 多义键登记（键 → 命中的不同实体数 > 1）
+        "amb_title_ver": set(),
+        "amb_title_short": set(),
+        "amb_weak_ver": set(),
+        "amb_weak_short": set(),
     }
+
+
+def _set_uniq(bucket: dict, amb: set, key: str, val: str) -> None:
+    """写入"仅唯一可用"的键：同一键出现第二个不同值时登记为多义，解析侧跳过。"""
+    if not key:
+        return
+    cur = bucket.get(key)
+    if cur is None:
+        bucket[key] = val
+    elif cur != val:
+        amb.add(key)
 
 
 def _add_entity(ix: dict, *, ref: str, name: str, docno: str, extra: dict | None = None) -> None:
@@ -150,10 +197,22 @@ def _add_entity(ix: dict, *, ref: str, name: str, docno: str, extra: dict | None
     nd = norm_docno(docno)
     if nd:
         ix["by_docno"].setdefault(nd, ref)
+    nds = norm_docno_strong(docno)
+    if nds:
+        ix["by_docno_strong"].setdefault(nds, ref)
     nt = norm_title_strict(name)
     if nt:
         ix["by_title"].setdefault(nt, ref)
         ix["title_list"].append((nt, ref))
+    ntr = norm_title_rel(name)
+    if ntr:
+        ix["by_title_rel"].setdefault(ntr, ref)
+        ix["title_rel_list"].append((ntr, ref))
+        # 版本键/简称键只在"唯一"时才建（多义键会被登记进 amb_*）
+        _set_uniq(ix["by_title_ver"], ix["amb_title_ver"],
+                  strip_title_version(ntr), ref)
+        _set_uniq(ix["by_title_short"], ix["amb_title_short"],
+                  drop_cn_prefix(ntr), ref)
 
 
 def build_regulatory_index() -> dict:
@@ -169,7 +228,10 @@ def build_regulatory_index() -> dict:
             docno=r.get("发文字号", ""),
             extra={"source": r.get("文件来源", ""), "status": r.get("时效状态", "")},
         )
+    # 两档标题列表都按长度降序：包含匹配是"最长者优先"，否则短标题（如"XX办法"）
+    # 会先命中，把具体文件匹成通用名（这是 contains 匹配的经典误配来源）。
     ix["title_list"].sort(key=lambda t: -len(t[0]))
+    ix["title_rel_list"].sort(key=lambda t: -len(t[0]))
     return ix
 
 
@@ -197,15 +259,29 @@ def add_cleaned_weak_index(ix: dict, sources: list[str]) -> int:
                 key = rec.get("dedup_key", "")
                 if not key:
                     continue
-                nt = norm_title_strict(rec.get("title", ""))
-                nd = norm_docno(rec.get("document_number", ""))
+                title = rec.get("title", "")
+                document_number = rec.get("document_number", "")
+                nt = norm_title_strict(title)
                 if nt:
                     ix["weak_title"].setdefault(nt, key)
                     ix["weak_list"].append((nt, key))
+                ntr = norm_title_rel(title)
+                if ntr:
+                    ix["weak_title_rel"].setdefault(ntr, key)
+                    ix["weak_list_rel"].append((ntr, key))
+                    _set_uniq(ix["weak_title_ver"], ix["amb_weak_ver"],
+                              strip_title_version(ntr), key)
+                    _set_uniq(ix["weak_title_short"], ix["amb_weak_short"],
+                              drop_cn_prefix(ntr), key)
+                nd = norm_docno(document_number)
                 if nd:
                     ix["weak_docno"].setdefault(nd, key)
+                nds = norm_docno_strong(document_number)
+                if nds:
+                    ix["weak_docno_strong"].setdefault(nds, key)
                 n += 1
     ix["weak_list"].sort(key=lambda t: -len(t[0]))
+    ix["weak_list_rel"].sort(key=lambda t: -len(t[0]))
     return n
 
 
@@ -223,7 +299,10 @@ def build_internal_index() -> dict:
             docno=r.get("docno", ""),
             extra={"extension": r.get("extension", ""), "dept": r.get("drafting_dept", "")},
         )
+    # 两档标题列表都按长度降序：包含匹配是"最长者优先"，否则短标题（如"XX办法"）
+    # 会先命中，把具体文件匹成通用名（这是 contains 匹配的经典误配来源）。
     ix["title_list"].sort(key=lambda t: -len(t[0]))
+    ix["title_rel_list"].sort(key=lambda t: -len(t[0]))
     return ix
 
 
@@ -243,6 +322,11 @@ def resolve_target(
     contains（`…应急预案` vs `…应急预案（2024版）` 属真实版本差异）。
     """
     if docno:
+        # ①-a 强·文号强归一（全角数字/中文序号/正文残渣）—— 先于标准层，
+        #     因为标准层对这三类形态直接失配（见 norm.py 关系增强层说明）。
+        nds = norm_docno_strong(docno)
+        if nds and nds in index.get("by_docno_strong", {}):
+            return index["by_docno_strong"][nds], "docno_exact", ""
         nd = norm_docno(docno)
         if nd and nd in index["by_docno"]:
             return index["by_docno"][nd], "docno_exact", ""
@@ -252,25 +336,74 @@ def resolve_target(
             for k, ref in index["by_sig"].items():
                 if k == sig or k.endswith(sig) or sig.endswith(k):
                     return ref, "docno_sig", ""
+        if nds and nds in index.get("weak_docno_strong", {}):
+            return "", "docno_exact", index["weak_docno_strong"][nds]
         if nd and nd in index.get("weak_docno", {}):
             return "", "docno_exact", index["weak_docno"][nd]
+
+    ntr = norm_title_rel(name)
     nt = norm_title_strict(name)
-    if nt:
-        if nt in index["by_title"]:
-            return index["by_title"][nt], "title", ""
-        if not strict and len(nt) >= MIN_CONTAINS_LEN:
-            for cand, ref in index["title_list"]:  # 已按长度降序 → 最长者优先
+    # ② 强·标题（三档强度递减：rel 精确 → 标准精确 → 去版本/去国名前缀的**唯一**键）
+    if ntr:
+        if ntr in index.get("by_title_rel", {}):
+            return index["by_title_rel"][ntr], "title", ""
+        ver = strip_title_version(ntr)
+        if ver and ver != ntr and ver in index.get("by_title_ver", {}) \
+                and ver not in index.get("amb_title_ver", ()):
+            return index["by_title_ver"][ver], "title", ""
+        short = drop_cn_prefix(ntr)
+        if short and short != ntr and short in index.get("by_title_short", {}) \
+                and short not in index.get("amb_title_short", ()):
+            return index["by_title_short"][short], "title", ""
+    if nt and nt in index["by_title"]:
+        return index["by_title"][nt], "title", ""
+
+    # ③ 标题包含（strict 模式禁用：跨域用 contains 会把法规误配成内部制度）
+    if not strict:
+        probe = ntr or nt
+        if probe and len(probe) >= MIN_CONTAINS_LEN:
+            for cand, ref in index.get("title_rel_list", []):
+                if len(cand) < MIN_CONTAINS_LEN:
+                    break
+                if cand in probe or probe in cand:
+                    return ref, "title_contains", ""
+        # 3 字法定简称（公司法 / 保险法 / 民法典）：`MIN_CONTAINS_LEN=4` 会把它整类挡掉。
+        # 收紧条件，**必须"候选以简称结尾"**——只认"《中华人民共和国公司法》"这种
+        # 法规全名，不认"关于适用公司法的若干规定"（那是另一份文件，挂了就是错挂）。
+        if probe and 3 <= len(probe) < MIN_CONTAINS_LEN:
+            for cand, ref in index.get("title_rel_list", []):
+                if len(cand) < len(probe):
+                    continue
+                if cand.endswith(probe):
+                    return ref, "title_contains", ""
+        if len(nt) >= MIN_CONTAINS_LEN:
+            for cand, ref in index["title_list"]:
                 if len(cand) < MIN_CONTAINS_LEN:
                     break
                 if cand in nt or nt in cand:
                     return ref, "title_contains", ""
-        if nt in index.get("weak_title", {}):
-            return "", "title", index["weak_title"][nt]
-        if not strict and len(nt) >= MIN_CONTAINS_LEN:
-            for cand, key in index.get("weak_list", []):
+
+    # ④ 弱索引（已采集未登记 RFN）：返回 dedup_key，`dst_ref` 仍留空（禁止臆造）
+    if ntr:
+        if ntr in index.get("weak_title_rel", {}):
+            return "", "title", index["weak_title_rel"][ntr]
+        ver = strip_title_version(ntr)
+        if ver and ver != ntr and ver in index.get("weak_title_ver", {}) \
+                and ver not in index.get("amb_weak_ver", ()):
+            return "", "title", index["weak_title_ver"][ver]
+        short = drop_cn_prefix(ntr)
+        if short and short != ntr and short in index.get("weak_title_short", {}) \
+                and short not in index.get("amb_weak_short", ()):
+            return "", "title", index["weak_title_short"][short]
+    if nt and nt in index.get("weak_title", {}):
+        return "", "title", index["weak_title"][nt]
+    if not strict:
+        probe = ntr or nt
+        if probe and len(probe) >= MIN_CONTAINS_LEN:
+            for cand, key in index.get("weak_list_rel", []):
                 if len(cand) < MIN_CONTAINS_LEN:
                     break
-                if cand in nt or nt in cand:
+                if cand in probe or probe in cand:
                     return "", "title_contains", key
     return "", "unresolved", ""
 
@@ -278,9 +411,41 @@ def resolve_target(
 # ===========================================================================
 # 二、正文迭代
 # ===========================================================================
+#: cleaned 目录里的**辅助产物**后缀（不是正文轨，绝不能当主文件读）
+#:
+#: ⚠️ 2026-10-23 实测事故（本条修复的由来）：
+#:   `nfra_cleaned_<date>.jsonl` 与 `nfra_cleaned_<date>.quarantine.jsonl` 并存，
+#:   字典序 `…22.jsonl` < `…22.quarantine.jsonl`（'j' < 'q'）⇒ `sorted()[-1]` 取到
+#:   **隔离文件**；其每行 `body_text` 为空、`iter_regulatory_docs` 直接 `continue`
+#:   ⇒ **nfra 全域 1935 份文件 / 111,970 条条款对关系链零贡献**，而日志只写
+#:   "正文可抽取 0 份"，完全看不出是"取错了文件"。
+#:   教训：**按文件名排序取"最新"时，必须先把非主轨文件排除**；且"抽到 0 份"
+#:   应该告警而不是静默（见 `_latest_cleaned_jsonl` 末尾的探测）。
+_CLEANED_AUX_MARKERS = (".quarantine.", ".bad.", ".bak.", ".tmp.", ".partial.")
+
+
+def _is_cleaned_main(path: str) -> bool:
+    """是否 cleaned 目录里的**主正文文件**（排除 quarantine/临时/备份）。"""
+    name = os.path.basename(path).lower()
+    return not any(m in name for m in _CLEANED_AUX_MARKERS)
+
+
 def _latest_cleaned_jsonl(source: str) -> str:
-    fs = sorted(glob(os.path.join(CLEANED_DIR, f"{source}_cleaned_*.jsonl")))
-    return fs[-1] if fs else ""
+    """取某源最新的**主** cleaned JSONL（排除 quarantine/备份等辅助产物）。
+
+    返回空串表示"该源没有可用主文件"。若目录里只有辅助文件，会**显式告警**
+    ——这类"源被整体漏掉"的故障必须能在日志里一眼看见。
+    """
+    all_fs = sorted(glob(os.path.join(CLEANED_DIR, f"{source}_cleaned_*.jsonl")))
+    if not all_fs:
+        return ""
+    fs = [p for p in all_fs if _is_cleaned_main(p)]
+    if not fs:
+        LOG.warning(
+            "[relations][warn] 源 %s 只有辅助文件（%s），**无主 cleaned 正文** ⇒ 该源不参与抽取",
+            source, ", ".join(os.path.basename(p) for p in all_fs[:3]))
+        return ""
+    return fs[-1]
 
 
 def iter_regulatory_docs(sources: list[str], limit: int = 0):
@@ -315,7 +480,14 @@ def iter_regulatory_docs(sources: list[str], limit: int = 0):
                     "extra_text": rec.get("attachment_content") or "",
                     "dedup_key": rec.get("dedup_key", ""),
                 }
-        LOG.info(f"[relations] 源 {src}：正文可抽取 {n} 份（{os.path.basename(p)}）")
+        if n:
+            LOG.info(f"[relations] 源 {src}：正文可抽取 {n} 份（{os.path.basename(p)}）")
+        else:
+            # "0 份"是**故障信号**（正常主文件必然有正文）：必须告警，
+            # 否则整源静默缺席（nfra 就是这样漏了整整一轮）。
+            LOG.warning(f"[relations][warn] 源 {src}：正文可抽取 **0 份**"
+                        f"（{os.path.basename(p)}，{os.path.getsize(p)} 字节）"
+                        " —— 检查是否取错文件或 body_text 全空")
 
 
 def iter_internal_docs(limit: int = 0):
