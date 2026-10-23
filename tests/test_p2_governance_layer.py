@@ -215,7 +215,8 @@ def test_run_step_order_matches_call_sites():
     # 32（31 → +1）：W4（§6.4）`semantic:search`（pgvector 语义检索视图的**链上调用点**）——
     #   动因：pgvector 长期"实现就绪但链上无调用点"（纸面接线）；形态：analysis:gen 之后
     #   （索引含 17 项交付物，须取 6.8 终态）；增强层 rc0（后端/嵌入不可用为合法状态）。
-    assert len(rpr.STEP_ORDER) == 32
+    # 第一百一十三批：32 → 33（relations:ext）
+    assert len(rpr.STEP_ORDER) == 33
     # 每个步骤名必须能在本文件中找到**引号字面量**（`"gates"` / `f"clean:{src}"` ⇒ `"clean:{src}"`）
     text = open(fp, encoding="utf-8").read()
     for step in rpr.STEP_ORDER:

@@ -1050,7 +1050,9 @@ STEP_LAYERS: Final[dict[str, LayerSpec]] = {
             # 但权威表里查不到"（编号可重算所以不会崩，但列表会是空的）。
             StepSpec("relations:ext", "side", "warn",
                      "外部法规权威表（语料外目标的独立键空间 RFN-EXT-*）", 300,
-                     depends_on=("relations:gen",),
+                     # ⚠️ `depends_on` 收的是**产物键**（不是步名）—— 写成
+                     # `"relations:gen"` 会让依赖图找不到上游（R4/分诊立刻报"upstream 为空"）。
+                     depends_on=("relations_index",),
                      produces=("external_authority",),
                      degrade_note="旁路：本步失败不阻断主链（图谱少一屏，不影响数据正确性）"),
             StepSpec("reconcile", "main", "abort", "清洗漂移对账（clean_drift）", 1200,
