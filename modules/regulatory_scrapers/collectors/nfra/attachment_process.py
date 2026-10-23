@@ -25,15 +25,32 @@ del _p, _os, _sys
 
 import json
 import os
+import random
 import time
+
+# 共享工具层（2026-10-23，TD-28）：这些名字原先由**单体模块**定义在被拆出去的那一半，
+# 拆分后调用点全在这里、定义全在别处 ⇒ 运行时 `NameError`（只在真正处理附件时才炸，
+# 所以两年没被发现是"运气"，不是"没问题"）。
+# 规范来源（去重后的唯一实现，不要再本地复制）：
+#   · `sha256_bytes`  ← std_lib.common_lib.io_atomic（原 `sha256_of` 已按 B2/W4 去重）
+#   · `docs_root`     ← std_lib.scraper_std.cache_store（附件/图表根目录的唯一口径）
+#   · `structured_table_fields` / `rich_object_fields` ← std_lib.scraper_std（与 mof/pbc 同源）
+from std_lib.common_lib.io_atomic import sha256_bytes
+from std_lib.scraper_std.cache_store import docs_root
+from std_lib.scraper_std.rich_object import rich_object_fields
+from std_lib.scraper_std.table_recovery import structured_table_fields
 
 # 层间依赖（process → fetch 的取数函数 + 编排层的 ATT_DIR；双形态）
 try:  # 包形态
     from .attachment_fetch import build_attachment_url, http_get_bytes
     from .attachment_paths import ATT_DIR, HERE
+    from .attachment_quality import quality_flags
+    from .attachments_extract import extract_any, ocr_pdf
 except ImportError:  # 脚本形态
     from attachment_fetch import build_attachment_url, http_get_bytes  # type: ignore[no-redef]
     from attachment_paths import ATT_DIR, HERE  # type: ignore[no-redef]
+    from attachment_quality import quality_flags  # type: ignore[no-redef]
+    from attachments_extract import extract_any, ocr_pdf  # type: ignore[no-redef]
 
 def process_attachment(doc_id, att, att_root, args, cooldown_state, ex=None):
     """处理单个附件：下载→抽取→落盘。返回 manifest 条目。
@@ -87,7 +104,7 @@ def process_attachment(doc_id, att, att_root, args, cooldown_state, ex=None):
 
     try:
         data = http_get_bytes(entry["url"], timeout=args.timeout)
-        sha = sha256_of(data)
+        sha = sha256_bytes(data)
         # 始终留存源文件（权威原件，保障可追溯/后续外部转换），不依赖 --keep-pdf
         src_path = os.path.join(att_root, name)
         with open(src_path, "wb") as fh:

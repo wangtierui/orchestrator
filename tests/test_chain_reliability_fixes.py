@@ -73,7 +73,7 @@ class TestCleanArgparsePercent:
                 continue
             # 找 help= 之后的字符串字面量区（到行尾），检查其中的 `%`
             tail = ln.split("help=", 1)[1]
-            for m in re.finditer(r"%(?!%)", tail):
+            for _m in re.finditer(r"%(?!%)", tail):
                 bad.append(f"L{ln_no}: {tail[:80]}")
                 break
         assert not bad, ("help= 里出现**未转义的 `%`**（argparse 会对 help 做 % 格式化，"
@@ -150,7 +150,6 @@ class TestConditionalRecIsComplete:
         src = _read("tools", "run_production_refresh.py")
         i = src.find("print(f\"{'step':<22}{'rc':>4}{'elapsed_s':>12}\")")
         assert i >= 0, "未找到汇总表头"
-        j = src.find("print(", i + 40)
         seg = src[i:i + 2600]
         code = _code_only(seg)
         assert "r['elapsed_s']" not in code and 'r["elapsed_s"]' not in code, (

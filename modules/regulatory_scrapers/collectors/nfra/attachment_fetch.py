@@ -17,35 +17,19 @@ for _p in (_HERE, _os.path.abspath(_os.path.join(_HERE, "..", "..", "..", ".."))
 # 保留 `_HERE`（不删）：路径派生常量计算需要它
 del _p, _os, _sys
 
+import random
 import ssl
+import time
+import urllib.error
 import urllib.request
 
 BASE = "https://www.nfra.gov.cn"
+
+# ⚠️ 2026-10-23（TD-28）：`_SSL_CTX` / `DEFAULT_HEADERS` 曾在此**重复三份**
+# （拆分时的粘贴残留）。重复的后果不是"多几行"，而是**改一份忘改另一份**：
+# 改 UA 只改了第一份，后面覆盖回旧值，排障时看到的 UA 与源码不一致。
+# 保留**唯一一份**，并由守卫 `test_no_duplicate_module_constants` 固定。
 _SSL_CTX = ssl.create_default_context()
-
-DEFAULT_HEADERS = {
-    "User-Agent": (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-        "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
-    ),
-    "Accept": "application/pdf,application/octet-stream,*/*;q=0.8",
-    "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
-    "Referer": BASE + "/cn/view/pages/ItemDetail.html",
-}
-
-
-_SSL_CTX = ssl.create_default_context()
-
-DEFAULT_HEADERS = {
-    "User-Agent": (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-        "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
-    ),
-    "Accept": "application/pdf,application/octet-stream,*/*;q=0.8",
-    "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
-    "Referer": BASE + "/cn/view/pages/ItemDetail.html",
-}
-
 
 DEFAULT_HEADERS = {
     "User-Agent": (

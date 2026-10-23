@@ -19,8 +19,15 @@ for _p in (_HERE, _os.path.abspath(_os.path.join(_HERE, "..", "..", "..", ".."))
 # 保留 `_HERE`（不删）：路径派生常量计算需要它
 del _p, _os, _sys
 
+import glob
 import json
 import os
+import time
+
+# 共享工具层（2026-10-23，TD-28）：`glob`/`time` 是 stdlib（原先漏导入）；
+# `sha256_bytes` 取代已被 B2/W4 去重删除的本地 `sha256_of`；
+# `sniff_kind`/`extract_pdf_text` 来自兄弟模块（只依赖 std_lib，故无环）。
+from std_lib.common_lib.io_atomic import sha256_bytes
 
 # 层间依赖（report → 路径常量层；双形态）
 # ⚠️ **不 import 编排层**：编排层 import 本层做 re-export ⇒ 反向 import 会成环。
@@ -28,8 +35,10 @@ import os
 #    由**调用方以参数传入**（见 `build_and_write_report` 的 `classify_entry` 形参）。
 try:  # 包形态
     from .attachment_paths import ATT_DIR, QUALITY_REPORT
+    from .attachments_extract import extract_pdf_text, sniff_kind
 except ImportError:  # 脚本形态
     from attachment_paths import ATT_DIR, QUALITY_REPORT  # type: ignore[no-redef]
+    from attachments_extract import extract_pdf_text, sniff_kind  # type: ignore[no-redef]
 
 def build_and_write_report(args, docs_total=None, att_total=None,
                            ok_total=None, ocr_total=None, failed_docs=None, classify_entry=None):
@@ -171,7 +180,7 @@ def refresh_stats():
                 except Exception:  # noqa: BLE001  采集容错（字段/附件缺失不阻断采集）
                     pass
             # 以源文件重新计算 sha256（权威校验值）
-            sha = sha256_of(data)
+            sha = sha256_bytes(data)
             if e.get("sha256") != sha:
                 e["sha256"] = sha
                 changed = True

@@ -296,11 +296,21 @@ async function api(path, opts){
   const ct = r.headers.get("content-type")||"";
   if(!ct.includes("json")) return {available:false, reason:"非 JSON 响应（HTTP "+r.status+"）"};
   let j={}; try{ j = await r.json(); }catch(e){ return {available:false, reason:"响应不是合法 JSON"}; }
-  // 401 ⇒ 会话失效/未登录：置状态并让 render 切到登录卡片（不白屏）
+  /* 401 ⇒ 会话失效/未登录：置状态，并**异步**触发一次重渲染切到登录卡片。
+   *
+   * ⚠️ 为什么不能直接 `render()`（2026-10-23 真实故障）：
+   * `render()` 内部会 await 多个 `api()`，而 `api()` 在 401 时又调 `render()`
+   * ⇒ **递归**（render→api→render→…），浏览器表现为"页面空着/一直转"，
+   * 用户看到的就是"两个地址都显示未认证、什么都点不出来"。
+   * 改为 `setTimeout(0)` + 一次性闸门：跳出当前调用栈，且并发 401 只触发一次。 */
   if(r.status === 401 && j && j.need_login){
-    STATE.auth = {authenticated:false, mode:j.mode || ""};
+    STATE.auth = {authenticated:false, mode:j.mode || "",
+                  user:"", user_source:"未认证"};
     HEALTH_P = null;
-    if(CUR !== "__login") render();
+    if(!AUTH_RELOADING && CUR !== "__login"){
+      AUTH_RELOADING = true;
+      setTimeout(()=>{ AUTH_RELOADING = false; render(); }, 0);
+    }
   }
   if(!r.ok) return Object.assign({available:false}, obj(j), {httpStatus:r.status});
   return j;
@@ -782,27 +792,49 @@ function viewRelease(d){
 
 /* ---------------- 交互 ---------------- */
 let CUR="overview", STATE={}, HEALTH_P=null;
+/*: 401 后"切登录卡片"的一次性闸门（防 render→api→render 递归，见 `api()`） */
+let AUTH_RELOADING=false;
 
 /*: 认证前置：**每次渲染前**确认身份（缓存一次，401 时由 `api()` 置空重取）。
  * 为什么不在页面加载时判一次就够：会话 8 小时过期，长时间开着的页面可能在
  * 中间失效；每页渲染前取一次状态最省事也最准。 */
+/*: 认证/访问范围状态（**唯一来源 = `/api/health`**）
+ *
+ * 2026-10-23 真实故障与根因（记在这里，避免以后又拆成两个源）：
+ *   原实现先取 `/api/auth/status`（免认证，有 mode），再取 `/api/health`
+ *   （**被认证闸门拦成 401**，body 里没有 `auth_mode`）⇒ `mode` 被覆盖成 `"off"`
+ *   ⇒ `render()` 认为"没开认证"，直接去拉数据接口 → 又 401 → 又 render → **递归**。
+ *   结果：两个地址都只剩"未认证/未登录"，一个页签都打不开。
+ * 现约定：
+ *   · `/api/health` **允许未认证访问**，且**恒带** `auth_mode/authenticated/need_login`；
+ *   · 未认证时它只回**公开子集**（不含门禁数、本机专属路由等内情）；
+ *   · `/api/auth/status` 仅用于"已认证后领取 CSRF 令牌"（代理认证场景的唯一入口）。
+ */
 function ensureHealth(){
   if(!HEALTH_P){
-    // 先取 auth/status：代理认证场景下它是**唯一**的下发 CSRF 令牌的入口
-    HEALTH_P = api("/api/auth/status").catch(()=>obj({})).then(st=>{
-      STATE.authStatus = obj(st);
-      return api("/api/health");
-    }).then(h=>{
+    HEALTH_P = api("/api/health").then(h=>{
       STATE.health = obj(h);
       STATE.auth = {
         authenticated: h.authenticated === true,
         user: String(h.user || ""),
         user_source: String(h.user_source || ""),
         mode: String(h.auth_mode || "off"),
+        need_login: h.need_login === true,
       };
       applyScope(h);
+      // 已认证才需要 CSRF（未认证时 status 只会回 need_login，不浪费一次往返）
+      if(STATE.auth.authenticated && !STATE.csrf){
+        return api("/api/auth/status").catch(()=>obj({})).then(st=>{
+          STATE.authStatus = obj(st);
+          return STATE.auth;
+        });
+      }
       return STATE.auth;
-    }).catch(()=>obj({authenticated:false, mode:""}));
+    }).catch(e=>{
+      // 连 health 都拿不到 ⇒ 服务不可达：给出**可行动**的结论，而不是"未登录"
+      STATE.auth = {authenticated:false, mode:"", unreachable:String(e||"")};
+      return STATE.auth;
+    });
   }
   return HEALTH_P;
 }
@@ -826,8 +858,25 @@ function applyScope(h){
   const au = $("#auth");
   if(au){
     const a = obj(STATE.auth);
-    au.textContent = a.authenticated && a.user ? `已登录 ${a.user}` : "未登录";
-    au.className = "badge " + (a.authenticated ? "" : "bad");
+    /* 三种身份要能分辨（原来只有"已登录/未登录"两态，本机自动认证会被显示成
+     * "已登录 <机器账号>"，容易被误读成"有人登录过"）： */
+    const src = String(a.user_source || "");
+    if(a.authenticated && src === "本机账号"){
+      au.textContent = `本机 · ${a.user || ""}`;
+      au.className = "badge";
+      au.title = "回环访问：已自动认证为当前 Windows 账号（内网访问需口令）";
+    }else if(a.authenticated){
+      au.textContent = `已登录 ${a.user || ""}`;
+      au.className = "badge";
+      au.title = src || "已认证";
+    }else if(a.mode === "off"){
+      au.textContent = "未启用认证";
+      au.className = "badge";
+    }else{
+      au.textContent = a.unreachable ? "服务不可达" : "未登录";
+      au.className = "badge bad";
+      au.title = a.unreachable || "请登录后查看";
+    }
   }
 }
 
@@ -840,8 +889,13 @@ function viewLogin(){
          <input id="lguser" autocomplete="username" placeholder="域账号"></label>` : "";
   return `<div class="card" style="max-width:460px;margin:8vh auto">
     <h3><span>登录确认台</span><span class="hint">${mode === "basic" ? "账号口令" : "内网共享口令"}</span></h3>
-    <div class="note">本确认台已启用访问认证（对内网开放后**不再允许匿名读取**）。
-      口令由管理员通过启动日志或 <code>python -m web.auth token</code> 获取。</div>
+    <div class="note">本确认台对内网开放，**不允许匿名读取数据**（内网与回环不同：
+      回环访问已自动认证为当前 Windows 账号）。
+      口令在服务启动日志里（检索 <code>内网共享口令</code> 一行），
+      也可直接看 <code>data\\state\\console_token.txt</code> 或运行
+      <code>python -m web.auth token</code> 获取/重置。</div>
+    <div class="muted" style="font-size:12px;margin-bottom:var(--s2)">
+      会话 8 小时；跨机器请勿共用口令，建议由 IT 统一发放或接可信代理（README §6.9）。</div>
     ${userField}
     <label class="muted" style="display:block">${mode === "basic" ? "口令" : "共享口令"}
       <input id="lgpw" type="password" autocomplete="current-password"
@@ -1299,6 +1353,9 @@ const GRAPH_VIEWS = [
   {key: "regulatory_to_regulatory", name: "监管 ↔ 监管"},
   {key: "internal_to_internal", name: "制度 ↔ 制度"},
   {key: "theme", name: "主题关系"},
+  /* 2026-10-23 新增：语料外文件的**独立键空间**（`RFN-EXT-*`）。
+   * 它必须单列一屏：这些目标不在库里，混进"监管文件"会让读者以为能点开原文。 */
+  {key: "external", name: "外部法规"},
 ];
 
 function _gTab(cur){
@@ -1315,23 +1372,72 @@ function viewGraphGlobal(d){
     : cur === "regulatory_to_regulatory" ? _gRegulatory(d)
     : cur === "internal_to_internal" ? _gInternal(d)
     : cur === "theme" ? _gTheme(d)
+    : cur === "external" ? _gExternal(d)
     : _gOverview(d);
   return card("关系图谱", "全局", _gTab(cur) + body,
     d.source_name || "relations_api.global_graph", d.fetched_at);
+}
+
+/*: 视图 ⑤：外部法规（语料外，独立键空间 `RFN-EXT-*`）
+ *
+ * 呈现选择：**排行榜**而不是关系图 ——
+ *   · 这些目标没有"出边"（它们不引用别人），画成图会得到一堆孤立点；
+ *   · 读者真正想知道的是"我们的文件最常依据哪几部法"，这是一张榜能答的。
+ * 诚实标注：编号 `RFN-EXT-*` + 「语料外」标记 + 顶部一句话说明"库里没有原文"。 */
+function _gExternal(d){
+  const g = obj(d.external), nodes = arr(g.nodes), c = obj(d.counts);
+  const by = obj(g.by_guise), lbl = obj(g.guise_labels);
+  const maxDeg = Math.max(1, ...nodes.map(n => Number(n.degree) || 0));
+  const rows = nodes.map(n => `<tr>
+      <td class="mono">${esc(n.id)}</td>
+      <td class="ttl">${esc(n.name || "")}</td>
+      <td class="mono">${esc(n.docno || "—")}</td>
+      <td><span class="tag">${esc(n.guise_label || "未分类")}</span></td>
+      <td style="min-width:120px">
+        <div class="bar" style="width:${Math.max(4, Math.round(n.degree / maxDeg * 100))}%"></div>
+      </td>
+      <td class="mono">${num(n.degree)}</td></tr>`).join("")
+    || '<tr><td colspan="6" class="muted">尚未生成外部权威表（运行 tools/build_external_authority.py）</td></tr>';
+  const chips = Object.keys(by).map(k =>
+    `<span class="tag">${esc(lbl[k] || k)} ${num(by[k])}</span>`).join(" ");
+  return `<div class="note" style="margin-bottom:8px">
+      外部法规是**语料外**文件（国家法律 / 行政法规 / 部委规章 / 制度历史版本）的登记键空间：
+      编号 <code>RFN-EXT-*</code> 表示「被引用过、已登记」，<b>不代表库里能打开这份文件</b>。
+      需要原文请按名称/文号在「政策法规」或官网检索。</div>
+    <div class="kpibar" style="margin-bottom:var(--s3)">
+      ${kpi("外部法规", num(c.external_total), "条")}
+      ${kpi("覆盖关系", num(c.external_evidence), "条")}
+      ${kpi("归属率（含外部）", `${(Number(c.attributed_ratio || 0) * 100).toFixed(1)}%`, "",
+            Number(c.attributed_ratio) >= 0.8 ? "ok" : "warn")}
+    </div>
+    <div style="margin-bottom:var(--s3)">${chips}</div>
+    <div class="scrollx"><table><thead><tr>
+      <th>编号</th><th>名称</th><th>文号</th><th>类型</th><th>被引次数</th><th>次数</th>
+    </tr></thead><tbody>${rows}</tbody></table></div>
+    <div class="muted" style="margin-top:var(--s2)">${esc(g.note || "")}</div>`;
 }
 
 function _gOverview(d){
   const c = obj(d.counts), vs = arr(d.views), uv = obj(c.unresolved_by_view);
   const cards = vs.map((v, i) => {
     const b = obj(uv[v.key]);
+    /* 四桶（2026-10-23 扩）：entity / corpus / organ / external。
+     * 之前把 corpus+external 混成"未定位"，读者会把"可补登记"误当成"没法修"。 */
+    const bucketBar = v.key === "external"
+      ? `<div class="kpibar" style="margin:8px 0">
+           ${kpi("外部法规", num(obj(d.external).total), "条")}
+           ${kpi("覆盖关系", num(obj(d.external).evidence), "条")}
+         </div>`
+      : `<div class="kpibar" style="margin:8px 0">
+           ${kpi("已定位实体", num(b.entity), "条", b.entity ? "ok" : "")}
+           ${kpi("语料内待补登记", num(b.corpus), "条", b.corpus ? "warn" : "")}
+           ${kpi("语料外（已登记）", num(b.external), "条", "")}
+           ${kpi("机关名（非文件）", num(b.organ), "条", "")}
+         </div>`;
     return `<div class="gcard" data-gview="${esc(v.key)}">
       <div class="gcard-h"><b>${esc(v.label)}</b>
         <span class="tag">${num(v.total)} 条</span></div>
-      <div class="kpibar" style="margin:8px 0">
-        ${kpi("可定位(实体)", num(b.entity), "条", b.entity ? "ok" : "")}
-        ${kpi("语料内未登记", num(b.corpus), "条", b.corpus ? "warn" : "")}
-        ${kpi("未定位", num(b.unresolved), "条", "")}
-      </div>
+      ${bucketBar}
       <div class="muted" style="font-size:12px">${esc(v.note || "")}</div>
       <div class="muted" style="font-size:12px;margin-top:6px">
         本视图绘制 ${num(v.edges)} 条边 / ${num(v.nodes)} 个节点 ⇒ 点击展开</div>
@@ -1353,10 +1459,12 @@ function _gBipartite(d){
   const bp = obj(d.bipartite), c = obj(d.counts);
   const L = arr(bp.left), R = arr(bp.right), E = arr(bp.edges);
   const b = obj(obj(c.unresolved_by_view).internal_to_regulatory);
+  const nExt = R.filter(nd => nd.external).length;
   const head = `<div class="muted" style="margin-bottom:8px">
-    制度 ${L.length} · 监管 ${R.length} · 可定位关系 ${E.length} 条（**全部画出，未抽样**）；
-    另有 ${num(b.corpus)} 条已匹配到语料但对方未登记 RFN、${num(b.unresolved)} 条目标不在库内
-    —— 它们**不伪造节点**，故不入图。</div>`;
+    制度 ${L.length} · 监管文件 ${R.length - nExt} · **外部法规 ${nExt}**（虚线）· 关系 ${E.length} 条
+    （**全部画出，未抽样**）；
+    另有 ${num(b.corpus)} 条已匹配到语料但对方未登记 RFN（可补登记）；
+    ${num(b.organ)} 条目标是机关名（不是文件，故不画）。</div>`;
   if (!E.length) return head + '<div class="note">当前没有可定位的「制度→监管」关系。</div>';
   const W = 1040, rowH = 30, n = Math.max(L.length, R.length, 1);
   const H = Math.max(360, 60 + n * rowH);
@@ -1369,27 +1477,37 @@ function _gBipartite(d){
     const a = pos[e.from], b2 = pos[e.to];
     if (!a || !b2) return "";
     const mx = (a.x + b2.x) / 2, repeal = e.relation === "repeal";
+    // 语料外目标：**点线 + 更淡**。它与"废止虚线"要能区分，故用 `2 3` 细点线。
+    const ext = e.external;
+    const dash = ext ? "2 3" : (repeal ? "5 4" : "");
     return `<path d="M${a.x + 8},${a.y} C${mx},${a.y} ${mx},${b2.y} ${b2.x - 8},${b2.y}"
-      fill="none" stroke="${repeal ? "var(--bad)" : "var(--primary)"}" stroke-width="1.3"
-      opacity=".45"${repeal ? ' stroke-dasharray="5 4"' : ""}>
-      <title>${esc(e.label)}</title></path>`;
+      fill="none" stroke="${ext ? "var(--fg3)" : (repeal ? "var(--bad)" : "var(--primary)")}"
+      stroke-width="${ext ? 1 : 1.3}" opacity="${ext ? ".55" : ".45"}"${
+      dash ? ` stroke-dasharray="${dash}"` : ""}>
+      <title>${esc(e.label)}${ext ? "（外部法规·语料外）" : ""}</title></path>`;
   }).join("");
   const nodeSvg = (list, side) => list.map(nd => {
     const p = pos[nd.id]; if (!p) return "";
     const isL = side === "left";
+    const ext = !!nd.external;
     return `<g class="gnode" data-ref="${esc(nd.id)}">
-      <circle cx="${p.x}" cy="${p.y}" r="7" fill="${isL ? "var(--primary-l)" : "var(--alt)"}"
-        stroke="${isL ? "var(--primary)" : "var(--line2)"}" stroke-width="1.5"/>
+      <circle cx="${p.x}" cy="${p.y}" r="${ext ? 5.5 : 7}"
+        fill="${ext ? "var(--card)" : (isL ? "var(--primary-l)" : "var(--alt)")}"
+        stroke="${ext ? "var(--fg3)" : (isL ? "var(--primary)" : "var(--line2)")}"
+        stroke-width="${ext ? 1.2 : 1.5}"${ext ? ' stroke-dasharray="2 2"' : ""}/>
       <text x="${isL ? p.x - 16 : p.x + 16}" y="${p.y + 4}"
-        text-anchor="${isL ? "end" : "start"}" style="font-size:11.5px;fill:var(--fg)"
+        text-anchor="${isL ? "end" : "start"}"
+        style="font-size:11.5px;fill:${ext ? "var(--fg3)" : "var(--fg)"}"
         >${esc(_gCut(nd.name || nd.id, isL ? 26 : 30))}</text>
-      <title>${esc(nd.name || nd.id)}${"\n"}${esc(nd.docno || "")}${"\n"}点击查看以它为中心</title>
+      <title>${esc(nd.name || nd.id)}${"\n"}${esc(nd.docno || "")}${
+        ext ? "\n【外部法规·语料外，库里无原文】" : "\n点击查看以它为中心"}</title>
     </g>`;
   }).join("");
   return head + `<div class="glegend">
       <span><i style="background:var(--primary)"></i>依据</span>
       <span><i style="background:var(--bad)"></i>废止（虚线）</span>
-      <span class="muted">左：公司制度 · 右：监管文件 · 点节点看局部图</span>
+      <span><i style="background:var(--fg3)"></i>语料外（点线）</span>
+      <span class="muted">左：公司制度 · 右：监管文件 / 外部法规 · 点节点看局部图</span>
     </div>
     <div class="gwrap"><svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}"
       role="img" aria-label="制度到监管关系图">
@@ -1481,22 +1599,29 @@ function _gInternal(d){
     const mx = (a.x + b2.x) / 2 + (cy - (a.y + b2.y) / 2) * 0.32;
     const my = (a.y + b2.y) / 2 + (cx - (a.x + b2.x) / 2) * 0.32;
     const repeal = e.relation === "repeal";
+    // 语料外（历史版本）：点线 —— 与"废止虚线"区分，提醒读者目标不在库内
+    const ext = e.external;
     return `<path d="M${a.x.toFixed(1)},${a.y.toFixed(1)} Q${mx.toFixed(1)},${my.toFixed(1)}
       ${b2.x.toFixed(1)},${b2.y.toFixed(1)}" fill="none"
-      stroke="${repeal ? "var(--bad)" : "var(--primary)"}" stroke-width="1.5" opacity=".55"
-      ${repeal ? ' stroke-dasharray="5 4"' : ""}>
-      <title>${idx[e.from]} → ${idx[e.to]} ${esc(e.label)}</title></path>`;
+      stroke="${ext ? "var(--fg3)" : (repeal ? "var(--bad)" : "var(--primary)")}"
+      stroke-width="1.5" opacity="${ext ? ".5" : ".55"}"
+      ${ext ? ' stroke-dasharray="2 3"' : (repeal ? ' stroke-dasharray="5 4"' : "")}>
+      <title>${idx[e.from]} → ${idx[e.to]} ${esc(e.label)}${
+        ext ? "（外部·库内无此版本）" : ""}</title></path>`;
   }).join("");
   const nodeSvg = nodes.map(n => {
     const p = pos[n.id];
+    const ext = !!n.external;
     return `<g class="gnode" data-ref="${esc(n.id)}">
-      <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="15"
-        fill="var(--primary-l)" stroke="var(--primary)" stroke-width="1.3"/>
+      <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${ext ? 12 : 15}"
+        fill="${ext ? "var(--card)" : "var(--primary-l)"}"
+        stroke="${ext ? "var(--fg3)" : "var(--primary)"}" stroke-width="1.3"
+        ${ext ? ' stroke-dasharray="2 2"' : ""}/>
       <text x="${p.x.toFixed(1)}" y="${(p.y + 4).toFixed(1)}" text-anchor="middle"
-        style="font-size:10.5px;fill:var(--primary)">${idx[n.id]}</text>
+        style="font-size:10.5px;fill:${ext ? "var(--fg3)" : "var(--primary)"}">${idx[n.id]}</text>
       <title>${esc(n.name || n.id)}
-${esc(n.docno || "")}
-点击查看局部图</title></g>`;
+${esc(n.docno || "")}${
+        ext ? "\n【外部·语料外，库内无此版本】" : "\n点击查看局部图"}</title></g>`;
   }).join("");
   const rows = edges.map(e => `<tr>
       <td class="mono">${idx[e.from]}</td>
@@ -1505,14 +1630,17 @@ ${esc(n.docno || "")}
       <td class="ttl">${esc(_gCut(nodes[idx[e.from] - 1].name, 30))}</td>
       <td class="ttl">${esc(_gCut(nodes[idx[e.to] - 1].name, 30))}</td>
       <td><button class="link" data-ref="${esc(e.from)}">查看</button></td></tr>`).join("");
+  const nExt = edges.filter(e => e.external).length;
   return `<div class="muted" style="margin-bottom:8px">
-    制度↔制度共 ${num(edges.length)} 条（全部可定位）：
+    制度↔制度共 ${num(edges.length)} 条：
     <b>${num(edges.filter(e => e.relation === "repeal").length)}</b> 条废止（新版废止旧版）·
-    <b>${num(edges.filter(e => e.relation !== "repeal").length)}</b> 条依据。
+    <b>${num(edges.filter(e => e.relation !== "repeal").length)}</b> 条依据；
+    其中 <b>${num(nExt)}</b> 条指向**语料外**的历史版本（点线，库内无此版本）。
     圆圈里的数字对应下方表格（长标题直接标在图上会互相压字）。</div>
     <div class="glegend">
       <span><i style="background:var(--primary)"></i>依据</span>
-      <span><i style="background:var(--bad)"></i>废止（虚线）</span></div>
+      <span><i style="background:var(--bad)"></i>废止（虚线）</span>
+      <span><i style="background:var(--fg3)"></i>语料外（点线）</span></div>
     <div class="gwrap"><svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}"
       role="img" aria-label="制度间关系图">${edgeSvg}${nodeSvg}</svg></div>
     <div class="scrollx"><table><thead><tr>
@@ -1583,7 +1711,9 @@ function viewGraph(d){
     <span class="muted">${esc(center.docno || "")}</span>
     <span class="muted">出 ${num(c.out)} · 入 ${num(c.in)} ·
       依据 ${num(c.basis)} · 废止 ${num(c.repeal)}</span>
+    ${c.external ? `<span class="tag">其中 ${num(c.external)} 条指向语料外法规（点线）</span>` : ""}
     ${c.weak_skipped ? `<span class="tag">已隐藏 ${num(c.weak_skipped)} 条弱线索（未登记 RFN）</span>` : ""}
+    ${c.organ_skipped ? `<span class="tag">已忽略 ${num(c.organ_skipped)} 条机关名（不是文件）</span>` : ""}
     ${c.truncated ? '<span class="tag">结果已截断（上限 200 条）</span>' : ""}
   </div>`;
   if (!edges.length) {
@@ -1619,31 +1749,39 @@ function viewGraph(d){
     const a = pos[e.from], b = pos[e.to];
     if (!a || !b) return "";
     const repeal = e.relation === "repeal";
+    const ext = e.external;
     return `<line x1="${a.x.toFixed(1)}" y1="${a.y.toFixed(1)}"
       x2="${b.x.toFixed(1)}" y2="${b.y.toFixed(1)}"
-      stroke="${repeal ? "var(--bad)" : "var(--primary)"}" stroke-width="1.6"
-      opacity=".5"${repeal ? ' stroke-dasharray="5 4"' : ""}>
-      <title>${esc(e.label)}${e.confidence ? "（" + esc(e.confidence) + "）" : ""}</title></line>`;
+      stroke="${ext ? "var(--fg3)" : (repeal ? "var(--bad)" : "var(--primary)")}"
+      stroke-width="1.6" opacity="${ext ? ".6" : ".5"}"${
+      ext ? ' stroke-dasharray="2 3"' : (repeal ? ' stroke-dasharray="5 4"' : "")}>
+      <title>${esc(e.label)}${ext ? "（外部法规·语料外）" : ""}${
+        e.confidence ? "（" + esc(e.confidence) + "）" : ""}</title></line>`;
   }).join("");
   const nodeSvg = nodes.map(n => {
     const p = pos[n.id] || {x: cx, y: cy};
     const isC = n.id === d.ref;
     const r = isC ? 44 : 28;
+    const ext = !!n.external;
     const fill = isC ? "var(--primary)"
-      : (n.kind === "internal" ? "var(--primary-l)" : "var(--alt)");
+      : (ext ? "var(--card)"
+        : (n.kind === "internal" ? "var(--primary-l)" : "var(--alt)"));
     const stroke = isC ? "var(--primary)"
-      : (n.kind === "internal" ? "var(--primary)" : "var(--line2)");
-    const inside = isC ? "中心" : (n.kind === "internal" ? "制度" : "监管");
+      : (ext ? "var(--fg3)"
+        : (n.kind === "internal" ? "var(--primary)" : "var(--line2)"));
+    const inside = isC ? "中心" : (ext ? "外部" : (n.kind === "internal" ? "制度" : "监管"));
     return `<g class="gnode" data-ref="${esc(n.id)}">
       <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${r}"
-        fill="${fill}" stroke="${stroke}" stroke-width="1.5"/>
+        fill="${fill}" stroke="${stroke}" stroke-width="1.5"${
+        ext ? ' stroke-dasharray="3 2"' : ""}/>
       <text x="${p.x.toFixed(1)}" y="${(p.y + 4).toFixed(1)}" text-anchor="middle"
-        style="fill:${isC ? "#fff" : "var(--fg2)"};font-size:11px">${inside}</text>
+        style="fill:${isC ? "#fff" : (ext ? "var(--fg3)" : "var(--fg2)")};font-size:11px">${inside}</text>
       <text x="${p.x.toFixed(1)}" y="${(p.y + r + 15).toFixed(1)}" text-anchor="middle"
-        style="font-size:11px;fill:var(--fg)">${esc(cut(n.name || n.id, 16))}</text>
+        style="font-size:11px;fill:${ext ? "var(--fg3)" : "var(--fg)"}"
+        >${esc(cut(n.name || n.id, 16))}</text>
       <title>${esc(n.name || n.id)}
 ${esc(n.docno || "")}
-点击以此为中新查看</title>
+${ext ? "【外部法规·语料外，库内无原文】" : "点击以此为中新查看"}</title>
     </g>`;
   }).join("");
   const edgeRows = edges.map(e => {
@@ -1653,15 +1791,17 @@ ${esc(n.docno || "")}
     return `<tr>
       <td>${pill(e.label, e.relation === "repeal" ? "bad" : "ok")}</td>
       <td class="muted">${outbound ? "本文件 →" : "← 本文件"}</td>
-      <td class="ttl">${esc(peer.name || peerId)}</td>
+      <td class="ttl">${esc(peer.name || peerId)}${
+        e.external ? ' <span class="tag">外部·语料外</span>' : ""}</td>
       <td class="mono">${esc(peer.docno || "—")}</td>
-      <td class="muted">${esc(e.matched_by || "—")}</td>
+      <td class="muted">${esc(e.external ? "external" : (e.matched_by || "—"))}</td>
       <td class="muted">${esc(String(e.confidence ?? "—"))}</td></tr>`;
   }).join("");
   const body = `${head}
     <div class="glegend">
       <span><i style="background:var(--primary)"></i>依据</span>
       <span><i style="background:var(--bad)"></i>废止（虚线）</span>
+      <span><i style="background:var(--fg3)"></i>语料外法规（点线，库里无原文）</span>
       <span class="muted">点任一节点 → 以它为新中心继续查看</span>
     </div>
     <div class="gwrap"><svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}"

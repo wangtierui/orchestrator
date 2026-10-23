@@ -1,0 +1,26 @@
+# 确认台账号表（`--auth basic` 模式）—— **示例文件，不要直接改名使用**
+#
+# 正确做法（口令哈希由工具生成，**不要手写**）：
+#     copy config\console_users.example.yaml config\console_users.yaml
+#     python -m web.auth adduser --user zhangsan
+#     python -m web.auth list
+#
+# 为什么不允许手写明文口令：
+#   · 本文件在版本库里，明文口令等于公开；
+#   · `adduser` 写的是 PBKDF2-SHA256 哈希（每账号独立 salt），且校验用常数时间比较；
+#   · 口令泄露时只需重置该账号，不必改代码。
+#
+# 字段：
+#   password : pbkdf2_sha256$<iterations>$<salt_b64>$<hash_b64>（由 adduser 生成）
+#   role     : admin（可处置待办/留言）| viewer（只读）—— 当前仅记录，未做强制
+#   note     : 备注（人名/部门/用途）
+#
+# ⚠️ basic 模式在**明文 HTTP** 下口令以 base64 过网（可被同网段嗅探）。
+#    生产请加 `--tls-cert/--tls-key`，或改用可信代理认证（`--trust-proxy`）。
+users: {}
+# 示例（请用 adduser 生成，勿手抄）：
+# users:
+#   zhangsan:
+#     password: pbkdf2_sha256$260000$<salt>$<hash>
+#     role: viewer
+#     note: 合规部

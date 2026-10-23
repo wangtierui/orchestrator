@@ -91,7 +91,11 @@ def _write_start_cmd(port: int = DEFAULT_PORT, lan: bool = True) -> str:
         "rem so UTF-8 Chinese comments get garbled and can break the script.",
         "cd /d %s" % repo,
         'if not exist "%s" mkdir "%s"' % (state_dir, state_dir),
-        '"%s" cli.py serve %s --port %d ^' % (
+        # `--auth auto`（显式写出，不依赖默认值）：
+        #   回环 ⇒ 自动认证为当前 Windows 账号（本机不用登录）；
+        #   内网 ⇒ 必须用共享口令登录（不匿名可读）。
+        # 同机反向代理场景请改用 `--auth token`（见 README §6.9）。
+        '"%s" cli.py serve %s --auth auto --port %d ^' % (
             _pythonw(), "--lan" if lan else "--host 127.0.0.1", port),
         '  --single-instance --pid-file "%s" --log-file "%s"' % (PID_FILE,
                                                                  LOG_FILE),

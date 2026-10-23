@@ -284,9 +284,24 @@ class TestRelationGraph:
                 stat[s][1] += 1
         weak_only = [k for k, (tot, strong) in stat.items() if tot and not strong]
         assert weak_only, "样本缺失（应存在仅弱线索的实体）"
-        e = R.ego(weak_only[0])
-        assert e["edges"] == [], "弱线索被当成边画出（会把'未定位'伪装成'已定位'）"
-        assert e["counts"]["weak_skipped"] > 0, "未披露被过滤的弱线索条数"
+        ref = weak_only[0]
+        e = R.ego(ref)
+        rows = [r for r in (R.by_src(ref) + R.by_dst(ref)) if not r.get("dst_ref")]
+        # 两类必须区分（2026-10-23）：
+        #   · `corpus`（有 dst_key）：**不画**（画出来等于把"未登记"伪装成"已定位"），
+        #     只在 `weak_skipped` 里计数；
+        #   · `external`（语料外文件）：**画**，但每条边必须 `external=True`
+        #     （编号 RFN-EXT-*，前端虚线，不冒充语料内实体）。
+        corpus_rows = [r for r in rows if r.get("dst_key")]
+        ext_rows = [r for r in rows if not r.get("dst_key")]
+        if corpus_rows:
+            assert e["counts"]["weak_skipped"] >= len(corpus_rows), "未披露被过滤的弱线索条数"
+        if ext_rows:
+            assert e["edges"], "语料外目标应当画出（已有 RFN-EXT 编号）"
+            assert all(x.get("external") for x in e["edges"]), (
+                "语料外边未标 external ⇒ 前端会把它画成'已定位实体'")
+        assert not any(str(x["to"]).startswith("key:") for x in e["edges"]), (
+            "corpus 弱线索被画成节点（会伪装成已定位）")
 
 
 class TestWebLayer:

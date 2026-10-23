@@ -45,7 +45,7 @@ def run(argv: list[str] | None = None) -> int:
     ap.add_argument("--single-instance", action="store_true",
                     help="单实例模式：已有实例在跑则本次直接退出（幂等）")
     # ---- 认证（2026-10-23）：对内网开放时**不允许无认证** -------------------- #
-    ap.add_argument("--auth", default="", choices=["", "off", "token", "basic"],
+    ap.add_argument("--auth", default="", choices=["", "auto", "off", "token", "basic"],
                     help="认证方式：off / token（共享口令）/ basic（账号）；"
                          "缺省时 --lan 自动用 token")
     ap.add_argument("--auth-rotate", action="store_true", help="token 模式：重新生成口令")

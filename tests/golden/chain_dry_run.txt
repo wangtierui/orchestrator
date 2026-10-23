@@ -13,15 +13,15 @@ warning: The `
 [step:collect:pbc] SKIP（--dry-run（只列 argv，不执行））
 [collect] supp 无网络采集（本地摄取/清洗刷新）→ 跳过
 [collect] supp：未触发本地摄取（经 --supp-batch <backlog.json> 或 collectors/supp/ingest_local_dir.py）
-[clean] gov: raw 459MB → 超时 1800s（N-150 按体量配置；原固定 1800s）
+[clean] gov: raw <mb>MB → 超时 1800s（N-150 按体量配置；原固定 1800s）
 [step:clean:gov] SKIP（--dry-run（只列 argv，不执行））
-[clean] mof: raw 64MB → 超时 1800s（N-150 按体量配置；原固定 1800s）
+[clean] mof: raw <mb>MB → 超时 1800s（N-150 按体量配置；原固定 1800s）
 [step:clean:mof] SKIP（--dry-run（只列 argv，不执行））
-[clean] nfra: raw 90MB → 超时 1800s（N-150 按体量配置；原固定 1800s）
+[clean] nfra: raw <mb>MB → 超时 1800s（N-150 按体量配置；原固定 1800s）
 [step:clean:nfra] SKIP（--dry-run（只列 argv，不执行））
-[clean] pbc: raw 3MB → 超时 1800s（N-150 按体量配置；原固定 1800s）
+[clean] pbc: raw <mb>MB → 超时 1800s（N-150 按体量配置；原固定 1800s）
 [step:clean:pbc] SKIP（--dry-run（只列 argv，不执行））
-[clean] supp: raw 14MB → 超时 1800s（N-150 按体量配置；原固定 1800s）
+[clean] supp: raw <mb>MB → 超时 1800s（N-150 按体量配置；原固定 1800s）
 [step:clean:supp] SKIP（--dry-run（只列 argv，不执行））
 [step:timeliness:verify] SKIP（--dry-run（只列 argv，不执行））
 [step:relevance:gov] SKIP（--dry-run（只列 argv，不执行））
@@ -38,6 +38,7 @@ warning: The `
 [step:apply:supp] SKIP（--dry-run（只列 argv，不执行））
 [step:classify:all] SKIP（--dry-run（只列 argv，不执行））
 [step:relations:gen] SKIP（--dry-run（只列 argv，不执行））
+[step:relations:ext] SKIP（--dry-run（只列 argv，不执行））
 [step:semantic:assist] SKIP（--dry-run（只列 argv，不执行））
 [step:docreader:extract] SKIP（--dry-run（只列 argv，不执行））
 [step:reconcile] SKIP（--dry-run（只列 argv，不执行））
@@ -88,6 +89,7 @@ apply:pbc                0         0.0
 apply:supp               0         0.0
 classify:all             0         0.0
 relations:gen            0         0.0
+relations:ext            0         0.0
 semantic:assist          0         0.0
 docreader:extract        0         0.0
 reconcile                0         0.0

@@ -209,10 +209,11 @@ class TestFourViews:
 
         return R.global_graph()
 
-    def test_four_views_present(self, g) -> None:
+    def test_five_views_present(self, g) -> None:
+        """四类关系 + 一屏**外部法规**（语料外，独立键空间 `RFN-EXT-*`）。"""
         keys = [v["key"] for v in g["views"]]
         assert keys == ["internal_to_regulatory", "regulatory_to_regulatory",
-                        "internal_to_internal", "theme"], keys
+                        "internal_to_internal", "theme", "external"], keys
 
     def test_regulatory_view_has_hubs_and_edges(self, g) -> None:
         reg = g["regulatory"]
@@ -253,13 +254,18 @@ class TestFourViews:
             assert e["from"] in left and e["to"] in right, e
 
     def test_views_disclose_unresolved(self, g) -> None:
-        """未定位必须**逐视图**披露（总盘子的数字对读者没意义）。"""
+        """四桶必须**逐视图**披露（总盘子的数字对读者没意义）。
+
+        桶定义（2026-10-23 扩）：`entity` 已定位 / `corpus` 语料内待补登记 /
+        `organ` 机关名（不是文件）/ `external` 语料外文件（已登记 RFN-EXT-*）。
+        原来把 corpus 与 external 混成"未定位"，会让"可补登记"看起来像"没法修"。
+        """
         uv = g["counts"]["unresolved_by_view"]
         for key in ("internal_to_regulatory", "regulatory_to_regulatory",
                     "internal_to_internal"):
             b = uv[key]
-            assert {"entity", "corpus", "unresolved"} <= set(b), (key, b)
-            assert b["entity"] + b["corpus"] + b["unresolved"] > 0
+            assert {"entity", "corpus", "organ", "external"} <= set(b), (key, b)
+            assert sum(b.values()) > 0, (key, b)
 
 
 class TestMetricDefinition:
@@ -284,11 +290,10 @@ class TestMetricDefinition:
         assert (c["resolved_to_entity_ratio"] or 0) >= 0.38, c["resolved_to_entity_ratio"]
 
     def test_unresolved_total_matches_stat(self) -> None:
+        """**逐视图四桶之和 == 全库关系总数**（口径必须能闭合，否则必有关系被漏计）。"""
         from interfaces import relations_api as R
 
         c = R.global_graph()["counts"]
-        # 三桶之和 == 总关系数
         uv = c["unresolved_by_view"]
-        s = sum(v[1]["entity"] + v[1]["corpus"] + v[1]["unresolved"]
-                for v in uv.items())
+        s = sum(sum(b.values()) for b in uv.values())
         assert s == c["total_relations"], (s, c["total_relations"])

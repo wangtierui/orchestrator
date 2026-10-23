@@ -303,11 +303,9 @@ def compare(source: str) -> list[str]:
     p = baseline_path(source)
     if not os.path.exists(p):
         return ["<基线文件缺失>"]
-    base = json.load(open(p, encoding="utf-8"))
-    # ⚠️ 用**基线里的 expected** 构造当前快照（关键，见 build() 的 docstring）：
-    # 否则 expected 每次从当前文件重算，拆分后自动缩水 ⇒ missing 恒空 ⇒ 漏搬抓不到。
-    # 同时**过滤噪声**（老基线用旧规则生成，含 `import logging`/`_att` 这类
-    # 模块名与内部别名，它们在拆分后必然"消失"但并非漏搬）。
+    # 注意：**这里不再重复读取基线**——`compare_report()` 内部已读，并按其
+    # `module_names.expected` 构造当前快照（否则 expected 每次重算会缩水，
+    # 拆分后 missing 恒空 ⇒ 漏搬抓不到）。原先此处多读一次却没使用（纯浪费）。
     rep = compare_report(source)
     return list(rep["fails"])
 

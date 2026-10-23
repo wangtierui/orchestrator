@@ -224,15 +224,28 @@ def ego(ref: str, *, limit: int = 200, include_weak: bool = False) -> dict:
                     "truncated": bool},
          "labels": {"basis": "依据", "repeal": "废止"}}
     """
+    from interfaces import external_api as _EXT_E
+    from std_lib.common_lib.relations.patterns import TARGET_ORGAN as _TARGET_ORGAN_E
+
     if not ref:
         return {"available": False, "reason": "缺 ref", "ref": "",
                 "nodes": [], "edges": [], "counts": {}}
 
     def _keep(row: dict) -> bool:
-        """弱线索（dst_ref 为空且靠 dst_key 命中）是否保留。"""
-        if include_weak:
+        """该行是否画进图。
+
+        2026-10-23（第一百一十三批）：**语料外文件**（`dst_class=external`）现在
+        有编号（`RFN-EXT-*`）⇒ 可以画；机关名仍然不画（它不是一个文件）。
+        弱线索（只有 `dst_key`、无 `dst_ref`）保持原语义：默认不画（那是"已采集
+        未登记"，画出来会把未登记伪装成已定位），`include_weak` 时才画。
+        """
+        if row.get("dst_ref"):
             return True
-        return bool(row.get("dst_ref"))
+        if str(row.get("dst_class") or "") == _TARGET_ORGAN_E:
+            return False
+        if row.get("dst_key"):
+            return bool(include_weak)
+        return bool(_EXT_E.resolve(row.get("dst_name"), row.get("dst_docno")))
 
     raw = [r for r in by_src(ref) if _keep(r)] + [r for r in by_dst(ref) if _keep(r)]
     truncated = len(raw) > limit
@@ -274,7 +287,15 @@ def ego(ref: str, *, limit: int = 200, include_weak: bool = False) -> dict:
         dst_ref = str(r.get("dst_ref") or "")
         dst_key = str(r.get("dst_key") or "")
         weak = not dst_ref and bool(dst_key)
-        to_id = _node(dst_ref, str(r.get("dst_kind") or ""),
+        external = False
+        if not dst_ref and not dst_key:
+            # 语料外文件：用 `RFN-EXT-*` 作节点 id（可重算、跨批稳定）
+            ext_id = _EXT_E.resolve(r.get("dst_name"), r.get("dst_docno"))
+            if not ext_id:
+                continue
+            dst_ref = ext_id
+            external = True
+        to_id = _node(dst_ref, "external" if external else str(r.get("dst_kind") or ""),
                       str(r.get("dst_name") or ""), str(r.get("dst_docno") or ""),
                       weak=weak)
         if weak:
@@ -286,15 +307,22 @@ def ego(ref: str, *, limit: int = 200, include_weak: bool = False) -> dict:
                         str(r.get("src_name") or ""), str(r.get("src_docno") or ""))
         if not to_id or not from_id:
             continue
+        if external:
+            nodes[to_id]["external"] = True
+            nodes[to_id]["guise"] = _EXT_E.guess_guise(r.get("dst_name"),
+                                                       r.get("dst_docno"))
+            nodes[to_id]["guise_label"] = _EXT_E.GUISE_LABELS.get(
+                nodes[to_id]["guise"], "")
         rel = str(r.get("relation") or "")
         edges.append({
             "id": rid or f"{from_id}->{to_id}:{rel}",
             "from": from_id, "to": to_id, "relation": rel,
             "label": RELATION_LABELS.get(rel, rel),
             "confidence": r.get("confidence", ""),
-            "matched_by": r.get("matched_by", ""),
+            "matched_by": "external" if external else r.get("matched_by", ""),
             "snippet": (r.get("source_snippet") or "")[:120],
             "is_weak": weak,
+            "external": external,
         })
 
     # 中心节点信息从任一条关系里补（relation 行同时带 src_name/src_docno）
@@ -324,9 +352,17 @@ def ego(ref: str, *, limit: int = 200, include_weak: bool = False) -> dict:
             "out": drawn_out, "in": drawn_in,
             "basis": sum(1 for e in edges if e["relation"] == "basis"),
             "repeal": sum(1 for e in edges if e["relation"] == "repeal"),
+            # 画出来的**外部法规**边（编号 RFN-EXT-*）：读者要能一眼知道
+            # "这条依据指向的是库外文件"，而不是以为库里就有这份法。
+            "external": sum(1 for e in edges if e.get("external")),
             # 被排除的弱线索（仅 dst_key 命中、无 dst_ref）——**显式披露**，不静默丢
             "weak_skipped": (0 if include_weak else
-                             sum(1 for r in out_all + in_all if not r.get("dst_ref"))),
+                             sum(1 for r in out_all + in_all
+                                 if not r.get("dst_ref") and r.get("dst_key"))),
+            # 机关名（"国务院"）不是文件 ⇒ 既不画也不叫"未定位"
+            "organ_skipped": sum(1 for r in out_all + in_all
+                                 if str(r.get("dst_class") or "")
+                                 == _TARGET_ORGAN_E),
             "raw_out": len(out_all), "raw_in": len(in_all),
             "truncated": truncated,
         },
@@ -349,7 +385,8 @@ def _nmaps(rows: list[dict]) -> tuple[dict[str, str], dict[str, str]]:
     return name, docno
 
 
-def global_graph(*, top_hubs: int = 15, top_theme_docs: int = 12) -> dict:
+def global_graph(*, top_hubs: int = 15, top_theme_docs: int = 12,
+                 top_ext_n: int = 20) -> dict:
     """**全局关系图谱**：四类关系各给一个可读视图（2026-10-23 重构）。
 
     为什么不是一个"全量图"
@@ -369,6 +406,13 @@ def global_graph(*, top_hubs: int = 15, top_theme_docs: int = 12) -> dict:
     ——"未定位"与"不存在"是两件事，混为一谈会让读者得出错误结论。
     """
     from interfaces import base_api as _B
+    from interfaces import external_api as _E
+    from std_lib.common_lib.relations.patterns import (
+        TARGET_CORPUS as _TARGET_CORPUS,
+    )
+    from std_lib.common_lib.relations.patterns import (
+        TARGET_ORGAN as _TARGET_ORGAN,
+    )
 
     reg_rows = load("regulatory")
     int_rows = load("internal")
@@ -401,17 +445,63 @@ def global_graph(*, top_hubs: int = 15, top_theme_docs: int = 12) -> dict:
                             "label": RELATION_LABELS.get(rel, rel),
                             "confidence": r.get("confidence", ""),
                             "matched_by": r.get("matched_by", "")})
-    # 三桶口径（2026-10-23）：把「未定位」与「语料内但未登记 RFN」分开 ——
-    # 前者是**找不到**（对方不在库里），后者是**找到了没登记**（可补登）。
-    # 混在一起会让读者以为三千多条都无从下手，其实其中一部分只差一次登记。
+
+    # ---- 视图 1 补充：**语料外**目标也画出来（第一百一十三批）----
+    # 原先这些边被整段丢弃（只计数）：读者看得到"未定位 93 条"，却不知道
+    # 那 93 条到底指向谁。现在它们有编号（`RFN-EXT-*`）与标题，可以成为节点，
+    # 只是**视觉上必须与语料内节点可分**（`external=True`，前端虚线/浅色）。
+    ext_seen: dict[str, dict] = {}
+    for r in cross_rows:
+        if r.get("dst_ref") or r.get("dst_key"):
+            continue
+        if str(r.get("dst_class") or "") == _TARGET_ORGAN:
+            continue                      # 机关名不是文件，不画
+        ext_id = _E.resolve(r.get("dst_name"), r.get("dst_docno"))
+        if not ext_id:
+            continue
+        src = str(r.get("src_ref") or "")
+        if not src:
+            continue
+        ext_seen.setdefault(ext_id, {
+            "id": ext_id, "kind": "external", "external": True,
+            "name": str(r.get("dst_name") or ""),
+            "docno": str(r.get("dst_docno") or ""),
+        })
+        left.setdefault(src, {"id": src, "kind": "internal",
+                              "name": all_name.get(src, ""),
+                              "docno": all_docno.get(src, "")})
+        right.setdefault(ext_id, ext_seen[ext_id])
+        cross_edges.append({"from": src, "to": ext_id,
+                            "relation": str(r.get("relation") or ""),
+                            "label": RELATION_LABELS.get(
+                                str(r.get("relation") or ""), ""),
+                            "confidence": r.get("confidence", ""),
+                            "matched_by": "external", "external": True})
+    # 四桶口径（2026-10-23 扩，第一百一十三批）：把"目标是什么"彻底分开 ——
+    #   entity   已解析到语料实体（RFN/IPN）
+    #   corpus   语料内已采集但未登记 RFN ⇒ **可补登记**（不是"找不到"）
+    #   organ    **机关名**（"国务院"/"财政部"）⇒ 不是文件引用，不该计入文件覆盖率
+    #   external **语料外文件**（法律法规…）⇒ 登记进 `RFN-EXT-*` 独立键空间
+    # 前三批把 external 与 corpus 混算成"未定位 2632"，读者会以为全都是坏账；
+    # 实际其中 509 条只差一次 RFN 补登记、1068 条根本不该算。
     def _buckets(rows: list[dict]) -> dict[str, int]:
-        ent = sum(1 for r in rows if r.get("dst_ref"))
-        corp = sum(1 for r in rows if not r.get("dst_ref") and r.get("dst_key"))
-        unres = sum(1 for r in rows if not r.get("dst_ref") and not r.get("dst_key"))
-        return {"entity": ent, "corpus": corp, "unresolved": unres}
+        b = {"entity": 0, "corpus": 0, "organ": 0, "external": 0}
+        for r in rows:
+            if r.get("dst_ref"):
+                b["entity"] += 1
+                continue
+            cls = str(r.get("dst_class") or "")
+            if cls == _TARGET_ORGAN:
+                b["organ"] += 1
+            elif cls == _TARGET_CORPUS or r.get("dst_key"):
+                b["corpus"] += 1
+            else:
+                # 兜底：无 class 字段的老数据 / 明确 external，都归外部文件
+                b["external"] += 1
+        return b
 
     cross_b, reg_b, int_b = _buckets(cross_rows), _buckets(reg_rows), _buckets(int_rows)
-    cross_unresolved = cross_b["unresolved"] + cross_b["corpus"]
+    cross_unresolved = cross_b["corpus"]   # 只剩"待补登记"，外部法规已另行登记
 
     # ---- 视图 2：监管 → 监管（枢纽星型）----
     deg: dict[str, int] = {}
@@ -432,7 +522,7 @@ def global_graph(*, top_hubs: int = 15, top_theme_docs: int = 12) -> dict:
     hub_edges = [{"from": s, "to": d, "relation": rel,
                   "label": RELATION_LABELS.get(rel, rel)}
                  for (s, d, rel) in _uniq(reg_rows) if s in hub_set and d in hub_set]
-    reg_unresolved = reg_b["unresolved"] + reg_b["corpus"]
+    reg_unresolved = reg_b["corpus"]
 
     # ---- 视图 3：制度 ↔ 制度（全画）----
     ii_edges: list[dict] = []
@@ -445,7 +535,30 @@ def global_graph(*, top_hubs: int = 15, top_theme_docs: int = 12) -> dict:
         ii_edges.append({"from": s, "to": d, "relation": rel,
                          "label": RELATION_LABELS.get(rel, rel),
                          "confidence": r.get("confidence", "")})
-    ii_unresolved = int_b["unresolved"] + int_b["corpus"]
+    # 制度↔制度 同样把"语料外"目标画出来（多为**历史版本**：新版废止旧版，
+    # 而旧版已不在库内）。这批若仍藏起来，"制度间关系只有 24 条"就是假象。
+    for r in int_rows:
+        if r.get("dst_ref") or r.get("dst_key"):
+            continue
+        if str(r.get("dst_class") or "") == _TARGET_ORGAN:
+            continue
+        ext_id = _E.resolve(r.get("dst_name"), r.get("dst_docno"))
+        src = str(r.get("src_ref") or "")
+        if not ext_id or not src:
+            continue
+        ii_nodes.setdefault(src, {"id": src, "kind": "internal",
+                                  "name": all_name.get(src, ""),
+                                  "docno": all_docno.get(src, "")})
+        ii_nodes.setdefault(ext_id, {"id": ext_id, "kind": "external",
+                                     "external": True,
+                                     "name": str(r.get("dst_name") or ""),
+                                     "docno": str(r.get("dst_docno") or "")})
+        rel = str(r.get("relation") or "")
+        ii_edges.append({"from": src, "to": ext_id, "relation": rel,
+                         "label": RELATION_LABELS.get(rel, rel),
+                         "confidence": r.get("confidence", ""),
+                         "matched_by": "external", "external": True})
+    ii_unresolved = int_b["corpus"]
 
     # ---- 视图 4：主题关系（主题 → 被其制度引用最多的监管文件）----
     # 口径：内部制度 `primary_theme`（T1/T9/… 或 UNALIGNED）→ 其"依据"关系指向的监管文件。
@@ -490,6 +603,23 @@ def global_graph(*, top_hubs: int = 15, top_theme_docs: int = 12) -> dict:
     themes = [{"code": t, "label": theme_label_map.get(t, t), "policies": n}
               for t, n in sorted(theme_counts.items(), key=lambda kv: -kv[1])]
 
+    # ---- 视图 5：外部法规权威（独立键空间 `RFN-EXT-*`）----
+    # 这一屏回答的是"我们的文件到底在依据什么法"。它们是**语料外**的：
+    # 编号只表示"被引用过、已登记"，**不表示库里能打开这份文件**。
+    ext_stat = _E.load_stat()
+    ext_all = _E.load()
+    top_ext = sorted(ext_all, key=lambda x: -int(x.get("evidence_count") or 0))[:top_ext_n]
+    ext_nodes = [{
+        "id": str(x.get("ext_id") or ""),
+        "kind": "external", "external": True,
+        "name": str(x.get("title") or ""),
+        "docno": str(x.get("docno") or ""),
+        "degree": int(x.get("evidence_count") or 0),
+        "guise": str(x.get("guise") or "unknown"),
+        "guise_label": _E.GUISE_LABELS.get(str(x.get("guise") or ""), ""),
+        "in_corpus": False,
+    } for x in top_ext]
+
     s = stat() or {}
     res = s.get("resolution") or {}
     rel = s.get("relations") or {}
@@ -515,12 +645,21 @@ def global_graph(*, top_hubs: int = 15, top_theme_docs: int = 12) -> dict:
         "file_located_ratio": s.get("file_located_ratio"),
         "resolved_to_entity_ratio": s.get("resolved_to_entity_ratio"),
         "located_in_corpus_ratio": s.get("located_in_corpus_ratio"),
+        # 外部法规权威（独立键空间，语料外）
+        "external_total": int(ext_stat.get("total") or 0),
+        "external_evidence": int(ext_stat.get("evidence_total") or 0),
+        "external_by_guise": ext_stat.get("by_guise") or {},
+        # **归属率**（含外部权威）：与"语料内定位率"分开报，不许合成一个数字
+        "attributed_ratio": (round(
+            (int(s.get("target_class", {}).get("entity") or 0)
+             + int(s.get("target_class", {}).get("external") or 0))
+            / int(s.get("file_level_denominator") or 1), 4)),
     }
     views = [
         {"key": "internal_to_regulatory", "label": "公司制度 → 监管依据",
          "edges": len(cross_edges), "nodes": len(left) + len(right),
          "total": counts["cross_relations"], "unresolved": cross_unresolved,
-         "note": "可定位的全部画出（不抽样）；未定位的只计数不伪造节点"},
+         "note": "可定位的全部画出（不抽样）；语料外的已登记为 RFN-EXT-* 并以虚线区分"},
         {"key": "regulatory_to_regulatory", "label": "监管文件 → 监管文件",
          "edges": len(hub_edges), "nodes": len(hub_nodes),
          "total": counts["regulatory_relations"], "unresolved": reg_unresolved,
@@ -529,12 +668,16 @@ def global_graph(*, top_hubs: int = 15, top_theme_docs: int = 12) -> dict:
         {"key": "internal_to_internal", "label": "公司制度 → 公司制度",
          "edges": len(ii_edges), "nodes": len(ii_nodes),
          "total": counts["internal_relations"], "unresolved": ii_unresolved,
-         "note": "全部画出（24 条可读）——含 16 条废止（新版废止旧版）"},
+         "note": "全部画出 —— 含废止（新版废止旧版）与指向**历史版本**的边（虚线）"},
         {"key": "theme", "label": "主题关系",
          "edges": len(theme_edges), "nodes": len(themes) + len(keep_docs),
          "total": sum(n for (_t, d), n in pair.items() if d in keep_docs),
          "unresolved": sum(1 for r in cross_rows if not r.get("dst_ref")),
          "note": "主题 → 被该主题制度引用最多的监管文件（只计已定位）"},
+        {"key": "external", "label": "外部法规（语料外）",
+         "edges": int(ext_stat.get("evidence_total") or 0), "nodes": len(ext_all),
+         "total": int(ext_stat.get("total") or 0), "unresolved": 0,
+         "note": "编号 RFN-EXT-* = 被引用但**未收录**；按被引次数排序"},
     ]
     return {
         "available": True,
@@ -553,6 +696,13 @@ def global_graph(*, top_hubs: int = 15, top_theme_docs: int = 12) -> dict:
                             "docno": all_docno.get(d, ""), "degree": doc_freq.get(d, 0)}
                            for d in top_docs],
                   "edges": theme_edges},
+        "external": {"nodes": ext_nodes,
+                     "total": int(ext_stat.get("total") or 0),
+                     "evidence": int(ext_stat.get("evidence_total") or 0),
+                     "by_guise": ext_stat.get("by_guise") or {},
+                     "guise_labels": dict(_E.GUISE_LABELS),
+                     "note": ("外部法规是**语料外**文件的登记键空间：编号 `RFN-EXT-*` "
+                              "表示「被引用但未收录」，不代表库里能打开这份文件。")},
         "hubs": hub_nodes,
         "counts": counts,
         "stats": {"resolution": res,
@@ -563,9 +713,12 @@ def global_graph(*, top_hubs: int = 15, top_theme_docs: int = 12) -> dict:
                  f"{counts['regulatory_relations']}、制度↔制度 "
                  f"{counts['internal_relations']}、制度→监管 "
                  f"{counts['cross_relations']}。"
-                 f"文件类目标定位率 {round((counts['file_resolved_ratio'] or 0) * 100, 1)}%"
-                 f"（分母 {counts['file_denominator']}，已剔除机关名/泛指词）。"
-                 f"未定位 {counts['unresolved']} 条在四个视图里逐项披露。"),
+                 f"文件类目标**语料内**定位率 "
+                 f"{round((counts['file_resolved_ratio'] or 0) * 100, 1)}%"
+                 f"（分母 {counts['file_denominator']}，已剔除机关名）；"
+                 f"另有 {counts['external_total']} 条外部法规已登记为独立键空间"
+                 f"（`RFN-EXT-*`，覆盖 {counts['external_evidence']} 条关系）；"
+                 f"语料内待补登记 {sum(1 for r in (cross_rows + reg_rows + int_rows) if not r.get('dst_ref') and r.get('dst_key'))} 条。"),
     }
 
 

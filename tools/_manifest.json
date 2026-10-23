@@ -15,6 +15,20 @@
       "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
     },
     {
+      "category": "independent",
+      "entry": "python -m tools.backfill_extract_version [--apply] [--file mof_laws.jsonl]",
+      "file": "backfill_extract_version.py",
+      "independent_why": "collect:mof 的耗时修复依赖「本地副本未变 + extract_version 一致」才复用抽取结果；存量 raw 的 246 个附件没有该字段 ⇒ 升级后第一次运行仍会全量重抽（小时级）。本工具把既有抽取结果盖上官方的 EXTRACT_VERSION，让复用从下一次运行起生效。安全依据：复用等于沿用已有产物（数据本来就在，下游一直按它工作），盖章不引入新的不准确，只是把「要不要重抽」的决定权收敛为「抽取器升级时显式做一次」。默认 dry-run，加 --apply 才写且自动备份。",
+      "produced_by": "给历史附件盖抽取版本号（一次性迁移，默认 dry-run）"
+    },
+    {
+      "category": "independent",
+      "entry": "python -m tools.backlog_governance growth | selfclosed | apply [--execute --by --reason]",
+      "file": "backlog_governance.py",
+      "independent_why": "三个子命令：growth（积压增长监控，只读，超阈值返回码 2 供 notify 消费）、selfclosed（机器判定「自证闭环」项，只读）、apply（受控执行，默认 dry-run）。机器判定边界保守：subject 含闭环词 + 无否定语境 + payload 无待决键，三者全满足才判（宁可漏判不可错判——错判不可逆）。写口一律走 governance_store.worklist_resolve（C1 审计在其内）。",
+      "produced_by": "诊断第 3 波：待办积压治理回路（增长监控 + 自证闭环判定）"
+    },
+    {
       "category": "tool",
       "entry": "EAST2.0 表格类监管文件 → supp backlog（§3.12.5 的 supp 通道）",
       "file": "build_east_backlog.py",
@@ -23,10 +37,24 @@
     },
     {
       "category": "tool",
+      "entry": "外部法规权威表生成（语料外目标的独立键空间 RFN-EXT-*）",
+      "file": "build_external_authority.py",
+      "independent": false,
+      "independent_why": ""
+    },
+    {
+      "category": "tool",
       "entry": "生成 data_migration_manifest.json（R22）；gate_hardcoded_paths 保留其 basename 豁免",
       "file": "build_migration_manifest.py",
       "independent": true,
       "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
+    },
+    {
+      "category": "independent",
+      "entry": "python -m tools.business_review_list [--out-dir D] [--json]",
+      "file": "business_review_list.py",
+      "independent_why": "待办里 relevance_boundary（相关性边界）与 internal_unaligned（内部制度未对齐）机器不可判，需业务口径。直接甩 277 条给业务等于没交付——本工具**先聚类再给裁定问题**：relevance_boundary 按其 payload 的 hits（四组关键词命中结果，空数组=未命中）聚成「命中模式」，同模式的相关性不足原因同类 ⇒ 可按组批量裁定；internal_unaligned 无机器维度，按标题关键词聚类并**明确标注「仅供阅读、非判定依据」**。输出 Markdown，每条列示名称/文号/访问地址（含空值可辨标注）。只读、不改任何数据。",
+      "produced_by": "生成业务裁定清单（按可裁定维度聚类，附判定依据与逐条字段）"
     },
     {
       "category": "tool",
@@ -53,6 +81,13 @@
       "file": "ci_check.py",
       "independent": true,
       "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
+    },
+    {
+      "category": "independent",
+      "entry": "python -m tools.dead_code_audit [--only A|B|C|D] [--json out.json]",
+      "file": "dead_code_audit.py",
+      "independent_why": "用户要求排查「已明确废弃删除的代码是否仍留在脚本内」与「是否存在只增不减的冗余」。四类判据全部静态可复跑；B 类（只定义不引用）已排除 pytest 自动收集、已允许模块.函数() 的点号访问、已补扫根目录 .py（否则 bootstrap/paths 里的使用会被漏掉，产出假死代码）。**只报告不改代码**：删除必须人工判断（动态调用无法静态判定）。实测本仓：真死代码 18 项（已删并清零）、死分支 0、大段注释代码 0；40 项「可疑命名」经人工核验均为正当业务命名（ipn_old / enrich_legacy / self._old）。",
+      "produced_by": "废弃/冗余代码审计：废弃标记 / 只定义不引用 / 只增不减痕迹 / 大段注释代码"
     },
     {
       "category": "tool",
@@ -84,6 +119,13 @@
       "category": "pipeline",
       "entry": "阶段 2.6 关系全量重抽（cli.py relations gen 的被调实现）",
       "file": "extract_relations.py"
+    },
+    {
+      "category": "independent",
+      "entry": "python -m tools.gate_triage [list|<gate> --run-id <id> --json]",
+      "file": "gate_triage.py",
+      "independent_why": "读治理库 gate_result（只读）把门禁 FAIL 归因成「产物/结构/口径/环境/复核」五类并给出重跑或改码建议。类别按**门禁身份注册表**判定（不猜problems 文本——文本会变、身份稳定）；三条硬约束：①门禁名必须有来源（ALL_GATES ∪ 台账历史）②无 problems 证据**不给类别** ③重跑命令只对 StepSpec.produces 声明过的产物给（produced_by 是模块路径，不能当 --from 用）。",
+      "produced_by": "门禁失败归因（诊断第 1 波）"
     },
     {
       "category": "pipeline",
@@ -200,6 +242,27 @@
       "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
     },
     {
+      "category": "independent",
+      "entry": "python -m tools.js_syntax_lint [--json] [path]",
+      "file": "js_syntax_lint.py",
+      "independent_why": "web/assets/index.html 的内联 <script> 一旦有语法错误，**整段脚本不执行** ⇒ 页面停在 HTML 初始态（加载中… + SSE 连接中…），而服务端 HTTP 200、API 全绿、SSE 有 hello/ping ⇒ 极易被误判成后端/SSE 故障（2026-10-19 实际发生过：模板字符串内的注释含反引号 ⇒ 提前闭合）。本仓无 Node，故用 esprima（纯 Python ECMAScript 解析器）做真语法检查，不可用时降级为词法兜底并**明确标注降级**（词法兜底不支持嵌套模板，实测会误报）。只读、不改任何文件。",
+      "produced_by": "内联 JS 语法体检（防前端语法错误导致全站静默瘫痪）"
+    },
+    {
+      "category": "independent",
+      "entry": "python -m tools.mermaid_lint [--file README.md]",
+      "file": "mermaid_lint.py",
+      "independent_why": "用户报 README 的 ER/数据流/链路图全部显示 Unable to render rich display。本机无 node（跑不了 mermaid-cli）、mermaid.ink 在线渲染接口在网络策略下不可达 ⇒ 无法用真实解析器定位，只能把图收敛到跨版本稳定的保守方言（禁 <br/>、禁引号、禁分号与 & 串联、禁非矩形外形、classDef 单值…），并用本工具做静态机器校验，防止生成器或手写再次漂移。只读 README，不改任何数据。",
+      "produced_by": "README 的 Mermaid 图保守方言静态检查（离线，可进 CI）"
+    },
+    {
+      "category": "independent",
+      "entry": "python -m tools.migrate_local_path [--file F] [--execute]",
+      "file": "migrate_local_path.py",
+      "independent_why": "采集器的 local_path 由 relpath(文件, REPO_ROOT) 生成；历史上 REPO_ROOT 只从采集器目录上溯一级（得到 collectors，而注释写 regulatory_scrapers）⇒ 落库成`../data/docs/…` 这种带 .. 的脏路径，只在 cwd=collectors 时解析正确，下游按仓根拼接就找不到文件（实测 pbc 13 条里 10 条是脏的）。修了代码只能让**新写入**变干净，历史数据仍需迁移。安全设计：只改一个字段、只替换已知脏前缀（不猜任意 ..）、每条先验证新路径拼仓根后文件真实存在（验证不过则原样保留并报告）、备份后用原子替换、默认 dry-run 须 --execute 才写。只写 raw，不碰其他产物。",
+      "produced_by": "把 raw 记录里带 `..` 的脏 local_path 迁到仓根基准（dry-run 优先）"
+    },
+    {
       "category": "tool",
       "file": "modern_features_report.py",
       "purpose": "现代特性现状与迁移影响面报告（方案 §13.9）：受控域**实际形态**统计（实测为 frozenset/tuple 字面量而非 Enum 类 ⇒ StrEnum 迁移不适用）+ match/PEP604/注解现状基线，落 reports/refactors/modern_features_report.json"
@@ -229,6 +292,13 @@
       "file": "reconcile_original_paths.py",
       "independent": true,
       "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
+    },
+    {
+      "category": "independent",
+      "entry": "python -m tools.record_cassettes --rebuild-manifest",
+      "file": "record_cassettes.py",
+      "independent_why": "夹具 manifest 的唯一重建入口（judge J13 要求的 --rebuild-manifest 落点）。录制真实抓取亦经此（后续 --record 开关），故按 tools 既有形态登记为独立工具。",
+      "produced_by": "TD-1 夹具层维护（manifest 重建/夹具生成）"
     },
     {
       "category": "tool",
@@ -274,6 +344,13 @@
       "step": "semantic:search"
     },
     {
+      "category": "independent",
+      "entry": "python -m tools.signal_availability",
+      "file": "signal_availability.py",
+      "independent_why": "五阶段审查发现『告警从未真正送达』（reports/_alerts 目录不存在），即以告警为输入的诊断能力建立在未被验证的通道上。本工具实测各信号源（治理库各表行数与最后活动 / step_logs / _alerts）+ notify 通道可达性探针（写探针即删，不触发真实告警），产出 reports/diagnosis/signal_availability.json。",
+      "produced_by": "诊断能力第 0 波：信号源可用性实测"
+    },
+    {
       "category": "tool",
       "entry": "P1 语义模型冒烟自检（真实初始化 + 真实调用）",
       "file": "smoke_semantic_models.py",
@@ -286,6 +363,27 @@
       "file": "split_internal_nonpolicy.py",
       "independent": true,
       "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
+    },
+    {
+      "category": "independent",
+      "entry": "python -m tools.split_precheck <file.py> --move <名,...> | --survey",
+      "file": "split_precheck.py",
+      "independent_why": "只读静态检查待拆文件的依赖闭包：①每个待迁块缺失的 stdlib/仓内/三方 import②模块级引导块与 logger 与路径常量（**AST 闭包捕获不到**，E2/E4 的实际故障类别）③try-import 别名（赋值在 try 内）④跨层共享常量（复制两份必漏改其一）。已用已拆文件的备份验证能复现真实故障（E4 的 lxml 静默降级、E2 的 LOG 与 _unified_doc_number）。不代劳判断，只出人工检查清单。",
+      "produced_by": "拆分前置检查（把 E1-E4 的失败模式静态化）"
+    },
+    {
+      "category": "independent",
+      "entry": "python -m tools.step_duration_baseline --runs 30",
+      "file": "step_duration_baseline.py",
+      "independent_why": "把「某步变慢了」从人肉对比变成可复算的判读：读治理库 run_step（只读），按步骤产出 p50/p90/max/last + skip_rate + 执行时间窗，落data/run_state/step_duration_baseline.json。口径两条关键：① dry-run 已排除（is_dry_run 列判据）② resume 跳过样本不计入耗时分布（否则 p50 被 0 压平）。消费方 = 确认台 P1 与未来的 step_triage。",
+      "produced_by": "步骤耗时基线采集（§13.8 性能基线）"
+    },
+    {
+      "category": "independent",
+      "entry": "python -m tools.step_triage [list-failures|<step> --run-id --json]",
+      "file": "step_triage.py",
+      "independent_why": "读治理库 run_step + 步骤日志 + 产出物水位 + 耗时基线，为**失败步骤**聚合证据包。经 interfaces/topology_api 做**双层标识匹配**（台账实例名 ↔ 声明模板名）。**不做自动根因断言**（无记录数列 ⇒ 穿透深度无法量化，断言会产出臆测结论），只给「怀疑排序 + 依据」并**显式列出证据缺口**。",
+      "produced_by": "步级失败取证（诊断第 2 波）"
     },
     {
       "category": "tool",
@@ -301,83 +399,6 @@
     },
     {
       "category": "independent",
-      "entry": "python -m tools.record_cassettes --rebuild-manifest",
-      "file": "record_cassettes.py",
-      "independent_why": "夹具 manifest 的唯一重建入口（judge J13 要求的 --rebuild-manifest 落点）。录制真实抓取亦经此（后续 --record 开关），故按 tools 既有形态登记为独立工具。",
-      "produced_by": "TD-1 夹具层维护（manifest 重建/夹具生成）"
-    },
-    {
-      "category": "independent",
-      "entry": "python -m tools.worklist_triage scan|bundle|apply",
-      "file": "worklist_triage.py",
-      "independent_why": "治理决策（2026-10-16）641 条 open 待办分批裁决的执行入口。写路径唯一（governance_store.worklist_resolve，自动落 audit_log）；默认只读，执行需 --execute + --by + --reason；机器只判『机器能判的』（summary 汇总项 / payload 自证闭环），业务判断批次一律拒绝代劳。",
-      "produced_by": "人工处置分批裁决（scan/bundle/apply）"
-    },
-    {
-      "category": "independent",
-      "entry": "python -m tools.signal_availability",
-      "file": "signal_availability.py",
-      "independent_why": "五阶段审查发现『告警从未真正送达』（reports/_alerts 目录不存在），即以告警为输入的诊断能力建立在未被验证的通道上。本工具实测各信号源（治理库各表行数与最后活动 / step_logs / _alerts）+ notify 通道可达性探针（写探针即删，不触发真实告警），产出 reports/diagnosis/signal_availability.json。",
-      "produced_by": "诊断能力第 0 波：信号源可用性实测"
-    },
-    {
-      "category": "independent",
-      "entry": "python -m tools.step_duration_baseline --runs 30",
-      "file": "step_duration_baseline.py",
-      "independent_why": "把「某步变慢了」从人肉对比变成可复算的判读：读治理库 run_step（只读），按步骤产出 p50/p90/max/last + skip_rate + 执行时间窗，落data/run_state/step_duration_baseline.json。口径两条关键：① dry-run 已排除（is_dry_run 列判据）② resume 跳过样本不计入耗时分布（否则 p50 被 0 压平）。消费方 = 确认台 P1 与未来的 step_triage。",
-      "produced_by": "步骤耗时基线采集（§13.8 性能基线）"
-    },
-    {
-      "category": "independent",
-      "entry": "python -m tools.gate_triage [list|<gate> --run-id <id> --json]",
-      "file": "gate_triage.py",
-      "independent_why": "读治理库 gate_result（只读）把门禁 FAIL 归因成「产物/结构/口径/环境/复核」五类并给出重跑或改码建议。类别按**门禁身份注册表**判定（不猜problems 文本——文本会变、身份稳定）；三条硬约束：①门禁名必须有来源（ALL_GATES ∪ 台账历史）②无 problems 证据**不给类别** ③重跑命令只对 StepSpec.produces 声明过的产物给（produced_by 是模块路径，不能当 --from 用）。",
-      "produced_by": "门禁失败归因（诊断第 1 波）"
-    },
-    {
-      "category": "independent",
-      "entry": "python -m tools.step_triage [list-failures|<step> --run-id --json]",
-      "file": "step_triage.py",
-      "independent_why": "读治理库 run_step + 步骤日志 + 产出物水位 + 耗时基线，为**失败步骤**聚合证据包。经 interfaces/topology_api 做**双层标识匹配**（台账实例名 ↔ 声明模板名）。**不做自动根因断言**（无记录数列 ⇒ 穿透深度无法量化，断言会产出臆测结论），只给「怀疑排序 + 依据」并**显式列出证据缺口**。",
-      "produced_by": "步级失败取证（诊断第 2 波）"
-    },
-    {
-      "category": "independent",
-      "entry": "python -m tools.split_precheck <file.py> --move <名,...> | --survey",
-      "file": "split_precheck.py",
-      "independent_why": "只读静态检查待拆文件的依赖闭包：①每个待迁块缺失的 stdlib/仓内/三方 import②模块级引导块与 logger 与路径常量（**AST 闭包捕获不到**，E2/E4 的实际故障类别）③try-import 别名（赋值在 try 内）④跨层共享常量（复制两份必漏改其一）。已用已拆文件的备份验证能复现真实故障（E4 的 lxml 静默降级、E2 的 LOG 与 _unified_doc_number）。不代劳判断，只出人工检查清单。",
-      "produced_by": "拆分前置检查（把 E1-E4 的失败模式静态化）"
-    },
-    {
-      "category": "independent",
-      "entry": "python -m tools.backlog_governance growth | selfclosed | apply [--execute --by --reason]",
-      "file": "backlog_governance.py",
-      "independent_why": "三个子命令：growth（积压增长监控，只读，超阈值返回码 2 供 notify 消费）、selfclosed（机器判定「自证闭环」项，只读）、apply（受控执行，默认 dry-run）。机器判定边界保守：subject 含闭环词 + 无否定语境 + payload 无待决键，三者全满足才判（宁可漏判不可错判——错判不可逆）。写口一律走 governance_store.worklist_resolve（C1 审计在其内）。",
-      "produced_by": "诊断第 3 波：待办积压治理回路（增长监控 + 自证闭环判定）"
-    },
-    {
-      "category": "independent",
-      "entry": "python -m tools.js_syntax_lint [--json] [path]",
-      "file": "js_syntax_lint.py",
-      "independent_why": "web/assets/index.html 的内联 <script> 一旦有语法错误，**整段脚本不执行** ⇒ 页面停在 HTML 初始态（加载中… + SSE 连接中…），而服务端 HTTP 200、API 全绿、SSE 有 hello/ping ⇒ 极易被误判成后端/SSE 故障（2026-10-19 实际发生过：模板字符串内的注释含反引号 ⇒ 提前闭合）。本仓无 Node，故用 esprima（纯 Python ECMAScript 解析器）做真语法检查，不可用时降级为词法兜底并**明确标注降级**（词法兜底不支持嵌套模板，实测会误报）。只读、不改任何文件。",
-      "produced_by": "内联 JS 语法体检（防前端语法错误导致全站静默瘫痪）"
-    },
-    {
-      "category": "independent",
-      "entry": "python -m tools.business_review_list [--out-dir D] [--json]",
-      "file": "business_review_list.py",
-      "independent_why": "待办里 relevance_boundary（相关性边界）与 internal_unaligned（内部制度未对齐）机器不可判，需业务口径。直接甩 277 条给业务等于没交付——本工具**先聚类再给裁定问题**：relevance_boundary 按其 payload 的 hits（四组关键词命中结果，空数组=未命中）聚成「命中模式」，同模式的相关性不足原因同类 ⇒ 可按组批量裁定；internal_unaligned 无机器维度，按标题关键词聚类并**明确标注「仅供阅读、非判定依据」**。输出 Markdown，每条列示名称/文号/访问地址（含空值可辨标注）。只读、不改任何数据。",
-      "produced_by": "生成业务裁定清单（按可裁定维度聚类，附判定依据与逐条字段）"
-    },
-    {
-      "category": "independent",
-      "entry": "python -m tools.migrate_local_path [--file F] [--execute]",
-      "file": "migrate_local_path.py",
-      "independent_why": "采集器的 local_path 由 relpath(文件, REPO_ROOT) 生成；历史上 REPO_ROOT 只从采集器目录上溯一级（得到 collectors，而注释写 regulatory_scrapers）⇒ 落库成`../data/docs/…` 这种带 .. 的脏路径，只在 cwd=collectors 时解析正确，下游按仓根拼接就找不到文件（实测 pbc 13 条里 10 条是脏的）。修了代码只能让**新写入**变干净，历史数据仍需迁移。安全设计：只改一个字段、只替换已知脏前缀（不猜任意 ..）、每条先验证新路径拼仓根后文件真实存在（验证不过则原样保留并报告）、备份后用原子替换、默认 dry-run 须 --execute 才写。只写 raw，不碰其他产物。",
-      "produced_by": "把 raw 记录里带 `..` 的脏 local_path 迁到仓根基准（dry-run 优先）"
-    },
-    {
-      "category": "independent",
       "entry": "python -m tools.workbench_service install|uninstall|status|verify",
       "file": "workbench_service.py",
       "independent_why": "用户要求「配置为开机自启动，并说明启动方式与验证方式」。若只把做法写在文档里，三个问题答不了：怎么验证真装上了（status）、装错了怎么撤（uninstall）、怎么保证只有一个实例（serve --single-instance）。故做成可执行工具。**方案选型**：计划任务 ONLOGON（用户级、**零提权**、可查询/可卸载、可延迟）优于启动文件夹（无查询/卸载）与 Windows 服务（需管理员 + 第三方 nssm）。可靠性三件套：单实例锁（计划任务每次登录都触发，无保护会起多进程互相踩踏）、日志落盘（pythonw 无控制台，print 全丢 ⇒ 改 logger + RotatingFileHandler）、pythonw 无窗口。只操作本用户自己的计划任务与 data/state/ 下文件，不碰数据库、不改仓内代码。",
@@ -385,24 +406,10 @@
     },
     {
       "category": "independent",
-      "entry": "python -m tools.mermaid_lint [--file README.md]",
-      "file": "mermaid_lint.py",
-      "independent_why": "用户报 README 的 ER/数据流/链路图全部显示 Unable to render rich display。本机无 node（跑不了 mermaid-cli）、mermaid.ink 在线渲染接口在网络策略下不可达 ⇒ 无法用真实解析器定位，只能把图收敛到跨版本稳定的保守方言（禁 <br/>、禁引号、禁分号与 & 串联、禁非矩形外形、classDef 单值…），并用本工具做静态机器校验，防止生成器或手写再次漂移。只读 README，不改任何数据。",
-      "produced_by": "README 的 Mermaid 图保守方言静态检查（离线，可进 CI）"
-    },
-    {
-      "category": "independent",
-      "entry": "python -m tools.dead_code_audit [--only A|B|C|D] [--json out.json]",
-      "file": "dead_code_audit.py",
-      "independent_why": "用户要求排查「已明确废弃删除的代码是否仍留在脚本内」与「是否存在只增不减的冗余」。四类判据全部静态可复跑；B 类（只定义不引用）已排除 pytest 自动收集、已允许模块.函数() 的点号访问、已补扫根目录 .py（否则 bootstrap/paths 里的使用会被漏掉，产出假死代码）。**只报告不改代码**：删除必须人工判断（动态调用无法静态判定）。实测本仓：真死代码 18 项（已删并清零）、死分支 0、大段注释代码 0；40 项「可疑命名」经人工核验均为正当业务命名（ipn_old / enrich_legacy / self._old）。",
-      "produced_by": "废弃/冗余代码审计：废弃标记 / 只定义不引用 / 只增不减痕迹 / 大段注释代码"
-    },
-    {
-      "category": "independent",
-      "entry": "python -m tools.backfill_extract_version [--apply] [--file mof_laws.jsonl]",
-      "file": "backfill_extract_version.py",
-      "independent_why": "collect:mof 的耗时修复依赖「本地副本未变 + extract_version 一致」才复用抽取结果；存量 raw 的 246 个附件没有该字段 ⇒ 升级后第一次运行仍会全量重抽（小时级）。本工具把既有抽取结果盖上官方的 EXTRACT_VERSION，让复用从下一次运行起生效。安全依据：复用等于沿用已有产物（数据本来就在，下游一直按它工作），盖章不引入新的不准确，只是把「要不要重抽」的决定权收敛为「抽取器升级时显式做一次」。默认 dry-run，加 --apply 才写且自动备份。",
-      "produced_by": "给历史附件盖抽取版本号（一次性迁移，默认 dry-run）"
+      "entry": "python -m tools.worklist_triage scan|bundle|apply",
+      "file": "worklist_triage.py",
+      "independent_why": "治理决策（2026-10-16）641 条 open 待办分批裁决的执行入口。写路径唯一（governance_store.worklist_resolve，自动落 audit_log）；默认只读，执行需 --execute + --by + --reason；机器只判『机器能判的』（summary 汇总项 / payload 自证闭环），业务判断批次一律拒绝代劳。",
+      "produced_by": "人工处置分批裁决（scan/bundle/apply）"
     }
   ],
   "generated_at": "2026-09-30",

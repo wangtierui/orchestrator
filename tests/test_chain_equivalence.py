@@ -121,11 +121,14 @@ def test_dry_run_argv_sequence_matches_golden():
     )
 
 
-def test_step_order_derived_from_layers_is_32():
-    """派生 STEP_ORDER = 32 项且与 plan 覆盖一致（结构自洽，防 plan 漏段/重段）。
+def test_step_order_derived_from_layers_is_33():
+    """派生 STEP_ORDER = 33 项且与 plan 覆盖一致（结构自洽，防 plan 漏段/重段）。
 
-    W4（§6.4）：31 → 32（`semantic:search` 插入 analysis:gen 之后——语义检索视图
-    的索引对象含 17 项交付物，须取 6.8 终态再嵌入）。
+    演进记录（**每次改步数都必须在这里留一行**，否则后人只能靠 diff 猜）：
+      · W4（§6.4）：31 → 32（`semantic:search` 插在 analysis:gen 之后——语义检索
+        视图的索引对象含 17 项交付物，须取 6.8 终态再嵌入）；
+      · 第一百一十三批：32 → **33**（`relations:ext` 紧跟 `relations:gen`——外部法规
+        权威表是关系事实的派生视图，必须与同批事实一起产出）。
     """
     # ⚠️ 必须用裸名（conftest 的 bootstrap(include_tools=True) 已把 tools/ 注入
     # sys.path）——`from tools import ...` 会让 mypy 全仓走查把同一文件同时登记为
@@ -134,7 +137,7 @@ def test_step_order_derived_from_layers_is_32():
     import run_production_refresh as rpr
 
     order = rpr.STEP_ORDER
-    assert len(order) == 32, len(order)
+    assert len(order) == 33, len(order)
     plan_names = [n for _layer, names in rpr.LAYER_EXEC_PLAN for n in names]
     assert plan_names == list(order), "LAYER_EXEC_PLAN 与派生 STEP_ORDER 不一致"
     # 每个 StepSpec 恰好出现在一个 plan 段

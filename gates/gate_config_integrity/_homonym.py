@@ -30,7 +30,7 @@ SKIP_DIRS = {".git", "__pycache__", "data", "external", "graphify-out", "node_mo
 def _homonym_names(root: str) -> set[str]:
     """仓内出现 >1 次的模块名（不含 `__init__`）。"""
     by_name: dict[str, int] = defaultdict(int)
-    for dirpath, dirnames, filenames in os.walk(root):
+    for _dirpath, dirnames, filenames in os.walk(root):
         dirnames[:] = [d for d in dirnames if d not in SKIP_DIRS]
         for fn in filenames:
             if fn.endswith(".py") and fn != "__init__.py":

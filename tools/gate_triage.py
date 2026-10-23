@@ -396,7 +396,8 @@ def render(t: Triage) -> str:
             L.append(f"    {i}. {p.text}")
             if p.files:
                 loc = ", ".join(f"{f}:{ln}" if ln else f for f, ln in
-                                zip(p.files, list(p.lines) + [None] * len(p.files)))
+                                zip(p.files, list(p.lines) + [None] * len(p.files),
+                                    strict=False))
                 L.append(f"       位置：{loc}")
     else:
         L.append("\n  判据证据：（无 problems）")

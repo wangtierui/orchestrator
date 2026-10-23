@@ -238,13 +238,55 @@ def throttled(ip: str) -> int:
 # --------------------------------------------------------------------------- #
 # 统一入口
 # --------------------------------------------------------------------------- #
+def local_user() -> str:
+    """本机操作系统登录账号（回环自动认证的身份来源）。
+
+    为什么这是**可信**身份而不是"自报"：回环请求只能由本机的进程发起，而本机的
+    用户边界就是 OS 账号边界 —— 能连 127.0.0.1 的人本来就能读同一个数据目录。
+    因此回环免口令不降低安全强度，只省掉一次粘贴口令（原先内网开放后连本机
+    都要登录，用户实际报障："两个地址都显示未认证，什么都看不到"）。
+    """
+    for key in ("USERNAME", "USER", "LOGNAME"):
+        v = os.environ.get(key)
+        if v:
+            return v.strip()[:64]
+    return "local"
+
+
+def _is_loopback(ip: str) -> bool:
+    try:
+        import ipaddress
+
+        s = (ip or "").strip()
+        if s.lower().startswith("::ffff:"):
+            s = s[7:]
+        return ipaddress.ip_address(s).is_loopback
+    except ValueError:
+        return False
+
+
+def _looks_proxied(h: dict) -> bool:
+    """请求是否**看起来经过代理**（用于阻止"同机反向代理"白拿回环身份）。
+
+    只判"这些头是否存在"，不采信其内容 —— 内容一律不信（可伪造），
+    存在的意义只是"这个连接不是浏览器直连"。
+    """
+    return any(k in h for k in ("x-forwarded-for", "x-real-ip", "forwarded"))
+
+
 def identity(*, cookies: dict, client_ip: str, headers: dict,
              mode: str, trusted_proxies: tuple[str, ...] = (),
              lan: bool = False) -> dict:
     """解析请求身份 → `{"user","src","authenticated","mode"}`。
 
-    `src` 取值：`proxy`（可信代理注入）/ `session`（口令或账号登录）/ `none`。
-    优先级：可信代理 > 会话 cookie。**不读** `X-Forwarded-User` 之类的野生头。
+    `src` 取值：`proxy`（可信代理注入）/ `session`（口令或账号登录）/
+    `local`（回环自动身份）/ `none`。
+
+    优先级：可信代理 > 会话 cookie > **回环自动身份**（仅 `mode=auto`）。
+
+    ⚠️ 回环自动身份有**一个必须防的坑**：若同机跑反向代理并转发到 127.0.0.1，
+    外部用户也会被看成回环。故要求"请求里没有任何代理痕迹头"才自动认证；
+    真要用同机代理，请显式 `--auth token|basic`（README §6.9）。
     """
     h = {str(k).lower(): v for k, v in (headers or {}).items()}
     # ① 可信代理：只有**来自受信 IP** 时才认 `X-Remote-User`
@@ -257,6 +299,10 @@ def identity(*, cookies: dict, client_ip: str, headers: dict,
     ses = parse_session((cookies or {}).get(COOKIE_SESS, ""))
     if ses:
         return {"user": ses["user"], "src": ses["src"], "authenticated": True,
+                "mode": mode}
+    # ③ 回环自动身份（mode=auto）：本机 == 已用 OS 账号登录
+    if mode == "auto" and _is_loopback(client_ip) and not _looks_proxied(h):
+        return {"user": local_user(), "src": "local", "authenticated": True,
                 "mode": mode}
     return {"user": "", "src": "none", "authenticated": False, "mode": mode}
 

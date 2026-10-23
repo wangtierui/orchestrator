@@ -145,11 +145,25 @@ class Handler(BaseHTTPRequestHandler):
             "identity_user": ident.get("user", ""),
             "identity_src": ident.get("src", "none"),
             "authenticated": bool(ident.get("authenticated")),
+            # `api.handle` 需要它来区分"要不要登录"（health 公开段）
+            "auth_mode": str(getattr(self.server, "auth_mode", "off") or "off"),
         }
 
     # -- 认证 ------------------------------------------------------------------ #
     def _auth_mode(self) -> str:
         return str(getattr(self.server, "auth_mode", "off") or "off")
+
+    def _auth_kind(self) -> str:
+        """**实际校验方式**：`auto` 在远端等同 `token`。
+
+        为什么要单独一个函数（2026-10-23 真实故障）：`_auth_login` 原来只判
+        `mode == "token"`，把默认模式改成 `auto` 之后没有任何分支命中 ⇒
+        **口令正确也报"账号或口令错误"**，表现为"两个地址都进不去"。
+        认证模式是"策略"，校验方式是"实现" —— 两者必须解耦，否则每加一种模式
+        都会漏掉某个分支。
+        """
+        m = self._auth_mode()
+        return "token" if m == "auto" else m
 
     def _identify(self) -> dict:
         from web import auth as _auth
@@ -177,7 +191,12 @@ class Handler(BaseHTTPRequestHandler):
                            "mode": "off"}
             return True
         ident = self._identify()
-        if path in _AUTH_ROUTES:
+        # `/api/health` 也放行 —— 它是**登录前唯一可用的状态探针**：
+        #   ① 页面要知道"该显示登录卡片还是数据"（mode/authenticated/need_login）；
+        #   ② `tools/workbench_service status` 要知道服务是否活着。
+        # 安全上不泄露内情：`api.handle` 在未认证时**只回公开子集**
+        # （不含 gates 数、本机专属路由清单、client_ip 等），见 web/api.py。
+        if path in _AUTH_ROUTES or path == "/api/health":
             return True
         if not path.startswith("/api/"):
             return True
@@ -228,7 +247,7 @@ class Handler(BaseHTTPRequestHandler):
 
         user = str(body.get("user") or "").strip()
         pw = str(body.get("password") or "")
-        mode = self._auth_mode()
+        mode = self._auth_kind()      # auto → token（回环已自动认证，不会走到这里）
         ok = False
         shown = ""
         if mode == "token":
@@ -600,13 +619,21 @@ def serve(host: str = DEFAULT_HOST, port: int = DEFAULT_PORT, *,
                  " ⇒ 本次不再启动（单实例模式）。")
             return 0
 
-    # ---- 认证模式（对内网开放 ⇒ 不允许"无认证"）------------------------------ #
-    # 规则：显式 `--auth` 优先；否则 `--lan` 自动升级为 token（否则就是"谁都能读"）。
+    # ---- 认证模式 ------------------------------------------------------------- #
+    # 取值：`auto`（默认）| `off` | `token` | `basic`。
+    #
+    # `auto` 的语义（2026-10-23 第一百一十三批，修"两个地址都进不去"）：
+    #   · **回环**（127.0.0.1）⇒ 自动认证为**本机 OS 账号**（`src=local`），不弹登录；
+    #   · **内网** ⇒ 等同 `token`（必须登录）。
+    # 为什么这样定：原来 `--lan` 一律升级成 `token`，连本机也要粘贴口令，而回环
+    # 访问者本来就有同等的文件读权限 —— 加这道门槛不增加安全性，只制造"打不开"。
+    # 反过来，内网匿名可读是**真的**风险，必须保留认证。
     _mode = (auth_mode or "").strip().lower()
-    if _mode not in ("off", "token", "basic"):
-        _mode = "token" if host not in _LOOPBACK else "off"
+    if _mode not in ("auto", "off", "token", "basic"):
+        _mode = "auto"
     if host not in _LOOPBACK and _mode == "off":
-        _mode = "token"
+        # 对外绑定绝不允许无认证（`auto` 在远端等价于 token）
+        _mode = "auto"
     use_tls = bool(tls_cert and tls_key)
 
     try:
@@ -636,9 +663,15 @@ def serve(host: str = DEFAULT_HOST, port: int = DEFAULT_PORT, *,
         _log("[serve] 认证：off（仅回环，无鉴权）；Ctrl-C 退出。")
     else:
         _log(f"[serve] 认证：{_mode}；Ctrl-C 退出。")
-        if _mode == "token":
+        # ⚠️ `auto` 必须与 `token` 一起打印口令（2026-10-23 真实故障）：
+        # 原判断只写了 `_mode == "token"`，而新默认是 `auto` ⇒ 内网同事拿不到口令，
+        # 页面只剩一张"请输入共享口令"的卡片，而日志里根本没有那串口令。
+        if _mode in ("token", "auto"):
             _log(f"[serve] 内网共享口令：{auth.access_token()}"
                  "（文件 data/state/console_token.txt；--auth-rotate 可更换）")
+            if _mode == "auto":
+                _log("[serve] 本机（127.0.0.1）已自动认证为当前 Windows 账号，"
+                     "**无需口令**；内网访问需上面的口令")
         elif _mode == "basic":
             users = auth.load_users()
             _log(f"[serve] 账号模式：已配置 {len(users)} 个账号"
@@ -686,7 +719,7 @@ def main(argv: list[str] | None = None) -> int:
                     help="单实例模式：已有实例在跑则本次直接退出（幂等）")
     # ---- 认证（2026-10-23）：对内网开放时**不允许无认证** -------------------- #
     ap.add_argument("--auth", default="",
-                    choices=["", "off", "token", "basic"],
+                    choices=["", "auto", "off", "token", "basic"],
                     help="认证方式：off（仅回环）/ token（共享口令）/ basic（账号）；"
                          "缺省时 --lan 自动用 token")
     ap.add_argument("--auth-rotate", action="store_true",

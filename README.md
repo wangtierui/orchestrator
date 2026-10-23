@@ -272,7 +272,7 @@ flowchart TB
     L1ingest[L1_ingest · 3 步 · 主链]
     L2transform[L2_transform · 4 步 · 主链]
     L9sync[L9_sync · 4 步 · 条件]
-    L3knowledge[L3_knowledge · 4 步 · 主链]
+    L3knowledge[L3_knowledge · 5 步 · 主链]
     L8enhancement[L8_enhancement · 3 步 · 增强]
     L6governance[L6_governance · 3 步 · 旁路]
     L4internal[L4_internal · 1 步 · 主链]
@@ -281,7 +281,7 @@ flowchart TB
     L10gate[L10_gate · 1 步 · 门禁]
   end
   subgraph ART[产物层（GOV_ARTIFACTS 血缘声明）]
-    ARTN[19 类产物键 · analysis:manifest … wiki:sync]
+    ARTN[20 类产物键 · analysis:manifest … wiki:sync]
   end
   subgraph GOV[治理层（governance.db · 旁路观测）]
     WL[待办队列 worklist · 12 类 kind]
@@ -780,33 +780,57 @@ python -m tools.workbench_service install --local    # 退回仅本机
 4. **代理**：浏览器若走公司代理，需把该地址加入**代理例外**（否则请求被代理拦掉）。
 
 
-### 6.9 认证（内网开放后**不再允许匿名读取**）
+### 6.9 认证（本机免口令 / 内网需登录）
 
 ```bash
-python cli.py serve --lan --auth token        # 内网 + 共享口令（--lan 缺省即此模式）
-python cli.py serve --lan --auth basic        # 内网 + 每人一账号（config/console_users.yaml）
-python -m web.auth token --rotate             # 换共享口令
-python -m web.auth adduser --user zhangsan    # 加账号（交互输入口令，存 PBKDF2 哈希）
-python cli.py serve --lan --auth basic --tls-cert c.pem --tls-key k.pem   # 加 HTTPS
+python cli.py serve --lan                    # 默认 --auth auto（推荐）
+python cli.py serve --lan --auth token       # 严格：本机也要口令（同机反代时用）
+python cli.py serve --lan --auth basic       # 每人一账号（需先 adduser，配 TLS 更好）
+python -m web.auth token --rotate            # 换共享口令
+python -m web.auth adduser --user zhangsan   # 加账号（交互输入口令，存 PBKDF2 哈希）
 ```
 
-| 模式 | 适用 | 说明 |
+| 来源 | 身份 | 说明 |
 |---|---|---|
-| `off` | 仅回环 | 默认；`--lan` 时**自动升级**为 `token`（不允许「对外且无认证」） |
-| `token` | 内网共享口令 | 口令在启动日志与 `data/state/console_token.txt`；输入一次换 8 小时会话 |
-| `basic` | 每人一账号 | 审计到人；**明文 HTTP 会暴露口令**，请配 TLS 或仅可信网段 |
+| 回环 `127.0.0.1` | **本机 Windows 账号**（`src=local`） | 免口令。回环访问者本就有同等文件权限，加门槛不增安全 |
+| 内网 | 共享口令 / 账号口令 | 会话 8 小时；口令在启动日志与 `data/state/console_token.txt` |
 
-**集成认证（推荐）**：`--trust-proxy --trusted-proxies <代理IP>`
-⇒ 只有**来自受信 IP** 的 `X-Remote-User` 被采信，请求直接视为已登录
-（留言板随即**不再要人填域账号**，`account_src=proxy`）。**绝不**采信
-`X-Forwarded-User` 之类的野生头。
+**三条防误用**：① 带任何代理痕迹头（`X-Forwarded-For`/`X-Real-IP`/`Forwarded`）的
+回环请求**不自动认证**（防同机反代把外部用户当本机）；② 同机反代请显式
+`--auth token|basic`；③ 对外绑定**永远不允许** `off`。
 
-**安全要点**（详见 `web/auth.py` 注释）：会话是无状态 HMAC cookie（密钥落盘，
-重启不掉线）｜CSRF 双重提交（`wb_csrf` **非 HttpOnly** + `X-CSRF` 头）｜
-登录失败限频 10 次/10 分钟｜常数时间比较｜口令只存 PBKDF2 哈希｜登录/失败/登出写审计。
+**集成认证（推荐）**：`--trust-proxy --trusted-proxies <代理IP>` ⇒ 只有受信 IP 的
+`X-Remote-User` 被采信，留言板随即**不再要人填域账号**（`account_src=proxy`）。
+**绝不**采信 `X-Forwarded-User` 之类的野生头。
 
-**排障**：`401 未认证` ⇒ 没登录或会话过期（8h）；`403 缺少 CSRF 令牌` ⇒ 页面没加载完
-就发写请求（先刷新）；`429` ⇒ 口令试错过多，等窗口过去。
+**排障**：`401 未认证` ⇒ 未登录/会话过期；`403 缺少 CSRF 令牌` ⇒ 页面未加载完就发写请求
+（先刷新）；`429` ⇒ 口令试错过多。内网打不开先查**防火墙**（见 §6.8）。
+
+### 6.10 外部法规权威表（`RFN-EXT-*`，语料外目标的独立键空间）
+
+关系事实里有一批目标**不在语料内**：国家法律（民法典/水法）、行政法规（国务院令）、
+部委规章，以及本公司制度的**历史版本**。给它们登记普通 RFN 等于宣称"已收录"——
+而库里没有原文，那是**伪造事实**。故建独立键空间：
+
+```bash
+python -m tools.build_external_authority            # 生成（链上 relations:ext 自动调用）
+python -m tools.build_external_authority --dry-run  # 只统计
+python -m tools.build_external_authority --check    # 校验编号稳定/无冲突
+```
+
+| 项 | 取值 |
+|---|---|
+| 编号 | `RFN-EXT-<12hex>` —— **与语料内 `RFN-<16hex>` 正则不相交** |
+| 键 | 文号优先（归一后），无文号用标题；**纯派生 ⇒ 可重算，跨批稳定** |
+| 纳入 | 只收 `dst_class == external`；**机关名（`organ`）不登记**（它不是文件） |
+| 产物 | `modules/regulatory_classifier/data/relations/external_authority.jsonl` + `_stat.json` |
+
+**两条纪律**：① 本表**只追加不手工编辑**（重建会覆盖，手改不可追溯）；
+② 前端必须与语料内节点**视觉可分**（虚线/点线 + 「语料外」标记），且页面明写
+"不代表库里能打开这份文件"。
+
+**指标口径**（分开报，不许合成一个更好看的数）：
+`file_resolved_ratio` = 语料内定位率；`attributed_ratio` = （实体 + 外部）/分母。
 
 ## 7. 附录与延伸阅读
 
@@ -842,7 +866,7 @@ python cli.py serve --lan --auth basic --tls-cert c.pem --tls-key k.pem   # 加 
 
 > **本节由 `tools/gen_flow_map.py` 机器生成并注入本 README**（受管块；事实源：`STEP_ORDER` + `_run` 调用点（AST）+ `config/schema/semantic_tools.json`）。**请勿手工编辑本节** —— 改链路请改源码后重跑 `python -m tools.gen_flow_map`。
 >
-> 步骤数：**32**；语义工具：**14**（生成时点实测：可用 5，未装 9）
+> 步骤数：**33**；语义工具：**14**（生成时点实测：可用 5，未装 9）
 >
 > ⚠️ 上面的「可用/未装」是**本机当次运行的探针快照**（`semantic_tools.probe` 逐个import + 模型实测，**依赖本机已装包与模型/env**），随环境漂移——**不是回归信号**，更不是接线状态：接线事实以 8.2 表「命令」列与 `config/schema/semantic_tools.json` 的`wired` 为准（结构事实，不随环境变）。
 ### 8.1 链路总览（Mermaid：**含全部接入模型节点**）
@@ -904,28 +928,29 @@ flowchart TD
 | `L2_transform` | main | 8 | `apply:{src}` | 时效核验结果回写清洗产物 | `（argv 由变量构造，完整形态见源码）` | 无核验结果可回写 → SKIP（rc=0） |
 | `L3_knowledge` | main | 9 | `classify:all` | 主题分类（_t*_base / _t*_final 派生） | `cli.py classify --all` | 断点幂等：输入未变自动跳过 |
 | `L3_knowledge` | main | 10 | `relations:gen` | 关系抽取（依据/废止，含条款级定位：窗口优先 + 跨度退路） | `cli.py relations gen` | 失败即停；必须在 cleaned 写入后、下游消费者（base:publish）之前 |
-| `L8_enhancement` | enhancement | 11 | `semantic:assist` | P1 语义增强入链调用点（嵌入 → 主题辅助裁定；只产分析视图） | `-m tools.semantic_assist --source all --limit 200` | 未启用（usage_policy.enabled=false）或嵌入链不可用 → 显式 rc=0；**绝不写事实源** |
-| `L8_enhancement` | enhancement | 12 | `docreader:extract` | docreader 入链调用点（版面解析 + 段落级定位；只产分析视图） | `-m tools.docreader_extract --limit 20` | 不可用/自检不过 → 显式 SKIP（rc=0），回退既有 6 态抽取；不替换抽取事实源（替换须先度量） |
-| `L3_knowledge` | main | 13 | `reconcile` | 清洗漂移对账（clean_drift） | `reconcile_clean_drift.py` | C2 漂移待人工 → worklist 待办，不阻断主链 |
-| `L3_knowledge` | main | 14 | `recall` | 召回复核与四门禁（clean/validity/contract/schema） | `run_retrieval_after_checks.py` | 四门禁不过即 FAIL，留人工 |
-| `L9_sync` | conditional | 15 | `inbox:drop`（超时见 triggers.yaml） | 收件箱投放（人工投递的制度文件入库） | （条件步骤；触发项 `inbox_drop`，判据见 `config/triggers.yaml`） | 投放区无新文件 → SKIP（rc=0）；产出 index/align/processed → 必须在 internal:merged 之前 |
-| `L9_sync` | conditional | 16 | `internal:update`（超时见 triggers.yaml） | 内部制度索引更新（原件同步） | （条件步骤；触发项 `internal_update`，判据见 `config/triggers.yaml`） | 原件库无未索引文件 → SKIP（rc=0） |
-| `L6_governance` | side | 17 | `governance:artifacts` | 原件注册（治理库 artifact 表） | `governance_register_artifacts.py` | N-63：此前**从未入链**（仅 docstring 自述）→ 原件 sha256/路径集长期不刷新；治理库不可用为合法降级 |
-| `L6_governance` | side | 18 | `governance:sync` | 治理库同步（run_log / gate_result / relation 等投影） | `governance_sync.py --apply` | N-64：投影后移到 internal:update **之后**（否则投影落后一轮）；库/文件摘要不一致 → 计入失败步骤（分叉判定） |
-| `L4_internal` | main | 19 | `internal:merged` | 内部制度合并视图（供条款对照与检索） | `cli.py internal merged` | 必须在 inbox:drop / internal:update（索引与原件同步）之后 |
-| `L5_delivery` | main | 20 | `reports:build` | 总览报告生成 | `build_overview_report.py` | **阻断**（失败即停；`--resume` 可从该步续跑） |
-| `L5_delivery` | main | 21 | `reports:theme` | 主题报告生成（T0–T10 × 11） | `build_theme_report.py` | **阻断**（失败即停；`--resume` 可从该步续跑） |
-| `L5_delivery` | main | 22 | `draft:clause` | 条款对照素材（drafter 视图） | `cli.py draft` | N-52：此前无任何调度导致滞后，故入链并置于 merged_view 之后 |
-| `L5_delivery` | main | 23 | `base:publish` | 底座发布（发布清单 publish_manifest） | `cli.py base publish` | 发布清单是 wiki_sync 条件触发（publish_manifest_changed）的观察对象 —— 可达性由门禁 T4 守护 |
-| `L5_delivery` | main | 24 | `analysis:gen` | 分析交付物（docs/deliverables，含 17 项 manifest sha） | `cli.py analysis gen` | **阻断**（失败即停；`--resume` 可从该步续跑） |
-| `L8_enhancement` | enhancement | 25 | `semantic:search` | 分析交付库语义检索视图（pgvector 嵌入索引 + FTS5 A/B 披露） | `-m tools.semantic_search --build --records-limit 1000` | 后端/嵌入链不可用 → rc=0 显式披露（既有 FTS5 检索路径不受影响；无度量不扩大使用面——ADR-0003 延伸） |
-| `L6_governance` | side | 26 | `watch:baseline` | 观测基线快照（source diff --record） | `cli.py source diff --record` | **旁路**：失败告警，不阻断主链 |
-| `L7_disclosure` | disclosure | 27 | `retention:plan` | 数据生命周期只读披露（dry-run + 台账） | `retention.py` | 恒 rc=0（无待归档是合法状态）；`--apply` 才是人工闸门 |
-| `L7_disclosure` | disclosure | 28 | `quarantine:triage` | 清洗隔离件分类与处置登记（零回写 → worklist 待办） | `quarantine_triage.py` | 恒 rc=0（零回写保证：不修复数据，只分类登记） |
-| `L7_disclosure` | disclosure | 29 | `semantic:preflight` | P1 语义增强启用前置披露（五道闸逐项） | `-m std_lib.common_lib.semantic_tools --preflight-report` | 恒 rc=0；未启用是合法状态（真正的启用判定用 semantic_tools --preflight 的 rc） |
-| `L7_disclosure` | disclosure | 30 | `pg:health` | 向量存储只读健康检查（pgvector / sqlite_vec 降级链披露） | `-m std_lib.common_lib.vector_store --health` | 恒 rc=0；后端不可用为合法状态 |
-| `L9_sync` | conditional | 31 | `wiki:sync`（超时见 triggers.yaml） | llm_wiki 源同步（发布件变化时执行） | （条件步骤；触发项 `wiki_sync`，判据见 `config/triggers.yaml`） | 发布件未变化 / vault 不可达 → SKIP（rc=0）；on_fail=skip_and_warn；观察对象可达性由门禁 T4 守护（D-1 修复） |
-| `L10_gate` | gate | 32 | `gates` | 全部门禁（阻断；置于链尾以终态产物为准） | `cli.py gates` | 失败即停并触发 notify(gate_fail)；P3-5 顺序解耦（原 gates 在链首） |
+| `L3_knowledge` | side | 11 | `relations:ext` | 外部法规权威表（语料外目标的独立键空间 RFN-EXT-*） | `-m tools.build_external_authority` | 旁路：本步失败不阻断主链（图谱少一屏，不影响数据正确性） |
+| `L8_enhancement` | enhancement | 12 | `semantic:assist` | P1 语义增强入链调用点（嵌入 → 主题辅助裁定；只产分析视图） | `-m tools.semantic_assist --source all --limit 200` | 未启用（usage_policy.enabled=false）或嵌入链不可用 → 显式 rc=0；**绝不写事实源** |
+| `L8_enhancement` | enhancement | 13 | `docreader:extract` | docreader 入链调用点（版面解析 + 段落级定位；只产分析视图） | `-m tools.docreader_extract --limit 20` | 不可用/自检不过 → 显式 SKIP（rc=0），回退既有 6 态抽取；不替换抽取事实源（替换须先度量） |
+| `L3_knowledge` | main | 14 | `reconcile` | 清洗漂移对账（clean_drift） | `reconcile_clean_drift.py` | C2 漂移待人工 → worklist 待办，不阻断主链 |
+| `L3_knowledge` | main | 15 | `recall` | 召回复核与四门禁（clean/validity/contract/schema） | `run_retrieval_after_checks.py` | 四门禁不过即 FAIL，留人工 |
+| `L9_sync` | conditional | 16 | `inbox:drop`（超时见 triggers.yaml） | 收件箱投放（人工投递的制度文件入库） | （条件步骤；触发项 `inbox_drop`，判据见 `config/triggers.yaml`） | 投放区无新文件 → SKIP（rc=0）；产出 index/align/processed → 必须在 internal:merged 之前 |
+| `L9_sync` | conditional | 17 | `internal:update`（超时见 triggers.yaml） | 内部制度索引更新（原件同步） | （条件步骤；触发项 `internal_update`，判据见 `config/triggers.yaml`） | 原件库无未索引文件 → SKIP（rc=0） |
+| `L6_governance` | side | 18 | `governance:artifacts` | 原件注册（治理库 artifact 表） | `governance_register_artifacts.py` | N-63：此前**从未入链**（仅 docstring 自述）→ 原件 sha256/路径集长期不刷新；治理库不可用为合法降级 |
+| `L6_governance` | side | 19 | `governance:sync` | 治理库同步（run_log / gate_result / relation 等投影） | `governance_sync.py --apply` | N-64：投影后移到 internal:update **之后**（否则投影落后一轮）；库/文件摘要不一致 → 计入失败步骤（分叉判定） |
+| `L4_internal` | main | 20 | `internal:merged` | 内部制度合并视图（供条款对照与检索） | `cli.py internal merged` | 必须在 inbox:drop / internal:update（索引与原件同步）之后 |
+| `L5_delivery` | main | 21 | `reports:build` | 总览报告生成 | `build_overview_report.py` | **阻断**（失败即停；`--resume` 可从该步续跑） |
+| `L5_delivery` | main | 22 | `reports:theme` | 主题报告生成（T0–T10 × 11） | `build_theme_report.py` | **阻断**（失败即停；`--resume` 可从该步续跑） |
+| `L5_delivery` | main | 23 | `draft:clause` | 条款对照素材（drafter 视图） | `cli.py draft` | N-52：此前无任何调度导致滞后，故入链并置于 merged_view 之后 |
+| `L5_delivery` | main | 24 | `base:publish` | 底座发布（发布清单 publish_manifest） | `cli.py base publish` | 发布清单是 wiki_sync 条件触发（publish_manifest_changed）的观察对象 —— 可达性由门禁 T4 守护 |
+| `L5_delivery` | main | 25 | `analysis:gen` | 分析交付物（docs/deliverables，含 17 项 manifest sha） | `cli.py analysis gen` | **阻断**（失败即停；`--resume` 可从该步续跑） |
+| `L8_enhancement` | enhancement | 26 | `semantic:search` | 分析交付库语义检索视图（pgvector 嵌入索引 + FTS5 A/B 披露） | `-m tools.semantic_search --build --records-limit 1000` | 后端/嵌入链不可用 → rc=0 显式披露（既有 FTS5 检索路径不受影响；无度量不扩大使用面——ADR-0003 延伸） |
+| `L6_governance` | side | 27 | `watch:baseline` | 观测基线快照（source diff --record） | `cli.py source diff --record` | **旁路**：失败告警，不阻断主链 |
+| `L7_disclosure` | disclosure | 28 | `retention:plan` | 数据生命周期只读披露（dry-run + 台账） | `retention.py` | 恒 rc=0（无待归档是合法状态）；`--apply` 才是人工闸门 |
+| `L7_disclosure` | disclosure | 29 | `quarantine:triage` | 清洗隔离件分类与处置登记（零回写 → worklist 待办） | `quarantine_triage.py` | 恒 rc=0（零回写保证：不修复数据，只分类登记） |
+| `L7_disclosure` | disclosure | 30 | `semantic:preflight` | P1 语义增强启用前置披露（五道闸逐项） | `-m std_lib.common_lib.semantic_tools --preflight-report` | 恒 rc=0；未启用是合法状态（真正的启用判定用 semantic_tools --preflight 的 rc） |
+| `L7_disclosure` | disclosure | 31 | `pg:health` | 向量存储只读健康检查（pgvector / sqlite_vec 降级链披露） | `-m std_lib.common_lib.vector_store --health` | 恒 rc=0；后端不可用为合法状态 |
+| `L9_sync` | conditional | 32 | `wiki:sync`（超时见 triggers.yaml） | llm_wiki 源同步（发布件变化时执行） | （条件步骤；触发项 `wiki_sync`，判据见 `config/triggers.yaml`） | 发布件未变化 / vault 不可达 → SKIP（rc=0）；on_fail=skip_and_warn；观察对象可达性由门禁 T4 守护（D-1 修复） |
+| `L10_gate` | gate | 33 | `gates` | 全部门禁（阻断；置于链尾以终态产物为准） | `cli.py gates` | 失败即停并触发 notify(gate_fail)；P3-5 顺序解耦（原 gates 在链首） |
 
 #### 8.2.1 编排层通性（**对所有步骤生效**）
 
@@ -1021,6 +1046,7 @@ flowchart TD
 显式 `model="…"` **覆盖 mode**（优先级最高）；分句增强由 env `REG_ORCH_SEMANTIC_SPLIT=1` 控制（**默认关**，见 §8.6 第 2 条）。
 
 <!-- END GENERATED: 全链数据流总图 -->
+
 
 
 

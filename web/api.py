@@ -85,26 +85,39 @@ def handle(method: str, path: str, qs: dict | None = None,
     ctx = ctx or {}
     scope = str(ctx.get("scope") or "local")
     if path == "/api/health":
+        authed = bool(ctx.get("authenticated", True))
+        auth_mode = str(ctx.get("auth_mode") or "off")
+        base = {
+            "ok": True,
+            # 认证态是**登录前后都要知道**的最小信息，故放在公开段
+            "auth_mode": auth_mode,
+            "authenticated": authed,
+            "need_login": auth_mode != "off" and not authed,
+            "user": str(ctx.get("identity_user") or ""),
+            "user_source": {"proxy": "网关认证", "session": "登录会话",
+                            "local": "本机账号", "none": "未认证"}.get(
+                                str(ctx.get("identity_src") or "none"), ""),
+            "identity_src": str(ctx.get("identity_src") or "none"),
+            "scope": scope,
+        }
+        if not authed:
+            # **公开子集**：未认证时只回"要不要登录"，不回内情
+            # （门禁数量、本机专属路由清单、客户端 IP 都属内部信息）。
+            # 这条分支是"health 被认证闸门放行"的配套约束 —— 放行不等于全量暴露。
+            base["hint"] = "该确认台已启用访问认证：请用共享口令或账号登录后查看数据"
+            return 200, base
         from gates import ALL_GATES
         from web.policy import LOCAL_ONLY_ROUTES, REMOTE_POST_ALLOW
 
         return 200, {
-            "ok": True,
+            **base,
             "gates_registered": len(ALL_GATES),
             "snapshot_ttl_s": S.CACHE_TTL_S,
-            # 前端据此隐藏「待办闭环」（仅本机可见的功能不该让内网误点）
-            "scope": scope,
             "client_ip": ctx.get("client_ip", ""),
+            # 前端据此隐藏「待办闭环」（仅本机可见的功能不该让内网误点）
             "local_only": scope == "local",
             "local_only_routes": list(LOCAL_ONLY_ROUTES),
             "remote_post_allow": list(REMOTE_POST_ALLOW),
-            # 认证状态（前端据此渲染登录卡片、并**隐藏留言板的域账号输入**）
-            "authenticated": bool(ctx.get("authenticated", True)),
-            "user": str(ctx.get("identity_user") or ""),
-            "user_source": {"proxy": "网关认证", "session": "登录会话",
-                            "none": "未认证"}.get(
-                                str(ctx.get("identity_src") or "none"), ""),
-            "auth_mode": str(ctx.get("auth_mode") or "off"),
         }
     if path == "/api/overview":
         return 200, S.overview()

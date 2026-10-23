@@ -364,12 +364,12 @@ class TestGlobalGraph:
 
         g = R.global_graph()
         assert g["counts"]["unresolved"] > 0, "应披露未定位条数"
-        # 2026-10-23 起改成**逐视图三桶披露**（entity/corpus/unresolved）：
-        # 只有总数对读者没意义（"2642 条没定位" 里有一部分只差一次 RFN 登记）。
+        # 逐视图**四桶**披露（2026-10-23 扩）：entity / corpus / organ / external。
+        # 只有总数对读者没意义（"2632 条没定位" 里 509 条只差一次登记、1026 条是机关名）。
         uv = g["counts"]["unresolved_by_view"]
-        assert uv and all({"entity", "corpus", "unresolved"} <= set(v)
+        assert uv and all({"entity", "corpus", "organ", "external"} <= set(v)
                           for v in uv.values()), uv
-        assert "未定位" in g["note"]
+        assert "外部法规" in g["note"] or "RFN-EXT" in g["note"]
 
     def test_hubs_sorted_by_degree(self) -> None:
         from interfaces import relations_api as R

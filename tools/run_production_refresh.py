@@ -244,6 +244,13 @@ GOV_ARTIFACTS: dict[str, dict] = {
         "stage": "2.6",
         "inputs": ["cleaned:{src}", "internal_index"],
     },
+    # 外部法规权威表（第一百一十三批）：关系事实的**派生键空间**。
+    # 输入只有 relations_index —— 它不读底座、不读网络，纯派生 ⇒ 可随时重建。
+    "external_authority": {
+        "produced_by": "tools.build_external_authority",
+        "stage": "2.6b",
+        "inputs": ["relations_index"],
+    },
     "reconcile:drift": {
         "produced_by": "regulatory_classifier.scripts.reconcile_clean_drift",
         "stage": "3",
@@ -444,6 +451,11 @@ def _artifact_paths(artifact_key: str) -> list[str]:
         "timeliness:state": [os.path.join(REVIEW, "verification_state.json")],
         "internal_index": [os.path.join(IPB_DATA, "internal_policy_index.json")],
         "relations_index": [paths.relations_index()],
+        # 外部法规权威表（第一百一十三批）：表 + 统计，两者任一变化都算产物变化
+        "external_authority": [
+            os.path.join(CLS_DATA, "relations", "external_authority.jsonl"),
+            os.path.join(CLS_DATA, "relations", "external_authority_stat.json"),
+        ],
         "reconcile:drift": [os.path.join(CLS_DATA, "rfn_drift_state.json")],
         "merged_view": [os.path.join(IPB_DATA, "merged_view.json")],
         "analysis:manifest": [os.path.join(DOCS_REPORTS, "_manifest.json")],
@@ -1032,6 +1044,15 @@ STEP_LAYERS: Final[dict[str, LayerSpec]] = {
                      depends_on=("clauses:{src}",),
                      produces=("relations_index",),
                      degrade_note="失败即停；必须在 cleaned 写入后、下游消费者（base:publish）之前"),
+            # 2026-10-23（第一百一十三批）：关系抽取之后立即重建**外部法规权威表**。
+            # 为什么必须紧跟 relations:gen：外部键空间是它的**派生视图**，同一批
+            # 关系事实必须产出同一张表；漏这一步会出现"关系里引用了 RFN-EXT-xxx，
+            # 但权威表里查不到"（编号可重算所以不会崩，但列表会是空的）。
+            StepSpec("relations:ext", "side", "warn",
+                     "外部法规权威表（语料外目标的独立键空间 RFN-EXT-*）", 300,
+                     depends_on=("relations:gen",),
+                     produces=("external_authority",),
+                     degrade_note="旁路：本步失败不阻断主链（图谱少一屏，不影响数据正确性）"),
             StepSpec("reconcile", "main", "abort", "清洗漂移对账（clean_drift）", 1200,
                      depends_on=("cleaned:{src}", "rfn_attr"),
                      produces=("reconcile:drift",),
@@ -1209,7 +1230,7 @@ LAYER_EXEC_PLAN: Final[tuple[tuple[str, tuple[str, ...]], ...]] = (
     ("L2_transform", ("clean:{src}", "relevance:{src}")),
     ("L9_sync", ("timeliness:verify",)),
     ("L2_transform", ("timeliness:consolidate", "apply:{src}")),
-    ("L3_knowledge", ("classify:all", "relations:gen")),
+    ("L3_knowledge", ("classify:all", "relations:gen", "relations:ext")),
     ("L8_enhancement", ("semantic:assist", "docreader:extract")),
     ("L3_knowledge", ("reconcile", "recall")),
     ("L9_sync", ("inbox:drop", "internal:update")),
@@ -1878,6 +1899,16 @@ def _run_chain(args) -> int:
         rc=_rc_of(report, "relations:gen"),
         paths=_artifact_paths("relations_index"),
     )
+
+    # ---- 阶段 2.6b：外部法规权威表（`relations:ext`，第一百一十三批）----
+    # 紧跟关系抽取：本表是关系事实的**派生视图**，同批事实必须产出同一张表。
+    # 侧路（warn）：失败只是"图谱少一屏"，不影响任何数据正确性 ⇒ 不阻断主链。
+    report.append(
+        _run("relations:ext",
+             [PY, "-m", "tools.build_external_authority"], timeout=300)
+    )
+    _wm("external_authority", rc=_rc_of(report, "relations:ext"),
+        paths=_artifact_paths("external_authority"))
 
     # ---- 阶段 2.7：P1 语义增强**入链**（`semantic:assist`，N-177）----
     # 动因（用户 2026-09-30 指出）：`bge_base_zh`/`text2vec`/`youtu_embedding` 的**权重与依赖早已就绪**
