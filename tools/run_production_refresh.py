@@ -2367,7 +2367,11 @@ def _run_chain(args) -> int:
     # （实测 2026-10-23 06:00 的 run：40 SKIP + gates FAIL，run_log 却写 rc=2(DATA)）。
     # 现按 config.exitcodes 的语义分层：链路性失败（FAIL/ENV）→ 1；纯数据类 → 2。
     global _ALL_SKIPPED
-    _ALL_SKIPPED = bool(report) and all(bool(r.get("skipped")) for r in report)
+    # `--dry-run` 下**所有步骤都标记为跳过**（它本来就不执行）⇒ 不能据此判"全跳过"，
+    # 也不能多打一行摘要（那会改变 dry-run 的输出指纹，`test_chain_equivalence`
+    # 的 golden 会失配 —— 实测踩到）。
+    _ALL_SKIPPED = (not _DRY_RUN) and bool(report) and all(
+        bool(r.get("skipped")) for r in report)
     if _ALL_SKIPPED:
         print("[refresh] 本轮**全部步骤跳过**（--resume：上次 rc=0 且水位无 stale/未登记）"
               f"；被 always_run 强制执行的步骤：{sorted(_FORCED_BY_ALWAYS) or '无'}",
