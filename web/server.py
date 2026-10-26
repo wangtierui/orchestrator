@@ -145,6 +145,8 @@ class Handler(BaseHTTPRequestHandler):
             "identity_user": ident.get("user", ""),
             "identity_src": ident.get("src", "none"),
             "authenticated": bool(ident.get("authenticated")),
+            # 审计级别：`user`（个人令牌/代理/账号）| `shared`（共享口令）
+            "level": str(ident.get("level") or ""),
             # `api.handle` 需要它来区分"要不要登录"（health 公开段）
             "auth_mode": str(getattr(self.server, "auth_mode", "off") or "off"),
         }
@@ -243,17 +245,19 @@ class Handler(BaseHTTPRequestHandler):
         except (UnicodeDecodeError, ValueError):
             self._json(400, {"ok": False, "error": "请求体须为 JSON"})
             return
-        import hmac as _hmac
 
         user = str(body.get("user") or "").strip()
         pw = str(body.get("password") or "")
         mode = self._auth_kind()      # auto → token（回环已自动认证，不会走到这里）
         ok = False
         shown = ""
+        level = "user"
         if mode == "token":
-            # 常数时间比较：口令错误与正确都要走同样的比较路径
-            ok = _hmac.compare_digest(pw, _auth.access_token())
-            shown = "内网共享口令用户"
+            # 个人令牌优先（可审计到人）；共享口令仍可用，但会话标 `level=shared`。
+            who, lv = _auth.identify_token(pw)
+            ok = bool(who)
+            shown = who
+            level = lv or "shared"
         elif mode == "basic":
             rec = (_auth.load_users() or {}).get(user) or {}
             ok = bool(rec) and _auth.verify_password(pw, str(rec.get("password") or ""))
@@ -266,7 +270,8 @@ class Handler(BaseHTTPRequestHandler):
                                       + ("" if allow else f"；已限频，请 {wait2} 秒后再试")})
             return
         _auth.clear_failures(ip)
-        cookie, csrf, exp = _auth.issue_session(shown or "user", src="session")
+        cookie, csrf, exp = _auth.issue_session(shown or "user", src="session",
+                                                level=level)
         secure = bool(getattr(self.server, "tls", False))
         self.send_response(200)
         self.send_header("Content-Type", "application/json; charset=utf-8")

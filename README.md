@@ -803,6 +803,18 @@ python -m web.auth adduser --user zhangsan   # 加账号（交互输入口令，
 `X-Remote-User` 被采信，留言板随即**不再要人填域账号**（`account_src=proxy`）。
 **绝不**采信 `X-Forwarded-User` 之类的野生头。
 
+**审计到人（个人令牌）**：共享口令下所有操作都记在"内网共享口令用户"名下，
+无法回答"是谁"。需要到人时给每人发令牌（只存哈希、可吊销）：
+
+```bash
+python -m web.auth token --for zhangsan --note 合规部   # 颁发（明文只显示一次）
+python -m web.auth token --list
+python -m web.auth token --revoke zhangsan
+```
+
+登录后 `/api/health` 回 `audit_level`：`user`（可审计到人）/ `shared`（共享口令，
+页面徽标会显式提示"操作无法定位到人"）。
+
 **排障**：`401 未认证` ⇒ 未登录/会话过期；`403 缺少 CSRF 令牌` ⇒ 页面未加载完就发写请求
 （先刷新）；`429` ⇒ 口令试错过多。内网打不开先查**防火墙**（见 §6.8）。
 
@@ -831,6 +843,23 @@ python -m tools.build_external_authority --check    # 校验编号稳定/无冲�
 
 **指标口径**（分开报，不许合成一个更好看的数）：
 `file_resolved_ratio` = 语料内定位率；`attributed_ratio` = （实体 + 外部）/分母。
+
+### 6.11 EAST 数据结构（数据表 / 数据项浏览）
+
+```bash
+python -m tools.build_east_structure --xlsx "<数据结构一览表（修订版）.xlsm>"   # 生成产物
+python -m tools.build_east_structure --check                                  # 校验结构
+```
+
+| 项 | 说明 |
+|---|---|
+| 产物 | `data/east/east_structure.json`（带 `source_file` / `source_sha256` / `generated_at`） |
+| 内容 | 112 张表 / 3062 个数据项 / 589 主键项 / 15 主题域（2024 版修订版口径） |
+| 页面 | 「监管统计」页内嵌：左表右项，表清单可按主题域筛选/搜索，数据项按表**懒加载** |
+| 边界 | **只做字段级查阅**：不校验报文、不生成 EAST 数据（页面已明写） |
+
+**为什么做成产物而不是页面直读 Excel**：源文件在桌面目录且 1.6MB/76 sheet，
+服务账户未必可访问、每次解析要数秒；落 JSON 后既能随仓审计版本差异，也不拖慢首屏。
 
 ## 7. 附录与延伸阅读
 
@@ -1046,6 +1075,7 @@ flowchart TD
 显式 `model="…"` **覆盖 mode**（优先级最高）；分句增强由 env `REG_ORCH_SEMANTIC_SPLIT=1` 控制（**默认关**，见 §8.6 第 2 条）。
 
 <!-- END GENERATED: 全链数据流总图 -->
+
 
 
 

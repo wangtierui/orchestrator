@@ -1,0 +1,39 @@
+{
+ "source": "nfra",
+ "stamp": "20261026",
+ "csv": "modules/regulatory_scrapers/data/cleaned/nfra_cleaned_20261026.csv",
+ "total": 1935,
+ "layer": {
+  "BOUNDARY": 588,
+  "EXCLUDE": 1047,
+  "INCLUDE": 300
+ },
+ "confidence": {
+  "BOUNDARY/低": 588,
+  "EXCLUDE/中": 1005,
+  "INCLUDE/中": 180,
+  "EXCLUDE/—": 42,
+  "INCLUDE/高": 120
+ },
+ "fin_hit": 1897,
+ "decisions_exported": [
+  "BOUNDARY",
+  "EXCLUDE",
+  "INCLUDE"
+ ],
+ "elapsed_s": 4.8,
+ "year_top": {
+  "2000": 9,
+  "2003": 15,
+  "2004": 38,
+  "2005": 343,
+  "2006": 105,
+  "2007": 124,
+  "2008": 103,
+  "2009": 108,
+  "2010": 94,
+  "2011": 58,
+  "2012": 62,
+  "2013": 63
+ }
+}

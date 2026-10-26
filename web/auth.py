@@ -57,6 +57,10 @@ SESSION_TTL_S = 8 * 3600
 FAIL_WINDOW_S = 600.0
 FAIL_MAX = 10
 
+#: 每人一枚访问令牌（YAML：users: {name: {hash, note, created_at}}）。
+#: 存**哈希**不存明文：文件在 data/state/ 下、可能被打包带走，明文即泄露。
+TOKENS_PATH = os.path.join(paths.DATA_DIR, "state", "console_tokens.yaml")
+
 COOKIE_SESS = "wb_sess"
 COOKIE_CSRF = "wb_csrf"
 
@@ -121,6 +125,92 @@ def access_token(rotate: bool = False) -> str:
     return t
 
 
+def _token_hash(token: str) -> str:
+    """令牌哈希（sha256 足够：令牌本身 16 位随机数，不需要慢哈希）。"""
+    import hashlib
+
+    return hashlib.sha256((token or "").strip().upper().encode("utf-8")).hexdigest()
+
+
+def load_user_tokens() -> dict[str, dict]:
+    """读令牌注册表（文件不存在/损坏 → 空表，不抛）。"""
+    if not os.path.exists(TOKENS_PATH):
+        return {}
+    try:
+        import yaml
+
+        with open(TOKENS_PATH, encoding="utf-8") as fh:
+            d = yaml.safe_load(fh) or {}
+        users = d.get("users") or {}
+        return {str(k): dict(v or {}) for k, v in users.items()} if isinstance(users, dict) else {}
+    except Exception:  # noqa: BLE001  注册表坏了不该让服务起不来
+        return {}
+
+
+def save_user_tokens(users: dict[str, dict]) -> None:
+    """写令牌注册表（原子替换；仅存哈希）。"""
+    import yaml
+
+    _ensure_dir()
+    tmp = TOKENS_PATH + ".tmp"
+    with open(tmp, "w", encoding="utf-8", newline="\n") as fh:
+        yaml.safe_dump({"users": users}, fh, allow_unicode=True, sort_keys=True)
+    os.replace(tmp, TOKENS_PATH)
+
+
+def issue_user_token(user: str, *, note: str = "") -> str:
+    """为 `user` 颁发（或轮换）令牌，**返回明文一次**（之后只有哈希）。"""
+    import datetime
+    import secrets
+
+    name = (user or "").strip()
+    if not name or len(name) > 64:
+        raise ValueError("用户名非法（1-64 字符）")
+    token = "-".join(secrets.token_hex(2).upper() for _ in range(4))
+    users = load_user_tokens()
+    users[name] = {
+        "hash": _token_hash(token),
+        "note": (note or "").strip(),
+        "created_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+    }
+    save_user_tokens(users)
+    return token
+
+
+def revoke_user_token(user: str) -> bool:
+    users = load_user_tokens()
+    if name_ok := (user or "").strip():
+        if name_ok in users:
+            del users[name_ok]
+            save_user_tokens(users)
+            return True
+    return False
+
+
+def identify_token(token: str) -> tuple[str, str]:
+    """令牌 → `(user, level)`。
+
+    `level`：`user`（个人令牌，可审计到人）/ `shared`（共享口令）/ `""`（不匹配）。
+    """
+    tk = (token or "").strip()
+    if not tk:
+        return "", ""
+    h = _token_hash(tk)
+    for name, rec in load_user_tokens().items():
+        if hmac_compare(str(rec.get("hash") or ""), h):
+            return name, "user"
+    if hmac_compare(tk, access_token()):
+        return "内网共享口令用户", "shared"
+    return "", ""
+
+
+def hmac_compare(a: str, b: str) -> bool:
+    """常数时间比较（口令与令牌统一走这里，避免两处实现时效/长度泄露）。"""
+    import hmac
+
+    return hmac.compare_digest((a or "").encode("utf-8"), (b or "").encode("utf-8"))
+
+
 def hash_password(pw: str, *, iterations: int = 260000) -> str:
     """PBKDF2-SHA256 → `pbkdf2_sha256$<iter>$<salt_hex>$<hash_hex>`。"""
     salt = secrets.token_bytes(16)
@@ -171,12 +261,17 @@ def _b64d(s: str) -> bytes:
     return base64.urlsafe_b64decode(s + "=" * (-len(s) % 4))
 
 
-def issue_session(user: str, src: str = "session") -> tuple[str, str, int]:
-    """签发会话 → `(cookie_value, csrf_token, expires_ts)`。"""
+def issue_session(user: str, src: str = "session", *,
+                  level: str = "user") -> tuple[str, str, int]:
+    """签发会话 → `(cookie_value, csrf_token, expires_ts)`。
+
+    `level`（审计级别）写进**签名载荷**：`user` = 能定位到人；`shared` = 共享口令。
+    放载荷里而不是查表：会话是无状态的，服务重启/多进程下都能还原这个事实。
+    """
     exp = int(time.time()) + SESSION_TTL_S
     nonce = secrets.token_hex(8)
-    payload = json.dumps({"u": user, "s": src, "e": exp, "n": nonce},
-                         separators=(",", ":"), ensure_ascii=False)
+    payload = json.dumps({"u": user, "s": src, "e": exp, "n": nonce,
+                          "l": level}, separators=(",", ":"), ensure_ascii=False)
     raw = _b64e(payload.encode("utf-8"))
     sig = hmac.new(secret(), raw.encode(), hashlib.sha256).hexdigest()[:32]
     csrf = secrets.token_hex(16)
@@ -198,7 +293,10 @@ def parse_session(cookie_value: str) -> dict | None:
     if int(d.get("e") or 0) < int(time.time()):
         return None
     return {"user": str(d.get("u") or ""), "src": str(d.get("s") or "session"),
-            "exp": int(d.get("e") or 0)}
+            "exp": int(d.get("e") or 0),
+            # 审计级别（2026-10-26）：`user` 可定位到人 / `shared` 共享口令。
+            # 旧会话没有 `l` 字段 —— 按 `user` 处理（那一版只有 basic/代理会签发会话）。
+            "level": str(d.get("l") or "user")}
 
 
 # --------------------------------------------------------------------------- #
@@ -294,17 +392,18 @@ def identity(*, cookies: dict, client_ip: str, headers: dict,
         u = (h.get("x-remote-user") or h.get("remote-user") or "").strip()
         if u:
             return {"user": u[:64], "src": "proxy", "authenticated": True,
-                    "mode": mode}
+                    "mode": mode, "level": "user"}
     # ② 会话 cookie
     ses = parse_session((cookies or {}).get(COOKIE_SESS, ""))
     if ses:
         return {"user": ses["user"], "src": ses["src"], "authenticated": True,
-                "mode": mode}
+                "mode": mode, "level": ses.get("level", "user")}
     # ③ 回环自动身份（mode=auto）：本机 == 已用 OS 账号登录
     if mode == "auto" and _is_loopback(client_ip) and not _looks_proxied(h):
         return {"user": local_user(), "src": "local", "authenticated": True,
-                "mode": mode}
-    return {"user": "", "src": "none", "authenticated": False, "mode": mode}
+                "mode": mode, "level": "user"}
+    return {"user": "", "src": "none", "authenticated": False, "mode": mode,
+            "level": ""}
 
 
 def cookie_header(name: str, value: str, *, max_age: int,
@@ -347,49 +446,61 @@ def audit(event: str, *, user: str = "", ip: str = "", note: str = "") -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
-    """维护命令：`adduser` / `token` / `users`。"""
+    """`python -m web.auth {token,adduser,list,revoke}`。
+
+    `token` 子命令（2026-10-26 扩）：
+        token                    # 显示/生成**共享**口令
+        token --rotate           # 轮换共享口令
+        token --for zhangsan     # 为某人颁发**个人令牌**（可审计到人）
+        token --list             # 列出已颁发令牌（只有用户名/时间，没有明文）
+        token --revoke zhangsan  # 吊销某人令牌
+    """
     import argparse
-    import getpass
 
-    ap = argparse.ArgumentParser(prog="web.auth", description="确认台账号/口令维护")
-    ap.add_argument("action", choices=["adduser", "token", "users"])
-    ap.add_argument("--user", default="", help="adduser：账号名")
-    ap.add_argument("--password", default="", help="adduser：口令（缺省交互输入）")
-    ap.add_argument("--rotate", action="store_true", help="token：重新生成共享口令")
+    ap = argparse.ArgumentParser(prog="web.auth", description="确认台凭据管理")
+    sub = ap.add_subparsers(dest="cmd", required=True)
+
+    t = sub.add_parser("token", help="共享口令 / 个人令牌")
+    t.add_argument("--rotate", action="store_true", help="轮换共享口令")
+    t.add_argument("--for", dest="for_user", default="", help="为某人颁发个人令牌")
+    t.add_argument("--list", action="store_true", help="列出已颁发的个人令牌")
+    t.add_argument("--revoke", default="", help="吊销某人的个人令牌")
+    t.add_argument("--note", default="", help="备注（部门/用途）")
+
+    u = sub.add_parser("adduser", help="basic 模式：新增账号")
+    u.add_argument("--user", required=True)
+    u.add_argument("--password", default="", help="留空则交互输入")
+
     a = ap.parse_args(argv)
-
-    if a.action == "token":
+    if a.cmd == "token":
+        if a.list:
+            users = load_user_tokens()
+            if not users:
+                print("（尚未颁发任何个人令牌；用 token --for <user> 颁发）")
+                return ExitCode.OK
+            print(f"{'用户名':20s} {'颁发时间':20s} 备注")
+            for name in sorted(users):
+                rec = users[name]
+                print(f"{name:20s} {str(rec.get('created_at') or ''):20s} "
+                      f"{rec.get('note') or ''}")
+            return ExitCode.OK
+        if a.revoke:
+            ok = revoke_user_token(a.revoke)
+            print("已吊销" if ok else "未找到该用户", a.revoke)
+            return ExitCode.OK if ok else ExitCode.FAIL
+        if a.for_user:
+            token = issue_user_token(a.for_user, note=a.note)
+            print(f"已为 {a.for_user} 颁发个人令牌（仅显示一次，请转交本人）：")
+            print(f"  {token}")
+            print(f"（注册表 {TOKENS_PATH}，只存哈希；吊销：python -m web.auth "
+                  f"token --revoke {a.for_user}）")
+            audit("token_issue", user=a.for_user, note=a.note or "个人令牌")
+            return ExitCode.OK
         print(f"共享口令：{access_token(rotate=a.rotate)}")
-        print(f"（文件：{TOKEN_PATH}）")
+        print(f"（文件 {TOKEN_PATH}；--rotate 可更换）")
+        print("提示：共享口令**无法审计到人**；需要到人请用 "
+              "`token --for <user>` 颁发个人令牌。")
         return ExitCode.OK
-    if a.action == "users":
-        users = load_users()
-        if not users:
-            print(f"未配置账号（{USERS_PATH} 不存在或为空）")
-        for u, rec in users.items():
-            print(f"  {u:20s} role={rec.get('role', '')}")
-        return ExitCode.OK
-    # adduser
-    user = a.user.strip()
-    if not user:
-        user = input("账号名：").strip()
-    pw = a.password or getpass.getpass("口令：")
-    if len(pw) < 8:
-        print("口令至少 8 位")
-        return ExitCode.FAIL
-    users = load_users()
-    users[user] = {"password": hash_password(pw), "role": "viewer"}
-    try:
-        import yaml
-    except Exception:  # noqa: BLE001
-        print("需要 PyYAML（已在依赖中）；请检查环境")
-        return ExitCode.ENV
-    os.makedirs(os.path.dirname(USERS_PATH), exist_ok=True)
-    with open(USERS_PATH, "w", encoding="utf-8") as fh:
-        yaml.safe_dump({"users": users}, fh, allow_unicode=True, sort_keys=True)
-    print(f"已写入 {USERS_PATH}（{user}）")
-    return ExitCode.OK
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

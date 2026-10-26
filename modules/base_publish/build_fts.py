@@ -37,6 +37,9 @@ CREATE TABLE records(
   record_id TEXT PRIMARY KEY, rfn TEXT, title TEXT, document_number TEXT,
   issue_organ TEXT, publish_date TEXT, effective_date TEXT, timeliness_status TEXT,
   verification_source TEXT, source TEXT, url TEXT, body_len INT, body_text TEXT, theme TEXT,
+  -- rfn_origin（2026-10-26）：`registry` = 已入册（归属表收录，可 join 主题/时效）；
+  -- `derived` = 未入册，仅本库内稳定标识。**两者不可混用**：派生号不代表"已收录"。
+  rfn_origin TEXT NOT NULL DEFAULT '',
   docno_norm TEXT);   -- 阶段 3（2026-09-18）：归一化文号，供 version_chain 索引下推
 CREATE TABLE clauses(
   record_id TEXT, rfn TEXT, document_number TEXT, title TEXT, article_no TEXT,
@@ -141,10 +144,11 @@ def build_external() -> dict:
     from std_lib.common_lib.norm import norm_docno as _nd
     for r in _iter_jsonl(rec_p):
         conn.execute(
-            "INSERT INTO records(record_id,rfn,title,document_number,issue_organ,publish_date,"
+            "INSERT INTO records(record_id,rfn,rfn_origin,title,document_number,issue_organ,publish_date,"
             "effective_date,timeliness_status,verification_source,source,url,body_len,body_text,theme,"
-            "docno_norm) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-            (r.get("record_id", ""), r.get("rfn", ""), r.get("title", ""), r.get("document_number", ""),
+            "docno_norm) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            (r.get("record_id", ""), r.get("rfn", ""), r.get("rfn_origin", ""),
+             r.get("title", ""), r.get("document_number", ""),
              r.get("issue_organ", ""), r.get("publish_date", ""), r.get("effective_date", ""),
              r.get("timeliness_status", ""), r.get("verification_source", ""), r.get("source", ""),
              r.get("url", ""), int(r.get("body_len") or 0), r.get("body_text", ""), r.get("theme", ""),

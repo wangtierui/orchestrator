@@ -83,6 +83,8 @@ from std_lib.common_lib.relations import (
     TARGET_CORPUS,
     TARGET_ENTITY,
     TARGET_EXTERNAL,
+    TARGET_GENERIC,
+    TARGET_ORGAN,
     RelationPipeline,
     classify_target,
     docno_signature,
@@ -590,8 +592,15 @@ def _ensure_unique_ids(rows: list[dict]) -> int:
 
 def build_rows(
     doc: dict, pipeline: RelationPipeline, reg_ix: dict, int_ix: dict, *, generated_at: str
-) -> tuple[list[dict], list[str], int]:
-    """单篇文档 → `(关系行列表, 警告, 被过滤的泛指词目标数)`（含跨域解析 + 条款级定位）。"""
+) -> tuple[list[dict], list[str], int, int]:
+    """单篇文档 → `(关系行, 警告, 被过滤的泛指词数, **被排除的机关名目标数**)`。
+
+    R-DEP-06（2026-10-26）：**机关名不建依据/废止边**。规则原文要求"依据与废止关系
+    的目标必须是具体文件"；`根据《国务院》…` 这类程序性表述的目标是机关，不是文件。
+    处置选择"**不建边**"而不是"建边后标 organ"：图谱只要存在这种边，读者就会看到
+    "某办法依据了国务院"，而那是**语义错误**（不是"未定位"）。
+    被排除的数量记入 stat（`excluded_organ`），可审计、不静默。
+    """
     text = doc["text"]
     res = pipeline.extractor.extract(text)
     src_kind = doc["doc_kind"]
@@ -614,6 +623,7 @@ def build_rows(
         _spans = load_regulatory_spans(doc.get("dedup_key", ""), text, _cindex)
 
     rows: list[dict] = []
+    excluded_organ = 0
     # 同域优先、再跨域：监管侧只解析监管域；内部侧先内部域再监管域
     for item, relation in [(b, "basis") for b in res.basis] + [(r, "repeal") for r in res.repeal]:
         name = item.target_name
@@ -672,6 +682,16 @@ def build_rows(
                     break
         else:
             _dst_art = ""
+        _dst_class = classify_target(
+            dst_ref=dst_ref,
+            dst_key=dst_key,
+            name=name,
+            basis_type=getattr(item, "basis_type", "") if relation == "basis" else "",
+        )
+        # R-DEP-06：机关名/非文件对象**不建边**（见 docstring）
+        if _dst_class in (TARGET_ORGAN, TARGET_GENERIC):
+            excluded_organ += 1
+            continue
         rows.append(
             {
                 "relation_id": _relation_id(
@@ -697,18 +717,24 @@ def build_rows(
                 "dst_kind": dst_kind,
                 "dst_ref": dst_ref,
                 "dst_key": dst_key,
-                # 目标性质分类（2026-09-14）：区分"真·文件引用未定位"与"机关名/泛指词"
-                "dst_class": classify_target(
-                    dst_ref=dst_ref,
-                    dst_key=dst_key,
-                    name=name,
-                    basis_type=getattr(item, "basis_type", "") if relation == "basis" else "",
-                ),
+                # 目标性质分类（entity/corpus/external；organ/generic 已在上面剔除）
+                "dst_class": _dst_class,
                 "dst_name": name,
                 "dst_docno": docno,
                 "dst_normalized_name": item.normalized_name,
                 "relation": relation,
                 "basis_type": getattr(item, "basis_type", "") if relation == "basis" else "",
+                # ---- 《依据抽取规则》2026-10-26 对齐字段（纯增量，不进 relation_id）----
+                # R-DEP-01：立法依据 / 适用依据
+                "relation_subtype": (getattr(item, "relation_subtype", "")
+                                     if relation == "basis" else "explicit_repeal"),
+                # R-DEP-03：同一引导词下的并列依据共享 group_id
+                "group_id": getattr(item, "group_id", ""),
+                # R-DEP-04：书名号后紧跟的条号（条款级依据）
+                "target_clause": getattr(item, "target_clause", ""),
+                # R-REP-01：`《X》自……废止` 的终止日（不复用 effective_date）
+                "target_end_date": (getattr(item, "target_end_date", "")
+                                    if relation == "repeal" else ""),
                 "article": item.article,
                 "is_explicit": bool(getattr(item, "is_explicit", True)),
                 "action": getattr(item, "action", "") if relation == "repeal" else "",
@@ -736,7 +762,7 @@ def build_rows(
                 "generated_at": generated_at,
             }
         )
-    return rows, list(res.warnings), int(res.filtered_generic or 0)
+    return rows, list(res.warnings), int(res.filtered_generic or 0), excluded_organ
 
 
 # ===========================================================================
@@ -765,23 +791,26 @@ def run(
     warnings: list[str] = []
     docs_stat: dict = {"regulatory": {}, "internal": 0}
     filtered_generic = 0
+    excluded_organ = 0
 
     for doc in iter_regulatory_docs(cfg_sources, limit=limit):
         docs_stat["regulatory"][doc["source"]] = docs_stat["regulatory"].get(doc["source"], 0) + 1
         if with_attachments and doc.get("extra_text"):
             doc["text"] = doc["text"] + "\n" + doc["extra_text"]
-        r, w, fg = build_rows(doc, pipeline, reg_ix, int_ix, generated_at=generated_at)
+        r, w, fg, eo = build_rows(doc, pipeline, reg_ix, int_ix, generated_at=generated_at)
         rows.extend(r)
         warnings.extend(w)
         filtered_generic += fg
+        excluded_organ += eo
 
     if with_internal:
         for doc in iter_internal_docs(limit=limit) or []:
             docs_stat["internal"] += 1
-            r, w, fg = build_rows(doc, pipeline, reg_ix, int_ix, generated_at=generated_at)
+            r, w, fg, eo = build_rows(doc, pipeline, reg_ix, int_ix, generated_at=generated_at)
             rows.extend(r)
             warnings.extend(w)
             filtered_generic += fg
+            excluded_organ += eo
 
     # 关系 id 唯一化（2026-09-20 相邻项修复）：判别字段完全相同的重复引用加确定性后缀
     n_id_dups = _ensure_unique_ids(rows)
@@ -796,6 +825,7 @@ def run(
         warnings,
         generated_at,
         filtered_generic=filtered_generic,
+        excluded_organ=excluded_organ,
         id_dups=n_id_dups,
     )
     if dry_run:
@@ -826,12 +856,31 @@ def _build_stat(
     generated_at: str,
     *,
     filtered_generic: int = 0,
+    excluded_organ: int = 0,
     id_dups: int = 0,
 ) -> dict:
     def _cnt(pred) -> int:
         return sum(1 for r in rows if pred(r))
 
     by_kind = {k: _cnt(lambda r, k=k: r["relation"] == k) for k in sorted(RELATION_KIND)}
+    # 《依据抽取规则》(2026-10-26) 对齐后的口径：
+    #   · by_subtype：立法依据（条款含"制定本×"）/ 适用依据 —— R-DEP-01
+    #   · groups：并列依据的组数（同 group_id 多条）—— R-DEP-03
+    #   · excluded_organ：因目标是机关名/非文件对象而**不建边**的条数 —— R-DEP-06
+    by_subtype: dict[str, int] = {}
+    for _r in rows:
+        if _r.get("relation") != "basis":
+            continue
+        _k = str(_r.get("relation_subtype") or "unknown")
+        by_subtype[_k] = by_subtype.get(_k, 0) + 1
+    _groups = {r.get("group_id") for r in rows if r.get("group_id")}
+    _multi = sum(
+        1 for g in _groups
+        if sum(1 for r in rows if r.get("group_id") == g) > 1
+    )
+    group_stat = {"groups": len(_groups), "multi_member_groups": _multi,
+                  "with_target_clause": _cnt(lambda r: bool(r.get("target_clause"))),
+                  "with_docno": _cnt(lambda r: bool(r.get("dst_docno")))}
     cross = {
         "regulatory->regulatory": _cnt(
             lambda r: r["src_kind"] == "regulatory" and r["dst_kind"] == "regulatory"
@@ -887,6 +936,9 @@ def _build_stat(
         "file_level_denominator": file_denom,
         "file_resolved_ratio": file_resolved,
         "file_located_ratio": file_located,
+        "by_subtype": by_subtype,
+        "groups": group_stat,
+        "excluded_organ": int(excluded_organ),
         "filtered_generic_total": filtered_generic,
         "warnings_total": len(warnings),
         "warnings_sample": sorted(set(warnings))[:10],

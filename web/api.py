@@ -98,6 +98,12 @@ def handle(method: str, path: str, qs: dict | None = None,
                             "local": "本机账号", "none": "未认证"}.get(
                                 str(ctx.get("identity_src") or "none"), ""),
             "identity_src": str(ctx.get("identity_src") or "none"),
+            # 审计级别（2026-10-26）：共享口令下"谁看的"无法回答，必须让读者看见这一点，
+            # 而不是让人以为"既然要登录，那一定审计到人了"。
+            "audit_level": str(ctx.get("level") or ""),
+            "audit_level_label": {"user": "可审计到人",
+                                  "shared": "共享口令（无法定位到人）",
+                                  "": "未认证"}.get(str(ctx.get("level") or ""), ""),
             "scope": scope,
         }
         if not authed:
@@ -249,6 +255,11 @@ def handle(method: str, path: str, qs: dict | None = None,
                          by=str(b.get("by") or ""),
                          status=str(b.get("status") or "closed"))
         return (200 if out.get("ok") else 400), out
+    if path == "/api/east":
+        # EAST 数据结构（表清单/统计）；数据项走 /api/east/table 懒加载
+        return 200, S.east_structure()
+    if path == "/api/east/table":
+        return 200, S.east_table(_one(qs, "no"))
     if path == "/api/regstats":
         return 200, S.regstats()
     if path == "/api/publish":

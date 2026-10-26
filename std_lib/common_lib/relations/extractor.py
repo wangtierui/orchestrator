@@ -24,6 +24,7 @@ from .patterns import (
     RelationConfig,
     default_config,
     is_generic_target,
+    is_non_file_target,
     normalize_doc_name,
     preprocess,
 )
@@ -43,6 +44,15 @@ class BasisRelation:
     article: str = ""
     basis_type: str = BASIS_TYPE_SUBSTANTIVE
     is_explicit: bool = True
+    #: R-DEP-01：`legislative_basis`（所在条款含"制定本×"）/ `application_basis`（其余）。
+    #: 与 `basis_type`（substantive/procedural，描述**依据的性质**）**正交**：
+    #: 前者回答"这条依据是不是立法依据"，后者回答"这条依据是实体还是程序"。
+    relation_subtype: str = ""
+    #: R-DEP-03：同一引导词下的多个书名号共享一个 group_id（同批并列依据）。
+    group_id: str = ""
+    #: R-DEP-04：书名号后紧跟的条号（"《X》第12条"），与 `article` 同义，
+    #: 用规则里的名字另存一份，**不进 relation_id**（避免 ID 漂移）。
+    target_clause: str = ""
     source_snippet: str = ""
     # N-98（2026-09-28）：**引用跨度**（＝命中的引用文本本身，如 `《X办法》第12条`）。
     # 与 `source_snippet`（±100 字符**窗口**，含源侧自身上下文的条号）互补：
@@ -66,6 +76,10 @@ class RepealRelation:
     scope: str = REPEAL_SCOPE_WHOLE
     article: str = ""
     reason: str = ""
+    #: R-REP-01：`《X》自……废止` 里的那个日期（语义上是被废止文件的**终止日**）。
+    #: 刻意不复用 `effective_date`——两者方向相反（一个开始、一个结束），混用会让
+    #: 时间区间构建出负区间（规则原文明确要求字段分离）。
+    target_end_date: str = ""
     source_snippet: str = ""
     # N-98（2026-09-28）：引用跨度（见 `BasisRelation.source_span` 注记）
     source_span: str = ""
@@ -84,6 +98,8 @@ class ExtractionResult:
     warnings: list[str] = field(default_factory=list)
     # 被过滤的"纯类型泛指词"目标数（`《条例》`/`《办法》`，2026-09-14 净化，见 is_generic_target）
     filtered_generic: int = 0
+    #: R-DEP-06：被过滤的**非文件对象**数（会议/讲话/实际情况/统计资料…）
+    filtered_non_file: int = 0
 
     def to_dict(self) -> dict:
         return {
@@ -93,6 +109,7 @@ class ExtractionResult:
             "repeal": [r.to_dict() for r in self.repeal],
             "warnings": list(self.warnings),
             "filtered_generic": self.filtered_generic,
+            "filtered_non_file": self.filtered_non_file,
         }
 
 
@@ -105,7 +122,15 @@ class RelationExtractor:
     def __init__(self, config: RelationConfig | None = None):
         self.cfg = config or default_config()
         self._filtered_generic = 0
+        self._filtered_non_file = 0
         self._compile()
+
+    def _skip_non_file(self, name: str) -> bool:
+        """R-DEP-06：会议/讲话/实际情况/统计资料 等**非文件对象**不建依据边。"""
+        if is_non_file_target(name):
+            self._filtered_non_file += 1
+            return True
+        return False
 
     def _skip_generic(self, name: str) -> bool:
         """纯类型泛指词目标（`《条例》`/`《办法》`）→ 过滤并计数（2026-09-14 净化）。
@@ -128,9 +153,13 @@ class RelationExtractor:
         one = rf"{q}[^{qc}]+{qc}"
         # 书名号列表：**分隔符可缺省**（真实公文中 `《A》《B》` 常紧邻，参照实现要求分隔符会漏抽）
         reflist = rf"{one}(?:\s*(?:{sep})?\s*{one})*"
-        # 中间连接段：等? + 位阶词（可连写，如"法律法规"）+ 的+规定/要求/精神? + 逗号?
+        # 中间连接段：等? + 括号文号? + 位阶词 + 的+规定/要求/精神? + 逗号?
+        #
+        # ⚠️ R-DEP-05（2026-10-26）：必须容忍书名号后的**括号文号**——
+        # `根据《保险法》和《保险公司管理规定》（银保监发〔2021〕12号）制定本办法`
+        # 实测因括号卡在"书名号 → 制定"之间而**整条漏抽**（原 mid 不认括号）。
         mid = (
-            rf"\s*(?:等)?\s*(?:(?:有关)?(?:{hier})+)?\s*"
+            rf"\s*(?:等)?\s*(?:[（(][^）)]{{0,40}}[）)])?\s*(?:(?:有关)?(?:{hier})+)?\s*"
             rf"(?:的\s*(?:相关|有关)?(?:规定|要求|精神|条款|内容|通知|办法|意见|细则))?\s*[，,]?\s*"
         )
 
@@ -157,13 +186,18 @@ class RelationExtractor:
         # ④ 废止单文件：（《名》）? （文号）? 动作
         ract = "|".join(map(re.escape, [k for k, _v in cfg.repeal_actions]))
         dn = "|".join(f"(?:{p})" for p in cfg.docno_patterns)
+        # ⚠️ R-REP-01 名词化排除（2026-10-26）：`(?!后|前|时|之日|程序|工作|条件)`
+        # 否则"《X》废止后…"、"废止程序"会被当成"本文废止 X"（实测噪声主要来源之一）。
         self.repeal_pattern = re.compile(
             rf"{cfg.open_quote}(?P<name>[^{cfg.close_quote}]+){cfg.close_quote}"
             rf"(?:\s*[（(\[](?P<number>[^）)\]]*)[）)\]]\s*[，,]?)?\s*"
-            rf"(?P<action>{ract})"
+            # R-REP-01：`自2024年1月1日起废止` —— 中间的时间状语不能阻断动作词
+            rf"(?:自\s*(?P<since>[^。；，]{{4,30}}?)\s*起)?\s*"
+            rf"(?P<action>{ract})(?!后|前|时|之日|程序|工作|条件)"
         )
         # ⑤ 废止列表：动作 + 书名号列表
-        self.repeal_list_pattern = re.compile(rf"(?P<action>{ract})\s*(?P<refs>{reflist})")
+        self.repeal_list_pattern = re.compile(
+            rf"(?P<action>{ract})(?!后|前|时|之日|程序|工作|条件)\s*(?P<refs>{reflist})")
         _ = dn  # （保留占位说明：文号形态见 self.docno_re，本处不内联以降低正则复杂度）
         # ⑥ 部分废止：《名》 第X条 动作
         self.partial_repeal_pattern = re.compile(
@@ -193,16 +227,51 @@ class RelationExtractor:
     def extract(self, text: str) -> ExtractionResult:
         t = preprocess(text)
         self._filtered_generic = 0
+        self._filtered_non_file = 0
         res = ExtractionResult()
         res.basis = self._extract_basis(t)
         res.repeal, warns = self._extract_repeal(t)
         res.warnings.extend(warns)
         res.filtered_generic = self._filtered_generic
+        res.filtered_non_file = self._filtered_non_file
         if self.attachment_hint.search(t):
             res.warnings.append('检测到"见附件"提示，废止/依据清单可能位于附件中')
         return res
 
     # ---- 依据 ----
+    def _sentence_around(self, text: str, pos: int) -> str:
+        """取 pos 所在句（以 `。；\n` 为界）——判 R-DEP-01 的"制定本×"要用整句上下文。"""
+        left = max(
+            text.rfind("。", 0, pos), text.rfind("；", 0, pos),
+            text.rfind("\n", 0, pos), text.rfind(";", 0, pos),
+        )
+        right_cands = [p for p in (text.find("。", pos), text.find("；", pos),
+                                   text.find("\n", pos), text.find(";", pos)) if p > 0]
+        right = min(right_cands) if right_cands else len(text)
+        return text[left + 1: right + 1]
+
+    def _basis_subtype(self, text: str, pos: int) -> str:
+        """R-DEP-01：所在条款含"制定本×"⇒ legislative_basis，否则 application_basis。
+
+        规则原文明确"不按引导词本身区分立法依据与适用依据"——实践中"根据/依据"混用，
+        唯一可靠信号是同一句里有没有"制定本办法/本条例…"。
+        """
+        sent = self._sentence_around(text, pos)
+        if re.search(r"(?:制定|起草|修订|修正)(?:本|该)(?:办法|条例|规定|细则|规则|意见|通知|制度|标准|方案|指引|规范)", sent):
+            return "legislative_basis"
+        return "application_basis"
+
+    def _docno_for_name(self, text: str, name: str, near: int) -> str:
+        """R-DEP-05：`《X》（…〔YYYY〕N号…）` —— 书名号**紧后**括号里的文号。"""
+        cfg = self.cfg
+        pat = re.compile(
+            rf"{re.escape(cfg.open_quote)}{re.escape(name)}{re.escape(cfg.close_quote)}"
+            rf"\s*[（(]\s*([^）)]*〔\d{{4}}〕\d+号[^）)]*)[）)]"
+        )
+        lo = max(0, near - 200)
+        m = pat.search(text, lo, min(len(text), near + 260))
+        return re.sub(r"\s+", "", m.group(1)) if m else ""
+
     def _extract_basis(self, text: str) -> list[BasisRelation]:
         out: list[BasisRelation] = []
         seen: set[tuple[str, str]] = set()
@@ -210,8 +279,11 @@ class RelationExtractor:
         for m in self.basis_pattern.finditer(text):
             if self._excluded(text, m.start()):
                 continue
+            subtype = self._basis_subtype(text, m.start())
+            # R-DEP-03：同一引导词下的并列书名号共享一个 group_id
+            gid = f"g{m.start()}"
             for name in self._quotes(m.group("refs")):
-                if self._skip_generic(name):
+                if self._skip_generic(name) or self._skip_non_file(name):
                     continue
                 key = (normalize_doc_name(name), "basis")
                 if key in seen:
@@ -221,6 +293,9 @@ class RelationExtractor:
                     BasisRelation(
                         target_name=name.strip(),
                         normalized_name=key[0],
+                        target_docno=self._docno_for_name(text, name.strip(), m.start()),
+                        relation_subtype=subtype,
+                        group_id=gid,
                         source_span=self._span(text, m),  # N-98：引用跨度（命中+紧随尾部）
                         source_snippet=self._snippet(text, m.start()),
                         offset=m.start(),
@@ -231,14 +306,16 @@ class RelationExtractor:
             if self._excluded(text, m.start()):
                 continue
             name = m.group("name").strip()
-            if self._skip_generic(name):
+            if self._skip_generic(name) or self._skip_non_file(name):
                 continue
             art = "第" + m.group("article") + "条"
             key = (normalize_doc_name(name), "basis")
             if key in seen:
                 for r in out:
                     if r.normalized_name == key[0] and not r.article:
+                        # R-DEP-04：书名号后紧跟条号 ⇒ 依据粒度到条款
                         r.article = art
+                        r.target_clause = art
                         break
                 continue
             seen.add(key)
@@ -247,6 +324,10 @@ class RelationExtractor:
                     target_name=name,
                     normalized_name=key[0],
                     article=art,
+                    target_clause=art,
+                    target_docno=self._docno_for_name(text, name, m.start()),
+                    relation_subtype=self._basis_subtype(text, m.start()),
+                    group_id=f"g{m.start()}",
                     source_span=self._span(text, m),  # N-98：引用跨度（披露字段）
                     source_snippet=self._snippet(text, m.start()),
                     offset=m.start(),
@@ -259,6 +340,8 @@ class RelationExtractor:
             auth = m.group("authority").strip()
             if not auth:
                 continue
+            if self._skip_non_file(auth):
+                continue
             key = (normalize_doc_name(auth), "procedural")
             if key in seen:
                 continue
@@ -268,6 +351,8 @@ class RelationExtractor:
                     target_name=auth,
                     normalized_name=key[0],
                     basis_type=BASIS_TYPE_PROCEDURAL,
+                    relation_subtype="application_basis",  # 程序性依据不是立法依据
+                    group_id=f"g{m.start()}",
                     source_span=self._span(text, m),  # N-98：引用跨度（披露字段）
                     source_snippet=self._snippet(text, m.start()),
                     offset=m.start(),
@@ -292,6 +377,7 @@ class RelationExtractor:
             snippet: str,
             offset: int,
             span: str = "",
+            end_date: str = "",
         ) -> None:
             action = dict(self._ract_pairs).get(action_cn, REPEAL_ACTION_REPEAL)
             if not name.strip() or self._skip_generic(name):
@@ -309,6 +395,7 @@ class RelationExtractor:
                     scope=scope,
                     article=article,
                     reason=reason,
+                    target_end_date=(end_date or "").strip(),
                     source_snippet=snippet,
                     source_span=span,
                     offset=offset,
@@ -326,6 +413,7 @@ class RelationExtractor:
                 m.group("name"),
                 m.group("action"),
                 number=num,
+                end_date=(m.groupdict().get("since") or ""),
                 scope=REPEAL_SCOPE_WHOLE,
                 snippet=self._snippet(text, m.start()),
                 span=self._span(text, m),  # N-98：引用跨度（命中+紧随尾部）

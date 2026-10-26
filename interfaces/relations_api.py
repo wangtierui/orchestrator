@@ -338,6 +338,10 @@ def ego(ref: str, *, limit: int = 200, include_weak: bool = False) -> dict:
             center["docno"] = str(r.get("dst_docno") or "")
             center["kind"] = str(r.get("dst_kind") or "")
     nodes[ref] = center
+    # T2：中心与邻居的名称统一回填（缺名/名为编码都回查底座）
+    _fill_node_names(list(nodes.values()))
+    if nodes[ref].get("name"):
+        center["name"] = nodes[ref]["name"]
 
     out_all = by_src(ref)
     in_all = by_dst(ref)
@@ -383,6 +387,34 @@ def _nmaps(rows: list[dict]) -> tuple[dict[str, str], dict[str, str]]:
             if r.get(f"{side}_docno") and ref not in docno:
                 docno[ref] = str(r[f"{side}_docno"])
     return name, docno
+
+
+def _fill_node_names(nodes: list[dict]) -> None:
+    """就地补齐节点名称（缺失/等于编码时回查底座）。
+
+    判定"缺名"要连**名称等于编码**也算：关系抽取在无法确定标题时会写
+    `dst_name = dst_ref`（早期实现如此），只判空会把它们漏掉。
+    """
+    need_rfn = [n["id"] for n in nodes
+                if str(n.get("id", "")).startswith("RFN-")
+                and not str(n.get("id", "")).startswith("RFN-EXT-")
+                and (not str(n.get("name") or "").strip()
+                     or str(n.get("name")) == str(n["id"]))]
+    need_ipn = [n["id"] for n in nodes
+                if str(n.get("id", "")).startswith("IPN-")
+                and (not str(n.get("name") or "").strip()
+                     or str(n.get("name")) == str(n["id"]))]
+    if not need_rfn and not need_ipn:
+        return
+    from interfaces import base_api
+
+    m = base_api.titles_by_refs(rfns=need_rfn, ipns=need_ipn)
+    for n in nodes:
+        title = m.get(str(n.get("id") or ""), "")
+        if title and (not str(n.get("name") or "").strip()
+                      or str(n.get("name")) == str(n["id"])):
+            n["name"] = title
+            n["name_from"] = "base"
 
 
 def global_graph(*, top_hubs: int = 15, top_theme_docs: int = 12,
@@ -679,6 +711,21 @@ def global_graph(*, top_hubs: int = 15, top_theme_docs: int = 12,
          "total": int(ext_stat.get("total") or 0), "unresolved": 0,
          "note": "编号 RFN-EXT-* = 被引用但**未收录**；按被引次数排序"},
     ]
+    # ---- T2（2026-10-26）：节点名称统一回填 ----
+    # 放在 return 之前对**所有**视图统一处理：节点名只有一个来源（底座标题），
+    # 每个视图各写一遍正是"有的显示名字、有的显示编码"的根因。
+    _need: list[dict] = []
+    _need.extend(hub_nodes)
+    _need.extend(ii_nodes.values())
+    _need.extend(right.values())
+    _need.extend(left.values())
+    for _d in top_docs:
+        _need.append({"id": _d, "name": all_name.get(_d, "")})
+    _fill_node_names(_need)
+    for _n in _need:
+        if _n.get("name") and not str(all_name.get(_n["id"]) or "").strip():
+            all_name[_n["id"]] = _n["name"]
+
     return {
         "available": True,
         "mode": "global",

@@ -35,7 +35,7 @@ SCHEMA_VERSION = "1.0"
 #   `source_snippet` 语义与定位口径**均未变**（曾拟改为以跨度定位，实测使目标侧覆盖由 5.7%
 #   降至 2.3%/2.5% → **否决**，见 `extract_relations` 否决注记）。字段集变化即提升版本
 #   （下游据此判"产物是否由当前抽取器生成"；`gate_relations` 与 `relations_api` 均披露该字段）。
-EXTRACTOR_VERSION = "relations-1.2"
+EXTRACTOR_VERSION = "relations-1.3"   # 2026-10-26：对齐《依据抽取规则》R-DEP/R-REP
 
 CN_NUM = "一二三四五六七八九十百千零两"
 _CN_NUM_RE = rf"[{CN_NUM}\d]"
@@ -481,6 +481,58 @@ def is_organ_target(name: str) -> bool:
     if _ORGAN_TAIL_RE.search(n) and not _DOC_KW_RE.search(n):
         return True
     return False
+
+
+#: **R-DEP-06 非文件依据对象**（《依据抽取规则与废止失效判定规则》2026-10-26）。
+#:
+#: 只列"**本身就是非文件**"的短语（会议精神/实际情况/统计资料…）——
+#: 刻意**不**收录 `批复`/`批示`/`通知` 这类**也可以是文件名**的词：
+#: `《国务院关于同意设立××的批复》` 是一份真实文件，一刀切会误删合法依据边。
+#: 规则原文的意图是"引导词后接**非规范性文件对象**时不建边"，而带书名号的
+#: 名字天然是"被引用的文件"，故这里只拦**短名词短语**（≤ 8 字且无文件尾缀）。
+NON_FILE_TARGETS: frozenset[str] = frozenset(
+    {
+        "会议精神",
+        "会议决定",
+        "会议纪要",
+        "实际情况",
+        "统计资料",
+        "调研结果",
+        "调研资料",
+        "有关要求",
+        "有关精神",
+        "上级要求",
+        "领导批示",
+        "领导讲话",
+        "讲话精神",
+        "批示精神",
+    }
+)
+
+
+def is_non_file_target(name: str) -> bool:
+    """R-DEP-06：目标是否**非文件对象**（会议/讲话/实际情况/统计资料…）。"""
+    n = re.sub(r"[\s　]+", "", (name or "").strip("《》〈〉\"'“”‘’"))
+    if not n or len(n) > 12:
+        return False
+    if n in NON_FILE_TARGETS:
+        return True
+    # "××会议精神"/"××统计资料"这类带修饰的变体
+    return bool(re.search(r"(?:会议精神|统计资料|实际情况|调研结果|领导批示|讲话精神)$", n)) \
+        and not _DOC_KW_RE.search(n)
+
+
+#: **R-REP-01 名词化排除**：`废止` 后面紧跟这些词时是名词短语（"废止后"、"废止程序"
+#: "废止工作"），不是"废止某个文件"的动作。规则原文要求前后都不得紧跟，
+#: 实测只查**后**向即可（"《X》废止后"是典型形态；前向"程序废止"极少见且
+#: 前向会误伤"本办法自公布之日起废止"——那里"起"不在排除词内）。
+REPEAL_NOMINAL_TAIL = ("后", "前", "时", "之日", "程序", "工作", "条件", "公告", "决定")
+
+
+def is_nominal_repeal(text: str, end: int) -> bool:
+    """`text[end:]` 是否紧跟名词化成分（R-REP-01 名词化排除）。"""
+    tail = (text or "")[end: end + 3]
+    return any(tail.startswith(w) for w in REPEAL_NOMINAL_TAIL)
 
 
 def classify_target(

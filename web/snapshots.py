@@ -1174,6 +1174,32 @@ def regstats() -> dict:
         return _degrade("base_api.regstats_docs", e)
 
 
+def east_structure() -> dict:
+    """「监管统计」页的 EAST 数据结构（表清单 + 统计；数据项按表懒加载）。"""
+    try:
+        from interfaces import east_api
+
+        d = east_api.structure()
+        d["fetched_at"] = _now()
+        d["source_name"] = "interfaces.east_api"
+        return d
+    except Exception as e:  # noqa: BLE001  旁路：页面降级为"不可用 + 原因"
+        return _degrade("interfaces.east_api", e)
+
+
+def east_table(table_no: str) -> dict:
+    """单表数据项（点开某张表时才拉，避免一次下发 3000+ 条）。"""
+    try:
+        from interfaces import east_api
+
+        d = east_api.table_items(table_no)
+        d["fetched_at"] = _now()
+        d["source_name"] = "interfaces.east_api"
+        return d
+    except Exception as e:  # noqa: BLE001
+        return _degrade("interfaces.east_api", e)
+
+
 def search(q: str, *, kind: str = "records", limit: int = 20) -> dict:
     """P6 文档检索：走 base_api 的 FTS5 门面（不裸读 sqlite）。"""
     try:

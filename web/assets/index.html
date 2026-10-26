@@ -189,6 +189,23 @@ th.sortable .arw{font-size:10px;opacity:.85}
 .gcard:hover{border-color:var(--primary);box-shadow:var(--shadow-h)}
 .gcard-h{display:flex;justify-content:space-between;align-items:center;gap:var(--s2)}
 .gnode text{pointer-events:none}
+/* ---------- EAST 数据结构：左表右项（2026-10-26） ---------- */
+.eastwrap{display:grid;grid-template-columns:300px 1fr;gap:var(--s3);align-items:start}
+@media (max-width:900px){.eastwrap{grid-template-columns:1fr}}
+.eastleft{border:1px solid var(--line);border-radius:var(--r-md);padding:var(--s2);background:var(--card)}
+.eastright{border:1px solid var(--line);border-radius:var(--r-md);padding:var(--s3);background:var(--card);min-width:0}
+.echips{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;max-height:96px;overflow:auto}
+.echips .gbtn{font-size:11.5px;padding:2px 8px}
+.elist{display:flex;flex-direction:column;gap:2px;max-height:460px;overflow:auto}
+.etbl{display:grid;grid-template-columns:1fr auto;grid-auto-rows:auto;gap:0 6px;
+  text-align:left;padding:5px 8px;border:1px solid transparent;border-radius:var(--r-sm);
+  background:none;cursor:pointer;font-size:12.5px;color:var(--fg)}
+.etbl .code{font-family:var(--mono);font-size:11px;color:var(--fg2);grid-column:1}
+.etbl .nm{grid-column:1;font-size:12.5px}
+.etbl .cnt{grid-column:2;grid-row:1/span 2;align-self:center;font-family:var(--mono);
+  font-size:11px;color:var(--fg3)}
+.etbl:hover{background:var(--alt)}
+.etbl.on{background:var(--primary-l);border-color:var(--primary)}
 </style>
 </head>
 <body>
@@ -820,6 +837,10 @@ function ensureHealth(){
         user_source: String(h.user_source || ""),
         mode: String(h.auth_mode || "off"),
         need_login: h.need_login === true,
+        /* 审计级别：`user` 能定位到人；`shared` 只有共享口令（无法定位到人）。
+         * 必须显示出来——否则读者会默认"既然要登录，那一定审计到人了"。 */
+        auditLevel: String(h.audit_level || ""),
+        auditLabel: String(h.audit_level_label || ""),
       };
       applyScope(h);
       // 已认证才需要 CSRF（未认证时 status 只会回 need_login，不浪费一次往返）
@@ -866,9 +887,12 @@ function applyScope(h){
       au.className = "badge";
       au.title = "回环访问：已自动认证为当前 Windows 账号（内网访问需口令）";
     }else if(a.authenticated){
-      au.textContent = `已登录 ${a.user || ""}`;
-      au.className = "badge";
-      au.title = src || "已认证";
+      const shared = String(a.auditLevel || "") === "shared";
+      au.textContent = `已登录 ${a.user || ""}` + (shared ? "（共享）" : "");
+      au.className = "badge" + (shared ? " warn" : "");
+      au.title = (src || "已认证") + (shared
+        ? "\n⚠ 共享口令：操作无法定位到人（如需到人，请向管理员申请个人令牌）"
+        : "\n" + (a.auditLabel || "可审计到人"));
     }else if(a.mode === "off"){
       au.textContent = "未启用认证";
       au.className = "badge";
@@ -1019,8 +1043,11 @@ async function render(){
       bindGraph(); return;
     }
     if(CUR==="regstats"){
-      STATE.regstats = await api("/api/regstats");
-      v.innerHTML = viewRegstats(STATE.regstats); return;
+      const [rs, es] = await Promise.all([api("/api/regstats"), api("/api/east")]);
+      STATE.regstats = rs;
+      STATE.east = es;
+      v.innerHTML = viewRegstats(STATE.regstats);
+      bindRegstats(); return;
     }
     if(CUR==="feedback"){
       const q = STATE._fbq || {};
@@ -1229,6 +1256,20 @@ function pager(d, id){
     <button data-pg="${pages}" ${page >= pages ? "disabled" : ""}>末页 »</button>
   </div>`;
 }
+/*: 唯一标识号单元格（政策法规）。
+ *
+ * 2026-10-26：底座现在**每条记录都有 RFN**（入册的用归属表编号，未入册的由发布件
+ * 派生）。两者语义不同，必须视觉可分：`派生` 标签 + 悬停说明，避免把"派生号"
+ * 当成"已收录"。以前这里对无号行显示 "—"，读者既引用不了也对不上账。 */
+function idCell(it){
+  const rfn = String(it.rfn || "");
+  if(!rfn) return '<span class="muted">—</span>';
+  const derived = String(it.rfn_origin || "") === "derived";
+  return `<span class="mono">${esc(rfn)}</span>` + (derived
+    ? ' <span class="tag" title="未入册：编号由发布件派生，可稳定引用，但不代表已被归属表收录（不参与主题/时效统计）">派生</span>'
+    : "");
+}
+
 function relBtn(ref){
   if (!ref) return '<span class="muted">—</span>';
   return `<button class="link" data-rel="${esc(ref)}"
@@ -1259,7 +1300,7 @@ function viewLaws(d, st, f){
   const items = arr(d.items);
   const rows = items.map(it => `<tr>
       <td>${themeCell(it.theme_label)}</td>
-      <td class="mono">${esc(it.rfn || "—")}</td>
+      <td>${idCell(it)}</td>
       <td class="ttl">${esc(it.title || "")}</td>
       <td class="mono">${esc(it.document_number || "—")}</td>
       <td>${timeCell(it.timeliness_status)}</td>
@@ -1926,10 +1967,137 @@ function viewRegstats(d){
         <th>名称</th><th>文号</th><th>时效</th><th>源</th><th>访问地址</th><th>关系</th>
       </tr></thead><tbody>${rows}</tbody></table></div>`;
   }).join("");
-  const body = `${kpiRow}${gapNote}${sections}
+  const body = `${kpiRow}${gapNote}${eastSection(d)}${sections}
     <div class="muted" style="margin-top:var(--s3)">${esc(d.note || "")}</div>`;
-  return card("监管统计（EAST 资料）", `${num(d.total)} 条 / ${cats.length} 类`, body,
+  return card("监管统计（EAST）", `${num(d.total)} 条资料 / ${num(obj(STATE.east).stats.tables)} 张数据表`, body,
     d.source_name || "base_api.regstats_docs", d.fetched_at);
+}
+
+/*: 「EAST 数据结构」区块（2026-10-26）
+ *
+ * UX 取舍（照着"人怎么查字段"来设计，而不是照着"数据怎么存"）：
+ *   · **左表右项**：先选表、再看项。112 张表 flat 列表 + 搜索 + 主题域筛选，
+ *     不用树形（主题域→表只有两层，树反而多一次点击）；
+ *   · **数据项按表懒加载**：3062 个数据项一次下发 ≈ 900KB，首屏会明显卡；
+ *     点表才拉（`/api/east/table?no=`），切换有缓存；
+ *   · **键列前置**：主键/可空两个标记决定"这列能不能空着"，是写报文的人最先看的，
+ *     所以放在名称右边而不是塞进说明列；
+ *   · 数据项搜索只过滤**当前表**（跨表搜"客户号"这种需求用左侧表搜索即可）。
+ */
+function eastSection(regstats){
+  const d = obj(STATE.east);
+  if (!d.available) {
+    return `<h3 style="margin:var(--s4) 0 var(--s2)"><span>EAST 数据结构</span></h3>
+      <div class="note">${esc(d.reason || "尚未生成 EAST 数据结构产物")}</div>`;
+  }
+  const st = obj(d.stats), tables = arr(d.tables);
+  const q = String(STATE.east_q || "").trim().toLowerCase();
+  const dom = String(STATE.east_domain || "");
+  const list = tables.filter(x => (!dom || x.domain === dom) &&
+    (!q || (x.table_code + " " + x.table_name + " " + x.table_no).toLowerCase().includes(q)));
+  const sel = String(STATE.east_sel || "") || (list[0] ? list[0].table_no : "");
+  const cur = list.find(x => x.table_no === sel) || list[0] || null;
+  const cache = obj(STATE.east_items);
+  const payload = cur ? obj(cache[cur.table_no]) : {};
+  const items = arr(payload.items);
+  const iq = String(STATE.east_iq || "").trim().toLowerCase();
+  const shown = items.filter(x => !iq ||
+    ((x.item_id || "") + " " + (x.item_name || "") + " " + (x.item_code || ""))
+      .toLowerCase().includes(iq));
+
+  const domChips = [`<button class="gbtn${dom === "" ? " on" : ""}" data-edom="">全部主题域</button>`]
+    .concat(arr(d.domains).map(x => `<button class="gbtn${dom === x ? " on" : ""}"
+      data-edom="${esc(x)}">${esc(x)}（${num(obj(st.by_domain)[x])}）</button>`)).join("");
+
+  const rows = shown.map(it => `<tr>
+      <td class="mono">${esc(it.item_id || "")}</td>
+      <td class="ttl">${esc(it.item_name || "")}</td>
+      <td>${it.is_pk === "Y" ? pill("主键", "ok") : '<span class="muted">—</span>'}</td>
+      <td>${it.nullable === "Y" ? '<span class="muted">可空</span>' : pill("必填", "warn")}</td>
+      <td class="mono">${esc(it.data_format || "—")}</td>
+      <td class="muted">${esc(_gCut(it.item_desc || it.value_range || "—", 70))}</td>
+    </tr>`).join("") || `<tr><td colspan="6" class="muted">${
+      cur ? (payload.items ? "无匹配数据项" : "加载中…") : "请选择左侧数据表"}</td></tr>`;
+
+  const listRows = list.map(x => `<button class="etbl${cur && x.table_no === cur.table_no ? " on" : ""}"
+      data-etbl="${esc(x.table_no)}" title="${esc(x.table_desc || x.table_name)}">
+      <span class="code">${esc(x.table_code || "—")}</span>
+      <span class="nm">${esc(x.table_name || "")}</span>
+      <span class="cnt">${num(x.item_count)}</span>
+    </button>`).join("") || '<div class="muted" style="padding:8px">无匹配数据表</div>';
+
+  const head = cur ? `<div class="toolbar" style="margin-bottom:6px">
+      <span class="tag">${esc(cur.domain || "")}</span>
+      <b>${esc(cur.table_code || "")}</b>
+      <span>${esc(cur.table_name || "")}</span>
+      <span class="mono">表编号 ${esc(cur.table_no || "")}</span>
+      <span class="muted">${num(cur.item_count)} 项 · 主键 ${num(cur.pk_count)}</span>
+      <span style="flex:1"></span>
+      <input id="eiq" placeholder="在本表内搜数据项…" value="${esc(STATE.east_iq || "")}"
+        style="width:220px;font-size:12px;padding:4px 8px">
+    </div>
+    ${cur.table_desc ? `<div class="muted" style="margin-bottom:8px;font-size:12.5px">${esc(cur.table_desc)}</div>` : ""}`
+    : "";
+
+  return `<h3 style="margin:var(--s4) 0 var(--s2)">
+      <span>EAST 数据结构 <span class="tag">${num(st.tables)} 张表 / ${num(st.items)} 个数据项</span></span>
+      <span class="hint">来源：${esc(d.source_file || "")}（${esc(d.generated_at || "")}）</span></h3>
+    <div class="kpibar" style="margin-bottom:var(--s2)">
+      ${kpi("数据表", num(st.tables), "张")}
+      ${kpi("数据项", num(st.items), "个")}
+      ${kpi("主键项", num(st.pk_items), "个")}
+      ${kpi("主题域", arr(d.domains).length, "个")}
+    </div>
+    <div class="muted" style="margin-bottom:var(--s2)">${esc(d.note || "")}</div>
+    <div class="eastwrap">
+      <div class="eastleft">
+        <input id="eq" placeholder="搜表名 / 表代码 / 表编号…" value="${esc(STATE.east_q || "")}"
+          style="width:100%;font-size:12px;padding:5px 8px;margin-bottom:6px">
+        <div class="echips">${domChips}</div>
+        <div class="elist">${listRows}</div>
+      </div>
+      <div class="eastright">${head}
+        <div class="scrollx"><table><thead><tr>
+          <th style="min-width:150px">数据项标识</th><th>数据项名称</th><th>主键</th>
+          <th>可空</th><th>数据格式</th><th>说明</th>
+        </tr></thead><tbody>${rows}</tbody></table></div>
+      </div>
+    </div>`;
+}
+
+function bindRegstats(){
+  const v = $("#view");
+  const loadItems = async (no) => {
+    if (!no) return;
+    const cache = STATE.east_items = Object.assign({}, obj(STATE.east_items));
+    if (cache[no]) return;
+    cache[no] = {items: null};            // 占位：渲染出"加载中"
+    const d = await api("/api/east/table?no=" + encodeURIComponent(no));
+    cache[no] = d;
+    render();
+  };
+  $$("[data-edom]", v).forEach(b => {
+    b.onclick = () => { STATE.east_domain = b.dataset.edom; STATE.east_sel = ""; render(); };
+  });
+  $$("[data-etbl]", v).forEach(b => {
+    b.onclick = async () => {
+      STATE.east_sel = b.dataset.etbl;
+      STATE.east_iq = "";
+      render();
+      await loadItems(STATE.east_sel);
+    };
+  });
+  const eq = $("#eq", v);
+  if (eq) eq.onkeydown = (e) => {
+    if (e.key === "Enter") { STATE.east_q = eq.value; STATE.east_sel = ""; render(); }
+  };
+  const eiq = $("#eiq", v);
+  if (eiq) eiq.onkeydown = (e) => {
+    if (e.key === "Enter") { STATE.east_iq = eiq.value; render(); }
+  };
+  // 首次进入：自动加载当前选中表的数据项
+  const cur = $$("[data-etbl].on", v)[0] || $$("[data-etbl]", v)[0];
+  if (cur && !obj(STATE.east_items)[cur.dataset.etbl]) loadItems(cur.dataset.etbl);
 }
 
 /*: 「留言板」—— 使用者反馈的**唯一入口**（对内网开放后必须有）

@@ -38,6 +38,7 @@ from config.exitcodes import ExitCode
 from interfaces.clause_index_api import clauses_dir as _clauses_dir
 from interfaces.clean_index_api import published_dir as _published_dir
 from interfaces.contract import attachment_view
+from interfaces.rfn_api import get_rfn_api as _get_rfn_api
 from interfaces.rfn_api import registry_paths as _registry_paths
 from std_lib.common_lib.norm import norm_docno
 
@@ -45,6 +46,9 @@ from std_lib.common_lib.norm import norm_docno
 # scrapers/data/clauses、classifier/data + 三个表）改经 interfaces 访问器
 # （gate_no_cross_module_import 判据 D 断言此纪律）。
 _RFN_PATHS = _registry_paths()
+#: 编码规则 SSOT（`rfn_of` / `unique_key`）——**绝不在本文件重算哈希**：
+#: 两处实现一旦漂移，同一条文件就会有两个编号（那正是"编号不可信"的来源）。
+_reg = _get_rfn_api()
 PUBLISH_DIR = _published_dir()
 CLAUSE_DIR = _clauses_dir()
 ATTR_CSV = _RFN_PATHS["attr_csv"]
@@ -157,10 +161,48 @@ def build() -> dict:
     def _rfn_of(dk: str, url: str, docno: str = "") -> str:
         """RFN 解析单入口（2026-09-13 rfn 透传收敛）：桥表 dedup_key → source_url → 发文字号（norm_docno）。
 
+        **只返回"入册"编号**（归属表/桥表里存在的号）。派生号见 `_rfn_or_derive`。
         records/clauses/attachments 三视图共用（原三处内联 fallback 重复收敛为单点）。
         """
         return (by_dedup.get(dk) or by_url.get(url)
                 or by_docno.get(norm_docno(docno)) or "")
+
+    #: 归属表里**全部**已入册编号（用于判定"派生结果是否其实已入册"）。
+    #:
+    #: ⚠️ 不能只用 `by_docno/by_dedup/by_url` 的并集：**无文号**的入册文件
+    #: 不会进 `by_docno`（那是 norm_docno→rfn 的映射）⇒ 会漏 17 个，
+    #: 表现为"派生号与归属表撞号"（实测）。故直接从归属表取全部编号。
+    registry_rfns = set(by_docno.values()) | set(by_dedup.values()) | set(by_url.values())
+    try:
+        from interfaces.rfn_api import attr_rows as _attr_rows
+
+        registry_rfns |= {(r.get("监管文件编号") or "").strip()
+                          for r in _attr_rows() if r.get("监管文件编号")}
+    except Exception:  # noqa: BLE001  归属表不可读 → 退化为桥表并集（不影响发布）
+        pass
+
+    def _rfn_or_derive(dk: str, url: str, docno: str, title: str,
+                       source: str, pub_date: str) -> tuple[str, str]:
+        """`(rfn, origin)`：入册优先；未入册则**派生**一个稳定编号。
+
+        为什么要给未入册记录也发号（2026-10-26）：
+          前台「政策法规」的唯一标识号列对 15323 条显示 "—"，用户无法引用/对账。
+          而 RFN 的编码规则本身就是 `md5(唯一键)[:16]` —— 对**任何**记录都可计算，
+          不需要先入册。区别只在语义：`registry` = 已被归属表收录（可 join 主题/时效），
+          `derived` = 仅本库内稳定标识（不入册、不参与主体名册）。
+        因此**新增 `rfn_origin` 字段**把两者分开，绝不用派生号冒充入册号。
+        """
+        reg = _rfn_of(dk, url, docno)
+        if reg:
+            return reg, "registry"
+        try:
+            uk = _reg.unique_key(docno or "", title or "", source or "", pub_date or "")
+            derived = _reg.rfn_of(uk)
+            # 派生结果若已在归属表 ⇒ 它**就是**入册文件（编号唯一键相同），
+            # 只是桥表/文号没回查到。标 registry 才如实反映"已收录"。
+            return derived, ("registry" if derived in registry_rfns else "derived")
+        except Exception:  # noqa: BLE001  派生失败不该阻断发布（退化为空号并如实标注）
+            return "", ""
 
     meta = {}            # record_id → {publish_date, timeliness_status, rfn}
     n_att = 0
@@ -184,14 +226,19 @@ def build() -> dict:
                 n_dup += 1
                 continue
             seen_rid.add(rid)
-            rfn = _rfn_of(dk, (rec.get("source_url") or "").strip(), rec.get("document_number") or "")
+            rfn, rfn_origin = _rfn_or_derive(
+                dk, (rec.get("source_url") or "").strip(), rec.get("document_number") or "",
+                (rec.get("title") or "").strip(),
+                (rec.get("source") or rec.get("_source_id") or "").strip(),
+                (rec.get("publish_date") or "").strip(),
+            )
             atts = rec.get("attachments") or []
             if isinstance(atts, list):
                 for a in atts:
                     if isinstance(a, dict):
                         n_att += 1
             yield {
-                "record_id": rid, "rfn": rfn,
+                "record_id": rid, "rfn": rfn, "rfn_origin": rfn_origin,
                 "title": (rec.get("title") or "").strip(),
                 "document_number": (rec.get("document_number") or "").strip(),
                 "issue_organ": (rec.get("issue_organ") or "").strip(),

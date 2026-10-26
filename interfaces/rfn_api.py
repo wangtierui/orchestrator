@@ -59,6 +59,24 @@ class RFNAPI:
 
         return rebuild_index()
 
+    # ---- 编码规则（2026-10-26：**必须从这里取**，不许调用方自己算哈希）----
+    #
+    # 背景：`base_publish` 需要为"未入册"的记录派生编号，而编码规则
+    # （`RFN- + md5(唯一键)[:16]`）原本只存在于 `rfn/registry.py` 的模块函数里，
+    # 未经本门面暴露 ⇒ 调用方要么 import 模块内部（破坏分层），要么自己写一份哈希
+    # （两处实现必然漂移，同一条文件会有两个编号）。
+    def unique_key(self, docno=None, title="", source="", pub_date=""):
+        """去重键值（与监管文件编号一一对应）。"""
+        from rfn.registry import unique_key
+
+        return unique_key(docno, title, source, pub_date)
+
+    def rfn_of(self, uk: str) -> str:
+        """由去重键值派生监管文件编号。"""
+        from rfn.registry import rfn_of
+
+        return rfn_of(uk)
+
     # ---- 溯源桥（Q1=A / R7：写者=reconcile 后处理；读取口=本接口）----
     def bridge_upsert(self, rfn, source, source_url, dedup_key, title, docno):
         """按 RFN 幂等 upsert 桥记录（保留既有锚；供 reconcile 后处理调用）。"""

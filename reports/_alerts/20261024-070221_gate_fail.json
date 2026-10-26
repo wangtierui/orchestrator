@@ -1,0 +1,31 @@
+{
+ "event": "gate_fail",
+ "title": "门禁未通过（链尾 gates rc=1，失败 2 条判据）",
+ "at": "2026-10-24T07:02:21",
+ "run_id": "RUN-20261024-060033-876",
+ "payload": {
+  "step": "gates",
+  "rc": 1,
+  "run_id": "RUN-20261024-060033-876",
+  "failed_gates": [
+   {
+    "gate": "配置与清单一致性（tools 清单 J1–J6/结构清单/退出码）",
+    "module": "gates.gate_config_integrity",
+    "problem_count": 143,
+    "problems": [
+     "J15: web\\assets\\index.html:319:41 括号 '{' 未闭合（前端语法错误会使整段脚本不执行 ⇒ 页面停在初始态，而服务端全绿 ⇒ 极易误判为后端故障）",
+     "J15: web\\assets\\index.html:320:38 括号 '${' 未闭合（前端语法错误会使整段脚本不执行 ⇒ 页面停在初始态，而服务端全绿 ⇒ 极易误判为后端故障）"
+    ]
+   },
+   {
+    "gate": "依赖治理与供应链安全（锁/影子依赖/CVE/SBOM/解释器路径）",
+    "module": "gates.gate_dependency_audit",
+    "problem_count": 1,
+    "problems": [
+     "D1: requirements.lock 与当前环境不一致（[lock] 与当前环境**不一致** —— 请运行 python -m tools.gen_lock 并提交变更）"
+    ]
+   }
+  ],
+  "triage": "python -m tools.gate_triage <gate> --run-id RUN-20261024-060033-876"
+ }
+}

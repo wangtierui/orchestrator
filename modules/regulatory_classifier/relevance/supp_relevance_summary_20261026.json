@@ -1,0 +1,39 @@
+{
+ "source": "supp",
+ "stamp": "20261026",
+ "csv": "modules/regulatory_scrapers/data/cleaned/supp_cleaned_20261026.csv",
+ "total": 58,
+ "layer": {
+  "BOUNDARY": 31,
+  "INCLUDE": 10,
+  "EXCLUDE": 17
+ },
+ "confidence": {
+  "BOUNDARY/低": 31,
+  "INCLUDE/高": 6,
+  "EXCLUDE/中": 11,
+  "INCLUDE/中": 4,
+  "EXCLUDE/—": 6
+ },
+ "fin_hit": 51,
+ "decisions_exported": [
+  "BOUNDARY",
+  "EXCLUDE",
+  "INCLUDE"
+ ],
+ "elapsed_s": 0.6,
+ "year_top": {
+  "1997": 1,
+  "2003": 2,
+  "2005": 1,
+  "2007": 1,
+  "2008": 1,
+  "2009": 3,
+  "2010": 3,
+  "2012": 1,
+  "2013": 2,
+  "2014": 4,
+  "2015": 2,
+  "2017": 4
+ }
+}

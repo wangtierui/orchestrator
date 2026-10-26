@@ -385,7 +385,7 @@ def list_external_page(
     where.extend(w_q)
     args.extend(a_q)
     clause = (" WHERE " + " AND ".join(where)) if where else ""
-    cols = ("record_id,rfn,title,document_number,issue_organ,publish_date,"
+    cols = ("record_id,rfn,rfn_origin,title,document_number,issue_organ,publish_date,"
             "effective_date,timeliness_status,source,url,body_len,theme")
     with _conn("external") as c:
         total = c.execute(f"SELECT COUNT(*) FROM records{clause}", args).fetchone()[0]
@@ -395,6 +395,61 @@ def list_external_page(
             [*args, size, (page - 1) * size])
         items = [dict(r) for r in rows]
     return _page_result(items, total, page, size, sort, desc)
+
+
+def titles_by_refs(*, rfns: list[str] | None = None,
+                   ipns: list[str] | None = None) -> dict[str, str]:
+    """批量 `ref → 标题`（图谱节点显示名称的唯一来源）。
+
+    为什么必须查底座而不是"用关系行里的名字"：
+      关系行的 `dst_name` 是**引用文本**（可能为空、可能是简称/错字），
+      `dst_key`（cleaned dedup_key）更不是人话。档案名只存在于两处：外部 `records.title`
+      与内部 `policies.title`。在这里一次批量取出，避免每个视图各写一套回查。
+    分块（900/批）：SQLite 默认的变量上限是 999，16607 条 ref 一次 IN 会报
+    `too many SQL variables`（实测）。
+    """
+    out: dict[str, str] = {}
+
+    def _chunks(seq: list[str], size: int = 900):
+        for i in range(0, len(seq), size):
+            yield seq[i: i + size]
+
+    try:
+        with _conn("external") as c:
+            for part in _chunks([r for r in (rfns or []) if r]):
+                q = ("SELECT rfn, title FROM records WHERE rfn IN (%s)"
+                     % ",".join("?" * len(part)))
+                for row in c.execute(q, part):
+                    if row[1]:
+                        out[row[0]] = str(row[1])
+        with _conn("internal") as c:
+            for part in _chunks([r for r in (ipns or []) if r]):
+                q = ("SELECT ipn, title FROM policies WHERE ipn IN (%s)"
+                     % ",".join("?" * len(part)))
+                for row in c.execute(q, part):
+                    if row[1]:
+                        out[row[0]] = str(row[1])
+    except sqlite3.Error:
+        return out
+
+    # 回退：**归属表**里的名称（已入册但不在底座 records 的文件）。
+    # 实测两个 RFN（银行保险监管统计管理办法 / 金融机构大额交易和可疑交易报告管理办法）
+    # 在关系里被引用、在归属表里有名字，但 `records` 里没有对应行 —— 它们属于
+    # "入册、但当前发布件未收录"。若只查底座，图谱上这两个节点就只剩编码。
+    missing = [r for r in (rfns or []) if r and r not in out]
+    if missing:
+        try:
+            from interfaces.rfn_api import attr_rows
+
+            want = set(missing)
+            for row in attr_rows():
+                ref = (row.get("监管文件编号") or "").strip()
+                title = (row.get("文件名称") or "").strip()
+                if ref in want and title:
+                    out[ref] = title
+        except Exception:  # noqa: BLE001  归属表不可读不应影响列表
+            pass
+    return out
 
 
 def external_facets() -> dict:

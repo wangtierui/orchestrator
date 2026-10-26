@@ -37,6 +37,13 @@
     },
     {
       "category": "tool",
+      "entry": "EAST 数据结构一览（数据表/数据项 → data/east/east_structure.json）",
+      "file": "build_east_structure.py",
+      "independent": true,
+      "independent_why": "刻意独立：源文件是外部下发的一览表（不在仓内、不定期更新），按需人工/CI 重建产物；非 STEP_ORDER 链路节点"
+    },
+    {
+      "category": "tool",
       "entry": "外部法规权威表生成（语料外目标的独立键空间 RFN-EXT-*）",
       "file": "build_external_authority.py",
       "independent": false,
