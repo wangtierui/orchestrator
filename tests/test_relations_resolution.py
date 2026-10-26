@@ -277,9 +277,12 @@ class TestMetricDefinition:
         c = R.global_graph()["counts"]
         total = c["total_relations"]
         denom = c["file_denominator"]
+        uv = c["unresolved_by_view"]
+        # 2026-10-26 口径变化：R-DEP-06 让机关名**不进产物** ⇒ 分母 == 总数，
+        # organ 桶恒为 0。若再对分母二次扣减，就是重复剔除（会把比率算高）。
+        assert sum(v["organ"] for v in uv.values()) == 0, "产物仍残留机关名边"
         assert 0 < denom <= total
-        # organ(机关名) + generic(泛指) 被剔除 ⇒ 分母必须显著小于总数
-        assert denom < total, "分母未剔除机关名/泛指词"
+        assert denom == total, f"分母被重复扣减：{denom} != {total}"
 
     def test_ratio_improved_vs_baseline(self) -> None:
         """回归基线：本批把 entity 定位率从 20.9% 提到 40%+（只降不升即回归）。"""

@@ -57,6 +57,26 @@ from std_lib.common_lib.relations.patterns import (
 )
 
 
+def _organ_excluded_from_stat(fallback: int = 0) -> int:
+    """机关名排除量：**优先读上游 `relations_stat.excluded_organ`**。
+
+    2026-10-26（R-DEP-06）：机关名在抽取层即被剔除，关系产物里没有 organ 行，
+    本模块遍历关系得到的计数恒为 0。若沿用它，页面会显示"排除机关名 0 条"——
+    与事实（实测 1068 条）相反。故改为读上游统计，并保留 fallback 以便旧产物兼容。
+    """
+    try:
+        import json
+        import os
+
+        p = os.path.join(os.path.dirname(R.INDEX_PATH), "relations_stat.json")
+        if os.path.exists(p):
+            st = json.load(open(p, encoding="utf-8"))
+            return int(st.get("excluded_organ") or 0)
+    except Exception:  # noqa: BLE001  统计不可读 → 退回遍历计数
+        pass
+    return int(fallback or 0)
+
+
 def _collect() -> tuple[list[dict], dict]:
     """→ (权威表行, 统计)。纯函数（除读产物外无副作用），便于 `--check` 复用。"""
     rows = R.load("all")
@@ -124,7 +144,8 @@ def _collect() -> tuple[list[dict], dict]:
         "by_guise": dict(by_guise),
         "skipped_no_evidence": skipped_no_evidence,
         "corpus_weak_excluded": corpus_weak,
-        "organ_excluded": excluded_organ,
+        # 机关名（上游已剔除，见下）
+        "organ_excluded": _organ_excluded_from_stat(excluded_organ),
         "note": ("只登记 `dst_class == external` 的**语料外文件**。"
                  "'organ_excluded' 是机关名（不是文件，故不登记）；"
                  "'corpus_weak_excluded' 是已采集未登记 RFN 的语料文件（应走 RFN 补登记）。"),

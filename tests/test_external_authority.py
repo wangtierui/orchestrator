@@ -121,7 +121,10 @@ class TestInclusionCriteria:
         from interfaces import external_api as E
 
         st = E.load_stat()
-        assert int(st.get("organ_excluded") or 0) > 0
+        # 机关名在**抽取层**剔除（R-DEP-06），本表统计改读上游
+        # `relations_stat.excluded_organ` —— 断言"有来源且非空"。
+        assert int(st.get("organ_excluded") or 0) > 0, (
+            "机关名排除量未披露（应读 relations_stat.excluded_organ）")
         assert int(st.get("corpus_weak_excluded") or 0) > 0
 
 
