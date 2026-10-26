@@ -11,7 +11,6 @@ warning: The `
 [step:collect:nfra] SKIP（--dry-run（只列 argv，不执行））
 [collect] pbc argv=['<PY>', '<ROOT>\\modules\\regulatory_scrapers\\collectors\\pbc\\collector.py', '--out', '<ROOT>\\modules\\regulatory_scrapers\\data\\raw']
 [step:collect:pbc] SKIP（--dry-run（只列 argv，不执行））
-[collect] supp 无网络采集（本地摄取/清洗刷新）→ 跳过
 [collect] supp：未触发本地摄取（经 --supp-batch <backlog.json> 或 collectors/supp/ingest_local_dir.py）
 [clean] gov: raw <mb>MB → 超时 1800s（N-150 按体量配置；原固定 1800s）
 [step:clean:gov] SKIP（--dry-run（只列 argv，不执行））
