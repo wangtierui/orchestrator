@@ -158,7 +158,9 @@ class TestEastSourceAndLayouts:
         from interfaces import attachment_api as A
         from tools.build_east_structure import parse_tables
 
-        official = A.attachment_file("金非银检函〔2025〕82号", "1-3")[0]
+        hits = A.attachment_file("金非银检函〔2025〕82号", "1-3")
+        assert hits, "附件1-3 不在采集事实源里"
+        official = hits[0]
         cands = [p for p in glob.glob(
             "data/corpus/regulatory_stats/**/*数据结构一览表*WTR.xlsx", recursive=True)]
         cur = parse_tables(official)
@@ -300,9 +302,11 @@ class TestPerUserToken:
         from web import auth
 
         ck, _c, _e = auth.issue_session("zhangsan", level="shared")
-        assert auth.parse_session(ck)["level"] == "shared"
+        ses = auth.parse_session(ck)
+        assert ses is not None and ses["level"] == "shared"
         ck2, _c2, _e2 = auth.issue_session("zhangsan", level="user")
-        assert auth.parse_session(ck2)["level"] == "user"
+        ses2 = auth.parse_session(ck2)
+        assert ses2 is not None and ses2["level"] == "user"
 
     def test_health_reports_audit_level(self) -> None:
         from web import api

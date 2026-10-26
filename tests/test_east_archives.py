@@ -77,9 +77,9 @@ def _code_only(src: str) -> str:
         body = getattr(node, "body", None)
         if not isinstance(body, list):      # `IfExp.body` 等不是语句列表
             continue
-        if body and isinstance(body[0], ast.Expr) and isinstance(
-                getattr(body[0], "value", None), ast.Constant):
-            doc = body[0].value.value or ""
+        if body and isinstance(body[0], ast.Expr):
+            const = body[0].value          # `Expr.value` 是 expression，运行时才知是 Constant
+            doc = str(const.value) if isinstance(const, ast.Constant) else ""
             if doc:
                 out = out.replace(doc, "")
     return out

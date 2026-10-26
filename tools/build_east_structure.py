@@ -191,7 +191,12 @@ def parse_tables(path: str) -> dict:
         for k in CARRY_KEYS:
             if not rec.get(k):
                 rec[k] = ctx.get(k, "")
-        key = rec.get("table_no") or rec.get("table_code")
+        # `rec` 的值类型是 str（`_s()` 已归一），mypy 看到的是 `Any|None`：
+        # 显式 `str()` 收窄；**空键跳过**（既无表编号又无表名的行不是数据项）
+        key = str(rec.get("table_no") or rec.get("table_code") or "")
+        if not key:
+            n_skipped += 1
+            continue
         tbl = tables.get(key)
         if tbl is None:
             meta = toc.get(key, {})
@@ -485,10 +490,17 @@ def collect(docno: str = NOTICE_DOCNO) -> dict:
             raise FileNotFoundError(f"{docno} 缺少附件{no}")
         return it
 
+    def _first_file(no: str) -> str:
+        """附件号 → 首个物理文件（缺附件时抛错：**早失败**胜过静默降级）。"""
+        hits = ATT.attachment_file(docno, no)
+        if not hits:
+            raise FileNotFoundError(f"{docno} 缺少附件{no}")
+        return hits[0]
+
     pick("1-3")   # 断言附件1-3 存在（缺失即抛，早失败）
-    parsed = parse_tables(ATT.attachment_file(docno, "1-3")[0])
-    codes = parse_codes(ATT.attachment_file(docno, "1-4")[0]) if "1-4" in items else []
-    rules = parse_rules(ATT.attachment_file(docno, "1-5")[0]) if "1-5" in items else {}
+    parsed = parse_tables(_first_file("1-3"))
+    codes = parse_codes(_first_file("1-4")) if "1-4" in items else []
+    rules = parse_rules(_first_file("1-5")) if "1-5" in items else {}
     er = build_er(parsed["tables"], rules)
 
     docs = []
@@ -506,7 +518,7 @@ def collect(docno: str = NOTICE_DOCNO) -> dict:
         att = items[no]
         sheets.append({"no": no, "name": att["name"], "kind": att["kind"],
                        "text_len": att["text_len"],
-                       **describe_sheet(att, ATT.attachment_file(docno, no)[0])})
+                       **describe_sheet(att, _first_file(no))})
 
     att_list = [{"no": it["no"], "name": it["name"], "kind": it["kind"],
                  "bytes": it["bytes"], "sha256": (it["sha256"] or "")[:16],

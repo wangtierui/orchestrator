@@ -4001,3 +4001,23 @@ python -m web.auth token --revoke zhangsan             # 吊销
 ruff 0 ｜ 新增守卫 4 组（archives / EAST v2 / mof wiring / relations gen-sync）｜
 `attachment_api` 12 个附件（1-2 已补出正文）｜ `/api/east` 112 表、规则 E 320 条、
 代码表按 sheet 取 19 行 ｜ 整链见下方运行记录。
+
+### ⑦ 工程基建：mypy 的结构性死锁（第一百一十六批附记）
+
+跑 `python -m mypy .` 一直"看起来通过"，实际是**整体中止**：
+
+```
+tools/backlog_governance.py: error: Source file found twice under different module
+names: "backlog_governance" and "tools.backlog_governance"
+```
+
+`tools/` 是脚本目录（必须能 `python tools/x.py` 直接跑），没有 `__init__.py`，
+于是同一份文件既作顶层模块、又作包内模块被看到 ⇒ mypy 只报这一条就退出，
+**147 条真实类型问题被它挡在后面**。
+
+处置：`pyproject.toml` 加 `explicit_package_bases = true` + `namespace_packages = true`
+（在检查器侧统一模块名，不改运行方式）。修后基线显形，本批把自己改动涉及的 12 条清零，
+其余 **135 条**登记 TD-34 并给出按层推进顺序。
+
+> 教训：**"检查通过"与"检查没跑"必须能区分**。凡是外部工具的输出只做 `tail -1` 的，
+> 都可能把 `error: ... found twice` 这种**首行即终止**的失败当成 0 错误。

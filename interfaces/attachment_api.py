@@ -98,7 +98,9 @@ def attachments_for_docno(docno: str, *, with_text: bool = False,
             txt = a.get("text") or ""
             item["text"] = txt[:text_head] if text_head else txt
         items.append(item)
-    items.sort(key=lambda x: (len(x["no"]), x["no"]))
+    # `items` 是 `list[dict[str, object]]`，`x["no"]` 对 mypy 是 `object`；
+    # 排序键需要 `len()` 与可比较 —— 显式转 `str`（运行时值本来就是 str）。
+    items.sort(key=lambda x: (len(str(x.get("no") or "")), str(x.get("no") or "")))
     out = {
         "available": True,
         "docno": str(rec.get("document_number") or rec.get("docno") or ""),
