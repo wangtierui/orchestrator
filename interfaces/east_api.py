@@ -143,7 +143,10 @@ def codes() -> dict:
     return {"available": True, "count": d.get("count", 0),
             "tables": [{"sheet": t.get("sheet"), "id": t.get("id"),
                         "name": t.get("name"), "count": t.get("count"),
-                        "columns": t.get("columns"), "normalized": t.get("normalized")}
+                        "columns": t.get("columns"),
+                        "hierarchy": bool(t.get("hierarchy")),
+                        "toc_name": t.get("toc_name", ""),
+                        "upgrade_type": t.get("upgrade_type", "")}
                        for t in d.get("tables") or []]}
 
 

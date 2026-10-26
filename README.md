@@ -844,33 +844,24 @@ python -m tools.build_external_authority --check    # 校验编号稳定/无冲�
 **指标口径**（分开报，不许合成一个更好看的数）：
 `file_resolved_ratio` = 语料内定位率；`attributed_ratio` = （实体 + 外部）/分母。
 
-### 6.11 EAST 规范（全附件结构与 E-R）
+### 6.11 EAST 规范（六页签：概览 / 数据表 / 数据元 / 代码表 / 检核规则 / E-R）
 
 ```bash
 python -m tools.build_east_structure            # 生成四件产物（按文号自动取附件）
-python -m tools.build_east_structure --check     # 校验结构（表/项/代码表/规则/E-R）
-python -m tools.repair_attachment_text --docno "金非银检函〔2025〕82号"          # 补抽（dry-run）
-python -m tools.repair_attachment_text --docno "金非银检函〔2025〕82号" --apply  # 回写事实源
+python -m tools.build_east_structure --check     # 校验结构
+python -m tools.repair_attachment_text --docno "金非银检函〔2025〕82号" [--apply]   # 补抽正文
 ```
 
 | 项 | 说明 |
 |---|---|
-| 附件事实源 | **采集目录**（`modules/regulatory_scrapers/data/docs/supplementary_regulations_scraper`），经 `interfaces/attachment_api` 单一读取；索引在 `supplementary_regulations.jsonl` 的 `attachments[]`（含 sha256/正文） |
-| 产物（四件） | `data/east/east_structure.json`（首屏 ~423KB）/ `east_items.json`（按表）/ `east_rules.json`（按类）/ `east_codes.json`（按表） |
-| 覆盖 | 附件 1 / 1-1 / 1-2 / 1-3（112 表 3062 项）/ 1-4（63 代码表 9543 行）/ 1-5（规则 2096 条）/ 1-6（E-R）+ 表单 2/3/4/5/6 |
-| E-R | 边来自**机器可读证据**：1-5-E 表间关联规则 319 条 + 1-3「关联数据项」362 条（112 节点 / 681 边） |
-| 页面 | 监管统计 → 概览 / 数据表 / 代码表 / 检核规则 / E-R 图（数据项、代码表、规则按需懒加载） |
-| 边界 | **只做查阅**：不校验报文、不生成 EAST 数据 |
-
-**两份存档的关系**：`data/corpus/regulatory_stats/**` 是**人工证据归档**；其中 `20250410/`
-的 13 个文件与采集目录**逐字节相同**（14.68MB），程序**只读采集目录**；归档里另有官方 zip、
-征求意见稿与后续通报（采集拿不到）。详见该目录 `README.md` 与 `_archive_manifest.json`，
-守卫 `tests/test_east_archives.py` 保证两边不漂移。
-
-**为什么"按表头名映射"而不是按列序**：总局下发过两版一览表（24 列 WTR / 16 列官方修订版，
-且官方版表编号只出现在"表标题行"），按列序取会把官方版解析成"1 张表 / 15 项"。现规则是
-"表头归一后按名映射 + 表上下文向下继承"，两版都能解析；`数据格式/取值范围` 由
-`数据元说明` 字典 join 回来（官方版数据项行不带这两列）。
+| 代码结构 | `tools/east_parse.py`（**解析**：1-3 版式 / 1-4 目录与层级 / 1-5 规则 / E-R）+ `tools/build_east_structure.py`（**编排**：取附件 → 落四件 → 自检） |
+| 附件事实源 | 采集目录（`…/supplementary_regulations_scraper`），经 `interfaces/attachment_api` 单一读取 |
+| 产物（四件） | `east_structure.json`（首屏）/ `east_items.json`（按表）/ `east_rules.json`（按类）/ `east_codes.json`（按表） |
+| 覆盖 | 附件 1 / 1-1 / 1-2 / 1-3（112 表 3062 项）/ 1-4（63 代码表）/ 1-5（规则 2096 条）/ 1-6（E-R）+ 表单 2~6 |
+| **数据元** | 每个数据项带 `element_code/name/desc/value_range`；`code_ref` 由 `参照《业务代码表》“X”，编号CDyyyyyy` 解析，页面可点跳代码表（`枚举值：…` 不给链接） |
+| **代码表** | 编号取自附件1-4「目录」表（`CD000001`…）；目录名与工作表名不一致时按归一/包含/相似度匹配，**不臆造编号**；「返回目录」列与单元格残留均在抽取层剔除；多级表按层级缩进 |
+| E-R | 边来自机器可读证据：1-5-E 319 条 + 1-3「关联数据项」362 条（112 节点 / 681 边） |
+| 呈现 | 关系图与 E-R 均为 **3D**（自研正交投影引擎：拖拽旋转 / 滚轮缩放 / 点节点聚焦），**零外链** |
 
 ## 7. 附录与延伸阅读
 

@@ -652,10 +652,12 @@ def global_graph(*, top_hubs: int = 15, top_theme_docs: int = 12,
         "in_corpus": False,
     } for x in top_ext]
 
-    s = stat() or {}
-    res = s.get("resolution") or {}
-    rel = s.get("relations") or {}
-    by_cross = rel.get("by_cross") or {}
+    # 注意：本函数前文的循环变量已用过 `s`/`rel`（str 型），
+    # 这里若复用同名变量，mypy 会按首次赋值定成 str ⇒ 16 条假错误。
+    st_all = stat() or {}
+    res = st_all.get("resolution") or {}
+    rel_all = st_all.get("relations") or {}
+    by_cross = rel_all.get("by_cross") or {}
     counts = {
         "documents": len(left) + len(right) + len(ii_nodes),
         "edges": len(cross_edges) + len(ii_edges),
@@ -664,7 +666,7 @@ def global_graph(*, top_hubs: int = 15, top_theme_docs: int = 12,
         "regulatory_relations": int(by_cross.get("regulatory->regulatory") or 0),
         "internal_relations": int(by_cross.get("internal->internal") or 0),
         "cross_relations": int(by_cross.get("internal->regulatory") or 0),
-        "total_relations": int(rel.get("total") or 0),
+        "total_relations": int(rel_all.get("total") or 0),
         # 各视图的"未定位"条数（**必须逐视图披露**：总盘子的 2462 条对读者没意义）
         "unresolved_by_view": {
             "internal_to_regulatory": cross_b,
@@ -672,20 +674,20 @@ def global_graph(*, top_hubs: int = 15, top_theme_docs: int = 12,
             "internal_to_internal": int_b,
         },
         # 口径：分母剔除 organ/generic（机关名/泛指词不是文件）
-        "file_denominator": int(s.get("file_level_denominator") or 0),
-        "file_resolved_ratio": s.get("file_resolved_ratio"),
-        "file_located_ratio": s.get("file_located_ratio"),
-        "resolved_to_entity_ratio": s.get("resolved_to_entity_ratio"),
-        "located_in_corpus_ratio": s.get("located_in_corpus_ratio"),
+        "file_denominator": int(st_all.get("file_level_denominator") or 0),
+        "file_resolved_ratio": st_all.get("file_resolved_ratio"),
+        "file_located_ratio": st_all.get("file_located_ratio"),
+        "resolved_to_entity_ratio": st_all.get("resolved_to_entity_ratio"),
+        "located_in_corpus_ratio": st_all.get("located_in_corpus_ratio"),
         # 外部法规权威（独立键空间，语料外）
         "external_total": int(ext_stat.get("total") or 0),
         "external_evidence": int(ext_stat.get("evidence_total") or 0),
         "external_by_guise": ext_stat.get("by_guise") or {},
         # **归属率**（含外部权威）：与"语料内定位率"分开报，不许合成一个数字
         "attributed_ratio": (round(
-            (int(s.get("target_class", {}).get("entity") or 0)
-             + int(s.get("target_class", {}).get("external") or 0))
-            / int(s.get("file_level_denominator") or 1), 4)),
+            (int(st_all.get("target_class", {}).get("entity") or 0)
+             + int(st_all.get("target_class", {}).get("external") or 0))
+            / int(st_all.get("file_level_denominator") or 1), 4)),
     }
     views = [
         {"key": "internal_to_regulatory", "label": "公司制度 → 监管依据",
@@ -753,8 +755,8 @@ def global_graph(*, top_hubs: int = 15, top_theme_docs: int = 12,
         "hubs": hub_nodes,
         "counts": counts,
         "stats": {"resolution": res,
-                  "resolved_to_entity_ratio": s.get("resolved_to_entity_ratio"),
-                  "file_resolved_ratio": s.get("file_resolved_ratio")},
+                  "resolved_to_entity_ratio": st_all.get("resolved_to_entity_ratio"),
+                  "file_resolved_ratio": st_all.get("file_resolved_ratio")},
         "labels": dict(RELATION_LABELS),
         "note": (f"全库 {counts['total_relations']} 条关系：监管↔监管 "
                  f"{counts['regulatory_relations']}、制度↔制度 "

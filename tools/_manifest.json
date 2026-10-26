@@ -124,6 +124,11 @@
     },
     {
       "category": "pipeline",
+      "entry": "EAST 附件解析子模块（1-3 版式/1-4 目录与层级/1-5 规则/E-R），被 tools/build_east_structure.py 调用；无独立 CLI",
+      "file": "east_parse.py"
+    },
+    {
+      "category": "pipeline",
       "entry": "阶段 2.6 关系全量重抽（cli.py relations gen 的被调实现）",
       "file": "extract_relations.py"
     },

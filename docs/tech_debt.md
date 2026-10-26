@@ -101,7 +101,7 @@ W5 自身（约 8 个批次）即该预算的**首次实践**：W0–W4 的 A–
 | TD-32 | **mof 采集器脚本形态两处致命属性缺陷** | 采集 | 稳定性 | 0 | 2026-10-26 | **已处置**：`_att_mod` 补脚本形态绝对导入兜底；`EarlyStopGuard` 三个计数移入 `__init__`（原在 property `return` 之后，永不执行）。整链 `collect:mof` 不再因收尾 NameError 判 FAIL。 |
 | TD-33 | **EAST 材料两份存档（14.68MB 逐字节重复）** | 数据治理 | 冗余 | 0 | 2026-10-26 | **已收敛读取路径**：`interfaces/attachment_api` 为唯一读口（指向采集目录），解析工具不再 glob 归档目录；归档保留作人工证据，`_archive_manifest.json` 记录 13 对 sha256，守卫 `tests/test_east_archives.py` 防单边更新。**残留**：物理重复仍在（14.68MB），如需彻底消除，可在确认 zip 可重建后删除 `20250410/` 解压件（需人工决策）。 |
 
-| TD-34 | **mypy 曾因「同一文件两种模块名」整体中止 ⇒ 类型检查长期形同虚设** | 工程基建 | 可维护性 | 1 | 2026-10-26 | **已修配置**：`pyproject.toml` 加 `explicit_package_bases` + `namespace_packages`（`tools/` 是脚本目录、无 `__init__.py`，同时以裸名与 `tools.*` 被看到）。**代价是基线显形**：原本恒 1 条死锁式报错，修后一次暴露 **135 条**真实类型问题（tests 81 / tools 19 / modules 16 / interfaces 16 / watcher 2 / web 1）。本批已把**自己新增/改动的 12 条**清零（build_east_structure 7、attachment_api 1、test_east_* 4）。**残留**：其余 135 条为历史存量，需按层推进（建议顺序 interfaces → tools → web → modules → tests，每层单独 PR 并逐条给判据）。 |
+| TD-34 | **mypy 曾因「同一文件两种模块名」整体中止 ⇒ 类型检查长期形同虚设** | 工程基建 | 可维护性 | 1 | 2026-10-26 | **已修配置**：`pyproject.toml` 加 `explicit_package_bases` + `namespace_packages`（`tools/` 是脚本目录、无 `__init__.py`，同时以裸名与 `tools.*` 被看到）。**代价是基线显形**：原本恒 1 条死锁式报错，修后一次暴露 **135 条**真实类型问题（tests 81 / tools 19 / modules 16 / interfaces 16 / watcher 2 / web 1）。本批已把**自己新增/改动的 12 条**清零（build_east_structure 7、attachment_api 1、test_east_* 4）。**残留**：其余 **122** 条为历史存量（第一百一十七批又清了 relations_api 的 16 条），需按层推进（建议顺序 interfaces → tools → web → modules → tests，每层单独 PR 并逐条给判据）。 |
 
 ## 七、复核节奏
 
