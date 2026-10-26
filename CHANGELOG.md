@@ -3928,3 +3928,76 @@ python -m web.auth token --revoke zhangsan             # 吊销
 **30 门禁 PASS**、ruff 0、mypy 0；本批新增守卫 **42 项**（规则 18 + EAST/标识/令牌 24）；
 真实接口：`/api/east` 112 表、`/api/east/table?no=00101` 26 项、图谱 253 节点 0 无名、
 政策法规 0 条空号、公司制度 0 条脏标题。
+## [Unreleased] 2026-10-26 — EAST 全附件 + E-R 图 + 附件单一事实源 + 两个采集器致命缺陷（第一百一十六批）
+
+### ① 两份存档的关系与冗余（用户提问，用架构回答）
+
+实测：
+
+| 位置 | 文件数 | 角色 |
+|---|---|---|
+| `modules/regulatory_scrapers/data/docs/supplementary_regulations_scraper` | 20 | **采集产物**（规范命名、可重放、底座 `attachments[].local_path` 指向它） |
+| `data/corpus/regulatory_stats/00.关于修订…通知` | 174 | **人工证据归档**（3 个官方 zip、征求意见稿 90+ 份、后续通报 5 份、20250410 解压件 13 份） |
+
+**`20250410/` 的 13 个文件与采集目录逐字节相同（14.68MB），且没有采集目录之外的内容。**
+
+处置：不是删文件，而是**收敛读取路径**——
+新增 `interfaces/attachment_api.py` 作为附件清单/路径/正文的**唯一读取口**（直接读
+`supplementary_regulations.jsonl` 的 `attachments[]`），`tools/build_east_structure.py`
+改为**按 `attachment_no` 取文件**，不再 glob 任何目录。归档目录保留为人工追溯，
+并新增 `README.md` + `_archive_manifest.json`（13 对 sha256）+ 守卫
+`tests/test_east_archives.py`：**冗余允许存在，但不允许悄悄漂移**。
+
+### ② 两个采集器致命缺陷（整链 `collect:mof rc=1` 的真因，stderr 1.9MB）
+
+| 缺陷 | 机理 | 为什么长期没被发现 |
+|---|---|---|
+| `_att_mod` 未绑定 | `try: from . import attachments as _att_mod / except ImportError: pass`；链上以**脚本形态**跑 `collector.py`，相对导入必失败，收尾读 `_att_mod.REUSE_STATS` ⇒ `NameError` | 数据已落盘，只有"步骤判 FAIL"；导入式单测与交互式调试都不触发 |
+| `EarlyStopGuard` 属性未初始化 | `reason / skipped_in_run / restored_from_history` 被写在 `deadline` property 的 `return` **之后**（永不执行），而 `__slots__` 声明了它们 ⇒ 第一次 `+= 1` 就 `AttributeError` | 只在"早停/跳过"路径触发 |
+
+守卫 `tests/test_mof_collector_wiring.py`：静态断言 + **真跑一次脚本形态（1 秒预算）**。
+
+### ③ `sniff_kind` 把 docx 认成 xlsx（正文永久为空）
+
+原实现用**原始字节子串**判 xlsx（`b"xl/" in data[:2MB]`）—— ZIP 是压缩流，这类短串纯属巧合
+也会出现。实测把附件1-2（76KB docx）判成 xlsx ⇒ `File contains no valid workbook part`、
+`extract_status=corrupt`、**正文为空**（底座里也是空，页面看不到 1-2 任何内容）。
+改为读 **ZIP 中央目录成员名**（`xl/` / `word/` / `ppt/`），损坏容器退扩展名。
+
+配套 `tools/repair_attachment_text.py`：用修好的 SSOT 补抽历史空文本并**原子回写**事实源
+（单写口、默认 dry-run；实测补出 1-2 的 2785 字，图片类按设计跳过）。
+
+### ④ 单个巨型附件不再拖死整链（三次整链实测）
+
+| 现象 | 根因 | 修法 |
+|---|---|---|
+| 51.6MB《进出口税则》PDF → 5.8GB / 40 分钟 | 抽取 SSOT 无大小上限 | `MAX_EXTRACT_BYTES=40MB` + `MAX_PDF_PAGES=400`（先判后解析，记 `too_large`） |
+| 加限后仍 7.8GB | `structured_table_fields` / `rich_object_fields` 对同一份字节**各开一次解析器** | 上限下沉到这两个函数本身（同一常量源） |
+| `r.read()` 全量入内存 | 下载无上限 | 改**流式 + 80MB 上限** |
+
+### ⑤ EAST 全附件结构化（四件产物）+ E-R 图
+
+| 附件 | 产出 |
+|---|---|
+| 1-3 数据结构一览表 | 112 表 / 3062 项 / 307 数据元 / 3062 项全带数据格式 |
+| 1-4 业务代码表 | **63 张 / 9543 行**，多级/复合表**保留原始列**（不硬塞成"代码/名称"） |
+| 1-5 检核规则 | **2096 条**：A 条件必填 267 / B 值域 552 / C 码表 867 / D 表内逻辑 90 / E 表间关联 320 |
+| 1-6 E-R 图 | 官方图元数据；**边由机器可读证据生成**：1-5-E 319 条 + 1-3「关联数据项」362 条 ⇒ 112 节点 / 681 边 |
+| 1 / 1-1 / 1-2 | 规模 + 标题预览（全文留在事实源，不复制 300 万字符） |
+| 2/3/4/5/6 | 表单类元数据（行×列、表头） |
+
+产物拆分（首版 9.8MB → 首屏 423KB）：`east_structure.json` / `east_items.json`（按表）/
+`east_rules.json`（按类）/ `east_codes.json`（按表）。
+
+页面：监管统计 → **五个分页**（概览 / 数据表 / 代码表 / 检核规则 / E-R 图）。E-R 按主题域
+分弧排布、默认细线、点节点高亮其边（681 条同屏等粗会变噪声）。
+
+### ⑥ `relations gen` 与 sync 合并为一条命令
+
+`relations gen` 收尾自动投影（`project_metadata(only=("relation",))` 白名单，避免空表清库），
+新增 `relations sync [--check]`；`--no-sync` 逃生口。此前"gen 写完 jsonl，界面仍读旧库"。
+
+### 验证
+ruff 0 ｜ 新增守卫 4 组（archives / EAST v2 / mof wiring / relations gen-sync）｜
+`attachment_api` 12 个附件（1-2 已补出正文）｜ `/api/east` 112 表、规则 E 320 条、
+代码表按 sheet 取 19 行 ｜ 整链见下方运行记录。

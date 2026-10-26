@@ -844,32 +844,33 @@ python -m tools.build_external_authority --check    # 校验编号稳定/无冲�
 **指标口径**（分开报，不许合成一个更好看的数）：
 `file_resolved_ratio` = 语料内定位率；`attributed_ratio` = （实体 + 外部）/分母。
 
-### 6.11 EAST 数据结构（数据表 / 数据项浏览）
+### 6.11 EAST 规范（全附件结构与 E-R）
 
 ```bash
-python -m tools.build_east_structure            # 自动发现仓内源文件并生成产物
-python -m tools.build_east_structure --xlsx <路径>   # 指定源文件（换版时用）
-python -m tools.build_east_structure --check     # 校验结构（表/项/主键/编号唯一）
+python -m tools.build_east_structure            # 生成四件产物（按文号自动取附件）
+python -m tools.build_east_structure --check     # 校验结构（表/项/代码表/规则/E-R）
+python -m tools.repair_attachment_text --docno "金非银检函〔2025〕82号"          # 补抽（dry-run）
+python -m tools.repair_attachment_text --docno "金非银检函〔2025〕82号" --apply  # 回写事实源
 ```
-
-**源文件随仓归档**：`data/corpus/regulatory_stats/00.关于修订…通知/20250410/附件1-3：…数据结构一览表（修订版）.xlsx`
-（官方 2025-04-10 修订版，16 列）。自动发现规则：**日期目录最大 → `（修订版）`优先 →
-排除 `征求意见稿`/`会议演示版`/`~$` 临时文件**，因此总局再发一版只需按日期新建目录。
-
-**两版版式都能解析**（`tools/build_east_structure.py`）：2024-11 版 24 列、`数据项标识`
-在第 4 列；2025-04 版 16 列、在第 2 列且**表编号只在表标题行出现**。解析规则是
-"表头归一名 → 按名映射 + 表上下文向下继承"，不依赖列序；`数据元说明` sheet 作为字典
-join 回 `数据格式/取值范围`（官方版数据项行不带这两列）。
 
 | 项 | 说明 |
 |---|---|
-| 产物 | `data/east/east_structure.json`（带 `source_file`（仓相对）/ `source_layout` / `source_sha256` / `format_legend`） |
-| 内容 | 112 张表 / 3062 个数据项 / 589 主键项 / 15 主题域（2024 版修订版口径），**3062 项均带数据格式**（含 `M`/`N` 参数化码的中文解释） |
-| 页面 | 「监管统计」页内嵌：左表右项，表清单可按主题域筛选/搜索，数据项按表**懒加载** |
-| 边界 | **只做字段级查阅**：不校验报文、不生成 EAST 数据（页面已明写） |
+| 附件事实源 | **采集目录**（`modules/regulatory_scrapers/data/docs/supplementary_regulations_scraper`），经 `interfaces/attachment_api` 单一读取；索引在 `supplementary_regulations.jsonl` 的 `attachments[]`（含 sha256/正文） |
+| 产物（四件） | `data/east/east_structure.json`（首屏 ~423KB）/ `east_items.json`（按表）/ `east_rules.json`（按类）/ `east_codes.json`（按表） |
+| 覆盖 | 附件 1 / 1-1 / 1-2 / 1-3（112 表 3062 项）/ 1-4（63 代码表 9543 行）/ 1-5（规则 2096 条）/ 1-6（E-R）+ 表单 2/3/4/5/6 |
+| E-R | 边来自**机器可读证据**：1-5-E 表间关联规则 319 条 + 1-3「关联数据项」362 条（112 节点 / 681 边） |
+| 页面 | 监管统计 → 概览 / 数据表 / 代码表 / 检核规则 / E-R 图（数据项、代码表、规则按需懒加载） |
+| 边界 | **只做查阅**：不校验报文、不生成 EAST 数据 |
 
-**为什么做成产物而不是页面直读 Excel**：源文件在桌面目录且 1.6MB/76 sheet，
-服务账户未必可访问、每次解析要数秒；落 JSON 后既能随仓审计版本差异，也不拖慢首屏。
+**两份存档的关系**：`data/corpus/regulatory_stats/**` 是**人工证据归档**；其中 `20250410/`
+的 13 个文件与采集目录**逐字节相同**（14.68MB），程序**只读采集目录**；归档里另有官方 zip、
+征求意见稿与后续通报（采集拿不到）。详见该目录 `README.md` 与 `_archive_manifest.json`，
+守卫 `tests/test_east_archives.py` 保证两边不漂移。
+
+**为什么"按表头名映射"而不是按列序**：总局下发过两版一览表（24 列 WTR / 16 列官方修订版，
+且官方版表编号只出现在"表标题行"），按列序取会把官方版解析成"1 张表 / 15 项"。现规则是
+"表头归一后按名映射 + 表上下文向下继承"，两版都能解析；`数据格式/取值范围` 由
+`数据元说明` 字典 join 回来（官方版数据项行不带这两列）。
 
 ## 7. 附录与延伸阅读
 
@@ -1085,6 +1086,7 @@ flowchart TD
 显式 `model="…"` **覆盖 mode**（优先级最高）；分句增强由 env `REG_ORCH_SEMANTIC_SPLIT=1` 控制（**默认关**，见 §8.6 第 2 条）。
 
 <!-- END GENERATED: 全链数据流总图 -->
+
 
 
 

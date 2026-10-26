@@ -77,6 +77,11 @@ from config.exitcodes import ExitCode
 DOCS_REPORTS = paths.DELIVERABLES_DIR
 
 SOURCES = list(SOURCE_ORDER)
+
+#: **摄取型源**（有数据但**没有爬虫**）：`supp` 依靠本地目录批量摄取
+#: （`supp:ingest_batch` / `ingest_local_dir`），采集口径必须排除它们，
+#: 否则 `collect:{src}` 会声明出永远跑不到的实例（R3 门禁每轮报缺 supp）。
+INGEST_ONLY_SOURCES: Final[tuple[str, ...]] = ("supp",)
 # 各源采集命令（全量语义）。supp 无网站增量 → 由 clean 刷新即可。
 COLLECT_CMD = {
     # —— R-C 子源拆分（2026-10-08）——
@@ -1595,7 +1600,11 @@ def collect_targets(collect: str) -> list[str]:
       · 未登记键也透传，由调用方按 `COLLECT_CMD` 判定"无网络采集 → 跳过"（保持既有语义）。
     """
     _sel = [x.strip() for x in (collect or "").replace("，", ",").split(",") if x.strip()]
-    pick = list(SOURCES) if collect == "all" else _sel
+    # `all` 只展开**有爬虫的源**：`supp` 是本地目录批量摄取（`supp:ingest_batch`），
+    # `collectors/supp/` 里没有 collector.py。此前把 supp 也算进采集口径，
+    # 于是 `collect:{src}` 的期望实例比实装多一个 ⇒ R3 门禁每轮报
+    # "台账缺实例 ['supp']"（判据本身没错，错的是**声明**）。
+    pick = [s for s in SOURCES if s not in INGEST_ONLY_SOURCES] if collect == "all" else _sel
     out: list[str] = []
     for s in pick:
         for t in COLLECT_ALIAS.get(s, [s]):
