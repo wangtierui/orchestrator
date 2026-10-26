@@ -86,7 +86,12 @@ def test_collect_targets_expands_gov_alias(rpr) -> None:
 def test_collect_targets_all_and_dedup(rpr) -> None:
     """`all` 展开全部事实源（gov 仍拆两子源）；重复键去重保序；未登记键透传。"""
     t = rpr.collect_targets("all")
-    assert t[:2] == ["gov_xzfgk", "gov_zhengceku"] and "pbc" in t and "supp" in t
+    assert t[:2] == ["gov_xzfgk", "gov_zhengceku"] and "pbc" in t
+    # 2026-10-26：`supp` 是**摄取型源**（`collectors/supp/` 下没有 collector.py，
+    # 靠 `supp:ingest_batch` 从本地目录批量摄取）⇒ 采集口径必须排除它，
+    # 否则 `collect:{src}` 会声明出永远跑不到的实例（R3 门禁每轮报缺 supp）。
+    assert "supp" not in t, t
+    assert "supp" in rpr.INGEST_ONLY_SOURCES
     assert rpr.collect_targets("gov,gov_xzfgk") == ["gov_xzfgk", "gov_zhengceku"]
     assert rpr.collect_targets("nonexistent") == ["nonexistent"]
     assert rpr.collect_targets("") == []

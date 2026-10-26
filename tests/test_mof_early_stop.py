@@ -208,8 +208,23 @@ class TestHostUnavailableCircuit:
         monkeypatch.setattr(att, "_MAX_ATT_502_STREAK", 8)
 
         class _Resp:
-            def read(self) -> bytes:
-                return b"%PDF-1.4 test"
+            """文件对象语义：读完返回 b""（流式下载靠它判 EOF）。
+
+            ⚠️ 不能"每次都返回同一段字节"：生产代码按 1MB 分块循环读，
+            永远非空会一路读到下载上限（实测把本用例打成 FAIL）。
+            """
+
+            def __init__(self) -> None:
+                self._buf = b"%PDF-1.4 test"
+
+            def read(self, n=-1) -> bytes:
+                if not self._buf:
+                    return b""
+                if n is None or n < 0:
+                    out, self._buf = self._buf, b""
+                    return out
+                out, self._buf = self._buf[:n], self._buf[n:]
+                return out
 
             def __enter__(self):
                 return self
