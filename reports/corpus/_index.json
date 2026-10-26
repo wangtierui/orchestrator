@@ -15,8 +15,8 @@
   {
    "domain": "regulatory_stats",
    "source_dir": "D:/0数据治理/00.EAST2.0#M20",
-   "file_count": 313,
-   "total_bytes": 214098678,
+   "file_count": 315,
+   "total_bytes": 214106002,
    "ingested_at": "2026-09-12 14:47:42",
    "excludes": [],
    "exclude_tops": [
@@ -30,7 +30,7 @@
    "manifest": "reports/corpus/regulatory_stats.manifest.json"
   }
  ],
- "total_files": 1340,
- "total_bytes": 536249045,
- "generated_at": "2026-09-26 06:11:25"
+ "total_files": 1342,
+ "total_bytes": 536256369,
+ "generated_at": "2026-10-26 17:32:36"
 }

@@ -47,6 +47,18 @@ from .http import (
 
 LOG = logging.getLogger("crawler_common")
 
+#: 单文件**抽取**上限：超过则不解析正文，只记 `too_large` + 实际大小。
+#:
+#: 实测（2026-10-26）：mof 一份 54MB《中华人民共和国进出口税则》PDF 让 pymupdf
+#: 峰值内存 5.8GB、抽取 40 分钟未完成，把整链卡死在 collect 阶段（进程被 OOM 前
+#: 一直吃 CPU）。这类文件是**税率表/超长附件**，正文对合规判定没有价值，而代价
+#: 是整链停摆 —— 用"显式跳过 + 留证据"换"链能跑完"，是这里的正确取舍。
+MAX_EXTRACT_BYTES = 40 * 1024 * 1024
+
+#: PDF **页数**上限：法规/通知类文件罕有超过 400 页；超长文档只取前 400 页并标注。
+#: 与字节上限互补：一页扫描图可能只有几十 KB，但整本上千页同样会拖死解析。
+MAX_PDF_PAGES = 400
+
 # --------------------------------------------------------------------------- #
 # 1. 反爬加固 HTTP 客户端（W4-b：实现已并入 http.py，此处仅保留共享常量定义）
 # --------------------------------------------------------------------------- #
@@ -96,12 +108,16 @@ def sniff_kind(data: bytes, name: str = "") -> str:
     if head[:4] == b"PK\x03\x04" or head[:4] == b"PK\x05\x06" or head[:4] == b"PK\x07\x08":
         # docx / xlsx / zip 均为 ZIP 容器，需进一步区分
         if _is_office_openxml(data):
-            if (
-                b"xl/" in data[: min(len(data), 2_000_000)]
-                or b"workbook" in data[: min(len(data), 2_000_000)]
-            ):
-                return "xlsx"
-            return "docx"
+            # ⚠️ 必须读 **ZIP 中央目录的成员名**，不能在压缩字节上找 "xl/"/"workbook"：
+            # 压缩流里出现这些短串纯属巧合，实测把 docx 判成 xlsx ⇒ 抽取报
+            # `File contains no valid workbook part`、`extract_status=corrupt`，
+            # 正文永久为空（附件1-2 就是这样丢的）。
+            kind = _ooxml_member_kind(data)
+            if kind:
+                return kind
+            # 成员名读不出来（损坏/超长）→ 退扩展名，别硬猜
+            ext = os.path.splitext(name)[1].lower()
+            return {".docx": "docx", ".xlsx": "xlsx", ".pptx": "pptx"}.get(ext, "zip")
         # 无法判定为 OOXML（损坏/截断）→ 退而用扩展名，避免误标 zip
         ext = os.path.splitext(name)[1].lower()
         if ext == ".docx":
@@ -124,6 +140,28 @@ def sniff_kind(data: bytes, name: str = "") -> str:
     if ext in (".xls", ".doc", ".wps", ".ceb", ".rtf"):
         return "ole2"
     return "unknown"
+
+
+def _ooxml_member_kind(data: bytes) -> str:
+    """ZIP 中央目录 → `xlsx` / `docx` / `pptx` / `""`（读成员名，不猜字节）。
+
+    OOXML 三件套的判据是**顶层目录**：`xl/`（工作簿）/ `word/`（文档）/ `ppt/`（演示）。
+    读中央目录只解析末尾的索引，不需要解压，代价可忽略。
+    """
+    try:
+        import zipfile
+
+        with zipfile.ZipFile(__import__("io").BytesIO(data)) as z:
+            names = [n.lower() for n in z.namelist()[:400]]
+    except Exception:  # noqa: BLE001  损坏/加密 ZIP → 交给调用方退扩展名
+        return ""
+    if any(n.startswith("xl/") for n in names):
+        return "xlsx"
+    if any(n.startswith("word/") for n in names):
+        return "docx"
+    if any(n.startswith("ppt/") for n in names):
+        return "pptx"
+    return ""
 
 
 def _is_office_openxml(data: bytes) -> bool:
@@ -270,6 +308,17 @@ def extract_document_text(
     """
     kind = sniff_kind(data, name)
     sha = sha256_bytes(data)
+    # ① 字节上限（见 `MAX_EXTRACT_BYTES` 的实测记录）：**先判后解析**，
+    # 绝不能让"一个超大附件"决定整条链能否跑完。
+    if len(data) > MAX_EXTRACT_BYTES:
+        LOG.warning("[extract] %s 跳过正文抽取：%d 字节 > 上限 %d（记 too_large）",
+                    name or "(未命名)", len(data), MAX_EXTRACT_BYTES)
+        return {"text": "", "kind": kind, "extracted": False,
+                "extract_status": "too_large", "sha256": sha, "needs_ocr": False,
+                "garble_ratio": 0.0, "size_bytes": len(data),
+                "sniff": {"declared_ext": os.path.splitext(name or "")[1].lower(),
+                          "sniffed_kind": kind},
+                "note": f"文件 {len(data)}B 超过抽取上限 {MAX_EXTRACT_BYTES}B（未解析正文）"}
     # 批 54/W-W：**content-type/sniff 二次判定** —— 扩展名与魔数均不可信时（MIME 封装、前导
     # MIME/HTTP 头、HTML 冒充 .doc 等）先**拆封**再重新嗅探，全过程**留证据** `sniff`（可审计）。
     _sniff: dict[str, Any] = {"declared_ext": os.path.splitext(name or "")[1].lower(),
@@ -442,7 +491,11 @@ def _extract_pdf(data: bytes, enable_ocr: bool, ocr_timeout: int) -> dict[str, A
         import pymupdf
 
         with pymupdf.open(stream=data, filetype="pdf") as doc:
-            t = clean_pdf_text("".join(p.get_text() for p in doc))
+            pages = list(doc)[:MAX_PDF_PAGES]
+            if doc.page_count > MAX_PDF_PAGES:
+                LOG.warning("[extract] PDF %d 页 > 上限 %d，只取前 %d 页",
+                            doc.page_count, MAX_PDF_PAGES, MAX_PDF_PAGES)
+            t = clean_pdf_text("".join(p.get_text() for p in pages))
         if t.strip():
             if text_layer_ok(t):
                 return {"text": t, "extracted": True, "extract_status": "ok", "needs_ocr": False}
@@ -455,7 +508,7 @@ def _extract_pdf(data: bytes, enable_ocr: bool, ocr_timeout: int) -> dict[str, A
 
         reader = PdfReader(__import__("io").BytesIO(data))
         text = ""
-        for page in reader.pages:
+        for page in list(reader.pages)[:MAX_PDF_PAGES]:
             try:
                 text += (page.extract_text() or "") + "\n"
             except Exception:  # noqa: BLE001  旁路设施/缓存降级（主路径不受影响）
@@ -473,7 +526,7 @@ def _extract_pdf(data: bytes, enable_ocr: bool, ocr_timeout: int) -> dict[str, A
 
         text = ""
         with pdfplumber.open(__import__("io").BytesIO(data)) as pdf:
-            for page in pdf.pages:  # type: ignore[assignment]
+            for page in list(pdf.pages)[:MAX_PDF_PAGES]:  # type: ignore[assignment]
                 try:
                     text += (page.extract_text() or "") + "\n"
                 except Exception:  # noqa: BLE001  旁路设施/缓存降级（主路径不受影响）

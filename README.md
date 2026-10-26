@@ -847,14 +847,24 @@ python -m tools.build_external_authority --check    # 校验编号稳定/无冲�
 ### 6.11 EAST 数据结构（数据表 / 数据项浏览）
 
 ```bash
-python -m tools.build_east_structure --xlsx "<数据结构一览表（修订版）.xlsm>"   # 生成产物
-python -m tools.build_east_structure --check                                  # 校验结构
+python -m tools.build_east_structure            # 自动发现仓内源文件并生成产物
+python -m tools.build_east_structure --xlsx <路径>   # 指定源文件（换版时用）
+python -m tools.build_east_structure --check     # 校验结构（表/项/主键/编号唯一）
 ```
+
+**源文件随仓归档**：`data/corpus/regulatory_stats/00.关于修订…通知/20250410/附件1-3：…数据结构一览表（修订版）.xlsx`
+（官方 2025-04-10 修订版，16 列）。自动发现规则：**日期目录最大 → `（修订版）`优先 →
+排除 `征求意见稿`/`会议演示版`/`~$` 临时文件**，因此总局再发一版只需按日期新建目录。
+
+**两版版式都能解析**（`tools/build_east_structure.py`）：2024-11 版 24 列、`数据项标识`
+在第 4 列；2025-04 版 16 列、在第 2 列且**表编号只在表标题行出现**。解析规则是
+"表头归一名 → 按名映射 + 表上下文向下继承"，不依赖列序；`数据元说明` sheet 作为字典
+join 回 `数据格式/取值范围`（官方版数据项行不带这两列）。
 
 | 项 | 说明 |
 |---|---|
-| 产物 | `data/east/east_structure.json`（带 `source_file` / `source_sha256` / `generated_at`） |
-| 内容 | 112 张表 / 3062 个数据项 / 589 主键项 / 15 主题域（2024 版修订版口径） |
+| 产物 | `data/east/east_structure.json`（带 `source_file`（仓相对）/ `source_layout` / `source_sha256` / `format_legend`） |
+| 内容 | 112 张表 / 3062 个数据项 / 589 主键项 / 15 主题域（2024 版修订版口径），**3062 项均带数据格式**（含 `M`/`N` 参数化码的中文解释） |
 | 页面 | 「监管统计」页内嵌：左表右项，表清单可按主题域筛选/搜索，数据项按表**懒加载** |
 | 边界 | **只做字段级查阅**：不校验报文、不生成 EAST 数据（页面已明写） |
 

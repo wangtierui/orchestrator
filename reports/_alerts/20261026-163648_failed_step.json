@@ -1,0 +1,23 @@
+{
+ "event": "failed_step",
+ "title": "生产刷新失败步骤 1 个",
+ "at": "2026-10-26T16:36:48",
+ "run_id": "RUN-20261026-151523-28648",
+ "payload": {
+  "summary_json": "D:\\WorkBuddy\\regulatory_compliance_orchestrator\\reports\\_tmp\\生产刷新汇总_20261026_163648.json",
+  "total_elapsed_s": 4876.5,
+  "failed": [
+   {
+    "step": "collect:mof",
+    "rc": 1,
+    "exit_code": "FAIL",
+    "elapsed_s": 2008.7,
+    "stderr_tail_len": 1988492,
+    "tail": ""
+   }
+  ],
+  "evidence": [
+   "collect:mof rc=1(FAIL) "
+  ]
+ }
+}

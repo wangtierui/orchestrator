@@ -260,6 +260,10 @@ def handle(method: str, path: str, qs: dict | None = None,
         return 200, S.east_structure()
     if path == "/api/east/table":
         return 200, S.east_table(_one(qs, "no"))
+    if path == "/api/east/rules":
+        return 200, S.east_rules(_one(qs, "kind"))
+    if path == "/api/east/code":
+        return 200, S.east_code(_one(qs, "sheet"))
     if path == "/api/regstats":
         return 200, S.regstats()
     if path == "/api/publish":

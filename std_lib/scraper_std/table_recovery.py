@@ -293,6 +293,16 @@ def structured_table_fields(
     无结构化表格或异常 → 返回 {}。.doc/.wps/.rtf/.ceb 旧格式经 doc_convert
     （LibreOffice doc→docx）转 docx 再取表，环境缺失自动降级不阻断。
     """
+    # 单文件上限（与 `extract_document_text` 同一常量）：超限**不解析**，只留证据。
+    # 为什么不只是"调用方跳过"：这三个抽取函数会被 gov/mof/nfra/supp 各自直接调用，
+    # 上限写进函数本身才叫根治（写在某一个调用点，换个源就又漏了）。
+    from std_lib.scraper_std.crawler_common import MAX_EXTRACT_BYTES
+
+    if len(data) > MAX_EXTRACT_BYTES:
+        return {"table_structured": [], "table_recovery_method": "too_large",
+                "table_skipped_bytes": len(data),
+                "table_skipped_reason": f"超过抽取上限 {MAX_EXTRACT_BYTES}B"}
+
     low = (name or "").lower()
     if low.endswith((".xlsx", ".xls")):
         try:

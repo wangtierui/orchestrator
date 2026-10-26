@@ -28,13 +28,24 @@ def _api():
 
 
 def _gen(argv) -> int:
-    """全量抽取（透传到 tools/extract_relations.py，保持单一实现）。"""
+    """全量抽取 → **落盘 → 投影入库**（一条命令完成）。
+
+    为什么把 sync 并进来（2026-10-26 用户反馈）
+    -------------------------------------------
+    以前要跑两条：`relations gen`（写 jsonl）+ `governance sync --apply`（投影进库），
+    而**确认台读库** ⇒ 只跑第一条会看到旧关系（实测：jsonl 4509 条、界面仍 5281 条）。
+    "生成成功"必须等于"界面可见"，所以投影是这条命令的**收尾步骤**，不是可选后续动作。
+
+    `--no-sync`：只写文件、不投影（调试/批量重抽时用；链上 `governance:sync` 会统一投影）。
+    `--dry-run` 隐含不等价于 `--no-sync`：dry-run 本身不落盘，投影会读到**旧**文件 ⇒ 一律跳过。
+    """
     from bootstrap import bootstrap
 
     bootstrap(include_tools=True)
     import argparse
 
     from extract_relations import run
+    from governance_sync import sync_relations
 
     ap = argparse.ArgumentParser(prog="orchestrator relations gen")
     ap.add_argument("--source", action="append", default=None)
@@ -43,6 +54,8 @@ def _gen(argv) -> int:
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--report", action="store_true")
+    ap.add_argument("--no-sync", action="store_true",
+                    help="只写 jsonl，不投影进治理库（默认会投影，供确认台立即可见）")
     a = ap.parse_args(argv)
     run(
         sources=a.source,
@@ -52,7 +65,43 @@ def _gen(argv) -> int:
         with_attachments=a.with_attachments,
         report=a.report,
     )
-    return ExitCode.OK
+    if a.dry_run or a.no_sync:
+        print("[relations] 已跳过投影（%s）"
+              % ("dry-run" if a.dry_run else "--no-sync"))
+        return ExitCode.OK
+
+    out = sync_relations(apply=True)
+    print(f"[relations] 已投影进治理库：{out['db_rows']} 行"
+          f"（源 {out['src_rows']} 行）"
+          f"{'，摘要一致' if out['ok'] else '，**摘要不一致**'}")
+    for n in out.get("notes") or []:
+        print(f"  注：{n}")
+    if not out["available"]:
+        print("[relations][warn] 治理库不可用 ⇒ 确认台仍读不到新关系"
+              "（先 `python cli.py governance init`）")
+        return ExitCode.DATA
+    return ExitCode.OK if out["ok"] else ExitCode.FAIL
+
+
+def _sync(argv) -> int:
+    """只投影（不重抽取）：jsonl 已在、库过期时用。"""
+    from bootstrap import bootstrap
+
+    bootstrap(include_tools=True)
+    import argparse
+
+    from governance_sync import sync_relations
+
+    ap = argparse.ArgumentParser(prog="orchestrator relations sync")
+    ap.add_argument("--check", action="store_true", help="只比对，不写库")
+    a = ap.parse_args(argv)
+    out = sync_relations(apply=not a.check)
+    print(f"[relations] {'比对' if a.check else '投影'}完成："
+          f"库 {out['db_rows']} 行 / 源 {out['src_rows']} 行 ⇒ "
+          f"{'一致' if out['ok'] else '**分叉**'}")
+    if not out["available"]:
+        return ExitCode.DATA
+    return ExitCode.OK if out["ok"] else ExitCode.FAIL
 
 
 def _status(argv) -> int:
@@ -96,16 +145,22 @@ def _show(argv) -> int:
 
 
 def run(argv) -> int:
-    """relations {gen|status|show} — 依据/废止关系（R-F01）。"""
+    """relations {gen|sync|status|show} — 依据/废止关系（R-F01）。
+
+    `gen` 已内含投影（jsonl → 治理库），等价于旧的两条命令：
+        relations gen  ==  extract_relations  +  governance sync（仅 relation 表）
+    """
     if not argv:
-        print("用法: orchestrator relations {gen|status|show}")
+        print("用法: orchestrator relations {gen|sync|status|show}")
         return ExitCode.FAIL
     sub, rest = argv[0], argv[1:]
     if sub == "gen":
         return _gen(rest)
+    if sub == "sync":
+        return _sync(rest)
     if sub == "status":
         return _status(rest)
     if sub == "show":
         return _show(rest)
-    print(f"未知子命令: {sub}（可用: gen/status/show）")
+    print(f"未知子命令: {sub}（可用: gen/sync/status/show）")
     return ExitCode.FAIL

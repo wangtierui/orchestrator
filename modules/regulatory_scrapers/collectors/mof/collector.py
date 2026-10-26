@@ -282,8 +282,12 @@ _ATTACH_KIND = {"0": "attachment", "90": "text_version"}
 # 取到的是快照，测量会永远显示 0）。
 try:
     from . import attachments as _att_mod
-except ImportError:  # pragma: no cover  脚本形态
-    pass
+except ImportError:  # pragma: no cover  脚本形态（**生产就是这种**：链上直接跑 collector.py）
+    # ⚠️ 2026-10-26 修：原实现这里 `pass` ⇒ 脚本形态下 `_att_mod` **从未绑定**，
+    # 而结尾汇总还要读 `_att_mod.REUSE_STATS` ⇒ `NameError: name '_att_mod' is not defined`。
+    # 它发生在**收尾处**，所以整轮采集白跑：数据已落盘，步骤却判 FAIL，
+    # 台账 stderr 累积到 1.9MB（每轮都报一次）。脚本形态必须用**绝对导入**兜底。
+    import attachments as _att_mod  # type: ignore[no-redef]
 
 
 

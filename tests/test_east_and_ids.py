@@ -26,29 +26,39 @@ def _html() -> str:
 
 
 class TestEastStructure:
-    """A. EAST 数据结构产物与接口。"""
+    """A. EAST 四件产物与接口（2026-10-26 改为全附件 + 懒加载）。"""
+
+    @staticmethod
+    def _structure() -> dict:
+        import json
+
+        from interfaces import east_api
+
+        return json.load(open(east_api.S_JSON, encoding="utf-8"))
 
     def test_artifact_check(self) -> None:
         from interfaces import east_api
         from tools.build_east_structure import check
 
-        assert east_api.available(), "产物缺失（运行 tools/build_east_structure --xlsx …）"
-        bad = check(east_api.load())
+        assert east_api.available(), "产物缺失（运行 python -m tools.build_east_structure）"
+        bad = check(self._structure())
         assert not bad, bad[:5]
 
-    def test_stats_are_plausible(self) -> None:
+    def test_stats_cover_all_attachments(self) -> None:
+        """四类附件都要有产出：1-3 表/项、1-4 代码表、1-5 规则、1-6→E-R。"""
         from interfaces import east_api
 
         d = east_api.structure()
         st = d["stats"]
-        assert d["available"] is True
-        assert int(st["tables"]) >= 100, st
-        assert int(st["items"]) >= 2000, st
-        assert int(st["pk_items"]) > 0
-        assert len(d["domains"]) >= 10, d["domains"]
+        assert st["attachments"] >= 12, st
+        assert st["tables"] >= 100 and st["items"] >= 2000, st
+        assert st["code_tables"] >= 60 and st["codes"] >= 5000, st
+        assert st["rules"] >= 1500, st
+        assert set(d["rule_index"]) == {"A", "B", "C", "D", "E"}, d["rule_index"]
+        assert st["er_edges"] >= 300, st
 
     def test_table_list_omits_items(self) -> None:
-        """列表**不得**携带数据项（3062 条 ≈ 900KB，首屏会卡）。"""
+        """结构件**不得**携带数据项（首屏 423KB 与 9.8MB 的区别就在这里）。"""
         from interfaces import east_api
 
         d = east_api.structure()
@@ -56,22 +66,37 @@ class TestEastStructure:
             assert "items" not in t, t["table_no"]
             assert t["item_count"] > 0
 
-    def test_table_items_lazy(self) -> None:
+    def test_lazy_items(self) -> None:
         from interfaces import east_api
 
         first = east_api.structure()["tables"][0]
         d = east_api.table_items(first["table_no"])
         assert d["available"] is True and d["items"]
         assert len(d["items"]) == first["item_count"]
-        item = d["items"][0]
+        assert d["meta"]["table_code"] == first["table_code"]
         for k in ("item_id", "item_name", "is_pk", "nullable", "data_format"):
-            assert k in item, k
+            assert k in d["items"][0], k
 
-    def test_unknown_table_degrades(self) -> None:
+    def test_lazy_rules_and_codes(self) -> None:
         from interfaces import east_api
 
-        d = east_api.table_items("00000")
-        assert d["available"] is False and d["items"] == []
+        idx = east_api.rules()
+        assert [k["kind"] for k in idx["kinds"]] == ["A", "B", "C", "D", "E"]
+        a = east_api.rules("A")
+        assert a["available"] and a["count"] == len(a["items"])
+        assert a["items"][0]["no"].startswith("A")
+
+        codes = east_api.codes()
+        assert codes["count"] >= 60
+        one = east_api.code_table(codes["tables"][0]["sheet"])
+        assert one["available"] and one["rows"] and one["columns"]
+
+    def test_unknown_degrades(self) -> None:
+        from interfaces import east_api
+
+        assert east_api.table_items("00000")["available"] is False
+        assert east_api.code_table("不存在")["available"] is False
+        assert east_api.rules("Z")["available"] is False
 
     def test_routes(self) -> None:
         from web import api
@@ -79,16 +104,85 @@ class TestEastStructure:
         st, d = api.handle_request("GET", "/api/east")
         assert st == 200 and d["available"] is True
         no = d["tables"][0]["table_no"]
-        st2, d2 = api.handle_request("GET", f"/api/east/table?no={no}")
-        assert st2 == 200 and d2["items"]
+        assert api.handle_request("GET", f"/api/east/table?no={no}")[1]["items"]
+        assert api.handle_request("GET", "/api/east/rules?kind=E")[1]["count"] > 0
+        sheet = d["code_index"][0]["sheet"]
+        assert api.handle_request("GET", f"/api/east/code?sheet={sheet}")[1]["rows"]
 
     def test_frontend_contract(self) -> None:
         h = _html()
         assert "function eastSection(" in h and "function bindRegstats(" in h
-        assert 'api("/api/east/table?no="' in h, "未按表懒加载数据项"
-        assert "eastwrap" in h and "data-etbl" in h
-        # 页面必须写明"不校验报文"——避免被当成 EAST 校验工具
+        for tab in ("overview", "tables", "codes", "rules", "er"):
+            assert f'k: "{tab}"' in h, f"缺分页 {tab}"
+        assert "/api/east/table?no=" in h
+        assert "/api/east/rules?kind=" in h
+        assert "/api/east/code?sheet=" in h
         assert "不校验报文" in h or "不校验报文字段" in h
+
+
+class TestEastSourceAndLayouts:
+    """A2. 附件**事实源**与版式自适应。
+
+    2026-10-26 变更：不再去 `data/corpus/**` 目录 glob 文件，改为读采集事实源
+    （`supplementary_regulations.jsonl` 的 `attachments[]`，含 local_path/sha256/正文）。
+    仓里同一批文件曾存三份（采集目录 / 人工归档 / 提前解压），是本批要消除的冗余。
+    """
+
+    def test_source_is_fact_source(self) -> None:
+        from interfaces import east_api
+
+        d = east_api.structure()
+        src = d["source"]
+        assert src["index"].endswith("supplementary_regulations.jsonl"), src
+        assert "supplementary_regulations_scraper" in src["attachment_root"], src
+        for a in src["attachments"]:
+            assert a["local_path"].startswith("modules/regulatory_scrapers/data/docs/"), a
+            assert a["sha256"], a
+
+    def test_attachment_api_is_single_entry(self) -> None:
+        """附件清单只经 `attachment_api`（禁止各模块自己 glob 目录）。"""
+        from interfaces import attachment_api as A
+
+        d = A.attachments_for_docno("金非银检函〔2025〕82号")
+        assert d["available"] and d["count"] >= 12
+        nos = {it["no"] for it in d["items"]}
+        assert {"1", "1-1", "1-2", "1-3", "1-4", "1-5", "1-6"} <= nos, nos
+        # 每个附件都要有采集侧结论（正文类应已抽出）
+        for it in d["items"]:
+            assert it["extract_status"] or it["kind"] == "jpg", it
+
+    def test_both_layouts_parse_identically(self) -> None:
+        """1-3 的两种版式（24 列 WTR / 16 列官方修订版）解析结果必须一致。"""
+        import glob
+
+        from interfaces import attachment_api as A
+        from tools.build_east_structure import parse_tables
+
+        official = A.attachment_file("金非银检函〔2025〕82号", "1-3")[0]
+        cands = [p for p in glob.glob(
+            "data/corpus/regulatory_stats/**/*数据结构一览表*WTR.xlsx", recursive=True)]
+        cur = parse_tables(official)
+        if not cands:
+            pytest.skip("仓内没有 WTR 版样本，跳过跨版式比对")
+        wtr = parse_tables(cands[0])
+        assert len(wtr["tables"]) == len(cur["tables"]), (
+            len(wtr["tables"]), len(cur["tables"]))
+        assert sum(len(t["items"]) for t in wtr["tables"]) == \
+            sum(len(t["items"]) for t in cur["tables"])
+
+    def test_data_format_filled_by_element_dict(self) -> None:
+        """官方版数据项行不带 数据格式，靠 `数据元说明` 字典 join 回来。"""
+        from interfaces import east_api
+
+        st = east_api.structure()["stats"]
+        assert st["with_format"] == st["items"], (
+            f"{st['with_format']}/{st['items']} 项有数据格式 —— 字典 join 失效")
+        assert east_api.structure()["format_legend"], "缺「数据格式说明」图例"
+
+    def test_frontend_resolves_parameterized_format(self) -> None:
+        h = _html()
+        assert "function eastFmtDesc(" in h
+        assert 'replace(/\\d+/g, "M")' in h, "未做 M/N 参数化归一，tooltip 会全空"
 
 
 class TestRfnAlwaysPresent:

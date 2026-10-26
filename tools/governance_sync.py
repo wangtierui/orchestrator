@@ -293,6 +293,45 @@ def load_timeliness() -> tuple[list[dict], list[str]]:
     return out, []
 
 
+def sync_relations(*, apply: bool = True) -> dict:
+    """**只**把 `relations_index.jsonl` 投影进治理库，并做摘要比对。
+
+    为什么需要这个函数（2026-10-26，用户反馈"gen 与 sync 得跑两次"）
+    ----------------------------------------------------------------
+    `relations gen` 写文件、`governance sync` 才写库，而确认台**读库** ⇒
+    只跑 gen 会看到旧关系（实测踩到：jsonl 已是 4509 条、界面仍是 5281 条）。
+    把"投影"收进 `relations gen` 的收尾，才能让"生成成功"等于"界面可见"。
+
+    为什么不能直接调 `project_metadata` 四表全量：那一层是**全量替换**语义，
+    传入空 documents 会把公文表清空 ⇒ 必须用 `only=("relation",)` 白名单。
+
+    返回：`{available, applied, src_rows, db_rows, ok, notes, detail}`。
+    `ok=False` 表示"库与文件分叉"（调用方应报 FAIL，而不是静默继续）。
+    """
+    rels, notes = load_relations()
+    gs.init_db()
+    counts: dict = {}
+    if apply:
+        counts = gs.project_metadata(
+            documents=[], theme_assigns=[], relations=rels, timeliness_rows=[],
+            only=("relation",),
+        )
+    detail = gs.verify_projection(
+        documents=[], theme_assigns=[], relations=rels, timeliness_rows=[],
+        only=("relation",),
+    ).get("relation", {})
+    return {
+        "available": bool(gs.enabled()),
+        "applied": bool(apply),
+        "src_rows": len(rels),
+        "db_rows": int(detail.get("db_rows") or 0),
+        "ok": bool(detail.get("ok")),
+        "counts": counts,
+        "notes": notes,
+        "detail": detail,
+    }
+
+
 def collect() -> tuple[dict, list[str]]:
     """装载全部四表源数据。返回 (payload, notes)。"""
     docs, n1 = load_documents()

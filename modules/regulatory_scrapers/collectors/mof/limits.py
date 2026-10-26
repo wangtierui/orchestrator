@@ -55,6 +55,14 @@ class EarlyStopGuard:
         self.started_at = time.time()
         self.stopped = False
         self.at_s = 0.0
+        # ⚠️ 2026-10-26 修：这三行**原本错放在 `deadline` property 的 return 之后**
+        # （永远执行不到）⇒ `__slots__` 声明了属性却从未赋值，
+        # `_guard.skipped_in_run += 1` 直接 `AttributeError`，
+        # 整轮 mof 采集在收尾处判 FAIL（实测 stderr 累积 1.9MB）。
+        # 它们是**初始化**，必须在这里。
+        self.reason = ""
+        self.skipped_in_run = 0
+        self.restored_from_history = 0
 
     @property
     def deadline(self) -> float | None:
@@ -69,9 +77,6 @@ class EarlyStopGuard:
         if self.max_seconds <= 0:
             return None
         return self.started_at + self.max_seconds
-        self.reason = ""
-        self.skipped_in_run = 0
-        self.restored_from_history = 0
 
     def check(self) -> bool:
         """到期即置 stopped（幂等：多次调用只取首次到期时刻）。"""

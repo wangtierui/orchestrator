@@ -1188,7 +1188,7 @@ def east_structure() -> dict:
 
 
 def east_table(table_no: str) -> dict:
-    """单表数据项（点开某张表时才拉，避免一次下发 3000+ 条）。"""
+    """EAST 单表数据项（点开某张表时才拉）。"""
     try:
         from interfaces import east_api
 
@@ -1197,7 +1197,33 @@ def east_table(table_no: str) -> dict:
         d["source_name"] = "interfaces.east_api"
         return d
     except Exception as e:  # noqa: BLE001
-        return _degrade("interfaces.east_api", e)
+        return _degrade("interfaces.east_api.table_items", e)
+
+
+def east_rules(kind: str = "") -> dict:
+    """EAST 检核规则（按类别懒加载；kind 为空返回索引）。"""
+    try:
+        from interfaces import east_api
+
+        d = east_api.rules(kind)
+        d["fetched_at"] = _now()
+        d["source_name"] = "interfaces.east_api"
+        return d
+    except Exception as e:  # noqa: BLE001
+        return _degrade("interfaces.east_api.rules", e)
+
+
+def east_code(sheet: str = "") -> dict:
+    """EAST 业务代码表（按 sheet 懒加载）。"""
+    try:
+        from interfaces import east_api
+
+        d = east_api.code_table(sheet)
+        d["fetched_at"] = _now()
+        d["source_name"] = "interfaces.east_api"
+        return d
+    except Exception as e:  # noqa: BLE001
+        return _degrade("interfaces.east_api.code_table", e)
 
 
 def search(q: str, *, kind: str = "records", limit: int = 20) -> dict:

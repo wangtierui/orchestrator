@@ -324,9 +324,18 @@ def fetch_attachments(law_id, rate, file_types=("0", "90"), timeout=20):
     return items
 
 
+#: 附件下载上限（2026-10-26）：防超大附件打爆内存（见 `download_attachment` 注释）。
+MAX_DOWNLOAD_BYTES = 80 * 1024 * 1024
+
 #: 抽取逻辑的**版本标记**。凡改动 `extract_document_text` / `structured_table_fields`
 #: / `rich_object_fields` 的语义，必须递增它 —— 否则"复用上次抽取结果"会保留旧口径
 #: 的产物（静默劣化，比慢更糟）。
+#: **刻意保持 v1**（2026-10-26 加"字节上限 40MB / PDF 页数上限 400"时复核后决定不升版）。
+#:
+#: 为什么不升：升版会让**全部 978 份附件重抽**（实测 30 分钟 + 4~6GB 峰值），
+#: 而且**方向是错的** —— v1 时代已抽出的文本是**完整的**（当时没有页数上限），
+#: 重抽会按 400 页截断 ⇒ 用"更少的信息"覆盖"更全的信息"，属于数据退化。
+#: 页数/字节上限的真实作用对象是**新文件首次抽取**，旧缓存不该被牵连。
 EXTRACT_VERSION = "v1"
 
 #: 复用/重抽计数（供 status 披露；本仓要求"降级/优化可辨"，不静默）。
@@ -404,7 +413,13 @@ def _finalize_attachment(att, data, fname, law_id, dest):
         att["garble_ratio"] = ext.get("garble_ratio", 0.0)
         # 批 55/F1：**对齐 gov 口径** —— 旧二进制格式（.doc/.xls 等 OLE2）默认**跳过**表格/富内容轨
         # （gov 早已如此；mof 原实现未对齐，与 2026-10-10 实测 `collect:mof` 用尽 7200s 超时上限被强杀相关）
-        if ENRICH_LEGACY or str(att.get("attachment_kind") or "") not in LEGACY_KINDS:
+        _too_large = str(att.get("extract_status") or "") == "too_large"
+        if _too_large:
+            # 超大文件已由 `extract_document_text` 判超限 ⇒ 表格/富内容轨一并跳过
+            # （函数内也有同一守卫；这里是"省两次无用调用"的快路径）
+            att.setdefault("table_recovery_method", "too_large")
+            logger.warning("附件超大，跳过表格/富内容轨：%s", att.get("file_name"))
+        elif ENRICH_LEGACY or str(att.get("attachment_kind") or "") not in LEGACY_KINDS:
             try:
                 att.update(structured_table_fields(data, fname))
             except Exception:  # noqa: BLE001  采集容错（字段/附件缺失不阻断采集）
@@ -413,9 +428,10 @@ def _finalize_attachment(att, data, fname, law_id, dest):
             att.setdefault("table_recovery_method", "legacy_skipped")
             logger.info("跳过旧格式附件的表格轨（legacy_skipped）：%s", att.get("file_name"))
         try:
-            att.update(rich_object_fields(data, fname,
-                                          image_dir=docs_root("mof", "diagrams"),
-                                          rec_key=str(law_id)))
+            if not _too_large:
+                att.update(rich_object_fields(data, fname,
+                                              image_dir=docs_root("mof", "diagrams"),
+                                              rec_key=str(law_id)))
         except Exception:  # noqa: BLE001  采集容错（字段/附件缺失不阻断采集）
             pass
         # 批 50：还原**角色**语义（表格/富内容字段不得覆盖）⇒ 写入侧据此把正文载体分流到 body_docs
@@ -479,7 +495,26 @@ def download_attachment(att, law_id, outdir, rate, timeout=60, max_retries=6,
             # 反爬加固：每次下载轮换 UA
             req.add_header("User-Agent", random.choice(CC_USER_AGENTS))
             with urllib.request.urlopen(req, timeout=timeout) as r:
-                data = r.read()
+                # **流式 + 上限**（2026-10-26）：`r.read()` 会把整个响应塞进内存，
+                # 实测遇到 54MB 附件时峰值 5.8GB（附件的抽取阶段更甚）。
+                # 超过 `MAX_DOWNLOAD_BYTES` 直接放弃：这类文件不在合规语料的价值面上。
+                _buf = bytearray()
+                while True:
+                    _chunk = r.read(1 << 20)
+                    if not _chunk:
+                        break
+                    _buf += _chunk
+                    if len(_buf) > MAX_DOWNLOAD_BYTES:
+                        logger.warning(
+                            "附件 %s 超过下载上限 %dMB，跳过（已读 %dMB）",
+                            att.get("file_url", "")[:80],
+                            MAX_DOWNLOAD_BYTES // (1024 * 1024),
+                            len(_buf) // (1024 * 1024))
+                        _buf = bytearray()
+                        break
+                data = bytes(_buf)
+            if not data:
+                continue
             # 成功即**清零**连续失败计数：熔断的语义是"**连续**不可用"，
             # 若不清零，一天里的偶发抖动会跨小时累积到 8 次 ⇒ 把健康主机误熔断。
             _ATT_502_STREAK = 0

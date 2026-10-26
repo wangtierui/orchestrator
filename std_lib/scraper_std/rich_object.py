@@ -373,6 +373,14 @@ def rich_object_fields(
     无富内容/异常 → {}。image_dir 给定时将 images 写入
     ``<image_dir>/<rec_key>/<filename>`` 并回填对象 image_path（相对 image_dir）。
     """
+    # 单文件上限（与 `extract_document_text` 同一常量源）：超限不解析图表/公式，
+    # 只留证据。实测 51.6MB PDF 走本函数时把进程内存推到 7.8GB。
+    from std_lib.scraper_std.crawler_common import MAX_EXTRACT_BYTES
+
+    if len(data) > MAX_EXTRACT_BYTES:
+        return {"rich_objects": [], "rich_object_method": "too_large",
+                "rich_skipped_bytes": len(data)}
+
     if not data:
         return {}
     res = extract_rich_objects(data, name)

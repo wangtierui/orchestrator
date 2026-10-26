@@ -4,15 +4,15 @@
  "csv": "modules/regulatory_scrapers/data/cleaned/mof_cleaned_20261026.csv",
  "total": 870,
  "layer": {
-  "BOUNDARY": 81,
-  "EXCLUDE": 785,
-  "INCLUDE": 4
+  "BOUNDARY": 77,
+  "EXCLUDE": 790,
+  "INCLUDE": 3
  },
  "confidence": {
-  "BOUNDARY/低": 81,
-  "EXCLUDE/—": 740,
-  "EXCLUDE/中": 45,
-  "INCLUDE/中": 3,
+  "BOUNDARY/低": 77,
+  "EXCLUDE/—": 752,
+  "EXCLUDE/中": 38,
+  "INCLUDE/中": 2,
   "INCLUDE/高": 1
  },
  "fin_hit": 179,
@@ -21,7 +21,7 @@
   "EXCLUDE",
   "INCLUDE"
  ],
- "elapsed_s": 22.5,
+ "elapsed_s": 19.9,
  "year_top": {
   "1989": 1,
   "1992": 1,

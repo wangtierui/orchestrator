@@ -133,7 +133,9 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser("rfn", help="RFN 登记/查询（registry 唯一写口，F-C01；register/lookup）")
     sub.add_parser("base", help="双底座发布件构建与统一查询（Base Contract v1；publish/query/search）")
     sub.add_parser("analysis", help="规划 2.1 五级分析交付库（F-L01；gen/status）")
-    sub.add_parser("relations", help="依据/废止关系（R-F01；gen/status/show）——三类关系唯一事实源")
+    sub.add_parser("relations",
+                   help="依据/废止关系（R-F01；gen=抽取+投影/sync/status/show）"
+                        "——三类关系唯一事实源")
     sub.add_parser(
         "backlog", help="待办积压治理（诊断第 3 波；growth|selfclosed|decide|apply）")
     p_wl = sub.add_parser("worklist", help="待办队列（v2 §3.14.3；list/resolve/export/stats）")

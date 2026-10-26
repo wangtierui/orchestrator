@@ -290,37 +290,53 @@ def _replace_table(conn, table: str, cols, rows) -> int:
 
 
 def project_metadata(
-    *, documents, theme_assigns, relations, timeliness_rows, synced_at: str = ""
+    *, documents, theme_assigns, relations, timeliness_rows, synced_at: str = "",
+    only: tuple[str, ...] | None = None,
 ) -> dict:
     """一次事务内投影四表（全有或全无）。
 
     - `documents` / `theme_assigns` / `relations`：**全量替换**；
     - `timeliness_rows`：**追加 + 去重**（(state_key,status,last_checked_at) 唯一）——
       时效表的价值在"历史观测"，故不做全量替换。
+
+    `only`（2026-10-26）：只投影**指定表**，未选中的表**保持原样**。
+
+    为什么需要它：`relations gen` 收尾要"把刚生成的 jsonl 立刻投影进库"（否则界面读到
+    旧关系），而四表全量替换语义下传入空 `documents` 会**把公文表清空**——那是数据事故。
+    调用方只该对"自己刚产出的那张表"负责，故用白名单显式限定。
+    取值：`document` / `theme_assign` / `relation` / `timeliness_history`。
     """
     ts = synced_at or now_iso()
+    sel = set(only) if only else {"document", "theme_assign", "relation",
+                                  "timeliness_history"}
     conn = _ensure()
     counts = {}
     try:
         conn.execute("BEGIN")
-        counts["document"] = _replace_table(
-            conn, "document", _DOC_COLS, [{**r, "synced_at": ts} for r in documents]
-        )
-        counts["theme_assign"] = _replace_table(
-            conn, "theme_assign", _THEME_COLS, [{**r, "synced_at": ts} for r in theme_assigns]
-        )
-        counts["relation"] = _replace_table(
-            conn, "relation", _REL_COLS, [{**r, "synced_at": ts} for r in relations]
-        )
-        before = conn.execute("SELECT COUNT(*) FROM timeliness_history").fetchone()[0]
-        conn.executemany(
-            f"INSERT OR IGNORE INTO timeliness_history({','.join(_TH_COLS)})"
-            f" VALUES({','.join('?' * len(_TH_COLS))})",
-            [tuple({**r, "synced_at": ts}.get(c) for c in _TH_COLS) for r in timeliness_rows],
-        )
-        after = conn.execute("SELECT COUNT(*) FROM timeliness_history").fetchone()[0]
-        counts["timeliness_history"] = after
-        counts["timeliness_history_added"] = after - before
+        if "document" in sel:
+            counts["document"] = _replace_table(
+                conn, "document", _DOC_COLS, [{**r, "synced_at": ts} for r in documents]
+            )
+        if "theme_assign" in sel:
+            counts["theme_assign"] = _replace_table(
+                conn, "theme_assign", _THEME_COLS,
+                [{**r, "synced_at": ts} for r in theme_assigns],
+            )
+        if "relation" in sel:
+            counts["relation"] = _replace_table(
+                conn, "relation", _REL_COLS, [{**r, "synced_at": ts} for r in relations]
+            )
+        if "timeliness_history" in sel:
+            before = conn.execute("SELECT COUNT(*) FROM timeliness_history").fetchone()[0]
+            conn.executemany(
+                f"INSERT OR IGNORE INTO timeliness_history({','.join(_TH_COLS)})"
+                f" VALUES({','.join('?' * len(_TH_COLS))})",
+                [tuple({**r, "synced_at": ts}.get(c) for c in _TH_COLS)
+                 for r in timeliness_rows],
+            )
+            after = conn.execute("SELECT COUNT(*) FROM timeliness_history").fetchone()[0]
+            counts["timeliness_history"] = after
+            counts["timeliness_history_added"] = after - before
         conn.commit()
     except BaseException:
         conn.rollback()
@@ -380,7 +396,8 @@ def table_digest(table: str, rows=None) -> str:
     return _canon(rows, keys)
 
 
-def verify_projection(*, documents, theme_assigns, relations, timeliness_rows) -> dict:
+def verify_projection(*, documents, theme_assigns, relations, timeliness_rows,
+                      only: tuple[str, ...] | None = None) -> dict:
     """**比对断言**（双写期核心）：库内容 vs 由文件重算的内容，逐表比对。
 
     - `mode=replace`（document / theme_assign / relation）：**摘要相等**（库 = 源那一刻快照）；
@@ -397,8 +414,11 @@ def verify_projection(*, documents, theme_assigns, relations, timeliness_rows) -
         "relation": relations,
         "timeliness_history": timeliness_rows,
     }
+    sel = set(only) if only else set(src)
     out = {}
     for t, rows in src.items():
+        if t not in sel:
+            continue
         spec = SYNC_TABLES[t]
         keys = spec["keys"]
         d = table_digest(t)

@@ -309,6 +309,13 @@
     },
     {
       "category": "tool",
+      "entry": "附件正文补抽（修 sniff/抽取缺陷遗留的空文本，回写采集事实源）",
+      "file": "repair_attachment_text.py",
+      "independent": true,
+      "independent_why": "刻意独立：数据修复类工具，按需人工执行（默认 dry-run），非 STEP_ORDER 链路节点"
+    },
+    {
+      "category": "tool",
       "entry": "数据生命周期与保留策略（v2 §3.10，P2-3；默认 dry-run，--apply 移动至 archive/ 并落台账）",
       "file": "retention.py"
     },
