@@ -45,7 +45,7 @@ def test_canonicalize_normalizes_document_number():
         ("金金金…财会[2026]12号", "财会〔2026〕12号"),
     ]
     for raw_dn, expect in cases:
-        env = canonicalize("pbc", {"doc_no": raw_dn, "title": "t", "content": "c"})
+        env = canonicalize("pbc", {"document_number": raw_dn, "title": "t", "content": "c"})
         assert env["document_number"] == expect, (raw_dn, env["document_number"])
     # document_number 字段优先级：document_number 优先于 doc_no/doc_no
     env = canonicalize("pbc", {"document_number": "国办发[2013]87号", "doc_no": "X"})
@@ -56,9 +56,9 @@ def test_canonicalize_normalizes_document_number():
 def test_raw_canonicalize_resolve_equivalence():
     """P0 核心锁：raw → canonicalize → _resolve_doc_number 等价（不再分裂）。"""
     cases = [
-        {"doc_no": "金规[2026]4号"},
+        {"document_number": "金规[2026]4号"},
         {"document_number": "银发[1999]407号"},
-        {"doc_no": "金金金…财会[2026]12号"},
+        {"document_number": "金金金…财会[2026]12号"},
         {"document_number": "国办发[2013]87号", "doc_no": "IGNORED"},
     ]
     for raw in cases:

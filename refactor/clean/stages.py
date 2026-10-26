@@ -5,9 +5,9 @@
 所有 stage 共用 `process(records, ctx) -> records` 签名：Load 忽略入参、
 Emit 写出后原样返回，其余为纯变换。
 
-关键约束：cleaned 产物写库时，storage 的 (namespace, key_md5) 去重键只认
-detail_url/url/detail_link/api_link；adapter 输出的是 source_url，故 Emit 在 sink
-边界把 source_url 注入为 url，保证 cleaned 表能按文档 URL 去重。
+关键约束：cleaned 产物写库时已对齐采集规范信封（detail_url 等），storage 的
+(namespace, key_md5) 去重键直接认 detail_url 计算 key_md5，无需在 sink 再做字段
+注入（原则7：去重身份单一契约，与 build_dedup_key 同源）。
 """
 from __future__ import annotations
 
@@ -133,25 +133,13 @@ class DedupStage:
 # --------------------------------------------------------------------------- #
 # 出口：写出到存储（PG / file 统一走 RecordStore；update 语义）
 # --------------------------------------------------------------------------- #
-def _clean_store_normalizer(namespace: str, item: dict) -> dict:
-    """sink 边界：保证 cleaned 记录带 storage 去重键字段（source_url → url）。"""
-    item = dict(item)
-    if not any(item.get(k) for k in ("detail_url", "url", "detail_link", "api_link")):
-        src = item.get("source_url")
-        if src:
-            item["url"] = src
-    return item
-
-
 class EmitStage:
     name = "emit"
 
     def process(self, records: list[dict], ctx: "Any") -> list[dict]:
-        store = get_store(
-            "cleaned",
-            normalizer=_clean_store_normalizer,
-            on_conflict="update",
-        )
+        # cleaned 已对齐采集规范信封（detail_url 等），storage 直接认 detail_url 算
+        # key_md5，无需 sink 字段注入（原则7：去重身份单一契约，与 build_dedup_key 同源）。
+        store = get_store("cleaned", on_conflict="update")
         ref = store.save(records, captured_at=ctx.captured_at or None)
         ctx.metrics["emit_ref"] = ref
         ctx.metrics["emit_count"] = len(records)

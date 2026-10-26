@@ -3,7 +3,7 @@
 std_lib.scraper_std.document_structure — 法规/制度条文结构解析（R21 落地 + 2026-09-18 解析适配）
 
 （本文件从 std_lib.scraper_std.document_structure 逐字抽取至 refactor/clause/core，
-源无关、storage-free，仅依赖 re 与 config.enums。）
+源无关、storage-free，仅依赖 re 与 common.enums（refactor 内受控词表）。）
 
 统一解析中文法规/制度正文的「章-条」骨架（docx_utils 既有 split_into_articles 的
 通用化 + 章识别 + 条文语义正文拆分），供：
@@ -66,7 +66,15 @@ from __future__ import annotations
 import re
 from typing import Iterable
 
-from config.enums import CLAUSE_ISSUE_SEVERITY, CLAUSE_PARSE_MODES  # noqa: F401
+import os
+import sys
+
+# 原则1：受控枚举唯一事实源收口为 refactor/common/enums.py（脱根目录依赖，refactor 自包含）。
+_HERE = os.path.dirname(os.path.abspath(__file__))
+_REFACTOR_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(_HERE)))
+if _REFACTOR_ROOT not in sys.path:
+    sys.path.insert(0, _REFACTOR_ROOT)
+from common.enums import CLAUSE_ISSUE_SEVERITY
 
 # 中文数字 1..9999 支持
 _CN = "一二三四五六七八九十百千万零〇两"
@@ -1208,7 +1216,7 @@ def _check_space_contamination(row: dict):
 
 # 身份字段（空 ⇒ 产物不可用）；其余 4 项为源数据属性（空 ⇒ WARN，依据见模块 docstring）
 _REQUIRED_STRICT = ("dedup_key", "title")
-_REQUIRED_SOFT = ("source_url", "document_number", "publish_date", "effective_date")
+_REQUIRED_SOFT = ("detail_url", "document_number", "title")
 _RFN_RE = re.compile(r"^RFN-[0-9a-f]{16}$")
 _MAX_ISSUES = 6
 

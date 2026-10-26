@@ -44,7 +44,7 @@ def build_high_freq_dict(
         return {}
     for rec in records:
         text = " ".join(
-            [str(rec.get("title") or ""), str(rec.get("body_text") or "")[:500]]
+            [str(rec.get("title") or ""), str(rec.get("content") or rec.get("body_text") or "")[:500]]
         )
         for w in jieba.cut(text):
             w = w.strip()
@@ -527,7 +527,7 @@ def run_ocr_correction(
     corrected_total = 0
     uncertain_total = 0
     for rec in records:
-        body = rec.get("body_text") or ""
+        body = rec.get("content") or rec.get("body_text") or ""
         if not body:
             continue
         result = correct_ocr_text(
@@ -540,7 +540,7 @@ def run_ocr_correction(
             annotate(rec, ocr_uncertain=True)
             uncertain_total += 1
         if result["corrected"] or result["dict_fixed"]:
-            rec["body_text"] = result["text"]
+            rec["content"] = result["text"]
             annotate(
                 rec,
                 ocr_corrected=result["corrected"],

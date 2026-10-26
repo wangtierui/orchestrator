@@ -44,7 +44,7 @@ def _pick(rec: dict[str, Any], spec: Any) -> Any:
 #  - issue_organ / category 按源读：因 canonicalize 的 unified 列表未覆盖 mof 的 issue_org、
 #    mof 的 category_name、nfra 的 category_type；若强改读统一字段会让已入库旧记录丢值
 #    （不在本次回刷范围），故保留按源映射。
-#  - index_spec / body_preclean / downloaded_* / att_* / dedup_index_or_url / raw_fields
+#  - index_spec / body_preclean / downloaded_* / att_* / raw_fields
 #    为真正的源相关行为。
 # 其余字段（body→content、detail_url）已由 canonicalize 在入库入口归一成统一字段，clean
 # 直接读，不再按源分支——新增数据源（如内部文档）无需在 _SPECS 登记即可被 clean 处理。
@@ -57,7 +57,6 @@ _SPECS: dict[str, dict[str, Any]] = {
         "downloaded_doc_url": None,
         "att_text_fallback": True,
         "att_join_fallback": True,
-        "dedup_index_or_url": True,
         "raw_fields": ("bbbs", "pub_date_original"),
     },
     "mof": {
@@ -68,7 +67,6 @@ _SPECS: dict[str, dict[str, Any]] = {
         "downloaded_doc_url": None,
         "att_text_fallback": False,
         "att_join_fallback": True,
-        "dedup_index_or_url": False,
         "raw_fields": ("id", "category_id", "create_dept", "expire_date",
                        "abolish_date", "fetch_time", "active", "change"),
     },
@@ -80,7 +78,6 @@ _SPECS: dict[str, dict[str, Any]] = {
         "downloaded_doc_url": ("doc_file_url", "pdf_file_url"),
         "att_text_fallback": False,
         "att_join_fallback": True,
-        "dedup_index_or_url": False,
         "raw_fields": ("doc_id", "build_date", "category_type"),
         "body_preclean": "nfra",
     },
@@ -92,7 +89,6 @@ _SPECS: dict[str, dict[str, Any]] = {
         "downloaded_doc_url": "source_url",
         "att_text_fallback": False,
         "att_join_fallback": False,
-        "dedup_index_or_url": True,
         "raw_fields": ("link_type", "file_type", "local_path", "fetch_status", "error"),
     },
 }
@@ -108,7 +104,6 @@ _DEFAULT_DIALECT: dict[str, Any] = {
     "downloaded_doc_url": None,
     "att_text_fallback": False,
     "att_join_fallback": False,
-    "dedup_index_or_url": False,
     "raw_fields": (),
 }
 
@@ -148,11 +143,12 @@ def _build_record(
     raw_source = empty_str(rec.get("source"))
 
     # body / detail_url 已由 canonicalize 在入库入口归一成统一字段，直接读。
-    body_raw = empty_str(rec.get("content"))
+    body_raw = empty_str(rec.get("content") or rec.get("content_text"))
     body = empty_str(_body_preclean(spec.get("body_preclean", ""), body_raw))
 
     index_no = _index_no(rec, spec)
-    # issue_organ / category 仍按源方言读（canonicalize 的 unified 列表未覆盖这些原始字段名）。
+    # issuing_authority / category 仍按源方言读（canonicalize 的 unified 列表未覆盖这些原始字段名），
+    # 输出一律规范名 issuing_authority；detail_url 已是规范名，直接输出。
     issue_organ = empty_str(rec.get(spec["issue_organ"]))
     source_url = empty_str(rec.get("detail_url"))
     category = empty_str(_pick(rec, spec["category"]))
@@ -181,8 +177,6 @@ def _build_record(
     else:
         downloaded_doc_url = ""
 
-    dedup_first = index_no or source_url if spec["dedup_index_or_url"] else index_no
-
     # _raw_fields：源专有字段保留（溯源）
     _raw: dict[str, Any] = {
         k: rec.get(k) for k in spec["raw_fields"] if rec.get(k) is not None
@@ -199,19 +193,16 @@ def _build_record(
         "category": category,
         "publish_date": empty_str(rec.get("publish_date")),
         "effective_date": empty_str(rec.get("effective_date")),
-        "issue_organ": issue_organ,
+        "issuing_authority": issue_organ,
         "document_number": _resolve_doc_number(rec),
-        "source_url": source_url,
+        "detail_url": source_url,
         "source": src,
-        "body_text": body,
-        "body_text_webpage": body,
-        "body_text_doc": "",
+        "content": body,
         "summary": empty_str(rec.get("summary")),
         "data_format": "TXT",
         "mime_type": "text/plain",
         "column_name": "",
         "theme_name": "",
-        "status": "",
         "timeliness_status": "",
         "replacement_document": "",
         "verification_source": "",
@@ -224,8 +215,7 @@ def _build_record(
         "table_recovery_method": empty_str(rec.get("table_recovery_method")),
         "downloaded_doc_path": downloaded_doc_path,
         "downloaded_doc_url": downloaded_doc_url,
-        "body_source": "webpage",
-        "dedup_key": build_dedup_key(dedup_first, source_url, rec.get("publish_date")),
+        "dedup_key": build_dedup_key(source_url),
         # scope：文档内/外部标记（内部文档=internal；历史外部数据缺省=external，向后兼容）
         "scope": empty_str(rec.get("scope")) or "external",
         "_metadata": m,
@@ -279,7 +269,9 @@ if __name__ == "__main__":  # 离线自检（含 S-3 枚举校验）
     )
     assert rec["index_no"] == "财会〔2024〕1号"
     assert rec["dedup_key"]
-    assert rec["body_text"] == "第一条 为规范……"
+    assert rec["content"] == "第一条 为规范……"
+    assert rec["detail_url"] == "https://fgk.mof.gov.cn/a"
+    assert rec["issuing_authority"] == "财政部"
     assert_enum_bindings()
     assert canonical_source("xzfgk") == "gov"
     assert canonical_source("flk") == "gov"

@@ -33,27 +33,38 @@ def test_build_clause_for_record_law():
     rec = {
         "source": "gov",
         "dedup_key": "gov-1",
-        "source_url": "http://example.gov/1",
+        "detail_url": "http://example.gov/1",
         "title": "测试办法",
         "document_number": "2020-1",
         "publish_date": "2020-01-01",
         "effective_date": "2020-02-01",
-        "body_text": LAW_TEXT,
+        "content": LAW_TEXT,
     }
     row = build_clause_for_record(rec)
     assert row is not None
     assert row["mode"] == "law"
     assert row["chapter_count"] == 2
     assert row["article_count"] == 3
-    assert row["source"] == "gov"
     assert row["detail_url"] == "http://example.gov/1"
-    assert row["source_url"] == row["detail_url"]  # 透传同义字段
+    # 最大化精简：仅保留 rfn 锚点 + rag 所需的身份字段，其余透传字段已删除
+    _trimmed = (
+        "source",
+        "publish_date",
+        "effective_date",
+        "category",
+        "summary",
+        "issuing_authority",
+        "scope",
+        "source_url",
+        "issue_organ",
+    )
+    assert all(k not in row for k in _trimmed)
     assert isinstance(row["articles"], list) and len(row["articles"]) == 3
     assert "validation" in row and "status" in row["validation"]
 
 
 def test_build_clause_for_record_empty_content():
-    rec = {"source": "gov", "dedup_key": "gov-2", "source_url": "", "body_text": "   "}
+    rec = {"source": "gov", "dedup_key": "gov-2", "detail_url": "", "body_text": "   "}
     assert build_clause_for_record(rec) is None
 
 
@@ -63,19 +74,19 @@ def test_build_clause_index_end_to_end():
         {
             "source": "gov",
             "dedup_key": "gov-1",
-            "source_url": "http://example.gov/1",
+            "detail_url": "http://example.gov/1",
             "title": "测试办法",
             "document_number": "2020-1",
             "publish_date": "2020-01-01",
             "effective_date": "2020-02-01",
-            "body_text": LAW_TEXT,
+            "content": LAW_TEXT,
         },
         {  # 无正文 → 应被跳过
             "source": "mof",
             "dedup_key": "mof-1",
-            "source_url": "http://example.mof/1",
+            "detail_url": "http://example.mof/1",
             "title": "空正文",
-            "body_text": "",
+            "content": "",
         },
     ]
     get_store("cleaned", s).save(cleaned, on_conflict="update")
@@ -102,14 +113,14 @@ def test_build_clause_index_idempotent_update():
     a = {
         "source": "nfra",
         "dedup_key": "n-1",
-        "source_url": "http://example.nfra/1",
+        "detail_url": "http://example.nfra/1",
         "title": "A",
-        "body_text": "第一条 内容甲。",
+        "content": "第一条 内容甲。",
     }
     get_store("cleaned", s).save([a], on_conflict="update")
     build_clause_index(s)
-    # 改正文后重跑（同 source_url）→ 覆盖而非重复
-    a["body_text"] = "第一条 内容乙，已更新。"
+    # 改正文后重跑（同 detail_url）→ 覆盖而非重复
+    a["content"] = "第一条 内容乙，已更新。"
     get_store("cleaned", s).save([a], on_conflict="update")
     build_clause_index(s)
     out = get_store("clauses", s).load()

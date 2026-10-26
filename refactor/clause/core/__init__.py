@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """refactor.clause.core — 条文抽取算法核心（源无关、storage-free）。
 
-从 std_lib.scraper_std.document_structure 逐字抽取；仅依赖 re 与 config.enums，
+从 std_lib.scraper_std.document_structure 逐字抽取；仅依赖 re 与 common.enums（refactor 内受控词表），
 不触碰任何存储/文件系统，便于独立单测与下游复用。
 """
 from .document_structure import (

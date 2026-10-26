@@ -24,11 +24,11 @@ def clean_and_repair(rec: dict[str, Any], settings: "Any") -> dict[str, Any]:
     """
     from ..schema import annotate  # 延迟导入，避免 schema→core→schema 循环
 
-    body = rec.get("body_text") or ""
+    body = rec.get("content") or rec.get("body_text") or ""
     if not body:
         return rec
     cleaned = clean_text(body, keep_newlines=True)
-    rec["body_text"] = cleaned
+    rec["content"] = cleaned
     annotate(rec, clean_version=settings.clean_version)
     if getattr(settings, "sentence_split_on", False):
         repaired = repair_text(cleaned, source="webpage")

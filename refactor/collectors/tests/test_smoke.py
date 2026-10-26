@@ -17,18 +17,18 @@ PROJ_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__fi
 # (源, 输出目录, CLI 参数含 out 旗标, 约定产物文件名)
 CASES = [
     ("mof", "/tmp/pytest_smoke/mof",
-     ["--outdir", "/tmp/pytest_smoke/mof",
-      "--max-items", "3", "--no-attachments"],
+     ["--out-dir", "/tmp/pytest_smoke/mof",
+      "--limit", "3", "--no-attachments"],
      "mof_laws.json"),
     ("pbc", "/tmp/pytest_smoke/pbc",
-     ["--out", "/tmp/pytest_smoke/pbc", "--max-items", "3", "--no-attachments"],
+     ["--out-dir", "/tmp/pytest_smoke/pbc", "--limit", "3", "--no-attachments"],
      "pbc_laws.json"),
     ("gov", "/tmp/pytest_smoke/gov",
      ["--source", "xzfgk", "--out-dir", "/tmp/pytest_smoke/gov",
-      "--max-items", "3", "--no-details"],
+      "--limit", "3", "--no-detail"],
      "gov_laws.json"),
     ("nfra", "/tmp/pytest_smoke/nfra",
-     ["--out-dir", "/tmp/pytest_smoke/nfra", "--limit", "3", "--no-originals"],
+     ["--out-dir", "/tmp/pytest_smoke/nfra", "--limit", "3"],
      "nfra_regulations.json"),
 ]
 

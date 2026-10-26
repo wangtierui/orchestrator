@@ -58,7 +58,7 @@ exclude = ["collectors/tests*", "data*", "cache*", "out*"]
 [tool.pytest.ini_options]
 # 仅覆盖本子项目自身测试；与根工程 tests/ 互不干扰。
 testpaths = ["collectors/tests"]
-addopts = "-q"
+addopts = "-q -m \"not data\""
 pythonpath = ["."]
 markers = [
     "data: 依赖本机数据产物（cache/raw）的用例；无数据环境用 -m \"not data\" 排除",

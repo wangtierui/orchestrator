@@ -135,7 +135,7 @@ def dedup_records(
                 continue
         c = None
         if on_content:
-            body = rec.get("body_text") or rec.get("content_text") or rec.get("content") or ""
+            body = rec.get("content") or rec.get("body_text") or rec.get("content_text") or ""
             c = content_hash(normalize_ws(body))
             if c in seen_content and k is None:
                 removed += 1
@@ -222,7 +222,7 @@ if __name__ == "__main__":  # 离线自检
     assert _ZERO_WIDTH.sub("", "a\u200bb") == "ab"
     noisy = "正文内容 版权所有 京ICP备11000000号 主办单位：某某部"
     assert "版权所有" not in denoise(noisy)
-    recs = [{"body_text": "同一正文", "url": "a"}, {"body_text": "同一正文", "url": "b"}]
+    recs = [{"content": "同一正文", "url": "a"}, {"content": "同一正文", "url": "b"}]
     assert len(dedup_records(recs, key_fields=["url"])) == 2  # 键不同不去重
     assert len(dedup_records(recs)) == 1  # 内容哈希去重
     assert is_table_block("序号 项目 金额\n1 收入 100\n2 支出 50") is True

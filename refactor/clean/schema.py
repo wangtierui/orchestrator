@@ -7,11 +7,10 @@ schema.py —— 统一元数据 Schema 与受控枚举归并（clean 阶段数�
 本模块现在只负责两类职责：
   1) 统一 Schema 数据定义（UNIFIED_SCHEMA / CSV_COLUMNS / CORE_NULL_FIELDS），
      作为 clean 的单一契约来源；
-  2) 受控枚举归并（canonical_source / canonical_body_source /
-     canonical_timeliness_status）与 nfra 正文去噪工具（供 adapter 调用）。
+  2) 受控枚举归并（canonical_source / canonical_timeliness_status）与 nfra 正文去噪工具（供 adapter 调用）。
 
 每条清洗后记录含 _metadata 顶层对象（抓取时间、源URL、清洗版本号、OCR是否存疑、
-表格恢复方法、正文文档来源、缺失字段、version、last_modified）。
+表格恢复方法、缺失字段、version、last_modified）。
 """
 
 from __future__ import annotations
@@ -24,12 +23,12 @@ import sys
 from collections.abc import Callable
 from typing import Any
 
-# R5（2026-09-08）：受控枚举唯一事实源上收为 config/enums.py，本模块 re-export。
-_ORCH_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-if _ORCH_ROOT not in sys.path:
-    sys.path.insert(0, _ORCH_ROOT)
-from config.enums import (
-    BODY_SOURCE,
+# 原则1：受控枚举唯一事实源收口为 refactor/common/enums.py（脱根目录依赖，refactor 自包含）。
+_HERE = os.path.dirname(os.path.abspath(__file__))
+_REFACTOR_ROOT = os.path.dirname(_HERE)
+if _REFACTOR_ROOT not in sys.path:
+    sys.path.insert(0, _REFACTOR_ROOT)
+from common.enums import (
     SOURCE_ALIASES,
     SOURCE_SET,
     TIMELINESS_STATUS,
@@ -56,7 +55,7 @@ def _resolve_doc_number(rec: dict[str, Any]) -> str:
        （如『关于印发《X办法》的通知（银发〔1999〕407号）』）。
     """
     raw = rec.get("document_number") or rec.get("doc_no") or rec.get("document_no") or ""
-    body = empty_str(rec.get("body_text") or rec.get("content"))
+    body = empty_str(rec.get("content") or rec.get("body_text"))
     title = empty_str(rec.get("title"))
     dn = normalize_doc_number(raw)
     if dn and looks_like_doc_number(dn):
@@ -84,19 +83,18 @@ UNIFIED_SCHEMA: dict[str, Any] = {
     "category": {"type": "string"},
     "publish_date": {"type": "datetime"},
     "effective_date": {"type": "datetime"},
-    "issue_organ": {"type": "string"},
+    "issuing_authority": {"type": "string"},
     "document_number": {"type": "string"},
-    "source_url": {"type": "url"},
+    "detail_url": {"type": "url"},
     # 枚举字段一律绑定上方受控常量（S-3）：禁止在此处写字面量，防枚举漂移
     "source": {"type": "enum", "enum_values": sorted(SOURCE_SET)},
     "scope": {"type": "string"},  # 文档内/外部标记（internal / external）
-    "body_text": {"type": "string", "required": True},
+    "content": {"type": "string", "required": True},
     "summary": {"type": "string"},
     "data_format": {"type": "string"},
     "mime_type": {"type": "string"},
     "column_name": {"type": "string"},
     "theme_name": {"type": "string"},
-    "status": {"type": "string"},
     "timeliness_status": {"type": "enum", "enum_values": sorted(TIMELINESS_STATUS)},
     "replacement_document": {"type": "string"},
     "verification_source": {"type": "string"},
@@ -106,31 +104,24 @@ UNIFIED_SCHEMA: dict[str, Any] = {
     # 附件/正文文档/表格（可选，类型宽松）
     "attachments": {"type": "array"},
     "attachment_content": {"type": "string"},
-    "attachment_content_path": {"type": "string"},
-    "attachment_content_md5": {"type": "string"},
     "table_structured": {"type": "array"},
     "table_raw_text": {"type": "string"},
     "table_recovery_method": {"type": "string"},
     "downloaded_doc_path": {"type": "string"},
     "downloaded_doc_url": {"type": "url"},
-    "body_source": {"type": "enum", "enum_values": sorted(BODY_SOURCE)},
     "raw_uncut_text": {"type": "string"},
     "split_sentences": {"type": "array"},
-    "renamed_filename": {"type": "string"},
-    "body_text_webpage": {"type": "string"},
-    "body_text_doc": {"type": "string"},
     "_metadata": {"type": "object"},
     "_raw_fields": {"type": "object"},
 }
 
 # 空值阈值监测核心字段（第九节）
-CORE_NULL_FIELDS = ["index_no", "title", "body_text"]
+CORE_NULL_FIELDS = ["index_no", "title", "content"]
 
 
-def build_dedup_key(*parts: Any) -> str:
-    """唯一业务主键：索引号 + URL 哈希 + 发布日期（第十一节）。"""
-    joined = "|".join("" if p is None else str(p) for p in parts)
-    return hashlib.sha256(joined.encode("utf-8")).hexdigest()
+def build_dedup_key(url: str = "") -> str:
+    """去重标识键 = 存储层 key_md5 的同一派生（URL 归一 md5），与 storage 单一身份契约一致（原则7）。"""
+    return hashlib.md5((url or "").encode("utf-8")).hexdigest()
 
 
 def empty_str(v: Any) -> str:
@@ -147,7 +138,6 @@ def _mk_meta(
         "clean_version": clean_version,
         "ocr_uncertain": False,
         "table_recovery_method": "",
-        "doc_source": "webpage",
         "missing_fields": [],
         "version": 1,
         "last_modified": "",
@@ -167,7 +157,6 @@ METADATA_KEYS = frozenset(
         "ocr_corrected",          # 字形替换次数
         "ocr_dict_fixed",         # 词典修正次数
         "table_recovery_method",  # 表格恢复方法（structured/raw_only/pending…）
-        "doc_source",             # 正文文档来源（webpage/downloaded_doc/both）
         "missing_fields",         # 缺失字段列表
         "version",                # 记录版本号
         "last_modified",          # 最后修改时间
@@ -198,25 +187,6 @@ def annotate(rec: dict[str, Any], **fields) -> dict[str, Any]:
 # --------------------------------------------------------------------------- #
 # 受控枚举归并层（canonical_*）：将任意取值归并为规范值；无法归并→空串（未核验）。
 # --------------------------------------------------------------------------- #
-_DOWNLOADED_HINTS = ("downloaded_doc", "本地", "docx", "pdf", "扫描", "ocr", "文本层")
-_BOTH_HINTS = ("网页与文档", "网页+文档", "both", "双版本", "网页正文与文档版并存")
-
-
-def canonical_body_source(raw: Any) -> str:
-    """将任意 body_source 取值归并为 'webpage' / 'downloaded_doc' / 'both'（规范 v3 3.4）。
-
-    注：四源主链路统一归为 'webpage'；本函数保留供 supp 兼容 / timeliness 回写阶段使用。
-    """
-    s = str(raw or "").strip().lower()
-    if not s:
-        return "webpage"
-    if any(h in s for h in _BOTH_HINTS):
-        return "both"
-    if any(h in s for h in _DOWNLOADED_HINTS):
-        return "downloaded_doc"
-    return "webpage"
-
-
 def canonical_source(raw: Any) -> str:
     """将任意 source 取值归并为五源标识（规范 v3 3.5）。
 
@@ -271,17 +241,14 @@ def canonical_timeliness_status(raw: Any) -> str:
 def assert_enum_bindings() -> None:
     """S-3 枚举一致性自检：UNIFIED_SCHEMA 的 enum_values 必须与受控常量严格一致。
 
-    防止 schema 声明与常量漂移（历史上 body_source 的 enum_values 为硬编码字面量，
-    与 BODY_SOURCE 常量存在不一致风险）。不一致即抛 AssertionError，供门禁与自检调用。
+    防止 schema 声明与常量漂移（source / timeliness_status 的 enum_values 必须与
+    受控常量逐字一致）。不一致即抛 AssertionError，供门禁与自检调用。
     """
     assert set(UNIFIED_SCHEMA["source"]["enum_values"]) == SOURCE_SET, (
         "source enum_values 与 SOURCE_SET 不一致"
     )
     assert set(UNIFIED_SCHEMA["timeliness_status"]["enum_values"]) == TIMELINESS_STATUS, (
         "timeliness_status enum_values 与 TIMELINESS_STATUS 不一致"
-    )
-    assert set(UNIFIED_SCHEMA["body_source"]["enum_values"]) == BODY_SOURCE, (
-        "body_source enum_values 与 BODY_SOURCE 不一致"
     )
 
 
@@ -340,22 +307,16 @@ DATA_DICTIONARY: dict[str, dict[str, str]] = {
     },
     "publish_date": {"含义": "发文/公布时间", "类型": "datetime YYYY-MM-DD"},
     "effective_date": {"含义": "生效日期", "类型": "datetime YYYY-MM-DD"},
-    "issue_organ": {"含义": "发布机构", "类型": "string"},
+    "issuing_authority": {"含义": "发布机构", "类型": "string"},
     "document_number": {"含义": "文号", "类型": "string"},
-    "source_url": {"含义": "来源详情链接", "类型": "url"},
+    "detail_url": {"含义": "来源详情链接", "类型": "url"},
     "source": {"含义": "数据源标识", "类型": "string"},
-    "body_text": {"含义": "正文全文（清洗后，含断句修复）", "类型": "string"},
-    "body_text_webpage": {"含义": "网页版正文（正文文档差异时保留）", "类型": "string"},
-    "body_text_doc": {"含义": "正文文档版全文（差异时保留）", "类型": "string"},
+    "content": {"含义": "正文全文（清洗后，含断句修复）", "类型": "string"},
     "summary": {"含义": "摘要", "类型": "string"},
     "data_format": {"含义": "数据格式（TXT/DOC/PDF）", "类型": "string"},
     "mime_type": {"含义": "文件格式（MIME）", "类型": "string"},
     "column_name": {"含义": "栏目名称", "类型": "string"},
     "theme_name": {"含义": "专题名称", "类型": "string"},
-    "status": {
-        "含义": "有效性状态（规范 v3：由 timeliness_status 派生英文值，中文仅展示层）",
-        "类型": "string",
-    },
     "timeliness_status": {
         "含义": "时效状态（受控 7 值：valid/amended/repealed/partially_repealed/expired/pending/uncertain；规范 v3）",
         "类型": "string",
@@ -372,8 +333,6 @@ DATA_DICTIONARY: dict[str, dict[str, str]] = {
         "类型": "array[object]",
     },
     "attachment_content": {"含义": "附件全文文本（多附件用 | 分隔）", "类型": "string"},
-    "attachment_content_path": {"含义": "超大附件全文 .txt 相对路径", "类型": "string"},
-    "attachment_content_md5": {"含义": "超大附件全文 MD5", "类型": "string"},
     "table_structured": {
         "含义": "表格结构化二维数组 list[list[str]]",
         "类型": "array[array[string]]",
@@ -382,14 +341,9 @@ DATA_DICTIONARY: dict[str, dict[str, str]] = {
     "table_recovery_method": {"含义": "表格恢复方法（structured/raw_only）", "类型": "string"},
     "downloaded_doc_path": {"含义": "正文文档下载路径（6.2）", "类型": "string"},
     "downloaded_doc_url": {"含义": "正文文档来源 URL", "类型": "url"},
-    "body_source": {
-        "含义": "正文来源（受控 3 值：webpage/downloaded_doc/both；规范 v3 3.4）",
-        "类型": "enum",
-    },
-    "dedup_key": {"含义": "唯一业务主键（索引号+URL哈希+发布日期）", "类型": "string"},
+    "dedup_key": {"含义": "唯一业务主键（URL 归一 md5，与 storage key_md5 同源）", "类型": "string"},
     "raw_uncut_text": {"含义": "无标点兜底切分时的原文留存（7.2④）", "类型": "string"},
     "split_sentences": {"含义": "无标点长文兜底切分短句列表（7.2④）", "类型": "array[string]"},
-    "renamed_filename": {"含义": "标准重命名后的主文档/附件文件名（6.4/7.4）", "类型": "string"},
     "_metadata": {
         "含义": "元数据（抓取时间/清洗版本/OCR存疑/表格恢复方法/缺失字段/version）",
         "类型": "object",
@@ -408,38 +362,31 @@ CSV_COLUMNS = [
     "category",
     "publish_date",
     "effective_date",
-    "issue_organ",
+    "issuing_authority",
     "document_number",
-    "source_url",
+    "detail_url",
     "source",
     "scope",
-    "body_text",
-    "body_text_webpage",
-    "body_text_doc",
+    "content",
     "summary",
     "data_format",
     "mime_type",
     "column_name",
     "theme_name",
-    "status",
     "timeliness_status",
     "replacement_document",
     "verification_source",
     "keyword",
     "attachment_count",
     "attachment_content",
-    "attachment_content_path",
-    "attachment_content_md5",
     "table_structured",
     "table_raw_text",
     "table_recovery_method",
     "downloaded_doc_path",
     "downloaded_doc_url",
-    "body_source",
     "dedup_key",
     "raw_uncut_text",
     "split_sentences",
-    "renamed_filename",
     "_metadata",
     "_raw_fields",
 ]

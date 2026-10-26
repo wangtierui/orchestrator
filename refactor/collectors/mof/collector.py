@@ -157,14 +157,18 @@ def _sig_current(rec):
 
 
 def _sig_prev(entry):
-    """历史存储条目的变更指纹（与 _sig_current 口径对齐）。"""
+    """历史存储条目的变更指纹（与 _sig_current 口径对齐）。
+
+    字段名跟随 canonical 契约：mof 落库已用规范名 content / document_number /
+    issuing_authority（源私有名 content_text / doc_no / issue_org 的改名已前移到解析）。
+    """
     return (
         entry.get("title"),
-        entry.get("content_text"),
+        entry.get("content"),
         entry.get("publish_date"),
         entry.get("effective_date"),
-        entry.get("doc_no"),
-        entry.get("issue_org"),
+        entry.get("document_number"),
+        entry.get("issuing_authority"),
         entry.get("summary"),
     )
 
