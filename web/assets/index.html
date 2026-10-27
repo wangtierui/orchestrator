@@ -19,8 +19,13 @@
  * ============================================================ */
 :root{
   /* ---- GitHub 色板（2026-10-27 第一百二十一批；用户指定值） ---- */
-  --bg:#ffffff; --bg-subtle:#f6f8fa; --border:#d0d7de;
+  --bg:#ffffff; --bg-subtle:#f6f8fa;
+  /* 边框/次要文字用**用户指定值**（与实测 #d1d9e0 / #59636e 仅差 1–2 个色阶，肉眼不可辨）；
+   * 另留 `--border-muted` 取实测的带透明度版本，用于列表卡片等"更轻"的边线。 */
+  --border:#d0d7de; --border-muted:#d1d9e0b3;
   --text:#1f2328; --text-muted:#656d76;
+  /* 头部深色是**实测**得到的关键事实（GitHub light 主题 header = #25292e），不能沿用浅灰 */
+  --header-bg:#25292e; --header-fg:#ffffff;
   --accent:#0969da; --success:#1a7f37; --danger:#cf222e; --hover:#f3f4f6;
 
   /* ---- 兼容层：把历史令牌指到新色板 ----
@@ -48,7 +53,8 @@
   --rail-w-min:56px;  /* 侧栏折叠宽（48–64） */
 }*{box-sizing:border-box}
 html,body{margin:0;background:var(--bg);color:var(--fg)}
-body{font:15px/1.6 -apple-system,"PingFang SC","Microsoft YaHei UI","Segoe UI",system-ui,sans-serif;
+body{font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans",
+  "PingFang SC","Microsoft YaHei UI",Helvetica,Arial,sans-serif;
   -webkit-font-smoothing:antialiased}
 a{color:var(--primary);text-decoration:none}
 a:hover{text-decoration:underline}
@@ -118,7 +124,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}
 th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
 th{color:var(--fg2);font-weight:600;background:var(--alt);position:sticky;top:0;z-index:1;
   font-size:12.5px;white-space:nowrap}
-tbody tr:hover td{background:#FAFBFC}
+tbody tr:hover td{background:var(--bg-subtle)}
 td.num{font-variant-numeric:tabular-nums;text-align:right}
 td.id{font-family:var(--mono);font-size:12px;color:var(--fg2);word-break:break-all}
 /*: 列表/表格**不允许**内部纵向滚动（规范：唯一滚动容器是 #view）。
@@ -184,6 +190,8 @@ th.sortable .arw{font-size:10px;opacity:.85}
 .pager button{padding:4px 10px;border:1px solid var(--line2);border-radius:var(--r-sm);
   background:var(--card);cursor:pointer;font-size:13px}
 .pager button:disabled{opacity:.45;cursor:default}
+.lv-meta .tag,.lv-meta .pill{font-size:12px;line-height:18px;height:18px;
+  border-radius:999px;padding:0 7px}
 .tag{display:inline-block;padding:1px 7px;border-radius:999px;font-size:11px;
   border:1px solid var(--line);background:var(--alt);color:var(--fg2);white-space:nowrap}
 .mono{font-family:var(--mono);font-size:11.5px;color:var(--fg2)}
@@ -287,7 +295,8 @@ body{background:var(--bg-subtle)}
 header{position:sticky;top:0;z-index:40;background:var(--bg);border-bottom:1px solid var(--border)}
 .hbar{display:flex;align-items:center;gap:12px;height:var(--head-h);
   padding:0 16px;max-width:none;margin:0}
-.brand{display:flex;align-items:center;gap:8px;font-weight:600;font-size:14px;color:var(--text)}
+.brand{display:flex;align-items:center;gap:8px;font-weight:600;font-size:14px;
+  color:var(--header-fg)}
 .brand .logo{width:20px;height:20px;color:var(--text)}
 .brand small{display:none}
 .crumb{display:flex;align-items:center;gap:6px;color:var(--text-muted);font-size:13px;min-width:0}
@@ -302,9 +311,17 @@ header{position:sticky;top:0;z-index:40;background:var(--bg);border-bottom:1px s
 .hsearch kbd{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--fg3);
   border:1px solid var(--border);border-radius:4px;padding:0 4px;background:var(--bg)}
 .hstat{display:flex;gap:6px;align-items:center;margin-left:8px;flex-wrap:nowrap}
-.hstat .badge{font-size:11.5px;padding:2px 8px}
-.railOpen{display:none;width:30px;height:30px;border:1px solid var(--border);
-  background:var(--bg);border-radius:var(--r-md);color:var(--text-muted);cursor:pointer;
+.hstat .badge{font-size:11.5px;padding:2px 8px;background:rgba(255,255,255,.10);
+  border-color:rgba(255,255,255,.22);color:rgba(255,255,255,.92)}
+.hstat .badge.live{background:rgba(63,185,80,.18);border-color:rgba(63,185,80,.5);
+  color:#7ee787}
+.hstat .badge.off{background:rgba(187,128,9,.18);border-color:rgba(187,128,9,.5);
+  color:#e3b341}
+.hstat .badge.bad{background:rgba(248,81,73,.18);border-color:rgba(248,81,73,.5);
+  color:#ff7b72}
+.railOpen{display:none;width:30px;height:30px;
+  border:1px solid rgba(255,255,255,.24);background:rgba(255,255,255,.10);
+  border-radius:var(--r-md);color:rgba(255,255,255,.85);cursor:pointer;
   font-size:14px;line-height:1;align-items:center;justify-content:center}
 .railOpen:hover{background:var(--hover);color:var(--text)}
 @media (max-width:1024px){ .railOpen{display:inline-flex} }
@@ -313,7 +330,7 @@ header{position:sticky;top:0;z-index:40;background:var(--bg);border-bottom:1px s
   body.rail-open .rail-mask{display:block;position:fixed;inset:var(--head-h) 0 0 0;
     background:rgba(31,35,40,.28);z-index:34}
 }
-.avatar{width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;
+.avatar{width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.2);color:#fff;
   display:inline-flex;align-items:center;justify-content:center;font-size:11.5px;
   font-weight:600;border:0;cursor:pointer}
 header nav{display:none}          /* 页面导航移入侧栏（顶栏只留面包屑与全局入口） */
@@ -331,21 +348,24 @@ header nav{display:none}          /* 页面导航移入侧栏（顶栏只留面�
 html,body{height:100%}
 body{overflow:hidden;background:var(--bg)}
 .app{display:flex;flex-direction:column;height:100vh;width:100vw;overflow:hidden}
-.global-header{height:var(--header-height);background:var(--bg-subtle);display:flex;align-items:center;
-  gap:12px;padding:0 16px;border-bottom:1px solid var(--border);flex-shrink:0;
+.global-header{height:var(--header-height);background:var(--header-bg);
+  color:var(--header-fg);display:flex;align-items:center;
+  gap:12px;padding:0 16px;border-bottom:1px solid #1b1f23;flex-shrink:0;
   position:static}                        /* 固定由 flex 布局保证，不用 sticky */
 .global-header .brand small{display:none}
 .gsearch{flex:1 1 auto;max-width:360px;min-width:120px;position:relative;display:flex}
 .gsearch input{width:100%;height:30px;padding:0 34px 0 30px;font-size:13px;
-  background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text)}
+  background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.24);
+  border-radius:6px;color:var(--header-fg)}
+.gsearch input::placeholder{color:rgba(255,255,255,.62)}
 .gsearch input:focus{outline:none;border-color:var(--accent);
   box-shadow:0 0 0 1px var(--accent)}
-.gsearch .ico{position:absolute;left:9px;top:7px;color:var(--text-muted);font-size:12px;
+.gsearch .ico{position:absolute;left:9px;top:7px;color:rgba(255,255,255,.7);font-size:12px;
   pointer-events:none}
 .gsearch-k{position:absolute;right:6px;top:5px;height:20px;padding:0 5px;font-size:11px;
-  font-family:var(--mono);color:var(--text-muted);background:var(--bg-subtle);
-  border:1px solid var(--border);border-radius:4px;cursor:pointer}
-.gsearch-k:hover{color:var(--text);background:var(--hover)}
+  font-family:var(--mono);color:rgba(255,255,255,.75);background:rgba(255,255,255,.12);
+  border:1px solid rgba(255,255,255,.24);border-radius:4px;cursor:pointer}
+.gsearch-k:hover{color:#fff;background:rgba(255,255,255,.2)}
 /* 原地下拉：**无遮罩**，不把页面压暗 */
 .spop{position:fixed;z-index:70;width:min(560px,calc(100vw - 32px));max-height:60vh;
   overflow:auto;background:var(--bg);border:1px solid var(--border);border-radius:6px;
@@ -365,7 +385,7 @@ body{overflow:hidden;background:var(--bg)}
   flex-shrink:0;overflow:hidden;position:relative}
 .tabs-inner{display:flex;align-items:stretch;gap:0;min-width:0;overflow:hidden}
 .tab{height:48px;padding:0 14px;border:0;background:none;color:var(--text-muted);
-  font-size:13.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;
+  font-size:14px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;
   border-bottom:2px solid transparent;white-space:nowrap;flex:0 0 auto}
 .tab:hover{color:var(--text);background:var(--bg-subtle)}
 .tab.on{color:var(--text);font-weight:600;border-bottom-color:#fd8c73}
@@ -387,7 +407,7 @@ body.rail-off .rail .sideitem .glyph{display:inline-flex}
 main{padding:0;max-width:none;margin:0;min-width:0}
 /* 侧栏项：选中 = 浅灰底 + 深黑加粗 + 左侧 2px 强调线（**不用蓝色整块**） */
 .rail .sideitem{position:relative;display:flex;align-items:center;gap:8px;width:100%;
-  border:0;background:none;padding:6px 8px;border-radius:6px;font-size:13px;
+  border:0;background:none;padding:6px 8px;border-radius:6px;font-size:14px;
   color:var(--text);cursor:pointer;text-align:left;line-height:1.4}
 .rail .sideitem:hover{background:var(--bg-subtle)}
 .rail .sideitem.on{background:var(--bg-subtle);color:var(--text);font-weight:600}
@@ -443,7 +463,8 @@ main{padding:0;max-width:none;margin:0;min-width:0}
  * 列表视图（GitHub Issues 风格）：工具栏 / 表头菜单 / 切片面板 / 批量栏
  * 说明：圆角 6px、边框优先、无渐变；密度接近 GitHub Issues。
  * ============================================================ */
-.lv{background:var(--bg);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden}
+.lv{background:var(--bg);border:1px solid var(--border-muted,#d8dee4);
+  border-radius:6px;overflow:hidden}
 .lv-bar{display:flex;align-items:center;gap:8px;padding:8px 12px;
   border-bottom:1px solid var(--border);background:var(--bg);flex-wrap:wrap}
 .lv-bar .sp{flex:1}
@@ -461,7 +482,7 @@ main{padding:0;max-width:none;margin:0;min-width:0}
 .lv-body.slice{grid-template-columns:minmax(0,1fr) 280px}
 .lv-scroll{overflow:visible;max-height:none}
 .lv-table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
-.lv-table th{position:sticky;top:0;z-index:2;background:var(--bg-subtle);
+.lv-table th{position:static;background:transparent;
   border-bottom:1px solid var(--border);padding:0;text-align:left;white-space:nowrap;
   font-size:12px;font-weight:600;color:var(--text-muted)}
 .lv-th{display:flex;align-items:center;gap:2px;padding:6px 8px}
@@ -476,22 +497,32 @@ main{padding:0;max-width:none;margin:0;min-width:0}
 .lv-th .menu:hover{background:var(--hover);color:var(--text)}
 .lv-th.dragover{box-shadow:inset 2px 0 0 var(--accent)}
 .lv-table th[draggable="true"]{cursor:grab}
-.lv-table td{border-bottom:1px solid var(--border);padding:8px;vertical-align:top}
+.lv-table td{border-bottom:1px solid var(--border);padding:6px 8px;
+  vertical-align:middle;font-size:14px;height:32px}
 .lv-table tbody tr:hover td{background:var(--hover)}
 .lv-table tbody tr[aria-selected="true"] td{background:var(--primary-l)}
 .lv-table tbody tr:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
-.lv-title{font-weight:600;color:var(--text);line-height:1.45}
+.lv-title{font-weight:600;font-size:14px;color:var(--text);line-height:1.4;
+  text-decoration:none;margin-right:8px}
+.lv-title:hover{color:var(--accent);text-decoration:underline}
 .lv-title a{color:inherit;text-decoration:none}
 .lv-title a:hover{color:var(--accent);text-decoration:underline}
-.lv-meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;color:var(--text-muted);
-  font-size:11.5px;align-items:center}
+.lv-meta{display:inline-flex;gap:4px;flex-wrap:wrap;color:var(--text-muted);
+  font-size:12px;align-items:center;vertical-align:middle}
+.lv-meta .meta-i{display:inline-flex;align-items:center;gap:4px}
+.lv-meta .dot-sep{color:var(--fg4);margin:0 2px}
 .lv-badge{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--border);
-  background:var(--bg-subtle);border-radius:999px;padding:1px 7px;font-size:11px;
-  color:var(--text-muted)}
+  background:var(--bg-subtle);border-radius:999px;padding:0 7px;height:18px;
+  font-size:12px;line-height:18px;color:var(--text-muted);white-space:nowrap}
 .lv-badge.ok{background:var(--ok-l);border-color:#aceebb;color:#116329}
 .lv-badge.bad{background:var(--bad-l);border-color:#ffcecb;color:#a40e26}
 .lv-badge.warn{background:var(--warn-l);border-color:#eac54f;color:#7d4e00}
-.lv-selcell{width:34px;padding-right:0 !important}
+.lv-selcell{width:32px;padding-right:0 !important}
+.lv-stcell{width:24px;padding-right:0 !important}
+.lv-stcell .lv-st{display:block}
+.lv-actcell{width:1%;white-space:nowrap;text-align:right;color:var(--text-muted)}
+.lv-actcell a{color:var(--text-muted);font-size:12px}
+.lv-actcell a:hover{color:var(--accent)}
 .lv-ck{appearance:none;width:14px;height:14px;border:1px solid var(--border);
   border-radius:3px;cursor:pointer;display:inline-block;vertical-align:middle;
   background:var(--bg);position:relative}
@@ -598,13 +629,12 @@ body.lv-selecting .lv-table tbody .lv-ck,
 .tblwrap>table{border:1px solid var(--border)}
 .scrollx{overflow-x:auto;max-height:none}
 /* 列表：平铺 + 表头底边加粗 + 行 1px 分割 */
-.lv{border:0;border-radius:0;background:transparent}
-.lv-table th{background:var(--bg);border-top:1px solid var(--border);
-  border-bottom:2px solid var(--border)}
-.lv-table td{border-bottom:1px solid var(--border)}
+/* 容器边框/圆角以基础规则为准（实测 GitHub 是 1px + 6px），这里不再清零 */
+.lv-table th{border-bottom:1px solid var(--border)}
 .lv-bar{border-bottom:1px solid var(--border);background:transparent;padding:8px 0}
 .lv-slice{border-left:1px solid var(--border);background:transparent}
-body.lv-compact .lv-table td{padding:4px 8px}
+body.lv-compact .lv-table td{padding:2px 8px;height:26px;font-size:13px}
+body.lv-compact .lv-title{font-size:13px}
 body.lv-compact .lv-meta{margin-top:2px}
 body.lv-compact .lv-title{font-size:12.5px}
 /* 状态筛选页签（替代外部下拉框） */
@@ -651,7 +681,7 @@ body.lv-compact .lv-title{font-size:12.5px}
   width:4px;height:7px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(42deg)}
 
 /* 列表全局过滤框（表头上方唯一的文本入口）与批量理由 */
-.lv-q{height:28px;min-width:220px;flex:1 1 260px;max-width:420px;font-size:12.5px;
+.lv-q{height:32px;min-width:220px;flex:1 1 260px;max-width:420px;font-size:12.5px;
   border:1px solid var(--border);border-radius:6px;padding:0 8px;background:var(--bg);
   color:var(--text)}
 .lv-q:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
@@ -3729,6 +3759,26 @@ function lvActiveFilters(list, st) {
 }
 
 /* ---------------- 行渲染 ---------------- */
+/*: 行首状态图标 —— GitHub 用 `issue-opened` 绿点 / `issue-closed` 紫点表达状态。
+ * 我们的状态是"时效"（laws）或"生效状态"（rules），映射到同一套观感。 */
+const ST_TONE = {
+  valid: "ok", pending: "warn", amended: "info",
+  repealed: "done", expired: "done", "": "muted",
+};
+function lvStateIcon(it, list) {
+  const v = list === "laws" ? it.timeliness_status : it.eff_status;
+  const tone = ST_TONE[v == null ? "" : v] || "muted";
+  const fill = tone === "ok" ? "#1a7f37"
+    : tone === "warn" ? "#bf8700"
+    : tone === "done" ? "#8250df"
+    : tone === "info" ? "#0969da" : "#8c959f";
+  const label = (ST_LABEL[v == null ? "" : v] || v || "未标注");
+  return `<svg class="lv-st" viewBox="0 0 16 16" width="16" height="16" role="img"
+      aria-label="${esc(label)}"><title>${esc(label)}</title>
+      <path fill="${fill}" d="M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z"></path>
+      <path fill="${fill}" d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Z"></path></svg>`;
+}
+
 function lvRowId(list, it) {
   return String(list === "laws" ? (it.rfn || it.document_number || it.title || "")
                                 : (it.ipn || it.docno || it.title || ""));
@@ -3756,41 +3806,51 @@ function lvRender(list, d, st, f) {
       <button data-lvrm="${esc(a.param)}" data-lvrmkind="${esc(a.kind)}"
         aria-label="移除该条件" title="移除">×</button></span>`).join("");
 
-  /* 表头必须与行**一一对应**：只画 primary + cols（`meta` 字段渲染在标题下方的
-   * 副行里，不占列）。此前误用 `vis`，表头会多出一截、列全错位。 */
-  const tableFields = [primary].concat(cols).filter(Boolean);
+  /* 表头与行**一一对应**（实测 GitHub 是 4 列：selection | status | primary | actions）。
+   * `meta` 字段不再占列 —— 它们作为**内联元数据**跟在标题后面（GitHub 就是这么排的）。 */
+  const stField = list === "laws" ? "timeliness_status" : "eff_status";
+  const primaryFd = primary || {k: "title", label: "事项", sort: "title"};
   const headCells = [`<th class="lv-selcell" aria-label="选择"><span class="lv-th">
       <input type="checkbox" class="lv-ck" id="lvAll" aria-label="全选当前页"
-        ${items.length && items.every(it => sel[lvRowId(list, it)]) ? "checked" : ""}></span></th>`]
-    .concat(tableFields.map(fd => {
-      const on = st.sort === (fd.sort || fd.k);
-      return `<th draggable="true" data-lvfk="${esc(fd.k)}" aria-sort="${on ? (st.desc ? "descending" : "ascending") : "none"}">
-        <span class="lv-th">
-          <button class="sortbtn" data-lvsort="${esc(fd.sort || fd.k)}"
-            title="${esc(fd.label)}：点击切换升/降序">${esc(fd.label)}${
-            on ? `<span aria-hidden="true">${st.desc ? "▾" : "▴"}</span>` : ""}</button>
-          <button class="menu" data-lvmenu="${esc(fd.k)}" aria-haspopup="menu"
-            aria-expanded="false" aria-label="字段菜单：${esc(fd.label)}">⋮</button>
-        </span></th>`;
-    })).join("");
+        ${items.length && items.every(it => sel[lvRowId(list, it)]) ? "checked" : ""}></span></th>`,
+    `<th data-lvfk="${esc(stField)}" class="lv-stcell">
+      <span class="lv-th"><button class="sortbtn" data-lvsort="${esc(stField)}"
+        title="按时效排序">状态${st.sort === stField
+          ? `<span aria-hidden="true">${st.desc ? "▾" : "▴"}</span>` : ""}</button></span></th>`,
+    `<th draggable="true" data-lvfk="${esc(primaryFd.k)}" aria-sort="${st.sort === (primaryFd.sort || primaryFd.k)
+        ? (st.desc ? "descending" : "ascending") : "none"}">
+      <span class="lv-th"><button class="sortbtn" data-lvsort="${esc(primaryFd.sort || primaryFd.k)}"
+        title="按名称排序">${esc(primaryFd.label || "事项")}${st.sort === (primaryFd.sort || primaryFd.k)
+          ? `<span aria-hidden="true">${st.desc ? "▾" : "▴"}</span>` : ""}</button>
+        <button class="menu" data-lvmenu="${esc(primaryFd.k)}" aria-haspopup="menu"
+          aria-expanded="false" aria-label="字段菜单：${esc(primaryFd.label)}">⋮</button></span></th>`,
+    `<th class="lv-actcell"><span class="lv-th">操作</span></th>`].join("");
 
   const rows = items.map(it => {
     const id = lvRowId(list, it);
     const isSel = !!sel[id];
-    const meta = metas.map(fd => `<span class="meta-i">${fd.cell ? fd.cell(it) : esc(it[fd.k] || "")}</span>`)
-      .join("");
+    /* 内联元数据：`#编号 · 文号 · 主题 · 来源` —— 12px、muted、与标题同行。
+     * 被隐藏的字段自然不出现（Hide field 的语义因此保持一致）。 */
+    const metaParts = metas.map(fd => `<span class="meta-i">${
+      fd.cell ? fd.cell(it) : esc(it[fd.k] || "")}</span>`);
+    const meta = metaParts.length
+      ? `<span class="lv-meta">${metaParts.join('<span class="dot-sep" aria-hidden="true">·</span>')}</span>`
+      : "";
+    const href = list === "rules" && it.local_path
+      ? `/api/local/file?path=${encodeURIComponent(it.local_path)}`
+      : (it.url || "");
+    const title = `<a class="lv-title" ${href ? `href="${esc(href)}" target="_blank" rel="noopener"` : ""}
+        title="${esc(it.title || "")}">${esc(it.title || "（无标题）")}</a>`;
     return `<tr class="lv-row" data-lvid="${esc(id)}" tabindex="0" aria-selected="${isSel}">
       <td class="lv-selcell"><input type="checkbox" class="lv-ck" data-lvck="${esc(id)}"
         ${isSel ? "checked" : ""} aria-label="选择：${esc(it.title || id)}"></td>
-      <td class="lv-primary">
-        <div class="lv-title">${esc(it.title || "（无标题）")}</div>
-        <div class="lv-meta">${meta || '<span class="muted">—</span>'}</div>
-      </td>
-      ${cols.map(fd => `<td>${fd.cell ? fd.cell(it) : esc(it[fd.k] || "—")}</td>`).join("")}
+      <td class="lv-stcell">${lvStateIcon(it, list)}</td>
+      <td class="lv-primary">${title}${meta}</td>
+      <td class="lv-actcell">${relBtn(list === "laws" ? it.rfn : it.ipn)}</td>
     </tr>`;
   }).join("");
 
-  const empty = `<tr><td colspan="${tableFields.length + 1}">
+  const empty = `<tr><td colspan="4">
       <div class="lv-empty"><span class="ico" aria-hidden="true">⌕</span>
         <b>当前筛选无结果</b>
         <div>没有符合条件的记录；可以放宽条件，或清除全部筛选。</div>

@@ -98,9 +98,12 @@ class TestDoubleHeader:
         assert ".repo-tabs{height:48px" in h
 
     def test_header_colors(self, h: str) -> None:
+        """实测（2026-10-27）：GitHub light 主题的 header 是**深灰 #25292e**，不是浅灰。
+        白底的只有第二层（repo tabs）。"""
+        assert "--header-bg:#25292e" in h
         gh = h[h.index(".global-header{"):]
         gh = gh[:gh.index("}")]
-        assert "background:var(--bg-subtle)" in gh
+        assert "background:var(--header-bg)" in gh
         rt = h[h.index(".repo-tabs{"):]
         rt = rt[:rt.index("}")]
         assert "background:var(--bg)" in rt and "border-bottom:1px solid var(--border)" in rt
@@ -244,3 +247,44 @@ class TestNoRegressionSurfaces:
         # 防止以后又把页签改回横向滚动
         for m in re.finditer(r"\.(repo-tabs|tabs-inner)\{[^}]*\}", h):
             assert "overflow-x:auto" not in m.group(0)
+
+class TestGithubIssuesRow:
+    """实页基线（docs/ui_github_baseline.md，2026-10-27 抓取）落到代码里的样子。"""
+
+    def test_row_is_4_columns(self, h: str) -> None:
+        body = fn(h, "lvRender")
+        for cell in ("lv-selcell", "lv-stcell", "lv-primary", "lv-actcell"):
+            assert cell in body, cell
+        # 表头 4 个 th（选择 / 状态 / 事项 / 操作）
+        assert body.count("<th") >= 4
+
+    def test_state_icon_column(self, h: str) -> None:
+        assert "function lvStateIcon(" in h
+        assert "function lvRender(" in h and "lvStateIcon(it, list)" in fn(h, "lvRender")
+
+    def test_meta_inline_not_below(self, h: str) -> None:
+        """实测：元数据与标题**同行**（12px muted），不是压在标题下面的一行。"""
+        meta = h[h.index(".lv-meta{"):]
+        meta = meta[:meta.index("}")]
+        assert "display:inline-flex" in meta
+        assert "margin-top" not in meta
+
+    def test_container_border_and_radius(self, h: str) -> None:
+        lv = h[h.index(".lv{"):]
+        lv = lv[:lv.index("}")]
+        assert "border:1px solid var(--border-muted" in lv
+        assert "border-radius:6px" in lv
+
+    def test_row_height_and_font(self, h: str) -> None:
+        td = h[h.index(".lv-table td{"):]
+        td = td[:td.index("}")]
+        assert "height:32px" in td and "font-size:14px" in td
+
+    def test_baseline_doc_recorded(self) -> None:
+        import os as _os
+
+        p = _os.path.join(ROOT, "docs", "ui_github_baseline.md")
+        assert _os.path.exists(p), "缺实测基线文档"
+        doc = open(p, encoding="utf-8").read()
+        for fact in ("#25292e", "56px", "14px", "12px", "6px", "32px", "listItem"):
+            assert fact in doc, fact
