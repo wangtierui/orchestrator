@@ -197,9 +197,19 @@ class TestServerEnforcement:
                    "Cookie": srv["cookie"], "X-CSRF": srv["csrf"]}
         req = urllib.request.Request(srv["base"] + path, data=data,
                                      method=method, headers=headers)
+        import time
+
         try:
-            with urllib.request.urlopen(req, timeout=30) as r:
+            with urllib.request.urlopen(req, timeout=60) as r:
                 return r.status, json.loads(r.read().decode("utf-8"))
+        except (urllib.error.URLError, TimeoutError, OSError):
+            # 全量并发下 `/api/records` 这类分页聚合会偶发超时：重试一次（见上）
+            time.sleep(1.5)
+            try:
+                with urllib.request.urlopen(req, timeout=60) as r:
+                    return r.status, json.loads(r.read().decode("utf-8"))
+            except urllib.error.HTTPError as e:
+                return e.code, json.loads(e.read().decode("utf-8") or "{}")
         except urllib.error.HTTPError as e:
             return e.code, json.loads(e.read().decode("utf-8") or "{}")
 

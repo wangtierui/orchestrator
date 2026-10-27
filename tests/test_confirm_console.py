@@ -41,8 +41,28 @@ def server():
 
 
 def _get(url: str):
-    with urllib.request.urlopen(url, timeout=20) as r:
-        return r.status, r.read()
+    """GET → (status, body)；**长超时 + 一次重试**。
+
+    为什么不用默认 20s：`/api/worklist`、`/api/governance`、`/api/search?q=` 都要聚合
+    sqlite（统计/审计/全文检索），全量测试并发 20+ 进程时 20s 会偶发超时；
+    单跑全绿、全量偶红 —— 这种"看心情红"的判据比不判更糟（会训练人忽略红）。
+    重试只吃 `URLError/TimeoutError`，服务端 4xx/5xx 仍直接失败。
+    """
+    import time
+    import urllib.error
+
+    last: Exception | None = None
+    for attempt in (1, 2):
+        try:
+            with urllib.request.urlopen(url, timeout=60) as r:
+                return r.status, r.read()
+        except urllib.error.HTTPError:
+            raise            # 4xx/5xx 是**被测行为**（如 404/400），不重试、不包装
+        except (urllib.error.URLError, TimeoutError, OSError) as e:
+            last = e
+            if attempt == 1:
+                time.sleep(1.5)
+    raise AssertionError(f"请求两次都失败：{url}（{last}）") from last
 
 
 def _get_json(url: str):
