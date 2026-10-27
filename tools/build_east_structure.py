@@ -73,7 +73,8 @@ SHEET_LIKE = ("2", "3", "4", "5", "6")
 from tools.east_parse import (  # noqa: F401
     CARRY_KEYS,
     CODE_HINTS,
-    CODE_REF_RE,
+    CODE_ID_RE,
+    CODE_NAME_RE,
     DESC_HINTS,
     DROP_COL_HINTS,
     ENUM_PREFIX,

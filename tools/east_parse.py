@@ -52,8 +52,10 @@ RULE_SHEETS = {
 #:
 #: 为什么在**抽取层**解析而不是页面里找：页面拿不到"这张代码表存不存在"的事实，
 #: 只能猜字符串；抽取层有 63 张表的 id，能给出**可点击且必然存在**的引用。
-CODE_REF_RE = re.compile(r"参照《?业务代码表》?[“\"](?P<name>[^”\"]+)[”\"]，?"
-                         r"编号(?P<id>CD\d{6})")
+#: 代码表编号（**稳定标识**：`CD` + 6 位数字）
+CODE_ID_RE = re.compile(r"(?P<id>CD\d{6})")
+#: 引号内的代码表名（中文引号/英文引号都收）
+CODE_NAME_RE = re.compile(r"[“\"](?P<name>[^”\"]{2,40})[”\"]")
 #: 内联枚举前缀（说明"值就在本条里"，无需跳转）
 ENUM_PREFIX = ("枚举值",)
 
@@ -85,14 +87,32 @@ def _hkey(cell: object) -> str:
 def _code_ref(text: str) -> dict | None:
     """取值范围 → 业务代码表引用 `{id, name}`（无引用返回 None）。
 
-    只有一种形态是代码表引用：`参照《业务代码表》“X”，编号CDxxxxxx。`；
-    `枚举值：…` 是**内联枚举**（值就在本条里），不该给跳转链接 ——
-    给了用户会点进一张不相干的表。判据写在抽取层，页面不做字符串猜测。
+    判据：**先认 `CDxxxxxx`**，再取它前面最近的引号内容作名称。这样下列同义写法
+    都能命中（它们此前全部漏掉 —— 用户报 CD000027/34/35 点不开就是这原因）：
+
+    ```
+    参照《业务代码表》“保险机构代码”，编号CD000002。
+    参照《业务代码表》“交易市场类型代码”，CD000027。      ← 省略"编号"
+    参考《业务代码表》中的“人际关系代码”，编号CD000049。    ← "参考"+"中的"
+    对应《业务代码表》中的“伤残等级代码”，编号CD000035。    ← "对应"
+    ```
+
+    误报防线：文本里**没有**"代码表"且名称不以"代码"结尾时，不认 ——
+    正文里偶然出现的 CD 编号（如内部流水）不该变成跳转。
+    `枚举值：…` 一律不认（值就在本条里，给了链接反而误导）。
     """
-    m = CODE_REF_RE.search(text or "")
+    s = str(text or "")
+    if not s or any(s.strip().startswith(p) for p in ENUM_PREFIX):
+        return None
+    m = CODE_ID_RE.search(s)
     if not m:
         return None
-    return {"id": m.group("id"), "name": m.group("name").strip()}
+    before = s[:m.start()]
+    names = CODE_NAME_RE.findall(before)
+    name = names[-1].strip() if names else ""
+    if "代码表" not in s and not name.endswith("代码"):
+        return None
+    return {"id": m.group("id"), "name": name}
 
 
 def _s(v: object) -> str:

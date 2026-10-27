@@ -10,27 +10,21 @@
    "ingested_at": "2026-09-12 04:01:39",
    "excludes": [],
    "exclude_tops": [],
+   "hash_mode": "sha256",
    "manifest": "reports/corpus/dept_policies.manifest.json"
-  },
+  }
+ ],
+ "retired": [
   {
    "domain": "regulatory_stats",
-   "source_dir": "D:/0数据治理/00.EAST2.0#M20",
    "file_count": 315,
    "total_bytes": 214106002,
-   "ingested_at": "2026-09-12 14:47:42",
-   "excludes": [],
-   "exclude_tops": [
-    "00.报送文档",
-    "核查手册",
-    "立项申请",
-    "需求文档",
-    "邮件宣导",
-    "相关法规"
-   ],
+   "retired_at": "2026-10-27",
+   "retired_reason": "本体目录 data/corpus/regulatory_stats/ 已从工作区移出（本机清理）。该批材料当年与采集事实源重复：13 个文件与 supp 采集目录逐字节相同，其余为官方 zip/征求意见稿/通报的留档。EAST 解析已改读 supp（interfaces/attachment_api），不依赖本目录。清单保留供审计（曾归集 174 个文件），需要时可按 source_dir 重新归集。",
    "manifest": "reports/corpus/regulatory_stats.manifest.json"
   }
  ],
- "total_files": 1342,
- "total_bytes": 536256369,
- "generated_at": "2026-10-26 17:32:36"
+ "total_files": 1027,
+ "total_bytes": 322150367,
+ "generated_at": "2026-10-27 11:41:34"
 }

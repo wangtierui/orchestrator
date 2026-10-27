@@ -103,6 +103,8 @@ W5 自身（约 8 个批次）即该预算的**首次实践**：W0–W4 的 A–
 
 | TD-34 | **mypy 曾因「同一文件两种模块名」整体中止 ⇒ 类型检查长期形同虚设** | 工程基建 | 可维护性 | 1 | 2026-10-26 | **已修配置**：`pyproject.toml` 加 `explicit_package_bases` + `namespace_packages`（`tools/` 是脚本目录、无 `__init__.py`，同时以裸名与 `tools.*` 被看到）。**代价是基线显形**：原本恒 1 条死锁式报错，修后一次暴露 **135 条**真实类型问题（tests 81 / tools 19 / modules 16 / interfaces 16 / watcher 2 / web 1）。本批已把**自己新增/改动的 12 条**清零（build_east_structure 7、attachment_api 1、test_east_* 4）。**残留**：其余 **122** 条为历史存量（第一百一十七批又清了 relations_api 的 16 条），需按层推进（建议顺序 interfaces → tools → web → modules → tests，每层单独 PR 并逐条给判据）。 |
 
+| TD-35 | **`data/corpus/regulatory_stats/` 人工归档已从工作区移出（174 文件）** | 数据治理 | 可追溯性 | 1 | 2026-10-27 | **已留痕退役**：清单加 `status: retired` + 时间 + 原因，`ingest_corpus --reindex` 输出到 `_index.json` 的 `retired` 段（不删清单）；门禁 J8.2 因而不再把该域当作"必须有本体目录"；归档一致性守卫在目录缺失时 **skip**（判据不可执行，不假装通过）。**影响**：EAST 解析读 supp 采集目录，**不受影响**；损失的是官方 zip / 征求意见稿 / 后续通报的留档。**建议**：若仍需该批证据，按清单 `source_dir` 重新归集一次（`python -m tools.ingest_corpus --src … --domain regulatory_stats`）。 |
+
 ## 七、复核节奏
 
 - **每 Wave 出口**：更新本文件（新增债登记、已偿标记闭环）。

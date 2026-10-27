@@ -195,6 +195,7 @@ def _rebuild_index() -> int:
     """
     idx_path = os.path.join(MANIFEST_DIR, "_index.json")
     domains = []
+    retired: list[dict] = []
     for fn in sorted(os.listdir(MANIFEST_DIR)) if os.path.isdir(MANIFEST_DIR) else []:
         if not fn.endswith(".manifest.json"):
             continue
@@ -205,6 +206,16 @@ def _rebuild_index() -> int:
             print(f"[ingest] 跳过无法解析的清单 {fn}: {type(e).__name__}: {e}")
             continue
         dom = man.get("domain") or fn[: -len(".manifest.json")]
+        # 退役域：**不进** domains（否则门禁 J8.2 会要求本体目录存在），
+        # 但要在 `retired` 里留一条 —— 退役是审计事实，不是"从来没归集过"。
+        if str(man.get("status") or "").lower() == "retired":
+            retired.append({"domain": dom,
+                            "file_count": man.get("file_count", 0),
+                            "total_bytes": man.get("total_bytes", 0),
+                            "retired_at": man.get("retired_at", ""),
+                            "retired_reason": man.get("retired_reason", ""),
+                            "manifest": f"reports/corpus/{fn}"})
+            continue
         domains.append(
             {
                 "domain": dom,
@@ -224,6 +235,8 @@ def _rebuild_index() -> int:
         "硬链接目标）；清单 reports/corpus/（入库，唯一可审计入口）。"
         "v2 §3.12：投放区 data/inbox/ 与本体分离，域内不再保留清单副本",
         "domains": sorted(domains, key=lambda d: d["domain"]),
+        # 退役域单独一段：**不删清单**，退役本身也是审计事实（2026-10-27）
+        "retired": sorted(retired, key=lambda d: d["domain"]),
         "total_files": sum(int(d["file_count"] or 0) for d in domains),
         "total_bytes": sum(int(d["total_bytes"] or 0) for d in domains),
         "generated_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),

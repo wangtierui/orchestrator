@@ -32,6 +32,13 @@ CORPUS = os.path.join(ROOT, "data", "corpus", "regulatory_stats",
                       "00.关于修订人身保险公司2024版监管数据标准化规范部分数据项报送口径的通知")
 MANIFEST = os.path.join(CORPUS, "_archive_manifest.json")
 
+#: 2026-10-27：该人工归档目录已从工作区移出（域已退役，见
+#: `reports/corpus/_index.json` 的 `retired` 段）。判据**不可执行 ≠ 通过**：
+#: 目录不在时统一跳过并说明原因，绝不假装"一致性已核验"。
+_ARCHIVE_PRESENT = os.path.isdir(CORPUS)
+_SKIP = ("人工归档目录已移出（regulatory_stats 域 retired）："
+         "两份存档一致性判据不可执行 —— 需要时按 manifest 的 source_dir 重新归集后再跑")
+
 
 def _sha(path: str) -> str:
     h = hashlib.sha256()
@@ -42,12 +49,16 @@ def _sha(path: str) -> str:
 
 
 def test_manifest_exists() -> None:
+    if not _ARCHIVE_PRESENT:
+        pytest.skip(_SKIP)
     assert os.path.exists(MANIFEST), (
         "缺 _archive_manifest.json（运行生成脚本重录：见 README 中的纪律段）")
 
 
 def test_no_drift_between_two_archives() -> None:
     """逐对比 sha256：两份存档必须仍然逐字节一致（防"只更新一边"）。"""
+    if not _ARCHIVE_PRESENT:
+        pytest.skip(_SKIP)
     m = json.load(open(MANIFEST, encoding="utf-8"))
     pairs = m.get("identical_pairs") or []
     assert pairs, "manifest 里没有 identical_pairs（录错了？）"
@@ -100,6 +111,8 @@ def test_program_reads_supp_only() -> None:
 
 def test_corpus_keeps_evidence_absent_from_supp() -> None:
     """归档目录的价值在于"采集拿不到的东西"——zip/征求意见稿/通报必须仍在。"""
+    if not _ARCHIVE_PRESENT:
+        pytest.skip(_SKIP)
     m = json.load(open(MANIFEST, encoding="utf-8"))
     dirs = set()
     for name in os.listdir(CORPUS):

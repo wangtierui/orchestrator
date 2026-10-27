@@ -131,12 +131,13 @@ class TestFrontendContract:
         h = _html()
         block = h[h.index("const EAST_TABS = ["):h.index("function eastTabBar(")]
         order = re.findall(r'k: "(\w+)"', block)
-        assert order == ["overview", "tables", "elements", "codes", "rules", "er"], order
+        # 2026-10-27：`er` 改名「关系图」（字段级），另加 `erd`「E-R 图」（表级）
+        assert order == ["overview", "tables", "elements", "codes", "rules", "er", "erd"], order
 
     def test_table_has_element_columns_and_link(self) -> None:
         h = _html()
         body = self._fn(h, "eastTables")
-        for col in ("数据元编码", "数据元名称", "数据元说明", "取值范围"):
+        for col in ("数据项说明", "数据元编码", "数据元名称", "数据元说明", "取值范围"):
             assert col in body, col
         assert "eastRangeCell" in body
         cell = self._fn(h, "eastRangeCell")
@@ -167,3 +168,46 @@ class TestFrontendContract:
         # 拖拽重绘不能替换 svg 元素本身（否则监听丢失）
         assert "svg.innerHTML = _g3dInner(" in h
         assert "svg.outerHTML" not in h
+
+class TestNoTruncationAndSidebar:
+    """2026-10-27 用户要求：说明类文本**禁止省略号缩减**；关键页改左侧栏。"""
+
+    def test_no_gcut_in_east_text_cells(self) -> None:
+        import re
+
+        h = _html()
+        i = h.index("function eastTables(")
+        j = h.index("function bindRegstats(")
+        seg = h[i:j]
+        # 允许在"取值范围未链接"的 title 里用，但不允许作为**显示文本**截断
+        bad = [m for m in re.findall(r"_gCut\([^)]*\),\s*(?:4[0-9]|5[0-9]|6[0-9]|9[0-9])\)", seg)]
+        assert not bad, bad[:3]
+        for fn in ("eastElements", "eastCodes"):
+            k = seg.index(f"function {fn}(")
+            k2 = seg.index("function ", k + 10) if "function " in seg[k + 10:] else len(seg)
+            body = seg[k:k2]
+            assert "_gCut(" not in body, f"{fn} 仍在截断文本"
+
+    def test_sidebar_shell_used_by_key_pages(self) -> None:
+        h = _html()
+        assert "function sideShell(" in h
+        for key in ("graph", "east", "laws", "rules", "worklist", "flow", "release"):
+            assert f'sideShell("{key}"' in h, key
+
+    def test_release_evidence_moved_to_overview(self) -> None:
+        h = _html()
+        i = h.index("function viewRelease(")
+        j = h.index("function ", i + 10)
+        # 判据要看**卡片调用**，不能看字面词：函数里有一句注释解释"已移入总览"
+        assert 'card("发布物证据"' not in h[i:j], "发布事件仍带发布物证据卡"
+        ov = h[h.index("function viewOverview("):]
+        ov = ov[:ov.index("\n}")]
+        assert "发布物证据" in ov, "总览未加发布物证据"
+
+    def test_er_tab_splits_relation_and_er(self) -> None:
+        h = _html()
+        assert "function eastErd(" in h, "缺表级 E-R 图"
+        body = h[h.index("function eastErd("):]
+        body = body[:body.index("\nfunction ")]
+        assert "pick:" in body, "E-R 图未接点击聚焦"
+        assert "上游" in body and "下游" in body, "缺上下游链路说明"
