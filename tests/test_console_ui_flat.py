@@ -146,7 +146,8 @@ class TestSidebarActive:
         assert "var(--primary-l)" not in on, "选中态仍是蓝色底板"
         bar = h[h.index(".rail .sideitem.on::before{"):]
         bar = bar[:bar.index("}")]
-        assert "width:2px" in bar and "background:var(--accent)" in bar
+        # 批 124：强调竖线由 2px 改为 **4px**（用户规范）
+        assert "width:4px" in bar and "background:var(--accent)" in bar
 
     def test_collapse_persist(self, h: str) -> None:
         assert 'localStorage.setItem("rail"' in h
@@ -192,7 +193,9 @@ class TestListV2:
             assert part in body, part
         # 面板顶部搜索框 + 转义关闭由 lvPop 负责
         assert 'placeholder="搜索该字段的取值' in body
-        assert ".fpop .opt:hover::before" in h and "width:2px" in h
+        assert ".fpop .opt:hover::before" in h
+        seg = h[h.index(".fpop .opt:hover::before"):][:260]
+        assert "width:4px" in seg, "表头筛选面板悬停线应为 4px"
 
     def test_density_toggle(self, h: str) -> None:
         assert "data-lvdensity" in h and "lv.density" in h

@@ -891,6 +891,11 @@ python -m tools.repair_attachment_text --docno "金非银检函〔2025〕82号" 
 | 视觉 | 主按钮 `#1a7f37`；仅小控件 6px 圆角；面板无外阴影 |
 | 图标 | `web/assets/favicon.svg`（单文件 SVG，`/favicon.svg` 直出 `image/svg+xml`） |
 
+**官方资源（本地化）**：`web/assets/primer.css`（官方 @primer/css 21.5.1 原样，727KB）
+先于自有 `<style>` 引入；`web/assets/octicons.js`（官方 Octicons 子集 67 个，60KB）
+提供 `oct(name,size)`。**运行时零外链**；页面图标（Logo/侧栏/排序/菜单/状态/批量/pager）
+全部改用 Octicons，符号图标已清零。服务端静态路由按 basename 读盘，未改路由。
+
 **UI 基线（实测）**：`docs/ui_github_baseline.md` —— 2026-10-27 抓取
 `notepad-plus-plus/notepad-plus-plus/issues` 的 HTML + 样式表，记录了头部深色 `#25292e`、
 正文 14px / 元数据 12px、列表容器 1px+6px、行 `min-height:32px` 等**可核对数值**，

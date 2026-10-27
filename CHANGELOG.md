@@ -4456,3 +4456,48 @@ TD-36（前端无 runtime 冒烟）：本机 Python 3.14 上 `quickjs` 无 wheel
 结构事实 5 条、本仓取舍 5 条、复核命令。守卫
 `tests/test_console_ui_flat.py::TestGithubIssuesRow` 会校验"行 4 列 / 元数据内联 /
 容器 1px+6px / 行高 32px / 基线文档存在且含关键数值"。
+
+## [Unreleased] 2026-10-27 — 接入官方 Primer CSS / Octicons（纯本地，零外链）（第一百二十四批）
+
+### ① 资源本地化（`web/assets/`，运行时不出网）
+
+| 文件 | 来源 | 大小 | 用法 |
+|---|---|---|---|
+| `primer.css` | 官方 `@primer/css@21.5.1` 编译产物（MIT，**原样不裁剪**） | 727 KB | `<head>` 中**先于**自有 `<style>` 引入 |
+| `octicons.js` | 官方 `@primer/octicons@19.11.0` 的 `build/data.json` → 生成**图标子集**（67 个） | 60 KB | `<script>` 先于主脚本；`oct(name,size)` 内联 SVG |
+
+* 服务端静态路由按 basename 读盘（既有实现），新增两个文件即可，**未改路由**；
+* 实测 `/primer.css` → `200 text/css 727KB`、`/octicons.js` → `200 application/javascript 60KB`；
+* 页面 **0 个 http(s) 外链**（守卫断言 `href|src="https?://"` 为空）。
+
+### ② 图标体系：符号 → 官方 Octicons
+
+| 位置 | 原来 | 现在 |
+|---|---|---|
+| 顶栏 Logo / 汉堡 / 搜索 / More | 内联手绘 SVG / `☰` / `⌕` / `▾` | `mark-github` / `three-bars` / `search` / `chevron-down` |
+| 侧栏页面图标 | 汉字「总/流/指…」（靠字形冒充图标） | `home/workflow/pulse/checklist/law/book/graph/table/shield-check/codescan/rocket/comment` |
+| 折叠按钮 | `⇤ 折叠` / `⇥` | `sidebar-collapse` / `sidebar-expand` |
+| 排序指示 | `▾ / ▴` | `triangle-down / triangle-up` |
+| 字段菜单 | `⋮` | `kebab-horizontal` |
+| 行首状态 | 自制双圆 SVG | `issue-opened` / `issue-closed`（按状态着色） |
+| 批量栏 | 纯文字 | `copy` / `download` / `x` |
+| 分页 / chip | `‹ ›` / `×` | `chevron-left/right` / `x` |
+
+统一入口 `ico(name, size, label)`：`octicons.js` 未加载时返回空串（**优雅降级**，
+不会把 `undefined` 渲染到界面）。
+
+### ③ 骨架与视觉（按本轮规范校订）
+
+* **第一层顶栏 52px、下边框取消**（层与层的分割只由第二层 1px 承担）；
+* 第二层 48px、1px 下边框、溢出折叠 `More`（原实现保留）；
+* 侧栏/筛选面板的强调竖线 **2px → 4px**（`::before`），选中为浅灰底 + 加粗；
+* 新增**明暗主题切换**（顶栏 ☾/☀）：只切 `html[data-color-mode]`，暗色令牌覆盖
+  表面/边框/文字（`--bg/--bg-subtle/--border/--text/--text-muted/--header-bg`），
+  状态存 `localStorage`；不引入任何外部 JS。
+
+### ④ 验收（本批新增守卫 27 项）
+
+`tests/test_console_primer_assets.py`：资源存在与体量、Primer 官方特征串、
+引入顺序（link 在 style 前、octicons 在主脚本前）、零外链、`_asset` 能读到两个文件、
+必需图标齐备、`PAGE_GLYPH` 全部指向真实图标、8 类符号图标已清零、第一层无边框、
+第二层 1px、唯一滚动容器、4px 强调线、搜索原地下拉、主题切换与暗色令牌、路由未新增。

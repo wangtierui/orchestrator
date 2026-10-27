@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-color-mode="light" data-light-theme="light" data-dark-theme="dark">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -8,7 +8,11 @@
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="apple-touch-icon" href="favicon.svg">
 <meta name="theme-color" content="#f6f8fa">
-<!-- 零 CDN / 零构建：原生 JS + CSS + 手绘 SVG（§8.4 纪律）。 -->
+<!-- 零 CDN：以下两份均为**本地静态资源**（web/assets/），运行时不出网。
+     · primer.css   = 官方 @primer/css 21.5.1 编译产物（原样，不裁剪）
+     · octicons.js  = 官方 @primer/octicons 的图标子集（path 数据内联，见文件头）
+     顺序：先官方基底，再自有 <style> 覆盖（同权重时后者胜）。 -->
+<link rel="stylesheet" href="primer.css">
 <style>
 /* ============================================================
  * 设计令牌（2026-10-22 第一百零九批重设计）
@@ -348,10 +352,18 @@ header nav{display:none}          /* 页面导航移入侧栏（顶栏只留面�
 html,body{height:100%}
 body{overflow:hidden;background:var(--bg)}
 .app{display:flex;flex-direction:column;height:100vh;width:100vw;overflow:hidden}
+/* 规范：第一层**无**下边框；层与层的分割只由第二层的 1px 承担 */
 .global-header{height:var(--header-height);background:var(--header-bg);
   color:var(--header-fg);display:flex;align-items:center;
-  gap:12px;padding:0 16px;border-bottom:1px solid #1b1f23;flex-shrink:0;
+  gap:12px;padding:0 16px;border-bottom:0;flex-shrink:0;
   position:static}                        /* 固定由 flex 布局保证，不用 sticky */
+.global-header .logo{display:inline-flex;align-items:center}
+.iconbtn{width:28px;height:28px;display:inline-flex;align-items:center;
+  justify-content:center;border:1px solid rgba(255,255,255,.24);border-radius:6px;
+  background:rgba(255,255,255,.10);color:rgba(255,255,255,.9);cursor:pointer;padding:0}
+.iconbtn:hover{background:rgba(255,255,255,.2);color:#fff}
+.iconbtn svg{display:block}
+.tabs-more{display:inline-flex;align-items:center;gap:4px}
 .global-header .brand small{display:none}
 .gsearch{flex:1 1 auto;max-width:360px;min-width:120px;position:relative;display:flex}
 .gsearch input{width:100%;height:30px;padding:0 34px 0 30px;font-size:13px;
@@ -376,7 +388,7 @@ body{overflow:hidden;background:var(--bg)}
   text-align:left;position:relative}
 .spop .it:hover,.spop .it[aria-selected="true"]{background:var(--bg-subtle)}
 .spop .it:hover::before,.spop .it[aria-selected="true"]::before{content:"";position:absolute;
-  left:0;top:4px;bottom:4px;width:2px;background:var(--accent);border-radius:2px}
+  left:0;top:3px;bottom:3px;width:4px;background:var(--accent);border-radius:2px}
 .spop .it .hint{margin-left:auto;font-size:11.5px;color:var(--text-muted)}
 .spop .empty{padding:10px 8px;font-size:12.5px;color:var(--text-muted)}
 /* 模块页签：溢出折叠进 More，容器 overflow:hidden 保证永不出现横向滚动条 */
@@ -400,7 +412,7 @@ body{overflow:hidden;background:var(--bg)}
   position:static;max-height:none;box-shadow:none}
 body.rail-off .rail{width:56px;flex-basis:56px;padding:12px 4px}
 body.rail-off .rail .side-h,body.rail-off .rail .nm,
-body.rail-off .rail .cnt,body.rail-off .rail .rail-foot span{display:none}
+body.rail-off .rail .cnt,body.rail-off .rail .rail-foot .rt-txt{display:none}
 body.rail-off .rail .sideitem{justify-content:center;padding:8px 0}
 body.rail-off .rail .sideitem .glyph{display:inline-flex}
 .main-content{flex:1;min-width:0;overflow-y:auto;padding:24px;background:var(--bg)}
@@ -411,8 +423,8 @@ main{padding:0;max-width:none;margin:0;min-width:0}
   color:var(--text);cursor:pointer;text-align:left;line-height:1.4}
 .rail .sideitem:hover{background:var(--bg-subtle)}
 .rail .sideitem.on{background:var(--bg-subtle);color:var(--text);font-weight:600}
-.rail .sideitem.on::before{content:"";position:absolute;left:-8px;top:4px;bottom:4px;
-  width:2px;background:var(--accent);border-radius:2px}
+.rail .sideitem.on::before{content:"";position:absolute;left:-8px;top:3px;bottom:3px;
+  width:4px;background:var(--accent);border-radius:2px}
 .rail .sideitem:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 .rail .sideitem .glyph{width:16px;text-align:center;flex:none;font-size:12px;
   color:var(--text-muted)}
@@ -425,6 +437,7 @@ main{padding:0;max-width:none;margin:0;min-width:0}
 .side-sep{height:1px;background:var(--border);margin:8px 0}
 .rail-foot{margin-top:8px;padding-top:8px;border-top:1px solid var(--border);
   display:flex;align-items:center;gap:6px}
+.rail-foot .rt-ico{display:inline-flex;align-items:center}
 .rail-foot button{flex:1;display:inline-flex;align-items:center;justify-content:center;
   gap:6px;height:28px;border:1px solid var(--border);background:var(--bg);
   border-radius:6px;font-size:12px;color:var(--text-muted);cursor:pointer}
@@ -665,11 +678,10 @@ body.lv-compact .lv-title{font-size:12.5px}
   border:0;background:none;padding:6px 8px;border-radius:6px;text-align:left;
   font-size:12.5px;color:var(--text);cursor:pointer}
 .fpop .opt:hover{background:var(--bg-subtle)}
-.fpop .opt:hover::before{content:"";position:absolute;left:0;top:4px;bottom:4px;
-  width:2px;background:var(--accent);border-radius:2px}
+.fpop .opt:hover::before,.fpop .opt[aria-checked="true"]::before{content:"";position:absolute;
+  left:0;top:3px;bottom:3px;width:4px;background:var(--accent);border-radius:2px}
 .fpop .opt[aria-checked="true"]{background:var(--bg-subtle);font-weight:600}
-.fpop .opt[aria-checked="true"]::before{content:"";position:absolute;left:0;top:4px;
-  bottom:4px;width:2px;background:var(--accent);border-radius:2px}
+
 .fpop .opt .dot{width:8px;height:8px;border-radius:50%;flex:none;background:var(--fg4)}
 .fpop .opt .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .fpop .opt .s{font-size:11px;color:var(--text-muted);font-weight:400}
@@ -690,19 +702,39 @@ body.lv-compact .lv-title{font-size:12.5px}
   color:#fff;padding:0 8px}
 .lv-batch input::placeholder{color:rgba(255,255,255,.55)}
 .lv-batch input:focus{outline:none;border-color:#fff}
+
+/* ============================================================
+ * 暗色主题（顶栏 ☾ 切换，写 localStorage；不依赖任何外部库）
+ * 只覆盖"表面/边框/文字"这几类令牌 —— 语义色（accent/success/danger）沿用 GitHub 暗色值。
+ * ============================================================ */
+html[data-color-mode="dark"]{
+  --bg:#0d1117; --bg-subtle:#151b23;
+  --border:#3d444d; --border-muted:#3d444d80;
+  --text:#e6edf3; --text-muted:#9198a1;
+  --accent:#4493f8; --success:#3fb950; --danger:#f85149; --hover:#1f262d;
+  --header-bg:#010409; --header-fg:#ffffff;
+  --fg:var(--text); --fg2:#b1bac4; --fg3:var(--text-muted); --fg4:#6e7681;
+  --line:var(--border); --line2:#3d444d; --alt:var(--bg-subtle); --card:var(--bg);
+  --primary:var(--accent); --primary-h:#388bfd; --primary-l:#388bfd1a;
+  --ok:var(--success); --ok-l:#2ea04326; --warn:#d29922; --warn-l:#bb800926;
+  --bad:var(--danger); --bad-l:#f851491a;
+}
+html[data-color-mode="dark"] img{opacity:.92}
+html[data-color-mode="dark"] .lv-badge,
+html[data-color-mode="dark"] .tag{background:#21262d;border-color:#3d444d}
 </style>
 </head>
 <body>
 <div class="app">
 <header class="global-header" id="appHeader">
   <button class="railOpen" id="railOpen" aria-label="打开导航" aria-controls="rail"
-    aria-expanded="false" title="打开导航">☰</button>
+    aria-expanded="false" title="打开导航"><span id="railOpenIco"></span></button>
   <div class="brand">
-    <svg class="logo" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+    <span class="logo" id="brandIco" aria-hidden="true"></span>
     监管合规编排器
   </div>
   <div class="gsearch" id="gsearchWrap">
-    <span class="ico" aria-hidden="true">⌕</span>
+    <span class="ico" id="searchIco" aria-hidden="true"></span>
     <input id="gsearchInput" type="text" autocomplete="off" spellcheck="false"
       placeholder="搜索或跳转…" aria-label="全局搜索"
       aria-haspopup="listbox" aria-expanded="false" aria-controls="gsearchPop">
@@ -715,13 +747,15 @@ body.lv-compact .lv-title{font-size:12.5px}
     <span class="badge" id="auth" title="登录身份">—</span>
     <span class="badge" id="gates">门禁 —</span>
     <span class="badge" id="stamp">—</span>
+    <button class="iconbtn" id="themeBtn" aria-label="切换明暗主题" title="切换明暗主题">
+      <span id="themeIco"></span></button>
     <button class="avatar" id="avatarBtn" title="身份与访问范围" aria-label="账号菜单">我</button>
   </div>
 </header>
 <nav class="repo-tabs" id="repoTabs" aria-label="模块导航">
   <div class="tabs-inner" id="tabsInner"></div>
   <button class="tabs-more" id="tabsMore" hidden aria-haspopup="menu"
-    aria-expanded="false">More ▾</button>
+    aria-expanded="false"><span>More</span><span id="moreIco"></span></button>
 </nav>
 <div class="body-layout" id="shell">
   <div class="rail-mask" id="railMask" aria-hidden="true"></div>
@@ -731,6 +765,7 @@ body.lv-compact .lv-title{font-size:12.5px}
 </div>
 <div class="toast" id="toast"></div>
 
+<script src="octicons.js"></script>
 <script>
 "use strict";
 /* ============================================================
@@ -811,9 +846,18 @@ function railSet(title, items, cur){
  * 折叠后只剩 56px 的图标列：`.glyph` 显示，其余隐藏，`title` 提供 tooltip。
  * 折叠状态写 localStorage；`aria-expanded` 同步给读屏器。
  */
+/*: 图标统一入口 —— 全部来自**本地** `octicons.js`（官方 Octicons 子集）。
+ * 降级：脚本没加载（极端情况）时返回空串，不会把 "undefined" 渲染出来。 */
+function ico(name, size, label) {
+  return (typeof window.oct === "function") ? window.oct(name, size || 16, "", label || "") : "";
+}
+
+/*: 页面 → Octicon 名（侧栏折叠后只剩这些 16px 图标）。 */
 const PAGE_GLYPH = {
-  overview: "总", flow: "流", metrics: "指", worklist: "待", laws: "法", rules: "制",
-  graph: "图", regstats: "统", governance: "审", search: "检", release: "发", feedback: "留",
+  overview: "home", flow: "workflow", metrics: "pulse", worklist: "checklist",
+  laws: "law", rules: "book", graph: "graph", regstats: "table",
+  governance: "shield-check", search: "codescan", release: "rocket",
+  feedback: "comment",
 };
 
 function goPage(id){
@@ -828,7 +872,7 @@ function _railItem(opts){
   return `<button class="sideitem${on ? " on" : ""}${level === 2 ? " sideitem-sub" : ""}"
       data-side="${esc(side)}" data-skey="${esc(skey || "")}"
       title="${esc(title || label || "")}" ${extra || ""}>
-      ${glyph ? `<span class="glyph" aria-hidden="true">${esc(glyph)}</span>` : ""}
+      ${glyph ? `<span class="glyph" aria-hidden="true">${ico(glyph, 16)}</span>` : ""}
       ${dot ? `<span class="dot" style="background:${esc(dot)}"></span>` : ""}
       <span class="nm">${esc(label || "")}</span>
       ${count != null ? `<span class="cnt">${num(count)}</span>` : ""}
@@ -864,12 +908,15 @@ function paintRail(){
       ? `<div class="side-sep"></div><div class="side-h">视图</div>` +
         pinItems.map(_railItem).join("") + viewItems.map(_railItem).join("") +
         `<button class="sideitem" data-side="lvsave" data-skey="" title="把当前筛选保存为视图">
-           <span class="glyph" aria-hidden="true">＋</span><span class="nm">保存当前视图…</span>
+           <span class="glyph" aria-hidden="true">${ico("plus", 16)}</span>
+           <span class="nm">保存当前视图…</span>
          </button>`
       : "") +
     `<div class="rail-foot">
        <button id="railToggle" aria-expanded="true" aria-controls="rail"
-         aria-label="折叠侧边栏" title="折叠侧边栏（Ctrl+B）">⇤ 折叠</button>
+         aria-label="折叠侧边栏" title="折叠侧边栏（Ctrl+B）">
+         <span class="rt-ico">${ico("sidebar-collapse", 16)}</span>
+         <span class="rt-txt">折叠</span></button>
      </div>`;
   syncRailToggle();
 }
@@ -1921,7 +1968,7 @@ const toQuery = o => Object.entries(o)
 
 function thSort(key, label, st){
   const on = st.sort === key;
-  const arw = on ? `<span class="arw">${st.desc ? "▾" : "▴"}</span>` : "";
+  const arw = on ? `<span class="arw">${ico(st.desc ? "triangle-down" : "triangle-up", 16)}</span>` : "";
   return `<th class="sortable${on ? " on" : ""}" data-sort="${key}"
     title="点击按「${esc(label)}」排序">${esc(label)}${arw}</th>`;
 }
@@ -1945,8 +1992,8 @@ function pager(d, id){
   return `<div class="pager" id="${id}">
     <span>共 <b>${num(total)}</b> 条 · 第 ${page} / ${pages} 页</span>
     <button data-pg="1" ${page <= 1 ? "disabled" : ""}>« 首页</button>
-    <button data-pg="${page - 1}" ${page <= 1 ? "disabled" : ""}>‹ 上一页</button>
-    <button data-pg="${page + 1}" ${page >= pages ? "disabled" : ""}>下一页 ›</button>
+    <button data-pg="${page - 1}" ${page <= 1 ? "disabled" : ""}>${ico("chevron-left", 16)} 上一页</button>
+    <button data-pg="${page + 1}" ${page >= pages ? "disabled" : ""}>下一页 ${ico("chevron-right", 16)}</button>
     <button data-pg="${pages}" ${page >= pages ? "disabled" : ""}>末页 »</button>
   </div>`;
 }
@@ -2223,7 +2270,8 @@ function syncRailToggle(){
     b.setAttribute("aria-expanded", off ? "false" : "true");
     b.setAttribute("aria-label", off ? "展开侧边栏" : "折叠侧边栏");
     b.title = (off ? "展开侧边栏" : "折叠侧边栏") + "（Ctrl+B）";
-    b.textContent = off ? "⇥" : "⇤ 折叠";
+    b.innerHTML = `<span class="rt-ico">${ico(off ? "sidebar-expand" : "sidebar-collapse", 16)}</span>`
+      + `<span class="rt-txt">${off ? "展开" : "折叠"}</span>`;
   }
 }
 
@@ -3773,10 +3821,11 @@ function lvStateIcon(it, list) {
     : tone === "done" ? "#8250df"
     : tone === "info" ? "#0969da" : "#8c959f";
   const label = (ST_LABEL[v == null ? "" : v] || v || "未标注");
-  return `<svg class="lv-st" viewBox="0 0 16 16" width="16" height="16" role="img"
-      aria-label="${esc(label)}"><title>${esc(label)}</title>
-      <path fill="${fill}" d="M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z"></path>
-      <path fill="${fill}" d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Z"></path></svg>`;
+  /* 官方图标：open/closed 两种形态，颜色按时效映射（GitHub 就是这么表达状态的） */
+  const name = (tone === "ok" || tone === "warn" || tone === "info")
+    ? "issue-opened" : "issue-closed";
+  return `<span class="lv-st" style="color:${fill}" role="img" aria-label="${esc(label)}"
+      title="${esc(label)}">${ico(name, 16)}</span>`;
 }
 
 function lvRowId(list, it) {
@@ -3804,7 +3853,7 @@ function lvRender(list, d, st, f) {
       ${a.kind === "slice" ? "切片" : "筛选"} <b>${esc(a.field)}</b>
       ${esc(String(a.value)).slice(0, 24)}
       <button data-lvrm="${esc(a.param)}" data-lvrmkind="${esc(a.kind)}"
-        aria-label="移除该条件" title="移除">×</button></span>`).join("");
+        aria-label="移除该条件" title="移除">${ico("x", 12)}</button></span>`).join("");
 
   /* 表头与行**一一对应**（实测 GitHub 是 4 列：selection | status | primary | actions）。
    * `meta` 字段不再占列 —— 它们作为**内联元数据**跟在标题后面（GitHub 就是这么排的）。 */
@@ -3816,14 +3865,15 @@ function lvRender(list, d, st, f) {
     `<th data-lvfk="${esc(stField)}" class="lv-stcell">
       <span class="lv-th"><button class="sortbtn" data-lvsort="${esc(stField)}"
         title="按时效排序">状态${st.sort === stField
-          ? `<span aria-hidden="true">${st.desc ? "▾" : "▴"}</span>` : ""}</button></span></th>`,
+          ? ico(st.desc ? "triangle-down" : "triangle-up", 16) : ""}</button></span></th>`,
     `<th draggable="true" data-lvfk="${esc(primaryFd.k)}" aria-sort="${st.sort === (primaryFd.sort || primaryFd.k)
         ? (st.desc ? "descending" : "ascending") : "none"}">
       <span class="lv-th"><button class="sortbtn" data-lvsort="${esc(primaryFd.sort || primaryFd.k)}"
         title="按名称排序">${esc(primaryFd.label || "事项")}${st.sort === (primaryFd.sort || primaryFd.k)
-          ? `<span aria-hidden="true">${st.desc ? "▾" : "▴"}</span>` : ""}</button>
+          ? ico(st.desc ? "triangle-down" : "triangle-up", 16) : ""}</button>
         <button class="menu" data-lvmenu="${esc(primaryFd.k)}" aria-haspopup="menu"
-          aria-expanded="false" aria-label="字段菜单：${esc(primaryFd.label)}">⋮</button></span></th>`,
+          aria-expanded="false" aria-label="字段菜单：${esc(primaryFd.label)}">${
+            ico("kebab-horizontal", 16)}</button></span></th>`,
     `<th class="lv-actcell"><span class="lv-th">操作</span></th>`].join("");
 
   const rows = items.map(it => {
@@ -3851,7 +3901,7 @@ function lvRender(list, d, st, f) {
   }).join("");
 
   const empty = `<tr><td colspan="4">
-      <div class="lv-empty"><span class="ico" aria-hidden="true">⌕</span>
+      <div class="lv-empty"><span class="ico" aria-hidden="true">${ico("search", 24)}</span>
         <b>当前筛选无结果</b>
         <div>没有符合条件的记录；可以放宽条件，或清除全部筛选。</div>
         <button class="btn" data-lvclear="1">清除筛选</button></div></td></tr>`;
@@ -3922,9 +3972,9 @@ function lvRender(list, d, st, f) {
       <span class="n">已选 ${selN} 项</span>
       <input id="lvReason" type="text" placeholder="批量理由（写入导出）"
         aria-label="批量理由" autocomplete="off">
-      <button data-lvbatch="copy">复制编号</button>
-      <button data-lvbatch="csv">导出 CSV</button>
-      <button class="x" data-lvbatch="clear" aria-label="清除选择">×</button>
+      <button data-lvbatch="copy">${ico("copy", 16)} 复制编号</button>
+      <button data-lvbatch="csv">${ico("download", 16)} 导出 CSV</button>
+      <button class="x" data-lvbatch="clear" aria-label="清除选择">${ico("x", 16)}</button>
     </div>`;
 }
 
@@ -4855,8 +4905,36 @@ function openSearchPop(){
   paint();
 }
 
+/*: 顶栏图标与主题（批 124：图标全部来自本地 Octicons；主题只切 `data-color-mode`）。 */
+function applyTheme(mode){
+  const m = (mode === "dark") ? "dark" : "light";
+  document.documentElement.setAttribute("data-color-mode", m);
+  try { localStorage.setItem("theme", m); } catch (e) { /* 隐私模式 */ }
+  const el = $("#themeIco");
+  if (el) el.innerHTML = ico(m === "dark" ? "sun" : "moon", 16);
+}
+
+function initChrome(){
+  const setIco = (sel, name, size) => {
+    const el = $(sel);
+    if (el) el.innerHTML = ico(name, size || 16);
+  };
+  setIco("#brandIco", "mark-github", 16);
+  setIco("#railOpenIco", "three-bars", 16);
+  setIco("#searchIco", "search", 14);
+  setIco("#moreIco", "chevron-down", 16);
+
+  let saved = "light";
+  try { saved = localStorage.getItem("theme") || "light"; } catch (e) { /* 隐私模式 */ }
+  applyTheme(saved);
+  const tb = $("#themeBtn");
+  if (tb) tb.onclick = () => applyTheme(
+    document.documentElement.getAttribute("data-color-mode") === "dark" ? "light" : "dark");
+}
+
 function initNav(){
   lvSetDensity(lvDensity());
+  initChrome();
   bindRailToggle();
   buildTabs();
   const cmd = $("#gsearchCmd");
