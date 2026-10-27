@@ -86,17 +86,20 @@ class TestThreeBlocks:
     """一、三块式骨架。"""
 
     def test_header_height(self, h: str) -> None:
-        assert "--head-h:52px" in h
-        assert "height:var(--head-h)" in h
+        """用户规范要求用变量管理 52px；第二层页签固定 48px。"""
+        assert "--header-height:52px" in h
+        assert "height:var(--header-height)" in h
+        assert ".repo-tabs{height:48px" in h
 
     def test_shell_grid_and_rail_widths(self, h: str) -> None:
-        assert "--rail-w:264px" in h and "--rail-w-min:56px" in h
-        shell = h[h.index(".shell{"):]
-        shell = shell[:shell.index("}")]
-        assert "grid-template-columns:var(--rail-w) minmax(0,1fr)" in shell
+        """批 122：弹性两列（侧栏 260 / 主内容自适应），不再用栅格比例。"""
+        assert ".body-layout{display:flex" in h
+        rail = h[h.index(".rail{"):]
+        rail = rail[:rail.index("}")]
+        assert "width:260px" in rail and "border-right:1px solid var(--border)" in rail
 
     def test_rail_outside_main(self, h: str) -> None:
-        start = h.index('<div class="shell"')
+        start = h.index('id="shell"')
         seg = h[start:h.index("</main>", start)]
         assert 'id="rail"' in seg and 'id="view"' in seg
         assert seg.index('id="rail"') < seg.index('id="view"')
@@ -116,9 +119,11 @@ class TestThreeBlocks:
 class TestHeader:
     """一.1 顶栏：标识 + 面包屑 + 全局搜索 + 账号。"""
 
-    def test_breadcrumb_and_search(self, h: str) -> None:
-        assert 'id="crumbName"' in h
-        assert 'id="paletteBtn"' in h and "aria-haspopup" in h
+    def test_search_box_and_palette_entry(self, h: str) -> None:
+        """批 122：顶栏 = 标识 + 全局搜索框 + 右侧状态/账号（面包屑已移除）。"""
+        assert 'id="gsearchInput"' in h and 'id="gsearchCmd"' in h
+        assert 'aria-haspopup="listbox"' in h
+        assert "function openSearchPop(" in h
 
     def test_palette_shortcut(self, h: str) -> None:
         assert "function openPalette(" in h

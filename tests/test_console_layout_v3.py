@@ -85,8 +85,8 @@ class TestGlobalRail:
 
     def test_rail_outside_main(self, h: str) -> None:
         assert 'id="rail"' in h
-        # `.shell` 里还有抽屉遮罩（自闭合 div），不能"遇到第一个 </div> 就截断"
-        start = h.index('<div class="shell"')
+        # 批 122：容器是 `#shell`（.body-layout），里面还有抽屉遮罩，按 </main> 截断
+        start = h.index('id="shell"')
         shell = h[start:h.index("</main>", start)]
         assert 'id="rail"' in shell and 'id="view"' in shell
         assert shell.index('id="rail"') < shell.index('id="view"')
@@ -104,9 +104,9 @@ class TestGlobalRail:
         assert "paintRail()" in fin[:200]
 
     def test_collapse(self, h: str) -> None:
-        """折叠 = 56px 图标列（保留可点），只有"本页无第二节"时才整列隐藏。"""
-        assert "body.rail-off .shell{grid-template-columns:var(--rail-w-min)" in h
-        assert "body.rail-empty .shell{grid-template-columns:minmax(0,1fr)}" in h
+        """折叠 = 56px 图标列（批 122：定宽侧栏，不再是栅格比例）。"""
+        assert "body.rail-off .rail{width:56px" in h
+        assert "body.rail-off .rail .nm," in h
 
 
 class TestKpiDecoupled:

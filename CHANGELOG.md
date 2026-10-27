@@ -4344,3 +4344,69 @@ TD-36（前端无 runtime 冒烟）：本机 Python 3.14 上 `quickjs` 无 wheel
 `aria-label` / `aria-haspopup` / `aria-expanded` / `aria-controls` / `aria-sort` /
 `role="grid"` + `aria-multiselectable` / `:focus-visible` 全套；菜单内方向键导航。
 断点：≥1280 三块完整；1024–1279 左栏可折叠；<1024 抽屉 + 单列 + 表格横向滚动。
+
+## [Unreleased] 2026-10-27 — 全幅扁平化重构（双层顶栏 / 页签折叠 / 唯一滚动容器）（第一百二十二批）
+
+> 目标：彻底去掉"B 端卡片流"观感（大圆角白盒 + 外阴影 + 灰色大底板包裹），
+> 全站对齐 GitHub 的**线切割、按需呈现、全幅铺满**。路由/接口/权限/业务**零改动**。
+
+### ① 骨架：100vh 应用壳 + 唯一滚动容器
+
+```
+.app（100vw/100vh, overflow:hidden）
+ ├ .global-header   52px（#f6f8fa，1px 下边框）
+ ├ .repo-tabs       48px（#fff，1px 下边框；溢出折叠 More，**无横向滚动条**）
+ └ .body-layout（flex, overflow:hidden）
+    ├ .rail  260px（右侧 1px 切割，自身可滚）
+    └ #view  overflow-y:auto（**唯一**滚动容器，24px 内边距）
+```
+
+* 删掉"包裹侧栏+主内容的灰底板"与所有面板外阴影；
+* `.card` 变**扁平**（无边框/圆角/阴影），模块之间靠 `.grid{gap:1px;background:var(--border)}`
+  渲染 1px 切割线；
+* 列表/表格**取消内部纵向滚动**：`.tblwrap` / `.lv-scroll` 的 `max-height` 归零
+  （宽表保留横向滚动，避免窄屏把列挤没）。
+
+### ② 双层顶栏（精确高度 + 溢出折叠）
+
+* 第一层 52px：`--header-height` 变量管理；标识 + **全局搜索框**（`Ctrl K` 提示）+ 状态徽标 + 账号；
+* 第二层 48px：模块页签；容器 `overflow:hidden`，**永不出现横向滚动条**；
+* 折叠算法（`foldTabs`）：测量 → 贪心装入（预留 More 宽）→ **活跃页签始终可见**
+  （放不下就腾出最后一个非活跃位）→ 其余进 `More ▾` 下拉；窗口 resize 与
+  `ResizeObserver` 双重触发；
+* 权限不变：内网只读时"本机专属"页签不进测量也不进 More（`STATE._local`）。
+
+### ③ 搜索的两条路径（严格区分）
+
+| 入口 | 形态 | 说明 |
+|---|---|---|
+| 点击/聚焦搜索框 | **原地下拉**（`.spop`） | 无遮罩、页面不变暗；分组列出跳转/视图/字段 show-hide；Esc 或点外部关闭 |
+| `Ctrl K` / 右侧图标 | **居中 Modal**（`.pal-mask`） | 命令面板：跳页面、show/hide 字段、save view、clear filters |
+
+### ④ 侧栏
+
+260px、右侧 1px；**选中态改为浅灰底（#f6f8fa）+ 深黑加粗 + 左侧 2px 强调竖线**
+（`::before`），彻底去掉"整块蓝底蓝字"；折叠 56px 只留图标、`localStorage` 持久化。
+
+### ⑤ 列表页（政策法规 / 公司制度）
+
+* **移除外部下拉框**：状态筛选改成**页签**（`全部 / 现行有效 / 已废止…`，取自后端分面）；
+* 全局过滤收拢到表头上方**一个输入框**，支持 `theme:` / `source:` / `时效:` / `文号:`
+  前缀（`<datalist>` 提供 type-ahead），回车应用；
+* 表头字段菜单 → **字段筛选面板**：顶部搜索框 + 选项列表（复选框 + 圆点 + 主文本 +
+  浅灰副文本 + 计数），悬停/选中时浅灰底 + 左侧 2px 蓝线；
+* 右上角**密度切换**（宽松/紧凑，`localStorage`）；
+* 批量栏新增**批量理由**输入框（写入导出 CSV 的 `reason` 列）；
+* 分页在列表末尾，随页面滚动（不固定）。
+
+### ⑥ 视觉与图标
+
+主按钮 `#1a7f37` 实心白字、次按钮白底细边框、危险红；仅按钮/输入框/小标签/下拉面板
+用 6px 圆角。新增 `web/assets/favicon.svg`（单文件 SVG，服务端按 basename 读盘），
+`index.html` 加 `rel="icon"` / `apple-touch-icon` / `theme-color`。
+
+### ⑦ 修掉的一处**启动级**缺陷（自查发现）
+
+删掉旧 `#nav` 节点后，`initNav()` 里仍留着 `const nav = $("#nav"); nav.appendChild(...)`
+—— `nav` 为 null 会抛 `TypeError`，**整个脚本停在初始化**（页面永远"加载中…"）。
+已删除该段，并把"内网只读隐藏本机专属页签"的权限行为迁到页签层。

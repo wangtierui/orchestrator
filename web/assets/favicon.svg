@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="监管合规编排器">
+  <rect width="32" height="32" rx="6" fill="#0969da"/>
+  <!-- 抽象"文档 + 校验勾"：与顶栏 logo 同源的极简线形，避免小尺寸糊成一团 -->
+  <path d="M9 7h10l4 4v14a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1z"
+        fill="none" stroke="#ffffff" stroke-width="2" stroke-linejoin="round"/>
+  <path d="M18.5 7v4.5H23" fill="none" stroke="#ffffff" stroke-width="2"
+        stroke-linejoin="round"/>
+  <path d="M12 16.5l2.6 2.6L21 12.6" fill="none" stroke="#ffffff" stroke-width="2.2"
+        stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
