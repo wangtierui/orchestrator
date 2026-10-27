@@ -14,20 +14,34 @@
  * 令牌全部集中在此，页面里不写死色值/圆角/间距 —— 改主题只改这一处。
  * ============================================================ */
 :root{
-  --primary:#1A5FB4; --primary-h:#144A8F; --primary-l:#E8F1FB;
-  --accent:#2F7CF6; --ai:#6C5CE7;
-  --ok:#12855A; --ok-l:#E6F6EF; --warn:#B26A00; --warn-l:#FFF6E5;
-  --bad:#C0392B; --bad-l:#FDECEA;
-  --fg:#1D2129; --fg2:#4E5969; --fg3:#86909C; --fg4:#C9CDD4;
-  --bg:#F7F8FA; --card:#FFFFFF; --alt:#F2F4F7;
-  --line:#E5E6EB; --line2:#D0D5DD;
-  --r-sm:4px; --r-md:8px; --r-lg:12px; --r-xl:16px;
+  /* ---- GitHub 色板（2026-10-27 第一百二十一批；用户指定值） ---- */
+  --bg:#ffffff; --bg-subtle:#f6f8fa; --border:#d0d7de;
+  --text:#1f2328; --text-muted:#656d76;
+  --accent:#0969da; --success:#1a7f37; --danger:#cf222e; --hover:#f3f4f6;
+
+  /* ---- 兼容层：把历史令牌指到新色板 ----
+   * 确认台有 3000+ 行样式在用 `--primary/--fg/--line` 这套名字；逐条改名既无收益
+   * 又容易漏。这里做**别名**，一次收口（改色只改上面 9 个值）。 */
+  --primary:var(--accent); --primary-h:#0550ae; --primary-l:#ddf4ff;
+  --accent2:#2f7cf6; --ai:#8250df;
+  --fg:var(--text); --fg2:#59636e; --fg3:var(--text-muted); --fg4:#afb8c1;
+  --alt:var(--bg-subtle); --card:#ffffff;
+  /* 边框/分隔线：老样式全在用 `--line/--line2` —— 漏了它们会让所有 1px 边框失效 */
+  --line:var(--border); --line2:#d8dee4;
+  --ok:var(--success); --ok-l:#dafbe1;
+  --warn:#9a6700; --warn-l:#fff8c5;
+  --bad:var(--danger); --bad-l:#ffebe9;
+
+  /* ---- 形状与间距：克制的 6px 圆角、边框优先 ---- */
+  --r-sm:4px; --r-md:6px; --r-lg:8px; --r-xl:12px;
   --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:32px; --s7:48px;
-  --shadow:0 1px 2px rgba(29,33,41,.04), 0 2px 8px rgba(29,33,41,.06);
-  --shadow-h:0 4px 16px rgba(29,33,41,.10);
+  --shadow:0 1px 0 rgba(31,35,40,.04);
+  --shadow-h:0 3px 12px rgba(31,35,40,.08);
   --mono:ui-monospace,"Cascadia Mono","Consolas",monospace;
-}
-*{box-sizing:border-box}
+  --head-h:52px;      /* 顶部横向导航高度（48–56） */
+  --rail-w:264px;     /* 侧栏展开宽（240–280） */
+  --rail-w-min:56px;  /* 侧栏折叠宽（48–64） */
+}*{box-sizing:border-box}
 html,body{margin:0;background:var(--bg);color:var(--fg)}
 body{font:15px/1.6 -apple-system,"PingFang SC","Microsoft YaHei UI","Segoe UI",system-ui,sans-serif;
   -webkit-font-smoothing:antialiased}
@@ -254,44 +268,278 @@ th.sortable .arw{font-size:10px;opacity:.85}
 .section{margin:var(--s5) 0 var(--s2)}
 h3.near{margin-top:var(--s1)}
 
-/*: GitHub 三块式（2026-10-27 第一百二十批）
- *   顶栏（品牌/状态）+ 横向页面导航 + **页面级左栏** + 内容
- * 为什么左栏必须放在 main 外：放在卡片里会随内边距缩进、且折叠要逐页实现；
- * 现在它是 sticky 的固定列，折叠只需一个 body class。 */
-.shell{display:grid;grid-template-columns:232px minmax(0,1fr);gap:var(--s4);
-  max-width:1760px;margin:0 auto;padding:var(--s4) var(--s5);align-items:start}
-.rail{position:sticky;top:104px;border:1px solid var(--line);border-radius:10px;
-  background:var(--card);padding:6px;max-height:calc(100vh - 128px);overflow:auto}
-.rail[hidden]{display:none}
-body.rail-off .shell{grid-template-columns:minmax(0,1fr)}
-body.rail-off .rail{display:none}
-body.rail-empty .shell{grid-template-columns:minmax(0,1fr)}
-main{max-width:none;margin:0;padding:0;min-width:0}
-@media (max-width:980px){
-  .shell{grid-template-columns:minmax(0,1fr);padding:var(--s3)}
-  .rail{position:static;max-height:none;order:2}
+/* 注：批 120 的 `.shell`（232px 固定列）已删除 —— 批 121 用 `--rail-w` 令牌
+ * 统一控制展开/折叠宽度，两套规则并存会让"折叠后宽度"取决于书写顺序。 */
+
+/* ============================================================
+ * 三块式骨架（GitHub Issues 风格，2026-10-27）
+ *   固定顶栏 52px / 可折叠侧栏 264↔56px / 主内容自适应
+ * 仅借鉴布局与视觉语言，不改路由与业务。
+ * ============================================================ */
+body{background:var(--bg-subtle)}
+header{position:sticky;top:0;z-index:40;background:var(--bg);border-bottom:1px solid var(--border)}
+.hbar{display:flex;align-items:center;gap:12px;height:var(--head-h);
+  padding:0 16px;max-width:none;margin:0}
+.brand{display:flex;align-items:center;gap:8px;font-weight:600;font-size:14px;color:var(--text)}
+.brand .logo{width:20px;height:20px;color:var(--text)}
+.brand small{display:none}
+.crumb{display:flex;align-items:center;gap:6px;color:var(--text-muted);font-size:13px;min-width:0}
+.crumb .sep{color:var(--fg4)}
+.crumb b{color:var(--text);font-weight:600;white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis;max-width:34vw}
+.hsearch{flex:1;max-width:520px;margin-left:auto;position:relative}
+.hsearch button{width:100%;display:flex;align-items:center;gap:8px;height:30px;
+  padding:0 10px;font-size:12.5px;color:var(--text-muted);background:var(--bg-subtle);
+  border:1px solid var(--border);border-radius:var(--r-md);cursor:pointer;text-align:left}
+.hsearch button:hover{background:var(--hover);color:var(--text)}
+.hsearch kbd{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--fg3);
+  border:1px solid var(--border);border-radius:4px;padding:0 4px;background:var(--bg)}
+.hstat{display:flex;gap:6px;align-items:center;margin-left:8px;flex-wrap:nowrap}
+.hstat .badge{font-size:11.5px;padding:2px 8px}
+.railOpen{display:none;width:30px;height:30px;border:1px solid var(--border);
+  background:var(--bg);border-radius:var(--r-md);color:var(--text-muted);cursor:pointer;
+  font-size:14px;line-height:1;align-items:center;justify-content:center}
+.railOpen:hover{background:var(--hover);color:var(--text)}
+@media (max-width:1024px){ .railOpen{display:inline-flex} }
+.rail-mask{display:none}
+@media (max-width:1024px){
+  body.rail-open .rail-mask{display:block;position:fixed;inset:var(--head-h) 0 0 0;
+    background:rgba(31,35,40,.28);z-index:34}
 }
+.avatar{width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;
+  display:inline-flex;align-items:center;justify-content:center;font-size:11.5px;
+  font-weight:600;border:0;cursor:pointer}
+header nav{display:none}          /* 页面导航移入侧栏（顶栏只留面包屑与全局入口） */
+
+.shell{display:grid;grid-template-columns:var(--rail-w) minmax(0,1fr);gap:16px;
+  max-width:none;margin:0;padding:16px;align-items:start;transition:none}
+.rail{position:sticky;top:calc(var(--head-h) + 12px);border:1px solid var(--border);
+  border-radius:var(--r-lg);background:var(--bg);padding:8px;
+  max-height:calc(100vh - var(--head-h) - 24px);overflow:auto}
+body.rail-off .shell{grid-template-columns:var(--rail-w-min) minmax(0,1fr)}
+body.rail-off .rail{padding:6px 4px}
+body.rail-off .rail .side-h,body.rail-off .rail .nm,
+body.rail-off .rail .cnt,body.rail-off .rail .rail-foot span{display:none}
+body.rail-off .rail .sideitem{justify-content:center;padding:8px 0}
+body.rail-off .rail .sideitem .glyph{display:inline-flex}
+body.rail-empty .shell{grid-template-columns:minmax(0,1fr)}
+.rail .sideitem{display:flex;align-items:center;gap:8px;width:100%;border:0;
+  background:none;padding:6px 8px;border-radius:var(--r-md);font-size:13px;
+  color:var(--text);cursor:pointer;text-align:left;line-height:1.4}
+.rail .sideitem:hover{background:var(--hover)}
+.rail .sideitem.on{background:var(--primary-l);color:var(--accent);font-weight:600}
+.rail .sideitem:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.rail .sideitem .glyph{width:16px;text-align:center;flex:none;font-size:12px;color:var(--fg3)}
+.rail .sideitem.on .glyph{color:var(--accent)}
+.rail .sideitem .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rail .sideitem .cnt{font-size:11px;color:var(--fg3);font-variant-numeric:tabular-nums}
+.side-h{font-size:11.5px;font-weight:600;letter-spacing:.02em;color:var(--text-muted);
+  padding:10px 8px 4px;display:flex;align-items:center;gap:6px}
+.side-sep{height:1px;background:var(--border);margin:8px 4px}
+.rail-foot{margin-top:8px;padding-top:8px;border-top:1px solid var(--border);
+  display:flex;align-items:center;gap:6px}
+.rail-foot button{flex:1;display:inline-flex;align-items:center;justify-content:center;
+  gap:6px;height:28px;border:1px solid var(--border);background:var(--bg);
+  border-radius:var(--r-md);font-size:12px;color:var(--text-muted);cursor:pointer}
+.rail-foot button:hover{background:var(--hover);color:var(--text)}
+.sideitem-sub{padding-left:26px !important;font-size:12.5px}
+.sideitem-sub .nm::before{content:"·";margin-right:5px;color:var(--fg4)}
+
+/* 主内容：页面标题区 + 卡片 */
+main{padding:0;max-width:none;margin:0;min-width:0}
+.ph{display:flex;align-items:flex-start;gap:12px;margin:0 0 12px}
+.ph h1{font-size:16px;font-weight:600;margin:0;color:var(--text);line-height:1.4}
+.ph .desc{font-size:12.5px;color:var(--text-muted);margin-top:2px}
+.ph .acts{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+.card{background:var(--bg);border:1px solid var(--border);border-radius:var(--r-lg);
+  padding:16px;box-shadow:none}
+.card>h3{font-size:14px}
+.btn{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 12px;
+  font-size:12.5px;border-radius:var(--r-md);border:1px solid var(--border);
+  background:var(--bg);color:var(--text);cursor:pointer;font-weight:500}
+.btn:hover{background:var(--hover)}
+.btn.primary{background:var(--success);border-color:rgba(31,35,40,.15);color:#fff}
+.btn.primary:hover{background:#187733}
+.btn.ghost{background:var(--bg-subtle)}
+.btn.icon{width:30px;padding:0;justify-content:center}
+.btn:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+
+@media (max-width:1280px){ :root{--rail-w:232px} }
+@media (max-width:1024px){
+  .shell{grid-template-columns:minmax(0,1fr)}
+  .rail{position:fixed;left:0;top:var(--head-h);bottom:0;width:264px;z-index:35;
+    border-radius:0;border-right:1px solid var(--border);box-shadow:var(--shadow-h);
+    transform:translateX(-100%);transition:transform .16s ease;max-height:none}
+  body.rail-open .rail{transform:translateX(0)}
+  body.rail-off .rail{transform:translateX(-100%)}
+  .hsearch{max-width:none}
+  .crumb b{max-width:46vw}
+}
+/* ============================================================
+ * 列表视图（GitHub Issues 风格）：工具栏 / 表头菜单 / 切片面板 / 批量栏
+ * 说明：圆角 6px、边框优先、无渐变；密度接近 GitHub Issues。
+ * ============================================================ */
+.lv{background:var(--bg);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden}
+.lv-bar{display:flex;align-items:center;gap:8px;padding:8px 12px;
+  border-bottom:1px solid var(--border);background:var(--bg);flex-wrap:wrap}
+.lv-bar .sp{flex:1}
+.lv-bar .count{font-size:12px;color:var(--text-muted);font-variant-numeric:tabular-nums}
+.lv-chip{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;
+  border:1px solid var(--border);background:var(--bg-subtle);color:var(--text);
+  border-radius:999px;padding:2px 8px;max-width:280px}
+.lv-chip b{font-weight:600}
+.lv-chip button{border:0;background:none;color:var(--text-muted);cursor:pointer;
+  padding:0 0 0 2px;font-size:12px;line-height:1}
+.lv-chip button:hover{color:var(--danger)}
+.lv-chip.slice{border-color:#c8e1ff;background:#ddf4ff;color:#0550ae}
+.lv-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);display:inline-block}
+.lv-body{display:grid;grid-template-columns:minmax(0,1fr);align-items:start}
+.lv-body.slice{grid-template-columns:minmax(0,1fr) 280px}
+.lv-scroll{overflow:auto;max-height:calc(100vh - 240px)}
+.lv-table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
+.lv-table th{position:sticky;top:0;z-index:2;background:var(--bg-subtle);
+  border-bottom:1px solid var(--border);padding:0;text-align:left;white-space:nowrap;
+  font-size:12px;font-weight:600;color:var(--text-muted)}
+.lv-th{display:flex;align-items:center;gap:2px;padding:6px 8px}
+.lv-th .sortbtn{border:0;background:none;font:inherit;color:inherit;cursor:pointer;
+  padding:2px 4px;border-radius:4px;display:inline-flex;align-items:center;gap:4px}
+.lv-th .sortbtn:hover{background:var(--hover);color:var(--text)}
+.lv-th .sortbtn:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.lv-th .menu{opacity:0;border:0;background:none;color:var(--text-muted);cursor:pointer;
+  width:22px;height:22px;border-radius:4px;line-height:1;font-size:13px}
+.lv-table th:hover .menu,.lv-th .menu:focus-visible,.lv-th .menu[aria-expanded="true"]{
+  opacity:1}
+.lv-th .menu:hover{background:var(--hover);color:var(--text)}
+.lv-th.dragover{box-shadow:inset 2px 0 0 var(--accent)}
+.lv-table th[draggable="true"]{cursor:grab}
+.lv-table td{border-bottom:1px solid var(--border);padding:8px;vertical-align:top}
+.lv-table tbody tr:hover td{background:var(--hover)}
+.lv-table tbody tr[aria-selected="true"] td{background:var(--primary-l)}
+.lv-table tbody tr:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.lv-title{font-weight:600;color:var(--text);line-height:1.45}
+.lv-title a{color:inherit;text-decoration:none}
+.lv-title a:hover{color:var(--accent);text-decoration:underline}
+.lv-meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;color:var(--text-muted);
+  font-size:11.5px;align-items:center}
+.lv-badge{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--border);
+  background:var(--bg-subtle);border-radius:999px;padding:1px 7px;font-size:11px;
+  color:var(--text-muted)}
+.lv-badge.ok{background:var(--ok-l);border-color:#aceebb;color:#116329}
+.lv-badge.bad{background:var(--bad-l);border-color:#ffcecb;color:#a40e26}
+.lv-badge.warn{background:var(--warn-l);border-color:#eac54f;color:#7d4e00}
+.lv-selcell{width:34px;padding-right:0 !important}
+.lv-ck{appearance:none;width:14px;height:14px;border:1px solid var(--border);
+  border-radius:3px;cursor:pointer;display:inline-block;vertical-align:middle;
+  background:var(--bg);position:relative}
+.lv-ck:checked{background:var(--accent);border-color:var(--accent)}
+.lv-ck:checked::after{content:"";position:absolute;left:3.5px;top:1px;width:4px;height:7px;
+  border:solid #fff;border-width:0 2px 2px 0;transform:rotate(42deg)}
+.lv-ck:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+/* 复选框：默认只在悬停/选中时出现；一旦进入选择模式则全部常显 */
+.lv-table tbody .lv-selcell .lv-ck{opacity:0;transition:opacity .1s}
+.lv-table tbody tr:hover .lv-ck,
+body.lv-selecting .lv-table tbody .lv-ck,
+.lv-ck:checked,
+.lv-ck:focus-visible{opacity:1}
+/* 切片面板 */
+.lv-slice{border-left:1px solid var(--border);background:var(--bg);
+  max-height:calc(100vh - 240px);overflow:auto;padding:10px}
+.lv-slice h4{margin:0 0 8px;font-size:12px;color:var(--text-muted);font-weight:600;
+  display:flex;align-items:center;gap:6px}
+.lv-slice select{width:100%;height:28px;font-size:12px;margin-bottom:8px;
+  border:1px solid var(--border);border-radius:var(--r-md);background:var(--bg)}
+.lv-slice .val{display:flex;align-items:center;gap:6px;width:100%;border:0;background:none;
+  padding:5px 6px;border-radius:var(--r-md);font-size:12.5px;cursor:pointer;text-align:left}
+.lv-slice .val:hover{background:var(--hover)}
+.lv-slice .val.on{background:var(--primary-l);color:var(--accent);font-weight:600}
+.lv-slice .val .c{margin-left:auto;color:var(--fg3);font-variant-numeric:tabular-nums}
+.lv-slice .foot{margin-top:8px;padding-top:8px;border-top:1px solid var(--border);
+  display:flex;gap:6px}
+.lv-slice .foot button{flex:1;height:26px;font-size:12px;border:1px solid var(--border);
+  background:var(--bg);border-radius:var(--r-md);cursor:pointer;color:var(--text-muted)}
+.lv-slice .foot button:hover{background:var(--hover);color:var(--text)}
+/* 表头/切片浮层菜单 */
+.lv-pop{position:fixed;z-index:60;min-width:196px;background:var(--bg);
+  border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--shadow-h);
+  padding:4px;font-size:13px}
+.lv-pop button{display:flex;align-items:center;gap:8px;width:100%;border:0;background:none;
+  padding:7px 10px;border-radius:var(--r-md);text-align:left;cursor:pointer;color:var(--text);
+  font:inherit}
+.lv-pop button:hover{background:var(--hover)}
+.lv-pop button[disabled]{color:var(--fg4);cursor:not-allowed;background:none}
+.lv-pop .sep{height:1px;background:var(--border);margin:4px 2px}
+.lv-pop .hint{color:var(--text-muted);font-size:11.5px;padding:4px 10px 6px}
+/* 批量操作栏 */
+.lv-batch{position:fixed;left:50%;bottom:20px;transform:translateX(-50%) translateY(12px);
+  background:#1f2328;color:#fff;border-radius:999px;padding:8px 10px 8px 16px;
+  display:flex;align-items:center;gap:10px;box-shadow:0 8px 24px rgba(31,35,40,.24);
+  z-index:70;font-size:13px;opacity:0;pointer-events:none;transition:opacity .12s,transform .12s}
+.lv-batch.on{opacity:1;pointer-events:auto;transform:translateX(-50%) translateY(0)}
+.lv-batch .n{font-weight:600}
+.lv-batch button{height:28px;padding:0 12px;border-radius:999px;border:1px solid transparent;
+  background:rgba(255,255,255,.14);color:#fff;font-size:12.5px;cursor:pointer}
+.lv-batch button:hover{background:rgba(255,255,255,.24)}
+.lv-batch button.x{background:none;border:0;font-size:16px;line-height:1;padding:0 6px}
+.lv-batch .st{font-size:12px;color:#d0d7de}
+/* 空态 */
+.lv-empty{padding:48px 16px;text-align:center;color:var(--text-muted)}
+.lv-empty .ico{font-size:26px;display:block;margin-bottom:8px;color:var(--fg4)}
+.lv-empty b{color:var(--text);display:block;margin-bottom:4px}
+.lv-empty .btn{margin-top:12px}
+@media (max-width:1024px){
+  .lv-body.slice{grid-template-columns:minmax(0,1fr)}
+  .lv-slice{border-left:0;border-top:1px solid var(--border);max-height:none}
+  .lv-scroll{max-height:none}
+}
+
+
+/* ---------- 命令面板（Ctrl/⌘ + K） ---------- */
+.pal-mask{position:fixed;inset:0;background:rgba(31,35,40,.32);z-index:80;
+  display:flex;align-items:flex-start;justify-content:center;padding-top:14vh}
+.pal{width:min(640px,92vw);background:var(--bg);border:1px solid var(--border);
+  border-radius:var(--r-xl);box-shadow:0 16px 48px rgba(31,35,40,.24);overflow:hidden}
+.pal input{width:100%;border:0;border-bottom:1px solid var(--border);border-radius:0;
+  padding:12px 14px;font-size:14px;background:var(--bg);outline:none}
+.pal ul{list-style:none;margin:0;padding:6px;max-height:44vh;overflow:auto}
+.pal li{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:var(--r-md);
+  font-size:13px;cursor:pointer;color:var(--text)}
+.pal li[aria-selected="true"]{background:var(--primary-l);color:var(--accent)}
+.pal li .hint{margin-left:auto;font-size:11.5px;color:var(--text-muted)}
+.pal .foot{border-top:1px solid var(--border);padding:6px 12px;font-size:11.5px;
+  color:var(--text-muted);display:flex;gap:12px}
+.pal em{font-style:normal;background:var(--bg-subtle);border:1px solid var(--border);
+  border-radius:4px;padding:0 4px;font-family:var(--mono);font-size:11px}
 </style>
 </head>
 <body>
 <header>
   <div class="hbar">
-    <div class="brand"><svg class="logo" viewBox="0 0 16 16" aria-hidden="true"
-      focusable="false"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>监管合规编排器<small>本地确认台</small></div>
-    <button class="railToggle" id="railToggle" title="折叠/展开左侧栏（Ctrl+B）"
-      aria-label="折叠左侧栏">☰</button>
+    <button class="railOpen" id="railOpen" aria-label="打开导航" aria-controls="rail"
+      aria-expanded="false" title="打开导航">☰</button>
+    <div class="brand">
+      <svg class="logo" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+      监管合规编排器
+    </div>
+    <div class="crumb" id="crumb"><span class="sep">/</span><b id="crumbName">总览</b></div>
+    <div class="hsearch">
+      <button id="paletteBtn" aria-haspopup="dialog" aria-label="打开命令面板（Ctrl 或 ⌘ + K）">
+        <span aria-hidden="true">⌕</span><span>搜索页面、字段或执行命令…</span><kbd>Ctrl K</kbd>
+      </button>
+    </div>
     <div class="hstat">
       <span class="badge" id="live">连接中…</span>
       <span class="badge" id="scope" title="访问范围">—</span>
       <span class="badge" id="auth" title="登录身份">—</span>
       <span class="badge" id="gates">门禁 —</span>
       <span class="badge" id="stamp">—</span>
+      <button class="avatar" id="avatarBtn" title="身份与访问范围" aria-label="账号菜单">我</button>
     </div>
   </div>
   <nav><div class="nwrap" id="nav"></div></nav>
 </header>
 
 <div class="shell" id="shell">
+  <div class="rail-mask" id="railMask" aria-hidden="true"></div>
   <aside class="rail" id="rail" aria-label="本页导航"></aside>
   <main id="view"><div class="card">加载中…</div></main>
 </div>
@@ -372,26 +620,74 @@ function railSet(title, items, cur){
              cur: String(cur == null ? "" : cur)};
 }
 
+/* ======================= 侧栏（GitHub 风格三组 + 折叠） =======================
+ *
+ * 分组：① 导航（页面）② 本页（第二维：视图/页签/主题/节点/日期/目录）③ 视图（Saved Views）
+ * 折叠后只剩 56px 的图标列：`.glyph` 显示，其余隐藏，`title` 提供 tooltip。
+ * 折叠状态写 localStorage；`aria-expanded` 同步给读屏器。
+ */
+const PAGE_GLYPH = {
+  overview: "总", flow: "流", metrics: "指", worklist: "待", laws: "法", rules: "制",
+  graph: "图", regstats: "统", governance: "审", search: "检", release: "发", feedback: "留",
+};
+
+function goPage(id){
+  CUR = id;
+  if (location.hash.slice(1) !== id) location.hash = id;
+  $$("#nav button").forEach(x => x.classList.toggle("on", x.dataset.id === id));
+  render();
+}
+
+function _railItem(opts){
+  const {side, skey, label, glyph, count, dot, on, level, title, extra} = opts;
+  return `<button class="sideitem${on ? " on" : ""}${level === 2 ? " sideitem-sub" : ""}"
+      data-side="${esc(side)}" data-skey="${esc(skey || "")}"
+      title="${esc(title || label || "")}" ${extra || ""}>
+      ${glyph ? `<span class="glyph" aria-hidden="true">${esc(glyph)}</span>` : ""}
+      ${dot ? `<span class="dot" style="background:${esc(dot)}"></span>` : ""}
+      <span class="nm">${esc(label || "")}</span>
+      ${count != null ? `<span class="cnt">${num(count)}</span>` : ""}
+    </button>`;
+}
+
 function paintRail(){
   const rail = $("#rail");
-  if(!rail) return;
-  const cfg = RAILCFG;
-  if(!cfg || !cfg.items.length){
-    rail.hidden = true;
-    document.body.classList.add("rail-empty");
-    return;
-  }
-  rail.hidden = false;
-  document.body.classList.remove("rail-empty");
-  rail.innerHTML = `<div class="side-h">${esc(cfg.title)}</div>` + cfg.items.map(it => `
-    <button class="sideitem${(it.on != null ? it.on : String(it.skey) === cfg.cur)
-      ? " on" : ""}${it.level === 2 ? " sideitem-sub" : ""}"
-      data-side="${esc(it.side)}" data-skey="${esc(it.skey)}"
-      title="${esc(it.title || it.label || "")}">
-      ${it.dot ? `<span class="dot" style="background:${esc(it.dot)}"></span>` : ""}
-      <span class="nm">${esc(it.label)}</span>
-      ${it.count != null ? `<span class="cnt">${num(it.count)}</span>` : ""}
-    </button>`).join("");
+  if (!rail) return;
+  const cfg = RAILCFG || {title: "", items: [], cur: ""};
+  const navItems = TABS.map(x => ({side: "page", skey: x.id, label: x.name,
+                                   glyph: PAGE_GLYPH[x.id] || "·",
+                                   on: x.id === CUR}));
+  const views = (typeof lvSavedViews === "function") ? lvSavedViews(CUR) : [];
+  const pinned = (typeof lvPinnedViews === "function") ? lvPinnedViews() : [];
+  /* `count` 只放**数字**：塞 "·" 会走 `num()` 变成 `NaN`（自查发现）。 */
+  const viewItems = views.map(v => ({side: "lvview", skey: v.id,
+                                     label: (v.pinned ? "★ " : "") + v.name, on: false}));
+  const pinItems = pinned.filter(v => v.list !== CUR).map(v => ({
+    side: "lvview", skey: v.id, label: "★ " + v.name, on: false}));
+
+  rail.innerHTML =
+    `<div class="side-h">导航</div>` +
+    navItems.map(_railItem).join("") +
+    (cfg.items && cfg.items.length
+      ? `<div class="side-sep"></div><div class="side-h">${esc(cfg.title || "本页")}</div>` +
+        cfg.items.map(it => _railItem({
+          side: it.side, skey: it.skey, label: it.label, count: it.count,
+          dot: it.dot, level: it.level,
+          on: it.on != null ? it.on : String(it.skey) === cfg.cur,
+        })).join("")
+      : "") +
+    (viewItems.length || pinItems.length
+      ? `<div class="side-sep"></div><div class="side-h">视图</div>` +
+        pinItems.map(_railItem).join("") + viewItems.map(_railItem).join("") +
+        `<button class="sideitem" data-side="lvsave" data-skey="" title="把当前筛选保存为视图">
+           <span class="glyph" aria-hidden="true">＋</span><span class="nm">保存当前视图…</span>
+         </button>`
+      : "") +
+    `<div class="rail-foot">
+       <button id="railToggle" aria-expanded="true" aria-controls="rail"
+         aria-label="折叠侧边栏" title="折叠侧边栏（Ctrl+B）">⇤ 折叠</button>
+     </div>`;
+  syncRailToggle();
 }
 
 /*: 兼容旧调用：`sideShell(key, items, cur, body)` = 登记 + 返回 body（不再包 aside）。 */
@@ -404,6 +700,9 @@ function sideShell(key, items, cur, body, title){
 
 /*: 左侧栏点击 → 各页状态位（集中一处，避免每页各写一遍监听） */
 const SIDE_ACT = {
+  page: (k) => { goPage(k || "overview"); },
+  lvview: (k) => { if (typeof lvApplyView === "function") lvApplyView(k); },
+  lvsave: () => { if (typeof lvSavePrompt === "function") lvSavePrompt(CUR); },
   graph: (k) => { STATE.graph = Object.assign({}, obj(STATE.graph), {view: k}); },
   east:  (k) => { STATE.east_scope = "east"; STATE.east_tab = k; },
   /* ⚠️ 2026-10-27 用户第 1 条：二级页签原来**没有动作键**（eastSide 发出的是
@@ -431,8 +730,9 @@ document.addEventListener("click", (ev) => {
   const key = b.dataset.side;
   const act = SIDE_ACT[key];
   if (act) act(b.dataset.skey || "");
-  // 目录跳转**只滚动**：整页重渲染会把滚动位置抹掉，等于没跳
-  if (key !== "toc") render();
+  /* 三类动作**自己会重渲染**（页面跳转 / 视图切换 / 保存视图弹窗），
+   * 这里再 `render()` 会重复请求一次接口；`toc` 只滚动（重渲染会把滚动位置抹掉）。 */
+  if (["toc", "page", "lvview", "lvsave"].indexOf(key) < 0) render();
 });
 
 function toast(msg, bad){
@@ -1220,6 +1520,7 @@ async function render(){
         obj(STATE.laws));
       if(!STATE.laws_f) STATE.laws_f = await api("/api/records/facets");
       const d = await api("/api/records?" + toQuery(st));
+      STATE.laws_d = d;
       v.innerHTML = viewLaws(d, st, obj(STATE.laws_f));
       bindLaws(); return;
     }
@@ -1230,6 +1531,7 @@ async function render(){
         obj(STATE.rules));
       if(!STATE.rules_f) STATE.rules_f = await api("/api/rules/facets");
       const d = await api("/api/rules?" + toQuery(st));
+      STATE.rules_d = d;
       v.innerHTML = viewRules(d, st, obj(STATE.rules_f));
       bindRules(); return;
     }
@@ -1268,6 +1570,10 @@ async function render(){
       <div class="note">${esc(String(e&&e.stack?e.stack:String(e)))}</div>`,"web 前端");
   }finally{
     paintRail();           // 所有分支（含登录/异常）都走这里，侧栏才不会残留上一页
+    const cur = TABS.find(x => x.id === CUR);
+    const cn = $("#crumbName");
+    if (cn) cn.textContent = cur ? cur.name : (CUR === "__login" ? "登录" : CUR);
+    if (cn) cn.title = cn.textContent;
     $("#stamp").textContent = "抓取 "+new Date().toLocaleTimeString();
   }
 }
@@ -1513,97 +1819,24 @@ function _themeSort(items){
 
 function viewLaws(d, st, f){
   if (!d || d.available === false) return unavail(obj(d), "政策法规");
-  const items = arr(d.items);
-  const rows = items.map(it => `<tr>
-      <td>${themeCell(it.theme_label)}</td>
-      <td>${idCell(it)}</td>
-      <td class="ttl">${esc(it.title || "")}</td>
-      <td class="mono">${esc(it.document_number || "—")}</td>
-      <td>${timeCell(it.timeliness_status)}</td>
-      <td><span class="tag">${esc(it.source || "—")}</span></td>
-      <td>${addrCell(it)}</td>
-      <td>${relBtn(it.rfn)}</td></tr>`).join("")
-    || '<tr><td colspan="8" class="muted">无匹配记录（放宽筛选条件再试）</td></tr>';
-  /* 主题移到**左侧栏**（GitHub issues 式）：表头那一列只留占位，
-   * 否则同一维度出现两次（左侧点了主题、表头下拉还显示"全部主题"，人会以为没生效）。 */
-  const _themes = _themeSort(arr(f.themes).filter(x => String(x.value) !== ""));
-  const _unset = arr(f.themes).find(x => String(x.value) === "");
-  const _sideItems = [{key: "", label: "全部主题", count: (_unset && _unset.count) || undefined}]
-    .concat(_themes.map(x => ({key: x.value, label: x.label || x.value, count: x.count})));
-  const body = `
-    <div class="scrollx"><table>
-      <thead>
-        <tr class="filters">
-          <th></th>
-          <th>${fInput("q_rfn", st, "RFN 前缀")}</th>
-          <th>${fInput("q_title", st, "名称包含…")}</th>
-          <th>${fInput("q_docno", st, "文号包含…")}</th>
-          <th>${fSelect("timeliness", st, arr(f.timeliness), "全部时效")}</th>
-          <th>${fSelect("source", st, arr(f.sources), "全部来源")}</th>
-          <th></th><th></th>
-        </tr>
-        <tr>
-          ${thSort("theme", "主题", st)}
-          ${thSort("rfn", "唯一标识号", st)}
-          ${thSort("title", "名称", st)}
-          ${thSort("document_number", "文号", st)}
-          ${thSort("timeliness_status", "时效", st)}
-          ${thSort("source", "源", st)}
-          <th>访问地址</th><th>关系</th>
-        </tr>
-      </thead>
-      <tbody>${rows}</tbody>
-    </table></div>
-    ${pager(d, "lawsPager")}`;
-  return card("政策法规", `${num(d.total)} 条 / ${d.pages} 页`,
-    sideShell("laws", _sideItems, String(obj(st).theme || ""), body, "主题"),
-    d.source_name || "base_api.list_external_page", d.fetched_at);
+  /* 2026-10-27：列表页统一交给 `lvRender`（GitHub Issues 风格）。
+   * 主题仍进左侧栏（"本页"组），与切片面板并存 —— 侧栏是"导航"，切片是"临时过滤"。 */
+  const themes = _themeSort(arr(f.themes).filter(x => String(x.value) !== ""));
+  const unset = arr(f.themes).find(x => String(x.value) === "");
+  railSet("主题", [{key: "", label: "全部主题", count: (unset && unset.count) || undefined}]
+    .concat(themes.map(x => ({key: x.value, label: x.label || x.value, count: x.count}))),
+    String(obj(st).theme || ""));
+  return lvRender("laws", d, st, f);
 }
 
 function viewRules(d, st, f){
   if (!d || d.available === false) return unavail(obj(d), "公司制度");
-  const items = arr(d.items);
-  const rows = items.map(it => `<tr>
-      <td>${themeCell(it.theme_label)}</td>
-      <td class="mono">${esc(it.ipn || "—")}</td>
-      <td class="ttl">${esc(it.title || "")}</td>
-      <td class="mono">${esc(it.docno || "—")}</td>
-      <td>${it.local_path
-        ? `<a href="/api/local/file?path=${encodeURIComponent(it.local_path)}"
-             target="_blank" rel="noopener" title="打开/下载：${esc(it.local_path)}">打开本地文件</a>`
-        : '<span class="muted">未查到</span>'}</td>
-      <td>${relBtn(it.ipn)}</td></tr>`).join("")
-    || '<tr><td colspan="6" class="muted">无匹配记录（放宽筛选条件再试）</td></tr>';
-  /* 主题移到**左侧栏**（GitHub issues 式）：表头那一列只留占位，
-   * 否则同一维度出现两次（左侧点了主题、表头下拉还显示"全部主题"，人会以为没生效）。 */
-  const _themes = _themeSort(arr(f.themes).filter(x => String(x.value) !== ""));
-  const _unset = arr(f.themes).find(x => String(x.value) === "");
-  const _sideItems = [{key: "", label: "全部主题", count: (_unset && _unset.count) || undefined}]
-    .concat(_themes.map(x => ({key: x.value, label: x.label || x.value, count: x.count})));
-  const body = `
-    <div class="scrollx"><table>
-      <thead>
-        <tr class="filters">
-          <th></th>
-          <th>${fInput("q_ipn", st, "IPN 前缀")}</th>
-          <th>${fInput("q_title", st, "名称包含…")}</th>
-          <th>${fInput("q_docno", st, "文号包含…")}</th>
-          <th></th><th></th>
-        </tr>
-        <tr>
-          ${thSort("primary_theme", "主题", st)}
-          ${thSort("ipn", "唯一标识号", st)}
-          ${thSort("title", "名称", st)}
-          ${thSort("docno", "文号", st)}
-          <th>访问地址</th><th>关系</th>
-        </tr>
-      </thead>
-      <tbody>${rows}</tbody>
-    </table></div>
-    ${pager(d, "rulesPager")}`;
-  return card("公司制度", `${num(d.total)} 条 / ${d.pages} 页`,
-    sideShell("rules", _sideItems, String(obj(st).theme || ""), body, "主题"),
-    d.source_name || "base_api.list_internal_page", d.fetched_at);
+  const themes = _themeSort(arr(f.themes).filter(x => String(x.value) !== ""));
+  const unset = arr(f.themes).find(x => String(x.value) === "");
+  railSet("主题", [{key: "", label: "全部主题", count: (unset && unset.count) || undefined}]
+    .concat(themes.map(x => ({key: x.value, label: x.label || x.value, count: x.count}))),
+    String(obj(st).theme || ""));
+  return lvRender("rules", d, st, f);
 }
 
 /*: 全局关系图 —— **四视图**（2026-10-23 用户要求：四类关系都要能看见）。
@@ -1800,16 +2033,32 @@ function g3dBox(key, model, W, H, hint){
 
 /*: 绑定拖拽/缩放/点选（**幂等**：每次渲染后调用一次即可） */
 /*: 左侧栏折叠（顶栏按钮 / Ctrl+B）；状态存 localStorage。 */
-function bindRailToggle(){
+function syncRailToggle(){
   const b = $("#railToggle");
+  const off = document.body.classList.contains("rail-off");
+  if (b) {
+    b.setAttribute("aria-expanded", off ? "false" : "true");
+    b.setAttribute("aria-label", off ? "展开侧边栏" : "折叠侧边栏");
+    b.title = (off ? "展开侧边栏" : "折叠侧边栏") + "（Ctrl+B）";
+    b.textContent = off ? "⇥" : "⇤ 折叠";
+  }
+}
+
+function bindRailToggle(){
   const saved = (typeof localStorage !== "undefined") ? localStorage.getItem("rail") : "";
   if (saved === "off") document.body.classList.add("rail-off");
   const toggle = () => {
     const off = document.body.classList.toggle("rail-off");
+    document.body.classList.toggle("rail-open", !off && window.innerWidth < 1024);
     try { localStorage.setItem("rail", off ? "off" : "on"); } catch (e) { /* 隐私模式 */ }
-    if (b) b.title = off ? "展开左侧栏（Ctrl+B）" : "折叠左侧栏（Ctrl+B）";
+    syncRailToggle();
   };
-  if (b) b.onclick = toggle;
+  document.addEventListener("click", (ev) => {
+    const t = ev.target && ev.target.closest ? ev.target.closest("#railToggle") : null;
+    if (!t) return;
+    ev.preventDefault();
+    toggle();
+  });
   document.addEventListener("keydown", (ev) => {
     if ((ev.ctrlKey || ev.metaKey) && String(ev.key).toLowerCase() === "b") {
       ev.preventDefault();
@@ -2220,43 +2469,9 @@ function viewGraph(d){
 
 
 /** 表头排序 + 筛选 + 翻页的**共用绑定**（两个表格行为必须一致）。 */
-function bindTable(st, pagerId){
-  const v = $("#view");
-  $$("th.sortable", v).forEach(th => {
-    th.onclick = () => {
-      const k = th.dataset.sort;
-      if (st.sort === k) st.desc = !st.desc;
-      else { st.sort = k; st.desc = false; }   // 首次点列：升序（标题/编号类更自然）
-      st.page = 1;
-      render();
-    };
-  });
-  $$("[data-f]", v).forEach(el => {
-    const k = el.dataset.f;
-    if (el.dataset.mode === "change") {
-      el.onchange = () => { st[k] = el.value; st.page = 1; render(); };
-    } else {
-      // 文本框只在回车时提交：onchange（失焦）会在每次点击别处时重渲染、抢焦点
-      el.onkeydown = e => {
-        if (e.key === "Enter") { st[k] = el.value; st.page = 1; render(); }
-      };
-    }
-  });
-  const pg = $("#" + pagerId, v);
-  if (pg) {
-    $$("[data-pg]", pg).forEach(b => {
-      b.onclick = () => {
-        const n = Number(b.dataset.pg) || 1;
-        if (n === Number(st.page)) return;
-        st.page = n; render();
-      };
-    });
-  }
-  $$("[data-rel]", v).forEach(b => { b.onclick = () => goGraph(b.dataset.rel); });
-}
 
-function bindLaws(){ bindTable(STATE.laws, "lawsPager"); }
-function bindRules(){ bindTable(STATE.rules, "rulesPager"); }
+function bindLaws(){ lvBind("laws", STATE.laws_d || {}, STATE.laws, STATE.laws_f || {}); }
+function bindRules(){ lvBind("rules", STATE.rules_d || {}, STATE.rules, STATE.rules_f || {}); }
 
 function bindGraph(){
   const v = $("#view");
@@ -3254,8 +3469,849 @@ function applyHash(){
   $$("#nav button").forEach(x=>x.classList.toggle("on", x.dataset.id===id));
   CUR=id; return true;
 }
+/* ========================= 列表视图引擎（GitHub Issues 风格） =========================
+ *
+ * 只借鉴 GitHub 的"表头即筛选入口 + 悬停出勾选 + 底部批量栏 + Saved Views"，
+ * 不动任何接口：切片/排序都映射到**后端已有的**查询参数（theme/timeliness/source/
+ * sort/desc/page），所以切片是"服务端过滤"而不是"只过滤当前页"。
+ *
+ * 数据来源仍是 `STATE.laws` / `STATE.rules`（筛选状态）与 `/api/records|rules`。
+ * 视图元数据（隐藏字段、列序、切片、Saved Views）存 localStorage —— 它们是**视图偏好**，
+ * 不属于业务数据，不该进服务端。
+ */
+const LV = {
+  laws: {
+    list: "laws", title: "政策法规",
+    desc: "外部监管法规；RFN 恒有值，带「派生」标记的编号未入册（可稳定引用，但不参与主题/时效统计）",
+    stateKey: "laws", jump: "laws",
+    fields: [
+      {k: "theme", label: "主题", sort: "theme", slice: "theme", chip: true, cell: it => themeCell(it.theme_label)},
+      {k: "rfn", label: "唯一标识号", sort: "rfn", mono: true, cell: it => idCell(it)},
+      {k: "title", label: "名称", sort: "title", primary: true},
+      {k: "document_number", label: "文号", sort: "document_number", meta: true,
+       cell: it => `<span class="mono">${esc(it.document_number || "—")}</span>`},
+      {k: "timeliness_status", label: "时效", sort: "timeliness_status", slice: "timeliness",
+       meta: true, cell: it => timeCell(it.timeliness_status)},
+      {k: "source", label: "源", sort: "source", slice: "source", meta: true,
+       cell: it => `<span class="lv-badge">${esc(it.source || "—")}</span>`},
+      {k: "url", label: "访问地址", meta: true, cell: it => addrCell(it)},
+      {k: "rel", label: "关系", meta: true, cell: it => relBtn(it.rfn)},
+    ],
+  },
+  rules: {
+    list: "rules", title: "公司制度",
+    desc: "本公司现行制度文件（IPN 为唯一标识号；本地路径可直接打开原件）",
+    stateKey: "rules", jump: "rules",
+    fields: [
+      {k: "theme", label: "主题", sort: "primary_theme", slice: "theme", chip: true,
+       cell: it => themeCell(it.theme_label)},
+      {k: "ipn", label: "唯一标识号", sort: "ipn", mono: true,
+       cell: it => `<span class="mono">${esc(it.ipn || "—")}</span>`},
+      {k: "title", label: "名称", sort: "title", primary: true},
+      {k: "docno", label: "文号", sort: "docno", meta: true,
+       cell: it => `<span class="mono">${esc(it.docno || "—")}</span>`},
+      {k: "local", label: "本地文件", meta: true, cell: it => it.local_path
+        ? `<a href="/api/local/file?path=${encodeURIComponent(it.local_path)}" target="_blank"
+             rel="noopener" title="打开/下载：${esc(it.local_path)}">打开本地文件</a>`
+        : '<span class="muted">未查到</span>'},
+      {k: "rel", label: "关系", meta: true, cell: it => relBtn(it.ipn)},
+    ],
+  },
+};
+
+/* ---------------- 视图元数据（隐藏字段 / 列序 / 切片） ---------------- */
+const LV_KEY = "lv.meta.v1";
+const LV_VIEWS_KEY = "lv.views.v1";
+
+function _ls(key, dflt) {
+  try { return JSON.parse(localStorage.getItem(key) || "null") ?? dflt; }
+  catch (e) { return dflt; }
+}
+function _lsSet(key, val) {
+  try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) { /* 隐私模式 */ }
+}
+
+function lvMeta(list) {
+  const all = _ls(LV_KEY, {});
+  const m = Object.assign({hidden: [], order: [], sliceField: "", sliceValue: ""}, all[list] || {});
+  return m;
+}
+function lvSetMeta(list, patch) {
+  const all = _ls(LV_KEY, {});
+  all[list] = Object.assign(lvMeta(list), patch);
+  _lsSet(LV_KEY, all);
+}
+function lvFields(list, onlyVisible) {
+  const cfg = LV[list], m = lvMeta(list);
+  const by = {};
+  cfg.fields.forEach(f => { by[f.k] = f; });
+  const order = (m.order || []).filter(k => by[k]);
+  const rest = cfg.fields.filter(f => order.indexOf(f.k) < 0).map(f => f.k);
+  const fields = order.concat(rest).map(k => by[k]);
+  return onlyVisible ? fields.filter(f => (m.hidden || []).indexOf(f.k) < 0) : fields;
+}
+function lvSliceActive(list) {
+  const m = lvMeta(list);
+  return !!(m.sliceField && m.sliceValue !== "" && m.sliceValue != null);
+}
+
+/* ---------------- 活动筛选（用于"非默认状态"提示） ---------------- */
+function lvActiveFilters(list, st) {
+  const out = [];
+  const cfg = LV[list];
+  cfg.fields.forEach(f => {
+    if (!f.slice) return;
+    if (st[f.slice]) out.push({kind: "filter", param: f.slice, field: f.label,
+                               value: st[f.slice]});
+  });
+  ["q_title", "q_docno", "q_rfn", "q_ipn"].forEach(k => {
+    if (st[k]) out.push({kind: "search", param: k, field: k.replace("q_", ""),
+                         value: st[k]});
+  });
+  const m = lvMeta(list);
+  if (lvSliceActive(list)) {
+    out.push({kind: "slice", param: m.sliceField, field: (LV[list].fields.find(f => f.k === m.sliceField) || {}).label || m.sliceField,
+              value: m.sliceValue});
+  }
+  return out;
+}
+
+/* ---------------- 行渲染 ---------------- */
+function lvRowId(list, it) {
+  return String(list === "laws" ? (it.rfn || it.document_number || it.title || "")
+                                : (it.ipn || it.docno || it.title || ""));
+}
+function lvSel(list) {
+  STATE._lvsel = STATE._lvsel || {};
+  STATE._lvsel[list] = STATE._lvsel[list] || {};
+  return STATE._lvsel[list];
+}
+
+function lvRender(list, d, st, f) {
+  const cfg = LV[list], m = lvMeta(list);
+  const items = arr(d.items);
+  const vis = lvFields(list, true);
+  const primary = vis.find(x => x.primary) || vis[0];
+  const cols = vis.filter(x => x !== primary && !x.meta);
+  const metas = vis.filter(x => x.meta);
+  const act = lvActiveFilters(list, st);
+  const sel = lvSel(list);
+  const selN = Object.keys(sel).filter(k => sel[k]).length;
+
+  const chips = act.map(a => `<span class="lv-chip${a.kind === "slice" ? " slice" : ""}">
+      ${a.kind === "slice" ? "切片" : "筛选"} <b>${esc(a.field)}</b>
+      ${esc(String(a.value)).slice(0, 24)}
+      <button data-lvrm="${esc(a.param)}" data-lvrmkind="${esc(a.kind)}"
+        aria-label="移除该条件" title="移除">×</button></span>`).join("");
+
+  /* 表头必须与行**一一对应**：只画 primary + cols（`meta` 字段渲染在标题下方的
+   * 副行里，不占列）。此前误用 `vis`，表头会多出一截、列全错位。 */
+  const tableFields = [primary].concat(cols).filter(Boolean);
+  const headCells = [`<th class="lv-selcell" aria-label="选择"><span class="lv-th">
+      <input type="checkbox" class="lv-ck" id="lvAll" aria-label="全选当前页"
+        ${items.length && items.every(it => sel[lvRowId(list, it)]) ? "checked" : ""}></span></th>`]
+    .concat(tableFields.map(fd => {
+      const on = st.sort === (fd.sort || fd.k);
+      return `<th draggable="true" data-lvfk="${esc(fd.k)}" aria-sort="${on ? (st.desc ? "descending" : "ascending") : "none"}">
+        <span class="lv-th">
+          <button class="sortbtn" data-lvsort="${esc(fd.sort || fd.k)}"
+            title="${esc(fd.label)}：点击切换升/降序">${esc(fd.label)}${
+            on ? `<span aria-hidden="true">${st.desc ? "▾" : "▴"}</span>` : ""}</button>
+          <button class="menu" data-lvmenu="${esc(fd.k)}" aria-haspopup="menu"
+            aria-expanded="false" aria-label="字段菜单：${esc(fd.label)}">⋮</button>
+        </span></th>`;
+    })).join("");
+
+  const rows = items.map(it => {
+    const id = lvRowId(list, it);
+    const isSel = !!sel[id];
+    const meta = metas.map(fd => `<span class="meta-i">${fd.cell ? fd.cell(it) : esc(it[fd.k] || "")}</span>`)
+      .join("");
+    return `<tr class="lv-row" data-lvid="${esc(id)}" tabindex="0" aria-selected="${isSel}">
+      <td class="lv-selcell"><input type="checkbox" class="lv-ck" data-lvck="${esc(id)}"
+        ${isSel ? "checked" : ""} aria-label="选择：${esc(it.title || id)}"></td>
+      <td class="lv-primary">
+        <div class="lv-title">${esc(it.title || "（无标题）")}</div>
+        <div class="lv-meta">${meta || '<span class="muted">—</span>'}</div>
+      </td>
+      ${cols.map(fd => `<td>${fd.cell ? fd.cell(it) : esc(it[fd.k] || "—")}</td>`).join("")}
+    </tr>`;
+  }).join("");
+
+  const empty = `<tr><td colspan="${tableFields.length + 1}">
+      <div class="lv-empty"><span class="ico" aria-hidden="true">⌕</span>
+        <b>当前筛选无结果</b>
+        <div>没有符合条件的记录；可以放宽条件，或清除全部筛选。</div>
+        <button class="btn" data-lvclear="1">清除筛选</button></div></td></tr>`;
+
+  /* 切片面板：只列**服务端支持**的字段（否则会变成"只过滤当前页"的假筛选） */
+  const sliceFields = cfg.fields.filter(x => x.slice);
+  const sf = m.sliceField || (sliceFields[0] || {}).k || "";
+  const opts = lvSliceOptions(list, sf, f, d);
+  const slicePanel = `<aside class="lv-slice" id="lvSlice" ${lvSliceActive(list) || STATE._lvSliceOpen ? "" : "hidden"}
+      aria-label="切片面板">
+      <h4>Slice by <span class="lv-badge">切片</span></h4>
+      <select id="lvSliceField" aria-label="选择切片字段">
+        ${sliceFields.map(x => `<option value="${esc(x.k)}"${x.k === sf ? " selected" : ""}>${esc(x.label)}</option>`).join("")}
+      </select>
+      ${opts.length ? opts.map(o => `<button class="val${String(o.value) === String(st[(sliceFields.find(x => x.k === sf) || {}).slice] || "") ? " on" : ""}"
+          data-lvslice="${esc(o.value)}">${esc(o.label || o.value || "（空）")}<span class="c">${num(o.count)}</span></button>`).join("")
+        : '<div class="muted" style="font-size:12px;padding:4px">该字段没有可选值（后端未提供分面）</div>'}
+      <div class="foot">
+        <button data-lvnoslice="1">No slicing</button>
+        <button data-lvslicefield="1">切换字段…</button>
+      </div>
+    </aside>`;
+
+  return `<div class="ph">
+      <div><h1>${esc(cfg.title)}</h1><div class="desc">${esc(cfg.desc)}</div></div>
+      <div class="acts">
+        <button class="btn" data-lvsavecur="1" title="把当前筛选/排序/切片/字段保存为视图">保存视图</button>
+      </div>
+    </div>
+    <div class="lv">
+      <div class="lv-bar">
+        <button class="btn ghost" id="lvFilterBtn" aria-haspopup="dialog" aria-expanded="false"
+          title="筛选与排序">筛选${act.length ? '<span class="lv-dot" aria-hidden="true"></span>' : ""}</button>
+        <button class="btn ghost" id="lvFieldsBtn" aria-haspopup="dialog" aria-expanded="false"
+          title="显示/隐藏字段">字段${(m.hidden || []).length ? `<span class="lv-badge">${(m.hidden || []).length} 隐藏</span>` : ""}</button>
+        ${chips}
+        <span class="sp"></span>
+        ${act.length ? `<button class="btn ghost" data-lvclear="1" title="清除搜索、筛选与排序">清除全部</button>` : ""}
+        <span class="count">共 <b>${num(d.total)}</b> 条 · 第 ${num(d.page)} / ${num(d.pages)} 页</span>
+      </div>
+      <div class="lv-body${lvSliceActive(list) || STATE._lvSliceOpen ? " slice" : ""}">
+        <div class="lv-scroll"><table class="lv-table" role="grid"
+          aria-multiselectable="true" aria-label="${esc(cfg.title)}列表">
+          <thead><tr>${headCells}</tr></thead>
+          <tbody>${items.length ? rows : empty}</tbody>
+        </table></div>
+        ${slicePanel}
+      </div>
+      <div class="lv-bar" style="border-bottom:0;border-top:1px solid var(--border)">
+        <span class="sp"></span>${pager(d, list + "Pager")}
+      </div>
+      <div class="src" style="padding:6px 12px">数据源：${esc(d.source_name || "—")}
+        · 抓取时刻 ${esc(d.fetched_at || "—")}
+        · 视图配置（隐藏字段/切片/已存视图）存本机浏览器，不入库</div>
+    </div>
+    <div class="lv-batch${selN ? " on" : ""}" id="lvBatch" role="region" aria-label="批量操作">
+      <span class="n">已选 ${selN} 项</span>
+      <button data-lvbatch="copy">复制编号</button>
+      <button data-lvbatch="csv">导出 CSV</button>
+      <button class="x" data-lvbatch="clear" aria-label="清除选择">×</button>
+    </div>`;
+}
+
+/* 切片的可选值：优先用后端分面（theme/source/timeliness），否则明确说明不可切片 */
+function lvSliceOptions(list, fieldKey, facets, d) {
+  const cfg = LV[list];
+  const fd = cfg.fields.find(x => x.k === fieldKey);
+  if (!fd || !fd.slice) return [];
+  const src = fd.slice === "theme" ? arr(obj(facets).themes)
+    : fd.slice === "source" ? arr(obj(facets).sources)
+    : fd.slice === "timeliness" ? arr(obj(facets).timeliness) : [];
+  return src.map(x => ({value: x.value == null ? "" : x.value,
+                        label: x.label || x.value || "（空）", count: x.count}));
+}
+
+
+/* ---------------- 浮层工具（表头菜单 / 字段 / 筛选 共用） ---------------- */
+let _lvPop = null;
+function lvClosePop() {
+  if (_lvPop && _lvPop.parentNode) _lvPop.parentNode.removeChild(_lvPop);
+  _lvPop = null;
+  $$("[aria-expanded='true'][data-lvmenu],#lvFilterBtn,#lvFieldsBtn")
+    .forEach(b => b.setAttribute("aria-expanded", "false"));
+}
+function lvPop(anchor, html, opts) {
+  lvClosePop();
+  const el = document.createElement("div");
+  el.className = "lv-pop";
+  el.setAttribute("role", "menu");
+  el.innerHTML = html;
+  el.style.visibility = "hidden";
+  document.body.appendChild(el);
+  const r = anchor.getBoundingClientRect();
+  const w = el.offsetWidth, h = el.offsetHeight;
+  let left = Math.min(r.left, window.innerWidth - w - 8);
+  let top = r.bottom + 4;
+  if (top + h > window.innerHeight - 8) top = Math.max(8, r.top - h - 4);
+  el.style.left = Math.max(8, left) + "px";
+  el.style.top = top + "px";
+  el.style.visibility = "visible";
+  _lvPop = el;
+  if (anchor.setAttribute) anchor.setAttribute("aria-expanded", "true");
+  // 键盘：方向键在菜单项间移动，Enter 触发，Escape 关闭
+  const items = $$("button:not([disabled])", el);
+  if (items.length) items[0].focus();
+  el.addEventListener("keydown", (ev) => {
+    const list = $$("button:not([disabled])", el);
+    const i = list.indexOf(document.activeElement);
+    if (ev.key === "Escape") { ev.preventDefault(); lvClosePop(); anchor.focus && anchor.focus(); }
+    else if (ev.key === "ArrowDown") { ev.preventDefault(); (list[i + 1] || list[0]).focus(); }
+    else if (ev.key === "ArrowUp") { ev.preventDefault(); (list[i - 1] || list[list.length - 1]).focus(); }
+  });
+  if (opts && opts.onPick) {
+    el.addEventListener("click", (ev) => {
+      const b = ev.target.closest("button[data-act]");
+      if (!b || b.disabled) return;
+      opts.onPick(b.dataset.act, b);
+    });
+  }
+  return el;
+}
+
+/* ---------------- 保存视图（Views） ---------------- */
+function lvAllViews() { return _ls(LV_VIEWS_KEY, []); }
+function lvSetViews(v) { _lsSet(LV_VIEWS_KEY, v); }
+function lvSavedViews(cur) { return lvAllViews().filter(v => v.list === cur); }
+function lvPinnedViews() { return lvAllViews().filter(v => v.pinned); }
+
+function lvSnapshot(list, st) {
+  const m = lvMeta(list);
+  return {
+    filters: {theme: st.theme || "", timeliness: st.timeliness || "",
+              source: st.source || "", q_title: st.q_title || "",
+              q_docno: st.q_docno || "", q_rfn: st.q_rfn || "", q_ipn: st.q_ipn || ""},
+    sort: st.sort, desc: !!st.desc,
+    hidden: (m.hidden || []).slice(), order: (m.order || []).slice(),
+    sliceField: m.sliceField || "", sliceValue: m.sliceValue || "",
+    size: st.size || 50,
+  };
+}
+
+function lvApplyView(id) {
+  const v = lvAllViews().find(x => x.id === id);
+  if (!v) return;
+  const st = STATE[LV[v.list].stateKey] = Object.assign({}, obj(STATE[LV[v.list].stateKey]));
+  Object.assign(st, v.state.filters || {});
+  st.sort = v.state.sort; st.desc = !!v.state.desc; st.page = 1;
+  lvSetMeta(v.list, {hidden: v.state.hidden || [], order: v.state.order || [],
+                     sliceField: v.state.sliceField || "",
+                     sliceValue: v.state.sliceValue || ""});
+  // 切片值要落到对应查询参数上（后端过滤）
+  const fd = (LV[v.list].fields.find(x => x.k === (v.state.sliceField || "")) || {});
+  if (fd.slice) st[fd.slice] = v.state.sliceValue || "";
+  if (CUR !== v.list) { goPage(v.list); }
+  else { render(); }
+  try { window.scrollTo({ top: 0, behavior: "auto" }); } catch (e) { /* 老浏览器 */ }
+  toast("已切换到视图：" + v.name);
+}
+
+function lvSavePrompt(list) {
+  const st = obj(STATE[LV[list].stateKey]);
+  const name = window.prompt("视图名称（保存后可从左侧「视图」一键切回）", "");
+  if (name == null) return;
+  const nm = String(name).trim();
+  if (!nm) return;
+  const views = lvAllViews();
+  const id = "v" + Date.now().toString(36);
+  views.push({id: id, list: list, name: nm, pinned: false, state: lvSnapshot(list, st)});
+  lvSetViews(views);
+  paintRail();
+  toast("已保存视图：" + nm);
+}
+
+function lvTogglePin(id) {
+  const views = lvAllViews();
+  const v = views.find(x => x.id === id);
+  if (!v) return;
+  v.pinned = !v.pinned;
+  lvSetViews(views);
+  paintRail();
+}
+
+function lvDeleteView(id) {
+  lvSetViews(lvAllViews().filter(x => x.id !== id));
+  paintRail();
+}
+
+/* ---------------- 交互绑定 ---------------- */
+function lvBind(list, d, st, f) {
+  const v = $("#view");
+  const rows = () => $$(".lv-row", v);
+  const sel = lvSel(list);
+  const updateBatch = () => {
+    const n = Object.keys(sel).filter(k => sel[k]).length;
+    const bar = $("#lvBatch");
+    if (bar) {
+      bar.classList.toggle("on", n > 0);
+      const cnt = bar.querySelector(".n");
+      if (cnt) cnt.textContent = "已选 " + n + " 项";
+    }
+    document.body.classList.toggle("lv-selecting", n > 0);
+  };
+
+  /* ① 排序 */
+  $$("[data-lvsort]", v).forEach(b => {
+    b.onclick = () => {
+      const k = b.dataset.lvsort;
+      if (st.sort === k) st.desc = !st.desc;
+      else { st.sort = k; st.desc = false; }
+      st.page = 1; render();
+    };
+  });
+
+  /* ② 表头菜单：Hide field / Slice by / 排序 */
+  $$("[data-lvmenu]", v).forEach(b => {
+    b.onclick = (ev) => {
+      ev.stopPropagation();
+      const fk = b.dataset.lvmenu;
+      const fd = LV[list].fields.find(x => x.k === fk) || {};
+      const m = lvMeta(list);
+      const hidden = (m.hidden || []).indexOf(fk) >= 0;
+      const canSlice = !!fd.slice;
+      const html = `<div class="hint">${esc(fd.label || fk)}</div>
+        <button data-act="slice" ${canSlice ? "" : "disabled"}
+          title="${canSlice ? "按该字段切片（服务端过滤）" : "该字段后端未提供分面，暂不支持切片"}">
+          ⊂ Slice by this field${canSlice ? "" : "（暂不支持）"}</button>
+        <button data-act="hide">${hidden ? "◉ 重新显示该字段" : "◌ Hide field"}</button>
+        <div class="sep"></div>
+        <button data-act="asc" ${fd.sort ? "" : "disabled"}>↑ 升序排序</button>
+        <button data-act="desc" ${fd.sort ? "" : "disabled"}>↓ 降序排序</button>
+        <div class="sep"></div>
+        <button data-act="all">显示全部字段</button>`;
+      lvPop(b, html, {
+        onPick: (act2) => {
+          if (act2 === "slice") {
+            lvSetMeta(list, {sliceField: fk, sliceValue: ""});
+            STATE._lvSliceOpen = true;
+            lvClosePop(); render();
+          } else if (act2 === "hide") {
+            const hs = (m.hidden || []).slice();
+            const i = hs.indexOf(fk);
+            if (i >= 0) hs.splice(i, 1); else hs.push(fk);
+            lvSetMeta(list, {hidden: hs}); lvClosePop(); render();
+          } else if (act2 === "asc" || act2 === "desc") {
+            st.sort = fd.sort; st.desc = act2 === "desc"; st.page = 1;
+            lvClosePop(); render();
+          } else if (act2 === "all") {
+            lvSetMeta(list, {hidden: []}); lvClosePop(); render();
+          }
+        },
+      });
+    };
+  });
+
+  /* ③ 拖拽换列序 */
+  let dragK = "";
+  $$("th[data-lvfk]", v).forEach(th => {
+    th.addEventListener("dragstart", (ev) => {
+      dragK = th.dataset.lvfk;
+      try { ev.dataTransfer.setData("text/plain", dragK); } catch (e) { /* noop */ }
+      ev.dataTransfer.effectAllowed = "move";
+    });
+    th.addEventListener("dragover", (ev) => { ev.preventDefault(); th.classList.add("dragover"); });
+    th.addEventListener("dragleave", () => th.classList.remove("dragover"));
+    th.addEventListener("drop", (ev) => {
+      ev.preventDefault(); th.classList.remove("dragover");
+      const target = th.dataset.lvfk;
+      if (!dragK || dragK === target) return;
+      const order = lvFields(list, false).map(x => x.k).filter(k => k !== dragK);
+      order.splice(order.indexOf(target), 0, dragK);
+      lvSetMeta(list, {order: order});
+      render();
+    });
+  });
+
+  /* ④ 筛选 / 排序 Popover */
+  const fb = $("#lvFilterBtn", v);
+  if (fb) {
+    fb.onclick = (ev) => {
+      ev.stopPropagation();
+      const sorts = [
+        {k: "publish_date", l: "最新发布 (Newest)"},
+        {k: "title", l: "名称"},
+      ];
+      const html = `<div class="hint">排序</div>
+        ${sorts.map(s => `<button data-act="sort:${s.k}">${st.sort === s.k ? "● " : "○ "}${esc(s.l)}</button>`).join("")}
+        <div class="sep"></div>
+        <div class="hint">筛选（服务端）</div>
+        <button data-act="focus:q_title">名称包含…</button>
+        <button data-act="focus:q_docno">文号包含…</button>
+        ${LV[list].fields.filter(x => x.slice).map(x =>
+          `<button data-act="slice:${x.k}">⊂ 按「${esc(x.label)}」切片</button>`).join("")}
+        <div class="sep"></div>
+        <button data-act="clear">清除搜索、筛选与排序</button>`;
+      lvPop(fb, html, {
+        onPick: (act2) => {
+          if (act2.startsWith("sort:")) {
+            const k = act2.slice(5);
+            st.sort = k; st.desc = k === "publish_date"; st.page = 1;
+            lvClosePop(); render();
+          } else if (act2.startsWith("slice:")) {
+            lvSetMeta(list, {sliceField: act2.slice(6), sliceValue: ""});
+            STATE._lvSliceOpen = true; lvClosePop(); render();
+          } else if (act2.startsWith("focus:")) {
+            lvClosePop();
+            const el = $("#lvq_" + act2.slice(6));
+            if (el) el.focus();
+          } else if (act2 === "clear") {
+            lvClearAll(list); lvClosePop();
+          }
+        },
+      });
+    };
+  }
+
+  /* ⑤ 字段显示/隐藏 Popover */
+  const fbb = $("#lvFieldsBtn", v);
+  if (fbb) {
+    fbb.onclick = (ev) => {
+      ev.stopPropagation();
+      const m = lvMeta(list);
+      const html = `<div class="hint">字段可见性</div>` +
+        LV[list].fields.map(x => `<button data-act="t:${x.k}">${
+          (m.hidden || []).indexOf(x.k) >= 0 ? "◌ " : "◉ "}${esc(x.label)}</button>`).join("") +
+        `<div class="sep"></div><button data-act="reset">显示全部字段</button>`;
+      lvPop(fbb, html, {
+        onPick: (act2) => {
+          const hs = (m.hidden || []).slice();
+          if (act2 === "reset") { lvSetMeta(list, {hidden: []}); }
+          else if (act2.startsWith("t:")) {
+            const k = act2.slice(2); const i = hs.indexOf(k);
+            if (i >= 0) hs.splice(i, 1); else hs.push(k);
+            lvSetMeta(list, {hidden: hs});
+          }
+          lvClosePop(); render();
+        },
+      });
+    };
+  }
+
+  /* ⑥ 切片面板 */
+  const sf = $("#lvSliceField", v);
+  if (sf) {
+    sf.onchange = () => {
+      lvSetMeta(list, {sliceField: sf.value, sliceValue: ""});
+      render();
+    };
+  }
+  $$("[data-lvslice]", v).forEach(b => {
+    b.onclick = () => {
+      const m = lvMeta(list);
+      const fd = LV[list].fields.find(x => x.k === m.sliceField) || {};
+      if (!fd.slice) return;
+      st[fd.slice] = b.dataset.lvslice; st.page = 1;
+      lvSetMeta(list, {sliceValue: b.dataset.lvslice});
+      render();
+    };
+  });
+  const ns = $("[data-lvnoslice]", v);
+  if (ns) ns.onclick = () => {
+    const m = lvMeta(list);
+    const fd = LV[list].fields.find(x => x.k === m.sliceField) || {};
+    if (fd.slice) st[fd.slice] = "";
+    lvSetMeta(list, {sliceField: "", sliceValue: ""});
+    STATE._lvSliceOpen = false;
+    render();
+  };
+  const sfb = $("[data-lvslicefield]", v);
+  if (sfb) sfb.onclick = () => { if (sf) sf.focus(); };
+
+  /* ⑦ 清除 / 移除 chip */
+  $$("[data-lvclear]", v).forEach(b => { b.onclick = () => lvClearAll(list); });
+  $$("[data-lvrm]", v).forEach(b => {
+    b.onclick = () => {
+      const p = b.dataset.lvrm, kind = b.dataset.lvrmkind;
+      if (kind === "slice") {
+        const m = lvMeta(list);
+        const fd = LV[list].fields.find(x => x.k === m.sliceField) || {};
+        if (fd.slice) st[fd.slice] = "";
+        lvSetMeta(list, {sliceValue: ""});
+      } else { st[p] = ""; }
+      st.page = 1; render();
+    };
+  });
+
+  /* ⑧ 选择：悬停出勾选 → 勾选后常显；Shift 范围、Cmd 切换 */
+  let lastIdx = -1;
+  const toggle = (id, idx, ev) => {
+    if (ev && ev.shiftKey && lastIdx >= 0) {
+      const rs = rows();
+      const [a, b2] = [Math.min(lastIdx, idx), Math.max(lastIdx, idx)];
+      for (let i = a; i <= b2; i++) {
+        const rid = rs[i] && rs[i].dataset.lvid;
+        if (rid) sel[rid] = true;
+      }
+    } else if (ev && (ev.metaKey || ev.ctrlKey)) {
+      sel[id] = !sel[id];
+    } else {
+      sel[id] = !sel[id];
+    }
+    lastIdx = idx;
+    rows().forEach(r => {
+      const on = !!sel[r.dataset.lvid];
+      r.setAttribute("aria-selected", on ? "true" : "false");
+      const ck = r.querySelector(".lv-ck");
+      if (ck) ck.checked = on;
+    });
+    updateBatch();
+  };
+  rows().forEach((r, idx) => {
+    const ck = r.querySelector(".lv-ck");
+    if (ck) ck.onclick = (ev) => { ev.stopPropagation(); toggle(r.dataset.lvid, idx, ev); };
+    r.onclick = (ev) => {
+      if (ev.target.closest("a,button,input")) return;
+      toggle(r.dataset.lvid, idx, ev);
+    };
+    r.onkeydown = (ev) => {
+      if (ev.key === "Enter") { ev.preventDefault(); goGraph(r.dataset.lvid); }
+      if (ev.key === " ") { ev.preventDefault(); toggle(r.dataset.lvid, idx, ev); }
+    };
+  });
+  const all = $("#lvAll", v);
+  if (all) all.onclick = () => {
+    const on = all.checked;
+    rows().forEach(r => { sel[r.dataset.lvid] = on; });
+    rows().forEach(r => {
+      r.setAttribute("aria-selected", on ? "true" : "false");
+      const ck = r.querySelector(".lv-ck"); if (ck) ck.checked = on;
+    });
+    updateBatch();
+  };
+  updateBatch();
+
+  /* ⑨ 批量操作 */
+  $$("[data-lvbatch]", v).forEach(b => {
+    b.onclick = () => {
+      const act2 = b.dataset.lvbatch;
+      const ids = Object.keys(sel).filter(k => sel[k]);
+      if (act2 === "clear") {
+        Object.keys(sel).forEach(k => { sel[k] = false; });
+        rows().forEach(r => {
+          r.setAttribute("aria-selected", "false");
+          const ck = r.querySelector(".lv-ck"); if (ck) ck.checked = false;
+        });
+        updateBatch(); return;
+      }
+      if (!ids.length) return;
+      if (act2 === "copy") {
+        const txt = ids.join("\n");
+        if (navigator.clipboard) navigator.clipboard.writeText(txt)
+          .then(() => toast("已复制 " + ids.length + " 个编号"))
+          .catch(() => toast("复制失败（浏览器不支持）", true));
+        else toast("浏览器不支持剪贴板", true);
+      } else if (act2 === "csv") {
+        const head2 = ["id", "title", "docno", "theme"];
+        const lines = [head2.join(",")].concat(
+          arr(d.items).filter(it => sel[lvRowId(list, it)]).map(it => [
+            lvRowId(list, it), it.title || "", it.document_number || it.docno || "",
+            it.theme_label || "",
+          ].map(x => '"' + String(x).replace(/"/g, '""') + '"').join(",")));
+        const blob = new Blob(["\ufeff" + lines.join("\n")], {type: "text/csv;charset=utf-8"});
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = list + "_selected_" + new Date().toISOString().slice(0, 10) + ".csv";
+        document.body.appendChild(a); a.click(); a.remove();
+        toast("已导出 " + (lines.length - 1) + " 行");
+      }
+    };
+  });
+
+  /* ⑩ 分页 */
+  const pg = $("#" + list + "Pager", v);
+  if (pg) {
+    $$("[data-pg]", pg).forEach(b => {
+      b.onclick = () => {
+        const n = Number(b.dataset.pg) || 1;
+        if (n === Number(st.page)) return;
+        st.page = n; render();
+      };
+    });
+  }
+  $$("[data-rel]", v).forEach(b => { b.onclick = () => goGraph(b.dataset.rel); });
+  $$("[data-lvsavecur]", v).forEach(b => { b.onclick = () => lvSavePrompt(list); });
+
+  /* ⑪ 键盘：Cmd/Ctrl+A 全选当前页；Escape 渐进式取消 */
+  const onKey = (ev) => {
+    const tag = (ev.target && ev.target.tagName) || "";
+    const typing = /INPUT|TEXTAREA|SELECT/.test(tag);
+    if ((ev.ctrlKey || ev.metaKey) && String(ev.key).toLowerCase() === "a" && !typing) {
+      ev.preventDefault();
+      rows().forEach(r => { sel[r.dataset.lvid] = true; });
+      rows().forEach(r => {
+        r.setAttribute("aria-selected", "true");
+        const ck = r.querySelector(".lv-ck"); if (ck) ck.checked = true;
+      });
+      updateBatch(); return;
+    }
+    if (ev.key === "Escape") {
+      const n = Object.keys(sel).filter(k => sel[k]).length;
+      if (n) {
+        Object.keys(sel).forEach(k => { sel[k] = false; });
+        rows().forEach(r => {
+          r.setAttribute("aria-selected", "false");
+          const ck = r.querySelector(".lv-ck"); if (ck) ck.checked = false;
+        });
+        updateBatch(); return;
+      }
+      if (_lvPop) { lvClosePop(); return; }
+      const act2 = lvActiveFilters(list, st);
+      if (act2.length) { lvClearAll(list); return; }
+    }
+  };
+  // 先摘掉上一轮装的监听：`render()` 每次都重建视图，不摘就会累积
+  // （表现为"按一次 Escape 连退好几级"、Ctrl+A 触发多次）。
+  if (STATE._lvKeyHandler) document.removeEventListener("keydown", STATE._lvKeyHandler);
+  document.addEventListener("keydown", onKey);
+  STATE._lvKeyHandler = onKey;
+}
+
+function lvClearAll(list) {
+  const st = STATE[LV[list].stateKey];
+  ["theme", "timeliness", "source", "q_title", "q_docno", "q_rfn", "q_ipn"]
+    .forEach(k => { if (k in st) st[k] = ""; });
+  st.page = 1;
+  lvSetMeta(list, {sliceField: "", sliceValue: ""});
+  STATE._lvSliceOpen = false;
+  render();
+}
+
+
+/* ======================= 命令面板（Ctrl/⌘ + K） =======================
+ *
+ * 为什么要有：字段很多时，逐个去表头点菜单很慢；键盘一条命令就能 show/hide 字段、
+ * 切视图、跳页面。命令来源**复用同一份状态**（TABS / LV / lvMeta），不新造权限模型。
+ */
+function paletteCommands(){
+  const out = TABS.map(t => ({label: "跳转：" + t.name, hint: "页面",
+                              run: () => goPage(t.id)}));
+  const list = LV[CUR] ? CUR : "";
+  if (list) {
+    const m = lvMeta(list);
+    LV[list].fields.forEach(f => {
+      const hidden = (m.hidden || []).indexOf(f.k) >= 0;
+      out.push({
+        label: (hidden ? "show " : "hide ") + f.label, hint: "字段",
+        run: () => {
+          const hs = (m.hidden || []).slice();
+          const i = hs.indexOf(f.k);
+          if (hidden) { if (i >= 0) hs.splice(i, 1); }
+          else if (i < 0) hs.push(f.k);
+          lvSetMeta(list, {hidden: hs}); render();
+        },
+      });
+    });
+    out.push({label: "save view", hint: "视图", run: () => lvSavePrompt(list)});
+    out.push({label: "clear filters", hint: "筛选", run: () => lvClearAll(list)});
+    lvAllViews().forEach(v => out.push({
+      label: "视图：" + v.name, hint: v.list === list ? "切换" : (v.list === "laws" ? "政策法规" : "公司制度"),
+      run: () => lvApplyView(v.id),
+    }));
+  }
+  return out;
+}
+
+let _palEl = null;
+function closePalette(){
+  if (_palEl && _palEl.parentNode) _palEl.parentNode.removeChild(_palEl);
+  _palEl = null;
+}
+
+function openPalette(){
+  if (_palEl) { closePalette(); return; }
+  const mask = document.createElement("div");
+  mask.className = "pal-mask";
+  mask.innerHTML = `<div class="pal" role="dialog" aria-modal="true" aria-label="命令面板">
+      <input id="palInput" placeholder="输入页面名、字段名或 show / hide / save / clear…"
+        aria-label="命令" autocomplete="off">
+      <ul id="palList" role="listbox" aria-label="命令列表"></ul>
+      <div class="foot"><span><em>↑</em><em>↓</em> 选择</span><span><em>Enter</em> 执行</span>
+        <span><em>Esc</em> 关闭</span></div>
+    </div>`;
+  document.body.appendChild(mask);
+  _palEl = mask;
+  const input = $("#palInput", mask);
+  const list = $("#palList", mask);
+  let rows = [], idx = 0;
+
+  const paint = () => {
+    const q = String(input.value || "").trim().toLowerCase();
+    rows = paletteCommands().filter(c => !q || (c.label + " " + c.hint).toLowerCase().includes(q))
+      .slice(0, 40);
+    idx = Math.min(idx, Math.max(0, rows.length - 1));
+    list.innerHTML = rows.map((c, i) => `<li role="option" data-i="${i}"
+        aria-selected="${i === idx}"><span>${esc(c.label)}</span>
+        <span class="hint">${esc(c.hint || "")}</span></li>`).join("")
+      || `<li class="muted" style="cursor:default">没有匹配的命令</li>`;
+    const cur = list.querySelector('li[aria-selected="true"]');
+    if (cur && cur.scrollIntoView) cur.scrollIntoView({block: "nearest"});
+  };
+  const run = (i) => {
+    const c = rows[i];
+    if (!c) return;
+    closePalette();
+    try { c.run(); } catch (e) { toast("命令执行失败：" + e, true); }
+  };
+  input.oninput = () => { idx = 0; paint(); };
+  input.onkeydown = (ev) => {
+    if (ev.key === "ArrowDown") { ev.preventDefault(); idx = Math.min(idx + 1, rows.length - 1); paint(); }
+    else if (ev.key === "ArrowUp") { ev.preventDefault(); idx = Math.max(idx - 1, 0); paint(); }
+    else if (ev.key === "Enter") { ev.preventDefault(); run(idx); }
+    else if (ev.key === "Escape") { ev.preventDefault(); closePalette(); }
+  };
+  list.onclick = (ev) => {
+    const li = ev.target.closest("li[data-i]");
+    if (li) run(Number(li.dataset.i));
+  };
+  mask.onclick = (ev) => { if (ev.target === mask) closePalette(); };
+  paint();
+  input.focus();
+}
+
+/*: 账号菜单：身份 / 范围 / 审计级别 / 门禁（原来这些散在 5 个徽标里，挤且难读）。 */
+function openAccountMenu(anchor){
+  const a = obj(STATE.auth), h = obj(STATE.health), g = obj(STATE.gates);
+  const html = `<div class="hint">身份与访问</div>
+    <div class="hint" style="color:var(--text)">用户：${esc(a.user || "本机账号")}</div>
+    <div class="hint" style="color:var(--text)">范围：${esc(h.scope_label || h.scope || "—")}</div>
+    <div class="hint" style="color:var(--text)">审计：${esc(a.auditLabel || a.mode || "—")}</div>
+    <div class="hint" style="color:var(--text)">门禁：${esc(String((g.pass != null ? g.pass : "—")))} 通过</div>
+    <div class="sep"></div>
+    <button data-act="refresh">刷新状态</button>
+    <button data-act="palette">命令面板（Ctrl K）</button>`;
+  lvPop(anchor, html, {
+    onPick: (act2) => {
+      lvClosePop();
+      if (act2 === "refresh") render();
+      if (act2 === "palette") openPalette();
+    },
+  });
+}
+
 function initNav(){
   bindRailToggle();
+  const pb = $("#paletteBtn");
+  if (pb) pb.onclick = () => openPalette();
+  const ro = $("#railOpen");
+  if (ro) ro.onclick = () => {
+    const open = document.body.classList.toggle("rail-open");
+    document.body.classList.remove("rail-off");
+    ro.setAttribute("aria-expanded", open ? "true" : "false");
+  };
+  document.addEventListener("click", (ev) => {
+    if (!document.body.classList.contains("rail-open")) return;
+    const inside = ev.target.closest && ev.target.closest("#rail,#railOpen");
+    if (!inside) {
+      document.body.classList.remove("rail-open");
+      if (ro) ro.setAttribute("aria-expanded", "false");
+    }
+  });
+  const ab = $("#avatarBtn");
+  if (ab) ab.onclick = (ev) => { ev.stopPropagation(); openAccountMenu(ab); };
+  document.addEventListener("keydown", (ev) => {
+    if ((ev.ctrlKey || ev.metaKey) && String(ev.key).toLowerCase() === "k") {
+      ev.preventDefault();
+      openPalette();
+    }
+  });
+  // 点击侧栏导航后，移动端抽屉自动收起（否则遮住内容）
+  document.addEventListener("click", (ev) => {
+    const b = ev.target.closest ? ev.target.closest("#rail [data-side]") : null;
+    if (b && window.innerWidth < 1024) document.body.classList.remove("rail-open");
+  });
   const nav=$("#nav");
   TABS.forEach(t=>{
     const b=document.createElement("button");

@@ -177,14 +177,17 @@ class TestGithubLayout:
         assert 'localStorage.setItem("rail"' in h
 
     def test_css(self, h: str) -> None:
-        assert "body.rail-off .rail{display:none}" in h
-        assert ".railToggle{" in h
-        assert ".shell{display:grid;grid-template-columns:232px minmax(0,1fr)" in h
+        # 折叠 = 缩到 56px 只留图标（不是隐藏）；宽度由令牌控制
+        assert "--rail-w-min:56px" in h
+        assert "body.rail-off .shell{grid-template-columns:var(--rail-w-min)" in h
+        assert "body.rail-off .rail .nm," in h, "折叠后应隐藏文字、保留图标"
+        assert ".shell{display:grid;grid-template-columns:var(--rail-w)" in h
 
     def test_tight_spacing(self, h: str) -> None:
-        assert "max-width:1760px" in h, "内容区最大宽未放宽"
+        # 宽屏优先：`.shell` 不再设 max-width（原 1760 会把 2K 屏两侧留白凑成大片空白）
+        assert "max-width:none" in h
         assert ".card{padding:var(--s4)}" in h
-        assert ".shell{" in h and "padding:var(--s4) var(--s5)" in h
+        assert "gap:16px" in h and "padding:16px" in h
 
 
 class TestDataSupportsNav:

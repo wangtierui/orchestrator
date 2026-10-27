@@ -375,15 +375,22 @@ class TestFrontendContract:
         assert "http://" not in h and "https://" not in h, "出现外链（破坏离线可用）"
 
     def test_sortable_headers_and_filters(self) -> None:
-        """注意：表格是**运行时生成**的，属性值在源码里是占位符
-        （`data-f="${key}"`）⇒ 断言要指向**生成函数与调用点**，而不是最终 HTML。"""
+        """2026-10-27：列表页改 GitHub 风格后，**逐列输入框**换成"筛选 Popover + 表头菜单"。
+
+        判据从"表头里有没有 input"改为"筛选是否仍然落到后端参数"：
+        切片/筛选写回 `STATE.laws|rules` 的同名字段（theme/timeliness/source/q_*），
+        由 `toQuery` 拼进 `/api/records|rules` —— 数据层一行没动。
+        """
         h = _html()
-        assert "function thSort(" in h and "th.sortable" in h, "表头未做可排序"
-        assert "data-sort=" in h, "表头未带排序标记"
-        assert "function fInput(" in h and "function fSelect(" in h, "缺筛选控件生成器"
-        assert 'fInput("q_title"' in h and 'fInput("q_docno"' in h, "缺逐列筛选"
-        assert 'fInput("q_rfn"' in h and 'fInput("q_ipn"' in h
-        assert "data-pg=" in h, "缺翻页控件"
+        assert "function lvRender(" in h, "缺列表视图引擎"
+        assert "function lvBind(" in h
+        # 服务端筛选参数仍在状态里被读写
+        for k in ("q_title", "q_docno", "theme", "timeliness", "source"):
+            assert k in h, k
+        # 排序：表头按钮 + 后端 sort 参数
+        assert "data-lvsort" in h and "st.sort" in h
+        # 切片：必须映射到后端分面字段（不是只过滤当前页）
+        assert "lvSliceOptions" in h and "f.slice" in h
 
     def test_rules_uses_local_file_link(self) -> None:
         h = _html()

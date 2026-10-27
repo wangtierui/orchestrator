@@ -54,7 +54,9 @@ class TestNoDeadClicks:
             i = src.index("const SIDE_ACT = {")
             j = src.index("\n};", i)
             body = src[i:j]
-        return set(re.findall(r"(?m)^\s{2}([A-Za-z_]\w*)\s*:\s*\(k\)", body))
+        # 只判"有没有这个键"，**不限定参数表**：`lvsave: () => …` 也是合法处理函数
+        # （旧正则要求 `(k)` ⇒ 误报，见第 121 批）。
+        return set(re.findall(r"(?m)^\s{2}([A-Za-z_]\w*)\s*:\s*\(", body))
 
     @staticmethod
     def _used_keys(src: str) -> set[str]:
@@ -83,10 +85,10 @@ class TestGlobalRail:
 
     def test_rail_outside_main(self, h: str) -> None:
         assert 'id="rail"' in h
-        shell = h[h.index('id="shell"'):]
-        shell = shell[:shell.index("</div>")]
-        assert "id=\"rail\"" in shell and "id=\"view\"" in shell
-        # 骨架顺序：rail 在 main 之前
+        # `.shell` 里还有抽屉遮罩（自闭合 div），不能"遇到第一个 </div> 就截断"
+        start = h.index('<div class="shell"')
+        shell = h[start:h.index("</main>", start)]
+        assert 'id="rail"' in shell and 'id="view"' in shell
         assert shell.index('id="rail"') < shell.index('id="view"')
 
     def test_views_do_not_wrap_side(self, h: str) -> None:
@@ -102,7 +104,8 @@ class TestGlobalRail:
         assert "paintRail()" in fin[:200]
 
     def test_collapse(self, h: str) -> None:
-        assert "body.rail-off .rail{display:none}" in h
+        """折叠 = 56px 图标列（保留可点），只有"本页无第二节"时才整列隐藏。"""
+        assert "body.rail-off .shell{grid-template-columns:var(--rail-w-min)" in h
         assert "body.rail-empty .shell{grid-template-columns:minmax(0,1fr)}" in h
 
 

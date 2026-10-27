@@ -188,9 +188,11 @@ class TestNoTruncationAndSidebar:
     def test_sidebar_shell_used_by_key_pages(self) -> None:
         h = _html()
         assert "function sideShell(" in h
-        # 监管统计改用**两级**侧栏 `eastSide()`（EAST / 统计制度），其余仍是 sideShell
-        for key in ("graph", "laws", "rules", "worklist", "flow", "release"):
+        # 2026-10-27 第一百二十一批：左栏统一到**页面级 #rail**（视图只 `railSet` 登记），
+        # 监管统计的两级导航仍由 `eastSide()` 生成。
+        for key in ("graph", "worklist", "flow", "release"):
             assert f'sideShell("{key}"' in h, key
+        assert 'railSet("主题"' in h, "政策法规/公司制度 的主题未进左栏"
         assert "function eastSide(" in h and "EAST_SCOPES" in h
 
     def test_release_evidence_moved_to_overview(self) -> None:
