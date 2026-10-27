@@ -234,6 +234,34 @@ th.sortable .arw{font-size:10px;opacity:.85}
 .sideitem .cnt{font-size:11px;color:var(--fg3);font-variant-numeric:tabular-nums}
 .sideitem .dot{width:7px;height:7px;border-radius:50%;flex:none}
 .sidebody{min-width:0}
+
+/*: 2026-10-27（用户第 2/8 条）：
+ *   · `.grid.g3` = **固定 3 列**（不是 auto-fit）—— 卡片宽度只由列数决定，
+ *     与"这一板块有几张卡"无关，12 个模块才可能真正等宽；
+ *   · 留白收一档（`--s5`→`--s4`），max-width 放宽，参照 GitHub 的三段式布局：
+ *     顶部横向导航 / 左侧可折叠侧栏 / 右侧内容。 */
+.grid.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media (max-width:1280px){.grid.g3{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:820px){.grid.g3{grid-template-columns:1fr}}
+.grid.g3>.section{margin:var(--s5) 0 0}
+main{max-width:1760px;padding:var(--s4) var(--s5)}
+.card{padding:var(--s4)}
+
+/*: 左侧栏折叠（2026-10-27 用户第 8 条：GitHub 三段式布局）
+ * 折叠后内容区占满宽度；状态存 localStorage，跨页面/刷新保持。
+ * 二级项用 `.sideitem-sub`（缩进 + 前置点），让"EAST → 数据表"这类层级一眼看出。 */
+body.rail-off .sidewrap{grid-template-columns:1fr}
+body.rail-off .side{display:none}
+.railToggle{border:1px solid var(--line);background:var(--card);color:var(--fg2);
+  border-radius:7px;width:30px;height:30px;line-height:1;cursor:pointer;font-size:14px;
+  display:inline-flex;align-items:center;justify-content:center;margin-right:2px}
+.railToggle:hover{background:var(--alt);color:var(--fg)}
+.sideitem-sub{padding-left:20px;font-size:12px}
+.sideitem-sub .nm::before{content:"·";margin-right:5px;color:var(--fg4)}
+.card>h3{margin:0 0 var(--s2)}
+.card .src{margin-top:var(--s2)}
+.section{margin:var(--s5) 0 var(--s2)}
+h3.near{margin-top:var(--s1)}
 </style>
 </head>
 <body>
@@ -241,6 +269,8 @@ th.sortable .arw{font-size:10px;opacity:.85}
   <div class="hbar">
     <div class="brand"><svg class="logo" viewBox="0 0 16 16" aria-hidden="true"
       focusable="false"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>监管合规编排器<small>本地确认台</small></div>
+    <button class="railToggle" id="railToggle" title="折叠/展开左侧栏（Ctrl+B）"
+      aria-label="折叠左侧栏">☰</button>
     <div class="hstat">
       <span class="badge" id="live">连接中…</span>
       <span class="badge" id="scope" title="访问范围">—</span>
@@ -336,21 +366,30 @@ function sideShell(key, items, cur, body, title){
 /*: 左侧栏点击 → 各页状态位（集中一处，避免每页各写一遍监听） */
 const SIDE_ACT = {
   graph: (k) => { STATE.graph = Object.assign({}, obj(STATE.graph), {view: k}); },
-  east:  (k) => { STATE.east_tab = k; },
+  east:  (k) => { STATE.east_scope = "east"; STATE.east_tab = k; },
+  east_scope: (k) => { STATE.east_scope = k || "east"; },
+  stat_tab: (k) => { STATE.stat_tab = k || "reg"; },
   laws:  (k) => { STATE.laws = Object.assign({}, obj(STATE.laws), {theme: k, page: 1}); },
   rules: (k) => { STATE.rules = Object.assign({}, obj(STATE.rules), {theme: k, page: 1}); },
   worklist: (k) => { STATE._wlkind = k || ""; },
   flow: (k) => { STATE.flow_sel = k; },
   release: (k) => { STATE.rel_day = k || ""; },
+  // 目录跳转：**只滚动，不重渲染**（重渲染会丢滚动位置，等于白点）
+  toc: (k) => {
+    const el = document.getElementById(String(k || "").replace(/^#/, ""));
+    if (el) el.scrollIntoView({behavior: "smooth", block: "start"});
+  },
 };
 
 document.addEventListener("click", (ev) => {
   const b = ev.target && ev.target.closest ? ev.target.closest("[data-side]") : null;
   if (!b) return;
   ev.preventDefault();
-  const act = SIDE_ACT[b.dataset.side];
+  const key = b.dataset.side;
+  const act = SIDE_ACT[key];
   if (act) act(b.dataset.skey || "");
-  render();
+  // 目录跳转**只滚动**：整页重渲染会把滚动位置抹掉，等于没跳
+  if (key !== "toc") render();
 });
 
 function toast(msg, bad){
@@ -493,10 +532,12 @@ function viewOverview(d, assets, publish, rel){
     : `<div class="note">⚠ ${esc(st.reason||"存储扫描不可用")}</div>`;
 
   /* P2 产物清单（并入总览） */
-  let assetsHtml;
-  if(!assets || assets.available===false) assetsHtml = `<div class="note">⚠ ${esc((assets||{}).reason||"不可用")}</div>`;
-  else if(assets.warming) assetsHtml = `<div class="note">${esc(assets.note||"统计中…")}</div>`;
-  else {
+  let assetsCards = "";
+  if(!assets || assets.available===false) {
+    assetsCards = `<div class="card"><div class="note">⚠ ${esc((assets||{}).reason||"不可用")}</div></div>`;
+  } else if(assets.warming) {
+    assetsCards = `<div class="card"><div class="note">${esc(assets.note||"统计中…")}</div></div>`;
+  } else {
     const rows = arr(assets.files).map(f=>`<tr><td>${esc(f.source)}</td>
       <td class="muted">${esc(f.date||"—")}</td><td class="num">${num(f.records)}</td></tr>`).join("");
     const c = obj(assets.contract);
@@ -507,8 +548,7 @@ function viewOverview(d, assets, publish, rel){
         <td class="num">${num(m.count||m.records||m.record_count)}</td></tr>`;}).join("");
     // 与「01 运行与风险」用**同一个**栅格（`.grid`），否则两张卡的最小宽不同，
     // 两个板块的卡片宽度对不齐（用户报「模块宽度应保持一致」）。
-    assetsHtml = `<div class="grid">
-      ${card("产物清单","clean 索引", rows?`<div class="tblwrap"><table><thead><tr><th>源</th><th>快照日</th><th>记录数</th></tr></thead><tbody>${rows}</tbody></table></div>`
+    assetsCards = `${card("产物清单","clean 索引", rows?`<div class="tblwrap"><table><thead><tr><th>源</th><th>快照日</th><th>记录数</th></tr></thead><tbody>${rows}</tbody></table></div>`
         :'<div class="muted">无产物</div>', assets.source, assets.fetched_at)}
       ${card("发布件状态","双底座", `<div class="tblwrap"><table><thead><tr><th>底座</th><th>快照/版本</th><th>记录数</th></tr></thead><tbody>${pubRows}</tbody></table></div>`, assets.source, assets.fetched_at)}
       ${card("条文契约自检","clause schema",
@@ -516,8 +556,7 @@ function viewOverview(d, assets, publish, rel){
         +kv("表格结构",num(c.structures))+kv("法条类",num(c.law))
         +kv("降级解析",num(c.degraded),Number(c.degraded)>0?"warn":"ok")
         +kv("无效",num(c.invalid),Number(c.invalid)>0?"bad":"ok")
-        +kv("告警",num(c.warned),Number(c.warned)>0?"warn":"ok"), assets.source, assets.fetched_at)}
-    </div>`;
+        +kv("告警",num(c.warned),Number(c.warned)>0?"warn":"ok"), assets.source, assets.fetched_at)}`;
   }
   /* P7 投放看板（并入总览） */
   let pubHtml="";
@@ -528,30 +567,50 @@ function viewOverview(d, assets, publish, rel){
       +kv("文件数", num(w.files)), publish.source, publish.fetched_at);
   }
 
-  return `${kpis}
-  <div class="section"><span class="no">01</span><h2>运行与风险</h2>
-    <span class="desc">六张卡回答"现在健康吗、有没有欠账"</span></div>
-  <div class="grid">
+  /* 2026-10-27（用户第 2 条）：12 个模块必须**等宽**。
+   *
+   * 原实现按"板块"各建一个 `.grid`（`auto-fit minmax(340px,1fr)`）：
+   * 6 张卡的板块自动铺成 4 列、3 张卡的铺成 3 列、只有 1 张卡的格子铺满整行 ——
+   * 于是同一页出现 360px / 496px / 1520px 三种宽度。
+   * 修法：**一个固定列数的网格装全部 12 个模块**，板块标题用 `grid-column:1/-1`
+   * 横跨整行 —— 卡片宽度只由列数决定，与"这一板块有几张卡"无关。
+   */
+  const sec = (no, name, desc) => `<div class="section" style="grid-column:1/-1">
+      <span class="no">${esc(no)}</span><h2>${esc(name)}</h2>
+      <span class="desc">${esc(desc)}</span></div>`;
+  const r0 = obj(rel), sb0 = obj(r0.sbom);
+  const toc = [{key: "ov-kpi", label: "关键指标"},
+               {key: "ov-01", label: "01 运行与风险", count: 6},
+               {key: "ov-02", label: "02 产物与发布", count: 5}];
+  const body = `<div class="grid g3">
+    <div id="ov-kpi">${kpis}</div>
+    ${sec("01", "运行与风险", "回答\"现在健康吗、有没有欠账\"").replace(
+      '<div class="section"', '<div id="ov-01" class="section"')}
     ${card("运行健康","最近一次运行",runHtml,rh.source,rh.fetched_at)}
     ${card("门禁状态","逐道结果",gateHtml,gs.source,gs.fetched_at)}
     ${card("待办","worklist open",wlHtml,wl.source,wl.fetched_at)}
     ${card("告警","reports/_alerts",alHtml,al.source,al.fetched_at)}
     ${card("数据新鲜度","水位边状态",frHtml,fr.source,fr.fetched_at)}
     ${card("存储占用","实测体积",stHtml,st.source,st.fetched_at)}
-  </div>
-  <div class="section"><span class="no">02</span><h2>产物与发布</h2>
-    <span class="desc">P2 数据状态 + P7 投放看板（已并入总览）</span></div>
-  ${assetsHtml}
-   <div class="grid">${pubHtml}</div>
-   <div class="grid">${(() => {
-     const r = obj(rel), sb = obj(r.sbom);
-     return card("发布物证据", "SBOM + 契约版本（原在「发布事件」，2026-10-27 移入）",
-       kv("SBOM 组件数", num(sb.components))
-       + kv("lock sha256", esc(String(sb.lock_sha256 || "").slice(0, 16)))
-       + kv("契约版本", esc(r.contract_version || "—"))
-       + `<div class="muted" style="margin-top:6px">发布事件的提交明细按日期看 → 「发布事件」页</div>`,
-       r.source || "git", r.fetched_at);
-   })()}</div>`;
+    ${sec("02", "产物与发布", "P2 数据状态 + P7 投放看板").replace(
+      '<div class="section"', '<div id="ov-02" class="section"')}
+    ${assetsCards}
+    ${pubHtml}
+    ${card("发布物证据", "SBOM + 契约版本",
+      kv("SBOM 组件数", num(sb0.components))
+      + kv("lock sha256", esc(String(sb0.lock_sha256 || "").slice(0, 16)))
+      + kv("契约版本", esc(r0.contract_version || "—"))
+      + `<div class="muted" style="margin-top:6px">提交明细按日期看 → 「发布事件」</div>`,
+      r0.source || "git", r0.fetched_at)}
+  </div>`;
+  return `<div class="sidewrap">
+      <aside class="side"><div class="side-h">本页</div>
+        ${toc.map(x => `<button class="sideitem" data-side="toc" data-skey="${esc(x.key)}">
+          <span class="nm">${esc(x.label)}</span>
+          ${x.count != null ? `<span class="cnt">${num(x.count)}</span>` : ""}</button>`).join("")}
+      </aside>
+      <div class="sidebody">${body}</div>
+    </div>`;
 }
 
 /* ---------------- P1 数据流转（分层 DAG） ---------------- */
@@ -642,10 +701,8 @@ ${n.purpose?("作用："+esc(n.purpose)):""}</title>
     sideShell("flow", _fItems, String(STATE.flow_sel || ""),
     `<div class="scrollx">${svg}</div>${legend}
      <div class="toolbar" style="margin-top:10px">
-       <span class="muted">节点抽屉：</span>
-       <select id="stepsel">${nodes.map(n=>`<option>${esc(n.id)}</option>`).join("")}</select>
-       <button class="act ghost" id="stepbtn">查看</button>
-       <span class="muted">最近运行：${esc(d.run_id||"—")}</span>
+       <span class="muted">节点抽屉在左侧：点任一节点看它的状态与日志尾巴</span>
+       <span class="muted" style="margin-left:auto">最近运行：${esc(d.run_id||"—")}</span>
      </div><div id="stepout"></div>`, "节点"), d.source, d.fetched_at);
 }
 
@@ -1146,7 +1203,12 @@ async function render(){
       bindGraph(); return;
     }
     if(CUR==="regstats"){
-      const [rs, es] = await Promise.all([api("/api/regstats"), api("/api/east")]);
+      const [rs, es, sc] = await Promise.all([
+        api("/api/regstats"), api("/api/east"),
+        /* 统计制度 → 公司制度：复用 `/api/rules` 的**服务端**关键词筛选（不在前端扫全量） */
+        api("/api/rules?size=100&q_title=" + encodeURIComponent("统计")),
+      ]);
+      STATE.stat_corp = sc;
       STATE.regstats = rs;
       STATE.east = es;
       v.innerHTML = viewRegstats(STATE.regstats);
@@ -1175,14 +1237,8 @@ async function render(){
 function bindFlow(){
   const v=$("#view");
   $$("g.fnode",v).forEach(g=>{ g.onclick=()=>openStep(g.dataset.step); });
-  const btn=$("#stepbtn");
-  if(btn) btn.onclick=()=>{ const s=$("#stepsel").value; if(s) openStep(s); };
-  // 侧栏点了节点 ⇒ 直接开它的抽屉（不必再点"查看"）
-  if(STATE.flow_sel){
-    const sel=$("#stepsel");
-    if(sel) sel.value = STATE.flow_sel;
-    openStep(STATE.flow_sel);
-  }
+  // 侧栏点了节点 ⇒ 直接开它的抽屉（右侧不再有下拉/按钮）
+  if(STATE.flow_sel) openStep(STATE.flow_sel);
 }
 async function openStep(step){
   const out=$("#stepout"); if(!out) return;
@@ -1404,6 +1460,17 @@ function addrCell(it){
   return '<span class="muted">未查到</span>';
 }
 
+/*: 主题自然序：T0, T1, T2 … T10（不能用 localeCompare 直接比，
+ * 那会把 "T10" 排到 "T2" 前面；也不能按 count 排 —— 用户要的是编号顺序）。 */
+function _themeSort(items){
+  const key = (x) => {
+    const v = String((x && (x.value ?? x.key ?? x)) || "");
+    const m = /^T(\d+)/.exec(v);
+    return m ? Number(m[1]) : 9999;
+  };
+  return arr(items).slice().sort((a, b) => key(a) - key(b));
+}
+
 function viewLaws(d, st, f){
   if (!d || d.available === false) return unavail(obj(d), "政策法规");
   const items = arr(d.items);
@@ -1419,7 +1486,7 @@ function viewLaws(d, st, f){
     || '<tr><td colspan="8" class="muted">无匹配记录（放宽筛选条件再试）</td></tr>';
   /* 主题移到**左侧栏**（GitHub issues 式）：表头那一列只留占位，
    * 否则同一维度出现两次（左侧点了主题、表头下拉还显示"全部主题"，人会以为没生效）。 */
-  const _themes = arr(f.themes).filter(x => String(x.value) !== "");
+  const _themes = _themeSort(arr(f.themes).filter(x => String(x.value) !== ""));
   const _unset = arr(f.themes).find(x => String(x.value) === "");
   const _sideItems = [{key: "", label: "全部主题", count: (_unset && _unset.count) || undefined}]
     .concat(_themes.map(x => ({key: x.value, label: x.label || x.value, count: x.count})));
@@ -1427,7 +1494,7 @@ function viewLaws(d, st, f){
     <div class="scrollx"><table>
       <thead>
         <tr class="filters">
-          <th class="muted" style="font-size:11px">主题见左侧</th>
+          <th></th>
           <th>${fInput("q_rfn", st, "RFN 前缀")}</th>
           <th>${fInput("q_title", st, "名称包含…")}</th>
           <th>${fInput("q_docno", st, "文号包含…")}</th>
@@ -1469,7 +1536,7 @@ function viewRules(d, st, f){
     || '<tr><td colspan="6" class="muted">无匹配记录（放宽筛选条件再试）</td></tr>';
   /* 主题移到**左侧栏**（GitHub issues 式）：表头那一列只留占位，
    * 否则同一维度出现两次（左侧点了主题、表头下拉还显示"全部主题"，人会以为没生效）。 */
-  const _themes = arr(f.themes).filter(x => String(x.value) !== "");
+  const _themes = _themeSort(arr(f.themes).filter(x => String(x.value) !== ""));
   const _unset = arr(f.themes).find(x => String(x.value) === "");
   const _sideItems = [{key: "", label: "全部主题", count: (_unset && _unset.count) || undefined}]
     .concat(_themes.map(x => ({key: x.value, label: x.label || x.value, count: x.count})));
@@ -1477,7 +1544,7 @@ function viewRules(d, st, f){
     <div class="scrollx"><table>
       <thead>
         <tr class="filters">
-          <th class="muted" style="font-size:11px">主题见左侧</th>
+          <th></th>
           <th>${fInput("q_ipn", st, "IPN 前缀")}</th>
           <th>${fInput("q_title", st, "名称包含…")}</th>
           <th>${fInput("q_docno", st, "文号包含…")}</th>
@@ -1692,6 +1759,25 @@ function g3dBox(key, model, W, H, hint){
 }
 
 /*: 绑定拖拽/缩放/点选（**幂等**：每次渲染后调用一次即可） */
+/*: 左侧栏折叠（顶栏按钮 / Ctrl+B）；状态存 localStorage。 */
+function bindRailToggle(){
+  const b = $("#railToggle");
+  const saved = (typeof localStorage !== "undefined") ? localStorage.getItem("rail") : "";
+  if (saved === "off") document.body.classList.add("rail-off");
+  const toggle = () => {
+    const off = document.body.classList.toggle("rail-off");
+    try { localStorage.setItem("rail", off ? "off" : "on"); } catch (e) { /* 隐私模式 */ }
+    if (b) b.title = off ? "展开左侧栏（Ctrl+B）" : "折叠左侧栏（Ctrl+B）";
+  };
+  if (b) b.onclick = toggle;
+  document.addEventListener("keydown", (ev) => {
+    if ((ev.ctrlKey || ev.metaKey) && String(ev.key).toLowerCase() === "b") {
+      ev.preventDefault();
+      toggle();
+    }
+  });
+}
+
 function bindG3d(){
   const v = $("#view");
   if(!v) return;
@@ -1964,7 +2050,16 @@ function _gRegulatory(d){
                                   color: e.relation === "repeal"
                                     ? "var(--bad)" : "var(--primary)"}));
   const top = nodes0.slice().sort((a, b) => (b.degree || 0) - (a.degree || 0)).slice(0, 10);
-  return `<div class="muted" style="margin-bottom:var(--s2)">
+  const nBasis = edges0.filter(e => e.relation !== "repeal").length;
+  const nRepeal = edges0.length - nBasis;
+  return `<div class="kpibar" style="margin-bottom:var(--s2)">
+      ${kpi("枢纽文件", num(nodes0.length), "份")}
+      ${kpi("全库关系", num(g.total_edges), "条")}
+      ${kpi("图上直连", num(edges0.length), "条")}
+      ${kpi("依据", num(nBasis), "条", "ok")}
+      ${kpi("废止", num(nRepeal), "条", nRepeal ? "bad" : "")}
+    </div>
+    <div class="muted" style="margin-bottom:var(--s2)">
       枢纽 ${num(nodes0.length)} 个 / 图上直连边 ${num(edges0.length)} 条（全库监管↔监管
       ${num(g.total_edges)} 条）。绝大多数关系是"各自依据同一部上位法"，故用
       **节点大小=被引次数**表达；枢纽之间真正互引的边照画。</div>
@@ -1994,7 +2089,17 @@ function _gInternal(d){
                                   title: e.label || "", external: !!e.external,
                                   color: e.relation === "repeal"
                                     ? "var(--bad)" : "var(--primary)"}));
-  return `<div class="muted" style="margin-bottom:var(--s2)">
+  const nBasis = edges0.filter(e => e.relation !== "repeal").length;
+  const nRepeal = edges0.length - nBasis;
+  const nExt = nodes0.filter(x => x.external).length;
+  return `<div class="kpibar" style="margin-bottom:var(--s2)">
+      ${kpi("制度文件", num(nodes0.length), "份")}
+      ${kpi("关系", num(edges0.length), "条")}
+      ${kpi("依据", num(nBasis), "条", "ok")}
+      ${kpi("废止", num(nRepeal), "条", nRepeal ? "bad" : "")}
+      ${kpi("指向库外", num(nExt), "份", nExt ? "warn" : "")}
+    </div>
+    <div class="muted" style="margin-bottom:var(--s2)">
       制度文件 ${num(nodes0.length)} 份 / 关系 ${num(edges0.length)} 条
       （当前**全部可定位**，没有"指向库外旧版本"的悬空边）。</div>
     ${g3dBox("graph.internal", {nodes, edges, labelAll: true}, 1040, 620)}
@@ -2021,7 +2126,13 @@ function _gTheme(d){
     title: (e.label || "") + (e.count ? "（" + e.count + " 份引用）" : ""),
     color: "var(--alt)",
   }));
-  return `<div class="muted" style="margin-bottom:var(--s2)">
+  const nDocs = new Set(es.map(e => e.ref)).size;
+  return `<div class="kpibar" style="margin-bottom:var(--s2)">
+      ${kpi("主题", num(ths.length), "个")}
+      ${kpi("有关联文件", num(nDocs), "份")}
+      ${kpi("主题边", num(es.length), "条")}
+    </div>
+    <div class="muted" style="margin-bottom:var(--s2)">
       ${num(ths.length)} 个主题 / ${num(docs.length)} 份被引监管文件 / ${num(es.length)} 条主题边。
       主题只对**入册**文件打标（覆盖率和主题口径见「治理审计」页）。</div>
     ${g3dBox("graph.theme", {nodes, edges, labelAll: true}, 1040, 620)}
@@ -2136,6 +2247,10 @@ function bindGraph(){
     STATE.graph = {};                             // 清空中心 ⇒ 下次渲染走全局
     CUR = "graph"; render();
   };
+  // E-R 实体框 / 表名点选 → 切换中心（**2D 图，不走 g3d**）
+  $$("[data-erdtab]", v).forEach(el => {
+    el.onclick = () => { STATE.east_erd = el.dataset.erdtab || ""; render(); };
+  });
   bindG3d();
 }
 
@@ -2181,13 +2296,11 @@ function eastRegstatsDocs(d){
         <th>名称</th><th>文号</th><th>时效</th><th>源</th><th>访问地址</th><th>关系</th>
       </tr></thead><tbody>${rows}</tbody></table></div>`;
   }).join("");
-  return `<h3 style="margin:0 0 var(--s2)"><span>EAST / 监管数据标准化
+  /* 标题与内容**紧邻**：不再在中间插入"能力边界"说明（那属于页级共识，
+   * 由 `eastOverview` 统一放在 KPI 下方一次说清）。 */
+  return `<h3 class="near" style="margin:var(--s2) 0 var(--s1)"><span>EAST / 监管数据标准化
       <span class="tag">${num(cov.east_direct)} 条</span></span>
-      <span class="hint">按受控关键词分类的**资料指针**（本段位于附件清单上方）</span></h3>
-    <div class="note" style="margin:0 0 var(--s2)">
-      <b>能力边界（如实说明）</b>：${esc(cov.note || "")}
-      本清单用于**定位资料**（哪份文件规定了什么口径、什么时候发的），
-      不产出任何 EAST 报送数据、也不校验报文字段。</div>
+      <span class="hint">按受控关键词分类的资料指针</span></h3>
     ${sections}`;
 }
 
@@ -2253,27 +2366,123 @@ function eastKpis(d){
   </div>`;
 }
 
+/* ============ 监管统计：**两级**侧栏（2026-10-27 用户第 7 条）============
+ *
+ * 一级：EAST（7 个二级页签） / 统计制度（监管制度、公司制度）
+ * 为什么这么分：EAST 是"一套规范的长相"（表/元/码/规则/关系），
+ * 统计制度是"规定口径的文件"（监管发文 + 本公司办法）—— 两类读者动机不同，
+ * 平铺成 9 个一级页签会让人分不清"我在看规范还是在看制度"。
+ */
+const EAST_SCOPES = [
+  {key: "east", label: "EAST", hint: "监管数据标准化规范"},
+  {key: "stat", label: "统计制度", hint: "监管发文 + 公司办法"},
+];
+const STAT_TABS = [
+  {key: "reg", label: "监管制度"},
+  {key: "corp", label: "公司制度"},
+];
+
+function eastSide(scope, tab, statTab){
+  /* 参数化按钮：`side` 是动作键、`skey` 是取值 —— 不再"先生成再替换"，
+   * 那种写法改一个空格就静默失效（点了没反应也不报错）。 */
+  const item = (side, skey, label, on, cnt, sub) => `<button
+      class="sideitem${sub ? " sideitem-sub" : ""}${on ? " on" : ""}"
+      data-side="${esc(side)}" data-skey="${esc(skey)}" title="${esc(label)}">
+      <span class="nm">${esc(label)}</span>
+      ${cnt != null ? `<span class="cnt">${num(cnt)}</span>` : ""}</button>`;
+  const st = obj(STATE.east).stats;
+  const tabCount = (k) => k === "tables" ? st.tables
+    : k === "elements" ? arr(obj(STATE.east).elements).length
+    : k === "codes" ? st.code_tables
+    : k === "rules" ? st.rules
+    : k === "er" ? st.er_edges : null;
+  let html = `<div class="side-h">规范与制度</div>`;
+  html += item("east_scope", "east", "EAST", scope === "east", null, false);
+  if (scope === "east") {
+    html += EAST_TABS.map(x => item("east_tab", x.k, x.n, tab === x.k,
+      tabCount(x.k), true)).join("");
+  }
+  html += item("east_scope", "stat", "统计制度", scope === "stat", null, false);
+  if (scope === "stat") {
+    html += STAT_TABS.map(x => item("stat_tab", x.key, x.label,
+      statTab === x.key, null, true)).join("");
+  }
+  return html;
+}
+
+/*: 监管制度 = 三个分类合并成一张表（保留「分类」列，合并的是层级不是来源）。 */
+function eastStatReg(regstats){
+  const cats = arr(obj(regstats).categories).filter(c =>
+    !String(c.label || "").includes("EAST"));
+  const rows = [];
+  cats.forEach(c => arr(c.items).forEach(it => rows.push({cat: c.label, it: it})));
+  if (!rows.length) return '<div class="note">暂无监管统计制度资料。</div>';
+  return `<div class="note" style="margin-bottom:var(--s2)">
+      监管侧的统计制度：<b>${num(cats.length)} 个来源分类合并</b>为一张表（保留「分类」列），
+      共 ${num(rows.length)} 条。口径以原文为准，本页只做定位。</div>
+    <div class="scrollx"><table><thead><tr>
+      <th>分类</th><th>名称</th><th>文号</th><th>时效</th><th>源</th><th>访问地址</th><th>关系</th>
+    </tr></thead><tbody>${rows.map(({cat, it}) => `<tr>
+      <td><span class="tag">${esc(cat)}</span></td>
+      <td class="ttl">${esc(it.title || "")}</td>
+      <td class="mono">${esc(it.document_number || "—")}</td>
+      <td>${timeCell(it.timeliness_status)}</td>
+      <td><span class="tag">${esc(it.source || "—")}</span></td>
+      <td>${addrCell(it)}</td>
+      <td>${relBtn(it.rfn)}</td></tr>`).join("")}</tbody></table></div>`;
+}
+
+/*: 公司制度（统计口径相关）——服务端按名称含"统计"筛选，前端不做全量过滤。 */
+function eastStatCorp(){
+  const d = obj(STATE.stat_corp);
+  const items = arr(d.items);
+  if (d.available === false) {
+    return `<div class="note">⚠ ${esc(d.reason || "公司制度不可用")}</div>`;
+  }
+  return `<div class="note" style="margin-bottom:var(--s2)">
+      公司侧的统计相关办法：按名称含<b>「统计」</b>在服务端筛选（共 ${num(d.total)} 条），
+      需要全量请到「公司制度」页。文件路径在本机打开。</div>
+    <div class="scrollx"><table><thead><tr>
+      <th>唯一标识号</th><th>名称</th><th>文号</th><th>主题</th><th>本地文件</th><th>关系</th>
+    </tr></thead><tbody>${items.map(it => `<tr>
+      <td class="mono">${esc(it.ipn || "—")}</td>
+      <td class="ttl">${esc(it.title || "")}</td>
+      <td class="mono">${esc(it.docno || "—")}</td>
+      <td>${themeCell(it.theme_label)}</td>
+      <td>${it.local_path
+        ? `<a href="/api/local/file?path=${encodeURIComponent(it.local_path)}"
+             target="_blank" rel="noopener">打开本地文件</a>`
+        : '<span class="muted">未查到</span>'}</td>
+      <td>${relBtn(it.ipn)}</td></tr>`).join("")
+      || '<tr><td colspan="6" class="muted">无匹配记录</td></tr>'}</tbody></table></div>`;
+}
+
 function eastSection(regstats){
   const d = obj(STATE.east);
   if (!d.available) {
     return `<h3 style="margin:var(--s4) 0 var(--s2)"><span>EAST 规范</span></h3>
       <div class="note">${esc(d.reason || "尚未生成 EAST 产物")}</div>`;
   }
+  const scope = String(STATE.east_scope || "east");
   const tab = String(STATE.east_tab || "overview");
+  const statTab = String(STATE.stat_tab || "reg");
   const ntc = obj(d.notice);
-  const head = `<h3 style="margin:var(--s4) 0 var(--s2)">
+  const head = `<h3 style="margin:0 0 var(--s2)">
       <span>EAST 规范 <span class="tag">${esc(ntc.docno || "")} · ${esc(ntc.publish_date || "")}</span></span>
       <span class="hint">${esc(ntc.title || "")}</span></h3>
     <div class="muted" style="margin-bottom:var(--s2)">${esc(d.note || "")}</div>`;
-  const body = tab === "tables" ? eastTables(d)
-    : tab === "elements" ? eastElements(d)
-    : tab === "codes" ? eastCodes(d)
-    : tab === "rules" ? eastRules(d)
-    : tab === "er" ? eastEr(d)
-    : tab === "erd" ? eastErd(d)
-    : eastOverview(d, regstats);
-  return head + sideShell("east", EAST_TABS.map(x => ({key: x.k, label: x.n})), tab,
-    body, "EAST 规范");
+  const body = scope === "stat"
+    ? (statTab === "corp" ? eastStatCorp() : eastStatReg(regstats))
+    : (tab === "tables" ? eastTables(d)
+      : tab === "elements" ? eastElements(d)
+      : tab === "codes" ? eastCodes(d)
+      : tab === "rules" ? eastRules(d)
+      : tab === "er" ? eastEr(d)
+      : tab === "erd" ? eastErd(d)
+      : eastOverview(d, regstats));
+  return head + `<div class="sidewrap">
+      <aside class="side">${eastSide(scope, tab, statTab)}</aside>
+      <div class="sidebody">${body}</div></div>`;
 }
 
 /* ---------------- 概览：覆盖度 + 附件清单 ---------------- */
@@ -2312,9 +2521,14 @@ function eastOverview(d, regstats){
                                                    : pill("未抽出", "warn"))}</td>
       <td class="mono">${esc(a.sha256 || "")}</td></tr>`).join("");
   const nEmpty = atts.filter(a => !a.text_len && String(a.kind) !== "jpg").length;
-  return `<h3 style="margin:0 0 var(--s2)"><span>EAST / 监管数据标准化</span>
-      <span class="hint">《保险业监管数据标准化规范（人身保险公司 2024 版）》2025-04-10 修订版</span></h3>
-    ${eastKpis(d)}
+  /* 2026-10-27（用户第 1 条）：概览原来有**两个**"EAST / 监管数据标准化"标题，
+   * 中间还夹着能力边界 note ⇒ 读起来像两段并列内容。现在收敛成：
+   *   ① 唯一的顶部标题（只留通知文号/日期，标题文字在卡片头里）
+   *   ② KPI + 能力边界（页级共识）
+   *   ③ 资料段（保险业监管数据标准化规范…）—— **紧邻** ④
+   *   ④ 附件清单（12 个，自然序）—— 中间不再插任何东西
+   */
+  return `${eastKpis(d)}
     <div class="note" style="margin:var(--s2) 0 var(--s3)">
       <b>能力边界</b>：本页只做**规范查阅**（有哪些表、每个数据项怎么填、代码表取值、
       检核规则、表间关系），<b>不校验报文、不生成 EAST 数据</b>。
@@ -2602,18 +2816,34 @@ function eastEr(d){
  * 得到表级 E-R；点任一张表会列出它的**上游**（谁指向它）与**下游**（它指向谁）。
  * 页面明写图片原件位置，读者可自行核对 —— 不假装"我们解析了那张图"。
  */
+/* ---------------- E-R 图（附件1-6 风格：实体框 + 正交连线 + 基数） ----------------
+ *
+ * 为什么不做成"关系图那样的 3D"（用户第 6 条明确要求区分）：
+ *   · 附件1-6 是**实体-关系图**：表是方框、连线标基数（1:N）、字段写在框里；
+ *   · 读者用它回答"这张表的主外键指向谁"，要的是**可读的连线**而不是密度感。
+ *
+ * 布局（聚焦式）：左列 = 上游（指向中心的表），中间 = 中心实体，右列 = 下游。
+ * 112 张表全画会变成毛线团 —— 所以默认聚焦**度数最高**的那张，点任一张表可切换。
+ * 数据来源仍是 1-5-E（319 条）+ 1-3「关联数据项」（362 条），页面写明"不假装解析了那张 JPG"。
+ */
 function eastErd(d){
   const er = obj(d.er), edges0 = arr(er.edges), nodes0 = arr(er.nodes);
   if(!edges0.length) return '<div class="note">尚未解析出表间关系。</div>';
-  // 聚合：表→表（保留来源集合与样例规则）
+  const byNo = {};
+  nodes0.forEach(n => { byNo[n.id] = n; });
+  // 表→表聚合（保留来源与样例规则、以及涉及的字段）
   const agg = {};
   edges0.forEach(e => {
     const k = e.from + "→" + e.to;
     if(!agg[k]) agg[k] = {from: e.from, to: e.to, from_table: e.from_table,
                           to_table: e.to_table, count: 0, sources: {},
-                          sample: e.rule || ""};
-    agg[k].count += 1;
-    agg[k].sources[e.source] = (agg[k].sources[e.source] || 0) + 1;
+                          fields: [], sample: e.rule || ""};
+    const a = agg[k];
+    a.count += 1;
+    a.sources[e.source] = (a.sources[e.source] || 0) + 1;
+    if(a.fields.length < 6) {
+      a.fields.push(e.field + (e.dst_field ? "→" + e.dst_field : ""));
+    }
   });
   const pairs = Object.values(agg);
   const deg = {};
@@ -2621,62 +2851,110 @@ function eastErd(d){
     deg[p.from] = (deg[p.from] || 0) + p.count;
     deg[p.to] = (deg[p.to] || 0) + p.count;
   });
-  const byNo = {};
-  nodes0.forEach(n => { byNo[n.id] = n; });
-  const involved = Object.keys(deg);
-  const nodes = involved.map(id => {
-    const n = byNo[id] || {id: id, name: id, domain: "未分类"};
-    return {id: id, name: n.name, docno: n.code, kind: "table",
-            group: n.domain || "未分类", degree: deg[id] || 1};
-  });
-  const links = pairs.map(p => ({
-    from: p.from, to: p.to,
-    title: `${p.from_table} → ${p.to_table}（${p.count} 条字段关系）`,
-    color: "var(--primary)",
-  }));
-  const sel = String(STATE.east_erd || "");
-  const model = {
-    nodes: nodes, edges: links, labelAll: true,
-    pick: (id) => { STATE.east_erd = id || ""; render(); },
+  // 焦点：用户点过的表 > 度数最高 > 第一张
+  let cur = String(STATE.east_erd || "");
+  if(!cur || !byNo[cur]) {
+    cur = Object.keys(deg).sort((a, b) => deg[b] - deg[a])[0] || "";
+  }
+  const up = pairs.filter(p => p.to === cur).sort((a, b) => b.count - a.count);
+  const down = pairs.filter(p => p.from === cur).sort((a, b) => b.count - a.count);
+  const center = byNo[cur] || {id: cur, name: cur, code: "", domain: ""};
+
+  /* ---------- 画布：左上游 / 中中心 / 右下游 ---------- */
+  const BW = 300, BH = 46, GAP = 14, PAD = 20, CX = 380, CW = 300;
+  const rows = Math.max(up.length, down.length, 1);
+  const H = PAD * 2 + Math.max(rows * (BH + GAP), BH + 40) + 30;
+  const W = CX * 2 + CW;
+  const cy = PAD + (rows * (BH + GAP) - GAP) / 2 - BH / 2;   // 中心框垂直居中
+
+  const box = (x, y, title, sub, cnt, on, id) => `<g class="erbox${on ? " on" : ""}"
+      data-erdtab="${esc(id)}" style="cursor:pointer">
+      <rect x="${x}" y="${y}" width="${BW}" height="${BH}" rx="7"
+        fill="${on ? "var(--primary-l)" : "var(--card)"}"
+        stroke="${on ? "var(--primary)" : "var(--line2)"}" stroke-width="${on ? 2 : 1}"/>
+      <text x="${x + 10}" y="${y + 18}" style="font-size:12.5px;font-weight:600;fill:var(--fg)">
+        ${esc(_gCut(sub || title, 18))}</text>
+      <text x="${x + 10}" y="${y + 34}" style="font-size:11px;fill:var(--fg3)">
+        ${esc(_gCut(title, 26))}${cnt ? " · " + cnt + " 条关系" : ""}</text>
+    </g>`;
+
+  const nUp = up.length, nDown = down.length;
+  const upY = (i) => PAD + i * (BH + GAP) + Math.max(0, (rows - nUp) * (BH + GAP) / 2);
+  const dnY = (i) => PAD + i * (BH + GAP) + Math.max(0, (rows - nDown) * (BH + GAP) / 2);
+
+  const link = (x1, y1, x2, y2, label, fromLeft) => {
+    const mx = (x1 + x2) / 2;
+    return `<path d="M${x1},${y1} H${mx} V${y2} H${x2}" fill="none"
+        stroke="var(--primary)" stroke-width="1.1" opacity=".55"/>
+      <circle cx="${x2}" cy="${y2}" r="2.6" fill="var(--primary)" opacity=".8"/>
+      <text x="${mx}" y="${(y1 + y2) / 2 - 4}" text-anchor="middle"
+        style="font-size:10.5px;fill:var(--fg3)">${esc(label)}</text>`;
   };
-  const pickNode = sel ? byNo[sel] : null;
-  const up = pairs.filter(p => p.to === sel);
-  const down = pairs.filter(p => p.from === sel);
-  const row = (p, dir) => `<tr>
+
+  let svg = `<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" role="img"
+      aria-label="E-R 实体关系图" style="background:
+      radial-gradient(circle at 50% 40%, var(--card), var(--bg) 75%);border-radius:10px;
+      border:1px solid var(--line)">`;
+  up.forEach((p, i) => {
+    const y = upY(i);
+    svg += box(PAD, y, p.from_table, byNo[p.from] ? byNo[p.from].name : "", p.count, false, p.from);
+    svg += link(PAD + BW, y + BH / 2, CX, cy + BH / 2, p.count + " 条", true);
+  });
+  down.forEach((p, i) => {
+    const y = dnY(i);
+    svg += box(CX + CW, y, p.to_table, byNo[p.to] ? byNo[p.to].name : "", p.count, false, p.to);
+    svg += link(CX + CW, cy + BH / 2, CX + CW, y + BH / 2, p.count + " 条", false);
+  });
+  // 中心实体框（更高：带关联字段清单）
+  const fields = [...new Set([...up.map(p => p.fields[0] || ""), ...down.map(p => p.fields[0] || "")])]
+    .filter(Boolean).slice(0, 5);
+  const CH = BH + 14 + Math.max(0, fields.length) * 15;
+  svg += `<g>
+      <rect x="${CX}" y="${cy}" width="${CW}" height="${CH}" rx="8"
+        fill="var(--primary-l)" stroke="var(--primary)" stroke-width="2"/>
+      <text x="${CX + 12}" y="${cy + 20}" style="font-size:13px;font-weight:700;fill:var(--primary)">
+        ${esc(_gCut(center.name || cur, 20))}</text>
+      <text x="${CX + 12}" y="${cy + 37}" style="font-size:11px;fill:var(--fg2)">
+        ${esc(center.code || "")} · ${esc(center.domain || "未分类")}</text>
+      ${fields.map((f, i) => `<text x="${CX + 12}" y="${cy + 58 + i * 15}"
+        style="font-size:10.5px;fill:var(--fg3)">◇ ${esc(_gCut(f, 26))}</text>`).join("")}
+    </g>`;
+  svg += "</svg>";
+
+  const rowLi = (p, dir) => `<tr>
       <td>${dir === "up" ? "←" : "→"}</td>
-      <td class="ttl">${esc(dir === "up" ? p.from_table : p.to_table)}</td>
-      <td class="mono">${num(p.count)} 条</td>
-      <td class="muted">${Object.keys(p.sources).join(" / ")}</td>
-      <td class="muted">${esc(_gCut(p.sample, 80))}</td></tr>`;
-  const chain = sel ? `<h3 style="margin:var(--s3) 0 var(--s2)">
-      <span>「${esc((pickNode || {}).name || sel)}」的指向链路</span>
-      <span class="hint">上游 ${num(up.length)} 张表 · 下游 ${num(down.length)} 张表
-        · 共 ${num(deg[sel] || 0)} 条字段关系；再点该表取消聚焦</span></h3>
-    <div class="scrollx"><table><thead><tr>
-      <th></th><th>表</th><th>字段关系数</th><th>来源</th><th>样例规则</th>
-    </tr></thead><tbody>${[...up.map(p => row(p, "up")),
-      ...down.map(p => row(p, "down"))].join("")
-      || '<tr><td colspan="5" class="muted">该表没有表间关系</td></tr>'}</tbody></table></div>`
-    : `<div class="muted" style="margin-top:var(--s2)">点球面上任一张表 → 这里列出它的
-        **上游（谁指向它）/ 下游（它指向谁）**，图上同时只高亮这些边。</div>`;
+      <td><button class="link" data-erdtab="${esc(dir === "up" ? p.from : p.to)}">
+        ${esc(dir === "up" ? p.from_table : p.to_table)}</button></td>
+      <td class="mono">${esc(dir === "up" ? p.from : p.to)}</td>
+      <td class="num">${num(p.count)}</td>
+      <td class="muted">${esc(Object.keys(p.sources).join("/"))}</td>
+      <td class="muted">${esc(_gCut(p.fields.join("；"), 46))}</td></tr>`;
+
   return `<div class="note" style="margin-bottom:var(--s2)">
-      附件1-6 是**图片**（E-R 图（修订版）），机器不可解析；本图按其语义用
-      <b>1-5-E 表间关联规则（319 条）</b>+<b>1-3 关联数据项（362 条）</b>聚合出
-      **${num(nodes.length)} 张表 / ${num(pairs.length)} 条表间指向**，
-      与图片可逐条核对。<b>不假装解析了那张图</b>。</div>
+      附件1-6 是**图片**（E-R 图（修订版）.jpg），机器不可解析；本图按其**实体-关系语义**，
+      用 1-5-E 表间关联规则（319 条）+ 1-3「关联数据项」（362 条）重建：
+      <b>${num(nodes0.length)} 张表 / ${num(pairs.length)} 条表间指向</b>，可逐条与图片核对。
+      <b>点任一实体框可切换中心</b>（看它的上游/下游）。</div>
     <div class="kpibar" style="margin-bottom:var(--s2)">
-      ${kpi("参与表", num(nodes.length), "张")}
+      ${kpi("参与表", num(nodes0.length), "张")}
       ${kpi("表间指向", num(pairs.length), "条")}
       ${kpi("字段级关系", num(edges0.length), "条")}
-      ${kpi("单向最多", num(Math.max(1, ...pairs.map(p => p.count))), "条/对")}
+      ${kpi("当前中心上游", num(up.length), "张")}
+      ${kpi("当前中心下游", num(down.length), "张")}
     </div>
-    ${g3dBox("east.erd", model, 1040, 680,
-             "拖拽旋转 · 滚轮缩放 · **点表聚焦**（下方列出上下游链路）")}
+    <div class="scrollx">${svg}</div>
     <div class="glegend" style="margin-top:var(--s2)">
-      <span><i style="background:var(--primary)"></i>表间指向（字段级关系聚合）</span>
-      <span class="muted">节点大小 = 该表参与的关系数</span>
+      <span><i style="background:var(--primary)"></i>指向（左=上游，右=下游）</span>
+      <span class="muted">连线上的数字 = 该对表之间的字段级关系条数</span>
     </div>
-    ${chain}`;
+    <h3 style="margin:var(--s3) 0 var(--s2)">
+      <span>「${esc(center.name || cur)}」的上游/下游</span>
+      <span class="hint">共 ${num(deg[cur] || 0)} 条字段级关系；点表名可切换中心</span></h3>
+    <div class="scrollx"><table><thead><tr>
+      <th></th><th>表</th><th>表编号</th><th>关系数</th><th>来源</th><th>关联字段（样例）</th>
+    </tr></thead><tbody>${[...up.map(p => rowLi(p, "up")),
+      ...down.map(p => rowLi(p, "down"))].join("")
+      || '<tr><td colspan="6" class="muted">该表没有表间关系</td></tr>'}</tbody></table></div>`;
 }
 
 /*: 数据格式码 → 官方解释（说明书是参数化码 `M!an`，数据项是具体码 `24!an`） */
@@ -2935,6 +3213,7 @@ function applyHash(){
   CUR=id; return true;
 }
 function initNav(){
+  bindRailToggle();
   const nav=$("#nav");
   TABS.forEach(t=>{
     const b=document.createElement("button");

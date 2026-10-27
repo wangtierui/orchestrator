@@ -139,6 +139,8 @@ def human_size(num_bytes: int) -> str:
                 return f"{int(size)} B"
             return f"{size:.2f} {unit}"
         size /= 1024
+    # 签名要求必须有返回；循环到 TB 必然已返回，故这行只是兜底（理论上不可达）
+    return f"{int(num_bytes)} B"
 
 
 def get_create_time(st) -> float:
@@ -193,7 +195,7 @@ def build_tree(files):
     从文件列表构建目录树。
     只包含有文件的目录，空目录不会出现在树里。
     """
-    root = {}
+    root: dict = {}
 
     for rel, size, mtime, ctime in files:
         node = root

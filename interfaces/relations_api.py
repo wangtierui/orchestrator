@@ -417,6 +417,15 @@ def _fill_node_names(nodes: list[dict]) -> None:
             n["name_from"] = "base"
 
 
+def _pct(v: float) -> float:
+    """比例 → 百分数（1 位小数）。
+
+    抽成函数是为了**一处收窄**：`counts` 是混合类型字典（数 + 嵌套字典），
+    直接在 f-string 里做算术 mypy 会报 operator。
+    """
+    return round(float(v) * 100, 1)
+
+
 def global_graph(*, top_hubs: int = 15, top_theme_docs: int = 12,
                  top_ext_n: int = 20) -> dict:
     """**全局关系图谱**：四类关系各给一个可读视图（2026-10-23 重构）。
@@ -689,6 +698,10 @@ def global_graph(*, top_hubs: int = 15, top_theme_docs: int = 12,
              + int(st_all.get("target_class", {}).get("external") or 0))
             / int(st_all.get("file_level_denominator") or 1), 4)),
     }
+    #: `counts` 是**混合类型**字典（数、嵌套字典都有）⇒ 在 note 里直接做算术，
+    #: mypy 会把它推成 `float | dict | int` 联合类型并报错。先取出并收窄成 float。
+    cnt_ratio = counts["file_resolved_ratio"]
+    cnt_ratio = float(cnt_ratio) if isinstance(cnt_ratio, (int, float)) else 0.0
     views = [
         {"key": "internal_to_regulatory", "label": "公司制度 → 监管依据",
          "edges": len(cross_edges), "nodes": len(left) + len(right),
@@ -763,7 +776,7 @@ def global_graph(*, top_hubs: int = 15, top_theme_docs: int = 12,
                  f"{counts['internal_relations']}、制度→监管 "
                  f"{counts['cross_relations']}。"
                  f"文件类目标**语料内**定位率 "
-                 f"{round((counts['file_resolved_ratio'] or 0) * 100, 1)}%"
+                 f"{_pct(cnt_ratio)}%"
                  f"（分母 {counts['file_denominator']}，已剔除机关名）；"
                  f"另有 {counts['external_total']} 条外部法规已登记为独立键空间"
                  f"（`RFN-EXT-*`，覆盖 {counts['external_evidence']} 条关系）；"

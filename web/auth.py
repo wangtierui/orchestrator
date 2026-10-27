@@ -501,6 +501,9 @@ def main(argv: list[str] | None = None) -> int:
         print("提示：共享口令**无法审计到人**；需要到人请用 "
               "`token --for <user>` 颁发个人令牌。")
         return ExitCode.OK
+    # 走到这里 = 没有匹配到任何子命令分支（argparse 之外是手工分发）。
+    # 显式返回失败码：签名是 `-> int`，落到函数末尾会返回 None（mypy: Missing return）。
+    return ExitCode.FAIL
 
 if __name__ == "__main__":
     raise SystemExit(main())

@@ -173,26 +173,25 @@ class TestNoTruncationAndSidebar:
     """2026-10-27 用户要求：说明类文本**禁止省略号缩减**；关键页改左侧栏。"""
 
     def test_no_gcut_in_east_text_cells(self) -> None:
-        import re
+        """表格里的说明/定义/规则**必须全文**；只允许**图形标签**截断。
 
+        2026-10-27 变更：E-R 实体框的标签要截断（300px 框放不下长表名），
+        故判据从"整段禁止 `_gCut`"收窄为"表格函数禁止"。
+        """
         h = _html()
-        i = h.index("function eastTables(")
-        j = h.index("function bindRegstats(")
-        seg = h[i:j]
-        # 允许在"取值范围未链接"的 title 里用，但不允许作为**显示文本**截断
-        bad = [m for m in re.findall(r"_gCut\([^)]*\),\s*(?:4[0-9]|5[0-9]|6[0-9]|9[0-9])\)", seg)]
-        assert not bad, bad[:3]
-        for fn in ("eastElements", "eastCodes"):
-            k = seg.index(f"function {fn}(")
-            k2 = seg.index("function ", k + 10) if "function " in seg[k + 10:] else len(seg)
-            body = seg[k:k2]
-            assert "_gCut(" not in body, f"{fn} 仍在截断文本"
+        for fn_name in ("eastTables", "eastElements", "eastCodes", "eastRules"):
+            i = h.index(f"function {fn_name}(")
+            j = h.index("\nfunction ", i)
+            body = h[i:j]
+            assert "_gCut(" not in body, f"{fn_name} 仍在截断表格文本"
 
     def test_sidebar_shell_used_by_key_pages(self) -> None:
         h = _html()
         assert "function sideShell(" in h
-        for key in ("graph", "east", "laws", "rules", "worklist", "flow", "release"):
+        # 监管统计改用**两级**侧栏 `eastSide()`（EAST / 统计制度），其余仍是 sideShell
+        for key in ("graph", "laws", "rules", "worklist", "flow", "release"):
             assert f'sideShell("{key}"' in h, key
+        assert "function eastSide(" in h and "EAST_SCOPES" in h
 
     def test_release_evidence_moved_to_overview(self) -> None:
         h = _html()
@@ -209,5 +208,7 @@ class TestNoTruncationAndSidebar:
         assert "function eastErd(" in h, "缺表级 E-R 图"
         body = h[h.index("function eastErd("):]
         body = body[:body.index("\nfunction ")]
-        assert "pick:" in body, "E-R 图未接点击聚焦"
+        # 2D 实体框：点框/点表名都走 `data-erdtab` 委托（不再是 3D 的 pick 回调）
+        assert "data-erdtab" in body, "E-R 实体框不可点选"
         assert "上游" in body and "下游" in body, "缺上下游链路说明"
+        assert "g3dBox(" not in body, "E-R 又用回 3D（与关系图重复呈现）"
