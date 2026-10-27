@@ -216,14 +216,9 @@ th.sortable .arw{font-size:10px;opacity:.85}
   font-size:12px;background:var(--card)}
 .g3n circle{transition:r .12s}
 
-/*: 左侧标签栏（2026-10-27，参照 GitHub Issues 双栏布局）
- * 为什么不是顶部页签：页签多了横向挤，而且"第二维"（主题/kind/节点/日期）
- * 没有地方放 —— 放左边才像目录，放上面只能再排一行筛选器。 */
-.sidewrap{display:grid;grid-template-columns:212px minmax(0,1fr);gap:var(--s4);
-  align-items:start}
-@media (max-width:980px){.sidewrap{grid-template-columns:1fr}.side{position:static;max-height:none}}
-.side{position:sticky;top:12px;border:1px solid var(--line);border-radius:10px;
-  background:var(--card);padding:6px;max-height:calc(100vh - 120px);overflow:auto}
+/*: 左栏（页面级，位于 `main` 之外 —— 2026-10-27 第一百二十批）
+ * 历史：曾用 `.sidewrap` 把 aside 塞进内容卡片，结果是"卡中卡"、折叠要逐页实现、
+ * 切页时左栏位置跳动。现在只有一套实现：`#rail` + `.rail`。 */
 .side-h{font-size:11.5px;letter-spacing:.04em;color:var(--fg3);padding:6px 8px 4px}
 .sideitem{display:flex;align-items:center;gap:8px;width:100%;border:0;background:none;
   padding:6px 8px;border-radius:7px;font-size:12.5px;color:var(--fg);cursor:pointer;
@@ -233,7 +228,6 @@ th.sortable .arw{font-size:10px;opacity:.85}
 .sideitem .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sideitem .cnt{font-size:11px;color:var(--fg3);font-variant-numeric:tabular-nums}
 .sideitem .dot{width:7px;height:7px;border-radius:50%;flex:none}
-.sidebody{min-width:0}
 
 /*: 2026-10-27（用户第 2/8 条）：
  *   · `.grid.g3` = **固定 3 列**（不是 auto-fit）—— 卡片宽度只由列数决定，
@@ -244,14 +238,11 @@ th.sortable .arw{font-size:10px;opacity:.85}
 @media (max-width:1280px){.grid.g3{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:820px){.grid.g3{grid-template-columns:1fr}}
 .grid.g3>.section{margin:var(--s5) 0 0}
-main{max-width:1760px;padding:var(--s4) var(--s5)}
 .card{padding:var(--s4)}
 
 /*: 左侧栏折叠（2026-10-27 用户第 8 条：GitHub 三段式布局）
  * 折叠后内容区占满宽度；状态存 localStorage，跨页面/刷新保持。
  * 二级项用 `.sideitem-sub`（缩进 + 前置点），让"EAST → 数据表"这类层级一眼看出。 */
-body.rail-off .sidewrap{grid-template-columns:1fr}
-body.rail-off .side{display:none}
 .railToggle{border:1px solid var(--line);background:var(--card);color:var(--fg2);
   border-radius:7px;width:30px;height:30px;line-height:1;cursor:pointer;font-size:14px;
   display:inline-flex;align-items:center;justify-content:center;margin-right:2px}
@@ -262,6 +253,24 @@ body.rail-off .side{display:none}
 .card .src{margin-top:var(--s2)}
 .section{margin:var(--s5) 0 var(--s2)}
 h3.near{margin-top:var(--s1)}
+
+/*: GitHub 三块式（2026-10-27 第一百二十批）
+ *   顶栏（品牌/状态）+ 横向页面导航 + **页面级左栏** + 内容
+ * 为什么左栏必须放在 main 外：放在卡片里会随内边距缩进、且折叠要逐页实现；
+ * 现在它是 sticky 的固定列，折叠只需一个 body class。 */
+.shell{display:grid;grid-template-columns:232px minmax(0,1fr);gap:var(--s4);
+  max-width:1760px;margin:0 auto;padding:var(--s4) var(--s5);align-items:start}
+.rail{position:sticky;top:104px;border:1px solid var(--line);border-radius:10px;
+  background:var(--card);padding:6px;max-height:calc(100vh - 128px);overflow:auto}
+.rail[hidden]{display:none}
+body.rail-off .shell{grid-template-columns:minmax(0,1fr)}
+body.rail-off .rail{display:none}
+body.rail-empty .shell{grid-template-columns:minmax(0,1fr)}
+main{max-width:none;margin:0;padding:0;min-width:0}
+@media (max-width:980px){
+  .shell{grid-template-columns:minmax(0,1fr);padding:var(--s3)}
+  .rail{position:static;max-height:none;order:2}
+}
 </style>
 </head>
 <body>
@@ -282,7 +291,10 @@ h3.near{margin-top:var(--s1)}
   <nav><div class="nwrap" id="nav"></div></nav>
 </header>
 
-<main id="view"><div class="card">加载中…</div></main>
+<div class="shell" id="shell">
+  <aside class="rail" id="rail" aria-label="本页导航"></aside>
+  <main id="view"><div class="card">加载中…</div></main>
+</div>
 <div class="foot">本地只读确认台 · loopback-only · 无鉴权 · 零外链</div>
 <div class="toast" id="toast"></div>
 
@@ -349,24 +361,55 @@ const SRC_LABEL = {
 
 
 /*: 左侧栏外壳：`items` = [{key,label,count?,dot?,title?}] */
-function sideShell(key, items, cur, body, title){
-  const list = items.map(it => `<button class="sideitem${String(it.key) === String(cur) ? " on" : ""}"
-      data-side="${esc(key)}" data-skey="${esc(it.key)}"
+/*: 本页导航的**登记**与渲染。
+ *
+ * 视图只声明"我这一页有哪些节"（`railSet`），不再自己画 aside；
+ * 渲染完由 `paintRail()` 统一画进 `#rail` —— 这样折叠/样式/选中态只有一处实现。 */
+let RAILCFG = null;
+
+function railSet(title, items, cur){
+  RAILCFG = {title: title || "本页", items: items || [],
+             cur: String(cur == null ? "" : cur)};
+}
+
+function paintRail(){
+  const rail = $("#rail");
+  if(!rail) return;
+  const cfg = RAILCFG;
+  if(!cfg || !cfg.items.length){
+    rail.hidden = true;
+    document.body.classList.add("rail-empty");
+    return;
+  }
+  rail.hidden = false;
+  document.body.classList.remove("rail-empty");
+  rail.innerHTML = `<div class="side-h">${esc(cfg.title)}</div>` + cfg.items.map(it => `
+    <button class="sideitem${(it.on != null ? it.on : String(it.skey) === cfg.cur)
+      ? " on" : ""}${it.level === 2 ? " sideitem-sub" : ""}"
+      data-side="${esc(it.side)}" data-skey="${esc(it.skey)}"
       title="${esc(it.title || it.label || "")}">
       ${it.dot ? `<span class="dot" style="background:${esc(it.dot)}"></span>` : ""}
       <span class="nm">${esc(it.label)}</span>
       ${it.count != null ? `<span class="cnt">${num(it.count)}</span>` : ""}
     </button>`).join("");
-  return `<div class="sidewrap">
-      <aside class="side">${title ? `<div class="side-h">${esc(title)}</div>` : ""}${list}</aside>
-      <div class="sidebody">${body}</div>
-    </div>`;
+}
+
+/*: 兼容旧调用：`sideShell(key, items, cur, body)` = 登记 + 返回 body（不再包 aside）。 */
+function sideShell(key, items, cur, body, title){
+  railSet(title || "本页",
+    items.map(it => ({side: key, skey: it.key, label: it.label, count: it.count,
+                      dot: it.dot, title: it.title})), cur);
+  return body;
 }
 
 /*: 左侧栏点击 → 各页状态位（集中一处，避免每页各写一遍监听） */
 const SIDE_ACT = {
   graph: (k) => { STATE.graph = Object.assign({}, obj(STATE.graph), {view: k}); },
   east:  (k) => { STATE.east_scope = "east"; STATE.east_tab = k; },
+  /* ⚠️ 2026-10-27 用户第 1 条：二级页签原来**没有动作键**（eastSide 发出的是
+   * `data-side="east_tab"`，而 SIDE_ACT 里只有 `east`）⇒ 点了完全没反应，
+   * 且不报错（委托里 `act` 为 undefined 就静默跳过）。这就是那个 bug 的根因。 */
+  east_tab: (k) => { STATE.east_scope = "east"; STATE.east_tab = k; },
   east_scope: (k) => { STATE.east_scope = k || "east"; },
   stat_tab: (k) => { STATE.stat_tab = k || "reg"; },
   laws:  (k) => { STATE.laws = Object.assign({}, obj(STATE.laws), {theme: k, page: 1}); },
@@ -583,7 +626,7 @@ function viewOverview(d, assets, publish, rel){
                {key: "ov-01", label: "01 运行与风险", count: 6},
                {key: "ov-02", label: "02 产物与发布", count: 5}];
   const body = `<div class="grid g3">
-    <div id="ov-kpi">${kpis}</div>
+    <div id="ov-kpi" style="grid-column:1/-1">${kpis}</div>
     ${sec("01", "运行与风险", "回答\"现在健康吗、有没有欠账\"").replace(
       '<div class="section"', '<div id="ov-01" class="section"')}
     ${card("运行健康","最近一次运行",runHtml,rh.source,rh.fetched_at)}
@@ -603,14 +646,9 @@ function viewOverview(d, assets, publish, rel){
       + `<div class="muted" style="margin-top:6px">提交明细按日期看 → 「发布事件」</div>`,
       r0.source || "git", r0.fetched_at)}
   </div>`;
-  return `<div class="sidewrap">
-      <aside class="side"><div class="side-h">本页</div>
-        ${toc.map(x => `<button class="sideitem" data-side="toc" data-skey="${esc(x.key)}">
-          <span class="nm">${esc(x.label)}</span>
-          ${x.count != null ? `<span class="cnt">${num(x.count)}</span>` : ""}</button>`).join("")}
-      </aside>
-      <div class="sidebody">${body}</div>
-    </div>`;
+  railSet("本页", toc.map(x => ({side: "toc", skey: x.key, label: x.label,
+                                   count: x.count})), "");
+  return body;
 }
 
 /* ---------------- P1 数据流转（分层 DAG） ---------------- */
@@ -1123,6 +1161,7 @@ function bindLogin(){
 
 async function render(){
   const v=$("#view");
+  RAILCFG = null;          // 每轮重来：视图没登记就说明本页没有第二维
   try{
     // 认证闸门：未登录且服务端开了认证 ⇒ 只渲染登录卡片（不请求任何数据接口）
     const au = await ensureHealth();
@@ -1228,6 +1267,7 @@ async function render(){
     v.innerHTML=card("渲染异常","",`<div class="pill bad">⚠ 前端异常</div>
       <div class="note">${esc(String(e&&e.stack?e.stack:String(e)))}</div>`,"web 前端");
   }finally{
+    paintRail();           // 所有分支（含登录/异常）都走这里，侧栏才不会残留上一页
     $("#stamp").textContent = "抓取 "+new Date().toLocaleTimeString();
   }
 }
@@ -1791,11 +1831,6 @@ function bindG3d(){
     const redraw = () => {
       // 只换内容，不换 svg 元素（否则 pointer 监听丢失 → "转一下就死住"）
       svg.innerHTML = _g3dInner(key, W, H);
-      // ⚠️ 必须清掉 nodes 标记：`bindG3dNodes` 用 `dataset.nodes === "1"` 防重复绑定，
-      // 而 innerHTML 换过之后**旧节点已不存在**、新节点还没绑 —— 不清标记就会出现
-      // "转一下之后点节点没反应"（实测用户报障）。
-      svg.dataset.nodes = "0";
-      bindG3dNodes(key, svg);
     };
     const onDown = (ev) => {
       drag = {x: ev.clientX, y: ev.clientY, moved: 0,
@@ -1812,7 +1847,32 @@ function bindG3d(){
         drag.raf = requestAnimationFrame(() => { drag.raf = 0; redraw(); });
       }
     };
-    const onUp = () => { drag = null; };
+    /* 点选**不能**依赖节点上的 click 监听：
+     * `setPointerCapture` 之后，浏览器把后续 pointer 事件重定向到 svg，
+     * 合成的 `click` 的 target 也变成 svg 本身（不是被点的 `<g>`）⇒ 节点监听永不触发。
+     * 这正是"点节点聚焦失效"的根因（上一版重绑 dataset 标记只是缓解，不是根治）。
+     * 正解：在 pointerup 里按**坐标**命中元素（moved 很小才算点击，避免拖拽误触）。
+     */
+    const pickAt = (ev) => {
+      const el = document.elementFromPoint(ev.clientX, ev.clientY);
+      const g = el && el.closest ? el.closest(".g3n") : null;
+      if (!g) return false;
+      const id = g.dataset.nid || "";
+      const st = G3D_ST[key];
+      st.sel = (st.sel === id) ? "" : id;
+      const m = G3D_MODEL[key] || {};
+      if (typeof m.pick === "function") { m.pick(st.sel); return true; }
+      svg.innerHTML = _g3dInner(key, W, H);
+      return true;
+    };
+    const onUp = (ev) => {
+      const d = drag;
+      drag = null;
+      if (!d) return;
+      if (d.moved <= 6 && ev && ev.clientX != null) {
+        try { pickAt(ev); } catch (e) { /* 命中失败不该影响拖拽 */ }
+      }
+    };
     svg.addEventListener("pointerdown", onDown);
     svg.addEventListener("pointermove", onMove);
     svg.addEventListener("pointerup", onUp);
@@ -1830,33 +1890,6 @@ function bindG3d(){
       G3D_ST[key] = {yaw: -0.55, pitch: 0.32, zoom: 1, sel: ""};
       render();
     };
-  });
-  $$(".g3svg", v).forEach(svg => {
-    bindG3dNodes(svg.dataset.g3 || "", svg);
-  });
-}
-
-/*: 绑定节点点击（可重复调用：innerHTML 换过就重绑，未换则跳过） */
-function bindG3dNodes(key, svg){
-  if(!svg || svg.dataset.nodes === "1") return;
-  svg.dataset.nodes = "1";
-  const model = G3D_MODEL[key] || {};
-  $$(".g3n", svg).forEach(g => {
-    g.addEventListener("click", (ev) => {
-      ev.stopPropagation();
-      const id = g.dataset.nid;
-      const st = G3D_ST[key];
-      st.sel = (st.sel === id) ? "" : id;
-      // 调用方可以要求"点选后整页重绘"（如 E-R 图要同步刷新下方的链路清单）。
-      // 其余视图只换 SVG 内容 —— 整页重绘会丢掉拖拽位置以外的滚动上下文。
-      if (typeof model.pick === "function") {
-        model.pick(st.sel);
-        return;
-      }
-      svg.dataset.nodes = "0";          // 允许重绘后重绑
-      svg.innerHTML = _g3dInner(key, 1040, 620);
-      bindG3dNodes(key, svg);
-    });
   });
 }
 
@@ -2145,6 +2178,8 @@ function _gTheme(d){
 function viewGraph(d){
   if (!d || d.available === false) return unavail(obj(d), "关系图谱");
   if (d.mode === "global") return viewGraphGlobal(d);   // 无中心 ⇒ 全局视图
+  /* 局部图也要有左栏：否则内容区突然变宽、且左上角少了返回路径（破坏三段式的稳定感）。 */
+  railSet("视图", [{side: "graph", skey: "overview", label: "← 回到全局视图"}], "");
   const nodes = arr(d.nodes), edges = arr(d.edges), center = obj(d.center);
   const c = obj(d.counts);
   const head = `<div class="toolbar">
@@ -2277,7 +2312,12 @@ function goGraph(ref){
  * 仍留在 `viewRegstats` 顶部（那是全页共识，不属于某个页签）。
  */
 function eastRegstatsDocs(d){
-  const cats = arr(d.categories), cov = obj(d.coverage);
+  /* 2026-10-27 用户第 3 条：EAST **概览**只应显示"EAST / 监管数据标准化"这一条；
+   * 监管统计制度 / 统计指标与报送 / 金融统计制度 三分类已归到「统计制度 → 监管制度」，
+   * 不能再在概览里重复出现（同一批文件出现在两个地方，读者会以为是两批）。
+   */
+  const cats = arr(d.categories).filter(c => String(c.label || "").includes("EAST"));
+  const cov = obj(d.coverage);
   if (!cats.length) return "";
   const sections = cats.map(cat => {
     const items = arr(cat.items);
@@ -2382,32 +2422,35 @@ const STAT_TABS = [
   {key: "corp", label: "公司制度"},
 ];
 
+/*: 监管统计的两级导航 → 登记到 rail（一级=scope，二级=页签）。
+ *
+ * ⚠️ 二级项的动作键必须是 `east_tab` / `stat_tab`（与 SIDE_ACT 对应）；
+ * 早前写成 `data-side="east_tab"` 却没在 SIDE_ACT 注册，症状就是"点了没反应"。
+ */
 function eastSide(scope, tab, statTab){
-  /* 参数化按钮：`side` 是动作键、`skey` 是取值 —— 不再"先生成再替换"，
-   * 那种写法改一个空格就静默失效（点了没反应也不报错）。 */
-  const item = (side, skey, label, on, cnt, sub) => `<button
-      class="sideitem${sub ? " sideitem-sub" : ""}${on ? " on" : ""}"
-      data-side="${esc(side)}" data-skey="${esc(skey)}" title="${esc(label)}">
-      <span class="nm">${esc(label)}</span>
-      ${cnt != null ? `<span class="cnt">${num(cnt)}</span>` : ""}</button>`;
   const st = obj(STATE.east).stats;
   const tabCount = (k) => k === "tables" ? st.tables
     : k === "elements" ? arr(obj(STATE.east).elements).length
     : k === "codes" ? st.code_tables
     : k === "rules" ? st.rules
     : k === "er" ? st.er_edges : null;
-  let html = `<div class="side-h">规范与制度</div>`;
-  html += item("east_scope", "east", "EAST", scope === "east", null, false);
+  const items = [{side: "east_scope", skey: "east", label: "EAST",
+                  level: 1, cur: scope === "east"}];
   if (scope === "east") {
-    html += EAST_TABS.map(x => item("east_tab", x.k, x.n, tab === x.k,
-      tabCount(x.k), true)).join("");
+    EAST_TABS.forEach(x => items.push({side: "east_tab", skey: x.k, label: x.n,
+                                       level: 2, count: tabCount(x.k),
+                                       cur: tab === x.k}));
   }
-  html += item("east_scope", "stat", "统计制度", scope === "stat", null, false);
+  items.push({side: "east_scope", skey: "stat", label: "统计制度",
+              level: 1, cur: scope === "stat"});
   if (scope === "stat") {
-    html += STAT_TABS.map(x => item("stat_tab", x.key, x.label,
-      statTab === x.key, null, true)).join("");
+    STAT_TABS.forEach(x => items.push({side: "stat_tab", skey: x.key, label: x.label,
+                                       level: 2, cur: statTab === x.key}));
   }
-  return html;
+  /* 两级导航天然有**两个**选中项（一级 + 它下面的二级），单一 `cur` 表达不了 ⇒
+   * 每项自带 `on`，`paintRail` 优先用它。 */
+  railSet("规范与制度", items.map(it => ({...it, on: !!it.cur})), "");
+  return items;
 }
 
 /*: 监管制度 = 三个分类合并成一张表（保留「分类」列，合并的是层级不是来源）。 */
@@ -2480,9 +2523,8 @@ function eastSection(regstats){
       : tab === "er" ? eastEr(d)
       : tab === "erd" ? eastErd(d)
       : eastOverview(d, regstats));
-  return head + `<div class="sidewrap">
-      <aside class="side">${eastSide(scope, tab, statTab)}</aside>
-      <div class="sidebody">${body}</div></div>`;
+  eastSide(scope, tab, statTab);        // 只登记导航，不再包 aside
+  return head + body;
 }
 
 /* ---------------- 概览：覆盖度 + 附件清单 ---------------- */

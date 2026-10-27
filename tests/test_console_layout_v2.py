@@ -79,10 +79,13 @@ class TestOverviewEqualWidth:
         for k in ('<div class="grid">', '<div class="grid two">'):
             assert k not in body, f"仍有按板块自建的栅格：{k}"
 
-    def test_kpi_is_normal_cell(self, h: str) -> None:
+    def test_kpi_spans_row(self, h: str) -> None:
+        """2026-10-27 用户澄清：**关键指标不必**与 01/02 内模块对齐。
+
+        KPI 是"顶部汇总带"，与内容模块不同轴 —— 强制同宽会让 4 个数字挤成 2×2。
+        """
         body = fn(h, "viewOverview")
-        assert '<div id="ov-kpi">' in body, "KPI 仍跨整行 ⇒ 与其它模块不等宽"
-        assert "grid-column:1/-1" in body          # 只给板块标题跨行
+        assert '<div id="ov-kpi" style="grid-column:1/-1">' in body, "KPI 未横跨整行"
 
     def test_css_fixed_columns(self, h: str) -> None:
         assert ".grid.g3{grid-template-columns:repeat(3,minmax(0,1fr))}" in h
@@ -145,12 +148,14 @@ class TestTwoLevelNav:
 
     def test_scopes(self, h: str) -> None:
         assert "const EAST_SCOPES" in h and "const STAT_TABS" in h
-        assert 'item("east_scope", "east"' in fn(h, "eastSide")
-        assert 'item("east_scope", "stat"' in fn(h, "eastSide")
+        side = fn(h, "eastSide")
+        assert 'side: "east_scope", skey: "east"' in side
+        assert 'side: "east_scope", skey: "stat"' in side
 
     def test_sub_tabs(self, h: str) -> None:
         side = fn(h, "eastSide")
-        assert "EAST_TABS.map" in side and "STAT_TABS.map" in side
+        assert "EAST_TABS.forEach" in side and "STAT_TABS.forEach" in side
+        assert 'side: "east_tab"' in side and 'side: "stat_tab"' in side
 
     def test_merged_reg_categories(self, h: str) -> None:
         body = fn(h, "eastStatReg")
@@ -172,12 +177,14 @@ class TestGithubLayout:
         assert 'localStorage.setItem("rail"' in h
 
     def test_css(self, h: str) -> None:
-        assert "body.rail-off .side{display:none}" in h
+        assert "body.rail-off .rail{display:none}" in h
         assert ".railToggle{" in h
+        assert ".shell{display:grid;grid-template-columns:232px minmax(0,1fr)" in h
 
     def test_tight_spacing(self, h: str) -> None:
-        assert "main{max-width:1760px;padding:var(--s4) var(--s5)}" in h
+        assert "max-width:1760px" in h, "内容区最大宽未放宽"
         assert ".card{padding:var(--s4)}" in h
+        assert ".shell{" in h and "padding:var(--s4) var(--s5)" in h
 
 
 class TestDataSupportsNav:

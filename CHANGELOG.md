@@ -4204,3 +4204,61 @@ EAST（7）        : 概览 / 数据表 / 数据元 / 代码表 / 检核规则 /
   （顶栏 ☰ 或 `Ctrl+B`，状态存 `localStorage`）；总览也补了「本页」目录；
 * 内容：`max-width 1560→1760`、`main` 与 `.card` 内边距各收一档，信息密度上去了；
 * 二级项加 `.sideitem-sub`（缩进 + 前置点），"EAST → 数据表"这类层级一眼看出。
+
+## [Unreleased] 2026-10-27 — 布局 v3（页面级左栏 / 死点击不变式 / 3D 点选根治）（第一百二十批）
+
+### ① EAST 二级页签"点了没反应"——根因是**动作键没人接**
+
+`eastSide` 给二级页签发的是 `data-side="east_tab"`，而 `SIDE_ACT` 里只有 `east`
+（第 118 批的旧键）⇒ 事件委托里 `act` 为 `undefined`，**静默跳过**：不报错、不动作。
+这正是"点了没反应却查不到错"的典型形态。
+
+修：注册 `east_tab` / `stat_tab`，并加**不变式守卫**：
+> 页面里出现的每一个 `data-side` / `side:` 动作键，必须在 `SIDE_ACT` 里有处理函数。
+
+这条判据（`tests/test_console_layout_v3.py::TestNoDeadClicks`）能兜住**整类**"死点击"，
+不依赖下次还记得。
+
+### ② 关键指标不再与 01/02 内模块对齐
+
+KPI 是"顶部汇总带"，与内容模块不同轴；强行同宽会把 4 个数字挤成 2×2。
+现 `#ov-kpi` 横跨整行（`grid-column:1/-1`），01/02 内的 11 个模块仍是同一固定 3 列网格。
+
+### ③ EAST 概览只显示 EAST 分类
+
+三个统计制度分类（监管统计制度 / 统计指标与报送 / 金融统计制度）已归到
+「统计制度 → 监管制度」，但概览里**仍在重复显示**（同一批文件在两个地方出现，
+读者会以为是两批）。现 `eastRegstatsDocs` 只取 label 含 `EAST` 的分类；
+"监管制度"页（`eastStatReg`）排除该分类并保留「分类」列。
+
+### ④ 3D 点节点聚焦失效——`setPointerCapture` 把 click 的 target 改了
+
+`svg.setPointerCapture(pointerId)` 之后，后续 pointer 事件被重定向到 svg，
+合成的 `click` 的 **target 也变成 svg 本身**（不是被点的 `<g>`）⇒ 节点上的 click 监听
+**永不触发**。上一版"重绑 dataset 标记"只是缓解，不是根治。
+
+修：改在 `pointerup` 里按**坐标**命中（`document.elementFromPoint` + `closest(".g3n")`），
+并要求 `moved <= 6`（拖拽不误触）；删掉逐节点绑定的 `bindG3dNodes` 全部实现。
+
+### ⑤ 布局重做为 GitHub 三段式（页面级左栏）
+
+| 位置 | 内容 |
+|---|---|
+| 顶部 | 品牌 + 状态徽标 + **横向页面导航** + ☰ 折叠 |
+| 左侧 | **页面级** `#rail`（sticky，位于 `main` 之外）：本页第二维——图谱视图 / EAST 两级 / 主题 / kind / 节点抽屉 / 日期流 / 总览目录 |
+| 内容 | `#view`（`main` 内不再自带 aside） |
+
+实现要点：
+* 视图只"登记"本页有哪些节（`railSet`），渲染完由 `paintRail()` **统一画一次**；
+  `render()` 的 `finally` 调用，登录/异常分支也不会残留上一页的导航；
+* 两级导航支持**逐项高亮**（一级 + 其下二级同时亮）；
+* 折叠：顶栏 ☰ / `Ctrl+B`，状态存 `localStorage`；本页无第二维时自动隐藏左栏
+  （`body.rail-empty`），内容占满宽度；
+* 旧方案 `.sidewrap`（把 aside 塞进内容卡片）**整套删除** —— 卡中卡、折叠逐页实现、
+  切页位置跳动，都是它的副作用。
+
+### ⑥ 遗留
+
+mypy 存量继续收敛（本批未新增；生产层 `interfaces/`、`web/`、根级已清零）。
+TD-36（前端无 runtime 冒烟）：本机 Python 3.14 上 `quickjs` 无 wheel、构建失败，
+离线 DOM 桩暂不可行；本批以**不变式守卫**（死点击）补上最有价值的一类。
