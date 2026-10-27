@@ -365,9 +365,19 @@ class TestFrontendContract:
             assert name in h, f"缺页签名称 {name}"
 
     def test_github_logo_is_inline_svg(self) -> None:
+        """批 124：logo 改由**本地 Octicons** 注入（仍是内联 SVG，只是不再硬编码在 HTML 里）。
+
+        判据从"HTML 里有没有那段 path"改为"注入点 + 图标源"：
+        `#brandIco` 存在、`initChrome` 里注入 `mark-github`、`octicons.js` 里确有该图标。
+        """
         h = _html()
-        assert 'viewBox="0 0 16 16"' in h, "logo 不是内联 SVG"
-        assert "M8 0C3.58 0 0 3.58 0 8" in h, "logo 路径不是 GitHub 标记"
+        assert 'id="brandIco"' in h, "缺 logo 注入点"
+        chrome = h[h.index("function initChrome("):]
+        chrome = chrome[:chrome.index("function ", 10)]
+        assert 'setIco("#brandIco", "mark-github", 16)' in chrome, "logo 未使用官方 mark-github"
+        oct_js = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                              "web", "assets", "octicons.js")
+        assert '"mark-github"' in open(oct_js, encoding="utf-8").read(), "octicons.js 缺 mark-github"
 
     def test_zero_external_links(self) -> None:
         """零 CDN 纪律：页面不得出现 http(s) 外链（logo 必须内联）。"""
