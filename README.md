@@ -891,7 +891,18 @@ python -m tools.repair_attachment_text --docno "金非银检函〔2025〕82号" 
 | 视觉 | 主按钮 `#1a7f37`；仅小控件 6px 圆角；面板无外阴影 |
 | 图标 | `web/assets/favicon.svg`（单文件 SVG，`/favicon.svg` 直出 `image/svg+xml`） |
 
-**官方资源（本地化）**：`web/assets/primer.css`（官方 @primer/css 21.5.1 原样，727KB）
+**官方资源（本地化，全量）**：
+
+| 文件 | 来源 | 覆盖 |
+|---|---|---|
+| `web/assets/primer-primitives.css`（543 KB） | `@primer/primitives@10.4.0` | 基础令牌 + **全部 9 个主题** |
+| `web/assets/primer.css`（727 KB） | `@primer/css@21.5.1` | **全部组件**（编译产物） |
+| `web/assets/octicons.js`（309 KB） | `@primer/octicons@19.11.0` | **329/330 个图标**（16/24px） |
+
+引入顺序固定：primitives → primer.css → 自有 `<style>`；**运行时零外链**
+（`/primer-primitives.css`、`/primer.css`、`/octicons.js` 均由本地 `web/assets/` 直出）。
+
+`web/assets/primer.css`（官方 @primer/css 21.5.1 原样，727KB）
 先于自有 `<style>` 引入；`web/assets/octicons.js`（官方 Octicons 子集 67 个，60KB）
 提供 `oct(name,size)`。**运行时零外链**；页面图标（Logo/侧栏/排序/菜单/状态/批量/pager）
 全部改用 Octicons，符号图标已清零。服务端静态路由按 basename 读盘，未改路由。

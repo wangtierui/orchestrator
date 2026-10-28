@@ -34,6 +34,21 @@ def oct_js() -> str:
     return open(os.path.join(ASSETS, "octicons.js"), encoding="utf-8").read()
 
 
+def fn(src: str, name: str) -> str:
+    """取出一个函数体（与其它契约测试里的同名工具一致，避免跨文件 import）。"""
+    i = src.index(f"function {name}(")
+    depth, k = 0, src.index("{", i)
+    while k < len(src):
+        if src[k] == "{":
+            depth += 1
+        elif src[k] == "}":
+            depth -= 1
+            if depth == 0:
+                return src[i:k + 1]
+        k += 1
+    raise AssertionError(name)
+
+
 class TestVendorAssets:
     """一、官方资源必须落地为本地文件，且被正确引用。"""
 
@@ -172,3 +187,89 @@ class TestNoRegression:
         """本批只加静态文件，不改路由表：`web/api.py` 里不能出现 v2 之类新前缀。"""
         src = open(os.path.join(ROOT, "web", "api.py"), encoding="utf-8").read()
         assert "/api/v2" not in src
+
+class TestFullOfflineAssets:
+    """第 1 问：三个官方包是否**全量**且**全部本地**。"""
+
+    def test_primitives_css_present(self) -> None:
+        p = os.path.join(ASSETS, "primer-primitives.css")
+        assert os.path.exists(p), "缺 primer-primitives.css"
+        assert os.path.getsize(p) > 300_000
+        css = open(p, encoding="utf-8", errors="replace").read()
+        # 基础令牌 + 主题（light/dark 及其无障碍变体都在同一个文件里）
+        for token in ("--base-size-4", "--borderRadius-medium",
+                      "--control-medium-size", "--text-body-size-medium"):
+            assert token in css, token
+        assert "[data-color-mode=dark]" in css or "data-dark-theme" in css
+
+    def test_primitives_linked_before_primer(self, h: str) -> None:
+        i_prim = h.index('href="primer-primitives.css"')
+        i_primer = h.index('href="primer.css"')
+        i_style = h.index("\n<style>")
+        assert i_prim < i_primer < i_style, "令牌必须最先、组件次之、自有样式最后"
+
+    def test_all_octicons(self, oct_js: str) -> None:
+        payload = oct_js[oct_js.index("var ICONS = ") + len("var ICONS = "):]
+        payload = payload[:payload.index(";\n  function oct")]
+        icons = json.loads(payload)
+        assert len(icons) >= 320, f"图标不全：只有 {len(icons)} 个"
+        for name in ("zap", "beaker", "law", "mark-github", "sidebar-collapse"):
+            assert name in icons, name
+
+    def test_all_assets_local(self, h: str) -> None:
+        for f in ("primer-primitives.css", "primer.css", "octicons.js", "favicon.svg"):
+            assert os.path.exists(os.path.join(ASSETS, f)), f
+            assert f in h, f"{f} 未被页面引用"
+        assert not re.findall(r'(?:href|src)="https?://', h)
+
+
+class TestLoggedInHeader:
+    """第 2-3 条：登录态顶栏浅灰、无下边框；Logo 左、控件右。"""
+
+    def test_light_header(self, h: str) -> None:
+        assert "--header-bg:#f6f8fa" in h
+        gh = h[h.index(".global-header{"):]
+        gh = gh[:gh.index("}")]
+        assert "background:var(--header-bg)" in gh and "border-bottom:0" in gh
+
+    def test_search_box_is_light(self, h: str) -> None:
+        seg = h[h.index(".gsearch input{"):]
+        seg = seg[:seg.index("}")]
+        assert "background:var(--bg)" in seg and "color:var(--text)" in seg
+        assert "rgba(255,255,255" not in seg, "搜索框仍是深色头专用样式"
+
+    def test_controls_right_logo_left(self, h: str) -> None:
+        head = h[h.index('<header class="global-header"'):]
+        head = head[:head.index("</header>")]
+        # 品牌在控件组之前；搜索框在控件组内部（右）
+        assert head.index('class="brand"') < head.index('class="hstat"')
+        assert head.index('class="hstat"') < head.index('id="gsearchWrap"')
+        assert head.index('id="bellBtn"') < head.index('id="themeBtn"') < head.index('id="avatarBtn"')
+
+    def test_hstat_right_aligned(self, h: str) -> None:
+        seg = h[h.index(".hstat{"):]
+        seg = seg[:seg.index("}")]
+        assert "margin-left:auto" in seg
+
+
+class TestLayoutDetails:
+    """第 4-6 条：KPI 白底 / 折叠在左下 / 密度用图标。"""
+
+    def test_grid_children_have_surface(self, h: str) -> None:
+        assert ".grid>*{background:var(--bg)}" in h
+
+    def test_collapse_at_sidebar_bottom(self, h: str) -> None:
+        rail = h[h.index(".rail{"):]
+        rail = rail[:rail.index("}")]
+        assert "flex-direction:column" in rail
+        foot = h[h.index(".rail-foot{"):]
+        foot = foot[:foot.index("}")]
+        assert "margin-top:auto" in foot
+
+    def test_density_is_icon(self, h: str) -> None:
+        body = fn(h, "lvRender")
+        seg = body[body.index('class="density"'):]
+        seg = seg[:seg.index("</span>")]
+        assert 'ico("rows"' in seg and 'ico("list-unordered"' in seg
+        assert "宽松</button>" not in seg and "紧凑</button>" not in seg
+        assert "aria-pressed" in seg

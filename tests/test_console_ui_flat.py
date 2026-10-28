@@ -98,12 +98,14 @@ class TestDoubleHeader:
         assert ".repo-tabs{height:48px" in h
 
     def test_header_colors(self, h: str) -> None:
-        """实测（2026-10-27）：GitHub light 主题的 header 是**深灰 #25292e**，不是浅灰。
-        白底的只有第二层（repo tabs）。"""
-        assert "--header-bg:#25292e" in h
+        """批 125：以**登录态**为准 —— 第一层与第二层同为浅色系，且第一层无下边框。
+
+        （登出态实测是深灰 #25292e；用户明确"本项目应与登录后一致"，故改浅灰。）
+        """
+        assert "--header-bg:#f6f8fa" in h
         gh = h[h.index(".global-header{"):]
         gh = gh[:gh.index("}")]
-        assert "background:var(--header-bg)" in gh
+        assert "background:var(--header-bg)" in gh and "border-bottom:0" in gh
         rt = h[h.index(".repo-tabs{"):]
         rt = rt[:rt.index("}")]
         assert "background:var(--bg)" in rt and "border-bottom:1px solid var(--border)" in rt

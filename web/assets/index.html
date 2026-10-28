@@ -12,6 +12,7 @@
      · primer.css   = 官方 @primer/css 21.5.1 编译产物（原样，不裁剪）
      · octicons.js  = 官方 @primer/octicons 的图标子集（path 数据内联，见文件头）
      顺序：先官方基底，再自有 <style> 覆盖（同权重时后者胜）。 -->
+<link rel="stylesheet" href="primer-primitives.css">
 <link rel="stylesheet" href="primer.css">
 <style>
 /* ============================================================
@@ -29,7 +30,8 @@
   --border:#d0d7de; --border-muted:#d1d9e0b3;
   --text:#1f2328; --text-muted:#656d76;
   /* 头部深色是**实测**得到的关键事实（GitHub light 主题 header = #25292e），不能沿用浅灰 */
-  --header-bg:#25292e; --header-fg:#ffffff;
+  /* 登录态顶栏：与第二层同为浅色系（用户第 2 条）；下边框仍为 0，分割交给第二层 */
+  --header-bg:#f6f8fa; --header-fg:#1f2328;
   --accent:#0969da; --success:#1a7f37; --danger:#cf222e; --hover:#f3f4f6;
 
   /* ---- 兼容层：把历史令牌指到新色板 ----
@@ -314,18 +316,15 @@ header{position:sticky;top:0;z-index:40;background:var(--bg);border-bottom:1px s
 .hsearch button:hover{background:var(--hover);color:var(--text)}
 .hsearch kbd{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--fg3);
   border:1px solid var(--border);border-radius:4px;padding:0 4px;background:var(--bg)}
-.hstat{display:flex;gap:6px;align-items:center;margin-left:8px;flex-wrap:nowrap}
-.hstat .badge{font-size:11.5px;padding:2px 8px;background:rgba(255,255,255,.10);
-  border-color:rgba(255,255,255,.22);color:rgba(255,255,255,.92)}
-.hstat .badge.live{background:rgba(63,185,80,.18);border-color:rgba(63,185,80,.5);
-  color:#7ee787}
-.hstat .badge.off{background:rgba(187,128,9,.18);border-color:rgba(187,128,9,.5);
-  color:#e3b341}
-.hstat .badge.bad{background:rgba(248,81,73,.18);border-color:rgba(248,81,73,.5);
-  color:#ff7b72}
+.hstat{display:flex;gap:8px;align-items:center;margin-left:auto;flex-wrap:nowrap}
+.hstat .badge{font-size:11.5px;padding:2px 8px;background:var(--bg);
+  border-color:var(--border);color:var(--text-muted)}
+.hstat .badge.live{background:var(--ok-l);border-color:#aceebb;color:#116329}
+.hstat .badge.off{background:var(--warn-l);border-color:#eac54f;color:#7d4e00}
+.hstat .badge.bad{background:var(--bad-l);border-color:#ffcecb;color:#a40e26}
 .railOpen{display:none;width:30px;height:30px;
-  border:1px solid rgba(255,255,255,.24);background:rgba(255,255,255,.10);
-  border-radius:var(--r-md);color:rgba(255,255,255,.85);cursor:pointer;
+  border:1px solid var(--border);background:var(--bg);
+  border-radius:var(--r-md);color:var(--text-muted);cursor:pointer;
   font-size:14px;line-height:1;align-items:center;justify-content:center}
 .railOpen:hover{background:var(--hover);color:var(--text)}
 @media (max-width:1024px){ .railOpen{display:inline-flex} }
@@ -334,7 +333,7 @@ header{position:sticky;top:0;z-index:40;background:var(--bg);border-bottom:1px s
   body.rail-open .rail-mask{display:block;position:fixed;inset:var(--head-h) 0 0 0;
     background:rgba(31,35,40,.28);z-index:34}
 }
-.avatar{width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.2);color:#fff;
+.avatar{width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;
   display:inline-flex;align-items:center;justify-content:center;font-size:11.5px;
   font-weight:600;border:0;cursor:pointer}
 header nav{display:none}          /* 页面导航移入侧栏（顶栏只留面包屑与全局入口） */
@@ -359,25 +358,25 @@ body{overflow:hidden;background:var(--bg)}
   position:static}                        /* 固定由 flex 布局保证，不用 sticky */
 .global-header .logo{display:inline-flex;align-items:center}
 .iconbtn{width:28px;height:28px;display:inline-flex;align-items:center;
-  justify-content:center;border:1px solid rgba(255,255,255,.24);border-radius:6px;
-  background:rgba(255,255,255,.10);color:rgba(255,255,255,.9);cursor:pointer;padding:0}
-.iconbtn:hover{background:rgba(255,255,255,.2);color:#fff}
+  justify-content:center;border:1px solid var(--border);border-radius:6px;
+  background:var(--bg);color:var(--text-muted);cursor:pointer;padding:0}
+.iconbtn:hover{background:var(--hover);color:var(--text)}
 .iconbtn svg{display:block}
 .tabs-more{display:inline-flex;align-items:center;gap:4px}
 .global-header .brand small{display:none}
-.gsearch{flex:1 1 auto;max-width:360px;min-width:120px;position:relative;display:flex}
+.gsearch{flex:0 1 320px;min-width:140px;position:relative;display:flex}
 .gsearch input{width:100%;height:30px;padding:0 34px 0 30px;font-size:13px;
-  background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.24);
-  border-radius:6px;color:var(--header-fg)}
-.gsearch input::placeholder{color:rgba(255,255,255,.62)}
+  background:var(--bg);border:1px solid var(--border);
+  border-radius:6px;color:var(--text)}
+.gsearch input::placeholder{color:var(--text-muted)}
 .gsearch input:focus{outline:none;border-color:var(--accent);
   box-shadow:0 0 0 1px var(--accent)}
-.gsearch .ico{position:absolute;left:9px;top:7px;color:rgba(255,255,255,.7);font-size:12px;
+.gsearch .ico{position:absolute;left:9px;top:7px;color:var(--text-muted);font-size:12px;
   pointer-events:none}
 .gsearch-k{position:absolute;right:6px;top:5px;height:20px;padding:0 5px;font-size:11px;
-  font-family:var(--mono);color:rgba(255,255,255,.75);background:rgba(255,255,255,.12);
-  border:1px solid rgba(255,255,255,.24);border-radius:4px;cursor:pointer}
-.gsearch-k:hover{color:#fff;background:rgba(255,255,255,.2)}
+  font-family:var(--mono);color:var(--text-muted);background:var(--bg-subtle);
+  border:1px solid var(--border);border-radius:4px;cursor:pointer}
+.gsearch-k:hover{color:var(--text);background:var(--hover)}
 /* 原地下拉：**无遮罩**，不把页面压暗 */
 .spop{position:fixed;z-index:70;width:min(560px,calc(100vw - 32px));max-height:60vh;
   overflow:auto;background:var(--bg);border:1px solid var(--border);border-radius:6px;
@@ -409,7 +408,8 @@ body{overflow:hidden;background:var(--bg)}
 .body-layout{display:flex;flex:1;min-height:0;overflow:hidden}
 .rail{width:260px;flex:0 0 260px;border:0;border-right:1px solid var(--border);
   border-radius:0;background:var(--bg);overflow-y:auto;padding:16px 8px;
-  position:static;max-height:none;box-shadow:none}
+  position:static;max-height:none;box-shadow:none;
+  display:flex;flex-direction:column}       /* 底部折叠按钮靠 flex 顶到底 */
 body.rail-off .rail{width:56px;flex-basis:56px;padding:12px 4px}
 body.rail-off .rail .side-h,body.rail-off .rail .nm,
 body.rail-off .rail .cnt,body.rail-off .rail .rail-foot .rt-txt{display:none}
@@ -435,7 +435,7 @@ main{padding:0;max-width:none;margin:0;min-width:0}
 .side-h{font-size:11px;font-weight:600;letter-spacing:.02em;color:var(--text-muted);
   padding:10px 8px 4px;display:flex;align-items:center;gap:6px;text-transform:uppercase}
 .side-sep{height:1px;background:var(--border);margin:8px 0}
-.rail-foot{margin-top:8px;padding-top:8px;border-top:1px solid var(--border);
+.rail-foot{margin-top:auto;padding-top:8px;border-top:1px solid var(--border);
   display:flex;align-items:center;gap:6px}
 .rail-foot .rt-ico{display:inline-flex;align-items:center}
 .rail-foot button{flex:1;display:inline-flex;align-items:center;justify-content:center;
@@ -633,6 +633,7 @@ body.lv-selecting .lv-table tbody .lv-ck,
 /* 栅格：用 1px 间隙渲染切割线（比给每个模块加边框更整齐） */
 .grid{display:grid;gap:1px;background:var(--border);border-top:1px solid var(--border);
   border-bottom:1px solid var(--border)}
+.grid>*{background:var(--bg)}          /* 含 KPI 这类非 .card 的直接子节点 */
 .grid>.card,.grid>.section{background:var(--bg);padding:16px;margin:0}
 .grid.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
 @media (max-width:1280px){.grid.g3{grid-template-columns:repeat(2,minmax(0,1fr))}}
@@ -663,9 +664,9 @@ body.lv-compact .lv-title{font-size:12.5px}
 /* 密度切换（宽松 / 紧凑） */
 .density{display:inline-flex;border:1px solid var(--border);border-radius:6px;
   overflow:hidden;margin-left:auto}
-.density button{height:26px;padding:0 8px;border:0;background:var(--bg);
+.density button{height:28px;width:30px;padding:0;border:0;background:var(--bg);
   color:var(--text-muted);font-size:12px;cursor:pointer;display:inline-flex;
-  align-items:center;gap:4px}
+  align-items:center;justify-content:center;gap:4px}
 .density button+button{border-left:1px solid var(--border)}
 .density button.on{background:var(--bg-subtle);color:var(--text);font-weight:600}
 /* 表头字段筛选面板：选项带复选框/圆点/主副文本，悬停或选中时浅灰 + 2px 蓝线 */
@@ -733,20 +734,22 @@ html[data-color-mode="dark"] .tag{background:#21262d;border-color:#3d444d}
     <span class="logo" id="brandIco" aria-hidden="true"></span>
     监管合规编排器
   </div>
-  <div class="gsearch" id="gsearchWrap">
-    <span class="ico" id="searchIco" aria-hidden="true"></span>
-    <input id="gsearchInput" type="text" autocomplete="off" spellcheck="false"
-      placeholder="搜索或跳转…" aria-label="全局搜索"
-      aria-haspopup="listbox" aria-expanded="false" aria-controls="gsearchPop">
-    <button class="gsearch-k" id="gsearchCmd" title="命令面板（Ctrl K）"
-      aria-label="打开命令面板">Ctrl K</button>
-  </div>
   <div class="hstat">
+    <div class="gsearch" id="gsearchWrap">
+      <span class="ico" id="searchIco" aria-hidden="true"></span>
+      <input id="gsearchInput" type="text" autocomplete="off" spellcheck="false"
+        placeholder="搜索或跳转…" aria-label="全局搜索"
+        aria-haspopup="listbox" aria-expanded="false" aria-controls="gsearchPop">
+      <button class="gsearch-k" id="gsearchCmd" title="命令面板（Ctrl K）"
+        aria-label="打开命令面板">Ctrl K</button>
+    </div>
     <span class="badge" id="live">连接中…</span>
     <span class="badge" id="scope" title="访问范围">—</span>
     <span class="badge" id="auth" title="登录身份">—</span>
     <span class="badge" id="gates">门禁 —</span>
     <span class="badge" id="stamp">—</span>
+    <button class="iconbtn" id="bellBtn" aria-haspopup="dialog" aria-label="通知"
+      title="通知"><span id="bellIco"></span></button>
     <button class="iconbtn" id="themeBtn" aria-label="切换明暗主题" title="切换明暗主题">
       <span id="themeIco"></span></button>
     <button class="avatar" id="avatarBtn" title="身份与访问范围" aria-label="账号菜单">我</button>
@@ -3947,10 +3950,12 @@ function lvRender(list, d, st, f) {
         ${act.length ? `<button class="btn ghost" data-lvclear="1" title="清除搜索、筛选与排序">清除全部</button>` : ""}
         <span class="count">共 <b>${num(d.total)}</b> 条 · 第 ${num(d.page)} / ${num(d.pages)} 页</span>
         <span class="density" role="group" aria-label="显示密度">
-          <button data-lvdensity="wide" title="宽松"
-            class="${lvDensity() === "wide" ? "on" : ""}">宽松</button>
-          <button data-lvdensity="compact" title="紧凑"
-            class="${lvDensity() === "compact" ? "on" : ""}">紧凑</button>
+          <button data-lvdensity="wide" title="宽松" aria-label="宽松"
+            aria-pressed="${lvDensity() === "wide"}"
+            class="${lvDensity() === "wide" ? "on" : ""}">${ico("rows", 16)}</button>
+          <button data-lvdensity="compact" title="紧凑" aria-label="紧凑"
+            aria-pressed="${lvDensity() === "compact"}"
+            class="${lvDensity() === "compact" ? "on" : ""}">${ico("list-unordered", 16)}</button>
         </span>
       </div>
       <div class="lv-body${lvSliceActive(list) || STATE._lvSliceOpen ? " slice" : ""}">
@@ -4276,7 +4281,11 @@ function lvBind(list, d, st, f) {
   $$("[data-lvdensity]", v).forEach(b => {
     b.onclick = () => {
       lvSetDensity(b.dataset.lvdensity);
-      $$("[data-lvdensity]", v).forEach(x => x.classList.toggle("on", x === b));
+      $$("[data-lvdensity]", v).forEach(x => {
+        const on = x === b;
+        x.classList.toggle("on", on);
+        x.setAttribute("aria-pressed", on ? "true" : "false");
+      });
     };
   });
 
@@ -4923,6 +4932,24 @@ function initChrome(){
   setIco("#railOpenIco", "three-bars", 16);
   setIco("#searchIco", "search", 14);
   setIco("#moreIco", "chevron-down", 16);
+  setIco("#bellIco", "bell", 16);
+  const bell = $("#bellBtn");
+  if (bell) bell.onclick = (ev) => {
+    ev.stopPropagation();
+    const g = obj(STATE.gates), h = obj(STATE.health);
+    const rows = [
+      ["门禁", g.summary || (g.pass != null ? `${g.pass} 项通过` : "—")],
+      ["健康", h.ok === false ? "不通" : "正常"],
+      ["范围", h.scope_label || h.scope || "—"],
+      ["门禁时刻", g.fetched_at || "—"],
+    ];
+    lvPop(bell, `<div class="hint">通知与状态</div>` +
+      rows.map(([k, v]) => `<button data-act="noop" disabled>
+        <span style="color:var(--text-muted)">${esc(k)}</span>
+        <span style="margin-left:auto">${esc(String(v))}</span></button>`).join("") +
+      `<div class="sep"></div><button data-act="refresh">刷新</button>`,
+      {onPick: (a) => { lvClosePop(); if (a === "refresh") render(); }});
+  };
 
   let saved = "light";
   try { saved = localStorage.getItem("theme") || "light"; } catch (e) { /* 隐私模式 */ }

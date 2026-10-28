@@ -4501,3 +4501,43 @@ TD-36（前端无 runtime 冒烟）：本机 Python 3.14 上 `quickjs` 无 wheel
 引入顺序（link 在 style 前、octicons 在主脚本前）、零外链、`_asset` 能读到两个文件、
 必需图标齐备、`PAGE_GLYPH` 全部指向真实图标、8 类符号图标已清零、第一层无边框、
 第二层 1px、唯一滚动容器、4px 强调线、搜索原地下拉、主题切换与暗色令牌、路由未新增。
+
+## [Unreleased] 2026-10-28 — 三个官方包全量本地化 + 登录态顶栏（第一百二十五批）
+
+### ① "是否全部引入？是否全部本地离线？"——逐包回答
+
+| 包 | 本地文件 | 覆盖范围 | 未引入的部分（及原因） |
+|---|---|---|---|
+| `@primer/css@21.5.1` | `web/assets/primer.css`（727 KB） | **编译后的全部组件**（按钮/表格/标签/表单/工具类…） | 仓库里的 **SCSS 源码**不引入——运行时只需要编译产物 |
+| `@primer/primitives@10.4.0` | `web/assets/primer-primitives.css`（543 KB） | `dist/css/primitives.css` + **全部 9 个主题**（light / light-colorblind / light-high-contrast / light-tritanopia / dark / dark-colorblind / dark-dimmed / dark-high-contrast / dark-tritanopia）合并 | `dist/docs/**/*.json`（文档站点用的数据）与 SCSS 源码——不是运行时资源 |
+| `@primer/octicons@19.11.0` | `web/assets/octicons.js`（309 KB） | 官方 `build/data.json` 里 **329/330 个图标**全部生成（16/24px 两档） | 单个 `build/svg/*.svg` 文件未逐份拷贝——path 数据已内联，等价且少 330 个请求 |
+
+* 三者都在 `<head>` 里以**相对路径**本地引入；`primitives → primer.css → 自有 <style>` 顺序固定；
+* 运行实例实测：`/primer-primitives.css` 543KB、`/primer.css` 727KB、`/octicons.js` 309KB，均 `200`；
+* 页面 **0 个 http(s) 外链**（守卫 + 运行实例双检）。
+
+### ② 顶栏改为**登录态**（用户第 2 条）
+
+- 登出态实测是深灰 `#25292e`；登录态（用户要求对齐的形态）是**浅灰 `#f6f8fa`**，与第二层同色系；
+- 第一层**无下边框**，分割只由第二层的 1px 承担（守卫断言 `border-bottom:0`）；
+- 搜索框/快捷键提示/状态徽标/头像/图标按钮全部改回**浅色**样式（不再有深底白字残留）。
+
+### ③ 顶栏布局：Logo 居左，其余居右
+
+`brand` → `hstat`（`margin-left:auto`）内含 **搜索框 → 状态徽标 → 通知 → 主题 → 头像**，
+顺序与 GitHub 一致；新增**通知**按钮（Popover 展示门禁/健康/范围/时刻，数据来自既有 `STATE`，不新增接口）。
+
+### ④ 三处布局缺陷
+
+| 问题 | 根因 | 修法 |
+|---|---|---|
+| 总览"关键指标"背景发灰 | KPI 是 `.grid` 的**直接子节点但不是 `.card`**，网格容器的 `background:var(--border)` 透出来 | `.grid>*{background:var(--bg)}` |
+| 折叠按钮不在左下 | `.rail-foot` 只是内容流末尾 | `.rail{display:flex;flex-direction:column}` + `.rail-foot{margin-top:auto}` |
+| 密度切换是文字 | 早期实现 | 改为 **Octicons 图标**（`rows` / `list-unordered`）+ `aria-pressed` + tooltip |
+
+### ⑤ 守卫
+
+`tests/test_console_primer_assets.py` 扩到 **38 项**：新增
+`TestFullOfflineAssets`（primitives 令牌与主题、三份资源的引用顺序、图标 ≥320、四份资源均本地）、
+`TestLoggedInHeader`（浅灰 + 无边框 + 搜索框浅色 + 控件顺序 + `margin-left:auto`）、
+`TestLayoutDetails`（`.grid>*` 白底、侧栏 flex 列 + `margin-top:auto`、密度用图标且无文字）。
