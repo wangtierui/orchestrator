@@ -891,6 +891,14 @@ python -m tools.repair_attachment_text --docno "金非银检函〔2025〕82号" 
 | 视觉 | 主按钮 `#1a7f37`；仅小控件 6px 圆角；面板无外阴影 |
 | 图标 | `web/assets/favicon.svg`（单文件 SVG，`/favicon.svg` 直出 `image/svg+xml`） |
 
+**字体（强制）**：正文 `--font-sans` = 系统栈（`-apple-system, BlinkMacSystemFont, "Segoe UI",
+Roboto, Helvetica, Arial, sans-serif, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑"`），
+代码 `--mono` = `ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono"`；
+正文 14px / 行高 1.5；**无 `@font-face`、无 Web Font**。
+
+**列表（复刻 GitHub Issues）**：搜索/筛选/字段/密度**收进 `<thead>`**；3 列（选择/状态/事项）；
+宽松=标题一行+元数据一行，紧凑=同一行；表头与单元格同内边距；公司制度"打开本地文件"列删除（标题即链接）。
+
 **官方资源（本地化，全量）**：
 
 | 文件 | 来源 | 覆盖 |

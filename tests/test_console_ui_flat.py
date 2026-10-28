@@ -108,7 +108,9 @@ class TestDoubleHeader:
         assert "background:var(--header-bg)" in gh and "border-bottom:0" in gh
         rt = h[h.index(".repo-tabs{"):]
         rt = rt[:rt.index("}")]
-        assert "background:var(--bg)" in rt and "border-bottom:1px solid var(--border)" in rt
+        # 批 126：第二层与第一层**同色**（--bg-subtle），只有底部 1px 分隔
+        assert "background:var(--bg-subtle)" in rt
+        assert "border-bottom:1px solid var(--border)" in rt
 
     def test_no_horizontal_scroll(self, h: str) -> None:
         rt = h[h.index(".repo-tabs{"):]
@@ -197,7 +199,7 @@ class TestListV2:
         assert 'placeholder="搜索该字段的取值' in body
         assert ".fpop .opt:hover::before" in h
         seg = h[h.index(".fpop .opt:hover::before"):][:260]
-        assert "width:4px" in seg, "表头筛选面板悬停线应为 4px"
+        assert "width:2px" in seg, "表头筛选面板悬停线应为 2px（本轮规范）"
 
     def test_density_toggle(self, h: str) -> None:
         assert "data-lvdensity" in h and "lv.density" in h
@@ -220,7 +222,8 @@ class TestButtonsAndTokens:
     """七、视觉：主按钮绿色；6px 圆角只用于小控件。"""
 
     def test_primary_green(self, h: str) -> None:
-        btn = h[h.index(".btn.primary{"):]
+        # 批 126：按钮改用 Primer 的 .btn；"主操作绿色"这条业务覆盖挂在 .btn-primary 上
+        btn = h[h.index(".btn.btn-primary{"):]
         btn = btn[:btn.index("}")]
         assert "background:var(--success)" in btn
         assert "#000" not in btn and "black" not in btn
@@ -256,12 +259,13 @@ class TestNoRegressionSurfaces:
 class TestGithubIssuesRow:
     """实页基线（docs/ui_github_baseline.md，2026-10-27 抓取）落到代码里的样子。"""
 
-    def test_row_is_4_columns(self, h: str) -> None:
+    def test_row_is_3_columns(self, h: str) -> None:
+        """批 126：删除"操作"列 —— 它与元数据里的「关系」重复（用户第 2 条）。"""
         body = fn(h, "lvRender")
-        for cell in ("lv-selcell", "lv-stcell", "lv-primary", "lv-actcell"):
+        for cell in ("lv-selcell", "lv-stcell", "lv-primary"):
             assert cell in body, cell
-        # 表头 4 个 th（选择 / 状态 / 事项 / 操作）
-        assert body.count("<th") >= 4
+        assert "lv-actcell" not in body, "操作列已删除，不应再出现"
+        assert body.count("<th") >= 3
 
     def test_state_icon_column(self, h: str) -> None:
         assert "function lvStateIcon(" in h

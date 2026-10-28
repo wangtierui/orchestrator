@@ -52,19 +52,23 @@
   --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:32px; --s7:48px;
   --shadow:0 1px 0 rgba(31,35,40,.04);
   --shadow-h:0 3px 12px rgba(31,35,40,.08);
-  --mono:ui-monospace,"Cascadia Mono","Consolas",monospace;
+  /* 用户强制的两套字体栈（禁止外部 Web Font） */
+  --font-sans:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
+    sans-serif, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑", sans-serif;
+  --mono:ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+    "Liberation Mono", monospace;
   --header-height:52px;   /* 用户规范：双层顶栏的高度用变量管理 */
   --head-h:var(--header-height);      /* 顶部横向导航高度（48–56） */
   --rail-w:264px;     /* 侧栏展开宽（240–280） */
   --rail-w-min:56px;  /* 侧栏折叠宽（48–64） */
 }*{box-sizing:border-box}
 html,body{margin:0;background:var(--bg);color:var(--fg)}
-body{font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans",
-  "PingFang SC","Microsoft YaHei UI",Helvetica,Arial,sans-serif;
+body{font-family:var(--font-sans);font-size:14px;line-height:1.5;
   -webkit-font-smoothing:antialiased}
 a{color:var(--primary);text-decoration:none}
 a:hover{text-decoration:underline}
-code,.mono{font-family:var(--mono);font-size:12.5px}
+code,.mono,pre,kbd,samp{font-family:var(--mono)}
+code,.mono{font-size:12px}
 
 /* ---------- 顶栏 ---------- */
 header{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line)}
@@ -387,11 +391,11 @@ body{overflow:hidden;background:var(--bg)}
   text-align:left;position:relative}
 .spop .it:hover,.spop .it[aria-selected="true"]{background:var(--bg-subtle)}
 .spop .it:hover::before,.spop .it[aria-selected="true"]::before{content:"";position:absolute;
-  left:0;top:3px;bottom:3px;width:4px;background:var(--accent);border-radius:2px}
+  left:0;top:3px;bottom:3px;width:2px;background:var(--accent);border-radius:2px}
 .spop .it .hint{margin-left:auto;font-size:11.5px;color:var(--text-muted)}
 .spop .empty{padding:10px 8px;font-size:12.5px;color:var(--text-muted)}
 /* 模块页签：溢出折叠进 More，容器 overflow:hidden 保证永不出现横向滚动条 */
-.repo-tabs{height:48px;background:var(--bg);border-bottom:1px solid var(--border);
+.repo-tabs{height:48px;background:var(--bg-subtle);border-bottom:1px solid var(--border);
   display:flex;align-items:stretch;justify-content:flex-start;padding:0 8px;
   flex-shrink:0;overflow:hidden;position:relative}
 .tabs-inner{display:flex;align-items:stretch;gap:0;min-width:0;overflow:hidden}
@@ -452,16 +456,10 @@ main{padding:0;max-width:none;margin:0;min-width:0}
 .ph .desc{font-size:13px;color:var(--text-muted);margin-top:4px}
 .ph .acts{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
 
-/* 按钮：主操作绿色实心；次操作白底细边框；禁止大面积纯黑 */
-.btn{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 12px;
-  font-size:12.5px;border-radius:6px;border:1px solid var(--border);
-  background:var(--bg);color:var(--text);cursor:pointer;font-weight:500}
-.btn:hover{background:var(--hover)}
-.btn.primary{background:var(--success);border-color:rgba(31,35,40,.15);color:#fff}
-.btn.primary:hover{background:#187733}
-.btn.ghost{background:var(--bg-subtle)}
-.btn.icon{width:30px;padding:0;justify-content:center}
-.btn:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+/* 按钮：**用 Primer 的 `.btn`**（高度/圆角/边框/悬停全由官方组件给）。
+ * 只保留一条业务覆盖：主操作必须是深绿实心（用户规范），挂在官方 `.btn-primary` 上。 */
+.btn.btn-primary{background:var(--success);border-color:rgba(31,35,40,.15);color:#fff}
+.btn.btn-primary:hover{background:#187733}
 
 @media (max-width:1024px){
   .rail{position:fixed;left:0;top:100px;bottom:0;width:260px;z-index:35;
@@ -533,9 +531,7 @@ main{padding:0;max-width:none;margin:0;min-width:0}
 .lv-selcell{width:32px;padding-right:0 !important}
 .lv-stcell{width:24px;padding-right:0 !important}
 .lv-stcell .lv-st{display:block}
-.lv-actcell{width:1%;white-space:nowrap;text-align:right;color:var(--text-muted)}
-.lv-actcell a{color:var(--text-muted);font-size:12px}
-.lv-actcell a:hover{color:var(--accent)}
+/* 操作列已删除（与元数据里的「关系」重复） */
 .lv-ck{appearance:none;width:14px;height:14px;border:1px solid var(--border);
   border-radius:3px;cursor:pointer;display:inline-block;vertical-align:middle;
   background:var(--bg);position:relative}
@@ -627,8 +623,7 @@ body.lv-selecting .lv-table tbody .lv-ck,
 .card>h3{margin:0 0 10px;padding-bottom:8px;border-bottom:1px solid var(--border);
   font-size:14px;font-weight:600;display:flex;justify-content:space-between;
   align-items:baseline;gap:8px}
-.card .src{margin-top:10px;padding-top:8px;border-top:1px solid var(--border);
-  font-size:11.5px;color:var(--text-muted)}
+.card .src{margin-top:8px;padding-top:6px;font-size:11.5px;color:var(--text-muted)}
 .card hr,.card .dashed{border:0;border-top:1px solid var(--border)}
 /* 栅格：用 1px 间隙渲染切割线（比给每个模块加边框更整齐） */
 .grid{display:grid;gap:1px;background:var(--border);border-top:1px solid var(--border);
@@ -645,9 +640,10 @@ body.lv-selecting .lv-table tbody .lv-ck,
 /* 列表：平铺 + 表头底边加粗 + 行 1px 分割 */
 /* 容器边框/圆角以基础规则为准（实测 GitHub 是 1px + 6px），这里不再清零 */
 .lv-table th{border-bottom:1px solid var(--border)}
-.lv-bar{border-bottom:1px solid var(--border);background:transparent;padding:8px 0}
+/* 工具行在 thead 里，分割交给 th —— 这里不再画线（用户："底部边框线过多"） */
+.lv-bar{border-bottom:0;background:transparent}
 .lv-slice{border-left:1px solid var(--border);background:transparent}
-body.lv-compact .lv-table td{padding:2px 8px;height:26px;font-size:13px}
+body.lv-compact .lv-table td{padding:2px 8px;height:26px;font-size:13px;white-space:nowrap}
 body.lv-compact .lv-title{font-size:13px}
 body.lv-compact .lv-meta{margin-top:2px}
 body.lv-compact .lv-title{font-size:12.5px}
@@ -680,7 +676,7 @@ body.lv-compact .lv-title{font-size:12.5px}
   font-size:12.5px;color:var(--text);cursor:pointer}
 .fpop .opt:hover{background:var(--bg-subtle)}
 .fpop .opt:hover::before,.fpop .opt[aria-checked="true"]::before{content:"";position:absolute;
-  left:0;top:3px;bottom:3px;width:4px;background:var(--accent);border-radius:2px}
+  left:0;top:3px;bottom:3px;width:2px;background:var(--accent);border-radius:2px}
 .fpop .opt[aria-checked="true"]{background:var(--bg-subtle);font-weight:600}
 
 .fpop .opt .dot{width:8px;height:8px;border-radius:50%;flex:none;background:var(--fg4)}
@@ -723,6 +719,34 @@ html[data-color-mode="dark"]{
 html[data-color-mode="dark"] img{opacity:.92}
 html[data-color-mode="dark"] .lv-badge,
 html[data-color-mode="dark"] .tag{background:#21262d;border-color:#3d444d}
+
+/* ============================================================
+ * 列表（批 126，复刻 GitHub Issues）
+ *  · 工具行（搜索/筛选/字段/计数/密度）**在 <thead> 内**，不再上挂一条独立工具条
+ *  · 三列：选择 / 状态 / 事项；行内不再有"操作"列
+ *  · 宽松 = 标题一行 + 元数据一行；紧凑 = 同一行（同一份 DOM）
+ * ============================================================ */
+.lv-tools th{padding:0;background:var(--bg);border-bottom:1px solid var(--border)}
+.lv-tools .lv-bar{padding:8px 8px;border:0;background:transparent}
+.lv-headrow th{padding:0;background:var(--bg);border-bottom:1px solid var(--border);
+  font-size:12px;color:var(--text-muted);font-weight:600;text-align:left}
+.lv-headrow .lv-th{padding:6px 8px;gap:2px}
+.lv-headrow .lv-th .sortbtn{padding:0 2px}
+.lv-primary-th{width:auto}
+.lv-primary{padding-left:8px}
+/* 宽松（默认）：两行 */
+.lv-primary .lv-title{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;
+  white-space:nowrap}
+.lv-primary .lv-meta{display:flex;margin-top:2px}
+/* 紧凑：一行（标题与元数据并排，超长省略） */
+body.lv-compact .lv-primary{display:flex;align-items:center;gap:8px;min-width:0}
+body.lv-compact .lv-primary .lv-title{display:inline;white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis;flex:0 1 auto;margin-right:0}
+body.lv-compact .lv-primary .lv-meta{display:inline-flex;margin-top:0;flex:1 1 auto;
+  min-width:0;overflow:hidden;white-space:nowrap}
+/* 分页脚：只保留与表格之间的那一条线 */
+.lv-foot{display:flex;justify-content:flex-end;padding:8px 8px 4px}
+.lv-foot .pager{border:0;padding:0;background:transparent}
 </style>
 </head>
 <body>
@@ -885,6 +909,14 @@ function _railItem(opts){
 function paintRail(){
   const rail = $("#rail");
   if (!rail) return;
+  /* 总览是"全景页"，没有第二维导航；左栏在这里只会挤掉内容（用户第 3 条）。 */
+  if (CUR === "overview") {
+    rail.hidden = true;
+    rail.innerHTML = "";
+    document.body.classList.add("rail-empty");
+    return;
+  }
+  rail.hidden = false;
   const cfg = RAILCFG || {title: "", items: [], cur: ""};
   const navItems = [];   // 见下：页面导航已上移到页签层
   const views = (typeof lvSavedViews === "function") ? lvSavedViews(CUR) : [];
@@ -2935,18 +2967,18 @@ function eastStatCorp(){
       公司侧的统计相关办法：按名称含<b>「统计」</b>在服务端筛选（共 ${num(d.total)} 条），
       需要全量请到「公司制度」页。文件路径在本机打开。</div>
     <div class="scrollx"><table><thead><tr>
-      <th>唯一标识号</th><th>名称</th><th>文号</th><th>主题</th><th>本地文件</th><th>关系</th>
+      <th>唯一标识号</th><th>名称</th><th>文号</th><th>主题</th><th>关系</th>
     </tr></thead><tbody>${items.map(it => `<tr>
       <td class="mono">${esc(it.ipn || "—")}</td>
-      <td class="ttl">${esc(it.title || "")}</td>
+      <td class="ttl">${it.local_path
+        ? `<a href="/api/local/file?path=${encodeURIComponent(it.local_path)}"
+             target="_blank" rel="noopener"
+             title="打开/下载：${esc(it.local_path)}">${esc(it.title || "")}</a>`
+        : esc(it.title || "")}</td>
       <td class="mono">${esc(it.docno || "—")}</td>
       <td>${themeCell(it.theme_label)}</td>
-      <td>${it.local_path
-        ? `<a href="/api/local/file?path=${encodeURIComponent(it.local_path)}"
-             target="_blank" rel="noopener">打开本地文件</a>`
-        : '<span class="muted">未查到</span>'}</td>
       <td>${relBtn(it.ipn)}</td></tr>`).join("")
-      || '<tr><td colspan="6" class="muted">无匹配记录</td></tr>'}</tbody></table></div>`;
+      || '<tr><td colspan="5" class="muted">无匹配记录</td></tr>'}</tbody></table></div>`;
 }
 
 function eastSection(regstats){
@@ -3743,10 +3775,7 @@ const LV = {
       {k: "title", label: "名称", sort: "title", primary: true},
       {k: "docno", label: "文号", sort: "docno", meta: true,
        cell: it => `<span class="mono">${esc(it.docno || "—")}</span>`},
-      {k: "local", label: "本地文件", meta: true, cell: it => it.local_path
-        ? `<a href="/api/local/file?path=${encodeURIComponent(it.local_path)}" target="_blank"
-             rel="noopener" title="打开/下载：${esc(it.local_path)}">打开本地文件</a>`
-        : '<span class="muted">未查到</span>'},
+    /* 「打开本地文件」不再单列：标题本身就是指向该文件的链接（同一动作一个入口）。 */
       {k: "rel", label: "关系", meta: true, cell: it => relBtn(it.ipn)},
     ],
   },
@@ -3862,6 +3891,8 @@ function lvRender(list, d, st, f) {
    * `meta` 字段不再占列 —— 它们作为**内联元数据**跟在标题后面（GitHub 就是这么排的）。 */
   const stField = list === "laws" ? "timeliness_status" : "eff_status";
   const primaryFd = primary || {k: "title", label: "事项", sort: "title"};
+  /* 三列（选择 / 状态 / 事项）—— GitHub 的 issues 行没有"操作列"：
+   * 「查看关系」「打开本地文件」都在标题与元数据里，重复呈现会让每行末尾多一列噪声。 */
   const headCells = [`<th class="lv-selcell" aria-label="选择"><span class="lv-th">
       <input type="checkbox" class="lv-ck" id="lvAll" aria-label="全选当前页"
         ${items.length && items.every(it => sel[lvRowId(list, it)]) ? "checked" : ""}></span></th>`,
@@ -3869,15 +3900,15 @@ function lvRender(list, d, st, f) {
       <span class="lv-th"><button class="sortbtn" data-lvsort="${esc(stField)}"
         title="按时效排序">状态${st.sort === stField
           ? ico(st.desc ? "triangle-down" : "triangle-up", 16) : ""}</button></span></th>`,
-    `<th draggable="true" data-lvfk="${esc(primaryFd.k)}" aria-sort="${st.sort === (primaryFd.sort || primaryFd.k)
+    `<th draggable="true" data-lvfk="${esc(primaryFd.k)}" class="lv-primary-th"
+        aria-sort="${st.sort === (primaryFd.sort || primaryFd.k)
         ? (st.desc ? "descending" : "ascending") : "none"}">
       <span class="lv-th"><button class="sortbtn" data-lvsort="${esc(primaryFd.sort || primaryFd.k)}"
         title="按名称排序">${esc(primaryFd.label || "事项")}${st.sort === (primaryFd.sort || primaryFd.k)
           ? ico(st.desc ? "triangle-down" : "triangle-up", 16) : ""}</button>
         <button class="menu" data-lvmenu="${esc(primaryFd.k)}" aria-haspopup="menu"
           aria-expanded="false" aria-label="字段菜单：${esc(primaryFd.label)}">${
-            ico("kebab-horizontal", 16)}</button></span></th>`,
-    `<th class="lv-actcell"><span class="lv-th">操作</span></th>`].join("");
+            ico("kebab-horizontal", 16)}</button></span></th>`].join("");
 
   const rows = items.map(it => {
     const id = lvRowId(list, it);
@@ -3889,6 +3920,8 @@ function lvRender(list, d, st, f) {
     const meta = metaParts.length
       ? `<span class="lv-meta">${metaParts.join('<span class="dot-sep" aria-hidden="true">·</span>')}</span>`
       : "";
+    /* 宽松：标题一行、元数据一行；紧凑：两者同一行。切换由 body.lv-compact 的 CSS 完成，
+     * 不再需要两套模板（同一份 DOM 两种密度）。 */
     const href = list === "rules" && it.local_path
       ? `/api/local/file?path=${encodeURIComponent(it.local_path)}`
       : (it.url || "");
@@ -3899,11 +3932,10 @@ function lvRender(list, d, st, f) {
         ${isSel ? "checked" : ""} aria-label="选择：${esc(it.title || id)}"></td>
       <td class="lv-stcell">${lvStateIcon(it, list)}</td>
       <td class="lv-primary">${title}${meta}</td>
-      <td class="lv-actcell">${relBtn(list === "laws" ? it.rfn : it.ipn)}</td>
     </tr>`;
   }).join("");
 
-  const empty = `<tr><td colspan="4">
+  const empty = `<tr><td colspan="3">
       <div class="lv-empty"><span class="ico" aria-hidden="true">${ico("search", 24)}</span>
         <b>当前筛选无结果</b>
         <div>没有符合条件的记录；可以放宽条件，或清除全部筛选。</div>
@@ -3936,40 +3968,45 @@ function lvRender(list, d, st, f) {
     </div>
     ${lvFilterTabs(list, st, st)}
     <div class="lv">
-      <div class="lv-bar">
-        <input id="lvq" class="lv-q" type="search" list="lvqQuals"
-          placeholder="筛选：名称关键字，或 theme: / source: / 时效: 前缀"
-          aria-label="过滤列表" value="${esc(lvQueryText(list, st))}">
-        <datalist id="lvqQuals">${lvQueryHints(list, f)}</datalist>
-        <button class="btn ghost" id="lvFilterBtn" aria-haspopup="dialog" aria-expanded="false"
-          title="排序与清除">筛选${act.length ? '<span class="lv-dot" aria-hidden="true"></span>' : ""}</button>
-        <button class="btn ghost" id="lvFieldsBtn" aria-haspopup="dialog" aria-expanded="false"
-          title="显示/隐藏字段">字段${(m.hidden || []).length ? `<span class="lv-badge">${(m.hidden || []).length} 隐藏</span>` : ""}</button>
-        ${chips}
-        <span class="sp"></span>
-        ${act.length ? `<button class="btn ghost" data-lvclear="1" title="清除搜索、筛选与排序">清除全部</button>` : ""}
-        <span class="count">共 <b>${num(d.total)}</b> 条 · 第 ${num(d.page)} / ${num(d.pages)} 页</span>
-        <span class="density" role="group" aria-label="显示密度">
-          <button data-lvdensity="wide" title="宽松" aria-label="宽松"
-            aria-pressed="${lvDensity() === "wide"}"
-            class="${lvDensity() === "wide" ? "on" : ""}">${ico("rows", 16)}</button>
-          <button data-lvdensity="compact" title="紧凑" aria-label="紧凑"
-            aria-pressed="${lvDensity() === "compact"}"
-            class="${lvDensity() === "compact" ? "on" : ""}">${ico("list-unordered", 16)}</button>
-        </span>
-      </div>
       <div class="lv-body${lvSliceActive(list) || STATE._lvSliceOpen ? " slice" : ""}">
         <div class="lv-scroll"><table class="lv-table" role="grid"
           aria-multiselectable="true" aria-label="${esc(cfg.title)}列表">
-          <thead><tr>${headCells}</tr></thead>
+          <thead>
+            <tr class="lv-tools"><th colspan="3">
+              <div class="lv-bar">
+                <input id="lvq" class="lv-q" type="search" list="lvqQuals"
+                  placeholder="搜索或筛选：名称关键字，或 theme: / source: / 时效: 前缀"
+                  aria-label="过滤列表" value="${esc(lvQueryText(list, st))}">
+                <datalist id="lvqQuals">${lvQueryHints(list, f)}</datalist>
+                <button class="btn" id="lvFilterBtn" aria-haspopup="dialog"
+                  aria-expanded="false" title="排序与清除">筛选${
+                  act.length ? '<span class="lv-dot" aria-hidden="true"></span>' : ""}</button>
+                <button class="btn" id="lvFieldsBtn" aria-haspopup="dialog"
+                  aria-expanded="false" title="显示/隐藏字段">字段${
+                  (m.hidden || []).length ? `<span class="lv-badge">${(m.hidden || []).length} 隐藏</span>` : ""}</button>
+                ${chips}
+                <span class="sp"></span>
+                ${act.length ? `<button class="btn" data-lvclear="1"
+                  title="清除搜索、筛选与排序">清除</button>` : ""}
+                <span class="count">共 <b>${num(d.total)}</b> 条 · 第 ${num(d.page)} / ${num(d.pages)} 页</span>
+                <span class="density" role="group" aria-label="显示密度">
+                  <button data-lvdensity="wide" title="宽松" aria-label="宽松"
+                    aria-pressed="${lvDensity() === "wide"}"
+                    class="${lvDensity() === "wide" ? "on" : ""}">${ico("rows", 16)}</button>
+                  <button data-lvdensity="compact" title="紧凑" aria-label="紧凑"
+                    aria-pressed="${lvDensity() === "compact"}"
+                    class="${lvDensity() === "compact" ? "on" : ""}">${ico("list-unordered", 16)}</button>
+                </span>
+              </div>
+            </th></tr>
+            <tr class="lv-headrow">${headCells}</tr>
+          </thead>
           <tbody>${items.length ? rows : empty}</tbody>
         </table></div>
         ${slicePanel}
       </div>
-      <div class="lv-bar" style="border-bottom:0;border-top:1px solid var(--border)">
-        <span class="sp"></span>${pager(d, list + "Pager")}
-      </div>
-      <div class="src" style="padding:6px 12px">数据源：${esc(d.source_name || "—")}
+      <div class="lv-foot">${pager(d, list + "Pager")}</div>
+      <div class="src" style="padding:6px 12px;border-top:0">数据源：${esc(d.source_name || "—")}
         · 抓取时刻 ${esc(d.fetched_at || "—")}
         · 视图配置（隐藏字段/切片/已存视图）存本机浏览器，不入库</div>
     </div>

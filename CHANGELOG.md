@@ -4553,3 +4553,42 @@ TD-36（前端无 runtime 冒烟）：本机 Python 3.14 上 `quickjs` 无 wheel
 - 修法：`gates/gate_config_integrity/_js.py` 增加**稳定读**——首次失败后 0.4s 重试一次，
   通过则记 `transient` 证据并忽略；**两次都红照常报**（重试不掩盖真错误）。
 - 守卫：`tests/test_gate_j15_transient.py` 两条（瞬时失败被忽略 + 持续失败仍报）。
+
+## [Unreleased] 2026-10-28 — 字体规范 + 列表面板化（工具行进表头）+ 复刻细节（第一百二十六批）
+
+### ① 全局字体（强制栈，禁止 Web Font）
+
+```css
+--font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
+             sans-serif, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑", sans-serif;
+--mono:      ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+body { font-family: var(--font-sans); font-size: 14px; line-height: 1.5 }
+```
+页面内**无 `@font-face`、无 Google Fonts**（守卫断言）。
+
+### ② 列表：工具栏**进表头**，三列，两种密度
+
+| 项 | 之前 | 现在 |
+|---|---|---|
+| 搜索/筛选/字段/计数/密度 | 表格**上方**一条独立工具条 | 收进 `<thead>` 第一行（`colspan=3`），GitHub 的 list header 形态 |
+| 列 | 4 列（选择/状态/事项/**操作**） | **3 列**（操作列与元数据「关系」重复，删除） |
+| 行 | 恒定两行 | **宽松=标题一行 + 元数据一行；紧凑=同一行**（同一份 DOM，`body.lv-compact` 切 CSS） |
+| 表头对齐 | 表头与单元格内边距不同 | 统一 `padding:6px 8px` |
+| 公司制度 | 「打开本地文件」单独一列 | 删列 —— **标题本身就是链接**（同一动作一个入口） |
+| 监管统计→公司制度小表 | 同上（标题不可点 + 独立列） | 同样收口：标题变链接、删列、colspan 6→5 |
+
+### ③ 骨架与细节
+
+* 第二层页签背景改为 **`--bg-subtle`**（与第一层一致），只保留底部 1px；
+* **总览页不显示左侧栏**（`paintRail` 里 `CUR === "overview"` 直接隐藏，内容占满）；
+* 去多余底部边线：列表工具行不再自己画线（分割交给 `th`）、分页从"带边框的 lv-bar"改为 `.lv-foot`、卡片来源行去掉 `border-top`；
+* 字段筛选面板/搜索面板的悬停强调线按本轮规范回到 **2px**（侧栏仍 4px）；
+* **favicon 换成 GitHub 标记**（取自本地 octicons.js 的 `mark-github` 24px，与顶栏同源），不再自绘；
+* **按钮改用 Primer 的 `.btn`**：删除自研 `.btn{...}` / `.btn.ghost` / `.btn.icon`，只保留一条业务覆盖 `.btn.btn-primary{background:var(--success)}`。
+
+### ④ 关于"100% 复刻"的现状（写在文档里，避免认知偏差）
+
+已经由 **Primer 官方件**承担：CSS 基底与令牌、组件类（`.btn`/`.Label`/`.Box` 等可用）、图标（全量 Octicons）。
+仍然自研的部分**只因为它们是业务结构**（本项目没有 GitHub 的 issue/PR 模型）：
+列表行网格、批量胶囊、Saved Views、EAST 七页签、关系图引擎。这些的**视觉参数**（尺寸/间距/字号/边框）
+已按实页基线逐项对齐并有守卫锁定。
