@@ -141,16 +141,19 @@ class TestHeaderMenus:
         assert "Hide field" in body and "Slice by this field" in body
 
     def test_sort_click_separate_from_menu(self, h: str) -> None:
+        """批 128：每个字段一个下拉按钮（data-lvf），排序是独立按钮（data-lvsort）。
+
+        不再有"字段名排序 + ⋮ 菜单"两件套 —— 与 GitHub 的 Author/Labels 按钮同形。
+        """
         body = fn(h, "lvRender")
-        # 字段名是 sortbtn，菜单是独立 button.menu —— 两个元素、两套 data 属性
-        assert 'class="sortbtn" data-lvsort' in body
-        assert 'class="menu" data-lvmenu' in body
+        assert 'data-lvf="${esc(k)}"' in body
+        assert 'data-lvsort=' in body
+        assert 'class="lv-fbtn lv-sortbtn"' in body
 
     def test_drag_reorder(self, h: str) -> None:
-        body = fn(h, "lvBind")
-        for ev in ("dragstart", "dragover", "drop"):
-            assert ev in body, ev
-        assert 'draggable="true"' in fn(h, "lvRender")
+        """批 128：表头不再有可拖拽的列（GitHub 的列表头也没有），列序由视图配置决定。"""
+        assert "lvSetMeta" in fn(h, "lvBind")
+        assert "order" in fn(h, "lvApplyView") or "order" in h
 
     def test_hidden_field_removable_from_menu(self, h: str) -> None:
         body = fn(h, "lvBind")
@@ -192,9 +195,10 @@ class TestFilterPopover:
         assert "清除搜索、筛选与排序" in body
 
     def test_active_dot(self, h: str) -> None:
+        """非默认筛选要在按钮上有可见状态：字段按钮 `.on` + chips。"""
         body = fn(h, "lvRender")
-        assert 'class="lv-dot"' in body
-        assert "act.length" in body
+        assert 'class="lv-fbtn${on ? " on" : ""}"' in body
+        assert "${chips}" in body
 
     def test_escape_closes_without_losing_state(self, h: str) -> None:
         """Escape 只关浮层；筛选状态存 `STATE`，不进 DOM ⇒ 天然不丢。"""
@@ -267,10 +271,10 @@ class TestA11y:
     """七、无障碍。"""
 
     def test_labels(self, h: str) -> None:
-        assert 'aria-label="字段菜单：' in h
-        assert 'aria-haspopup="menu"' in h
+        assert 'title="按「' in h              # 字段按钮的 tooltip
+        assert 'aria-haspopup="dialog"' in h  # 字段面板是 dialog 语义
         assert 'aria-multiselectable="true"' in h
-        assert 'aria-sort=' in h
+        assert 'aria-expanded' in h
 
     def test_menu_keyboard(self, h: str) -> None:
         body = fn(h, "lvPop")

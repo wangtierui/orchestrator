@@ -364,7 +364,7 @@ body{overflow:hidden;background:var(--bg)}
   gap:12px;padding:0 16px;border-bottom:0;flex-shrink:0;
   position:static}                        /* 固定由 flex 布局保证，不用 sticky */
 .global-header .logo{display:inline-flex;align-items:center}
-.iconbtn{width:32px;height:32px;display:inline-flex;align-items:center;
+.iconbtn{width:32px;height:32px;flex:none;display:inline-flex;align-items:center;
   justify-content:center;border:1px solid var(--border);border-radius:6px;
   background:var(--bg);color:var(--text-muted);cursor:pointer;padding:0}
 .iconbtn:hover{background:var(--hover);color:var(--text)}
@@ -791,6 +791,76 @@ input::placeholder,textarea::placeholder{color:var(--text-muted)}
 select{padding-right:24px}
 /* 标签与按钮同一套圆角（与搜索框一致） */
 .tag,.pill,.lv-badge,.Counter{border-radius:6px}
+
+/* ============================================================
+ * 列表表头（批 128，按 CDP 实测复刻）
+ *   · 一行 48px，底色 #f6f8fa（与顶栏一致），下边框 1px
+ *   · 只放可操作项：状态页签 + 字段按钮 + 排序 + 密度 + 保存视图
+ *   · 不显示列名、不放全局搜索框
+ * ============================================================ */
+.lv-headrow th{height:48px;padding:0;background:var(--bg-subtle);
+  border-bottom:1px solid var(--border)}
+.lv-headbar{display:flex;align-items:center;gap:8px;height:48px;padding:0 10px;
+  background:var(--bg-subtle);flex-wrap:nowrap;overflow:hidden}
+.lv-headbar .ftabs{margin:0;border:0;display:flex;gap:2px;flex-shrink:0}
+.lv-headbar .ftab{height:32px;padding:0 10px;border:0;border-radius:6px;background:none;
+  color:var(--text-muted);font-size:13px;display:inline-flex;align-items:center;gap:6px}
+.lv-headbar .ftab.on{background:var(--bg);color:var(--text);font-weight:600;
+  box-shadow:inset 0 -2px 0 #fd8c73}
+.lv-fsep{width:1px;height:20px;background:var(--border);flex:none}
+.lv-fbtn{height:32px;display:inline-flex;align-items:center;gap:4px;padding:0 10px;
+  border:1px solid var(--border);border-radius:6px;background:var(--bg);
+  color:var(--text);font-size:13px;cursor:pointer;flex:none;white-space:nowrap}
+.lv-fbtn:hover{background:var(--hover)}
+.lv-fbtn.on{border-color:var(--accent);color:var(--accent);background:var(--primary-l)}
+.lv-fbtn .octicon{color:var(--text-muted)}
+.lv-fbtn.on .octicon{color:var(--accent)}
+/* 面板选项：32 高（用户规范） */
+.fpop .opt{height:32px}
+.fpop .opt .t{line-height:1.2}
+
+/* ============================================================
+ * 批 128 覆盖层：顶栏尺寸/底色、侧栏尺寸/滚动条/折叠竖线、反馈入口
+ * （统一放末尾：既有的同名规则被改过多次，锚点匹配不可靠）
+ * ============================================================ */
+/* 顶栏：所有控件 32 高、浅灰底、同一基线 */
+.global-header .brand{height:32px}
+.global-header .brand .logo{width:32px;height:32px}
+.hstat{align-items:center}
+.hstat .badge{height:32px;line-height:30px;padding:0 10px;background:var(--bg-subtle);
+  border:1px solid var(--border);border-radius:6px;color:var(--text-muted);
+  display:inline-flex;align-items:center;white-space:nowrap;font-size:12px}
+.iconbtn{width:32px;height:32px;background:var(--bg-subtle);border-radius:6px}
+.avatar{width:32px;height:32px;display:inline-flex;align-items:center;
+  justify-content:center;font-size:13px}
+.gsearch input{height:32px;background:var(--bg-subtle);border-radius:6px}
+.gsearch .ico{top:9px}
+.gsearch-k{top:6px}
+
+/* 侧栏：项 32 高；折叠键 32 高且无边框；滚动条 6px、无箭头 */
+.rail{border-top:0;padding-top:8px;scrollbar-width:thin;
+  scrollbar-color:var(--border) transparent}
+.rail::-webkit-scrollbar{width:6px;height:6px}
+.rail::-webkit-scrollbar-track{background:transparent}
+.rail::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+.rail::-webkit-scrollbar-button{display:none;width:0;height:0}
+.rail .sideitem,.rail .sideitem-sub{height:32px;flex:0 0 auto}
+.rail .rail-fb{flex:0 0 auto}
+.rail .side-h,.rail .side-sep{flex:0 0 auto}
+.rail .sideitem-sub{font-size:13px}
+.rail-foot{padding-top:6px}
+.rail-foot button{height:32px;border:0;background:transparent;border-radius:6px;
+  color:var(--text-muted);font-size:13px}
+.rail-foot button:hover{background:var(--hover);color:var(--text)}
+.rail-fb{display:flex;align-items:center;gap:8px;width:100%;height:32px;padding:0 8px;
+  margin-top:6px;border:0;background:none;border-radius:6px;color:var(--text-muted);
+  font-size:14px;cursor:pointer}
+.rail-fb:hover{background:var(--hover);color:var(--text)}
+body.rail-off .rail-fb{justify-content:center;padding:0}
+body.rail-off .rail-fb .nm{display:none}
+/* 折叠后：选中项仍要有 4px 竖线（原来被负偏移裁掉） */
+body.rail-off .rail .sideitem.on::before{left:-4px}
+body.rail-off .rail .sideitem.on{background:var(--bg-subtle)}
 </style>
 </head>
 <body>
@@ -992,12 +1062,17 @@ function paintRail(){
            <span class="nm">保存当前视图…</span>
          </button>`
       : "") +
-    `<div class="rail-foot">
+    `<button class="rail-fb" id="railFb" title="反馈：记录一个问题">
+       <span class="glyph" aria-hidden="true">${ico("comment", 16)}</span>
+       <span class="nm">反馈</span></button>
+     <div class="rail-foot">
        <button id="railToggle" aria-expanded="true" aria-controls="rail"
          aria-label="折叠侧边栏" title="折叠侧边栏（Ctrl+B）">
          <span class="rt-ico">${ico("sidebar-collapse", 16)}</span>
          <span class="rt-txt">折叠</span></button>
      </div>`;
+  const fb = $("#railFb");
+  if (fb) fb.onclick = () => openFeedbackModal();
   syncRailToggle();
 }
 
@@ -1694,7 +1769,7 @@ function applyScope(h){
      * "已登录 <机器账号>"，容易被误读成"有人登录过"）： */
     const src = String(a.user_source || "");
     if(a.authenticated && src === "本机账号"){
-      au.textContent = `本机 · ${a.user || ""}`;
+      au.textContent = a.user || "本机账号";   /* 范围由 #scope 表达，避免重复 */
       au.className = "badge";
       au.title = "回环访问：已自动认证为当前 Windows 账号（内网访问需口令）";
     }else if(a.authenticated){
@@ -3669,24 +3744,7 @@ function viewFeedback(d){
     s === "normal" ? " selected" : ""}>${
     ({low:"轻微",normal:"一般",high:"严重",blocker:"阻塞"})[s] || esc(s)}</option>`).join("");
   const pageOpt = TABS.map(t => `<option value="${esc(t.name)}">${esc(t.name)}</option>`).join("");
-  const form = `<div class="card">
-    <h3><span>记录一个问题</span><span class="hint">想改什么、哪里不对、缺什么功能</span></h3>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:var(--s2)">
-      <label class="muted">分类<select id="fbkind">${kindOpt}</select></label>
-      <label class="muted">严重度<select id="fbsev">${sevOpt}</select></label>
-      <label class="muted">页面<select id="fbpage">${pageOpt}</select></label>
-      ${whoCell}
-    </div>
-    <label class="muted" style="display:block;margin-top:var(--s2)">标题
-      <input id="fbtitle" maxlength="120" placeholder="一句话说清问题（≥4 字）"></label>
-    <label class="muted" style="display:block;margin-top:var(--s2)">详细说明（可选）
-      <textarea id="fbdetail" rows="3" maxlength="4000"
-        placeholder="复现步骤 / 期望结果 / 实际结果；数据问题请带上 RFN 或文号"></textarea></label>
-    <div class="toolbar" style="margin-top:var(--s2)">
-      <button class="primary" id="fbsubmit">提交</button>
-      <span class="muted" style="font-size:12px">
-        ${esc(whoNote)} 留言只追加不删除，处置只改状态。</span>
-    </div></div>`;
+  const form = "";   /* 记录入口已移到左侧栏「反馈」（弹窗），页面只留列表 */
   const rows = items.map(it => `<tr>
       <td class="mono">${esc((it.created_at || "").replace("T", " ").slice(0, 19))}</td>
       <td class="mono">${esc(it.fid || "")}</td>
@@ -3724,37 +3782,109 @@ function viewFeedback(d){
     d.source_name || "interfaces.feedback_api", d.fetched_at);
 }
 
+
+/*: 「记录一个问题」表单（左侧栏「反馈」弹窗复用）。
+ * 为什么抽成函数：入口从页面搬到弹窗后，表单标记只能有一份 —— 复制一份就等着两边不一致。 */
+function fbFormHtml(){
+  /* 这些选项原先取自 viewFeedback 的局部变量，抽成独立函数后必须在这里重算 */
+  const _d = obj(STATE.feedback);
+  const _kinds = arr(_d.kinds), _sevs = arr(_d.severities);
+  const _au = obj(STATE.auth);
+  const _known = _au.authenticated ? String(_au.user || "") : "";
+  const whoCell = _known
+    ? `<div class="muted" style="align-self:end;padding-bottom:2px">
+         记录者：<b>${esc(_known)}</b>
+         <span class="tag">${esc(_au.user_source || "登录身份")}</span></div>`
+    : `<label class="muted">域账号<input id="fbacc" placeholder="本机/域账号，如 zhangsan"
+         maxlength="64" autocomplete="username"></label>`;
+  const whoNote = _known
+    ? "记录者取自**登录身份**（服务端写入，不可篡改）。"
+    : "域账号为**自报**（当前未启用登录认证）；IP / 浏览器 / 提交时间由服务端记录。";
+  const kindOpt = _kinds.map(k => `<option value="${esc(k)}">${
+    ({bug: "缺陷", data: "数据质量", feature: "功能缺失", other: "其他"})[k] || esc(k)}</option>`).join("");
+  const sevOpt = _sevs.map(s => `<option value="${esc(s)}"${
+    s === "normal" ? " selected" : ""}>${
+    ({low: "轻微", normal: "一般", high: "严重", blocker: "阻塞"})[s] || esc(s)}</option>`).join("");
+  const pageOpt = TABS.map(t2 => `<option value="${esc(t2.name)}">${esc(t2.name)}</option>`).join("");
+  const form = `<div>
+    <h3><span>记录一个问题</span><span class="hint">想改什么、哪里不对、缺什么功能</span></h3>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:var(--s2)">
+      <label class="muted">分类<select id="fbkind">${kindOpt}</select></label>
+      <label class="muted">严重度<select id="fbsev">${sevOpt}</select></label>
+      <label class="muted">页面<select id="fbpage">${pageOpt}</select></label>
+      ${whoCell}
+    </div>
+    <label class="muted" style="display:block;margin-top:var(--s2)">标题
+      <input id="fbtitle" maxlength="120" placeholder="一句话说清问题（≥4 字）"></label>
+    <label class="muted" style="display:block;margin-top:var(--s2)">详细说明（可选）
+      <textarea id="fbdetail" rows="3" maxlength="4000"
+        placeholder="复现步骤 / 期望结果 / 实际结果；数据问题请带上 RFN 或文号"></textarea></label>
+    <div class="toolbar" style="margin-top:var(--s2)">
+      <button class="primary" id="fbsubmit">提交</button>
+      <span class="muted" style="font-size:12px">
+        ${esc(whoNote)} 留言只追加不删除，处置只改状态。</span>
+    </div></div>`;
+}
+
+/*: 提交（页面与弹窗共用一套逻辑与校验）。 */
+async function fbSubmit(root, btn, done){
+  const val = (sel) => { const el = $(sel, root); return el ? el.value : ""; };
+  const payload = {
+    kind: val("#fbkind") || "bug",
+    severity: val("#fbsev") || "normal",
+    page: val("#fbpage") || "",
+    account: (val("#fbacc") || "").trim(),
+    title: (val("#fbtitle") || "").trim(),
+    detail: (val("#fbdetail") || "").trim(),
+  };
+  if (btn) btn.disabled = true;
+  try {
+    const r = await api("/api/feedback", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(payload),
+    });
+    if (r && r.ok) {
+      toast("已记录：" + r.fid);
+      if (done) done();
+      render();
+    } else {
+      toast("提交失败：" + ((r && r.reason) || "未知原因"), true);
+      if (btn) btn.disabled = false;
+    }
+  } catch (e) {
+    toast("提交失败：" + String(e), true);
+    if (btn) btn.disabled = false;
+  }
+}
+
+/*: 侧栏「反馈」→ 居中弹窗（带遮罩）。 */
+function openFeedbackModal(){
+  lvClosePop();
+  const mask = document.createElement("div");
+  mask.className = "pal-mask";
+  mask.innerHTML = `<div class="pal" role="dialog" aria-modal="true"
+      aria-label="反馈：记录一个问题" style="width:min(760px,94vw)">
+      <div class="pal-h"><span>记录一个问题</span>
+        <button class="iconbtn" data-close aria-label="关闭">${ico("x", 16)}</button></div>
+      <div class="pal-b">${fbFormHtml()}</div>
+    </div>`;
+  document.body.appendChild(mask);
+  const close = () => mask.remove();
+  mask.addEventListener("click", (ev) => {
+    if (ev.target === mask || (ev.target.closest && ev.target.closest("[data-close]"))) close();
+  });
+  const btn = $("#fbsubmit", mask);
+  if (btn) btn.onclick = () => fbSubmit(mask, btn, close);
+  const first = $("#fbtitle", mask);
+  if (first) first.focus();
+  return mask;
+}
+
 function bindFeedback(){
   const v = $("#view");
   const sub = $("#fbsubmit", v);
-  if (sub) sub.onclick = async () => {
-    const payload = {
-      kind: ($("#fbkind", v) || {}).value || "bug",
-      severity: ($("#fbsev", v) || {}).value || "normal",
-      page: ($("#fbpage", v) || {}).value || "",
-      account: (($("#fbacc", v) || {}).value || "").trim(),
-      title: (($("#fbtitle", v) || {}).value || "").trim(),
-      detail: (($("#fbdetail", v) || {}).value || "").trim(),
-    };
-    sub.disabled = true;
-    try {
-      const r = await api("/api/feedback", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify(payload),
-      });
-      if (r && r.ok) {
-        toast("已记录：" + r.fid);
-        render();
-      } else {
-        toast("提交失败：" + ((r && r.reason) || "未知原因"), true);
-        sub.disabled = false;
-      }
-    } catch (e) {
-      toast("提交失败：" + String(e), true);
-      sub.disabled = false;
-    }
-  };
+  if (sub) sub.onclick = () => fbSubmit(v, sub);
   const flt = $("#fbfilter", v);
   if (flt) {
     flt.value = (STATE._fbq || {}).status || "";
@@ -3801,11 +3931,12 @@ const LV = {
     list: "laws", title: "政策法规",
     desc: "外部监管法规；RFN 恒有值，带「派生」标记的编号未入册（可稳定引用，但不参与主题/时效统计）",
     stateKey: "laws", jump: "laws",
+    hdr: ["theme", "rfn", "title", "document_number"],
     fields: [
       {k: "theme", label: "主题", sort: "theme", slice: "theme", chip: true, cell: it => themeCell(it.theme_label)},
-      {k: "rfn", label: "唯一标识号", sort: "rfn", mono: true, cell: it => idCell(it)},
-      {k: "title", label: "名称", sort: "title", primary: true},
-      {k: "document_number", label: "文号", sort: "document_number", meta: true,
+      {k: "rfn", label: "唯一标识号", sort: "rfn", q: "q_rfn", mono: true, cell: it => idCell(it)},
+      {k: "title", label: "名称", sort: "title", q: "q_title", primary: true},
+      {k: "document_number", label: "文号", sort: "document_number", q: "q_docno", meta: true,
        cell: it => `<span class="mono">${esc(it.document_number || "—")}</span>`},
       {k: "timeliness_status", label: "时效", sort: "timeliness_status", slice: "timeliness",
        meta: true, cell: it => timeCell(it.timeliness_status)},
@@ -3819,13 +3950,14 @@ const LV = {
     list: "rules", title: "公司制度",
     desc: "本公司现行制度文件（IPN 为唯一标识号；本地路径可直接打开原件）",
     stateKey: "rules", jump: "rules",
+    hdr: ["theme", "ipn", "title", "docno"],
     fields: [
       {k: "theme", label: "主题", sort: "primary_theme", slice: "theme", chip: true,
        cell: it => themeCell(it.theme_label)},
-      {k: "ipn", label: "唯一标识号", sort: "ipn", mono: true,
+      {k: "ipn", label: "唯一标识号", sort: "ipn", q: "q_ipn", mono: true,
        cell: it => `<span class="mono">${esc(it.ipn || "—")}</span>`},
-      {k: "title", label: "名称", sort: "title", primary: true},
-      {k: "docno", label: "文号", sort: "docno", meta: true,
+      {k: "title", label: "名称", sort: "title", q: "q_title", primary: true},
+      {k: "docno", label: "文号", sort: "docno", q: "q_docno", meta: true,
        cell: it => `<span class="mono">${esc(it.docno || "—")}</span>`},
     /* 「打开本地文件」不再单列：标题本身就是指向该文件的链接（同一动作一个入口）。 */
       {k: "rel", label: "关系", meta: true, cell: it => relBtn(it.ipn)},
@@ -3945,22 +4077,39 @@ function lvRender(list, d, st, f) {
   const primaryFd = primary || {k: "title", label: "事项", sort: "title"};
   /* 三列（选择 / 状态 / 事项）—— GitHub 的 issues 行没有"操作列"：
    * 「查看关系」「打开本地文件」都在标题与元数据里，重复呈现会让每行末尾多一列噪声。 */
-  const headCells = [`<th class="lv-selcell" aria-label="选择"><span class="lv-th">
-      <input type="checkbox" class="lv-ck" id="lvAll" aria-label="全选当前页"
-        ${items.length && items.every(it => sel[lvRowId(list, it)]) ? "checked" : ""}></span></th>`,
-    `<th data-lvfk="${esc(stField)}" class="lv-stcell">
-      <span class="lv-th"><button class="sortbtn" data-lvsort="${esc(stField)}"
-        title="按时效排序">状态${st.sort === stField
-          ? ico(st.desc ? "triangle-down" : "triangle-up", 16) : ""}</button></span></th>`,
-    `<th draggable="true" data-lvfk="${esc(primaryFd.k)}" class="lv-primary-th"
-        aria-sort="${st.sort === (primaryFd.sort || primaryFd.k)
-        ? (st.desc ? "descending" : "ascending") : "none"}">
-      <span class="lv-th"><button class="sortbtn" data-lvsort="${esc(primaryFd.sort || primaryFd.k)}"
-        title="按名称排序">${esc(primaryFd.label || "事项")}${st.sort === (primaryFd.sort || primaryFd.k)
-          ? ico(st.desc ? "triangle-down" : "triangle-up", 16) : ""}</button>
-        <button class="menu" data-lvmenu="${esc(primaryFd.k)}" aria-haspopup="menu"
-          aria-expanded="false" aria-label="字段菜单：${esc(primaryFd.label)}">${
-            ico("kebab-horizontal", 16)}</button></span></th>`].join("");
+  /* 表头 = **一行工具条**（复刻 GitHub 列表头）：页签 + 字段按钮 + 排序 + 密度 + 保存视图。
+   * 不显示任何列名（"状态/名称"），也不放全局搜索框与"筛选/字段"按钮 ——
+   * 实测 GitHub 的列表头只有可操作项。 */
+  const arrow = st.desc ? "triangle-down" : "triangle-up";
+  const fbtns = (cfg.hdr || []).map(k => {
+    const fd = cfg.fields.find(x => x.k === k);
+    if (!fd) return "";
+    const on = fd.slice ? !!st[fd.slice] : !!(fd.q && st[fd.q]);
+    return `<button class="lv-fbtn${on ? " on" : ""}" data-lvf="${esc(k)}"
+      aria-haspopup="dialog" aria-expanded="false"
+      title="按「${esc(fd.label)}」筛选">${esc(fd.label)}${
+      ico("chevron-down", 16)}</button>`;
+  }).join("");
+  const headCells = `<th colspan="3"><div class="lv-bar lv-headbar">
+      ${lvFilterTabs(list, st)}
+      <span class="lv-fsep" aria-hidden="true"></span>
+      ${fbtns}
+      ${chips}
+      <span class="sp"></span>
+      <button class="lv-fbtn lv-sortbtn" data-lvsort="${esc(st.sort || primaryFd.sort || "title")}"
+        title="切换升降序">${esc((cfg.fields.find(x => (x.sort || x.k) === st.sort) || primaryFd).label
+          || "名称")}${ico(arrow, 16)}</button>
+      <span class="density" role="group" aria-label="显示密度">
+        <button data-lvdensity="wide" title="宽松" aria-label="宽松"
+          aria-pressed="${lvDensity() === "wide"}"
+          class="${lvDensity() === "wide" ? "on" : ""}">${ico("rows", 16)}</button>
+        <button data-lvdensity="compact" title="紧凑" aria-label="紧凑"
+          aria-pressed="${lvDensity() === "compact"}"
+          class="${lvDensity() === "compact" ? "on" : ""}">${ico("list-unordered", 16)}</button>
+      </span>
+      <button class="btn" data-lvsavecur="1"
+        title="把当前筛选/排序/切片/字段保存为视图">保存视图</button>
+    </div></th>`;
 
   const rows = items.map(it => {
     const id = lvRowId(list, it);
@@ -3987,7 +4136,7 @@ function lvRender(list, d, st, f) {
     </tr>`;
   }).join("");
 
-  const empty = `<tr><td colspan="4">
+  const empty = `<tr><td colspan="3">
       <div class="lv-empty"><span class="ico" aria-hidden="true">${ico("search", 24)}</span>
         <b>当前筛选无结果</b>
         <div>没有符合条件的记录；可以放宽条件，或清除全部筛选。</div>
@@ -4014,42 +4163,15 @@ function lvRender(list, d, st, f) {
 
   return `<div class="ph">
       <div><div class="desc">${esc(cfg.desc)}</div></div>
-      <div class="acts">
-        <button class="btn" data-lvsavecur="1" title="把当前筛选/排序/切片/字段保存为视图">保存视图</button>
-      </div>
+      <div class="acts"></div>
     </div>
-    ${lvFilterTabs(list, st, st)}
     <div class="lv">
       <div class="lv-body${lvSliceActive(list) || STATE._lvSliceOpen ? " slice" : ""}">
         <div class="lv-scroll"><table class="lv-table" role="grid"
           aria-multiselectable="true" aria-label="${esc(cfg.title)}列表">
           <thead>
             <tr class="lv-headrow">${headCells}
-              <th class="lv-headctl">
-                <div class="lv-bar">
-                  <input id="lvq" class="lv-q" type="search" list="lvqQuals"
-                    placeholder="搜索或筛选…（theme: / source: / 时效: 前缀）"
-                    aria-label="过滤列表" value="${esc(lvQueryText(list, st))}">
-                  <datalist id="lvqQuals">${lvQueryHints(list, f)}</datalist>
-                  <button class="btn" id="lvFilterBtn" aria-haspopup="dialog"
-                    aria-expanded="false" title="排序与清除">筛选${
-                    act.length ? '<span class="lv-dot" aria-hidden="true"></span>' : ""}</button>
-                  <button class="btn" id="lvFieldsBtn" aria-haspopup="dialog"
-                    aria-expanded="false" title="显示/隐藏字段">字段${
-                    (m.hidden || []).length ? `<span class="lv-badge">${(m.hidden || []).length}</span>` : ""}</button>
-                  ${chips}
-                  ${act.length ? `<button class="btn" data-lvclear="1"
-                    title="清除搜索、筛选与排序">清除</button>` : ""}
-                  <span class="density" role="group" aria-label="显示密度">
-                    <button data-lvdensity="wide" title="宽松" aria-label="宽松"
-                      aria-pressed="${lvDensity() === "wide"}"
-                      class="${lvDensity() === "wide" ? "on" : ""}">${ico("rows", 16)}</button>
-                    <button data-lvdensity="compact" title="紧凑" aria-label="紧凑"
-                      aria-pressed="${lvDensity() === "compact"}"
-                      class="${lvDensity() === "compact" ? "on" : ""}">${ico("list-unordered", 16)}</button>
-                  </span>
-                </div>
-              </th>
+
             </tr>
           </thead>
           <tbody>${items.length ? rows : empty}</tbody>
@@ -4176,6 +4298,57 @@ function lvSetDensity(v) {
 /* ---------------- 表头字段筛选面板（选项：复选框 + 圆点 + 主文本 + 计数） ---------------- */
 function lvFieldFilterPop(list, st, fieldKey, anchor, facets) {
   const fd = LV[list].fields.find(x => x.k === fieldKey) || {};
+
+  /* 文本字段（唯一标识号 / 名称 / 文号）：走**服务端** q_* 参数。
+   * 面板里的搜索框既是"过滤选项"也是"输入值"：回车即应用（不让它变成只过滤当前页的假筛选）。
+   * 选项列表给的是"当前页出现过的值"，作为 type-ahead 建议，不是全集。 */
+  if (!fd.slice && fd.q) {
+    const cur = String(st[fd.q] || "");
+    const items = arr(obj(STATE[LV[list].stateKey]).items);
+    const seen = [];
+    items.forEach(it => {
+      const v = String(it[fd.k] || "").trim();
+      if (v && seen.indexOf(v) < 0) seen.push(v);
+    });
+    const optHtml = (q2) => seen.filter(v => !q2 || v.toLowerCase().includes(q2))
+      .slice(0, 40)
+      .map(v => `<button class="opt" data-val="${esc(v)}" role="menuitemradio"
+          aria-checked="${v === cur}">
+          <span class="ck" aria-hidden="true"></span>
+          <span class="dot" aria-hidden="true"></span>
+          <span class="t">${esc(v)}<span class="s">当前页</span></span>
+        </button>`).join("");
+    const html = `<input class="q" id="fpopQ" placeholder="输入或搜索「${esc(fd.label)}」，回车应用…"
+        aria-label="按${esc(fd.label)}筛选" value="${esc(cur)}">
+      <div id="fpopList">${optHtml("") ||
+        '<div class="empty" style="padding:8px;color:var(--text-muted)">当前页没有可选值，直接输入后回车</div>'}</div>
+      <div class="sep"></div>
+      <button data-act="clear" style="width:100%;text-align:left;border:0;background:none;
+        padding:6px 8px;font-size:12.5px;cursor:pointer;color:var(--text-muted)">
+        清除该字段筛选</button>`;
+    const el = lvPop(anchor, html, {
+      cls: "fpop",
+      onPick: (act2, btn) => {
+        if (act2 === "clear") { st[fd.q] = ""; st.page = 1; lvClosePop(); render(); return; }
+        st[fd.q] = String(btn.dataset.val || "");
+        st.page = 1; lvClosePop(); render();
+      },
+    });
+    const q = $("#fpopQ", el);
+    if (q) {
+      q.oninput = () => {
+        const box = $("#fpopList", el);
+        if (box) box.innerHTML = optHtml(q.value.trim().toLowerCase());
+      };
+      q.onkeydown = (ev) => {
+        if (ev.key !== "Enter") return;
+        st[fd.q] = q.value.trim(); st.page = 1; lvClosePop(); render();
+      };
+      q.focus();
+    }
+    return;
+  }
+
   if (!fd.slice) return;
   const opts = lvSliceOptions(list, fieldKey, facets, {});
   const cur = String(st[fd.slice] || "");
@@ -4349,6 +4522,17 @@ function lvBind(list, d, st, f) {
       const f = lvStatusField(list);
       st[f.param] = b.dataset.lvtab || "";
       st.page = 1; render();
+    };
+  });
+
+  /* ⓪ 表头字段按钮：每个字段一个下拉（GitHub 的 Author/Labels 同款） */
+  $$("[data-lvf]", v).forEach(b => {
+    b.onclick = (ev) => {
+      ev.stopPropagation();
+      const open = b.getAttribute("aria-expanded") === "true";
+      if (open) { lvClosePop(); return; }
+      b.setAttribute("aria-expanded", "true");
+      lvFieldFilterPop(list, st, b.dataset.lvf, b, f);
     };
   });
 
@@ -5018,7 +5202,7 @@ function initChrome(){
     const el = $(sel);
     if (el) el.innerHTML = ico(name, size || 16);
   };
-  setIco("#brandIco", "mark-github", 24);
+  setIco("#brandIco", "mark-github", 32);
   setIco("#railOpenIco", "three-bars", 16);
   setIco("#searchIco", "search", 14);
   setIco("#moreIco", "chevron-down", 16);

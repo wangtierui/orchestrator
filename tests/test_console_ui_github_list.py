@@ -80,14 +80,17 @@ class TestListLayout:
     """列表：工具栏在表头内、三列、两种密度。"""
 
     def test_toolbar_inside_header_row(self, h: str) -> None:
-        """批 127：控件组与列名在**同一行表头**（不是表头之上另起一行）。"""
-        body = fn(h, "lvRender")
-        i_head = body.index("<thead>")
-        i_end = body.index("</thead>")
-        seg = body[i_head:i_end]
-        assert 'class="lv-headctl"' in seg, "控件组必须在表头行内"
-        assert seg.count("<tr") == 1, "表头只能有一行（否则控件又跑到表头上面）"
-        assert 'id="lvq"' in seg and 'data-lvdensity="wide"' in seg
+        """批 128：表头只有一行工具条；**没有列名**、没有搜索框、没有"筛选/字段"按钮。"""
+        seg = h             # fn() 会被模板字面量里的 } 截断；这类判据直接查整页
+        assert 'class="lv-bar lv-headbar"' in seg
+        assert '<th colspan="3"><div class="lv-bar lv-headbar">' in seg, \
+            "表头必须是**一个**跨 3 列的单元格（工具条），不再有列名格"
+        assert 'data-lvtab' in seg              # 状态页签在表头里
+        assert 'data-lvf=' in seg               # 字段级下拉
+        assert 'data-lvdensity="wide"' in seg
+        assert 'data-lvsavecur' in seg          # 保存视图内嵌
+        assert 'id="lvq"' not in seg
+        assert 'id="lvFilterBtn"' not in seg and 'id="lvFieldsBtn"' not in seg
 
     def test_three_columns(self, h: str) -> None:
         body = fn(h, "lvRender")
@@ -125,9 +128,9 @@ class TestListLayout:
         assert "padding:6px 8px" in th and "padding:6px 8px" in td
 
     def test_density_buttons_in_header(self, h: str) -> None:
-        body = fn(h, "lvRender")
-        head = body[body.index("<thead>"):body.index("</thead>")]
+        head = h
         assert 'data-lvdensity="wide"' in head and 'ico("rows"' in head
+        assert "保存视图" in head
 
 
 class TestChrome:
@@ -172,9 +175,10 @@ class TestUnifiedMetrics:
         assert ".gsearch input{width:100%;height:32px" in h
         # 页面上有两处 .brand（早期一套），按"达到最终形态那条"的特征串判定
         assert "color:var(--header-fg);height:32px}" in h, "品牌区必须 32 高"
-        assert ".iconbtn{width:32px;height:32px" in h
+        # 批 128：图标按钮被 flex 压成 20px（真 bug），现在必须 flex:none
+        assert ".iconbtn{width:32px;height:32px;flex:none" in h
         assert ".avatar{width:32px;height:32px" in h
-        assert 'setIco("#brandIco", "mark-github", 24)' in h, "logo 应用 24px 图形"
+        assert 'setIco("#brandIco", "mark-github", 32)' in h, "logo 应用 32px 图形"
 
     def test_badge_radius_matches_search(self, h: str) -> None:
         badge = h[h.index(".hstat .badge{"):]

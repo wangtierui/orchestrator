@@ -266,7 +266,8 @@ class TestGithubIssuesRow:
         for cell in ("lv-selcell", "lv-stcell", "lv-primary"):
             assert cell in body, cell
         assert "lv-actcell" not in body, "操作列已删除，不应再出现"
-        assert body.count("<th") >= 3
+        # 批 128：表头只剩**一个**单元格（colspan 工具条），行仍是 3 个单元格
+        assert body.count("<th ") == 1 and 'colspan="3"' in body
 
     def test_state_icon_column(self, h: str) -> None:
         assert "function lvStateIcon(" in h
