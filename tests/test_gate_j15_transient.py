@@ -12,11 +12,7 @@
 
 from __future__ import annotations
 
-import os
-import sys
-
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
+# 门禁纪律：tests/ 里**不新增** sys.path 注入（pytest 已把仓库根放进 sys.path）
 from gates.gate_config_integrity import _js
 
 
