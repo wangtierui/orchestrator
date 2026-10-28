@@ -4541,3 +4541,15 @@ TD-36（前端无 runtime 冒烟）：本机 Python 3.14 上 `quickjs` 无 wheel
 `TestFullOfflineAssets`（primitives 令牌与主题、三份资源的引用顺序、图标 ≥320、四份资源均本地）、
 `TestLoggedInHeader`（浅灰 + 无边框 + 搜索框浅色 + 控件顺序 + `margin-left:auto`）、
 `TestLayoutDetails`（`.grid>*` 白底、侧栏 flex 列 + `margin-top:auto`、密度用图标且无文字）。
+
+### ⑥ 今日链尾 gates 为什么红：J15 读到了"写文件的中间态"
+
+- 现象：`RUN-20261028-060029-30808` 链尾 gates rc=1，265 条
+  `J15: web/assets/index.html:870 括号 '{' 未闭合`；
+- 事实：同一文件在链跑前后两次手跑 `python -m tools.js_syntax_lint` 都是 **OK**，
+  后续 gates 也是 **30/30 PASS**；
+- 根因：写文件是"截断 + 重写"（非原子）。巡检恰好落在写入窗口时会读到半个文件，
+  于是把"正在被写的文件"判成语法错误。**文件正在被写 ≠ 语法错误**；
+- 修法：`gates/gate_config_integrity/_js.py` 增加**稳定读**——首次失败后 0.4s 重试一次，
+  通过则记 `transient` 证据并忽略；**两次都红照常报**（重试不掩盖真错误）。
+- 守卫：`tests/test_gate_j15_transient.py` 两条（瞬时失败被忽略 + 持续失败仍报）。

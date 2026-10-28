@@ -24,6 +24,7 @@
 from __future__ import annotations
 
 import os
+import time
 
 #: 受检的前端入口（新增页面时在此登记；判据遍历）
 FRONTEND_FILES = (
@@ -41,11 +42,30 @@ def _check_inline_js(root: str) -> tuple[list[str], dict]:
         detail["skipped"] = f"js_syntax_lint 不可导入：{type(e).__name__}: {e}"
         return problems, detail
 
+    def _lint_stable(lint, path: str) -> dict:
+        """读一次不通过时**短暂重试一次**。
+
+        原因：写文件是"截断 + 重写"，不是原子操作。巡检/链跑恰好落在写入窗口时，
+        会读到半个文件（实测 2026-10-28 06:10 报 265 条 `括号未闭合`，而同一文件
+        前后两次手跑都 OK）。文件正在被写 ≠ 语法错误 —— 重试仍红才算真问题。
+        """
+        r = lint(path)
+        if r.get("ok"):
+            return r
+        time.sleep(0.4)
+        r2 = lint(path)
+        if r2.get("ok"):
+            r2["transient"] = True
+        return r2
+
     for rel in FRONTEND_FILES:
         path = os.path.join(root, rel)
         if not os.path.exists(path):
             continue
-        r = L.lint_file(path)
+        r = _lint_stable(L.lint_file, path)
+        if r.get("transient"):
+            detail.setdefault("transient", []).append(
+                f"{rel}: 首次读取命中写入中间态，重试后通过（已忽略，不代表语法错误）")
         detail["backend"] = r.get("backend", "")
         detail["files"][rel] = {"scripts": r["scripts"], "lines": r["lines"],
                                 "ok": r["ok"], "issues": len(r["issues"])}
