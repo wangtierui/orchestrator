@@ -374,7 +374,7 @@ class TestFrontendContract:
         assert 'id="brandIco"' in h, "缺 logo 注入点"
         chrome = h[h.index("function initChrome("):]
         chrome = chrome[:chrome.index("function ", 10)]
-        assert 'setIco("#brandIco", "mark-github", 16)' in chrome, "logo 未使用官方 mark-github"
+        assert 'setIco("#brandIco", "mark-github", 24)' in chrome, "logo 未使用官方 mark-github（24px）"
         oct_js = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                               "web", "assets", "octicons.js")
         assert '"mark-github"' in open(oct_js, encoding="utf-8").read(), "octicons.js 缺 mark-github"

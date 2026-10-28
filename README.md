@@ -891,6 +891,10 @@ python -m tools.repair_attachment_text --docno "金非银检函〔2025〕82号" 
 | 视觉 | 主按钮 `#1a7f37`；仅小控件 6px 圆角；面板无外阴影 |
 | 图标 | `web/assets/favicon.svg`（单文件 SVG，`/favicon.svg` 直出 `image/svg+xml`） |
 
+**尺寸基线（批 127）**：顶栏控件 32（logo/头像/通知/主题 32×32）；列表表头 48、宽松行 65、
+紧凑行 38；按钮/输入/侧栏项 32；圆角统一 6px；强调竖线 4px（侧栏/搜索下拉/表头筛选/字段筛选）。
+**全局表单基线**：`input/select/textarea` 统一 32 高 + 6px 圆角 + 聚焦蓝边（此前裸控件靠各页内联，是"风格不一致"的根源）。
+
 **字体（强制）**：正文 `--font-sans` = 系统栈（`-apple-system, BlinkMacSystemFont, "Segoe UI",
 Roboto, Helvetica, Arial, sans-serif, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑"`），
 代码 `--mono` = `ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono"`；

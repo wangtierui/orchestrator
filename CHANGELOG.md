@@ -4592,3 +4592,78 @@ body { font-family: var(--font-sans); font-size: 14px; line-height: 1.5 }
 仍然自研的部分**只因为它们是业务结构**（本项目没有 GitHub 的 issue/PR 模型）：
 列表行网格、批量胶囊、Saved Views、EAST 七页签、关系图引擎。这些的**视觉参数**（尺寸/间距/字号/边框）
 已按实页基线逐项对齐并有守卫锁定。
+
+## [Unreleased] 2026-10-28 — 尺寸统一 + 去页面标题 + 全局表单基线（第一百二十七批）
+
+### ① 顶栏（第 1 条）
+
+* 第一行所有控件 **32 高**；`logo / 我 / 通知 / 主题` 均 **32×32**；
+* logo 换 **24px 图形**（同一份 Octicons 数据，只是取 24 档，16px 在小尺寸下发虚）；
+* 徽标（实时/本机/门禁/抓取时间）**圆角 6px**，与搜索框一致，且定高 24px。
+
+### ② 删除页面文字标题（第 2 条）
+
+`card()` 改为**标题为空则不渲染 `<h3>`**（否则"删了字还留着一条边框"）。已置空：
+待办闭环台 / 关系图谱（含 ego 两处）/ 监管统计（EAST）/ 文档检索 / 提交流 / 留言板 /
+全链数据流（分层 DAG）；政策法规、公司制度去 `<h1>`（描述保留）。
+
+### ③ 去标题区与侧栏的上下边框（第 3 条）
+
+`.ph{border-bottom:0}`、`.rail-foot{border-top:0}` —— 分割只由第二层页签的 1px 承担。
+
+### ④ 文案（第 4 条）
+
+政策法规/公司制度的「查看」→ **「关系」**（`relBtn` 的唯一文案）。
+
+### ⑤ 统一尺寸（第 5 条）
+
+| 对象 | 值 |
+|---|---|
+| 列表表头 | **48px** |
+| 宽松行 | **65px** |
+| 紧凑行 | **38px** |
+| 按钮 / 输入框 / 侧栏项 | **32px** |
+| 圆角（标签/按钮/输入/徽标） | **6px**（与搜索框一致） |
+| 强调竖线（侧栏 / 搜索下拉 / 表头筛选 / 字段筛选） | **4px** |
+
+### ⑥ 全局风格调度（第 6 条）——确实缺一层
+
+审计发现：待办 / 留言板 / 文档检索里的 `<input>` **没有 class**，而项目此前从未定义
+表单控件基线（Primer 只管 `.form-control`），于是裸控件是浏览器默认外观 —— 这就是
+"同一页三种控件风格"的根源。新增**全局基线**：
+
+```css
+input:not([type="checkbox"]):not([type="radio"]), select, textarea {
+  height: 32px; padding: 0 8px; border: 1px solid var(--border);
+  border-radius: 6px; background: var(--bg);
+}
+:focus { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) }
+```
+同时清掉三处"特例实现"：留言板表单的 `border-style:dashed`、待办"处置"按钮的
+`padding:4px 10px;font-size:12px` 内联、数据流转图里写死的 hex（改为 `--ok-l/--warn-l/--bad-l`）。
+
+### ⑦ 页签图标（第 7 条）
+
+第二层每个页签 = **16px Octicon + 文字**（与侧栏同一份 `PAGE_GLYPH` 映射）。
+
+### ⑧ 深灰模块底（第 8 条）——根因是"后写者胜"
+
+`.card{background:transparent}`（去卡片化）与 `.grid>*{background:var(--bg)}` **同权重**，
+前者写在后面 ⇒ 透明生效、容器 1px 切割色（#d0d7de）透出来，看着就是"深灰模块底"。
+修法：在样式表**末尾**再声明一次 `.grid > .card, .grid > .section, .grid > *{background:var(--bg)}`。
+
+### ⑨ 列表控件真正"内嵌表头"（第 9 条）
+
+上一批把控件放在 `<thead>` 的**另一行**，视觉上仍是"表头上面一条"。本批合并成
+**表头同一行**：`[选择][状态][事项 ⋮][控件组]`，控件组右对齐；表头因此只有一行。
+
+### ⑩ 总览留白（第 10 条）
+
+`body.no-rail .main-content{padding:0 220px}`（≤1440px 收 96，≤1024px 收 16）。
+
+### ⑪ 守卫
+
+`tests/test_console_ui_github_list.py` 扩到 **36 项**：新增 `TestUnifiedMetrics`（32/48/65/38/4px/6px）、
+`TestNoPageTitles`（7 个标题不得出现 + 无 h1 + 标题区/侧栏无边框）、
+`TestGlobalFormDispatch`（表单基线存在、无虚线框、流程色已令牌化）、
+`TestTabsAndOverview`（页签有图标、白底覆盖层在透明卡片之后、总览 220 留白）。

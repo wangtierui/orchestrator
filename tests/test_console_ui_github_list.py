@@ -79,13 +79,15 @@ class TestFonts:
 class TestListLayout:
     """列表：工具栏在表头内、三列、两种密度。"""
 
-    def test_toolbar_inside_thead(self, h: str) -> None:
+    def test_toolbar_inside_header_row(self, h: str) -> None:
+        """批 127：控件组与列名在**同一行表头**（不是表头之上另起一行）。"""
         body = fn(h, "lvRender")
         i_head = body.index("<thead>")
-        i_tools = body.index('class="lv-tools"')
         i_end = body.index("</thead>")
-        assert i_head < i_tools < i_end, "工具栏必须在 <thead> 内"
-        assert 'colspan="3"' in body[i_tools:i_end]
+        seg = body[i_head:i_end]
+        assert 'class="lv-headctl"' in seg, "控件组必须在表头行内"
+        assert seg.count("<tr") == 1, "表头只能有一行（否则控件又跑到表头上面）"
+        assert 'id="lvq"' in seg and 'data-lvdensity="wide"' in seg
 
     def test_three_columns(self, h: str) -> None:
         body = fn(h, "lvRender")
@@ -162,3 +164,98 @@ class TestChrome:
     def test_no_redundant_bottom_borders(self, h: str) -> None:
         assert ".lv-bar{border-bottom:0" in h
         assert ".lv-foot{" in h
+
+class TestUnifiedMetrics:
+    """批 127：顶栏 32 / 表头 48 / 行 65·38 / 侧栏项 32 / 4px 线 / 6px 圆角。"""
+
+    def test_header_controls_32(self, h: str) -> None:
+        assert ".gsearch input{width:100%;height:32px" in h
+        # 页面上有两处 .brand（早期一套），按"达到最终形态那条"的特征串判定
+        assert "color:var(--header-fg);height:32px}" in h, "品牌区必须 32 高"
+        assert ".iconbtn{width:32px;height:32px" in h
+        assert ".avatar{width:32px;height:32px" in h
+        assert 'setIco("#brandIco", "mark-github", 24)' in h, "logo 应用 24px 图形"
+
+    def test_badge_radius_matches_search(self, h: str) -> None:
+        badge = h[h.index(".hstat .badge{"):]
+        badge = badge[:badge.index("}")]
+        assert "border-radius:6px" in badge
+
+    def test_list_heights(self, h: str) -> None:
+        assert ".lv-headrow th{height:48px" in h
+        assert ".lv-table td{height:65px}" in h
+        assert "body.lv-compact .lv-table td{height:38px}" in h
+
+    def test_sidebar_item_height(self, h: str) -> None:
+        # 注意 `body.rail-off .rail .sideitem{...}` 也含该子串，必须锚到行首
+        i = h.index("\n.rail .sideitem{")
+        seg = h[i:i + 260]
+        assert "height:32px" in seg
+
+    def test_four_px_lines_unified(self, h: str) -> None:
+        for sel in (".rail .sideitem.on::before", ".spop .it:hover::before",
+                    ".fpop .opt:hover::before"):
+            seg = h[h.index(sel):]
+            seg = seg[:seg.index("}")]
+            assert "width:4px" in seg, sel
+
+    def test_radius_unified_6px(self, h: str) -> None:
+        assert ".tag,.pill,.lv-badge,.Counter{border-radius:6px}" in h
+        assert "--r-md:6px" in h
+
+
+class TestNoPageTitles:
+    """第 2-3 条：删页面标题文字 + 标题区/侧栏树上下边框。"""
+
+    @pytest.mark.parametrize("title", [
+        "待办闭环台", "关系图谱", "监管统计（EAST）", "文档检索", "提交流",
+        "留言板", "全链数据流（分层 DAG）",
+    ])
+    def test_card_title_removed(self, h: str, title: str) -> None:
+        assert f'card("{title}"' not in h, f"{title} 仍是卡片标题"
+
+    def test_list_page_has_no_h1(self, h: str) -> None:
+        body = fn(h, "lvRender")
+        assert "<h1>" not in body
+
+    def test_ph_and_rail_borders_removed(self, h: str) -> None:
+        ph = h[h.index(".ph{"):]
+        ph = ph[:ph.index("}")]
+        assert "border-bottom:0" in ph
+        foot = h[h.index(".rail-foot{"):]
+        foot = foot[:foot.index("}")]
+        assert "border-top:0" in foot
+
+
+class TestGlobalFormDispatch:
+    """第 6 条：有没有"全局风格调度"，还是各页特例内联。"""
+
+    def test_global_form_control_rule(self, h: str) -> None:
+        assert "表单控件基线（批 127）" in h
+        i = h.index('input:not([type="checkbox"])')
+        seg = h[i:i + 420]
+        assert "height:32px" in seg and "border-radius:6px" in seg
+
+    def test_no_dashed_form_box(self, h: str) -> None:
+        assert 'border-style:dashed' not in h
+
+    def test_flow_colors_tokenized(self, h: str) -> None:
+        assert "#E6F6EF" not in h and "#FFF6E5" not in h and "#FDECEA" not in h
+
+
+class TestTabsAndOverview:
+    """第 7 / 8 / 10 条。"""
+
+    def test_tabs_have_icons(self, h: str) -> None:
+        body = fn(h, "buildTabs")
+        assert 'class="tab-ico"' in body and "ico(PAGE_GLYPH[x.id]" in body
+
+    def test_grid_children_white_at_end(self, h: str) -> None:
+        # 覆盖层必须在 `.card{background:transparent}` **之后**才生效
+        i_card = h.index(".card{background:transparent")
+        i_fix = h.index(".grid > .card, .grid > .section, .grid > *{background:var(--bg)}")
+        assert i_fix > i_card, "白底覆盖层必须写在透明卡片规则之后"
+
+    def test_overview_padding_220(self, h: str) -> None:
+        assert "body.no-rail .main-content{padding-left:220px;padding-right:220px}" in h
+        assert 'document.body.classList.toggle("no-rail", CUR === "overview")' in h

@@ -199,7 +199,8 @@ class TestListV2:
         assert 'placeholder="搜索该字段的取值' in body
         assert ".fpop .opt:hover::before" in h
         seg = h[h.index(".fpop .opt:hover::before"):][:260]
-        assert "width:2px" in seg, "表头筛选面板悬停线应为 2px（本轮规范）"
+        # 批 127：侧栏 / 搜索下拉 / 表头筛选 / 字段筛选的强调线**统一 4px**
+        assert "width:4px" in seg, "表头筛选面板悬停线应为 4px"
 
     def test_density_toggle(self, h: str) -> None:
         assert "data-lvdensity" in h and "lv.density" in h

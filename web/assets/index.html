@@ -306,7 +306,9 @@ header{position:sticky;top:0;z-index:40;background:var(--bg);border-bottom:1px s
 .hbar{display:flex;align-items:center;gap:12px;height:var(--head-h);
   padding:0 16px;max-width:none;margin:0}
 .brand{display:flex;align-items:center;gap:8px;font-weight:600;font-size:14px;
-  color:var(--header-fg)}
+  color:var(--header-fg);height:32px}
+.brand .logo{width:32px;height:32px;display:inline-flex;align-items:center;
+  justify-content:center}
 .brand .logo{width:20px;height:20px;color:var(--text)}
 .brand small{display:none}
 .crumb{display:flex;align-items:center;gap:6px;color:var(--text-muted);font-size:13px;min-width:0}
@@ -321,8 +323,9 @@ header{position:sticky;top:0;z-index:40;background:var(--bg);border-bottom:1px s
 .hsearch kbd{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--fg3);
   border:1px solid var(--border);border-radius:4px;padding:0 4px;background:var(--bg)}
 .hstat{display:flex;gap:8px;align-items:center;margin-left:auto;flex-wrap:nowrap}
-.hstat .badge{font-size:11.5px;padding:2px 8px;background:var(--bg);
-  border-color:var(--border);color:var(--text-muted)}
+.hstat .badge{font-size:11.5px;height:24px;line-height:22px;padding:0 8px;
+  background:var(--bg);border:1px solid var(--border);border-radius:6px;
+  color:var(--text-muted)}
 .hstat .badge.live{background:var(--ok-l);border-color:#aceebb;color:#116329}
 .hstat .badge.off{background:var(--warn-l);border-color:#eac54f;color:#7d4e00}
 .hstat .badge.bad{background:var(--bad-l);border-color:#ffcecb;color:#a40e26}
@@ -337,7 +340,7 @@ header{position:sticky;top:0;z-index:40;background:var(--bg);border-bottom:1px s
   body.rail-open .rail-mask{display:block;position:fixed;inset:var(--head-h) 0 0 0;
     background:rgba(31,35,40,.28);z-index:34}
 }
-.avatar{width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;
+.avatar{width:32px;height:32px;border-radius:50%;background:var(--accent);color:#fff;
   display:inline-flex;align-items:center;justify-content:center;font-size:11.5px;
   font-weight:600;border:0;cursor:pointer}
 header nav{display:none}          /* 页面导航移入侧栏（顶栏只留面包屑与全局入口） */
@@ -361,7 +364,7 @@ body{overflow:hidden;background:var(--bg)}
   gap:12px;padding:0 16px;border-bottom:0;flex-shrink:0;
   position:static}                        /* 固定由 flex 布局保证，不用 sticky */
 .global-header .logo{display:inline-flex;align-items:center}
-.iconbtn{width:28px;height:28px;display:inline-flex;align-items:center;
+.iconbtn{width:32px;height:32px;display:inline-flex;align-items:center;
   justify-content:center;border:1px solid var(--border);border-radius:6px;
   background:var(--bg);color:var(--text-muted);cursor:pointer;padding:0}
 .iconbtn:hover{background:var(--hover);color:var(--text)}
@@ -369,7 +372,7 @@ body{overflow:hidden;background:var(--bg)}
 .tabs-more{display:inline-flex;align-items:center;gap:4px}
 .global-header .brand small{display:none}
 .gsearch{flex:0 1 320px;min-width:140px;position:relative;display:flex}
-.gsearch input{width:100%;height:30px;padding:0 34px 0 30px;font-size:13px;
+.gsearch input{width:100%;height:32px;padding:0 40px 0 30px;font-size:13px;
   background:var(--bg);border:1px solid var(--border);
   border-radius:6px;color:var(--text)}
 .gsearch input::placeholder{color:var(--text-muted)}
@@ -377,7 +380,7 @@ body{overflow:hidden;background:var(--bg)}
   box-shadow:0 0 0 1px var(--accent)}
 .gsearch .ico{position:absolute;left:9px;top:7px;color:var(--text-muted);font-size:12px;
   pointer-events:none}
-.gsearch-k{position:absolute;right:6px;top:5px;height:20px;padding:0 5px;font-size:11px;
+.gsearch-k{position:absolute;right:6px;top:6px;height:20px;padding:0 5px;font-size:11px;
   font-family:var(--mono);color:var(--text-muted);background:var(--bg-subtle);
   border:1px solid var(--border);border-radius:4px;cursor:pointer}
 .gsearch-k:hover{color:var(--text);background:var(--hover)}
@@ -391,7 +394,7 @@ body{overflow:hidden;background:var(--bg)}
   text-align:left;position:relative}
 .spop .it:hover,.spop .it[aria-selected="true"]{background:var(--bg-subtle)}
 .spop .it:hover::before,.spop .it[aria-selected="true"]::before{content:"";position:absolute;
-  left:0;top:3px;bottom:3px;width:2px;background:var(--accent);border-radius:2px}
+  left:0;top:3px;bottom:3px;width:4px;background:var(--accent);border-radius:2px}
 .spop .it .hint{margin-left:auto;font-size:11.5px;color:var(--text-muted)}
 .spop .empty{padding:10px 8px;font-size:12.5px;color:var(--text-muted)}
 /* 模块页签：溢出折叠进 More，容器 overflow:hidden 保证永不出现横向滚动条 */
@@ -399,11 +402,13 @@ body{overflow:hidden;background:var(--bg)}
   display:flex;align-items:stretch;justify-content:flex-start;padding:0 8px;
   flex-shrink:0;overflow:hidden;position:relative}
 .tabs-inner{display:flex;align-items:stretch;gap:0;min-width:0;overflow:hidden}
-.tab{height:48px;padding:0 14px;border:0;background:none;color:var(--text-muted);
+.tab{height:48px;padding:0 12px;border:0;background:none;color:var(--text-muted);
   font-size:14px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;
   border-bottom:2px solid transparent;white-space:nowrap;flex:0 0 auto}
 .tab:hover{color:var(--text);background:var(--bg-subtle)}
 .tab.on{color:var(--text);font-weight:600;border-bottom-color:#fd8c73}
+.tab .tab-ico{display:inline-flex;align-items:center;color:var(--text-muted)}
+.tab.on .tab-ico{color:var(--text)}
 .tabs-more{height:48px;padding:0 12px;border:0;background:none;color:var(--text-muted);
   font-size:13.5px;cursor:pointer;display:inline-flex;align-items:center;gap:4px;
   border-bottom:2px solid transparent;margin-left:auto;flex:0 0 auto}
@@ -420,10 +425,14 @@ body.rail-off .rail .cnt,body.rail-off .rail .rail-foot .rt-txt{display:none}
 body.rail-off .rail .sideitem{justify-content:center;padding:8px 0}
 body.rail-off .rail .sideitem .glyph{display:inline-flex}
 .main-content{flex:1;min-width:0;overflow-y:auto;padding:24px;background:var(--bg)}
+/* 总览是全景页：没有侧栏，左右各留 220 的呼吸区（用户第 10 条），窄屏自动收 */
+body.no-rail .main-content{padding-left:220px;padding-right:220px}
+@media (max-width:1440px){body.no-rail .main-content{padding-left:96px;padding-right:96px}}
+@media (max-width:1024px){body.no-rail .main-content{padding-left:16px;padding-right:16px}}
 main{padding:0;max-width:none;margin:0;min-width:0}
 /* 侧栏项：选中 = 浅灰底 + 深黑加粗 + 左侧 2px 强调线（**不用蓝色整块**） */
 .rail .sideitem{position:relative;display:flex;align-items:center;gap:8px;width:100%;
-  border:0;background:none;padding:6px 8px;border-radius:6px;font-size:14px;
+  border:0;background:none;padding:0 8px;height:32px;border-radius:6px;font-size:14px;
   color:var(--text);cursor:pointer;text-align:left;line-height:1.4}
 .rail .sideitem:hover{background:var(--bg-subtle)}
 .rail .sideitem.on{background:var(--bg-subtle);color:var(--text);font-weight:600}
@@ -439,7 +448,7 @@ main{padding:0;max-width:none;margin:0;min-width:0}
 .side-h{font-size:11px;font-weight:600;letter-spacing:.02em;color:var(--text-muted);
   padding:10px 8px 4px;display:flex;align-items:center;gap:6px;text-transform:uppercase}
 .side-sep{height:1px;background:var(--border);margin:8px 0}
-.rail-foot{margin-top:auto;padding-top:8px;border-top:1px solid var(--border);
+.rail-foot{margin-top:auto;padding-top:8px;border-top:0;
   display:flex;align-items:center;gap:6px}
 .rail-foot .rt-ico{display:inline-flex;align-items:center}
 .rail-foot button{flex:1;display:inline-flex;align-items:center;justify-content:center;
@@ -450,8 +459,8 @@ main{padding:0;max-width:none;margin:0;min-width:0}
 .sideitem-sub .nm::before{content:"·";margin-right:5px;color:var(--fg4)}
 
 /* 页面标题区（GitHub 的 repository header 观感：标题 + 灰色描述 + 右侧动作） */
-.ph{display:flex;align-items:flex-start;gap:12px;margin:0 0 16px;
-  padding-bottom:12px;border-bottom:1px solid var(--border)}
+.ph{display:flex;align-items:flex-start;gap:12px;margin:0 0 12px;
+  padding-bottom:0;border-bottom:0}
 .ph h1{font-size:20px;font-weight:600;margin:0;color:var(--text);line-height:1.3}
 .ph .desc{font-size:13px;color:var(--text-muted);margin-top:4px}
 .ph .acts{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
@@ -676,7 +685,7 @@ body.lv-compact .lv-title{font-size:12.5px}
   font-size:12.5px;color:var(--text);cursor:pointer}
 .fpop .opt:hover{background:var(--bg-subtle)}
 .fpop .opt:hover::before,.fpop .opt[aria-checked="true"]::before{content:"";position:absolute;
-  left:0;top:3px;bottom:3px;width:2px;background:var(--accent);border-radius:2px}
+  left:0;top:3px;bottom:3px;width:4px;background:var(--accent);border-radius:2px}
 .fpop .opt[aria-checked="true"]{background:var(--bg-subtle);font-weight:600}
 
 .fpop .opt .dot{width:8px;height:8px;border-radius:50%;flex:none;background:var(--fg4)}
@@ -747,6 +756,41 @@ body.lv-compact .lv-primary .lv-meta{display:inline-flex;margin-top:0;flex:1 1 a
 /* 分页脚：只保留与表格之间的那一条线 */
 .lv-foot{display:flex;justify-content:flex-end;padding:8px 8px 4px}
 .lv-foot .pager{border:0;padding:0;background:transparent}
+
+/* 统一高度（批 127）：表头 48 / 宽松行 65 / 紧凑行 38 / 控件 32 */
+.lv-headrow th{height:48px;padding:0}
+.lv-table td{height:65px}
+body.lv-compact .lv-table td{height:38px}
+.lv-headctl{width:auto;padding:0 8px 0 0 !important}
+.lv-headctl .lv-bar{display:flex;align-items:center;gap:6px;flex-wrap:nowrap;
+  justify-content:flex-end;padding:0}
+.lv-headctl .lv-q{height:32px;flex:0 1 240px;min-width:120px}
+.lv-headctl .btn{height:32px}
+.lv-headctl .count{font-size:12px;color:var(--text-muted);white-space:nowrap}
+.lv-headctl .density{height:32px}
+.lv-headctl .density button{height:30px}
+@media (max-width:1200px){.lv-headctl .lv-q{flex-basis:160px}}
+
+/* 栅格里的模块必须是白底：`.card{background:transparent}` 会盖掉 `.grid>*`（同权重、后写者胜），
+ * 于是容器的 1px 切割色（#d0d7de）透出来，看起来像"深灰模块底"（用户第 8 条）。 */
+.grid > .card, .grid > .section, .grid > *{background:var(--bg)}
+
+/* ============================================================
+ * 表单控件基线（批 127）：一切 input/select/textarea 走同一套尺寸与圆角。
+ * 为什么需要：待办/留言板/文档检索里的控件**没有 class**，Primer 只管 `.form-control`，
+ * 于是裸 input 是浏览器默认外观 —— 这是"三个页面风格不一致"的真正原因。
+ * ============================================================ */
+input:not([type="checkbox"]):not([type="radio"]),select,textarea{
+  height:32px;padding:0 8px;font-family:var(--font-sans);font-size:13px;
+  color:var(--text);background:var(--bg);border:1px solid var(--border);
+  border-radius:6px;box-shadow:none;min-width:0}
+textarea{height:auto;padding:6px 8px;line-height:1.5}
+input:not([type="checkbox"]):not([type="radio"]):focus,select:focus,textarea:focus{
+  outline:none;border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+input::placeholder,textarea::placeholder{color:var(--text-muted)}
+select{padding-right:24px}
+/* 标签与按钮同一套圆角（与搜索框一致） */
+.tag,.pill,.lv-badge,.Counter{border-radius:6px}
 </style>
 </head>
 <body>
@@ -909,6 +953,7 @@ function _railItem(opts){
 function paintRail(){
   const rail = $("#rail");
   if (!rail) return;
+  document.body.classList.toggle("no-rail", CUR === "overview");
   /* 总览是"全景页"，没有第二维导航；左栏在这里只会挤掉内容（用户第 3 条）。 */
   if (CUR === "overview") {
     rail.hidden = true;
@@ -1046,7 +1091,12 @@ async function api(path, opts){
 }
 
 function card(title, hint, body, src, at){
-  return `<div class="card"><h3><span>${esc(title)}</span><span class="hint">${esc(hint||"")}</span></h3>
+  /* 标题为空 ⇒ **不渲染标题行**（用户第 2 条：这些页面不需要文字标题）。
+   * 保留 h3 的空壳会让标题区仍占一条边框/高度，等于"删了字没删结构"。 */
+  const head = title
+    ? `<h3><span>${esc(title)}</span><span class="hint">${esc(hint||"")}</span></h3>`
+    : "";
+  return `<div class="card">${head}
     ${body}<div class="src">数据源：${esc(src||"—")}${at?(" ｜ 抓取："+esc(at)):""}</div></div>`;
 }
 function unavail(d, why){
@@ -1243,8 +1293,9 @@ function viewFlow(d){
     const x=colX[l], y=PADY+i*(ROWH+GAPY);
     pos[n.id]={x,y,cx:x+COLW/2,cy:y+ROWH/2}; }); });
 
-  const STATUS_FILL={ok:"#E6F6EF",failed:"#FDECEA",skip:"#F2F4F7",
-                     degraded:"#FFF6E5",idle:"#FFFFFF",unknown:"#FFFFFF"};
+  /* 颜色一律走令牌（原来写死 hex，换主题/换色板时这张图是唯一"不跟着变"的地方） */
+const STATUS_FILL={ok:"var(--ok-l)",failed:"var(--bad-l)",skip:"var(--alt)",
+                     degraded:"var(--warn-l)",idle:"var(--bg)",unknown:"var(--bg)"};
   const STATUS_STROKE={ok:"#12855A",failed:"#C0392B",skip:"#D0D5DD",
                        degraded:"#B26A00",idle:"#D0D5DD",unknown:"#D0D5DD"};
   let svg=`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img">`;
@@ -1288,9 +1339,9 @@ ${n.purpose?("作用："+esc(n.purpose)):""}</title>
   svg+="</svg>";
 
   const legend=`<div class="legend">
-    <span><i style="background:#E6F6EF;border:1px solid #12855A"></i>ok</span>
-    <span><i style="background:#FFF6E5;border:1px solid #B26A00"></i>degraded</span>
-    <span><i style="background:#FDECEA;border:1px solid #C0392B"></i>failed</span>
+    <span><i style="background:var(--ok-l);border:1px solid var(--ok)"></i>ok</span>
+    <span><i style="background:var(--warn-l);border:1px solid var(--warn)"></i>degraded</span>
+    <span><i style="background:var(--bad-l);border:1px solid var(--bad)"></i>failed</span>
     <span><i style="background:#F2F4F7;border:1px solid #D0D5DD"></i>skip/未运行</span>
     <span>连线宽度 ∝ √记录数；悬停看详情，点击看抽屉</span></div>`;
   const t=obj(d.totals);
@@ -1300,7 +1351,7 @@ ${n.purpose?("作用："+esc(n.purpose)):""}</title>
                         skip: "#D0D5DD"}[s] || "#D0D5DD");
   const _fItems = nodes.map(n => ({key: n.id, label: n.id, dot: _dot(n.status),
                                    title: `${n.id} · ${n.status || "unknown"}`}));
-  return card("全链数据流（分层 DAG）",
+  return card("",
     `${num(t.nodes)} 节点 · ${num(t.edges)} 条边 · ${num(t.sources)} 源`,
     sideShell("flow", _fItems, String(STATE.flow_sel || ""),
     `<div class="scrollx">${svg}</div>${legend}
@@ -1431,7 +1482,7 @@ function viewWorklist(d, kinds){
     return `<tr data-id="${esc(it.item_id)}" data-idx="${idx}">
       <td style="white-space:nowrap">
         <input type="checkbox" class="wlck" value="${esc(it.item_id)}" title="选择本条">
-        <button class="act" style="padding:4px 10px;font-size:12px" data-resolve="${esc(it.item_id)}">处置</button>
+        <button class="btn" data-resolve="${esc(it.item_id)}">处置</button>
       </td>
       <td><code>${esc(kind)}</code></td>
       <td class="id">${cellVal(f.identity, f.identity_src)}</td>
@@ -1461,8 +1512,8 @@ function viewWorklist(d, kinds){
       <span class="muted">已选 <b id="wln">0</b> 条</span>
       <select id="wlstatus"><option value="resolved">resolved（已处置）</option>
         <option value="dismissed">dismissed（不适用）</option></select>
-      <input id="wlby" placeholder="操作者" value="confirm_console" size="14">
-      <input id="wlwhy" placeholder="批量处置理由（必填，进审计台账）" size="30">
+      <input id="wlby" placeholder="操作者" value="confirm_console" style="width:160px">
+      <input id="wlwhy" placeholder="批量处置理由（必填，进审计台账）" style="flex:1;min-width:220px">
       <button class="act" id="wlbulk">批量处置</button>
       <span class="muted" style="margin-left:auto">写路径纪律：${esc((kinds&&kinds.action_policy)||"worklist_resolve")}</span>
     </div>`;
@@ -1474,7 +1525,7 @@ function viewWorklist(d, kinds){
     </th><th style="width:190px">kind</th>
     <th style="width:170px">唯一标识号</th><th>名称</th><th style="width:170px">文号</th>
     <th style="width:200px">访问地址</th><th>详情 / 生产者建议</th></tr>`;
-  return card("待办闭环台", wtitle,
+  return card("", wtitle,
     sideShell("worklist", _kItems, String(STATE._wlkind || ""), toolbar + (rows
       ? `<div class="tblwrap"><table><thead>${head}</thead><tbody>${rows}</tbody></table></div>`
       : '<div class="muted">当前无待办 ✓</div>')
@@ -1519,9 +1570,10 @@ function viewSearch(d){
     return `<tr><td class="id">${esc(r.rfn||r.ipn||"—")}</td>
       <td>${esc(r.title||"")}</td><td class="mono">${esc(r.document_number||"")}</td>
       <td>${esc(r.timeliness_status||"")}</td><td>${url}</td></tr>`;}).join("");
-  return card("文档检索","base_api FTS5",
+  return card("","base_api FTS5",
     `<div class="toolbar">
-      <input id="q" placeholder="输入关键词（标题/文号/正文）" value="${esc(d.query||"")}" style="flex:1;min-width:260px">
+      <input id="q" placeholder="输入关键词（标题/文号/正文）" value="${esc(d.query||"")}"
+      style="flex:1;min-width:260px;max-width:none">
       <select id="kind"><option value="records">记录</option><option value="clauses">条文</option></select>
       <button class="act" id="qbtn">检索</button>
       <span class="muted">后端：${esc(d.backend||"—")} · 方式：${
@@ -1556,7 +1608,7 @@ function viewRelease(d){
     <td class="mono">${esc(c.sha)}</td><td>${esc(c.subject)}</td>
     <td><button class="link" data-sha="${esc(c.sha)}">变更</button></td></tr>`).join("");
   const stream = `<div class="grid">
-    ${card("提交流",`git log ${day ? day + " · " : "全量 "}${commits.length} 条${
+    ${card("",`git log ${day ? day + " · " : "全量 "}${commits.length} 条${
       d.commit_total ? "（total " + d.commit_total + "）" : ""}`,
       commits?`<div class="tblwrap" style="max-height:560px"><table><thead><tr><th style="width:96px">日期</th>
         <th style="width:92px">sha</th><th>主题</th><th style="width:64px"></th></tr></thead><tbody>${rows}</tbody></table></div>
@@ -2049,7 +2101,7 @@ function idCell(it){
 function relBtn(ref){
   if (!ref) return '<span class="muted">—</span>';
   return `<button class="link" data-rel="${esc(ref)}"
-    title="在「关系图谱」中查看 ${esc(ref)}">查看</button>`;
+    title="在「关系图谱」中查看 ${esc(ref)}">关系</button>`;
 }
 function themeCell(t){
   return t ? `<span class="tag">${esc(t)}</span>` : '<span class="muted">—</span>';
@@ -2460,7 +2512,7 @@ function viewGraphGlobal(d){
       : (obj(uv[v.key]).entity != null ? obj(uv[v.key]).entity : undefined),
     title: v.name + " · 数字为已定位条数",
   }));
-  return card("关系图谱", "全局", sideShell("graph", items, cur, body, "视图"),
+  return card("", "全局", sideShell("graph", items, cur, body, "视图"),
     d.source_name || "relations_api.global_graph", d.fetched_at);
 }
 
@@ -2724,12 +2776,12 @@ function viewGraph(d){
          无法作为图节点定位（不会把它们伪造成"已定位"）。</div>
          <div class="muted">处置：先在归属表补登记对方文件（生成 RFN），再回到本页查看。</div>`
       : '<div class="note">该文件暂无「依据 / 废止」关系记录。</div>';
-    return card("关系图谱", esc(d.ref), head + note,
+    return card("", esc(d.ref), head + note,
       d.source_name || "relations_api.ego", d.fetched_at);
   }
     /* 2026-10-26：绘图改 3D（`_gEgo`）。局部图常见 20~60 个邻居，
    * 2D 圆周布局在 30+ 时会挤成一圈字；3D 簇状球更好分辨。 */
-  return card("关系图谱", esc(d.ref),
+  return card("", esc(d.ref),
     head + _gEgo(d), d.source_name || "relations_api.ego", d.fetched_at);
 }
 
@@ -2837,7 +2889,7 @@ function viewRegstats(d){
   </div>`;
   const body = `${kpiRow}${eastSection(d, d)}
     <div class="muted" style="margin-top:var(--s3)">${esc(d.note || "")}</div>`;
-  return card("监管统计（EAST）",
+  return card("",
     `${num(d.total)} 条资料 / ${num(obj(STATE.east).stats.tables)} 张数据表`, body,
     d.source_name || "base_api.regstats_docs", d.fetched_at);
 }
@@ -3617,7 +3669,7 @@ function viewFeedback(d){
     s === "normal" ? " selected" : ""}>${
     ({low:"轻微",normal:"一般",high:"严重",blocker:"阻塞"})[s] || esc(s)}</option>`).join("");
   const pageOpt = TABS.map(t => `<option value="${esc(t.name)}">${esc(t.name)}</option>`).join("");
-  const form = `<div class="card" style="box-shadow:none;border-style:dashed">
+  const form = `<div class="card">
     <h3><span>记录一个问题</span><span class="hint">想改什么、哪里不对、缺什么功能</span></h3>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:var(--s2)">
       <label class="muted">分类<select id="fbkind">${kindOpt}</select></label>
@@ -3668,7 +3720,7 @@ function viewFeedback(d){
       <th>时间</th><th>编号</th><th>分类</th><th>严重度</th><th>页面</th><th>标题 / 说明</th>
       <th>记录者</th><th>IP</th><th>状态</th><th>操作</th>
     </tr></thead><tbody>${rows}</tbody></table></div>`;
-  return card("留言板", "发现问题就记一条", body,
+  return card("", "发现问题就记一条", body,
     d.source_name || "interfaces.feedback_api", d.fetched_at);
 }
 
@@ -3935,7 +3987,7 @@ function lvRender(list, d, st, f) {
     </tr>`;
   }).join("");
 
-  const empty = `<tr><td colspan="3">
+  const empty = `<tr><td colspan="4">
       <div class="lv-empty"><span class="ico" aria-hidden="true">${ico("search", 24)}</span>
         <b>当前筛选无结果</b>
         <div>没有符合条件的记录；可以放宽条件，或清除全部筛选。</div>
@@ -3961,7 +4013,7 @@ function lvRender(list, d, st, f) {
     </aside>`;
 
   return `<div class="ph">
-      <div><h1>${esc(cfg.title)}</h1><div class="desc">${esc(cfg.desc)}</div></div>
+      <div><div class="desc">${esc(cfg.desc)}</div></div>
       <div class="acts">
         <button class="btn" data-lvsavecur="1" title="把当前筛选/排序/切片/字段保存为视图">保存视图</button>
       </div>
@@ -3972,34 +4024,33 @@ function lvRender(list, d, st, f) {
         <div class="lv-scroll"><table class="lv-table" role="grid"
           aria-multiselectable="true" aria-label="${esc(cfg.title)}列表">
           <thead>
-            <tr class="lv-tools"><th colspan="3">
-              <div class="lv-bar">
-                <input id="lvq" class="lv-q" type="search" list="lvqQuals"
-                  placeholder="搜索或筛选：名称关键字，或 theme: / source: / 时效: 前缀"
-                  aria-label="过滤列表" value="${esc(lvQueryText(list, st))}">
-                <datalist id="lvqQuals">${lvQueryHints(list, f)}</datalist>
-                <button class="btn" id="lvFilterBtn" aria-haspopup="dialog"
-                  aria-expanded="false" title="排序与清除">筛选${
-                  act.length ? '<span class="lv-dot" aria-hidden="true"></span>' : ""}</button>
-                <button class="btn" id="lvFieldsBtn" aria-haspopup="dialog"
-                  aria-expanded="false" title="显示/隐藏字段">字段${
-                  (m.hidden || []).length ? `<span class="lv-badge">${(m.hidden || []).length} 隐藏</span>` : ""}</button>
-                ${chips}
-                <span class="sp"></span>
-                ${act.length ? `<button class="btn" data-lvclear="1"
-                  title="清除搜索、筛选与排序">清除</button>` : ""}
-                <span class="count">共 <b>${num(d.total)}</b> 条 · 第 ${num(d.page)} / ${num(d.pages)} 页</span>
-                <span class="density" role="group" aria-label="显示密度">
-                  <button data-lvdensity="wide" title="宽松" aria-label="宽松"
-                    aria-pressed="${lvDensity() === "wide"}"
-                    class="${lvDensity() === "wide" ? "on" : ""}">${ico("rows", 16)}</button>
-                  <button data-lvdensity="compact" title="紧凑" aria-label="紧凑"
-                    aria-pressed="${lvDensity() === "compact"}"
-                    class="${lvDensity() === "compact" ? "on" : ""}">${ico("list-unordered", 16)}</button>
-                </span>
-              </div>
-            </th></tr>
-            <tr class="lv-headrow">${headCells}</tr>
+            <tr class="lv-headrow">${headCells}
+              <th class="lv-headctl">
+                <div class="lv-bar">
+                  <input id="lvq" class="lv-q" type="search" list="lvqQuals"
+                    placeholder="搜索或筛选…（theme: / source: / 时效: 前缀）"
+                    aria-label="过滤列表" value="${esc(lvQueryText(list, st))}">
+                  <datalist id="lvqQuals">${lvQueryHints(list, f)}</datalist>
+                  <button class="btn" id="lvFilterBtn" aria-haspopup="dialog"
+                    aria-expanded="false" title="排序与清除">筛选${
+                    act.length ? '<span class="lv-dot" aria-hidden="true"></span>' : ""}</button>
+                  <button class="btn" id="lvFieldsBtn" aria-haspopup="dialog"
+                    aria-expanded="false" title="显示/隐藏字段">字段${
+                    (m.hidden || []).length ? `<span class="lv-badge">${(m.hidden || []).length}</span>` : ""}</button>
+                  ${chips}
+                  ${act.length ? `<button class="btn" data-lvclear="1"
+                    title="清除搜索、筛选与排序">清除</button>` : ""}
+                  <span class="density" role="group" aria-label="显示密度">
+                    <button data-lvdensity="wide" title="宽松" aria-label="宽松"
+                      aria-pressed="${lvDensity() === "wide"}"
+                      class="${lvDensity() === "wide" ? "on" : ""}">${ico("rows", 16)}</button>
+                    <button data-lvdensity="compact" title="紧凑" aria-label="紧凑"
+                      aria-pressed="${lvDensity() === "compact"}"
+                      class="${lvDensity() === "compact" ? "on" : ""}">${ico("list-unordered", 16)}</button>
+                  </span>
+                </div>
+              </th>
+            </tr>
           </thead>
           <tbody>${items.length ? rows : empty}</tbody>
         </table></div>
@@ -4780,8 +4831,10 @@ let _tabsSig = "";
 function buildTabs(){
   const box = $("#tabsInner");
   if (!box) return;
+  /* 每个页签 = 图标 + 文字（图标取自本地 Octicons，与侧栏同一份映射） */
   box.innerHTML = TABS.map(x => `<button class="tab" data-id="${esc(x.id)}"
-      role="tab" aria-selected="false">${esc(x.name)}</button>`).join("");
+      role="tab" aria-selected="false"><span class="tab-ico" aria-hidden="true">${
+      ico(PAGE_GLYPH[x.id] || "circle", 16)}</span><span>${esc(x.name)}</span></button>`).join("");
   $$(".tab", box).forEach(b => {
     b.onclick = () => goPage(b.dataset.id);
   });
@@ -4965,7 +5018,7 @@ function initChrome(){
     const el = $(sel);
     if (el) el.innerHTML = ico(name, size || 16);
   };
-  setIco("#brandIco", "mark-github", 16);
+  setIco("#brandIco", "mark-github", 24);
   setIco("#railOpenIco", "three-bars", 16);
   setIco("#searchIco", "search", 14);
   setIco("#moreIco", "chevron-down", 16);
