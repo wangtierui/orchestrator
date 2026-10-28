@@ -933,6 +933,62 @@ body.rail-off .rail-fb,body.rail-off .rail-foot button{justify-content:center;pa
   align-items:start}
 .rel-split>#commitbox{position:sticky;top:8px}
 @media (max-width:1180px){.rel-split{grid-template-columns:1fr}}
+
+/* ============================================================
+ * 批 130：页签几何对齐实测值 + 搜索框/侧栏/板块边线
+ * ============================================================ */
+/* ① 页签：48 的容器里放 32 的项（GitHub: nav 48 = 8 + 32 + 8） */
+.repo-tabs{align-items:flex-start;padding:8px 16px 0;flex-wrap:nowrap}
+.tab{height:32px;margin:0 2px 0 0;padding:0 8px;border-radius:6px;
+  font-size:14px;display:inline-flex;align-items:center;gap:6px}
+.tab:hover{background:rgba(129,139,152,.12)}
+.tab.on{background:transparent}
+.tab.on::after{left:8px;right:8px;bottom:0;height:2px;background:#fd8c73;border-radius:2px}
+.repo-tabs{box-shadow:inset 0 -1px 0 0 rgba(209,217,224,.7)}
+/* 第二个页签层与第一行的间距：GitHub 第一行图标底部到第二行文字顶 ≈ 8px */
+
+/* ② 顶栏搜索框：图标不压文字、底色与顶栏一致（GitHub 的 header search 就是同色+边框） */
+/* id 选择器压过全局表单基线（后者是 input:not(...)，特异性更高） */
+#gsearchInput{padding:0 40px 0 34px;background:var(--bg-subtle);
+  border:1px solid var(--border);height:32px;border-radius:6px}
+.gsearch .ico{left:10px;top:9px;width:16px;height:16px;display:inline-flex;
+  align-items:center;justify-content:center;color:var(--text-muted)}
+.gsearch-k{top:7px}
+/* 顶栏内部垂直居中，且行高压缩到 GitHub 的观感 */
+
+/* ③ 侧栏：首个分组不再有标题行，顶部内距 8（GitHub sidebar padding 8） */
+.rail{padding:8px 8px 8px 12px}
+#rail .side-h{display:none}
+
+/* ④ 板块不再有边线（GitHub 的卡片就是白底无框；上一版的 inset 描边要去掉） */
+.grid>*{box-shadow:none !important;border:0 !important;background:var(--bg)}
+.grid{gap:16px;background:transparent}
+
+/* ⑤ 发布事件右栏：空态也要有高度（否则两栏视觉上缺一半） */
+.rel-split>#commitbox{min-height:200px}
+
+/* ============================================================
+ * 批 130 全局统一：旧式 <table class="scrollx"> 与按钮
+ *   待办闭环 / 留言板 / 文档检索 / 治理审计 这些页仍是裸 table，
+ *   与列表页（.lv）观感不一致 —— 这里统一成 GitHub 的"轻表头 + 52 行高 + 1px 底线"。
+ * ============================================================ */
+.scrollx table,.tblwrap table{width:100%;border-collapse:separate;border-spacing:0}
+.scrollx thead th,.tblwrap thead th{height:40px;padding:0 8px;text-align:left;
+  font-size:12px;font-weight:600;color:var(--text-muted);background:var(--bg-subtle);
+  border-bottom:1px solid var(--border);white-space:nowrap}
+.scrollx tbody td,.tblwrap tbody td{height:52px;padding:8px;font-size:13px;
+  border-bottom:1px solid var(--border);vertical-align:middle}
+.scrollx tbody tr:hover td,.tblwrap tbody tr:hover td{background:var(--bg-subtle)}
+
+/* 按钮统一：primary → 深绿实心；link → 蓝色文字链接（GitHub 的 .btn-primary / .Link） */
+button.primary,.btn.btn-primary{height:32px;padding:0 12px;border:1px solid rgba(31,35,40,.15);
+  border-radius:6px;background:var(--success);color:#fff;font-size:13px;font-weight:500;
+  cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+button.primary:hover,.btn.btn-primary:hover{background:#187733}
+button.link{background:none;border:0;padding:0;color:var(--accent);font-size:13px;
+  cursor:pointer;text-decoration:none}
+button.link:hover{text-decoration:underline}
+select,input[type="text"],input[type="search"],textarea{font-size:13px}
 </style>
 </head>
 <body>
@@ -3909,10 +3965,11 @@ function fbFormHtml(){
       <textarea id="fbdetail" rows="3" maxlength="4000"
         placeholder="复现步骤 / 期望结果 / 实际结果；数据问题请带上 RFN 或文号"></textarea></label>
     <div class="toolbar" style="margin-top:var(--s2)">
-      <button class="primary" id="fbsubmit">提交</button>
+      <button class="btn btn-primary" id="fbsubmit">提交</button>
       <span class="muted" style="font-size:12px">
         ${esc(whoNote)} 留言只追加不删除，处置只改状态。</span>
     </div></div>`;
+  return form;      /* 抽成函数时漏了这句 ⇒ 弹窗是空壳，点提交自然没反应 */
 }
 
 /*: 提交（页面与弹窗共用一套逻辑与校验）。 */
