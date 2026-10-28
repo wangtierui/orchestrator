@@ -3181,15 +3181,17 @@ function eastSide(scope, tab, statTab){
     : k === "codes" ? st.code_tables
     : k === "rules" ? st.rules
     : k === "er" ? st.er_edges : null;
+  /* 一级是**分组标题**（点击只切换分组，不代表"当前页"）⇒ 恒不高亮；
+   * 选中态由二级项表达（用户第 8 条）。 */
   const items = [{side: "east_scope", skey: "east", label: "EAST",
-                  level: 1, cur: scope === "east"}];
+                  level: 1, cur: false}];
   if (scope === "east") {
     EAST_TABS.forEach(x => items.push({side: "east_tab", skey: x.k, label: x.n,
                                        level: 2, count: tabCount(x.k),
                                        cur: tab === x.k}));
   }
   items.push({side: "east_scope", skey: "stat", label: "统计制度",
-              level: 1, cur: scope === "stat"});
+              level: 1, cur: false});
   if (scope === "stat") {
     STAT_TABS.forEach(x => items.push({side: "stat_tab", skey: x.key, label: x.label,
                                        level: 2, cur: statTab === x.key}));
