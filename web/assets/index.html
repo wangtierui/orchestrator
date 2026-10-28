@@ -861,6 +861,78 @@ body.rail-off .rail-fb .nm{display:none}
 /* 折叠后：选中项仍要有 4px 竖线（原来被负偏移裁掉） */
 body.rail-off .rail .sideitem.on::before{left:-4px}
 body.rail-off .rail .sideitem.on{background:var(--bg-subtle)}
+
+/* ============================================================
+ * 批 129：按 GitHub 实测校订（页签悬停/2px 下划线、表头无边框项、灰底、滚动条）
+ * ============================================================ */
+/* ① 页签：悬停浅灰、激活 2px #fd8c73 下划线（实测 ::after 高 2px） */
+.tab{position:relative;border-bottom:0 !important}
+.tab:hover{background:rgba(129,139,152,.12);border-radius:6px 6px 0 0}
+.tab.on{background:transparent}
+.tab.on::after{content:"";position:absolute;left:8px;right:8px;bottom:0;height:2px;
+  background:#fd8c73;border-radius:2px}
+.repo-tabs{box-shadow:inset 0 -1px 0 0 rgba(209,217,224,.7);border-bottom:0}
+
+/* ② 表头筛选项：**无边框**（1px transparent），悬停浅灰；只有密度是分组控件 */
+.lv-fbtn{border-color:transparent;background:transparent}
+.lv-fbtn:hover{background:rgba(129,139,152,.12)}
+.lv-fbtn.on{border-color:transparent;background:rgba(9,105,218,.08);color:var(--accent)}
+.density{border:1px solid var(--border);border-radius:6px;background:var(--bg)}
+.lv-headbar .lv-savebtn{width:32px;padding:0;justify-content:center}
+.lv-headbar .ftab{border-radius:6px}
+.lv-headbar .ftab:hover{background:rgba(129,139,152,.12)}
+.lv-headbar .ftab.on{background:transparent;box-shadow:inset 0 -2px 0 #fd8c73}
+
+/* ③ 灰底根治：容器不再用"边框色"当 1px 线（空单元格会露出灰块）；
+ *    改为每个格子自己画 1px 内描边，容器透明 ⇒ 空区与页面同色。 */
+.grid{background:transparent !important;gap:1px}
+.grid>*{box-shadow:inset 0 0 0 1px var(--border);background:var(--bg)}
+
+/* ④ 滚动条：与侧栏一致（6px、同色、无箭头），全局生效 */
+html,body,#view{scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+#view::-webkit-scrollbar{width:6px;height:6px}
+#view::-webkit-scrollbar-track{background:transparent}
+#view::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+#view::-webkit-scrollbar-button{display:none;width:0;height:0}
+
+/* ⑤ 侧栏：选中竖线离左缘留出间距；分组标题上方不再画横线 */
+.rail{padding-left:12px !important}
+.rail .sideitem.on::before{left:-6px}
+body.rail-off .rail .sideitem.on::before{left:-6px}
+.side-sep{display:none}
+.side-h{margin:10px 0 4px;font-size:12px;color:var(--text-muted);font-weight:600}
+
+/* ⑥ 反馈 + 折叠：都在底部、都左对齐（不是居中胶囊） */
+.rail-foot{margin-top:auto;padding-top:6px;border-top:0;display:flex;
+  flex-direction:column;align-items:stretch;gap:4px}
+.rail-fb,.rail-foot button{justify-content:flex-start;width:100%;height:32px;padding:0 8px;
+  border:0;background:transparent;border-radius:6px;color:var(--text-muted);
+  font-size:14px;display:flex;align-items:center;gap:8px}
+.rail-fb:hover,.rail-foot button:hover{background:var(--hover);color:var(--text)}
+body.rail-off .rail-fb,body.rail-off .rail-foot button{justify-content:center;padding:0}
+
+/* ⑦ 顶栏：头像底色与第一行一致（不再蓝色实心） */
+.avatar{background:var(--bg-subtle);border:1px solid var(--border);color:var(--text)}
+.avatar:hover{background:var(--hover)}
+
+/* ⑧ 列表容器四边都有边框（原来只有上/下） */
+.lv{border:1px solid var(--border);border-radius:6px;overflow:hidden}
+
+/* ⑨ 待办/检索里的自定义按钮统一成 Primer `.btn` 的观感 */
+.act,.btn-act{height:32px;display:inline-flex;align-items:center;gap:6px;padding:0 12px;
+  border:1px solid var(--border);border-radius:6px;background:var(--bg);
+  color:var(--text);font-size:13px;cursor:pointer}
+.act:hover,.btn-act:hover{background:var(--hover)}
+
+/* ⑩ 去掉多余上下边框（关键指标带 / 数据源行 / 审计日志分隔） */
+.kpibar{border-top:0 !important;border-bottom:0 !important}
+.card .src{border-top:0 !important}
+
+/* 发布事件：左右两栏（列表 | 变更详情），列表不设固定高度 */
+.rel-split{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:16px;
+  align-items:start}
+.rel-split>#commitbox{position:sticky;top:8px}
+@media (max-width:1180px){.rel-split{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -870,7 +942,7 @@ body.rail-off .rail .sideitem.on{background:var(--bg-subtle)}
     aria-expanded="false" title="打开导航"><span id="railOpenIco"></span></button>
   <div class="brand">
     <span class="logo" id="brandIco" aria-hidden="true"></span>
-    监管合规编排器
+    Supervisory Statistics
   </div>
   <div class="hstat">
     <div class="gsearch" id="gsearchWrap">
@@ -1086,6 +1158,11 @@ function sideShell(key, items, cur, body, title){
 
 /*: 左侧栏点击 → 各页状态位（集中一处，避免每页各写一遍监听） */
 const SIDE_ACT = {
+  /* 留言板：左侧"状态"就是筛选入口（页面上不再放下拉/页签） */
+  fb: (k) => {
+    STATE._fbq = Object.assign({}, obj(STATE._fbq), {status: k || ""});
+    render();
+  },
   page: (k) => { goPage(k || "overview"); },
   lvview: (k) => { if (typeof lvApplyView === "function") lvApplyView(k); },
   lvsave: () => { if (typeof lvSavePrompt === "function") lvSavePrompt(CUR); },
@@ -1677,20 +1754,26 @@ function viewRelease(d){
     .concat(Object.keys(dayCount).sort().reverse()
       .map(k => ({key: k, label: k, count: dayCount[k]})));
   const day = String(STATE.rel_day || "");
-  const commits = day ? all.filter(c => String(c.date || "—") === day) : all;
+  const commitsAll = day ? all.filter(c => String(c.date || "—") === day) : all;
+  /* 列表不再设固定高度（用户要求），但 364 条全铺会把页面撑到 2.7 万像素。
+   * 单页 100 条 + 明说还剩多少，让"左侧按日期"成为缩小范围的主入口。 */
+  const PER = 100;
+  const commits = commitsAll.slice(0, PER);
   const rows=commits.map(c=>`<tr data-sha="${esc(c.sha)}" style="cursor:pointer">
     <td class="muted" style="white-space:nowrap">${esc(c.date)}</td>
     <td class="mono">${esc(c.sha)}</td><td>${esc(c.subject)}</td>
     <td><button class="link" data-sha="${esc(c.sha)}">变更</button></td></tr>`).join("");
-  const stream = `<div class="grid">
+  const stream = `<div class="rel-split"><div class="grid">
     ${card("",`git log ${day ? day + " · " : "全量 "}${commits.length} 条${
       d.commit_total ? "（total " + d.commit_total + "）" : ""}`,
-      commits?`<div class="tblwrap" style="max-height:560px"><table><thead><tr><th style="width:96px">日期</th>
+      commits?`<div class="tblwrap"><table><thead><tr><th style="width:96px">日期</th>
         <th style="width:92px">sha</th><th>主题</th><th style="width:64px"></th></tr></thead><tbody>${rows}</tbody></table></div>
-        <div class="note">点「变更」看该提交的**完整**改动（文件清单 + 完整提交说明）。</div>`
+        <div class="note">点「变更」看该提交的**完整**改动（文件清单 + 完整提交说明）。${
+          commitsAll.length > PER
+            ? ` 共 ${commitsAll.length} 条，此处显示前 ${PER} 条；用左侧日期可缩小范围。`
+            : ""}</div>`
         :`<div class="muted">git 不可用${d.git_error?("："+esc(d.git_error)):""}</div>`, d.source, d.fetched_at)}
-  </div>
-  <div id="commitbox" style="margin-top:16px"></div>`;
+  </div><div id="commitbox"></div></div>`;
   return sideShell("release", dayItems, day, stream, "日期（倒序）");
 }
 
@@ -3766,19 +3849,25 @@ function viewFeedback(d){
     </tr>`).join("")
     || '<tr><td colspan="10" class="muted">还没有留言。发现问题就写在上面 —— 每一条都会进入改进清单。</td></tr>';
   const body = `${form}
-    <div class="toolbar" style="margin-top:var(--s4)">
-      <b>共 ${num(st.total || 0)} 条</b>
-      <span class="muted">待处置 ${num(obj(st.by_status).open)} · 已受理 ${
-        num(obj(st.by_status).ack)} · 已闭环 ${num(obj(st.by_status).closed)}</span>
-      <select id="fbfilter"><option value="">全部状态</option>
-        <option value="open">待处置</option><option value="ack">已受理</option>
-        <option value="closed">已闭环</option></select>
+    <div class="kpibar">
+      ${kpi("全部", num(st.total || 0), "条")}
+      ${kpi("待处置", num(obj(st.by_status).open), "条")}
+      ${kpi("已受理", num(obj(st.by_status).ack), "条")}
+      ${kpi("已闭环", num(obj(st.by_status).closed), "条")}
     </div>
     <div class="scrollx"><table><thead><tr>
       <th>时间</th><th>编号</th><th>分类</th><th>严重度</th><th>页面</th><th>标题 / 说明</th>
       <th>记录者</th><th>IP</th><th>状态</th><th>操作</th>
     </tr></thead><tbody>${rows}</tbody></table></div>`;
-  return card("", "发现问题就记一条", body,
+  const cur = String(obj(STATE._fbq).status || "");
+  const stItems = [
+    {key: "", label: "全部状态", count: st.total || 0},
+    {key: "open", label: "待处置", count: obj(st.by_status).open},
+    {key: "ack", label: "已受理", count: obj(st.by_status).ack},
+    {key: "closed", label: "已闭环", count: obj(st.by_status).closed},
+  ];
+  return card("", "发现问题就记一条",
+    sideShell("fb", stItems, cur, body, "状态"),
     d.source_name || "interfaces.feedback_api", d.fetched_at);
 }
 
@@ -3931,7 +4020,7 @@ const LV = {
     list: "laws", title: "政策法规",
     desc: "外部监管法规；RFN 恒有值，带「派生」标记的编号未入册（可稳定引用，但不参与主题/时效统计）",
     stateKey: "laws", jump: "laws",
-    hdr: ["theme", "rfn", "title", "document_number"],
+    hdr: ["theme", "rfn", "title", "document_number", "timeliness_status"],
     fields: [
       {k: "theme", label: "主题", sort: "theme", slice: "theme", chip: true, cell: it => themeCell(it.theme_label)},
       {k: "rfn", label: "唯一标识号", sort: "rfn", q: "q_rfn", mono: true, cell: it => idCell(it)},
@@ -4107,8 +4196,8 @@ function lvRender(list, d, st, f) {
           aria-pressed="${lvDensity() === "compact"}"
           class="${lvDensity() === "compact" ? "on" : ""}">${ico("list-unordered", 16)}</button>
       </span>
-      <button class="btn" data-lvsavecur="1"
-        title="把当前筛选/排序/切片/字段保存为视图">保存视图</button>
+      <button class="lv-fbtn lv-savebtn" data-lvsavecur="1"
+        aria-label="保存为视图" title="保存为视图">${ico("pin", 16)}</button>
     </div></th>`;
 
   const rows = items.map(it => {
@@ -4221,6 +4310,8 @@ function lvStatusField(list) {
 }
 
 function lvFilterTabs(list, st) {
+  /* 批 129：状态不再平铺成页签 —— laws 把它当普通字段（时效），rules 没有状态维。 */
+  return "";
   const f = lvStatusField(list);
   const cur = st[f.param] || "";
   const total = arr(f.items).reduce((a, x) => a + (Number(x.count) || 0), 0);
