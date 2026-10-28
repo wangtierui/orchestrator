@@ -416,7 +416,7 @@ class ZhengcekuScraper:
         max_items = getattr(cfg, "max_items", 0) or 0
         delay = getattr(cfg, "delay_min", 1.5)
         stop_after = int(getattr(cfg, "stop_after_empty_pages", DEFAULT_STOP_AFTER_EMPTY_PAGES) or 1)
-        backfill = bool(getattr(cfg, "backfill", False))
+        scan_all = bool(getattr(cfg, "backfill", False) or ctx.opts.get("full"))
         first = fetch(self._list_url(0))
         if not first:
             return
@@ -449,7 +449,7 @@ class ZhengcekuScraper:
                 empty_streak = 0
             else:
                 empty_streak += 1
-            if should_stop_paging(empty_streak, stop_after, backfill):
+            if should_stop_paging(empty_streak, stop_after, scan_all):
                 break
             if delay and i + 1 < n_pages:
                 time.sleep(delay)

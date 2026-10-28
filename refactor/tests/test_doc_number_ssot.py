@@ -16,13 +16,6 @@ import types
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))  # 包根 refactor/
 
-# 强制 file 后端；若本环境 REFACTOR_STORAGE=postgres 会强制 sqlalchemy，桩入占位。
-os.environ["REFACTOR_STORAGE"] = "file"
-if "collectors.storage.sql_backend" not in sys.modules:
-    _stub = types.ModuleType("collectors.storage.sql_backend")
-    _stub.SqlStore = object
-    sys.modules["collectors.storage.sql_backend"] = _stub
-
 from collectors.lib.doc_number import normalize_doc_number as norm_collectors
 from collectors.storage.canonical import canonicalize
 from clean.core.doc_number import normalize_doc_number as norm_clean

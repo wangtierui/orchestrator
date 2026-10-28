@@ -25,11 +25,18 @@
 from __future__ import annotations
 
 import abc
+import json
 import logging
 from typing import Any, Iterator
 
 from ..storage import open_storage
 from .incremental import KnownTracker
+from .resilience import (
+    get_coordinator,
+    extract_status,
+    take_drain_records,
+    FailureKind,
+)
 
 LOG = logging.getLogger("pipeline")
 
@@ -143,12 +150,24 @@ class CollectorPipeline(abc.ABC):
         return CollectorContext(storage, master, tracker, master_by_key, out_dir, opts)
 
     def _collect(self, ctx: CollectorContext) -> list:
-        """核心路由（与存储/锁无关，便于单测）：返回记录列表。"""
+        """核心路由（与存储/锁无关，便于单测）：返回记录列表。
+
+        对 new 态的 handle_new 做容错包装：失败按分类进死信（临时）/ 永久跳过，
+        成功与失败都计入可观测指标；熔断冷却中自动暂停。
+        """
         records: list = []
         tracker = ctx.tracker
         cur_batch = None
         cap = self.max_items()
-        for entry in self.iter_list_entries(ctx):
+        coord = get_coordinator()
+        source = self.source_id
+        try:
+            entries = self.iter_list_entries(ctx)
+        except Exception as e:  # 列表枚举级失败（多为站点封锁）：记录并退出本轮
+            LOG.error("列表枚举失败（源=%s）：%s", source, e)
+            coord.metrics.record_status(extract_status(e))
+            return records
+        for entry in entries:
             cls = tracker.classify(entry)
             if cls == "dup":
                 continue
@@ -156,7 +175,17 @@ class CollectorPipeline(abc.ABC):
             if cls == "known":
                 rec = self.handle_known(key, entry, ctx)
             else:  # new
-                rec = self.handle_new(entry, ctx)
+                coord.metrics.record_attempt()
+                coord.pause_if_needed(source)
+                try:
+                    rec = self.handle_new(entry, ctx)
+                    coord.metrics.record_ok()
+                except Exception as e:  # 抓取失败：分类后产出死信，不阻断其余条目
+                    st = extract_status(e)
+                    coord.metrics.record_status(st)
+                    if coord.classify(st, str(e)) != FailureKind.PERMANENT:
+                        coord.enqueue_failure(source, key, entry, st, str(e)[:500])
+                    rec = None
             if rec is not None:
                 records.append(rec)
                 if cap and len(records) >= cap:
@@ -179,6 +208,17 @@ class CollectorPipeline(abc.ABC):
 
     def run(self, out_dir: str, **opts) -> str:
         ctx = self.build_context(out_dir, **opts)
+        coord = get_coordinator()
+        coord.start_run(self.source_id)
         records = self._collect(ctx)
+        # 冷却补抓趟：重放 pending 死信（硬上限 + 零回收早停），回收成果并入当次运行
+        coord.drain(self.source_id, retry_fn=lambda e: self.handle_new(e, ctx), max_passes=3)
+        recovered = take_drain_records()
+        if recovered:
+            records.extend(recovered)
+            LOG.info("冷却补抓回收 %d 条（源=%s）", len(recovered), self.source_id)
+        summary = coord.end_run(self.source_id)
+        # 可观测：结束打印 JSON 汇总（fetch_runs 已在 end_run 落库）
+        print(json.dumps({"source": self.source_id, **summary}, ensure_ascii=False))
         self._last_records = records
         return self.save(records, ctx)

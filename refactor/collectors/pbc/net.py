@@ -16,7 +16,7 @@ from ..lib.paths import docs_root
 from ..lib.rich_object import rich_object_fields
 from ..lib.table_recovery import structured_table_fields
 from ..lib.doc_convert import find_libreoffice
-from ..lib.http import USER_AGENTS
+from ..lib.http import USER_AGENTS, robust_get
 
 LO_PATH = find_libreoffice()
 LO_AVAILABLE = LO_PATH is not None
@@ -110,48 +110,14 @@ class Fetcher:
     def get(self, url, referer=None, binary=False, timeout=None):
         """带指数退避重试的 GET 请求，返回 (status, content)。
 
+        统一走 lib/http（requests 底座），自动接入容错编排层（熔断/死信/指标）。
         status 为 HTTP 状态码；失败时 status=None，content 为错误说明字符串。
-        纯实时请求（HTTP 响应磁盘缓存已移除）；二进制附件落盘到 ATTACHMENTS_DIR。
         """
         from .parse import safe_url  # 延迟导入，避免与 parse.py 的循环引用
 
-        last_err = None
         url = safe_url(url)
-        for attempt in range(1, self.retries + 1):
-            self._throttle()
-            try:
-                req = urllib.request.Request(url, method="GET")
-                req.add_header("User-Agent", random.choice(USER_AGENTS))
-                req.add_header("Accept", "*/*")
-                req.add_header("Accept-Language", "zh-CN,zh;q=0.9")
-                if referer:
-                    req.add_header("Referer", referer)
-                with urllib.request.urlopen(req, timeout=timeout or self.timeout) as resp:
-                    status = resp.status
-                    data = resp.read()
-                    if binary:
-                        return status, data
-                    # 解码：优先按 HTTP 头，回退 utf-8
-                    enc = resp.headers.get_content_charset() or "utf-8"
-                    try:
-                        text = data.decode(enc, errors="replace")
-                    except LookupError:
-                        text = data.decode("utf-8", errors="replace")
-                    return status, text
-            except urllib.error.HTTPError as e:
-                last_err = f"HTTP {e.code}"
-                # 确定性错误不重试；限流/服务暂不可用则退避后重试
-                if e.code in (403, 404, 410):
-                    return e.code, None
-                if e.code in (429, 503):
-                    retry_after = e.headers.get("Retry-After")
-                    wait = int(retry_after) if (retry_after and retry_after.isdigit()) else min(2 ** attempt * 2, 16)
-                    if attempt < self.retries:
-                        time.sleep(wait)
-                    continue
-            except (urllib.error.URLError, ConnectionError, TimeoutError, Exception) as e:  # noqa: BLE001
-                last_err = f"{type(e).__name__}: {e}"
-            # 通用退避：2^(attempt) 秒
-            if attempt < self.retries:
-                time.sleep(min(2 ** attempt, 8))
-        return None, last_err
+        return robust_get(
+            url, binary=binary, timeout=timeout or self.timeout,
+            retries=self.retries, min_delay=self.min_delay,
+            max_delay=self.max_delay, referer=referer,
+        )

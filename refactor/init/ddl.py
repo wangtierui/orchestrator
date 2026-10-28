@@ -209,8 +209,55 @@ CREATE INDEX IF NOT EXISTS ix_docgraph_edges_dst       ON docgraph_edges (dst_id
 CREATE INDEX IF NOT EXISTS ix_docgraph_edges_relation  ON docgraph_edges (relation);
 """
 
+# ── 容错层账本：死信队列 + 运行指标（跨源统一，与 raw_{ns} 解耦）──
+FETCH_DEAD_LETTER_DDL = """
+CREATE TABLE IF NOT EXISTS fetch_dead_letter (
+    id                  BIGSERIAL    PRIMARY KEY,
+    source              VARCHAR(32)  NOT NULL,
+    doc_key             VARCHAR(128) NOT NULL,
+    entry               JSONB        NULL,
+    endpoint            TEXT         NULL,
+    params              JSONB        NULL,
+    attempt_count       INTEGER      NOT NULL DEFAULT 0,
+    max_attempts        INTEGER      NOT NULL DEFAULT 4,
+    last_status         INTEGER      NULL,
+    last_error          TEXT         NULL,
+    status              VARCHAR(16)  NOT NULL DEFAULT 'pending',
+    needs_review        BOOLEAN      NOT NULL DEFAULT false,
+    next_attempt_after  TIMESTAMPTZ  NULL,
+    created_at          TIMESTAMPTZ  DEFAULT now(),
+    updated_at          TIMESTAMPTZ  DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS ix_fetch_dead_letter_source     ON fetch_dead_letter (source);
+CREATE INDEX IF NOT EXISTS ix_fetch_dead_letter_pending   ON fetch_dead_letter (status, next_attempt_after);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_fetch_dead_letter_src_key
+    ON fetch_dead_letter (source, doc_key);
+"""
+
+FETCH_RUNS_DDL = """
+CREATE TABLE IF NOT EXISTS fetch_runs (
+    id           BIGSERIAL    PRIMARY KEY,
+    source       VARCHAR(32)  NOT NULL,
+    started_at   TIMESTAMPTZ  NOT NULL,
+    finished_at  TIMESTAMPTZ  NULL,
+    attempted    INTEGER      NOT NULL DEFAULT 0,
+    ok           INTEGER      NOT NULL DEFAULT 0,
+    status_403   INTEGER      NOT NULL DEFAULT 0,
+    status_429   INTEGER      NOT NULL DEFAULT 0,
+    status_5xx   INTEGER      NOT NULL DEFAULT 0,
+    status_404_perm INTEGER   NOT NULL DEFAULT 0,
+    status_net   INTEGER      NOT NULL DEFAULT 0,
+    parse_err    INTEGER      NOT NULL DEFAULT 0,
+    recovered    INTEGER      NOT NULL DEFAULT 0,
+    remaining    INTEGER      NOT NULL DEFAULT 0,
+    summary      JSONB        NULL,
+    created_at   TIMESTAMPTZ  DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS ix_fetch_runs_source ON fetch_runs (source);
+"""
+
 # 完整 DDL（按依赖顺序：runs → raw_items(兼容) → raw_docs + 各源副表 →
-#              cleaned_items → clauses → edges → 向量表）。
+#              cleaned_items → clauses → edges → 容错账本 → 向量表）。
 FULL_DDL = (
     MASTER_RUNS_DDL
     + RAW_ITEMS_DDL
@@ -223,5 +270,7 @@ FULL_DDL = (
     + CLEANED_ITEMS_DDL
     + CLAUSES_DDL
     + DOCGRAPH_EDGES_DDL
+    + FETCH_DEAD_LETTER_DDL
+    + FETCH_RUNS_DDL
     + VECTOR_DDL
 )

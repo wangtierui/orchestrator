@@ -44,6 +44,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from .base import StoredRecord
+from ._sanitize import sanitize_value, sanitize_surrogates
 from ..lib.fetch_status import normalize as _norm_fetch_status
 
 UTC = timezone.utc
@@ -141,6 +142,49 @@ RAW_INTERNAL = Table(
     Column("doc_id", BigInteger, ForeignKey("raw_docs.id"), primary_key=True),
     Column("attachments", JSON),
     Column("extra", JSON),
+)
+
+# ── 死信队列：抓取失败项持久化（可冷却补抓 / 人工旁路重试）──
+# 与 raw_{ns} 解耦：跨源统一，永不删除失败记录（达上限标 exhausted+needs_review）。
+FETCH_DEAD_LETTER = Table(
+    "fetch_dead_letter", RAW_METADATA,
+    Column("id", BigInteger, primary_key=True),
+    Column("source", String(32), nullable=False, index=True),
+    Column("doc_key", String(128), nullable=False),
+    Column("entry", JSON, nullable=True),          # 列表条目原样，复抓时回灌 handle_new
+    Column("endpoint", Text, nullable=True),
+    Column("params", JSON, nullable=True),
+    Column("attempt_count", Integer, nullable=False, server_default=text("0")),
+    Column("max_attempts", Integer, nullable=False, server_default=text("4")),
+    Column("last_status", Integer, nullable=True),
+    Column("last_error", Text, nullable=True),
+    Column("status", String(16), nullable=False, server_default=text("'pending'")),
+    Column("needs_review", Boolean, nullable=False, server_default=text("false")),
+    Column("next_attempt_after", DateTime(timezone=True), nullable=True),
+    Column("created_at", DateTime(timezone=True), server_default=text("now()")),
+    Column("updated_at", DateTime(timezone=True), server_default=text("now()")),
+    UniqueConstraint("source", "doc_key", name="uq_dead_letter_src_key"),
+)
+
+# ── 抓取运行指标账本（可观测：跨 run 看趋势）──
+FETCH_RUNS = Table(
+    "fetch_runs", RAW_METADATA,
+    Column("id", BigInteger, primary_key=True),
+    Column("source", String(32), nullable=False, index=True),
+    Column("started_at", DateTime(timezone=True), nullable=False),
+    Column("finished_at", DateTime(timezone=True), nullable=True),
+    Column("attempted", Integer, nullable=False, server_default=text("0")),
+    Column("ok", Integer, nullable=False, server_default=text("0")),
+    Column("status_403", Integer, nullable=False, server_default=text("0")),
+    Column("status_429", Integer, nullable=False, server_default=text("0")),
+    Column("status_5xx", Integer, nullable=False, server_default=text("0")),
+    Column("status_404_perm", Integer, nullable=False, server_default=text("0")),
+    Column("status_net", Integer, nullable=False, server_default=text("0")),
+    Column("parse_err", Integer, nullable=False, server_default=text("0")),
+    Column("recovered", Integer, nullable=False, server_default=text("0")),
+    Column("remaining", Integer, nullable=False, server_default=text("0")),
+    Column("summary", JSON, nullable=True),
+    Column("created_at", DateTime(timezone=True), server_default=text("now()")),
 )
 
 CHILD_TABLES = {
@@ -289,16 +333,22 @@ class RawStore:
         norm = normalizer or self._normalizer
         if norm:
             items = [norm(ns, it) for it in items]
+        # 写入边界清洗：去除孤立代理字符（脏 Unicode），否则 psycopg/JSON 落盘失败
+        items = [sanitize_value(it) for it in items]
         parsed = [p for p in (self._split(it, ns) for it in items) if p is not None]
 
         with self.engine.begin() as conn:
             run_id = conn.execute(
                 insert(RUNS).values(
                     namespace=ns, captured_at=captured_at,
-                    count=len(parsed), meta=extra)
+                    count=len(parsed), meta=sanitize_value(extra))
             ).inserted_primary_key[0]
 
             for common, child, content in parsed:
+                # 写入边界再次清洗（覆盖 save_master 直接透传 merged 的路径），去除孤立代理字符
+                common = sanitize_value(common)
+                child = sanitize_value(child)
+                content = sanitize_surrogates(content)
                 if ns == "mof":
                     key = child.get("law_id") or common["detail_url"] or ns
                 elif ns == "nfra":

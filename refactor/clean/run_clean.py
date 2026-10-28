@@ -2,12 +2,12 @@
 """clean 阶段 CLI 入口（极简）。
 
 数据流（与 collectors 的 CollectorPipeline 同构，仅做"洗脏数据"）：
-  Load → Adapt → DateNormalize → BodyClean → OcrCorrect → Dedup → Emit(PG/file)
+  Load → Adapt → DateNormalize → BodyClean → OcrCorrect → Dedup → Emit(PG)
 
 与旧版 run_pipeline 的差异（已收敛为极简）：
   - 移除一切交付闸门/阈值/quarantine/history/sidecar/sanitize/验收 —— 那不是清洗；
   - 输出统一经 collectors.storage.RecordStore 写出（namespace="cleaned"，
-    on_conflict="update"），直连 PG（REFACTOR_STORAGE=postgres）或回落 file。
+    on_conflict="update"），直连 PG（REFACTOR_STORAGE=postgres；file 后端已移除）。
 
 用法：
   cd refactor

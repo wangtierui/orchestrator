@@ -162,6 +162,8 @@ class XzfgkScraper:
         budget = float(getattr(self.cfg, "max_seconds", 0.0) or 0.0)
         t0 = time.time()
         yielded = 0
+        # 全扫旗标：--mode full 或 --backfill 时不早停（扫完所有列表页，已知项跳过、未知项补抓）
+        scan_all = bool(ctx.opts.get("full") or getattr(self.cfg, "backfill", False))
         while True:
             if max_pages and page > max_pages:
                 LOG.info("xzfgk 已达 max_pages=%d，停止翻页", max_pages)
@@ -196,7 +198,7 @@ class XzfgkScraper:
                     yielded += 1
                     if max_items and yielded >= max_items:
                         return
-            if new_in_page == 0:
+            if not scan_all and new_in_page == 0:
                 LOG.info("xzfgk 第 %d 页无新增条目，停止翻页", page)
                 break
             page += 1
@@ -335,7 +337,7 @@ class GovCollector(CollectorPipeline):
             log_file="",
         )
         self._setup(args)
-        return self.run(out_dir)
+        return self.run(out_dir, full=full)
 
 
 def main():

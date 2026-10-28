@@ -39,8 +39,24 @@ def _doc_id(payload: dict) -> str:
     return payload.get("index_no") or payload.get("id") or payload.get("title") or ""
 
 
+def _payload_to_doc(p: dict) -> dict:
+    """cleaned payload → 文档表示（doc_id / title / text）。
+
+    正文对齐采集规范信封 content；对旧版 cleaned 残留的 body_text / text 保留读取
+    回退（原则9 兼容续跑）。source 在 docgraph 抽取中无消费，不纳入（最小化携带）。
+    """
+    return {
+        "doc_id": _doc_id(p),
+        "title": p.get("title", "") or "",
+        "text": p.get("content") or p.get("body_text") or p.get("text") or "",
+    }
+
+
 def load_corpus(db_url: str, namespaces=("cleaned",), limit: int = 0) -> list:
-    """从 cleaned_items 读出文档 (doc_id, title, source, text)。"""
+    """从 cleaned_items 读出文档 (doc_id, title, text)，供 RelationExtractor 抽取。
+
+    正文字段为 clean 规范信封 content（兼容旧版 body_text / text 回退）。
+    """
     try:
         from psycopg import connect
     except ImportError:  # pragma: no cover
@@ -55,15 +71,7 @@ def load_corpus(db_url: str, namespaces=("cleaned",), limit: int = 0) -> list:
                 )
                 for (pl,) in cur.fetchall():
                     p = dict(pl) if not isinstance(pl, dict) else pl
-                    text = p.get("body_text") or p.get("text") or ""
-                    docs.append(
-                        {
-                            "doc_id": _doc_id(p),
-                            "title": p.get("title", "") or "",
-                            "source": p.get("source", "") or "",
-                            "text": text,
-                        }
-                    )
+                    docs.append(_payload_to_doc(p))
     if limit:
         docs = docs[:limit]
     return docs

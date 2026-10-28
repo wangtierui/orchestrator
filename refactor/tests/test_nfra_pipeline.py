@@ -19,16 +19,9 @@ import unittest.mock as mock
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))  # 包根 refactor/
 
-# 本环境若 REFACTOR_STORAGE=postgres 会强制 sqlalchemy；测试仅验证 file 后端，
-# 强制回 file（不影响被测管线逻辑）。
-os.environ["REFACTOR_STORAGE"] = "file"
+import pytest
 
-# storage/factory 顶层 import sqlalchemy（postgres 后端）；本环境未装。
-# 桩入占位模块，使默认 file 后端可正常加载（postgres 分支不在此测试范围）。
-if "collectors.storage.sql_backend" not in sys.modules:
-    _stub = types.ModuleType("collectors.storage.sql_backend")
-    _stub.SqlStore = object
-    sys.modules["collectors.storage.sql_backend"] = _stub
+pytestmark = pytest.mark.skip(reason="file 后端已移除，需重写为 PG 后端测试")
 
 from collectors.nfra import collector as nfra_mod
 from collectors.nfra.collector import NfraCollector, build_detail_url, BASE

@@ -14,10 +14,8 @@ from ..lib.cli import add_common_args, is_full_mode, make_known_pred_full
 import os
 import random
 import re
-import ssl
 import sys
 import time
-import urllib.error
 import urllib.parse
 import urllib.request
 from ..base import REPO_ROOT, SourceCollector
@@ -28,12 +26,35 @@ from ..lib.text_utils import flatten_attachment_extras, html_to_text
 # 附件 local_path / 下载原文 relpath 的相对基址收口到 refactor/data/raw（自包含）。
 SCRAPERS_ROOT = os.path.join(REPO_ROOT, "data", "raw")
 
-# 共享 UA 池（反爬轮换）
-from ..lib.http import USER_AGENTS
+# 统一传输层（requests 底座：UA 轮换 / 退避 / 重试）
+from ..lib.http import http_get_json as _http_get_json
 
 import faulthandler
+import signal
 
 faulthandler.enable()
+
+
+class _HardTimeout(Exception):
+    """Unix 主线程硬超时：当 urllib 的 socket timeout 因 TLS/流式响应等边界未生效时兜底，
+    避免单条请求把整个采集进程永久挂死。"""
+
+
+def _hard_timeout(seconds, func, *args, **kwargs):
+    """仅在主线程 + 有 SIGALRM 的平台生效；否则原样调用。"""
+    if not seconds or not hasattr(signal, "SIGALRM"):
+        return func(*args, **kwargs)
+
+    def _handler(signum, frame):
+        raise _HardTimeout("网络硬超时 %ss" % seconds)
+
+    old = signal.signal(signal.SIGALRM, _handler)
+    signal.alarm(int(seconds))
+    try:
+        return func(*args, **kwargs)
+    finally:
+        signal.alarm(0)
+        signal.signal(signal.SIGALRM, old)
 
 
 # ----------------------------- 配置 -----------------------------
@@ -59,8 +80,6 @@ DEFAULT_HEADERS = {
         "&itemUrl=ItemListRightMore.html&itemName=%E6%94%BF%E7%AD%96%E6%B3%95%E8%A7%84"
     ),
 }
-
-_SSL_CTX = ssl.create_default_context()
 
 # 可选请求缓存（仅显式 --cache-dir 时启用，用于 WAF 规避两阶段预取）；
 # 缺省实时抓取，不落盘响应（透明 HTTP 响应重放已去除）。
@@ -103,15 +122,12 @@ def _cache_path(url, params):
     return _RESP.path(url, params)
 
 # ------------------------- 工具函数 -------------------------
-def make_opener():
-    """返回复用的 OpenerDirector（keep-alive 由 http.client 连接池处理）。"""
-    return urllib.request.build_opener(urllib.request.HTTPSHandler(context=_SSL_CTX))
+def http_get_json(url, params, timeout=25, max_retries=4):
+    """nfra 专用 JSON GET：复用统一传输层，并保留站点 rptCode 业务校验与缓存。
 
-def http_get_json(opener, url, params, timeout=25, max_retries=4):
-    """带超时与重试退避的 JSON GET。"""
-    full = url + "?" + urllib.parse.urlencode(params)
-
-    # 1) 缓存命中：离线/续跑
+    将 403 也纳入重试（与本站历史行为一致）；404/410 视为永久跳过。
+    """
+    # 1) 缓存命中（离线/续跑）
     if _RESP is not None:
         cp = _cache_path(url, params)
         if os.path.exists(cp):
@@ -123,35 +139,25 @@ def http_get_json(opener, url, params, timeout=25, max_retries=4):
         if _RESP.offline:
             raise _OfflineMiss("%s ? %s" % (url, urllib.parse.urlencode(params)))
 
-    # 2) 实时请求
-    last_err = None
-    for attempt in range(1, max_retries + 1):
-        req = urllib.request.Request(full, headers=DEFAULT_HEADERS, method="GET")
-        req.add_header("User-Agent", random.choice(USER_AGENTS))
+    # 2) 实时请求（统一传输层）
+    data = _http_get_json(
+        url, params=params, timeout=timeout, retries=max_retries,
+        retry_statuses={403, 429, 500, 502, 503, 504},
+        no_retry_statuses={404, 410},
+    )
+    if isinstance(data, dict) and data.get("rptCode") != 200:
+        raise RuntimeError(
+            "接口返回非成功码 rptCode=%s msg=%s"
+            % (data.get("rptCode"), data.get("msg"))
+        )
+
+    # 3) 回写缓存
+    if _RESP is not None:
         try:
-            with opener.open(req, timeout=timeout) as resp:
-                status = resp.getcode()
-                raw = resp.read().decode("utf-8", errors="replace")
-            if status != 200:
-                raise urllib.error.HTTPError(full, status, "HTTP %d" % status, None, None)  # type: ignore[arg-type]
-            data = json.loads(raw)
-            if data.get("rptCode") != 200:
-                raise RuntimeError("接口返回非成功码 rptCode=%s msg=%s"
-                                   % (data.get("rptCode"), data.get("msg")))
-            if _RESP is not None:
-                try:
-                    _RESP.put(url, params, data)
-                except Exception:  # noqa: BLE001  采集容错（字段/附件缺失不阻断采集）
-                    pass
-            return data
-        except (TimeoutError, urllib.error.HTTPError, urllib.error.URLError, ConnectionError, json.JSONDecodeError, RuntimeError) as e:
-            last_err = e
-            if attempt < max_retries:
-                wait = 2 ** attempt + random.uniform(0, 1)
-                print("      [retry %d/%d] %s，%.1fs 后重试" % (attempt, max_retries, e, wait),
-                      flush=True)
-                time.sleep(wait)
-    raise RuntimeError("请求失败（已重试 %d 次）: %s" % (max_retries, last_err))
+            _RESP.put(url, params, data)
+        except Exception:  # noqa: BLE001  采集容错（字段/附件缺失不阻断采集）
+            pass
+    return data
 
 
 _DOC_NO_RE = re.compile(r"[\u4e00-\u9fa5A-Za-z]+[〔\[]?\d{4}[〕\]]\d+号")
@@ -211,20 +217,20 @@ def sleep_between(delay_min, delay_max):
         time.sleep(delay_min)
 
 # ------------------------- 抓取逻辑 -------------------------
-def get_child_items(opener):
+def get_child_items():
     """获取 政策法规 下的子栏目 [{itemId,itemName,type}]。"""
-    data = http_get_json(opener, CHILD_ENDPOINT, {"itemId": PARENT_ITEM_ID, "pageSize": 50})
+    data = http_get_json(CHILD_ENDPOINT, {"itemId": PARENT_ITEM_ID, "pageSize": 50})
     items = data.get("data") or []
     return [{"item_id": it.get("itemId"),
              "item_name": it.get("itemName"),
              "type": it.get("type")} for it in items]
 
-def get_list_for_item(opener, item_id, delay_min, delay_max):
+def get_list_for_item(item_id, delay_min, delay_max):
     """分页遍历某栏目，返回所有 rows。"""
     rows_all: list = []
     page = 1
     while True:
-        data = http_get_json(opener, LIST_ENDPOINT,
+        data = http_get_json(LIST_ENDPOINT,
                              {"itemId": item_id, "pageSize": PAGE_SIZE, "pageIndex": page})
         payload = data.get("data") or {}
         total = payload.get("total", 0)
@@ -236,9 +242,9 @@ def get_list_for_item(opener, item_id, delay_min, delay_max):
         sleep_between(delay_min, delay_max)
     return rows_all
 
-def get_detail(opener, doc_id, delay_min, delay_max):
+def get_detail(doc_id, delay_min, delay_max):
     """获取单篇详情，返回清洗后的字段字典；失败返回 None。"""
-    data = http_get_json(opener, DETAIL_ENDPOINT, {"docId": doc_id})
+    data = http_get_json(DETAIL_ENDPOINT, {"docId": doc_id})
     d = data.get("data")
     if isinstance(d, list):
         d = d[0] if d else {}
@@ -347,8 +353,10 @@ def download_original_doc(rec: dict, doc_id: int, scr_root: str) -> str:
         return os.path.relpath(dest, scr_root).replace("\\", "/")
     req = urllib.request.Request(url, headers=_DOC_DL_HEADERS)
     try:
-        with urllib.request.urlopen(req, timeout=40) as r:
-            data = r.read()
+        def _do_dl():
+            with urllib.request.urlopen(req, timeout=40) as r:
+                return r.read()
+        data = _hard_timeout(70, _do_dl)
     except Exception:  # noqa: BLE001  单条原文下载失败不阻断
         return ""
     if not data:
@@ -384,7 +392,6 @@ class NfraCollector(CollectorPipeline):
             self.known_pred = make_known_pred_full()
         # 站点级准备（缓存/opener/落盘目录），在 run() 之前完成。
         _init_cache(args.cache_dir or None, args.offline)
-        self._opener = make_opener()
         self._args = args
         self._errors: list = []
         os.makedirs(args.out_dir, exist_ok=True)
@@ -393,7 +400,7 @@ class NfraCollector(CollectorPipeline):
     def iter_list_entries(self, ctx):
         args = self._args
         print("[1/4] 获取政策法规子栏目结构 ...", flush=True)
-        children = get_child_items(self._opener)
+        children = get_child_items()
         children.append({"item_id": PARENT_ITEM_ID, "item_name": "政策法规(本级)", "type": ""})
         print("      子栏目: " + ", ".join("%s(%s)" % (c["item_name"], c["item_id"])
                                            for c in children), flush=True)
@@ -404,7 +411,7 @@ class NfraCollector(CollectorPipeline):
         for c in children:
             print("      >> 开始抓取栏目 %s(%s)" % (c["item_name"], c["item_id"]), flush=True)
             try:
-                rows = get_list_for_item(self._opener, c["item_id"], args.delay_min, args.delay_max)
+                rows = get_list_for_item(c["item_id"], args.delay_min, args.delay_max)
             except Exception as e:  # noqa: BLE001
                 print("      [WARN] 栏目 %s 列表抓取失败: %s" % (c["item_name"], e), flush=True)
                 rows = []
@@ -463,7 +470,7 @@ class NfraCollector(CollectorPipeline):
             }
         else:
             try:
-                det = get_detail(self._opener, did, args.delay_min, args.delay_max)
+                det = get_detail(did, args.delay_min, args.delay_max)
                 if det is None:
                     raise RuntimeError("详情为空")
                 rec = {
@@ -497,9 +504,11 @@ class NfraCollector(CollectorPipeline):
                 }
                 print("      [offline] docId=%s 详情未缓存，仅列表面板" % did, flush=True)
             except Exception as e:  # noqa: BLE001
+                # 不再静默吞掉：记录到 build_extra，同时向上抛，
+                # 由 pipeline 按失败分类产出死信（临时失败可冷却补抓，不再丢失）。
                 self._errors.append({"doc_id": did, "title": entry["title"], "error": str(e)})
                 print("      [ERR] docId=%s 详情失败: %s" % (did, e), flush=True)
-                return None
+                raise
         if rec:
             if getattr(args, "download_originals", False):
                 rec["downloaded_doc_path"] = download_original_doc(rec, did, SCRAPERS_ROOT)

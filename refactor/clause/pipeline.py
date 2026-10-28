@@ -9,9 +9,9 @@ validate_clauses → 写 storage(namespace="clauses")。
 body_text / source_url / issue_organ 保留读取回退（原则9 兼容续跑）。
 
 设计要点：
-  - 源无关、backend-agnostic（file / postgres 通吃，统一走 collectors.storage.get_store）；
+  - 源无关、backend 仅 Postgres（PG 元数据 + content_ref 文件指向，统一走 collectors.storage.get_store）；
   - clause 是 cleaned 的**派生索引**，随 cleaned 变化而重建 → out_store 用
-    on_conflict="update"（file 后端整文件覆盖天然等价；PG 下按 key 覆盖）；
+    on_conflict="update"（PG 下按 key 覆盖）；
   - 身份/溯源锚点从 cleaned 记录透传（dedup_key / title / document_number / detail_url），
     detail_url 同时作为 PG 端 key_md5 派生源（详见 collectors.storage.sql_backend._extract_key）；
   - **rfn 投影（方向 A：本阶段不做）**：本管线不引入 `interfaces.rfn_api` / RFN 桥表。
@@ -19,8 +19,8 @@ body_text / source_url / issue_organ 保留读取回退（原则9 兼容续跑�
     其 storage 化是单独的工程，不应塞进条文抽取。clause 行已透传全部锚点键
     （dedup_key / detail_url / document_number / title），将来 rfn 子系统
     就位后，一次 join 即可把 rfn 回填，**无需重解析**。
-  - 增量/状态：clauses 是 cleaned 的派生索引，storage 后端天然幂等（file=整文件覆盖、
-    PG=按 key 覆盖），无需旧 clause_index_state.json 式的独立状态机。
+  - 增量/状态：clauses 是 cleaned 的派生索引，storage 后端天然幂等（PG=按 key 覆盖），
+    无需旧 clause_index_state.json 式的独立状态机。
 """
 from __future__ import annotations
 
@@ -139,12 +139,15 @@ def build_clause_index(
 
 
 if __name__ == "__main__":
-    # 离线自检：在临时 file 后端跑一轮 mini 端到端。
+    # 后端仅 PG（file 后端已移除）：需要 REFACTOR_DB_URL；无则跳过自检。
     import json
-    import tempfile
+    import os
 
-    tmp = tempfile.mkdtemp(prefix="clause_smoke_")
-    s = StorageSettings(backend="file", raw_dir=tmp)
+    if not os.environ.get("REFACTOR_DB_URL"):
+        print("[clause] 自检跳过：需要 postgres 后端（REFACTOR_DB_URL 未设置）")
+        raise SystemExit(0)
+
+    s = StorageSettings.load()
     sample = [
         {
             "source": "gov",

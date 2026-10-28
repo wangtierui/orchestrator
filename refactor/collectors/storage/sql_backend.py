@@ -34,6 +34,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from .base import StoredRecord
+from ._sanitize import sanitize_value
 
 UTC = timezone.utc
 
@@ -149,6 +150,8 @@ class SqlStore:
         norm = normalizer or self._normalizer
         if norm:
             items = [norm(self.namespace, it) for it in items]
+        # 写入边界清洗：去除孤立代理字符（脏 Unicode），否则 psycopg/JSON 落盘失败
+        items = [sanitize_value(it) for it in items]
         captured_at = captured_at or datetime.now(UTC)
         oc = on_conflict or self._on_conflict
 

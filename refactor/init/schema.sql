@@ -44,7 +44,7 @@ CREATE TABLE IF NOT EXISTS raw_docs (
     effective_date DATE         NULL,
     issuing_authority TEXT       NULL,
     category       TEXT         NULL,
-    doc_no         TEXT         NULL,
+    document_number TEXT         NULL,
     summary        TEXT         NULL,
     fetch_status   TEXT         NOT NULL
                                 CHECK (fetch_status IN ('pending', 'ok', 'no_content', 'parse_error', 'fetch_failed', 'download_failed', 'attachment_skipped', 'attachment_failed', 'attachment_saved', 'skipped_existing', 'title_link_only', 'offline_missing')),

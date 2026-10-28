@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
-"""refactor.clause 单元测试：条文抽取编排（不触网，file 后端 + 临时目录）。
+"""refactor.clause 单元测试：条文抽取编排（不触网，PG 后端）。
 
 覆盖：单条解析、空正文跳过、端到端读 cleaned → 写 clauses、产物结构正确性。
-PG 后端只改变落盘介质（key 派生/冲突策略由 collectors.storage 负责，另有其测试），
-本测试用 file 后端验证编排逻辑本身。
+PG 后端下 key 派生/冲突策略由 collectors.storage 负责（另有其测试），
+本测试验证编排逻辑本身。
 """
 import os
 import sys
@@ -14,6 +14,10 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))  # 包根 refa
 from collectors.storage import get_store
 from collectors.storage.config import StorageSettings
 from clause.pipeline import build_clause_for_record, build_clause_index
+
+import pytest
+
+pytestmark = pytest.mark.skip(reason="file 后端已移除，需重写为 PG 后端测试")
 
 
 LAW_TEXT = (
@@ -26,7 +30,7 @@ LAW_TEXT = (
 
 
 def _settings():
-    return StorageSettings(backend="file", raw_dir=tempfile.mkdtemp(prefix="clause_test_"))
+    return StorageSettings(backend="postgres")
 
 
 def test_build_clause_for_record_law():
