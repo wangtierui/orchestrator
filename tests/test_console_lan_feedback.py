@@ -463,9 +463,15 @@ class TestFrontendContract:
 
     def test_feedback_form_wiring(self) -> None:
         h = _html()
+        # 批 130：表单搬进左侧栏「反馈」弹窗（仍只有一份标记，由 fbFormHtml() 产出）
         for el in ("fbkind", "fbsev", "fbpage", "fbacc", "fbtitle", "fbdetail",
-                   "fbsubmit", "fbfilter"):
+                   "fbsubmit"):
             assert f'id="{el}"' in h, f"缺表单元素 {el}"
+        assert "function fbFormHtml(" in h and "return form;" in h, "表单函数没返回内容"
+        assert "function openFeedbackModal(" in h
+        # 状态筛选不再用页面下拉，改侧栏项
+        assert 'id="fbfilter"' not in h, "状态下拉应已删除（改侧栏）"
+        assert 'sideShell("fb"' in h, "留言板未挂侧栏状态"
         assert "function bindFeedback(" in h
         assert 'api("/api/feedback"' in h
 
