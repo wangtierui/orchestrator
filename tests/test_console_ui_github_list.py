@@ -204,7 +204,8 @@ class TestUnifiedMetrics:
             assert "width:4px" in seg, sel
 
     def test_radius_unified_6px(self, h: str) -> None:
-        assert ".tag,.pill,.lv-badge,.Counter{border-radius:6px}" in h
+        # 批 137：pill/tag 自研已删，圆角规则收敛到 .lv-badge/.Counter/.Label
+        assert ".lv-badge,.Counter,.Label{border-radius:6px}" in h
         assert "--r-md:6px" in h
 
 

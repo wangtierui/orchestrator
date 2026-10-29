@@ -123,11 +123,8 @@ main{max-width:1560px;margin:0 auto;padding:var(--s5)}
 
 /* ---------- 状态色 ---------- */
 .ok{color:var(--ok)} .warn{color:var(--warn)} .bad{color:var(--bad)} .muted{color:var(--fg3)}
-.pill{display:inline-block;font-size:11.5px;padding:1px 8px;border-radius:999px;
-  border:1px solid var(--line2);background:var(--alt);color:var(--fg2);white-space:nowrap}
-.pill.ok{color:var(--ok);background:var(--ok-l);border-color:#BFE6D6}
-.pill.warn{color:var(--warn);background:var(--warn-l);border-color:#F0DCB4}
-.pill.bad{color:var(--bad);background:var(--bad-l);border-color:#F3C9C2}
+
+
 
 /* ---------- 表格 ---------- */
 table{width:100%;border-collapse:collapse;font-size:13px}
@@ -202,9 +199,7 @@ th.sortable .arw{font-size:10px;opacity:.85}
 .pager button:disabled{opacity:.45;cursor:default}
 .lv-meta .tag,.lv-meta .pill{font-size:12px;line-height:18px;height:18px;
   border-radius:999px;padding:0 7px}
-.tag{display:inline-block;padding:1px 7px;border-radius:999px;font-size:11px;
-  border:1px solid var(--line);background:var(--alt);color:var(--fg2);white-space:nowrap}
-.mono{font-family:var(--mono);font-size:11.5px;color:var(--fg2)}
+
 .ttl{max-width:420px}
 /* ---------- 关系图谱 ---------- */
 .gwrap{overflow:auto;border:1px solid var(--line);border-radius:var(--r-md);background:var(--card)}
@@ -218,11 +213,8 @@ th.sortable .arw{font-size:10px;opacity:.85}
 .brand .logo{width:20px;height:20px;fill:currentColor;margin-right:8px;opacity:.92;flex:none}
 /* ---------- 关系图谱：四视图切换 + 全览卡片 ---------- */
 .gtabs{gap:var(--s1);margin-bottom:var(--s3)}
-.gbtn{padding:5px 12px;border:1px solid var(--line2);background:var(--card);
-  border-radius:999px;cursor:pointer;font-size:13px;color:var(--fg2)}
-.gbtn:hover{border-color:var(--primary);color:var(--primary)}
-.gbtn.on{background:var(--primary);border-color:var(--primary);color:#fff;font-weight:600}
-.ggrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:var(--s3)}
+
+
 .gcard{border:1px solid var(--line);border-radius:var(--r-md);padding:var(--s3);
   background:var(--card);cursor:pointer;transition:box-shadow .15s,border-color .15s}
 .gcard:hover{border-color:var(--primary);box-shadow:var(--shadow-h)}
@@ -234,8 +226,7 @@ th.sortable .arw{font-size:10px;opacity:.85}
 .eastleft{border:1px solid var(--line);border-radius:var(--r-md);padding:var(--s2);background:var(--card)}
 .eastright{border:1px solid var(--line);border-radius:var(--r-md);padding:var(--s3);background:var(--card);min-width:0}
 .echips{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;max-height:96px;overflow:auto}
-.echips .gbtn{font-size:11.5px;padding:2px 8px}
-.elist{display:flex;flex-direction:column;gap:2px;max-height:460px;overflow:auto}
+
 .etbl{display:grid;grid-template-columns:1fr auto;grid-auto-rows:auto;gap:0 6px;
   text-align:left;padding:5px 8px;border:1px solid transparent;border-radius:var(--r-sm);
   background:none;cursor:pointer;font-size:12.5px;color:var(--fg)}
@@ -595,10 +586,8 @@ body.lv-selecting .lv-table tbody .lv-ck,
 .lv-batch button.x{background:none;border:0;font-size:16px;line-height:1;padding:0 6px}
 .lv-batch .st{font-size:12px;color:#d0d7de}
 /* 空态 */
-.lv-empty{padding:48px 16px;text-align:center;color:var(--text-muted)}
-.lv-empty .ico{font-size:26px;display:block;margin-bottom:8px;color:var(--fg4)}
-.lv-empty b{color:var(--text);display:block;margin-bottom:4px}
-.lv-empty .btn{margin-top:12px}
+
+
 @media (max-width:1024px){
   .lv-body.slice{grid-template-columns:minmax(0,1fr)}
   .lv-slice{border-left:0;border-top:1px solid var(--border);max-height:none}
@@ -794,7 +783,7 @@ input:not([type="checkbox"]):not([type="radio"]):focus,select:focus,textarea:foc
 input::placeholder,textarea::placeholder{color:var(--text-muted)}
 select{padding-right:24px}
 /* 标签与按钮同一套圆角（与搜索框一致） */
-.tag,.pill,.lv-badge,.Counter{border-radius:6px}
+.lv-badge,.Counter,.Label{border-radius:6px}
 
 /* ============================================================
  * 列表表头（批 128，按 CDP 实测复刻）
@@ -812,13 +801,8 @@ select{padding-right:24px}
 .lv-headbar .ftab.on{background:var(--bg);color:var(--text);font-weight:600;
   box-shadow:inset 0 -2px 0 #fd8c73}
 .lv-fsep{width:1px;height:20px;background:var(--border);flex:none}
-.lv-fbtn{height:32px;display:inline-flex;align-items:center;gap:4px;padding:0 10px;
-  border:1px solid var(--border);border-radius:6px;background:var(--bg);
-  color:var(--text);font-size:13px;cursor:pointer;flex:none;white-space:nowrap}
-.lv-fbtn:hover{background:var(--hover)}
-.lv-fbtn.on{border-color:var(--accent);color:var(--accent);background:var(--primary-l)}
-.lv-fbtn .octicon{color:var(--text-muted)}
-.lv-fbtn.on .octicon{color:var(--accent)}
+
+
 /* 面板选项：32 高（用户规范） */
 .fpop .opt{height:32px}
 .fpop .opt .t{line-height:1.2}
@@ -878,9 +862,7 @@ body.rail-off .rail .sideitem.on{background:var(--bg-subtle)}
 .repo-tabs{box-shadow:inset 0 -1px 0 0 rgba(209,217,224,.7);border-bottom:0}
 
 /* ② 表头筛选项：**无边框**（1px transparent），悬停浅灰；只有密度是分组控件 */
-.lv-fbtn{border-color:transparent;background:transparent}
-.lv-fbtn:hover{background:rgba(129,139,152,.12)}
-.lv-fbtn.on{border-color:transparent;background:rgba(9,105,218,.08);color:var(--accent)}
+
 .density{border:1px solid var(--border);border-radius:6px;background:var(--bg)}
 .lv-headbar .lv-savebtn{width:32px;padding:0;justify-content:center}
 .lv-headbar .ftab{border-radius:6px}
@@ -1050,9 +1032,7 @@ body.rail-off .rail .sideitem-sub2,body.rail-off .rail .sideitem-sub3{
   border-bottom:1px solid var(--border);white-space:nowrap}
 
 /* 批133：列头筛选按钮（.lv 表头内） */
-.colf{background:none;border:0;padding:0;margin:0;font:inherit;color:inherit;
-  display:inline-flex;align-items:center;gap:4px;cursor:pointer}
-.colf:hover{color:var(--text)}
+
 .colf .ch{display:inline-flex;color:var(--text-muted)}
 th.on .colf .ch{color:var(--accent)}
 .lv-dense .lv-row:hover td{background:var(--bg-subtle)}
@@ -1071,6 +1051,25 @@ th.on .colf .ch{color:var(--accent)}
 .ghstate-btn.on{color:var(--text);font-weight:600}
 .ghstate-btn .n{color:var(--text-muted);font-weight:400}
 .ghstate-btn.on .n{color:var(--text-muted)}
+
+/* 批 137：筛选类按钮的"选中"只用一条规则（外观交给 Primer .btn-invisible） */
+.gbtn.on,.lv-fbtn.on,.colf.on,.gbtn[aria-pressed="true"]{
+  background:var(--bg-subtle);color:var(--text)}
+
+/* 批 137：动效对齐 GitHub 实测（0.08s / cubic-bezier(.65,0,.35,1)） */
+.btn,.btn-invisible,.gbtn,.lv-fbtn,.colf,.tab,.sideitem,.ghstate-btn{
+  transition:color .08s cubic-bezier(.65,0,.35,1),
+             background-color .08s cubic-bezier(.65,0,.35,1),
+             border-color .08s cubic-bezier(.65,0,.35,1),
+             fill .08s cubic-bezier(.65,0,.35,1)}
+@media (prefers-reduced-motion: reduce){
+  .btn,.btn-invisible,.gbtn,.lv-fbtn,.colf,.tab,.sideitem,.ghstate-btn{transition:none}
+}
+
+/* 批 137b：不可见按钮统一 32 高（Primer .btn-invisible 默认按 padding 撑，实测 30） */
+.btn-invisible,.lv-fbtn,.gbtn,.colf{height:32px;min-height:32px;padding:0 8px;
+  border-radius:6px}
+.lv-fbtn .octicon,.colf .ch{color:var(--text-muted)}
 </style>
 </head>
 <body>
@@ -2140,6 +2139,11 @@ function bindLogin(){
  * 只保留一个判据：可输入的控件就必须是 Primer 控件。 */
 function applyPrimerControls(){
   /* 弹窗/浮层挂在 body 下（不在 #view 里）⇒ 必须扫全文档，否则反馈表单永远裸控件 */
+  /* 筛选/字段/列头按钮统一成 Primer 的不可见按钮（删掉三套自研外观） */
+  $$(".gbtn, .lv-fbtn, .colf").forEach(el => {
+    if (!el.classList.contains("btn")) el.classList.add("btn", "btn-invisible");
+  });
+  $$(".lv-empty").forEach(el => el.classList.add("blankslate"));
   $$("input, select, textarea").forEach(el => {
     const type = String(el.getAttribute("type") || "").toLowerCase();
     if (type === "checkbox" || type === "radio" || type === "hidden" || type === "file") return;
@@ -2651,7 +2655,7 @@ function idCell(it){
   if(!rfn) return '<span class="muted">—</span>';
   const derived = String(it.rfn_origin || "") === "derived";
   return `<span class="mono">${esc(rfn)}</span>` + (derived
-    ? ' <span class="tag" title="未入册：编号由发布件派生，可稳定引用，但不代表已被归属表收录（不参与主题/时效统计）">派生</span>'
+    ? ' <span class="Label" title="未入册：编号由发布件派生，可稳定引用，但不代表已被归属表收录（不参与主题/时效统计）">派生</span>'
     : "");
 }
 
@@ -2661,7 +2665,7 @@ function relBtn(ref){
     title="在「关系图谱」中查看 ${esc(ref)}">关系</button>`;
 }
 function themeCell(t){
-  return t ? `<span class="tag">${esc(t)}</span>` : '<span class="muted">—</span>';
+  return t ? `<span class="Label">${esc(t)}</span>` : '<span class="muted">—</span>';
 }
 function timeCell(v){
   /* 时效状态用**中文**呈现：底座存的是受控枚举（valid/amended/…），
@@ -3091,14 +3095,14 @@ function _gExternal(d){
       <td class="mono">${esc(n.id)}</td>
       <td class="ttl">${esc(n.name || "")}</td>
       <td class="mono">${esc(n.docno || "—")}</td>
-      <td><span class="tag">${esc(n.guise_label || "未分类")}</span></td>
+      <td><span class="Label">${esc(n.guise_label || "未分类")}</span></td>
       <td style="min-width:120px">
         <div class="bar" style="width:${Math.max(4, Math.round(n.degree / maxDeg * 100))}%"></div>
       </td>
       <td class="mono">${num(n.degree)}</td></tr>`).join("")
     || '<tr><td colspan="6" class="muted">尚未生成外部权威表（运行 tools/build_external_authority.py）</td></tr>';
   const chips = Object.keys(by).map(k =>
-    `<span class="tag">${esc(lbl[k] || k)} ${num(by[k])}</span>`).join(" ");
+    `<span class="Label">${esc(lbl[k] || k)} ${num(by[k])}</span>`).join(" ");
   return `<div class="note" style="margin-bottom:8px">
       外部法规是**语料外**文件（国家法律 / 行政法规 / 部委规章 / 制度历史版本）的登记键空间：
       编号 <code>RFN-EXT-*</code> 表示「被引用过、已登记」，<b>不代表库里能打开这份文件</b>。
@@ -3135,7 +3139,7 @@ function _gOverview(d){
          </div>`;
     return `<div class="gcard" data-gview="${esc(v.key)}">
       <div class="gcard-h"><b>${esc(v.label)}</b>
-        <span class="tag">${num(v.total)} 条</span></div>
+        <span class="Label">${num(v.total)} 条</span></div>
       ${bucketBar}
       <div class="muted" style="font-size:12px">${esc(v.note || "")}</div>
       <div class="muted" style="font-size:12px;margin-top:6px">
@@ -3312,16 +3316,16 @@ function viewGraph(d){
   const c = obj(d.counts);
   const head = `<div class="toolbar">
     <button class="link" id="gback" title="回到全局视图">← 全局视图</button>
-    <span class="tag">${esc(center.kind_label || "中心")}</span>
+    <span class="Label">${esc(center.kind_label || "中心")}</span>
     <b>${esc(center.name || d.ref)}</b>
     <span class="mono">${esc(d.ref)}</span>
     <span class="muted">${esc(center.docno || "")}</span>
     <span class="muted">出 ${num(c.out)} · 入 ${num(c.in)} ·
       依据 ${num(c.basis)} · 废止 ${num(c.repeal)}</span>
-    ${c.external ? `<span class="tag">其中 ${num(c.external)} 条指向语料外法规（点线）</span>` : ""}
-    ${c.weak_skipped ? `<span class="tag">已隐藏 ${num(c.weak_skipped)} 条弱线索（未登记 RFN）</span>` : ""}
-    ${c.organ_skipped ? `<span class="tag">已忽略 ${num(c.organ_skipped)} 条机关名（不是文件）</span>` : ""}
-    ${c.truncated ? '<span class="tag">结果已截断（上限 200 条）</span>' : ""}
+    ${c.external ? `<span class="Label">其中 ${num(c.external)} 条指向语料外法规（点线）</span>` : ""}
+    ${c.weak_skipped ? `<span class="Label">已隐藏 ${num(c.weak_skipped)} 条弱线索（未登记 RFN）</span>` : ""}
+    ${c.organ_skipped ? `<span class="Label">已忽略 ${num(c.organ_skipped)} 条机关名（不是文件）</span>` : ""}
+    ${c.truncated ? '<span class="Label">结果已截断（上限 200 条）</span>' : ""}
   </div>`;
   if (!edges.length) {
     /* 空图分两种，"暂无关系"这个说法只对第一种成立（2026-10-23 补）：
@@ -3419,12 +3423,12 @@ function eastRegstatsDocs(d){
         <td class="ttl">${esc(it.title || "")}</td>
         <td class="mono">${esc(it.document_number || "—")}</td>
         <td>${timeCell(it.timeliness_status)}</td>
-        <td><span class="tag">${esc(it.source || "—")}</span></td>
+        <td><span class="Label">${esc(it.source || "—")}</span></td>
         <td>${addrCell(it)}</td>
         <td>${relBtn(it.rfn)}</td></tr>`).join("")
       || '<tr><td colspan="6" class="muted">该类暂无资料</td></tr>';
     return `<h3 style="margin:var(--s4) 0 var(--s2)">
-        <span>${esc(cat.label)} <span class="tag">${num(cat.count)} 条</span></span>
+        <span>${esc(cat.label)} <span class="Label">${num(cat.count)} 条</span></span>
         <span class="hint">${esc(cat.note || "")}</span></h3>
       <div class="scrollx"><table><thead><tr>
         <th>名称</th><th>文号</th><th>时效</th><th>源</th><th>访问地址</th><th>关系</th>
@@ -3433,7 +3437,7 @@ function eastRegstatsDocs(d){
   /* 标题与内容**紧邻**：不再在中间插入"能力边界"说明（那属于页级共识，
    * 由 `eastOverview` 统一放在 KPI 下方一次说清）。 */
   return `<h3 class="near" style="margin:var(--s2) 0 var(--s1)"><span>EAST / 监管数据标准化
-      <span class="tag">${num(cov.east_direct)} 条</span></span>
+      <span class="Label">${num(cov.east_direct)} 条</span></span>
       <span class="hint">按受控关键词分类的资料指针</span></h3>
     ${sections}`;
 }
@@ -3607,11 +3611,11 @@ function eastStatReg(regstats){
     <div class="scrollx"><table><thead><tr>
       <th>分类</th><th>名称</th><th>文号</th><th>时效</th><th>源</th><th>访问地址</th><th>关系</th>
     </tr></thead><tbody>${rows.map(({cat, it}) => `<tr>
-      <td><span class="tag">${esc(cat)}</span></td>
+      <td><span class="Label">${esc(cat)}</span></td>
       <td class="ttl">${esc(it.title || "")}</td>
       <td class="mono">${esc(it.document_number || "—")}</td>
       <td>${timeCell(it.timeliness_status)}</td>
-      <td><span class="tag">${esc(it.source || "—")}</span></td>
+      <td><span class="Label">${esc(it.source || "—")}</span></td>
       <td>${addrCell(it)}</td>
       <td>${relBtn(it.rfn)}</td></tr>`).join("")}</tbody></table></div>`;
 }
@@ -3652,7 +3656,7 @@ function eastSection(regstats){
   const statTab = String(STATE.stat_tab || "reg");
   const ntc = obj(d.notice);
   const head = `<h3 style="margin:0 0 var(--s2)">
-      <span>EAST 规范 <span class="tag">${esc(ntc.docno || "")} · ${esc(ntc.publish_date || "")}</span></span>
+      <span>EAST 规范 <span class="Label">${esc(ntc.docno || "")} · ${esc(ntc.publish_date || "")}</span></span>
       <span class="hint">${esc(ntc.title || "")}</span></h3>
     <div class="muted" style="margin-bottom:var(--s2)">${esc(d.note || "")}</div>`;
   /* 批 132（第 10 条）：除概览外，不再重复"规范说明 + 覆盖度"那段文案。 */
@@ -3701,7 +3705,7 @@ function eastOverview(d, regstats){
   const rows = atts.map(a => `<tr>
       <td class="mono">${esc(a.no || "-")}</td>
       <td class="ttl">${esc(a.name || "")}</td>
-      <td><span class="tag">${esc(a.kind || "—")}</span></td>
+      <td><span class="Label">${esc(a.kind || "—")}</span></td>
       <td class="mono">${(Number(a.bytes || 0) / 1048576).toFixed(2)} MB</td>
       <td>${a.text_len ? pill(num(a.text_len) + " 字", "ok")
                        : (String(a.kind) === "jpg" ? '<span class="muted">图片</span>'
@@ -3723,7 +3727,7 @@ function eastOverview(d, regstats){
     </div>
     ${docsBlock}
     <h3 style="margin:var(--s3) 0 var(--s2)">
-      <span>附件清单 <span class="tag">${num(atts.length)} 个</span></span>
+      <span>附件清单 <span class="Label">${num(atts.length)} 个</span></span>
       <span class="hint">按附件号自然序排列（1, 1-1, 1-2 …）；抽取状态如实标注${
         nEmpty ? "（" + num(nEmpty) + " 个非图片附件未抽出正文）" : ""}</span></h3>
     <div class="scrollx"><table><thead><tr>
@@ -3749,7 +3753,7 @@ function eastModeCell(code, kind) {
   const c = String(code || "").trim();
   if (!c) return '<span class="muted">—</span>';
   const lab = EAST_MODE[c] || kind;
-  return `<span class="tag" title="${esc(lab || "")}">${esc(c)}</span>`;
+  return `<span class="Label" title="${esc(lab || "")}">${esc(c)}</span>`;
 }
 
 function eastCatalog(d, domain) {
@@ -3806,7 +3810,7 @@ function eastTables(d){
     </tr>`).join("") || `<tr><td colspan="11" class="muted" style="padding:16px">${
       cur ? (payload.items ? "无匹配数据项" : "加载中…") : "请在左侧选择数据表"}</td></tr>`;
   const head = cur ? `<div class="toolbar" style="margin-bottom:6px">
-      <span class="tag">${esc(cur.domain || "")}</span>
+      <span class="Label">${esc(cur.domain || "")}</span>
       <b class="mono">${esc(cur.table_code || "")}</b>
       <span>${esc(cur.table_name || "")}</span>
       <span class="muted">${num(cur.item_count)} 项 · 主键 ${num(cur.pk_count)}</span>
@@ -3996,7 +4000,7 @@ function eastEr(d){
       <td class="mono">${esc(e.field)}${e.field_code ? "（" + esc(e.field_code) + "）" : ""}</td>
       <td>→</td><td class="ttl">${esc(e.to_table)}</td>
       <td class="mono">${esc(e.dst_field || "—")}</td>
-      <td><span class="tag">${esc(e.source)}</span></td>
+      <td><span class="Label">${esc(e.source)}</span></td>
       <td class="mono">${esc(e.rule_no)}</td>
       <td class="muted">${esc(e.rule || "")}</td></tr>`).join("")}</tbody></table></div>`;
 }
@@ -4300,7 +4304,7 @@ function viewFeedback(d){
   const whoCell = known
     ? `<div class="muted" style="align-self:end;padding-bottom:2px">
          记录者：<b>${esc(known)}</b>
-         <span class="tag">${esc(au.user_source || "登录身份")}</span></div>`
+         <span class="Label">${esc(au.user_source || "登录身份")}</span></div>`
     : `<label class="muted">域账号<input id="fbacc" placeholder="本机/域账号，如 zhangsan"
          maxlength="64" autocomplete="username"></label>`;
   const whoNote = known
@@ -4316,7 +4320,7 @@ function viewFeedback(d){
   const rows = items.map(it => `<tr>
       <td class="mono">${esc((it.created_at || "").replace("T", " ").slice(0, 19))}</td>
       <td class="mono">${esc(it.fid || "")}</td>
-      <td><span class="tag">${esc(it.kind_label || it.kind || "")}</span></td>
+      <td><span class="Label">${esc(it.kind_label || it.kind || "")}</span></td>
       <td>${pill(it.severity_label || it.severity || "",
         it.severity === "high" || it.severity === "blocker" ? "bad"
         : (it.severity === "low" ? "" : "warn"))}</td>
@@ -4368,7 +4372,7 @@ function fbFormHtml(){
   const whoCell = _known
     ? `<div class="muted" style="align-self:end;padding-bottom:2px">
          记录者：<b>${esc(_known)}</b>
-         <span class="tag">${esc(_au.user_source || "登录身份")}</span></div>`
+         <span class="Label">${esc(_au.user_source || "登录身份")}</span></div>`
     : `<label class="muted">域账号<input id="fbacc" placeholder="本机/域账号，如 zhangsan"
          maxlength="64" autocomplete="username"></label>`;
   const whoNote = _known
