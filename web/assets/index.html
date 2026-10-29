@@ -2115,7 +2115,10 @@ function enhanceLegacyTables(){
   const view = $("#view");
   if (!view) return;
   $$("table", view).forEach(table => {
-    if (table.classList.contains("lv-table") || table.dataset.ghx === "1") return;
+    if (table.dataset.ghx === "1") return;
+    /* 列表页（政策法规/公司制度）的表头是一个 colspan 工具条 ⇒ 不加列筛选；
+     * 其它 .lv-table（如数据结构目录）是普通列头 ⇒ 照常加。 */
+    if (table.querySelector("thead th[colspan]")) return;
     const headRow = table.querySelector("thead tr");
     const body = table.querySelector("tbody");
     if (!headRow || !body) return;
@@ -4935,6 +4938,10 @@ function lvPop(anchor, html, opts) {
   });
   if (opts && opts.onPick) {
     el.addEventListener("click", (ev) => {
+      /* 取值项（.opt[data-val]）此前没人接 —— 只有 data-act 的按钮能触发，
+       * 于是"点选项没反应"（列筛选/字段筛选都受影响）。这里一并接住。 */
+      const opt = ev.target.closest("button.opt[data-val]");
+      if (opt && !opt.disabled) { opts.onPick("pick", opt); return; }
       const b = ev.target.closest("button[data-act]");
       if (!b || b.disabled) return;
       opts.onPick(b.dataset.act, b);
