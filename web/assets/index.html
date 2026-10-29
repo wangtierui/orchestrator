@@ -1070,6 +1070,13 @@ th.on .colf .ch{color:var(--accent)}
 .btn-invisible,.lv-fbtn,.gbtn,.colf{height:32px;min-height:32px;padding:0 8px;
   border-radius:6px}
 .lv-fbtn .octicon,.colf .ch{color:var(--text-muted)}
+
+/* 批 138（P2）：筛选面板的清除入口 —— 搜索框内右侧 X，不再有底部"清除"行 */
+.fpop{position:relative}
+.fpop .fpop-x{position:absolute;right:8px;top:8px;width:24px;height:24px;border:0;
+  background:none;border-radius:6px;color:var(--text-muted);cursor:pointer;
+  display:inline-flex;align-items:center;justify-content:center}
+.fpop .fpop-x:hover{background:var(--hover);color:var(--text)}
 </style>
 </head>
 <body>
@@ -2253,10 +2260,8 @@ function openTableFilter(table, idx, anchor){
         <span class="t">${esc(e.v)}<span class="s">${num(e.c)} 条</span></span>
       </button>`).join("") ||
     '<div class="empty" style="padding:8px;color:var(--text-muted)">该列没有取值</div>';
-  const html = `<input class="q" id="tfQ" placeholder="搜索取值…" aria-label="搜索取值">
-    <div id="tfList">${optHtml("")}</div>
-    <div class="sep"></div>
-    <button data-act="clear">清除该列筛选</button>`;
+  const html = `<input class="q" id="tfQ" placeholder="搜索取值…" aria-label="搜索取值"><button class="fpop-x" data-act="clear" aria-label="清除筛选" title="清除筛选">${ico("x", 14)}</button>
+    <div id="tfList">${optHtml("")}</div>`;
   const el = lvPop(anchor, html, {
     cls: "fpop",
     onPick: (act, btn) => {
@@ -4911,13 +4916,9 @@ function lvFieldFilterPop(list, st, fieldKey, anchor, facets) {
           <span class="t">${esc(v)}<span class="s">当前页</span></span>
         </button>`).join("");
     const html = `<input class="q" id="fpopQ" placeholder="输入或搜索「${esc(fd.label)}」，回车应用…"
-        aria-label="按${esc(fd.label)}筛选" value="${esc(cur)}">
+        aria-label="按${esc(fd.label)}筛选" value="${esc(cur)}"><button class="fpop-x" data-act="clear" aria-label="清除筛选" title="清除筛选">${ico("x", 14)}</button>
       <div id="fpopList">${optHtml("") ||
-        '<div class="empty" style="padding:8px;color:var(--text-muted)">当前页没有可选值，直接输入后回车</div>'}</div>
-      <div class="sep"></div>
-      <button data-act="clear" style="width:100%;text-align:left;border:0;background:none;
-        padding:6px 8px;font-size:12.5px;cursor:pointer;color:var(--text-muted)">
-        清除该字段筛选</button>`;
+        '<div class="empty" style="padding:8px;color:var(--text-muted)">当前页没有可选值，直接输入后回车</div>'}</div>`;
     const el = lvPop(anchor, html, {
       cls: "fpop",
       onPick: (act2, btn) => {
@@ -4955,13 +4956,9 @@ function lvFieldFilterPop(list, st, fieldKey, anchor, facets) {
         <span class="c">${num(o.count)}</span>
       </button>`).join("");
   const html = `<input class="q" id="fpopQ" placeholder="搜索该字段的取值…"
-      aria-label="搜索取值">
+      aria-label="搜索取值"><button class="fpop-x" data-act="clear" aria-label="清除筛选" title="清除筛选">${ico("x", 14)}</button>
     <div id="fpopList">${optHtml("") ||
-      '<div class="empty" style="padding:8px;color:var(--text-muted)">该字段没有可选值</div>'}</div>
-    <div class="sep"></div>
-    <button data-act="clear" style="width:100%;text-align:left;border:0;background:none;
-      padding:6px 8px;font-size:12.5px;cursor:pointer;color:var(--text-muted)">
-      清除该字段筛选</button>`;
+      '<div class="empty" style="padding:8px;color:var(--text-muted)">该字段没有可选值</div>'}</div>`;
   const el = lvPop(anchor, html, {
     cls: "fpop",
     onPick: (act2, btn) => {
