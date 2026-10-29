@@ -919,10 +919,7 @@ body.rail-off .rail-fb,body.rail-off .rail-foot button{justify-content:center;pa
 .lv{border:1px solid var(--border);border-radius:6px;overflow:hidden}
 
 /* ⑨ 待办/检索里的自定义按钮统一成 Primer `.btn` 的观感 */
-.act,.btn-act{height:32px;display:inline-flex;align-items:center;gap:6px;padding:0 12px;
-  border:1px solid var(--border);border-radius:6px;background:var(--bg);
-  color:var(--text);font-size:13px;cursor:pointer}
-.act:hover,.btn-act:hover{background:var(--hover)}
+
 
 /* ⑩ 去掉多余上下边框（关键指标带 / 数据源行 / 审计日志分隔） */
 .kpibar{border-top:0 !important;border-bottom:0 !important}
@@ -1056,6 +1053,10 @@ body.rail-off .rail .sideitem-sub2,body.rail-off .rail .sideitem-sub3{
 th.on .colf .ch{color:var(--accent)}
 .lv-dense .lv-row:hover td{background:var(--bg-subtle)}
 .lv-empty-row td{height:auto !important;padding:16px !important}
+
+/* 批 134（P1）：标签圆角与全局一致（6px）；Primer .Label 默认 9999px 胶囊 */
+.Label{border-radius:6px;padding:0 7px;line-height:18px;font-size:11.5px;
+  display:inline-flex;align-items:center}
 </style>
 </head>
 <body>
@@ -1421,7 +1422,11 @@ function unavail(d, why){
     <div class="note">${esc(d.reason||d.error||"未知原因")}</div>`, d.source);
 }
 const kv = (k,v,cls)=>`<div class="kv"><span class="k">${esc(k)}</span><span class="v ${cls||""}">${v}</span></div>`;
-const pill = (t,c)=>`<span class="pill ${c||""}">${esc(t)}</span>`;
+/* 批 134（P1）：标签统一用 Primer 的 .Label 家族——不再自绘 pill；
+ * 语义色映射沿用旧调用方传入的 ok/warn/bad。 */
+const PILL_LABEL = {ok: "Label--success", warn: "Label--attention",
+                    bad: "Label--danger", done: "Label--success"};
+const pill = (t, c) => `<span class="Label ${PILL_LABEL[c] || ""}">${esc(t)}</span>`;
 const kpi = (label,value,unit,cls)=>
   `<div class="kpi"><div class="n ${cls||""}">${value}${unit?`<span class="u">${esc(unit)}</span>`:""}</div>
    <div class="l">${esc(label)}</div></div>`;
@@ -1832,7 +1837,7 @@ function viewWorklist(d, kinds){
         <option value="dismissed">dismissed（不适用）</option></select>
       <input id="wlby" placeholder="操作者" value="confirm_console" style="width:160px">
       <input id="wlwhy" placeholder="批量处置理由（必填，进审计台账）" style="flex:1;min-width:220px">
-      <button class="act" id="wlbulk">批量处置</button>
+      <button class="btn" id="wlbulk">批量处置</button>
       <span class="muted" style="margin-left:auto">写路径纪律：${esc((kinds&&kinds.action_policy)||"worklist_resolve")}</span>
     </div>`;
 
@@ -1893,7 +1898,7 @@ function viewSearch(d){
       <input id="q" placeholder="输入关键词（标题/文号/正文）" value="${esc(d.query||"")}"
       style="flex:1;min-width:260px;max-width:none">
       <select id="kind"><option value="records">记录</option><option value="clauses">条文</option></select>
-      <button class="act" id="qbtn">检索</button>
+      <button class="btn" id="qbtn">检索</button>
       <span class="muted">后端：${esc(d.backend||"—")} · 方式：${
         d.mode==="like"?"模糊匹配（短词）":(d.mode==="fts"?"全文索引":"—")}</span>
     </div>
@@ -2060,7 +2065,7 @@ function viewLogin(){
       <input id="lgpw" type="password" autocomplete="current-password"
         placeholder="${mode === "basic" ? "你的口令" : "XXXX-XXXX-XXXX-XXXX"}"></label>
     <div class="toolbar" style="margin-top:var(--s3)">
-      <button class="primary" id="lgbtn">登录</button>
+      <button class="btn btn-primary" id="lgbtn">登录</button>
       <span class="muted" id="lgmsg" style="font-size:12px"></span>
     </div>
   </div>`;
@@ -2106,6 +2111,20 @@ function bindLogin(){
  * 的数据形状差异很大，重写等于七次改版；先把**交互**统一（表头即筛选），
  * 再把视觉交给全局表格样式，收益/风险比最高。
  */
+/*: 表单控件统一挂 Primer `.form-control`（批 134 P1）
+ *
+ * 为什么不逐处改模板：输入框分散在 30+ 个模板字符串里，逐个加 class 既容易漏，
+ * 也会让"哪个控件长什么样"取决于写模板的人。这里在**渲染完成后一次性收口**，
+ * 只保留一个判据：可输入的控件就必须是 Primer 控件。 */
+function applyPrimerControls(){
+  /* 弹窗/浮层挂在 body 下（不在 #view 里）⇒ 必须扫全文档，否则反馈表单永远裸控件 */
+  $$("input, select, textarea").forEach(el => {
+    const type = String(el.getAttribute("type") || "").toLowerCase();
+    if (type === "checkbox" || type === "radio" || type === "hidden" || type === "file") return;
+    if (!el.classList.contains("form-control")) el.classList.add("form-control");
+  });
+}
+
 function enhanceLegacyTables(){
   /* 把 #view 里所有"裸 table"就地升级为 .lv 结构：
    *   <div class="lv lv-dense"><div class="lv-scroll"><table class="lv-table">
@@ -2375,6 +2394,7 @@ async function render(){
   }finally{
     paintRail();           // 所有分支（含登录/异常）都走这里，侧栏才不会残留上一页
     enhanceLegacyTables();  // 旧式表格：表头补"筛选下拉"（与列表页同一套交互）
+    applyPrimerControls();  // 输入类控件统一 Primer .form-control
     const cur = TABS.find(x => x.id === CUR);
     const cn = $("#crumbName");
     if (cn) cn.textContent = cur ? cur.name : (CUR === "__login" ? "登录" : CUR);
@@ -2472,7 +2492,7 @@ function openResolveInline(tr, id){
       <select id="rstatus"><option value="resolved">resolved（已处置）</option>
         <option value="dismissed">dismissed（不适用）</option></select>
       <input id="rby" placeholder="操作者" value="confirm_console" size="14">
-      <button class="act" id="rok">提交</button>
+      <button class="btn btn-primary" id="rok">提交</button>
       <button class="act ghost" id="rcancel">取消</button></div>
     <textarea id="rwhy" placeholder="处置理由（必填，进入审计台账）"></textarea>
     <div class="note">写路径：<code>worklist_resolve</code>（唯一写口，逐条落审计）。</div>
@@ -4379,6 +4399,7 @@ function openFeedbackModal(){
       <div class="fb-body">${fbFormHtml()}</div>
     </div>`;
   document.body.appendChild(mask);
+  applyPrimerControls();      /* 弹窗不在 render 流程里，控件要再过一遍 */
   const close = () => mask.remove();
   mask.addEventListener("click", (ev) => {
     if (ev.target === mask || (ev.target.closest && ev.target.closest("[data-close]"))) close();
