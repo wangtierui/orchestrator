@@ -667,13 +667,17 @@ body.lv-compact .lv-title{font-size:12.5px}
 .ftab .c{font-size:11px;color:var(--text-muted);background:var(--bg-subtle);
   border:1px solid var(--border);border-radius:999px;padding:0 6px}
 /* 密度切换（宽松 / 紧凑） */
-.density{display:inline-flex;border:1px solid var(--border);border-radius:6px;
+/* 批 135：SegmentedControl（实测 2×32×32、aria-pressed 表达选中） */
+.density{display:inline-flex;height:32px;border:1px solid var(--border);border-radius:6px;
+  overflow:hidden;
   overflow:hidden;margin-left:auto}
-.density button{height:28px;width:30px;padding:0;border:0;background:var(--bg);
+.density button{height:32px;width:32px;padding:0;border:0;background:transparent;
   color:var(--text-muted);font-size:12px;cursor:pointer;display:inline-flex;
   align-items:center;justify-content:center;gap:4px}
 .density button+button{border-left:1px solid var(--border)}
-.density button.on{background:var(--bg-subtle);color:var(--text);font-weight:600}
+.density button.on{background:var(--bg-subtle);color:var(--text)}
+.density button:hover{background:var(--hover)}
+.density button.on:hover{background:var(--bg-subtle)}
 /* 表头字段筛选面板：选项带复选框/圆点/主副文本，悬停或选中时浅灰 + 2px 蓝线 */
 .fpop{position:fixed;z-index:70;width:300px;max-height:60vh;overflow:auto;
   background:var(--bg);border:1px solid var(--border);border-radius:6px;
@@ -759,7 +763,7 @@ body.lv-compact .lv-primary .lv-meta{display:inline-flex;margin-top:0;flex:1 1 a
 
 /* 统一高度（批 127）：表头 48 / 宽松行 65 / 紧凑行 38 / 控件 32 */
 .lv-headrow th{height:48px;padding:0}
-.lv-table td{height:65px}
+.lv-table td{height:67px}
 body.lv-compact .lv-table td{height:38px}
 .lv-headctl{width:auto;padding:0 8px 0 0 !important}
 .lv-headctl .lv-bar{display:flex;align-items:center;gap:6px;flex-wrap:nowrap;
@@ -5087,6 +5091,7 @@ function lvBind(list, d, st, f) {
 
   /* ⓪ 显示密度 */
   $$("[data-lvdensity]", v).forEach(b => {
+    b.setAttribute("aria-pressed", String(b.dataset.lvdensity === lvDensity()));
     b.onclick = () => {
       lvSetDensity(b.dataset.lvdensity);
       $$("[data-lvdensity]", v).forEach(x => {

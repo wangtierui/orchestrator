@@ -187,7 +187,7 @@ class TestUnifiedMetrics:
 
     def test_list_heights(self, h: str) -> None:
         assert ".lv-headrow th{height:48px" in h
-        assert ".lv-table td{height:65px}" in h
+        assert ".lv-table td{height:67px}" in h
         assert "body.lv-compact .lv-table td{height:38px}" in h
 
     def test_sidebar_item_height(self, h: str) -> None:
