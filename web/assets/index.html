@@ -137,7 +137,7 @@ td.id{font-family:var(--mono);font-size:12px;color:var(--fg2);word-break:break-a
 /*: 列表/表格**不允许**内部纵向滚动（规范：唯一滚动容器是 #view）。
  * 宽表仍可横向滚动（`overflow-x:auto`），否则窄屏会把列挤没。 */
 .tblwrap{max-height:none;overflow-x:auto;overflow-y:visible;border:0;border-radius:0}
-.trunc{max-width:520px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
 tr.detail>td{background:var(--primary-l);border-bottom:1px solid var(--line2)}
 
 /* ---------- 控件 ---------- */
@@ -197,7 +197,7 @@ th.sortable .arw{font-size:10px;opacity:.85}
 .pager button{padding:4px 10px;border:1px solid var(--line2);border-radius:var(--r-sm);
   background:var(--card);cursor:pointer;font-size:13px}
 .pager button:disabled{opacity:.45;cursor:default}
-.lv-meta .tag,.lv-meta .pill{font-size:12px;line-height:18px;height:18px;
+.lv-meta .Label{font-size:12px;line-height:18px;height:18px;
   border-radius:999px;padding:0 7px}
 
 .ttl{max-width:420px}
@@ -720,7 +720,7 @@ html[data-color-mode="dark"]{
 }
 html[data-color-mode="dark"] img{opacity:.92}
 html[data-color-mode="dark"] .lv-badge,
-html[data-color-mode="dark"] .tag{background:#21262d;border-color:#3d444d}
+html[data-color-mode="dark"] .Label{background:#21262d;border-color:#3d444d}
 
 /* ============================================================
  * 列表（批 126，复刻 GitHub Issues）
@@ -1096,6 +1096,29 @@ th.on .colf .ch{color:var(--accent)}
   display:inline-flex;align-items:center;justify-content:center;color:var(--text-muted);
   cursor:pointer}
 .lv-fx:hover{background:var(--hover);color:var(--text)}
+
+/* 批 140：筛选框按 GitHub 实测 30（输入 30、外框 30） */
+.lv-fbox{min-height:30px;padding:0 8px}
+.lv-fq{height:30px}
+.fpop input.q{height:30px;border:0;box-shadow:none}
+/* 选项勾选框：多选显示 checkbox 方块，选中打勾 */
+.fpop .opt .ck{width:16px;height:16px;border:1px solid var(--border);border-radius:3px;
+  display:inline-flex;align-items:center;justify-content:center;flex:none;
+  color:#fff;background:var(--bg)}
+.fpop .opt .ck.on{background:#0969da;border-color:#0969da}
+.fpop .opt[aria-checked="true"]{background:var(--bg-subtle)}
+
+/* 批 140b：筛选框 30 高（压过全局表单基线的 input{height:32}） */
+.lv-fbar .lv-fbox{min-height:30px;padding:0 8px}
+.lv-fbar .lv-fbox .lv-fq{height:30px;border:0;box-shadow:none}
+.fpop .q{height:30px}
+
+/* 批 140c：截断统一用 Primer 的 .Truncate 语义（裸用 + 嵌套 .Truncate-text 都支持） */
+.Truncate{display:block;max-width:520px;overflow:hidden;text-overflow:ellipsis;
+  white-space:nowrap}
+.Truncate>.Truncate-text,.Truncate-text{display:block;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+td .Truncate{max-width:520px}
 </style>
 </head>
 <body>
@@ -1855,7 +1878,7 @@ function viewWorklist(d, kinds){
       <td>${f.aggregate? esc(f.title) : cellVal(f.title, f.title_src)}</td>
       <td class="mono">${cap.docno ? cellVal(f.document_number, f.document_number_src) : '<span class="muted">不适用</span>'}</td>
       <td>${cellUrl(f)}</td>
-      <td class="muted"><div class="trunc" title="${esc(detail)}">${esc(detail||"—")}</div></td>
+      <td class="muted"><div class="Truncate" title="${esc(detail)}">${esc(detail||"—")}</div></td>
     </tr>`;
   }).join("");
 
@@ -2173,6 +2196,8 @@ function applyPrimerControls(){
   $$("input, select, textarea").forEach(el => {
     const type = String(el.getAttribute("type") || "").toLowerCase();
     if (type === "checkbox" || type === "radio" || type === "hidden" || type === "file") return;
+    /* 筛选框/浮层搜索框按 GitHub 实测 30（不是表单控件的 32） */
+    if (el.classList.contains("lv-fq") || el.classList.contains("q")) return;
     if (!el.classList.contains("form-control")) el.classList.add("form-control");
   });
 }
@@ -2260,8 +2285,18 @@ function enhanceLegacyTables(){
   });
 }
 
+function tableFilterGet(table, idx){
+  try { return JSON.parse(table.dataset["f" + idx] || "[]"); } catch (e) { return []; }
+}
+
+function tableFilterSet(table, idx, vals){
+  if (vals && vals.length) table.dataset["f" + idx] = JSON.stringify(vals);
+  else delete table.dataset["f" + idx];
+}
+
+/*: 列头筛选：多选（复选框），条件同时进顶部 token 条（用户第 1、3 条）。 */
 function openTableFilter(table, idx, anchor){
-  const rows = $$("tbody tr", table).filter(tr => !tr.dataset.ghxEmpty);
+  const rows = $$("tbody tr", table).filter(tr => !tr.classList.contains("lv-empty-row"));
   const counts = {};
   rows.forEach(tr => {
     const td = tr.children[idx];
@@ -2269,81 +2304,89 @@ function openTableFilter(table, idx, anchor){
     const v = (td.textContent || "").trim();
     if (v) counts[v] = (counts[v] || 0) + 1;
   });
-  const entries = Object.keys(counts).sort().map(k => ({v: k, c: counts[k]}));
-  const cur = table.dataset["f" + idx] || "";
-  const optHtml = (q) => entries.filter(e => !q || e.v.toLowerCase().includes(q))
-    .slice(0, 60)
-    .map(e => `<button class="opt" data-val="${esc(e.v)}" role="menuitemradio"
-        aria-checked="${e.v === cur}">
-        <span class="ck" aria-hidden="true"></span>
-        <span class="t">${esc(e.v)}<span class="s">${num(e.c)} 条</span></span>
-      </button>`).join("") ||
-    '<div class="empty" style="padding:8px;color:var(--text-muted)">该列没有取值</div>';
-  const html = `<input class="q" id="tfQ" placeholder="搜索取值…" aria-label="搜索取值"><button class="fpop-x" data-act="clear" aria-label="清除筛选" title="清除筛选">${ico("x", 14)}</button>
-    <div id="tfList">${optHtml("")}</div>`;
-  const el = lvPop(anchor, html, {
-    cls: "fpop",
-    onPick: (act, btn) => {
-      if (act === "clear") {
-        delete table.dataset["f" + idx];
-        applyTableFilters(table);
-        lvClosePop();
-        return;
-      }
-      const v = btn.dataset.val;
-      if (table.dataset["f" + idx] === v) delete table.dataset["f" + idx];
-      else table.dataset["f" + idx] = v;
+  openOptionList({
+    anchor,
+    options: Object.keys(counts).sort().map(k => ({
+      value: k, label: k, sub: `${num(counts[k])} 条`})),
+    selected: tableFilterGet(table, idx),
+    multi: true,
+    placeholder: "搜索取值…",
+    emptyText: "该列没有取值",
+    onChange: (vals) => {
+      tableFilterSet(table, idx, vals);
       applyTableFilters(table);
-      lvClosePop();
+      renderTableTokens(table);
     },
   });
-  const q = $("#tfQ", el);
-  if (q) {
-    q.oninput = () => {
-      const box = $("#tfList", el);
-      if (box) box.innerHTML = optHtml(q.value.trim().toLowerCase());
-    };
-    q.focus();
+}
+
+/*: 把某张表的列筛选渲染成顶部 token（与列表页的 token 同一套外观） */
+function renderTableTokens(table){
+  const idxs = Object.keys(table.dataset).filter(k => /^f\d+$/.test(k) && table.dataset[k]);
+  const host = table.closest(".lv") || table.parentElement;
+  const parent = host.parentElement || host;
+  let bar = parent.querySelector(".lv-fbar");
+  const ths = $$("thead th", table);
+  ths.forEach((th, i) => th.classList.toggle("on", tableFilterGet(table, i).length > 0));
+  if (!idxs.length) { if (bar) bar.remove(); return; }
+  if (!bar) {
+    bar = document.createElement("div");
+    bar.className = "lv-fbar";
+    bar.setAttribute("data-tbar", "1");
+    bar.innerHTML = '<div class="lv-fbox" role="group" aria-label="筛选条件"></div>';
+    parent.insertBefore(bar, host);
   }
+  const box = bar.querySelector(".lv-fbox");
+  box.innerHTML = idxs.map(k => {
+    const i = Number(k.slice(1));
+    const lab = (ths[i] ? ths[i].textContent : "").trim();
+    return tableFilterGet(table, i).map(v =>
+      `<span class="lv-tok"><b>${esc(lab)}</b>${esc(v)}<button data-trm="${i}"
+        data-tval="${esc(v)}" aria-label="移除该条件" title="移除">${ico("x", 12)}</button></span>`
+    ).join("");
+  }).join("");
+  box.querySelectorAll("[data-trm]").forEach(b => {
+    b.onclick = () => {
+      const i = Number(b.dataset.trm);
+      tableFilterSet(table, i, tableFilterGet(table, i).filter(x => x !== b.dataset.tval));
+      applyTableFilters(table);
+      renderTableTokens(table);
+    };
+  });
 }
 
 function applyTableFilters(table){
-  const idxs = Object.keys(table.dataset)
-    .filter(k => /^f\d+$/.test(k));
+  const idxs = Object.keys(table.dataset).filter(k => /^f\d+$/.test(k));
   const rows = $$("tbody tr", table);
   let shown = 0;
   rows.forEach(tr => {
+    if (tr.classList.contains("lv-empty-row")) return;
     let ok = true;
     idxs.forEach(k => {
-      const want = table.dataset[k];
-      const td = tr.children[Number(k.slice(1))];
-      if (!want || !td) return;
-      if ((td.textContent || "").trim() !== want) ok = false;
+      const i = Number(k.slice(1));
+      const want = tableFilterGet(table, i);
+      const td = tr.children[i];
+      if (!want.length || !td) return;
+      if (want.indexOf((td.textContent || "").trim()) < 0) ok = false;
     });
     tr.hidden = !ok;
     if (ok) shown++;
   });
   const ths = $$("thead th", table);
-  idxs.forEach(k => {
-    const th = ths[Number(k.slice(1))];
-    if (th) th.classList.add("on");
-  });
-  ths.forEach((th, i) => {
-    if (!table.dataset["f" + i]) th.classList.remove("on");
-  });
-  /* 一行都没剩：给一句明确提示，而不是让人以为"数据没了" */
+  ths.forEach((th, i) => th.classList.toggle("on", tableFilterGet(table, i).length > 0));
   let empty = table.querySelector(".ghx-empty");
   if (!shown) {
     if (!empty) {
       empty = document.createElement("tr");
-      empty.className = "ghx-empty";
-      empty.innerHTML = `<td colspan="${ths.length}" style="padding:16px;color:var(--text-muted)">当前筛选无结果（清除表头筛选可恢复）</td>`;
+      empty.className = "ghx-empty lv-empty-row";
+      empty.innerHTML = `<td colspan="${ths.length}" style="padding:16px;color:var(--text-muted)">当前筛选无结果（清除上方条件可恢复）</td>`;
       table.querySelector("tbody").appendChild(empty);
     }
   } else if (empty) {
     empty.remove();
   }
 }
+
 
 async function render(){
   const v=$("#view");
@@ -2476,8 +2519,6 @@ async function render(){
     $("#stamp").textContent = "抓取 "+new Date().toLocaleTimeString();
   }
 }
-
-/*: 本地文件打开：POST（有副作用，不适合 GET）+ 失败原因必须显示出来。 */
 
 function bindFlow(){
   const v=$("#view");
@@ -4939,6 +4980,79 @@ function lvSetDensity(v) {
 }
 
 /* ---------------- 表头字段筛选面板（选项：复选框 + 圆点 + 主文本 + 计数） ---------------- */
+/*: 唯一的选项面板实现（GitHub ActionList 的等价物）。
+ *
+ * 之前面板有三套写法（字段面板 / 文本字段 / 旧表格列筛选），行结构、勾选语义、清除入口
+ * 各不相同。这里收成一个函数：搜索框（内嵌 X）、选项行（复选框/单选框 + 圆点 + 主文本 +
+ * 浅灰副文本 + 计数），多选时**不关闭面板**，单选时点完即关。
+ *
+ * opts: {anchor, options:[{value,label,sub,count,dot,color}], selected:[...], multi,
+ *        placeholder, emptyText, onChange(values)}
+ */
+function openOptionList(opts){
+  const o = opts || {};
+  const sel = new Set((o.selected || []).map(String));
+  const rowHtml = (it) => {
+    const v = String(it.value);
+    const on = sel.has(v);
+    return `<button class="opt${on ? " on" : ""}" data-val="${esc(v)}"
+        role="${o.multi ? "menuitemcheckbox" : "menuitemradio"}" aria-checked="${on}">
+        <span class="ck${on ? " on" : ""}" aria-hidden="true">${on ? ico("check", 12) : ""}</span>
+        ${it.dot === false ? "" : `<span class="dot" aria-hidden="true"${
+          it.color ? ` style="background:${esc(it.color)}"` : ""}></span>`}
+        <span class="t">${esc(it.label)}${it.sub ? `<span class="s">${esc(it.sub)}</span>` : ""}</span>
+        ${it.count != null ? `<span class="c">${num(it.count)}</span>` : ""}
+      </button>`;
+  };
+  const listHtml = (q) => {
+    const ql = String(q || "").toLowerCase();
+    const rows = (o.options || []).filter(it => !ql ||
+      (String(it.label || "") + " " + String(it.value || "")).toLowerCase().includes(ql));
+    if (!rows.length) {
+      return `<div class="empty" style="padding:8px;color:var(--text-muted)">${
+        esc(o.emptyText || "没有可选值")}</div>`;
+    }
+    return rows.slice(0, 200).map(rowHtml).join("");
+  };
+  const html = `<input class="q" id="fpopQ" placeholder="${esc(o.placeholder || "搜索…")}"
+      aria-label="搜索取值"><button class="fpop-x" data-act="clear"
+      aria-label="清除筛选" title="清除筛选">${ico("x", 14)}</button>
+    <div id="fpopList">${listHtml("")}</div>`;
+  const el = lvPop(o.anchor, html, {
+    cls: "fpop",
+    onPick: (act, btn) => {
+      if (act === "clear") {
+        sel.clear();
+        if (o.onChange) o.onChange([...sel]);
+        if (!o.multi) lvClosePop();
+        return;
+      }
+      const v = btn.dataset.val;
+      if (o.multi) {
+        if (sel.has(v)) sel.delete(v); else sel.add(v);
+        btn.classList.toggle("on", sel.has(v));
+        btn.setAttribute("aria-checked", String(sel.has(v)));
+        const ck = btn.querySelector(".ck");
+        if (ck) { ck.classList.toggle("on", sel.has(v)); ck.innerHTML = sel.has(v) ? ico("check", 12) : ""; }
+        if (o.onChange) o.onChange([...sel]);
+      } else {
+        sel.clear(); sel.add(v);
+        if (o.onChange) o.onChange([...sel]);
+        lvClosePop();
+      }
+    },
+  });
+  const q = $("#fpopQ", el);
+  if (q) {
+    q.oninput = () => {
+      const box = $("#fpopList", el);
+      if (box) box.innerHTML = listHtml(q.value.trim());
+    };
+    q.focus();
+  }
+  return el;
+}
+
 function lvFieldFilterPop(list, st, fieldKey, anchor, facets) {
   const fd = LV[list].fields.find(x => x.k === fieldKey) || {};
 
@@ -4991,37 +5105,21 @@ function lvFieldFilterPop(list, st, fieldKey, anchor, facets) {
   if (!fd.slice) return;
   const opts = lvSliceOptions(list, fieldKey, facets, {});
   const cur = String(st[fd.slice] || "");
-  const optHtml = (list2) => opts.filter(o => !list2 ||
-      String(o.label || o.value).toLowerCase().includes(list2))
-    .map(o => `<button class="opt" data-val="${esc(o.value)}"
-        role="menuitemcheckbox" aria-checked="${String(o.value) === cur}">
-        <span class="ck" aria-hidden="true"></span>
-        <span class="dot" aria-hidden="true"></span>
-        <span class="t">${esc(o.label || "（空）")}
-          <span class="s">${esc(o.value || "")}</span></span>
-        <span class="c">${num(o.count)}</span>
-      </button>`).join("");
-  const html = `<input class="q" id="fpopQ" placeholder="搜索该字段的取值…"
-      aria-label="搜索取值"><button class="fpop-x" data-act="clear" aria-label="清除筛选" title="清除筛选">${ico("x", 14)}</button>
-    <div id="fpopList">${optHtml("") ||
-      '<div class="empty" style="padding:8px;color:var(--text-muted)">该字段没有可选值</div>'}</div>`;
-  const el = lvPop(anchor, html, {
-    cls: "fpop",
-    onPick: (act2, btn) => {
-      if (act2 === "clear") { st[fd.slice] = ""; st.page = 1; lvClosePop(); render(); return; }
-      const v = btn.dataset.val;
-      st[fd.slice] = (String(st[fd.slice] || "") === String(v)) ? "" : v;
-      st.page = 1; lvClosePop(); render();
+  /* 统一走 openOptionList（单选；点完即关） */
+  openOptionList({
+    anchor,
+    options: opts.map(o => ({value: o.value, label: o.label || "（空）",
+                             sub: o.value || "", count: o.count})),
+    selected: cur ? [cur] : [],
+    multi: false,
+    placeholder: "搜索该字段的取值…",
+    emptyText: "该字段没有可选值",
+    onChange: (vals) => {
+      st[fd.slice] = vals.length ? vals[vals.length - 1] : "";
+      st.page = 1;
+      render();
     },
   });
-  const q = $("#fpopQ", el);
-  if (q) {
-    q.oninput = () => {
-      const box = $("#fpopList", el);
-      if (box) box.innerHTML = optHtml(q.value.toLowerCase());
-    };
-    q.focus();
-  }
 }
 
 /* ---------------- 浮层工具（表头菜单 / 字段 / 筛选 共用） ---------------- */

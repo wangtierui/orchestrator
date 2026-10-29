@@ -192,11 +192,13 @@ class TestListV2:
         assert "data-lvtab" in bind
 
     def test_header_field_filter_panel(self, h: str) -> None:
-        body = fn(h, "lvFieldFilterPop")
-        for part in ('class="ck"', 'class="dot"', 'class="t"', 'class="c"'):
+        # 批 140：选项行只在 openOptionList 一处生成；字段面板调用它
+        body = fn(h, "openOptionList")
+        for part in ('class="ck', 'class="dot"', 'class="t"', 'class="c"'):
             assert part in body, part
-        # 面板顶部搜索框 + 转义关闭由 lvPop 负责
-        assert 'placeholder="搜索该字段的取值' in body
+        panel = fn(h, "lvFieldFilterPop")
+        assert "openOptionList({" in panel, "字段面板未走统一组件"
+        assert "搜索该字段的取值" in panel
         assert ".fpop .opt:hover::before" in h
         seg = h[h.index(".fpop .opt:hover::before"):][:260]
         # 批 127：侧栏 / 搜索下拉 / 表头筛选 / 字段筛选的强调线**统一 4px**
