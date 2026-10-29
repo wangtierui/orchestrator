@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>监管合规编排器 · 本地确认台</title>
+<title>Supervisory Statistics</title>
 <!-- 图标：单文件 SVG（无外链），服务端按 basename 从 web/assets/ 读盘 -->
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="apple-touch-icon" href="favicon.svg">
@@ -1032,6 +1032,21 @@ th{position:relative}
   display:inline-flex;align-items:center;justify-content:center}
 .thf:hover{background:rgba(129,139,152,.16);color:var(--text)}
 th.on .thf{background:rgba(9,105,218,.12);color:var(--accent)}
+
+/* 批132-css：折叠 32 / 页签下划线贴底 / 三·四级缩进 / 密集 lv 表 */
+.rail-foot button,.rail-fb{height:32px;min-height:32px;line-height:32px}
+.repo-tabs{padding-top:0}
+.tab{margin-top:16px}   /* 16 = 8(原内距) + 8，使 tab 底边与容器底边齐平，下划线正好压在 1px 线上 */
+.tab.on::after{bottom:0;height:2px}
+.rail .sideitem-sub2{padding-left:28px;font-size:13px}
+.rail .sideitem-sub3{padding-left:44px;font-size:12.5px}
+body.rail-off .rail .sideitem-sub2,body.rail-off .rail .sideitem-sub3{
+  padding-left:0;justify-content:center}
+.lv-dense .lv-table td{height:40px;font-size:12.5px;padding:4px 8px}
+.lv-dense .lv-table th{height:40px;font-size:12px}
+.lv-headrow-plain th{height:40px;padding:0 8px;text-align:left;font-size:12px;
+  font-weight:600;color:var(--text-muted);background:var(--bg-subtle);
+  border-bottom:1px solid var(--border);white-space:nowrap}
 </style>
 </head>
 <body>
@@ -1186,7 +1201,9 @@ function goPage(id){
 
 function _railItem(opts){
   const {side, skey, label, glyph, count, dot, on, level, title, extra} = opts;
-  return `<button class="sideitem${on ? " on" : ""}${level === 2 ? " sideitem-sub" : ""}"
+  const lvlCls = level === 2 ? " sideitem-sub" : (level === 3 ? " sideitem-sub2"
+    : (level === 4 ? " sideitem-sub3" : ""));
+  return `<button class="sideitem${on ? " on" : ""}${lvlCls}"
       data-side="${esc(side)}" data-skey="${esc(skey || "")}"
       title="${esc(title || label || "")}" ${extra || ""}>
       ${glyph ? `<span class="glyph" aria-hidden="true">${ico(glyph, 16)}</span>` : ""}
@@ -1262,6 +1279,23 @@ function sideShell(key, items, cur, body, title){
 
 /*: 左侧栏点击 → 各页状态位（集中一处，避免每页各写一遍监听） */
 const SIDE_ACT = {
+  /* 数据结构：三级=主题域（清空表选择 ⇒ 显示该域全部表）；四级=具体表 */
+  east_domain: (k) => {
+    STATE.east_domain = k || "";
+    STATE.east_sel = "";
+    render();
+  },
+  east_table: (k) => {
+    const d = obj(STATE.east);
+    const tb = arr(d.tables).find(x => x.table_no === k);
+    if (tb) STATE.east_domain = tb.domain || "";
+    STATE.east_sel = k || "";
+    render();
+  },
+  /* 业务代码：三级=具体代码表 */
+  east_codesel: (k) => { STATE.east_code = k || ""; render(); },
+  /* 检核规则：三级=规则类型 */
+  east_rtype: (k) => { STATE.east_rtype = k || ""; render(); },
   /* 列表页左侧「主题」：写回当前列表的 theme（服务端过滤） */
   lvtheme: (k) => {
     const key = CUR === "laws" ? "laws" : (CUR === "rules" ? "rules" : "");
@@ -1282,7 +1316,11 @@ const SIDE_ACT = {
   /* ⚠️ 2026-10-27 用户第 1 条：二级页签原来**没有动作键**（eastSide 发出的是
    * `data-side="east_tab"`，而 SIDE_ACT 里只有 `east`）⇒ 点了完全没反应，
    * 且不报错（委托里 `act` 为 undefined 就静默跳过）。这就是那个 bug 的根因。 */
-  east_tab: (k) => { STATE.east_scope = "east"; STATE.east_tab = k; },
+  east_tab: (k) => {
+    if (k === "codes" && !STATE.east_code) {
+      const first = arr(obj(STATE.east).code_index)[0];
+      if (first) STATE.east_code = first.sheet;
+    } STATE.east_scope = "east"; STATE.east_tab = k; },
   east_scope: (k) => { STATE.east_scope = k || "east"; },
   stat_tab: (k) => { STATE.stat_tab = k || "reg"; },
   laws:  (k) => { STATE.laws = Object.assign({}, obj(STATE.laws), {theme: k, page: 1}); },
@@ -1437,11 +1475,11 @@ function viewOverview(d, assets, publish, rel){
       + kv("最老未处置", (wl.oldest_open_days??"—")+" 天", Number(wl.oldest_open_days)>7?"bad":"")
       + kv("按 kind", Object.entries(obj(wl.by_kind)).map(([k,v])=>pill(`${k} ${v}`)).join(" "))
     : `<div class="note">⚠ ${esc(wl.reason||"待办不可用")}</div>`;
+  /* 用户第 7 条：告警不用表格，与「条文契约自检」同一种 kv 呈现 */
   const alHtml = arr(al.alerts).length
-    ? `<div class="tblwrap" style="max-height:220px"><table><thead><tr><th>事件</th><th>时间</th></tr></thead><tbody>`
-      + arr(al.alerts).slice(0,8).map(a=>`<tr><td>${esc(a.event||a.title||"—")}</td>
-        <td class="muted">${esc(a.at||a.ts||"")}</td></tr>`).join("")+`</tbody></table></div>`
-    : `<div class="muted">无近期告警（${esc(al.count??0)} 条记录）</div>`;
+    ? arr(al.alerts).slice(0, 8).map(a => kv(a.event || a.title || "—",
+        esc(a.at || a.ts || ""))).join("")
+    : `<div class="muted">无近期告警（${esc(al.count ?? 0)} 条记录）</div>`;
   const frHtml = fr.available
     ? kv("边状态", Object.entries(obj(fr.by_status)).map(([k,v])=>pill(`${k} ${v}`,
         k==="stale"?"bad":(k==="ok"?"ok":"warn"))).join(" "))
@@ -1460,8 +1498,9 @@ function viewOverview(d, assets, publish, rel){
   } else if(assets.warming) {
     assetsCards = `<div class="card"><div class="note">${esc(assets.note||"统计中…")}</div></div>`;
   } else {
-    const rows = arr(assets.files).map(f=>`<tr><td>${esc(f.source)}</td>
-      <td class="muted">${esc(f.date||"—")}</td><td class="num">${num(f.records)}</td></tr>`).join("");
+    /* 产物清单同样不用表格：一行 = 源 → 快照日 · 记录数 */
+    const rows = arr(assets.files).map(f => kv(f.source,
+      `${esc(f.date || "—")} · ${num(f.records)} 条`)).join("");
     const c = obj(assets.contract);
     const pub = obj(assets.publish);
     const pubRows = ["external","internal"].map(b=>{const m=obj(pub[b]);
@@ -1470,9 +1509,9 @@ function viewOverview(d, assets, publish, rel){
         <td class="num">${num(m.count||m.records||m.record_count)}</td></tr>`;}).join("");
     // 与「01 运行与风险」用**同一个**栅格（`.grid`），否则两张卡的最小宽不同，
     // 两个板块的卡片宽度对不齐（用户报「模块宽度应保持一致」）。
-    assetsCards = `${card("产物清单","clean 索引", rows?`<div class="tblwrap"><table><thead><tr><th>源</th><th>快照日</th><th>记录数</th></tr></thead><tbody>${rows}</tbody></table></div>`
+    assetsCards = `${card("产物清单","clean 索引", rows?`${rows}`
         :'<div class="muted">无产物</div>', assets.source, assets.fetched_at)}
-      ${card("发布件状态","双底座", `<div class="tblwrap"><table><thead><tr><th>底座</th><th>快照/版本</th><th>记录数</th></tr></thead><tbody>${pubRows}</tbody></table></div>`, assets.source, assets.fetched_at)}
+      ${card("发布件状态","双底座", `${pubRows}`, assets.source, assets.fetched_at)}
       ${card("条文契约自检","clause schema",
         kv("覆盖文件",num(c.files))+kv("条文",num(c.articles))+kv("章节",num(c.chapters))
         +kv("表格结构",num(c.structures))+kv("法条类",num(c.law))
@@ -3282,8 +3321,12 @@ function viewRegstats(d){
     ${kpi("无官方链接", num(cov.without_url), "条")}
     ${kpi("字段级校验", cov.east_field_validation ? "已接入" : "未接入", "")}
   </div>`;
-  const body = `${kpiRow}${eastSection(d, d)}
-    <div class="muted" style="margin-top:var(--s3)">${esc(d.note || "")}</div>`;
+  /* 批 132（用户第 10 条）：只有「概览」显示覆盖度 KPI 与规范说明；
+   * 数据结构/数据元/业务代码/检核规则/图 等页签不再重复这段。 */
+  const eastTab = String(STATE.east_tab || "overview");
+  const onOverview = String(STATE.east_scope || "east") !== "east" || eastTab === "overview";
+  const body = `${onOverview ? kpiRow : ""}${eastSection(d, d)}
+    ${onOverview ? `<div class="muted" style="margin-top:var(--s3)">${esc(d.note || "")}</div>` : ""}`;
   return card("",
     `${num(d.total)} 条资料 / ${num(obj(STATE.east).stats.tables)} 张数据表`, body,
     d.source_name || "base_api.regstats_docs", d.fetched_at);
@@ -3307,9 +3350,9 @@ function viewRegstats(d){
  */
 const EAST_TABS = [
   {k: "overview", n: "概览"},
-  {k: "tables", n: "数据表"},
+  {k: "tables", n: "数据结构"},
   {k: "elements", n: "数据元"},
-  {k: "codes", n: "代码表"},
+  {k: "codes", n: "业务代码"},
   {k: "rules", n: "检核规则"},
   {k: "er", n: "关系图"},
   {k: "erd", n: "E-R 图"},
@@ -3356,29 +3399,56 @@ const STAT_TABS = [
  * 早前写成 `data-side="east_tab"` 却没在 SIDE_ACT 注册，症状就是"点了没反应"。
  */
 function eastSide(scope, tab, statTab){
-  const st = obj(STATE.east).stats;
+  const d = obj(STATE.east);
+  const st = obj(d.stats);
   const tabCount = (k) => k === "tables" ? st.tables
-    : k === "elements" ? arr(obj(STATE.east).elements).length
+    : k === "elements" ? arr(d.elements).length
     : k === "codes" ? st.code_tables
     : k === "rules" ? st.rules
     : k === "er" ? st.er_edges : null;
-  /* 一级是**分组标题**（点击只切换分组，不代表"当前页"）⇒ 恒不高亮；
-   * 选中态由二级项表达（用户第 8 条）。 */
-  const items = [{side: "east_scope", skey: "east", label: "EAST",
-                  level: 1, cur: false}];
+  /* 一级=分组标题（恒不高亮）；二级=页签；三/四级只在当前页签展开 ——
+   * 默认展开到第二层，与 GitHub 侧栏的按需展开一致（用户第 8 条）。 */
+  const items = [{side: "east_scope", skey: "east", label: "EAST", level: 1, cur: false}];
   if (scope === "east") {
-    EAST_TABS.forEach(x => items.push({side: "east_tab", skey: x.k, label: x.n,
-                                       level: 2, count: tabCount(x.k),
-                                       cur: tab === x.k}));
+    EAST_TABS.forEach(x => {
+      items.push({side: "east_tab", skey: x.k, label: x.n, level: 2,
+                  count: tabCount(x.k), cur: tab === x.k});
+      if (tab !== x.k) return;
+      if (x.k === "tables") {
+        arr(d.domains).forEach(dm => {
+          const on = String(STATE.east_domain || "") === dm;
+          items.push({side: "east_domain", skey: dm, label: dm, level: 3,
+                      count: obj(st.by_domain)[dm], cur: on});
+          if (!on) return;
+          arr(d.tables).filter(tb => tb.domain === dm).forEach(tb => {
+            items.push({side: "east_table", skey: tb.table_no,
+                        label: (tb.table_code ? tb.table_code + " · " : "") + (tb.table_name || ""),
+                        level: 4, cur: String(STATE.east_sel || "") === tb.table_no});
+          });
+        });
+      }
+      if (x.k === "codes") {
+        arr(d.code_index).slice().sort((a, b) =>
+          String(a.id || "zzz") < String(b.id || "zzz") ? -1 : 1)
+          .forEach(c => items.push({side: "east_codesel", skey: c.sheet,
+            label: (c.id ? c.id + " · " : "") + (c.name || c.sheet), level: 3,
+            count: c.count, cur: String(STATE.east_code || "") === c.sheet}));
+      }
+      if (x.k === "rules") {
+        Object.keys(obj(d.rule_index)).forEach(k => {
+          const m = obj(obj(d.rule_index)[k]);
+          items.push({side: "east_rtype", skey: k, label: k + " " + (m.label || ""),
+                      level: 3, count: m.count,
+                      cur: String(STATE.east_rtype || "") === k});
+        });
+      }
+    });
   }
-  items.push({side: "east_scope", skey: "stat", label: "统计制度",
-              level: 1, cur: false});
+  items.push({side: "east_scope", skey: "stat", label: "统计制度", level: 1, cur: false});
   if (scope === "stat") {
     STAT_TABS.forEach(x => items.push({side: "stat_tab", skey: x.key, label: x.label,
                                        level: 2, cur: statTab === x.key}));
   }
-  /* 两级导航天然有**两个**选中项（一级 + 它下面的二级），单一 `cur` 表达不了 ⇒
-   * 每项自带 `on`，`paintRail` 优先用它。 */
   railSet("规范与制度", items.map(it => ({...it, on: !!it.cur})), "");
   return items;
 }
@@ -3444,6 +3514,8 @@ function eastSection(regstats){
       <span>EAST 规范 <span class="tag">${esc(ntc.docno || "")} · ${esc(ntc.publish_date || "")}</span></span>
       <span class="hint">${esc(ntc.title || "")}</span></h3>
     <div class="muted" style="margin-bottom:var(--s2)">${esc(d.note || "")}</div>`;
+  /* 批 132（第 10 条）：除概览外，不再重复"规范说明 + 覆盖度"那段文案。 */
+  const showHead = tab === "overview";
   const body = scope === "stat"
     ? (statTab === "corp" ? eastStatCorp() : eastStatReg(regstats))
     : (tab === "tables" ? eastTables(d)
@@ -3454,7 +3526,7 @@ function eastSection(regstats){
       : tab === "erd" ? eastErd(d)
       : eastOverview(d, regstats));
   eastSide(scope, tab, statTab);        // 只登记导航，不再包 aside
-  return head + body;
+  return (showHead ? head : "") + body;
 }
 
 /* ---------------- 概览：覆盖度 + 附件清单 ---------------- */
@@ -3521,11 +3593,11 @@ function eastOverview(d, regstats){
 
 /* ---------------- 数据表：左表右项（含数据元四列 + 取值范围跳转） ---------------- */
 function eastTables(d){
+  /* 批 132：筛选项全部搬到左侧栏（数据结构 → 主题域 → 表），主区只负责"呈现"。
+   * 表格结构对齐 .lv（与政策法规/公司制度同一套行结构）。 */
   const st = obj(d.stats), tables = arr(d.tables);
-  const q = String(STATE.east_q || "").trim().toLowerCase();
   const dom = String(STATE.east_domain || "");
-  const list = tables.filter(x => (!dom || x.domain === dom) &&
-    (!q || (x.table_code + " " + x.table_name + " " + x.table_no).toLowerCase().includes(q)));
+  const list = tables.filter(x => !dom || x.domain === dom);
   const sel = String(STATE.east_sel || "") || (list[0] ? list[0].table_no : "");
   const cur = list.find(x => x.table_no === sel) || list[0] || null;
   const payload = cur ? obj(obj(STATE.east_items)[cur.table_no]) : {};
@@ -3535,11 +3607,10 @@ function eastTables(d){
     ((x.item_id || "") + " " + (x.item_name || "") + " " + (x.item_code || "") + " " +
      (x.element_code || "") + " " + (x.element_name || ""))
       .toLowerCase().includes(iq));
-  const domChips = [`<button class="gbtn${dom === "" ? " on" : ""}" data-edom="">全部主题域</button>`]
-    .concat(arr(d.domains).map(x => `<button class="gbtn${dom === x ? " on" : ""}"
-      data-edom="${esc(x)}">${esc(x)}（${num(obj(st.by_domain)[x])}）</button>`)).join("");
-  const rows = shown.map(it => `<tr>
-      <td class="mono">${esc(it.item_id || "")}</td>
+  const rows = shown.map(it => `<tr class="lv-row">
+      <td class="mono">${esc(it.table_code || (cur && cur.table_code) || "—")}</td>
+      <td>${esc(it.table_name || (cur && cur.table_name) || "—")}</td>
+      <td class="mono">${esc(it.item_code || it.item_id || "")}</td>
       <td class="ttl">${esc(it.item_name || "")}</td>
       <td class="muted">${esc(it.item_desc || "—")}</td>
       <td class="mono">${esc(it.element_code || "—")}</td>
@@ -3549,19 +3620,12 @@ function eastTables(d){
       <td class="mono" title="${esc(eastFmtDesc(it.data_format))}">${esc(it.data_format || "—")}</td>
       <td>${it.is_pk === "Y" ? pill("主键", "ok")
             : (it.nullable === "Y" ? '<span class="muted">可空</span>' : pill("必填", "warn"))}</td>
-    </tr>`).join("") || `<tr><td colspan="9" class="muted">${
-      cur ? (payload.items ? "无匹配数据项" : "加载中…") : "请选择左侧数据表"}</td></tr>`;
-  const listRows = list.map(x => `<button class="etbl${cur && x.table_no === cur.table_no ? " on" : ""}"
-      data-etbl="${esc(x.table_no)}" title="${esc(x.table_desc || x.table_name)}">
-      <span class="code">${esc(x.table_code || "—")}</span>
-      <span class="nm">${esc(x.table_name || "")}</span>
-      <span class="cnt">${num(x.item_count)}</span>
-    </button>`).join("") || '<div class="muted" style="padding:8px">无匹配数据表</div>';
+    </tr>`).join("") || `<tr><td colspan="11" class="muted" style="padding:16px">${
+      cur ? (payload.items ? "无匹配数据项" : "加载中…") : "请在左侧选择数据表"}</td></tr>`;
   const head = cur ? `<div class="toolbar" style="margin-bottom:6px">
       <span class="tag">${esc(cur.domain || "")}</span>
-      <b>${esc(cur.table_code || "")}</b>
+      <b class="mono">${esc(cur.table_code || "")}</b>
       <span>${esc(cur.table_name || "")}</span>
-      <span class="mono">表编号 ${esc(cur.table_no || "")}</span>
       <span class="muted">${num(cur.item_count)} 项 · 主键 ${num(cur.pk_count)}</span>
       <span style="flex:1"></span>
       <input id="eiq" placeholder="在本表内搜数据项/数据元…" value="${esc(STATE.east_iq || "")}"
@@ -3570,23 +3634,14 @@ function eastTables(d){
     : "";
   return `<div class="muted" style="margin-bottom:var(--s2)">
       表 ${num(st.tables)} 张 / 数据项 ${num(st.items)} 个（主键 ${num(st.pk_items)}）。
-      数据元四列取自「数据元说明」；<b>取值范围是代码表引用，可直接点开</b>。</div>
-    <div class="eastwrap">
-      <div class="eastleft">
-        <input id="eq" placeholder="搜表名 / 表代码 / 表编号…" value="${esc(STATE.east_q || "")}"
-          style="width:100%;font-size:12px;padding:5px 8px;margin-bottom:6px">
-        <div class="echips">${domChips}</div>
-        <div class="elist">${listRows}</div>
-      </div>
-      <div class="eastright">${head}
-        <div class="scrollx"><table><thead><tr>
-          <th style="min-width:132px">数据项标识</th><th>数据项名称</th>
-          <th style="min-width:220px">数据项说明</th><th>数据元编码</th>
-          <th>数据元名称</th><th style="min-width:240px">数据元说明</th>
-          <th style="min-width:180px">取值范围</th><th>格式</th><th>约束</th>
-        </tr></thead><tbody>${rows}</tbody></table></div>
-      </div>
-    </div>`;
+      主题域与数据表在左侧选择；数据元四列取自「数据元说明」，取值范围可点开代码表。</div>
+    ${head}
+    <div class="lv lv-dense"><div class="lv-scroll"><table class="lv-table">
+      <thead><tr class="lv-headrow-plain">
+        <th>表名</th><th>表中文名</th><th>数据项代码</th><th>数据项名称</th>
+        <th>数据项说明</th><th>数据元编码</th><th>数据元名称</th><th>数据元说明</th>
+        <th>取值范围</th><th>格式</th><th>约束</th>
+      </tr></thead><tbody>${rows}</tbody></table></div></div>`;
 }
 
 /*: 取值范围单元格：有代码表引用时**可点**（跳该表），否则原文展示 */
@@ -3631,17 +3686,13 @@ function eastElements(d){
 
 /* ---------------- 代码表：带 CD 编号；多级表按层级缩进 ---------------- */
 function eastCodes(d){
+  /* 批 132：代码表选择搬到侧栏（业务代码 → 三级=每张代码表）；主区只呈现当前表。 */
   const list = arr(d.code_index).slice().sort((a, b) => {
-    // 按 `CDxxxxxx` 编号自然序（无编号的排末尾）；不能用 localeCompare 直接比中文名，
-    // 那样"保险机构代码"会跑到"中介机构类别代码"前面，与附件1-4 目录顺序相反。
     const x = String(a.id || "zzzzzz"), y = String(b.id || "zzzzzz");
     return x < y ? -1 : (x > y ? 1 : 0);
   });
-  const q = String(STATE.east_cq || "").trim().toLowerCase();
-  const shown = list.filter(c => !q ||
-    ((c.id || "") + " " + (c.name || "") + " " + (c.sheet || "")).toLowerCase().includes(q));
-  const sel = String(STATE.east_code || "") || (shown[0] ? shown[0].sheet : "");
-  const cur = shown.find(c => c.sheet === sel) || shown[0] || null;
+  const sel = String(STATE.east_code || "") || (list[0] ? list[0].sheet : "");
+  const cur = list.find(c => c.sheet === sel) || list[0] || null;
   const payload = cur ? obj(obj(STATE.east_codes)[cur.sheet]) : {};
   const view = arr(payload.view);
   const cols = arr(payload.columns);
@@ -3654,80 +3705,69 @@ function eastCodes(d){
       <span class="mono">${cur.id ? esc(cur.id) : '<span class="muted">目录未列出</span>'}</span>
       <b>${esc(cur.name || cur.sheet)}</b>
       <span class="muted">${num(cur.count)} 行${
-        cur.hierarchy ? " · **多级表**（按层级缩进）" : ""}${
+        cur.hierarchy ? " · 多级表（按层级缩进）" : ""}${
         cur.upgrade_type ? " · " + esc(cur.upgrade_type) : ""}</span>
       <span style="flex:1"></span>
       <input id="ecq" placeholder="在本表内搜代码/名称…" value="${esc(STATE.east_cq2 || "")}"
         style="width:200px;font-size:12px;padding:4px 8px"></div>` : "";
-  const table = cur ? `<div class="scrollx"><table><thead><tr>
-        <th style="min-width:110px">代码</th><th>名称</th><th>说明</th>
-      </tr></thead><tbody>${viewShown.slice(0, 500).map(r => `<tr>
+  const table = cur ? `<div class="lv lv-dense"><div class="lv-scroll"><table class="lv-table">
+      <thead><tr class="lv-headrow-plain"><th style="min-width:110px">代码</th><th>名称</th><th>说明</th></tr></thead>
+      <tbody>${viewShown.slice(0, 500).map(r => `<tr class="lv-row">
         <td class="mono">${esc(r.code || "")}</td>
         <td style="padding-left:${(Number(r.level) - 1) * 16 + 10}px">${
           Number(r.level) > 1 ? '<span class="muted">└ </span>' : ""}${esc(r.name || "")}</td>
         <td class="muted">${esc(r.desc || "")}</td></tr>`).join("")
-        || `<tr><td colspan="3" class="muted">${payload.view ? "无匹配代码" : "加载中…"}</td></tr>`}
-      </tbody></table></div>
+        || `<tr><td colspan="3" class="muted" style="padding:16px">${payload.view ? "无匹配代码" : "加载中…"}</td></tr>`}
+      </tbody></table></div></div>
       ${viewShown.length > 500 ? `<div class="muted">仅显示前 500 行（共 ${num(viewShown.length)} 行）</div>` : ""}
       ${cols.length ? `<details style="margin-top:var(--s2)"><summary class="muted">
         原始列（${cols.length} 列，保真用；「返回目录」导航列已在抽取层剔除）</summary>
         <div class="scrollx"><table><thead><tr>${cols.map(c => `<th>${esc(c)}</th>`).join("")}</tr></thead>
         <tbody>${rowsShown.slice(0, 200).map(r => `<tr>${cols.map((_c, i) =>
           `<td class="${i === 0 ? "mono" : ""}">${esc(arr(r)[i] || "")}</td>`).join("")}</tr>`).join("")}
-        </tbody></table></div></details>` : ""}`
-    : "";
-  const listRows = shown.map(c => `<button class="etbl${cur && c.sheet === cur.sheet ? " on" : ""}"
-      data-ecode="${esc(c.sheet)}" title="${esc(c.name)}${c.id ? " · " + esc(c.id) : ""}">
-      <span class="code">${esc(c.id || "—")}</span>
-      <span class="nm">${esc(c.name || c.sheet)}</span>
-      <span class="cnt">${num(c.count)}</span></button>`).join("")
-    || '<div class="muted" style="padding:8px">无匹配代码表</div>';
+        </tbody></table></div></details>` : ""}` : "";
   const noId = list.filter(c => !c.id).length;
   return `<div class="muted" style="margin-bottom:var(--s2)">
       业务代码表 ${num(list.length)} 张 / ${num(obj(d.stats).codes)} 行；编号取自附件1-4「目录」表${
-        noId ? `（${num(noId)} 张工作表未被目录列出，编号显示"目录未列出"——**不臆造编号**）` : ""}。</div>
-    <div class="eastwrap">
-      <div class="eastleft">
-        <input id="ecq0" placeholder="搜编号 / 代码表名…" value="${esc(STATE.east_cq || "")}"
-          style="width:100%;font-size:12px;padding:5px 8px;margin-bottom:6px">
-        <div class="elist">${listRows}</div>
-      </div>
-      <div class="eastright">${head}${table}</div>
-    </div>`;
+        noId ? `（${num(noId)} 张未被目录列出，编号显示"目录未列出"——不臆造编号）` : ""}。
+      具体代码表在左侧「业务代码」下选择。</div>
+    ${head}${table}`;
 }
 
 /* ---------------- 检核规则 ---------------- */
 function eastRules(d){
+  /* 批 132：规则类型移到侧栏（检核规则 → 三级=类型）；表格补「规则类型」列。 */
   const idx = obj(d.rule_index);
   const kinds = Object.keys(idx);
-  const sel = String(STATE.east_rule || "") || (kinds[0] || "A");
-  const payload = obj(obj(STATE.east_rules)[sel]);
+  const sel = String(STATE.east_rtype || "");
+  const payload = obj(obj(STATE.east_rules)[sel || (kinds[0] || "A")]);
   const items = arr(payload.items);
   const q = String(STATE.east_rq || "").trim().toLowerCase();
   const shown = items.filter(r => !q ||
     ((r.no || "") + " " + (r.table || "") + " " + (r.item || "") + " " + (r.code || "") +
      " " + (r.rule || "")).toLowerCase().includes(q));
-  const tabs = kinds.map(k => `<button class="gbtn${k === sel ? " on" : ""}" data-erule="${esc(k)}"
-      title="${esc(obj(idx[k]).label || "")}">${esc(k)} ${esc(obj(idx[k]).label || "")}
-      <span class="muted">${num(obj(idx[k]).count)}</span></button>`).join("");
-  const rows = shown.slice(0, 500).map(r => `<tr>
+  const rows = shown.slice(0, 500).map(r => `<tr class="lv-row">
       <td class="mono">${esc(r.no || "")}</td>
+      <td>${esc(sel ? (obj(idx[sel]).label || sel) : "—")}</td>
       <td>${esc(r.table || "")}</td>
       <td class="ttl">${esc(r.item || "")}</td>
       <td class="mono">${esc(r.code || "")}</td>
       <td class="muted">${esc(r.rule || "")}</td></tr>`).join("")
-    || `<tr><td colspan="5" class="muted">${payload.items ? "无匹配规则" : "加载中…"}</td></tr>`;
-  return `<div class="toolbar" style="margin-bottom:var(--s2)">${tabs}
+    || `<tr><td colspan="6" class="muted" style="padding:16px">${payload.items ? "无匹配规则" : "加载中…"}</td></tr>`;
+  return `<div class="toolbar" style="margin-bottom:var(--s2)">
+      <b>${esc(sel ? (obj(idx[sel]).label || sel) : "全部类型")}</b>
+      <span class="muted">${num(shown.length)} 条</span>
       <span style="flex:1"></span>
       <input id="erq" placeholder="搜表/数据项/规则…" value="${esc(STATE.east_rq || "")}"
         style="width:220px;font-size:12px;padding:4px 8px"></div>
     <div class="muted" style="margin-bottom:var(--s2)">
       共 ${num(obj(d.stats).rules)} 条：A 条件必填 / B 表内值合理性 / C 码表 / D 表内逻辑 / E 表间关联。
-      规则原文来自附件1-5，**不改写**（口径以监管原文为准）。${
+      规则原文来自附件1-5，不改写（口径以监管原文为准）；类型在左侧选择。${
         shown.length > 500 ? "仅显示前 500 条，可用搜索缩小范围。" : ""}</div>
-    <div class="scrollx"><table><thead><tr>
-      <th>序号</th><th>表名</th><th>数据项</th><th>代码</th><th>规则</th>
-    </tr></thead><tbody>${rows}</tbody></table></div>`;
+    <div class="lv lv-dense"><div class="lv-scroll"><table class="lv-table">
+      <thead><tr class="lv-headrow-plain">
+        <th>序号</th><th>规则类型</th><th>表名</th><th>数据项</th><th>代码</th><th>规则</th>
+      </tr></thead><tbody>${rows}</tbody></table></div></div>`;
 }
 
 /* ---------------- E-R 图（3D） ---------------- */
@@ -3983,8 +4023,17 @@ function bindRegstats(){
   if (eiq) eiq.onkeydown = (e) => {
     if (e.key === "Enter") { STATE.east_iq = eiq.value; render(); }
   };
-  const curTbl = $$("[data-etbl].on", v)[0] || $$("[data-etbl]", v)[0];
-  if (curTbl && STATE.east_tab === "tables") {
+  /* 批 132：数据表选择移到侧栏，[data-etbl] 不再存在 ⇒ 这里按 STATE 直接加载 */
+  if (STATE.east_tab === "tables") {
+    const ed = obj(STATE.east);
+    const edom = String(STATE.east_domain || "");
+    const elist = arr(ed.tables).filter(x => !edom || x.domain === edom);
+    const esel = String(STATE.east_sel || "") || (elist[0] ? elist[0].table_no : "");
+    if (esel && !obj(obj(STATE.east_items)[esel]).items) {
+      load("/api/east/table?no=" + encodeURIComponent(esel), esel, "east_items");
+    }
+  }
+  if (false) {
     load("/api/east/table?no=" + encodeURIComponent(curTbl.dataset.etbl),
          curTbl.dataset.etbl, "east_items");
   }
@@ -4009,10 +4058,12 @@ function bindRegstats(){
   if (ecq) ecq.onkeydown = (e) => {
     if (e.key === "Enter") { STATE.east_cq2 = ecq.value; render(); }
   };
-  const curCode = $$("[data-ecode].on", v)[0] || $$("[data-ecode]", v)[0];
-  if (curCode && STATE.east_tab === "codes") {
-    load("/api/east/code?sheet=" + encodeURIComponent(curCode.dataset.ecode),
-         curCode.dataset.ecode, "east_codes");
+  /* 批 132：代码表选择移到侧栏，[data-ecode] 不再存在 ⇒ 按 STATE.east_code 加载 */
+  const codeList = arr(obj(STATE.east).code_index);
+  const codeSel = String(STATE.east_code || "") || (codeList[0] ? codeList[0].sheet : "");
+  if (STATE.east_tab === "codes" && codeSel
+      && !obj(obj(STATE.east_codes)[codeSel]).view) {
+    load("/api/east/code?sheet=" + encodeURIComponent(codeSel), codeSel, "east_codes");
   }
   // 规则
   $$("[data-erule]", v).forEach(b => {
