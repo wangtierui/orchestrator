@@ -1036,8 +1036,8 @@ th.on .thf{background:rgba(9,105,218,.12);color:var(--accent)}
 /* 批132-css：折叠 32 / 页签下划线贴底 / 三·四级缩进 / 密集 lv 表 */
 .rail-foot button,.rail-fb{height:32px;min-height:32px;line-height:32px}
 .repo-tabs{padding-top:0}
-.tab{margin-top:16px}   /* 16 = 8(原内距) + 8，使 tab 底边与容器底边齐平，下划线正好压在 1px 线上 */
-.tab.on::after{bottom:0;height:2px}
+.tab{margin-top:8px}   /* 与 GitHub 一致：tab 底边距容器底 8px，下划线在 tab 底边 */
+.tab.on::after{bottom:0;height:2px}   /* 贴在 tab 底边 */
 .rail .sideitem-sub2{padding-left:28px;font-size:13px}
 .rail .sideitem-sub3{padding-left:44px;font-size:12.5px}
 body.rail-off .rail .sideitem-sub2,body.rail-off .rail .sideitem-sub3{
@@ -1047,6 +1047,15 @@ body.rail-off .rail .sideitem-sub2,body.rail-off .rail .sideitem-sub3{
 .lv-headrow-plain th{height:40px;padding:0 8px;text-align:left;font-size:12px;
   font-weight:600;color:var(--text-muted);background:var(--bg-subtle);
   border-bottom:1px solid var(--border);white-space:nowrap}
+
+/* 批133：列头筛选按钮（.lv 表头内） */
+.colf{background:none;border:0;padding:0;margin:0;font:inherit;color:inherit;
+  display:inline-flex;align-items:center;gap:4px;cursor:pointer}
+.colf:hover{color:var(--text)}
+.colf .ch{display:inline-flex;color:var(--text-muted)}
+th.on .colf .ch{color:var(--accent)}
+.lv-dense .lv-row:hover td{background:var(--bg-subtle)}
+.lv-empty-row td{height:auto !important;padding:16px !important}
 </style>
 </head>
 <body>
@@ -1279,6 +1288,12 @@ function sideShell(key, items, cur, body, title){
 
 /*: 左侧栏点击 → 各页状态位（集中一处，避免每页各写一遍监听） */
 const SIDE_ACT = {
+  /* 概览 → 数据结构目录（k 为空 = 全部主题域） */
+  east_cat: (k) => {
+    STATE.east_tab = "overview";
+    STATE.east_cat = {on: true, domain: k || ""};
+    render();
+  },
   /* 数据结构：三级=主题域（清空表选择 ⇒ 显示该域全部表）；四级=具体表 */
   east_domain: (k) => {
     STATE.east_domain = k || "";
@@ -1317,6 +1332,7 @@ const SIDE_ACT = {
    * `data-side="east_tab"`，而 SIDE_ACT 里只有 `east`）⇒ 点了完全没反应，
    * 且不报错（委托里 `act` 为 undefined 就静默跳过）。这就是那个 bug 的根因。 */
   east_tab: (k) => {
+    STATE.east_cat = null;
     if (k === "codes" && !STATE.east_code) {
       const first = arr(obj(STATE.east).code_index)[0];
       if (first) STATE.east_code = first.sheet;
@@ -2091,30 +2107,69 @@ function bindLogin(){
  * 再把视觉交给全局表格样式，收益/风险比最高。
  */
 function enhanceLegacyTables(){
+  /* 把 #view 里所有"裸 table"就地升级为 .lv 结构：
+   *   <div class="lv lv-dense"><div class="lv-scroll"><table class="lv-table">
+   *     <thead><tr class="lv-headrow-plain"><th><button class="colf">列名 ⌄</button></th>…
+   *     <tbody><tr class="lv-row"><td>…
+   * 列头按钮 = 筛选入口（与政策法规/公司制度同构）。 */
   const view = $("#view");
   if (!view) return;
   $$("table", view).forEach(table => {
     if (table.classList.contains("lv-table") || table.dataset.ghx === "1") return;
-    const ths = $$("thead th", table);
+    const headRow = table.querySelector("thead tr");
+    const body = table.querySelector("tbody");
+    if (!headRow || !body) return;
+    const ths = [...headRow.children].filter(c => c.tagName === "TH");
     if (!ths.length) return;
     table.dataset.ghx = "1";
-    ths.forEach((th, idx) => {
-      if (th.dataset.nofilter === "1") return;
-      /* 操作/详情列每行都是同一个按钮文案，没有"取值"可筛 */
-      if (th.textContent.trim().indexOf("操作") === 0) return;
-      if (th.textContent.trim().indexOf("详情") === 0) return;
+
+    /* 1) 表头：纯文字列名 → 筛选按钮 */
+    const labels = ths.map(th => (th.textContent || "").trim());
+    const noFilterIdx = new Set();
+    labels.forEach((lab, i) => {
+      if (/^操作$|^详情/.test(lab) || lab === "") noFilterIdx.add(i);
+    });
+
+    /* 2) 行：统一加 lv-row */
+    [...body.children].forEach(tr => {
+      if (tr.tagName !== "TR") return;
+      tr.classList.add("lv-row");
+      if (tr.querySelector("td[colspan]")) tr.classList.add("lv-empty-row");
+    });
+
+    /* 3) 表头单元格：替换为按钮（可筛选列）+ 纯文本（操作列） */
+    ths.forEach((th, i) => {
+      if (noFilterIdx.has(i)) return;
       const btn = document.createElement("button");
-      btn.className = "thf";
       btn.type = "button";
-      btn.setAttribute("aria-label", `按「${th.textContent.trim()}」筛选`);
-      btn.title = `按「${th.textContent.trim()}」筛选（当前页）`;
-      btn.innerHTML = ico("chevron-down", 14);
+      btn.className = "colf";
+      btn.setAttribute("aria-label", `按「${labels[i]}」筛选`);
+      btn.title = `按「${labels[i]}」筛选（当前页）`;
+      btn.innerHTML = `${labels[i]}<span class="ch" aria-hidden="true">${ico("chevron-down", 14)}</span>`;
+      th.textContent = "";
       th.appendChild(btn);
       btn.addEventListener("click", (ev) => {
         ev.stopPropagation();
-        openTableFilter(table, idx, btn);
+        openTableFilter(table, i, btn);
       });
     });
+
+    /* 4) 容器与表头类名 */
+    table.classList.add("lv-table");
+    table.classList.remove("tbl");
+    const headTr = table.querySelector("thead tr");
+    if (headTr) headTr.classList.add("lv-headrow-plain");
+    const wrap = table.parentElement;
+    if (wrap && !wrap.classList.contains("lv-scroll")) {
+      const scroll = document.createElement("div");
+      scroll.className = "lv-scroll";
+      wrap.insertBefore(scroll, table);
+      scroll.appendChild(table);
+      const box = document.createElement("div");
+      box.className = "lv lv-dense";
+      scroll.parentNode.insertBefore(box, scroll);
+      box.appendChild(scroll);
+    }
   });
 }
 
@@ -3411,9 +3466,23 @@ function eastSide(scope, tab, statTab){
   const items = [{side: "east_scope", skey: "east", label: "EAST", level: 1, cur: false}];
   if (scope === "east") {
     EAST_TABS.forEach(x => {
+      /* 子项被选中时，父级（二级页签）**不再高亮** —— GitHub 侧栏只标当前项（第 3 条） */
+      const childOn = (x.k === "overview" && !!(STATE.east_cat && STATE.east_cat.on))
+        || (x.k === "tables" && !!(STATE.east_domain || STATE.east_sel))
+        || (x.k === "codes" && !!STATE.east_code)
+        || (x.k === "rules" && !!STATE.east_rtype);
       items.push({side: "east_tab", skey: x.k, label: x.n, level: 2,
-                  count: tabCount(x.k), cur: tab === x.k});
+                  count: tabCount(x.k), cur: tab === x.k && !childOn});
       if (tab !== x.k) return;
+      if (x.k === "overview") {
+        const c = obj(STATE.east_cat);
+        items.push({side: "east_cat", skey: "", label: "数据结构", level: 3,
+                    count: arr(d.tables).length, cur: !!c.on && !c.domain});
+        arr(d.domains).forEach(dm => items.push({
+          side: "east_cat", skey: dm, label: dm, level: 4,
+          count: obj(st.by_domain)[dm], cur: !!c.on && c.domain === dm,
+        }));
+      }
       if (x.k === "tables") {
         arr(d.domains).forEach(dm => {
           const on = String(STATE.east_domain || "") === dm;
@@ -3516,9 +3585,11 @@ function eastSection(regstats){
     <div class="muted" style="margin-bottom:var(--s2)">${esc(d.note || "")}</div>`;
   /* 批 132（第 10 条）：除概览外，不再重复"规范说明 + 覆盖度"那段文案。 */
   const showHead = tab === "overview";
+  const cat = obj(STATE.east_cat);
   const body = scope === "stat"
     ? (statTab === "corp" ? eastStatCorp() : eastStatReg(regstats))
-    : (tab === "tables" ? eastTables(d)
+    : (cat.on ? eastCatalog(d, String(cat.domain || ""))
+      : tab === "tables" ? eastTables(d)
       : tab === "elements" ? eastElements(d)
       : tab === "codes" ? eastCodes(d)
       : tab === "rules" ? eastRules(d)
@@ -3589,6 +3660,46 @@ function eastOverview(d, regstats){
     <div class="muted" style="margin-top:var(--s2)">
       来源：<code title="${esc(src.index || "")}">${esc(String(src.index || "").split("/").pop())}</code>
       ；附件字节存采集目录（唯一事实源），正文全文可在「文档检索」问。</div>`;
+}
+
+/* ---------------- 数据结构目录（概览 → 数据结构；2026-10-29） ----------------
+ * 与「数据结构」页签的区别：这里是**目录**（一表一行，含报送模式），
+ * 点表名/表中文名跳到该表的数据项明细。
+ * 集中采集/持续采集来自附件1-2 表3（已并入 east_structure.json 的
+ * collect_mode / continuous_mode，取值 A1–A2 / B1–B4）。 */
+const EAST_MODE = {
+  A1: "集中采集 · 明细类表", A2: "集中采集 · 状态类表",
+  B1: "持续采集 · 明细类（增量）", B2: "持续采集 · 状态类（全量）",
+  B3: "持续采集 · 状态类（变化量）", B4: "持续采集 · 状态轨迹",
+};
+
+function eastModeCell(code, kind) {
+  const c = String(code || "").trim();
+  if (!c) return '<span class="muted">—</span>';
+  const lab = EAST_MODE[c] || kind;
+  return `<span class="tag" title="${esc(lab || "")}">${esc(c)}</span>`;
+}
+
+function eastCatalog(d, domain) {
+  const tables = arr(d.tables).filter(x => !domain || x.domain === domain);
+  const rows = tables.map(x => `<tr class="lv-row">
+      <td>${esc(x.domain || "—")}</td>
+      <td><button class="link" data-ecattbl="${esc(x.table_no)}"
+        title="查看 ${esc(x.table_code || "")} 的数据项">${esc(x.table_code || "—")}</button></td>
+      <td><button class="link" data-ecattbl="${esc(x.table_no)}">${esc(x.table_name || "")}</button></td>
+      <td class="mono">${esc(x.table_no || "")}</td>
+      <td class="muted">${esc(x.table_desc || "—")}</td>
+      <td>${eastModeCell(x.collect_mode, "集中采集")}</td>
+      <td>${eastModeCell(x.continuous_mode, "持续采集")}</td>
+    </tr>`).join("") || `<tr class="lv-row"><td colspan="7" class="muted" style="padding:16px">该主题域没有数据表</td></tr>`;
+  return `<div class="muted" style="margin-bottom:var(--s2)">
+      ${domain ? `主题域：<b>${esc(domain)}</b> · ` : ""}共 ${num(tables.length)} 张表。
+      报送模式取自附件1-2 表3（A=集中采集 / B=持续采集）；点表名或表中文名进入数据项明细。</div>
+    <div class="lv lv-dense"><div class="lv-scroll"><table class="lv-table">
+      <thead><tr class="lv-headrow-plain">
+        <th>主题域</th><th>表名</th><th>表中文名</th><th>表编号</th>
+        <th>数据表说明</th><th>集中采集</th><th>持续采集</th>
+      </tr></thead><tbody>${rows}</tbody></table></div></div>`;
 }
 
 /* ---------------- 数据表：左表右项（含数据元四列 + 取值范围跳转） ---------------- */
@@ -4081,6 +4192,18 @@ function bindRegstats(){
     const k = String(STATE.east_rule || "A");
     load("/api/east/rules?kind=" + encodeURIComponent(k), k, "east_rules");
   }
+  // 数据结构目录 → 跳到该表
+  $$("[data-ecattbl]", v).forEach(b => {
+    b.onclick = () => {
+      const no = b.dataset.ecattbl;
+      const tb = arr(obj(STATE.east).tables).find(x => x.table_no === no);
+      STATE.east_cat = null;
+      STATE.east_tab = "tables";
+      STATE.east_domain = tb ? (tb.domain || "") : "";
+      STATE.east_sel = no;
+      render();
+    };
+  });
   // 取值范围 → 代码表
   $$("[data-ecoderef]", v).forEach(b => {
     b.onclick = () => {
