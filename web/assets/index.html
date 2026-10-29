@@ -1077,6 +1077,25 @@ th.on .colf .ch{color:var(--accent)}
   background:none;border-radius:6px;color:var(--text-muted);cursor:pointer;
   display:inline-flex;align-items:center;justify-content:center}
 .fpop .fpop-x:hover{background:var(--hover);color:var(--text)}
+
+/* 批 139（P2）：列表上方筛选框（整宽、30 高；条件 token 在框内、右侧 X 清除） */
+.lv-fbar{padding:8px;border-bottom:1px solid var(--border)}
+.lv-fbox{display:flex;flex-wrap:wrap;align-items:center;gap:6px;min-height:32px;
+  padding:2px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg)}
+.lv-fbox:focus-within{border-color:#0969da;box-shadow:0 0 0 1px #0969da inset}
+.lv-fq{flex:1 1 160px;min-width:120px;height:26px;border:0;outline:0;background:none;
+  font-size:14px;color:var(--text)}
+.lv-tok{display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 6px;
+  border:1px solid var(--border);border-radius:6px;background:var(--bg-subtle);
+  font-size:12px;color:var(--text)}
+.lv-tok b{font-weight:600;color:var(--text-muted)}
+.lv-tok button{border:0;background:none;padding:0;display:inline-flex;
+  color:var(--text-muted);cursor:pointer}
+.lv-tok button:hover{color:var(--text)}
+.lv-fx{margin-left:auto;border:0;background:none;width:24px;height:24px;border-radius:6px;
+  display:inline-flex;align-items:center;justify-content:center;color:var(--text-muted);
+  cursor:pointer}
+.lv-fx:hover{background:var(--hover);color:var(--text)}
 </style>
 </head>
 <body>
@@ -4649,6 +4668,33 @@ function lvSel(list) {
   return STATE._lvsel[list];
 }
 
+/*: 列表上方的筛选框（GitHub 的 filter input）：条件以 token 留在框内，右侧 X 清除。
+ *
+ * 语法与 GitHub 的 qualifier 同构：`主题:T1 文号:金非银检函`，不认识的键按自由文本处理
+ * （落到"名称"上）。只改 `st` 里既有的查询参数，不新增接口参数。 */
+const LV_QBAR_KEYS = {
+  "主题": "theme", "来源": "source", "时效": "timeliness",
+  "名称": "q_title", "标题": "q_title", "文号": "q_docno",
+  "标识": "q_rfn", "唯一标识号": "q_rfn",
+};
+
+function lvFilterBar(list, st, act){
+  const toks = act.map(a => `<span class="lv-tok${a.kind === "slice" ? " slice" : ""}">
+      <b>${esc(a.field)}</b>${esc(String(a.value)).slice(0, 24)}
+      <button data-lvrm="${esc(a.param)}" data-lvrmkind="${esc(a.kind)}"
+        aria-label="移除该条件" title="移除">${ico("x", 12)}</button></span>`).join("");
+  return `<div class="lv-fbar">
+      <div class="lv-fbox" role="group" aria-label="筛选条件">
+        ${toks}
+        <input id="lvfq" class="lv-fq" autocomplete="off"
+          placeholder="${act.length ? "继续输入：主题:T1 文号:…" : "搜索或筛选：主题:T1、文号:金非银检函…（回车应用）"}"
+          aria-label="筛选条件">
+        ${act.length ? `<button class="lv-fx" data-lvclear="1" aria-label="清除全部筛选"
+          title="清除全部筛选">${ico("x", 14)}</button>` : ""}
+      </div>
+    </div>`;
+}
+
 function lvRender(list, d, st, f) {
   const cfg = LV[list], m = lvMeta(list);
   const items = arr(d.items);
@@ -4689,7 +4735,6 @@ function lvRender(list, d, st, f) {
       ${lvFilterTabs(list, st)}
       <span class="lv-fsep" aria-hidden="true"></span>
       ${fbtns}
-      ${chips}
       <span class="sp"></span>
       <button class="lv-fbtn lv-sortbtn" data-lvsort="${esc(st.sort || primaryFd.sort || "title")}"
         title="切换升降序">${esc((cfg.fields.find(x => (x.sort || x.k) === st.sort) || primaryFd).label
@@ -4761,6 +4806,7 @@ function lvRender(list, d, st, f) {
       <div class="acts"></div>
     </div>
     <div class="lv">
+      ${lvFilterBar(list, st, act)}
       <div class="lv-body${lvSliceActive(list) || STATE._lvSliceOpen ? " slice" : ""}">
         <div class="lv-scroll"><table class="lv-table" role="grid"
           aria-multiselectable="true" aria-label="${esc(cfg.title)}列表">
@@ -5841,8 +5887,40 @@ function bindGlobalDismiss(){
   });
 }
 
+/*: 列表筛选框（#lvfq）的键盘处理：委托到 document，任何页面都有效。
+ *
+ * 为什么不是就地绑定：这个输入框由 lvRender 生成，绑定写在各页 binder 里会随页面不同而漏；
+ * 委托一次即可，且不依赖渲染时机。 */
+function bindLvFilterBar(){
+  document.addEventListener("keydown", (ev) => {
+    const el = ev.target;
+    if (!el || el.id !== "lvfq") return;
+    if (ev.key === "Escape") { el.value = ""; return; }
+    if (ev.key !== "Enter") return;
+    ev.preventDefault();
+    const txt = String(el.value || "").trim();
+    if (!txt) return;
+    const cfg = LV[CUR] || {};
+    const st = STATE[cfg.stateKey || CUR];
+    if (!st || st.page == null) return;
+    const free = [];
+    txt.split(/\s+/).forEach(tok => {
+      const k = tok.indexOf(":");
+      if (k < 0) { free.push(tok); return; }
+      const nm = tok.slice(0, k).trim();
+      const key = LV_QBAR_KEYS[nm] || LV_QBAR_KEYS[nm.replace(/号$/, "")];
+      if (key) st[key] = tok.slice(k + 1).trim();
+      else free.push(tok);
+    });
+    if (free.length) st.q_title = free.join(" ");
+    st.page = 1;
+    render();
+  }, true);
+}
+
 function initNav(){
   lvSetDensity(lvDensity());
+  bindLvFilterBar();
   bindGlobalDismiss();
   initChrome();
   bindRailToggle();

@@ -198,7 +198,10 @@ class TestFilterPopover:
         """非默认筛选要在按钮上有可见状态：字段按钮 `.on` + chips。"""
         body = fn(h, "lvRender")
         assert 'class="lv-fbtn${on ? " on" : ""}"' in body
-        assert "${chips}" in body
+        # 批 139：条件不再挂在表头，改为列表上方筛选框里的 token
+        assert "${lvFilterBar(list, st, act)}" in body
+        bar = fn(h, "lvFilterBar")
+        assert "lv-tok" in bar and "data-lvrm=" in bar
 
     def test_escape_closes_without_losing_state(self, h: str) -> None:
         """Escape 只关浮层；筛选状态存 `STATE`，不进 DOM ⇒ 天然不丢。"""
