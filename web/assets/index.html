@@ -1061,6 +1061,16 @@ th.on .colf .ch{color:var(--accent)}
 /* 批 134（P1）：标签圆角与全局一致（6px）；Primer .Label 默认 9999px 胶囊 */
 .Label{border-radius:6px;padding:0 7px;line-height:18px;font-size:11.5px;
   display:inline-flex;align-items:center}
+
+/* 状态开关（GitHub Open/Closed）：30 高、无边框、选中加粗 */
+.ghstate{display:inline-flex;align-items:center;gap:2px;height:30px}
+.ghstate-btn{height:30px;padding:0 8px;border:0;background:none;border-radius:6px;
+  color:var(--text-muted);font-size:14px;cursor:pointer;display:inline-flex;
+  align-items:center;gap:6px;white-space:nowrap}
+.ghstate-btn:hover{background:var(--hover)}
+.ghstate-btn.on{color:var(--text);font-weight:600}
+.ghstate-btn .n{color:var(--text-muted);font-weight:400}
+.ghstate-btn.on .n{color:var(--text-muted)}
 </style>
 </head>
 <body>
@@ -1324,6 +1334,10 @@ const SIDE_ACT = {
     render();
   },
   /* 留言板：左侧"状态"就是筛选入口（页面上不再放下拉/页签） */
+  fbstatus: (k) => {
+    STATE._fbq = Object.assign({}, obj(STATE._fbq), {status: k || ""});
+    render();
+  },
   fb: (k) => {
     STATE._fbq = Object.assign({}, obj(STATE._fbq), {status: k || ""});
     render();
@@ -1820,6 +1834,10 @@ function viewWorklist(d, kinds){
     </tr>`;
   }).join("");
 
+  const statBar = ghStateTabs([
+    {key: "open", label: "待处置", count: obj(STATE._wlcnt).open},
+    {key: "resolved", label: "已处置", count: obj(STATE._wlcnt).resolved},
+  ], String(STATE._wlstatus || "open"), "wlstatus");
   const kd = arr(kinds&&(kinds.kinds||kinds.items));
   const _kItems = [{key: "", label: "全部 kind"}].concat(
     kd.map(x => (typeof x === "string"
@@ -1853,7 +1871,7 @@ function viewWorklist(d, kinds){
     <th style="width:170px">唯一标识号</th><th>名称</th><th style="width:170px">文号</th>
     <th style="width:200px">访问地址</th><th>详情 / 生产者建议</th></tr>`;
   return card("", wtitle,
-    sideShell("worklist", _kItems, String(STATE._wlkind || ""), toolbar + (rows
+    sideShell("worklist", _kItems, String(STATE._wlkind || ""), statBar + toolbar + (rows
       ? `<div class="tblwrap"><table><thead>${head}</thead><tbody>${rows}</tbody></table></div>`
       : '<div class="muted">当前无待办 ✓</div>')
     + `<div class="note">列含义：唯一标识号 = 该条的机器身份（RFN/IPN/文号）；
@@ -2129,6 +2147,19 @@ function applyPrimerControls(){
   });
 }
 
+/*: GitHub 的「开启/关闭」状态开关（列表头最左，30px、带计数、无边框）
+ *
+ * 实测：`Open 454 (454)` / `Closed 15,462`——未选中灰字，选中黑字加粗，hover 浅灰底。
+ * 计数直接来自各页已有的统计（待办取 /api/worklist 两个状态的 total；
+ * 留言板取 st.by_status），不新增接口。 */
+function ghStateTabs(items, cur, side){
+  return `<div class="ghstate" role="tablist" aria-label="状态">` + items.map(it =>
+    `<button class="ghstate-btn${it.key === cur ? " on" : ""}" role="tab"
+       aria-selected="${it.key === cur}" data-${side}="${esc(it.key)}"
+       >${esc(it.label)}<span class="n">${num(it.count)}</span></button>`).join("") +
+    `</div>`;
+}
+
 function enhanceLegacyTables(){
   /* 把 #view 里所有"裸 table"就地升级为 .lv 结构：
    *   <div class="lv lv-dense"><div class="lv-scroll"><table class="lv-table">
@@ -2315,9 +2346,20 @@ async function render(){
       v.innerHTML=viewMetrics(STATE.metrics); return;
     }
     if(CUR==="worklist"){
-      const qk=STATE._wlkind?("?kind="+encodeURIComponent(STATE._wlkind)):"";
+      const wlSt = String(STATE._wlstatus || "open");
+      const qk = "?status=" + wlSt + (STATE._wlkind
+        ? "&kind=" + encodeURIComponent(STATE._wlkind) : "");
       const [wl,k]=await Promise.all([api("/api/worklist"+qk),api("/api/worklist/kinds")]);
       STATE.worklist=wl; STATE._wlkinds=k;
+      /* 两个状态的计数各取一次并缓存（已处置只有十来条，代价可忽略） */
+      if (!STATE._wlcnt) {
+        const other = await api("/api/worklist?status=" + (wlSt === "open" ? "resolved" : "open"));
+        STATE._wlcnt = wlSt === "open"
+          ? {open: wl.total || 0, resolved: other.total || 0}
+          : {open: other.total || 0, resolved: wl.total || 0};
+      } else {
+        STATE._wlcnt[wlSt] = wl.total || 0;
+      }
       v.innerHTML=viewWorklist(wl,k);
       bindWorklist(v); return;
     }
@@ -2455,6 +2497,9 @@ function bindWorklist(v){
   cks.forEach(c=>c.onchange=upd);
   const all=$("#wlall");
   if(all) all.onchange=()=>{ cks.forEach(c=>{ c.checked=all.checked; }); upd(); };
+  $$("[data-wlstatus]", v).forEach(b => {
+    b.onclick = () => { STATE._wlstatus = b.dataset.wlstatus; render(); };
+  });
   const ks=$("#wlkind");
   if(ks) ks.onchange=()=>{ STATE._wlkind=ks.value; render(); };
   // 行内处置：表单插在**该行下方**（不再跑到整张表之后）
@@ -4289,12 +4334,12 @@ function viewFeedback(d){
     </tr>`).join("")
     || '<tr><td colspan="10" class="muted">还没有留言。发现问题就写在上面 —— 每一条都会进入改进清单。</td></tr>';
   const body = `${form}
-    <div class="kpibar">
-      ${kpi("全部", num(st.total || 0), "条")}
-      ${kpi("待处置", num(obj(st.by_status).open), "条")}
-      ${kpi("已受理", num(obj(st.by_status).ack), "条")}
-      ${kpi("已闭环", num(obj(st.by_status).closed), "条")}
-    </div>
+    ${ghStateTabs([
+      {key: "", label: "全部", count: st.total || 0},
+      {key: "open", label: "待处置", count: obj(st.by_status).open},
+      {key: "ack", label: "已受理", count: obj(st.by_status).ack},
+      {key: "closed", label: "已闭环", count: obj(st.by_status).closed},
+    ], String(obj(STATE._fbq).status || ""), "fbstatus")}
     <div class="scrollx"><table><thead><tr>
       <th>时间</th><th>编号</th><th>分类</th><th>严重度</th><th>页面</th><th>标题 / 说明</th>
       <th>记录者</th><th>IP</th><th>状态</th><th>操作</th>
@@ -4417,6 +4462,13 @@ function openFeedbackModal(){
 
 function bindFeedback(){
   const v = $("#view");
+  /* 表头「全部/待处置/已受理/已闭环」开关 */
+  $$("[data-fbstatus]", v).forEach(b => {
+    b.onclick = () => {
+      STATE._fbq = Object.assign({}, obj(STATE._fbq), {status: b.dataset.fbstatus || ""});
+      render();
+    };
+  });
   const sub = $("#fbsubmit", v);
   if (sub) sub.onclick = () => fbSubmit(v, sub);
   const flt = $("#fbfilter", v);
