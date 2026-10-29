@@ -54,6 +54,6 @@ def test_persistent_failure_still_reported(tmp_path, monkeypatch) -> None:
     target.parent.mkdir(parents=True)
     target.write_text("<script>1</script>", encoding="utf-8")
 
-    monkeypatch.setattr("tools.js_syntax_lint.lint_file", _fake_lint([BAD, BAD]))
+    monkeypatch.setattr("tools.js_syntax_lint.lint_file", _fake_lint([BAD, BAD, BAD]))
     problems, _detail = _js._check_inline_js(str(tmp_path))
     assert problems and "J15" in problems[0], "真错误必须报出来"

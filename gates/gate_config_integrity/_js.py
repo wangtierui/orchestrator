@@ -52,11 +52,15 @@ def _check_inline_js(root: str) -> tuple[list[str], dict]:
         r = lint(path)
         if r.get("ok"):
             return r
-        time.sleep(0.4)
-        r2 = lint(path)
-        if r2.get("ok"):
-            r2["transient"] = True
-        return r2
+        # 最多再试 2 次（合计 ~2.4s）：覆盖"截断 → 写入"的窗口
+        for _ in range(2):
+            time.sleep(0.8)
+            r2 = lint(path)
+            if r2.get("ok"):
+                r2["transient"] = True
+                return r2
+            r = r2
+        return r
 
     for rel in FRONTEND_FILES:
         path = os.path.join(root, rel)
