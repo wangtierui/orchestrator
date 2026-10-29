@@ -989,6 +989,49 @@ button.link{background:none;border:0;padding:0;color:var(--accent);font-size:13p
   cursor:pointer;text-decoration:none}
 button.link:hover{text-decoration:underline}
 select,input[type="text"],input[type="search"],textarea{font-size:13px}
+
+/* ============================================================
+ * 批 131：页签下划线压在容器线上、去横线、反馈贴底
+ * ============================================================ */
+/* ① 激活页签的 2px 线要**压在**第二行的 1px 底线上（GitHub 视觉上是一条线加粗） */
+.tab.on::after{bottom:-8px;height:2px}
+
+/* ② 去掉多余横线：栅格容器不再有边框；模块标题不再有下划线 */
+.grid,.grid.g3,.grid.two{border:0 !important}
+.card>h3,.card h3{border-bottom:0 !important;padding-bottom:0}
+.kpibar{border:0 !important}
+.card .src{border-top:0 !important}
+
+/* ③ 反馈 + 折叠：作为整体**贴底**（侧栏内容可滚，但这一块始终在可见区底部） */
+.rail-foot{position:sticky;bottom:0;z-index:2;background:var(--bg);
+  display:flex;flex-direction:column;align-items:stretch;gap:2px;padding:6px 0 4px;
+  border-top:0;margin-top:auto}
+.rail-fb,.rail-foot button{justify-content:flex-start;text-align:left}
+
+/* 反馈弹窗（对齐 GitHub 的 new issue 表单：宽 940、左标签右控件、底部按钮靠右） */
+.fb-modal{width:min(940px,94vw);max-height:88vh;overflow:auto;background:var(--bg);
+  border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 24px rgba(31,35,40,.2)}
+.fb-head{display:flex;align-items:center;justify-content:space-between;
+  padding:16px 20px;border-bottom:1px solid var(--border)}
+.fb-head h2{margin:0;font-size:16px;font-weight:600}
+.fb-body{padding:16px 20px}
+.fb-row{display:grid;grid-template-columns:140px minmax(0,1fr);gap:12px;
+  align-items:start;margin-bottom:12px}
+.fb-label{font-size:13px;color:var(--text-muted);text-align:right;padding-top:8px}
+.fb-ctl{width:100%}
+.fb-note{margin:4px 0 12px 152px;font-size:12px;color:var(--text-muted)}
+.fb-foot{display:flex;justify-content:flex-end;gap:8px;padding-top:12px;
+  border-top:1px solid var(--border)}
+@media (max-width:640px){.fb-row{grid-template-columns:1fr}
+  .fb-label{text-align:left;padding-top:0}.fb-note{margin-left:0}}
+
+/* 表头筛选按钮（旧式表格） */
+th{position:relative}
+.thf{margin-left:6px;width:20px;height:20px;border:0;border-radius:4px;background:transparent;
+  color:var(--text-muted);cursor:pointer;vertical-align:middle;padding:0;
+  display:inline-flex;align-items:center;justify-content:center}
+.thf:hover{background:rgba(129,139,152,.16);color:var(--text)}
+th.on .thf{background:rgba(9,105,218,.12);color:var(--accent)}
 </style>
 </head>
 <body>
@@ -1105,7 +1148,12 @@ const SRC_LABEL = {
 let RAILCFG = null;
 
 function railSet(title, items, cur){
-  RAILCFG = {title: title || "本页", items: items || [],
+  /* 归一化：不同页面历史上有的传 `skey`、有的传 `key` —— 统一在这里收口，
+   * 否则 `data-skey=""` ⇒ 点击进不了 SIDE_ACT（政策法规/公司制度曾整页点不动）。 */
+  items = (items || []).map(it => Object.assign({}, it, {
+    skey: it.skey != null ? it.skey : (it.key != null ? it.key : ""),
+  }));
+  RAILCFG = {title: title || "本页", items,
              cur: String(cur == null ? "" : cur)};
 }
 
@@ -1190,10 +1238,10 @@ function paintRail(){
            <span class="nm">保存当前视图…</span>
          </button>`
       : "") +
-    `<button class="rail-fb" id="railFb" title="反馈：记录一个问题">
-       <span class="glyph" aria-hidden="true">${ico("comment", 16)}</span>
-       <span class="nm">反馈</span></button>
-     <div class="rail-foot">
+    `<div class="rail-foot">
+       <button class="rail-fb" id="railFb" title="反馈：记录一个问题">
+         <span class="glyph" aria-hidden="true">${ico("comment", 16)}</span>
+         <span class="nm">反馈</span></button>
        <button id="railToggle" aria-expanded="true" aria-controls="rail"
          aria-label="折叠侧边栏" title="折叠侧边栏（Ctrl+B）">
          <span class="rt-ico">${ico("sidebar-collapse", 16)}</span>
@@ -1214,6 +1262,13 @@ function sideShell(key, items, cur, body, title){
 
 /*: 左侧栏点击 → 各页状态位（集中一处，避免每页各写一遍监听） */
 const SIDE_ACT = {
+  /* 列表页左侧「主题」：写回当前列表的 theme（服务端过滤） */
+  lvtheme: (k) => {
+    const key = CUR === "laws" ? "laws" : (CUR === "rules" ? "rules" : "");
+    if (!key) return;
+    STATE[key] = Object.assign({}, obj(STATE[key]), {theme: k || "", page: 1});
+    render();
+  },
   /* 留言板：左侧"状态"就是筛选入口（页面上不再放下拉/页签） */
   fb: (k) => {
     STATE._fbq = Object.assign({}, obj(STATE._fbq), {status: k || ""});
@@ -1990,6 +2045,127 @@ function bindLogin(){
   if(pw) pw.onkeydown = (e) => { if(e.key === "Enter") go(); };
 }
 
+/*: 旧式表格增强：给每个 <th> 加"筛选下拉"，点开列出该列取值（含计数），选中即过滤行。
+ *
+ * 为什么不重写成 .lv：这些页（待办/检索/审计/发布事件/留言板/监管统计/关系图谱）
+ * 的数据形状差异很大，重写等于七次改版；先把**交互**统一（表头即筛选），
+ * 再把视觉交给全局表格样式，收益/风险比最高。
+ */
+function enhanceLegacyTables(){
+  const view = $("#view");
+  if (!view) return;
+  $$("table", view).forEach(table => {
+    if (table.classList.contains("lv-table") || table.dataset.ghx === "1") return;
+    const ths = $$("thead th", table);
+    if (!ths.length) return;
+    table.dataset.ghx = "1";
+    ths.forEach((th, idx) => {
+      if (th.dataset.nofilter === "1") return;
+      /* 操作/详情列每行都是同一个按钮文案，没有"取值"可筛 */
+      if (th.textContent.trim().indexOf("操作") === 0) return;
+      if (th.textContent.trim().indexOf("详情") === 0) return;
+      const btn = document.createElement("button");
+      btn.className = "thf";
+      btn.type = "button";
+      btn.setAttribute("aria-label", `按「${th.textContent.trim()}」筛选`);
+      btn.title = `按「${th.textContent.trim()}」筛选（当前页）`;
+      btn.innerHTML = ico("chevron-down", 14);
+      th.appendChild(btn);
+      btn.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        openTableFilter(table, idx, btn);
+      });
+    });
+  });
+}
+
+function openTableFilter(table, idx, anchor){
+  const rows = $$("tbody tr", table).filter(tr => !tr.dataset.ghxEmpty);
+  const counts = {};
+  rows.forEach(tr => {
+    const td = tr.children[idx];
+    if (!td) return;
+    const v = (td.textContent || "").trim();
+    if (v) counts[v] = (counts[v] || 0) + 1;
+  });
+  const entries = Object.keys(counts).sort().map(k => ({v: k, c: counts[k]}));
+  const cur = table.dataset["f" + idx] || "";
+  const optHtml = (q) => entries.filter(e => !q || e.v.toLowerCase().includes(q))
+    .slice(0, 60)
+    .map(e => `<button class="opt" data-val="${esc(e.v)}" role="menuitemradio"
+        aria-checked="${e.v === cur}">
+        <span class="ck" aria-hidden="true"></span>
+        <span class="t">${esc(e.v)}<span class="s">${num(e.c)} 条</span></span>
+      </button>`).join("") ||
+    '<div class="empty" style="padding:8px;color:var(--text-muted)">该列没有取值</div>';
+  const html = `<input class="q" id="tfQ" placeholder="搜索取值…" aria-label="搜索取值">
+    <div id="tfList">${optHtml("")}</div>
+    <div class="sep"></div>
+    <button data-act="clear">清除该列筛选</button>`;
+  const el = lvPop(anchor, html, {
+    cls: "fpop",
+    onPick: (act, btn) => {
+      if (act === "clear") {
+        delete table.dataset["f" + idx];
+        applyTableFilters(table);
+        lvClosePop();
+        return;
+      }
+      const v = btn.dataset.val;
+      if (table.dataset["f" + idx] === v) delete table.dataset["f" + idx];
+      else table.dataset["f" + idx] = v;
+      applyTableFilters(table);
+      lvClosePop();
+    },
+  });
+  const q = $("#tfQ", el);
+  if (q) {
+    q.oninput = () => {
+      const box = $("#tfList", el);
+      if (box) box.innerHTML = optHtml(q.value.trim().toLowerCase());
+    };
+    q.focus();
+  }
+}
+
+function applyTableFilters(table){
+  const idxs = Object.keys(table.dataset)
+    .filter(k => /^f\d+$/.test(k));
+  const rows = $$("tbody tr", table);
+  let shown = 0;
+  rows.forEach(tr => {
+    let ok = true;
+    idxs.forEach(k => {
+      const want = table.dataset[k];
+      const td = tr.children[Number(k.slice(1))];
+      if (!want || !td) return;
+      if ((td.textContent || "").trim() !== want) ok = false;
+    });
+    tr.hidden = !ok;
+    if (ok) shown++;
+  });
+  const ths = $$("thead th", table);
+  idxs.forEach(k => {
+    const th = ths[Number(k.slice(1))];
+    if (th) th.classList.add("on");
+  });
+  ths.forEach((th, i) => {
+    if (!table.dataset["f" + i]) th.classList.remove("on");
+  });
+  /* 一行都没剩：给一句明确提示，而不是让人以为"数据没了" */
+  let empty = table.querySelector(".ghx-empty");
+  if (!shown) {
+    if (!empty) {
+      empty = document.createElement("tr");
+      empty.className = "ghx-empty";
+      empty.innerHTML = `<td colspan="${ths.length}" style="padding:16px;color:var(--text-muted)">当前筛选无结果（清除表头筛选可恢复）</td>`;
+      table.querySelector("tbody").appendChild(empty);
+    }
+  } else if (empty) {
+    empty.remove();
+  }
+}
+
 async function render(){
   const v=$("#view");
   RAILCFG = null;          // 每轮重来：视图没登记就说明本页没有第二维
@@ -2101,6 +2277,7 @@ async function render(){
       <div class="note">${esc(String(e&&e.stack?e.stack:String(e)))}</div>`,"web 前端");
   }finally{
     paintRail();           // 所有分支（含登录/异常）都走这里，侧栏才不会残留上一页
+    enhanceLegacyTables();  // 旧式表格：表头补"筛选下拉"（与列表页同一套交互）
     const cur = TABS.find(x => x.id === CUR);
     const cn = $("#crumbName");
     if (cn) cn.textContent = cur ? cur.name : (CUR === "__login" ? "登录" : CUR);
@@ -2354,8 +2531,10 @@ function viewLaws(d, st, f){
    * 主题仍进左侧栏（"本页"组），与切片面板并存 —— 侧栏是"导航"，切片是"临时过滤"。 */
   const themes = _themeSort(arr(f.themes).filter(x => String(x.value) !== ""));
   const unset = arr(f.themes).find(x => String(x.value) === "");
-  railSet("主题", [{key: "", label: "全部主题", count: (unset && unset.count) || undefined}]
-    .concat(themes.map(x => ({key: x.value, label: x.label || x.value, count: x.count}))),
+  railSet("主题", [{side: "lvtheme", key: "", label: "全部主题",
+     count: (unset && unset.count) || undefined}]
+    .concat(themes.map(x => ({side: "lvtheme", key: x.value,
+      label: x.label || x.value, count: x.count}))),
     String(obj(st).theme || ""));
   return lvRender("laws", d, st, f);
 }
@@ -2364,8 +2543,10 @@ function viewRules(d, st, f){
   if (!d || d.available === false) return unavail(obj(d), "公司制度");
   const themes = _themeSort(arr(f.themes).filter(x => String(x.value) !== ""));
   const unset = arr(f.themes).find(x => String(x.value) === "");
-  railSet("主题", [{key: "", label: "全部主题", count: (unset && unset.count) || undefined}]
-    .concat(themes.map(x => ({key: x.value, label: x.label || x.value, count: x.count}))),
+  railSet("主题", [{side: "lvtheme", key: "", label: "全部主题",
+     count: (unset && unset.count) || undefined}]
+    .concat(themes.map(x => ({side: "lvtheme", key: x.value,
+      label: x.label || x.value, count: x.count}))),
     String(obj(st).theme || ""));
   return lvRender("rules", d, st, f);
 }
@@ -3953,23 +4134,26 @@ function fbFormHtml(){
     s === "normal" ? " selected" : ""}>${
     ({low: "轻微", normal: "一般", high: "严重", blocker: "阻塞"})[s] || esc(s)}</option>`).join("");
   const pageOpt = TABS.map(t2 => `<option value="${esc(t2.name)}">${esc(t2.name)}</option>`).join("");
-  const form = `<div>
-    <h3><span>记录一个问题</span><span class="hint">想改什么、哪里不对、缺什么功能</span></h3>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:var(--s2)">
-      <label class="muted">分类<select id="fbkind">${kindOpt}</select></label>
-      <label class="muted">严重度<select id="fbsev">${sevOpt}</select></label>
-      <label class="muted">页面<select id="fbpage">${pageOpt}</select></label>
-      ${whoCell}
-    </div>
-    <label class="muted" style="display:block;margin-top:var(--s2)">标题
-      <input id="fbtitle" maxlength="120" placeholder="一句话说清问题（≥4 字）"></label>
-    <label class="muted" style="display:block;margin-top:var(--s2)">详细说明（可选）
-      <textarea id="fbdetail" rows="3" maxlength="4000"
-        placeholder="复现步骤 / 期望结果 / 实际结果；数据问题请带上 RFN 或文号"></textarea></label>
-    <div class="toolbar" style="margin-top:var(--s2)">
+  /* 结构对齐 GitHub 的 "new issue" 表单：左列右对齐标签、右列控件、底部主次按钮 */
+  const form = `<div class="fb-form">
+    <div class="fb-row"><label class="fb-label" for="fbkind">分类</label>
+      <select id="fbkind" class="fb-ctl">${kindOpt}</select></div>
+    <div class="fb-row"><label class="fb-label" for="fbsev">严重度</label>
+      <select id="fbsev" class="fb-ctl">${sevOpt}</select></div>
+    <div class="fb-row"><label class="fb-label" for="fbpage">页面</label>
+      <select id="fbpage" class="fb-ctl">${pageOpt}</select></div>
+    <div class="fb-row"><span class="fb-label">记录者</span>
+      <div class="fb-ctl">${whoCell}</div></div>
+    <div class="fb-row"><label class="fb-label" for="fbtitle">标题</label>
+      <input id="fbtitle" class="fb-ctl" maxlength="120"
+        placeholder="一句话说清问题（≥4 字）"></div>
+    <div class="fb-row"><label class="fb-label" for="fbdetail">详细说明</label>
+      <textarea id="fbdetail" class="fb-ctl" rows="4" maxlength="4000"
+        placeholder="复现步骤 / 期望结果 / 实际结果；数据问题请带上 RFN 或文号"></textarea></div>
+    <p class="fb-note">${esc(whoNote)} 留言只追加不删除，处置只改状态。</p>
+    <div class="fb-foot">
+      <button class="btn" data-close>取消</button>
       <button class="btn btn-primary" id="fbsubmit">提交</button>
-      <span class="muted" style="font-size:12px">
-        ${esc(whoNote)} 留言只追加不删除，处置只改状态。</span>
     </div></div>`;
   return form;      /* 抽成函数时漏了这句 ⇒ 弹窗是空壳，点提交自然没反应 */
 }
@@ -4011,11 +4195,11 @@ function openFeedbackModal(){
   lvClosePop();
   const mask = document.createElement("div");
   mask.className = "pal-mask";
-  mask.innerHTML = `<div class="pal" role="dialog" aria-modal="true"
-      aria-label="反馈：记录一个问题" style="width:min(760px,94vw)">
-      <div class="pal-h"><span>记录一个问题</span>
+  mask.innerHTML = `<div class="fb-modal" role="dialog" aria-modal="true"
+      aria-labelledby="fbTitle">
+      <div class="fb-head"><h2 id="fbTitle">记录一个问题</h2>
         <button class="iconbtn" data-close aria-label="关闭">${ico("x", 16)}</button></div>
-      <div class="pal-b">${fbFormHtml()}</div>
+      <div class="fb-body">${fbFormHtml()}</div>
     </div>`;
   document.body.appendChild(mask);
   const close = () => mask.remove();
@@ -5383,8 +5567,23 @@ function initChrome(){
     document.documentElement.getAttribute("data-color-mode") === "dark" ? "light" : "dark");
 }
 
+/*: 点浮层外部就关（用户第 6 条：点了筛选按钮再点页面别处，面板应当消失）。 */
+function bindGlobalDismiss(){
+  document.addEventListener("click", (ev) => {
+    const t2 = ev.target;
+    if (!t2 || !t2.closest) return;
+    if (t2.closest(".fpop") || t2.closest(".spop") || t2.closest(".pal-mask")) return;
+    if (t2.closest("[data-lvf]") || t2.closest("#gsearchWrap")) return;
+    if ($(".fpop") || $(".spop")) lvClosePop();
+  }, true);
+  document.addEventListener("keydown", (ev) => {
+    if (ev.key === "Escape" && ($(".fpop") || $(".spop"))) lvClosePop();
+  });
+}
+
 function initNav(){
   lvSetDensity(lvDensity());
+  bindGlobalDismiss();
   initChrome();
   bindRailToggle();
   buildTabs();
