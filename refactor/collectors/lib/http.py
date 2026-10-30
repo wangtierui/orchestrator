@@ -68,9 +68,10 @@ BASE_HEADERS = {
     "Upgrade-Insecure-Requests": "1",
 }
 
-# 默认状态分类（P1 会把 403 也纳入重试；此处保持与旧 robust_get 一致，避免改动 gov 行为）
-DEFAULT_NO_RETRY = frozenset({403, 404, 410})
-DEFAULT_RETRY = frozenset({429, 500, 502, 503, 504})
+# 默认重试策略：403 视为限流/临时封锁（重构前 nfra/http_api 即对任何非 200 退避重试），
+# 统一纳入重试，对所有采集员生效，不按源特判。404/410 为永久缺失，不重试。
+DEFAULT_NO_RETRY = frozenset({404, 410})
+DEFAULT_RETRY = frozenset({403, 429, 500, 502, 503, 504})
 
 
 @dataclass
@@ -148,7 +149,7 @@ class RequestsTransport(Transport):
                     time.sleep(random.uniform(0.8, 1.6))
                 resp = self._session.request(
                     method, url, params=params, json=json_body, data=data,
-                    headers=hdrs, timeout=timeout,
+                    headers=hdrs, timeout=timeout, proxies={},
                 )
                 get_coordinator().record_request(resp.status_code)
                 if resp.status_code in no_retry_statuses:
@@ -184,13 +185,21 @@ class RequestsTransport(Transport):
 _DEFAULT_TRANSPORT: Transport = RequestsTransport()
 
 
-def get_default_transport() -> Transport:
-    """返回当前默认传输实例。
+def select_transport() -> Transport:
+    """统一传输入口：当前默认直连 RequestsTransport。
 
-    TODO(T3)：在此按配置切换 RequestsTransport / ImpersonateTransport /
-    PlaywrightTransport，采集器与容错层无需改动。
+    四个采集器经 http_get_json / robust_get / http_request 统一调用本函数，
+    零改动即可在未来切换传输实现（如浏览器仿真等）。
     """
     return _DEFAULT_TRANSPORT
+
+
+def get_default_transport() -> Transport:
+    """返回当前默认传输实例（默认直连）。
+
+    采集器与容错层无需改动。
+    """
+    return select_transport()
 
 
 # ---------------------------------------------------------------------------
@@ -218,7 +227,7 @@ def robust_get(
         headers["Referer"] = referer
     if extra_headers:
         headers.update(extra_headers)
-    resp = _DEFAULT_TRANSPORT.request(
+    resp = select_transport().request(
         "GET", url, headers=headers, timeout=timeout, retries=retries,
         retry_statuses=DEFAULT_RETRY, no_retry_statuses=DEFAULT_NO_RETRY,
     )
@@ -244,15 +253,14 @@ def http_get_json(
 ):
     """共享 JSON GET：成功返回解析后的 dict；失败抛 RuntimeError。
 
-    默认 403 不重试（与旧 robust_get 一致）；采集器可按需在调用处放宽
-    （如 nfra 将 403 也纳入重试，保留其原有行为）。
+    403 已纳入默认重试集（视为限流/临时封锁，传输层统一处理），无需调用处特判。
     """
     headers: dict[str, str] = {}
     if referer:
         headers["Referer"] = referer
     if extra_headers:
         headers.update(extra_headers)
-    resp = _DEFAULT_TRANSPORT.request(
+    resp = select_transport().request(
         "GET", url, params=params, headers=headers, timeout=timeout, retries=retries,
         retry_statuses=retry_statuses, no_retry_statuses=no_retry_statuses,
     )

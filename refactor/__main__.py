@@ -24,11 +24,18 @@ import refactor.init as init_pkg
 
 def main(argv=None) -> int:
     argv = list(argv) if argv is not None else sys.argv[1:]
-    if not argv or argv[0] != "init":
-        print("用法: python -m refactor init [--db-url URL] [--no-dump]")
+    if not argv:
+        print("用法: python -m refactor <init|rag> [...]")
         return 1
-    # 剥掉 "init"，把剩余参数交给 init 包解析
-    return init_pkg.main(argv[1:])
+    cmd, rest = argv[0], argv[1:]
+    if cmd == "init":
+        # 剥掉 "init"，把剩余参数交给 init 包解析
+        return init_pkg.main(rest)
+    if cmd == "rag":
+        from refactor.rag.connector import main as rag_main
+        return rag_main(rest)
+    print(f"未知子命令: {cmd}\n用法: python -m refactor <init|rag> [...]")
+    return 1
 
 
 if __name__ == "__main__":
