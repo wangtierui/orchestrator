@@ -1170,6 +1170,15 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,
 textarea:focus-visible,[tabindex]:focus-visible{
   outline:2px solid transparent;outline-offset:-2px;
   box-shadow:0 0 0 2px #0969da inset}
+
+/* 批 145（第 1 条）：列表行 -> CSS Grid（GitHub 三区：选择 / 状态 / 主体）
+ * 用 display:grid 作用于 tr，td 变成网格项；列宽固定为 32/24/1fr，间距 8。 */
+.lv:not(.lv-dense) .lv-table tr.lv-row{display:grid;grid-template-columns:32px 24px minmax(0,1fr);
+  align-items:center;column-gap:8px;height:auto;min-height:65px;padding:8px}
+.lv:not(.lv-dense) .lv-table tr.lv-row>td{display:block;padding:0;border:0;height:auto;min-width:0}
+body.lv-compact .lv:not(.lv-dense) .lv-table tr.lv-row{min-height:38px;padding:4px 8px}
+.lv:not(.lv-dense) .lv-table tr.lv-row:hover{background:var(--bg-subtle)}
+.lv:not(.lv-dense) .lv-table tr.lv-row[aria-selected="true"]{background:var(--bg-subtle)}
 </style>
 </head>
 <body>
@@ -2304,6 +2313,20 @@ function enhanceLegacyTables(){
     /* 3) 表头 → **一行工具条**（GitHub 的列表头没有列名，只有可操作项）：
      *    左：状态开关（若页面有）+ 各列的字段筛选按钮；右：留白。
      *    列名因此不再出现在表头里 —— 与政策法规/公司制度同构。 */
+    /* 合并表头前先锁列宽：否则 autolayout 会按内容重新分配，长文本换行把行撑高 */
+    const widths = ths.map(th => Math.round(th.getBoundingClientRect().width));
+    const totalW = widths.reduce((a, b) => a + b, 0) || 1;
+    if (widths.some(w => w > 0)) {
+      const cg = document.createElement("colgroup");
+      widths.forEach(w => {
+        const col = document.createElement("col");
+        col.style.width = ((w / totalW) * 100).toFixed(2) + "%";
+        cg.appendChild(col);
+      });
+      table.insertBefore(cg, table.firstChild);
+      table.style.tableLayout = "fixed";
+    }
+
     const bar = document.createElement("div");
     bar.className = "lv-bar lv-headbar";
     /* 把页面上的状态开关（待办：待处置/已处置；留言板：四态）搬进来 */
