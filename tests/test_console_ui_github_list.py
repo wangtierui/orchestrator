@@ -264,3 +264,25 @@ class TestTabsAndOverview:
     def test_overview_padding_220(self, h: str) -> None:
         assert "body.no-rail .main-content{padding-left:220px;padding-right:220px}" in h
         assert 'document.body.classList.toggle("no-rail", CUR === "overview")' in h
+
+class TestSingleTableImplementation:
+    """第 1、2 条：全局只有一套表结构，且不再有运行时转换器。"""
+
+    def test_no_bare_table(self, h: str) -> None:
+        """除 `.lv-table` 外不允许出现任何 <table>（裸表即"第二套实现"）。"""
+        total = h.count("<table")
+        lv = h.count('<table class="lv-table"')
+        assert total == lv, f"还有 {total - lv} 处裸 <table>"
+
+    def test_converter_removed(self, h: str) -> None:
+        """运行时转换器已删除，不允许以任何名字复活。"""
+        assert "enhanceLegacyTables" not in h
+        assert "openTableFilter" not in h
+        assert "applyTableFilters" not in h
+
+    def test_grid_rows_used_everywhere(self, h: str) -> None:
+        """各页列表都用 .lv-gtable + .lv-row + .lv-cell。"""
+        assert h.count("lv-gtable") >= 8
+        assert "function openGridFilter(" in h
+        assert "function applyGridFilters(" in h
+
