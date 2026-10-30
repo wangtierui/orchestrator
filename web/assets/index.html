@@ -1179,6 +1179,24 @@ textarea:focus-visible,[tabindex]:focus-visible{
 body.lv-compact .lv:not(.lv-dense) .lv-table tr.lv-row{min-height:38px;padding:4px 8px}
 .lv:not(.lv-dense) .lv-table tr.lv-row:hover{background:var(--bg-subtle)}
 .lv:not(.lv-dense) .lv-table tr.lv-row[aria-selected="true"]{background:var(--bg-subtle)}
+
+/* 批 146：网格表（div 行）—— 与列表页同一套观感，列宽由调用方用 --cols 指定 */
+.lv-gtable{border:1px solid var(--border);border-radius:6px;background:var(--bg);
+  overflow:hidden}
+.lv-gtable .lv-headbar{display:flex;align-items:center;gap:8px;height:48px;
+  padding:8px;background:var(--bg-subtle);border-bottom:1px solid var(--border)}
+.lv-gtable .toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  padding:8px;border-bottom:1px solid var(--border)}
+.lv-gtable .lv-grid{display:grid}
+.lv-gtable .lv-row{display:grid;grid-template-columns:var(--cols,1fr);align-items:center;
+  column-gap:8px;min-height:65px;padding:8px;border-bottom:1px solid var(--border)}
+.lv-gtable .lv-row:last-child{border-bottom:0}
+.lv-gtable .lv-row:hover{background:var(--bg-subtle)}
+.lv-gtable .lv-cell{min-width:0;display:block;font-size:14px}
+.lv-gtable .lv-cell.muted{color:var(--text-muted)}
+.lv-gtable .lv-row.detail{display:block;grid-template-columns:none;background:var(--bg-subtle);
+  padding:8px 12px}
+.lv-gtable .Truncate{max-width:100%}
 </style>
 </head>
 <body>
@@ -1929,18 +1947,18 @@ function viewWorklist(d, kinds){
     const f=obj(it.fields), kind=String(it.kind||"");
     const cap=obj(caps[kind]);
     const detail=[f.note, it.suggestion].filter(Boolean).join(" ｜ ");
-    return `<tr data-id="${esc(it.item_id)}" data-idx="${idx}">
-      <td style="white-space:nowrap">
+    return `<div class="lv-row" data-id="${esc(it.item_id)}" data-idx="${idx}">
+      <span class="lv-cell" style="white-space:nowrap">
         <input type="checkbox" class="wlck" value="${esc(it.item_id)}" title="选择本条">
-        <button class="btn" data-resolve="${esc(it.item_id)}">处置</button>
-      </td>
-      <td><code>${esc(kind)}</code></td>
-      <td class="id">${cellVal(f.identity, f.identity_src)}</td>
-      <td>${f.aggregate? esc(f.title) : cellVal(f.title, f.title_src)}</td>
-      <td class="mono">${cap.docno ? cellVal(f.document_number, f.document_number_src) : '<span class="muted">不适用</span>'}</td>
-      <td>${cellUrl(f)}</td>
-      <td class="muted"><div class="Truncate" title="${esc(detail)}">${esc(detail||"—")}</div></td>
-    </tr>`;
+        <button class="btn btn-sm" data-resolve="${esc(it.item_id)}">处置</button>
+      </span>
+      <span class="lv-cell"><code>${esc(kind)}</code></span>
+      <span class="lv-cell id">${cellVal(f.identity, f.identity_src)}</span>
+      <span class="lv-cell">${f.aggregate? esc(f.title) : cellVal(f.title, f.title_src)}</span>
+      <span class="lv-cell mono">${cap.docno ? cellVal(f.document_number, f.document_number_src) : '<span class="muted">不适用</span>'}</span>
+      <span class="lv-cell">${cellUrl(f)}</span>
+      <span class="lv-cell muted"><span class="Truncate" title="${esc(detail)}">${esc(detail||"—")}</span></span>
+    </div>`;
   }).join("");
 
   const statBar = ghStateTabs([
@@ -1974,14 +1992,27 @@ function viewWorklist(d, kinds){
 
   // 操作列固定最左，且**带全选**：批量处置前要先能"一次勾完"。
   // 2026-10-22 重写时漏过一次（旧守卫 test_console_exposes_bulk_selection 抓到）。
-  const head = `<tr><th style="width:150px">
-      <label style="cursor:pointer"><input type="checkbox" id="wlall" title="全选本页"> 操作</label>
-    </th><th style="width:190px">kind</th>
-    <th style="width:170px">唯一标识号</th><th>名称</th><th style="width:170px">文号</th>
-    <th style="width:200px">访问地址</th><th>详情 / 生产者建议</th></tr>`;
+  /* 表头 = 工具条（状态开关 + 字段按钮 + 批量控件），列名不再出现（GitHub 同构） */
+  const COL_LABELS = ["操作", "kind", "唯一标识号", "名称", "文号", "访问地址", "详情"];
+  const NO_FILTER = new Set([0]);
+  const colBtns = COL_LABELS.map((lab, i) => NO_FILTER.has(i) ? "" :
+    `<button class="lv-fbtn btn btn-invisible" data-gcol="${i}"
+      aria-haspopup="dialog" title="按「${esc(lab)}」筛选">${esc(lab)}${
+      ico("chevron-down", 16)}</button>`).join("");
+  const head = `<div class="lv-headbar">${statBar}${colBtns}
+      <span class="sp"></span>
+      <label class="muted" style="display:inline-flex;align-items:center;gap:6px">
+        <input type="checkbox" id="wlall" title="全选本页"> 全选</label>
+    </div>`;
   return card("", wtitle,
-    sideShell("worklist", _kItems, String(STATE._wlkind || ""), statBar + toolbar + (rows
-      ? `<div class="tblwrap"><table><thead>${head}</thead><tbody>${rows}</tbody></table></div>`
+    sideShell("worklist", _kItems, String(STATE._wlkind || ""), (rows
+      ? `<div class="lv lv-gtable" data-lg="worklist">
+          ${head}
+          ${toolbar}
+          <div class="lv-scroll"><div class="lv-grid"
+            style="--cols:150px 190px 170px minmax(0,1fr) 170px 200px minmax(0,1fr)">
+            ${rows}</div></div>
+        </div>`
       : '<div class="muted">当前无待办 ✓</div>')
     + `<div class="note">列含义：唯一标识号 = 该条的机器身份（RFN/IPN/文号）；
         文号仅对"有外部文号"的 kind 显示，其余标「不适用」；
@@ -2274,6 +2305,50 @@ function ghStateTabs(items, cur, side){
        aria-selected="${it.key === cur}" data-${side}="${esc(it.key)}"
        >${esc(it.label)}<span class="n">${num(it.count)}</span></button>`).join("") +
     `</div>`;
+}
+
+/*: 网格行（.lv-row = div）的列筛选：与表格版同一套选项面板，只是取值来自 .lv-cell */
+function openGridFilter(root, idx, anchor){
+  const rows = $$(".lv-row", root).filter(r => !r.classList.contains("detail"));
+  const counts = {};
+  rows.forEach(r => {
+    const c = r.querySelectorAll(".lv-cell")[idx];
+    const v = c ? (c.textContent || "").trim() : "";
+    if (v) counts[v] = (counts[v] || 0) + 1;
+  });
+  let sel = [];
+  try { sel = JSON.parse(root.dataset["f" + idx] || "[]"); } catch (e) { sel = []; }
+  openOptionList({
+    anchor,
+    options: Object.keys(counts).sort().map(k => ({
+      value: k, label: k, sub: `${num(counts[k])} 条`})),
+    selected: sel,
+    multi: true,
+    placeholder: "搜索取值…",
+    emptyText: "该列没有取值",
+    onChange: (vals) => {
+      if (vals.length) root.dataset["f" + idx] = JSON.stringify(vals);
+      else delete root.dataset["f" + idx];
+      applyGridFilters(root);
+    },
+  });
+}
+
+function applyGridFilters(root){
+  const idxs = Object.keys(root.dataset).filter(k => /^f\d+$/.test(k));
+  $$(".lv-row", root).forEach(r => {
+    if (r.classList.contains("detail")) return;
+    let ok = true;
+    idxs.forEach(k => {
+      const i = Number(k.slice(1));
+      let want = [];
+      try { want = JSON.parse(root.dataset[k]); } catch (e) { want = []; }
+      const c = r.querySelectorAll(".lv-cell")[i];
+      if (!want.length || !c) return;
+      if (want.indexOf((c.textContent || "").trim()) < 0) ok = false;
+    });
+    r.hidden = !ok;
+  });
 }
 
 function enhanceLegacyTables(){
@@ -2658,6 +2733,12 @@ function bindWorklist(v){
   cks.forEach(c=>c.onchange=upd);
   const all=$("#wlall");
   if(all) all.onchange=()=>{ cks.forEach(c=>{ c.checked=all.checked; }); upd(); };
+  $$("[data-gcol]", v).forEach(b => {
+    b.onclick = () => {
+      const root = b.closest(".lv-gtable");
+      if (root) openGridFilter(root, Number(b.dataset.gcol), b);
+    };
+  });
   $$("[data-wlstatus]", v).forEach(b => {
     b.onclick = () => { STATE._wlstatus = b.dataset.wlstatus; render(); };
   });
@@ -2665,7 +2746,7 @@ function bindWorklist(v){
   if(ks) ks.onchange=()=>{ STATE._wlkind=ks.value; render(); };
   // 行内处置：表单插在**该行下方**（不再跑到整张表之后）
   $$("button[data-resolve]",v).forEach(b=>{
-    b.onclick=()=>openResolveInline(b.closest("tr"), b.dataset.resolve);
+    b.onclick=()=>openResolveInline(b.closest("tr") || b.closest(".lv-row"), b.dataset.resolve);
   });
   const bulk=$("#wlbulk");
   if(bulk) bulk.onclick=async()=>{
@@ -2695,9 +2776,10 @@ function openResolveInline(tr, id){
   if(!tr) return;
   const next=tr.nextElementSibling;
   if(next && next.classList.contains("detail")){ next.remove(); return; }  // 再点收起
-  const tr2=document.createElement("tr");
-  tr2.className="detail";
-  tr2.innerHTML=`<td colspan="7">
+  const isTr = tr.tagName === "TR";
+  const tr2 = document.createElement(isTr ? "tr" : "div");
+  tr2.className = isTr ? "detail" : "lv-row detail";
+  tr2.innerHTML = isTr ? `<td colspan="7">
     <div class="row"><b>处置 ${esc(id)}</b>
       <select id="rstatus"><option value="resolved">resolved（已处置）</option>
         <option value="dismissed">dismissed（不适用）</option></select>
@@ -2706,7 +2788,16 @@ function openResolveInline(tr, id){
       <button class="act ghost" id="rcancel">取消</button></div>
     <textarea id="rwhy" placeholder="处置理由（必填，进入审计台账）"></textarea>
     <div class="note">写路径：<code>worklist_resolve</code>（唯一写口，逐条落审计）。</div>
-  </td>`;
+  </td>` : `<div class="fb-body">
+    <div class="row"><b>处置 ${esc(id)}</b>
+      <select id="rstatus"><option value="resolved">resolved（已处置）</option>
+        <option value="dismissed">dismissed（不适用）</option></select>
+      <input id="rby" placeholder="操作者" value="confirm_console" size="14">
+      <button class="btn btn-primary" id="rok">提交</button>
+      <button class="btn" id="rcancel">取消</button></div>
+    <textarea id="rwhy" placeholder="处置理由（必填，进入审计台账）"></textarea>
+    <div class="note">写路径：<code>worklist_resolve</code>（唯一写口，逐条落审计）。</div>
+  </div>`;
   tr.after(tr2);
   const box=$("#rwhy"); if(box) box.focus();
   $("#rcancel").onclick=()=>tr2.remove();
