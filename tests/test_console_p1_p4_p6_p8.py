@@ -403,12 +403,10 @@ class TestHtmlWiring:
 
     def test_worklist_action_column_first(self) -> None:
         code = _code_only(HTML)
-        head = re.search(r"const head = `(<tr>.*?)</tr>`", code, re.S)
-        assert head, "找不到待办表头"
-        # 第一列必须是"操作"：含全选 checkbox（wlall）+ 文案「操作」
-        first_th = head.group(1).split("</th>")[0]
-        assert 'id="wlall"' in first_th and "操作" in first_th, (
-            "操作列（含全选）必须在最左 —— 用户报'处置在列表最下方，交互不合理'")
+        # 批 146：表头从 <tr><th> 改成 .lv-headbar 工具条（GitHub 同构），
+        # 但「操作在最左 + 全选」这条业务语义不变：全选与操作列仍是第一列。
+        assert 'const COL_LABELS = ["操作"' in code, "操作列必须在最左"
+        assert 'id="wlall"' in code, "缺少全选"
         assert "data-resolve" in code and "openResolveInline" in code, "缺少行内处置"
 
     def test_p1_flow_renders_edges(self) -> None:
