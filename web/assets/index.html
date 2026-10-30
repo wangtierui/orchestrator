@@ -513,7 +513,7 @@ main{padding:0;max-width:none;margin:0;min-width:0}
 .lv-table tbody tr:hover td{background:var(--hover)}
 .lv-table tbody tr[aria-selected="true"] td{background:var(--primary-l)}
 .lv-table tbody tr:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
-.lv-title{font-weight:600;font-size:14px;color:var(--text);line-height:1.4;
+.lv-title{font-weight:500;font-size:16px;line-height:24px;color:var(--text);line-height:1.4;
   text-decoration:none;margin-right:8px}
 .lv-title:hover{color:var(--accent);text-decoration:underline}
 .lv-title a{color:inherit;text-decoration:none}
@@ -752,7 +752,7 @@ body.lv-compact .lv-primary .lv-meta{display:inline-flex;margin-top:0;flex:1 1 a
 
 /* 统一高度（批 127）：表头 48 / 宽松行 65 / 紧凑行 38 / 控件 32 */
 .lv-headrow th{height:48px;padding:0}
-.lv-table td{height:67px}
+.lv-table td{height:65px}
 body.lv-compact .lv-table td{height:38px}
 .lv-headctl{width:auto;padding:0 8px 0 0 !important}
 .lv-headctl .lv-bar{display:flex;align-items:center;gap:6px;flex-wrap:nowrap;
@@ -793,7 +793,7 @@ select{padding-right:24px}
  * ============================================================ */
 .lv-headrow th{height:48px;padding:0;background:var(--bg-subtle);
   border-bottom:1px solid var(--border)}
-.lv-headbar{display:flex;align-items:center;gap:8px;height:48px;padding:0 10px;
+.lv-headbar{display:flex;align-items:center;gap:8px;height:48px;padding:8px;background:var(--bg-subtle);
   background:var(--bg-subtle);flex-wrap:nowrap;overflow:hidden}
 .lv-headbar .ftabs{margin:0;border:0;display:flex;gap:2px;flex-shrink:0}
 .lv-headbar .ftab{height:32px;padding:0 10px;border:0;border-radius:6px;background:none;
@@ -1027,7 +1027,7 @@ body.rail-off .rail .sideitem-sub2,body.rail-off .rail .sideitem-sub3{
   padding-left:0;justify-content:center}
 .lv-dense .lv-table td{height:40px;font-size:12.5px;padding:4px 8px}
 .lv-dense .lv-table th{height:40px;font-size:12px}
-.lv-headrow-plain th{height:40px;padding:0 8px;text-align:left;font-size:12px;
+.lv-headrow-plain th{height:48px;padding:0 8px;text-align:left;font-size:12px;
   font-weight:600;color:var(--text-muted);background:var(--bg-subtle);
   border-bottom:1px solid var(--border);white-space:nowrap}
 
@@ -1119,6 +1119,10 @@ th.on .colf .ch{color:var(--accent)}
 .Truncate>.Truncate-text,.Truncate-text{display:block;overflow:hidden;
   text-overflow:ellipsis;white-space:nowrap}
 td .Truncate{max-width:520px}
+
+/* 批 141（P3）：表头统一 48（含旧表格转换来的 .lv-dense），标题行高 24 */
+.lv-dense .lv-table th{height:48px}
+.lv-title{line-height:24px}
 </style>
 </head>
 <body>
