@@ -4651,37 +4651,46 @@ function viewFeedback(d){
     ({low:"轻微",normal:"一般",high:"严重",blocker:"阻塞"})[s] || esc(s)}</option>`).join("");
   const pageOpt = TABS.map(t => `<option value="${esc(t.name)}">${esc(t.name)}</option>`).join("");
   const form = "";   /* 记录入口已移到左侧栏「反馈」（弹窗），页面只留列表 */
-  const rows = items.map(it => `<tr>
-      <td class="mono">${esc((it.created_at || "").replace("T", " ").slice(0, 19))}</td>
-      <td class="mono">${esc(it.fid || "")}</td>
-      <td><span class="Label">${esc(it.kind_label || it.kind || "")}</span></td>
-      <td>${pill(it.severity_label || it.severity || "",
+  const rows = items.map(it => `<div class="lv-row">
+      <span class="lv-cell mono">${esc((it.created_at || "").replace("T", " ").slice(0, 19))}</span>
+      <span class="lv-cell mono">${esc(it.fid || "")}</span>
+      <span class="lv-cell"><span class="Label">${esc(it.kind_label || it.kind || "")}</span></span>
+      <span class="lv-cell">${pill(it.severity_label || it.severity || "",
         it.severity === "high" || it.severity === "blocker" ? "bad"
-        : (it.severity === "low" ? "" : "warn"))}</td>
-      <td>${esc(it.page || "—")}</td>
-      <td class="ttl">${esc(it.title || "")}${
+        : (it.severity === "low" ? "" : "warn"))}</span>
+      <span class="lv-cell">${esc(it.page || "—")}</span>
+      <span class="lv-cell ttl">${esc(it.title || "")}${
         it.detail ? `<details><summary>展开说明</summary><div class="muted"
-          style="white-space:pre-wrap">${esc(it.detail)}</div></details>` : ""}</td>
-      <td>${esc(it.account || "—")}
-        <span class="muted" style="font-size:11px">（${esc(it.account_src_label || "")}）</span></td>
-      <td class="mono">${esc(it.ip || "—")}</td>
-      <td>${pill(it.status_label || it.status || "",
-        it.status === "closed" ? "ok" : (it.status === "ack" ? "warn" : ""))}</td>
-      <td>${STATE.health && STATE.health.local_only
-        ? `<button class="link" data-fbx="${esc(it.fid)}">处置</button>` : '<span class="muted">—</span>'}</td>
-    </tr>`).join("")
-    || '<tr><td colspan="10" class="muted">还没有留言。发现问题就写在上面 —— 每一条都会进入改进清单。</td></tr>';
+          style="white-space:pre-wrap">${esc(it.detail)}</div></details>` : ""}</span>
+      <span class="lv-cell">${esc(it.account || "—")}
+        <span class="muted" style="font-size:11px">（${esc(it.account_src_label || "")}）</span></span>
+      <span class="lv-cell mono">${esc(it.ip || "—")}</span>
+      <span class="lv-cell">${pill(it.status_label || it.status || "",
+        it.status === "closed" ? "ok" : (it.status === "ack" ? "warn" : ""))}</span>
+      <span class="lv-cell">${STATE.health && STATE.health.local_only
+        ? `<button class="link" data-fbx="${esc(it.fid)}">处置</button>` : '<span class="muted">—</span>'}</span>
+    </div>`).join("")
+    || '<div class="lv-row"><span class="lv-cell muted" style="grid-column:1/-1">还没有留言。</span></div>';
   const body = `${form}
-    ${ghStateTabs([
-      {key: "", label: "全部", count: st.total || 0},
-      {key: "open", label: "待处置", count: obj(st.by_status).open},
-      {key: "ack", label: "已受理", count: obj(st.by_status).ack},
-      {key: "closed", label: "已闭环", count: obj(st.by_status).closed},
-    ], String(obj(STATE._fbq).status || ""), "fbstatus")}
-    <div class="scrollx"><table><thead><tr>
-      <th>时间</th><th>编号</th><th>分类</th><th>严重度</th><th>页面</th><th>标题 / 说明</th>
-      <th>记录者</th><th>IP</th><th>状态</th><th>操作</th>
-    </tr></thead><tbody>${rows}</tbody></table></div>`;
+    <div class="lv lv-gtable" data-lg="feedback">
+      <div class="lv-headbar">
+        ${ghStateTabs([
+          {key: "", label: "全部", count: st.total || 0},
+          {key: "open", label: "待处置", count: obj(st.by_status).open},
+          {key: "ack", label: "已受理", count: obj(st.by_status).ack},
+          {key: "closed", label: "已闭环", count: obj(st.by_status).closed},
+        ], String(obj(STATE._fbq).status || ""), "fbstatus")}
+        ${["时间", "编号", "分类", "严重度", "页面", "标题 / 说明", "记录者", "IP",
+           "状态"].map((lab, i) =>
+          `<button class="lv-fbtn btn btn-invisible" data-gcol="${i}"
+            aria-haspopup="dialog" title="按「${esc(lab)}」筛选">${esc(lab)}${
+            ico("chevron-down", 16)}</button>`).join("")}
+        <span class="sp"></span>
+      </div>
+      <div class="lv-scroll"><div class="lv-grid"
+        style="--cols:150px 190px 90px 96px 96px minmax(0,1fr) 150px 120px 90px 80px">
+        ${rows}</div></div>
+    </div>`;
   const cur = String(obj(STATE._fbq).status || "");
   const stItems = [
     {key: "", label: "全部状态", count: st.total || 0},
@@ -4800,6 +4809,12 @@ function openFeedbackModal(){
 
 function bindFeedback(){
   const v = $("#view");
+  $$("[data-gcol]", v).forEach(b => {
+    b.onclick = () => {
+      const root = b.closest(".lv-gtable");
+      if (root) openGridFilter(root, Number(b.dataset.gcol), b);
+    };
+  });
   /* 表头「全部/待处置/已受理/已闭环」开关 */
   $$("[data-fbstatus]", v).forEach(b => {
     b.onclick = () => {
