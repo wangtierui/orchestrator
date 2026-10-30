@@ -3067,6 +3067,58 @@ function bindRailToggle(){
   });
 }
 
+/*: 图谱下方的关系列表（与列表页同构：.lv 容器 + 行；末尾多一列「引用次数」）
+ *
+ * 联动方向：图里点节点 → 列表只剩与该节点相关的行；点列表行 → 图里选中该节点。
+ * 两边共享 `G3D_ST[key].sel`，不新增状态。 */
+function _gEdgeTable(key, edges, nameOf, countOf){
+  const es = arr(edges);
+  if (!es.length) return "";
+  const inDeg = {};
+  es.forEach(e => { const to = e.to != null ? e.to : e.ref; inDeg[to] = (inDeg[to] || 0) + 1; });
+  const rows = es.map((e, i) => {
+    const from = e.from != null ? e.from : e.theme;
+    const to = e.to != null ? e.to : e.ref;
+    return {i, from, to, label: e.label || e.relation || "",
+            count: countOf ? countOf(e) : (inDeg[to] || 1)};
+  });
+  const body = rows.map(r => `<tr class="lv-row" data-grow="${esc(key)}"
+      data-gfrom="${esc(r.from)}" data-gto="${esc(r.to)}">
+      <td><span class="lv-title" style="font-size:14px;font-weight:500">${esc(nameOf(r.from))}</span></td>
+      <td><span class="Label">${esc(r.label || "—")}</span></td>
+      <td>${esc(nameOf(r.to))}</td>
+      <td class="mono">${num(r.count)}</td>
+    </tr>`).join("");
+  return `<div class="lv lv-dense" style="margin-top:var(--s3)" data-gtable="${esc(key)}">
+      <div class="lv-scroll"><table class="lv-table"><thead><tr class="lv-headrow-plain">
+        <th>主体</th><th>关系</th><th>对象</th><th style="text-align:right">引用次数</th>
+      </tr></thead><tbody>${body}</tbody></table></div></div>`;
+}
+
+/*: 按当前选中节点过滤列表（图 → 列表） */
+function syncGraphTable(key){
+  const sel = String(obj(G3D_ST[key]).sel || "");
+  $$(`[data-gtable="${key}"] tbody tr`).forEach(tr => {
+    const hit = !sel || tr.dataset.gfrom === sel || tr.dataset.gto === sel;
+    tr.hidden = !hit;
+  });
+}
+
+/*: 列表行 → 图（点行即选中该节点并重绘） */
+function bindGraphRows(){
+  document.addEventListener("click", (ev) => {
+    const tr = ev.target && ev.target.closest ? ev.target.closest("[data-grow]") : null;
+    if (!tr) return;
+    const key = tr.dataset.grow;
+    const st = G3D_ST[key];
+    if (!st) return;
+    st.sel = st.sel === tr.dataset.gto ? "" : tr.dataset.gto;
+    const svg = document.querySelector(`[data-g3key="${key}"] .g3svg`);
+    if (svg) svg.innerHTML = _g3dInner(key, 1040, 620);
+    syncGraphTable(key);
+  }, true);
+}
+
 function bindG3d(){
   const v = $("#view");
   if(!v) return;
@@ -3109,6 +3161,7 @@ function bindG3d(){
       const id = g.dataset.nid || "";
       const st = G3D_ST[key];
       st.sel = (st.sel === id) ? "" : id;
+      syncGraphTable(key);      /* 图 → 列表联动 */
       const m = G3D_MODEL[key] || {};
       if (typeof m.pick === "function") { m.pick(st.sel); return true; }
       svg.innerHTML = _g3dInner(key, W, H);
@@ -3310,6 +3363,8 @@ function _gBipartite(d){
       ${kpi("关系", num(E.length), "条")}
     </div>
     ${g3dBox("graph.bipartite", {nodes, edges}, 1040, 620)}
+    ${_gEdgeTable("graph.bipartite", E,
+      (id) => ((L.concat(R)).find(x => x.id === id) || {}).name || id)}
     <div class="glegend" style="margin-top:var(--s2)">
       <span><i style="background:var(--primary-l)"></i>公司制度</span>
       <span><i style="background:var(--alt)"></i>监管文件</span>
@@ -3385,6 +3440,8 @@ function _gInternal(d){
       制度文件 ${num(nodes0.length)} 份 / 关系 ${num(edges0.length)} 条
       （当前**全部可定位**，没有"指向库外旧版本"的悬空边）。</div>
     ${g3dBox("graph.internal", {nodes, edges, labelAll: true}, 1040, 620)}
+    ${_gEdgeTable("graph.internal", edges0,
+      (id) => (nodes0.find(x => x.id === id) || {}).name || id)}
     <div class="glegend" style="margin-top:var(--s2)">
       <span><i style="background:var(--primary-l)"></i>公司制度</span>
       <span><i style="background:var(--bad)"></i>废止</span>
@@ -3418,6 +3475,11 @@ function _gTheme(d){
       ${num(ths.length)} 个主题 / ${num(docs.length)} 份被引监管文件 / ${num(es.length)} 条主题边。
       主题只对**入册**文件打标（覆盖率和主题口径见「治理审计」页）。</div>
     ${g3dBox("graph.theme", {nodes, edges, labelAll: true}, 1040, 620)}
+    ${_gEdgeTable("graph.theme", es,
+      (id) => id.startsWith("T:")
+        ? ((ths.find(x => "T:" + x.code === id) || {}).label || id.slice(2))
+        : ((docs.find(x => x.id === id) || {}).name || id),
+      (e) => e.count)}
     <div class="glegend" style="margin-top:var(--s2)">
       <span><i style="background:var(--primary)"></i>主题</span>
       <span><i style="background:var(--alt)"></i>被引监管文件</span>
@@ -4101,6 +4163,8 @@ function eastEr(d){
     </div>
     ${g3dBox("east.er", {nodes, edges, labelAll: true}, 1040, 660,
              "拖拽旋转 · 滚轮缩放 · 点节点聚焦（球面按主题域分簇）")}
+    ${_gEdgeTable("east.er", edges0,
+      (id) => (nodes0.find(x => x.id === id) || {}).name || id)}
     <div class="glegend" style="margin-top:var(--s2)">
       <span><i style="background:var(--primary)"></i>表间关联规则（附件1-5-E）</span>
       <span><i style="background:var(--alt)"></i>数据项「关联数据项」（附件1-3）</span>
@@ -6085,6 +6149,7 @@ function bindLvFilterBar(){
 
 function initNav(){
   lvSetDensity(lvDensity());
+  bindGraphRows();
   bindLvFilterBar();
   bindGlobalDismiss();
   initChrome();
