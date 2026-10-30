@@ -731,7 +731,8 @@ html[data-color-mode="dark"] .Label{background:#21262d;border-color:#3d444d}
 .lv-tools th{padding:0;background:var(--bg);border-bottom:1px solid var(--border)}
 .lv-tools .lv-bar{padding:8px 8px;border:0;background:transparent}
 .lv-headrow th{padding:0;background:var(--bg);border-bottom:1px solid var(--border);
-  font-size:12px;color:var(--text-muted);font-weight:600;text-align:left}
+  font-size:12px;color:var(--text);font-weight:600;text-align:left;
+  vertical-align:middle}
 .lv-headrow .lv-th{padding:6px 8px;gap:2px}
 .lv-headrow .lv-th .sortbtn{padding:0 2px}
 .lv-primary-th{width:auto}
@@ -1072,7 +1073,6 @@ th.on .colf .ch{color:var(--accent)}
 .lv-fbtn .octicon,.colf .ch{color:var(--text-muted)}
 
 /* 批 138（P2）：筛选面板的清除入口 —— 搜索框内右侧 X，不再有底部"清除"行 */
-.fpop{position:relative}
 .fpop .fpop-x{position:absolute;right:8px;top:8px;width:24px;height:24px;border:0;
   background:none;border-radius:6px;color:var(--text-muted);cursor:pointer;
   display:inline-flex;align-items:center;justify-content:center}
@@ -1147,6 +1147,29 @@ td .Truncate{max-width:520px}
 body.rail-off .rail{transition:width .15s cubic-bezier(.65,0,.35,1),
              flex-basis .15s cubic-bezier(.65,0,.35,1)}
 @media (prefers-reduced-motion: reduce){ .rail{transition:none} }
+
+/* 批 144 */
+/* ③ 筛选框：去掉外层"框线"，图标在输入区内 */
+.lv-fbar{border-bottom:1px solid var(--border)}
+.lv-fbox{border:0;box-shadow:inset 0 0 0 1px var(--border);border-radius:6px;
+  padding:0 8px;gap:4px}
+.lv-fbox:focus-within{box-shadow:inset 0 0 0 2px #0969da}
+.lv-fico{display:inline-flex;color:var(--text-muted);flex:none}
+/* ④⑥ 表头文字与对齐 */
+.lv-headbar .lv-fbtn,.lv-headbar .lv-sortbtn{color:var(--text)}
+.lv-headbar{align-items:center}
+/* ⑤ 排序按钮：图标与文字间距 */
+.lv-sortbtn .octicon{color:var(--text-muted)}
+.lv-sortbtn{display:inline-flex;align-items:center;gap:4px}
+/* ⑧ 分页：无外框、无边框、hover 浅灰底 */
+.paginate-container{border:0;text-align:center}
+.pagination a,.pagination span,.pagination em{border-color:transparent}
+.paginate-container .pagination a:hover,.paginate-container .pagination a:focus{background:var(--bg-subtle);border-color:transparent}
+/* ⑪ 焦点环：GitHub 是 inset 2px #0969da（实测 outline:2px transparent; shadow inset） */
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,
+textarea:focus-visible,[tabindex]:focus-visible{
+  outline:2px solid transparent;outline-offset:-2px;
+  box-shadow:0 0 0 2px #0969da inset}
 </style>
 </head>
 <body>
@@ -2278,22 +2301,38 @@ function enhanceLegacyTables(){
       if (tr.querySelector("td[colspan]")) tr.classList.add("lv-empty-row");
     });
 
-    /* 3) 表头单元格：替换为按钮（可筛选列）+ 纯文本（操作列） */
+    /* 3) 表头 → **一行工具条**（GitHub 的列表头没有列名，只有可操作项）：
+     *    左：状态开关（若页面有）+ 各列的字段筛选按钮；右：留白。
+     *    列名因此不再出现在表头里 —— 与政策法规/公司制度同构。 */
+    const bar = document.createElement("div");
+    bar.className = "lv-bar lv-headbar";
+    /* 把页面上的状态开关（待办：待处置/已处置；留言板：四态）搬进来 */
+    let host = table;
+    for (let k = 0; k < 3 && host.parentElement; k++) host = host.parentElement;
+    const stateEl = host.querySelector(".ghstate");
+    if (stateEl) bar.appendChild(stateEl);
     ths.forEach((th, i) => {
       if (noFilterIdx.has(i)) return;
       const btn = document.createElement("button");
       btn.type = "button";
-      btn.className = "colf";
+      btn.className = "lv-fbtn btn btn-invisible";
+      btn.setAttribute("aria-haspopup", "dialog");
+      btn.setAttribute("aria-expanded", "false");
       btn.setAttribute("aria-label", `按「${labels[i]}」筛选`);
       btn.title = `按「${labels[i]}」筛选（当前页）`;
-      btn.innerHTML = `${labels[i]}<span class="ch" aria-hidden="true">${ico("chevron-down", 14)}</span>`;
-      th.textContent = "";
-      th.appendChild(btn);
+      btn.innerHTML = `${labels[i]}<span class="ch" aria-hidden="true">${ico("chevron-down", 16)}</span>`;
       btn.addEventListener("click", (ev) => {
         ev.stopPropagation();
         openTableFilter(table, i, btn);
       });
+      bar.appendChild(btn);
     });
+    bar.insertAdjacentHTML("beforeend", '<span class="sp" aria-hidden="true"></span>');
+    const holder = document.createElement("th");
+    holder.colSpan = ths.length;
+    holder.appendChild(bar);
+    headRow.textContent = "";
+    headRow.appendChild(holder);
 
     /* 4) 容器与表头类名 */
     table.classList.add("lv-table");
@@ -4842,6 +4881,7 @@ function lvFilterBar(list, st, act){
         aria-label="移除该条件" title="移除">${ico("x", 12)}</button></span>`).join("");
   return `<div class="lv-fbar">
       <div class="lv-fbox" role="group" aria-label="筛选条件">
+        <span class="lv-fico" aria-hidden="true">${ico("search", 16)}</span>
         ${toks}
         <input id="lvfq" class="lv-fq" autocomplete="off"
           placeholder="${act.length ? "继续输入：主题:T1 文号:…" : "搜索或筛选：主题:T1、文号:金非银检函…（回车应用）"}"
@@ -4894,8 +4934,9 @@ function lvRender(list, d, st, f) {
       ${fbtns}
       <span class="sp"></span>
       <button class="lv-fbtn lv-sortbtn" data-lvsort="${esc(st.sort || primaryFd.sort || "title")}"
-        title="切换升降序">${esc((cfg.fields.find(x => (x.sort || x.k) === st.sort) || primaryFd).label
-          || "名称")}${ico(arrow, 16)}</button>
+        title="切换升降序">${ico(st.desc ? "sort-desc" : "sort-asc", 16)}${
+        esc((cfg.fields.find(x => (x.sort || x.k) === st.sort) || primaryFd).label || "名称")}${
+        ico(arrow, 16)}</button>
       <span class="density" role="group" aria-label="显示密度">
         <button data-lvdensity="wide" title="宽松" aria-label="宽松"
           aria-pressed="${lvDensity() === "wide"}"
