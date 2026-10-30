@@ -2127,15 +2127,25 @@ function viewRelease(d){
    * 单页 100 条 + 明说还剩多少，让"左侧按日期"成为缩小范围的主入口。 */
   const PER = 100;
   const commits = commitsAll.slice(0, PER);
-  const rows=commits.map(c=>`<tr data-sha="${esc(c.sha)}" style="cursor:pointer">
-    <td class="muted" style="white-space:nowrap">${esc(c.date)}</td>
-    <td class="mono">${esc(c.sha)}</td><td>${esc(c.subject)}</td>
-    <td><button class="link" data-sha="${esc(c.sha)}">变更</button></td></tr>`).join("");
+  const rows=commits.map(c=>`<div class="lv-row" data-sha="${esc(c.sha)}" style="cursor:pointer">
+    <span class="lv-cell muted" style="white-space:nowrap">${esc(c.date)}</span>
+    <span class="lv-cell mono">${esc(c.sha)}</span>
+    <span class="lv-cell">${esc(c.subject)}</span>
+    <span class="lv-cell"><button class="link" data-sha="${esc(c.sha)}">变更</button></span></div>`).join("");
   const stream = `<div class="rel-split"><div class="grid">
     ${card("",`git log ${day ? day + " · " : "全量 "}${commits.length} 条${
       d.commit_total ? "（total " + d.commit_total + "）" : ""}`,
-      commits?`<div class="tblwrap"><table><thead><tr><th style="width:96px">日期</th>
-        <th style="width:92px">sha</th><th>主题</th><th style="width:64px"></th></tr></thead><tbody>${rows}</tbody></table></div>
+      commits?`<div class="lv lv-gtable" data-lg="release">
+        <div class="lv-headbar">
+          ${["日期", "sha", "主题"].map((lab, i) =>
+            `<button class="lv-fbtn btn btn-invisible" data-gcol="${i}"
+              aria-haspopup="dialog" title="按「${esc(lab)}」筛选">${esc(lab)}${
+              ico("chevron-down", 16)}</button>`).join("")}
+          <span class="sp"></span>
+        </div>
+        <div class="lv-scroll"><div class="lv-grid"
+          style="--cols:96px 92px minmax(0,1fr) 64px">${rows}</div></div>
+      </div>
         <div class="note">点「变更」看该提交的**完整**改动（文件清单 + 完整提交说明）。${
           commitsAll.length > PER
             ? ` 共 ${commitsAll.length} 条，此处显示前 ${PER} 条；用左侧日期可缩小范围。`
@@ -2847,7 +2857,7 @@ function bindSearch(){
 }
 
 function bindRelease(){
-  $$("tr[data-sha]").forEach(tr=>{
+  $$(".lv-row[data-sha]").forEach(tr=>{
     tr.onclick=(e)=>{
       // 点行或点「变更」都展开（按钮的默认行为不额外触发）
       openCommit(tr.dataset.sha);
@@ -3264,23 +3274,22 @@ function _gEdgeTable(key, edges, nameOf, countOf){
     return {i, from, to, label: e.label || e.relation || "",
             count: countOf ? countOf(e) : (inDeg[to] || 1)};
   });
-  const body = rows.map(r => `<tr class="lv-row" data-grow="${esc(key)}"
+  const body = rows.map(r => `<div class="lv-row" data-grow="${esc(key)}"
       data-gfrom="${esc(r.from)}" data-gto="${esc(r.to)}">
-      <td><span class="lv-title" style="font-size:14px;font-weight:500">${esc(nameOf(r.from))}</span></td>
-      <td><span class="Label">${esc(r.label || "—")}</span></td>
-      <td>${esc(nameOf(r.to))}</td>
-      <td class="mono">${num(r.count)}</td>
-    </tr>`).join("");
-  return `<div class="lv lv-dense" style="margin-top:var(--s3)" data-gtable="${esc(key)}">
-      <div class="lv-scroll"><table class="lv-table"><thead><tr class="lv-headrow-plain">
-        <th>主体</th><th>关系</th><th>对象</th><th style="text-align:right">引用次数</th>
-      </tr></thead><tbody>${body}</tbody></table></div></div>`;
+      <span class="lv-cell"><span class="lv-title" style="font-size:14px;font-weight:500">${esc(nameOf(r.from))}</span></span>
+      <span class="lv-cell"><span class="Label">${esc(r.label || "—")}</span></span>
+      <span class="lv-cell">${esc(nameOf(r.to))}</span>
+      <span class="lv-cell mono" style="text-align:right">${num(r.count)}</span>
+    </div>`).join("");
+  return `<div class="lv lv-gtable" style="margin-top:var(--s3)" data-gtable="${esc(key)}">
+      <div class="lv-scroll"><div class="lv-grid"
+        style="--cols:minmax(0,1.2fr) 90px minmax(0,1.2fr) 96px">${body}</div></div></div>`;
 }
 
 /*: 按当前选中节点过滤列表（图 → 列表） */
 function syncGraphTable(key){
   const sel = String(obj(G3D_ST[key]).sel || "");
-  $$(`[data-gtable="${key}"] tbody tr`).forEach(tr => {
+  $$(`[data-gtable="${key}"] .lv-row`).forEach(tr => {
     const hit = !sel || tr.dataset.gfrom === sel || tr.dataset.gto === sel;
     tr.hidden = !hit;
   });
@@ -4155,21 +4164,21 @@ function eastTables(d){
     ((x.item_id || "") + " " + (x.item_name || "") + " " + (x.item_code || "") + " " +
      (x.element_code || "") + " " + (x.element_name || ""))
       .toLowerCase().includes(iq));
-  const rows = shown.map(it => `<tr class="lv-row">
-      <td class="mono">${esc(it.table_code || (cur && cur.table_code) || "—")}</td>
-      <td>${esc(it.table_name || (cur && cur.table_name) || "—")}</td>
-      <td class="mono">${esc(it.item_code || it.item_id || "")}</td>
-      <td class="ttl">${esc(it.item_name || "")}</td>
-      <td class="muted">${esc(it.item_desc || "—")}</td>
-      <td class="mono">${esc(it.element_code || "—")}</td>
-      <td>${esc(it.element_name || "—")}</td>
-      <td class="muted">${esc(it.element_desc || "—")}</td>
-      <td>${eastRangeCell(it)}</td>
-      <td class="mono" title="${esc(eastFmtDesc(it.data_format))}">${esc(it.data_format || "—")}</td>
-      <td>${it.is_pk === "Y" ? pill("主键", "ok")
-            : (it.nullable === "Y" ? '<span class="muted">可空</span>' : pill("必填", "warn"))}</td>
-    </tr>`).join("") || `<tr><td colspan="11" class="muted" style="padding:16px">${
-      cur ? (payload.items ? "无匹配数据项" : "加载中…") : "请在左侧选择数据表"}</td></tr>`;
+  const rows = shown.map(it => `<div class="lv-row">
+      <span class="lv-cell mono">${esc(it.table_code || (cur && cur.table_code) || "—")}</span>
+      <span class="lv-cell">${esc(it.table_name || (cur && cur.table_name) || "—")}</span>
+      <span class="lv-cell mono">${esc(it.item_code || it.item_id || "")}</span>
+      <span class="lv-cell ttl">${esc(it.item_name || "")}</span>
+      <span class="lv-cell muted">${esc(it.item_desc || "—")}</span>
+      <span class="lv-cell mono">${esc(it.element_code || "—")}</span>
+      <span class="lv-cell">${esc(it.element_name || "—")}</span>
+      <span class="lv-cell muted">${esc(it.element_desc || "—")}</span>
+      <span class="lv-cell">${eastRangeCell(it)}</span>
+      <span class="lv-cell mono" title="${esc(eastFmtDesc(it.data_format))}">${esc(it.data_format || "—")}</span>
+      <span class="lv-cell">${it.is_pk === "Y" ? pill("主键", "ok")
+            : (it.nullable === "Y" ? '<span class="muted">可空</span>' : pill("必填", "warn"))}</span>
+    </div>`).join("") || `<div class="lv-row"><span class="lv-cell muted" style="grid-column:1/-1">${
+      cur ? (payload.items ? "无匹配数据项" : "加载中…") : "请在左侧选择数据表"}</span></div>`;
   const head = cur ? `<div class="toolbar" style="margin-bottom:6px">
       <span class="Label">${esc(cur.domain || "")}</span>
       <b class="mono">${esc(cur.table_code || "")}</b>
@@ -4184,12 +4193,10 @@ function eastTables(d){
       表 ${num(st.tables)} 张 / 数据项 ${num(st.items)} 个（主键 ${num(st.pk_items)}）。
       主题域与数据表在左侧选择；数据元四列取自「数据元说明」，取值范围可点开代码表。</div>
     ${head}
-    <div class="lv lv-dense"><div class="lv-scroll"><table class="lv-table">
-      <thead><tr class="lv-headrow-plain">
-        <th>表名</th><th>表中文名</th><th>数据项代码</th><th>数据项名称</th>
-        <th>数据项说明</th><th>数据元编码</th><th>数据元名称</th><th>数据元说明</th>
-        <th>取值范围</th><th>格式</th><th>约束</th>
-      </tr></thead><tbody>${rows}</tbody></table></div></div>`;
+    <div class="lv lv-gtable" data-lg="east-items">
+      <div class="lv-scroll"><div class="lv-grid"
+        style="--cols:110px minmax(140px,0.8fr) 120px minmax(140px,0.8fr) minmax(160px,1.2fr) 120px minmax(140px,0.8fr) minmax(160px,1.2fr) 160px 90px 90px">
+        ${rows}</div></div></div>`;
 }
 
 /*: 取值范围单元格：有代码表引用时**可点**（跳该表），否则原文展示 */
@@ -4258,15 +4265,16 @@ function eastCodes(d){
       <span style="flex:1"></span>
       <input id="ecq" placeholder="在本表内搜代码/名称…" value="${esc(STATE.east_cq2 || "")}"
         style="width:200px;font-size:12px;padding:4px 8px"></div>` : "";
-  const table = cur ? `<div class="lv lv-dense"><div class="lv-scroll"><table class="lv-table">
-      <thead><tr class="lv-headrow-plain"><th style="min-width:110px">代码</th><th>名称</th><th>说明</th></tr></thead>
-      <tbody>${viewShown.slice(0, 500).map(r => `<tr class="lv-row">
-        <td class="mono">${esc(r.code || "")}</td>
-        <td style="padding-left:${(Number(r.level) - 1) * 16 + 10}px">${
-          Number(r.level) > 1 ? '<span class="muted">└ </span>' : ""}${esc(r.name || "")}</td>
-        <td class="muted">${esc(r.desc || "")}</td></tr>`).join("")
-        || `<tr><td colspan="3" class="muted" style="padding:16px">${payload.view ? "无匹配代码" : "加载中…"}</td></tr>`}
-      </tbody></table></div></div>
+  const table = cur ? `<div class="lv lv-gtable" data-lg="east-codes">
+      <div class="lv-scroll"><div class="lv-grid" style="--cols:120px minmax(0,1fr) minmax(0,1.4fr)">
+        ${viewShown.slice(0, 500).map(r => `<div class="lv-row">
+        <span class="lv-cell mono">${esc(r.code || "")}</span>
+        <span class="lv-cell" style="padding-left:${(Number(r.level) - 1) * 16 + 10}px">${
+          Number(r.level) > 1 ? '<span class="muted">└ </span>' : ""}${esc(r.name || "")}</span>
+        <span class="lv-cell muted">${esc(r.desc || "")}</span></div>`).join("")
+        || `<div class="lv-row"><span class="lv-cell muted" style="grid-column:1/-1">${
+          payload.view ? "无匹配代码" : "加载中…"}</span></div>`}
+      </div></div></div>
       ${viewShown.length > 500 ? `<div class="muted">仅显示前 500 行（共 ${num(viewShown.length)} 行）</div>` : ""}
       ${cols.length ? `<details style="margin-top:var(--s2)"><summary class="muted">
         原始列（${cols.length} 列，保真用；「返回目录」导航列已在抽取层剔除）</summary>
@@ -4294,14 +4302,15 @@ function eastRules(d){
   const shown = items.filter(r => !q ||
     ((r.no || "") + " " + (r.table || "") + " " + (r.item || "") + " " + (r.code || "") +
      " " + (r.rule || "")).toLowerCase().includes(q));
-  const rows = shown.slice(0, 500).map(r => `<tr class="lv-row">
-      <td class="mono">${esc(r.no || "")}</td>
-      <td>${esc(sel ? (obj(idx[sel]).label || sel) : "—")}</td>
-      <td>${esc(r.table || "")}</td>
-      <td class="ttl">${esc(r.item || "")}</td>
-      <td class="mono">${esc(r.code || "")}</td>
-      <td class="muted">${esc(r.rule || "")}</td></tr>`).join("")
-    || `<tr><td colspan="6" class="muted" style="padding:16px">${payload.items ? "无匹配规则" : "加载中…"}</td></tr>`;
+  const rows = shown.slice(0, 500).map(r => `<div class="lv-row">
+      <span class="lv-cell mono">${esc(r.no || "")}</span>
+      <span class="lv-cell">${esc(sel ? (obj(idx[sel]).label || sel) : "—")}</span>
+      <span class="lv-cell">${esc(r.table || "")}</span>
+      <span class="lv-cell ttl">${esc(r.item || "")}</span>
+      <span class="lv-cell mono">${esc(r.code || "")}</span>
+      <span class="lv-cell muted">${esc(r.rule || "")}</span></div>`).join("")
+    || `<div class="lv-row"><span class="lv-cell muted" style="grid-column:1/-1">${
+      payload.items ? "无匹配规则" : "加载中…"}</span></div>`;
   return `<div class="toolbar" style="margin-bottom:var(--s2)">
       <b>${esc(sel ? (obj(idx[sel]).label || sel) : "全部类型")}</b>
       <span class="muted">${num(shown.length)} 条</span>
@@ -4312,10 +4321,10 @@ function eastRules(d){
       共 ${num(obj(d.stats).rules)} 条：A 条件必填 / B 表内值合理性 / C 码表 / D 表内逻辑 / E 表间关联。
       规则原文来自附件1-5，不改写（口径以监管原文为准）；类型在左侧选择。${
         shown.length > 500 ? "仅显示前 500 条，可用搜索缩小范围。" : ""}</div>
-    <div class="lv lv-dense"><div class="lv-scroll"><table class="lv-table">
-      <thead><tr class="lv-headrow-plain">
-        <th>序号</th><th>规则类型</th><th>表名</th><th>数据项</th><th>代码</th><th>规则</th>
-      </tr></thead><tbody>${rows}</tbody></table></div></div>`;
+    <div class="lv lv-gtable" data-lg="east-rules">
+      <div class="lv-scroll"><div class="lv-grid"
+        style="--cols:70px 120px 120px minmax(140px,0.8fr) 100px minmax(200px,1.4fr)">
+        ${rows}</div></div></div>`;
 }
 
 /* ---------------- E-R 图（3D） ---------------- */

@@ -137,8 +137,10 @@ class TestFrontendContract:
     def test_table_has_element_columns_and_link(self) -> None:
         h = _html()
         body = self._fn(h, "eastTables")
-        for col in ("数据项说明", "数据元编码", "数据元名称", "数据元说明", "取值范围"):
-            assert col in body, col
+        # 批 149：表头列名已收进工具条（GitHub 风格），改为校验**单元格字段**
+        for key in ("item_desc", "element_code", "element_name", "element_desc"):
+            assert key in body, key
+        assert body.count("lv-cell") >= 11, "数据结构应为 11 列"
         assert "eastRangeCell" in body
         cell = self._fn(h, "eastRangeCell")
         assert "data-ecoderef" in cell, "取值范围没有做跳转入口"
