@@ -1020,7 +1020,7 @@ th.on .thf{background:rgba(9,105,218,.12);color:var(--accent)}
 .rail-foot button,.rail-fb{height:32px;min-height:32px;line-height:32px}
 .repo-tabs{padding-top:0}
 .tab{margin-top:8px}   /* 与 GitHub 一致：tab 底边距容器底 8px，下划线在 tab 底边 */
-.tab.on::after{bottom:0;height:2px}   /* 贴在 tab 底边 */
+/* 批 142：橙线改由容器级 #tabsInk 绘制（贴在容器底部，与 1px 底线重叠） */
 .rail .sideitem-sub2{padding-left:28px;font-size:13px}
 .rail .sideitem-sub3{padding-left:44px;font-size:12.5px}
 body.rail-off .rail .sideitem-sub2,body.rail-off .rail .sideitem-sub3{
@@ -1123,6 +1123,30 @@ td .Truncate{max-width:520px}
 /* 批 141（P3）：表头统一 48（含旧表格转换来的 .lv-dense），标题行高 24 */
 .lv-dense .lv-table th{height:48px}
 .lv-title{line-height:24px}
+
+/* 批 142（P4）：分页按 GitHub 实测 32×32、圆角 6、整条居中 */
+.paginate-container{text-align:center;margin:12px 0 4px}
+.pagination{display:inline-flex;align-items:center;gap:2px}
+.pagination a,.pagination span,.pagination em{height:32px;min-width:32px;padding:0 8px;
+  display:inline-flex;align-items:center;justify-content:center;border-radius:6px;
+  border:1px solid transparent;font-size:14px;text-decoration:none}
+.pagination .previous_page,.pagination .next_page{min-width:auto;padding:0 10px}
+.lv-foot{justify-content:center !important}
+
+/* 批 142：页签墨线（容器底部 2px，压在 1px 底线上） */
+.repo-tabs{position:relative}
+.tabs-ink{position:absolute;bottom:0;height:2px;background:#fd8c73;border-radius:2px;
+  display:none;pointer-events:none;
+  transition:left .08s cubic-bezier(.65,0,.35,1),width .08s cubic-bezier(.65,0,.35,1)}
+.tab.on::after{display:none}
+
+/* 批 142（P4）：侧栏内距按实测 8；折叠过渡 150ms（GitHub 的收起动画节奏） */
+.rail{padding:8px 8px 8px 12px;
+  transition:width .15s cubic-bezier(.65,0,.35,1),
+             flex-basis .15s cubic-bezier(.65,0,.35,1)}
+body.rail-off .rail{transition:width .15s cubic-bezier(.65,0,.35,1),
+             flex-basis .15s cubic-bezier(.65,0,.35,1)}
+@media (prefers-reduced-motion: reduce){ .rail{transition:none} }
 </style>
 </head>
 <body>
@@ -1157,6 +1181,7 @@ td .Truncate{max-width:520px}
 </header>
 <nav class="repo-tabs" id="repoTabs" aria-label="模块导航">
   <div class="tabs-inner" id="tabsInner"></div>
+  <span class="tabs-ink" id="tabsInk" aria-hidden="true"></span>
   <button class="tabs-more" id="tabsMore" hidden aria-haspopup="menu"
     aria-expanded="false"><span>More</span><span id="moreIco"></span></button>
 </nav>
@@ -2513,7 +2538,8 @@ async function render(){
     v.innerHTML=card("渲染异常","",`<div class="pill bad">⚠ 前端异常</div>
       <div class="note">${esc(String(e&&e.stack?e.stack:String(e)))}</div>`,"web 前端");
   }finally{
-    paintRail();           // 所有分支（含登录/异常）都走这里，侧栏才不会残留上一页
+    paintRail();           // 所有分支（含登录/异常）都走这里
+    syncTabInk();          // 页签墨线跟随当前页签，侧栏才不会残留上一页
     enhanceLegacyTables();  // 旧式表格：表头补"筛选下拉"（与列表页同一套交互）
     applyPrimerControls();  // 输入类控件统一 Primer .form-control
     const cur = TABS.find(x => x.id === CUR);
@@ -2703,17 +2729,39 @@ function fSelect(key, st, items, ph){
     }));
   return `<select data-f="${key}" data-mode="change">${opts.join("")}</select>`;
 }
+/*: 分页器（Primer `.pagination`）：居中、当前页蓝底 32×32、页码窗口 + … 折叠。
+ * GitHub 实测：条目 32×32、圆角 6、当前页 `#0969da` 白字、disabled 灰字、整条居中。 */
 function pager(d, id){
-  const total = Number(d.total) || 0, pages = Number(d.pages) || 1,
-        page = Number(d.page) || 1;
-  return `<div class="pager" id="${id}">
-    <span>共 <b>${num(total)}</b> 条 · 第 ${page} / ${pages} 页</span>
-    <button data-pg="1" ${page <= 1 ? "disabled" : ""}>« 首页</button>
-    <button data-pg="${page - 1}" ${page <= 1 ? "disabled" : ""}>${ico("chevron-left", 16)} 上一页</button>
-    <button data-pg="${page + 1}" ${page >= pages ? "disabled" : ""}>下一页 ${ico("chevron-right", 16)}</button>
-    <button data-pg="${pages}" ${page >= pages ? "disabled" : ""}>末页 »</button>
+  const total = Number(d.total) || 0;
+  const pages = Math.max(1, Number(d.pages) || 1);
+  const page = Math.min(pages, Math.max(1, Number(d.page) || 1));
+  const nums = [];
+  const push = (n) => { if (n >= 1 && n <= pages && nums.indexOf(n) < 0) nums.push(n); };
+  push(1);
+  for (let n = page - 2; n <= page + 2; n++) push(n);
+  push(pages);
+  nums.sort((a, b) => a - b);
+  let last = 0;
+  const items = nums.map(n => {
+    const gap = (last && n - last > 1) ? '<span class="gap" aria-hidden="true">…</span>' : "";
+    last = n;
+    return gap + (n === page
+      ? `<span class="current" aria-current="page">${n}</span>`
+      : `<a data-pg="${n}" href="#" role="button">${n}</a>`);
+  }).join("");
+  const prevDis = page <= 1, nextDis = page >= pages;
+  return `<div class="paginate-container" id="${id}">
+    <div class="pagination" role="navigation" aria-label="分页">
+      <a class="previous_page" data-pg="${page - 1}" href="#"${
+        prevDis ? ' aria-disabled="true" tabindex="-1"' : ""}>Previous</a>
+      ${items}
+      <a class="next_page" data-pg="${page + 1}" href="#"${
+        nextDis ? ' aria-disabled="true" tabindex="-1"' : ""}>Next</a>
+    </div>
+    <div class="muted" style="font-size:12px;margin-top:4px">共 ${num(total)} 条</div>
   </div>`;
 }
+
 /*: 唯一标识号单元格（政策法规）。
  *
  * 2026-10-26：底座现在**每条记录都有 RFN**（入册的用归属表编号，未入册的由发布件
@@ -5574,7 +5622,9 @@ function lvBind(list, d, st, f) {
   const pg = $("#" + list + "Pager", v);
   if (pg) {
     $$("[data-pg]", pg).forEach(b => {
-      b.onclick = () => {
+      b.onclick = (ev) => {
+        ev.preventDefault();
+        if (b.getAttribute("aria-disabled") === "true") return;
         const n = Number(b.dataset.pg) || 1;
         if (n === Number(st.page)) return;
         st.page = n; render();
@@ -5783,6 +5833,19 @@ function buildTabs(){
   window.addEventListener("resize", () => requestAnimationFrame(foldTabs));
   if (window.ResizeObserver) new ResizeObserver(() => requestAnimationFrame(foldTabs))
     .observe($("#repoTabs"));
+}
+
+/*: 同步页签墨线（容器级）：实测 GitHub 的橙线画在**容器底边**（2px，压在 1px 线上）。
+ * 用 getBoundingClientRect 相对 nav 计算，折叠/换页/缩放都走同一处。 */
+function syncTabInk(){
+  const nav = $("#repoTabs"), ink = $("#tabsInk");
+  if (!nav || !ink) return;
+  const on = $(".tab.on", nav);
+  if (!on || on.hidden) { ink.style.display = "none"; return; }
+  const nb = nav.getBoundingClientRect(), tb = on.getBoundingClientRect();
+  ink.style.display = "block";
+  ink.style.left = Math.max(0, tb.left - nb.left + 8) + "px";
+  ink.style.width = Math.max(0, tb.width - 16) + "px";
 }
 
 function foldTabs(){
