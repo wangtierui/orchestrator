@@ -681,7 +681,7 @@ body.lv-selecting .lv-table tbody .lv-ck,
 .fpop .opt[aria-checked="true"]{background:var(--bg-subtle);font-weight:600}
 
 .fpop .opt .dot{width:8px;height:8px;border-radius:50%;flex:none;background:var(--fg4)}
-.fpop .opt .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fpop .opt .t{flex:1;min-width:0;display:flex;align-items:center;gap:6px}
 .fpop .opt .s{font-size:11px;color:var(--text-muted);font-weight:400}
 .fpop .opt .c{font-size:11px;color:var(--text-muted);font-variant-numeric:tabular-nums}
 .fpop .ck{width:14px;height:14px;flex:none;border:1px solid var(--border);border-radius:3px;
@@ -737,13 +737,12 @@ html[data-color-mode="dark"] .Label{background:#21262d;border-color:#3d444d}
 .lv-primary-th{width:auto}
 .lv-primary{padding-left:8px}
 /* 宽松（默认）：两行 */
-.lv-primary .lv-title{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;
-  white-space:nowrap}
+.lv-primary .lv-title{display:block;max-width:100%}
 .lv-primary .lv-meta{display:flex;margin-top:2px}
 /* 紧凑：一行（标题与元数据并排，超长省略） */
 #view.lv-compact .lv-primary{display:flex;align-items:center;gap:8px;min-width:0}
-#view.lv-compact .lv-primary .lv-title{display:inline;white-space:nowrap;overflow:hidden;
-  text-overflow:ellipsis;flex:0 1 auto;margin-right:0}
+#view.lv-compact .lv-primary .lv-title{display:inline-flex;min-width:0;
+  flex:0 1 auto;margin-right:0}
 #view.lv-compact .lv-primary .lv-meta{display:inline-flex;margin-top:0;flex:1 1 auto;
   min-width:0;overflow:hidden;white-space:nowrap}
 /* 分页脚：只保留与表格之间的那一条线 */
@@ -1112,12 +1111,10 @@ th.on .colf .ch{color:var(--accent)}
 .lv-fbar .lv-fbox .lv-fq{height:30px;border:0;box-shadow:none}
 .fpop .q{height:30px}
 
-/* 批 140c：截断统一用 Primer 的 .Truncate 语义（裸用 + 嵌套 .Truncate-text 都支持） */
-.Truncate{display:block;max-width:520px;overflow:hidden;text-overflow:ellipsis;
-  white-space:nowrap}
-.Truncate>.Truncate-text,.Truncate-text{display:block;overflow:hidden;
+/* 批 157：截断交给 Primer 的 .Truncate 语义（不自写覆盖） */
+.Truncate{display:inline-flex;max-width:100%;min-width:0;overflow:hidden}
+.Truncate>.Truncate-text,.Truncate-text{display:block;min-width:0;overflow:hidden;
   text-overflow:ellipsis;white-space:nowrap}
-td .Truncate{max-width:520px}
 
 /* 批 141（P3）：表头统一 48（含旧表格转换来的 .lv-dense），标题行高 24 */
 .lv-dense .lv-table th{height:48px}
@@ -1239,6 +1236,10 @@ textarea:focus-visible,[tabindex]:focus-visible{
 
 /* 批 156c：紧凑行由 tr 控制高度，td 归零（此前 td{height:38}+padding 4 ⇒ 47） */
 #view.lv-compact .lv-table tr.lv-row>td{height:auto;padding:0;line-height:18px}
+
+/* 批 157：表头控件禁用态（保存视图无变更 / 空列表时的密度切换） */
+.lv-headbar .btn:disabled,.lv-headbar .lv-fbtn:disabled,
+.density button:disabled{opacity:.45;cursor:not-allowed;pointer-events:none}
 </style>
 </head>
 <body>
@@ -2003,7 +2004,7 @@ function viewWorklist(d, kinds){
       <span class="lv-cell">${f.aggregate? esc(f.title) : cellVal(f.title, f.title_src)}</span>
       <span class="lv-cell mono">${cap.docno ? cellVal(f.document_number, f.document_number_src) : '<span class="muted">不适用</span>'}</span>
       <span class="lv-cell">${cellUrl(f)}</span>
-      <span class="lv-cell muted"><span class="Truncate" title="${esc(detail)}">${esc(detail||"—")}</span></span>
+      <span class="lv-cell muted"><span class="Truncate" title="${esc(detail)}"><span class="Truncate-text">${esc(detail||"—")}</span></span></span>
     </div>`;
   }).join("");
 
@@ -4895,9 +4896,22 @@ function lvSel(list) {
  * 语法与 GitHub 的 qualifier 同构：`主题:T1 文号:金非银检函`，不认识的键按自由文本处理
  * （落到"名称"上）。只改 `st` 里既有的查询参数，不新增接口参数。 */
 const LV_QBAR_KEYS = {
-  "主题": "theme", "来源": "source", "时效": "timeliness",
-  "名称": "q_title", "标题": "q_title", "文号": "q_docno",
-  "标识": "q_rfn", "唯一标识号": "q_rfn",
+  "主题": "theme", "主题域": "theme",
+  "来源": "source",
+  "时效": "timeliness", "状态": "timeliness",
+  "名称": "q_title", "标题": "q_title",
+  "文号": "q_docno", "发文字号": "q_docno",
+  "标识": "q_rfn", "唯一标识号": "q_rfn", "编号": "q_rfn",
+  "排序": "sort",
+};
+/*: `排序:名称` → 实际 sort 键（取值见 LV.fields[].sort） */
+const LV_SORT_ALIAS = {
+  "名称": "title", "标题": "title",
+  "文号": "document_number", "发文字号": "document_number",
+  "标识": "rfn", "唯一标识号": "rfn", "编号": "rfn",
+  "主题": "theme", "主题域": "theme",
+  "时效": "timeliness", "状态": "timeliness",
+  "来源": "source",
 };
 
 function lvFilterBar(list, st, act){
@@ -4939,6 +4953,10 @@ function lvRender(list, d, st, f) {
    * `meta` 字段不再占列 —— 它们作为**内联元数据**跟在标题后面（GitHub 就是这么排的）。 */
   const stField = list === "laws" ? "timeliness_status" : "eff_status";
   const primaryFd = primary || {k: "title", label: "事项", sort: "title"};
+  /* 批 157：只有"确实存在可保存的状态"时才允许保存视图（依赖 primaryFd，故放这里） */
+  const dirty = act.length > 0
+    || String(st.sort || "") !== String(primaryFd.sort || "title")
+    || !!st.desc;
   /* 三列（选择 / 状态 / 事项）—— GitHub 的 issues 行没有"操作列"：
    * 「查看关系」「打开本地文件」都在标题与元数据里，重复呈现会让每行末尾多一列噪声。 */
   /* 表头 = **一行工具条**（复刻 GitHub 列表头）：页签 + 字段按钮 + 排序 + 密度 + 保存视图。
@@ -4965,14 +4983,17 @@ function lvRender(list, d, st, f) {
         ico(arrow, 16)}</button>
       <span class="density" role="group" aria-label="显示密度">
         <button data-lvdensity="wide" title="宽松" aria-label="宽松"
+          ${items.length ? "" : "disabled aria-disabled=\"true\""}
           aria-pressed="${lvDensity() === "wide"}"
           class="${lvDensity() === "wide" ? "on" : ""}">${ico("rows", 16)}</button>
         <button data-lvdensity="compact" title="紧凑" aria-label="紧凑"
+          ${items.length ? "" : "disabled aria-disabled=\"true\""}
           aria-pressed="${lvDensity() === "compact"}"
           class="${lvDensity() === "compact" ? "on" : ""}">${ico("list-unordered", 16)}</button>
       </span>
       <button class="lv-fbtn lv-savebtn" data-lvsavecur="1"
-        aria-label="保存为视图" title="保存为视图">${ico("pin", 16)}</button>
+        ${dirty ? "" : "disabled aria-disabled=\"true\""}
+        aria-label="保存为视图" title="${dirty ? "保存为视图" : "当前没有可保存的条件"}">${ico("pin", 16)}</button>
     </div></th>`;
 
   const rows = items.map(it => {
@@ -4990,8 +5011,8 @@ function lvRender(list, d, st, f) {
     const href = list === "rules" && it.local_path
       ? `/api/local/file?path=${encodeURIComponent(it.local_path)}`
       : (it.url || "");
-    const title = `<a class="lv-title" ${href ? `href="${esc(href)}" target="_blank" rel="noopener"` : ""}
-        title="${esc(it.title || "")}">${esc(it.title || "（无标题）")}</a>`;
+    const title = `<a class="lv-title Truncate" ${href ? `href="${esc(href)}" target="_blank" rel="noopener"` : ""}
+        title="${esc(it.title || "")}"><span class="Truncate-text">${esc(it.title || "（无标题）")}</span></a>`;
     return `<tr class="lv-row" data-lvid="${esc(id)}" tabindex="0" aria-selected="${isSel}">
       <td class="lv-selcell"><input type="checkbox" class="lv-ck" data-lvck="${esc(id)}"
         ${isSel ? "checked" : ""} aria-label="选择：${esc(it.title || id)}"></td>
@@ -5186,7 +5207,8 @@ function openOptionList(opts){
         <span class="ck${on ? " on" : ""}" aria-hidden="true">${on ? ico("check", 12) : ""}</span>
         ${it.dot === false ? "" : `<span class="dot" aria-hidden="true"${
           it.color ? ` style="background:${esc(it.color)}"` : ""}></span>`}
-        <span class="t">${esc(it.label)}${it.sub ? `<span class="s">${esc(it.sub)}</span>` : ""}</span>
+        <span class="t"><span class="Truncate"><span class="Truncate-text">${esc(it.label)}</span></span>${
+          it.sub ? `<span class="s">${esc(it.sub)}</span>` : ""}</span>
         ${it.count != null ? `<span class="c">${num(it.count)}</span>` : ""}
       </button>`;
   };
@@ -6208,10 +6230,20 @@ function bindLvFilterBar(){
       if (k < 0) { free.push(tok); return; }
       const nm = tok.slice(0, k).trim();
       const key = LV_QBAR_KEYS[nm] || LV_QBAR_KEYS[nm.replace(/号$/, "")];
-      if (key) st[key] = tok.slice(k + 1).trim();
+      const val = tok.slice(k + 1).trim();
+      if (key === "sort") st.sort = LV_SORT_ALIAS[val] || val;
+      else if (key) st[key] = val;
       else free.push(tok);
     });
-    if (free.length) st.q_title = free.join(" ");
+    if (free.length) {
+      const rest = [];
+      free.forEach(w => {
+        if (w === "降序" || w === "倒序") st.desc = true;
+        else if (w === "升序" || w === "正序") st.desc = false;
+        else rest.push(w);
+      });
+      if (rest.length) st.q_title = rest.join(" ");
+    }
     st.page = 1;
     render();
   }, true);
