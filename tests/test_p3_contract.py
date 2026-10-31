@@ -109,30 +109,29 @@ class TestGeometryGuards:
     """
 
     def test_label_cannot_overflow_into_bar(self) -> None:
-        src = open(HTML, encoding="utf-8").read()
-        # 条形列表用网格：标签列 / 柱体列 / 数值列（顺序固定，标签不可能压到柱子上）
-        assert "function bars(" in src, "缺少条形列表实现 `bars()`"
-        i = src.find("function bars(")
-        seg = src[i:i + 3000]
-        assert ".brow" in src and "grid-template-columns" in src, (
-            "条形列表未用网格布局（回到绝对定位/坐标计算就会重新出现越界）")
-        assert "ellipsis" in src, "标签未做省略号截断（长标签会挤压柱体）"
-        assert "title=" in seg, "截断后必须用 title 给出完整文本（信息不丢）"
+        # 批 160：条形图改 ECharts（轴标签截断 + tooltip 给全文），标签与柱体由坐标系分隔，
+        # 不存在"标签压到柱子上"。规则仍要守住：截断必须有、完整文本必须可达。
+        charts = open(os.path.join(ROOT, "web", "assets", "charts.js"), encoding="utf-8").read()
+        assert 'type: "bar"' in charts, "缺少条形图实现"
+        assert "overflow: \"truncate\"" in charts, "轴标签未截断（长标签会挤压绘图区）"
+        assert "tooltip" in charts, "截断后未提供完整文本（tooltip）"
 
     def test_dominance_is_explained_not_hidden(self) -> None:
         """极值比 ≥20 时必须**说明**而非美化（禁止对数轴/截断掩盖真实分布）。"""
         src = open(HTML, encoding="utf-8").read()
-        i = src.find("function bars(")
-        seg = src[i:i + 3000]
-        assert "max/minPos>=20" in seg, "未检测分布高度集中"
+        # 规则不变：极值比 ≥20 必须**说明**，且禁止对数轴掩盖分布。
+        assert "function skewNote(" in src, "缺少分布高度集中的说明器"
+        seg = src[src.find("function skewNote("):][:600]
+        assert "minPos" in seg and "20" in seg, "未检测极值比 ≥20"
         assert "真实分布" in seg, "未向读者说明「这是真实分布，不是图坏」"
-        # 明确禁止的失真手段（全文件层面禁止，不限于某个函数）
-        for bad in ("Math.log(", "log10("):
+        assert "skewNote(items)" in src, "分布图未调用说明器"
+        for bad in ("Math.log(", "log10(", 'type: "log"'):
             assert bad not in src, f"使用了 {bad}（对数轴会失真，本仓禁止）"
 
     def test_empty_state_is_explicit(self) -> None:
         src = open(HTML, encoding="utf-8").read()
-        i = src.find("function bars(")
-        seg = src[i:i + 3000]
-        assert "暂无数据" in seg, "空数据时未给明确说明（空画布会被误读成渲染失败）"
+        # 空态必须在**页面侧**给出文字说明（空画布会被误读成渲染失败）
+        body = src[src.find("function viewMetrics("):]
+        body = body[:body.find("\nfunction ")]
+        assert body.count("暂无数据") >= 2, "分布图空态未给说明"
         assert "暂无质量快照" in src, "DAMA 空态未给说明"

@@ -1899,6 +1899,17 @@ function mountCharts(){
   });
 }
 
+/*: 分布高度集中时必须**说明**而不是美化（禁止对数轴掩盖真实分布）。
+ * 旧实现写在 bars() 内；bars() 删除后规则上移到调用侧（批 160）。 */
+function skewNote(items){
+  const vals = (items || []).map(x => Number(x.value) || 0);
+  const pos = vals.filter(v => v > 0);
+  if (!pos.length) return "";
+  const max = Math.max(...vals), minPos = Math.min(...pos);
+  if (minPos <= 0 || max / minPos < 20) return "";
+  return `<div class="note">极值比 ${Math.round(max / minPos)}：这是真实分布，不是图表故障（未使用对数轴/截断）。</div>`;
+}
+
 function viewMetrics(d){
   if(!d.available) return unavail(d);
   const q=obj(d.quality), s=obj(d.slo);
@@ -1938,9 +1949,9 @@ function viewMetrics(d){
     ${card("待办 aging","未处置天数分布", (() => {
       const e = Object.entries(obj(d.worklist_aging));
       if (!e.length) return '<div class="muted">暂无数据</div>';
-      return chartBox("bar", {items: e.map(([k, v]) => ({label: k, value: Number(v) || 0})),
-                              color: "#B26A00", unit: " 条"},
-        Math.max(140, Math.min(320, e.length * 30)));
+      const items = e.map(([k, v]) => ({label: k, value: Number(v) || 0}));
+      return chartBox("bar", {items: items, color: "#B26A00", unit: " 条"},
+        Math.max(140, Math.min(320, e.length * 30))) + skewNote(items);
     })(), d.source, d.fetched_at)}
     ${card("DAMA 六维","质量快照", qHtml, q.source, q.fetched_at)}
     ${card("SLI / SLO","最近快照", (() => {
@@ -1961,9 +1972,9 @@ function viewMetrics(d){
     ${card("时效三态","valid / pending / uncertain", (() => {
       const e = Object.entries(obj(d.timeliness_tri));
       if (!e.length) return '<div class="muted">暂无数据</div>';
-      return chartBox("bar", {items: e.map(([k, v]) => ({label: k, value: Number(v) || 0})),
-                              color: "#12855A", unit: " 条"},
-        Math.max(140, Math.min(280, e.length * 34)));
+      const items = e.map(([k, v]) => ({label: k, value: Number(v) || 0}));
+      return chartBox("bar", {items: items, color: "#12855A", unit: " 条"},
+        Math.max(140, Math.min(280, e.length * 34))) + skewNote(items);
     })(), d.source, d.fetched_at)}
     ${card("主题分布",`${tEntries.length} 个主题 / 合计 ${num(tTotal)}`,
       (tEntries.length
@@ -3349,7 +3360,7 @@ function _gInternal(d){
     <div class="muted" style="margin-bottom:var(--s2)">
       制度文件 ${num(nodes0.length)} 份 / 关系 ${num(edges0.length)} 条
       （当前**全部可定位**，没有"指向库外旧版本"的悬空边）。</div>
-    ${g3dBox("graph.internal", {nodes, edges, labelAll: true}, 1040, 620)}
+    ${g3dBox("graph.internal", {nodes, edges, labelAll: true, hollow: ["ext"]}, 1040, 620)}
     ${_gEdgeTable("graph.internal", edges0,
       (id) => (nodes0.find(x => x.id === id) || {}).name || id)}
     <div class="glegend" style="margin-top:var(--s2)">
@@ -3411,7 +3422,7 @@ function viewGraph(d){
     <span class="muted">${esc(center.docno || "")}</span>
     <span class="muted">出 ${num(c.out)} · 入 ${num(c.in)} ·
       依据 ${num(c.basis)} · 废止 ${num(c.repeal)}</span>
-    ${c.external ? `<span class="Label">其中 ${num(c.external)} 条指向语料外法规（点线）</span>` : ""}
+    ${c.external ? `<span class="Label">其中 ${num(c.external)} 条指向语料外法规（空心节点）</span>` : ""}
     ${c.weak_skipped ? `<span class="Label">已隐藏 ${num(c.weak_skipped)} 条弱线索（未登记 RFN）</span>` : ""}
     ${c.organ_skipped ? `<span class="Label">已忽略 ${num(c.organ_skipped)} 条机关名（不是文件）</span>` : ""}
     ${c.truncated ? '<span class="Label">结果已截断（上限 200 条）</span>' : ""}

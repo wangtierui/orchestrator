@@ -125,12 +125,14 @@ def test_bar_chart_reads_by_label_not_by_position() -> None:
     （JSON 对象键序无语义保证，实测 `worklist_aging` 键序是字典序）。
     """
     src = _src(*HTML)
-    i = src.find("function bars(")
-    assert i > 0, "找不到 bars() 实现"
-    seg = _code_only(src[i:i + 1800])
-    assert "Object.values(data" not in seg, (
-        "bars 仍在按位置取值 ⇒ 标签与数值错位（P3 渲染异常复发）")
-    assert "Object.entries(obj(data))" in seg, "bars 未按 label 取值"
+    # 批 160：bars() 已删除，图表走 charts.js。规则不变——
+    # **数据必须按 label（键）取值**，不能按位置（Object.values）取，否则标签与数值整片错位。
+    assert "function bars(" not in src, "自绘条形图未删除（应统一走 Charts.bar）"
+    body = src[src.find("function viewMetrics("):]
+    body = body[:body.find("\nfunction ")]
+    assert "Object.values(" not in body, "图表数据仍按位置取值 ⇒ 标签与数值错位"
+    assert body.count("Object.entries(obj(") >= 2, "图表数据未按 label 取值"
+    assert 'chartBox("bar"' in body and "items: items" in body
 
 
 # --------------------------------------------------------------------------- #

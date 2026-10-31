@@ -254,8 +254,12 @@ class TestFrontendContract:
     def test_external_visually_distinct(self) -> None:
         """外部节点必须与语料内节点**视觉可分**（点线/空心），且图例可查。"""
         h = _html()
-        assert "语料外（点线）" in h or "语料外法规（点线" in h
-        assert 'stroke-dasharray="2 3"' in h or 'stroke-dasharray="2 2"' in h
+        # 批 160：自绘 SVG（虚线）→ ECharts graph，语料外节点用**空心 + 彩色描边**，
+        # 且图例里能查到该分类（"语料外法规（空心节点）"）。
+        assert "语料外法规（空心节点" in h
+        assert 'hollow: ["ext"]' in h, "外部节点未传 hollow（会与库内节点同色）"
+        charts = open(os.path.join(ROOT, "web", "assets", "charts.js"), encoding="utf-8").read()
+        assert "hollowGroups" in charts and 'color: "#fff"' in charts, "空心样式未实现"
 
     def test_states_files_are_outside_corpus(self) -> None:
         """页面必须明说"不代表库里能打开这份文件"——否则会被当成已收录。"""

@@ -206,6 +206,7 @@
       if (groups.indexOf(g) < 0) groups.push(g);
     });
     var colors = [p.accent, p.purple, p.ok, p.warn, "#8250df", "#bc4c00", "#1b7c83"];
+    var hollow = spec.hollowGroups || [];      // 例：语料外节点（空心 + 虚线圈）
     var maxDeg = 1;
     nodes.forEach(function (n) { maxDeg = Math.max(maxDeg, Number(n.degree) || 1); });
     var sel = String(spec.selected || "");
@@ -214,14 +215,28 @@
       var d = Number(n.degree) || 1;
       var id = String(n.id);
       var showLabel = !!spec.labelAll || d >= (spec.labelMin || 8);
+      var gi = Math.max(0, groups.indexOf(String(n.group == null ? "" : n.group)));
+      var isHollow = hollow.indexOf(String(n.group == null ? "" : n.group)) >= 0;
+      var style;
+
+      if (isHollow) {
+        style = { color: "#fff", borderColor: colors[gi % colors.length], borderWidth: 2 };
+      }
+
+      if (id === sel) {
+        style = style || {};
+        style.borderColor = p.accent;
+        style.borderWidth = 3;
+      }
+
       return {
         name: id,
         labelText: String(n.name || id),
         value: d,
-        category: Math.max(0, groups.indexOf(String(n.group == null ? "" : n.group))),
+        category: gi,
         symbolSize: 7 + 11 * Math.sqrt(d / maxDeg),
         label: { show: showLabel },
-        itemStyle: id === sel ? { borderColor: p.accent, borderWidth: 3 } : undefined,
+        itemStyle: style,
       };
     });
 
@@ -235,8 +250,11 @@
       if (typeof spec.onSelect === "function") spec.onSelect(params.name);
     });
 
+    var catNames = groups.map(function (g) { return g || "默认"; });
     var opt = {
       animationDuration: 500,
+      legend: [{ data: catNames, bottom: 0, itemWidth: 10, itemHeight: 10,
+                 textStyle: { color: p.muted, fontSize: 11 } }],
       tooltip: {
         confine: true,
         backgroundColor: "#fff",

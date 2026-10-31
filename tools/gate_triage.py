@@ -64,6 +64,8 @@ TZ8 = timezone(timedelta(hours=8))
 # --------------------------------------------------------------------------- #
 GATE_CLASS: dict[str, tuple[str, str]] = {
     # ── 产物类（artifact）：产物本身不对 ⇒ 重跑生产者可解──────────────────
+    # 前端运行时冒烟：实测值不符 ⇒ 视图层回退（不属于数据/环境问题）
+    "gates.gate_ui_smoke": ("artifact", "前端交互与度量实测不符（hover/尺寸/行高/禁用态）"),
     "gates.gate_run_steps": ("artifact", "失败步骤的产物未���下游采用（跑完链仍缺产物）"),
     "gates.gate_watermark": ("artifact", "产物水位与声明不一致"),
     "gates.gate_relations": ("artifact", "依据/废止关系产物陈旧或键集/强引用不齐"),
