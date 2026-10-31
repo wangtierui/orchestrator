@@ -1,0 +1,73 @@
+{
+  "generated_at": "2026-10-31T21:28:57",
+  "note": "图表库本地副本；版本固定，sha256 可复算（python -m tools.vendor_charts --check）",
+  "total_bytes": 1727209,
+  "packages": [
+    {
+      "pkg": "echarts",
+      "version": "5.5.1",
+      "path": "dist/echarts.min.js",
+      "file": "echarts.min.js",
+      "license": "Apache-2.0",
+      "sha256": "e84270bd0cd5bdf60fefc26d00c2a391cb2e81f4d26a7a9ee16185a54773a3cf",
+      "bytes": 1030855,
+      "url": "https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js",
+      "downloaded_at": "2026-10-31T21:28:17"
+    },
+    {
+      "pkg": "echarts-gl",
+      "version": "2.0.9",
+      "path": "dist/echarts-gl.min.js",
+      "file": "echarts-gl.min.js",
+      "license": "MIT",
+      "sha256": "bfba1b87b8c3c06e5c7ed7741002586c747b00e4efdaa92077d15c2dc721bda0",
+      "bytes": 640694,
+      "url": "https://cdn.jsdelivr.net/npm/echarts-gl@2.0.9/dist/echarts-gl.min.js",
+      "downloaded_at": "2026-10-31T21:28:23"
+    },
+    {
+      "pkg": "echarts-wordcloud",
+      "version": "2.1.0",
+      "path": "dist/echarts-wordcloud.min.js",
+      "file": "echarts-wordcloud.min.js",
+      "license": "ISC",
+      "sha256": "7b6f0d55971d9de5913120c7ce6342f3551efd00b4a1df8a50f08385bb25f155",
+      "bytes": 16552,
+      "url": "https://cdn.jsdelivr.net/npm/echarts-wordcloud@2.1.0/dist/echarts-wordcloud.min.js",
+      "downloaded_at": "2026-10-31T21:28:24"
+    },
+    {
+      "pkg": "echarts-liquidfill",
+      "version": "3.1.0",
+      "path": "dist/echarts-liquidfill.min.js",
+      "file": "echarts-liquidfill.min.js",
+      "license": "MIT",
+      "sha256": "7925141a342a2e92fb6223d94a47d8d39534cb40d70f1b28410e9933a8ac840b",
+      "bytes": 7980,
+      "url": "https://cdn.jsdelivr.net/npm/echarts-liquidfill@3.1.0/dist/echarts-liquidfill.min.js",
+      "downloaded_at": "2026-10-31T21:28:36"
+    },
+    {
+      "pkg": "echarts-graph-modularity",
+      "version": "2.1.0",
+      "path": "dist/echarts-graph-modularity.min.js",
+      "file": "echarts-graph-modularity.min.js",
+      "license": "ISC",
+      "sha256": "2b91b696db358fad2d0c81d6a5f0cce2c52ee1d7140d01d3a891b55a7815222e",
+      "bytes": 15067,
+      "url": "https://cdn.jsdelivr.net/npm/echarts-graph-modularity@2.1.0/dist/echarts-graph-modularity.min.js",
+      "downloaded_at": "2026-10-31T21:28:46"
+    },
+    {
+      "pkg": "echarts-stat",
+      "version": "1.2.0",
+      "path": "dist/ecStat.min.js",
+      "file": "ecStat.min.js",
+      "license": "BSD",
+      "sha256": "ff12e3dd24e811e95daf11f4b3e929064003e6c330a3603c52d2e6529a6a578b",
+      "bytes": 16061,
+      "url": "https://cdn.jsdelivr.net/npm/echarts-stat@1.2.0/dist/ecStat.min.js",
+      "downloaded_at": "2026-10-31T21:28:52"
+    }
+  ]
+}

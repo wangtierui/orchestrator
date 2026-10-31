@@ -170,6 +170,13 @@ ALL_GATES: list[dict] = [
         "desc": "依赖治理与供应链安全（锁/影子依赖/CVE/SBOM/解释器路径）",
         "require_impl": True,
     },
+    {
+        # 运行时冒烟：hover 颜色 / 面板尺寸 / 密度行高 / 标题省略 / 按钮 disabled
+        # 这些值源码断言证明不了，必须在浏览器里量（环境缺失时 PASS + skipped）。
+        "module": "gates.gate_ui_smoke",
+        "desc": "前端运行时冒烟（分页 hover/面板 320/密度 65↔38/标题省略/禁用态）",
+        "require_impl": True,
+    },
 ]
 
 

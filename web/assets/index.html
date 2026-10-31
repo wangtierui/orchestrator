@@ -156,10 +156,7 @@ button.link:hover{text-decoration:underline}
 button[disabled]{opacity:.5;cursor:not-allowed}
 
 /* ---------- 条形（用 flex 而非 SVG：从结构上消灭"标签溢出画布"） ---------- */
-.bars{display:flex;flex-direction:column;gap:7px}
-.brow{display:grid;grid-template-columns:minmax(88px,150px) 1fr 96px;gap:var(--s2);align-items:center;
   font-size:12.5px}
-.brow .bl{color:var(--fg2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .brow .bt{background:var(--alt);border-radius:var(--r-sm);height:16px;position:relative;overflow:hidden}
 .brow .bf{height:100%;border-radius:var(--r-sm);transition:width .25s}
 .brow .bv{text-align:right;font-variant-numeric:tabular-nums;color:var(--fg);font-weight:600}
@@ -1240,6 +1237,10 @@ textarea:focus-visible,[tabindex]:focus-visible{
 /* 批 157：表头控件禁用态（保存视图无变更 / 空列表时的密度切换） */
 .lv-headbar .btn:disabled,.lv-headbar .lv-fbtn:disabled,
 .density button:disabled{opacity:.45;cursor:not-allowed;pointer-events:none}
+
+/* 批 159：图表容器（ECharts 画布撑满卡片宽度） */
+.chart-box{width:100%;min-width:0}
+.chart-box canvas{max-width:100%}
 </style>
 </head>
 <body>
@@ -1286,6 +1287,16 @@ textarea:focus-visible,[tabindex]:focus-visible{
 </div>
 <div class="toast" id="toast"></div>
 
+<!-- 图表库：**本地副本**（web/assets/vendor/echarts，Apache-2.0/MIT/ISC/BSD；
+     版本与 sha256 见 MANIFEST.json，可 python -m tools.vendor_charts --check 复算）。
+     顺序：echarts 核心 → gl → wordcloud → liquidfill → modularity → stat。 -->
+<script src="vendor/echarts/echarts.min.js"></script>
+<script src="vendor/echarts/echarts-gl.min.js"></script>
+<script src="vendor/echarts/echarts-wordcloud.min.js"></script>
+<script src="vendor/echarts/echarts-liquidfill.min.js"></script>
+<script src="vendor/echarts/echarts-graph-modularity.min.js"></script>
+<script src="vendor/echarts/ecStat.min.js"></script>
+<script src="charts.js"></script>
 <script src="octicons.js"></script>
 <script>
 "use strict";
@@ -1627,27 +1638,6 @@ const kpi = (label,value,unit,cls)=>
  * 用户三次报"图表渲染异常"，其中两次的根因都是 SVG 里**文字按估算宽度排版会溢出画布**
  * （标签压柱、数值被裁）。CSS 网格 + `text-overflow` 从结构上消除了这类问题：
  * 文字只在它自己的格子里，永远不会跑到柱子上。 */
-function bars(data, color, unit){
-  const e = Object.entries(obj(data));
-  if(!e.length) return '<div class="muted">暂无数据</div>';
-  const max = Math.max(1, ...e.map(([,v])=>Number(v)||0));
-  const total = e.reduce((a,[,v])=>a+(Number(v)||0),0);
-  const rows = e.map(([k,v])=>{
-    const n=Number(v)||0, pct=max?Math.max(n>0?1.5:0, n/max*100):0;
-    const share=total?(n/total*100):0;
-    return `<div class="brow" title="${esc(k)}：${num(n)}${unit||""}（占 ${share.toFixed(1)}%）">
-      <div class="bl">${esc(k)}</div>
-      <div class="bt"><div class="bf" style="width:${pct}%;background:${color}"></div></div>
-      <div class="bv">${num(n)}${unit?" "+esc(unit):""}<span class="muted" style="font-weight:400"> · ${share.toFixed(share>=10?0:1)}%</span></div>
-    </div>`;}).join("");
-  const pos=e.map(([,v])=>Number(v)||0).filter(v=>v>0);
-  const minPos=pos.length?Math.min(...pos):0;
-  const note = (minPos>0 && max/minPos>=20)
-    ? `<div class="note">分布高度集中（最大 ${num(max)} / 最小非零 ${num(minPos)}，约 ${Math.round(max/minPos)} 倍）：
-        小值条形按线性比例接近不可见，**数值与占比均已标注**——这是真实分布，不是图坏了。</div>` : "";
-  return `<div class="bars">${rows}</div>${note}`;
-}
-
 /* ---------------- 总览（P0 + P2 + P7 合并） ---------------- */
 function viewOverview(d, assets, publish, rel){
   if(!d.available) return unavail(d);
@@ -1882,26 +1872,32 @@ const SLI_LABEL = {
   "sli_data_freshness":"数据新鲜度",
   "sli_gate_pass_rate":"门禁通过率",
 };
-function lineChart(rows, color){
-  rows=arr(rows);
-  if(rows.length<2) return '<div class="muted">数据点不足（需 ≥2 个运行）</div>';
-  const W=560,H=150,pad=30;
-  const vals=rows.map(r=>Number(r.rate)||0);
-  const lo=Math.min(...vals), hi=Math.max(...vals);
-  const spanRaw=hi-lo, margin=spanRaw<2?0.5:Math.max(1,spanRaw*0.25);
-  const min=lo-margin, max=hi+margin, span=(max-min)||1;
-  const pts=rows.map((r,i)=>[pad+i*(W-2*pad)/Math.max(1,rows.length-1),
-    H-pad-((Number(r.rate)||0)-min)/span*(H-2*pad)]);
-  let svg=`<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}">
-    <line x1="${pad}" y1="${H-pad}" x2="${W-pad}" y2="${H-pad}" stroke="#E5E6EB"/>`;
-  svg+=`<polyline fill="none" stroke="${color}" stroke-width="2" points="${pts.map(p=>p.join(",")).join(" ")}"/>`;
-  rows.forEach((r,i)=>{svg+=`<circle cx="${pts[i][0]}" cy="${pts[i][1]}" r="3" fill="#fff"
-    stroke="${color}" stroke-width="2"><title>${esc(r.run_id)}：${r.rate}%</title></circle>`;});
-  svg+=`<text x="${W-pad}" y="14" fill="#86909C" font-size="10.5" text-anchor="end">y 轴 ${lo}~${hi}%</text>`;
-  svg+=`<text x="${pad}" y="${H-10}" fill="#86909C" font-size="10.5">${esc(rows[0].run_id||"")}</text>
-    <text x="${W-pad}" y="${H-10}" fill="#86909C" font-size="10.5" text-anchor="end">${esc(rows[rows.length-1].run_id||"")}</text></svg>`;
-  return svg;
+/*: 图表占位：页面只声明"要什么图 + 数据"，实际渲染交给 charts.js（唯一出口）。
+ * 为什么不在模板里直接 init：视图函数是**纯字符串**，拿不到 DOM；
+ * 用 id 登记 + 渲染后统一挂载，既保持"纯字符串渲染"的既有结构，也不引入异步。 */
+let CHART_SPECS = [];
+function chartBox(kind, spec, h){
+  const id = "ch" + CHART_SPECS.length;
+  CHART_SPECS.push({id, kind, spec: spec || {}});
+  return `<div class="chart-box" id="${id}" style="height:${h || 200}px"></div>`;
 }
+function mountCharts(){
+  const list = CHART_SPECS;
+  CHART_SPECS = [];
+  if (!window.Charts) return;
+  list.forEach(it => {
+    const el = document.getElementById(it.id);
+    if (!el) return;
+    try {
+      const fn = Charts[it.kind];
+      if (typeof fn === "function") fn(el, it.spec);
+    } catch (e) {
+      el.innerHTML = `<div class="muted" style="padding:8px">图表渲染失败：${
+        esc(String(e && e.message || e))}</div>`;
+    }
+  });
+}
+
 function viewMetrics(d){
   if(!d.available) return unavail(d);
   const q=obj(d.quality), s=obj(d.slo);
@@ -1909,14 +1905,10 @@ function viewMetrics(d){
   const dims=Object.entries(qd).map(([k,v])=>({k, v:obj(v).score==null?"—":obj(v).score}));
   const qHtml = dims.length===0
     ? '<div class="muted">暂无质量快照（python -m tools.gen_quality_metrics）</div>'
-    : `<div class="bars">${dims.map(x=>{
-        const val = x.v==="—"?0:Number(x.v);
-        const color = val>=90?"var(--ok)":(val>=70?"var(--warn)":"var(--bad)");
-        return `<div class="brow" title="${esc(x.k)}：${esc(x.v)}">
-          <div class="bl">${esc(x.k)}</div>
-          <div class="bt"><div class="bf" style="width:${Math.max(val>0?1.5:0,val)}%;background:${color}"></div></div>
-          <div class="bv">${esc(x.v)}</div></div>`;}).join("")}</div>
-      <div class="note">健康度 ${esc(obj(q.doc).health_score??"—")}（均权；缺失维度不计入分母）</div>`;
+    : chartBox("bar", {items: dims.map(x => ({label: x.k,
+        value: x.v === "—" ? 0 : Number(x.v)})), color: "#12855A", unit: " 分"},
+        Math.max(160, Math.min(320, dims.length * 34)))
+      + `<div class="note">健康度 ${esc(obj(q.doc).health_score??"—")}（均权；缺失维度不计入分母）</div>`;
 
   const lastSLI=obj(obj(s.last).sli), tgt=obj(obj(s.last).targets);
   const sliRows=Object.keys(lastSLI).map(k=>{
@@ -1933,13 +1925,50 @@ function viewMetrics(d){
   const tTotal=tEntries.reduce((a,[,v])=>a+(Number(v)||0),0);
 
   return `<div class="grid">
-    ${card("门禁通过率趋势","逐轮", lineChart(d.gate_trend,"#2F7CF6"), d.source, d.fetched_at)}
-    ${card("待办 aging","未处置天数分布", bars(d.worklist_aging,"#B26A00","条"), d.source, d.fetched_at)}
+    ${card("门禁通过率趋势","逐轮", (() => {
+      const rows = arr(d.gate_trend);
+      if (rows.length < 2) return '<div class="muted">数据点不足（需 ≥2 个运行）</div>';
+      return chartBox("line", {
+        labels: rows.map((r, i) => String(r.date || r.run_id || ("#" + (i + 1))).slice(-8)),
+        values: rows.map(r => Number(r.rate) || 0),
+        color: "#2F7CF6",
+      }, 200);
+    })(), d.source, d.fetched_at)}
+    ${card("待办 aging","未处置天数分布", (() => {
+      const e = Object.entries(obj(d.worklist_aging));
+      if (!e.length) return '<div class="muted">暂无数据</div>';
+      return chartBox("bar", {items: e.map(([k, v]) => ({label: k, value: Number(v) || 0})),
+                              color: "#B26A00", unit: " 条"},
+        Math.max(140, Math.min(320, e.length * 30)));
+    })(), d.source, d.fetched_at)}
     ${card("DAMA 六维","质量快照", qHtml, q.source, q.fetched_at)}
-    ${card("SLI / SLO","最近快照", sliRows||'<div class="muted">尚无快照（python -m tools.check_slo）</div>', s.source, s.fetched_at)}
-    ${card("时效三态","valid / pending / uncertain", bars(d.timeliness_tri,"#12855A","条"), d.source, d.fetched_at)}
+    ${card("SLI / SLO","最近快照", (() => {
+      const keys = Object.keys(lastSLI);
+      if (!keys.length) return '<div class="muted">尚无快照（python -m tools.check_slo）</div>';
+      let ok = 0;
+      keys.forEach(k => {
+        const v = Number(obj(lastSLI[k]).value), g = Number(tgt[k]);
+        if (!Number.isNaN(v) && !Number.isNaN(g) && v >= g) ok += 1;
+      });
+      const rate = keys.length ? ok / keys.length : 0;
+      return `<div class="sli-wrap" style="display:flex;gap:12px;align-items:center">
+        ${chartBox("liquid", {value: rate}, 160)}
+        <div style="flex:1;min-width:0">${sliRows}
+          <div class="note">达标 ${ok}/${keys.length} 项（液位显示达标率）</div></div>
+      </div>`;
+    })(), s.source, s.fetched_at)}
+    ${card("时效三态","valid / pending / uncertain", (() => {
+      const e = Object.entries(obj(d.timeliness_tri));
+      if (!e.length) return '<div class="muted">暂无数据</div>';
+      return chartBox("bar", {items: e.map(([k, v]) => ({label: k, value: Number(v) || 0})),
+                              color: "#12855A", unit: " 条"},
+        Math.max(140, Math.min(280, e.length * 34)));
+    })(), d.source, d.fetched_at)}
     ${card("主题分布",`${tEntries.length} 个主题 / 合计 ${num(tTotal)}`,
-      bars(tDist,"#6C5CE7","条")
+      (tEntries.length
+        ? chartBox("wordcloud", {items: tDist.map ? tDist.map(x => x) : Object.entries(tDist)
+            .map(([k, v]) => ({name: k, value: Number(v) || 0}))}, 220)
+        : '<div class="muted">暂无数据</div>')
       + `<div class="note">显示前 ${Math.min(TOP_N,tEntries.length)} 项${restSum>0?`，其余 ${tEntries.length-TOP_N} 项合并为「其他」`:""}；各条合计 = ${num(tTotal)}（可自行核对）</div>`,
       d.source, d.fetched_at)}
   </div>`;
@@ -2571,7 +2600,8 @@ async function render(){
       <div class="note">${esc(String(e&&e.stack?e.stack:String(e)))}</div>`,"web 前端");
   }finally{
     paintRail();           // 所有分支（含登录/异常）都走这里
-    syncTabInk();          // 页签墨线跟随当前页签，侧栏才不会残留上一页
+    syncTabInk();          // 页签墨线跟随当前页签
+    mountCharts();         // 图表：统一挂载（charts.js 唯一出口），侧栏才不会残留上一页
     applyPrimerControls();  // 输入类控件统一 Primer .form-control
     const cur = TABS.find(x => x.id === CUR);
     const cn = $("#crumbName");

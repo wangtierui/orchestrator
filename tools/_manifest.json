@@ -417,6 +417,20 @@
       "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
     },
     {
+      "category": "tool",
+      "entry": "前端运行时冒烟（CDP 量 hover 颜色/面板尺寸/密度行高/标题省略/禁用态；供 gate_ui_smoke 调用）",
+      "file": "ui_smoke.py",
+      "independent": true,
+      "independent_why": "刻意独立：需要运行中的服务 + 浏览器，按需人工或门禁调用，非 STEP_ORDER 链路节点"
+    },
+    {
+      "category": "tool",
+      "entry": "把图表库（echarts + gl/wordcloud/liquidfill/modularity/stat）全量提取到 web/assets/vendor/echarts，写 MANIFEST（版本/sha256）并支持 --check 复算",
+      "file": "vendor_charts.py",
+      "independent": true,
+      "independent_why": "刻意独立：离线资产生成/校验类工具，按需人工执行，非 STEP_ORDER 链路节点"
+    },
+    {
       "category": "independent",
       "entry": "python -m tools.workbench_service install|uninstall|status|verify",
       "file": "workbench_service.py",

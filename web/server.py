@@ -52,10 +52,17 @@ _AUTH_ROUTES = ("/api/auth/login", "/api/auth/status", "/api/auth/logout")
 
 
 def _asset(name: str) -> tuple[bytes, str]:
-    """读静态资源 → `(bytes, content_type)`；防路径穿越（`..` 一律拒绝）。"""
-    if "/" in name or "\\" in name or name.startswith("."):
+    """读静态资源 → `(bytes, content_type)`；防路径穿越（解析后必须仍在 assets 下）。
+
+    2026-10-31：允许 `vendor/...` 子目录（图表库本地副本），但用 normpath + 前缀校验
+    堵住 `../` —— 旧实现直接禁 `/`，无法引入子目录资源。
+    """
+    if not name or "\\" in name or name.startswith(("/", ".")):
         raise ApiError(400, f"非法资源名 {name!r}")
-    p = os.path.join(ASSETS_DIR, name)
+    root = os.path.normpath(ASSETS_DIR)
+    p = os.path.normpath(os.path.join(root, name))
+    if p != root and not p.startswith(root + os.sep):
+        raise ApiError(400, f"非法资源名 {name!r}")
     if not os.path.exists(p):
         raise ApiError(404, f"资源不存在 {name}")
     ctype = {".html": "text/html; charset=utf-8",
@@ -402,9 +409,10 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(200, {"available": False,
                                         "reason": f"{type(e).__name__}: {str(e)[:200]}"})
             return self._json(status, payload)
-        # 静态资源
+        # 静态资源（保留子目录：`vendor/echarts/xxx.js` 这类本地库；
+        # `_asset` 内已用 normpath + 前缀校验挡住 `../`）
         try:
-            body, ctype = _asset(os.path.basename(path))
+            body, ctype = _asset(path.lstrip("/"))
         except ApiError as e:
             return self._json(e.status, {"error": e.msg})
         return self._send(200, body, ctype)
