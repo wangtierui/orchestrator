@@ -287,3 +287,52 @@ class TestSingleTableImplementation:
         assert "function openGridFilter(" in h
         assert "function applyGridFilters(" in h
 
+class TestListControlsContract:
+    """批 156/157：列表工具的交互契约（禁用态 / token 语法 / Truncate 结构）。"""
+
+    def test_token_grammar_extended(self, h: str) -> None:
+        """筛选框支持 主题域/状态/发文字号/编号/排序 与 升序·降序。"""
+        for key in ("\"主题域\": \"theme\"", "\"状态\": \"timeliness\"",
+                    "\"发文字号\": \"q_docno\"", "\"编号\": \"q_rfn\"",
+                    "\"排序\": \"sort\""):
+            assert key in h, f"缺少 token 键 {key}"
+
+        assert "const LV_SORT_ALIAS" in h, "缺少排序别名表"
+        assert '"文号": "document_number"' in h
+        assert 'if (key === "sort") st.sort = LV_SORT_ALIAS[val] || val' in h, \
+            "排序 token 未映射"
+        assert 'if (w === "降序" || w === "倒序") st.desc = true' in h, "缺少降序 token"
+        assert 'else if (w === "升序" || w === "正序") st.desc = false' in h, "缺少升序 token"
+
+    def test_save_view_disabled_when_clean(self, h: str) -> None:
+        """没有筛选/非默认排序时，保存视图按钮应禁用。"""
+        assert "const dirty = act.length > 0" in h
+        assert 'String(st.sort || "") !== String(primaryFd.sort || "title")' in h
+        assert "|| !!st.desc" in h, "降序也应算可保存状态"
+        assert 'data-lvsavecur="1"' in h
+        assert '${dirty ? "" : "disabled aria-disabled=\\"true\\""}' in h, \
+            "保存按钮缺少条件禁用"
+        assert ".lv-headbar .btn:disabled" in h, "缺少禁用态样式"
+
+    def test_density_disabled_when_empty(self, h: str) -> None:
+        """列表为空时，密度切换两个按钮都应禁用。"""
+        guard = '${items.length ? "" : "disabled aria-disabled=\\"true\\""}'
+        assert h.count(guard) == 2, "密度按钮未按空列表禁用（应为 2 个）"
+
+    def test_truncate_structure(self, h: str) -> None:
+        """标题 / 选项 / 详情统一用 Primer .Truncate 结构，不再手写截断。"""
+        assert '<a class="lv-title Truncate"' in h, "列表标题未用 Truncate"
+        assert '<span class="Truncate-text">' in h
+        assert ".Truncate{display:inline-flex;max-width:100%;min-width:0;overflow:hidden}" in h
+        assert ".Truncate-text" in h and "text-overflow:ellipsis" in h
+        # 标题规则里不应再有手写 text-overflow（交给 Truncate-text）
+        seg = h[h.index(".lv-primary .lv-title{"):]
+        seg = seg[:seg.index("}")]
+        assert "text-overflow" not in seg, "标题仍在手写截断"
+
+    def test_dirty_defined_after_primaryfd(self, h: str) -> None:
+        """dirty 依赖 primaryFd —— 顺序错了会 TDZ 报错、整页不渲染（批 157 踩过）。"""
+        i_primary = h.index("const primaryFd = primary")
+        i_dirty = h.index("const dirty = act.length > 0")
+        assert i_primary < i_dirty, "dirty 必须在 primaryFd 之后定义"
+
