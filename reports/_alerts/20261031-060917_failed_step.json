@@ -1,0 +1,32 @@
+{
+ "event": "failed_step",
+ "title": "生产刷新失败步骤 2 个",
+ "at": "2026-10-31T06:09:17",
+ "run_id": "RUN-20261031-060018-31688",
+ "payload": {
+  "summary_json": "D:\\WorkBuddy\\regulatory_compliance_orchestrator\\reports\\_tmp\\生产刷新汇总_20261031_060917.json",
+  "total_elapsed_s": 535.5,
+  "failed": [
+   {
+    "step": "timeliness:verify",
+    "rc": 2,
+    "exit_code": "DATA",
+    "elapsed_s": 44.1,
+    "stderr_tail_len": 154,
+    "tail": "  pbc   success      missing=   2 ok=   0 degraded=   0 changed=  0\n  supp  success      missing=   0 ok=   0 degraded=   0 changed=  0\n  overall: partial"
+   },
+   {
+    "step": "gates",
+    "rc": 1,
+    "exit_code": "FAIL",
+    "elapsed_s": 484.6,
+    "stderr_tail_len": 0,
+    "tail": "[gates] 已归档 30 条门禁结果到治理库（run_id=RUN-20261031-060018-31688）\n====================\nFAIL: 存在未通过门禁"
+   }
+  ],
+  "evidence": [
+   "timeliness:verify rc=2(DATA)   pbc   success      missing=   2 ok=   0 degraded=   0 changed=  0\n  supp  success      missing=   0 ok=   0 degraded=   0 changed=  0\n  overall: partial",
+   "gates rc=1(FAIL) [gates] 已归档 30 条门禁结果到治理库（run_id=RUN-20261031-060018-31688）\n====================\nFAIL: 存在未通过门禁"
+  ]
+ }
+}
