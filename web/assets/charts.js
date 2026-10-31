@@ -1,29 +1,30 @@
 /* ============================================================================
- * charts.js — 工作台**唯一**的图表出口（全部基于本地 echarts 5.5.1 + 5 个插件）
+ * charts.js — 工作台**唯一**的图表出口（本地 echarts 5.5.1 + 插件）
  *
- * 为什么单独一层：之前图表有 3 套手写实现（自绘 SVG 折线、div 条形、自研 g3d 投影）。
- * 这里收成一个门面：页面只声明"要什么图 + 数据"，初始化/主题/自适应/销毁都由这里管。
+ * 为什么单独一层：之前图表有 3 套手写实现（自绘 SVG 折线、div 条形、自研 3D 投影）。
+ * 这里收成一个门面：页面只声明"要什么图 + 数据"，初始化 / 主题 / 自适应 / 销毁都由这里管。
  *
  * 约定：
- *   · 所有函数接收 **DOM 元素** + 纯数据，不返回 HTML（避免页面里再拼图表标记）；
- *   · 主题颜色取 CSS 变量（与 Primer 令牌同源），不在图表里写死十六进制；
- *   · `Charts.dispose(el)` 幂等；`Charts.resizeAll()` 供窗口/侧栏变化时调用。
+ *   · 所有函数接收 **DOM 元素** + 纯数据，不返回 HTML；
+ *   · 主题颜色取 CSS 变量（与 Primer 令牌同源），不写死十六进制；
+ *   · `Charts.refresh(el)` 用登记过的 spec 重放（选中态变化、重置视图都走它）。
  * ========================================================================== */
 (function (global) {
   "use strict";
 
   if (typeof echarts === "undefined") {
-    // 库没加载时不抛错：页面仍能用空态提示，不至于整屏白
+    // 库没加载时不抛错：页面仍能显示空态，不至于整屏白
     global.Charts = {
       available: false,
       line: function () {}, bar: function () {}, wordcloud: function () {},
-      liquid: function () {}, graph3d: function () {}, dispose: function () {},
-      resizeAll: function () {},
+      liquid: function () {}, graph: function () {}, refresh: function () {},
+      dispose: function () {}, resizeAll: function () {},
     };
     return;
   }
 
   var INSTANCES = new Map();
+  var SPECS = new Map();          // el -> {kind, spec}（refresh 时重放同一份数据）
 
   function cssVar(name, fallback) {
     var v = getComputedStyle(document.documentElement).getPropertyValue(name);
@@ -81,12 +82,14 @@
       try { inst.dispose(); } catch (e) { /* 已销毁 */ }
       INSTANCES.delete(el);
     }
+    SPECS.delete(el);
   }
 
-  /*: 折线（趋势） —— 单序列，面积淡填充，点只在 hover 出现 */
+  /*: 折线（趋势） */
   function line(el, spec) {
     var inst = ensure(el);
     if (!inst) return;
+    SPECS.set(el, { kind: "line", spec: spec });
     var p = palette();
     var color = spec.color || p.accent;
     var opt = baseOption();
@@ -110,10 +113,11 @@
     inst.setOption(opt, true);
   }
 
-  /*: 横向条形（分布/aging/主题） —— 单序列，值走标签 */
+  /*: 横向条形（分布/aging/主题） */
   function bar(el, spec) {
     var inst = ensure(el);
     if (!inst) return;
+    SPECS.set(el, { kind: "bar", spec: spec });
     var p = palette();
     var color = spec.color || p.accent;
     var items = (spec.items || []).slice();
@@ -142,6 +146,7 @@
   function wordcloud(el, spec) {
     var inst = ensure(el);
     if (!inst) return;
+    SPECS.set(el, { kind: "wordcloud", spec: spec });
     var p = palette();
     var colors = [p.accent, p.purple, p.ok, p.warn, "#8250df", "#bc4c00", "#1b7c83"];
     var opt = {
@@ -159,10 +164,11 @@
     inst.setOption(opt, true);
   }
 
-  /*: 液位（覆盖率/完成度）—— echarts-liquidfill */
+  /*: 液位（达标率/完成度）—— echarts-liquidfill */
   function liquid(el, spec) {
     var inst = ensure(el);
     if (!inst) return;
+    SPECS.set(el, { kind: "liquid", spec: spec });
     var p = palette();
     var v = Math.max(0, Math.min(1, Number(spec.value) || 0));
     var opt = {
@@ -170,44 +176,107 @@
         type: "liquidFill", data: [v, v - 0.06, v - 0.12], radius: "78%",
         color: [p.accent, "rgba(9,105,218,.55)", "rgba(9,105,218,.3)"],
         label: { formatter: (v * 100).toFixed(0) + "%", fontSize: 22, color: p.text },
-        outline: { show: true, borderDistance: 4, itemStyle: { borderColor: p.border, borderWidth: 1 } },
+        outline: { show: true, borderDistance: 4,
+                   itemStyle: { borderColor: p.border, borderWidth: 1 } },
         backgroundStyle: { color: "transparent" },
       }],
     };
     inst.setOption(opt, true);
   }
 
-  /*: 3D 图（关系/ER）—— echarts-gl */
-  function graph3d(el, spec) {
+  /*: 关系图 / E-R（**2D force**）。
+   *
+   * 为什么不是 echarts-gl 的 3D 图：实测两个事实——
+   *   · echarts-gl 2.0.9 的 dist 里**没有 `graph3D` 系列**（只有 `graphGL`）；
+   *   · `graphGL` 能出画布，但**不产生节点 click**（pointer 命不中节点），
+   *     而"点节点 → 下方列表联动"是必须保留的交互。
+   * 因此用 ECharts 内置 `graph`（force）：roam 缩放、节点可拖、click 精确。
+   */
+  function graph(el, spec) {
     var inst = ensure(el);
     if (!inst) return;
+    SPECS.set(el, { kind: "graph", spec: spec });
     var p = palette();
-    var nodes = (spec.nodes || []).map(function (n) { return { name: n.name, value: n.value || 1 }; });
-    var links = (spec.links || []).map(function (l) {
-      return { source: l.source, target: l.target };
+    var nodes = spec.nodes || [];
+    var links = spec.links || [];
+
+    var groups = [];
+    nodes.forEach(function (n) {
+      var g = String(n.group == null ? "" : n.group);
+      if (groups.indexOf(g) < 0) groups.push(g);
     });
+    var colors = [p.accent, p.purple, p.ok, p.warn, "#8250df", "#bc4c00", "#1b7c83"];
+    var maxDeg = 1;
+    nodes.forEach(function (n) { maxDeg = Math.max(maxDeg, Number(n.degree) || 1); });
+    var sel = String(spec.selected || "");
+
+    var data = nodes.map(function (n) {
+      var d = Number(n.degree) || 1;
+      var id = String(n.id);
+      var showLabel = !!spec.labelAll || d >= (spec.labelMin || 8);
+      return {
+        name: id,
+        labelText: String(n.name || id),
+        value: d,
+        category: Math.max(0, groups.indexOf(String(n.group == null ? "" : n.group))),
+        symbolSize: 7 + 11 * Math.sqrt(d / maxDeg),
+        label: { show: showLabel },
+        itemStyle: id === sel ? { borderColor: p.accent, borderWidth: 3 } : undefined,
+      };
+    });
+
+    var edges = links.map(function (l) {
+      return { source: String(l.from || l.source), target: String(l.to || l.target) };
+    });
+
+    inst.off("click");
+    inst.on("click", function (params) {
+      if (!params || params.dataType !== "node") return;
+      if (typeof spec.onSelect === "function") spec.onSelect(params.name);
+    });
+
     var opt = {
-      tooltip: {},
+      animationDuration: 500,
+      tooltip: {
+        confine: true,
+        backgroundColor: "#fff",
+        borderColor: p.border,
+        borderWidth: 1,
+        textStyle: { color: p.text, fontSize: 12 },
+        extraCssText: "box-shadow:0 8px 24px rgba(31,35,40,.12);border-radius:6px;",
+        formatter: function (o) {
+          if (o.dataType === "node") return o.data.labelText + "（引用 " + o.data.value + "）";
+          return "";
+        },
+      },
       series: [{
-        type: "graph3D",
-        shading: "lambert",
-        layout: "force",
-        force: { repulsion: 120, edgeLength: 40 },
-        data: nodes,
-        links: links,
-        label: { show: false },
-        itemStyle: { color: p.accent, opacity: 0.9 },
-        lineStyle: { color: "rgba(89,99,110,.35)", width: 1 },
-        light: { main: { intensity: 1.1 }, ambient: { intensity: 0.35 } },
+        type: "graph", layout: "force", roam: true, draggable: true,
+        force: { repulsion: spec.repulsion || 90, edgeLength: [40, 120], gravity: 0.08 },
+        categories: groups.map(function (g, i) {
+          return { name: g || "默认", itemStyle: { color: colors[i % colors.length] } };
+        }),
+        label: { position: "right", color: p.muted, fontSize: 11 },
+        lineStyle: { color: "rgba(89,99,110,.35)", width: 1, curveness: 0.08 },
+        emphasis: { focus: "adjacency", lineStyle: { width: 2 } },
+        data: data,
+        links: edges,
       }],
     };
     inst.setOption(opt, true);
   }
 
+  /*: 用当前 spec 重放（选中高亮、重置视图） */
+  function refresh(el) {
+    var s = SPECS.get(el);
+    if (!s) return;
+    var fn = { line: line, bar: bar, wordcloud: wordcloud, liquid: liquid, graph: graph }[s.kind];
+    if (fn) fn(el, s.spec);
+  }
+
   global.Charts = {
     available: true,
-    line: line, bar: bar, wordcloud: wordcloud, liquid: liquid, graph3d: graph3d,
-    dispose: dispose, resizeAll: resizeAll,
+    line: line, bar: bar, wordcloud: wordcloud, liquid: liquid, graph: graph,
+    refresh: refresh, dispose: dispose, resizeAll: resizeAll,
   };
 
   // 容器尺寸变化（含侧栏折叠）→ 统一 resize

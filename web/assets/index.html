@@ -237,11 +237,12 @@ th.sortable .arw{font-size:10px;opacity:.85}
 /*: 3D 关系图容器（2026-10-26）：SVG 拖拽旋转 + 底部操作条 */
 .g3wrap{border:1px solid var(--line);border-radius:10px;background:
   radial-gradient(circle at 50% 45%, var(--card), var(--bg) 78%);overflow:hidden}
-.g3svg{touch-action:none;cursor:grab;display:block}
-.g3svg:active{cursor:grabbing}
+.g3chart{width:100%;min-width:0;background:var(--bg)}
+.g3chart canvas{cursor:grab}
+.g3chart canvas:active{cursor:grabbing}
 .g3bar{display:flex;align-items:center;gap:8px;padding:6px 10px;border-top:1px solid var(--line);
   font-size:12px;background:var(--card)}
-.g3n circle{transition:r .12s}
+/* 旧 SVG 节点样式已随自绘渲染删除 */
 
 /*: 左栏（页面级，位于 `main` 之外 —— 2026-10-27 第一百二十批）
  * 历史：曾用 `.sidewrap` 把 aside 塞进内容卡片，结果是"卡中卡"、折叠要逐页实现、
@@ -2959,150 +2960,81 @@ function _gCut(s, n){ s = String(s || ""); return s.length > n ? s.slice(0, n) +
 const G3D_ST = {};        // key -> {yaw, pitch, zoom, sel}
 const G3D_MODEL = {};     // key -> model（拖拽时重算用）
 
-function _g3dHash(s){
-  let h = 2166136261;
-  s = String(s || "");
-  for(let i = 0; i < s.length; i++){ h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
-  return ((h >>> 0) % 10000) / 10000;   // 0..1 稳定抖动
-}
-
-function _g3dLayout(model){
-  const nodes = model.nodes || [];
-  const groups = [];
-  const by = {};
-  nodes.forEach(n => {
-    const g = String(n.group || "");
-    if(!(g in by)){ by[g] = []; groups.push(g); }
-    by[g].push(n);
-  });
-  const R = 300, G = Math.max(1, groups.length);
-  const out = {};
-  groups.forEach((g, gi) => {
-    // 簇心：斐波那契球（只取球面上一点，保证均匀）
-    let cx = 0, cy = 0, cz = 0;
-    if(G > 1){
-      const y = -1 + 2 * (gi + 0.5) / G;
-      const r = Math.sqrt(Math.max(0, 1 - y * y));
-      const th = gi * 2.399963229728653;
-      cx = r * Math.cos(th) * R; cy = y * R; cz = r * Math.sin(th) * R;
-    }
-    const mem = by[g], M = Math.max(1, mem.length);
-    // 簇内半径：成员多则铺开（∝ sqrt），但不超过簇间距的一半
-    const rr = G === 1 ? R * 0.92 : Math.min(R * 0.55, 26 + 12 * Math.sqrt(M));
-    mem.forEach((n, i) => {
-      const y = M === 1 ? 0 : -1 + 2 * (i + 0.5) / M;
-      const r2 = Math.sqrt(Math.max(0, 1 - y * y));
-      const th = i * 2.399963229728653 + _g3dHash(n.id) * 1.7;
-      out[n.id] = {
-        x: cx + r2 * Math.cos(th) * rr,
-        y: cy + y * rr,
-        z: cz + r2 * Math.sin(th) * rr,
-      };
-    });
-  });
-  return out;
-}
-
-function _g3dProj(pos, st, W, H){
-  const cy = Math.cos(st.yaw), sy = Math.sin(st.yaw);
-  const cp = Math.cos(st.pitch), sp = Math.sin(st.pitch);
-  const D = 1000, zoom = st.zoom || 1;
-  const out = {};
-  Object.keys(pos).forEach(k => {
-    const p = pos[k];
-    let x = p.x * cy - p.z * sy;
-    let z1 = p.x * sy + p.z * cy;
-    const y = p.y * cp - z1 * sp;
-    z1 = p.y * sp + z1 * cp;
-    const s = zoom * D / (D + z1);
-    out[k] = {x: W / 2 + x * s, y: H / 2 + y * s, z: z1, s: s};
-  });
-  return out;
-}
-
-/*: 渲染一张 3D 图（返回 SVG 字符串；拖拽由 `bindG3d` 接管重绘） */
-function _g3dSvg(key, W, H){
-  return `<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}"
-      class="g3svg" data-g3="${esc(key)}" role="img" aria-label="三维关系图">
-      ${_g3dInner(key, W, H)}</svg>`;
-}
-
-/*: 只产出 **内部** 内容 —— 拖拽重绘走 `svg.innerHTML = _g3dInner(...)`，
- * 关键点：**不能替换 svg 元素本身**，否则绑定在上面的 pointer 监听全丢，
- * 表现为"能转一下，之后就死住"（实测踩到）。 */
-function _g3dInner(key, W, H){
-  const model = G3D_MODEL[key] || {nodes: [], edges: []};
-  const st = G3D_ST[key] || (G3D_ST[key] = {yaw: -0.55, pitch: 0.32, zoom: 1, sel: ""});
-  const pos = model._pos || (model._pos = _g3dLayout(model));
-  const pr = _g3dProj(pos, st, W, H);
-  const sel = String(st.sel || "");
-  const touch = new Set();
-  (model.edges || []).forEach(e => {
-    if(!sel) return;
-    if(e.from === sel) touch.add(e.to);
-    if(e.to === sel) touch.add(e.from);
-  });
-  const maxDeg = Math.max(1, ...(model.nodes || []).map(n => Number(n.degree) || 1));
-
-  const edgeSvg = (model.edges || []).map(e => {
-    const a = pr[e.from], b = pr[e.to];
-    if(!a || !b) return "";
-    const hot = sel && (e.from === sel || e.to === sel);
-    const depth = (a.z + b.z) / 2;
-    const op = hot ? .9 : (sel ? .05 : Math.max(.08, Math.min(.55, .42 - depth / 1400)));
-    const dash = e.external ? ' stroke-dasharray="3 3"' : (e.dashed ? ' stroke-dasharray="6 4"' : "");
-    return `<line x1="${a.x.toFixed(1)}" y1="${a.y.toFixed(1)}" x2="${b.x.toFixed(1)}"
-      y2="${b.y.toFixed(1)}" stroke="${e.color || "var(--primary)"}"
-      stroke-width="${(hot ? 1.8 : .8) * ((a.s + b.s) / 2)}" opacity="${op.toFixed(2)}"${dash}>
-      <title>${esc(e.title || e.label || "")}</title></line>`;
-  }).join("");
-
-  const ordered = (model.nodes || []).slice().sort((n1, n2) =>
-    (pr[n1.id] ? pr[n1.id].z : 0) - (pr[n2.id] ? pr[n2.id].z : 0));
-  const nodeSvg = ordered.map(n => {
-    const p = pr[n.id];
-    if(!p) return "";
-    const deg = Number(n.degree) || 1;
-    const r = (3.2 + 6.2 * Math.sqrt(deg / maxDeg)) * p.s;
-    const on = sel === n.id, near = touch.has(n.id);
-    // 标签策略：前景(s>0.95) 或 选中/邻接 或 高度数节点才显示 —— 否则 100+ 标签互相压
-    const showLabel = on || near || (p.s > 0.98 && deg >= Math.max(2, maxDeg * 0.12))
-      || (model.labelAll && p.s > 0.9);
-    const fill = on ? "var(--primary)"
-      : n.kind === "external" ? "var(--card)"
-      : n.kind === "internal" ? "var(--primary-l)" : "var(--alt)";
-    return `<g class="g3n" data-nid="${esc(n.id)}" style="cursor:pointer">
-      <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${r.toFixed(1)}"
-        fill="${fill}" stroke="${on || near ? "var(--primary)" : "var(--line2)"}"
-        stroke-width="${on ? 2 : 1}" ${n.kind === "external" ? 'stroke-dasharray="2 2"' : ""}
-        opacity="${sel && !on && !near ? .35 : .95}"/>
-      ${showLabel ? `<text x="${(p.x + r + 3).toFixed(1)}" y="${(p.y + 3.4).toFixed(1)}"
-        style="font-size:${(10.5 * Math.min(1.25, p.s)).toFixed(1)}px;fill:${
-        on ? "var(--primary)" : "var(--fg2)"};pointer-events:none">${
-        esc(_gCut(n.name || n.id, 14))}</text>` : ""}
-      <title>${esc(n.name || n.id)}${n.docno ? "\n" + esc(n.docno) : ""}${
-        n.degree ? "\n关联 " + num(n.degree) + " 条" : ""}\n点击聚焦</title></g>`;
-  }).join("");
-
-  return `<g>${edgeSvg}</g><g>${nodeSvg}</g>`;
-}
-
-/*: 容器（含操作提示与"重置视角"）—— 图例由调用方给 */
+/*: 关系图 / E-R 的容器（**唯一图表出口** Charts.graph；不再自绘 SVG 投影）。
+ * 页面只登记"key + 模型 + 高度"，渲染由 mountGraphs() 在 DOM 就绪后统一完成——
+ * 与 chartBox/mountCharts 同一套路，避免视图函数依赖 DOM。 */
+const G3D_SPECS = [];
 function g3dBox(key, model, W, H, hint){
   G3D_MODEL[key] = model;
-  if(!G3D_ST[key]) G3D_ST[key] = {yaw: -0.55, pitch: 0.32, zoom: 1, sel: ""};
+  if(!G3D_ST[key]) G3D_ST[key] = {sel: ""};
+  const id = "g3-" + G3D_SPECS.length;
+  G3D_SPECS.push({id: id, key: key, model: model, h: H || 620});
   return `<div class="g3wrap" data-g3key="${esc(key)}">
-      ${_g3dSvg(key, W, H)}
+      <div class="g3chart" id="${id}" style="height:${H || 620}px"></div>
       <div class="g3bar">
-        <span class="muted">${hint || "拖拽旋转 · 滚轮缩放 · 点节点聚焦"}</span>
+        <span class="muted">${hint || "拖拽节点 · 滚轮/拖动缩放 · 点节点聚焦（下方列表同步过滤）"}</span>
         <span style="flex:1"></span>
-        <button class="link" data-g3reset="${esc(key)}">重置视角</button>
+        <button class="link" data-g3reset="${esc(key)}">重置视图</button>
       </div>
     </div>`;
 }
 
-/*: 绑定拖拽/缩放/点选（**幂等**：每次渲染后调用一次即可） */
-/*: 左侧栏折叠（顶栏按钮 / Ctrl+B）；状态存 localStorage。 */
+/*: 渲染后挂图（**幂等**：每次 render 后调用一次；旧的实例按容器复用）。 */
+function mountGraphs(){
+  const list = G3D_SPECS.splice(0);
+  if (!window.Charts) return;
+  list.forEach(it => {
+    const el = document.getElementById(it.id);
+    if (!el) return;
+    const model = it.model || {};
+    const nodes = arr(model.nodes);
+    const edges = arr(model.edges);
+    try {
+      Charts.graph(el, {
+        nodes: nodes,
+        links: edges.map(e => ({from: e.from, to: e.to})),
+        labelAll: !!model.labelAll,
+        selected: obj(G3D_ST[it.key]).sel || "",
+        onSelect: (id) => {
+          const st = G3D_ST[it.key] || (G3D_ST[it.key] = {sel: ""});
+          st.sel = (st.sel === id) ? "" : id;
+          syncGraphTable(it.key);          /* 图 → 列表联动 */
+          Charts.refresh(el);              /* 选中高亮 */
+          const m = G3D_MODEL[it.key] || {};
+          if (typeof m.pick === "function") m.pick(st.sel);
+        },
+      });
+    } catch (e) {
+      el.innerHTML = `<div class="muted" style="padding:8px">图渲染失败：${
+        esc(String(e && e.message || e))}</div>`;
+    }
+  });
+}
+
+function _gEdgeTable(key, edges, nameOf, countOf){
+  const es = arr(edges);
+  if (!es.length) return "";
+  const inDeg = {};
+  es.forEach(e => { const to = e.to != null ? e.to : e.ref; inDeg[to] = (inDeg[to] || 0) + 1; });
+  const rows = es.map((e, i) => {
+    const from = e.from != null ? e.from : e.theme;
+    const to = e.to != null ? e.to : e.ref;
+    return {i, from, to, label: e.label || e.relation || "",
+            count: countOf ? countOf(e) : (inDeg[to] || 1)};
+  });
+  const body = rows.map(r => `<div class="lv-row" data-grow="${esc(key)}"
+      data-gfrom="${esc(r.from)}" data-gto="${esc(r.to)}">
+      <span class="lv-cell"><span class="lv-title" style="font-size:14px;font-weight:500">${esc(nameOf(r.from))}</span></span>
+      <span class="lv-cell"><span class="Label">${esc(r.label || "—")}</span></span>
+      <span class="lv-cell">${esc(nameOf(r.to))}</span>
+      <span class="lv-cell mono" style="text-align:right">${num(r.count)}</span>
+    </div>`).join("");
+  return `<div class="lv lv-gtable" style="margin-top:var(--s3)" data-gtable="${esc(key)}">
+      <div class="lv-scroll"><div class="lv-grid"
+        style="--cols:minmax(0,1.2fr) 90px minmax(0,1.2fr) 96px">
+        <div class="lv-headrow"><span>主体</span><span>关系</span><span>对象</span><span>引用次数</span></div>${body}</div></div></div>`;
+}
+
 function syncRailToggle(){
   const b = $("#railToggle");
   const off = document.body.classList.contains("rail-off");
@@ -3138,34 +3070,6 @@ function bindRailToggle(){
   });
 }
 
-/*: 图谱下方的关系列表（与列表页同构：.lv 容器 + 行；末尾多一列「引用次数」）
- *
- * 联动方向：图里点节点 → 列表只剩与该节点相关的行；点列表行 → 图里选中该节点。
- * 两边共享 `G3D_ST[key].sel`，不新增状态。 */
-function _gEdgeTable(key, edges, nameOf, countOf){
-  const es = arr(edges);
-  if (!es.length) return "";
-  const inDeg = {};
-  es.forEach(e => { const to = e.to != null ? e.to : e.ref; inDeg[to] = (inDeg[to] || 0) + 1; });
-  const rows = es.map((e, i) => {
-    const from = e.from != null ? e.from : e.theme;
-    const to = e.to != null ? e.to : e.ref;
-    return {i, from, to, label: e.label || e.relation || "",
-            count: countOf ? countOf(e) : (inDeg[to] || 1)};
-  });
-  const body = rows.map(r => `<div class="lv-row" data-grow="${esc(key)}"
-      data-gfrom="${esc(r.from)}" data-gto="${esc(r.to)}">
-      <span class="lv-cell"><span class="lv-title" style="font-size:14px;font-weight:500">${esc(nameOf(r.from))}</span></span>
-      <span class="lv-cell"><span class="Label">${esc(r.label || "—")}</span></span>
-      <span class="lv-cell">${esc(nameOf(r.to))}</span>
-      <span class="lv-cell mono" style="text-align:right">${num(r.count)}</span>
-    </div>`).join("");
-  return `<div class="lv lv-gtable" style="margin-top:var(--s3)" data-gtable="${esc(key)}">
-      <div class="lv-scroll"><div class="lv-grid"
-        style="--cols:minmax(0,1.2fr) 90px minmax(0,1.2fr) 96px">
-        <div class="lv-headrow"><span>主体</span><span>关系</span><span>对象</span><span>引用次数</span></div>${body}</div></div></div>`;
-}
-
 /*: 按当前选中节点过滤列表（图 → 列表） */
 function syncGraphTable(key){
   const sel = String(obj(G3D_ST[key]).sel || "");
@@ -3175,96 +3079,31 @@ function syncGraphTable(key){
   });
 }
 
-/*: 列表行 → 图（点行即选中该节点并重绘） */
+/*: 列表行 → 图（点行即选中该节点并重绘）；同时负责「重置视图」 */
 function bindGraphRows(){
   document.addEventListener("click", (ev) => {
+    const rst = ev.target && ev.target.closest ? ev.target.closest("[data-g3reset]") : null;
+    if (rst) {
+      const k = rst.dataset.g3reset;
+      G3D_ST[k] = {sel: ""};
+      const chart = document.querySelector(`[data-g3key="${k}"] .g3chart`);
+      if (chart && window.Charts) Charts.refresh(chart);
+      syncGraphTable(k);
+      return;
+    }
     const tr = ev.target && ev.target.closest ? ev.target.closest("[data-grow]") : null;
     if (!tr) return;
     const key = tr.dataset.grow;
     const st = G3D_ST[key];
     if (!st) return;
     st.sel = st.sel === tr.dataset.gto ? "" : tr.dataset.gto;
-    const svg = document.querySelector(`[data-g3key="${key}"] .g3svg`);
-    if (svg) svg.innerHTML = _g3dInner(key, 1040, 620);
+    const chart = document.querySelector(`[data-g3key="${key}"] .g3chart`);
+    if (chart && window.Charts) Charts.refresh(chart);
     syncGraphTable(key);
   }, true);
 }
 
-function bindG3d(){
-  const v = $("#view");
-  if(!v) return;
-  $$("[data-g3key]", v).forEach(wrap => {
-    const key = wrap.dataset.g3key;
-    const svg = $(".g3svg", wrap);
-    if(!svg || svg.dataset.bound === "1") return;
-    svg.dataset.bound = "1";
-    const W = 1040, H = 620;
-    let drag = null;
-    const redraw = () => {
-      // 只换内容，不换 svg 元素（否则 pointer 监听丢失 → "转一下就死住"）
-      svg.innerHTML = _g3dInner(key, W, H);
-    };
-    const onDown = (ev) => {
-      drag = {x: ev.clientX, y: ev.clientY, moved: 0,
-              yaw: G3D_ST[key].yaw, pitch: G3D_ST[key].pitch};
-      svg.setPointerCapture && svg.setPointerCapture(ev.pointerId);
-    };
-    const onMove = (ev) => {
-      if(!drag) return;
-      const dx = ev.clientX - drag.x, dy = ev.clientY - drag.y;
-      drag.moved = Math.max(drag.moved, Math.abs(dx) + Math.abs(dy));
-      G3D_ST[key].yaw = drag.yaw + dx * 0.008;
-      G3D_ST[key].pitch = Math.max(-1.35, Math.min(1.35, drag.pitch + dy * 0.006));
-      if(!drag.raf){
-        drag.raf = requestAnimationFrame(() => { drag.raf = 0; redraw(); });
-      }
-    };
-    /* 点选**不能**依赖节点上的 click 监听：
-     * `setPointerCapture` 之后，浏览器把后续 pointer 事件重定向到 svg，
-     * 合成的 `click` 的 target 也变成 svg 本身（不是被点的 `<g>`）⇒ 节点监听永不触发。
-     * 这正是"点节点聚焦失效"的根因（上一版重绑 dataset 标记只是缓解，不是根治）。
-     * 正解：在 pointerup 里按**坐标**命中元素（moved 很小才算点击，避免拖拽误触）。
-     */
-    const pickAt = (ev) => {
-      const el = document.elementFromPoint(ev.clientX, ev.clientY);
-      const g = el && el.closest ? el.closest(".g3n") : null;
-      if (!g) return false;
-      const id = g.dataset.nid || "";
-      const st = G3D_ST[key];
-      st.sel = (st.sel === id) ? "" : id;
-      syncGraphTable(key);      /* 图 → 列表联动 */
-      const m = G3D_MODEL[key] || {};
-      if (typeof m.pick === "function") { m.pick(st.sel); return true; }
-      svg.innerHTML = _g3dInner(key, W, H);
-      return true;
-    };
-    const onUp = (ev) => {
-      const d = drag;
-      drag = null;
-      if (!d) return;
-      if (d.moved <= 6 && ev && ev.clientX != null) {
-        try { pickAt(ev); } catch (e) { /* 命中失败不该影响拖拽 */ }
-      }
-    };
-    svg.addEventListener("pointerdown", onDown);
-    svg.addEventListener("pointermove", onMove);
-    svg.addEventListener("pointerup", onUp);
-    svg.addEventListener("pointerleave", onUp);
-    svg.addEventListener("wheel", (ev) => {
-      ev.preventDefault();
-      G3D_ST[key].zoom = Math.max(0.45, Math.min(3, G3D_ST[key].zoom *
-        (ev.deltaY > 0 ? 0.92 : 1.08)));
-      redraw();
-    }, {passive: false});
-  });
-  $$("[data-g3reset]", v).forEach(b => {
-    b.onclick = () => {
-      const key = b.dataset.g3reset;
-      G3D_ST[key] = {yaw: -0.55, pitch: 0.32, zoom: 1, sel: ""};
-      render();
-    };
-  });
-}
+
 
 /*: 视图 ⑥ 局部图（点节点进入）：中心 + 一跳邻居，3D 球 */
 function _gEgo(d){
@@ -3634,7 +3473,7 @@ function bindGraph(){
   $$("[data-erdtab]", v).forEach(el => {
     el.onclick = () => { STATE.east_erd = el.dataset.erdtab || ""; render(); };
   });
-  bindG3d();
+  mountGraphs();
 }
 
 /** 跳到「关系图谱」页签并以 `ref` 为中心。
@@ -4556,7 +4395,7 @@ function bindRegstats(){
       eastGotoCode(id, hit ? hit.name : "");
     };
   });
-  bindG3d();
+  mountGraphs();
 }
 
 function viewFeedback(d){

@@ -160,16 +160,18 @@ class TestFrontendContract:
         fn = self._fn(h, "_natNo")
         assert "split(/[-.]/)" in fn, "未按 -/. 分段，1-10 会排到 1-2 前面"
 
-    def test_3d_engine_used_in_both_graphs(self) -> None:
+    def test_graph_engine_used_in_all_views(self) -> None:
+        """批 160：自绘 SVG 3D → ECharts graph（charts.js 唯一出口）。"""
         h = _html()
-        assert "function g3dBox(" in h and "function _g3dInner(" in h
-        assert "pointermove" in h and "wheel" in h and "requestAnimationFrame" in h
+        assert "function g3dBox(" in h, "缺少图表容器工厂"
+        assert "function mountGraphs(" in h, "缺少统一挂载"
+        assert "Charts.graph(" in h, "未走统一图表出口"
+        # 自绘实现已删除
+        assert "_g3dInner" not in h and "canvas 投影" not in h
+        assert "function bindG3d(" not in h
         for name in ("_gBipartite", "_gRegulatory", "_gInternal", "_gTheme", "_gEgo"):
-            assert "g3dBox(" in self._fn(h, name), f"{name} 未接 3D"
-        assert "g3dBox(" in self._fn(h, "eastEr"), "E-R 未接 3D"
-        # 拖拽重绘不能替换 svg 元素本身（否则监听丢失）
-        assert "svg.innerHTML = _g3dInner(" in h
-        assert "svg.outerHTML" not in h
+            assert "g3dBox(" in self._fn(h, name), f"{name} 未接图表"
+        assert "g3dBox(" in self._fn(h, "eastEr"), "E-R 未接图表"
 
 class TestNoTruncationAndSidebar:
     """2026-10-27 用户要求：说明类文本**禁止省略号缩减**；关键页改左侧栏。"""

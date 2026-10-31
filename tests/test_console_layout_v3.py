@@ -133,21 +133,24 @@ class TestOverviewEastOnly:
         assert "附件清单" in body and "${docsBlock}" in body
 
 
-class TestPointerPick:
-    """④ 3D 点节点聚焦：坐标命中（capture 后 click target 会变 svg）。"""
+class TestGraphSelection:
+    """④ 图点节点聚焦（批 160：自绘 SVG → ECharts graph，选中态走 onSelect/refresh）。"""
 
     def test_no_per_node_click(self, h: str) -> None:
         assert "bindG3dNodes" not in h, "仍在用逐节点绑定（capture 后收不到 click）"
 
-    def test_element_from_point(self, h: str) -> None:
-        body = fn(h, "bindG3d")
-        assert "document.elementFromPoint(" in body
-        assert 'closest(".g3n")' in body
-        assert "d.moved <= 6" in body, "未设拖拽阈值 ⇒ 拖一下就会误触发点选"
+    def test_mount_uses_charts_graph(self, h: str) -> None:
+        body = fn(h, "mountGraphs")
+        assert "Charts.graph(" in body, "关系图未走统一图表出口"
+        assert "onSelect" in body, "缺少点节点回调"
+        # 自绘实现必须已删除
+        assert "elementFromPoint(" not in h, "仍在用坐标命中（自绘 SVG 时代的做法）"
+        assert "_g3dInner" not in h, "自绘 SVG 渲染未删除"
 
-    def test_still_renders_selection(self, h: str) -> None:
-        body = fn(h, "_g3dInner")
-        assert "st.sel" in body and "sel ===" in body.replace("st.sel", "sel")
+    def test_selection_drives_table(self, h: str) -> None:
+        body = fn(h, "mountGraphs") + fn(h, "bindGraphRows")
+        assert "G3D_ST[" in body and "syncGraphTable(" in body
+        assert "Charts.refresh(" in body, "选中态变化后未重放图表（高亮不更新）"
 
 
 class TestRailContentStillData:
