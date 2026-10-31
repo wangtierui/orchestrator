@@ -641,10 +641,10 @@ body.lv-selecting .lv-table tbody .lv-ck,
 /* 工具行在 thead 里，分割交给 th —— 这里不再画线（用户："底部边框线过多"） */
 .lv-bar{border-bottom:0;background:transparent}
 .lv-slice{border-left:1px solid var(--border);background:transparent}
-body.lv-compact .lv-table td{padding:2px 8px;height:26px;font-size:13px;white-space:nowrap}
-body.lv-compact .lv-title{font-size:13px}
-body.lv-compact .lv-meta{margin-top:2px}
-body.lv-compact .lv-title{font-size:12.5px}
+#view.lv-compact .lv-table td{padding:2px 8px;height:26px;font-size:13px;white-space:nowrap}
+#view.lv-compact .lv-title{font-size:13px}
+#view.lv-compact .lv-meta{margin-top:2px}
+#view.lv-compact .lv-title{font-size:12.5px}
 /* 状态筛选页签（替代外部下拉框） */
 .ftabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin:0 0 12px;
   overflow:hidden}
@@ -668,7 +668,7 @@ body.lv-compact .lv-title{font-size:12.5px}
 .density button:hover{background:var(--hover)}
 .density button.on:hover{background:var(--bg-subtle)}
 /* 表头字段筛选面板：选项带复选框/圆点/主副文本，悬停或选中时浅灰 + 2px 蓝线 */
-.fpop{position:fixed;z-index:70;width:300px;max-height:60vh;overflow:auto;
+.fpop{position:fixed;z-index:70;width:320px;max-height:60vh;overflow:auto;
   background:var(--bg);border:1px solid var(--border);border-radius:6px;
   box-shadow:0 8px 24px rgba(31,35,40,.12);padding:8px}
 .fpop .q{width:100%;height:28px;font-size:12.5px;border:1px solid var(--border);
@@ -676,9 +676,8 @@ body.lv-compact .lv-title{font-size:12.5px}
 .fpop .opt{position:relative;display:flex;align-items:center;gap:8px;width:100%;
   border:0;background:none;padding:6px 8px;border-radius:6px;text-align:left;
   font-size:12.5px;color:var(--text);cursor:pointer}
-.fpop .opt:hover{background:var(--bg-subtle)}
-.fpop .opt:hover::before,.fpop .opt[aria-checked="true"]::before{content:"";position:absolute;
-  left:0;top:3px;bottom:3px;width:4px;background:var(--accent);border-radius:2px}
+.fpop .opt:hover{background:rgba(129,139,152,.1)}
+/* 批 156d：面板不再画左侧竖线（实测 GitHub ActionList 无此装饰） */
 .fpop .opt[aria-checked="true"]{background:var(--bg-subtle);font-weight:600}
 
 .fpop .opt .dot{width:8px;height:8px;border-radius:50%;flex:none;background:var(--fg4)}
@@ -742,10 +741,10 @@ html[data-color-mode="dark"] .Label{background:#21262d;border-color:#3d444d}
   white-space:nowrap}
 .lv-primary .lv-meta{display:flex;margin-top:2px}
 /* 紧凑：一行（标题与元数据并排，超长省略） */
-body.lv-compact .lv-primary{display:flex;align-items:center;gap:8px;min-width:0}
-body.lv-compact .lv-primary .lv-title{display:inline;white-space:nowrap;overflow:hidden;
+#view.lv-compact .lv-primary{display:flex;align-items:center;gap:8px;min-width:0}
+#view.lv-compact .lv-primary .lv-title{display:inline;white-space:nowrap;overflow:hidden;
   text-overflow:ellipsis;flex:0 1 auto;margin-right:0}
-body.lv-compact .lv-primary .lv-meta{display:inline-flex;margin-top:0;flex:1 1 auto;
+#view.lv-compact .lv-primary .lv-meta{display:inline-flex;margin-top:0;flex:1 1 auto;
   min-width:0;overflow:hidden;white-space:nowrap}
 /* 分页脚：只保留与表格之间的那一条线 */
 .lv-foot{display:flex;justify-content:flex-end;padding:8px 8px 4px}
@@ -754,7 +753,7 @@ body.lv-compact .lv-primary .lv-meta{display:inline-flex;margin-top:0;flex:1 1 a
 /* 统一高度（批 127）：表头 48 / 宽松行 65 / 紧凑行 38 / 控件 32 */
 .lv-headrow th{height:48px;padding:0}
 .lv-table td{height:65px}
-body.lv-compact .lv-table td{height:38px}
+#view.lv-compact .lv-table td{height:38px}
 .lv-headctl{width:auto;padding:0 8px 0 0 !important}
 .lv-headctl .lv-bar{display:flex;align-items:center;gap:6px;flex-wrap:nowrap;
   justify-content:flex-end;padding:0}
@@ -1164,7 +1163,10 @@ body.rail-off .rail{transition:width .15s cubic-bezier(.65,0,.35,1),
 /* ⑧ 分页：无外框、无边框、hover 浅灰底 */
 .paginate-container{border:0;text-align:center}
 .pagination a,.pagination span,.pagination em{border-color:transparent}
-.paginate-container .pagination a:hover,.paginate-container .pagination a:focus{background:var(--bg-subtle);border-color:transparent}
+.paginate-container .pagination a:hover,.paginate-container .pagination a:focus{
+  background:transparent;border-color:#0969da;color:#0969da;text-decoration:none}
+.paginate-container .pagination a[aria-disabled="true"]:hover{
+  background:transparent;border-color:transparent;color:var(--text-muted)}
 /* ⑪ 焦点环：GitHub 是 inset 2px #0969da（实测 outline:2px transparent; shadow inset） */
 a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,
 textarea:focus-visible,[tabindex]:focus-visible{
@@ -1176,7 +1178,7 @@ textarea:focus-visible,[tabindex]:focus-visible{
 .lv:not(.lv-dense) .lv-table tr.lv-row{display:grid;grid-template-columns:32px 24px minmax(0,1fr);
   align-items:center;column-gap:8px;height:auto;min-height:65px;padding:8px}
 .lv:not(.lv-dense) .lv-table tr.lv-row>td{display:block;padding:0;border:0;height:auto;min-width:0}
-body.lv-compact .lv:not(.lv-dense) .lv-table tr.lv-row{min-height:38px;padding:4px 8px}
+#view.lv-compact .lv:not(.lv-dense) .lv-table tr.lv-row{min-height:38px;padding:4px 8px}
 .lv:not(.lv-dense) .lv-table tr.lv-row:hover{background:var(--bg-subtle)}
 .lv:not(.lv-dense) .lv-table tr.lv-row[aria-selected="true"]{background:var(--bg-subtle)}
 
@@ -1223,6 +1225,20 @@ body.lv-compact .lv:not(.lv-dense) .lv-table tr.lv-row{min-height:38px;padding:4
 .lv-gtable .lv-cell.wrapc{white-space:normal;overflow:visible;text-overflow:clip;
   word-break:break-word;line-height:1.55;padding-top:6px;padding-bottom:6px}
 .lv-gtable .lv-row{align-items:start}
+
+/* 批 156：紧凑密度也作用于网格表（.lv-gtable 没有 td） */
+#view.lv-compact .lv-gtable .lv-row{min-height:38px;padding:4px 8px}
+#view.lv-compact .lv-gtable .lv-cell{font-size:13px}
+
+/* 批 156b：紧凑密度真正压到 38（此前 47：标题 16/24 行高把行撑开） */
+#view.lv-compact .lv-table tr.lv-row{min-height:38px;padding:4px 8px;align-items:center}
+#view.lv-compact .lv-table tr.lv-row .lv-title{font-size:14px;line-height:18px;margin:0}
+#view.lv-compact .lv-table tr.lv-row .lv-meta{font-size:12px;line-height:16px;margin-top:0}
+#view.lv-compact .lv-gtable .lv-row{min-height:38px;padding:4px 8px}
+#view.lv-compact .lv-gtable .lv-cell{font-size:13px;line-height:18px}
+
+/* 批 156c：紧凑行由 tr 控制高度，td 归零（此前 td{height:38}+padding 4 ⇒ 47） */
+#view.lv-compact .lv-table tr.lv-row>td{height:auto;padding:0;line-height:18px}
 </style>
 </head>
 <body>
@@ -4969,7 +4985,7 @@ function lvRender(list, d, st, f) {
     const meta = metaParts.length
       ? `<span class="lv-meta">${metaParts.join('<span class="dot-sep" aria-hidden="true">·</span>')}</span>`
       : "";
-    /* 宽松：标题一行、元数据一行；紧凑：两者同一行。切换由 body.lv-compact 的 CSS 完成，
+    /* 宽松：标题一行、元数据一行；紧凑：两者同一行。切换由 #view.lv-compact 的 CSS 完成，
      * 不再需要两套模板（同一份 DOM 两种密度）。 */
     const href = list === "rules" && it.local_path
       ? `/api/local/file?path=${encodeURIComponent(it.local_path)}`
@@ -5142,8 +5158,11 @@ function lvDensity() {
   try { return localStorage.getItem("lv.density") || "wide"; } catch (e) { return "wide"; }
 }
 function lvSetDensity(v) {
+  /* 批 156：密度只作用于内容区（#view），不再改 body ——
+   * 之前挂在 body 上，会连带影响顶栏/侧栏，且切页后仍残留。 */
   try { localStorage.setItem("lv.density", v); } catch (e) { /* 隐私模式 */ }
-  document.body.classList.toggle("lv-compact", v === "compact");
+  const view = $("#view");
+  if (view) view.classList.toggle("lv-compact", v === "compact");
 }
 
 /* ---------------- 表头字段筛选面板（选项：复选框 + 圆点 + 主文本 + 计数） ---------------- */

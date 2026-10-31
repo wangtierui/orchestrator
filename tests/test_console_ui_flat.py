@@ -199,14 +199,15 @@ class TestListV2:
         panel = fn(h, "lvFieldFilterPop")
         assert "openOptionList({" in panel, "字段面板未走统一组件"
         assert "搜索该字段的取值" in panel
-        assert ".fpop .opt:hover::before" in h
-        seg = h[h.index(".fpop .opt:hover::before"):][:260]
-        # 批 127：侧栏 / 搜索下拉 / 表头筛选 / 字段筛选的强调线**统一 4px**
-        assert "width:4px" in seg, "表头筛选面板悬停线应为 4px"
+        # 批 156：面板宽度按 GitHub 实测 320；行 hover 用 .1 透明；**不再画左侧竖线**
+        assert "width:320px" in fn(h, "openOptionList") or ".fpop{position:fixed;z-index:70;width:320px" in h
+        assert ".fpop .opt:hover{background:rgba(129,139,152,.1)}" in h
+        assert ".fpop .opt:hover::before" not in h
 
     def test_density_toggle(self, h: str) -> None:
         assert "data-lvdensity" in h and "lv.density" in h
-        assert "body.lv-compact .lv-table td" in h
+        # 批 156：密度只作用于内容区（#view），不再挂 body
+        assert "#view.lv-compact .lv-table td" in h
 
     def test_batch_reason(self, h: str) -> None:
         assert 'id="lvReason"' in h

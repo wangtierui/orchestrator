@@ -114,10 +114,10 @@ class TestListLayout:
         wide_meta = h[h.index(".lv-primary .lv-meta{"):]
         wide_meta = wide_meta[:wide_meta.index("}")]
         assert "display:flex" in wide_meta
-        compact = h[h.index("body.lv-compact .lv-primary{"):]
+        compact = h[h.index("#view.lv-compact .lv-primary{"):]
         compact = compact[:compact.index("}")]
         assert "display:flex" in compact, "紧凑模式必须一行排布"
-        assert "body.lv-compact .lv-primary .lv-meta" in h
+        assert "#view.lv-compact .lv-primary .lv-meta" in h
 
     def test_header_cells_aligned(self, h: str) -> None:
         """表头与单元格同一套内边距 ⇒ 文字左边缘对齐。"""
@@ -187,8 +187,9 @@ class TestUnifiedMetrics:
 
     def test_list_heights(self, h: str) -> None:
         assert ".lv-headrow th{height:48px" in h
-        assert ".lv-table td{height:65px}" in h
-        assert "body.lv-compact .lv-table td{height:38px}" in h
+        # 批 145/156：列表行高由 tr 的 min-height 控制（td 不再定高）
+        assert "min-height:65px" in h
+        assert "#view.lv-compact .lv-table tr.lv-row{min-height:38px" in h
 
     def test_sidebar_item_height(self, h: str) -> None:
         # 注意 `body.rail-off .rail .sideitem{...}` 也含该子串，必须锚到行首
@@ -197,8 +198,8 @@ class TestUnifiedMetrics:
         assert "height:32px" in seg
 
     def test_four_px_lines_unified(self, h: str) -> None:
-        for sel in (".rail .sideitem.on::before", ".spop .it:hover::before",
-                    ".fpop .opt:hover::before"):
+        # 批 156：面板（.fpop）按 GitHub 无左侧竖线，只剩侧栏与搜索下拉两处
+        for sel in (".rail .sideitem.on::before", ".spop .it:hover::before"):
             seg = h[h.index(sel):]
             seg = seg[:seg.index("}")]
             assert "width:4px" in seg, sel
