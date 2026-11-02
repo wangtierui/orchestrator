@@ -103,13 +103,45 @@
       type: "value", splitLine: { lineStyle: { color: p.border, type: "dashed" } },
       axisLabel: { color: p.muted, fontSize: 11 },
     };
+    var values = spec.values || [];
     opt.series = [{
-      type: "line", data: spec.values || [], smooth: true, showSymbol: true,
+      type: "line", data: values, smooth: true, showSymbol: true,
       symbolSize: 4, connectNulls: true,
       lineStyle: { width: 2, color: color },
       itemStyle: { color: color },
       areaStyle: { color: color, opacity: 0.08 },
     }];
+
+    /*: 回归线（**可选**，spec.regression 才画）：用 ecStat 拟合，
+     * R² 由残差/总平方和自己算（ecStat 该版本不返回 r2）。 */
+    if (spec.regression && window.ecStat && values.length >= 3) {
+      var pairs = values.map(function (v, i) { return [i, v]; });
+      try {
+        var fit = window.ecStat.regression("linear", pairs);
+        var pts = fit.points || [];
+        var mean = values.reduce(function (a, b) { return a + b; }, 0) / values.length;
+        var sst = values.reduce(function (a, b) { return a + Math.pow(b - mean, 2); }, 0);
+        var sse = values.reduce(function (a, v, i) {
+          var y = pts[i] ? pts[i][1] : v;
+          return a + Math.pow(v - y, 2);
+        }, 0);
+        var r2 = sst > 0 ? 1 - sse / sst : 1;
+
+        opt.series.push({
+          type: "line", data: pts.map(function (q) { return q[1]; }),
+          smooth: false, symbol: "none", silent: true, z: 1,
+          lineStyle: { width: 1.5, type: "dashed", color: p.muted },
+        });
+        opt.title = {
+          text: "",
+          subtext: "拟合 " + String(fit.expression || "").replace(/\s+/g, "")
+                   + " · R²=" + r2.toFixed(2),
+          right: 8, top: 0,
+          subtextStyle: { color: p.muted, fontSize: 11, fontFamily: "inherit" },
+        };
+      } catch (e) { /* 拟合失败不影响主图 */ }
+    }
+
     inst.setOption(opt, true);
   }
 
@@ -268,8 +300,10 @@
         },
       },
       series: [{
-        type: "graph", layout: "force", roam: true, draggable: true,
+        type: "graph", layout: spec.layout === "circular" ? "circular" : "force",
+        roam: true, draggable: true,
         force: { repulsion: spec.repulsion || 90, edgeLength: [40, 120], gravity: 0.08 },
+        circular: { rotateLabel: false },
         categories: groups.map(function (g, i) {
           return { name: g || "默认", itemStyle: { color: colors[i % colors.length] } };
         }),

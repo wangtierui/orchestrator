@@ -140,7 +140,9 @@ class TestGraphSelection:
         assert "bindG3dNodes" not in h, "仍在用逐节点绑定（capture 后收不到 click）"
 
     def test_mount_uses_charts_graph(self, h: str) -> None:
-        body = fn(h, "mountGraphs")
+        mount = fn(h, "mountGraphs")
+        assert "renderGraphEl(" in mount, "挂载未走统一重绘入口"
+        body = fn(h, "renderGraphEl")
         assert "Charts.graph(" in body, "关系图未走统一图表出口"
         assert "onSelect" in body, "缺少点节点回调"
         # 自绘实现必须已删除
@@ -148,9 +150,11 @@ class TestGraphSelection:
         assert "_g3dInner" not in h, "自绘 SVG 渲染未删除"
 
     def test_selection_drives_table(self, h: str) -> None:
-        body = fn(h, "mountGraphs") + fn(h, "bindGraphRows")
+        body = fn(h, "renderGraphEl") + fn(h, "bindGraphRows")
         assert "G3D_ST[" in body and "syncGraphTable(" in body
-        assert "Charts.refresh(" in body, "选中态变化后未重放图表（高亮不更新）"
+        assert "renderGraphEl(" in body, "选中态变化后未重绘图表（高亮不更新）"
+        # 布局切换必须重建 spec（refresh 只重放旧 spec，改不了 layout）
+        assert 'layout: obj(G3D_ST[key]).layout' in body
 
 
 class TestRailContentStillData:

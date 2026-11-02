@@ -427,7 +427,7 @@ main{padding:0;max-width:none;margin:0;min-width:0}
 .rail .sideitem.on{background:var(--bg-subtle);color:var(--text);font-weight:600}
 .rail .sideitem.on::before{content:"";position:absolute;left:-8px;top:3px;bottom:3px;
   width:4px;background:var(--accent);border-radius:2px}
-.rail .sideitem:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.rail .sideitem:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;box-shadow:none}
 .rail .sideitem .glyph{width:16px;text-align:center;flex:none;font-size:12px;
   color:var(--text-muted)}
 .rail .sideitem.on .glyph{color:var(--text)}
@@ -498,7 +498,7 @@ main{padding:0;max-width:none;margin:0;min-width:0}
 .lv-th .sortbtn{border:0;background:none;font:inherit;color:inherit;cursor:pointer;
   padding:2px 4px;border-radius:4px;display:inline-flex;align-items:center;gap:4px}
 .lv-th .sortbtn:hover{background:var(--hover);color:var(--text)}
-.lv-th .sortbtn:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.lv-th .sortbtn:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;box-shadow:none}
 .lv-th .menu{opacity:0;border:0;background:none;color:var(--text-muted);cursor:pointer;
   width:22px;height:22px;border-radius:4px;line-height:1;font-size:13px}
 .lv-table th:hover .menu,.lv-th .menu:focus-visible,.lv-th .menu[aria-expanded="true"]{
@@ -536,7 +536,7 @@ main{padding:0;max-width:none;margin:0;min-width:0}
 .lv-ck:checked{background:var(--accent);border-color:var(--accent)}
 .lv-ck:checked::after{content:"";position:absolute;left:3.5px;top:1px;width:4px;height:7px;
   border:solid #fff;border-width:0 2px 2px 0;transform:rotate(42deg)}
-.lv-ck:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.lv-ck:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;box-shadow:none}
 /* 复选框：默认只在悬停/选中时出现；一旦进入选择模式则全部常显 */
 .lv-table tbody .lv-selcell .lv-ck{opacity:0;transition:opacity .1s}
 .lv-table tbody tr:hover .lv-ck,
@@ -1162,11 +1162,9 @@ body.rail-off .rail{transition:width .15s cubic-bezier(.65,0,.35,1),
   background:transparent;border-color:#0969da;color:#0969da;text-decoration:none}
 .paginate-container .pagination a[aria-disabled="true"]:hover{
   background:transparent;border-color:transparent;color:var(--text-muted)}
-/* ⑪ 焦点环：GitHub 是 inset 2px #0969da（实测 outline:2px transparent; shadow inset） */
-a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,
-textarea:focus-visible,[tabindex]:focus-visible{
-  outline:2px solid transparent;outline-offset:-2px;
-  box-shadow:0 0 0 2px #0969da inset}
+/* ⑪ 焦点环：批 161 按登录态实测改为 **2px 实线 + outline-offset -2**
+ * （旧版是 transparent outline + inset shadow，与 GitHub 不符）；
+ * 具体规则集中在样式表末尾的 `:focus-visible` 段，这里不再重复定义。 */
 
 /* 批 145（第 1 条）：列表行 -> CSS Grid（GitHub 三区：选择 / 状态 / 主体）
  * 用 display:grid 作用于 tr，td 变成网格项；列宽固定为 32/24/1fr，间距 8。 */
@@ -1242,6 +1240,22 @@ textarea:focus-visible,[tabindex]:focus-visible{
 /* 批 159：图表容器（ECharts 画布撑满卡片宽度） */
 .chart-box{width:100%;min-width:0}
 .chart-box canvas{max-width:100%}
+
+/* 批 161：图表底部分段控件（布局切换） */
+.g3bar .seg{display:inline-flex;align-items:center;gap:2px;border:1px solid var(--line);
+  border-radius:6px;padding:1px;background:var(--card)}
+.g3bar .segbtn{height:24px;font-size:12px;padding:0 8px;border-radius:5px}
+.g3bar .segbtn.on{background:var(--bg-subtle);font-weight:600}
+
+/* 批 161：焦点环按 GitHub 登录态实测（2026-11-02）
+ * 常规元素：outline 2px solid #0969da + outline-offset -2px（贴边内缩）
+ * 页签：outline 透明 + box-shadow 0 0 0 2px（round 角内缩，避免被 overflow 裁切）
+ */
+:focus-visible{outline:2px solid #0969da;outline-offset:-2px;box-shadow:none}
+.tab:focus-visible,.repo-tabs .tab:focus-visible{
+  outline:2px solid transparent;box-shadow:0 0 0 2px #0969da}
+.paginate-container .pagination a:focus-visible{
+  outline:2px solid #0969da;outline-offset:-2px;box-shadow:0 0 0 2px #fff}
 </style>
 </head>
 <body>
@@ -1877,8 +1891,9 @@ const SLI_LABEL = {
  * 为什么不在模板里直接 init：视图函数是**纯字符串**，拿不到 DOM；
  * 用 id 登记 + 渲染后统一挂载，既保持"纯字符串渲染"的既有结构，也不引入异步。 */
 let CHART_SPECS = [];
+let CHART_SEQ = 0;
 function chartBox(kind, spec, h){
-  const id = "ch" + CHART_SPECS.length;
+  const id = "ch" + (CHART_SEQ++);
   CHART_SPECS.push({id, kind, spec: spec || {}});
   return `<div class="chart-box" id="${id}" style="height:${h || 200}px"></div>`;
 }
@@ -1944,6 +1959,7 @@ function viewMetrics(d){
         labels: rows.map((r, i) => String(r.date || r.run_id || ("#" + (i + 1))).slice(-8)),
         values: rows.map(r => Number(r.rate) || 0),
         color: "#2F7CF6",
+        regression: true,
       }, 200);
     })(), d.source, d.fetched_at)}
     ${card("待办 aging","未处置天数分布", (() => {
@@ -2975,53 +2991,78 @@ const G3D_MODEL = {};     // key -> model（拖拽时重算用）
  * 页面只登记"key + 模型 + 高度"，渲染由 mountGraphs() 在 DOM 就绪后统一完成——
  * 与 chartBox/mountCharts 同一套路，避免视图函数依赖 DOM。 */
 const G3D_SPECS = [];
+let G3_SEQ = 0;
 function g3dBox(key, model, W, H, hint){
   G3D_MODEL[key] = model;
-  if(!G3D_ST[key]) G3D_ST[key] = {sel: ""};
-  const id = "g3-" + G3D_SPECS.length;
+  if(!G3D_ST[key]) G3D_ST[key] = {sel: "", layout: "force"};
+  if(!G3D_ST[key].layout) G3D_ST[key].layout = "force";
+  const id = "g3-" + (G3_SEQ++);
   G3D_SPECS.push({id: id, key: key, model: model, h: H || 620});
   return `<div class="g3wrap" data-g3key="${esc(key)}">
       <div class="g3chart" id="${id}" style="height:${H || 620}px"></div>
       <div class="g3bar">
         <span class="muted">${hint || "拖拽节点 · 滚轮/拖动缩放 · 点节点聚焦（下方列表同步过滤）"}</span>
         <span style="flex:1"></span>
+        <span class="seg" role="group" aria-label="布局">
+          <button class="btn btn-invisible segbtn${G3D_ST[key].layout === "force" ? " on" : ""}"
+            data-g3layout="force" data-g3key="${esc(key)}"
+            aria-pressed="${G3D_ST[key].layout === "force"}">力导向</button>
+          <button class="btn btn-invisible segbtn${G3D_ST[key].layout === "circular" ? " on" : ""}"
+            data-g3layout="circular" data-g3key="${esc(key)}"
+            aria-pressed="${G3D_ST[key].layout === "circular"}">环形</button>
+        </span>
         <button class="link" data-g3reset="${esc(key)}">重置视图</button>
       </div>
     </div>`;
 }
 
-/*: 渲染后挂图（**幂等**：每次 render 后调用一次；旧的实例按容器复用）。 */
+/*: 单个关系图的重绘入口（挂载 / 切布局 / 重置 / 行选中都走这里）。
+ * 为什么不用 Charts.refresh：refresh 只会重放**旧 spec**，改不了 layout ——
+ * 图的参数来自 G3D_ST（layout/sel）与 G3D_MODEL（节点边），必须现场重建 spec。 */
+function renderGraphEl(key, el, h){
+  if (!el || !window.Charts) return;
+  const model = G3D_MODEL[key] || {};
+  try {
+    Charts.graph(el, {
+      nodes: arr(model.nodes),
+      links: arr(model.edges).map(e => ({from: e.from, to: e.to})),
+      labelAll: !!model.labelAll,
+      hollowGroups: arr(model.hollow),
+      selected: obj(G3D_ST[key]).sel || "",
+      layout: obj(G3D_ST[key]).layout || "force",
+      onSelect: (id) => {
+        const st = G3D_ST[key] || (G3D_ST[key] = {sel: ""});
+        st.sel = (st.sel === id) ? "" : id;
+        syncGraphTable(key);          /* 图 → 列表联动 */
+        renderGraphEl(key, el);       /* 选中高亮 */
+        if (typeof model.pick === "function") model.pick(st.sel);
+      },
+    });
+  } catch (e) {
+    el.innerHTML = `<div class="muted" style="padding:8px">图渲染失败：${
+      esc(String(e && e.message || e))}</div>`;
+  }
+}
+
+/*: 渲染后挂图（幂等：每次 render 后调用一次；实例按容器复用）。 */
 function mountGraphs(){
   const list = G3D_SPECS.splice(0);
-  if (!window.Charts) return;
   list.forEach(it => {
     const el = document.getElementById(it.id);
-    if (!el) return;
-    const model = it.model || {};
-    const nodes = arr(model.nodes);
-    const edges = arr(model.edges);
-    try {
-      Charts.graph(el, {
-        nodes: nodes,
-        links: edges.map(e => ({from: e.from, to: e.to})),
-        labelAll: !!model.labelAll,
-        selected: obj(G3D_ST[it.key]).sel || "",
-        onSelect: (id) => {
-          const st = G3D_ST[it.key] || (G3D_ST[it.key] = {sel: ""});
-          st.sel = (st.sel === id) ? "" : id;
-          syncGraphTable(it.key);          /* 图 → 列表联动 */
-          Charts.refresh(el);              /* 选中高亮 */
-          const m = G3D_MODEL[it.key] || {};
-          if (typeof m.pick === "function") m.pick(st.sel);
-        },
-      });
-    } catch (e) {
-      el.innerHTML = `<div class="muted" style="padding:8px">图渲染失败：${
-        esc(String(e && e.message || e))}</div>`;
-    }
+    if (el) renderGraphEl(it.key, el);
   });
 }
 
+/*: 按当前选中节点过滤列表（图 → 列表） */
+function syncGraphTable(key){
+  const sel = String(obj(G3D_ST[key]).sel || "");
+  $$(`[data-gtable="${key}"] .lv-row`).forEach(tr => {
+    const hit = !sel || tr.dataset.gfrom === sel || tr.dataset.gto === sel;
+    tr.hidden = !hit;
+  });
+}
+
+/*: 列表行 → 图（点行即选中该节点并重绘）；同时负责「重置视图」 */
 function _gEdgeTable(key, edges, nameOf, countOf){
   const es = arr(edges);
   if (!es.length) return "";
@@ -3044,18 +3085,6 @@ function _gEdgeTable(key, edges, nameOf, countOf){
       <div class="lv-scroll"><div class="lv-grid"
         style="--cols:minmax(0,1.2fr) 90px minmax(0,1.2fr) 96px">
         <div class="lv-headrow"><span>主体</span><span>关系</span><span>对象</span><span>引用次数</span></div>${body}</div></div></div>`;
-}
-
-function syncRailToggle(){
-  const b = $("#railToggle");
-  const off = document.body.classList.contains("rail-off");
-  if (b) {
-    b.setAttribute("aria-expanded", off ? "false" : "true");
-    b.setAttribute("aria-label", off ? "展开侧边栏" : "折叠侧边栏");
-    b.title = (off ? "展开侧边栏" : "折叠侧边栏") + "（Ctrl+B）";
-    b.innerHTML = `<span class="rt-ico">${ico(off ? "sidebar-expand" : "sidebar-collapse", 16)}</span>`
-      + `<span class="rt-txt">${off ? "展开" : "折叠"}</span>`;
-  }
 }
 
 function bindRailToggle(){
@@ -3081,24 +3110,49 @@ function bindRailToggle(){
   });
 }
 
-/*: 按当前选中节点过滤列表（图 → 列表） */
-function syncGraphTable(key){
-  const sel = String(obj(G3D_ST[key]).sel || "");
-  $$(`[data-gtable="${key}"] .lv-row`).forEach(tr => {
-    const hit = !sel || tr.dataset.gfrom === sel || tr.dataset.gto === sel;
-    tr.hidden = !hit;
-  });
+function syncRailToggle(){
+  const b = $("#railToggle");
+  const off = document.body.classList.contains("rail-off");
+  if (b) {
+    b.setAttribute("aria-expanded", off ? "false" : "true");
+    b.setAttribute("aria-label", off ? "展开侧边栏" : "折叠侧边栏");
+    b.title = (off ? "展开侧边栏" : "折叠侧边栏") + "（Ctrl+B）";
+    b.innerHTML = `<span class="rt-ico">${ico(off ? "sidebar-expand" : "sidebar-collapse", 16)}</span>`
+      + `<span class="rt-txt">${off ? "展开" : "折叠"}</span>`;
+  }
 }
 
-/*: 列表行 → 图（点行即选中该节点并重绘）；同时负责「重置视图」 */
 function bindGraphRows(){
   document.addEventListener("click", (ev) => {
+    const lay = ev.target && ev.target.closest ? ev.target.closest("[data-g3layout]") : null;
+    if (lay) {
+      const k = lay.dataset.g3key;
+      const v = lay.dataset.g3layout;
+      G3D_ST[k] = Object.assign({}, G3D_ST[k], {sel: "", layout: v});
+      const box = document.querySelector(`.g3wrap[data-g3key="${k}"]`);
+      const chart = box ? box.querySelector(".g3chart") : null;
+      if (chart) renderGraphEl(k, chart);
+      if (box) {
+        box.querySelectorAll("[data-g3layout]").forEach(b => {
+          const on = b.dataset.g3layout === v;
+          b.classList.toggle("on", on);
+          b.setAttribute("aria-pressed", on ? "true" : "false");
+        });
+      }
+      return;
+    }
     const rst = ev.target && ev.target.closest ? ev.target.closest("[data-g3reset]") : null;
     if (rst) {
       const k = rst.dataset.g3reset;
-      G3D_ST[k] = {sel: ""};
-      const chart = document.querySelector(`[data-g3key="${k}"] .g3chart`);
-      if (chart && window.Charts) Charts.refresh(chart);
+      G3D_ST[k] = {sel: "", layout: obj(G3D_ST[k]).layout || "force"};
+      const box = document.querySelector(`.g3wrap[data-g3key="${k}"]`);
+      const chart = box ? box.querySelector(".g3chart") : null;
+      if (chart) renderGraphEl(k, chart);
+      if (box) box.querySelectorAll("[data-g3layout]").forEach(b => {
+        const on = b.dataset.g3layout === G3D_ST[k].layout;
+        b.classList.toggle("on", on);
+        b.setAttribute("aria-pressed", on ? "true" : "false");
+      });
       syncGraphTable(k);
       return;
     }
@@ -3108,8 +3162,8 @@ function bindGraphRows(){
     const st = G3D_ST[key];
     if (!st) return;
     st.sel = st.sel === tr.dataset.gto ? "" : tr.dataset.gto;
-    const chart = document.querySelector(`[data-g3key="${key}"] .g3chart`);
-    if (chart && window.Charts) Charts.refresh(chart);
+    const chart = document.querySelector(`.g3wrap[data-g3key="${key}"] .g3chart`);
+    if (chart) renderGraphEl(key, chart);
     syncGraphTable(key);
   }, true);
 }
