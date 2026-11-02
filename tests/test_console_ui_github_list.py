@@ -83,7 +83,7 @@ class TestListLayout:
         """批 128：表头只有一行工具条；**没有列名**、没有搜索框、没有"筛选/字段"按钮。"""
         seg = h             # fn() 会被模板字面量里的 } 截断；这类判据直接查整页
         assert 'class="lv-bar lv-headbar"' in seg
-        assert '<th colspan="3"><div class="lv-bar lv-headbar">' in seg, \
+        assert '<th colspan="${acts.length ? 4 : 3}"><div class="lv-bar lv-headbar">' in seg, \
             "表头必须是**一个**跨 3 列的单元格（工具条），不再有列名格"
         assert 'data-lvtab' in seg              # 状态页签在表头里
         assert 'data-lvf=' in seg               # 字段级下拉
@@ -96,7 +96,8 @@ class TestListLayout:
         body = fn(h, "lvRender")
         for cell in ("lv-selcell", "lv-stcell", "lv-primary"):
             assert cell in body
-        assert "lv-actcell" not in body, "操作列已删除（与元数据「关系」重复）"
+        # 批 164（第 12 条）：动作列回归，但只放"打开原文/关系"，固定在最右
+        assert "lv-actcell" in body, "缺少右侧动作列（打开原文/关系）"
 
     def test_no_duplicate_local_file_link(self, h: str) -> None:
         """公司制度：标题即链接，不再有"打开本地文件"这一列。"""

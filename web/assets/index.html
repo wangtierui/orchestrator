@@ -1292,6 +1292,12 @@ body.no-rail .main-content{max-width:none;margin:0 auto}
   padding:8px 10px;border:1px solid var(--border);border-radius:6px;font:inherit;resize:vertical}
 .detail .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .detail textarea{display:block;width:100%;min-height:64px;margin-top:10px}
+
+/* 批 164（第 12 条）：最右动作列（打开原文 / 关系）固定宽度、右对齐 */
+.lv:not(.lv-dense) .lv-table tr.lv-row{grid-template-columns:32px 24px minmax(0,1fr) 148px}
+.lv-table .lv-actcell{display:flex;justify-content:flex-end;align-items:center;gap:12px;
+  white-space:nowrap;justify-self:end}
+.lv-table .lv-actcell .act-i{display:inline-flex;align-items:center}
 </style>
 </head>
 <body>
@@ -5127,7 +5133,11 @@ function lvRender(list, d, st, f) {
   const vis = lvFields(list, true);
   const primary = vis.find(x => x.primary) || vis[0];
   const cols = vis.filter(x => x !== primary && !x.meta);
-  const metas = vis.filter(x => x.meta);
+  /* 批 164（第 12 条）：访问地址/关系**不再跟在标题后面**（会随标题长度左右漂移），
+   * 单独放到最右一列、固定宽度、右对齐。 */
+  const ACT_KEYS = new Set(["url", "rel"]);
+  const metas = vis.filter(x => x.meta && !ACT_KEYS.has(x.k));
+  const acts = vis.filter(x => x.meta && ACT_KEYS.has(x.k));
   const act = lvActiveFilters(list, st);
   const sel = lvSel(list);
   const selN = Object.keys(sel).filter(k => sel[k]).length;
@@ -5161,7 +5171,7 @@ function lvRender(list, d, st, f) {
       title="按「${esc(fd.label)}」筛选">${esc(fd.label)}${
       ico("chevron-down", 16)}</button>`;
   }).join("");
-  const headCells = `<th colspan="3"><div class="lv-bar lv-headbar">
+  const headCells = `<th colspan="${acts.length ? 4 : 3}"><div class="lv-bar lv-headbar">
       ${lvFilterTabs(list, st)}
       <span class="lv-fsep" aria-hidden="true"></span>
       ${fbtns}
@@ -5207,6 +5217,8 @@ function lvRender(list, d, st, f) {
         ${isSel ? "checked" : ""} aria-label="选择：${esc(it.title || id)}"></td>
       <td class="lv-stcell">${lvStateIcon(it, list)}</td>
       <td class="lv-primary">${title}${meta}</td>
+      ${acts.length ? `<td class="lv-actcell">${acts.map(fd =>
+        `<span class="act-i">${fd.cell ? fd.cell(it) : esc(it[fd.k] || "")}</span>`).join("")}</td>` : ""}
     </tr>`;
   }).join("");
 

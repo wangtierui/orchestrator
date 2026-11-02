@@ -268,7 +268,10 @@ class TestGithubIssuesRow:
         body = fn(h, "lvRender")
         for cell in ("lv-selcell", "lv-stcell", "lv-primary"):
             assert cell in body, cell
-        assert "lv-actcell" not in body, "操作列已删除，不应再出现"
+        # 批 164（第 12 条）：url/rel 从"跟随标题"改为**右侧固定动作列**，
+        # lv-actcell 重新出现；它只承载这两个动作（ACT_KEYS），没有"操作"语义。
+        assert "lv-actcell" in body, "缺少右侧动作列（打开原文/关系）"
+        assert 'ACT_KEYS = new Set(["url", "rel"])' in body, "动作列应只收 url/rel"
         # 批 128：表头只剩**一个**单元格（colspan 工具条），行仍是 3 个单元格
         assert body.count("<th ") == 1 and 'colspan="3"' in body
 

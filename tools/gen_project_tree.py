@@ -41,6 +41,7 @@ KEY_NAMES = {
 }
 
 MAX_DEPTH = 3
+DOC_RE = re.compile('"""(.*?)"""', re.S)
 MAX_NODES = 420
 PURPOSE_MAX = 120
 
@@ -112,6 +113,36 @@ def _file_node(path: str, name: str) -> dict:
     return node
 
 
+def _dir_purpose(path: str) -> str:
+    """目录用途：优先 README 第一行标题，其次 __init__.py 的模块 docstring 首行。"""
+    readme = os.path.join(path, "README.md")
+    if os.path.exists(readme):
+        try:
+            for line in open(readme, encoding="utf-8", errors="replace").read().splitlines():
+                s = line.strip().lstrip("#").strip()
+                # 跳过 HTML 片段 / 纯链接行（README 里常见，不是"用途"）
+                if not s or s.startswith("<") or s.startswith("[!") or s.startswith("!["):
+                    continue
+                s = re.sub(r"<[^>]+>", "", s).replace("**", "").strip()
+                if s:
+                    return s[:80]
+        except OSError:
+            pass
+    init = os.path.join(path, "__init__.py")
+    if os.path.exists(init):
+        try:
+            text = open(init, encoding="utf-8", errors="replace").read()
+            m = DOC_RE.search(text)
+            if m:
+                for line in m.group(1).strip().splitlines():
+                    s = line.strip()
+                    if s:
+                        return s[:80]
+        except OSError:
+            pass
+    return ""
+
+
 def _list(path: str) -> tuple[list[str], list[str]]:
     try:
         entries = sorted(os.listdir(path))
@@ -133,6 +164,9 @@ def walk(path: str, depth: int, budget: list[int]) -> dict:
     """递归展开；budget 是单元素列表（可变 int），保证同层共享余量。"""
     node: dict = {"name": os.path.basename(path) or path, "type": "dir",
                   "path": os.path.relpath(path, ROOT).replace("\\", "/")}
+    purpose = _dir_purpose(path)
+    if purpose:
+        node["purpose"] = purpose
     if depth >= MAX_DEPTH or budget[0] <= 0:
         return node
 

@@ -1,6 +1,6 @@
 {
  "meta": {
-  "generated_at": "2026-11-02T14:34:03",
+  "generated_at": "2026-11-02T17:30:58",
   "root": "regulatory_compliance_orchestrator",
   "max_depth": 3,
   "max_nodes": 420,
@@ -12,11 +12,13 @@
   "name": "regulatory_compliance_orchestrator",
   "type": "dir",
   "path": ".",
+  "purpose": "监管合规治理编排仓（regulatory_compliance_orchestrator）",
   "children": [
    {
     "name": ".codebuddy",
     "type": "dir",
     "path": ".codebuddy",
+    "purpose": "`.codebuddy/` —— 助手状态目录（历史归档，非流程输入）",
     "children": [
      {
       "name": "automations",
@@ -362,17 +364,20 @@
     "name": "commands",
     "type": "dir",
     "path": "commands",
+    "purpose": "orchestrator 命令包（cli.py 薄壳，2026-09-13 审查 P3）。",
     "value": 1
    },
    {
     "name": "config",
     "type": "dir",
     "path": "config",
+    "purpose": "config — 受控枚举 / 源配置 / OCR 配置唯一事实源目录。",
     "children": [
      {
       "name": "schema",
       "type": "dir",
       "path": "config/schema",
+      "purpose": "config/schema — 数据契约 schema 目录（R24：程序可读清单）。",
       "children": [
        {
         "name": "contract_manifest.json",
@@ -488,6 +493,7 @@
       "name": "adr",
       "type": "dir",
       "path": "docs/adr",
+      "purpose": "ADR 索引（架构决策记录）",
       "children": [
        {
         "name": "0001-raw-主库-JSONL化.md",
@@ -709,6 +715,7 @@
       "name": "PaddleOCR-3.7.0",
       "type": "dir",
       "path": "external/PaddleOCR-3.7.0",
+      "purpose": "English | [简体中文](./readme/README_cn.md) | [繁體中文](./readme/README_tcn.md) | [日本語]",
       "children": [
        {
         "name": ".github",
@@ -718,17 +725,20 @@
        {
         "name": "api_sdk",
         "type": "dir",
-        "path": "external/PaddleOCR-3.7.0/api_sdk"
+        "path": "external/PaddleOCR-3.7.0/api_sdk",
+        "purpose": "PaddleOCR official API SDKs"
        },
        {
         "name": "applications",
         "type": "dir",
-        "path": "external/PaddleOCR-3.7.0/applications"
+        "path": "external/PaddleOCR-3.7.0/applications",
+        "purpose": "移步[docs](https://www.paddleocr.ai/v2.10.0/applications/overview.html)"
        },
        {
         "name": "benchmark",
         "type": "dir",
-        "path": "external/PaddleOCR-3.7.0/benchmark"
+        "path": "external/PaddleOCR-3.7.0/benchmark",
+        "purpose": "PaddleOCR DB/EAST/PSE 算法训练benchmark测试"
        }
       ],
       "value": 4
@@ -741,17 +751,20 @@
        {
         "name": "LTPbase",
         "type": "dir",
-        "path": "external/models/LTPbase"
+        "path": "external/models/LTPbase",
+        "purpose": "| Language                             | version                                "
        },
        {
         "name": "Youtu-Embedding",
         "type": "dir",
-        "path": "external/models/Youtu-Embedding"
+        "path": "external/models/Youtu-Embedding",
+        "purpose": "---"
        },
        {
         "name": "bge-base-zh-v1.5",
         "type": "dir",
-        "path": "external/models/bge-base-zh-v1.5"
+        "path": "external/models/bge-base-zh-v1.5",
+        "purpose": "---"
        },
        {
         "name": "hanlp",
@@ -775,7 +788,8 @@
        {
         "name": "doc",
         "type": "dir",
-        "path": "external/tesseract/doc"
+        "path": "external/tesseract/doc",
+        "purpose": "Tesseract OCR"
        },
        {
         "name": "tessdata",
@@ -793,12 +807,14 @@
        {
         "name": "DeepKE",
         "type": "dir",
-        "path": "external/upstream/DeepKE"
+        "path": "external/upstream/DeepKE",
+        "purpose": "[DeepKE](https://arxiv.org/pdf/2201.03335.pdf) is a knowledge extraction toolkit"
        },
        {
         "name": "WeKnora",
         "type": "dir",
-        "path": "external/upstream/WeKnora"
+        "path": "external/upstream/WeKnora",
+        "purpose": "Overview"
        }
       ],
       "value": 2
@@ -810,11 +826,13 @@
     "name": "gates",
     "type": "dir",
     "path": "gates",
+    "purpose": "gates — 交付门禁（R23：门禁类别为唯一事实，实现/数量以 ALL_GATES 为准，禁止文本写死数量）",
     "children": [
      {
       "name": "gate_config_integrity",
       "type": "dir",
       "path": "gates/gate_config_integrity",
+      "purpose": "gates.gate_config_integrity — 配置与清单一致性门禁（W4-c 五拆，方案 7.5.1）。",
       "value": 1
      }
     ],
@@ -1008,29 +1026,34 @@
     "name": "interfaces",
     "type": "dir",
     "path": "interfaces",
+    "purpose": "interfaces — 跨模块唯一调用层（v1 §5.2 / Q3）",
     "value": 1
    },
    {
     "name": "mcp_server",
     "type": "dir",
     "path": "mcp_server",
+    "purpose": "mcp_server — MCP 门面（W2，v2 §4）：给 agent / IDE 的**只读**编排观测面。",
     "value": 1
    },
    {
     "name": "modules",
     "type": "dir",
     "path": "modules",
+    "purpose": "modules — 四子项目（复制进新仓后修改，原仓只读冻结）",
     "children": [
      {
       "name": "base_publish",
       "type": "dir",
       "path": "modules/base_publish",
+      "purpose": "base_publish — 双底座发布层（Base Contract v1 实装，2026-09-12）",
       "value": 1
      },
      {
       "name": "implementation_audit",
       "type": "dir",
       "path": "modules/implementation_audit",
+      "purpose": "modules.implementation_audit — 落地执行检视（W3，方案 §5.3；用途四）。",
       "children": [
        {
         "name": "rules",
@@ -1044,6 +1067,7 @@
       "name": "internal_policy_base",
       "type": "dir",
       "path": "modules/internal_policy_base",
+      "purpose": "modules.internal_policy_base — 内部制度扫描服务（P6 实现）。",
       "children": [
        {
         "name": "backups",
@@ -1062,6 +1086,7 @@
       "name": "internal_policy_drafter",
       "type": "dir",
       "path": "modules/internal_policy_drafter",
+      "purpose": "modules.internal_policy_drafter — 制度起草/修订（P7 复制迁入）。",
       "children": [
        {
         "name": "docs",
@@ -1080,12 +1105,14 @@
       "name": "reg_frameworks",
       "type": "dir",
       "path": "modules/reg_frameworks",
+      "purpose": "modules.reg_frameworks — 多监管数据体系建模（W3，方案 §5.2；用途二）。",
       "value": 1
      },
      {
       "name": "regulatory_classifier",
       "type": "dir",
       "path": "modules/regulatory_classifier",
+      "purpose": "modules.regulatory_classifier — RFN+主题+报告（P4 复制迁入，白名单见 v2 §4.2）。",
       "children": [
        {
         "name": "backups",
@@ -1100,7 +1127,8 @@
        {
         "name": "recall_audit",
         "type": "dir",
-        "path": "modules/regulatory_classifier/recall_audit"
+        "path": "modules/regulatory_classifier/recall_audit",
+        "purpose": "recall_audit — 召回复核链路（现行链成员）基准说明"
        }
       ],
       "value": 3
@@ -1109,6 +1137,7 @@
       "name": "regulatory_scrapers",
       "type": "dir",
       "path": "modules/regulatory_scrapers",
+      "purpose": "modules.regulatory_scrapers — 外部监管采集+清洗。",
       "children": [
        {
         "name": "backups",
@@ -1123,7 +1152,8 @@
        {
         "name": "clause_index",
         "type": "dir",
-        "path": "modules/regulatory_scrapers/clause_index"
+        "path": "modules/regulatory_scrapers/clause_index",
+        "purpose": "modules.regulatory_scrapers.clause_index — 五源 clean 条文抽取固定节点（②，2026-09-08）"
        }
       ],
       "value": 3
@@ -1149,11 +1179,13 @@
       "name": "clause",
       "type": "dir",
       "path": "refactor/clause",
+      "purpose": "refactor.clause — clean 之后的条文抽取阶段（storage-native）。",
       "children": [
        {
         "name": "core",
         "type": "dir",
-        "path": "refactor/clause/core"
+        "path": "refactor/clause/core",
+        "purpose": "refactor.clause.core — 条文抽取算法核心（源无关、storage-free）。"
        }
       ],
       "value": 1
@@ -1162,11 +1194,13 @@
       "name": "clean",
       "type": "dir",
       "path": "refactor/clean",
+      "purpose": "refactor.clean — 清洗阶段包（Phase 1 骨架）。",
       "children": [
        {
         "name": "core",
         "type": "dir",
-        "path": "refactor/clean/core"
+        "path": "refactor/clean/core",
+        "purpose": "clean.core — clean 阶段的核心清洗算法（业务核心，非公用库）。"
        }
       ],
       "value": 1
@@ -1179,7 +1213,8 @@
        {
         "name": "gov",
         "type": "dir",
-        "path": "refactor/collectors/gov"
+        "path": "refactor/collectors/gov",
+        "purpose": "国务院法规库（gov：xzfgk + zhengceku）爬虫包。"
        },
        {
         "name": "internal",
@@ -1193,6 +1228,7 @@
       "name": "common",
       "type": "dir",
       "path": "refactor/common",
+      "purpose": "common —— refactor 内跨包共享的基础工具（单一事实源）。",
       "value": 1
      },
      {
@@ -1205,17 +1241,20 @@
       "name": "init",
       "type": "dir",
       "path": "refactor/init",
+      "purpose": "refactor 项目初始化（前置步骤）包。",
       "value": 1
      },
      {
       "name": "mcp_server",
       "type": "dir",
       "path": "refactor/mcp_server",
+      "purpose": "mcp_server — 把各项能力（含 RAG）以 MCP 协议暴露给 Agent 的薄壳门面。",
       "children": [
        {
         "name": "tools",
         "type": "dir",
-        "path": "refactor/mcp_server/tools"
+        "path": "refactor/mcp_server/tools",
+        "purpose": "tool 实现集合。由 registry.discover() 动态导入，触发各模块的 @tool 注册。"
        },
        {
         "name": "requirements.txt",
@@ -1232,11 +1271,13 @@
       "name": "rag",
       "type": "dir",
       "path": "refactor/rag",
+      "purpose": "rag — 通用 RAG 内核（数据无关、组件可热插拔）。",
       "children": [
        {
         "name": "adapters",
         "type": "dir",
-        "path": "refactor/rag/adapters"
+        "path": "refactor/rag/adapters",
+        "purpose": "adapters — 四大可替换组件的工厂入口。"
        },
        {
         "name": "examples",
@@ -1250,6 +1291,7 @@
       "name": "storage",
       "type": "dir",
       "path": "refactor/storage",
+      "purpose": "refactor.storage —— 跨模块共享的通用持久化层（顶层再导出）。",
       "value": 1
      },
      {
@@ -1291,21 +1333,25 @@
     "name": "std_lib",
     "type": "dir",
     "path": "std_lib",
+    "purpose": "std_lib — 共享库唯一副本（P1 自旧仓复制 scraper_std；common_lib 为新统一通用层）。",
     "children": [
      {
       "name": "common_lib",
       "type": "dir",
       "path": "std_lib/common_lib",
+      "purpose": "std_lib.common_lib — 跨域通用层（fs_lock/io_atomic/norm/index_store/audit）。",
       "children": [
        {
         "name": "governance_store",
         "type": "dir",
-        "path": "std_lib/common_lib/governance_store"
+        "path": "std_lib/common_lib/governance_store",
+        "purpose": "std_lib.common_lib.governance_store — 治理库（governance.db）唯一读写实现"
        },
        {
         "name": "relations",
         "type": "dir",
-        "path": "std_lib/common_lib/relations"
+        "path": "std_lib/common_lib/relations",
+        "purpose": "std_lib.common_lib.relations — 监管与制度依据·废止关系抽取（W4-c 三拆）。"
        }
       ],
       "value": 2
@@ -1314,21 +1360,25 @@
       "name": "scraper_std",
       "type": "dir",
       "path": "std_lib/scraper_std",
+      "purpose": "scraper_std —— 监管爬虫项目共享标准库（S 级交付基线）",
       "children": [
        {
         "name": "common",
         "type": "dir",
-        "path": "std_lib/scraper_std/common"
+        "path": "std_lib/scraper_std/common",
+        "purpose": "Shared utilities for cn-law-hub crawlers (integrated into scraper_std.common)."
        },
        {
         "name": "retired",
         "type": "dir",
-        "path": "std_lib/scraper_std/retired"
+        "path": "std_lib/scraper_std/retired",
+        "purpose": "`std_lib/scraper_std/retired/` —— 共享库退役隔离层"
        },
        {
         "name": "scripts",
         "type": "dir",
-        "path": "std_lib/scraper_std/scripts"
+        "path": "std_lib/scraper_std/scripts",
+        "purpose": "scraper_std.scripts —— 五源 scripts/ 再导出层「单一事实源」。"
        }
       ],
       "value": 3
@@ -1340,6 +1390,7 @@
     "name": "tests",
     "type": "dir",
     "path": "tests",
+    "purpose": "tests/README.md — 测试体系说明与契约测试矩阵",
     "children": [
      {
       "name": "baselines",
@@ -1469,6 +1520,7 @@
       "name": "retired",
       "type": "dir",
       "path": "tools/retired",
+      "purpose": "tools/retired — 废弃 / 一次性脚本隔离层",
       "children": [
        {
         "name": "README.md",
@@ -1497,6 +1549,7 @@
     "name": "web",
     "type": "dir",
     "path": "web",
+    "purpose": "web — 本地确认台（方案 §8 人机交互层；`cli.py serve` 入口）",
     "children": [
      {
       "name": "assets",
@@ -1507,10 +1560,10 @@
         "name": "project-tree.json",
         "type": "file",
         "path": "web/assets/project-tree.json",
-        "size": 42060,
-        "mtime": "2026-11-02 14:33",
+        "size": 46813,
+        "mtime": "2026-11-02 17:30",
         "purpose": "自动生成：仅目录 + 关键文件（配置/入口/文档/契约），不含数据与缓存",
-        "lines": 1627
+        "lines": 1680
        }
       ],
       "value": 1
