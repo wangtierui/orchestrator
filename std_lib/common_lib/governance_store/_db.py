@@ -25,7 +25,7 @@ SCHEMA_VERSION = "1.2"
 # 注意：投影表（document/theme_assign/relation/timeliness_history）版本落后时**DROP 重建**；
 #      观测表（run_log/watermark/artifact/audit_log/gate_result/worklist）一律 ALTER 增量迁移
 #      （新增整表由 `_DDL` 的 CREATE TABLE IF NOT EXISTS 完成，无需迁移项）。
-_SCHEMA_INT = 6
+_SCHEMA_INT = 7
 _TZ = timezone(timedelta(hours=8))  # Asia/Shanghai，与 clean_index 时间基准一致
 
 TABLES = (
@@ -204,6 +204,10 @@ CREATE TABLE IF NOT EXISTS run_step(
   -- 混在同一张表里（实测占 run_step 行数 65.4%），使 SLI「链成功率」被非生产流量
   -- 稀释。此前只能靠 note 文本匹配，文案一改口径即失效 ⇒ 改为显式列。
   is_dry_run  INTEGER NOT NULL DEFAULT 0,
+  -- 批 164（第 7 条）：本步**实际产出记录数**。此前只有 collect/clean/apply/base 有
+  -- 水位计数，classify/relations/publish 等一律没有 ⇒ P1 节点量级长期为 0，链路不可审计。
+  -- 约定：-1 = 该步不产出记录数（显式未知，不冒充 0）；0 = 产出但为空。
+  record_count INTEGER NOT NULL DEFAULT -1,
   PRIMARY KEY(run_id, step)
 );
 CREATE INDEX IF NOT EXISTS ix_step_run ON run_step(run_id);
@@ -408,6 +412,11 @@ _OBSERVATION_MIGRATIONS: dict[int, tuple[tuple[str, str, str], ...]] = {
         ("run_step", "started_at", "REAL NOT NULL DEFAULT 0"),
         ("run_step", "finished_at", "REAL NOT NULL DEFAULT 0"),
         ("run_step", "is_dry_run", "INTEGER NOT NULL DEFAULT 0"),
+    ),
+    # 批 164（第 7 条）：run_step 增 record_count（每步产出记录数）。
+    # 键必须是**目标 _SCHEMA_INT**（本次 6 → 7）：`v > cur` 才执行，写 6 会被跳过。
+    7: (
+        ("run_step", "record_count", "INTEGER NOT NULL DEFAULT -1"),
     ),
 }
 

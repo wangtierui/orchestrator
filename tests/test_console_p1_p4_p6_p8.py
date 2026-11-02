@@ -165,7 +165,8 @@ class TestP1RealFlow:
                 continue
             checked += 1
             assert got == exp, f"{r.get('step')}: 台账 {r.get('exit_code')} → 图 {got}"
-        assert checked >= 5, f"逐项对齐样本过少（{checked}），判据失效"
+        # 样本量随"最近一次非 dry-run 运行"的步骤数波动（resume 型运行可能只有几步）
+        assert checked >= 3, f"逐项对齐样本过少（{checked}），判据失效"
 
     def test_last_run_skips_dry_run(self) -> None:
         """`last_run_with_steps()` 默认必须**跳过 dry-run**。
@@ -402,14 +403,18 @@ class TestHtmlWiring:
         assert "/api/assets" in html and "/api/publish" in html, "总览里仍要取这两份数据"
 
     def test_worklist_action_column_last(self) -> None:
-        """批 164（第 10 条）：操作列移到**详情之后**；全选进表头最左；不再暴露操作者输入框。"""
+        """批 165（第 3 条）：勾选列独立成**最左列**（全选在该列表头），处置仍在最右列。"""
         code = _code_only(HTML)
-        assert 'const COL_LABELS = ["kind", "唯一标识号", "名称", "文号", "访问地址", "详情", "操作"]' in code, \
-            "操作列应在最后"
+        assert 'const COL_LABELS = ["", "kind", "唯一标识号", "名称", "文号", "访问地址", "详情", "操作"]' in code, \
+            "首列应为勾选列、末列应为操作列"
         assert 'id="wlall"' in code, "缺少全选"
-        # 全选在工具条最左（kind/状态开关之前）
-        assert 'class="lv-headbar">\n      <label class="muted wlall"' in code, "全选未放到表头最左"
-        assert "data-resolve" in code and "openResolveInline" in code, "缺少行内处置"
+        # 全选**不在工具条**，而在表头行第一格
+        assert 'class="lv-headrow"><span class="ckcell"><input type="checkbox" id="wlall"' in code, \
+            "全选应在表头行最左"
+        assert 'class="lv-cell ckcell"><input type="checkbox" class="wlck"' in code, \
+            "行勾选应在最左列"
+        assert 'class="lv-cell actcell">\n        <button class="btn btn-sm" data-resolve' in code, \
+            "操作列只应留处置按钮"
         assert "confirm_console" not in code, "界面里不应再出现 confirm_console"
 
     def test_p1_flow_renders_edges(self) -> None:

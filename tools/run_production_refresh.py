@@ -1355,6 +1355,15 @@ def _skip_reason(step: str) -> str:
 
 def _record_step(rec: dict) -> None:
     """把步骤结果写入治理库 `run_step`（旁路设施：登记失败不得中断主链）。"""
+    if "record_count" not in rec:
+        # dry-run 只列 argv 不执行，**没有产出** ⇒ 显式 -1（不冒充产物计数）
+        if _DRY_RUN:
+            rec["record_count"] = -1
+        else:
+            try:
+                rec["record_count"] = _step_record_count(rec.get("step", ""))
+            except Exception:  # noqa: BLE001  计数失败不影响登记
+                rec["record_count"] = -1
     try:
         from std_lib.common_lib import governance_store as gs
 
@@ -1371,9 +1380,99 @@ def _record_step(rec: dict) -> None:
             finished_at=rec.get("ended_at", 0.0) or 0.0,
             # TD-3：dry-run 显式标记（此前只能靠 note 文本识别）
             is_dry_run=bool(_DRY_RUN),
+            # 第 7 条：本步产出记录数（-1 = 不产出，0 = 空）
+            record_count=int(rec.get("record_count", -1)),
         )
     except Exception:  # noqa: BLE001  旁路设施
         pass
+
+
+def _count_records(path: str) -> int:
+    """按扩展名数一条产物里的记录数（口径可复算，不猜）。
+
+    .jsonl → 非空行数；.json → 数组长度或常见列表字段长度；.csv → 数据行数（去表头）。
+    读不出来一律 0（文件存在但空 = 真的 0，不是未知）。
+    """
+    if not path or not os.path.isfile(path):
+        return 0
+    low = path.lower()
+    try:
+        if low.endswith((".jsonl", ".ndjson")):
+            with open(path, encoding="utf-8", errors="replace") as fh:
+                return sum(1 for line in fh if line.strip())
+        if low.endswith(".json"):
+            with open(path, encoding="utf-8", errors="replace") as fh:
+                data = json.load(fh)
+            if isinstance(data, list):
+                return len(data)
+            if isinstance(data, dict):
+                # 发布清单把计数放在 counts 子字典里；files 是附件清单，不是记录数
+                cnt = data.get("counts")
+                if isinstance(cnt, dict):
+                    data = {**data, **cnt}
+                keys = ("records", "items", "rows", "documents", "tables",
+                        "edges", "nodes", "products", "themes", "relations",
+                        "policies", "clauses")
+                for k in keys:
+                    v = data.get(k)
+                    if isinstance(v, list):
+                        return len(v)
+                    if isinstance(v, int) and not isinstance(v, bool):
+                        return v
+                # 一层嵌套（发布清单形如 {external: {...}, internal: {...}}）
+                total = 0
+                for sub in data.values():
+                    if not isinstance(sub, dict):
+                        continue
+                    for k in keys:
+                        v = sub.get(k)
+                        if isinstance(v, list):
+                            total += len(v)
+                        elif isinstance(v, int) and not isinstance(v, bool):
+                            total += v
+                if total:
+                    return total
+            return 0
+        if low.endswith(".csv"):
+            with open(path, encoding="utf-8", errors="replace") as fh:
+                return max(0, sum(1 for _ in fh) - 1)
+    except (OSError, ValueError):
+        return 0
+    return 0
+
+
+def _spec_for_step(name: str):
+    """步骤实例名 → StepSpec（动态族 `collect:{src}` 之类按族前缀回退）。"""
+    by = step_by_name()
+    if name in by:
+        return by[name]
+    head = name.split(":", 1)[0]
+    return by.get(head + ":{src}")
+
+
+def _step_record_count(name: str) -> int:
+    """本步**实际产出**的记录数：按 `StepSpec.produces` 的代表文件逐个累加。
+
+    返回 -1 = 该步没有可数产物（显式"不产出"，不冒充 0）；
+    返回 0 = 有产物但为空。两者在 UI 上语义不同，故不合并。
+    """
+    spec = _spec_for_step(name)
+    if spec is None:
+        return -1
+    src = name.split(":", 1)[1] if ":" in name else ""
+    counts, seen = [], set()
+    for key in tuple(getattr(spec, "produces", ()) or ()):
+        concrete = key.replace("{src}", src) if "{src}" in key else key
+        for p in _artifact_paths(concrete):
+            if p in seen:
+                continue
+            seen.add(p)
+            counts.append(_count_records(p))
+    if not seen:
+        return -1
+    # 多产物**取最大**：同批数据的不同视图（如 cleaned vs clauses）求和会重复计，
+    # 节点上的"量级"应是这一批的规模，而不是副本数之和。
+    return max(counts) if counts else 0
 
 
 def _resume_plan() -> dict:

@@ -443,6 +443,8 @@ def flow_graph() -> dict:
             except Exception:  # noqa: BLE001
                 weights = {}
             rcodes: dict[str, dict] = {}
+            # 第 7 条：步骤实际产出记录数（run_step.record_count，-1=不产出）
+            vols: dict[str, int] = {}
             run_id = ""
             try:
                 from std_lib.common_lib import governance_store as gs
@@ -460,6 +462,10 @@ def flow_graph() -> dict:
                     _st = str(s.get("status") or "").strip().lower()
                     if _st in ("", "unknown", "none"):
                         _st = _MAP.get(_ex, "unknown")
+                    try:
+                        vols[nm] = int(s.get("record_count"))
+                    except (TypeError, ValueError):
+                        vols[nm] = -1
                     rcodes[nm] = {"status": _st,
                                   "rc": s.get("exit_code") or s.get("rc"),
                                   "elapsed_s": s.get("elapsed_s"),
@@ -468,7 +474,7 @@ def flow_graph() -> dict:
                 pass
 
             # ── 真实 DAG：由 `StepSpec.produces / depends_on` **按产物连边** ──
-            dags = _build_flow_dag(steps, srcs, weights, rcodes)
+            dags = _build_flow_dag(steps, srcs, weights, rcodes, vols)
             return {"available": True, "fetched_at": _now(),
                     "source": "STEP_ORDER + StepSpec(produces/depends_on) + "
                               "clean_index_api + 运行台账",
@@ -484,7 +490,8 @@ def flow_graph() -> dict:
 
 def _build_flow_dag(steps: list[str], srcs: list[str],
                     weights: dict[str, int],
-                    rcodes: dict[str, dict]) -> dict:
+                    rcodes: dict[str, dict],
+                    vols: dict[str, int] | None = None) -> dict:
     """把「模板步骤 + 产物依赖」展开成**可直接渲染的分层 DAG**。
 
     返回 `{layers, nodes, edges, totals}`：
@@ -565,6 +572,15 @@ def _build_flow_dag(steps: list[str], srcs: list[str],
                 edges.append({"from": a, "to": b, "artifact": f"src:{src}",
                               "volume": int(weights.get(a, 0) or 0)})
 
+    counts = vols or {}
+    # 同名局部（_load 里同名字典）不做隐式捕获：一切经由形参。
+    def _vol(nid: str, tpl: str = "") -> int:
+        """节点/边量级：**台账 record_count 优先**，老数据（-1）才回退到源级权重。"""
+        for key in (nid, tpl):
+            if key and counts.get(key, -1) >= 0:
+                return int(counts[key])
+        return int(weights.get(nid, 0) or 0)
+
     nodes: list[dict] = []
     for it in inst:
         spec = specs.get(it["tpl"])
@@ -583,18 +599,30 @@ def _build_flow_dag(steps: list[str], srcs: list[str],
             "purpose": (str(getattr(spec, "purpose", "") or "")[:120] if spec else ""),
             "status": status, "rc": rc,
             "elapsed_s": st.get("elapsed_s"),
-            "volume": int(weights.get(it["id"], 0) or 0),
+            "volume": _vol(it["id"], it["tpl"]),
             "degraded": (str(getattr(spec, "fail_semantics", "") or "")[:80]
                          if spec else ""),
         })
+    def _vol(nid: str, tpl: str = "") -> int:
+        """节点/边量级：**台账 record_count 优先**，没有（老数据）才回退到源级权重。"""
+        for key in (nid, tpl):
+            if key and key in vols and vols[key] >= 0:
+                return int(vols[key])
+        return int(weights.get(nid, 0) or 0)
+
     idx = {n["id"]: n for n in nodes}
+    # 边权跟随**产出方**的真实记录数（此前一律取 weights ⇒ 非源级步骤恒 0）
+    for e in edges:
+        src_node = idx.get(e["from"]) or {}
+        if "volume" in e:
+            e["volume"] = _vol(e["from"], str(src_node.get("tpl") or ""))
     edges = [e for e in edges if e["from"] in idx and e["to"] in idx]
     return {"layers": [{"id": lid, "name": layer_names.get(lid, lid)}
                        for lid in layer_order],
             "nodes": nodes, "edges": edges,
             "totals": {"nodes": len(nodes), "edges": len(edges),
-                       "volume": sum(int(weights.get(f"{p}:{s}", 0) or 0)
-                                     for s in srcs for p in ("collect",)),
+                       # 链路总记录数 = 采集步的真实产出之和（台账口径）
+                       "volume": sum(int(_vol(f"collect:{s}")) for s in srcs),
                        "sources": len(srcs)}}
 
 

@@ -96,6 +96,7 @@ def step_record(
     started_at: float = 0.0,
     finished_at: float = 0.0,
     is_dry_run: bool = False,
+    record_count: int = -1,
 ) -> None:
     """登记一个步骤的结果（**幂等 upsert**：同 (run_id, step) 覆盖）。
 
@@ -115,16 +116,16 @@ def step_record(
     try:
         conn.execute(
             "INSERT INTO run_step(run_id,step,rc,exit_code,elapsed_s,skipped,note,recorded_at,"
-            " started_at,finished_at,is_dry_run)"
-            " VALUES(?,?,?,?,?,?,?,?,?,?,?)"
+            " started_at,finished_at,is_dry_run,record_count)"
+            " VALUES(?,?,?,?,?,?,?,?,?,?,?,?)"
             " ON CONFLICT(run_id,step) DO UPDATE SET rc=excluded.rc,"
             " exit_code=excluded.exit_code, elapsed_s=excluded.elapsed_s,"
             " skipped=excluded.skipped, note=excluded.note, recorded_at=excluded.recorded_at,"
             " started_at=excluded.started_at, finished_at=excluded.finished_at,"
-            " is_dry_run=excluded.is_dry_run",
+            " is_dry_run=excluded.is_dry_run, record_count=excluded.record_count",
             (rid, step, int(rc), exit_code, float(elapsed_s), 1 if skipped else 0, note,
              now_iso(), float(started_at or 0.0), float(finished_at or 0.0),
-             1 if is_dry_run else 0),
+             1 if is_dry_run else 0, int(record_count)),
         )
         conn.commit()
     except sqlite3.Error as e:
