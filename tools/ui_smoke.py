@@ -311,7 +311,28 @@ def collect(url: str = DEFAULT_URL) -> dict:
             " saveDisabled: (() => {const b=document.querySelector('[data-lvsavecur]');"
             "return b ? !!b.disabled : null;})()})")
 
-        # ③ 窄视口：标题真实截断
+        # ③ Tab 键序：连续 Tab，记录每次落点的可读名字
+        s.ev("document.body.focus()")
+        stops = []
+        for _ in range(12):
+            for typ in ("rawKeyDown", "keyDown", "keyUp"):
+                s.cmd("Input.dispatchKeyEvent", {
+                    "type": typ, "key": "Tab", "code": "Tab",
+                    "windowsVirtualKeyCode": 9, "nativeVirtualKeyCode": 9})
+            time.sleep(0.12)
+            info = s.ev(r"""(() => {
+              const el = document.activeElement;
+              if (!el || el === document.body) return null;
+              const label = (el.getAttribute('aria-label') || el.textContent
+                             || el.getAttribute('placeholder') || '').trim().slice(0, 20);
+              return {tag: el.tagName.toLowerCase(),
+                      cls: String(el.className || '').slice(0, 24), label: label};
+            })()""")
+            if info:
+                stops.append(info)
+        out["tabStops"] = stops
+
+        # ④ 窄视口：标题真实截断
         s.viewport(760, 900)
         s.cmd("Page.navigate", {"url": f"{url}/?v={tag + 1}#rules"})
         time.sleep(3.0)
@@ -361,6 +382,13 @@ def evaluate(data: dict) -> list[dict]:
     tok = data.get("token") or {}
     add("排序 token 生效且解锁保存", tok.get("sort") == "document_number"
         and tok.get("desc") is True and tok.get("saveDisabled") is False, tok)
+
+    stops = data.get("tabStops") or []
+    named = [x for x in stops if x.get("label")]
+    uniq = {(x["tag"], x["cls"], x["label"]) for x in named}
+    add("Tab 键序可用", len(stops) >= 8 and len(named) == len(stops) and len(uniq) >= 5,
+        {"stops": len(stops), "named": len(named), "unique": len(uniq),
+         "sample": [x["label"][:12] for x in named[:6]]})
 
     tr = data.get("truncate") or {}
     add("标题真实省略", (tr.get("maxOverflow") or 0) > 0 and tr.get("ellipsis") == "ellipsis", tr)

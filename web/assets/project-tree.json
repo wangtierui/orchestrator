@@ -1,0 +1,833 @@
+{
+ "meta": {
+  "generated_at": "2026-11-02T12:01:19",
+  "root": "regulatory_compliance_orchestrator",
+  "max_depth": 3,
+  "max_nodes": 420,
+  "truncated": false,
+  "node_count": 213,
+  "note": "自动生成：仅目录 + 关键文件（配置/入口/文档/契约），不含数据与缓存"
+ },
+ "tree": {
+  "name": "regulatory_compliance_orchestrator",
+  "children": [
+   {
+    "name": ".codebuddy",
+    "children": [
+     {
+      "name": "automations",
+      "children": [
+       {
+        "name": "orchestrator"
+       },
+       {
+        "name": "orchestrator-2"
+       }
+      ],
+      "value": 2
+     },
+     {
+      "name": "memory",
+      "children": [
+       {
+        "name": "2026-09-12.md"
+       },
+       {
+        "name": "2026-09-13.md"
+       },
+       {
+        "name": "2026-09-14.md"
+       },
+       {
+        "name": "2026-09-15.md"
+       },
+       {
+        "name": "2026-09-18.md"
+       },
+       {
+        "name": "2026-09-19.md"
+       },
+       {
+        "name": "2026-09-20.md"
+       },
+       {
+        "name": "2026-09-21.md"
+       },
+       {
+        "name": "2026-09-22.md"
+       },
+       {
+        "name": "2026-09-24.md"
+       }
+      ],
+      "value": 10
+     },
+     {
+      "name": "README.md"
+     },
+     {
+      "name": "settings.json"
+     }
+    ],
+    "value": 4
+   },
+   {
+    "name": ".devcontainer",
+    "children": [
+     {
+      "name": "devcontainer.json"
+     }
+    ],
+    "value": 1
+   },
+   {
+    "name": ".githooks",
+    "value": 1
+   },
+   {
+    "name": "archive",
+    "children": [
+     {
+      "name": "classifier_backups",
+      "children": [
+       {
+        "name": "_upper_laws_20260912_033733.json"
+       },
+       {
+        "name": "_upper_laws_20260912_123948.json"
+       },
+       {
+        "name": "_upper_laws_20260912_230509.json"
+       },
+       {
+        "name": "_upper_laws_20260913_162440.json"
+       },
+       {
+        "name": "_upper_laws_20260914_011123.json"
+       },
+       {
+        "name": "_upper_laws_20260914_191759.json"
+       },
+       {
+        "name": "_upper_laws_20260915_120902.json"
+       }
+      ],
+      "value": 7
+     },
+     {
+      "name": "clean_quarantine",
+      "value": 1
+     },
+     {
+      "name": "reports_tmp",
+      "children": [
+       {
+        "name": "audit.json"
+       },
+       {
+        "name": "生产刷新汇总_20260909_190345.json"
+       },
+       {
+        "name": "生产刷新汇总_20260918_011928.json"
+       },
+       {
+        "name": "生产刷新汇总_20260918_013616.json"
+       },
+       {
+        "name": "生产刷新汇总_20260918_024124.json"
+       },
+       {
+        "name": "生产刷新汇总_20260918_030858.json"
+       },
+       {
+        "name": "生产刷新汇总_20260918_032545.json"
+       }
+      ],
+      "value": 7
+     }
+    ],
+    "value": 3
+   },
+   {
+    "name": "backups",
+    "children": [
+     {
+      "name": "attr_backfill_20260915_121234",
+      "value": 1
+     },
+     {
+      "name": "attr_src_fix_20260915_121629",
+      "value": 1
+     },
+     {
+      "name": "bridge_key_migration_20260915_102820",
+      "value": 1
+     },
+     {
+      "name": "docno_writeback_20260915_102345",
+      "value": 1
+     },
+     {
+      "name": "supp_nonregulatory_20260926.json"
+     }
+    ],
+    "value": 5
+   },
+   {
+    "name": "commands",
+    "value": 1
+   },
+   {
+    "name": "config",
+    "children": [
+     {
+      "name": "schema",
+      "children": [
+       {
+        "name": "contract_manifest.json"
+       },
+       {
+        "name": "semantic_tools.json"
+       }
+      ],
+      "value": 2
+     },
+     {
+      "name": "console_users.example.yaml"
+     },
+     {
+      "name": "dependency_policy.yaml"
+     },
+     {
+      "name": "inbox_registry.yaml"
+     },
+     {
+      "name": "integrity_policy.yaml"
+     },
+     {
+      "name": "mirrors.yaml"
+     },
+     {
+      "name": "ocr.yaml"
+     },
+     {
+      "name": "schedule.yaml"
+     },
+     {
+      "name": "sources.yaml"
+     },
+     {
+      "name": "triggers.yaml"
+     }
+    ],
+    "value": 10
+   },
+   {
+    "name": "docs",
+    "children": [
+     {
+      "name": "adr",
+      "children": [
+       {
+        "name": "0001-raw-主库-JSONL化.md"
+       },
+       {
+        "name": "0002-调度器安装形态修复.md"
+       },
+       {
+        "name": "0003-P1语义增强取值口径.md"
+       },
+       {
+        "name": "0004-分句SSOT收敛.md"
+       },
+       {
+        "name": "0006-STEP_LAYERS分层编排.md"
+       },
+       {
+        "name": "0007-产物分级存储.md"
+       },
+       {
+        "name": "0008-调度作业kind标注与分层归属.md"
+       },
+       {
+        "name": "0009-代码卫生.md"
+       },
+       {
+        "name": "0010-本地Web确认台与文档投放入口.md"
+       },
+       {
+        "name": "0011-依赖治理与供应链安全.md"
+       }
+      ],
+      "value": 10
+     },
+     {
+      "name": "deliverables",
+      "children": [
+       {
+        "name": "2.1.1.1_子主题层级结构总览.md"
+       },
+       {
+        "name": "2.1.1.2_监管演变阶段与逻辑迁移.md"
+       },
+       {
+        "name": "2.1.1.3_内部关联关系图.md"
+       },
+       {
+        "name": "2.1.1.4_核心文件引用细化链条表.md"
+       },
+       {
+        "name": "2.1.1.5_监管体系完整性评估.md"
+       },
+       {
+        "name": "2.1.2.1_核心监管主题总览.md"
+       },
+       {
+        "name": "2.1.2.2_主题间关联关系图.md"
+       },
+       {
+        "name": "2.1.2.3_各主题监管演进阐述.md"
+       },
+       {
+        "name": "2.1.3.1_执行摘要.md"
+       },
+       {
+        "name": "2.1.3.2_主题交叉影响全景图.md"
+       }
+      ],
+      "value": 10
+     }
+    ],
+    "value": 2
+   },
+   {
+    "name": "exports",
+    "children": [
+     {
+      "name": "manifest.json"
+     }
+    ],
+    "value": 1
+   },
+   {
+    "name": "external",
+    "children": [
+     {
+      "name": "PaddleOCR-3.7.0",
+      "children": [
+       {
+        "name": ".github"
+       },
+       {
+        "name": "api_sdk"
+       },
+       {
+        "name": "applications"
+       },
+       {
+        "name": "benchmark"
+       }
+      ],
+      "value": 4
+     },
+     {
+      "name": "models",
+      "children": [
+       {
+        "name": "LTPbase"
+       },
+       {
+        "name": "Youtu-Embedding"
+       },
+       {
+        "name": "bge-base-zh-v1.5"
+       },
+       {
+        "name": "hanlp"
+       }
+      ],
+      "value": 4
+     },
+     {
+      "name": "tessdata",
+      "value": 1
+     },
+     {
+      "name": "tesseract",
+      "children": [
+       {
+        "name": "doc"
+       },
+       {
+        "name": "tessdata"
+       }
+      ],
+      "value": 2
+     },
+     {
+      "name": "upstream",
+      "children": [
+       {
+        "name": "DeepKE"
+       },
+       {
+        "name": "WeKnora"
+       }
+      ],
+      "value": 2
+     }
+    ],
+    "value": 5
+   },
+   {
+    "name": "gates",
+    "children": [
+     {
+      "name": "gate_config_integrity",
+      "value": 1
+     }
+    ],
+    "value": 1
+   },
+   {
+    "name": "graphify-out",
+    "children": [
+     {
+      "name": "2026-09-20",
+      "children": [
+       {
+        "name": ".graphify_analysis.json"
+       }
+      ],
+      "value": 1
+     },
+     {
+      "name": "2026-09-21",
+      "children": [
+       {
+        "name": ".graphify_analysis.json"
+       }
+      ],
+      "value": 1
+     },
+     {
+      "name": "2026-09-26",
+      "children": [
+       {
+        "name": ".graphify_analysis.json"
+       }
+      ],
+      "value": 1
+     },
+     {
+      "name": "2026-09-27",
+      "children": [
+       {
+        "name": ".graphify_analysis.json"
+       }
+      ],
+      "value": 1
+     },
+     {
+      "name": "2026-09-28",
+      "children": [
+       {
+        "name": ".graphify_analysis.json"
+       }
+      ],
+      "value": 1
+     },
+     {
+      "name": "2026-09-29",
+      "children": [
+       {
+        "name": ".graphify_analysis.json"
+       }
+      ],
+      "value": 1
+     },
+     {
+      "name": "2026-09-30",
+      "children": [
+       {
+        "name": ".graphify_analysis.json"
+       }
+      ],
+      "value": 1
+     },
+     {
+      "name": "2026-10-01",
+      "children": [
+       {
+        "name": ".graphify_analysis.json"
+       }
+      ],
+      "value": 1
+     },
+     {
+      "name": "2026-10-08",
+      "children": [
+       {
+        "name": ".graphify_analysis.json"
+       }
+      ],
+      "value": 1
+     },
+     {
+      "name": "2026-10-09",
+      "children": [
+       {
+        "name": ".graphify_analysis.json"
+       }
+      ],
+      "value": 1
+     },
+     {
+      "name": "2026-10-10",
+      "children": [
+       {
+        "name": ".graphify_analysis.json"
+       }
+      ],
+      "value": 1
+     }
+    ],
+    "value": 11
+   },
+   {
+    "name": "interfaces",
+    "value": 1
+   },
+   {
+    "name": "mcp_server",
+    "value": 1
+   },
+   {
+    "name": "modules",
+    "children": [
+     {
+      "name": "base_publish",
+      "value": 1
+     },
+     {
+      "name": "implementation_audit",
+      "children": [
+       {
+        "name": "rules"
+       }
+      ],
+      "value": 1
+     },
+     {
+      "name": "internal_policy_base",
+      "children": [
+       {
+        "name": "backups"
+       },
+       {
+        "name": "published"
+       }
+      ],
+      "value": 2
+     },
+     {
+      "name": "internal_policy_drafter",
+      "children": [
+       {
+        "name": "docs"
+       },
+       {
+        "name": "scripts"
+       }
+      ],
+      "value": 2
+     },
+     {
+      "name": "reg_frameworks",
+      "value": 1
+     },
+     {
+      "name": "regulatory_classifier",
+      "children": [
+       {
+        "name": "backups"
+       },
+       {
+        "name": "docs"
+       },
+       {
+        "name": "recall_audit"
+       }
+      ],
+      "value": 3
+     },
+     {
+      "name": "regulatory_scrapers",
+      "children": [
+       {
+        "name": "backups"
+       },
+       {
+        "name": "cache"
+       },
+       {
+        "name": "clause_index"
+       }
+      ],
+      "value": 3
+     },
+     {
+      "name": "_manifest.json"
+     }
+    ],
+    "value": 8
+   },
+   {
+    "name": "refactor",
+    "children": [
+     {
+      "name": "clause",
+      "children": [
+       {
+        "name": "core"
+       }
+      ],
+      "value": 1
+     },
+     {
+      "name": "clean",
+      "children": [
+       {
+        "name": "core"
+       }
+      ],
+      "value": 1
+     },
+     {
+      "name": "collectors",
+      "children": [
+       {
+        "name": "gov"
+       },
+       {
+        "name": "internal"
+       }
+      ],
+      "value": 2
+     },
+     {
+      "name": "common",
+      "value": 1
+     },
+     {
+      "name": "docgraph",
+      "value": 1
+     },
+     {
+      "name": "init",
+      "value": 1
+     },
+     {
+      "name": "mcp_server",
+      "children": [
+       {
+        "name": "tools"
+       },
+       {
+        "name": "requirements.txt"
+       }
+      ],
+      "value": 2
+     },
+     {
+      "name": "rag",
+      "children": [
+       {
+        "name": "adapters"
+       },
+       {
+        "name": "examples"
+       }
+      ],
+      "value": 2
+     },
+     {
+      "name": "storage",
+      "value": 1
+     },
+     {
+      "name": "tests",
+      "value": 1
+     },
+     {
+      "name": "config.yaml"
+     },
+     {
+      "name": "pyproject.toml"
+     },
+     {
+      "name": "requirements.txt"
+     }
+    ],
+    "value": 13
+   },
+   {
+    "name": "std_lib",
+    "children": [
+     {
+      "name": "common_lib",
+      "children": [
+       {
+        "name": "governance_store"
+       },
+       {
+        "name": "relations"
+       }
+      ],
+      "value": 2
+     },
+     {
+      "name": "scraper_std",
+      "children": [
+       {
+        "name": "common"
+       },
+       {
+        "name": "retired"
+       },
+       {
+        "name": "scripts"
+       }
+      ],
+      "value": 3
+     }
+    ],
+    "value": 2
+   },
+   {
+    "name": "tests",
+    "children": [
+     {
+      "name": "baselines",
+      "children": [
+       {
+        "name": "gov_collector_baseline.json"
+       },
+       {
+        "name": "mof_collector_baseline.json"
+       }
+      ],
+      "value": 2
+     },
+     {
+      "name": "cassettes",
+      "children": [
+       {
+        "name": "gov_detail_page.json"
+       },
+       {
+        "name": "gov_list_page.json"
+       },
+       {
+        "name": "manifest.json"
+       },
+       {
+        "name": "pbc_detail_page.json"
+       },
+       {
+        "name": "pbc_list_page.json"
+       },
+       {
+        "name": "zhengceku_detail_page.json"
+       },
+       {
+        "name": "zhengceku_list_page.json"
+       }
+      ],
+      "value": 7
+     },
+     {
+      "name": "golden",
+      "value": 1
+     },
+     {
+      "name": "README.md"
+     },
+     {
+      "name": "conftest.py"
+     }
+    ],
+    "value": 5
+   },
+   {
+    "name": "tools",
+    "children": [
+     {
+      "name": "retired",
+      "children": [
+       {
+        "name": "README.md"
+       }
+      ],
+      "value": 1
+     },
+     {
+      "name": "_manifest.json"
+     }
+    ],
+    "value": 2
+   },
+   {
+    "name": "web",
+    "children": [
+     {
+      "name": "assets",
+      "children": [
+       {
+        "name": "project-tree.json"
+       }
+      ],
+      "value": 1
+     }
+    ],
+    "value": 1
+   },
+   {
+    "name": ".pre-commit-config.yaml"
+   },
+   {
+    "name": "BENCHMARK.md"
+   },
+   {
+    "name": "CHANGELOG.md"
+   },
+   {
+    "name": "CODEBUDDY.md"
+   },
+   {
+    "name": "FILE_LIST.md"
+   },
+   {
+    "name": "README.md"
+   },
+   {
+    "name": "bootstrap.py"
+   },
+   {
+    "name": "cli.py"
+   },
+   {
+    "name": "data_migration_manifest.json"
+   },
+   {
+    "name": "paths.py"
+   },
+   {
+    "name": "pyproject.toml"
+   },
+   {
+    "name": "requirements.lock"
+   }
+  ]
+ }
+}

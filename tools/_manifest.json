@@ -172,6 +172,13 @@
     },
     {
       "category": "tool",
+      "entry": "生成「项目结构」页的目录树快照（web/assets/project-tree.json；只含目录与关键文件，可 --check 复算）",
+      "file": "gen_project_tree.py",
+      "independent": true,
+      "independent_why": "刻意独立：静态资产生成类工具，结构变化时按需重跑，非 STEP_ORDER 链路节点"
+    },
+    {
+      "category": "tool",
       "file": "gen_quality_metrics.py",
       "purpose": "DAMA 六维数据质量度量 + 健康度评分（方案 §13.5；指标全部取自既有机器判据输出，缺失维度不计入分母；环比劣化 >10% 出 quality_regression）"
     },

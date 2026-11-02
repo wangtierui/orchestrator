@@ -1256,6 +1256,11 @@ body.rail-off .rail{transition:width .15s cubic-bezier(.65,0,.35,1),
   outline:2px solid transparent;box-shadow:0 0 0 2px #0969da}
 .paginate-container .pagination a:focus-visible{
   outline:2px solid #0969da;outline-offset:-2px;box-shadow:0 0 0 2px #fff}
+
+/* 批 162：SLI/SLO —— 图在上，指标行在下（满宽） */
+.sli-wrap{display:flex;flex-direction:column;gap:8px}
+.sli-wrap .chart-box{width:100%}
+.sli-rows{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:4px 12px}
 </style>
 </head>
 <body>
@@ -1333,6 +1338,9 @@ body.rail-off .rail{transition:width .15s cubic-bezier(.65,0,.35,1),
 
 const TABS = [
   {id:"overview", name:"总览"},
+  /* 批 162（第 5 条）：项目结构 —— 放在"总览"之后、"数据流转"之前：
+   * 读者先看"是什么"（指标/产物），再看"代码与配置放在哪"，最后才看"数据怎么流"。 */
+  {id:"project",  name:"项目结构"},
   {id:"flow",     name:"数据流转"},
   {id:"metrics",  name:"指标"},
   {id:"worklist", name:"待办闭环"},
@@ -1406,7 +1414,8 @@ function ico(name, size, label) {
 
 /*: 页面 → Octicon 名（侧栏折叠后只剩这些 16px 图标）。 */
 const PAGE_GLYPH = {
-  overview: "home", flow: "workflow", metrics: "pulse", worklist: "checklist",
+  overview: "home", project: "file-directory", flow: "workflow",
+  metrics: "pulse", worklist: "checklist",
   laws: "law", rules: "book", graph: "graph", regstats: "table",
   governance: "shield-check", search: "codescan", release: "rocket",
   feedback: "comment",
@@ -1792,6 +1801,25 @@ function viewOverview(d, assets, publish, rel){
  * 桑基要求"每个节点进出守恒"，而本链有大量**多进多出**与**旁路/条件**步骤
  * （gates/reports/retention…），强行守恒会把数据改成假的。分层 DAG 只表达
  * "谁依赖谁 + 流量多少"，语义上忠实。 */
+/*: 项目结构：径向树（ECharts tree / layout:radial）。
+ * 数据来自静态快照，页面只负责呈现；节点深度=目录层级，叶子=关键文件。 */
+function viewProject(tr){
+  const meta = obj(tr.meta), tree = obj(tr.tree);
+  if(!tree.name) return card("项目结构", "", '<div class="muted">暂无结构快照</div>',
+                             "web/assets/project-tree.json", "");
+  const count = (x) => 1 + arr(x.children).reduce((a, c) => a + count(c), 0);
+  const total = count(tree);
+  const body = chartBox("treeRadial", {tree: tree, depth: Number(meta.max_depth) || 3}, 660)
+    + `<div class="note">${esc(meta.note || "")} · 共 ${num(total)} 个节点${meta.truncated
+        ? "（已按上限截断）" : ""} · 生成于 ${esc(meta.generated_at || "—")}</div>`
+    + `<div class="toolbar" style="margin-top:8px">
+         <span class="muted">拖拽/滚轮缩放；悬停看节点名与子项数；点击折叠展开</span>
+         <span class="muted" style="margin-left:auto">来源：tools/gen_project_tree.py</span>
+       </div>`;
+  return card("项目结构", `${num(total)} 个节点 · 深度 ${num(meta.max_depth || 3)}`, body,
+              "web/assets/project-tree.json", meta.generated_at || "");
+}
+
 function viewFlow(d){
   if(!d.available) return unavail(d);
   const nodes=arr(d.nodes), edges=arr(d.edges), layers=arr(d.layers);
@@ -1813,57 +1841,21 @@ function viewFlow(d){
     const x=colX[l], y=PADY+i*(ROWH+GAPY);
     pos[n.id]={x,y,cx:x+COLW/2,cy:y+ROWH/2}; }); });
 
-  /* 颜色一律走令牌（原来写死 hex，换主题/换色板时这张图是唯一"不跟着变"的地方） */
-const STATUS_FILL={ok:"var(--ok-l)",failed:"var(--bad-l)",skip:"var(--alt)",
-                     degraded:"var(--warn-l)",idle:"var(--bg)",unknown:"var(--bg)"};
-  const STATUS_STROKE={ok:"#12855A",failed:"#C0392B",skip:"#D0D5DD",
-                       degraded:"#B26A00",idle:"#D0D5DD",unknown:"#D0D5DD"};
-  let svg=`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img">`;
-  // 层标题带
-  lids.forEach(l=>{
-    const nm=(layers.find(x=>x.id===l)||{}).name||l;
-    svg+=`<text x="${colX[l]}" y="20" fill="#86909C" font-size="11.5" font-weight="600">${esc(nm)}</text>`;
-  });
-  // 边（先画，压在节点下方）
-  edges.forEach(e=>{
-    const a=pos[e.from], b=pos[e.to];
-    if(!a||!b) return;
-    const x1=a.x+COLW, y1=a.cy, x2=b.x, y2=b.cy;
-    const dx=Math.max(24,(x2-x1)/2);
-    const w=Math.max(1.2, Math.min(16, Math.sqrt(Number(e.volume)||1)/3.2));
-    svg+=`<path d="M${x1},${y1} C${x1+dx},${y1} ${x2-dx},${y2} ${x2},${y2}"
-      fill="none" stroke="#2F7CF6" stroke-opacity="0.30" stroke-width="${w}">
-      <title>${esc(e.from)} → ${esc(e.to)}（${esc(e.artifact)}，${num(e.volume)} 条）</title></path>`;
-  });
-  // 节点
-  lids.forEach(l=>{
-    (byLayer[l]||[]).forEach(n=>{
-      const p=pos[n.id];
-      const st=n.status||"idle";
-      const vol=Number(n.volume)||0;
-      const label=n.label.length>26?n.label.slice(0,25)+"…":n.label;
-      svg+=`<g class="fnode" data-step="${esc(n.id)}" style="cursor:pointer">
-        <rect x="${p.x}" y="${p.y}" width="${COLW}" height="${ROWH}" rx="6"
-          fill="${STATUS_FILL[st]||"#fff"}" stroke="${STATUS_STROKE[st]||"#D0D5DD"}"/>
-        <text x="${p.x+8}" y="${p.y+19}" font-size="11.5" fill="#1D2129">${esc(label)}</text>
-        ${vol?`<text x="${p.x+COLW-7}" y="${p.y+19}" font-size="10.5" fill="#4E5969"
-          text-anchor="end">${num(vol)}</text>`:""}
-        <title>${esc(n.id)}
-层：${esc((layers.find(x=>x.id===n.layer)||{}).name||n.layer)}
-状态：${esc(st)}${n.rc!=null?"（rc="+esc(n.rc)+"）":""}${n.elapsed_s!=null?"  耗时 "+n.elapsed_s+"s":""}
-记录数：${vol?num(vol):"（该步骤无记录数语义）"}
-${n.purpose?("作用："+esc(n.purpose)):""}</title>
-      </g>`;
-    });
-  });
-  svg+="</svg>";
+  /* 批 162（第 4 条）：自绘 SVG DAG → **ECharts 桑基图**。
+   * 节点按层着色（itemStyle 逐节点给），连线用渐变 + 脉动近似"流动"。 */
+  const layerIdx = {};
+  lids.forEach((l, i) => { layerIdx[l] = i; });
+  const svg = chartBox("sankey", {
+    nodes: nodes.map(n => ({name: n.id, layer: layerIdx[n.layer] || 0})),
+    links: edges.map(e => ({from: e.from, to: e.to, value: Number(e.volume) || 1})),
+  }, Math.max(420, Math.min(820, lids.length * 96)));
 
-  const legend=`<div class="legend">
-    <span><i style="background:var(--ok-l);border:1px solid var(--ok)"></i>ok</span>
-    <span><i style="background:var(--warn-l);border:1px solid var(--warn)"></i>degraded</span>
-    <span><i style="background:var(--bad-l);border:1px solid var(--bad)"></i>failed</span>
-    <span><i style="background:#F2F4F7;border:1px solid #D0D5DD"></i>skip/未运行</span>
-    <span>连线宽度 ∝ √记录数；悬停看详情，点击看抽屉</span></div>`;
+  const legend = `<div class="legend">${lids.map((l, i) => {
+    const nm = (layers.find(x => x.id === l) || {}).name || l;
+    const color = ["#0969da", "#6c5ce7", "#12855a", "#b26a00", "#8250df",
+                   "#bc4c00", "#1b7c83", "#57606a"][i % 8];
+    return `<span><i style="background:${color}"></i>${esc(nm)}</span>`;
+  }).join("")}<span>线宽 ∝ 记录数；悬停看节点/连线详情；左侧抽屉可跳到具体节点</span></div>`;
   const t=obj(d.totals);
   /* 左侧「节点抽屉」：按层列出全部节点 + 状态点。
    * 原来只有一个 `<select>`（要先展开、还看不到状态），排在 40 个节点上纯属折磨。 */
@@ -1959,8 +1951,13 @@ function viewMetrics(d){
         labels: rows.map((r, i) => String(r.date || r.run_id || ("#" + (i + 1))).slice(-8)),
         values: rows.map(r => Number(r.rate) || 0),
         color: "#2F7CF6",
-        regression: true,
-      }, 200);
+        regression: STATE.metrics_trendline !== false,
+      }, 200)
+      + `<div class="toolbar" style="margin-top:4px">
+           <button class="link" data-trendline="1">趋势线：${
+             STATE.metrics_trendline === false ? "关" : "开"}</button>
+           <span class="muted">虚线为最小二乘拟合，R² 见右上角</span>
+         </div>`;
     })(), d.source, d.fetched_at)}
     ${card("待办 aging","未处置天数分布", (() => {
       const e = Object.entries(obj(d.worklist_aging));
@@ -1979,9 +1976,10 @@ function viewMetrics(d){
         if (!Number.isNaN(v) && !Number.isNaN(g) && v >= g) ok += 1;
       });
       const rate = keys.length ? ok / keys.length : 0;
-      return `<div class="sli-wrap" style="display:flex;gap:12px;align-items:center">
-        ${chartBox("liquid", {value: rate}, 160)}
-        <div style="flex:1;min-width:0">${sliRows}
+      /* 批 162（第 1 条）：**图在上、指标说明在图下**（原来并排，说明被挤在右侧） */
+      return `<div class="sli-wrap">
+        ${chartBox("liquid", {value: rate}, 170)}
+        <div class="sli-rows">${sliRows}
           <div class="note">达标 ${ok}/${keys.length} 项（液位显示达标率）</div></div>
       </div>`;
     })(), s.source, s.fetched_at)}
@@ -1994,8 +1992,8 @@ function viewMetrics(d){
     })(), d.source, d.fetched_at)}
     ${card("主题分布",`${tEntries.length} 个主题 / 合计 ${num(tTotal)}`,
       (tEntries.length
-        ? chartBox("wordcloud", {items: tDist.map ? tDist.map(x => x) : Object.entries(tDist)
-            .map(([k, v]) => ({name: k, value: Number(v) || 0}))}, 220)
+        ? chartBox("wordcloud", {items: Object.entries(tDist)
+            .map(([k, v]) => ({name: k, value: Number(v) || 0})), shape: "circle"}, 240)
         : '<div class="muted">暂无数据</div>')
       + `<div class="note">显示前 ${Math.min(TOP_N,tEntries.length)} 项${restSum>0?`，其余 ${tEntries.length-TOP_N} 项合并为「其他」`:""}；各条合计 = ${num(tTotal)}（可自行核对）</div>`,
       d.source, d.fetched_at)}
@@ -2525,6 +2523,20 @@ async function render(){
       STATE.overview=o; STATE.release=r;
       v.innerHTML=viewOverview(o,a,p,r); return;
     }
+    if(CUR==="project"){
+      /* 静态结构快照（tools/gen_project_tree.py 生成），不新增接口 */
+      let tr = STATE.project;
+      if(!tr){
+        try{
+          tr = await fetch("project-tree.json", {cache:"no-store"}).then(r => r.json());
+        }catch(e){
+          tr = {meta:{note:"读取 project-tree.json 失败：" + String(e && e.message || e)},
+                tree:{name:"（无数据）"}};
+        }
+        STATE.project = tr;
+      }
+      v.innerHTML = viewProject(tr); return;
+    }
     if(CUR==="metrics"){
       const [m,q,s]=await Promise.all([api("/api/metrics"),api("/api/quality"),api("/api/slo")]);
       /* ⚠️ 2026-10-22 修 P3 的 TypeError：原实现 `Object.assign(LAST.metrics, m)`，
@@ -2994,7 +3006,11 @@ const G3D_SPECS = [];
 let G3_SEQ = 0;
 function g3dBox(key, model, W, H, hint){
   G3D_MODEL[key] = model;
-  if(!G3D_ST[key]) G3D_ST[key] = {sel: "", layout: "force"};
+  /* 布局记忆：同一张图上次选的是力导向还是环形，下次进来沿用（localStorage）。 */
+  const savedLayout = (() => {
+    try { return localStorage.getItem("g3.layout." + key) || ""; } catch (e) { return ""; }
+  })();
+  if(!G3D_ST[key]) G3D_ST[key] = {sel: "", layout: savedLayout || "force"};
   if(!G3D_ST[key].layout) G3D_ST[key].layout = "force";
   const id = "g3-" + (G3_SEQ++);
   G3D_SPECS.push({id: id, key: key, model: model, h: H || 620});
@@ -3122,6 +3138,18 @@ function syncRailToggle(){
   }
 }
 
+/*: 趋势线开关：只影响趋势图这一张，状态记在 STATE 并持久化。 */
+function bindTrendlineToggle(){
+  document.addEventListener("click", (ev) => {
+    const b = ev.target && ev.target.closest ? ev.target.closest("[data-trendline]") : null;
+    if (!b) return;
+    STATE.metrics_trendline = STATE.metrics_trendline === false;
+    try { localStorage.setItem("metrics.trendline", STATE.metrics_trendline ? "1" : "0"); }
+    catch (e) { /* 隐私模式 */ }
+    render();
+  }, true);
+}
+
 function bindGraphRows(){
   document.addEventListener("click", (ev) => {
     const lay = ev.target && ev.target.closest ? ev.target.closest("[data-g3layout]") : null;
@@ -3129,6 +3157,7 @@ function bindGraphRows(){
       const k = lay.dataset.g3key;
       const v = lay.dataset.g3layout;
       G3D_ST[k] = Object.assign({}, G3D_ST[k], {sel: "", layout: v});
+      try { localStorage.setItem("g3.layout." + k, v); } catch (e) { /* 隐私模式 */ }
       const box = document.querySelector(`.g3wrap[data-g3key="${k}"]`);
       const chart = box ? box.querySelector(".g3chart") : null;
       if (chart) renderGraphEl(k, chart);
@@ -6197,6 +6226,10 @@ function bindGridFilters(){
 }
 
 function initNav(){
+  /* 趋势线开关的初值（默认开；用户关过就记住） */
+  try { STATE.metrics_trendline = localStorage.getItem("metrics.trendline") !== "0"; }
+  catch (e) { STATE.metrics_trendline = true; }
+  bindTrendlineToggle();
   lvSetDensity(lvDensity());
   bindGraphRows();
   bindGridFilters();

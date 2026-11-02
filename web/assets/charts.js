@@ -18,6 +18,7 @@
       available: false,
       line: function () {}, bar: function () {}, wordcloud: function () {},
       liquid: function () {}, graph: function () {}, refresh: function () {},
+      sankey: function () {}, treeRadial: function () {},
       dispose: function () {}, resizeAll: function () {},
     };
     return;
@@ -25,6 +26,7 @@
 
   var INSTANCES = new Map();
   var SPECS = new Map();          // el -> {kind, spec}（refresh 时重放同一份数据）
+  var TIMERS = new Map();         // inst -> intervalId（流动脉冲）
 
   function cssVar(name, fallback) {
     var v = getComputedStyle(document.documentElement).getPropertyValue(name);
@@ -79,6 +81,7 @@
   function dispose(el) {
     var inst = INSTANCES.get(el);
     if (inst) {
+      stopPulse(inst);
       try { inst.dispose(); } catch (e) { /* 已销毁 */ }
       INSTANCES.delete(el);
     }
@@ -92,6 +95,7 @@
     SPECS.set(el, { kind: "line", spec: spec });
     var p = palette();
     var color = spec.color || p.accent;
+    var values = spec.values || [];
     var opt = baseOption();
     opt.xAxis = {
       type: "category", data: spec.labels || [], boundaryGap: false,
@@ -99,11 +103,21 @@
       axisTick: { show: false },
       axisLabel: { color: p.muted, fontSize: 11 },
     };
-    opt.yAxis = {
-      type: "value", splitLine: { lineStyle: { color: p.border, type: "dashed" } },
+    /*: 纵轴**不要从 0 起**：通过率这类指标全在 90±5 区间，0 起会把折线压成一条贴顶直线。
+     * scale:true 让轴贴合数据；若数据全在 0–100，则上下各留 ~8% 余量并夹到 [0,100]。 */
+    var nums = values.filter(function (v) { return typeof v === "number" && isFinite(v); });
+    var yAxis = {
+      type: "value", scale: true,
+      splitLine: { lineStyle: { color: p.border, type: "dashed" } },
       axisLabel: { color: p.muted, fontSize: 11 },
     };
-    var values = spec.values || [];
+    if (nums.length) {
+      var lo = Math.min.apply(null, nums), hi = Math.max.apply(null, nums);
+      var pad = Math.max(1, (hi - lo) * 0.35);
+      yAxis.min = Math.max(0, Math.floor(lo - pad));
+      if (hi <= 100) yAxis.max = Math.min(100, Math.ceil(hi + pad));
+    }
+    opt.yAxis = yAxis;
     opt.series = [{
       type: "line", data: values, smooth: true, showSymbol: true,
       symbolSize: 4, connectNulls: true,
@@ -183,6 +197,18 @@
     var colors = [p.accent, p.purple, p.ok, p.warn, "#8250df", "#bc4c00", "#1b7c83"];
     var opt = {
       tooltip: { show: true, formatter: function (o) { return o.name + "：" + o.value; } },
+      /*: 轮廓：词云本身只排字，形状靠一层虚线几何体暗示（圆/菱形/矩形由 spec.shape 决定）。 */
+      graphic: [{
+        type: spec.shape === "rect" ? "rect" : (spec.shape === "diamond" ? "polygon" : "circle"),
+        left: "center", top: "middle",
+        shape: spec.shape === "rect"
+          ? { width: "92%", height: "86%", r: 8 }
+          : (spec.shape === "diamond"
+            ? { points: [[90, 0], [180, 90], [90, 180], [0, 90]] }
+            : { r: "46%" }),
+        style: { fill: "none", stroke: p.border, lineWidth: 1, lineDash: [3, 4] },
+        silent: true, z: 0,
+      }],
       series: [{
         type: "wordCloud", shape: "circle", width: "100%", height: "100%",
         sizeRange: [12, 28], rotationRange: [0, 0], gridSize: 8, drawOutOfBound: false,
@@ -317,17 +343,141 @@
     inst.setOption(opt, true);
   }
 
+  /* ------------------------------------------------------------------ 流动效果
+   * "粒子/流动"在 ECharts 里只有 `lines`/`effectScatter` 原生支持（需要坐标系统）；
+   * 桑基与树没有粒子轨道，这里用**脉动**近似：周期性在两档透明度/线宽之间切换，
+   * 观感上像"流向在动"。prefers-reduced-motion 时完全不启动。
+   */
+  function pulse(inst, frames, period) {
+    if (!inst || !frames || frames.length < 2) return;
+    if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    var i = 0;
+    var timer = setInterval(function () {
+      var dom = inst.getDom && inst.getDom();
+      if (!dom || !document.body.contains(dom)) { clearInterval(timer); return; }
+      i = (i + 1) % frames.length;
+      try { inst.setOption(frames[i], { lazyUpdate: true }); } catch (e) { clearInterval(timer); }
+    }, period || 1400);
+    TIMERS.set(inst, timer);
+  }
+
+  function stopPulse(inst) {
+    var tm = TIMERS.get(inst);
+    if (tm) { clearInterval(tm); TIMERS.delete(inst); }
+  }
+
+  /*: 桑基图（数据流转）：**逐节点 itemStyle**（按层着色），链接用渐变 + 脉动。 */
+  function sankey(el, spec) {
+    var inst = ensure(el);
+    if (!inst) return;
+    SPECS.set(el, { kind: "sankey", spec: spec });
+    stopPulse(inst);
+    var p = palette();
+    var layerColors = spec.layerColors ||
+      [p.accent, p.purple, p.ok, p.warn, "#8250df", "#bc4c00", "#1b7c83", "#57606a"];
+    var nodes = spec.nodes || [];
+    var links = spec.links || [];
+
+    var data = nodes.map(function (n) {
+      var d = Number(n.layer) || 0;
+      return {
+        name: String(n.name),
+        depth: d,
+        itemStyle: { color: layerColors[d % layerColors.length], borderWidth: 0 },
+        label: { color: p.text, fontSize: 11 },
+      };
+    });
+
+    var opt = {
+      animationDuration: 700,
+      tooltip: { trigger: "item", triggerOn: "mousemove",
+                 backgroundColor: "#fff", borderColor: p.border, borderWidth: 1,
+                 textStyle: { color: p.text, fontSize: 12 } },
+      series: [{
+        type: "sankey",
+        left: 8, right: 120, top: 12, bottom: 12,
+        nodeWidth: 12, nodeGap: 8,
+        emphasis: { focus: "adjacency" },
+        data: data,
+        links: links.map(function (l) {
+          return { source: String(l.from || l.source), target: String(l.to || l.target),
+                   value: Number(l.value) || 1 };
+        }),
+        label: { position: "right", color: p.muted, fontSize: 11 },
+        lineStyle: { color: "gradient", curveness: 0.5, opacity: 0.32 },
+      }],
+    };
+    inst.setOption(opt, true);
+
+    pulse(inst, [{
+      series: [{ lineStyle: { opacity: 0.5 } }],
+    }, {
+      series: [{ lineStyle: { opacity: 0.22 } }],
+    }], 1500);
+  }
+
+  /*: 径向树（项目结构）：按深度着色，连线脉动（近似"流动"）。 */
+  function treeRadial(el, spec) {
+    var inst = ensure(el);
+    if (!inst) return;
+    SPECS.set(el, { kind: "treeRadial", spec: spec });
+    stopPulse(inst);
+    var p = palette();
+    var colors = [p.accent, p.purple, p.ok, p.warn, "#8250df"];
+    var opt = {
+      tooltip: { trigger: "item", triggerOn: "mousemove",
+                 backgroundColor: "#fff", borderColor: p.border, borderWidth: 1,
+                 textStyle: { color: p.text, fontSize: 12 },
+                 formatter: function (o) {
+                   var n = o.data || {};
+                   return (n.name || "") + (n.children ? "（" + n.children.length + " 项）" : "");
+                 } },
+      series: [{
+        type: "tree",
+        data: [spec.tree],
+        layout: "radial",
+        roam: true,
+        initialTreeDepth: spec.depth || 3,
+        symbol: "circle",
+        symbolSize: 7,
+        edgeShape: "curve",
+        edgeForkPosition: "50%",
+        label: { position: "left", verticalAlign: "middle", fontSize: 11,
+                 color: p.text, distance: 6 },
+        leaves: { label: { position: "right", fontSize: 10, color: p.muted } },
+        emphasis: { focus: "descendant" },
+        lineStyle: { color: p.border, width: 1.1, curveness: 0.5, opacity: 0.9 },
+        itemStyle: {
+          color: function (params) {
+            return colors[(params.data.depth || 0) % colors.length];
+          },
+        },
+        animationDuration: 700,
+        animationDurationUpdate: 500,
+      }],
+    };
+    inst.setOption(opt, true);
+
+    pulse(inst, [{
+      series: [{ lineStyle: { width: 2.2, opacity: 1 } }],
+    }, {
+      series: [{ lineStyle: { width: 1.1, opacity: 0.65 } }],
+    }], 1600);
+  }
+
   /*: 用当前 spec 重放（选中高亮、重置视图） */
   function refresh(el) {
     var s = SPECS.get(el);
     if (!s) return;
-    var fn = { line: line, bar: bar, wordcloud: wordcloud, liquid: liquid, graph: graph }[s.kind];
+    var fn = { line: line, bar: bar, wordcloud: wordcloud, liquid: liquid,
+               graph: graph, sankey: sankey, treeRadial: treeRadial }[s.kind];
     if (fn) fn(el, s.spec);
   }
 
   global.Charts = {
     available: true,
     line: line, bar: bar, wordcloud: wordcloud, liquid: liquid, graph: graph,
+    sankey: sankey, treeRadial: treeRadial,
     refresh: refresh, dispose: dispose, resizeAll: resizeAll,
   };
 

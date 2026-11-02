@@ -25,6 +25,16 @@ GOOD = {
     "densityScope": {"view": "main-content lv-compact", "body": ""},
     "token": {"sort": "document_number", "desc": True, "saveDisabled": False},
     "truncate": {"maxOverflow": 79, "ellipsis": "ellipsis"},
+    "tabStops": [{"tag": "button", "cls": "btn", "label": "主题"},
+                 {"tag": "button", "cls": "btn", "label": "名称"},
+                 {"tag": "button", "cls": "btn", "label": "紧凑"},
+                 {"tag": "a", "cls": "page", "label": "2"},
+                 {"tag": "a", "cls": "page", "label": "3"},
+                 {"tag": "input", "cls": "q", "label": "搜索"},
+                 {"tag": "button", "cls": "x", "label": "保存"},
+                 {"tag": "a", "cls": "y", "label": "返回"},
+                 {"tag": "button", "cls": "z", "label": "关闭"},
+                 {"tag": "a", "cls": "w", "label": "更多"}],
 }
 
 
@@ -49,7 +59,7 @@ def test_pass_when_all_checks_good(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(S, "collect", lambda *a, **k: dict(GOOD))
     ok, detail = G.run()
     assert ok is True and not detail.get("skipped")
-    assert detail["passed"] == detail["total"] >= 6
+    assert detail["passed"] == detail["total"] >= 7
 
 
 def test_fail_when_metric_off(monkeypatch: pytest.MonkeyPatch) -> None:
