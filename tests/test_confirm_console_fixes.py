@@ -173,15 +173,17 @@ def test_console_exposes_bulk_selection() -> None:
 
 
 def test_console_flow_nodes_are_clickable() -> None:
-    """正例：P1 节点带 `data-step` 且有事件绑定（此前"点击无反应"）。
+    """正例：数据流转节点可点开抽屉。
 
-    2026-10-22：节点从 `<rect class="fnode">` 改为 `<g class="fnode">`（组内 rect+text）。
-    整组可点比"只有矩形能点"更好用（点在文字上也算），故断言随之改为 `g.fnode`。
+    批 162 起画布是 ECharts 桑基图，点击契约从"g.fnode 绑定"改为
+    "series 的 onSelect 回调 → openStep + 左侧高亮"，语义不变。
     """
     src = _src(*HTML)
-    assert "fnode" in src, "P1 节点缺 class=fnode（无法绑定点击）"
     assert "openStep" in src, "缺 openStep()（节点抽屉入口）"
-    assert "g.fnode" in src, "P1 节点未绑定 click"
+    assert 'chartBox("sankey"' in src, "数据流转未用桑基图"
+    assert "onSelect: (id)=>{ STATE.flow_sel=id; openStep(id);" in src, \
+        "节点点击未接 openStep（点击无反应的老问题会复发）"
+    assert "markFlowSel(" in src, "点节点后未同步左侧高亮"
 
 
 def test_console_shows_real_total() -> None:
