@@ -18,6 +18,7 @@ internal 的 ``--in-dir/--org``）。
 from __future__ import annotations
 
 import argparse
+import logging
 import os
 
 from ..base import REPO_ROOT
@@ -82,3 +83,17 @@ def is_full_mode(args: argparse.Namespace) -> bool:
 def make_known_pred_full() -> callable:
     """全量模式下让所有主库记录都不算'已知'，从而逐条重抓。"""
     return lambda _r: False
+
+
+def configure_logging(level: int = logging.INFO) -> None:
+    """统一配置根日志，供所有采集入口（总入口 + 各源 main）调用。
+
+    背景：部分源（gov/mof/internal）进度日志走 ``logging``，若入口不配置则 INFO
+    级日志被 Python 静默兜底吞掉（pbc/nfra 用 ``print`` 所以照常显示），造成
+    "有的源有日志、有的没有"。集中到此处，各入口统一调用即可消除该不一致。
+    """
+    logging.basicConfig(
+        level=level,
+        format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
+        datefmt="%H:%M:%S",
+    )

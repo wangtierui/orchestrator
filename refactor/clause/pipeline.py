@@ -28,6 +28,10 @@ from typing import Any, Dict, List
 
 from collectors.storage import get_store
 from collectors.storage.config import StorageSettings
+try:
+    from refactor.config import settings
+except ImportError:  # 兼容从 refactor/ 目录直接运行（collectors 上下文）
+    from config import settings
 from clause.core.document_structure import parse_document, validate_clauses
 
 
@@ -141,9 +145,8 @@ def build_clause_index(
 if __name__ == "__main__":
     # 后端仅 PG（file 后端已移除）：需要 REFACTOR_DB_URL；无则跳过自检。
     import json
-    import os
 
-    if not os.environ.get("REFACTOR_DB_URL"):
+    if not settings.database.url:
         print("[clause] 自检跳过：需要 postgres 后端（REFACTOR_DB_URL 未设置）")
         raise SystemExit(0)
 

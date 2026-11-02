@@ -29,6 +29,8 @@ try:
 except ImportError:  # pragma: no cover - 作为脚本直接运行时
     from docgraph_loader import load_rows  # type: ignore
 
+from refactor.config import psycopg_dsn  # 统一 URL 归一化（消除手工 .replace）
+
 
 def _norm(s: str) -> str:
     """归一标题/书名号，用于解析匹配（去空白、去书名号/括号）。"""
@@ -61,7 +63,7 @@ def load_corpus(db_url: str, namespaces=("cleaned",), limit: int = 0) -> list:
         from psycopg import connect
     except ImportError:  # pragma: no cover
         from psycopg2 import connect  # type: ignore
-    pg = db_url.replace("postgresql+psycopg://", "postgresql://")
+    pg = psycopg_dsn(db_url)
     docs = []
     with connect(pg) as conn:
         with conn.cursor() as cur:

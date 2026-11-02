@@ -242,6 +242,24 @@ def _first(item: Dict[str, Any], *keys: str) -> Any:
     return None
 
 
+# 抓取状态优先级（数值越高内容越完整/越终态）。用于 update 不降级守卫：
+# 仅当新状态优先级 ≥ 旧状态才覆盖，避免 handle_known 的 skipped_existing 把已完成的 ok 覆盖。
+# 顺序同 sql_backend：ok(5) > attachment_saved(4) > attachment_failed(3) >
+# attachment_skipped/title_link_only(2) > 失败类(1)。
+def _rank_case(col: str) -> str:
+    return (
+        "CASE COALESCE(%s,'') "
+        "WHEN 'ok' THEN 5 "
+        "WHEN 'attachment_saved' THEN 4 "
+        "WHEN 'attachment_failed' THEN 3 "
+        "WHEN 'attachment_skipped' THEN 2 "
+        "WHEN 'title_link_only' THEN 2 "
+        "WHEN 'fetch_failed' THEN 1 "
+        "WHEN 'parse_error' THEN 1 "
+        "ELSE 0 END" % col
+    )
+
+
 class RawStore:
     """采集源范式化存储：raw_docs（公共）+ raw_{ns}（源私有）双写。"""
 
@@ -384,15 +402,26 @@ class RawStore:
                             run_id=run_id, namespace=ns, key_md5=key_md5, **common)
                     ).inserted_primary_key[0]
                     conn.execute(insert(child_t).values(doc_id=did, **child))
-                else:  # update：冲突覆盖（mof 变更追踪）
+                else:  # update：冲突覆盖（mof 变更追踪），但不降级——新状态优先级 ≥ 旧才覆盖
                     did = conn.execute(
                         pg_insert(RAW_DOCS).values(
                             run_id=run_id, namespace=ns, key_md5=key_md5, **common)
                         .on_conflict_do_update(
                             index_elements=["namespace", "key_md5"],
-                            set_={**common, "run_id": run_id})
+                            set_={**common, "run_id": run_id},
+                            where=text(
+                                f"({_rank_case('EXCLUDED.fetch_status')}) >= "
+                                f"({_rank_case('raw_docs.fetch_status')})"))
                         .returning(RAW_DOCS.c.id)
-                    ).scalar_one()
+                    ).scalar_one_or_none()
+                    if did is None:
+                        # 不降级守卫拦截了本次覆盖（如 skipped_existing 撞上 ok）：
+                        # 取已存在行 id，副表仍按既有内容幂等 upsert。
+                        did = conn.execute(
+                            select(RAW_DOCS.c.id).where(
+                                RAW_DOCS.c.namespace == ns,
+                                RAW_DOCS.c.key_md5 == key_md5)
+                        ).scalar_one()
                     conn.execute(
                         pg_insert(child_t).values(doc_id=did, **child)
                         .on_conflict_do_update(

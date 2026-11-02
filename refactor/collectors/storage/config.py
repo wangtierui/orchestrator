@@ -1,17 +1,21 @@
 # -*- coding: utf-8 -*-
-"""存储配置（12-factor：配置外置到环境变量）。仅支持 Postgres 后端。
+"""存储配置（单一配置源 refactor/config.yaml + 环境变量覆盖，12-factor）。仅支持 Postgres 后端。
 
 后端形态：Postgres 存元数据（raw_docs / raw_{ns} / cleaned_items / docgraph_edges 等），
 正文等大对象落本地文件、由 content_ref 指针指向（即"PG + 文件指向"）。
 file 后端已移除。
 
-环境变量：
+配置项（来自 refactor/config.yaml 的 database 段，环境变量可覆盖）：
   REFACTOR_STORAGE  postgres   （默认 postgres；仅支持 PG 后端）
   REFACTOR_RAW_DIR   正文落盘根目录 content_root（默认 data/raw）
-  REFACTOR_DB_URL    postgres 连接串，如 postgresql+psycopg://user:pwd@host:5432/db
+  REFACTOR_DB_URL    postgres 连接串（SQLAlchemy 风格，psycopg 直连自动剥离 +psycopg）
 """
-import os
 from dataclasses import dataclass
+
+try:
+    from refactor.config import settings
+except ImportError:  # 兼容从 refactor/ 目录直接运行（collectors 上下文）
+    from config import settings
 
 
 @dataclass
@@ -22,10 +26,11 @@ class StorageSettings:
 
     @classmethod
     def load(cls) -> "StorageSettings":
+        # 统一配置已合并环境变量覆盖（settings.database.* 已含 env 覆盖）
         return cls(
-            backend=(os.environ.get("REFACTOR_STORAGE") or "postgres").strip().lower(),
-            raw_dir=(os.environ.get("REFACTOR_RAW_DIR") or "data/raw").strip(),
-            db_url=(os.environ.get("REFACTOR_DB_URL") or None),
+            backend=settings.database.storage_backend,
+            raw_dir=settings.database.raw_dir,
+            db_url=settings.database.url,
         )
 
     def is_postgres(self) -> bool:

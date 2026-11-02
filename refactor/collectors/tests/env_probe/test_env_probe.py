@@ -18,6 +18,11 @@ import threading
 
 import pytest
 
+try:
+    from refactor.config import settings  # 统一配置（OCR 调优项集中管理）
+except ImportError:  # 兼容从 refactor/ 目录直接运行（collectors 上下文）
+    from config import settings
+
 # 自包含导入前缀：随测试被收集的包名走（collectors.* 或 refactor.collectors.*）
 _PKG = ".".join(__name__.split(".")[:-3])  # 去掉 .tests.env_probe.<module>
 
@@ -101,7 +106,7 @@ def test_pdf_text_layer_capable():
 
 def _ocr_gap(msg):
     """OCR 缺口处理：默认降级为 SKIP（非必需）；设 REFACTOR_REQUIRE_OCR=1 升级为必检 FAIL。"""
-    require = os.environ.get("REFACTOR_REQUIRE_OCR", "0") == "1"
+    require = settings.ocr.require_ocr
     if require:
         pytest.fail(msg)
     pytest.skip(f"[OCR 非必需] {msg}")
@@ -145,7 +150,7 @@ def test_ocr_stack_probe(capsys):
 
 
 # OCR 功能验证的超时护栏（秒）：Paddle 首次推理会下载/加载模型，可能很慢。
-OCR_FUNC_TIMEOUT = int(os.environ.get("REFACTOR_OCR_FUNC_TIMEOUT", "300"))
+OCR_FUNC_TIMEOUT = settings.ocr.ocr_func_timeout
 
 
 def _run_with_timeout(fn, timeout, label):

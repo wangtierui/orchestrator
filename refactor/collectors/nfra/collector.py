@@ -10,7 +10,7 @@ import 全部收口到 refactor/collectors 内部（自包含，不依赖外部 
 
 import argparse
 import json
-from ..lib.cli import add_common_args, is_full_mode, make_known_pred_full
+from ..lib.cli import add_common_args, is_full_mode, make_known_pred_full, configure_logging
 import os
 import random
 import re
@@ -563,6 +563,7 @@ def scrape(args):
 
 
 def main():
+    configure_logging()
     ap = argparse.ArgumentParser(description="国家金融监督管理总局 政策法规 全量抓取")
     add_common_args(ap, with_category=False, with_attachments=False,
                     default_out=os.path.join(SCRAPERS_ROOT, "data", "raw"))

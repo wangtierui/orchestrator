@@ -16,7 +16,9 @@ from .factory import get_store, open_store
 
 # 各源默认冲突策略
 _DEFAULT_ON_CONFLICT = {
-    "pbc": "nothing",
+    # pbc 官方文档不可变，但"补全重试"（attachment_skipped/失败→ok）必须能落库，
+    # 故用 update；配合 sql_backend 的"不降级"守卫，ok 记录不会被 --no-attachments 覆盖。
+    "pbc": "update",
     "gov": "nothing",
     "nfra": "nothing",
     "mof": "update",  # mof 法规会"废止/失效/移除"，确需覆盖

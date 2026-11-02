@@ -61,11 +61,6 @@ DEFAULT_HEADERS = {
 }
 
 logger = logging.getLogger("mof_scraper")
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-    datefmt="%H:%M:%S",
-)
 
 
 class RateLimiter:

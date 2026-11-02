@@ -15,7 +15,7 @@ HTML 解析（_parse_list/_parse_detail/scan_list/parse_detail/fetch_attachments
 """
 import argparse
 import logging
-from ..lib.cli import add_common_args, is_full_mode, make_known_pred_full
+from ..lib.cli import add_common_args, is_full_mode, make_known_pred_full, configure_logging
 import os
 import re
 import sys
@@ -341,6 +341,7 @@ class GovCollector(CollectorPipeline):
 
 
 def main():
+    configure_logging()
     parser = argparse.ArgumentParser(
         description="抓取 gov.cn 行政法规库（xzfg.moj.gov.cn）+ 国务院政策文件库·部门文件")
     add_common_args(parser, with_category=False, with_source=True, with_mode=True,

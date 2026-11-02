@@ -16,7 +16,7 @@ import sys
 import time
 
 from ..base import REPO_ROOT, SourceCollector
-from ..lib.cli import add_common_args, is_full_mode, make_known_pred_full
+from ..lib.cli import add_common_args, is_full_mode, make_known_pred_full, configure_logging
 from . import net, parse
 from ..lib.pipeline import CollectorPipeline
 
@@ -71,8 +71,16 @@ class PbcCollector(CollectorPipeline):
 
     source_id = "pbc"
     master_filename = "pbc_laws.json"
-    # 仅 fetch_status=='ok' 的历史记录算"已知可复用"（断点续跑）。
-    known_pred = staticmethod(lambda r: r.get("fetch_status") == "ok")
+    # 已知→复用 判定：已抓取且"终态"的记录算已知，避免重复抓取/死循环。
+    # 覆盖全部永久失败态（ok / 附件已存 / 附件失败 / HTML 抓取失败 / 解析失败），
+    # 不再无限重抓；故意不含 attachment_skipped / title_link_only —— 那是用户主动
+    # 跳过（--no-attachments / --no-detail），后续想补抓仍可重抓。
+    known_pred = staticmethod(
+        lambda r: r.get("fetch_status") in (
+            "ok", "attachment_saved", "attachment_failed",
+            "fetch_failed", "parse_error",
+        )
+    )
 
     # ----------------------------- CollectorPipeline 钩子 -----------------------------
     def key_of(self, item: dict):
@@ -167,6 +175,7 @@ class PbcCollector(CollectorPipeline):
             "category": name,
             "title": entry["title"],
             "detail_url": url,
+            "url": url,
             "link_type": "attachment" if parse.is_attachment(url) else "html",
             "file_type": (url.rsplit(".", 1)[-1].lower() if parse.is_attachment(url) else None),
             "local_path": None,
@@ -210,6 +219,7 @@ class PbcCollector(CollectorPipeline):
                     # 不降级为致命 fetch_failed，后续可由"附件补抓"任务重试。
                     rec["fetch_status"] = "attachment_failed"
                     rec["attachment_status"] = "failed"
+                    rec["error"] = f"附件下载失败 status={st}"
                     rec["attachment_errors"] = [
                         {"url": url, "status": st, "reason": f"附件下载失败 status={st}"}
                     ]
@@ -288,6 +298,7 @@ class PbcCollector(CollectorPipeline):
 
 
 def main():
+    configure_logging()
     ap = argparse.ArgumentParser(description="中国人民银行条法司法规抓取脚本")
     add_common_args(ap, with_category=True, with_mode=True, with_delay=True,
                     with_limit=True, with_detail=True, with_attachments=True,

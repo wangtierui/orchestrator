@@ -29,7 +29,7 @@ from ..base import (
 from ..storage import get_storage, StorageSettings, open_storage
 from ..lib.pipeline import CollectorPipeline
 from ..lib.incremental import KnownTracker
-from ..lib.cli import add_common_args, is_full_mode, make_known_pred_full
+from ..lib.cli import add_common_args, is_full_mode, make_known_pred_full, configure_logging
 from . import net
 from ..lib.text_utils import flatten_attachment_extras
 from .attachments import collect_attachments
@@ -363,6 +363,7 @@ class MofCollector(CollectorPipeline):
 
 
 def main():
+    configure_logging()
     ap = argparse.ArgumentParser(description="财政部法规数据库自动抓取（重构版·增量 diff）")
     add_common_args(ap, with_category=True, with_mode=True, with_delay=True,
                     with_limit=True, with_detail=True, with_attachments=True,

@@ -17,7 +17,7 @@ import os
 import sys
 from typing import Any
 
-from ..lib.cli import add_common_args
+from ..lib.cli import add_common_args, configure_logging
 
 # 仓库根入路径，使 collectors 可被导入（与既有采集器同约定）
 _HERE = os.path.dirname(os.path.abspath(__file__))
@@ -114,9 +114,7 @@ def main() -> None:
     ap.add_argument("--org", default="", help="发文机构（可选，默认空）")
     ap.add_argument("--category", default="", help="分类（可选，默认空，作为录入元数据）")
     args = ap.parse_args()
-    logging.basicConfig(
-        level=logging.INFO, format="%(levelname)s %(name)s: %(message)s"
-    )
+    configure_logging()
     out = collect(args.in_dir, org=args.org, category=args.category, limit=args.limit)
     print("[internal] 采集完成：", out)
 

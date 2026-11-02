@@ -23,6 +23,10 @@ from urllib.parse import urljoin
 from ..base import REPO_ROOT as _ORCH  # refactor 项目根（自包含，不指向外部）
 from .parse import make_summary  # 复用 gov 主链摘要口径（消除 zhengceku 副本）
 from ..lib.text_utils import normalize_date  # 复用统一日期归一化（消除 _iso 副本）
+try:
+    from refactor.config import settings  # 统一配置（抓取/OCR 调优项集中管理）
+except ImportError:  # 兼容从 refactor/ 目录直接运行（collectors 上下文）
+    from config import settings
 # local_path 相对基址收口到 refactor/data/raw（自包含）。
 SCRAPERS_ROOT = os.path.join(_ORCH, "data", "raw")
 
@@ -133,8 +137,8 @@ def clean_html_text(html: str) -> str:
 # --------------------------------------------------------------------------- #
 # 附件处理模式（全量采集提速 / 减重）
 # --------------------------------------------------------------------------- #
-_ATTACH_FAST = os.environ.get("ZC_ATTACH_FAST", "").strip().lower() in ("1", "true", "yes", "on")
-_FAST_MIN_BODY = int(os.environ.get("ZC_FAST_MIN_BODY", "200") or 200)
+_ATTACH_FAST = settings.scrape.zc_attach_fast
+_FAST_MIN_BODY = settings.scrape.zc_fast_min_body
 _skipped = [0]                 # 本次运行跳过附件抽取的条目计数（供收尾日志）
 
 
@@ -260,7 +264,7 @@ def _word_app():
         return None
     if _WORD_APP is not None:
         return _WORD_APP
-    if os.environ.get("ZC_NO_WORD_COM", "").strip().lower() in ("1", "true", "yes", "on"):
+    if settings.scrape.zc_no_word_com:
         LOG.info("Word COM 已按 ZC_NO_WORD_COM 禁用，.doc 走通用抽取")
         _WORD_DEAD = True
         return None

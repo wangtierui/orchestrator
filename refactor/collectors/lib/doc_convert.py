@@ -5,6 +5,11 @@
 """
 import os
 import shutil
+
+try:
+    from refactor.config import settings  # 统一配置（LO_BIN 集中管理）
+except ImportError:  # 兼容从 refactor/ 目录直接运行（collectors 上下文）
+    from config import settings
 import subprocess
 import tempfile
 
@@ -26,7 +31,7 @@ def find_libreoffice(bin: str | None = None) -> str | None:
     """探测 LibreOffice(headless) 可执行；找不到返回 None。"""
     if bin and os.path.exists(bin):
         return bin
-    env_bin = (bin or os.environ.get("LO_BIN") or "").strip()
+    env_bin = (bin or settings.ocr.lo_bin or "").strip()
     if env_bin and os.path.exists(env_bin):
         return env_bin
     for c in ("soffice", "libreoffice"):

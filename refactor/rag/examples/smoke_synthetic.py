@@ -41,11 +41,8 @@ def _fake_clauses():
 
 
 def main():
-    import os
-    embedder_name = os.environ.get("RAG_EMBEDDER", "bge_m3")
-    embed_dim = int(os.environ.get("RAG_EMBED_DIM", "1024"))
-    llm_name = os.environ.get("RAG_LLM", "ollama")
-    cfg = RagConfig(embedder_name=embedder_name, embed_dim=embed_dim, llm_name=llm_name)
+    # 默认值全部来自统一配置 refactor/config.yaml
+    cfg = RagConfig()
 
     print(f"[smoke] embedder={cfg.embedder_name} dim={cfg.embed_dim} "
           f"vector_store={cfg.vector_store['name']} llm={cfg.llm_name} "

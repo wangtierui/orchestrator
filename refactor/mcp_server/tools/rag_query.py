@@ -10,8 +10,6 @@
 """
 from __future__ import annotations
 
-import os
-
 from ..registry import tool
 
 
@@ -44,13 +42,7 @@ def rag_query(args: dict) -> dict:
     question = args["question"]
     top_k = int(args.get("top_k", 5))
 
-    # 业务无关的通用查询：具体用哪个 embedding / LLM / 维度，由「启动 MCP server 时的
-    # 环境变量」决定，不在代码里写死，便于切换（如 RAG_EMBEDDER=bge_small_zh）。
-    cfg = RagConfig(
-        embedder_name=os.environ.get("RAG_EMBEDDER", "bge_m3"),
-        embed_dim=int(os.environ.get("RAG_EMBED_DIM", "1024")),
-        llm_name=os.environ.get("RAG_LLM", "ollama"),
-        top_k=top_k,
-    )
+    # 具体用哪个 embedding / LLM / 维度，由统一配置 refactor/config.yaml 决定（不在代码写死）
+    cfg = RagConfig(top_k=top_k)
     res = query(question, cfg)
     return {"answer": res.get("answer"), "citations": res.get("citations", [])}

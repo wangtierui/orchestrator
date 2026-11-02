@@ -32,13 +32,19 @@ except ImportError:  # pragma: no cover - 兼容 psycopg2
     from psycopg2 import connect  # type: ignore
 
 from . import ddl as ddl_mod
+try:
+    from refactor.config import settings, psycopg_dsn
+except ImportError:  # 兼容从 refactor/ 目录直接运行（collectors 上下文）
+    from config import settings, psycopg_dsn
 
-DEFAULT_DB_URL = "postgresql+psycopg://root:5462@localhost:5432/test"
+# 默认库址统一取自 refactor/config.yaml（不再散落硬编码）
+DEFAULT_DB_URL = settings.database.url
 SCHEMA_SQL_PATH = _HERE / "schema.sql"
 
 
 def _pg_url(db_url: str) -> str:
-    return db_url.replace("postgresql+psycopg://", "postgresql://")
+    # SQLAlchemy 风格串（postgresql+psycopg://）转 psycopg 直连串
+    return psycopg_dsn(db_url)
 
 
 def _extension_exists(cur, name: str) -> bool:

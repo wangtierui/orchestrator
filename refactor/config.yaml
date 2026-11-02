@@ -1,0 +1,46 @@
+# =============================================================================
+# refactor 子系统统一配置 —— 单一配置源（12-factor：配置文件为默认，环境变量可覆盖）
+#
+# 规则：
+#   - 本文件提交进仓库，作为 dev / 默认配置。
+#   - 同名大写环境变量可覆盖任意一项（用于不同环境 / 密钥，例如 REFACTOR_DB_URL）。
+#   - 模块导入 refactor.config 时会把解析后的值回填 os.environ（仅当未设置），
+#     因此既有 os.environ.get(...) 读取无需改动即可生效。
+#   - 新代码优先直接读 refactor.config.settings。
+# =============================================================================
+
+database:
+  # 连接串：SQLAlchemy 风格（postgresql+psycopg://），SQLAlchemy 消费者直接使用；
+  # psycopg 直连消费者经 config.psycopg_dsn() 自动剥离 +psycopg 前缀。
+  url: "postgresql+psycopg://root:5462@localhost:5432/test"
+  storage_backend: "postgres"   # REFACTOR_STORAGE
+  raw_dir: "data/raw"          # REFACTOR_RAW_DIR（正文落盘根目录 content_root）
+
+rag:
+  embedder_name: "bge_m3"      # RAG_EMBEDDER
+  embed_dim: 1024              # RAG_EMBED_DIM（须与 embedder 输出维度一致）
+  llm_name: "ollama"           # RAG_LLM
+  reranker_name: "none"
+  top_k: 5
+  # 向量库连接（与 database.url 同源凭据，集中维护避免两套表示）
+  vector_store:
+    name: "pgvector"
+    host: "localhost"
+    port: 5432
+    user: "root"
+    password: "5462"
+    database: "test"
+    table_name: "clause_chunks"
+
+scrape:
+  zc_attach_fast: false        # ZC_ATTACH_FAST（gov/zhengceku 快速附件判定）
+  zc_fast_min_body: 200        # ZC_FAST_MIN_BODY
+  zc_no_word_com: false        # ZC_NO_WORD_COM（跳过正文逗号启发式）
+
+ocr:
+  require_ocr: false           # REFACTOR_REQUIRE_OCR（回归测试是否强制 OCR）
+  ocr_func_timeout: 300        # REFACTOR_OCR_FUNC_TIMEOUT
+  tessdata_dir: ""             # OCR_TESSDATA_DIR
+  tesseract_bin: ""            # OCR_TESSERACT_BIN
+  paddleocr_root: ""           # OCR_PADDLEOCR_ROOT
+  lo_bin: ""                   # LO_BIN（LibreOffice 可执行路径）

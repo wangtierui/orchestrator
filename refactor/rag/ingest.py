@@ -1,13 +1,23 @@
 # -*- coding: utf-8 -*-
-"""ingest — 把 CanonicalChunk 列表写入向量库（一次性离线任务）。"""
+"""ingest — 把 CanonicalChunk 列表写入向量库（storage-native stage）。
+
+关键修正：
+  - 不走 VectorStoreIndex.from_documents —— 它把 Document 转 Node 时会重生成
+    随机 node_id，导致无法按我们的 chunk_id 幂等 upsert（PGVectorStore.add 又是
+    纯 INSERT、node_id 无唯一约束，重跑只会堆叠重复行）。
+  - 改为直接构造 TextNode(id_=chunk_id)，node_id 即幂等键；注入前先按 node_id
+    删旧行，实现 upsert 语义。
+  - embedding 批量计算（比逐节点 get_embedding 快）。
+"""
 from __future__ import annotations
 
 from typing import List
 
-from llama_index.core import Document, Settings, StorageContext, VectorStoreIndex
+from llama_index.core import Settings
+from llama_index.core.schema import TextNode
 
 from .adapters import get_embedder, get_vector_store
-from .adapters.vectorstores import ensure_compatible
+from .adapters.vectorstores import ensure_compatible, delete_nodes_by_id
 from .canonical import CanonicalChunk
 from .config import RagConfig
 
@@ -26,31 +36,36 @@ def _get_cached_embedder(config: RagConfig):
     return _EMBEDDER_CACHE[key]
 
 
-def ingest(chunks: List[CanonicalChunk], config: RagConfig | None = None) -> VectorStoreIndex:
-    config = config or RagConfig()
+def ingest(chunks: List[CanonicalChunk], config: RagConfig | None = None) -> List[TextNode]:
+    """把一批 chunk 幂等写入向量库，返回写入的 nodes。
 
+    幂等：先按 chunk_id(node_id) 删旧行，再 add。重跑同一批不产生重复节点。
+    """
+    config = config or RagConfig()
+    if not chunks:
+        return []
     embedder = _get_cached_embedder(config)
-    # 把 embed_dim 并入向量库参数（否则 PGVectorStore 用默认 1024 建表，与向量维度冲突）
     vs_spec = {**config.vector_store, "embed_dim": config.embed_dim}
     vector_store = get_vector_store(vs_spec)
-    # 换模型/维度时自动重索引，避免新旧向量混用
     ensure_compatible(vs_spec, config.embed_dim)
-    Settings.embed_model = embedder  # 入库编码用此模型
+    Settings.embed_model = embedder
 
-    docs = []
-    for c in chunks:
-        # chunk_id 作为 LlamaIndex 的 doc_id：向量库按 doc_id upsert，
-        # 使增量重跑（同 key_md5 同条款位置）幂等覆盖，而非写重复节点。
-        kw = {
-            "text": c.text,
-            "metadata": c.to_document_meta(
-                embed_model=config.embedder_name, embed_dim=config.embed_dim
-            ),
-        }
-        if c.chunk_id:
-            kw["id_"] = c.chunk_id
-        docs.append(Document(**kw))
-    # 必须用 StorageContext 才能把向量真正写入 PG（直接传 vector_store= 会被忽略）
-    storage_context = StorageContext.from_defaults(vector_store=vector_store)
-    index = VectorStoreIndex.from_documents(docs, storage_context=storage_context)
-    return index
+    # 批量算 embedding（比逐节点 get_embedding 高效）
+    texts = [c.text for c in chunks]
+    embeddings = embedder.get_text_embedding_batch(texts)
+
+    nodes = []
+    for c, emb in zip(chunks, embeddings):
+        meta = c.to_document_meta(
+            embed_model=config.embedder_name, embed_dim=config.embed_dim
+        )
+        nodes.append(
+            TextNode(text=c.text, id_=c.chunk_id or None, embedding=emb, metadata=meta)
+        )
+
+    # PGVectorStore.add 是纯 INSERT（node_id 无唯一约束），先删同 id 旧节点实现 upsert
+    ids = [c.chunk_id for c in chunks if c.chunk_id]
+    if ids:
+        delete_nodes_by_id(vs_spec, ids)
+    vector_store.add(nodes)
+    return nodes

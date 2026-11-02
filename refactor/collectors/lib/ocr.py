@@ -17,8 +17,13 @@ from typing import Any
 
 LOG = logging.getLogger("refactor.collectors.lib.ocr")
 
-_TESSDATA_DEFAULT = os.environ.get("OCR_TESSDATA_DIR", "")
-_TESSERACT_DEFAULT = os.environ.get("OCR_TESSERACT_BIN", "")
+try:
+    from refactor.config import settings  # 统一配置（OCR 路径集中管理）
+except ImportError:  # 兼容从 refactor/ 目录直接运行（collectors 上下文）
+    from config import settings
+
+_TESSDATA_DEFAULT = settings.ocr.tessdata_dir
+_TESSERACT_DEFAULT = settings.ocr.tesseract_bin
 
 ENGINE_PADDLE = "paddle"
 ENGINE_TESSERACT = "tesseract"
@@ -39,7 +44,7 @@ class OCRConfig:
     ))
     tesseract_cmd: str = _TESSERACT_DEFAULT
     tessdata_prefix: str = _TESSDATA_DEFAULT
-    paddleocr_root: str = os.environ.get("OCR_PADDLEOCR_ROOT", "")
+    paddleocr_root: str = settings.ocr.paddleocr_root
     tesseract_langs: str = "chi_sim+eng"
     tesseract_config: str = "--psm 6 -c preserve_interword_spaces=0"
     dpi: int = 220

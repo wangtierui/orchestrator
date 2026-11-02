@@ -91,6 +91,24 @@ def _key_md5(key: str | None) -> str | None:
     return hashlib.md5(key.encode("utf-8")).hexdigest() if key else None
 
 
+# 抓取状态优先级：数值越高代表"内容越完整/越终态"。用于 on_conflict UPDATE 时
+# 仅当新记录"不比旧记录差"才覆盖，避免裸 update 把已完成的 ok 降级为 attachment_skipped 等。
+# 顺序：ok(5) > attachment_saved(4) > attachment_failed(3) > attachment_skipped/title_link_only(2) > 失败类(1)
+# 关键：attachment_skipped 必须低于 attachment_failed，否则"跳过→下载失败"的转移会被拦截、循环不停止。
+def _status_rank(col_expr: str) -> str:
+    return (
+        "CASE COALESCE(%s->>'fetch_status','') "
+        "WHEN 'ok' THEN 5 "
+        "WHEN 'attachment_saved' THEN 4 "
+        "WHEN 'attachment_failed' THEN 3 "
+        "WHEN 'attachment_skipped' THEN 2 "
+        "WHEN 'title_link_only' THEN 2 "
+        "WHEN 'fetch_failed' THEN 1 "
+        "WHEN 'parse_error' THEN 1 "
+        "ELSE 0 END" % col_expr
+    )
+
+
 class SqlStore:
     def __init__(
         self,
@@ -187,6 +205,12 @@ class SqlStore:
                             "url": stmt.excluded.url,
                             "run_id": stmt.excluded.run_id,
                         },
+                        # 不降级：仅当新状态优先级 ≥ 旧状态才覆盖
+                        # （如 --no-attachments 重跑不会把 ok 覆盖成 attachment_skipped）。
+                        where=text(
+                            f"{_status_rank('EXCLUDED.payload')} >= "
+                            f"{_status_rank(self._table.name + '.payload')}"
+                        ),
                     )
                 else:  # nothing（写一次）
                     stmt = stmt.on_conflict_do_nothing(
