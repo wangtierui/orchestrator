@@ -164,6 +164,15 @@ class Session:
         self.cmd("Emulation.setDeviceMetricsOverride", {
             "width": w, "height": h, "deviceScaleFactor": 1, "mobile": False})
 
+    def wait_for(self, selector: str, timeout: float = 20) -> bool:
+        """轮询等待元素出现（服务忙时固定 sleep 会误判成"页面坏了"）。"""
+        end = time.time() + timeout
+        while time.time() < end:
+            if self.ev(f"!!document.querySelector({selector!r})") is True:
+                return True
+            time.sleep(0.4)
+        return False
+
     def hover(self, x: int, y: int) -> None:
         self.cmd("Input.dispatchMouseEvent", {"type": "mouseMoved", "x": x, "y": y,
                                               "button": "none", "clickCount": 0})
@@ -246,7 +255,7 @@ def collect(url: str = DEFAULT_URL) -> dict:
         # ① 列表页：分页 hover / 面板 / 保存视图 / 截断
         s.viewport(1400, 900)
         s.cmd("Page.navigate", {"url": f"{url}/?v={tag}#rules"})
-        time.sleep(3.0)
+        s.wait_for("[data-lvsavecur]")        # 列表渲染完成再取数（最多 20s）
 
         out["saveDisabled"] = s.ev(
             "(() => {const b=document.querySelector('[data-lvsavecur]');"
@@ -335,7 +344,7 @@ def collect(url: str = DEFAULT_URL) -> dict:
         # ④ 窄视口：标题真实截断
         s.viewport(760, 900)
         s.cmd("Page.navigate", {"url": f"{url}/?v={tag + 1}#rules"})
-        time.sleep(3.0)
+        s.wait_for(".lv-row")
         out["truncate"] = s.ev(r"""(() => {
           let worst = null;
           [...document.querySelectorAll('.lv-row')].forEach(r => {

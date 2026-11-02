@@ -113,7 +113,8 @@ class TestFlowCleanup:
     def test_no_select_button(self, h: str) -> None:
         body = fn(h, "viewFlow")
         assert "stepsel" not in body and "stepbtn" not in body
-        assert "节点抽屉在左侧" in body
+        # 批 163：文案改为"点图上的节点（或左侧任一节点）"，但"抽屉在左侧"的语义必须保留
+        assert "左侧" in body and "抽屉" in body
 
     def test_bind_still_opens(self, h: str) -> None:
         bind = fn(h, "bindFlow")

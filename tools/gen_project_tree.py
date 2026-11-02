@@ -7,16 +7,18 @@
 产出口径（可复算）：
   · 只列**目录**与**关键文件**（配置/入口/文档），不列业务数据、不列缓存；
   · **顶层目录全部保留**，剩余预算在顶层之间均分（避免按字母序只展开前几个）；
+  · 每个文件带 size / mtime / lines / purpose（用途从 docstring、md 标题、注释里取）；
   · 深度上限 3 层、节点上限 420，超出部分在 meta.truncated 标注。
 
 用法：
     python -m tools.gen_project_tree            # 写 web/assets/project-tree.json
-    python -m tools.gen_project_tree --check    # 只校验现有文件是否过期
+    python -m tools.gen_project_tree --check    # 只校验结构是否过期（忽略时间戳）
 """
 from __future__ import annotations
 
 import json
 import os
+import re
 import sys
 import time
 
@@ -40,10 +42,74 @@ KEY_NAMES = {
 
 MAX_DEPTH = 3
 MAX_NODES = 420
+PURPOSE_MAX = 120
+
+_DQ3 = '"' * 3
+_SQ3 = "'" * 3
 
 
 def _is_key_file(name: str) -> bool:
     return name in KEY_NAMES or name.startswith("requirements") or name.endswith(KEY_SUFFIX)
+
+
+def _purpose(path: str, name: str) -> str:
+    """从文件自身取一句「用途」：py docstring 首行 / md 标题 / 配置首注释 / json note。"""
+    try:
+        with open(path, encoding="utf-8", errors="replace") as fh:
+            head = fh.read(4000)
+    except OSError:
+        return ""
+    lines = head.splitlines()
+
+    if name.endswith(".py"):
+        stripped = head.lstrip()
+        if stripped.startswith(_DQ3) or stripped.startswith(_SQ3):
+            quote = stripped[:3]
+            body = stripped[3:].split(quote, 1)[0].strip()
+            if body:
+                return body.splitlines()[0][:PURPOSE_MAX]
+        return ""
+
+    if name.endswith(".md"):
+        for ln in lines:
+            if ln.startswith("#"):
+                return ln.lstrip("# ").strip()[:PURPOSE_MAX]
+        return ""
+
+    if name.endswith((".toml", ".cfg", ".ini", ".yaml", ".yml")):
+        for ln in lines:
+            s = ln.strip()
+            if s.startswith("#") and len(s.strip("# ")) > 3:
+                return s.strip("# ").strip()[:PURPOSE_MAX]
+        return ""
+
+    if name.endswith(".json"):
+        m = re.search(r'"note"\s*:\s*"([^"]{4,})"', head)
+        if m:
+            return m.group(1)[:PURPOSE_MAX]
+    return ""
+
+
+def _file_node(path: str, name: str) -> dict:
+    node: dict = {"name": name, "type": "file",
+                  "path": os.path.relpath(path, ROOT).replace("\\", "/")}
+    try:
+        st = os.stat(path)
+    except OSError:
+        return node
+    node["size"] = int(st.st_size)
+    node["mtime"] = time.strftime("%Y-%m-%d %H:%M", time.localtime(st.st_mtime))
+    purpose = _purpose(path, name)
+    if purpose:
+        node["purpose"] = purpose
+    try:
+        with open(path, "rb") as fh:
+            blob = fh.read(2 << 20)
+        if b"\0" not in blob:
+            node["lines"] = blob.count(b"\n") + (0 if blob.endswith(b"\n") else 1)
+    except OSError:
+        pass
+    return node
 
 
 def _list(path: str) -> tuple[list[str], list[str]]:
@@ -65,7 +131,8 @@ def _list(path: str) -> tuple[list[str], list[str]]:
 
 def walk(path: str, depth: int, budget: list[int]) -> dict:
     """递归展开；budget 是单元素列表（可变 int），保证同层共享余量。"""
-    node = {"name": os.path.basename(path) or path}
+    node: dict = {"name": os.path.basename(path) or path, "type": "dir",
+                  "path": os.path.relpath(path, ROOT).replace("\\", "/")}
     if depth >= MAX_DEPTH or budget[0] <= 0:
         return node
 
@@ -88,13 +155,29 @@ def walk(path: str, depth: int, budget: list[int]) -> dict:
         if budget[0] <= 0:
             break
         budget[0] -= 1
-        children.append({"name": f})
+        children.append(_file_node(os.path.join(path, f), f))
 
     if children:
         node["children"] = children
     if depth > 0:
         node["value"] = len(children) or 1
     return node
+
+
+VOLATILE = ("size", "mtime", "lines", "purpose", "value")
+
+
+def _shape(node: dict) -> dict:
+    """去掉易变字段后的结构指纹（用于 --check）。"""
+    out = {k: v for k, v in node.items() if k not in VOLATILE}
+    kids = node.get("children")
+    if kids:
+        out["children"] = [_shape(c) for c in kids]
+    return out
+
+
+def _count(node: dict) -> int:
+    return 1 + sum(_count(c) for c in node.get("children", []))
 
 
 def build() -> dict:
@@ -114,25 +197,19 @@ def build() -> dict:
     }
 
 
-def _count(node: dict) -> int:
-    return 1 + sum(_count(c) for c in node.get("children", []))
-
-
 def main(argv: list[str] | None = None) -> int:
     args = list(argv if argv is not None else sys.argv[1:])
     data = build()
     text = json.dumps(data, ensure_ascii=False, indent=1) + "\n"
+
     if "--check" in args:
         if not os.path.exists(OUT):
             print(f"[tree] 缺少 {OUT}，请运行 python -m tools.gen_project_tree")
             return 1
         cur = json.loads(open(OUT, encoding="utf-8").read())
-        # 只比**结构**：`generated_at` 每次都变，比它等于永远"已过期"
-        meta_a = dict(cur.get("meta") or {})
-        meta_b = dict(data["meta"])
-        meta_a.pop("generated_at", None)
-        meta_b.pop("generated_at", None)
-        same = cur.get("tree") == data["tree"] and meta_a == meta_b
+        # 只比**结构**：generated_at / size / mtime / lines / purpose 随时会变，
+        # 把它们算进去等于"永远过期"；这里关心的是"目录与文件有没有增减"。
+        same = _shape(cur.get("tree")) == _shape(data["tree"])
         print(f"[tree] {'一致' if same else '已过期（请重新生成）'}")
         return 0 if same else 1
 

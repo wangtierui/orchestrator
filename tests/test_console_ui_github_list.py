@@ -145,9 +145,10 @@ class TestChrome:
         assert "background:var(--header-bg)" in gh
 
     def test_overview_hides_sidebar(self, h: str) -> None:
+        """全景页（总览 / 项目结构）不占左栏：没有第二维导航。"""
         body = fn(h, "paintRail")
-        assert 'if (CUR === "overview")' in body
-        seg = body[body.index('if (CUR === "overview")'):]
+        assert 'const PANORAMA = (CUR === "overview" || CUR === "project")' in body
+        seg = body[body.index("if (PANORAMA)"):]
         seg = seg[:seg.index("}") + 1]
         assert "rail.hidden = true" in seg
 
@@ -264,7 +265,7 @@ class TestTabsAndOverview:
 
     def test_overview_padding_220(self, h: str) -> None:
         assert "body.no-rail .main-content{padding-left:220px;padding-right:220px}" in h
-        assert 'document.body.classList.toggle("no-rail", CUR === "overview")' in h
+        assert 'document.body.classList.toggle("no-rail", PANORAMA)' in h
 
 class TestSingleTableImplementation:
     """第 1、2 条：全局只有一套表结构，且不再有运行时转换器。"""

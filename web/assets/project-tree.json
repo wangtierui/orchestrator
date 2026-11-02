@@ -1,6 +1,6 @@
 {
  "meta": {
-  "generated_at": "2026-11-02T12:01:19",
+  "generated_at": "2026-11-02T14:34:03",
   "root": "regulatory_compliance_orchestrator",
   "max_depth": 3,
   "max_nodes": 420,
@@ -10,137 +10,307 @@
  },
  "tree": {
   "name": "regulatory_compliance_orchestrator",
+  "type": "dir",
+  "path": ".",
   "children": [
    {
     "name": ".codebuddy",
+    "type": "dir",
+    "path": ".codebuddy",
     "children": [
      {
       "name": "automations",
+      "type": "dir",
+      "path": ".codebuddy/automations",
       "children": [
        {
-        "name": "orchestrator"
+        "name": "orchestrator",
+        "type": "dir",
+        "path": ".codebuddy/automations/orchestrator"
        },
        {
-        "name": "orchestrator-2"
+        "name": "orchestrator-2",
+        "type": "dir",
+        "path": ".codebuddy/automations/orchestrator-2"
        }
       ],
       "value": 2
      },
      {
       "name": "memory",
+      "type": "dir",
+      "path": ".codebuddy/memory",
       "children": [
        {
-        "name": "2026-09-12.md"
+        "name": "2026-09-12.md",
+        "type": "file",
+        "path": ".codebuddy/memory/2026-09-12.md",
+        "size": 1210,
+        "mtime": "2026-09-12 06:39",
+        "purpose": "2026-09-12 工作记忆",
+        "lines": 16
        },
        {
-        "name": "2026-09-13.md"
+        "name": "2026-09-13.md",
+        "type": "file",
+        "path": ".codebuddy/memory/2026-09-13.md",
+        "size": 970,
+        "mtime": "2026-09-13 06:02",
+        "purpose": "2026-09-13 工作记忆",
+        "lines": 13
        },
        {
-        "name": "2026-09-14.md"
+        "name": "2026-09-14.md",
+        "type": "file",
+        "path": ".codebuddy/memory/2026-09-14.md",
+        "size": 1488,
+        "mtime": "2026-09-14 06:07",
+        "purpose": "2026-09-14 工作记忆",
+        "lines": 19
        },
        {
-        "name": "2026-09-15.md"
+        "name": "2026-09-15.md",
+        "type": "file",
+        "path": ".codebuddy/memory/2026-09-15.md",
+        "size": 888,
+        "mtime": "2026-09-15 06:02",
+        "purpose": "2026-09-15 工作记忆",
+        "lines": 10
        },
        {
-        "name": "2026-09-18.md"
+        "name": "2026-09-18.md",
+        "type": "file",
+        "path": ".codebuddy/memory/2026-09-18.md",
+        "size": 1188,
+        "mtime": "2026-09-18 06:02",
+        "purpose": "2026-09-18 工作记忆",
+        "lines": 13
        },
        {
-        "name": "2026-09-19.md"
+        "name": "2026-09-19.md",
+        "type": "file",
+        "path": ".codebuddy/memory/2026-09-19.md",
+        "size": 801,
+        "mtime": "2026-09-19 06:02",
+        "purpose": "2026-09-19 工作记忆",
+        "lines": 10
        },
        {
-        "name": "2026-09-20.md"
+        "name": "2026-09-20.md",
+        "type": "file",
+        "path": ".codebuddy/memory/2026-09-20.md",
+        "size": 652,
+        "mtime": "2026-09-20 06:01",
+        "purpose": "2026-09-20 工作记忆",
+        "lines": 9
        },
        {
-        "name": "2026-09-21.md"
+        "name": "2026-09-21.md",
+        "type": "file",
+        "path": ".codebuddy/memory/2026-09-21.md",
+        "size": 910,
+        "mtime": "2026-09-21 19:57",
+        "purpose": "2026-09-21 工作记忆",
+        "lines": 11
        },
        {
-        "name": "2026-09-22.md"
+        "name": "2026-09-22.md",
+        "type": "file",
+        "path": ".codebuddy/memory/2026-09-22.md",
+        "size": 792,
+        "mtime": "2026-09-22 06:01",
+        "purpose": "2026-09-22 工作记忆",
+        "lines": 10
        },
        {
-        "name": "2026-09-24.md"
+        "name": "2026-09-24.md",
+        "type": "file",
+        "path": ".codebuddy/memory/2026-09-24.md",
+        "size": 1248,
+        "mtime": "2026-09-24 12:09",
+        "purpose": "2026-09-24 工作记忆",
+        "lines": 15
        }
       ],
       "value": 10
      },
      {
-      "name": "README.md"
+      "name": "README.md",
+      "type": "file",
+      "path": ".codebuddy/README.md",
+      "size": 1259,
+      "mtime": "2026-09-26 13:40",
+      "purpose": "`.codebuddy/` —— 助手状态目录（**历史归档，非流程输入**）",
+      "lines": 20
      },
      {
-      "name": "settings.json"
+      "name": "settings.json",
+      "type": "file",
+      "path": ".codebuddy/settings.json",
+      "size": 570,
+      "mtime": "2026-09-20 01:49",
+      "lines": 26
      }
     ],
     "value": 4
    },
    {
     "name": ".devcontainer",
+    "type": "dir",
+    "path": ".devcontainer",
     "children": [
      {
-      "name": "devcontainer.json"
+      "name": "devcontainer.json",
+      "type": "file",
+      "path": ".devcontainer/devcontainer.json",
+      "size": 1365,
+      "mtime": "2026-10-15 11:32",
+      "lines": 44
      }
     ],
     "value": 1
    },
    {
     "name": ".githooks",
+    "type": "dir",
+    "path": ".githooks",
     "value": 1
    },
    {
     "name": "archive",
+    "type": "dir",
+    "path": "archive",
     "children": [
      {
       "name": "classifier_backups",
+      "type": "dir",
+      "path": "archive/classifier_backups",
       "children": [
        {
-        "name": "_upper_laws_20260912_033733.json"
+        "name": "_upper_laws_20260912_033733.json",
+        "type": "file",
+        "path": "archive/classifier_backups/_upper_laws_20260912_033733.json",
+        "size": 175511,
+        "mtime": "2026-09-12 02:57",
+        "lines": 194
        },
        {
-        "name": "_upper_laws_20260912_123948.json"
+        "name": "_upper_laws_20260912_123948.json",
+        "type": "file",
+        "path": "archive/classifier_backups/_upper_laws_20260912_123948.json",
+        "size": 251830,
+        "mtime": "2026-09-12 03:37",
+        "lines": 194
        },
        {
-        "name": "_upper_laws_20260912_230509.json"
+        "name": "_upper_laws_20260912_230509.json",
+        "type": "file",
+        "path": "archive/classifier_backups/_upper_laws_20260912_230509.json",
+        "size": 251830,
+        "mtime": "2026-09-12 12:39",
+        "lines": 194
        },
        {
-        "name": "_upper_laws_20260913_162440.json"
+        "name": "_upper_laws_20260913_162440.json",
+        "type": "file",
+        "path": "archive/classifier_backups/_upper_laws_20260913_162440.json",
+        "size": 251830,
+        "mtime": "2026-09-12 23:05",
+        "lines": 194
        },
        {
-        "name": "_upper_laws_20260914_011123.json"
+        "name": "_upper_laws_20260914_011123.json",
+        "type": "file",
+        "path": "archive/classifier_backups/_upper_laws_20260914_011123.json",
+        "size": 251830,
+        "mtime": "2026-09-13 16:24",
+        "lines": 194
        },
        {
-        "name": "_upper_laws_20260914_191759.json"
+        "name": "_upper_laws_20260914_191759.json",
+        "type": "file",
+        "path": "archive/classifier_backups/_upper_laws_20260914_191759.json",
+        "size": 1915811,
+        "mtime": "2026-09-14 01:11",
+        "lines": 1897
        },
        {
-        "name": "_upper_laws_20260915_120902.json"
+        "name": "_upper_laws_20260915_120902.json",
+        "type": "file",
+        "path": "archive/classifier_backups/_upper_laws_20260915_120902.json",
+        "size": 1915811,
+        "mtime": "2026-09-14 19:17",
+        "lines": 1897
        }
       ],
       "value": 7
      },
      {
       "name": "clean_quarantine",
+      "type": "dir",
+      "path": "archive/clean_quarantine",
       "value": 1
      },
      {
       "name": "reports_tmp",
+      "type": "dir",
+      "path": "archive/reports_tmp",
       "children": [
        {
-        "name": "audit.json"
+        "name": "audit.json",
+        "type": "file",
+        "path": "archive/reports_tmp/audit.json",
+        "size": 18433,
+        "mtime": "2026-09-30 22:26",
+        "lines": 482
        },
        {
-        "name": "生产刷新汇总_20260909_190345.json"
+        "name": "生产刷新汇总_20260909_190345.json",
+        "type": "file",
+        "path": "archive/reports_tmp/生产刷新汇总_20260909_190345.json",
+        "size": 6597,
+        "mtime": "2026-09-09 19:03",
+        "lines": 158
        },
        {
-        "name": "生产刷新汇总_20260918_011928.json"
+        "name": "生产刷新汇总_20260918_011928.json",
+        "type": "file",
+        "path": "archive/reports_tmp/生产刷新汇总_20260918_011928.json",
+        "size": 8184,
+        "mtime": "2026-09-18 01:19",
+        "lines": 197
        },
        {
-        "name": "生产刷新汇总_20260918_013616.json"
+        "name": "生产刷新汇总_20260918_013616.json",
+        "type": "file",
+        "path": "archive/reports_tmp/生产刷新汇总_20260918_013616.json",
+        "size": 8178,
+        "mtime": "2026-09-18 01:36",
+        "lines": 197
        },
        {
-        "name": "生产刷新汇总_20260918_024124.json"
+        "name": "生产刷新汇总_20260918_024124.json",
+        "type": "file",
+        "path": "archive/reports_tmp/生产刷新汇总_20260918_024124.json",
+        "size": 9443,
+        "mtime": "2026-09-18 02:41",
+        "lines": 230
        },
        {
-        "name": "生产刷新汇总_20260918_030858.json"
+        "name": "生产刷新汇总_20260918_030858.json",
+        "type": "file",
+        "path": "archive/reports_tmp/生产刷新汇总_20260918_030858.json",
+        "size": 8549,
+        "mtime": "2026-09-18 03:08",
+        "lines": 205
        },
        {
-        "name": "生产刷新汇总_20260918_032545.json"
+        "name": "生产刷新汇总_20260918_032545.json",
+        "type": "file",
+        "path": "archive/reports_tmp/生产刷新汇总_20260918_032545.json",
+        "size": 8550,
+        "mtime": "2026-09-18 03:25",
+        "lines": 205
        }
       ],
       "value": 7
@@ -150,149 +320,362 @@
    },
    {
     "name": "backups",
+    "type": "dir",
+    "path": "backups",
     "children": [
      {
       "name": "attr_backfill_20260915_121234",
+      "type": "dir",
+      "path": "backups/attr_backfill_20260915_121234",
       "value": 1
      },
      {
       "name": "attr_src_fix_20260915_121629",
+      "type": "dir",
+      "path": "backups/attr_src_fix_20260915_121629",
       "value": 1
      },
      {
       "name": "bridge_key_migration_20260915_102820",
+      "type": "dir",
+      "path": "backups/bridge_key_migration_20260915_102820",
       "value": 1
      },
      {
       "name": "docno_writeback_20260915_102345",
+      "type": "dir",
+      "path": "backups/docno_writeback_20260915_102345",
       "value": 1
      },
      {
-      "name": "supp_nonregulatory_20260926.json"
+      "name": "supp_nonregulatory_20260926.json",
+      "type": "file",
+      "path": "backups/supp_nonregulatory_20260926.json",
+      "size": 237802,
+      "mtime": "2026-09-26 17:28",
+      "lines": 64
      }
     ],
     "value": 5
    },
    {
     "name": "commands",
+    "type": "dir",
+    "path": "commands",
     "value": 1
    },
    {
     "name": "config",
+    "type": "dir",
+    "path": "config",
     "children": [
      {
       "name": "schema",
+      "type": "dir",
+      "path": "config/schema",
       "children": [
        {
-        "name": "contract_manifest.json"
+        "name": "contract_manifest.json",
+        "type": "file",
+        "path": "config/schema/contract_manifest.json",
+        "size": 8483,
+        "mtime": "2026-10-15 01:39",
+        "purpose": "程序可读契约清单（R24）：实际列头/键集唯一事实由各接口模块持有；本清单登记版本与定位，防文本漂移。v2 §3.4（M1 修复，2026-09-26）：新增顶层 version，并由 gate_contract 断言 file 存在 + ",
+        "lines": 244
        },
        {
-        "name": "semantic_tools.json"
+        "name": "semantic_tools.json",
+        "type": "file",
+        "path": "config/schema/semantic_tools.json",
+        "size": 40433,
+        "mtime": "2026-10-15 02:46",
+        "purpose": "P1 语义增强**工具清单**（唯一事实源）。登记：来源仓库、用途、pip 包/探测名、v2 方案对应项、体积与离线性、许可待核项。消费者：std_lib/common_lib/semantic_tools.py（探测与指纹）、gates/",
+        "lines": 559
        }
       ],
       "value": 2
      },
      {
-      "name": "console_users.example.yaml"
+      "name": "console_users.example.yaml",
+      "type": "file",
+      "path": "config/console_users.example.yaml",
+      "size": 1253,
+      "mtime": "2026-10-23 18:58",
+      "purpose": "确认台账号表（`--auth basic` 模式）—— **示例文件，不要直接改名使用**",
+      "lines": 26
      },
      {
-      "name": "dependency_policy.yaml"
+      "name": "dependency_policy.yaml",
+      "type": "file",
+      "path": "config/dependency_policy.yaml",
+      "size": 6725,
+      "mtime": "2026-10-19 18:07",
+      "purpose": "config/dependency_policy.yaml — **直接依赖登记簿**（方案 §13.2-5；ADR-0011）",
+      "lines": 149
      },
      {
-      "name": "inbox_registry.yaml"
+      "name": "inbox_registry.yaml",
+      "type": "file",
+      "path": "config/inbox_registry.yaml",
+      "size": 3474,
+      "mtime": "2026-09-26 13:40",
+      "purpose": "config/inbox_registry.yaml —— 投放区「域 → 管线」映射**唯一事实源**（v2 §3.12.4，P2-3b）",
+      "lines": 63
      },
      {
-      "name": "integrity_policy.yaml"
+      "name": "integrity_policy.yaml",
+      "type": "file",
+      "path": "config/integrity_policy.yaml",
+      "size": 4961,
+      "mtime": "2026-10-20 17:15",
+      "purpose": "config/integrity_policy.yaml — 门禁 `gate_config_integrity` 的**策略清单**（N-166，2026-09-30）",
+      "lines": 90
      },
      {
-      "name": "mirrors.yaml"
+      "name": "mirrors.yaml",
+      "type": "file",
+      "path": "config/mirrors.yaml",
+      "size": 3578,
+      "mtime": "2026-09-30 18:20",
+      "purpose": "config/mirrors.yaml — 镜像源配置（**权重与依赖下载的优先访问源**）",
+      "lines": 59
      },
      {
-      "name": "ocr.yaml"
+      "name": "ocr.yaml",
+      "type": "file",
+      "path": "config/ocr.yaml",
+      "size": 1297,
+      "mtime": "2026-10-15 03:44",
+      "purpose": "config/ocr.yaml — OCR/文档解析引擎配置（R17 落地：消除 Tesseract/PaddleOCR 硬编码路径）",
+      "lines": 17
      },
      {
-      "name": "schedule.yaml"
+      "name": "schedule.yaml",
+      "type": "file",
+      "path": "config/schedule.yaml",
+      "size": 10705,
+      "mtime": "2026-10-19 15:27",
+      "purpose": "config/schedule.yaml —— 调度**唯一事实源**（v2 §3.9 + §3.13.6，P2-2/P2-6）",
+      "lines": 149
      },
      {
-      "name": "sources.yaml"
+      "name": "sources.yaml",
+      "type": "file",
+      "path": "config/sources.yaml",
+      "size": 1856,
+      "mtime": "2026-10-15 13:41",
+      "purpose": "config/sources.yaml — 源目录唯一事实源（R15 落地）",
+      "lines": 45
      },
      {
-      "name": "triggers.yaml"
+      "name": "triggers.yaml",
+      "type": "file",
+      "path": "config/triggers.yaml",
+      "size": 4131,
+      "mtime": "2026-10-15 13:42",
+      "purpose": "config/triggers.yaml —— 条件触发**唯一事实源**（v2 §3.5，P2-1）",
+      "lines": 74
      }
     ],
     "value": 10
    },
    {
     "name": "docs",
+    "type": "dir",
+    "path": "docs",
     "children": [
      {
       "name": "adr",
+      "type": "dir",
+      "path": "docs/adr",
       "children": [
        {
-        "name": "0001-raw-主库-JSONL化.md"
+        "name": "0001-raw-主库-JSONL化.md",
+        "type": "file",
+        "path": "docs/adr/0001-raw-主库-JSONL化.md",
+        "size": 1121,
+        "mtime": "2026-10-15 02:26",
+        "purpose": "ADR-0001 raw 主库 JSONL 化",
+        "lines": 19
        },
        {
-        "name": "0002-调度器安装形态修复.md"
+        "name": "0002-调度器安装形态修复.md",
+        "type": "file",
+        "path": "docs/adr/0002-调度器安装形态修复.md",
+        "size": 1565,
+        "mtime": "2026-10-15 02:26",
+        "purpose": "ADR-0002 调度器安装形态（Windows 任务计划 + yaml 派生）",
+        "lines": 28
        },
        {
-        "name": "0003-P1语义增强取值口径.md"
+        "name": "0003-P1语义增强取值口径.md",
+        "type": "file",
+        "path": "docs/adr/0003-P1语义增强取值口径.md",
+        "size": 1561,
+        "mtime": "2026-10-15 02:27",
+        "purpose": "ADR-0003 P1 语义增强取值口径（analysis_view / 无度量不上线）",
+        "lines": 24
        },
        {
-        "name": "0004-分句SSOT收敛.md"
+        "name": "0004-分句SSOT收敛.md",
+        "type": "file",
+        "path": "docs/adr/0004-分句SSOT收敛.md",
+        "size": 847,
+        "mtime": "2026-10-15 02:27",
+        "purpose": "ADR-0004 分句 SSOT 收敛（sentence_boundary）",
+        "lines": 17
        },
        {
-        "name": "0006-STEP_LAYERS分层编排.md"
+        "name": "0006-STEP_LAYERS分层编排.md",
+        "type": "file",
+        "path": "docs/adr/0006-STEP_LAYERS分层编排.md",
+        "size": 1643,
+        "mtime": "2026-10-15 02:27",
+        "purpose": "ADR-0006 STEP_LAYERS 分层编排",
+        "lines": 27
        },
        {
-        "name": "0007-产物分级存储.md"
+        "name": "0007-产物分级存储.md",
+        "type": "file",
+        "path": "docs/adr/0007-产物分级存储.md",
+        "size": 3241,
+        "mtime": "2026-10-15 02:26",
+        "purpose": "ADR-0007 产物分级存储（文件事实源 / SQLite 索引治理 / PG 可选门槛）",
+        "lines": 45
        },
        {
-        "name": "0008-调度作业kind标注与分层归属.md"
+        "name": "0008-调度作业kind标注与分层归属.md",
+        "type": "file",
+        "path": "docs/adr/0008-调度作业kind标注与分层归属.md",
+        "size": 1222,
+        "mtime": "2026-10-15 02:27",
+        "purpose": "ADR-0008 调度作业 kind 标注与分层归属",
+        "lines": 20
        },
        {
-        "name": "0009-代码卫生.md"
+        "name": "0009-代码卫生.md",
+        "type": "file",
+        "path": "docs/adr/0009-代码卫生.md",
+        "size": 2979,
+        "mtime": "2026-10-15 02:29",
+        "purpose": "ADR-0009 代码卫生（死代码退役 / 重复原语 SSOT / import 面基线冻结）",
+        "lines": 41
        },
        {
-        "name": "0010-本地Web确认台与文档投放入口.md"
+        "name": "0010-本地Web确认台与文档投放入口.md",
+        "type": "file",
+        "path": "docs/adr/0010-本地Web确认台与文档投放入口.md",
+        "size": 1730,
+        "mtime": "2026-10-15 02:27",
+        "purpose": "ADR-0010 本地 Web 确认台与文档投放入口",
+        "lines": 28
        },
        {
-        "name": "0011-依赖治理与供应链安全.md"
+        "name": "0011-依赖治理与供应链安全.md",
+        "type": "file",
+        "path": "docs/adr/0011-依赖治理与供应链安全.md",
+        "size": 6471,
+        "mtime": "2026-10-15 14:53",
+        "purpose": "ADR-0011 依赖治理与供应链安全（锁定 · 漏洞扫描 · SBOM · 登记簿）",
+        "lines": 96
        }
       ],
       "value": 10
      },
      {
       "name": "deliverables",
+      "type": "dir",
+      "path": "docs/deliverables",
       "children": [
        {
-        "name": "2.1.1.1_子主题层级结构总览.md"
+        "name": "2.1.1.1_子主题层级结构总览.md",
+        "type": "file",
+        "path": "docs/deliverables/2.1.1.1_子主题层级结构总览.md",
+        "size": 11198,
+        "mtime": "2026-11-02 10:25",
+        "purpose": "2.1.1.1 子主题层级结构总览",
+        "lines": 109
        },
        {
-        "name": "2.1.1.2_监管演变阶段与逻辑迁移.md"
+        "name": "2.1.1.2_监管演变阶段与逻辑迁移.md",
+        "type": "file",
+        "path": "docs/deliverables/2.1.1.2_监管演变阶段与逻辑迁移.md",
+        "size": 5959,
+        "mtime": "2026-11-02 10:25",
+        "purpose": "2.1.1.2 监管演变阶段与逻辑迁移",
+        "lines": 240
        },
        {
-        "name": "2.1.1.3_内部关联关系图.md"
+        "name": "2.1.1.3_内部关联关系图.md",
+        "type": "file",
+        "path": "docs/deliverables/2.1.1.3_内部关联关系图.md",
+        "size": 116540,
+        "mtime": "2026-11-02 10:25",
+        "purpose": "2.1.1.3 内部关联关系图",
+        "lines": 798
        },
        {
-        "name": "2.1.1.4_核心文件引用细化链条表.md"
+        "name": "2.1.1.4_核心文件引用细化链条表.md",
+        "type": "file",
+        "path": "docs/deliverables/2.1.1.4_核心文件引用细化链条表.md",
+        "size": 268026,
+        "mtime": "2026-11-02 10:25",
+        "purpose": "2.1.1.4 核心文件引用-细化链条表",
+        "lines": 1323
        },
        {
-        "name": "2.1.1.5_监管体系完整性评估.md"
+        "name": "2.1.1.5_监管体系完整性评估.md",
+        "type": "file",
+        "path": "docs/deliverables/2.1.1.5_监管体系完整性评估.md",
+        "size": 25563,
+        "mtime": "2026-11-02 10:25",
+        "purpose": "2.1.1.5 监管体系完整性评估",
+        "lines": 217
        },
        {
-        "name": "2.1.2.1_核心监管主题总览.md"
+        "name": "2.1.2.1_核心监管主题总览.md",
+        "type": "file",
+        "path": "docs/deliverables/2.1.2.1_核心监管主题总览.md",
+        "size": 1718,
+        "mtime": "2026-11-02 10:25",
+        "purpose": "2.1.2.1 核心监管主题总览",
+        "lines": 27
        },
        {
-        "name": "2.1.2.2_主题间关联关系图.md"
+        "name": "2.1.2.2_主题间关联关系图.md",
+        "type": "file",
+        "path": "docs/deliverables/2.1.2.2_主题间关联关系图.md",
+        "size": 157922,
+        "mtime": "2026-11-02 10:25",
+        "purpose": "2.1.2.2 主题间关联关系图",
+        "lines": 1143
        },
        {
-        "name": "2.1.2.3_各主题监管演进阐述.md"
+        "name": "2.1.2.3_各主题监管演进阐述.md",
+        "type": "file",
+        "path": "docs/deliverables/2.1.2.3_各主题监管演进阐述.md",
+        "size": 29987,
+        "mtime": "2026-11-02 10:25",
+        "purpose": "2.1.2.3 各主题监管演进阐述",
+        "lines": 304
        },
        {
-        "name": "2.1.3.1_执行摘要.md"
+        "name": "2.1.3.1_执行摘要.md",
+        "type": "file",
+        "path": "docs/deliverables/2.1.3.1_执行摘要.md",
+        "size": 1116,
+        "mtime": "2026-11-02 10:25",
+        "purpose": "2.1.3.1 执行摘要",
+        "lines": 37
        },
        {
-        "name": "2.1.3.2_主题交叉影响全景图.md"
+        "name": "2.1.3.2_主题交叉影响全景图.md",
+        "type": "file",
+        "path": "docs/deliverables/2.1.3.2_主题交叉影响全景图.md",
+        "size": 2042,
+        "mtime": "2026-11-02 10:25",
+        "purpose": "2.1.3.2 主题交叉影响全景图",
+        "lines": 65
        }
       ],
       "value": 10
@@ -302,76 +685,120 @@
    },
    {
     "name": "exports",
+    "type": "dir",
+    "path": "exports",
     "children": [
      {
-      "name": "manifest.json"
+      "name": "manifest.json",
+      "type": "file",
+      "path": "exports/manifest.json",
+      "size": 2162,
+      "mtime": "2026-09-18 02:11",
+      "purpose": "治理库元数据快照（只读交换层）。事实源仍为各模块文件；本目录为派生只读视图。",
+      "lines": 68
      }
     ],
     "value": 1
    },
    {
     "name": "external",
+    "type": "dir",
+    "path": "external",
     "children": [
      {
       "name": "PaddleOCR-3.7.0",
+      "type": "dir",
+      "path": "external/PaddleOCR-3.7.0",
       "children": [
        {
-        "name": ".github"
+        "name": ".github",
+        "type": "dir",
+        "path": "external/PaddleOCR-3.7.0/.github"
        },
        {
-        "name": "api_sdk"
+        "name": "api_sdk",
+        "type": "dir",
+        "path": "external/PaddleOCR-3.7.0/api_sdk"
        },
        {
-        "name": "applications"
+        "name": "applications",
+        "type": "dir",
+        "path": "external/PaddleOCR-3.7.0/applications"
        },
        {
-        "name": "benchmark"
+        "name": "benchmark",
+        "type": "dir",
+        "path": "external/PaddleOCR-3.7.0/benchmark"
        }
       ],
       "value": 4
      },
      {
       "name": "models",
+      "type": "dir",
+      "path": "external/models",
       "children": [
        {
-        "name": "LTPbase"
+        "name": "LTPbase",
+        "type": "dir",
+        "path": "external/models/LTPbase"
        },
        {
-        "name": "Youtu-Embedding"
+        "name": "Youtu-Embedding",
+        "type": "dir",
+        "path": "external/models/Youtu-Embedding"
        },
        {
-        "name": "bge-base-zh-v1.5"
+        "name": "bge-base-zh-v1.5",
+        "type": "dir",
+        "path": "external/models/bge-base-zh-v1.5"
        },
        {
-        "name": "hanlp"
+        "name": "hanlp",
+        "type": "dir",
+        "path": "external/models/hanlp"
        }
       ],
       "value": 4
      },
      {
       "name": "tessdata",
+      "type": "dir",
+      "path": "external/tessdata",
       "value": 1
      },
      {
       "name": "tesseract",
+      "type": "dir",
+      "path": "external/tesseract",
       "children": [
        {
-        "name": "doc"
+        "name": "doc",
+        "type": "dir",
+        "path": "external/tesseract/doc"
        },
        {
-        "name": "tessdata"
+        "name": "tessdata",
+        "type": "dir",
+        "path": "external/tesseract/tessdata"
        }
       ],
       "value": 2
      },
      {
       "name": "upstream",
+      "type": "dir",
+      "path": "external/upstream",
       "children": [
        {
-        "name": "DeepKE"
+        "name": "DeepKE",
+        "type": "dir",
+        "path": "external/upstream/DeepKE"
        },
        {
-        "name": "WeKnora"
+        "name": "WeKnora",
+        "type": "dir",
+        "path": "external/upstream/WeKnora"
        }
       ],
       "value": 2
@@ -381,9 +808,13 @@
    },
    {
     "name": "gates",
+    "type": "dir",
+    "path": "gates",
     "children": [
      {
       "name": "gate_config_integrity",
+      "type": "dir",
+      "path": "gates/gate_config_integrity",
       "value": 1
      }
     ],
@@ -391,102 +822,181 @@
    },
    {
     "name": "graphify-out",
+    "type": "dir",
+    "path": "graphify-out",
     "children": [
      {
       "name": "2026-09-20",
+      "type": "dir",
+      "path": "graphify-out/2026-09-20",
       "children": [
        {
-        "name": ".graphify_analysis.json"
+        "name": ".graphify_analysis.json",
+        "type": "file",
+        "path": "graphify-out/2026-09-20/.graphify_analysis.json",
+        "size": 408712,
+        "mtime": "2026-09-20 19:12",
+        "lines": 6270
        }
       ],
       "value": 1
      },
      {
       "name": "2026-09-21",
+      "type": "dir",
+      "path": "graphify-out/2026-09-21",
       "children": [
        {
-        "name": ".graphify_analysis.json"
+        "name": ".graphify_analysis.json",
+        "type": "file",
+        "path": "graphify-out/2026-09-21/.graphify_analysis.json",
+        "size": 414271,
+        "mtime": "2026-09-21 00:42",
+        "lines": 6373
        }
       ],
       "value": 1
      },
      {
       "name": "2026-09-26",
+      "type": "dir",
+      "path": "graphify-out/2026-09-26",
       "children": [
        {
-        "name": ".graphify_analysis.json"
+        "name": ".graphify_analysis.json",
+        "type": "file",
+        "path": "graphify-out/2026-09-26/.graphify_analysis.json",
+        "size": 490663,
+        "mtime": "2026-09-26 17:16",
+        "lines": 7580
        }
       ],
       "value": 1
      },
      {
       "name": "2026-09-27",
+      "type": "dir",
+      "path": "graphify-out/2026-09-27",
       "children": [
        {
-        "name": ".graphify_analysis.json"
+        "name": ".graphify_analysis.json",
+        "type": "file",
+        "path": "graphify-out/2026-09-27/.graphify_analysis.json",
+        "size": 498934,
+        "mtime": "2026-09-27 05:02",
+        "lines": 7668
        }
       ],
       "value": 1
      },
      {
       "name": "2026-09-28",
+      "type": "dir",
+      "path": "graphify-out/2026-09-28",
       "children": [
        {
-        "name": ".graphify_analysis.json"
+        "name": ".graphify_analysis.json",
+        "type": "file",
+        "path": "graphify-out/2026-09-28/.graphify_analysis.json",
+        "size": 527246,
+        "mtime": "2026-09-28 20:12",
+        "lines": 8087
        }
       ],
       "value": 1
      },
      {
       "name": "2026-09-29",
+      "type": "dir",
+      "path": "graphify-out/2026-09-29",
       "children": [
        {
-        "name": ".graphify_analysis.json"
+        "name": ".graphify_analysis.json",
+        "type": "file",
+        "path": "graphify-out/2026-09-29/.graphify_analysis.json",
+        "size": 541414,
+        "mtime": "2026-09-29 18:58",
+        "lines": 8224
        }
       ],
       "value": 1
      },
      {
       "name": "2026-09-30",
+      "type": "dir",
+      "path": "graphify-out/2026-09-30",
       "children": [
        {
-        "name": ".graphify_analysis.json"
+        "name": ".graphify_analysis.json",
+        "type": "file",
+        "path": "graphify-out/2026-09-30/.graphify_analysis.json",
+        "size": 571886,
+        "mtime": "2026-09-30 19:55",
+        "lines": 8787
        }
       ],
       "value": 1
      },
      {
       "name": "2026-10-01",
+      "type": "dir",
+      "path": "graphify-out/2026-10-01",
       "children": [
        {
-        "name": ".graphify_analysis.json"
+        "name": ".graphify_analysis.json",
+        "type": "file",
+        "path": "graphify-out/2026-10-01/.graphify_analysis.json",
+        "size": 577206,
+        "mtime": "2026-10-01 00:10",
+        "lines": 8838
        }
       ],
       "value": 1
      },
      {
       "name": "2026-10-08",
+      "type": "dir",
+      "path": "graphify-out/2026-10-08",
       "children": [
        {
-        "name": ".graphify_analysis.json"
+        "name": ".graphify_analysis.json",
+        "type": "file",
+        "path": "graphify-out/2026-10-08/.graphify_analysis.json",
+        "size": 589210,
+        "mtime": "2026-10-08 14:47",
+        "lines": 8989
        }
       ],
       "value": 1
      },
      {
       "name": "2026-10-09",
+      "type": "dir",
+      "path": "graphify-out/2026-10-09",
       "children": [
        {
-        "name": ".graphify_analysis.json"
+        "name": ".graphify_analysis.json",
+        "type": "file",
+        "path": "graphify-out/2026-10-09/.graphify_analysis.json",
+        "size": 638185,
+        "mtime": "2026-10-09 20:27",
+        "lines": 9833
        }
       ],
       "value": 1
      },
      {
       "name": "2026-10-10",
+      "type": "dir",
+      "path": "graphify-out/2026-10-10",
       "children": [
        {
-        "name": ".graphify_analysis.json"
+        "name": ".graphify_analysis.json",
+        "type": "file",
+        "path": "graphify-out/2026-10-10/.graphify_analysis.json",
+        "size": 668199,
+        "mtime": "2026-10-10 20:53",
+        "lines": 10285
        }
       ],
       "value": 1
@@ -496,207 +1006,329 @@
    },
    {
     "name": "interfaces",
+    "type": "dir",
+    "path": "interfaces",
     "value": 1
    },
    {
     "name": "mcp_server",
+    "type": "dir",
+    "path": "mcp_server",
     "value": 1
    },
    {
     "name": "modules",
+    "type": "dir",
+    "path": "modules",
     "children": [
      {
       "name": "base_publish",
+      "type": "dir",
+      "path": "modules/base_publish",
       "value": 1
      },
      {
       "name": "implementation_audit",
+      "type": "dir",
+      "path": "modules/implementation_audit",
       "children": [
        {
-        "name": "rules"
+        "name": "rules",
+        "type": "dir",
+        "path": "modules/implementation_audit/rules"
        }
       ],
       "value": 1
      },
      {
       "name": "internal_policy_base",
+      "type": "dir",
+      "path": "modules/internal_policy_base",
       "children": [
        {
-        "name": "backups"
+        "name": "backups",
+        "type": "dir",
+        "path": "modules/internal_policy_base/backups"
        },
        {
-        "name": "published"
+        "name": "published",
+        "type": "dir",
+        "path": "modules/internal_policy_base/published"
        }
       ],
       "value": 2
      },
      {
       "name": "internal_policy_drafter",
+      "type": "dir",
+      "path": "modules/internal_policy_drafter",
       "children": [
        {
-        "name": "docs"
+        "name": "docs",
+        "type": "dir",
+        "path": "modules/internal_policy_drafter/docs"
        },
        {
-        "name": "scripts"
+        "name": "scripts",
+        "type": "dir",
+        "path": "modules/internal_policy_drafter/scripts"
        }
       ],
       "value": 2
      },
      {
       "name": "reg_frameworks",
+      "type": "dir",
+      "path": "modules/reg_frameworks",
       "value": 1
      },
      {
       "name": "regulatory_classifier",
+      "type": "dir",
+      "path": "modules/regulatory_classifier",
       "children": [
        {
-        "name": "backups"
+        "name": "backups",
+        "type": "dir",
+        "path": "modules/regulatory_classifier/backups"
        },
        {
-        "name": "docs"
+        "name": "docs",
+        "type": "dir",
+        "path": "modules/regulatory_classifier/docs"
        },
        {
-        "name": "recall_audit"
+        "name": "recall_audit",
+        "type": "dir",
+        "path": "modules/regulatory_classifier/recall_audit"
        }
       ],
       "value": 3
      },
      {
       "name": "regulatory_scrapers",
+      "type": "dir",
+      "path": "modules/regulatory_scrapers",
       "children": [
        {
-        "name": "backups"
+        "name": "backups",
+        "type": "dir",
+        "path": "modules/regulatory_scrapers/backups"
        },
        {
-        "name": "cache"
+        "name": "cache",
+        "type": "dir",
+        "path": "modules/regulatory_scrapers/cache"
        },
        {
-        "name": "clause_index"
+        "name": "clause_index",
+        "type": "dir",
+        "path": "modules/regulatory_scrapers/clause_index"
        }
       ],
       "value": 3
      },
      {
-      "name": "_manifest.json"
+      "name": "_manifest.json",
+      "type": "file",
+      "path": "modules/_manifest.json",
+      "size": 6656,
+      "mtime": "2026-10-15 13:42",
+      "purpose": "modules/ 脚本归属清单（W4 §7.2 A 类：零引用脚本处置的门禁化事实源）。三态：chain（编排器/接口/触发器消费——不在此登记）/ independent（刻意独立，按需人工执行，必须给 independent_why）/",
+      "lines": 133
      }
     ],
     "value": 8
    },
    {
     "name": "refactor",
+    "type": "dir",
+    "path": "refactor",
     "children": [
      {
       "name": "clause",
+      "type": "dir",
+      "path": "refactor/clause",
       "children": [
        {
-        "name": "core"
+        "name": "core",
+        "type": "dir",
+        "path": "refactor/clause/core"
        }
       ],
       "value": 1
      },
      {
       "name": "clean",
+      "type": "dir",
+      "path": "refactor/clean",
       "children": [
        {
-        "name": "core"
+        "name": "core",
+        "type": "dir",
+        "path": "refactor/clean/core"
        }
       ],
       "value": 1
      },
      {
       "name": "collectors",
+      "type": "dir",
+      "path": "refactor/collectors",
       "children": [
        {
-        "name": "gov"
+        "name": "gov",
+        "type": "dir",
+        "path": "refactor/collectors/gov"
        },
        {
-        "name": "internal"
+        "name": "internal",
+        "type": "dir",
+        "path": "refactor/collectors/internal"
        }
       ],
       "value": 2
      },
      {
       "name": "common",
+      "type": "dir",
+      "path": "refactor/common",
       "value": 1
      },
      {
       "name": "docgraph",
+      "type": "dir",
+      "path": "refactor/docgraph",
       "value": 1
      },
      {
       "name": "init",
+      "type": "dir",
+      "path": "refactor/init",
       "value": 1
      },
      {
       "name": "mcp_server",
+      "type": "dir",
+      "path": "refactor/mcp_server",
       "children": [
        {
-        "name": "tools"
+        "name": "tools",
+        "type": "dir",
+        "path": "refactor/mcp_server/tools"
        },
        {
-        "name": "requirements.txt"
+        "name": "requirements.txt",
+        "type": "file",
+        "path": "refactor/mcp_server/requirements.txt",
+        "size": 85,
+        "mtime": "2026-10-20 10:17",
+        "lines": 2
        }
       ],
       "value": 2
      },
      {
       "name": "rag",
+      "type": "dir",
+      "path": "refactor/rag",
       "children": [
        {
-        "name": "adapters"
+        "name": "adapters",
+        "type": "dir",
+        "path": "refactor/rag/adapters"
        },
        {
-        "name": "examples"
+        "name": "examples",
+        "type": "dir",
+        "path": "refactor/rag/examples"
        }
       ],
       "value": 2
      },
      {
       "name": "storage",
+      "type": "dir",
+      "path": "refactor/storage",
       "value": 1
      },
      {
       "name": "tests",
+      "type": "dir",
+      "path": "refactor/tests",
       "value": 1
      },
      {
-      "name": "config.yaml"
+      "name": "config.yaml",
+      "type": "file",
+      "path": "refactor/config.yaml",
+      "size": 2215,
+      "mtime": "2026-11-02 10:25",
+      "purpose": "=============================================================================",
+      "lines": 46
      },
      {
-      "name": "pyproject.toml"
+      "name": "pyproject.toml",
+      "type": "file",
+      "path": "refactor/pyproject.toml",
+      "size": 2449,
+      "mtime": "2026-10-27 13:07",
+      "purpose": "-*- coding: utf-8 -*-",
+      "lines": 74
      },
      {
-      "name": "requirements.txt"
+      "name": "requirements.txt",
+      "type": "file",
+      "path": "refactor/requirements.txt",
+      "size": 463,
+      "mtime": "2026-10-10 00:20",
+      "lines": 16
      }
     ],
     "value": 13
    },
    {
     "name": "std_lib",
+    "type": "dir",
+    "path": "std_lib",
     "children": [
      {
       "name": "common_lib",
+      "type": "dir",
+      "path": "std_lib/common_lib",
       "children": [
        {
-        "name": "governance_store"
+        "name": "governance_store",
+        "type": "dir",
+        "path": "std_lib/common_lib/governance_store"
        },
        {
-        "name": "relations"
+        "name": "relations",
+        "type": "dir",
+        "path": "std_lib/common_lib/relations"
        }
       ],
       "value": 2
      },
      {
       "name": "scraper_std",
+      "type": "dir",
+      "path": "std_lib/scraper_std",
       "children": [
        {
-        "name": "common"
+        "name": "common",
+        "type": "dir",
+        "path": "std_lib/scraper_std/common"
        },
        {
-        "name": "retired"
+        "name": "retired",
+        "type": "dir",
+        "path": "std_lib/scraper_std/retired"
        },
        {
-        "name": "scripts"
+        "name": "scripts",
+        "type": "dir",
+        "path": "std_lib/scraper_std/scripts"
        }
       ],
       "value": 3
@@ -706,85 +1338,179 @@
    },
    {
     "name": "tests",
+    "type": "dir",
+    "path": "tests",
     "children": [
      {
       "name": "baselines",
+      "type": "dir",
+      "path": "tests/baselines",
       "children": [
        {
-        "name": "gov_collector_baseline.json"
+        "name": "gov_collector_baseline.json",
+        "type": "file",
+        "path": "tests/baselines/gov_collector_baseline.json",
+        "size": 10674,
+        "mtime": "2026-10-20 19:09",
+        "lines": 540
        },
        {
-        "name": "mof_collector_baseline.json"
+        "name": "mof_collector_baseline.json",
+        "type": "file",
+        "path": "tests/baselines/mof_collector_baseline.json",
+        "size": 8143,
+        "mtime": "2026-10-22 13:29",
+        "lines": 376
        }
       ],
       "value": 2
      },
      {
       "name": "cassettes",
+      "type": "dir",
+      "path": "tests/cassettes",
       "children": [
        {
-        "name": "gov_detail_page.json"
+        "name": "gov_detail_page.json",
+        "type": "file",
+        "path": "tests/cassettes/gov_detail_page.json",
+        "size": 1217,
+        "mtime": "2026-10-20 17:15",
+        "purpose": "国务院政策详情页（title meta + pages_content 兜底容器 + 文号/发文机关/生效日期）",
+        "lines": 23
        },
        {
-        "name": "gov_list_page.json"
+        "name": "gov_list_page.json",
+        "type": "file",
+        "path": "tests/cassettes/gov_list_page.json",
+        "size": 2448,
+        "mtime": "2026-10-20 17:15",
+        "purpose": "国务院政策文件库列表页（两条；含易变参数变体，验证 URL 归一命中同键）",
+        "lines": 37
        },
        {
-        "name": "manifest.json"
+        "name": "manifest.json",
+        "type": "file",
+        "path": "tests/cassettes/manifest.json",
+        "size": 1862,
+        "mtime": "2026-10-20 17:28",
+        "purpose": "国务院政策详情页（title meta + pages_content 兜底容器 + 文号/发文机关/生效日期）",
+        "lines": 55
        },
        {
-        "name": "pbc_detail_page.json"
+        "name": "pbc_detail_page.json",
+        "type": "file",
+        "path": "tests/cassettes/pbc_detail_page.json",
+        "size": 1110,
+        "mtime": "2026-10-20 17:15",
+        "purpose": "人行详情页（ArticleTitle meta + #shijian + #zoom 正文）",
+        "lines": 23
        },
        {
-        "name": "pbc_list_page.json"
+        "name": "pbc_list_page.json",
+        "type": "file",
+        "path": "tests/cassettes/pbc_list_page.json",
+        "size": 1241,
+        "mtime": "2026-10-20 17:15",
+        "purpose": "人行条法司列表页（分页隐藏域 moduleid/totalpage + /tiaofasi/ 条目）",
+        "lines": 23
        },
        {
-        "name": "zhengceku_detail_page.json"
+        "name": "zhengceku_detail_page.json",
+        "type": "file",
+        "path": "tests/cassettes/zhengceku_detail_page.json",
+        "size": 1538,
+        "mtime": "2026-10-16 01:53",
+        "lines": 21
        },
        {
-        "name": "zhengceku_list_page.json"
+        "name": "zhengceku_list_page.json",
+        "type": "file",
+        "path": "tests/cassettes/zhengceku_list_page.json",
+        "size": 1503,
+        "mtime": "2026-10-16 01:52",
+        "lines": 21
        }
       ],
       "value": 7
      },
      {
       "name": "golden",
+      "type": "dir",
+      "path": "tests/golden",
       "value": 1
      },
      {
-      "name": "README.md"
+      "name": "README.md",
+      "type": "file",
+      "path": "tests/README.md",
+      "size": 5659,
+      "mtime": "2026-10-15 18:36",
+      "purpose": "tests/README.md — 测试体系说明与**契约测试矩阵**",
+      "lines": 64
      },
      {
-      "name": "conftest.py"
+      "name": "conftest.py",
+      "type": "file",
+      "path": "tests/conftest.py",
+      "size": 1082,
+      "mtime": "2026-09-28 10:48",
+      "lines": 27
      }
     ],
     "value": 5
    },
    {
     "name": "tools",
+    "type": "dir",
+    "path": "tools",
     "children": [
      {
       "name": "retired",
+      "type": "dir",
+      "path": "tools/retired",
       "children": [
        {
-        "name": "README.md"
+        "name": "README.md",
+        "type": "file",
+        "path": "tools/retired/README.md",
+        "size": 1820,
+        "mtime": "2026-10-15 11:33",
+        "purpose": "tools/retired — 废弃 / 一次性脚本隔离层",
+        "lines": 28
        }
       ],
       "value": 1
      },
      {
-      "name": "_manifest.json"
+      "name": "_manifest.json",
+      "type": "file",
+      "path": "tools/_manifest.json",
+      "size": 28428,
+      "mtime": "2026-11-02 11:49",
+      "lines": 464
      }
     ],
     "value": 2
    },
    {
     "name": "web",
+    "type": "dir",
+    "path": "web",
     "children": [
      {
       "name": "assets",
+      "type": "dir",
+      "path": "web/assets",
       "children": [
        {
-        "name": "project-tree.json"
+        "name": "project-tree.json",
+        "type": "file",
+        "path": "web/assets/project-tree.json",
+        "size": 42060,
+        "mtime": "2026-11-02 14:33",
+        "purpose": "自动生成：仅目录 + 关键文件（配置/入口/文档/契约），不含数据与缓存",
+        "lines": 1627
        }
       ],
       "value": 1
@@ -793,40 +1519,108 @@
     "value": 1
    },
    {
-    "name": ".pre-commit-config.yaml"
+    "name": ".pre-commit-config.yaml",
+    "type": "file",
+    "path": ".pre-commit-config.yaml",
+    "size": 1417,
+    "mtime": "2026-09-26 13:36",
+    "purpose": ".pre-commit-config.yaml —— 提交前置钩子（v2 §3.7 G4，P2-4）",
+    "lines": 32
    },
    {
-    "name": "BENCHMARK.md"
+    "name": "BENCHMARK.md",
+    "type": "file",
+    "path": "BENCHMARK.md",
+    "size": 12800,
+    "mtime": "2026-10-15 02:48",
+    "purpose": "BENCHMARK —— 交付基准登记（回归对照基线）",
+    "lines": 204
    },
    {
-    "name": "CHANGELOG.md"
+    "name": "CHANGELOG.md",
+    "type": "file",
+    "path": "CHANGELOG.md",
+    "size": 349037,
+    "mtime": "2026-10-28 14:39",
+    "purpose": "Changelog",
+    "lines": 4669
    },
    {
-    "name": "CODEBUDDY.md"
+    "name": "CODEBUDDY.md",
+    "type": "file",
+    "path": "CODEBUDDY.md",
+    "size": 1359,
+    "mtime": "2026-09-20 12:24",
+    "purpose": "graphify",
+    "lines": 10
    },
    {
-    "name": "FILE_LIST.md"
+    "name": "FILE_LIST.md",
+    "type": "file",
+    "path": "FILE_LIST.md",
+    "size": 4123995,
+    "mtime": "2026-10-15 11:24",
+    "purpose": "文件路径清单",
+    "lines": 10099
    },
    {
-    "name": "README.md"
+    "name": "README.md",
+    "type": "file",
+    "path": "README.md",
+    "size": 112378,
+    "mtime": "2026-10-31 21:20",
+    "purpose": "监管合规治理编排仓（regulatory_compliance_orchestrator）",
+    "lines": 1178
    },
    {
-    "name": "bootstrap.py"
+    "name": "bootstrap.py",
+    "type": "file",
+    "path": "bootstrap.py",
+    "size": 5913,
+    "mtime": "2026-10-10 16:51",
+    "lines": 132
    },
    {
-    "name": "cli.py"
+    "name": "cli.py",
+    "type": "file",
+    "path": "cli.py",
+    "size": 11952,
+    "mtime": "2026-10-26 12:55",
+    "lines": 199
    },
    {
-    "name": "data_migration_manifest.json"
+    "name": "data_migration_manifest.json",
+    "type": "file",
+    "path": "data_migration_manifest.json",
+    "size": 22481,
+    "mtime": "2026-09-13 19:33",
+    "purpose": "现行活跃数据清单：用于异机恢复与完整性核对（sha256）。数据不入 git，按本清单从备份复制或按 README §6 重建；校验后比对 sha256。",
+    "lines": 494
    },
    {
-    "name": "paths.py"
+    "name": "paths.py",
+    "type": "file",
+    "path": "paths.py",
+    "size": 7213,
+    "mtime": "2026-10-15 11:20",
+    "lines": 124
    },
    {
-    "name": "pyproject.toml"
+    "name": "pyproject.toml",
+    "type": "file",
+    "path": "pyproject.toml",
+    "size": 21184,
+    "mtime": "2026-10-26 20:59",
+    "purpose": "-*- coding: utf-8 -*-",
+    "lines": 302
    },
    {
-    "name": "requirements.lock"
+    "name": "requirements.lock",
+    "type": "file",
+    "path": "requirements.lock",
+    "size": 3286,
+    "mtime": "2026-10-19 18:05",
+    "lines": 137
    }
   ]
  }

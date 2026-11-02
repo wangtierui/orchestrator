@@ -1261,6 +1261,15 @@ body.rail-off .rail{transition:width .15s cubic-bezier(.65,0,.35,1),
 .sli-wrap{display:flex;flex-direction:column;gap:8px}
 .sli-wrap .chart-box{width:100%}
 .sli-rows{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:4px 12px}
+
+/* 批 163：项目结构 —— 全景页（无左栏）+ 图下详情 */
+body.no-rail .main-content{max-width:none;margin:0 auto}
+.proj-info{margin-top:var(--s3)}
+.proj-purpose{margin-top:8px;padding:8px 10px;border-left:3px solid var(--line);
+  background:var(--bg-subtle);border-radius:4px;line-height:1.6}
+/* 粒子层不挡事件 */
+.chart-box{position:relative}
+.chart-box canvas.flowfx{position:absolute;left:0;top:0;pointer-events:none}
 </style>
 </head>
 <body>
@@ -1445,9 +1454,10 @@ function _railItem(opts){
 function paintRail(){
   const rail = $("#rail");
   if (!rail) return;
-  document.body.classList.toggle("no-rail", CUR === "overview");
-  /* 总览是"全景页"，没有第二维导航；左栏在这里只会挤掉内容（用户第 3 条）。 */
-  if (CUR === "overview") {
+  /* 全景页：总览、项目结构 —— 没有第二维导航，左栏只会挤掉内容 */
+  const PANORAMA = (CUR === "overview" || CUR === "project");
+  document.body.classList.toggle("no-rail", PANORAMA);
+  if (PANORAMA) {
     rail.hidden = true;
     rail.innerHTML = "";
     document.body.classList.add("rail-empty");
@@ -1803,21 +1813,55 @@ function viewOverview(d, assets, publish, rel){
  * "谁依赖谁 + 流量多少"，语义上忠实。 */
 /*: 项目结构：径向树（ECharts tree / layout:radial）。
  * 数据来自静态快照，页面只负责呈现；节点深度=目录层级，叶子=关键文件。 */
+/*: 项目结构：径向树 + 点击出详情。
+ * 数据来自静态快照（tools/gen_project_tree.py），页面不请求接口、不占左栏。 */
 function viewProject(tr){
   const meta = obj(tr.meta), tree = obj(tr.tree);
   if(!tree.name) return card("项目结构", "", '<div class="muted">暂无结构快照</div>',
                              "web/assets/project-tree.json", "");
+
   const count = (x) => 1 + arr(x.children).reduce((a, c) => a + count(c), 0);
   const total = count(tree);
-  const body = chartBox("treeRadial", {tree: tree, depth: Number(meta.max_depth) || 3}, 660)
+
+  const body = chartBox("treeRadial", {
+    tree: tree,
+    depth: Number(meta.max_depth) || 3,
+    onSelect: (node) => projDetail(node),
+  }, 660)
     + `<div class="note">${esc(meta.note || "")} · 共 ${num(total)} 个节点${meta.truncated
         ? "（已按上限截断）" : ""} · 生成于 ${esc(meta.generated_at || "—")}</div>`
+    + `<div id="projinfo" class="proj-info"><div class="muted">点图上的任一节点，这里显示它的路径、体量与用途</div></div>`
     + `<div class="toolbar" style="margin-top:8px">
-         <span class="muted">拖拽/滚轮缩放；悬停看节点名与子项数；点击折叠展开</span>
+         <span class="muted">拖拽/滚轮缩放；点击节点折叠展开，同时在下方显示详情</span>
          <span class="muted" style="margin-left:auto">来源：tools/gen_project_tree.py</span>
        </div>`;
+
   return card("项目结构", `${num(total)} 个节点 · 深度 ${num(meta.max_depth || 3)}`, body,
               "web/assets/project-tree.json", meta.generated_at || "");
+}
+
+/*: 点树节点 → 图**下方**的详情（路径 / 类型 / 体积 / 行数 / 修改时间 / 用途） */
+function projDetail(node){
+  const out = $("#projinfo");
+  if(!out || !node) return;
+  const isDir = node.type === "dir" || arr(node.children).length > 0;
+  const kb = (node.size == null) ? "—" : (node.size < 1024 ? node.size + " B"
+    : (node.size < 1024 * 1024 ? (node.size / 1024).toFixed(1) + " KB"
+    : (node.size / 1024 / 1024).toFixed(2) + " MB"));
+  const rows = [
+    kv("路径", esc(node.path || node.name || "—")),
+    kv("类型", isDir ? "目录" : "文件"),
+    isDir ? kv("直接子项", num(arr(node.children).length)) : kv("体积", kb),
+    isDir ? "" : kv("行数", node.lines ? num(node.lines) : "—"),
+    isDir ? "" : kv("修改时间", esc(node.mtime || "—")),
+  ].join("");
+  const purpose = node.purpose
+    ? `<div class="proj-purpose">${esc(node.purpose)}</div>`
+    : `<div class="proj-purpose muted">${isDir ? "目录：由下面的文件构成" : "该文件没有写用途说明（docstring / 标题 / 注释）"}</div>`;
+  out.innerHTML = `<div class="card" style="margin-top:var(--s3)">
+      <div class="card-h"><h3>${esc(node.name || "")}</h3>
+        <span class="muted">${isDir ? "目录" : "文件"}</span></div>
+      ${rows}${purpose}</div>`;
 }
 
 function viewFlow(d){
@@ -1826,52 +1870,131 @@ function viewFlow(d){
   if(!nodes.length) return card("数据流转","",'<div class="pill warn">⚠ 链路为空</div>'
     +'<div class="note">STEP_ORDER 未加载</div>', d.source, d.fetched_at);
 
-  const byLayer = {};
-  layers.forEach(l=>{ byLayer[l.id]=[]; });
-  nodes.forEach(n=>{ (byLayer[n.layer]||(byLayer[n.layer]=[])).push(n); });
-  const lids = layers.length?layers.map(l=>l.id):Object.keys(byLayer);
+  const byId={}; nodes.forEach(n=>{ byId[n.id]=n; });
 
-  const COLW=186, GAPX=54, ROWH=30, GAPY=8, PADX=16, PADY=34;
-  const colX={}; lids.forEach((l,i)=>{ colX[l]=PADX+i*(COLW+GAPX); });
-  const maxRows = Math.max(1, ...lids.map(l=>(byLayer[l]||[]).length));
-  const W = PADX*2 + lids.length*(COLW+GAPX) - GAPX;
-  const H = PADY + maxRows*(ROWH+GAPY) + 18;
-  const pos={};
-  lids.forEach(l=>{ (byLayer[l]||[]).forEach((n,i)=>{
-    const x=colX[l], y=PADY+i*(ROWH+GAPY);
-    pos[n.id]={x,y,cx:x+COLW/2,cy:y+ROWH/2}; }); });
+  /* ① 列 = **DAG 最长路径深度**（不再按 layers 数组顺序）。
+   * 原实现直接拿 layers 下标当列，于是 L2_transform 里 clean→relevance→apply
+   * 三段串行被压进同一列，连线全挤在一起 —— 这就是"第二节点看不清"的根因。 */
+  const outs={}, indeg={};
+  nodes.forEach(n=>{ outs[n.id]=[]; indeg[n.id]=0; });
+  edges.forEach(e=>{ if(byId[e.from]&&byId[e.to]){ outs[e.from].push(e.to); indeg[e.to]++; } });
+  const depth={}, indegLeft=Object.assign({}, indeg), queue=[];
+  nodes.forEach(n=>{ if(!indeg[n.id]){ depth[n.id]=0; queue.push(n.id); } });
+  while(queue.length){
+    const id=queue.shift();
+    outs[id].forEach(t=>{
+      depth[t]=Math.max(depth[t]===undefined?0:depth[t], depth[id]+1);
+      if(--indegLeft[t]===0) queue.push(t);
+    });
+  }
+  nodes.forEach(n=>{ if(depth[n.id]===undefined) depth[n.id]=0; });   /* 环/孤点兜底 */
+  const maxD=Math.max(0, ...nodes.map(n=>depth[n.id]));
 
-  /* 批 162（第 4 条）：自绘 SVG DAG → **ECharts 桑基图**。
-   * 节点按层着色（itemStyle 逐节点给），连线用渐变 + 脉动近似"流动"。 */
-  const layerIdx = {};
-  lids.forEach((l, i) => { layerIdx[l] = i; });
-  const svg = chartBox("sankey", {
-    nodes: nodes.map(n => ({name: n.id, layer: layerIdx[n.layer] || 0})),
-    links: edges.map(e => ({from: e.from, to: e.to, value: Number(e.volume) || 1})),
-  }, Math.max(420, Math.min(820, lids.length * 96)));
+  /* ② 量级：自身 volume 优先；没有则取**上游汇入**并标 ≈（推断，不伪造） */
+  const inflow={};
+  edges.forEach(e=>{ const v=Number(e.volume)||0; if(v>0) inflow[e.to]=(inflow[e.to]||0)+v; });
+  const volOf=(n)=>{
+    const own=Number(n.volume)||0;
+    if(own>0) return {v:own, inf:false};
+    const up=inflow[n.id]||0;
+    return {v:up, inf:up>0};
+  };
 
-  const legend = `<div class="legend">${lids.map((l, i) => {
-    const nm = (layers.find(x => x.id === l) || {}).name || l;
-    const color = ["#0969da", "#6c5ce7", "#12855a", "#b26a00", "#8250df",
-                   "#bc4c00", "#1b7c83", "#57606a"][i % 8];
-    return `<span><i style="background:${color}"></i>${esc(nm)}</span>`;
-  }).join("")}<span>线宽 ∝ 记录数；悬停看节点/连线详情；左侧抽屉可跳到具体节点</span></div>`;
+  /* ③ 连线情况：桑基只画有边的节点，孤立任务单独列出来（否则"少节点"没人发现） */
+  const linked=new Set();
+  edges.forEach(e=>{ linked.add(e.from); linked.add(e.to); });
+  const isolated=nodes.filter(n=>!linked.has(n.id));
+
+  const layerIdx={}, layerName={};
+  layers.forEach((l,i)=>{ layerIdx[l.id]=i; layerName[l.id]=(l.name||l.id); });
+
+  const cols=[];
+  for(let i=0;i<=maxD;i++) cols.push(nodes.filter(n=>depth[n.id]===i));
+  const maxRows=Math.max(1, ...cols.map(c=>c.length));
+
+  const chart=chartBox("sankey", {
+    nodes: nodes.filter(n=>linked.has(n.id)).map(n=>{
+      const v=volOf(n);
+      return {name:n.id, depth:depth[n.id], layer:layerIdx[n.layer]||0,
+              vol: v.v ? (v.inf? "≈"+num(v.v) : num(v.v)) : ""};
+    }),
+    links: edges.map(e=>({from:e.from, to:e.to, value:Math.max(1, Number(e.volume)||0)})),
+    /* 图 → 抽屉：点节点即把它设为当前选择，并展开该步骤的日志抽屉 */
+    onSelect: (id)=>{ STATE.flow_sel=id; openStep(id); markFlowSel(id); },
+  }, Math.max(420, Math.min(900, maxRows*26+60)));
+
+  /* ④ 每列（阶段）的实际数据情况：节点数 / 记录数合计 / 是否有统计 */
+  const colRows=cols.map((list, i)=>{
+    const own=list.reduce((a,n)=>a+(Number(n.volume)||0), 0);
+    const withV=list.filter(n=>volOf(n).v>0).length;
+    const zero=list.length-withV;
+    return `<div class="lv-row">
+      <span class="lv-cell mono">${i+1}</span>
+      <span class="lv-cell">${esc([...new Set(list.map(n=>layerName[n.layer]||n.layer))].join(" / "))}</span>
+      <span class="lv-cell mono" style="text-align:right">${num(list.length)}</span>
+      <span class="lv-cell mono" style="text-align:right">${num(withV)}</span>
+      <span class="lv-cell mono" style="text-align:right">${own?num(own):"—"}</span>
+      <span class="lv-cell muted">${zero? `${zero} 个节点本步骤不产出记录数（已明示，不估算）` : "全部有统计"}</span>
+    </div>`;
+  }).join("");
+
+  const colTable=`<div class="lv lv-gtable" style="margin-top:var(--s3)">
+    <div class="lv-headrow" style="--cols:56px minmax(0,1.4fr) 72px 110px 120px minmax(0,1fr)">
+      <span>列</span><span>阶段</span><span>节点</span><span>有量级</span><span>记录数合计</span><span>说明</span>
+    </div>
+    <div class="lv-grid" style="--cols:56px minmax(0,1.4fr) 72px 110px 120px minmax(0,1fr)">${colRows}</div>
+  </div>`;
+
+  /* ⑤ 孤立任务：不在主链路上，但**仍在跑**，必须让人看见 */
+  const isoBlock = isolated.length ? `<div class="lv lv-gtable" style="margin-top:var(--s3)">
+    <div class="lv-headrow" style="--cols:minmax(0,1.6fr) 110px 120px minmax(0,1fr)">
+      <span>未连线任务（${isolated.length}）</span><span>所属层</span><span>状态</span><span>说明</span>
+    </div>
+    <div class="lv-grid" style="--cols:minmax(0,1.6fr) 110px 120px minmax(0,1fr)">
+      ${isolated.map(n=>`<div class="lv-row">
+        <span class="lv-cell mono">${esc(n.id)}</span>
+        <span class="lv-cell">${esc(layerName[n.layer]||n.layer)}</span>
+        <span class="lv-cell">${esc(n.status||"—")}</span>
+        <span class="lv-cell muted">独立任务：不在主链路上，按自己的触发器运行</span>
+      </div>`).join("")}
+    </div>
+  </div>` : "";
+
+  const legend=`<div class="legend">${layers.map((l,i)=>{
+    const color=["#0969da","#6c5ce7","#12855a","#b26a00","#8250df","#bc4c00","#1b7c83","#57606a"][i%8];
+    return `<span><i style="background:${color}"></i>${esc(l.name||l.id)}</span>`;
+  }).join("")}<span>列=依赖深度（最长路径）；线宽 ∝ 记录数；≈ = 由上游汇入推断（本步骤未统计）</span></div>`;
+
   const t=obj(d.totals);
-  /* 左侧「节点抽屉」：按层列出全部节点 + 状态点。
-   * 原来只有一个 `<select>`（要先展开、还看不到状态），排在 40 个节点上纯属折磨。 */
-  const _dot = (s) => ({ok: "#12855A", failed: "#C0392B", degraded: "#B26A00",
-                        skip: "#D0D5DD"}[s] || "#D0D5DD");
-  const _fItems = nodes.map(n => ({key: n.id, label: n.id, dot: _dot(n.status),
-                                   title: `${n.id} · ${n.status || "unknown"}`}));
+  const _dot=(s)=>({ok:"#12855A",failed:"#C0392B",degraded:"#B26A00",skip:"#D0D5DD"}[s]||"#D0D5DD");
+  const _fItems=nodes.map(n=>{
+    const v=volOf(n);
+    return {key:n.id, label:n.id, dot:_dot(n.status),
+            title:`${n.id} · ${n.status||"unknown"}${v.v?` · ${v.inf?"≈":""}${num(v.v)} 条`:""}`};
+  });
+
   return card("",
-    `${num(t.nodes)} 节点 · ${num(t.edges)} 条边 · ${num(t.sources)} 源`,
-    sideShell("flow", _fItems, String(STATE.flow_sel || ""),
-    `<div class="scrollx">${svg}</div>${legend}
+    `${num(t.nodes)} 节点 · ${num(t.edges)} 条边 · ${maxD+1} 列`,
+    sideShell("flow", _fItems, String(STATE.flow_sel||""),
+    `<div class="scrollx">${chart}</div>${legend}
+     ${colTable}${isoBlock}
      <div class="toolbar" style="margin-top:10px">
-       <span class="muted">节点抽屉在左侧：点任一节点看它的状态与日志尾巴</span>
+       <span class="muted">点图上的节点（或左侧任一节点）看它的状态与日志尾巴</span>
        <span class="muted" style="margin-left:auto">最近运行：${esc(d.run_id||"—")}</span>
      </div><div id="stepout"></div>`, "节点"), d.source, d.fetched_at);
 }
+
+/*: 点图节点时让左侧抽屉的对应项也亮起来（不整页重渲染，避免闪一下） */
+function markFlowSel(id){
+  const rail=$("#rail");
+  if(!rail) return;
+  $$(".sideitem", rail).forEach(b=>{
+    const on=b.dataset.skey===id;
+    b.classList.toggle("on", on);
+    b.setAttribute("aria-current", on?"true":"false");
+  });
+}
+
 
 /* ---------------- P3 指标 ---------------- */
 const SLI_LABEL = {
@@ -2652,9 +2775,8 @@ async function render(){
 }
 
 function bindFlow(){
-  const v=$("#view");
-  $$("g.fnode",v).forEach(g=>{ g.onclick=()=>openStep(g.dataset.step); });
-  // 侧栏点了节点 ⇒ 直接开它的抽屉（右侧不再有下拉/按钮）
+  /* 批 163：图节点点击已在 charts.js 的 onSelect 里接好（→ openStep + 高亮左侧）；
+   * 这里只负责"带着选择进来"的场景：从别的页面跳回来时自动展开抽屉。 */
   if(STATE.flow_sel) openStep(STATE.flow_sel);
 }
 async function openStep(step){
