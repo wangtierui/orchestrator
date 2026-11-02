@@ -410,6 +410,8 @@ class TestHtmlWiring:
         assert "data-resolve" in code and "openResolveInline" in code, "缺少行内处置"
 
     def test_p1_flow_renders_edges(self) -> None:
+        """批 162：自绘 SVG DAG → ECharts 桑基图；"边要画、节点可点"的语义不变。"""
         code = _code_only(HTML)
-        assert "edges.forEach" in code and "fnode" in code, "P1 必须画边且节点可点"
-        assert "// 边（先画" in _html() or "edges.forEach" in code
+        assert 'chartBox("sankey"' in code, "数据流转未画成图"
+        assert "edges.map(" in code and "links:" in code, "边未进入图表数据"
+        assert 'sideShell("flow"' in code, "缺少节点抽屉（点节点看状态与日志）"
