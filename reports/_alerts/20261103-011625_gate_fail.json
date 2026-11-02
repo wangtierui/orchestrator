@@ -1,0 +1,28 @@
+{
+ "event": "gate_fail",
+ "title": "门禁未通过（链尾 gates rc=1，失败 2 条判据）",
+ "at": "2026-11-03T01:16:25",
+ "run_id": "RUN-20261102-233232-18864",
+ "payload": {
+  "step": "gates",
+  "rc": 1,
+  "run_id": "RUN-20261102-233232-18864",
+  "failed_gates": [
+   {
+    "gate": "前端运行时冒烟（分页 hover/面板 320/密度 65↔38/标题省略/禁用态）",
+    "module": "gates.gate_ui_smoke",
+    "problem_count": 0,
+    "problems": []
+   },
+   {
+    "gate": "产物水位一致性（阶段 1：水位比对替代 mtime）",
+    "module": "gates.gate_watermark",
+    "problem_count": 1,
+    "problems": [
+     "水位陈旧（上游已推进、产物未重跑）：cleaned:mof 声明 raw:mof=2cbb2d514767b1db 但当前 raw:mof=b3ec5c7b6cf50c0a; cleaned:nfra 声明 raw:nfra=81e92c18fecce3a0 但当前 raw:nfra=6c145320bd89607f; cleaned:pbc 声明 raw:pbc=5739e2744f66a39b"
+    ]
+   }
+  ],
+  "triage": "python -m tools.gate_triage <gate> --run-id RUN-20261102-233232-18864"
+ }
+}

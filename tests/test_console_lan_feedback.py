@@ -466,7 +466,9 @@ class TestFrontendContract:
         # 批 130：表单搬进左侧栏「反馈」弹窗（仍只有一份标记，由 fbFormHtml() 产出）
         for el in ("fbkind", "fbsev", "fbpage", "fbacc", "fbtitle", "fbdetail",
                    "fbsubmit"):
-            assert f'id="{el}"' in h, f"缺表单元素 {el}"
+            # 批 165：分类/严重度/页面改成 ghSelect（隐藏 input + 选项面板），
+            # 静态源码里出现的是 `ghSelect("fbkind"` 而不是字面 id。
+            assert (f'id="{el}"' in h) or (f'ghSelect("{el}"' in h), f"缺表单元素 {el}"
         assert "function fbFormHtml(" in h and "return form;" in h, "表单函数没返回内容"
         assert "function openFeedbackModal(" in h
         # 状态筛选不再用页面下拉，改侧栏项

@@ -1316,6 +1316,10 @@ body.no-rail .main-content{max-width:none;margin:0 auto}
 /* 批 165（第 13 条）：单选下拉 = 按钮 + 选项面板（GitHub reviews 同款） */
 .ghsel{display:inline-flex;align-items:center;min-width:0}
 .ghsel .btn{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+
+/* 批 165：紧凑模式下动作按钮缩到 24px —— 32px 会把 38px 行撑到 41px（ui_smoke 实测） */
+#view.lv-compact .lv-table .actbtn{width:24px;height:24px}
+#view.lv-compact .lv-table .lv-actcell{padding:0 8px;gap:10px}
 </style>
 </head>
 <body>
