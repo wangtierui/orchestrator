@@ -1270,6 +1270,16 @@ body.no-rail .main-content{max-width:none;margin:0 auto}
 /* 粒子层不挡事件 */
 .chart-box{position:relative}
 .chart-box canvas.flowfx{position:absolute;left:0;top:0;pointer-events:none}
+
+/* 批 164：引用次数单元格（条形 + 数字同一列） */
+.lv-gtable .lv-cell.refcell{display:flex;align-items:center;gap:6px}
+.lv-gtable .lv-cell.refcell .bar{height:8px;border-radius:4px;background:var(--accent);opacity:.35;min-width:4px}
+.lv-gtable .lv-cell.refcell .mono{font-variant-numeric:tabular-nums;color:var(--text-muted)}
+
+/* 批 164：桑基列头（覆盖层，按真实列 x 定位） */
+.chart-box .sk-cols{position:absolute;left:0;top:2px;right:0;height:20px;pointer-events:none}
+.chart-box .sk-cols span{position:absolute;top:0;font-size:11px;font-weight:600;
+  color:var(--text-muted);white-space:nowrap;letter-spacing:.2px}
 </style>
 </head>
 <body>
@@ -1921,6 +1931,11 @@ function viewFlow(d){
     links: edges.map(e=>({from:e.from, to:e.to, value:Math.max(1, Number(e.volume)||0)})),
     /* 图 → 抽屉：点节点即把它设为当前选择，并展开该步骤的日志抽屉 */
     onSelect: (id)=>{ STATE.flow_sel=id; openStep(id); markFlowSel(id); },
+    colTitles: cols.map((list, i) => {
+      const names = [...new Set(list.map(n => String(layerName[n.layer] || n.layer)
+        .replace(/^L\d+_/, "")))];
+      return `第 ${i + 1} 列 · ${names.slice(0, 2).join(" / ")}${names.length > 2 ? " …" : ""}`;
+    }),
   }, Math.max(420, Math.min(900, maxRows*26+60)));
 
   /* ④ 每列（阶段）的实际数据情况：节点数 / 记录数合计 / 是否有统计 */
@@ -2059,12 +2074,12 @@ function viewMetrics(d){
     return kv(SLI_LABEL[k]||k, `${v}%（SLO ${Number.isNaN(g)?"—":Math.round(g)}%）`, bad?"bad":"ok");
   }).join("");
 
-  const tEntries=Object.entries(obj(d.theme_dist)).sort((a,b)=>(Number(b[1])||0)-(Number(a[1])||0));
-  const TOP_N=7, tDist={};
-  tEntries.slice(0,TOP_N).forEach(([k,v])=>{tDist[k]=v;});
-  const restSum=tEntries.slice(TOP_N).reduce((a,[,v])=>a+(Number(v)||0),0);
-  if(restSum>0) tDist[`其他（${tEntries.length-TOP_N} 项）`]=restSum;
-  const tTotal=tEntries.reduce((a,[,v])=>a+(Number(v)||0),0);
+  /* 批 164（第 4 条）：主题分布**不再合并"其他"** —— 全部主题都进玫瑰图。 */
+  const tEntries=Object.entries(obj(d.theme_dist))
+    .map(([k, v]) => ({label: k, value: Number(v) || 0}))
+    .filter(x => x.value > 0)
+    .sort((a, b) => b.value - a.value);
+  const tTotal=tEntries.reduce((a, x) => a + x.value, 0);
 
   return `<div class="grid">
     ${card("门禁通过率趋势","逐轮", (() => {
@@ -2115,10 +2130,9 @@ function viewMetrics(d){
     })(), d.source, d.fetched_at)}
     ${card("主题分布",`${tEntries.length} 个主题 / 合计 ${num(tTotal)}`,
       (tEntries.length
-        ? chartBox("wordcloud", {items: Object.entries(tDist)
-            .map(([k, v]) => ({name: k, value: Number(v) || 0})), shape: "circle"}, 240)
-        : '<div class="muted">暂无数据</div>')
-      + `<div class="note">显示前 ${Math.min(TOP_N,tEntries.length)} 项${restSum>0?`，其余 ${tEntries.length-TOP_N} 项合并为「其他」`:""}；各条合计 = ${num(tTotal)}（可自行核对）</div>`,
+        ? chartBox("rose", {items: tEntries}, 320)
+          + `<div class="note">全部 ${tEntries.length} 个主题（不再合并"其他"）；扇形半径 = 条数，合计 ${num(tTotal)}</div>`
+        : '<div class="muted">暂无数据</div>'),
       d.source, d.fetched_at)}
   </div>`;
 }
@@ -3387,15 +3401,16 @@ function _gExternal(d){
   const g = obj(d.external), nodes = arr(g.nodes), c = obj(d.counts);
   const by = obj(g.by_guise), lbl = obj(g.guise_labels);
   const maxDeg = Math.max(1, ...nodes.map(n => Number(n.degree) || 0));
+  /* 批 164（第 9 条）：原来"被引次数"(条形) 与"次数"(数字) 是同一件事的两列 ⇒ 合并为一列 */
   const rows = nodes.map(n => `<div class="lv-row">
       <span class="lv-cell mono">${esc(n.id)}</span>
-      <span class="lv-cell" class="ttl">${esc(n.name || "")}</span>
+      <span class="lv-cell ttl">${esc(n.name || "")}</span>
       <span class="lv-cell mono">${esc(n.docno || "—")}</span>
       <span class="lv-cell"><span class="Label">${esc(n.guise_label || "未分类")}</span></span>
-      <span class="lv-cell" style="min-width:120px">
-        <div class="bar" style="width:${Math.max(4, Math.round(n.degree / maxDeg * 100))}%"></div>
-      </span>
-      <span class="lv-cell mono">${num(n.degree)}</span></div>`).join("")
+      <span class="lv-cell refcell">
+        <span class="bar" style="width:${Math.max(4, Math.round(n.degree / maxDeg * 72))}%"></span>
+        <span class="mono">${num(n.degree)}</span>
+      </span></div>`).join("")
     || '<div class="lv-row"><span class="lv-cell"  style="grid-column:1/-1" class="muted">尚未生成外部权威表（运行 tools/build_external_authority.py）</span></div>';
   const chips = Object.keys(by).map(k =>
     `<span class="Label">${esc(lbl[k] || k)} ${num(by[k])}</span>`).join(" ");
@@ -3410,8 +3425,8 @@ function _gExternal(d){
             Number(c.attributed_ratio) >= 0.8 ? "ok" : "warn")}
     </div>
     <div style="margin-bottom:var(--s3)">${chips}</div>
-    <div class="lv lv-gtable"><div class="lv-scroll"><div class="lv-grid" style="--cols:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)">
-        <div class="lv-headrow"><span>编号</span><span>名称</span><span>文号</span><span>类型</span><span>被引次数</span><span>次数</span></div>${rows}</div></div></div>
+    <div class="lv lv-gtable"><div class="lv-scroll"><div class="lv-grid" style="--cols:170px minmax(0,1.6fr) 150px 100px 140px">
+        <div class="lv-headrow"><span>编号</span><span>名称</span><span>文号</span><span>类型</span><span>引用次数</span></div>${rows}</div></div></div>
     <div class="muted" style="margin-top:var(--s2)">${esc(g.note || "")}</div>`;
 }
 
@@ -3529,7 +3544,7 @@ function _gRegulatory(d){
     <h3 style="margin:var(--s3) 0 var(--s2)"><span>枢纽 Top 10</span>
       <span class="hint">球面大小 = 被依据次数</span></h3>
     <div class="lv lv-gtable"><div class="lv-scroll"><div class="lv-grid" style="--cols:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)">
-        <div class="lv-headrow"><span>文件</span><span>文号</span><span>被引</span></div>
+        <div class="lv-headrow"><span>文件</span><span>文号</span><span>引用次数</span></div>
       ${top.map(x => `<div class="lv-row"><span class="lv-cell" class="ttl">${esc(x.name || x.id)}</span>
         <span class="lv-cell mono">${esc(x.docno || "—")}</span>
         <span class="lv-cell mono">${num(x.degree)}</span></div>`).join("")}</div></div></div>`;

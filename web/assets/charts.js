@@ -18,7 +18,7 @@
       available: false,
       line: function () {}, bar: function () {}, wordcloud: function () {},
       liquid: function () {}, graph: function () {}, refresh: function () {},
-      sankey: function () {}, treeRadial: function () {},
+      sankey: function () {}, treeRadial: function () {}, rose: function () {},
       dispose: function () {}, resizeAll: function () {},
     };
     return;
@@ -75,6 +75,10 @@
   function resizeAll() {
     INSTANCES.forEach(function (inst) {
       try { inst.resize(); } catch (e) { /* 容器已移除 */ }
+      var dom = inst.getDom && inst.getDom();
+      if (dom && dom.__skTitles) {
+        setTimeout(function () { drawColHeads(dom, inst, dom.__skTitles); }, 120);
+      }
     });
   }
 
@@ -450,6 +454,34 @@
     if (cv) cv.remove();
   }
 
+  /*: 列头覆盖层：按真实节点 x 定位，窗口缩放时重算（resizeAll 会调）。 */
+  function drawColHeads(el, inst, titles) {
+    if (!el) return;
+    var old = el.querySelector(".sk-cols");
+    if (old) old.remove();
+    el.__skTitles = titles || null;
+    if (!titles || !titles.length) return;
+    var data = inst.getModel().getSeriesByIndex(0).getData();
+    var colX = {};
+    for (var i = 0; i < data.count(); i++) {
+      var nodeEl = data.getItemGraphicEl(i);
+      if (!nodeEl) continue;
+      var d = (data.getRawDataItem(i) || {}).depth || 0;
+      var r = nodeEl.getBoundingRect();
+      var gx = nodeEl.transformCoordToGlobal(r.x, r.y)[0];
+      if (colX[d] === undefined || gx < colX[d]) colX[d] = gx;
+    }
+    var wrap = document.createElement("div");
+    wrap.className = "sk-cols";
+    Object.keys(colX).sort(function (a, b) { return a - b; }).forEach(function (d) {
+      var sp = document.createElement("span");
+      sp.textContent = titles[d] || ("第 " + (Number(d) + 1) + " 列");
+      sp.style.left = Math.round(colX[d]) + "px";
+      wrap.appendChild(sp);
+    });
+    el.appendChild(wrap);
+  }
+
   /*: 桑基图（数据流转）：**逐节点 itemStyle**（按层着色），链接用渐变 + 脉动。 */
   function sankey(el, spec) {
     var inst = ensure(el);
@@ -482,7 +514,7 @@
                  textStyle: { color: p.text, fontSize: 12 } },
       series: [{
         type: "sankey",
-        left: 8, right: 120, top: 12, bottom: 12,
+        left: 8, right: 120, top: 30, bottom: 12,
         nodeWidth: 12, nodeGap: 8,
         emphasis: { focus: "adjacency" },
         data: data,
@@ -509,7 +541,53 @@
     });
     inst.setOption(opt, true);
 
+    /* 列头：布局稳定后按每一列**真实节点 x** 画 HTML 覆盖层
+     * （ECharts 的 graphic 在 setOption 合并时被忽略，实测不出来，故改用 DOM） */
+    setTimeout(function () { drawColHeads(el, inst, spec.colTitles); }, 760);
+
     setTimeout(function () { startParticles(el, inst); }, 60);
+  }
+
+  /*: 南丁格尔玫瑰图（主题分布）：半径表示数值，**全部条目不合并**。 */
+  function rose(el, spec) {
+    var inst = ensure(el);
+    if (!inst) return;
+    SPECS.set(el, { kind: "rose", spec: spec });
+    stopPulse(inst);
+    var p = palette();
+    var items = (spec.items || []).slice();
+    var total = items.reduce(function (a, x) { return a + (Number(x.value) || 0); }, 0);
+    var colors = [p.accent, p.purple, p.ok, p.warn, "#8250df", "#bc4c00", "#1b7c83",
+                  "#57606a", "#0969da", "#6c5ce7", "#12855a"];
+    var opt = {
+      tooltip: {
+        trigger: "item",
+        formatter: function (o) {
+          var pct = total ? (o.value / total * 100).toFixed(1) : "0";
+          return o.name + "：" + o.value + "（" + pct + "%）";
+        },
+        backgroundColor: "#fff", borderColor: p.border, borderWidth: 1,
+        textStyle: { color: p.text, fontSize: 12 },
+      },
+      legend: {
+        ty: "scroll", bottom: 0, itemWidth: 9, itemHeight: 9,
+        textStyle: { color: p.muted, fontSize: 11 },
+      },
+      series: [{
+        type: "pie",
+        roseType: "radius",
+        radius: ["16%", "68%"],
+        center: ["50%", "46%"],
+        itemStyle: { borderColor: "#fff", borderWidth: 1, borderRadius: 3 },
+        label: { color: p.text, fontSize: 11, formatter: "{b} {c}" },
+        labelLine: { length: 8, length2: 8, lineStyle: { color: p.border } },
+        data: items.map(function (x, i) {
+          return { name: x.label, value: Number(x.value) || 0,
+                   itemStyle: { color: colors[i % colors.length] } };
+        }),
+      }],
+    };
+    inst.setOption(opt, true);
   }
 
   /*: 径向树（项目结构）：按深度着色，连线脉动（近似"流动"）。 */
@@ -586,14 +664,15 @@
     var s = SPECS.get(el);
     if (!s) return;
     var fn = { line: line, bar: bar, wordcloud: wordcloud, liquid: liquid,
-               graph: graph, sankey: sankey, treeRadial: treeRadial }[s.kind];
+               graph: graph, sankey: sankey, treeRadial: treeRadial,
+               rose: rose }[s.kind];
     if (fn) fn(el, s.spec);
   }
 
   global.Charts = {
     available: true,
     line: line, bar: bar, wordcloud: wordcloud, liquid: liquid, graph: graph,
-    sankey: sankey, treeRadial: treeRadial,
+    sankey: sankey, treeRadial: treeRadial, rose: rose,
     refresh: refresh, dispose: dispose, resizeAll: resizeAll,
   };
 
