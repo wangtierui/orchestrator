@@ -401,13 +401,16 @@ class TestHtmlWiring:
             "旧的独立页渲染函数应已移除")
         assert "/api/assets" in html and "/api/publish" in html, "总览里仍要取这两份数据"
 
-    def test_worklist_action_column_first(self) -> None:
+    def test_worklist_action_column_last(self) -> None:
+        """批 164（第 10 条）：操作列移到**详情之后**；全选进表头最左；不再暴露操作者输入框。"""
         code = _code_only(HTML)
-        # 批 146：表头从 <tr><th> 改成 .lv-headbar 工具条（GitHub 同构），
-        # 但「操作在最左 + 全选」这条业务语义不变：全选与操作列仍是第一列。
-        assert 'const COL_LABELS = ["操作"' in code, "操作列必须在最左"
+        assert 'const COL_LABELS = ["kind", "唯一标识号", "名称", "文号", "访问地址", "详情", "操作"]' in code, \
+            "操作列应在最后"
         assert 'id="wlall"' in code, "缺少全选"
+        # 全选在工具条最左（kind/状态开关之前）
+        assert 'class="lv-headbar">\n      <label class="muted wlall"' in code, "全选未放到表头最左"
         assert "data-resolve" in code and "openResolveInline" in code, "缺少行内处置"
+        assert "confirm_console" not in code, "界面里不应再出现 confirm_console"
 
     def test_p1_flow_renders_edges(self) -> None:
         """批 162：自绘 SVG DAG → ECharts 桑基图；"边要画、节点可点"的语义不变。"""

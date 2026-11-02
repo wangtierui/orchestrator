@@ -508,8 +508,8 @@ main{padding:0;max-width:none;margin:0;min-width:0}
 .lv-table th[draggable="true"]{cursor:grab}
 .lv-table td{border-bottom:1px solid var(--border);padding:6px 8px;
   vertical-align:middle;font-size:14px;height:32px}
-.lv-table tbody tr:hover td{background:var(--hover)}
-.lv-table tbody tr[aria-selected="true"] td{background:var(--primary-l)}
+.lv-table tbody tr:hover td{background:transparent}
+.lv-table tbody tr[aria-selected="true"] td{background:transparent}
 .lv-table tbody tr:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
 .lv-title{font-weight:500;font-size:16px;line-height:24px;color:var(--text);line-height:1.4;
   text-decoration:none;margin-right:8px}
@@ -1032,7 +1032,7 @@ body.rail-off .rail .sideitem-sub2,body.rail-off .rail .sideitem-sub3{
 
 .colf .ch{display:inline-flex;color:var(--text-muted)}
 th.on .colf .ch{color:var(--accent)}
-.lv-dense .lv-row:hover td{background:var(--bg-subtle)}
+.lv-dense .lv-row:hover{background:var(--bg-subtle)}
 .lv-empty-row td{height:auto !important;padding:16px !important}
 
 /* 批 134（P1）：标签圆角与全局一致（6px）；Primer .Label 默认 9999px 胶囊 */
@@ -1174,6 +1174,8 @@ body.rail-off .rail{transition:width .15s cubic-bezier(.65,0,.35,1),
 #view.lv-compact .lv:not(.lv-dense) .lv-table tr.lv-row{min-height:38px;padding:4px 8px}
 .lv:not(.lv-dense) .lv-table tr.lv-row:hover{background:var(--bg-subtle)}
 .lv:not(.lv-dense) .lv-table tr.lv-row[aria-selected="true"]{background:var(--bg-subtle)}
+/* 批 164（第 12 条）：勾选整行只加一层极浅底，不出现"蓝色窄条" */
+.lv-table tbody tr[aria-selected="true"]{background:var(--bg-subtle)}
 
 /* 批 146：网格表（div 行）—— 与列表页同一套观感，列宽由调用方用 --cols 指定 */
 .lv-gtable{border:1px solid var(--border);border-radius:6px;background:var(--bg);
@@ -1280,6 +1282,16 @@ body.no-rail .main-content{max-width:none;margin:0 auto}
 .chart-box .sk-cols{position:absolute;left:0;top:2px;right:0;height:20px;pointer-events:none}
 .chart-box .sk-cols span{position:absolute;top:0;font-size:11px;font-weight:600;
   color:var(--text-muted);white-space:nowrap;letter-spacing:.2px}
+
+/* 批 164（第 10 条）：行内处置表单 —— 上方按钮区与下方理由框留出间距，避免重叠 */
+.lv-row.detail{padding:10px 12px;background:var(--bg-subtle);border-radius:6px;margin:4px 0 8px}
+.lv-row.detail .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.lv-row.detail .row b{margin-right:4px}
+.lv-row.detail .row .btn{min-width:76px}
+.lv-row.detail textarea{display:block;width:100%;min-height:64px;margin:0 0 8px;
+  padding:8px 10px;border:1px solid var(--border);border-radius:6px;font:inherit;resize:vertical}
+.detail .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.detail textarea{display:block;width:100%;min-height:64px;margin-top:10px}
 </style>
 </head>
 <body>
@@ -1960,14 +1972,28 @@ function viewFlow(d){
     <div class="lv-grid" style="--cols:56px minmax(0,1.4fr) 72px 110px 120px minmax(0,1fr)">${colRows}</div>
   </div>`;
 
-  /* ⑤ 孤立任务：不在主链路上，但**仍在跑**，必须让人看见 */
+  /* ⑤ 孤立任务：不在主链路上，但**仍在跑**，必须让人看见。
+   * 批 164（第 1 条）：补"归属链"——按步骤前缀判定它属于哪条业务链（不靠猜，按前缀表）。 */
+  const CHAIN = {
+    collect: "采集链", clean: "转换链", classify: "转换链", relevance: "转换链",
+    apply: "转换链", relations: "关系链", rfn: "索引链", graph: "关系链",
+    exec: "关系链", themes: "主题链", theme: "主题链", docreader: "文档解析链",
+    internal: "制度链", timeliness: "时效链", gates: "门禁链", verify: "校验链",
+    base: "底座链", publish: "发布链", analysis: "分析链", wiki: "发布链",
+  };
+  const chainOf = (n) => {
+    const pre = String(n.id || "").split(":")[0];
+    return CHAIN[pre] || (String(n.purpose || "").split(/[。；]/)[0].slice(0, 16)) || "未归类";
+  };
   const isoBlock = isolated.length ? `<div class="lv lv-gtable" style="margin-top:var(--s3)">
-    <div class="lv-headrow" style="--cols:minmax(0,1.6fr) 110px 120px minmax(0,1fr)">
-      <span>未连线任务（${isolated.length}）</span><span>所属层</span><span>状态</span><span>说明</span>
+    <div class="lv-headrow" style="--cols:minmax(0,1.5fr) 120px 120px 100px minmax(0,1fr)">
+      <span>未连线任务（${isolated.length}）</span><span>归属链</span><span>所属层</span>
+      <span>状态</span><span>说明</span>
     </div>
-    <div class="lv-grid" style="--cols:minmax(0,1.6fr) 110px 120px minmax(0,1fr)">
+    <div class="lv-grid" style="--cols:minmax(0,1.5fr) 120px 120px 100px minmax(0,1fr)">
       ${isolated.map(n=>`<div class="lv-row">
         <span class="lv-cell mono">${esc(n.id)}</span>
+        <span class="lv-cell">${esc(chainOf(n))}</span>
         <span class="lv-cell">${esc(layerName[n.layer]||n.layer)}</span>
         <span class="lv-cell">${esc(n.status||"—")}</span>
         <span class="lv-cell muted">独立任务：不在主链路上，按自己的触发器运行</span>
@@ -2168,6 +2194,12 @@ function cellUrl(f){
   return `<span class="muted" title="${esc(f.url_note||"")}">${esc(lab)}</span>`;
 }
 
+/*: 当前操作者：优先登录用户；没登录（本机模式）就用本机标识，**不在界面里显示**。 */
+function curBy(){
+  const u = String(obj(STATE.auth).user || "").trim();
+  return u || "本机";
+}
+
 function viewWorklist(d, kinds){
   if(!d.available) return unavail(d);
   const schema=obj(d.fields_schema), caps=obj(schema.kinds);
@@ -2187,16 +2219,16 @@ function viewWorklist(d, kinds){
     const cap=obj(caps[kind]);
     const detail=[f.note, it.suggestion].filter(Boolean).join(" ｜ ");
     return `<div class="lv-row" data-id="${esc(it.item_id)}" data-idx="${idx}">
-      <span class="lv-cell" style="white-space:nowrap">
+      <span class="lv-cell"><code>${esc(kind)}</code></span>
+      <span class="lv-cell id">${cellVal(f.identity, f.identity_src)}</span>
+      <span class="lv-cell wrapc">${f.aggregate? esc(f.title) : cellVal(f.title, f.title_src)}</span>
+      <span class="lv-cell mono">${cap.docno ? cellVal(f.document_number, f.document_number_src) : '<span class="muted">不适用</span>'}</span>
+      <span class="lv-cell">${cellUrl(f)}</span>
+      <span class="lv-cell muted wrapc" title="${esc(detail)}">${esc(detail||"—")}</span>
+      <span class="lv-cell actcell">
         <input type="checkbox" class="wlck" value="${esc(it.item_id)}" title="选择本条">
         <button class="btn btn-sm" data-resolve="${esc(it.item_id)}">处置</button>
       </span>
-      <span class="lv-cell"><code>${esc(kind)}</code></span>
-      <span class="lv-cell id">${cellVal(f.identity, f.identity_src)}</span>
-      <span class="lv-cell">${f.aggregate? esc(f.title) : cellVal(f.title, f.title_src)}</span>
-      <span class="lv-cell mono">${cap.docno ? cellVal(f.document_number, f.document_number_src) : '<span class="muted">不适用</span>'}</span>
-      <span class="lv-cell">${cellUrl(f)}</span>
-      <span class="lv-cell muted"><span class="Truncate" title="${esc(detail)}"><span class="Truncate-text">${esc(detail||"—")}</span></span></span>
     </div>`;
   }).join("");
 
@@ -2223,7 +2255,6 @@ function viewWorklist(d, kinds){
       <span class="muted">已选 <b id="wln">0</b> 条</span>
       <select id="wlstatus"><option value="resolved">resolved（已处置）</option>
         <option value="dismissed">dismissed（不适用）</option></select>
-      <input id="wlby" placeholder="操作者" value="confirm_console" style="width:160px">
       <input id="wlwhy" placeholder="批量处置理由（必填，进审计台账）" style="flex:1;min-width:220px">
       <button class="btn" id="wlbulk">批量处置</button>
       <span class="muted" style="margin-left:auto">写路径纪律：${esc((kinds&&kinds.action_policy)||"worklist_resolve")}</span>
@@ -2232,16 +2263,18 @@ function viewWorklist(d, kinds){
   // 操作列固定最左，且**带全选**：批量处置前要先能"一次勾完"。
   // 2026-10-22 重写时漏过一次（旧守卫 test_console_exposes_bulk_selection 抓到）。
   /* 表头 = 工具条（状态开关 + 字段按钮 + 批量控件），列名不再出现（GitHub 同构） */
-  const COL_LABELS = ["操作", "kind", "唯一标识号", "名称", "文号", "访问地址", "详情"];
-  const NO_FILTER = new Set([0]);
+  /* 批 164（第 10 条）：操作列移到**详情之后**；全选移到工具条最左（kind 之前）。 */
+  const COL_LABELS = ["kind", "唯一标识号", "名称", "文号", "访问地址", "详情", "操作"];
+  const NO_FILTER = new Set([6]);
   const colBtns = COL_LABELS.map((lab, i) => NO_FILTER.has(i) ? "" :
     `<button class="lv-fbtn btn btn-invisible" data-gcol="${i}"
       aria-haspopup="dialog" title="按「${esc(lab)}」筛选">${esc(lab)}${
       ico("chevron-down", 16)}</button>`).join("");
-  const head = `<div class="lv-headbar">${statBar}${colBtns}
+  const head = `<div class="lv-headbar">
+      <label class="muted wlall" title="全选本页">
+        <input type="checkbox" id="wlall"> 全选</label>
+      ${statBar}${colBtns}
       <span class="sp"></span>
-      <label class="muted" style="display:inline-flex;align-items:center;gap:6px">
-        <input type="checkbox" id="wlall" title="全选本页"> 全选</label>
     </div>`;
   return card("", wtitle,
     sideShell("worklist", _kItems, String(STATE._wlkind || ""), (rows
@@ -2249,8 +2282,8 @@ function viewWorklist(d, kinds){
           ${head}
           ${toolbar}
           <div class="lv-scroll"><div class="lv-grid"
-            style="--cols:150px 190px 170px minmax(0,1fr) 170px 200px minmax(0,1fr)">
-        <div class="lv-headrow"><span>操作</span><span>kind</span><span>唯一标识号</span><span>名称</span><span>文号</span><span>访问地址</span><span>详情</span></div>
+            style="--cols:150px 170px minmax(0,1fr) 170px 200px minmax(0,1.1fr) 130px">
+        <div class="lv-headrow"><span>kind</span><span>唯一标识号</span><span>名称</span><span>文号</span><span>访问地址</span><span>详情</span><span>操作</span></div>
             ${rows}</div></div>
         </div>`
       : '<div class="muted">当前无待办 ✓</div>')
@@ -2848,7 +2881,7 @@ function bindWorklist(v){
     if(!sel.length){ toast("未选择任何条目", true); return; }
     const why=$("#wlwhy").value.trim();
     if(!why){ toast("批量处置必须填理由（进审计台账）", true); return; }
-    const st=$("#wlstatus").value, by=$("#wlby").value.trim()||"confirm_console";
+    const st=$("#wlstatus").value, by=curBy();
     bulk.disabled=true;
     let ok=0; const bad=[];
     for(const id of sel){
@@ -2866,6 +2899,37 @@ function bindWorklist(v){
   };
 }
 
+/*: 留言板的行内处置表单：**与待办同一套外观**（行内展开、理由必填、按钮在上方右侧）。 */
+function openFeedbackInline(row, fid){
+  if(!row) return;
+  const next = row.nextElementSibling;
+  if(next && next.classList.contains("detail")){ next.remove(); return; }   // 再点收起
+  const box = document.createElement("div");
+  box.className = "lv-row detail";
+  box.innerHTML = `<div class="row">
+      <b>处置 ${esc(fid)}</b>
+      <select id="rstatus">
+        <option value="ack">已受理（ack）</option>
+        <option value="closed">已闭环（closed）</option>
+      </select>
+      <button class="btn btn-primary" id="rok">提交</button>
+      <button class="btn" id="rcancel">取消</button></div>
+    <textarea id="rwhy" placeholder="处置说明（必填，≥4 字，进入审计台账）"></textarea>
+    <div class="note">写路径：<code>feedback_resolve</code>（逐条落审计）。</div>`;
+  row.after(box);
+  const ta = $("#rwhy"); if(ta) ta.focus();
+  $("#rcancel").onclick = () => box.remove();
+  $("#rok").onclick = async () => {
+    const why = String($("#rwhy").value || "").trim();
+    if(why.length < 4){ toast("处置说明至少 4 个字", true); return; }
+    const r = await api("/api/feedback/resolve", {method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({fid: fid, handling: why, status: $("#rstatus").value})});
+    if(r && r.ok){ toast("已处置 " + fid); box.remove(); render(); }
+    else toast("处置失败：" + ((r && r.reason) || "未知原因"), true);
+  };
+}
+
 function openResolveInline(tr, id){
   if(!tr) return;
   const next=tr.nextElementSibling;
@@ -2877,7 +2941,6 @@ function openResolveInline(tr, id){
     <div class="row"><b>处置 ${esc(id)}</b>
       <select id="rstatus"><option value="resolved">resolved（已处置）</option>
         <option value="dismissed">dismissed（不适用）</option></select>
-      <input id="rby" placeholder="操作者" value="confirm_console" size="14">
       <button class="btn btn-primary" id="rok">提交</button>
       <button class="act ghost" id="rcancel">取消</button></div>
     <textarea id="rwhy" placeholder="处置理由（必填，进入审计台账）"></textarea>
@@ -2886,7 +2949,6 @@ function openResolveInline(tr, id){
     <div class="row"><b>处置 ${esc(id)}</b>
       <select id="rstatus"><option value="resolved">resolved（已处置）</option>
         <option value="dismissed">dismissed（不适用）</option></select>
-      <input id="rby" placeholder="操作者" value="confirm_console" size="14">
       <button class="btn btn-primary" id="rok">提交</button>
       <button class="btn" id="rcancel">取消</button></div>
     <textarea id="rwhy" placeholder="处置理由（必填，进入审计台账）"></textarea>
@@ -2900,7 +2962,7 @@ function openResolveInline(tr, id){
     if(!why){ toast("必须填处置理由", true); return; }
     const r=await api("/api/worklist/resolve",{method:"POST",
       headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({item_id:id, resolution:why, status:$("#rstatus").value, by:$("#rby").value})});
+      body:JSON.stringify({item_id:id, resolution:why, status:$("#rstatus").value, by:curBy()})});
     if(r.ok||r.available){ toast("已处置："+id); tr2.remove(); render(); }
     else toast("处置失败："+(r.reason||r.error||"未知"), true);
   };
@@ -3212,6 +3274,13 @@ function syncGraphTable(key){
     const hit = !sel || tr.dataset.gfrom === sel || tr.dataset.gto === sel;
     tr.hidden = !hit;
   });
+  /* 批 164（第 5 条）：字段级明细也跟着筛（按"源表/目标表 = 选中表"）。 */
+  if (key === "east.er") {
+    $$("[data-erfields] .lv-row").forEach(tr => {
+      const hit = !sel || tr.dataset.efrom === sel || tr.dataset.eto === sel;
+      tr.hidden = !hit;
+    });
+  }
 }
 
 /*: 列表行 → 图（点行即选中该节点并重绘）；同时负责「重置视图」 */
@@ -3871,7 +3940,12 @@ function eastSide(scope, tab, statTab){
       if (tab !== x.k) return;
       if (x.k === "tables") {
         arr(d.domains).forEach(dm => {
-          const on = String(STATE.east_domain || "") === dm && !!obj(STATE.east_cat).on;
+          /* 批 164（第 6 条）：点开某张表后 east_cat 会被清空（显示明细），
+           * 但侧栏必须**继续展示并高亮**这张表 —— 否则标记会消失、组也会塌。 */
+          const selHere = arr(d.tables).some(tb =>
+            tb.table_no === String(STATE.east_sel || "") && tb.domain === dm);
+          const on = (String(STATE.east_domain || "") === dm && !!obj(STATE.east_cat).on)
+            || selHere;
           items.push({side: "east_domain", skey: dm, label: dm, level: 3,
                       count: obj(st.by_domain)[dm], cur: on});
           if (!on) return;
@@ -4174,9 +4248,9 @@ function eastElements(d){
   const rows = shown.map(e => `<div class="lv-row">
       <span class="lv-cell mono">${esc(e.element_code || "")}</span>
       <span class="lv-cell">${esc(e.element_name || "")}</span>
-      <span class="lv-cell muted">${esc(e.element_desc || "—")}</span>
+      <span class="lv-cell muted wrapc">${esc(e.element_desc || "—")}</span>
       <span class="lv-cell">${eastRangeCell(e)}</span>
-      <span class="lv-cell" class="mono" title="${esc(eastFmtDesc(e.data_format))}">${esc(e.data_format || "—")}</span>
+      <span class="lv-cell mono" title="${esc(eastFmtDesc(e.data_format))}">${esc(e.data_format || "—")}</span>
     </div>`).join("") || '<div class="lv-row"><span class="lv-cell"  style="grid-column:1/-1" class="muted">无匹配数据元</span></div>';
   const withRef = els.filter(e => obj(e.code_ref).id).length;
   return `<div class="toolbar" style="margin-bottom:var(--s2)">
@@ -4186,7 +4260,16 @@ function eastElements(d){
       <input id="eeq" placeholder="搜编码 / 名称 / 定义 / 取值…" value="${esc(STATE.east_eq || "")}"
         style="width:250px;font-size:12px;padding:4px 8px">
     </div>
-    <div class="lv lv-gtable"><div class="lv-scroll"><div class="lv-grid" style="--cols:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)">
+    <div class="lv lv-gtable">
+      <div class="lv-headbar">
+        ${["数据元编码", "名称", "定义", "取值范围", "格式"].map((lab, i) =>
+          `<button class="lv-fbtn btn btn-invisible" data-gcol="${i}"
+            aria-haspopup="dialog" title="按「${esc(lab)}」筛选">${esc(lab)}${
+            ico("chevron-down", 16)}</button>`).join("")}
+        <span class="sp"></span>
+      </div>
+      <div class="lv-scroll"><div class="lv-grid"
+        style="--cols:120px 170px minmax(260px,1.8fr) minmax(160px,0.9fr) 96px">
         <div class="lv-headrow"><span>数据元编码</span><span>名称</span><span>定义</span><span>取值范围</span><span>格式</span></div>${rows}</div></div></div>`;
 }
 
@@ -4311,6 +4394,16 @@ function eastEr(d){
            + `（${e.source} ${e.rule_no}）`,
     color: e.source === "1-5E" ? "var(--primary)" : "var(--alt)",
   }));
+  /* 批 164（第 5 条）：同一 (源表, 源字段, 目标表, 目标字段, 规则号) 只保留一条 ——
+   * 1-5-E 与 1-3 关联会对同一字段对重复登记，直接铺开就是"内容重复"。 */
+  const seen = new Set();
+  const uniqEdges = edges0.filter(e => {
+    const k = [e.from_table, e.field, e.to_table, e.dst_field, e.rule_no].join("\u0001");
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+  const fedges = uniqEdges.slice(0, 200);
   const bySource = obj(st.by_source);
   return `<div class="muted" style="margin-bottom:var(--s2)">${esc(er.note || "")}</div>
     <div class="kpibar" style="margin-bottom:var(--s2)">
@@ -4329,18 +4422,24 @@ function eastEr(d){
       <span><i style="background:var(--alt)"></i>数据项「关联数据项」（附件1-3）</span>
       <span class="muted">边为**字段级**：悬停看"源表.字段 → 目标表.字段"</span>
     </div>
-    <h3 style="margin:var(--s3) 0 var(--s2)"><span>字段级关系明细（前 80 条）</span>
+    <h3 style="margin:var(--s3) 0 var(--s2)"><span>字段级关系明细（${uniqEdges.length < edges0.length
+      ? `去重后 ${num(uniqEdges.length)} / 原始 ${num(edges0.length)} 条`
+      : `共 ${num(edges0.length)} 条`}${
+      uniqEdges.length > fedges.length ? `，此处显示前 ${fedges.length} 条` : ""}）</span>
       <span class="hint">这是**字段到字段**的校验关系（1-5-E + 1-3 关联数据项）；
         要看**表到表**的 E-R 请切到「E-R 图」页签</span></h3>
-    <div class="lv lv-gtable"><div class="lv-scroll"><div class="lv-grid" style="--cols:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)">
-        <div class="lv-headrow"><span>源表</span><span>源字段</span><span>目标表</span><span>目标字段</span><span>来源</span><span>规则号</span><span>规则原文</span></div>${edges0.slice(0, 80).map(e => `<div class="lv-row">
-      <span class="lv-cell" class="ttl">${esc(e.from_table)}</span>
-      <span class="lv-cell mono">${esc(e.field)}${e.field_code ? "（" + esc(e.field_code) + "）" : ""}</span>
-      <span class="lv-cell">→</span><span class="lv-cell" class="ttl">${esc(e.to_table)}</span>
+    <div class="lv lv-gtable" data-erfields="1"><div class="lv-scroll"><div class="lv-grid"
+      style="--cols:170px 170px 170px 150px 100px 110px minmax(0,1.4fr)">
+        <div class="lv-headrow"><span>源表</span><span>源字段</span><span>目标表</span>
+          <span>目标字段</span><span>来源</span><span>规则号</span><span>规则原文</span></div>
+        ${fedges.map(e => `<div class="lv-row" data-efrom="${esc(e.from_table)}" data-eto="${esc(e.to_table)}">
+      <span class="lv-cell ttl">${esc(e.from_table)}</span>
+      <span class="lv-cell mono">${esc(e.field)}${e.field_code ? "（" + esc(e.field_code) + "）" : ""} →</span>
+      <span class="lv-cell ttl">${esc(e.to_table)}</span>
       <span class="lv-cell mono">${esc(e.dst_field || "—")}</span>
       <span class="lv-cell"><span class="Label">${esc(e.source)}</span></span>
       <span class="lv-cell mono">${esc(e.rule_no)}</span>
-      <span class="lv-cell muted">${esc(e.rule || "")}</span></div>`).join("")}</div></div></div>`;
+      <span class="lv-cell muted wrapc">${esc(e.rule || "")}</span></div>`).join("")}</div></div></div>`;
 }
 
 /* ---------------- E-R 图（表级，按附件1-6 语义重建） ----------------
@@ -4830,19 +4929,9 @@ function bindFeedback(){
       render();
     };
   }
+  /* 批 164（第 11 条）：留言板的处置与待办**同一套行内表单**（不再用 prompt）。 */
   $$("[data-fbx]", v).forEach(b => {
-    b.onclick = async () => {
-      const fid = b.dataset.fbx;
-      const handling = prompt("处置说明（闭环必填，≥4 字）：\n" + fid, "已核验并修复");
-      if (handling == null) return;
-      const r = await api("/api/feedback/resolve", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({fid: fid, handling: handling, status: "closed"}),
-      });
-      if (r && r.ok) { toast("已闭环 " + fid); render(); }
-      else toast("处置失败：" + ((r && r.reason) || "未知原因"), true);
-    };
+    b.onclick = () => openFeedbackInline(b.closest(".lv-row"), b.dataset.fbx);
   });
 }
 
