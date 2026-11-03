@@ -1,0 +1,2772 @@
+{
+ "title": "Draft Advisory · notepad-plus-plus/notepad-plus-plus",
+ "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/security/advisories/new",
+ "user_login": "wangtierui",
+ "ready": "complete",
+ "counts": {
+  "els": 2289,
+  "interactive": 122,
+  "links": 10
+ },
+ "landmarks": [
+  [
+   "header",
+   0,
+   0,
+   1425,
+   100
+  ],
+  [
+   "nav",
+   100,
+   16,
+   741,
+   32
+  ],
+  [
+   "main",
+   0,
+   124,
+   1425,
+   1585
+  ],
+  [
+   "footer",
+   0,
+   1709,
+   1425,
+   113
+  ]
+ ],
+ "headings": [
+  [
+   "H2",
+   "Repository navigation"
+  ],
+  [
+   "H1",
+   "Command palette"
+  ],
+  [
+   "H3",
+   "Uh oh!"
+  ],
+  [
+   "H1",
+   "Report a vulnerability"
+  ],
+  [
+   "H4",
+   "Advisory Details"
+  ],
+  [
+   "H1",
+   "Select a reply"
+  ],
+  [
+   "H3",
+   "Uh oh!"
+  ],
+  [
+   "H4",
+   "An unexpected error has occurred"
+  ],
+  [
+   "H4",
+   "Affected products"
+  ],
+  [
+   "H2",
+   "Severity"
+  ],
+  [
+   "H1",
+   "Attack Vector"
+  ],
+  [
+   "H1",
+   "Attack Complexity"
+  ],
+  [
+   "H1",
+   "Privileges Required"
+  ],
+  [
+   "H1",
+   "User Interaction"
+  ],
+  [
+   "H1",
+   "Scope"
+  ],
+  [
+   "H1",
+   "Confidentiality"
+  ],
+  [
+   "H1",
+   "Integrity"
+  ],
+  [
+   "H1",
+   "Availability"
+  ],
+  [
+   "H4",
+   "Exploitability metrics"
+  ],
+  [
+   "H1",
+   "Attack Vector (AV)"
+  ],
+  [
+   "H1",
+   "Attack Complexity (AC)"
+  ],
+  [
+   "H1",
+   "Attack Requirements (AT)"
+  ],
+  [
+   "H1",
+   "Privileges Required (PR)"
+  ],
+  [
+   "H1",
+   "User Interaction (UI)"
+  ],
+  [
+   "H4",
+   "Vulnerable system impact metrics"
+  ],
+  [
+   "H1",
+   "Confidentiality (VC)"
+  ],
+  [
+   "H1",
+   "Integrity (VI)"
+  ],
+  [
+   "H1",
+   "Availability (VA)"
+  ],
+  [
+   "H4",
+   "Subsequent system impact metrics"
+  ],
+  [
+   "H1",
+   "Confidentiality (SC)"
+  ],
+  [
+   "H1",
+   "Integrity (SI)"
+  ],
+  [
+   "H1",
+   "Availability (SA)"
+  ],
+  [
+   "H2",
+   "Weaknesses"
+  ],
+  [
+   "H2",
+   "Footer"
+  ],
+  [
+   "H3",
+   "Footer navigation"
+  ]
+ ],
+ "interactive": [
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Skip to content",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "#start-of-content",
+   "cls": "tmp-p-3 color-bg-accent-emphasis color-fg-on-emphasis show-on-focus js",
+   "rect": [
+    0,
+    0,
+    1,
+    1
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU prc-Button-IconBut",
+   "rect": [
+    16,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "/",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderHome__5NxwyK prc-Button-IconButto",
+   "rect": [
+    60,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "notepad-plus-plus",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus",
+   "cls": "contextCrumb__Q8nET8 prc-Breadcrumbs-Item-jcraJ",
+   "rect": [
+    100,
+    16,
+    126,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "notepad-plus-plus",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus",
+   "cls": "contextCrumb__Q8nET8 contextCrumbLast__l2P28s repoPickerCrumb__56N_WW ",
+   "rect": [
+    241,
+    16,
+    125,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk contextCrumb__Q8nET8 repoPickerDropdownBut",
+   "rect": [
+    366,
+    16,
+    20,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Type / to search",
+   "aria": "Open quick search dialog, type / to search",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU searchButton__6Ru-",
+   "rect": [
+    849,
+    16,
+    191,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU js-activate-comman",
+   "rect": [
+    1039,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "/copilot",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU prc-Button-IconBut",
+   "rect": [
+    1078,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "Open Copilot…",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU CopilotMenu__oPrKz",
+   "rect": [
+    1109,
+    16,
+    26,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk actionMenuButton__QPJCOZ responsiveCreateM",
+   "rect": [
+    1159,
+    16,
+    50,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "/issues",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU prc-Button-IconBut",
+   "rect": [
+    1217,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "/pulls",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU prc-Button-IconBut",
+   "rect": [
+    1257,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "/repos",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU prc-Button-IconBut",
+   "rect": [
+    1297,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "/notifications",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU prc-Button-IconBut",
+   "rect": [
+    1337,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk anchor__zXCwGI prc-Button-IconButton-fyge7",
+   "rect": [
+    1377,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "UL",
+   "role": "list",
+   "text": "CodeIssues2.9k (2.9k)Pull requests28 (28)AgentsActionsProjectsWikiSecurity and quality40 (",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "prc-UnderlineNav-ItemsList-oj8gN prc-components-UnderlineItemList-xKlK",
+   "rect": [
+    16,
+    60,
+    1393,
+    40
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Code",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    16,
+    60,
+    73,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Issues2.9k (2.9k)",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/issues",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    97,
+    60,
+    122,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Pull requests28 (28)",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/pulls",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    227,
+    60,
+    157,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Agents",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/agents?author=wangtierui",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    392,
+    60,
+    85,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Actions",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/actions",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    484,
+    60,
+    87,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Projects",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/projects",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    580,
+    60,
+    90,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Wiki",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/wiki",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    678,
+    60,
+    68,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Security and quality40 (40)",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/security",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    754,
+    60,
+    201,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Insights",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/pulse",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    964,
+    60,
+    90,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "INPUT",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "text",
+   "href": "",
+   "cls": "form-control width-full js-advisory-form-title",
+   "rect": [
+    122,
+    289,
+    878,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "TEXTAREA",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "issue-form-textarea form-control js-structured-issue-textarea-expander",
+   "rect": [
+    122,
+    387,
+    878,
+    100
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "TEXTAREA",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "issue-form-textarea form-control js-structured-issue-textarea-expander",
+   "rect": [
+    122,
+    553,
+    878,
+    100
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "TEXTAREA",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "issue-form-textarea form-control js-structured-issue-textarea-expander",
+   "rect": [
+    122,
+    719,
+    878,
+    100
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "TEXTAREA",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "issue-form-textarea form-control js-structured-issue-textarea-expander",
+   "rect": [
+    122,
+    885,
+    878,
+    100
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "Button Button--iconOnly Button--invisible Button--small affected-produ",
+   "rect": [
+    453,
+    1064,
+    28,
+    24
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "SELECT",
+   "role": "",
+   "text": "Select an ecosystem Composer Erlang GitHub Actions Go Maven npm NuGet pip Pub RubyGems Rus",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "form-select flex-auto js-ecosystem-selection",
+   "rect": [
+    131,
+    1091,
+    350,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "INPUT",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "text",
+   "href": "",
+   "cls": "form-control form-control width-full js-advisory-package-name",
+   "rect": [
+    489,
+    1091,
+    502,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "INPUT",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "text",
+   "href": "",
+   "cls": "form-control form-control",
+   "rect": [
+    131,
+    1165,
+    350,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "INPUT",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "text",
+   "href": "",
+   "cls": "form-control form-control width-full",
+   "rect": [
+    489,
+    1165,
+    502,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "Remove affected product",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "btn-octicon btn-octicon-danger position-absolute top-0 right-0 p-2",
+   "rect": [
+    967,
+    1049,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Add another affected product",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "btn-link",
+   "rect": [
+    122,
+    1221,
+    208,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "DIV",
+   "role": "region",
+   "text": "Unknown Pending selection We were not able to calculate your score. Please try changing th",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "flex-1 d-flex flex-items-center position-relative",
+   "rect": [
+    122,
+    1298,
+    293,
+    25
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "SELECT",
+   "role": "",
+   "text": "Select severity Low Moderate High Critical Assess severity using CVSS v3 Assess severity u",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "form-select width-full",
+   "rect": [
+    122,
+    1365,
+    220,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "INPUT",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "text",
+   "href": "",
+   "cls": "form-control input-block width-full",
+   "rect": [
+    357,
+    1365,
+    643,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "SUMMARY",
+   "role": "",
+   "text": "Calculator",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "",
+   "rect": [
+    139,
+    1429,
+    844,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Learn more about CVSS scoring",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://www.first.org/cvss/v3.1/user-guide",
+   "cls": "Link d-inline-block f6 mt-2 tmp-mt-2 mx-md-2 tmp-mx-md-2",
+   "rect": [
+    147,
+    1458,
+    167,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "UL",
+   "role": "list",
+   "text": "Network Adjacent Local Physical",
+   "aria": "uncategorized",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "d-block SegmentedControl--small SegmentedControl mt-2 tmp-mt-2 mb-2 tm",
+   "rect": [
+    147,
+    1518,
+    250,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "listitem",
+   "text": "Network",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "SegmentedControl-item",
+   "rect": [
+    147,
+    1518,
+    65,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Network",
+   "aria": "Attack Vector - Network",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "metric-selection-next-choice Button--invisible Button--small Button Bu",
+   "rect": [
+    150,
+    1521,
+    59,
+    22
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "listitem",
+   "text": "Adjacent",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "SegmentedControl-item",
+   "rect": [
+    215,
+    1518,
+    66,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Adjacent",
+   "aria": "Attack Vector - Adjacent",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "metric-selection-next-choice Button--invisible Button--small Button Bu",
+   "rect": [
+    218,
+    1521,
+    60,
+    22
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "listitem",
+   "text": "Local",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "SegmentedControl-item",
+   "rect": [
+    285,
+    1518,
+    46,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Local",
+   "aria": "Attack Vector - Local",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "metric-selection-next-choice Button--invisible Button--small Button Bu",
+   "rect": [
+    288,
+    1521,
+    40,
+    22
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "listitem",
+   "text": "Physical",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "SegmentedControl-item",
+   "rect": [
+    335,
+    1518,
+    61,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Physical",
+   "aria": "Attack Vector - Physical",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "metric-selection-next-choice Button--invisible Button--small Button Bu",
+   "rect": [
+    338,
+    1521,
+    55,
+    22
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Learn more about attack vector",
+   "aria": "Learn more about attack vector",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "Button--link Button--medium Button f6",
+   "rect": [
+    147,
+    1556,
+    171,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "UL",
+   "role": "list",
+   "text": "Low High",
+   "aria": "uncategorized",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "d-block SegmentedControl--small SegmentedControl mt-2 tmp-mt-2 mb-2 tm",
+   "rect": [
+    147,
+    1624,
+    88,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "listitem",
+   "text": "Low",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "SegmentedControl-item",
+   "rect": [
+    147,
+    1624,
+    40,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Low",
+   "aria": "Attack Complexity - Low",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "metric-selection-next-choice Button--invisible Button--small Button Bu",
+   "rect": [
+    150,
+    1627,
+    34,
+    22
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "listitem",
+   "text": "High",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "SegmentedControl-item",
+   "rect": [
+    190,
+    1624,
+    44,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "High",
+   "aria": "Attack Complexity - High",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "metric-selection-next-choice Button--invisible Button--small Button Bu",
+   "rect": [
+    193,
+    1627,
+    38,
+    22
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Learn more about attack complexity",
+   "aria": "Learn more about attack complexity",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "Button--link Button--medium Button f6",
+   "rect": [
+    147,
+    1662,
+    197,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "UL",
+   "role": "list",
+   "text": "None Low High",
+   "aria": "uncategorized",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "d-block SegmentedControl--small SegmentedControl mt-2 tmp-mt-2 mb-2 tm",
+   "rect": [
+    147,
+    1730,
+    140,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "listitem",
+   "text": "None",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "SegmentedControl-item",
+   "rect": [
+    147,
+    1730,
+    48,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "None",
+   "aria": "Privileges Required - None",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "metric-selection-next-choice Button--invisible Button--small Button Bu",
+   "rect": [
+    150,
+    1733,
+    42,
+    22
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "listitem",
+   "text": "Low",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "SegmentedControl-item",
+   "rect": [
+    198,
+    1730,
+    40,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Low",
+   "aria": "Privileges Required - Low",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "metric-selection-next-choice Button--invisible Button--small Button Bu",
+   "rect": [
+    201,
+    1733,
+    34,
+    22
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "listitem",
+   "text": "High",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "SegmentedControl-item",
+   "rect": [
+    242,
+    1730,
+    44,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "High",
+   "aria": "Privileges Required - High",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "metric-selection-next-choice Button--invisible Button--small Button Bu",
+   "rect": [
+    245,
+    1733,
+    38,
+    22
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Learn more about privileges required",
+   "aria": "Learn more about privileges required",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "Button--link Button--medium Button f6",
+   "rect": [
+    147,
+    1768,
+    202,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "UL",
+   "role": "list",
+   "text": "None Required",
+   "aria": "uncategorized",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "d-block SegmentedControl--small SegmentedControl mt-2 tmp-mt-2 mb-2 tm",
+   "rect": [
+    147,
+    1836,
+    118,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "listitem",
+   "text": "None",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "SegmentedControl-item",
+   "rect": [
+    147,
+    1836,
+    48,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "None",
+   "aria": "User Interaction - None",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "metric-selection-next-choice Button--invisible Button--small Button Bu",
+   "rect": [
+    150,
+    1839,
+    42,
+    22
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "listitem",
+   "text": "Required",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "SegmentedControl-item",
+   "rect": [
+    198,
+    1836,
+    67,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Required",
+   "aria": "User Interaction - Required",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "metric-selection-next-choice Button--invisible Button--small Button Bu",
+   "rect": [
+    201,
+    1839,
+    61,
+    22
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Learn more about user interaction",
+   "aria": "Learn more about user interaction",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "Button--link Button--medium Button f6",
+   "rect": [
+    147,
+    1874,
+    185,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "UL",
+   "role": "list",
+   "text": "Unchanged Changed",
+   "aria": "uncategorized",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "d-block SegmentedControl--small SegmentedControl mt-2 tmp-mt-2 mb-2 tm",
+   "rect": [
+    147,
+    1942,
+    151,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "listitem",
+   "text": "Unchanged",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "SegmentedControl-item",
+   "rect": [
+    147,
+    1942,
+    80,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Unchanged",
+   "aria": "Scope - Unchanged",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "metric-selection-next-choice Button--invisible Button--small Button Bu",
+   "rect": [
+    150,
+    1945,
+    74,
+    22
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "listitem",
+   "text": "Changed",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "SegmentedControl-item",
+   "rect": [
+    231,
+    1942,
+    67,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Changed",
+   "aria": "Scope - Changed",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "metric-selection-next-choice Button--invisible Button--small Button Bu",
+   "rect": [
+    234,
+    1945,
+    61,
+    22
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Learn more about scope",
+   "aria": "Learn more about scope",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "Button--link Button--medium Button f6",
+   "rect": [
+    147,
+    1980,
+    132,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "UL",
+   "role": "list",
+   "text": "None Low High",
+   "aria": "uncategorized",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "d-block SegmentedControl--small SegmentedControl mt-2 tmp-mt-2 mb-2 tm",
+   "rect": [
+    147,
+    2048,
+    140,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "listitem",
+   "text": "None",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "SegmentedControl-item",
+   "rect": [
+    147,
+    2048,
+    48,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "None",
+   "aria": "Confidentiality - None",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "metric-selection-next-choice Button--invisible Button--small Button Bu",
+   "rect": [
+    150,
+    2051,
+    42,
+    22
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "listitem",
+   "text": "Low",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "SegmentedControl-item",
+   "rect": [
+    198,
+    2048,
+    40,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Low",
+   "aria": "Confidentiality - Low",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "metric-selection-next-choice Button--invisible Button--small Button Bu",
+   "rect": [
+    201,
+    2051,
+    34,
+    22
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "listitem",
+   "text": "High",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "SegmentedControl-item",
+   "rect": [
+    242,
+    2048,
+    44,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "High",
+   "aria": "Confidentiality - High",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "metric-selection-next-choice Button--invisible Button--small Button Bu",
+   "rect": [
+    245,
+    2051,
+    38,
+    22
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Learn more about confidentiality",
+   "aria": "Learn more about confidentiality",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "Button--link Button--medium Button f6",
+   "rect": [
+    147,
+    2086,
+    178,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "UL",
+   "role": "list",
+   "text": "None Low High",
+   "aria": "uncategorized",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "d-block SegmentedControl--small SegmentedControl mt-2 tmp-mt-2 mb-2 tm",
+   "rect": [
+    147,
+    2154,
+    140,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "listitem",
+   "text": "None",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "SegmentedControl-item",
+   "rect": [
+    147,
+    2154,
+    48,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "None",
+   "aria": "Integrity - None",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "metric-selection-next-choice Button--invisible Button--small Button Bu",
+   "rect": [
+    150,
+    2157,
+    42,
+    22
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "listitem",
+   "text": "Low",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "SegmentedControl-item",
+   "rect": [
+    198,
+    2154,
+    40,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Low",
+   "aria": "Integrity - Low",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "metric-selection-next-choice Button--invisible Button--small Button Bu",
+   "rect": [
+    201,
+    2157,
+    34,
+    22
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "listitem",
+   "text": "High",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "SegmentedControl-item",
+   "rect": [
+    242,
+    2154,
+    44,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "High",
+   "aria": "Integrity - High",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "metric-selection-next-choice Button--invisible Button--small Button Bu",
+   "rect": [
+    245,
+    2157,
+    38,
+    22
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Learn more about integrity",
+   "aria": "Learn more about integrity",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "Button--link Button--medium Button f6",
+   "rect": [
+    147,
+    2192,
+    146,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "UL",
+   "role": "list",
+   "text": "None Low High",
+   "aria": "uncategorized",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "d-block SegmentedControl--small SegmentedControl mt-2 tmp-mt-2 mb-2 tm",
+   "rect": [
+    147,
+    2260,
+    140,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "listitem",
+   "text": "None",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "SegmentedControl-item",
+   "rect": [
+    147,
+    2260,
+    48,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "None",
+   "aria": "Availability - None",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "metric-selection-next-choice Button--invisible Button--small Button Bu",
+   "rect": [
+    150,
+    2263,
+    42,
+    22
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "listitem",
+   "text": "Low",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "SegmentedControl-item",
+   "rect": [
+    198,
+    2260,
+    40,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Low",
+   "aria": "Availability - Low",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "metric-selection-next-choice Button--invisible Button--small Button Bu",
+   "rect": [
+    201,
+    2263,
+    34,
+    22
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "listitem",
+   "text": "High",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "SegmentedControl-item",
+   "rect": [
+    242,
+    2260,
+    44,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "High",
+   "aria": "Availability - High",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "metric-selection-next-choice Button--invisible Button--small Button Bu",
+   "rect": [
+    245,
+    2263,
+    38,
+    22
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Learn more about availability",
+   "aria": "Learn more about availability",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "Button--link Button--medium Button f6",
+   "rect": [
+    147,
+    2298,
+    158,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "INPUT",
+   "role": "combobox",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "text",
+   "href": "",
+   "cls": "form-control auto-search-input input-contrast width-full",
+   "rect": [
+    122,
+    1549,
+    878,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "INPUT",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "checkbox",
+   "href": "",
+   "cls": "",
+   "rect": [
+    122,
+    1619,
+    13,
+    13
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Cancel",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/security/advisories",
+   "cls": "btn mt-2 mr-2",
+   "rect": [
+    796,
+    1668,
+    76,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Submit report",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "submit",
+   "href": "",
+   "cls": "btn-primary btn mt-2 tmp-mt-2",
+   "rect": [
+    879,
+    1668,
+    123,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/wangtierui",
+   "cls": "no-underline",
+   "rect": [
+    1041,
+    235,
+    23,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "wangtierui",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/wangtierui",
+   "cls": "assignee Link--primary text-bold ml-1 f5",
+   "rect": [
+    1068,
+    233,
+    72,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Glossary and documentation",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://docs.github.com/enterprise-cloud@latest/code-security/repository-security-advisories/creating-a-repository-security-advisory",
+   "cls": "Link--primary Link text-bold",
+   "rect": [
+    1041,
+    648,
+    181,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Dependabot language support",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://docs.github.com/code-security/dependabot/dependabot-alerts/browsing-security-advisories-in-the-github-advisory-database#github-reviewed-advisories",
+   "cls": "Link--primary Link text-bold",
+   "rect": [
+    1041,
+    682,
+    192,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "FOOTER",
+   "role": "contentinfo",
+   "text": "Footer © 2026 GitHub, Inc. Footer navigation Terms Privacy Security Status Community Docs ",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "footer f6 color-fg-muted color-border-subtle tmp-pt-7 tmp-pb-6 p-respo",
+   "rect": [
+    0,
+    1709,
+    1425,
+    113
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "GitHub Homepage",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.com",
+   "cls": "footer-octicon mr-2",
+   "rect": [
+    293,
+    1757,
+    24,
+    25
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Terms",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://docs.github.com/site-policy/github-terms/github-terms-of-service",
+   "cls": "Link--secondary Link",
+   "rect": [
+    446,
+    1762,
+    31,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Privacy",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://docs.github.com/site-policy/privacy-policies/github-privacy-statement",
+   "cls": "Link--secondary Link",
+   "rect": [
+    493,
+    1762,
+    37,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Security",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.com/security",
+   "cls": "Link--secondary Link",
+   "rect": [
+    546,
+    1762,
+    42,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Status",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://www.githubstatus.com/",
+   "cls": "Link--secondary Link",
+   "rect": [
+    604,
+    1762,
+    32,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Community",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.community/",
+   "cls": "Link--secondary Link",
+   "rect": [
+    652,
+    1762,
+    62,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Docs",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://docs.github.com/",
+   "cls": "Link--secondary Link",
+   "rect": [
+    729,
+    1762,
+    26,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Contact",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://support.github.com?tags=dotcom-footer",
+   "cls": "Link--secondary Link",
+   "rect": [
+    771,
+    1762,
+    41,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Manage cookies",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "Link--secondary underline-on-hover border-0 p-0 color-bg-transparent",
+   "rect": [
+    828,
+    1761,
+    86,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Do not share my personal information",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "Link--secondary underline-on-hover border-0 p-0 color-bg-transparent t",
+   "rect": [
+    931,
+    1761,
+    202,
+    18
+   ],
+   "disabled": false
+  }
+ ],
+ "tables": [
+  {
+   "headers": [],
+   "rows": [
+    [
+     "Summary A short summary of the"
+    ]
+   ]
+  }
+ ],
+ "same_repo_links": [
+  "/notepad-plus-plus/notepad-plus-plus",
+  "/notepad-plus-plus/notepad-plus-plus/issues",
+  "/notepad-plus-plus/notepad-plus-plus/pulls",
+  "/notepad-plus-plus/notepad-plus-plus/agents?author=wangtierui",
+  "/notepad-plus-plus/notepad-plus-plus/actions",
+  "/notepad-plus-plus/notepad-plus-plus/projects",
+  "/notepad-plus-plus/notepad-plus-plus/wiki",
+  "/notepad-plus-plus/notepad-plus-plus/security",
+  "/notepad-plus-plus/notepad-plus-plus/pulse",
+  "/notepad-plus-plus/notepad-plus-plus/security/advisories"
+ ],
+ "density": null,
+ "fetched_at": "2026-11-03T21:18:30",
+ "elements_seen": 2289
+}

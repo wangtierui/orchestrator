@@ -1,0 +1,60 @@
+{
+ "fetched_at": "2026-11-03T21:17:52",
+ "width": 1440,
+ "pairs": [],
+ "spacing": {
+  "gh-contributors": {
+   "n": 9,
+   "vgaps": [
+    16
+   ],
+   "hgaps": [
+    16,
+    16,
+    16,
+    16
+   ],
+   "border": "1px/rgb(209, 217, 224)",
+   "radius": "6px",
+   "padding": "0px",
+   "period": [
+    "Period: Last 3 month",
+    183,
+    32
+   ]
+  },
+  "wb-overview": {
+   "n": 12,
+   "vgaps": [
+    93
+   ],
+   "hgaps": [
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    16
+   ],
+   "border": "0px/rgb(31, 35, 40)",
+   "radius": "0px",
+   "padding": "0px",
+   "period": null
+  },
+  "wb-metrics": {
+   "n": 6,
+   "vgaps": [],
+   "hgaps": [
+    16,
+    15,
+    16,
+    15
+   ],
+   "border": "0px/rgb(31, 35, 40)",
+   "radius": "0px",
+   "padding": "16px",
+   "period": null
+  }
+ }
+}
