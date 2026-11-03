@@ -1,0 +1,174 @@
+{
+ "fetched_at": "2026-11-03T19:53:03",
+ "panels": {
+  "author": {
+   "expanded_by": "Collapse sidebar",
+   "panel": {
+    "cls": "prc-SelectPanel-Overlay-tEbxh prc-AnchoredOverlay-AnchoredOv",
+    "rect": [
+     614,
+     373,
+     320,
+     221
+    ],
+    "radius": "12px",
+    "border": "0px/rgb(31, 35, 40)",
+    "shadow": "rgba(209, 217, 224, 0.25) 0px 0px 0px 1px, rgba(37, 41, 46, 0.04) 0px 6px 12px -3px, rgba(37, 41, 46, 0.12) 0px 6px 18px 0px",
+    "bg": "rgb(255, 255, 255)",
+    "padding": "0px",
+    "input": {
+     "ph": "Filter authors",
+     "h": 30,
+     "border": "0px"
+    },
+    "options": [
+     {
+      "text": "wangtierui",
+      "h": 32,
+      "bg": "rgba(129, 139, 152, 0.15)",
+      "color": "rgb(31, 35, 40)",
+      "radius": "6px",
+      "cursor": "auto",
+      "checkbox": false
+     },
+     {
+      "text": "chcg",
+      "h": 32,
+      "bg": "rgba(255, 255, 255, 0)",
+      "color": "rgb(31, 35, 40)",
+      "radius": "6px",
+      "cursor": "auto",
+      "checkbox": false
+     },
+     {
+      "text": "donhoDon HO",
+      "h": 32,
+      "bg": "rgba(255, 255, 255, 0)",
+      "color": "rgb(31, 35, 40)",
+      "radius": "6px",
+      "cursor": "auto",
+      "checkbox": false
+     },
+     {
+      "text": "pryrtPeterCJ",
+      "h": 32,
+      "bg": "rgba(255, 255, 255, 0)",
+      "color": "rgb(31, 35, 40)",
+      "radius": "6px",
+      "cursor": "auto",
+      "checkbox": false
+     }
+    ],
+    "html": "<div role=\"dialog\" data-component=\"AnchoredOverlay\" aria-labelledby=\"_r_4_\" data-anchor-position=\"true\" data-side=\"outside-bottom\" data-width-medium=\"\" data-height-auto=\"\" data-visibility-visible=\"\" class=\"prc-SelectPanel-Overlay-tEbxh prc-AnchoredOverlay-AnchoredOverlay-fYg9Z prc-Overlay-Overlay-jfs-T\" data-focus-trap=\"active\" data-align=\"right\" style=\"--left: 0px; position-anchor: --anchored-overlay-anchor-_r_7_; --anchored-overlay-anchor-offset-right: 0px;\"><span class=\"sentinel\" tabindex=\"0\" aria-hidden=\"true\" style=\"position: absolute; width: 1px; height: 1px; padding: 0px; margin: -1px; overflow: hidden; clip: rect(0px, 0px, 0px, 0px); white-space: nowrap; border: 0px;\"></span><div class=\"prc-SelectPanel-Wrapper-OD-e6\" data-variant=\"anchored\" data-component=\"SelectPanel\"><div class=\"prc-SelectPanel-Header-p2DSz\" data-component=\"SelectPanel.Header\"><div><h1 class=\"prc-SelectPanel-Title-4cax5 prc-Heading-Heading-MtWFE\" data-component=\"SelectPanel.Title\" id=\"_r_4_\">Filter by author</h1></div></div><div class=\"prc-SelectPanel-FilteredActionList--VY7U prc-FilteredActionList-Root-QgIk1\" data-testid=\"filtered-action-list\" data-component=\"FilteredActionList\"><div class=\"prc-FilteredActionList-Header-y6ihu\" data-component=\"FilteredActionList.Header\"><span class=\"prc-SelectPanel-TextInput--Qqkq TextInput-wrapper prc-components-TextInputWrapper-Hpdqi prc-components-TextInputBaseWrapper-wY-n0\" data-block=\"true\" data-no-trailing-action=\"true\" data-component=\"TextInput\" data-leading-visual=\"true\" data-no-trailing-visual=\"true\" aria-busy=\"false\" data-focused=\"true\" style=\"width: auto;\"><span class=\"TextInput-icon\" data-component=\"TextInput.LeadingVisual\"><div class=\"prc-components-Box-XRSqm\" id=\"_r_b_\"><div class=\"prc-components-SpinnerVisible-paqsj\"><svg data-component=\"Octicon\" aria-hidden=\"true\" focusable=\"false\" class=\"octicon octicon-search\" viewBox=\"0 0 16 16\" width=\"16\" height=\"16\" fill=\"currentColor\" display=\"inline-block\" overflow=\"visible\" style=\"vertical-align: text-bottom;\"><path d=\"M10.68 11.74a6 6 0 0 1-7.922-8.982 6 6 0 0 1 8.982 7.922l3.04 3.04a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215ZM11.5 7a4.499 4.499 0 1 0-8.997 0A4.499 4.499 0 0 0 11.5 7Z\"></path></svg></div><span class=\"prc-Spinner-Box-Y-ke-\" data-component=\"Spinner\"><svg height=\"32px\" width=\"32px\" viewBox=\"0 0 16 16\" fill=\"none\" aria-hidden=\"true\" class=\"prc-components-SpinnerHidden-mRxuj prc-components-Spinner-fIUBk prc-components-SpinnerLeading-phYLe prc-Spinner-SpinnerAnimation-tu"
+   },
+   "option_hover": {
+    "bg_before": "rgba(129, 139, 152, 0.15)",
+    "bg_hover": "rgba(129, 139, 152, 0.1)"
+   }
+  },
+  "labels": {
+   "expanded_by": "Collapse sidebar",
+   "panel": {
+    "cls": "prc-SelectPanel-Overlay-tEbxh prc-AnchoredOverlay-AnchoredOv",
+    "rect": [
+     472,
+     373,
+     320,
+     600
+    ],
+    "radius": "12px",
+    "border": "0px/rgb(31, 35, 40)",
+    "shadow": "rgba(209, 217, 224, 0.25) 0px 0px 0px 1px, rgba(37, 41, 46, 0.04) 0px 6px 12px -3px, rgba(37, 41, 46, 0.12) 0px 6px 18px 0px",
+    "bg": "rgb(255, 255, 255)",
+    "padding": "0px",
+    "input": {
+     "ph": "Filter labels",
+     "h": 30,
+     "border": "0px"
+    },
+    "options": [
+     {
+      "text": "SuggestionsduplicatePopula",
+      "h": 288,
+      "bg": "rgba(0, 0, 0, 0)",
+      "color": "rgb(31, 35, 40)",
+      "radius": "0px",
+      "cursor": "auto",
+      "checkbox": true
+     },
+     {
+      "text": "duplicatePopular",
+      "h": 32,
+      "bg": "rgba(129, 139, 152, 0.15)",
+      "color": "rgb(31, 35, 40)",
+      "radius": "6px",
+      "cursor": "auto",
+      "checkbox": true
+     },
+     {
+      "text": "enhancementProposed enhanc",
+      "h": 68,
+      "bg": "rgba(255, 255, 255, 0)",
+      "color": "rgb(31, 35, 40)",
+      "radius": "6px",
+      "cursor": "auto",
+      "checkbox": true
+     },
+     {
+      "text": "rejectPopular",
+      "h": 32,
+      "bg": "rgba(255, 255, 255, 0)",
+      "color": "rgb(31, 35, 40)",
+      "radius": "6px",
+      "cursor": "auto",
+      "checkbox": true
+     }
+    ],
+    "html": "<div role=\"dialog\" data-component=\"AnchoredOverlay\" aria-labelledby=\"_r_p_\" data-anchor-position=\"true\" data-side=\"outside-bottom\" data-width-medium=\"\" data-visibility-visible=\"\" class=\"prc-SelectPanel-Overlay-tEbxh prc-AnchoredOverlay-AnchoredOverlay-fYg9Z prc-Overlay-Overlay-jfs-T\" data-focus-trap=\"active\" data-align=\"left\" data-list-overflow=\"true\" data-list-grouped=\"true\" data-height-xlarge=\"\" style=\"--left: 0px; position-anchor: --anchored-overlay-anchor-_r_s_; --anchored-overlay-anchor-offset-left: 0px;\"><span class=\"sentinel\" tabindex=\"0\" aria-hidden=\"true\" style=\"position: absolute; width: 1px; height: 1px; padding: 0px; margin: -1px; overflow: hidden; clip: rect(0px, 0px, 0px, 0px); white-space: nowrap; border: 0px;\"></span><div class=\"prc-SelectPanel-Wrapper-OD-e6\" data-variant=\"anchored\" data-component=\"SelectPanel\"><div class=\"prc-SelectPanel-Header-p2DSz\" data-component=\"SelectPanel.Header\"><div><h1 class=\"prc-SelectPanel-Title-4cax5 prc-Heading-Heading-MtWFE\" data-component=\"SelectPanel.Title\" id=\"_r_p_\">Filter by label</h1></div></div><div class=\"prc-SelectPanel-FilteredActionList--VY7U prc-FilteredActionList-Root-QgIk1\" data-testid=\"filtered-action-list\" data-component=\"FilteredActionList\"><div class=\"prc-FilteredActionList-Header-y6ihu\" data-component=\"FilteredActionList.Header\"><span class=\"prc-SelectPanel-TextInput--Qqkq TextInput-wrapper prc-components-TextInputWrapper-Hpdqi prc-components-TextInputBaseWrapper-wY-n0\" data-block=\"true\" data-no-trailing-action=\"true\" data-component=\"TextInput\" data-leading-visual=\"true\" data-no-trailing-visual=\"true\" aria-busy=\"false\" data-focused=\"true\" style=\"width: auto;\"><span class=\"TextInput-icon\" data-component=\"TextInput.LeadingVisual\"><div class=\"prc-components-Box-XRSqm\" id=\"_r_10_\"><div class=\"prc-components-SpinnerVisible-paqsj\"><svg data-component=\"Octicon\" aria-hidden=\"true\" focusable=\"false\" class=\"octicon octicon-search\" viewBox=\"0 0 16 16\" width=\"16\" height=\"16\" fill=\"currentColor\" display=\"inline-block\" overflow=\"visible\" style=\"vertical-align: text-bottom;\"><path d=\"M10.68 11.74a6 6 0 0 1-7.922-8.982 6 6 0 0 1 8.982 7.922l3.04 3.04a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215ZM11.5 7a4.499 4.499 0 1 0-8.997 0A4.499 4.499 0 0 0 11.5 7Z\"></path></svg></div><span class=\"prc-Spinner-Box-Y-ke-\" data-component=\"Spinner\"><svg height=\"32px\" width=\"32px\" viewBox=\"0 0 16 16\" fill=\"none\" aria-hidden=\"true\" class=\"prc-components-SpinnerHidden-mRxuj prc-components-Spinner-fIUBk prc-components-S"
+   },
+   "option_hover": {
+    "bg_before": "rgba(129, 139, 152, 0.15)",
+    "bg_hover": "rgba(129, 139, 152, 0.1)"
+   }
+  }
+ },
+ "menus": {
+  "avatar": {
+   "opened": true,
+   "body": {
+    "missing": true
+   }
+  }
+ },
+ "menu_quicksearch": {
+  "opened": true,
+  "body": {
+   "cls": "Panel__NcXYLC prc-Dialog-Dialog-G8cDF",
+   "radius": "12px",
+   "shadow": "rgba(209, 217, 224, 0.25) 0px 0px 0px 1px, rgba(37, 41, 46, 0.04) 0px 6px 12px -3px, rgba(37, 41, 46, 0.12) 0px 6px 18px 0px",
+   "width": 994,
+   "input": {
+    "ph": "Search or jump to...",
+    "h": 30
+   },
+   "rows": [
+    {
+     "text": "repo:notepad-plus-plus/n",
+     "h": 67
+    },
+    {
+     "text": "repo:notepad-plus-plus/n",
+     "h": 34
+    },
+    {
+     "text": "repo:notepad-plus-plus/n",
+     "h": 34
+    },
+    {
+     "text": "org:notepad-plus-plus Se",
+     "h": 34
+    }
+   ]
+  }
+ }
+}

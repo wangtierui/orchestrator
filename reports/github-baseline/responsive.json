@@ -1,0 +1,253 @@
+{
+ "fetched_at": "2026-11-03T19:53:38",
+ "widths": {
+  "1440": {
+   "top-search": {
+    "present": true,
+    "visible": true,
+    "rect": [
+     849,
+     16,
+     191,
+     32
+    ],
+    "display": "flex",
+    "fontSize": "14px"
+   },
+   "filter-author": {
+    "present": true,
+    "visible": true,
+    "rect": [
+     614,
+     337,
+     89,
+     32
+    ],
+    "display": "flex",
+    "fontSize": "14px"
+   },
+   "density": {
+    "present": true,
+    "visible": true,
+    "rect": [
+     1327,
+     337,
+     65,
+     32
+    ],
+    "display": "inline-flex",
+    "fontSize": "14px"
+   },
+   "list-search": {
+    "present": true,
+    "visible": true,
+    "rect": [
+     293,
+     281,
+     1047,
+     30
+    ],
+    "display": "flex",
+    "fontSize": "14px"
+   },
+   "tab-open": {
+    "present": true,
+    "visible": true,
+    "rect": [
+     289,
+     338,
+     102,
+     30
+    ],
+    "display": "flex",
+    "fontSize": "14px"
+   }
+  },
+  "1012": {
+   "top-search": {
+    "present": true,
+    "visible": true,
+    "rect": [
+     579,
+     16,
+     32,
+     32
+    ],
+    "display": "flex",
+    "fontSize": "14px"
+   },
+   "filter-author": {
+    "present": true,
+    "visible": true,
+    "rect": [
+     583,
+     361,
+     89,
+     32
+    ],
+    "display": "flex",
+    "fontSize": "14px"
+   },
+   "density": {
+    "present": true,
+    "visible": true,
+    "rect": [
+     899,
+     361,
+     65,
+     32
+    ],
+    "display": "inline-flex",
+    "fontSize": "14px"
+   },
+   "list-search": {
+    "present": true,
+    "visible": true,
+    "rect": [
+     293,
+     305,
+     619,
+     30
+    ],
+    "display": "flex",
+    "fontSize": "14px"
+   },
+   "tab-open": {
+    "present": true,
+    "visible": true,
+    "rect": [
+     289,
+     362,
+     102,
+     30
+    ],
+    "display": "flex",
+    "fontSize": "14px"
+   }
+  },
+  "768": {
+   "top-search": {
+    "present": true,
+    "visible": true,
+    "rect": [
+     335,
+     16,
+     32,
+     32
+    ],
+    "display": "flex",
+    "fontSize": "14px"
+   },
+   "filter-author": {
+    "present": true,
+    "visible": true,
+    "rect": [
+     526,
+     427,
+     89,
+     32
+    ],
+    "display": "flex",
+    "fontSize": "14px"
+   },
+   "density": {
+    "present": true,
+    "visible": true,
+    "rect": [
+     655,
+     427,
+     65,
+     32
+    ],
+    "display": "inline-flex",
+    "fontSize": "14px"
+   },
+   "list-search": {
+    "present": true,
+    "visible": true,
+    "rect": [
+     293,
+     371,
+     375,
+     30
+    ],
+    "display": "flex",
+    "fontSize": "14px"
+   },
+   "tab-open": {
+    "present": true,
+    "visible": true,
+    "rect": [
+     289,
+     428,
+     102,
+     30
+    ],
+    "display": "flex",
+    "fontSize": "14px"
+   }
+  },
+  "544": {
+   "top-search": {
+    "present": true,
+    "visible": true,
+    "rect": [
+     312,
+     16,
+     32,
+     32
+    ],
+    "display": "flex",
+    "fontSize": "14px"
+   },
+   "filter-author": {
+    "present": true,
+    "visible": true,
+    "rect": [
+     67,
+     391,
+     89,
+     32
+    ],
+    "display": "flex",
+    "fontSize": "14px"
+   },
+   "density": {
+    "present": true,
+    "visible": true,
+    "rect": [
+     37,
+     423,
+     65,
+     32
+    ],
+    "display": "inline-flex",
+    "fontSize": "14px"
+   },
+   "list-search": {
+    "present": true,
+    "visible": true,
+    "rect": [
+     37,
+     305,
+     407,
+     30
+    ],
+    "display": "flex",
+    "fontSize": "14px"
+   },
+   "tab-open": {
+    "present": true,
+    "visible": true,
+    "rect": [
+     33,
+     361,
+     102,
+     30
+    ],
+    "display": "flex",
+    "fontSize": "14px"
+   }
+  }
+ }
+}
