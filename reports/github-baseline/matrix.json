@@ -1,7 +1,996 @@
 {
- "fetched_at": "2026-11-03T21:17:52",
+ "fetched_at": "2026-11-03T21:19:08",
  "width": 1440,
- "pairs": [],
+ "pairs": [
+  {
+   "name": "feedback",
+   "gh": "https://github.com/notepad-plus-plus/notepad-plus-plus/pulls",
+   "target": "http://127.0.0.1:8765/#feedback",
+   "gh_n": 214,
+   "target_n": 48,
+   "cats": {
+    "搜索框": {
+     "gh": {
+      "n": 1,
+      "w_med": 1047,
+      "h_med": 30,
+      "w_max": 1047,
+      "fs_med": 14,
+      "narrow": 0
+     },
+     "mine": {
+      "n": 2,
+      "w_med": 193,
+      "h_med": 31,
+      "w_max": 223,
+      "fs_med": 13.0,
+      "narrow": 0
+     },
+     "verdict": "偏窄",
+     "delta": -0.816
+    },
+    "按钮": {
+     "gh": {
+      "n": 32,
+      "w_med": 95,
+      "h_med": 21,
+      "w_max": 223,
+      "fs_med": 14.0,
+      "narrow": 0
+     },
+     "mine": {
+      "n": 40,
+      "w_med": 76,
+      "h_med": 32,
+      "w_max": 239,
+      "fs_med": 14.0,
+      "narrow": 0
+     },
+     "verdict": "偏窄",
+     "delta": -0.2
+    },
+    "图标按钮": {
+     "gh": {
+      "n": 15,
+      "w_med": 28,
+      "h_med": 32,
+      "w_max": 50,
+      "fs_med": 14,
+      "narrow": 6
+     },
+     "mine": {
+      "n": 2,
+      "w_med": 32,
+      "h_med": 32,
+      "w_max": 32,
+      "fs_med": 14.0,
+      "narrow": 0
+     },
+     "verdict": "偏宽",
+     "delta": 0.143
+    },
+    "链接": {
+     "gh": {
+      "n": 80,
+      "w_med": 86,
+      "h_med": 24,
+      "w_max": 583,
+      "fs_med": 14.0,
+      "narrow": 1
+     },
+     "mine": {
+      "n": 0
+     },
+     "verdict": "该侧无此类",
+     "delta": null
+    }
+   },
+   "worst": [
+    [
+     "搜索框",
+     "偏窄",
+     193,
+     1047
+    ],
+    [
+     "按钮",
+     "偏窄",
+     76,
+     95
+    ],
+    [
+     "图标按钮",
+     "偏宽",
+     32,
+     28
+    ]
+   ]
+  },
+  {
+   "name": "search",
+   "gh": "https://github.com/notepad-plus-plus/notepad-plus-plus/pulls",
+   "target": "http://127.0.0.1:8765/#search",
+   "gh_n": 235,
+   "target_n": 23,
+   "cats": {
+    "搜索框": {
+     "gh": {
+      "n": 1,
+      "w_med": 1047,
+      "h_med": 30,
+      "w_max": 1047,
+      "fs_med": 14,
+      "narrow": 0
+     },
+     "mine": {
+      "n": 1,
+      "w_med": 223,
+      "h_med": 32,
+      "w_max": 223,
+      "fs_med": 13,
+      "narrow": 0
+     },
+     "verdict": "偏窄",
+     "delta": -0.787
+    },
+    "文本输入": {
+     "gh": {
+      "n": 0
+     },
+     "mine": {
+      "n": 1,
+      "w_med": 857,
+      "h_med": 32,
+      "w_max": 857,
+      "fs_med": 13,
+      "narrow": 0
+     },
+     "verdict": "该侧无此类",
+     "delta": null
+    },
+    "按钮": {
+     "gh": {
+      "n": 53,
+      "w_med": 79,
+      "h_med": 21,
+      "w_max": 223,
+      "fs_med": 14,
+      "narrow": 0
+     },
+     "mine": {
+      "n": 19,
+      "w_med": 94,
+      "h_med": 32,
+      "w_max": 239,
+      "fs_med": 14,
+      "narrow": 0
+     },
+     "verdict": "偏宽",
+     "delta": 0.19
+    },
+    "图标按钮": {
+     "gh": {
+      "n": 15,
+      "w_med": 28,
+      "h_med": 32,
+      "w_max": 50,
+      "fs_med": 14,
+      "narrow": 6
+     },
+     "mine": {
+      "n": 2,
+      "w_med": 32,
+      "h_med": 32,
+      "w_max": 32,
+      "fs_med": 14.0,
+      "narrow": 0
+     },
+     "verdict": "偏宽",
+     "delta": 0.143
+    },
+    "链接": {
+     "gh": {
+      "n": 80,
+      "w_med": 86,
+      "h_med": 24,
+      "w_max": 583,
+      "fs_med": 14.0,
+      "narrow": 1
+     },
+     "mine": {
+      "n": 0
+     },
+     "verdict": "该侧无此类",
+     "delta": null
+    }
+   },
+   "worst": [
+    [
+     "搜索框",
+     "偏窄",
+     223,
+     1047
+    ],
+    [
+     "按钮",
+     "偏宽",
+     94,
+     79
+    ],
+    [
+     "图标按钮",
+     "偏宽",
+     32,
+     28
+    ]
+   ]
+  },
+  {
+   "name": "rules",
+   "gh": "https://github.com/notepad-plus-plus/notepad-plus-plus/pulls",
+   "target": "http://127.0.0.1:8765/#rules",
+   "gh_n": 235,
+   "target_n": 305,
+   "cats": {
+    "搜索框": {
+     "gh": {
+      "n": 1,
+      "w_med": 1047,
+      "h_med": 30,
+      "w_max": 1047,
+      "fs_med": 14,
+      "narrow": 0
+     },
+     "mine": {
+      "n": 2,
+      "w_med": 644,
+      "h_med": 31,
+      "w_max": 1066,
+      "fs_med": 13.0,
+      "narrow": 0
+     },
+     "verdict": "偏窄",
+     "delta": -0.385
+    },
+    "文本输入": {
+     "gh": {
+      "n": 0
+     },
+     "mine": {
+      "n": 1,
+      "w_med": 180,
+      "h_med": 32,
+      "w_max": 180,
+      "fs_med": 13,
+      "narrow": 0
+     },
+     "verdict": "该侧无此类",
+     "delta": null
+    },
+    "按钮": {
+     "gh": {
+      "n": 53,
+      "w_med": 79,
+      "h_med": 21,
+      "w_max": 223,
+      "fs_med": 14,
+      "narrow": 0
+     },
+     "mine": {
+      "n": 36,
+      "w_med": 94,
+      "h_med": 32,
+      "w_max": 239,
+      "fs_med": 14.0,
+      "narrow": 0
+     },
+     "verdict": "偏宽",
+     "delta": 0.19
+    },
+    "图标按钮": {
+     "gh": {
+      "n": 15,
+      "w_med": 28,
+      "h_med": 32,
+      "w_max": 50,
+      "fs_med": 14,
+      "narrow": 6
+     },
+     "mine": {
+      "n": 56,
+      "w_med": 32,
+      "h_med": 32,
+      "w_max": 32,
+      "fs_med": 14.0,
+      "narrow": 0
+     },
+     "verdict": "偏宽",
+     "delta": 0.143
+    },
+    "链接": {
+     "gh": {
+      "n": 80,
+      "w_med": 86,
+      "h_med": 24,
+      "w_max": 583,
+      "fs_med": 14.0,
+      "narrow": 1
+     },
+     "mine": {
+      "n": 55,
+      "w_med": 868,
+      "h_med": 24,
+      "w_max": 868,
+      "fs_med": 16,
+      "narrow": 0
+     },
+     "verdict": "偏宽",
+     "delta": 9.093
+    },
+    "复选": {
+     "gh": {
+      "n": 0
+     },
+     "mine": {
+      "n": 50,
+      "w_med": 14,
+      "h_med": 14,
+      "w_max": 14,
+      "fs_med": 14.0,
+      "narrow": 50
+     },
+     "verdict": "该侧无此类",
+     "delta": null
+    }
+   },
+   "worst": [
+    [
+     "链接",
+     "偏宽",
+     868,
+     86
+    ],
+    [
+     "搜索框",
+     "偏窄",
+     644,
+     1047
+    ],
+    [
+     "按钮",
+     "偏宽",
+     94,
+     79
+    ]
+   ]
+  },
+  {
+   "name": "laws",
+   "gh": "https://github.com/notepad-plus-plus/notepad-plus-plus/pulls",
+   "target": "http://127.0.0.1:8765/#laws",
+   "gh_n": 214,
+   "target_n": 18,
+   "cats": {
+    "搜索框": {
+     "gh": {
+      "n": 1,
+      "w_med": 1047,
+      "h_med": 30,
+      "w_max": 1047,
+      "fs_med": 14,
+      "narrow": 0
+     },
+     "mine": {
+      "n": 1,
+      "w_med": 223,
+      "h_med": 32,
+      "w_max": 223,
+      "fs_med": 13,
+      "narrow": 0
+     },
+     "verdict": "偏窄",
+     "delta": -0.787
+    },
+    "按钮": {
+     "gh": {
+      "n": 32,
+      "w_med": 95,
+      "h_med": 21,
+      "w_max": 223,
+      "fs_med": 14.0,
+      "narrow": 0
+     },
+     "mine": {
+      "n": 15,
+      "w_med": 94,
+      "h_med": 32,
+      "w_max": 94,
+      "fs_med": 14,
+      "narrow": 0
+     },
+     "verdict": "一致",
+     "delta": -0.011
+    },
+    "图标按钮": {
+     "gh": {
+      "n": 15,
+      "w_med": 28,
+      "h_med": 32,
+      "w_max": 50,
+      "fs_med": 14,
+      "narrow": 6
+     },
+     "mine": {
+      "n": 2,
+      "w_med": 32,
+      "h_med": 32,
+      "w_max": 32,
+      "fs_med": 14.0,
+      "narrow": 0
+     },
+     "verdict": "偏宽",
+     "delta": 0.143
+    },
+    "链接": {
+     "gh": {
+      "n": 80,
+      "w_med": 86,
+      "h_med": 24,
+      "w_max": 583,
+      "fs_med": 14.0,
+      "narrow": 1
+     },
+     "mine": {
+      "n": 0
+     },
+     "verdict": "该侧无此类",
+     "delta": null
+    }
+   },
+   "worst": [
+    [
+     "搜索框",
+     "偏窄",
+     223,
+     1047
+    ],
+    [
+     "图标按钮",
+     "偏宽",
+     32,
+     28
+    ],
+    [
+     "按钮",
+     "一致",
+     94,
+     95
+    ]
+   ]
+  },
+  {
+   "name": "worklist",
+   "gh": "https://github.com/notepad-plus-plus/notepad-plus-plus/pulls",
+   "target": "http://127.0.0.1:8765/#worklist",
+   "gh_n": 214,
+   "target_n": 959,
+   "cats": {
+    "搜索框": {
+     "gh": {
+      "n": 1,
+      "w_med": 1047,
+      "h_med": 30,
+      "w_max": 1047,
+      "fs_med": 14,
+      "narrow": 0
+     },
+     "mine": {
+      "n": 2,
+      "w_med": 193,
+      "h_med": 31,
+      "w_max": 223,
+      "fs_med": 13.0,
+      "narrow": 0
+     },
+     "verdict": "偏窄",
+     "delta": -0.816
+    },
+    "文本输入": {
+     "gh": {
+      "n": 0
+     },
+     "mine": {
+      "n": 1,
+      "w_med": 631,
+      "h_med": 32,
+      "w_max": 631,
+      "fs_med": 13,
+      "narrow": 0
+     },
+     "verdict": "该侧无此类",
+     "delta": null
+    },
+    "按钮": {
+     "gh": {
+      "n": 32,
+      "w_med": 95,
+      "h_med": 21,
+      "w_max": 223,
+      "fs_med": 14.0,
+      "narrow": 0
+     },
+     "mine": {
+      "n": 80,
+      "w_med": 50,
+      "h_med": 29,
+      "w_max": 239,
+      "fs_med": 12.5,
+      "narrow": 0
+     },
+     "verdict": "偏窄",
+     "delta": -0.474
+    },
+    "图标按钮": {
+     "gh": {
+      "n": 15,
+      "w_med": 28,
+      "h_med": 32,
+      "w_max": 50,
+      "fs_med": 14,
+      "narrow": 6
+     },
+     "mine": {
+      "n": 2,
+      "w_med": 32,
+      "h_med": 32,
+      "w_max": 32,
+      "fs_med": 14.0,
+      "narrow": 0
+     },
+     "verdict": "偏宽",
+     "delta": 0.143
+    },
+    "链接": {
+     "gh": {
+      "n": 80,
+      "w_med": 86,
+      "h_med": 24,
+      "w_max": 583,
+      "fs_med": 14.0,
+      "narrow": 1
+     },
+     "mine": {
+      "n": 80,
+      "w_med": 84,
+      "h_med": 19,
+      "w_max": 84,
+      "fs_med": 14.0,
+      "narrow": 0
+     },
+     "verdict": "一致",
+     "delta": -0.023
+    },
+    "复选": {
+     "gh": {
+      "n": 0
+     },
+     "mine": {
+      "n": 80,
+      "w_med": 13,
+      "h_med": 13,
+      "w_max": 13,
+      "fs_med": 14.0,
+      "narrow": 80
+     },
+     "verdict": "该侧无此类",
+     "delta": null
+    }
+   },
+   "worst": [
+    [
+     "搜索框",
+     "偏窄",
+     193,
+     1047
+    ],
+    [
+     "按钮",
+     "偏窄",
+     50,
+     95
+    ],
+    [
+     "图标按钮",
+     "偏宽",
+     32,
+     28
+    ]
+   ]
+  },
+  {
+   "name": "regstats",
+   "gh": "https://github.com/notepad-plus-plus/notepad-plus-plus/pulls",
+   "target": "http://127.0.0.1:8765/#regstats",
+   "gh_n": 214,
+   "target_n": 34,
+   "cats": {
+    "搜索框": {
+     "gh": {
+      "n": 1,
+      "w_med": 1047,
+      "h_med": 30,
+      "w_max": 1047,
+      "fs_med": 14,
+      "narrow": 0
+     },
+     "mine": {
+      "n": 3,
+      "w_med": 163,
+      "h_med": 30,
+      "w_max": 223,
+      "fs_med": 13,
+      "narrow": 0
+     },
+     "verdict": "偏窄",
+     "delta": -0.844
+    },
+    "按钮": {
+     "gh": {
+      "n": 32,
+      "w_med": 95,
+      "h_med": 21,
+      "w_max": 223,
+      "fs_med": 14.0,
+      "narrow": 0
+     },
+     "mine": {
+      "n": 26,
+      "w_med": 94,
+      "h_med": 32,
+      "w_max": 239,
+      "fs_med": 14.0,
+      "narrow": 0
+     },
+     "verdict": "一致",
+     "delta": -0.011
+    },
+    "图标按钮": {
+     "gh": {
+      "n": 15,
+      "w_med": 28,
+      "h_med": 32,
+      "w_max": 50,
+      "fs_med": 14,
+      "narrow": 6
+     },
+     "mine": {
+      "n": 3,
+      "w_med": 32,
+      "h_med": 32,
+      "w_max": 32,
+      "fs_med": 14,
+      "narrow": 0
+     },
+     "verdict": "偏宽",
+     "delta": 0.143
+    },
+    "链接": {
+     "gh": {
+      "n": 80,
+      "w_med": 86,
+      "h_med": 24,
+      "w_max": 583,
+      "fs_med": 14.0,
+      "narrow": 1
+     },
+     "mine": {
+      "n": 0
+     },
+     "verdict": "该侧无此类",
+     "delta": null
+    }
+   },
+   "worst": [
+    [
+     "搜索框",
+     "偏窄",
+     163,
+     1047
+    ],
+    [
+     "图标按钮",
+     "偏宽",
+     32,
+     28
+    ],
+    [
+     "按钮",
+     "一致",
+     94,
+     95
+    ]
+   ]
+  },
+  {
+   "name": "release",
+   "gh": "https://github.com/notepad-plus-plus/notepad-plus-plus/commits/master",
+   "target": "http://127.0.0.1:8765/#release",
+   "gh_n": 361,
+   "target_n": 168,
+   "cats": {
+    "搜索框": {
+     "gh": {
+      "n": 0
+     },
+     "mine": {
+      "n": 2,
+      "w_med": 193,
+      "h_med": 31,
+      "w_max": 223,
+      "fs_med": 13.0,
+      "narrow": 0
+     },
+     "verdict": "该侧无此类",
+     "delta": null
+    },
+    "按钮": {
+     "gh": {
+      "n": 6,
+      "w_med": 124,
+      "h_med": 32,
+      "w_max": 202,
+      "fs_med": 14.0,
+      "narrow": 0
+     },
+     "mine": {
+      "n": 80,
+      "w_med": 229,
+      "h_med": 32,
+      "w_max": 229,
+      "fs_med": 14.0,
+      "narrow": 0
+     },
+     "verdict": "偏宽",
+     "delta": 0.847
+    },
+    "图标按钮": {
+     "gh": {
+      "n": 75,
+      "w_med": 28,
+      "h_med": 28,
+      "w_max": 50,
+      "fs_med": 12,
+      "narrow": 1
+     },
+     "mine": {
+      "n": 2,
+      "w_med": 32,
+      "h_med": 32,
+      "w_max": 32,
+      "fs_med": 14.0,
+      "narrow": 0
+     },
+     "verdict": "偏宽",
+     "delta": 0.143
+    },
+    "链接": {
+     "gh": {
+      "n": 80,
+      "w_med": 61,
+      "h_med": 28,
+      "w_max": 534,
+      "fs_med": 12.0,
+      "narrow": 1
+     },
+     "mine": {
+      "n": 0
+     },
+     "verdict": "该侧无此类",
+     "delta": null
+    }
+   },
+   "worst": [
+    [
+     "按钮",
+     "偏宽",
+     229,
+     124
+    ],
+    [
+     "图标按钮",
+     "偏宽",
+     32,
+     28
+    ]
+   ]
+  },
+  {
+   "name": "overview",
+   "gh": "https://github.com/notepad-plus-plus/notepad-plus-plus/graphs/contributors",
+   "target": "http://127.0.0.1:8765/#overview",
+   "gh_n": 49,
+   "target_n": 24,
+   "cats": {
+    "搜索框": {
+     "gh": {
+      "n": 0
+     },
+     "mine": {
+      "n": 1,
+      "w_med": 223,
+      "h_med": 32,
+      "w_max": 223,
+      "fs_med": 13,
+      "narrow": 0
+     },
+     "verdict": "该侧无此类",
+     "delta": null
+    },
+    "按钮": {
+     "gh": {
+      "n": 5,
+      "w_med": 191,
+      "h_med": 32,
+      "w_max": 202,
+      "fs_med": 14,
+      "narrow": 0
+     },
+     "mine": {
+      "n": 21,
+      "w_med": 94,
+      "h_med": 32,
+      "w_max": 358,
+      "fs_med": 14,
+      "narrow": 0
+     },
+     "verdict": "偏窄",
+     "delta": -0.508
+    },
+    "图标按钮": {
+     "gh": {
+      "n": 6,
+      "w_med": 32,
+      "h_med": 32,
+      "w_max": 50,
+      "fs_med": 14.0,
+      "narrow": 1
+     },
+     "mine": {
+      "n": 2,
+      "w_med": 32,
+      "h_med": 32,
+      "w_max": 32,
+      "fs_med": 14.0,
+      "narrow": 0
+     },
+     "verdict": "一致",
+     "delta": 0.0
+    },
+    "链接": {
+     "gh": {
+      "n": 36,
+      "w_med": 86,
+      "h_med": 32,
+      "w_max": 294,
+      "fs_med": 14.0,
+      "narrow": 1
+     },
+     "mine": {
+      "n": 0
+     },
+     "verdict": "该侧无此类",
+     "delta": null
+    }
+   },
+   "worst": [
+    [
+     "按钮",
+     "偏窄",
+     94,
+     191
+    ],
+    [
+     "图标按钮",
+     "一致",
+     32,
+     32
+    ]
+   ]
+  },
+  {
+   "name": "metrics",
+   "gh": "https://github.com/notepad-plus-plus/notepad-plus-plus/graphs/contributors",
+   "target": "http://127.0.0.1:8765/#metrics",
+   "gh_n": 49,
+   "target_n": 21,
+   "cats": {
+    "搜索框": {
+     "gh": {
+      "n": 0
+     },
+     "mine": {
+      "n": 1,
+      "w_med": 223,
+      "h_med": 32,
+      "w_max": 223,
+      "fs_med": 13,
+      "narrow": 0
+     },
+     "verdict": "该侧无此类",
+     "delta": null
+    },
+    "按钮": {
+     "gh": {
+      "n": 5,
+      "w_med": 191,
+      "h_med": 32,
+      "w_max": 202,
+      "fs_med": 14,
+      "narrow": 0
+     },
+     "mine": {
+      "n": 18,
+      "w_med": 94,
+      "h_med": 32,
+      "w_max": 239,
+      "fs_med": 14.0,
+      "narrow": 0
+     },
+     "verdict": "偏窄",
+     "delta": -0.508
+    },
+    "图标按钮": {
+     "gh": {
+      "n": 6,
+      "w_med": 32,
+      "h_med": 32,
+      "w_max": 50,
+      "fs_med": 14.0,
+      "narrow": 1
+     },
+     "mine": {
+      "n": 2,
+      "w_med": 32,
+      "h_med": 32,
+      "w_max": 32,
+      "fs_med": 14.0,
+      "narrow": 0
+     },
+     "verdict": "一致",
+     "delta": 0.0
+    },
+    "链接": {
+     "gh": {
+      "n": 36,
+      "w_med": 86,
+      "h_med": 32,
+      "w_max": 294,
+      "fs_med": 14.0,
+      "narrow": 1
+     },
+     "mine": {
+      "n": 0
+     },
+     "verdict": "该侧无此类",
+     "delta": null
+    }
+   },
+   "worst": [
+    [
+     "按钮",
+     "偏窄",
+     94,
+     191
+    ],
+    [
+     "图标按钮",
+     "一致",
+     32,
+     32
+    ]
+   ]
+  }
+ ],
  "spacing": {
   "gh-contributors": {
    "n": 9,
