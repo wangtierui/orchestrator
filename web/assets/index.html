@@ -668,10 +668,15 @@ body.lv-selecting .lv-table tbody .lv-ck,
 /* 表头字段筛选面板：选项带复选框/圆点/主副文本，悬停或选中时浅灰 + 2px 蓝线 */
 /* 批 167（第 1 条）：`.pal-mask` 是 80，弹层必须更高，否则"反馈弹窗里的下拉看不见" */
 .fpop{position:fixed;z-index:95;width:320px;max-height:60vh;overflow:auto;
-  background:var(--bg);border:1px solid var(--border);border-radius:6px;
-  box-shadow:0 8px 24px rgba(31,35,40,.12);padding:8px}
-.fpop .q{width:100%;height:28px;font-size:12.5px;border:1px solid var(--border);
-  border-radius:6px;padding:0 8px;margin-bottom:6px;background:var(--bg)}
+   background:var(--bg);border:0;border-radius:12px;padding:8px;
+   box-shadow:0 0 0 1px rgba(209,217,224,.25),0 6px 12px -3px rgba(37,41,46,.04),0 6px 18px 0 rgba(37,41,46,.12)}
+.fpop .qwrap{position:relative;display:block;margin-bottom:6px}
+.fpop .qico{position:absolute;left:8px;top:50%;transform:translateY(-50%);color:var(--text-muted);pointer-events:none}
+.fpop .q{width:100%;height:30px;font-size:12.5px;border:0;border-radius:6px;
+   padding:0 8px 0 30px;background:var(--bg)}
+.fpop .q:focus{outline:2px solid #0969da;outline-offset:-1px}
+.fpop .opt:hover{background:rgba(129,139,152,.1)}
+.fpop .opt.on{background:rgba(129,139,152,.15)}
 .fpop .opt{position:relative;display:flex;align-items:center;gap:8px;width:100%;
   border:0;background:none;padding:6px 8px;border-radius:6px;text-align:left;
   font-size:12.5px;color:var(--text);cursor:pointer}
@@ -1079,7 +1084,13 @@ th.on .colf .ch{color:var(--accent)}
 .lv-fbar{padding:8px;border-bottom:1px solid var(--border)}
 .lv-fbox{display:flex;flex-wrap:wrap;align-items:center;gap:6px;min-height:32px;
   padding:2px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg)}
-.lv-fbox:focus-within{border-color:#0969da;box-shadow:0 0 0 1px #0969da inset}
+.lv-fbox .lv-fico{order:9;margin-left:auto}
+.lv-fbox input{order:1;flex:1 1 auto;min-width:0}
+.lv-fbox:focus-within{box-shadow:none!important;border-color:var(--border);outline:2px solid #0969da;outline-offset:-1px}
+.lv-fbox input:focus,.lv-fbox input:focus-visible{outline:none!important;box-shadow:none!important}
+.lv-fbox:focus-within{border-color:var(--border);outline:2px solid #0969da;
+   outline-offset:-1px;box-shadow:none}
+.lv-fbox input,.lv-fbox input:focus{outline:none!important;box-shadow:none!important}
 .lv-fq{flex:1 1 160px;min-width:120px;height:26px;border:0;outline:0;background:none;
   font-size:14px;color:var(--text)}
 .lv-tok{display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 6px;
@@ -2763,7 +2774,28 @@ function applyGridFilters(root){
 
 /*: 列头筛选：多选（复选框），条件同时进顶部 token 条（用户第 1、3 条）。 */
 /*: 把某张表的列筛选渲染成顶部 token（与列表页的 token 同一套外观） */
+/* 批 171：密度控件补齐 —— render 结束后统一注入，避免每个渲染器各写一遍。
+ * 之所以包一层而不是改 8 个渲染器：早期只有 lvRender 有密度，其余列表漏了（用户第 3 条）。 */
 async function render(){
+  await renderCore();
+  try { ensureDensity($("#view")); } catch (e) { /* 注入失败不影响主渲染 */ }
+  /* 有些页（文档检索/总览）是先渲染骨架、数据回来再补表格 ⇒ 再补一次 */
+  setTimeout(() => { try { ensureDensity($("#view")); } catch (e) { /* 忽略 */ } }, 400);
+  /* 再兜一层：DOM 变化时补（文档检索的工具条是数据返回后才插入的）。
+   * 只观察 #view 的 childList，不监听属性，避免自身插入触发死循环。 */
+  try {
+    const v2 = $("#view");
+    if (v2 && !v2.dataset.densObs) {
+      v2.dataset.densObs = "1";
+      let tm = null;
+      new MutationObserver(() => {
+        clearTimeout(tm);
+        tm = setTimeout(() => { try { ensureDensity(v2); } catch (e) { /* 忽略 */ } }, 150);
+      }).observe(v2, { childList: true, subtree: true });
+    }
+  } catch (e) { /* 老浏览器忽略 */ }
+}
+async function renderCore(){
   const v=$("#view");
   RAILCFG = null;          // 每轮重来：视图没登记就说明本页没有第二维
   try{
@@ -5361,14 +5393,14 @@ function lvRender(list, d, st, f) {
         esc((cfg.fields.find(x => (x.sort || x.k) === st.sort) || primaryFd).label || "名称")}${
         ico(arrow, 16)}</button>
       <span class="density" role="group" aria-label="显示密度">
-        <button data-lvdensity="wide" title="宽松" aria-label="宽松"
+        <button data-lvdensity="wide" title="Comfortable display density" aria-label="Comfortable display density"
           ${items.length ? "" : "disabled aria-disabled=\"true\""}
           aria-pressed="${lvDensity() === "wide"}"
           class="${lvDensity() === "wide" ? "on" : ""}">${ico("rows", 16)}</button>
-        <button data-lvdensity="compact" title="紧凑" aria-label="紧凑"
+        <button data-lvdensity="compact" title="Compact display density" aria-label="Compact display density"
           ${items.length ? "" : "disabled aria-disabled=\"true\""}
           aria-pressed="${lvDensity() === "compact"}"
-          class="${lvDensity() === "compact" ? "on" : ""}">${ico("list-unordered", 16)}</button>
+          class="${lvDensity() === "compact" ? "on" : ""}">${ico("three-bars", 16)}</button>
       </span>
       <button class="lv-fbtn lv-savebtn" data-lvsavecur="1"
         ${dirty ? "" : "disabled aria-disabled=\"true\""}
@@ -5566,6 +5598,45 @@ function lvSetDensity(v) {
   const view = $("#view");
   if (view) view.classList.toggle("lv-compact", v === "compact");
 }
+/*: 密度分组的唯一 HTML（GitHub 实测：octicon-rows / octicon-three-bars，65×32）。 */
+function densityGroupHtml(){
+  const d = lvDensity();
+  return '<span class="density" role="group" aria-label="显示密度">'
+    + '<button data-lvdensity="wide" title="Comfortable display density"'
+    + ' aria-label="Comfortable display density" aria-pressed="' + (d === "wide") + '"'
+    + ' class="' + (d === "wide" ? "on" : "") + '">' + ico("rows", 16) + "</button>"
+    + '<button data-lvdensity="compact" title="Compact display density"'
+    + ' aria-label="Compact display density" aria-pressed="' + (d === "compact") + '"'
+    + ' class="' + (d === "compact" ? "on" : "") + '">' + ico("three-bars", 16) + "</button>"
+    + "</span>";
+}
+
+/*: 给没有密度控件的工具条补一个，并统一绑定。 */
+function ensureDensity(v){
+  if (!v) return;
+  $$(".lv-headbar, .lv-bar, .toolbar", v).forEach(bar => {
+    if (bar.querySelector("[data-lvdensity]")) return;
+    const sp = bar.querySelector(".sp");
+    const box = document.createElement("span");
+    box.innerHTML = densityGroupHtml();
+    const g = box.firstElementChild;
+    if (sp && sp.parentNode === bar) bar.insertBefore(g, sp.nextSibling);
+    else bar.appendChild(g);
+  });
+  $$("[data-lvdensity]", v).forEach(b => {
+    if (b.dataset.lvdBound) return;
+    b.dataset.lvdBound = "1";
+    b.onclick = () => {
+      lvSetDensity(b.dataset.lvdensity);
+      $$("[data-lvdensity]", v).forEach(x => {
+        const on = x.dataset.lvdensity === b.dataset.lvdensity;
+        x.classList.toggle("on", on);
+        x.setAttribute("aria-pressed", on ? "true" : "false");
+      });
+    };
+  });
+}
+
 
 /* ---------------- 表头字段筛选面板（选项：复选框 + 圆点 + 主文本 + 计数） ---------------- */
 /*: 唯一的选项面板实现（GitHub ActionList 的等价物）。
@@ -5585,7 +5656,7 @@ function openOptionList(opts){
     const on = sel.has(v);
     return `<button class="opt${on ? " on" : ""}" data-val="${esc(v)}"
         role="${o.multi ? "menuitemcheckbox" : "menuitemradio"}" aria-checked="${on}">
-        <span class="ck${on ? " on" : ""}" aria-hidden="true">${on ? ico("check", 12) : ""}</span>
+        ${o.multi ? `<span class="ck${on ? " on" : ""}" aria-hidden="true">${on ? ico("check", 12) : ""}</span>` : ""}
         ${it.dot === false ? "" : `<span class="dot" aria-hidden="true"${
           it.color ? ` style="background:${esc(it.color)}"` : ""}></span>`}
         <span class="t"><span class="Truncate"><span class="Truncate-text">${esc(it.label)}</span></span>${
@@ -5603,9 +5674,7 @@ function openOptionList(opts){
     }
     return rows.slice(0, 200).map(rowHtml).join("");
   };
-  const html = `<input class="q" id="fpopQ" placeholder="${esc(o.placeholder || "搜索…")}"
-      aria-label="搜索取值"><button class="fpop-x" data-act="clear"
-      aria-label="清除筛选" title="清除筛选">${ico("x", 14)}</button>
+  const html = `<span class="qwrap"><span class="qico">${ico("search", 14)}</span><input class="q" id="fpopQ"      aria-label="搜索取值"></span><button class="fpop-x"      aria-label="清除筛选" title="清除筛选">${ico("x", 14)}</button>
     <div id="fpopList">${listHtml("")}</div>`;
   const el = lvPop(o.anchor, html, {
     cls: "fpop",
@@ -5660,13 +5729,10 @@ function lvFieldFilterPop(list, st, fieldKey, anchor, facets) {
       .slice(0, 40)
       .map(v => `<button class="opt" data-val="${esc(v)}" role="menuitemradio"
           aria-checked="${v === cur}">
-          <span class="ck" aria-hidden="true"></span>
           <span class="dot" aria-hidden="true"></span>
           <span class="t">${esc(v)}<span class="s">当前页</span></span>
         </button>`).join("");
-    const html = `<input class="q" id="fpopQ" placeholder="输入或搜索「${esc(fd.label)}」，回车应用…"
-        aria-label="按${esc(fd.label)}筛选" value="${esc(cur)}"><button class="fpop-x" data-act="clear" aria-label="清除筛选" title="清除筛选">${ico("x", 14)}</button>
-      <div id="fpopList">${optHtml("") ||
+    const html = `<span class="qwrap"><span class="qico">${ico("search", 14)}</span><input class="q" id="fpopQ"        aria-label="按${esc(fd.label)}筛选" value="${esc(cur)}"></span><button class="fpop-x"      <div id="fpopList">${optHtml("") ||
         '<div class="empty" style="padding:8px;color:var(--text-muted)">当前页没有可选值，直接输入后回车</div>'}</div>`;
     const el = lvPop(anchor, html, {
       cls: "fpop",

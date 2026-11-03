@@ -270,6 +270,6 @@ class TestLayoutDetails:
         body = fn(h, "lvRender")
         seg = body[body.index('class="density"'):]
         seg = seg[:seg.index("</span>")]
-        assert 'ico("rows"' in seg and 'ico("list-unordered"' in seg
+        assert 'ico("rows"' in seg and 'ico("three-bars"' in seg  # GitHub 实测：Comfortable=rows / Compact=three-bars
         assert "宽松</button>" not in seg and "紧凑</button>" not in seg
         assert "aria-pressed" in seg

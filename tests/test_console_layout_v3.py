@@ -96,7 +96,8 @@ class TestGlobalRail:
         assert "sideShell(" in h and "railSet(" in h
 
     def test_paint_on_every_branch(self, h: str) -> None:
-        body = fn(h, "render")
+        # 批 171：render 抽出 renderCore（外壳只做密度注入），主体在 renderCore
+        body = fn(h, "renderCore")
         assert "RAILCFG = null" in body, "渲染前未重置导航（会残留上一页的项）"
         assert "paintRail()" in body, "未统一绘制左栏"
         # 必须在 finally 里（登录/异常分支也要清）

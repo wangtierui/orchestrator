@@ -1,7 +1,6 @@
-/*! Octicons 19.42.0 —— 官方 @primer/octicons 的**全量**图标（408 个），
- * 由 build/data.json 生成为本地静态资源；运行时零外链。
+/*! Octicons 19.42.0 —— 官方 @primer/octicons 全量图标（408 个），本地静态资源。
+ * 生成：reports/_tmp/b171_oct_fix.py（读 build/data.json，path 为完整 <path> 元素）。
  * 用法：`oct(name, size, cls, label)` → 内联 SVG 字符串。
- * 重新生成：reports/_tmp/b186_upgrade.py（读 @primer/octicons 的 build/data.json）。
  */
 (function (global) {
   "use strict";
@@ -14,8 +13,8 @@
       ? 'role="img" aria-label="' + String(label).replace(/"/g, "&quot;") + '"'
       : 'aria-hidden="true" focusable="false"';
     return '<svg class="octicon octicon-' + name + (cls ? " " + cls : "") +
-      '" viewBox="0 0 ' + node.w + ' 16" width="' + s + '" height="' + s +
-      '" fill="currentColor" ' + a11y + '><path d="' + node.p + '"></path></svg>';
+      '" viewBox="0 0 ' + node.w + " " + node.w + '" width="' + s + '" height="' + s +
+      '" fill="currentColor" ' + a11y + ">" + node.p + "</svg>";
   }
   global.oct = oct;
   global.ICONS = ICONS;
