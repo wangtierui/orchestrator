@@ -1,0 +1,543 @@
+{
+ "fetched_at": "2026-11-03T19:42:46",
+ "pages": {
+  "repo": [
+   {
+    "name": "top-search",
+    "tag": "BUTTON",
+    "host": "BUTTON.prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HI",
+    "rect": [
+     849,
+     16,
+     191,
+     32
+    ],
+    "default": {
+     "color": "rgb(37, 41, 46)",
+     "backgroundColor": "rgba(0, 0, 0, 0)",
+     "borderTopColor": "rgb(209, 217, 224)",
+     "borderTopWidth": "1px",
+     "boxShadow": "none",
+     "outlineColor": "rgb(37, 41, 46)",
+     "outlineWidth": "3px",
+     "outlineStyle": "none",
+     "textDecorationLine": "none",
+     "opacity": "1",
+     "transform": "none",
+     "cursor": "pointer"
+    },
+    "host_default": {
+     "color": "rgb(37, 41, 46)",
+     "backgroundColor": "rgba(0, 0, 0, 0)",
+     "borderTopColor": "rgb(209, 217, 224)",
+     "borderTopWidth": "1px",
+     "boxShadow": "none",
+     "outlineColor": "rgb(37, 41, 46)",
+     "outlineWidth": "3px",
+     "outlineStyle": "none",
+     "textDecorationLine": "none",
+     "opacity": "1",
+     "transform": "none",
+     "cursor": "pointer"
+    },
+    "hover": {
+     "self.backgroundColor": "rgba(255, 255, 255, 0)",
+     "host.backgroundColor": "rgba(255, 255, 255, 0)"
+    },
+    "focus": {
+     "self.backgroundColor": "rgba(255, 255, 255, 0)",
+     "self.outlineColor": "rgb(9, 105, 218)",
+     "self.outlineWidth": "2px",
+     "self.outlineStyle": "solid",
+     "host.backgroundColor": "rgba(255, 255, 255, 0)",
+     "host.outlineColor": "rgb(9, 105, 218)",
+     "host.outlineWidth": "2px",
+     "host.outlineStyle": "solid"
+    },
+    "active": {
+     "self.backgroundColor": "rgba(255, 255, 255, 0)",
+     "self.outlineColor": "rgb(9, 105, 218)",
+     "self.outlineWidth": "2px",
+     "self.outlineStyle": "solid",
+     "host.backgroundColor": "rgba(255, 255, 255, 0)",
+     "host.outlineColor": "rgb(9, 105, 218)",
+     "host.outlineWidth": "2px",
+     "host.outlineStyle": "solid"
+    }
+   },
+   {
+    "name": "tab-issues",
+    "tag": "A",
+    "host": "A.prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HI",
+    "rect": [
+     1217,
+     16,
+     32,
+     32
+    ],
+    "default": {
+     "color": "rgb(89, 99, 110)",
+     "backgroundColor": "rgba(0, 0, 0, 0)",
+     "borderTopColor": "rgb(209, 217, 224)",
+     "borderTopWidth": "1px",
+     "boxShadow": "none",
+     "outlineColor": "rgb(89, 99, 110)",
+     "outlineWidth": "3px",
+     "outlineStyle": "none",
+     "textDecorationLine": "none",
+     "opacity": "1",
+     "transform": "none",
+     "cursor": "pointer"
+    },
+    "host_default": {
+     "color": "rgb(89, 99, 110)",
+     "backgroundColor": "rgba(0, 0, 0, 0)",
+     "borderTopColor": "rgb(209, 217, 224)",
+     "borderTopWidth": "1px",
+     "boxShadow": "none",
+     "outlineColor": "rgb(89, 99, 110)",
+     "outlineWidth": "3px",
+     "outlineStyle": "none",
+     "textDecorationLine": "none",
+     "opacity": "1",
+     "transform": "none",
+     "cursor": "pointer"
+    },
+    "hover": {
+     "self.backgroundColor": "rgba(129, 139, 152, 0.075)",
+     "host.backgroundColor": "rgba(129, 139, 152, 0.075)"
+    },
+    "focus": {},
+    "active": {}
+   }
+  ],
+  "issues": [
+   {
+    "name": "list-search",
+    "tag": "INPUT",
+    "host": "INPUT.Box_4__0ZM1Bz",
+    "rect": [
+     293,
+     281,
+     1047,
+     30
+    ],
+    "default": {
+     "color": "rgba(0, 0, 0, 0)",
+     "backgroundColor": "rgba(0, 0, 0, 0)",
+     "borderTopColor": "rgba(0, 0, 0, 0)",
+     "borderTopWidth": "0px",
+     "boxShadow": "none",
+     "outlineColor": "rgba(0, 0, 0, 0)",
+     "outlineWidth": "3px",
+     "outlineStyle": "none",
+     "textDecorationLine": "none",
+     "opacity": "1",
+     "transform": "none",
+     "cursor": "text"
+    },
+    "host_default": {
+     "color": "rgba(0, 0, 0, 0)",
+     "backgroundColor": "rgba(0, 0, 0, 0)",
+     "borderTopColor": "rgba(0, 0, 0, 0)",
+     "borderTopWidth": "0px",
+     "boxShadow": "none",
+     "outlineColor": "rgba(0, 0, 0, 0)",
+     "outlineWidth": "3px",
+     "outlineStyle": "none",
+     "textDecorationLine": "none",
+     "opacity": "1",
+     "transform": "none",
+     "cursor": "text"
+    },
+    "hover": {},
+    "focus": {},
+    "active": {}
+   },
+   {
+    "name": "density-btn",
+    "tag": "BUTTON",
+    "host": "UL.prc-SegmentedControl-SegmentedControl-lqIXp",
+    "rect": [
+     1327,
+     337,
+     32,
+     32
+    ],
+    "default": {
+     "color": "rgb(31, 35, 40)",
+     "backgroundColor": "rgba(0, 0, 0, 0)",
+     "borderTopColor": "rgba(0, 0, 0, 0)",
+     "borderTopWidth": "0px",
+     "boxShadow": "none",
+     "outlineColor": "rgb(31, 35, 40)",
+     "outlineWidth": "3px",
+     "outlineStyle": "none",
+     "textDecorationLine": "none",
+     "opacity": "1",
+     "transform": "none",
+     "cursor": "pointer"
+    },
+    "host_default": {
+     "color": "rgb(31, 35, 40)",
+     "backgroundColor": "rgb(230, 234, 239)",
+     "borderTopColor": "rgb(209, 217, 224)",
+     "borderTopWidth": "1px",
+     "boxShadow": "none",
+     "outlineColor": "rgb(31, 35, 40)",
+     "outlineWidth": "3px",
+     "outlineStyle": "none",
+     "textDecorationLine": "none",
+     "opacity": "1",
+     "transform": "none",
+     "cursor": "auto"
+    },
+    "hover": {},
+    "focus": {
+     "self.outlineColor": "rgb(9, 105, 218)",
+     "self.outlineWidth": "2px",
+     "self.outlineStyle": "solid"
+    },
+    "active": {
+     "self.outlineColor": "rgb(9, 105, 218)",
+     "self.outlineWidth": "2px",
+     "self.outlineStyle": "solid"
+    }
+   },
+   {
+    "name": "filter-author",
+    "tag": "BUTTON",
+    "host": "BUTTON.prc-Button-ButtonBase-9n-Xk ListFilterButton__ccIa",
+    "rect": [
+     614,
+     337,
+     89,
+     32
+    ],
+    "default": {
+     "color": "rgb(37, 41, 46)",
+     "backgroundColor": "rgba(0, 0, 0, 0)",
+     "borderTopColor": "rgba(255, 255, 255, 0)",
+     "borderTopWidth": "1px",
+     "boxShadow": "none",
+     "outlineColor": "rgb(37, 41, 46)",
+     "outlineWidth": "3px",
+     "outlineStyle": "none",
+     "textDecorationLine": "none",
+     "opacity": "1",
+     "transform": "none",
+     "cursor": "pointer"
+    },
+    "host_default": {
+     "color": "rgb(37, 41, 46)",
+     "backgroundColor": "rgba(0, 0, 0, 0)",
+     "borderTopColor": "rgba(255, 255, 255, 0)",
+     "borderTopWidth": "1px",
+     "boxShadow": "none",
+     "outlineColor": "rgb(37, 41, 46)",
+     "outlineWidth": "3px",
+     "outlineStyle": "none",
+     "textDecorationLine": "none",
+     "opacity": "1",
+     "transform": "none",
+     "cursor": "pointer"
+    },
+    "hover": {
+     "self.backgroundColor": "rgba(129, 139, 152, 0.1)",
+     "host.backgroundColor": "rgba(129, 139, 152, 0.1)"
+    },
+    "focus": {
+     "self.backgroundColor": "rgba(129, 139, 152, 0.1)",
+     "self.outlineColor": "rgb(9, 105, 218)",
+     "self.outlineWidth": "2px",
+     "self.outlineStyle": "solid",
+     "host.backgroundColor": "rgba(129, 139, 152, 0.1)",
+     "host.outlineColor": "rgb(9, 105, 218)",
+     "host.outlineWidth": "2px",
+     "host.outlineStyle": "solid"
+    },
+    "active": {
+     "self.backgroundColor": "rgba(129, 139, 152, 0.15)",
+     "self.outlineColor": "rgb(9, 105, 218)",
+     "self.outlineWidth": "2px",
+     "self.outlineStyle": "solid",
+     "host.backgroundColor": "rgba(129, 139, 152, 0.15)",
+     "host.outlineColor": "rgb(9, 105, 218)",
+     "host.outlineWidth": "2px",
+     "host.outlineStyle": "solid"
+    }
+   },
+   {
+    "name": "tab-open",
+    "tag": "A",
+    "host": "A.container__OP-V2v selected__fg2bAE prc-Text-Text-9",
+    "rect": [
+     289,
+     338,
+     102,
+     30
+    ],
+    "default": {
+     "color": "rgb(31, 35, 40)",
+     "backgroundColor": "rgba(0, 0, 0, 0)",
+     "borderTopColor": "rgb(31, 35, 40)",
+     "borderTopWidth": "0px",
+     "boxShadow": "none",
+     "outlineColor": "rgb(31, 35, 40)",
+     "outlineWidth": "3px",
+     "outlineStyle": "none",
+     "textDecorationLine": "none",
+     "opacity": "1",
+     "transform": "none",
+     "cursor": "pointer"
+    },
+    "host_default": {
+     "color": "rgb(31, 35, 40)",
+     "backgroundColor": "rgba(0, 0, 0, 0)",
+     "borderTopColor": "rgb(31, 35, 40)",
+     "borderTopWidth": "0px",
+     "boxShadow": "none",
+     "outlineColor": "rgb(31, 35, 40)",
+     "outlineWidth": "3px",
+     "outlineStyle": "none",
+     "textDecorationLine": "none",
+     "opacity": "1",
+     "transform": "none",
+     "cursor": "pointer"
+    },
+    "hover": {
+     "self.backgroundColor": "rgba(129, 139, 152, 0.1)",
+     "host.backgroundColor": "rgba(129, 139, 152, 0.1)"
+    },
+    "focus": {
+     "self.backgroundColor": "rgba(129, 139, 152, 0.1)",
+     "host.backgroundColor": "rgba(129, 139, 152, 0.1)"
+    },
+    "active": {
+     "self.backgroundColor": "rgba(129, 139, 152, 0.15)",
+     "self.borderTopColor": "rgb(209, 217, 224)",
+     "host.backgroundColor": "rgba(129, 139, 152, 0.15)",
+     "host.borderTopColor": "rgb(209, 217, 224)"
+    }
+   },
+   {
+    "name": "tab-closed",
+    "tag": "A",
+    "host": "A.container__OP-V2v prc-Text-Text-9mHv3",
+    "rect": [
+     391,
+     338,
+     109,
+     30
+    ],
+    "default": {
+     "color": "rgb(89, 99, 110)",
+     "backgroundColor": "rgba(0, 0, 0, 0)",
+     "borderTopColor": "rgb(89, 99, 110)",
+     "borderTopWidth": "0px",
+     "boxShadow": "none",
+     "outlineColor": "rgb(89, 99, 110)",
+     "outlineWidth": "3px",
+     "outlineStyle": "none",
+     "textDecorationLine": "none",
+     "opacity": "1",
+     "transform": "none",
+     "cursor": "pointer"
+    },
+    "host_default": {
+     "color": "rgb(89, 99, 110)",
+     "backgroundColor": "rgba(0, 0, 0, 0)",
+     "borderTopColor": "rgb(89, 99, 110)",
+     "borderTopWidth": "0px",
+     "boxShadow": "none",
+     "outlineColor": "rgb(89, 99, 110)",
+     "outlineWidth": "3px",
+     "outlineStyle": "none",
+     "textDecorationLine": "none",
+     "opacity": "1",
+     "transform": "none",
+     "cursor": "pointer"
+    },
+    "hover": {
+     "self.backgroundColor": "rgba(129, 139, 152, 0.1)",
+     "host.backgroundColor": "rgba(129, 139, 152, 0.1)"
+    },
+    "focus": {
+     "self.backgroundColor": "rgba(129, 139, 152, 0.1)",
+     "host.backgroundColor": "rgba(129, 139, 152, 0.1)"
+    },
+    "active": {
+     "self.backgroundColor": "rgba(129, 139, 152, 0.15)",
+     "self.borderTopColor": "rgb(209, 217, 224)",
+     "host.backgroundColor": "rgba(129, 139, 152, 0.15)",
+     "host.borderTopColor": "rgb(209, 217, 224)"
+    }
+   },
+   {
+    "name": "row-title",
+    "tag": "A",
+    "host": "LI.prc-ActionList-ActionListItem-So4vC",
+    "rect": [
+     16,
+     317,
+     223,
+     32
+    ],
+    "default": {
+     "color": "rgb(37, 41, 46)",
+     "backgroundColor": "rgba(0, 0, 0, 0)",
+     "borderTopColor": "rgb(37, 41, 46)",
+     "borderTopWidth": "0px",
+     "boxShadow": "none",
+     "outlineColor": "rgb(37, 41, 46)",
+     "outlineWidth": "3px",
+     "outlineStyle": "none",
+     "textDecorationLine": "none",
+     "opacity": "1",
+     "transform": "none",
+     "cursor": "pointer"
+    },
+    "host_default": {
+     "color": "rgb(31, 35, 40)",
+     "backgroundColor": "rgba(255, 255, 255, 0)",
+     "borderTopColor": "rgb(31, 35, 40)",
+     "borderTopWidth": "0px",
+     "boxShadow": "none",
+     "outlineColor": "rgb(31, 35, 40)",
+     "outlineWidth": "3px",
+     "outlineStyle": "none",
+     "textDecorationLine": "none",
+     "opacity": "1",
+     "transform": "none",
+     "cursor": "auto"
+    },
+    "hover": {
+     "host.backgroundColor": "rgba(129, 139, 152, 0.1)",
+     "host.boxShadow": "rgba(255, 255, 255, 0) 0px 0px 0px 1px inset",
+     "host.outlineColor": "rgba(0, 0, 0, 0)",
+     "host.outlineWidth": "1px",
+     "host.outlineStyle": "solid",
+     "host.cursor": "pointer"
+    },
+    "focus": {
+     "host.backgroundColor": "rgba(129, 139, 152, 0.1)",
+     "host.boxShadow": "rgba(255, 255, 255, 0) 0px 0px 0px 1px inset",
+     "host.outlineColor": "rgba(0, 0, 0, 0)",
+     "host.outlineWidth": "1px",
+     "host.outlineStyle": "solid",
+     "host.cursor": "pointer"
+    },
+    "active": {
+     "host.backgroundColor": "rgba(129, 139, 152, 0.15)",
+     "host.boxShadow": "rgba(255, 255, 255, 0) 0px 0px 0px 1px inset",
+     "host.outlineColor": "rgba(0, 0, 0, 0)",
+     "host.outlineWidth": "1px",
+     "host.outlineStyle": "solid",
+     "host.cursor": "pointer"
+    }
+   },
+   {
+    "name": "pagination",
+    "tag": "A",
+    "host": "A.prc-Pagination-Page-Etgqf",
+    "rect": [
+     692,
+     855,
+     32,
+     32
+    ],
+    "default": {
+     "color": "rgb(255, 255, 255)",
+     "backgroundColor": "rgb(9, 105, 218)",
+     "borderTopColor": "rgba(0, 0, 0, 0)",
+     "borderTopWidth": "0px",
+     "boxShadow": "none",
+     "outlineColor": "rgb(255, 255, 255)",
+     "outlineWidth": "3px",
+     "outlineStyle": "none",
+     "textDecorationLine": "none",
+     "opacity": "1",
+     "transform": "none",
+     "cursor": "pointer"
+    },
+    "host_default": {
+     "color": "rgb(255, 255, 255)",
+     "backgroundColor": "rgb(9, 105, 218)",
+     "borderTopColor": "rgba(0, 0, 0, 0)",
+     "borderTopWidth": "0px",
+     "boxShadow": "none",
+     "outlineColor": "rgb(255, 255, 255)",
+     "outlineWidth": "3px",
+     "outlineStyle": "none",
+     "textDecorationLine": "none",
+     "opacity": "1",
+     "transform": "none",
+     "cursor": "pointer"
+    },
+    "hover": {
+     "self.outlineWidth": "0px",
+     "host.outlineWidth": "0px"
+    },
+    "focus": {
+     "self.color": null,
+     "self.backgroundColor": null,
+     "self.borderTopColor": null,
+     "self.borderTopWidth": null,
+     "self.boxShadow": null,
+     "self.outlineColor": null,
+     "self.outlineWidth": null,
+     "self.outlineStyle": null,
+     "self.textDecorationLine": null,
+     "self.opacity": null,
+     "self.transform": null,
+     "self.cursor": null,
+     "host.color": null,
+     "host.backgroundColor": null,
+     "host.borderTopColor": null,
+     "host.borderTopWidth": null,
+     "host.boxShadow": null,
+     "host.outlineColor": null,
+     "host.outlineWidth": null,
+     "host.outlineStyle": null,
+     "host.textDecorationLine": null,
+     "host.opacity": null,
+     "host.transform": null,
+     "host.cursor": null
+    },
+    "active": {
+     "self.color": null,
+     "self.backgroundColor": null,
+     "self.borderTopColor": null,
+     "self.borderTopWidth": null,
+     "self.boxShadow": null,
+     "self.outlineColor": null,
+     "self.outlineWidth": null,
+     "self.outlineStyle": null,
+     "self.textDecorationLine": null,
+     "self.opacity": null,
+     "self.transform": null,
+     "self.cursor": null,
+     "host.color": null,
+     "host.backgroundColor": null,
+     "host.borderTopColor": null,
+     "host.borderTopWidth": null,
+     "host.boxShadow": null,
+     "host.outlineColor": null,
+     "host.outlineWidth": null,
+     "host.outlineStyle": null,
+     "host.textDecorationLine": null,
+     "host.opacity": null,
+     "host.transform": null,
+     "host.cursor": null
+    }
+   }
+  ]
+ },
+ "panel_author": {
+  "expanded_before": null,
+  "expanded_after": null,
+  "panel": {
+   "missing": true
+  }
+ }
+}
