@@ -1432,6 +1432,11 @@ def _count_records(path: str) -> int:
                             total += v
                 if total:
                     return total
+                # 记录映射型：{键 -> 状态/记录}（如时效核验状态 15,604 条）。
+                # 门槛 ≥20 且值多为 dict/list，避免把清单类（几个键）误当记录表。
+                vals = [v for v in data.values() if isinstance(v, (dict, list))]
+                if len(data) >= 20 and len(vals) >= len(data) * 0.8:
+                    return len(data)
             return 0
         if low.endswith(".csv"):
             with open(path, encoding="utf-8", errors="replace") as fh:
@@ -1456,6 +1461,18 @@ def _step_record_count(name: str) -> int:
     返回 -1 = 该步没有可数产物（显式"不产出"，不冒充 0）；
     返回 0 = 有产物但为空。两者在 UI 上语义不同，故不合并。
     """
+    # apply:{src} 只写库（clean_index），共享的 index.json 分不出"这一步处理了哪个源"
+    # ⇒ 用**权威接口**按源计数（与 P1 边权同一事实源）。
+    if name.startswith("apply:"):
+        src = name.split(":", 1)[1]
+        try:
+            from interfaces import clean_index_api as _cia
+
+            n = int(_cia.record_count(src) or 0)
+            if n > 0:
+                return n
+        except Exception:  # noqa: BLE001 接口不可用 → 落回文件口径
+            pass
     spec = _spec_for_step(name)
     if spec is None:
         return -1
