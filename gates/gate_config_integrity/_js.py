@@ -42,6 +42,27 @@ def _check_inline_js(root: str) -> tuple[list[str], dict]:
         detail["skipped"] = f"js_syntax_lint 不可导入：{type(e).__name__}: {e}"
         return problems, detail
 
+    def _wait_stable(path: str, settle: float = 0.5, tries: int = 10) -> bool:
+        """等写入落定：连续两次 `(size, mtime)` 一致才算稳定。
+
+        为什么不是"失败再重试"：写文件是"截断 + 重写"，重试仍可能落在同一个长写入窗口里
+        （实测 2026-11-03 06:12 那次：0.8s×2 的重试全落在窗口内，报出 1490/1494 两处
+        `括号未闭合`，而文件本身完全正常）。先等稳定，再解析。
+        """
+        prev = None
+        for _ in range(tries):
+            try:
+                st = os.stat(path)
+            except OSError:
+                time.sleep(settle)
+                continue
+            cur = (st.st_size, st.st_mtime_ns)
+            if cur == prev:
+                return True
+            prev = cur
+            time.sleep(settle)
+        return False
+
     def _lint_stable(lint, path: str) -> dict:
         """读一次不通过时**短暂重试一次**。
 
@@ -66,7 +87,11 @@ def _check_inline_js(root: str) -> tuple[list[str], dict]:
         path = os.path.join(root, rel)
         if not os.path.exists(path):
             continue
+        settled = _wait_stable(path)
         r = _lint_stable(L.lint_file, path)
+        if not settled:
+            detail.setdefault("unstable", []).append(
+                f"{rel}: 读取期间文件仍在变化（已按 best-effort 解析）")
         if r.get("transient"):
             detail.setdefault("transient", []).append(
                 f"{rel}: 首次读取命中写入中间态，重试后通过（已忽略，不代表语法错误）")

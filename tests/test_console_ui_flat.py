@@ -200,7 +200,8 @@ class TestListV2:
         assert "openOptionList({" in panel, "字段面板未走统一组件"
         assert "搜索该字段的取值" in panel
         # 批 156：面板宽度按 GitHub 实测 320；行 hover 用 .1 透明；**不再画左侧竖线**
-        assert "width:320px" in fn(h, "openOptionList") or ".fpop{position:fixed;z-index:70;width:320px" in h
+        # 批 167（第 1 条）：z-index 70 → 95 —— 反馈弹窗的遮罩是 80，否则面板被盖住点不到
+        assert "width:320px" in fn(h, "openOptionList") or ".fpop{position:fixed;z-index:95;width:320px" in h
         assert ".fpop .opt:hover{background:rgba(129,139,152,.1)}" in h
         assert ".fpop .opt:hover::before" not in h
 

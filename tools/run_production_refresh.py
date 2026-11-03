@@ -1446,6 +1446,19 @@ def _count_records(path: str) -> int:
     return 0
 
 
+def _latest_glob(dirpath: str, pattern: str) -> str:
+    """目录下按 mtime 取最新的匹配文件（产物带日期戳，不能写死文件名）。"""
+    import glob
+
+    try:
+        hits = glob.glob(os.path.join(dirpath, pattern))
+    except OSError:
+        return ""
+    if not hits:
+        return ""
+    return max(hits, key=os.path.getmtime)
+
+
 def _spec_for_step(name: str):
     """步骤实例名 → StepSpec（动态族 `collect:{src}` 之类按族前缀回退）。"""
     by = step_by_name()
@@ -1473,6 +1486,22 @@ def _step_record_count(name: str) -> int:
                 return n
         except Exception:  # noqa: BLE001 接口不可用 → 落回文件口径
             pass
+    # relevance:{src} 的产物是带日期戳的 `<src>_relevance_<stamp>.jsonl`（不在 _artifact_paths
+    # 的固定映射里）⇒ 取最新那份数行数，得到**该步自己的产出**（而非兜底的源级权重）。
+    if name.startswith("relevance:"):
+        src = name.split(":", 1)[1]
+        p = _latest_glob(os.path.join(ROOT, "modules", "regulatory_classifier", "relevance"),
+                         f"{src}_relevance_*.jsonl")
+        n = _count_records(p)
+        if n > 0:
+            return n
+    # 时效汇总：`时效性标注结果清单_全量_<stamp>.jsonl`
+    if name == "timeliness:consolidate":
+        p = _latest_glob(os.path.join(ROOT, "modules", "regulatory_scrapers", "timeliness_review"),
+                         "时效性标注结果清单_全量_*.jsonl")
+        n = _count_records(p)
+        if n > 0:
+            return n
     spec = _spec_for_step(name)
     if spec is None:
         return -1

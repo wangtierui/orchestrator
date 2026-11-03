@@ -666,7 +666,8 @@ body.lv-selecting .lv-table tbody .lv-ck,
 .density button:hover{background:var(--hover)}
 .density button.on:hover{background:var(--bg-subtle)}
 /* 表头字段筛选面板：选项带复选框/圆点/主副文本，悬停或选中时浅灰 + 2px 蓝线 */
-.fpop{position:fixed;z-index:70;width:320px;max-height:60vh;overflow:auto;
+/* 批 167（第 1 条）：`.pal-mask` 是 80，弹层必须更高，否则"反馈弹窗里的下拉看不见" */
+.fpop{position:fixed;z-index:95;width:320px;max-height:60vh;overflow:auto;
   background:var(--bg);border:1px solid var(--border);border-radius:6px;
   box-shadow:0 8px 24px rgba(31,35,40,.12);padding:8px}
 .fpop .q{width:100%;height:28px;font-size:12.5px;border:1px solid var(--border);
@@ -1204,7 +1205,13 @@ body.rail-off .rail{transition:width .15s cubic-bezier(.65,0,.35,1),
   background:var(--bg-subtle);border-bottom:1px solid var(--border);
   font-size:12px;color:var(--text-muted);font-weight:600}
 .lv-gtable .lv-headrow span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.lv-gtable .lv-cell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* 批 167（第 5 条）：默认**换行完整显示**，只有代码/编号类保持单行。
+ * 原实现全局 nowrap+ellipsis ⇒ 大量列表"看不全"（用户反复反馈）。 */
+.lv-gtable .lv-cell{white-space:normal;overflow:visible;text-overflow:clip;
+  word-break:break-word;line-height:1.5}
+/* 编号/代码列也允许折行：RFN/IPN 很长，省略号会让"唯一标识号"看不全 */
+.lv-gtable .lv-cell.mono,.lv-gtable .lv-cell.id{word-break:break-all}
+.lv-gtable .lv-row{align-items:start}
 .lv-gtable .lv-cell.ttl{white-space:normal}
 .paginate-container .pagination{display:inline-flex;flex-wrap:nowrap;
   align-items:center;white-space:nowrap}
@@ -1320,6 +1327,13 @@ body.no-rail .main-content{max-width:none;margin:0 auto}
 /* 批 165：紧凑模式下动作按钮缩到 24px —— 32px 会把 38px 行撑到 41px（ui_smoke 实测） */
 #view.lv-compact .lv-table .actbtn{width:24px;height:24px}
 #view.lv-compact .lv-table .lv-actcell{padding:0 8px;gap:10px}
+
+/* 批 167（第 3 条）：`.actbtn` 原来只在 `.lv-table` 下生效，div 网格（.lv-gtable）里是裸图标 */
+.lv-gtable .actbtn{display:inline-flex;align-items:center;justify-content:center;
+  width:32px;height:32px;border-radius:6px;border:1px solid transparent;padding:0;
+  background:transparent;color:var(--text-muted);cursor:pointer;text-decoration:none;flex:none}
+.lv-gtable .actbtn:hover{background:var(--bg-subtle);color:var(--accent);border-color:var(--border)}
+.lv-gtable .actbtn:focus-visible{outline:2px solid #0969da;outline-offset:-2px}
 </style>
 </head>
 <body>
@@ -2014,11 +2028,11 @@ function viewFlow(d){
     return CHAIN[pre] || (String(n.purpose || "").split(/[。；]/)[0].slice(0, 16)) || "未归类";
   };
   const isoBlock = isolated.length ? `<div class="lv lv-gtable" style="margin-top:var(--s3)">
-    <div class="lv-headrow" style="--cols:minmax(150px,1.6fr) 150px 130px 90px minmax(0,1.2fr)">
+    <div class="lv-headrow" style="--cols:minmax(180px,1.6fr) 170px 160px 96px minmax(200px,1.4fr)">
       <span>未连线任务（${isolated.length}）</span><span>归属链</span><span>所属层</span>
       <span>状态</span><span>说明</span>
     </div>
-    <div class="lv-grid" style="--cols:minmax(150px,1.6fr) 150px 130px 90px minmax(0,1.2fr)">
+    <div class="lv-grid" style="--cols:minmax(180px,1.6fr) 170px 160px 96px minmax(200px,1.4fr)">
       ${isolated.map(n=>`<div class="lv-row">
         <span class="lv-cell mono">${esc(n.id)}</span>
         <span class="lv-cell">${esc(chainOf(n))}</span>
@@ -2398,7 +2412,8 @@ function viewSearch(d){
     `<div class="toolbar">
       <input id="q" placeholder="输入关键词（标题/文号/正文）" value="${esc(d.query||"")}"
       style="flex:1;min-width:260px;max-width:none">
-      <select id="kind"><option value="records">记录</option><option value="clauses">条文</option></select>
+      ${ghSelect("kind", "records", [{value: "records", label: "记录"},
+        {value: "clauses", label: "条文"}], "检索类型")}
       <button class="btn" id="qbtn">检索</button>
       <span class="muted">后端：${esc(d.backend||"—")} · 方式：${
         d.mode==="like"?"模糊匹配（短词）":(d.mode==="fts"?"全文索引":"—")}</span>
@@ -3421,6 +3436,49 @@ function ghOpen(id, btn){
 }
 
 /* 兼容旧调用点（引导层已不再需要委托绑定） */
+/*: 批 167（第 7 条）：GitHub 的列表上方有 filter input —— 这里统一注入，
+ * 用 MutationObserver 覆盖所有渲染分支（不必逐页改模板）。 */
+function attachListSearch(root){
+  const scope = root || $("#view");
+  if (!scope) return;
+  const boxes = scope.querySelectorAll(".lv-gtable");
+  for (const g of boxes) {
+    let bar = g.querySelector(".lv-headbar");
+    if (!bar) {
+      /* 很多区块（概览资料清单、附件表…）**根本没有工具条** —— 先补一条，
+       * 否则"列表上方无搜索框"永远修不到（用户第 7 条）。 */
+      bar = document.createElement("div");
+      bar.className = "lv-headbar";
+      bar.innerHTML = '<span class="sp"></span>';
+      g.insertBefore(bar, g.firstChild);
+    }
+    if (bar.querySelector(".lv-q")) continue;
+    const wrap = document.createElement("span");
+    wrap.className = "lv-qwrap";
+    wrap.innerHTML = '<input class="lv-q" type="search" placeholder="搜索本表…" aria-label="搜索本表">';
+    bar.insertBefore(wrap, bar.firstChild);
+    const inp = wrap.querySelector("input");
+    inp.oninput = () => {
+      const q = inp.value.trim().toLowerCase();
+      g.querySelectorAll(".lv-row").forEach(r => {
+        r.hidden = !!q && !(r.textContent || "").toLowerCase().includes(q);
+      });
+    };
+  }
+}
+
+function watchListToolbars(){
+  const v = $("#view");
+  if (!v || v.__lqObs) return;
+  const apply = () => {
+    v.__lqObs.disconnect();
+    try { attachListSearch(v); } finally { v.__lqObs.observe(v, {childList: true, subtree: true}); }
+  };
+  v.__lqObs = new MutationObserver(apply);
+  v.__lqObs.observe(v, {childList: true, subtree: true});
+  apply();
+}
+
 function bindGhSelect(){}
 
 function bindTrendlineToggle(){
@@ -3888,17 +3946,17 @@ function eastRegstatsDocs(d){
   const sections = cats.map(cat => {
     const items = arr(cat.items);
     const rows = items.map(it => `<div class="lv-row">
-        <span class="lv-cell" class="ttl">${esc(it.title || "")}</span>
+        <span class="lv-cell ttl">${esc(it.title || "")}</span>
         <span class="lv-cell mono">${esc(it.document_number || "—")}</span>
         <span class="lv-cell">${timeCell(it.timeliness_status)}</span>
         <span class="lv-cell"><span class="Label">${esc(it.source || "—")}</span></span>
         <span class="lv-cell">${addrCell(it)}</span>
         <span class="lv-cell">${relBtn(it.rfn)}</span></div>`).join("")
-      || '<div class="lv-row"><span class="lv-cell"  style="grid-column:1/-1" class="muted">该类暂无资料</span></div>';
+      || '<div class="lv-row"><span class="lv-cell muted" style="grid-column:1/-1">该类暂无资料</span></div>';
     return `<h3 style="margin:var(--s4) 0 var(--s2)">
         <span>${esc(cat.label)} <span class="Label">${num(cat.count)} 条</span></span>
         <span class="hint">${esc(cat.note || "")}</span></h3>
-      <div class="lv lv-gtable"><div class="lv-scroll"><div class="lv-grid" style="--cols:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)">
+      <div class="lv lv-gtable"><div class="lv-scroll"><div class="lv-grid" style="--cols:minmax(220px,2.4fr) 170px 96px 110px 120px 64px">
         <div class="lv-headrow"><span>名称</span><span>文号</span><span>时效</span><span>源</span><span>访问地址</span><span>关系</span></div>${rows}</div></div></div>`;
   }).join("");
   /* 标题与内容**紧邻**：不再在中间插入"能力边界"说明（那属于页级共识，
@@ -4165,7 +4223,7 @@ function eastOverview(d, regstats){
   const atts = arr(src.attachments).slice().sort((a, b) => _natNo(a.no, b.no));
   const rows = atts.map(a => `<div class="lv-row">
       <span class="lv-cell mono">${esc(a.no || "-")}</span>
-      <span class="lv-cell" class="ttl">${esc(a.name || "")}</span>
+      <span class="lv-cell ttl">${esc(a.name || "")}</span>
       <span class="lv-cell"><span class="Label">${esc(a.kind || "—")}</span></span>
       <span class="lv-cell mono">${(Number(a.bytes || 0) / 1048576).toFixed(2)} MB</span>
       <span class="lv-cell">${a.text_len ? pill(num(a.text_len) + " 字", "ok")
@@ -4367,7 +4425,8 @@ function eastCodes(d){
   const rq = String(STATE.east_cq2 || "").trim().toLowerCase();
   const viewShown = view.filter(r => !rq ||
     ((r.code || "") + " " + (r.name || "") + " " + (r.desc || "")).toLowerCase().includes(rq));
-  const rowsShown = arr(payload.rows).filter(r => !rq ||
+  const raw = arr(payload.rows);
+  const rowsShown = raw.filter(r => !rq ||
     arr(r).join(" ").toLowerCase().includes(rq));
   const head = cur ? `<div class="toolbar" style="margin-bottom:6px">
       <span class="mono">${cur.id ? esc(cur.id) : '<span class="muted">目录未列出</span>'}</span>
@@ -4378,32 +4437,39 @@ function eastCodes(d){
       <span style="flex:1"></span>
       <input id="ecq" placeholder="在本表内搜代码/名称…" value="${esc(STATE.east_cq2 || "")}"
         style="width:200px;font-size:12px;padding:4px 8px"></div>` : "";
+  /* 批 167（第 6 条）：**按原始列渲染**。此前用 3 列归一视图 ⇒ 6 列的表被压成 3 列，
+   * 值还会错位（行业类型代码的 行业门类/大类/中类/小类 全塞进 code/name/desc，
+   * 于是"CD000007 行业类型代码"看起来列不对、内容也不全）。 */
+  const useRaw = cols.length > 0 && raw.length > 0;
+  const labels = useRaw ? cols : ["代码", "名称", "说明"];
+  const colSpec = useRaw
+    ? cols.map(c => (/取值|^代码/.test(String(c)) ? "minmax(110px,0.9fr)" : "minmax(130px,1.1fr)")).join(" ")
+    : "120px minmax(0,1fr) minmax(0,2fr)";
+  const cap = useRaw ? 800 : 500;
+  const totalRows = useRaw ? rowsShown.length : viewShown.length;
   const table = cur ? `<div class="lv lv-gtable" data-lg="east-codes">
       <div class="lv-headbar">
-        ${["代码", "名称", "说明"].map((lab, i) =>
+        ${labels.slice(0, 12).map((lab, i) =>
           `<button class="lv-fbtn btn btn-invisible" data-gcol="${i}"
             aria-haspopup="dialog" title="按「${esc(lab)}」筛选">${esc(lab)}${
             ico("chevron-down", 16)}</button>`).join("")}
         <span class="sp"></span>
       </div>
-      <div class="lv-scroll"><div class="lv-grid" style="--cols:120px minmax(0,1fr) minmax(0,2fr)">
-        <div class="lv-headrow"><span>代码</span><span>名称</span><span>说明</span></div>
-        ${viewShown.slice(0, 500).map(r => `<div class="lv-row">
-        <span class="lv-cell mono">${esc(r.code || "")}</span>
-        <span class="lv-cell" style="padding-left:${(Number(r.level) - 1) * 16 + 10}px">${
-          Number(r.level) > 1 ? '<span class="muted">└ </span>' : ""}${esc(r.name || "")}</span>
-        <span class="lv-cell muted wrapc">${esc(r.desc || "")}</span></div>`).join("")
+      <div class="lv-scroll"><div class="lv-grid" style="--cols:${colSpec}">
+        <div class="lv-headrow">${labels.map(c => `<span>${esc(c)}</span>`).join("")}</div>
+        ${(useRaw
+          ? rowsShown.slice(0, cap).map(r => `<div class="lv-row">${arr(r).map((v, i) =>
+              `<span class="lv-cell wrapc${i === 0 ? " mono" : ""}">${
+                esc(v == null ? "" : v)}</span>`).join("")}</div>`).join("")
+          : viewShown.slice(0, cap).map(r => `<div class="lv-row">
+              <span class="lv-cell mono">${esc(r.code || "")}</span>
+              <span class="lv-cell wrapc">${esc(r.name || "")}</span>
+              <span class="lv-cell muted wrapc">${esc(r.desc || "")}</span></div>`).join(""))
         || `<div class="lv-row"><span class="lv-cell muted" style="grid-column:1/-1">${
-          payload.view ? "无匹配代码" : "加载中…"}</span></div>`}
+          useRaw || payload.view ? "无匹配代码" : "加载中…"}</span></div>`}
       </div></div></div>
-      ${viewShown.length > 500 ? `<div class="muted">仅显示前 500 行（共 ${num(viewShown.length)} 行）</div>` : ""}
-      ${cols.length ? `<details style="margin-top:var(--s2)"><summary class="muted">
-        原始列（${cols.length} 列，保真用；「返回目录」导航列已在抽取层剔除）</summary>
-        <div class="lv lv-gtable"><div class="lv-scroll"><div class="lv-grid" style="--cols:minmax(0,1fr)">
-        <div class="lv-headrow"><span>代码</span><span>名称</span><span>说明</span></div>
-        ${rowsShown.slice(0, 200).map(r => `<div class="lv-row">${cols.map((_c, i) =>
-          `<span class="lv-cell" class="${i === 0 ? "mono" : ""}">${esc(arr(r)[i] || "")}</span>`).join("")}</div>`).join("")}
-        </div></div></div></details>` : ""}` : "";
+      ${totalRows > cap ? `<div class="muted">仅显示前 ${cap} 行（共 ${
+        num(totalRows)} 行，可在上方搜索缩小范围）</div>` : ""}` : "";
   const noId = list.filter(c => !c.id).length;
   return `<div class="muted" style="margin-bottom:var(--s2)">
       业务代码表 ${num(list.length)} 张 / ${num(obj(d.stats).codes)} 行；编号取自附件1-4「目录」表${
@@ -6542,6 +6608,7 @@ function initNav(){
   catch (e) { STATE.metrics_trendline = true; }
   bindTrendlineToggle();
   bindGhSelect();
+  watchListToolbars();
   lvSetDensity(lvDensity());
   bindGraphRows();
   bindGridFilters();
