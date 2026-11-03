@@ -1334,6 +1334,18 @@ body.no-rail .main-content{max-width:none;margin:0 auto}
   background:transparent;color:var(--text-muted);cursor:pointer;text-decoration:none;flex:none}
 .lv-gtable .actbtn:hover{background:var(--bg-subtle);color:var(--accent);border-color:var(--border)}
 .lv-gtable .actbtn:focus-visible{outline:2px solid #0969da;outline-offset:-2px}
+
+/* 批 168（第 3/4 条）：表单控件横向对齐 + 提交/取消等宽等高（弹窗与行内处置同一规格） */
+.fb-row .ghsel{display:flex;width:100%;min-width:0}
+.fb-row .ghsel .btn{width:100%;justify-content:space-between}
+.fb-who{display:flex;align-items:center;gap:8px;padding-top:6px}
+.fb-who b{font-weight:600;color:var(--fg)}
+.fb-foot .btn,.lv-row.detail .row .btn{min-width:88px;height:32px;padding:0 16px;
+  display:inline-flex;align-items:center;justify-content:center}
+.wl-kinds{margin:2px 0 6px;padding-left:10px;border-left:2px solid var(--border)}
+.wl-kinds .kv{padding:1px 0}
+.wl-kinds .k{color:var(--text-muted);font-size:12px}
+.wl-kinds .v{font-variant-numeric:tabular-nums}
 </style>
 </head>
 <body>
@@ -1771,10 +1783,19 @@ function viewOverview(d, assets, publish, rel){
           ? `<div style="margin-top:6px">${arr(gs.failed).map(f=>`<div class="bad" style="font-size:12px">● ${esc(f.gate)} — ${esc(f.descr||"")}</div>`).join("")}</div>`
           : `<div class="ok" style="margin-top:6px;font-size:12px">✓ 全部通过</div>`)
     : `<div class="note">⚠ ${esc(gs.reason||"无门禁记录")}</div>`;
+  /* 批 168（第 2 条）：kind 分布改为**左文字 / 右数量**的排行，紧跟 open 行、按数量降序。
+   * 数据源就是 open 集合的 by_kind（同一口径，合计 == open 总数，不另算一遍）。 */
+  const wlKinds = Object.entries(obj(wl.by_kind))
+    .map(([k, v]) => [String(k), Number(v) || 0])
+    .sort((a, b) => b[1] - a[1]);
+  const wlKindHtml = wlKinds.length
+    ? `<div class="wl-kinds">${wlKinds.map(([k, v]) =>
+        `<div class="kv"><span class="k">${esc(k)}</span><span class="v">${num(v)}</span></div>`
+      ).join("")}</div>` : "";
   const wlHtml = wl.available
     ? kv("open 总数", num(wl.open_total), Number(wl.open_total)>0?"warn":"ok")
+      + wlKindHtml
       + kv("最老未处置", (wl.oldest_open_days??"—")+" 天", Number(wl.oldest_open_days)>7?"bad":"")
-      + kv("按 kind", Object.entries(obj(wl.by_kind)).map(([k,v])=>pill(`${k} ${v}`)).join(" "))
     : `<div class="note">⚠ ${esc(wl.reason||"待办不可用")}</div>`;
   /* 用户第 7 条：告警不用表格，与「条文契约自检」同一种 kv 呈现 */
   const alHtml = arr(al.alerts).length
@@ -1850,9 +1871,9 @@ function viewOverview(d, assets, publish, rel){
       '<div class="section"', '<div id="ov-01" class="section"')}
     ${card("运行健康","最近一次运行",runHtml,rh.source,rh.fetched_at)}
     ${card("门禁状态","逐道结果",gateHtml,gs.source,gs.fetched_at)}
-    ${card("待办","worklist open",wlHtml,wl.source,wl.fetched_at)}
-    ${card("告警","reports/_alerts",alHtml,al.source,al.fetched_at)}
     ${card("数据新鲜度","水位边状态",frHtml,fr.source,fr.fetched_at)}
+    ${card("告警","reports/_alerts",alHtml,al.source,al.fetched_at)}
+    ${card("待办","worklist open",wlHtml,wl.source,wl.fetched_at)}
     ${card("存储占用","实测体积",stHtml,st.source,st.fetched_at)}
     ${sec("02", "产物与发布", "P2 数据状态 + P7 投放看板").replace(
       '<div class="section"', '<div id="ov-02" class="section"')}
@@ -3452,10 +3473,15 @@ function attachListSearch(root){
       bar.innerHTML = '<span class="sp"></span>';
       g.insertBefore(bar, g.firstChild);
     }
-    if (bar.querySelector(".lv-q")) continue;
-    const wrap = document.createElement("span");
-    wrap.className = "lv-qwrap";
-    wrap.innerHTML = '<input class="lv-q" type="search" placeholder="搜索本表…" aria-label="搜索本表">';
+    if (bar.querySelector(".lv-fq")) continue;
+    /* 批 168（第 1 条）：与 lvRender 的筛选框**同一套标记**（.lv-fbar>.lv-fbox>[ico]+input.lv-fq），
+     * 不再自造 .lv-q —— 同一产品里出现两种搜索框，是这次被点出来的问题。 */
+    const wrap = document.createElement("div");
+    wrap.className = "lv-fbar";
+    wrap.innerHTML = `<div class="lv-fbox" role="group" aria-label="筛选条件">
+        <span class="lv-fico" aria-hidden="true">${ico("search", 16)}</span>
+        <input class="lv-fq" autocomplete="off" placeholder="搜索本表…（输入即筛）"
+          aria-label="搜索本表"></div>`;
     bar.insertBefore(wrap, bar.firstChild);
     const inp = wrap.querySelector("input");
     inp.oninput = () => {
@@ -4961,8 +4987,7 @@ function fbFormHtml(){
   const _au = obj(STATE.auth);
   const _known = _au.authenticated ? String(_au.user || "") : "";
   const whoCell = _known
-    ? `<div class="muted" style="align-self:end;padding-bottom:2px">
-         记录者：<b>${esc(_known)}</b>
+    ? `<div class="muted fb-who"><b>${esc(_known)}</b>
          <span class="Label">${esc(_au.user_source || "登录身份")}</span></div>`
     : `<label class="muted">域账号<input id="fbacc" placeholder="本机/域账号，如 zhangsan"
          maxlength="64" autocomplete="username"></label>`;
