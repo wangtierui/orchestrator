@@ -3,6 +3,7 @@
 - 采集时间：`2026-11-03T16:19:02`
 - 视口：`1440x1000`（桌面）
 - 采集器：`python -m tools.gh_ui_harvest`
+- **登录态：未登录**（`meta[user-login]` 为空）—— 登录后才有的控件待补采，见文末边界
 - 每页产物：`<slug>.json`（交互清单）+ `<slug>.html`（渲染后整页 DOM，已 gitignore）
 
 ## 页面清单
@@ -60,6 +61,15 @@
 - 输入框：left `293`、宽 `1047`、高 `30`；容器 `[280, 1370]`
 - 聚焦：`outline: 2px/solid/rgb(9, 105, 218)`（**单层 2px**，无 box-shadow）
 - 输入框底色：`rgba(0, 0, 0, 0)`（透明，底色由容器给）
+
+### pulls 页表头筛选（与 issues 的差异）
+
+| 按钮 | 单选/多选 | 面板搜索框 |
+|---|---|---|
+| Filter by author | 单选 | placeholder `Filter authors` |
+| Filter by label | 多选 | placeholder `Filter labels` |
+| Filter by reviews | 无搜索框 | 非 option 结构（菜单项，无勾选框） |
+| Filter by assignee | 单选 | placeholder `Filter assignees` |
 
 ## 边界（没采到什么，为什么）
 

@@ -139,5 +139,94 @@
   "focus_shadow": "none",
   "radius": "6px 0px 0px 6px",
   "html": "<div class=\"Box_2__ubxFA4 leftRounded__zB4I6t hasSubmit__j6O00I\"><div tabindex=\"-1\" class=\"styled-input-container Box_0__HkKqOF\"><div aria-hidden=\"true\" class=\"styled-input-content Box_1__kjXarr\"><span data-type=\"filter-expression\"><span data-type=\"filter\" class=\"\">is</span><span class=\"delimiter\">:</span><span><span data-type=\"filter-value\" class=\"valid-filter-value Box_1__drLDjC\">issue</span></span></span><span class=\"delimiter space-delimiter\"> </span><span data-type=\"filter-expression\"><span data-type=\"filter\" class=\"\">state</span><span class=\"delimiter\">:</span><span><span data-type=\"filter-value\" class=\"valid-filter-value Box_1__drLDjC\">open</span></span></span></div><div class=\"Box_2__oyay5f\"><div aria-hidden=\"true\" class=\"Box_3__EZ1k1_\"><span>is:issue state:open</span><span></span><span></span></div><input id=\"issues-index-filter-input\" role=\"combobox\" aria-expanded=\"false\" aria-autocomplete=\"list\" aria-haspopup=\"listbox\" aria-controls=\"issues-index-filter-results\" aria-describedby=\"\" placeholder=\"Search issues\" autocomplete=\"off\" spellcheck=\"false\" class=\"Box_4__0ZM1Bz focus-visible\" name=\"issues-index-filter-inputname\" value=\"is:issue state:open\" data-focus-visible-added=\"\" style=\"width: 113px;\"></div></div><button data-component=\"IconButton\" type=\"button\" class=\"prc-Button-ButtonBase-9n-Xk clearButton__zWB3bC prc-Button-IconButton-fyge7\" data-loading=\"false\" data-no-visuals=\"true\" data-size=\"small\" data-variant=\"invisible\" aria-labelledby=\"_R_hjd3ad85_\"><svg data-component=\"Octicon\" aria-hidden=\"true\" focusable=\"false\" class=\"octicon octicon-x-circle-fill\" viewBox=\"0 0 16 16\" width=\"16\" height=\"16\" fill=\"currentColor\" display=\"inline-block\" overflow=\"visible\" style=\"vertical-align:text-bottom\"><path d=\"M2.343 13.657A8 8 0 1 1 13.658 2.343 8 8 0 0 1 2.343 13.657ZM6.03 4.97a.751.751 0 0 0-1.042.018.751.751 0 0 0-.018 1.042L6.94 8 4.97 9.97a.749.749 0 0 0 .326 1.275.749.749 0 0 0 .734-.215L8 9.06l1.97 1.97a.749.749 0 0 0 1.275-.326.749.749 0 0 0-.215-.734L9.06 8l1.97-1.97a.749.749 0 0 0-.326-1.275.749.749 0 0 0-.734.215L8 6.94Z\"></path></svg></button><span class=\"prc-TooltipV2-Tooltip-tLeuB\" data-direction=\"s\" data-component=\"Tooltip\" aria-hidden=\"true\" id=\"_R_hjd3ad85_\" popover=\"auto\">Clear filter</span></div>"
+ },
+ "pulls_panels": {
+  "Filter by author": {
+   "w": 320,
+   "radius": "12px",
+   "ph": "Filter authors",
+   "multi": false,
+   "rows": [
+    {
+     "t": "0017031fcccp",
+     "cb": false
+    },
+    {
+     "t": "0o001Mustafa Ateş UZUN",
+     "cb": false
+    },
+    {
+     "t": "0xabcdefffMaxwell",
+     "cb": false
+    },
+    {
+     "t": "0xlaySerge",
+     "cb": false
+    },
+    {
+     "t": "3fTL3fTL",
+     "cb": false
+    }
+   ]
+  },
+  "Filter by label": {
+   "w": 320,
+   "radius": "12px",
+   "ph": "Filter labels",
+   "multi": true,
+   "rows": [
+    {
+     "t": "duplicatePopular",
+     "cb": true
+    },
+    {
+     "t": "enhancementProposed enha",
+     "cb": true
+    },
+    {
+     "t": "rejectPopular",
+     "cb": true
+    },
+    {
+     "t": "hidpi supportPopular",
+     "cb": true
+    },
+    {
+     "t": "not reproducibleIssues t",
+     "cb": true
+    }
+   ]
+  },
+  "Filter by reviews": {
+   "none": true
+  },
+  "Filter by assignee": {
+   "w": 320,
+   "radius": "12px",
+   "ph": "Filter assignees",
+   "multi": false,
+   "rows": [
+    {
+     "t": "No assignees",
+     "cb": false
+    },
+    {
+     "t": "CopilotGitHubAI",
+     "cb": false
+    },
+    {
+     "t": "chcg",
+     "cb": false
+    },
+    {
+     "t": "donhoDon HO",
+     "cb": false
+    },
+    {
+     "t": "pryrtPeterCJ",
+     "cb": false
+    }
+   ]
+  }
  }
 }
