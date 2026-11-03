@@ -20,7 +20,6 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import sys
 import time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -220,8 +219,7 @@ def main(argv: list[str] | None = None) -> int:
         args.overlays = True
         args.viewports = "1440,1012,768,544"
 
-    sys.path.insert(0, os.path.join(ROOT, "reports", "_tmp"))
-    from cdp import Session
+    from tools.cdp import Session
 
     s = Session()
     s.cmd("Emulation.setDeviceMetricsOverride", {

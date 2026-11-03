@@ -25,7 +25,6 @@ import argparse
 import json
 import os
 import re
-import sys
 import time
 from urllib.parse import urlparse
 
@@ -67,8 +66,6 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--seed", default=REPO)
     args = ap.parse_args(argv)
 
-    sys.path.insert(0, os.path.join(ROOT, "reports", "_tmp"))
-    sys.path.insert(0, ROOT)
     from tools import gh_ui_harvest as H
 
     s = H._session()

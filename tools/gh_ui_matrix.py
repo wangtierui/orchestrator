@@ -19,7 +19,6 @@ import argparse
 import json
 import os
 import statistics as st
-import sys
 import time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -76,11 +75,8 @@ def main(argv: list[str] | None = None) -> int:
     if not args.matrix and not args.spacing:
         args.matrix = args.spacing = True
 
-    sys.path.insert(0, os.path.join(ROOT, "reports", "_tmp"))
-    sys.path.insert(0, ROOT)
-    from cdp import Session
-
     from tools import gh_ui_compare as C
+    from tools.cdp import Session
 
     s = Session()
     s.cmd("Emulation.setDeviceMetricsOverride", {

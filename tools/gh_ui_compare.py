@@ -28,7 +28,6 @@ import argparse
 import json
 import os
 import statistics as st
-import sys
 import time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -132,8 +131,7 @@ def md_table(rows: list[list[str]], head: list[str]) -> list[str]:
 
 def run_full(args) -> int:
     widths = [int(x) for x in args.widths.split(",") if x.strip()]
-    sys.path.insert(0, os.path.join(ROOT, "reports", "_tmp"))
-    from cdp import Session
+    from tools.cdp import Session
 
     s = Session()
     data: dict = {"fetched_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
@@ -185,9 +183,9 @@ def run_full(args) -> int:
     w0 = str(widths[0])
     gh_all = []
     mine_all = []
-    for cat, rows in data["widths"][w0]["gh"].items():
+    for _cat, rows in data["widths"][w0]["gh"].items():
         gh_all += rows
-    for cat, rows in data["widths"][w0]["target"].items():
+    for _cat, rows in data["widths"][w0]["target"].items():
         mine_all += rows
     gh_by_text = {}
     for e in gh_all:
@@ -218,8 +216,7 @@ def run_pair(args) -> int:
     """旧模式：5 个精确映射控件。"""
     widths = [int(x) for x in args.widths.split(",") if x.strip()]
     base = json.load(open(os.path.join(BASE, "responsive.json"), encoding="utf-8"))
-    sys.path.insert(0, os.path.join(ROOT, "reports", "_tmp"))
-    from cdp import Session
+    from tools.cdp import Session
 
     s = Session()
     print("[pair] widths:", widths)

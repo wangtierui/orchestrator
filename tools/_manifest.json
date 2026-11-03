@@ -65,6 +65,13 @@
     },
     {
       "category": "tool",
+      "entry": "CDP 会话助手（供上述工具共用；非独立命令）",
+      "file": "cdp.py",
+      "independent": true,
+      "independent_why": "开发期基线采集/对比工具，按需手动执行，不属于 STEP_ORDER 生产链"
+    },
+    {
+      "category": "tool",
       "entry": "llm_wiki 上游 Releases 监测（网络失败 rc=2）",
       "file": "check_llm_wiki_upstream.py",
       "independent": true,
@@ -207,6 +214,62 @@
       "file": "gen_theme_moc.py",
       "independent": true,
       "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
+    },
+    {
+      "category": "tool",
+      "entry": "顶栏与左侧边栏对照测量（GitHub vs 工作台，含三档宽度）",
+      "file": "gh_ui_chrome.py",
+      "independent": true,
+      "independent_why": "开发期基线测量工具，按需手动执行，不属于 STEP_ORDER 生产链"
+    },
+    {
+      "category": "tool",
+      "entry": "全元素分类对比（GitHub 基线 vs 工作台）",
+      "file": "gh_ui_compare.py",
+      "independent": true,
+      "independent_why": "开发期基线采集/对比工具，按需手动执行，不属于 STEP_ORDER 生产链"
+    },
+    {
+      "category": "tool",
+      "entry": "从仓库首页按入口 BFS 采集",
+      "file": "gh_ui_crawl.py",
+      "independent": true,
+      "independent_why": "开发期基线采集/对比工具，按需手动执行，不属于 STEP_ORDER 生产链"
+    },
+    {
+      "category": "tool",
+      "entry": "采集 GitHub 页面 UI 基线（DOM/交互元素/同仓链接）",
+      "file": "gh_ui_harvest.py",
+      "independent": true,
+      "independent_why": "开发期基线采集/对比工具，按需手动执行，不属于 STEP_ORDER 生产链"
+    },
+    {
+      "category": "tool",
+      "entry": "按页面映射批量对比 + 图表栅格间距",
+      "file": "gh_ui_matrix.py",
+      "independent": true,
+      "independent_why": "开发期基线采集/对比工具，按需手动执行，不属于 STEP_ORDER 生产链"
+    },
+    {
+      "category": "tool",
+      "entry": "采集展开态（筛选面板/对话框/菜单）与四档响应式",
+      "file": "gh_ui_overlays.py",
+      "independent": true,
+      "independent_why": "开发期基线采集/对比工具，按需手动执行，不属于 STEP_ORDER 生产链"
+    },
+    {
+      "category": "tool",
+      "entry": "解析手动另存的 GitHub 页面（登录不可得时的替代通道）",
+      "file": "gh_ui_parse_saved.py",
+      "independent": true,
+      "independent_why": "开发期基线采集/对比工具，按需手动执行，不属于 STEP_ORDER 生产链"
+    },
+    {
+      "category": "tool",
+      "entry": "采集控件状态差分（默认/悬停/聚焦/按下）",
+      "file": "gh_ui_states.py",
+      "independent": true,
+      "independent_why": "开发期基线采集/对比工具，按需手动执行，不属于 STEP_ORDER 生产链"
     },
     {
       "category": "tool",

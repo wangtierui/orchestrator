@@ -31,7 +31,6 @@ import argparse
 import json
 import os
 import re
-import sys
 import time
 from datetime import datetime
 
@@ -159,8 +158,7 @@ def slugify(name: str) -> str:
 
 
 def _session():
-    sys.path.insert(0, os.path.join(ROOT, "reports", "_tmp"))
-    from cdp import Session
+    from tools.cdp import Session
 
     return Session()
 
