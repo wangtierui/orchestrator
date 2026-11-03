@@ -1,0 +1,1968 @@
+{
+ "title": "notepad-plus-plus/boostregex at master · notepad-plus-plus/notepad-plus-plus",
+ "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/tree/master/boostregex",
+ "user_login": "wangtierui",
+ "ready": "complete",
+ "counts": {
+  "els": 1664,
+  "interactive": 85,
+  "links": 26
+ },
+ "landmarks": [
+  [
+   "header",
+   0,
+   0,
+   1425,
+   100
+  ],
+  [
+   "nav",
+   100,
+   16,
+   741,
+   32
+  ],
+  [
+   "main",
+   0,
+   100,
+   1425,
+   1000
+  ],
+  [
+   "footer",
+   0,
+   0,
+   0,
+   0
+  ]
+ ],
+ "headings": [
+  [
+   "H2",
+   "Repository navigation"
+  ],
+  [
+   "H1",
+   "Command palette"
+  ],
+  [
+   "H3",
+   "Uh oh!"
+  ],
+  [
+   "H2",
+   "Collapse file tree"
+  ],
+  [
+   "H2",
+   "Files"
+  ],
+  [
+   "H2",
+   "Breadcrumbs"
+  ],
+  [
+   "H1",
+   "boostregex"
+  ],
+  [
+   "H2",
+   "Directory actions"
+  ],
+  [
+   "H2",
+   "Add file"
+  ],
+  [
+   "H2",
+   "More options"
+  ],
+  [
+   "H2",
+   "Directory actions"
+  ],
+  [
+   "H2",
+   "More options"
+  ],
+  [
+   "H2",
+   "Latest commit"
+  ],
+  [
+   "H2",
+   "History"
+  ],
+  [
+   "H2",
+   "Breadcrumbs"
+  ],
+  [
+   "H1",
+   "boostregex"
+  ],
+  [
+   "H2",
+   "Folders and files"
+  ],
+  [
+   "H3",
+   "parent directory"
+  ],
+  [
+   "H2",
+   "Footer"
+  ],
+  [
+   "H3",
+   "Footer navigation"
+  ]
+ ],
+ "interactive": [
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Skip to content",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "#start-of-content",
+   "cls": "tmp-p-3 color-bg-accent-emphasis color-fg-on-emphasis show-on-focus js",
+   "rect": [
+    0,
+    0,
+    1,
+    1
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU prc-Button-IconBut",
+   "rect": [
+    16,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "/",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderHome__5NxwyK prc-Button-IconButto",
+   "rect": [
+    60,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "notepad-plus-plus",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus",
+   "cls": "contextCrumb__Q8nET8 prc-Breadcrumbs-Item-jcraJ",
+   "rect": [
+    100,
+    16,
+    126,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "notepad-plus-plus",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus",
+   "cls": "contextCrumb__Q8nET8 contextCrumbLast__l2P28s repoPickerCrumb__56N_WW ",
+   "rect": [
+    241,
+    16,
+    125,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk contextCrumb__Q8nET8 repoPickerDropdownBut",
+   "rect": [
+    366,
+    16,
+    20,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Type / to search",
+   "aria": "Open quick search dialog, type / to search",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU searchButton__6Ru-",
+   "rect": [
+    849,
+    16,
+    191,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU js-activate-comman",
+   "rect": [
+    1039,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "/copilot",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU prc-Button-IconBut",
+   "rect": [
+    1078,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "Open Copilot…",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU CopilotMenu__oPrKz",
+   "rect": [
+    1109,
+    16,
+    26,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk actionMenuButton__QPJCOZ responsiveCreateM",
+   "rect": [
+    1159,
+    16,
+    50,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "/issues",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU prc-Button-IconBut",
+   "rect": [
+    1217,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "/pulls",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU prc-Button-IconBut",
+   "rect": [
+    1257,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "/repos",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU prc-Button-IconBut",
+   "rect": [
+    1297,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "/notifications",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU prc-Button-IconBut",
+   "rect": [
+    1337,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk anchor__zXCwGI prc-Button-IconButton-fyge7",
+   "rect": [
+    1377,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "UL",
+   "role": "list",
+   "text": "CodeIssues2.9k (2.9k)Pull requests28 (28)AgentsActionsProjectsWikiSecurity and quality40 (",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "prc-UnderlineNav-ItemsList-oj8gN prc-components-UnderlineItemList-xKlK",
+   "rect": [
+    16,
+    60,
+    1393,
+    40
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Code",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    16,
+    60,
+    73,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Issues2.9k (2.9k)",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/issues",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    97,
+    60,
+    122,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Pull requests28 (28)",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/pulls",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    227,
+    60,
+    157,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Agents",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/agents?author=wangtierui",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    392,
+    60,
+    85,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Actions",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/actions",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    484,
+    60,
+    87,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Projects",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/projects",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    580,
+    60,
+    90,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Wiki",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/wiki",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    678,
+    60,
+    68,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Security and quality40 (40)",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/security",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    754,
+    60,
+    201,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Insights",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/pulse",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    964,
+    60,
+    90,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "DIV",
+   "role": "",
+   "text": "Collapse file treeFilesmasterAdd fileSearch this repository(forward slash) forward slash/ ",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "sidebar__UTbGEu",
+   "rect": [
+    0,
+    100,
+    321,
+    1000
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "true",
+   "checked": "",
+   "testid": "collapse-file-tree-button",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk position-relative expandButton__x9VQso fgC",
+   "rect": [
+    16,
+    116,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "master",
+   "aria": "master branch",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "anchor-button",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk react-repos-tree-pane-ref-selector width-f",
+   "rect": [
+    16,
+    164,
+    216,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "/notepad-plus-plus/notepad-plus-plus/new/master/boostregex",
+   "cls": "prc-Button-ButtonBase-9n-Xk IconButton__SknM5q prc-Button-IconButton-f",
+   "rect": [
+    240,
+    164,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk IconButton__zX3ebA SearchButtonWithLeftBor",
+   "rect": [
+    272,
+    164,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "INPUT",
+   "role": "combobox",
+   "text": "",
+   "aria": "Go to file",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "text",
+   "href": "",
+   "cls": "prc-components-Input-IwWrt",
+   "rect": [
+    49,
+    205,
+    218,
+    30
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "UL",
+   "role": "tree",
+   "text": ".githubPowerEditorboostregexboostAnsiDocumentIterator.hBoostRegExSearch.cxxUTF8DocumentIte",
+   "aria": "Files",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "prc-TreeView-TreeViewRootUlStyles-Mzrmj",
+   "rect": [
+    16,
+    248,
+    273,
+    676
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "treeitem",
+   "text": ".github",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "PRIVATE_TreeView-item prc-TreeView-TreeViewItem-Ter5f",
+   "rect": [
+    16,
+    248,
+    273,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "treeitem",
+   "text": "PowerEditor",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "PRIVATE_TreeView-item prc-TreeView-TreeViewItem-Ter5f",
+   "rect": [
+    16,
+    280,
+    273,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "treeitem",
+   "text": "boostregexboostAnsiDocumentIterator.hBoostRegExSearch.cxxUTF8DocumentIterator.cxxUTF8Docum",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "true",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "PRIVATE_TreeView-item prc-TreeView-TreeViewItem-Ter5f",
+   "rect": [
+    16,
+    312,
+    273,
+    258
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "UL",
+   "role": "group",
+   "text": "boostAnsiDocumentIterator.hBoostRegExSearch.cxxUTF8DocumentIterator.cxxUTF8DocumentIterato",
+   "aria": "boostregex",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "",
+   "rect": [
+    16,
+    345,
+    273,
+    225
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "treeitem",
+   "text": "boost",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "PRIVATE_TreeView-item prc-TreeView-TreeViewItem-Ter5f",
+   "rect": [
+    16,
+    345,
+    273,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "treeitem",
+   "text": "AnsiDocumentIterator.h",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "PRIVATE_TreeView-item prc-TreeView-TreeViewItem-Ter5f",
+   "rect": [
+    16,
+    377,
+    273,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "treeitem",
+   "text": "BoostRegExSearch.cxx",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "PRIVATE_TreeView-item prc-TreeView-TreeViewItem-Ter5f",
+   "rect": [
+    16,
+    409,
+    273,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "treeitem",
+   "text": "UTF8DocumentIterator.cxx",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "PRIVATE_TreeView-item prc-TreeView-TreeViewItem-Ter5f",
+   "rect": [
+    16,
+    441,
+    273,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "treeitem",
+   "text": "UTF8DocumentIterator.h",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "PRIVATE_TreeView-item prc-TreeView-TreeViewItem-Ter5f",
+   "rect": [
+    16,
+    473,
+    273,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "treeitem",
+   "text": "nppSpecifics.mak",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "PRIVATE_TreeView-item prc-TreeView-TreeViewItem-Ter5f",
+   "rect": [
+    16,
+    506,
+    273,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "treeitem",
+   "text": "nppSpecifics_mingw.mak",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "PRIVATE_TreeView-item prc-TreeView-TreeViewItem-Ter5f",
+   "rect": [
+    16,
+    538,
+    273,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "treeitem",
+   "text": "lexilla",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "PRIVATE_TreeView-item prc-TreeView-TreeViewItem-Ter5f",
+   "rect": [
+    16,
+    570,
+    273,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "treeitem",
+   "text": "scintilla",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "PRIVATE_TreeView-item prc-TreeView-TreeViewItem-Ter5f",
+   "rect": [
+    16,
+    602,
+    273,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "treeitem",
+   "text": ".gitignore",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "PRIVATE_TreeView-item prc-TreeView-TreeViewItem-Ter5f",
+   "rect": [
+    16,
+    634,
+    273,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "treeitem",
+   "text": "AGENTS.md",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "PRIVATE_TreeView-item prc-TreeView-TreeViewItem-Ter5f",
+   "rect": [
+    16,
+    666,
+    273,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "treeitem",
+   "text": "BUILD.md",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "PRIVATE_TreeView-item prc-TreeView-TreeViewItem-Ter5f",
+   "rect": [
+    16,
+    699,
+    273,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "treeitem",
+   "text": "CONTRIBUTING.md",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "PRIVATE_TreeView-item prc-TreeView-TreeViewItem-Ter5f",
+   "rect": [
+    16,
+    731,
+    273,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "treeitem",
+   "text": "LICENSE",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "PRIVATE_TreeView-item prc-TreeView-TreeViewItem-Ter5f",
+   "rect": [
+    16,
+    763,
+    273,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "treeitem",
+   "text": "README.md",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "PRIVATE_TreeView-item prc-TreeView-TreeViewItem-Ter5f",
+   "rect": [
+    16,
+    795,
+    273,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "treeitem",
+   "text": "SUPPORTED_SYSTEM.md",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "PRIVATE_TreeView-item prc-TreeView-TreeViewItem-Ter5f",
+   "rect": [
+    16,
+    827,
+    273,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "treeitem",
+   "text": "appveyor.yml",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "PRIVATE_TreeView-item prc-TreeView-TreeViewItem-Ter5f",
+   "rect": [
+    16,
+    860,
+    273,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "treeitem",
+   "text": "nppGpgPub.asc",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "PRIVATE_TreeView-item prc-TreeView-TreeViewItem-Ter5f",
+   "rect": [
+    16,
+    892,
+    273,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "DIV",
+   "role": "slider",
+   "text": "",
+   "aria": "Draggable pane splitter",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "prc-PageLayout-DraggableHandle-9s6B4",
+   "rect": [
+    318,
+    100,
+    5,
+    1000
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "DIV",
+   "role": "",
+   "text": "Breadcrumbsnotepad-plus-plus/boostregex/Copy pathDirectory actionsAdd fileAdd fileMore opt",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "content__cw9d2I",
+   "rect": [
+    321,
+    100,
+    1104,
+    543
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "notepad-plus-plus",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "breadcrumbs-repo-link",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/tree/master",
+   "cls": "repoLink__Uax2bT prc-Link-Link-9ZwDx",
+   "rect": [
+    337,
+    121,
+    134,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "H1",
+   "role": "",
+   "text": "boostregex",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "filenameHeading__MTKryR lg__W8GBuN prc-Heading-Heading-MtWFE",
+   "rect": [
+    493,
+    120,
+    82,
+    24
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk ml-2 prc-Button-IconButton-fyge7",
+   "rect": [
+    605,
+    118,
+    28,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Add file",
+   "aria": "Add file",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk",
+   "rect": [
+    1277,
+    116,
+    92,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "More options",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "tree-overflow-menu-anchor",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk IconButton__0uY3Vn prc-Button-IconButton-f",
+   "rect": [
+    1377,
+    116,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "DIV",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "pc-AvatarStackBody prc-AvatarStack-AvatarStackBody-JFK4u",
+   "rect": [
+    350,
+    177,
+    29,
+    20
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "chcg",
+   "aria": "commits by chcg",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/commits?author=chcg",
+   "cls": "authorNameLink__RYkc-M prc-Link-Link-9ZwDx",
+   "rect": [
+    383,
+    177,
+    30,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "donho",
+   "aria": "commits by donho",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/commits?author=donho",
+   "cls": "authorNameLink__RYkc-M prc-Link-Link-9ZwDx",
+   "rect": [
+    444,
+    177,
+    41,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Update to boost 1.92.0",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/commit/164574781ddc37fe7a94b34f3ca5bb516adcb39a",
+   "cls": "Link--secondary",
+   "rect": [
+    494,
+    178,
+    141,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "false",
+   "expanded": "false",
+   "checked": "",
+   "testid": "latest-commit-details-toggle",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk IconButton__9oMQ5T prc-Button-IconButton-f",
+   "rect": [
+    643,
+    173,
+    28,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "checks-status-badge-icon",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk ChecksStatusBadgeIconButton__O8V97i prc-Bu",
+   "rect": [
+    679,
+    173,
+    28,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "1645747",
+   "aria": "Commit 1645747",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/commit/164574781ddc37fe7a94b34f3ca5bb516adcb39a",
+   "cls": "Link--secondary prc-Link-Link-9ZwDx",
+   "rect": [
+    1203,
+    178,
+    45,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "History",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/commits/master/boostregex",
+   "cls": "prc-Button-ButtonBase-9n-Xk d-none d-lg-flex linkButton__rBg5F1 flex-i",
+   "rect": [
+    1322,
+    173,
+    78,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "..",
+   "aria": "Parent directory",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "up-tree",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/tree/master",
+   "cls": "PrimerLink__2SYjfE prc-Link-Link-9ZwDx",
+   "rect": [
+    354,
+    277,
+    1038,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "boost",
+   "aria": "boost, (Directory)",
+   "title": "boost",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/tree/master/boostregex/boost",
+   "cls": "Link--primary",
+   "rect": [
+    380,
+    319,
+    35,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Update to boost 1.92.0",
+   "aria": "",
+   "title": "Update to boost 1.92.0\n\nhttps://www.boost.org/releases/1.92.0/\n\nClose #18536",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/commit/164574781ddc37fe7a94b34f3ca5bb516adcb39a",
+   "cls": "Link--secondary",
+   "rect": [
+    782,
+    319,
+    141,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "AnsiDocumentIterator.h",
+   "aria": "AnsiDocumentIterator.h, (File)",
+   "title": "AnsiDocumentIterator.h",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/blob/master/boostregex/AnsiDocumentIterator.h",
+   "cls": "Link--primary",
+   "rect": [
+    380,
+    360,
+    147,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Fix gcc warnings",
+   "aria": "",
+   "title": "Fix gcc warnings\n\nFix #12675, close #12676",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/commit/90af76353ee34f4a0c8dd8636b0dec2801fe48a6",
+   "cls": "Link--secondary",
+   "rect": [
+    782,
+    360,
+    101,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "BoostRegExSearch.cxx",
+   "aria": "BoostRegExSearch.cxx, (File)",
+   "title": "BoostRegExSearch.cxx",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/blob/master/boostregex/BoostRegExSearch.cxx",
+   "cls": "Link--primary",
+   "rect": [
+    380,
+    401,
+    136,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Fix lite mode status bar turning to black regression when switching s…",
+   "aria": "",
+   "title": "Fix lite mode status bar turning to black regression when switching scale\n\nDisabling PerMonitorV2 to fix the issue temporarily.\n\nClose #18462",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/commit/9d99c3199edbbaeb988ce3cc7d6a21b38c8bab93",
+   "cls": "Link--secondary",
+   "rect": [
+    782,
+    401,
+    432,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "UTF8DocumentIterator.cxx",
+   "aria": "UTF8DocumentIterator.cxx, (File)",
+   "title": "UTF8DocumentIterator.cxx",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/blob/master/boostregex/UTF8DocumentIterator.cxx",
+   "cls": "Link--primary",
+   "rect": [
+    380,
+    442,
+    164,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Update to scintilla 5.5.5 & Lexilla 5.4.3",
+   "aria": "",
+   "title": "Update to scintilla 5.5.5 & Lexilla 5.4.3\n\nRelease 5.5.5 (https://www.scintilla.org/scintilla555.zip)\n\n    Released 25 February 2025.\n    Remember selection with undo and redo. Controlled with SCI_SETUNDOSELECTIONHISTORY. Feature #1273, Bug #1479, Bug #1224.\n    Serialize selection type and ranges with SCI_GETSELECTIONSERIALIZED and SCI_SETSELECTIONSERIALIZED.\n    For Win32, update Direct2D and DirectWrite interfaces used to 1.1 and add a lower-level approach to calling DirectWrite 1.1 by specifying SC_TECHNOLOGY_DIRECT_WRITE_1. Since Windows Vista does not support these API versions, Scintilla o longer supports DirectWrite on Windows Vista and will fall back to using GDI.\n    Fix segmentation of long lexemes to avoid breaking before modifiers like accents that must be drawn with their base letters. For wrapping, try to break lines without separating letters from modifiers.\n    For GTK on Windows, replace reverse arrow cursor with hand as reverse arrow was small in scaled modes. Bug #2460.\n    Fix bug on Qt where double-click stopped working when Scintilla instance had been running for weeks.\n\nRelease 5.4.3 (https://www.scintilla.org/lexilla543.zip)\n\n    Released 25 February 2025.\n    C++: Fix evaluation of != in preprocessor condition. Issue #299.\n    Modula-3: Allow digits in uppercase identifiers. Issue #297.\n    Pascal: Fix asm style extending past end. Issue #295.\n    Python: Fix detection of attributes and decorators. Issue #294, Pull request #302.\n    Ruby: Implement substyles for identifiers SCE_RB_IDENTIFIER.\n    Ruby: Recognize name as SCE_RB_DEFNAME in def when `::` used as well as `.`. Issue #300.\n\nClose #16235",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/commit/e38a0f2ec9c609451fd6670d1b430862e8722a78",
+   "cls": "Link--secondary",
+   "rect": [
+    782,
+    442,
+    233,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "UTF8DocumentIterator.h",
+   "aria": "UTF8DocumentIterator.h, (File)",
+   "title": "UTF8DocumentIterator.h",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/blob/master/boostregex/UTF8DocumentIterator.h",
+   "cls": "Link--primary",
+   "rect": [
+    380,
+    483,
+    152,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Fix lite mode status bar turning to black regression when switching s…",
+   "aria": "",
+   "title": "Fix lite mode status bar turning to black regression when switching scale\n\nDisabling PerMonitorV2 to fix the issue temporarily.\n\nClose #18462",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/commit/9d99c3199edbbaeb988ce3cc7d6a21b38c8bab93",
+   "cls": "Link--secondary",
+   "rect": [
+    782,
+    483,
+    432,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "nppSpecifics.mak",
+   "aria": "nppSpecifics.mak, (File)",
+   "title": "nppSpecifics.mak",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/blob/master/boostregex/nppSpecifics.mak",
+   "cls": "Link--primary",
+   "rect": [
+    380,
+    524,
+    107,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Add version of external libraries (Scintilla/Lexilla/Boost) into Debu…",
+   "aria": "",
+   "title": "Add version of external libraries (Scintilla/Lexilla/Boost) into Debug Info\n\nDynamically collects all the version info needed and creates NppLibsVersion.h file by the help of a pre-build event.\n\nFix https://community.notepad-plus-plus.org/topic/21513/determining-supporting-library-versions\n\nFix #11466, close #16318",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/commit/9eb2598ea429b0c509266d7956b1a94148884668",
+   "cls": "Link--secondary",
+   "rect": [
+    782,
+    524,
+    414,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "nppSpecifics_mingw.mak",
+   "aria": "nppSpecifics_mingw.mak, (File)",
+   "title": "nppSpecifics_mingw.mak",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/blob/master/boostregex/nppSpecifics_mingw.mak",
+   "cls": "Link--primary",
+   "rect": [
+    380,
+    565,
+    154,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Add version of external libraries (Scintilla/Lexilla/Boost) into Debu…",
+   "aria": "",
+   "title": "Add version of external libraries (Scintilla/Lexilla/Boost) into Debug Info\n\nDynamically collects all the version info needed and creates NppLibsVersion.h file by the help of a pre-build event.\n\nFix https://community.notepad-plus-plus.org/topic/21513/determining-supporting-library-versions\n\nFix #11466, close #16318",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/commit/9eb2598ea429b0c509266d7956b1a94148884668",
+   "cls": "Link--secondary",
+   "rect": [
+    782,
+    565,
+    414,
+    19
+   ],
+   "disabled": false
+  }
+ ],
+ "tables": [
+  {
+   "headers": [
+    "Name",
+    "Name",
+    "Last commit message",
+    "Last commit date"
+   ],
+   "rows": [
+    [
+     "parent directory.."
+    ],
+    [
+     "boost",
+     "boost",
+     "Update to boost 1.92.0",
+     "Nov 2, 2026"
+    ],
+    [
+     "AnsiDocumentIterator.h",
+     "AnsiDocumentIterator.h",
+     "Fix gcc warnings",
+     "Dec 26, 2022"
+    ]
+   ]
+  }
+ ],
+ "same_repo_links": [
+  "/notepad-plus-plus/notepad-plus-plus",
+  "/notepad-plus-plus/notepad-plus-plus/issues",
+  "/notepad-plus-plus/notepad-plus-plus/pulls",
+  "/notepad-plus-plus/notepad-plus-plus/agents?author=wangtierui",
+  "/notepad-plus-plus/notepad-plus-plus/actions",
+  "/notepad-plus-plus/notepad-plus-plus/projects",
+  "/notepad-plus-plus/notepad-plus-plus/wiki",
+  "/notepad-plus-plus/notepad-plus-plus/security",
+  "/notepad-plus-plus/notepad-plus-plus/pulse",
+  "/notepad-plus-plus/notepad-plus-plus/new/master/boostregex",
+  "/notepad-plus-plus/notepad-plus-plus/tree/master",
+  "/notepad-plus-plus/notepad-plus-plus/commits?author=chcg",
+  "/notepad-plus-plus/notepad-plus-plus/commits?author=donho",
+  "/notepad-plus-plus/notepad-plus-plus/commit/164574781ddc37fe7a94b34f3ca5bb516adcb39a",
+  "/notepad-plus-plus/notepad-plus-plus/commits/master/boostregex",
+  "/notepad-plus-plus/notepad-plus-plus/tree/master/boostregex/boost",
+  "/notepad-plus-plus/notepad-plus-plus/blob/master/boostregex/AnsiDocumentIterator.h",
+  "/notepad-plus-plus/notepad-plus-plus/commit/90af76353ee34f4a0c8dd8636b0dec2801fe48a6",
+  "/notepad-plus-plus/notepad-plus-plus/blob/master/boostregex/BoostRegExSearch.cxx",
+  "/notepad-plus-plus/notepad-plus-plus/commit/9d99c3199edbbaeb988ce3cc7d6a21b38c8bab93",
+  "/notepad-plus-plus/notepad-plus-plus/blob/master/boostregex/UTF8DocumentIterator.cxx",
+  "/notepad-plus-plus/notepad-plus-plus/commit/e38a0f2ec9c609451fd6670d1b430862e8722a78",
+  "/notepad-plus-plus/notepad-plus-plus/blob/master/boostregex/UTF8DocumentIterator.h",
+  "/notepad-plus-plus/notepad-plus-plus/blob/master/boostregex/nppSpecifics.mak",
+  "/notepad-plus-plus/notepad-plus-plus/commit/9eb2598ea429b0c509266d7956b1a94148884668",
+  "/notepad-plus-plus/notepad-plus-plus/blob/master/boostregex/nppSpecifics_mingw.mak"
+ ],
+ "density": null,
+ "fetched_at": "2026-11-03T20:11:52",
+ "elements_seen": 1664
+}

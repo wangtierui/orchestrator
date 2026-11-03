@@ -1,0 +1,184 @@
+{
+ "fetched_at": "2026-11-03T20:12:13",
+ "seed": "https://github.com/notepad-plus-plus/notepad-plus-plus",
+ "depth": 1,
+ "cap": 26,
+ "pages": [
+  {
+   "slug": "crawl-repo",
+   "path": "/notepad-plus-plus/notepad-plus-plus",
+   "url": "https://github.com/notepad-plus-plus/notepad-plus-plus",
+   "depth": 0,
+   "title": "notepad-plus-plus/notepad-plus-plus: Notepad++ official repository",
+   "interactive": 160
+  },
+  {
+   "slug": "crawl-issues",
+   "path": "/notepad-plus-plus/notepad-plus-plus/issues",
+   "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/issues",
+   "depth": 1,
+   "title": "Issues · notepad-plus-plus/notepad-plus-plus",
+   "interactive": 208
+  },
+  {
+   "slug": "crawl-pulls",
+   "path": "/notepad-plus-plus/notepad-plus-plus/pulls",
+   "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/pulls",
+   "depth": 1,
+   "title": "Pull requests · notepad-plus-plus/notepad-plus-plus",
+   "interactive": 234
+  },
+  {
+   "slug": "crawl-agents",
+   "path": "/notepad-plus-plus/notepad-plus-plus/agents",
+   "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/agents",
+   "depth": 1,
+   "title": "Agents · notepad-plus-plus/notepad-plus-plus",
+   "interactive": 42
+  },
+  {
+   "slug": "crawl-actions",
+   "path": "/notepad-plus-plus/notepad-plus-plus/actions",
+   "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/actions",
+   "depth": 1,
+   "title": "All workflows",
+   "interactive": 211
+  },
+  {
+   "slug": "crawl-projects",
+   "path": "/notepad-plus-plus/notepad-plus-plus/projects",
+   "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/projects",
+   "depth": 1,
+   "title": "Projects · notepad-plus-plus/notepad-plus-plus",
+   "interactive": 56
+  },
+  {
+   "slug": "crawl-wiki",
+   "path": "/notepad-plus-plus/notepad-plus-plus/wiki",
+   "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/wiki",
+   "depth": 1,
+   "title": "Home · notepad-plus-plus/notepad-plus-plus Wiki",
+   "interactive": 67
+  },
+  {
+   "slug": "crawl-security",
+   "path": "/notepad-plus-plus/notepad-plus-plus/security",
+   "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/security",
+   "depth": 1,
+   "title": "Overview · notepad-plus-plus/notepad-plus-plus",
+   "interactive": 66
+  },
+  {
+   "slug": "crawl-pulse",
+   "path": "/notepad-plus-plus/notepad-plus-plus/pulse",
+   "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/pulse",
+   "depth": 1,
+   "title": "Pulse · notepad-plus-plus/notepad-plus-plus",
+   "interactive": 141
+  },
+  {
+   "slug": "crawl-activity",
+   "path": "/notepad-plus-plus/notepad-plus-plus/activity",
+   "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/activity",
+   "depth": 1,
+   "title": "Activity · notepad-plus-plus/notepad-plus-plus",
+   "interactive": 137
+  },
+  {
+   "slug": "crawl-custom-properties",
+   "path": "/notepad-plus-plus/notepad-plus-plus/custom-properties",
+   "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/custom-properties",
+   "depth": 1,
+   "title": "Settings · Custom properties · notepad-plus-plus/notepad-plus-plus",
+   "interactive": 38
+  },
+  {
+   "slug": "crawl-forks",
+   "path": "/notepad-plus-plus/notepad-plus-plus/forks",
+   "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/forks",
+   "depth": 1,
+   "title": "Forks · notepad-plus-plus/notepad-plus-plus",
+   "interactive": 212
+  },
+  {
+   "slug": "crawl-branches",
+   "path": "/notepad-plus-plus/notepad-plus-plus/branches",
+   "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/branches",
+   "depth": 1,
+   "title": "Branches · notepad-plus-plus/notepad-plus-plus",
+   "interactive": 67
+  },
+  {
+   "slug": "crawl-tags",
+   "path": "/notepad-plus-plus/notepad-plus-plus/tags",
+   "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/tags",
+   "depth": 1,
+   "title": "Tags · notepad-plus-plus/notepad-plus-plus",
+   "interactive": 113
+  },
+  {
+   "slug": "crawl-commits-master",
+   "path": "/notepad-plus-plus/notepad-plus-plus/commits/master",
+   "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/commits/master",
+   "depth": 1,
+   "title": "Commits · notepad-plus-plus/notepad-plus-plus",
+   "interactive": 395
+  },
+  {
+   "slug": "crawl-tree-master-github",
+   "path": "/notepad-plus-plus/notepad-plus-plus/tree/master/.github",
+   "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/tree/master/.github",
+   "depth": 1,
+   "title": "notepad-plus-plus/.github at master · notepad-plus-plus/notepad-plus-plus",
+   "interactive": 79
+  },
+  {
+   "slug": "crawl-tree-master-powereditor",
+   "path": "/notepad-plus-plus/notepad-plus-plus/tree/master/PowerEditor",
+   "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/tree/master/PowerEditor",
+   "depth": 1,
+   "title": "notepad-plus-plus/PowerEditor at master · notepad-plus-plus/notepad-plus-plus",
+   "interactive": 88
+  },
+  {
+   "slug": "crawl-tree-master-boostregex",
+   "path": "/notepad-plus-plus/notepad-plus-plus/tree/master/boostregex",
+   "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/tree/master/boostregex",
+   "depth": 1,
+   "title": "notepad-plus-plus/boostregex at master · notepad-plus-plus/notepad-plus-plus",
+   "interactive": 85
+  },
+  {
+   "slug": "crawl-tree-master-lexilla",
+   "path": "/notepad-plus-plus/notepad-plus-plus/tree/master/lexilla",
+   "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/tree/master/lexilla",
+   "depth": 1,
+   "title": "notepad-plus-plus/lexilla at master · notepad-plus-plus/notepad-plus-plus",
+   "interactive": 133
+  },
+  {
+   "slug": "crawl-tree-master-scintilla",
+   "path": "/notepad-plus-plus/notepad-plus-plus/tree/master/scintilla",
+   "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/tree/master/scintilla",
+   "depth": 1,
+   "title": "notepad-plus-plus/scintilla at master · notepad-plus-plus/notepad-plus-plus",
+   "interactive": 127
+  },
+  {
+   "slug": "crawl-releases",
+   "path": "/notepad-plus-plus/notepad-plus-plus/releases",
+   "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/releases",
+   "depth": 1,
+   "title": "Releases · notepad-plus-plus/notepad-plus-plus",
+   "interactive": 266
+  },
+  {
+   "slug": "crawl-graphs-contributors",
+   "path": "/notepad-plus-plus/notepad-plus-plus/graphs/contributors",
+   "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/graphs/contributors",
+   "depth": 1,
+   "title": "Contributors to notepad-plus-plus/notepad-plus-plus",
+   "interactive": 49
+  }
+ ]
+}

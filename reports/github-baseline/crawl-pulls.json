@@ -1,0 +1,5172 @@
+{
+ "title": "Pull requests · notepad-plus-plus/notepad-plus-plus",
+ "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/pulls",
+ "user_login": "wangtierui",
+ "ready": "complete",
+ "counts": {
+  "els": 2656,
+  "interactive": 234,
+  "links": 51
+ },
+ "landmarks": [
+  [
+   "header",
+   0,
+   0,
+   1425,
+   100
+  ],
+  [
+   "nav",
+   100,
+   16,
+   741,
+   32
+  ],
+  [
+   "main",
+   0,
+   100,
+   1425,
+   1920
+  ],
+  [
+   "aside",
+   0,
+   100,
+   256,
+   1000
+  ],
+  [
+   "footer",
+   0,
+   2020,
+   1425,
+   58
+  ]
+ ],
+ "headings": [
+  [
+   "H2",
+   "Repository navigation"
+  ],
+  [
+   "H1",
+   "Command palette"
+  ],
+  [
+   "H3",
+   "Uh oh!"
+  ],
+  [
+   "H1",
+   "Pull requests"
+  ],
+  [
+   "H1",
+   "All pull requests"
+  ],
+  [
+   "H2",
+   "Pull requests"
+  ],
+  [
+   "H3",
+   "Update to Scintilla 5.6.9"
+  ],
+  [
+   "H3",
+   "fix: scale whitespace markers with DPI and zoom"
+  ],
+  [
+   "H3",
+   "[xml] Update Taiwanese Mandarin translation"
+  ],
+  [
+   "H3",
+   "Use system font for docking panel for handling dpi changes for its child control"
+  ],
+  [
+   "H3",
+   "[xml] Update hungarian.xml"
+  ],
+  [
+   "H3",
+   "Fix UDL dialog edits scrolling the wrapped document down"
+  ],
+  [
+   "H3",
+   "Fix Java function list broken by braces in literals and comments"
+  ],
+  [
+   "H3",
+   "Fix wrong read-only and monitoring icons in Document List and Ctrl+Tab list"
+  ],
+  [
+   "H3",
+   "Fix Bash function list broken by quoted here-document delimiter"
+  ],
+  [
+   "H3",
+   "Fix Shift+F4 in Search results selecting the same occurrence"
+  ],
+  [
+   "H3",
+   "Fix hasExt() falsely detecting dots in directory path as file extensions"
+  ],
+  [
+   "H3",
+   "add grep and ungrep functionality to find dialog"
+  ],
+  [
+   "H3",
+   "Editorial: few typos and grammar glitches"
+  ],
+  [
+   "H3",
+   "Draw right-to-left views with GDI, as DirectWrite can't mirror them"
+  ],
+  [
+   "H3",
+   "Add horizontal titles to the vertical tab bar"
+  ],
+  [
+   "H3",
+   "Add smooth scrolling by pixels"
+  ],
+  [
+   "H3",
+   "Add option to highlight all matches while the Find dialog is open"
+  ],
+  [
+   "H3",
+   "Keep incremental search \"Highlight all\" up to date"
+  ],
+  [
+   "H3",
+   "Add option to apply word wrap per document"
+  ],
+  [
+   "H3",
+   "Fix UDL not switching between dark/light mode variants for already-open files"
+  ],
+  [
+   "H3",
+   "[xml] Add Lao translation (lao.xml)"
+  ],
+  [
+   "H3",
+   "Support per-user installation mode (no admin rights required)"
+  ],
+  [
+   "H3",
+   "Add per-document word wrap settings"
+  ],
+  [
+   "H3",
+   "Always link with /DEBUG:FULL"
+  ],
+  [
+   "H3",
+   "Lazy load & late redraw"
+  ],
+  [
+   "H2",
+   "Footer"
+  ],
+  [
+   "H3",
+   "Footer navigation"
+  ]
+ ],
+ "interactive": [
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Skip to content",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "#start-of-content",
+   "cls": "tmp-p-3 color-bg-accent-emphasis color-fg-on-emphasis show-on-focus js",
+   "rect": [
+    0,
+    0,
+    1,
+    1
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU prc-Button-IconBut",
+   "rect": [
+    16,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "/",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderHome__5NxwyK prc-Button-IconButto",
+   "rect": [
+    60,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "notepad-plus-plus",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus",
+   "cls": "contextCrumb__Q8nET8 prc-Breadcrumbs-Item-jcraJ",
+   "rect": [
+    100,
+    16,
+    126,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "notepad-plus-plus",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus",
+   "cls": "contextCrumb__Q8nET8 contextCrumbLast__l2P28s repoPickerCrumb__56N_WW ",
+   "rect": [
+    241,
+    16,
+    125,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk contextCrumb__Q8nET8 repoPickerDropdownBut",
+   "rect": [
+    366,
+    16,
+    20,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Type / to search",
+   "aria": "Open quick search dialog, type / to search",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU searchButton__6Ru-",
+   "rect": [
+    849,
+    16,
+    191,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU js-activate-comman",
+   "rect": [
+    1039,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "/copilot",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU prc-Button-IconBut",
+   "rect": [
+    1078,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "Open Copilot…",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU CopilotMenu__oPrKz",
+   "rect": [
+    1109,
+    16,
+    26,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk actionMenuButton__QPJCOZ responsiveCreateM",
+   "rect": [
+    1159,
+    16,
+    50,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "/issues",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU prc-Button-IconBut",
+   "rect": [
+    1217,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "/pulls",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU prc-Button-IconBut",
+   "rect": [
+    1257,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "/repos",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU prc-Button-IconBut",
+   "rect": [
+    1297,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "/notifications",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU prc-Button-IconBut",
+   "rect": [
+    1337,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk anchor__zXCwGI prc-Button-IconButton-fyge7",
+   "rect": [
+    1377,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "UL",
+   "role": "list",
+   "text": "CodeIssues2.9k (2.9k)Pull requests28 (28)AgentsActionsProjectsWikiSecurity and quality40 (",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "prc-UnderlineNav-ItemsList-oj8gN prc-components-UnderlineItemList-xKlK",
+   "rect": [
+    16,
+    60,
+    1393,
+    40
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Code",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    16,
+    60,
+    73,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Issues2.9k (2.9k)",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/issues",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    97,
+    60,
+    122,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Pull requests28 (28)",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/pulls",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    227,
+    60,
+    157,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Agents",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/agents?author=wangtierui",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    392,
+    60,
+    85,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Actions",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/actions",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    484,
+    60,
+    87,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Projects",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/projects",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    580,
+    60,
+    90,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Wiki",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/wiki",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    678,
+    60,
+    68,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Security and quality40 (40)",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/security",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    754,
+    60,
+    201,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Insights",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/pulse",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    964,
+    60,
+    90,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Pull requests",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/pulls",
+   "cls": "prc-ActionList-ActionListContent-KBb8- prc-Link-Link-9ZwDx",
+   "rect": [
+    16,
+    116,
+    223,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Authored by me",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/pulls/wangtierui",
+   "cls": "prc-ActionList-ActionListContent-KBb8- prc-Link-Link-9ZwDx",
+   "rect": [
+    16,
+    148,
+    223,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Assigned to me",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/pulls/assigned/wangtierui",
+   "cls": "prc-ActionList-ActionListContent-KBb8- prc-Link-Link-9ZwDx",
+   "rect": [
+    16,
+    180,
+    223,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Involves me",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/pulls/involves/wangtierui",
+   "cls": "prc-ActionList-ActionListContent-KBb8- prc-Link-Link-9ZwDx",
+   "rect": [
+    16,
+    212,
+    223,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Review requests",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/pulls/review-requested/wangtierui",
+   "cls": "prc-ActionList-ActionListContent-KBb8- prc-Link-Link-9ZwDx",
+   "rect": [
+    16,
+    244,
+    223,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Milestones",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/milestones",
+   "cls": "prc-ActionList-ActionListContent-KBb8- prc-Link-Link-9ZwDx",
+   "rect": [
+    16,
+    309,
+    223,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Labels",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/labels",
+   "cls": "prc-ActionList-ActionListContent-KBb8- prc-Link-Link-9ZwDx",
+   "rect": [
+    16,
+    341,
+    223,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Stacks",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/stacks",
+   "cls": "prc-ActionList-ActionListContent-KBb8- prc-Link-Link-9ZwDx",
+   "rect": [
+    16,
+    373,
+    223,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Feedback",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-ActionList-ActionListContent-KBb8-",
+   "rect": [
+    16,
+    924,
+    223,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Collapse sidebar",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "true",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-ActionList-ActionListContent-KBb8-",
+   "rect": [
+    16,
+    960,
+    223,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "DIV",
+   "role": "",
+   "text": "Pull requestsChange the pull requests type filterAll pull requestsNew pull requestSearch p",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "HeaderInner__vi8Fya",
+   "rect": [
+    256,
+    124,
+    1169,
+    80
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "New pull request",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "/notepad-plus-plus/notepad-plus-plus/compare",
+   "cls": "prc-Button-ButtonBase-9n-Xk",
+   "rect": [
+    1267,
+    124,
+    134,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "DIV",
+   "role": "search",
+   "text": "Search pull requestsis:pr state:openis:pr state:openClear filterSearch",
+   "aria": "Pull requests",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "",
+   "rect": [
+    280,
+    172,
+    1121,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "DIV",
+   "role": "form",
+   "text": "Search pull requestsis:pr state:openis:pr state:openClear filterSearch",
+   "aria": "Search pull requests",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "FormControl FormControl--fullWidth Box_1__QYTtv7",
+   "rect": [
+    280,
+    172,
+    1121,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "DIV",
+   "role": "",
+   "text": "is:pr state:openis:pr state:open",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "styled-input-container Box_0__HkKqOF",
+   "rect": [
+    293,
+    173,
+    1047,
+    30
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "INPUT",
+   "role": "combobox",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "Box_4__0ZM1Bz",
+   "rect": [
+    293,
+    173,
+    1047,
+    30
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk clearButton__zWB3bC prc-Button-IconButton-",
+   "rect": [
+    1340,
+    174,
+    28,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk IconButton_0__SSIi47 prc-Button-IconButton",
+   "rect": [
+    1369,
+    172,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "UL",
+   "role": "listbox",
+   "text": "",
+   "aria": "Suggestions",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "prc-ActionList-ActionList-rPFF2 ActionList_0__Ssg8Xf",
+   "rect": [
+    277,
+    208,
+    250,
+    48
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Open28 (28)",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/pulls?q=is%3Apr+state%3Aopen",
+   "cls": "container__OP-V2v selected__fg2bAE prc-Text-Text-9mHv3",
+   "rect": [
+    289,
+    230,
+    91,
+    30
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Closed5,338 (5,338)",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/pulls?q=is%3Apr+state%3Aclosed",
+   "cls": "container__OP-V2v prc-Text-Text-9mHv3",
+   "rect": [
+    380,
+    230,
+    109,
+    30
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "DIV",
+   "role": "toolbar",
+   "text": "AuthorLabelProjectsMilestonesReviewsAssigneeSort by Newest descendingSort…Sort by Newest d",
+   "aria": "Pull request filters",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "prc-ActionBar-List-9uz46",
+   "rect": [
+    608,
+    229,
+    715,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Author",
+   "aria": "Filter by author",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk ListFilterButton__ccIaF1",
+   "rect": [
+    612,
+    229,
+    89,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Label",
+   "aria": "Filter by label",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk ListFilterButton__ccIaF1",
+   "rect": [
+    705,
+    229,
+    79,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Projects",
+   "aria": "Filter by projects",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk ListFilterButton__ccIaF1",
+   "rect": [
+    788,
+    229,
+    95,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Milestones",
+   "aria": "Filter by milestones",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk ListFilterButton__ccIaF1",
+   "rect": [
+    886,
+    229,
+    113,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Reviews",
+   "aria": "Filter by reviews",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk ListFilterButton__ccIaF1",
+   "rect": [
+    1003,
+    229,
+    95,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Assignee",
+   "aria": "Filter by assignee",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk ListFilterButton__ccIaF1",
+   "rect": [
+    1102,
+    229,
+    101,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Sort by Newest descendingSort…Sort by Newest descending",
+   "aria": "Sort by Newest descending",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk ListFilterButton__ccIaF1",
+   "rect": [
+    1207,
+    229,
+    116,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "true",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-SegmentedControl-Button-E48xz prc-SegmentedControl-IconButton-tlzD",
+   "rect": [
+    1327,
+    229,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "false",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-SegmentedControl-Button-E48xz prc-SegmentedControl-IconButton-tlzD",
+   "rect": [
+    1360,
+    229,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "UL",
+   "role": "list",
+   "text": "Update to Scintilla 5.6.9regressionscintilla dependent#18595·chcg opened Nov 2, 2026Contri",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "ul__5IxUHb withMetadata__klorrw",
+   "rect": [
+    281,
+    269,
+    1119,
+    1658
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "",
+   "text": "Update to Scintilla 5.6.9regressionscintilla dependent#18595·chcg opened Nov 2, 2026Contri",
+   "aria": "Update to Scintilla 5.6.9. More information available below.",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "listItem__X41oTe listItem__97ykKy",
+   "rect": [
+    281,
+    269,
+    1119,
+    67
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Update to Scintilla 5.6.9",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "listitem-title-link",
+   "type": "",
+   "href": "https://github.com/notepad-plus-plus/notepad-plus-plus/pull/18595",
+   "cls": "anchor__PSAOdR inline__z8HXmA titleLink__-u2mid inlineCodeTitle__kWY7p",
+   "rect": [
+    321,
+    278,
+    172,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "regression",
+   "aria": "Filter by label regression",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__OXCGsP",
+   "rect": [
+    497,
+    278,
+    78,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "scintilla dependent",
+   "aria": "Filter by label scintilla dependent",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__OXCGsP",
+   "rect": [
+    576,
+    278,
+    125,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Open pull request",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    297,
+    283,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "chcg",
+   "aria": "Filter by author chcg",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "author-filter-link",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/pulls?q=is%3Apr+state%3Aopen+author%3Achcg",
+   "cls": "filterLink__OXCGsP Link__H3GvIl",
+   "rect": [
+    371,
+    307,
+    25,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "13/13",
+   "aria": "13/13 checks passing",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "checks-status-badge-button",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk ChecksStatusBadgeButton__eiY6lv ChecksStat",
+   "rect": [
+    695,
+    305,
+    51,
+    20
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "Filter by assignee donho",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "assigneeFilterButton__jTgqFx",
+   "rect": [
+    1360,
+    292,
+    20,
+    20
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "",
+   "text": "fix: scale whitespace markers with DPI and zoomhidpi support#18591·krishnarawatethicoffici",
+   "aria": "fix: scale whitespace markers with DPI and zoom. More information available below.",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "listItem__X41oTe listItem__97ykKy",
+   "rect": [
+    281,
+    336,
+    1119,
+    65
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "fix: scale whitespace markers with DPI and zoom",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "listitem-title-link",
+   "type": "",
+   "href": "https://github.com/notepad-plus-plus/notepad-plus-plus/pull/18591",
+   "cls": "anchor__PSAOdR inline__z8HXmA titleLink__-u2mid inlineCodeTitle__kWY7p",
+   "rect": [
+    321,
+    345,
+    351,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "hidpi support",
+   "aria": "Filter by label hidpi support",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__OXCGsP",
+   "rect": [
+    676,
+    345,
+    96,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Open pull request",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    297,
+    350,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "krishnarawatethicofficial",
+   "aria": "Filter by author krishnarawatethicofficial",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "author-filter-link",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/pulls?q=is%3Apr+state%3Aopen+author%3Akrishnarawatethicofficial",
+   "cls": "filterLink__OXCGsP Link__H3GvIl",
+   "rect": [
+    371,
+    373,
+    127,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "13/13",
+   "aria": "13/13 checks passing",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "checks-status-badge-button",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk ChecksStatusBadgeButton__eiY6lv ChecksStat",
+   "rect": [
+    626,
+    371,
+    51,
+    20
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "1",
+   "aria": "1 linked issue for pull request notepad-plus-plus/notepad-plus-plus#18591: fix: scale whitespace markers with DPI and zoom",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/issues/18591/linked_closing_reference?reference_location=REPO_PULLS_INDEX",
+   "cls": "d-inline-flex flex-items-center gap-1 linkedIssueLink__-cLCcl prc-Link",
+   "rect": [
+    1354,
+    356,
+    26,
+    24
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "",
+   "text": "[xml] Update Taiwanese Mandarin translationtranslation#18584·seantw opened Oct 31, 2026Con",
+   "aria": "[xml] Update Taiwanese Mandarin translation. More information available below.",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "listItem__X41oTe listItem__97ykKy",
+   "rect": [
+    281,
+    401,
+    1119,
+    67
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "[xml] Update Taiwanese Mandarin translation",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "listitem-title-link",
+   "type": "",
+   "href": "https://github.com/notepad-plus-plus/notepad-plus-plus/pull/18584",
+   "cls": "anchor__PSAOdR inline__z8HXmA titleLink__-u2mid inlineCodeTitle__kWY7p",
+   "rect": [
+    321,
+    410,
+    329,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "translation",
+   "aria": "Filter by label translation",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__OXCGsP",
+   "rect": [
+    654,
+    410,
+    80,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Open pull request",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    297,
+    415,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "seantw",
+   "aria": "Filter by author seantw",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "author-filter-link",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/pulls?q=is%3Apr+state%3Aopen+author%3Aseantw",
+   "cls": "filterLink__OXCGsP Link__H3GvIl",
+   "rect": [
+    371,
+    439,
+    37,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "4/4",
+   "aria": "4/4 checks passing",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "checks-status-badge-button",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk ChecksStatusBadgeButton__eiY6lv ChecksStat",
+   "rect": [
+    605,
+    437,
+    38,
+    20
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "",
+   "text": "Use system font for docking panel for handling dpi changes for its child controlshidpi sup",
+   "aria": "Use system font for docking panel for handling dpi changes for its child controls. More information available below.",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "listItem__X41oTe listItem__97ykKy",
+   "rect": [
+    281,
+    468,
+    1119,
+    67
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Use system font for docking panel for handling dpi changes for its child controls",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "listitem-title-link",
+   "type": "",
+   "href": "https://github.com/notepad-plus-plus/notepad-plus-plus/pull/18577",
+   "cls": "anchor__PSAOdR inline__z8HXmA titleLink__-u2mid inlineCodeTitle__kWY7p",
+   "rect": [
+    321,
+    477,
+    583,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "hidpi support",
+   "aria": "Filter by label hidpi support",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__OXCGsP",
+   "rect": [
+    908,
+    477,
+    96,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Open pull request",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    297,
+    482,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "ozone10",
+   "aria": "Filter by author ozone10",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "author-filter-link",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/pulls?q=is%3Apr+state%3Aopen+author%3Aozone10",
+   "cls": "filterLink__OXCGsP Link__H3GvIl",
+   "rect": [
+    371,
+    506,
+    46,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "13/13",
+   "aria": "13/13 checks passing",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "checks-status-badge-button",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk ChecksStatusBadgeButton__eiY6lv ChecksStat",
+   "rect": [
+    703,
+    504,
+    51,
+    20
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "",
+   "text": "[xml] Update hungarian.xmltranslation#18575·Krazal opened Oct 30, 2026Contributor·4/4",
+   "aria": "[xml] Update hungarian.xml. More information available below.",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "listItem__X41oTe listItem__97ykKy",
+   "rect": [
+    281,
+    535,
+    1119,
+    67
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "[xml] Update hungarian.xml",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "listitem-title-link",
+   "type": "",
+   "href": "https://github.com/notepad-plus-plus/notepad-plus-plus/pull/18575",
+   "cls": "anchor__PSAOdR inline__z8HXmA titleLink__-u2mid inlineCodeTitle__kWY7p",
+   "rect": [
+    321,
+    544,
+    203,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "translation",
+   "aria": "Filter by label translation",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__OXCGsP",
+   "rect": [
+    528,
+    544,
+    80,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Open pull request",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    297,
+    549,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Krazal",
+   "aria": "Filter by author Krazal",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "author-filter-link",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/pulls?q=is%3Apr+state%3Aopen+author%3AKrazal",
+   "cls": "filterLink__OXCGsP Link__H3GvIl",
+   "rect": [
+    371,
+    573,
+    32,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "4/4",
+   "aria": "4/4 checks passing",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "checks-status-badge-button",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk ChecksStatusBadgeButton__eiY6lv ChecksStat",
+   "rect": [
+    599,
+    571,
+    38,
+    20
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "",
+   "text": "Fix UDL dialog edits scrolling the wrapped document downudl#18566·haraldrohan opened Oct 2",
+   "aria": "Fix UDL dialog edits scrolling the wrapped document down. More information available below.",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "listItem__X41oTe listItem__97ykKy",
+   "rect": [
+    281,
+    602,
+    1119,
+    67
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Fix UDL dialog edits scrolling the wrapped document down",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "listitem-title-link",
+   "type": "",
+   "href": "https://github.com/notepad-plus-plus/notepad-plus-plus/pull/18566",
+   "cls": "anchor__PSAOdR inline__z8HXmA titleLink__-u2mid inlineCodeTitle__kWY7p",
+   "rect": [
+    321,
+    611,
+    430,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "udl",
+   "aria": "Filter by label udl",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__OXCGsP",
+   "rect": [
+    755,
+    611,
+    39,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Open pull request",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    297,
+    616,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "haraldrohan",
+   "aria": "Filter by author haraldrohan",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "author-filter-link",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/pulls?q=is%3Apr+state%3Aopen+author%3Aharaldrohan",
+   "cls": "filterLink__OXCGsP Link__H3GvIl",
+   "rect": [
+    371,
+    640,
+    64,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "13/13",
+   "aria": "13/13 checks passing",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "checks-status-badge-button",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk ChecksStatusBadgeButton__eiY6lv ChecksStat",
+   "rect": [
+    713,
+    638,
+    51,
+    20
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "1",
+   "aria": "1 linked issue for pull request notepad-plus-plus/notepad-plus-plus#18566: Fix UDL dialog edits scrolling the wrapped document down",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/issues/18566/linked_closing_reference?reference_location=REPO_PULLS_INDEX",
+   "cls": "d-inline-flex flex-items-center gap-1 linkedIssueLink__-cLCcl prc-Link",
+   "rect": [
+    1354,
+    623,
+    26,
+    24
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "",
+   "text": "Fix Java function list broken by braces in literals and commentsenhancementfunction list#1",
+   "aria": "Fix Java function list broken by braces in literals and comments. More information available below.",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "listItem__X41oTe listItem__97ykKy",
+   "rect": [
+    281,
+    669,
+    1119,
+    67
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Fix Java function list broken by braces in literals and comments",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "listitem-title-link",
+   "type": "",
+   "href": "https://github.com/notepad-plus-plus/notepad-plus-plus/pull/18565",
+   "cls": "anchor__PSAOdR inline__z8HXmA titleLink__-u2mid inlineCodeTitle__kWY7p",
+   "rect": [
+    321,
+    678,
+    457,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "enhancement",
+   "aria": "Filter by label enhancement",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__OXCGsP",
+   "rect": [
+    782,
+    678,
+    96,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "function list",
+   "aria": "Filter by label function list",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__OXCGsP",
+   "rect": [
+    878,
+    678,
+    87,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Open pull request",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    297,
+    683,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "haraldrohan",
+   "aria": "Filter by author haraldrohan",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "author-filter-link",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/pulls?q=is%3Apr+state%3Aopen+author%3Aharaldrohan",
+   "cls": "filterLink__OXCGsP Link__H3GvIl",
+   "rect": [
+    371,
+    707,
+    64,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "13/13",
+   "aria": "13/13 checks passing",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "checks-status-badge-button",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk ChecksStatusBadgeButton__eiY6lv ChecksStat",
+   "rect": [
+    713,
+    705,
+    51,
+    20
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "1",
+   "aria": "1 linked issue for pull request notepad-plus-plus/notepad-plus-plus#18565: Fix Java function list broken by braces in literals and comments",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/issues/18565/linked_closing_reference?reference_location=REPO_PULLS_INDEX",
+   "cls": "d-inline-flex flex-items-center gap-1 linkedIssueLink__-cLCcl prc-Link",
+   "rect": [
+    1326,
+    690,
+    26,
+    24
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "Filter by assignee donho",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "assigneeFilterButton__jTgqFx",
+   "rect": [
+    1360,
+    692,
+    20,
+    20
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "",
+   "text": "Fix wrong read-only and monitoring icons in Document List and Ctrl+Tab listenhancement#185",
+   "aria": "Fix wrong read-only and monitoring icons in Document List and Ctrl+Tab list. More information available below.",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "listItem__X41oTe listItem__97ykKy",
+   "rect": [
+    281,
+    736,
+    1119,
+    67
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Fix wrong read-only and monitoring icons in Document List and Ctrl+Tab list",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "listitem-title-link",
+   "type": "",
+   "href": "https://github.com/notepad-plus-plus/notepad-plus-plus/pull/18558",
+   "cls": "anchor__PSAOdR inline__z8HXmA titleLink__-u2mid inlineCodeTitle__kWY7p",
+   "rect": [
+    321,
+    745,
+    556,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "enhancement",
+   "aria": "Filter by label enhancement",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__OXCGsP",
+   "rect": [
+    881,
+    745,
+    96,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Open pull request",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    297,
+    750,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "haraldrohan",
+   "aria": "Filter by author haraldrohan",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "author-filter-link",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/pulls?q=is%3Apr+state%3Aopen+author%3Aharaldrohan",
+   "cls": "filterLink__OXCGsP Link__H3GvIl",
+   "rect": [
+    371,
+    774,
+    64,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "13/13",
+   "aria": "13/13 checks passing",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "checks-status-badge-button",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk ChecksStatusBadgeButton__eiY6lv ChecksStat",
+   "rect": [
+    713,
+    772,
+    51,
+    20
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "1",
+   "aria": "1 linked issue for pull request notepad-plus-plus/notepad-plus-plus#18558: Fix wrong read-only and monitoring icons in Document List and Ctrl+Tab list",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/issues/18558/linked_closing_reference?reference_location=REPO_PULLS_INDEX",
+   "cls": "d-inline-flex flex-items-center gap-1 linkedIssueLink__-cLCcl prc-Link",
+   "rect": [
+    1354,
+    757,
+    26,
+    24
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "",
+   "text": "Fix Bash function list broken by quoted here-document delimiterlanguage-support#18545·hara",
+   "aria": "Fix Bash function list broken by quoted here-document delimiter. More information available below.",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "listItem__X41oTe listItem__97ykKy",
+   "rect": [
+    281,
+    803,
+    1119,
+    67
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Fix Bash function list broken by quoted here-document delimiter",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "listitem-title-link",
+   "type": "",
+   "href": "https://github.com/notepad-plus-plus/notepad-plus-plus/pull/18545",
+   "cls": "anchor__PSAOdR inline__z8HXmA titleLink__-u2mid inlineCodeTitle__kWY7p",
+   "rect": [
+    321,
+    812,
+    470,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "language-support",
+   "aria": "Filter by label language-support",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__OXCGsP",
+   "rect": [
+    795,
+    812,
+    120,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Open pull request",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    297,
+    817,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "haraldrohan",
+   "aria": "Filter by author haraldrohan",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "author-filter-link",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/pulls?q=is%3Apr+state%3Aopen+author%3Aharaldrohan",
+   "cls": "filterLink__OXCGsP Link__H3GvIl",
+   "rect": [
+    371,
+    841,
+    64,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "4/4",
+   "aria": "4/4 checks passing",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "checks-status-badge-button",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk ChecksStatusBadgeButton__eiY6lv ChecksStat",
+   "rect": [
+    718,
+    839,
+    38,
+    20
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "1",
+   "aria": "1 linked issue for pull request notepad-plus-plus/notepad-plus-plus#18545: Fix Bash function list broken by quoted here-document delimiter",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/issues/18545/linked_closing_reference?reference_location=REPO_PULLS_INDEX",
+   "cls": "d-inline-flex flex-items-center gap-1 linkedIssueLink__-cLCcl prc-Link",
+   "rect": [
+    1319,
+    824,
+    26,
+    24
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "",
+   "text": "Fix Shift+F4 in Search results selecting the same occurrencebug#18542·haraldrohan opened O",
+   "aria": "Fix Shift+F4 in Search results selecting the same occurrence. More information available below.",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "listItem__X41oTe listItem__97ykKy",
+   "rect": [
+    281,
+    870,
+    1119,
+    67
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Fix Shift+F4 in Search results selecting the same occurrence",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "listitem-title-link",
+   "type": "",
+   "href": "https://github.com/notepad-plus-plus/notepad-plus-plus/pull/18542",
+   "cls": "anchor__PSAOdR inline__z8HXmA titleLink__-u2mid inlineCodeTitle__kWY7p",
+   "rect": [
+    321,
+    879,
+    432,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "bug",
+   "aria": "Filter by label bug",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__OXCGsP",
+   "rect": [
+    757,
+    879,
+    43,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Open pull request",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    297,
+    884,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "haraldrohan",
+   "aria": "Filter by author haraldrohan",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "author-filter-link",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/pulls?q=is%3Apr+state%3Aopen+author%3Aharaldrohan",
+   "cls": "filterLink__OXCGsP Link__H3GvIl",
+   "rect": [
+    371,
+    908,
+    64,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "13/13",
+   "aria": "13/13 checks passing",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "checks-status-badge-button",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk ChecksStatusBadgeButton__eiY6lv ChecksStat",
+   "rect": [
+    640,
+    906,
+    51,
+    20
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "1",
+   "aria": "1 linked issue for pull request notepad-plus-plus/notepad-plus-plus#18542: Fix Shift+F4 in Search results selecting the same occurrence",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/issues/18542/linked_closing_reference?reference_location=REPO_PULLS_INDEX",
+   "cls": "d-inline-flex flex-items-center gap-1 linkedIssueLink__-cLCcl prc-Link",
+   "rect": [
+    1354,
+    891,
+    26,
+    24
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "",
+   "text": "Fix hasExt() falsely detecting dots in directory path as file extensionsbug#18540·softmgr ",
+   "aria": "Fix hasExt() falsely detecting dots in directory path as file extensions. More information available below.",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "listItem__X41oTe listItem__97ykKy",
+   "rect": [
+    281,
+    937,
+    1119,
+    67
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Fix hasExt() falsely detecting dots in directory path as file extensions",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "listitem-title-link",
+   "type": "",
+   "href": "https://github.com/notepad-plus-plus/notepad-plus-plus/pull/18540",
+   "cls": "anchor__PSAOdR inline__z8HXmA titleLink__-u2mid inlineCodeTitle__kWY7p",
+   "rect": [
+    321,
+    946,
+    494,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "bug",
+   "aria": "Filter by label bug",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__OXCGsP",
+   "rect": [
+    819,
+    946,
+    43,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Open pull request",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    297,
+    951,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "softmgr",
+   "aria": "Filter by author softmgr",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "author-filter-link",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/pulls?q=is%3Apr+state%3Aopen+author%3Asoftmgr",
+   "cls": "filterLink__OXCGsP Link__H3GvIl",
+   "rect": [
+    371,
+    975,
+    42,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "11/13",
+   "aria": "11/13 checks passing",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "checks-status-badge-button",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk ChecksStatusBadgeButton__eiY6lv ChecksStat",
+   "rect": [
+    617,
+    973,
+    51,
+    20
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "1",
+   "aria": "1 linked issue for pull request notepad-plus-plus/notepad-plus-plus#18540: Fix hasExt() falsely detecting dots in directory path as file extensions",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/issues/18540/linked_closing_reference?reference_location=REPO_PULLS_INDEX",
+   "cls": "d-inline-flex flex-items-center gap-1 linkedIssueLink__-cLCcl prc-Link",
+   "rect": [
+    1319,
+    958,
+    26,
+    24
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "",
+   "text": "add grep and ungrep functionality to find dialog#18518·meigelb opened Oct 18, 2026·1 task ",
+   "aria": "add grep and ungrep functionality to find dialog. More information available below.",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "listItem__X41oTe listItem__97ykKy",
+   "rect": [
+    281,
+    1004,
+    1119,
+    65
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "add grep and ungrep functionality to find dialog",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "listitem-title-link",
+   "type": "",
+   "href": "https://github.com/notepad-plus-plus/notepad-plus-plus/pull/18518",
+   "cls": "anchor__PSAOdR inline__z8HXmA titleLink__-u2mid inlineCodeTitle__kWY7p",
+   "rect": [
+    321,
+    1013,
+    352,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Draft pull request",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    297,
+    1018,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "meigelb",
+   "aria": "Filter by author meigelb",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "author-filter-link",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/pulls?q=is%3Apr+state%3Aopen+author%3Ameigelb",
+   "cls": "filterLink__OXCGsP Link__H3GvIl",
+   "rect": [
+    371,
+    1041,
+    43,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "1",
+   "aria": "1 linked issue for pull request notepad-plus-plus/notepad-plus-plus#18518: add grep and ungrep functionality to find dialog",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/issues/18518/linked_closing_reference?reference_location=REPO_PULLS_INDEX",
+   "cls": "d-inline-flex flex-items-center gap-1 linkedIssueLink__-cLCcl prc-Link",
+   "rect": [
+    1319,
+    1024,
+    26,
+    24
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "",
+   "text": "Editorial: few typos and grammar glitchesdocumentation#18507·Helder-Magalhaes opened Oct 1",
+   "aria": "Editorial: few typos and grammar glitches. More information available below.",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "listItem__X41oTe listItem__97ykKy",
+   "rect": [
+    281,
+    1069,
+    1119,
+    65
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Editorial: few typos and grammar glitches",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "listitem-title-link",
+   "type": "",
+   "href": "https://github.com/notepad-plus-plus/notepad-plus-plus/pull/18507",
+   "cls": "anchor__PSAOdR inline__z8HXmA titleLink__-u2mid inlineCodeTitle__kWY7p",
+   "rect": [
+    321,
+    1078,
+    302,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "documentation",
+   "aria": "Filter by label documentation",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__OXCGsP",
+   "rect": [
+    627,
+    1078,
+    105,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Open pull request",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    297,
+    1083,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Helder-Magalhaes",
+   "aria": "Filter by author Helder-Magalhaes",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "author-filter-link",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/pulls?q=is%3Apr+state%3Aopen+author%3AHelder-Magalhaes",
+   "cls": "filterLink__OXCGsP Link__H3GvIl",
+   "rect": [
+    371,
+    1106,
+    97,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "",
+   "text": "Draw right-to-left views with GDI, as DirectWrite can't mirror themenhancement#18503·Pyre9",
+   "aria": "Draw right-to-left views with GDI, as DirectWrite can't mirror them. More information available below.",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "listItem__X41oTe listItem__97ykKy",
+   "rect": [
+    281,
+    1134,
+    1119,
+    65
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Draw right-to-left views with GDI, as DirectWrite can't mirror them",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "listitem-title-link",
+   "type": "",
+   "href": "https://github.com/notepad-plus-plus/notepad-plus-plus/pull/18503",
+   "cls": "anchor__PSAOdR inline__z8HXmA titleLink__-u2mid inlineCodeTitle__kWY7p",
+   "rect": [
+    321,
+    1143,
+    482,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "enhancement",
+   "aria": "Filter by label enhancement",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__OXCGsP",
+   "rect": [
+    807,
+    1143,
+    96,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Open pull request",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    297,
+    1148,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Pyre909",
+   "aria": "Filter by author Pyre909",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "author-filter-link",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/pulls?q=is%3Apr+state%3Aopen+author%3APyre909",
+   "cls": "filterLink__OXCGsP Link__H3GvIl",
+   "rect": [
+    371,
+    1171,
+    42,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "13/13",
+   "aria": "13/13 checks passing",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "checks-status-badge-button",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk ChecksStatusBadgeButton__eiY6lv ChecksStat",
+   "rect": [
+    627,
+    1169,
+    51,
+    20
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "SPAN",
+   "role": "img",
+   "text": "2",
+   "aria": "2 linked issues",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "d-inline-flex flex-items-center gap-1",
+   "rect": [
+    1354,
+    1157,
+    26,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "",
+   "text": "Add horizontal titles to the vertical tab bar#18497·LucaSorvillo opened Oct 15, 2026Contri",
+   "aria": "Add horizontal titles to the vertical tab bar. More information available below.",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "listItem__X41oTe listItem__97ykKy",
+   "rect": [
+    281,
+    1199,
+    1119,
+    67
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Add horizontal titles to the vertical tab bar",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "listitem-title-link",
+   "type": "",
+   "href": "https://github.com/notepad-plus-plus/notepad-plus-plus/pull/18497",
+   "cls": "anchor__PSAOdR inline__z8HXmA titleLink__-u2mid inlineCodeTitle__kWY7p",
+   "rect": [
+    321,
+    1208,
+    309,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Open pull request",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    297,
+    1213,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "LucaSorvillo",
+   "aria": "Filter by author LucaSorvillo",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "author-filter-link",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/pulls?q=is%3Apr+state%3Aopen+author%3ALucaSorvillo",
+   "cls": "filterLink__OXCGsP Link__H3GvIl",
+   "rect": [
+    371,
+    1237,
+    63,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "13/13",
+   "aria": "13/13 checks passing",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "checks-status-badge-button",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk ChecksStatusBadgeButton__eiY6lv ChecksStat",
+   "rect": [
+    729,
+    1235,
+    51,
+    20
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "1",
+   "aria": "1 linked issue for pull request notepad-plus-plus/notepad-plus-plus#18497: Add horizontal titles to the vertical tab bar",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/issues/18497/linked_closing_reference?reference_location=REPO_PULLS_INDEX",
+   "cls": "d-inline-flex flex-items-center gap-1 linkedIssueLink__-cLCcl prc-Link",
+   "rect": [
+    1319,
+    1220,
+    26,
+    24
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "",
+   "text": "Add smooth scrolling by pixels#18495·LucaSorvillo opened Oct 15, 2026Contributor·1 task do",
+   "aria": "Add smooth scrolling by pixels. More information available below.",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "listItem__X41oTe listItem__97ykKy",
+   "rect": [
+    281,
+    1266,
+    1119,
+    67
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Add smooth scrolling by pixels",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "listitem-title-link",
+   "type": "",
+   "href": "https://github.com/notepad-plus-plus/notepad-plus-plus/pull/18495",
+   "cls": "anchor__PSAOdR inline__z8HXmA titleLink__-u2mid inlineCodeTitle__kWY7p",
+   "rect": [
+    321,
+    1275,
+    223,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Open pull request",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    297,
+    1280,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "LucaSorvillo",
+   "aria": "Filter by author LucaSorvillo",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "author-filter-link",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/pulls?q=is%3Apr+state%3Aopen+author%3ALucaSorvillo",
+   "cls": "filterLink__OXCGsP Link__H3GvIl",
+   "rect": [
+    371,
+    1304,
+    63,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "13/13",
+   "aria": "13/13 checks passing",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "checks-status-badge-button",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk ChecksStatusBadgeButton__eiY6lv ChecksStat",
+   "rect": [
+    729,
+    1302,
+    51,
+    20
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "1",
+   "aria": "1 linked issue for pull request notepad-plus-plus/notepad-plus-plus#18495: Add smooth scrolling by pixels",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/issues/18495/linked_closing_reference?reference_location=REPO_PULLS_INDEX",
+   "cls": "d-inline-flex flex-items-center gap-1 linkedIssueLink__-cLCcl prc-Link",
+   "rect": [
+    1354,
+    1287,
+    26,
+    24
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "",
+   "text": "Add option to highlight all matches while the Find dialog is open#18492·LucaSorvillo opene",
+   "aria": "Add option to highlight all matches while the Find dialog is open. More information available below.",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "listItem__X41oTe listItem__97ykKy",
+   "rect": [
+    281,
+    1333,
+    1119,
+    67
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Add option to highlight all matches while the Find dialog is open",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "listitem-title-link",
+   "type": "",
+   "href": "https://github.com/notepad-plus-plus/notepad-plus-plus/pull/18492",
+   "cls": "anchor__PSAOdR inline__z8HXmA titleLink__-u2mid inlineCodeTitle__kWY7p",
+   "rect": [
+    321,
+    1342,
+    471,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Open pull request",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    297,
+    1347,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "LucaSorvillo",
+   "aria": "Filter by author LucaSorvillo",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "author-filter-link",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/pulls?q=is%3Apr+state%3Aopen+author%3ALucaSorvillo",
+   "cls": "filterLink__OXCGsP Link__H3GvIl",
+   "rect": [
+    371,
+    1371,
+    63,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "13/13",
+   "aria": "13/13 checks passing",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "checks-status-badge-button",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk ChecksStatusBadgeButton__eiY6lv ChecksStat",
+   "rect": [
+    729,
+    1369,
+    51,
+    20
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "1",
+   "aria": "1 linked issue for pull request notepad-plus-plus/notepad-plus-plus#18492: Add option to highlight all matches while the Find dialog is open",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/issues/18492/linked_closing_reference?reference_location=REPO_PULLS_INDEX",
+   "cls": "d-inline-flex flex-items-center gap-1 linkedIssueLink__-cLCcl prc-Link",
+   "rect": [
+    1291,
+    1354,
+    26,
+    24
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "Filter by assignee donho",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "assigneeFilterButton__jTgqFx",
+   "rect": [
+    1360,
+    1356,
+    20,
+    20
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "",
+   "text": "Keep incremental search \"Highlight all\" up to date#18490·LucaSorvillo opened Oct 15, 2026C",
+   "aria": "Keep incremental search \"Highlight all\" up to date. More information available below.",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "listItem__X41oTe listItem__97ykKy",
+   "rect": [
+    281,
+    1400,
+    1119,
+    67
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Keep incremental search \"Highlight all\" up to date",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "listitem-title-link",
+   "type": "",
+   "href": "https://github.com/notepad-plus-plus/notepad-plus-plus/pull/18490",
+   "cls": "anchor__PSAOdR inline__z8HXmA titleLink__-u2mid inlineCodeTitle__kWY7p",
+   "rect": [
+    321,
+    1409,
+    364,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Open pull request",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    297,
+    1414,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "LucaSorvillo",
+   "aria": "Filter by author LucaSorvillo",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "author-filter-link",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/pulls?q=is%3Apr+state%3Aopen+author%3ALucaSorvillo",
+   "cls": "filterLink__OXCGsP Link__H3GvIl",
+   "rect": [
+    371,
+    1438,
+    63,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "13/13",
+   "aria": "13/13 checks passing",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "checks-status-badge-button",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk ChecksStatusBadgeButton__eiY6lv ChecksStat",
+   "rect": [
+    729,
+    1436,
+    51,
+    20
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "1",
+   "aria": "1 linked issue for pull request notepad-plus-plus/notepad-plus-plus#18490: Keep incremental search \"Highlight all\" up to date",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/issues/18490/linked_closing_reference?reference_location=REPO_PULLS_INDEX",
+   "cls": "d-inline-flex flex-items-center gap-1 linkedIssueLink__-cLCcl prc-Link",
+   "rect": [
+    1354,
+    1421,
+    26,
+    24
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "",
+   "text": "Add option to apply word wrap per document#18488·LucaSorvillo opened Oct 15, 2026Contribut",
+   "aria": "Add option to apply word wrap per document. More information available below.",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "listItem__X41oTe listItem__97ykKy",
+   "rect": [
+    281,
+    1467,
+    1119,
+    67
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Add option to apply word wrap per document",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "listitem-title-link",
+   "type": "",
+   "href": "https://github.com/notepad-plus-plus/notepad-plus-plus/pull/18488",
+   "cls": "anchor__PSAOdR inline__z8HXmA titleLink__-u2mid inlineCodeTitle__kWY7p",
+   "rect": [
+    321,
+    1476,
+    335,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Open pull request",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    297,
+    1481,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "LucaSorvillo",
+   "aria": "Filter by author LucaSorvillo",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "author-filter-link",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/pulls?q=is%3Apr+state%3Aopen+author%3ALucaSorvillo",
+   "cls": "filterLink__OXCGsP Link__H3GvIl",
+   "rect": [
+    371,
+    1505,
+    63,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "13/13",
+   "aria": "13/13 checks passing",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "checks-status-badge-button",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk ChecksStatusBadgeButton__eiY6lv ChecksStat",
+   "rect": [
+    729,
+    1503,
+    51,
+    20
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "1",
+   "aria": "1 linked issue for pull request notepad-plus-plus/notepad-plus-plus#18488: Add option to apply word wrap per document",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/issues/18488/linked_closing_reference?reference_location=REPO_PULLS_INDEX",
+   "cls": "d-inline-flex flex-items-center gap-1 linkedIssueLink__-cLCcl prc-Link",
+   "rect": [
+    1319,
+    1488,
+    26,
+    24
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "",
+   "text": "Fix UDL not switching between dark/light mode variants for already-open filesdark modeudl#",
+   "aria": "Fix UDL not switching between dark/light mode variants for already-open files. More information available below.",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "listItem__X41oTe listItem__97ykKy",
+   "rect": [
+    281,
+    1534,
+    1119,
+    67
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Fix UDL not switching between dark/light mode variants for already-open files",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "listitem-title-link",
+   "type": "",
+   "href": "https://github.com/notepad-plus-plus/notepad-plus-plus/pull/18475",
+   "cls": "anchor__PSAOdR inline__z8HXmA titleLink__-u2mid inlineCodeTitle__kWY7p",
+   "rect": [
+    321,
+    1543,
+    568,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "dark mode",
+   "aria": "Filter by label dark mode",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__OXCGsP",
+   "rect": [
+    893,
+    1543,
+    81,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "udl",
+   "aria": "Filter by label udl",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__OXCGsP",
+   "rect": [
+    974,
+    1543,
+    39,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Open pull request",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    297,
+    1548,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "haraldrohan",
+   "aria": "Filter by author haraldrohan",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "author-filter-link",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/pulls?q=is%3Apr+state%3Aopen+author%3Aharaldrohan",
+   "cls": "filterLink__OXCGsP Link__H3GvIl",
+   "rect": [
+    371,
+    1572,
+    64,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "13/13",
+   "aria": "13/13 checks passing",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "checks-status-badge-button",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk ChecksStatusBadgeButton__eiY6lv ChecksStat",
+   "rect": [
+    640,
+    1570,
+    51,
+    20
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "1",
+   "aria": "1 linked issue for pull request notepad-plus-plus/notepad-plus-plus#18475: Fix UDL not switching between dark/light mode variants for already-open files",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/issues/18475/linked_closing_reference?reference_location=REPO_PULLS_INDEX",
+   "cls": "d-inline-flex flex-items-center gap-1 linkedIssueLink__-cLCcl prc-Link",
+   "rect": [
+    1354,
+    1555,
+    26,
+    24
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "",
+   "text": "[xml] Add Lao translation (lao.xml)translation#18426·bounkirdni-2025 opened Sep 29, 2026·C",
+   "aria": "[xml] Add Lao translation (lao.xml). More information available below.",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "listItem__X41oTe listItem__97ykKy",
+   "rect": [
+    281,
+    1601,
+    1119,
+    65
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "[xml] Add Lao translation (lao.xml)",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "listitem-title-link",
+   "type": "",
+   "href": "https://github.com/notepad-plus-plus/notepad-plus-plus/pull/18426",
+   "cls": "anchor__PSAOdR inline__z8HXmA titleLink__-u2mid inlineCodeTitle__kWY7p",
+   "rect": [
+    321,
+    1610,
+    251,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "translation",
+   "aria": "Filter by label translation",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__OXCGsP",
+   "rect": [
+    576,
+    1610,
+    80,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Open pull request",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    297,
+    1615,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "bounkirdni-2025",
+   "aria": "Filter by author bounkirdni-2025",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "author-filter-link",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/pulls?q=is%3Apr+state%3Aopen+author%3Abounkirdni-2025",
+   "cls": "filterLink__OXCGsP Link__H3GvIl",
+   "rect": [
+    371,
+    1638,
+    88,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Changes requested",
+   "aria": "Filter by review: Changes requested",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__OXCGsP",
+   "rect": [
+    570,
+    1637,
+    102,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "13/13",
+   "aria": "13/13 checks passing",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "checks-status-badge-button",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk ChecksStatusBadgeButton__eiY6lv ChecksStat",
+   "rect": [
+    682,
+    1636,
+    51,
+    20
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "",
+   "text": "Support per-user installation mode (no admin rights required)installer#18286·DraftingDream",
+   "aria": "Support per-user installation mode (no admin rights required). More information available below.",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "listItem__X41oTe listItem__97ykKy",
+   "rect": [
+    281,
+    1666,
+    1119,
+    67
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Support per-user installation mode (no admin rights required)",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "listitem-title-link",
+   "type": "",
+   "href": "https://github.com/notepad-plus-plus/notepad-plus-plus/pull/18286",
+   "cls": "anchor__PSAOdR inline__z8HXmA titleLink__-u2mid inlineCodeTitle__kWY7p",
+   "rect": [
+    321,
+    1675,
+    450,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "installer",
+   "aria": "Filter by label installer",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__OXCGsP",
+   "rect": [
+    775,
+    1675,
+    65,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Open pull request",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    297,
+    1680,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "DraftingDreamer",
+   "aria": "Filter by author DraftingDreamer",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "author-filter-link",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/pulls?q=is%3Apr+state%3Aopen+author%3ADraftingDreamer",
+   "cls": "filterLink__OXCGsP Link__H3GvIl",
+   "rect": [
+    371,
+    1704,
+    89,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "13/13",
+   "aria": "13/13 checks passing",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "checks-status-badge-button",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk ChecksStatusBadgeButton__eiY6lv ChecksStat",
+   "rect": [
+    744,
+    1702,
+    51,
+    20
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "1",
+   "aria": "1 linked issue for pull request notepad-plus-plus/notepad-plus-plus#18286: Support per-user installation mode (no admin rights required)",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/issues/18286/linked_closing_reference?reference_location=REPO_PULLS_INDEX",
+   "cls": "d-inline-flex flex-items-center gap-1 linkedIssueLink__-cLCcl prc-Link",
+   "rect": [
+    1354,
+    1687,
+    26,
+    24
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "",
+   "text": "Add per-document word wrap settings#18278·ocp1006 opened Aug 8, 20261 2",
+   "aria": "Add per-document word wrap settings. More information available below.",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "listItem__X41oTe listItem__97ykKy",
+   "rect": [
+    281,
+    1733,
+    1119,
+    65
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Add per-document word wrap settings",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "listitem-title-link",
+   "type": "",
+   "href": "https://github.com/notepad-plus-plus/notepad-plus-plus/pull/18278",
+   "cls": "anchor__PSAOdR inline__z8HXmA titleLink__-u2mid inlineCodeTitle__kWY7p",
+   "rect": [
+    321,
+    1742,
+    281,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Open pull request",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    297,
+    1747,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "ocp1006",
+   "aria": "Filter by author ocp1006",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "author-filter-link",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/pulls?q=is%3Apr+state%3Aopen+author%3Aocp1006",
+   "cls": "filterLink__OXCGsP Link__H3GvIl",
+   "rect": [
+    371,
+    1770,
+    46,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "1",
+   "aria": "1 linked issue for pull request notepad-plus-plus/notepad-plus-plus#18278: Add per-document word wrap settings",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/issues/18278/linked_closing_reference?reference_location=REPO_PULLS_INDEX",
+   "cls": "d-inline-flex flex-items-center gap-1 linkedIssueLink__-cLCcl prc-Link",
+   "rect": [
+    1319,
+    1753,
+    26,
+    24
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "",
+   "text": "Always link with /DEBUG:FULLbuild / code#18216·enginelesscc opened Jul 14, 2026 2",
+   "aria": "Always link with /DEBUG:FULL. More information available below.",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "listItem__X41oTe listItem__97ykKy",
+   "rect": [
+    281,
+    1798,
+    1119,
+    65
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Always link with /DEBUG:FULL",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "listitem-title-link",
+   "type": "",
+   "href": "https://github.com/notepad-plus-plus/notepad-plus-plus/pull/18216",
+   "cls": "anchor__PSAOdR inline__z8HXmA titleLink__-u2mid inlineCodeTitle__kWY7p",
+   "rect": [
+    321,
+    1807,
+    218,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "build / code",
+   "aria": "Filter by label build / code",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__OXCGsP",
+   "rect": [
+    543,
+    1807,
+    88,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Open pull request",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    297,
+    1812,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "enginelesscc",
+   "aria": "Filter by author enginelesscc",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "author-filter-link",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/pulls?q=is%3Apr+state%3Aopen+author%3Aenginelesscc",
+   "cls": "filterLink__OXCGsP Link__H3GvIl",
+   "rect": [
+    371,
+    1835,
+    67,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "",
+   "text": "Lazy load & late redraw#18191·enginelesscc opened Jul 7, 2026·3 tasks 3",
+   "aria": "Lazy load & late redraw. More information available below.",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "listItem__X41oTe listItem__97ykKy",
+   "rect": [
+    281,
+    1863,
+    1119,
+    64
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Lazy load & late redraw",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "listitem-title-link",
+   "type": "",
+   "href": "https://github.com/notepad-plus-plus/notepad-plus-plus/pull/18191",
+   "cls": "anchor__PSAOdR inline__z8HXmA titleLink__-u2mid inlineCodeTitle__kWY7p",
+   "rect": [
+    321,
+    1872,
+    169,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Draft pull request",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    297,
+    1877,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "enginelesscc",
+   "aria": "Filter by author enginelesscc",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "author-filter-link",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/pulls?q=is%3Apr+state%3Aopen+author%3Aenginelesscc",
+   "cls": "filterLink__OXCGsP Link__H3GvIl",
+   "rect": [
+    371,
+    1900,
+    67,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Previous",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/pulls?q=is%3Apr+state%3Aopen",
+   "cls": "prc-Pagination-Page-Etgqf",
+   "rect": [
+    732,
+    1948,
+    82,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "1",
+   "aria": "Page 1",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/pulls?q=is%3Apr+state%3Aopen",
+   "cls": "prc-Pagination-Page-Etgqf",
+   "rect": [
+    818,
+    1948,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "2",
+   "aria": "Page 2",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/pulls?q=is%3Apr+state%3Aopen&page=2",
+   "cls": "prc-Pagination-Page-Etgqf",
+   "rect": [
+    854,
+    1948,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Next",
+   "aria": "Next Page",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/pulls?q=is%3Apr+state%3Aopen&page=2",
+   "cls": "prc-Pagination-Page-Etgqf",
+   "rect": [
+    890,
+    1948,
+    59,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "FOOTER",
+   "role": "contentinfo",
+   "text": "Footer © 2026 GitHub, Inc. Footer navigation Terms Privacy Security Status Community Docs ",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "footer f6 color-fg-muted color-border-subtle tmp-pt-7 tmp-pb-6 p-respo",
+   "rect": [
+    0,
+    2020,
+    1425,
+    58
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "GitHub Homepage",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.com",
+   "cls": "footer-octicon mr-2",
+   "rect": [
+    293,
+    2037,
+    24,
+    25
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Terms",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://docs.github.com/site-policy/github-terms/github-terms-of-service",
+   "cls": "Link--secondary Link",
+   "rect": [
+    446,
+    2042,
+    31,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Privacy",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://docs.github.com/site-policy/privacy-policies/github-privacy-statement",
+   "cls": "Link--secondary Link",
+   "rect": [
+    493,
+    2042,
+    37,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Security",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.com/security",
+   "cls": "Link--secondary Link",
+   "rect": [
+    546,
+    2042,
+    42,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Status",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://www.githubstatus.com/",
+   "cls": "Link--secondary Link",
+   "rect": [
+    604,
+    2042,
+    32,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Community",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.community/",
+   "cls": "Link--secondary Link",
+   "rect": [
+    652,
+    2042,
+    62,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Docs",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://docs.github.com/",
+   "cls": "Link--secondary Link",
+   "rect": [
+    729,
+    2042,
+    26,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Contact",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://support.github.com?tags=dotcom-footer",
+   "cls": "Link--secondary Link",
+   "rect": [
+    771,
+    2042,
+    41,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Manage cookies",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "Link--secondary underline-on-hover border-0 p-0 color-bg-transparent",
+   "rect": [
+    828,
+    2041,
+    86,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Do not share my personal information",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "Link--secondary underline-on-hover border-0 p-0 color-bg-transparent t",
+   "rect": [
+    931,
+    2041,
+    202,
+    18
+   ],
+   "disabled": false
+  }
+ ],
+ "tables": [],
+ "same_repo_links": [
+  "/notepad-plus-plus/notepad-plus-plus",
+  "/notepad-plus-plus/notepad-plus-plus/issues",
+  "/notepad-plus-plus/notepad-plus-plus/pulls",
+  "/notepad-plus-plus/notepad-plus-plus/agents?author=wangtierui",
+  "/notepad-plus-plus/notepad-plus-plus/actions",
+  "/notepad-plus-plus/notepad-plus-plus/projects",
+  "/notepad-plus-plus/notepad-plus-plus/wiki",
+  "/notepad-plus-plus/notepad-plus-plus/security",
+  "/notepad-plus-plus/notepad-plus-plus/pulse",
+  "/notepad-plus-plus/notepad-plus-plus/pulls/wangtierui",
+  "/notepad-plus-plus/notepad-plus-plus/pulls/assigned/wangtierui",
+  "/notepad-plus-plus/notepad-plus-plus/pulls/involves/wangtierui",
+  "/notepad-plus-plus/notepad-plus-plus/pulls/review-requested/wangtierui",
+  "/notepad-plus-plus/notepad-plus-plus/milestones",
+  "/notepad-plus-plus/notepad-plus-plus/labels",
+  "/notepad-plus-plus/notepad-plus-plus/stacks",
+  "/notepad-plus-plus/notepad-plus-plus/compare",
+  "/notepad-plus-plus/notepad-plus-plus/pulls?q=is%3Apr+state%3Aopen",
+  "/notepad-plus-plus/notepad-plus-plus/pulls?q=is%3Apr+state%3Aclosed",
+  "/notepad-plus-plus/notepad-plus-plus/pulls?q=is%3Apr+state%3Aopen+author%3Achcg",
+  "/notepad-plus-plus/notepad-plus-plus/pulls?q=is%3Apr+state%3Aopen+author%3Akrishnarawatethicofficial",
+  "/notepad-plus-plus/notepad-plus-plus/issues/18591/linked_closing_reference?reference_location=REPO_PULLS_INDEX",
+  "/notepad-plus-plus/notepad-plus-plus/pulls?q=is%3Apr+state%3Aopen+author%3Aseantw",
+  "/notepad-plus-plus/notepad-plus-plus/pulls?q=is%3Apr+state%3Aopen+author%3Aozone10",
+  "/notepad-plus-plus/notepad-plus-plus/pulls?q=is%3Apr+state%3Aopen+author%3AKrazal",
+  "/notepad-plus-plus/notepad-plus-plus/pulls?q=is%3Apr+state%3Aopen+author%3Aharaldrohan",
+  "/notepad-plus-plus/notepad-plus-plus/issues/18566/linked_closing_reference?reference_location=REPO_PULLS_INDEX",
+  "/notepad-plus-plus/notepad-plus-plus/issues/18565/linked_closing_reference?reference_location=REPO_PULLS_INDEX",
+  "/notepad-plus-plus/notepad-plus-plus/issues/18558/linked_closing_reference?reference_location=REPO_PULLS_INDEX",
+  "/notepad-plus-plus/notepad-plus-plus/issues/18545/linked_closing_reference?reference_location=REPO_PULLS_INDEX",
+  "/notepad-plus-plus/notepad-plus-plus/issues/18542/linked_closing_reference?reference_location=REPO_PULLS_INDEX",
+  "/notepad-plus-plus/notepad-plus-plus/pulls?q=is%3Apr+state%3Aopen+author%3Asoftmgr",
+  "/notepad-plus-plus/notepad-plus-plus/issues/18540/linked_closing_reference?reference_location=REPO_PULLS_INDEX",
+  "/notepad-plus-plus/notepad-plus-plus/pulls?q=is%3Apr+state%3Aopen+author%3Ameigelb",
+  "/notepad-plus-plus/notepad-plus-plus/issues/18518/linked_closing_reference?reference_location=REPO_PULLS_INDEX",
+  "/notepad-plus-plus/notepad-plus-plus/pulls?q=is%3Apr+state%3Aopen+author%3AHelder-Magalhaes",
+  "/notepad-plus-plus/notepad-plus-plus/pulls?q=is%3Apr+state%3Aopen+author%3APyre909",
+  "/notepad-plus-plus/notepad-plus-plus/pulls?q=is%3Apr+state%3Aopen+author%3ALucaSorvillo",
+  "/notepad-plus-plus/notepad-plus-plus/issues/18497/linked_closing_reference?reference_location=REPO_PULLS_INDEX",
+  "/notepad-plus-plus/notepad-plus-plus/issues/18495/linked_closing_reference?reference_location=REPO_PULLS_INDEX",
+  "/notepad-plus-plus/notepad-plus-plus/issues/18492/linked_closing_reference?reference_location=REPO_PULLS_INDEX",
+  "/notepad-plus-plus/notepad-plus-plus/issues/18490/linked_closing_reference?reference_location=REPO_PULLS_INDEX",
+  "/notepad-plus-plus/notepad-plus-plus/issues/18488/linked_closing_reference?reference_location=REPO_PULLS_INDEX",
+  "/notepad-plus-plus/notepad-plus-plus/issues/18475/linked_closing_reference?reference_location=REPO_PULLS_INDEX",
+  "/notepad-plus-plus/notepad-plus-plus/pulls?q=is%3Apr+state%3Aopen+author%3Abounkirdni-2025",
+  "/notepad-plus-plus/notepad-plus-plus/pulls?q=is%3Apr+state%3Aopen+author%3ADraftingDreamer",
+  "/notepad-plus-plus/notepad-plus-plus/issues/18286/linked_closing_reference?reference_location=REPO_PULLS_INDEX",
+  "/notepad-plus-plus/notepad-plus-plus/pulls?q=is%3Apr+state%3Aopen+author%3Aocp1006",
+  "/notepad-plus-plus/notepad-plus-plus/issues/18278/linked_closing_reference?reference_location=REPO_PULLS_INDEX",
+  "/notepad-plus-plus/notepad-plus-plus/pulls?q=is%3Apr+state%3Aopen+author%3Aenginelesscc",
+  "/notepad-plus-plus/notepad-plus-plus/pulls?q=is%3Apr+state%3Aopen&page=2"
+ ],
+ "density": {
+  "rect": [
+   1327,
+   65
+  ],
+  "items": [
+   {
+    "pressed": "true",
+    "icon": "octicon-rows",
+    "tip": "Comfortable display density"
+   },
+   {
+    "pressed": "false",
+    "icon": "octicon-three-bars",
+    "tip": "Compact display density"
+   }
+  ]
+ },
+ "fetched_at": "2026-11-03T20:10:29",
+ "elements_seen": 2656
+}

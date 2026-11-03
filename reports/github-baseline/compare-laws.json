@@ -1,0 +1,164 @@
+{
+ "fetched_at": "2026-11-03T20:13:23",
+ "target": "http://127.0.0.1:8765/#laws",
+ "widths": {
+  "1440": {
+   "list-search": {
+    "present": true,
+    "visible": true,
+    "w": 1066,
+    "h": 30,
+    "x": 322,
+    "fontSize": "13px",
+    "display": "block"
+   },
+   "density": {
+    "present": true,
+    "visible": true,
+    "w": 64,
+    "h": 32,
+    "x": 1292,
+    "fontSize": "12px",
+    "display": "union"
+   },
+   "filter-author": {
+    "present": true,
+    "visible": true,
+    "w": 60,
+    "h": 32,
+    "x": 302,
+    "fontSize": "14px",
+    "display": "block"
+   },
+   "tab-open": {
+    "mapped": false
+   },
+   "top-search": {
+    "mapped": false
+   }
+  },
+  "1012": {
+   "list-search": {
+    "present": true,
+    "visible": true,
+    "w": 914,
+    "h": 30,
+    "x": 54,
+    "fontSize": "13px",
+    "display": "block"
+   },
+   "density": {
+    "present": true,
+    "visible": true,
+    "w": 64,
+    "h": 32,
+    "x": 872,
+    "fontSize": "12px",
+    "display": "union"
+   },
+   "filter-author": {
+    "present": true,
+    "visible": true,
+    "w": 60,
+    "h": 32,
+    "x": 34,
+    "fontSize": "14px",
+    "display": "block"
+   },
+   "tab-open": {
+    "mapped": false
+   },
+   "top-search": {
+    "mapped": false
+   }
+  },
+  "768": {
+   "list-search": {
+    "present": true,
+    "visible": true,
+    "w": 670,
+    "h": 30,
+    "x": 54,
+    "fontSize": "13px",
+    "display": "block"
+   },
+   "density": {
+    "present": true,
+    "visible": true,
+    "w": 64,
+    "h": 32,
+    "x": 628,
+    "fontSize": "12px",
+    "display": "union"
+   },
+   "filter-author": {
+    "present": true,
+    "visible": true,
+    "w": 60,
+    "h": 32,
+    "x": 34,
+    "fontSize": "14px",
+    "display": "block"
+   },
+   "tab-open": {
+    "mapped": false
+   },
+   "top-search": {
+    "mapped": false
+   }
+  },
+  "544": {
+   "list-search": {
+    "present": true,
+    "visible": true,
+    "w": 446,
+    "h": 30,
+    "x": 54,
+    "fontSize": "13px",
+    "display": "block"
+   },
+   "density": {
+    "present": true,
+    "visible": true,
+    "w": 64,
+    "h": 32,
+    "x": 525,
+    "fontSize": "12px",
+    "display": "union"
+   },
+   "filter-author": {
+    "present": true,
+    "visible": true,
+    "w": 60,
+    "h": 32,
+    "x": 34,
+    "fontSize": "14px",
+    "display": "block"
+   },
+   "tab-open": {
+    "mapped": false
+   },
+   "top-search": {
+    "mapped": false
+   }
+  }
+ },
+ "map": {
+  "list-search": {
+   "sel": "#lvfq, input[type=search]"
+  },
+  "density": {
+   "sel": "[data-lvdensity]",
+   "union": true
+  },
+  "filter-author": {
+   "sel": ".lv-fbtn"
+  },
+  "tab-open": {
+   "sel": null
+  },
+  "top-search": {
+   "sel": null
+  }
+ }
+}

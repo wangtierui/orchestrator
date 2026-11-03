@@ -1,0 +1,2999 @@
+{
+ "title": "notepad-plus-plus/lexilla at master · notepad-plus-plus/notepad-plus-plus",
+ "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/tree/master/lexilla",
+ "user_login": "wangtierui",
+ "ready": "complete",
+ "counts": {
+  "els": 2266,
+  "interactive": 133,
+  "links": 45
+ },
+ "landmarks": [
+  [
+   "header",
+   0,
+   0,
+   1425,
+   100
+  ],
+  [
+   "nav",
+   100,
+   16,
+   741,
+   32
+  ],
+  [
+   "main",
+   0,
+   100,
+   1425,
+   2167
+  ],
+  [
+   "footer",
+   0,
+   0,
+   0,
+   0
+  ]
+ ],
+ "headings": [
+  [
+   "H2",
+   "Repository navigation"
+  ],
+  [
+   "H1",
+   "Command palette"
+  ],
+  [
+   "H3",
+   "Uh oh!"
+  ],
+  [
+   "H2",
+   "Collapse file tree"
+  ],
+  [
+   "H2",
+   "Files"
+  ],
+  [
+   "H2",
+   "Breadcrumbs"
+  ],
+  [
+   "H1",
+   "lexilla"
+  ],
+  [
+   "H2",
+   "Directory actions"
+  ],
+  [
+   "H2",
+   "Add file"
+  ],
+  [
+   "H2",
+   "More options"
+  ],
+  [
+   "H2",
+   "Directory actions"
+  ],
+  [
+   "H2",
+   "More options"
+  ],
+  [
+   "H2",
+   "Latest commit"
+  ],
+  [
+   "H2",
+   "History"
+  ],
+  [
+   "H2",
+   "Breadcrumbs"
+  ],
+  [
+   "H1",
+   "lexilla"
+  ],
+  [
+   "H2",
+   "Folders and files"
+  ],
+  [
+   "H3",
+   "parent directory"
+  ],
+  [
+   "H2",
+   "README"
+  ],
+  [
+   "H2",
+   "Footer"
+  ],
+  [
+   "H3",
+   "Footer navigation"
+  ]
+ ],
+ "interactive": [
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Skip to content",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "#start-of-content",
+   "cls": "tmp-p-3 color-bg-accent-emphasis color-fg-on-emphasis show-on-focus js",
+   "rect": [
+    0,
+    0,
+    1,
+    1
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU prc-Button-IconBut",
+   "rect": [
+    16,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "/",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderHome__5NxwyK prc-Button-IconButto",
+   "rect": [
+    60,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "notepad-plus-plus",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus",
+   "cls": "contextCrumb__Q8nET8 prc-Breadcrumbs-Item-jcraJ",
+   "rect": [
+    100,
+    16,
+    126,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "notepad-plus-plus",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus",
+   "cls": "contextCrumb__Q8nET8 contextCrumbLast__l2P28s repoPickerCrumb__56N_WW ",
+   "rect": [
+    241,
+    16,
+    125,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk contextCrumb__Q8nET8 repoPickerDropdownBut",
+   "rect": [
+    366,
+    16,
+    20,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Type / to search",
+   "aria": "Open quick search dialog, type / to search",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU searchButton__6Ru-",
+   "rect": [
+    849,
+    16,
+    191,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU js-activate-comman",
+   "rect": [
+    1039,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "/copilot",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU prc-Button-IconBut",
+   "rect": [
+    1078,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "Open Copilot…",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU CopilotMenu__oPrKz",
+   "rect": [
+    1109,
+    16,
+    26,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk actionMenuButton__QPJCOZ responsiveCreateM",
+   "rect": [
+    1159,
+    16,
+    50,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "/issues",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU prc-Button-IconBut",
+   "rect": [
+    1217,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "/pulls",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU prc-Button-IconBut",
+   "rect": [
+    1257,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "/repos",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU prc-Button-IconBut",
+   "rect": [
+    1297,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "/notifications",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU prc-Button-IconBut",
+   "rect": [
+    1337,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk anchor__zXCwGI prc-Button-IconButton-fyge7",
+   "rect": [
+    1377,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "UL",
+   "role": "list",
+   "text": "CodeIssues2.9k (2.9k)Pull requests28 (28)AgentsActionsProjectsWikiSecurity and quality40 (",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "prc-UnderlineNav-ItemsList-oj8gN prc-components-UnderlineItemList-xKlK",
+   "rect": [
+    16,
+    60,
+    1393,
+    40
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Code",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    16,
+    60,
+    73,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Issues2.9k (2.9k)",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/issues",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    97,
+    60,
+    122,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Pull requests28 (28)",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/pulls",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    227,
+    60,
+    157,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Agents",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/agents?author=wangtierui",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    392,
+    60,
+    85,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Actions",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/actions",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    484,
+    60,
+    87,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Projects",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/projects",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    580,
+    60,
+    90,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Wiki",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/wiki",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    678,
+    60,
+    68,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Security and quality40 (40)",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/security",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    754,
+    60,
+    201,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Insights",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/pulse",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    964,
+    60,
+    90,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "DIV",
+   "role": "",
+   "text": "Collapse file treeFilesmasterAdd fileSearch this repository(forward slash) forward slash/ ",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "sidebar__UTbGEu",
+   "rect": [
+    0,
+    100,
+    321,
+    2167
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "true",
+   "checked": "",
+   "testid": "collapse-file-tree-button",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk position-relative expandButton__x9VQso fgC",
+   "rect": [
+    16,
+    116,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "master",
+   "aria": "master branch",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "anchor-button",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk react-repos-tree-pane-ref-selector width-f",
+   "rect": [
+    16,
+    164,
+    216,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "/notepad-plus-plus/notepad-plus-plus/new/master/lexilla",
+   "cls": "prc-Button-ButtonBase-9n-Xk IconButton__SknM5q prc-Button-IconButton-f",
+   "rect": [
+    240,
+    164,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk IconButton__zX3ebA SearchButtonWithLeftBor",
+   "rect": [
+    272,
+    164,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "INPUT",
+   "role": "combobox",
+   "text": "",
+   "aria": "Go to file",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "text",
+   "href": "",
+   "cls": "prc-components-Input-IwWrt",
+   "rect": [
+    49,
+    205,
+    218,
+    30
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "UL",
+   "role": "tree",
+   "text": ".githubPowerEditorboostregexlexilla.githubaccessbindocexamplesincludelexerslexlibscriptssr",
+   "aria": "Files",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "prc-TreeView-TreeViewRootUlStyles-Mzrmj",
+   "rect": [
+    16,
+    248,
+    273,
+    1159
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "treeitem",
+   "text": ".github",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "PRIVATE_TreeView-item prc-TreeView-TreeViewItem-Ter5f",
+   "rect": [
+    16,
+    248,
+    273,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "treeitem",
+   "text": "PowerEditor",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "PRIVATE_TreeView-item prc-TreeView-TreeViewItem-Ter5f",
+   "rect": [
+    16,
+    280,
+    273,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "treeitem",
+   "text": "boostregex",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "PRIVATE_TreeView-item prc-TreeView-TreeViewItem-Ter5f",
+   "rect": [
+    16,
+    312,
+    273,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "treeitem",
+   "text": "lexilla.githubaccessbindocexamplesincludelexerslexlibscriptssrctest.gitattributes.gitignor",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "true",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "PRIVATE_TreeView-item prc-TreeView-TreeViewItem-Ter5f",
+   "rect": [
+    16,
+    345,
+    273,
+    740
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "UL",
+   "role": "group",
+   "text": ".githubaccessbindocexamplesincludelexerslexlibscriptssrctest.gitattributes.gitignore.travi",
+   "aria": "lexilla",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "",
+   "rect": [
+    16,
+    377,
+    273,
+    708
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "treeitem",
+   "text": ".github",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "PRIVATE_TreeView-item prc-TreeView-TreeViewItem-Ter5f",
+   "rect": [
+    16,
+    377,
+    273,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "treeitem",
+   "text": "access",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "PRIVATE_TreeView-item prc-TreeView-TreeViewItem-Ter5f",
+   "rect": [
+    16,
+    409,
+    273,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "treeitem",
+   "text": "bin",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "PRIVATE_TreeView-item prc-TreeView-TreeViewItem-Ter5f",
+   "rect": [
+    16,
+    441,
+    273,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "treeitem",
+   "text": "doc",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "PRIVATE_TreeView-item prc-TreeView-TreeViewItem-Ter5f",
+   "rect": [
+    16,
+    473,
+    273,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "treeitem",
+   "text": "examples",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "PRIVATE_TreeView-item prc-TreeView-TreeViewItem-Ter5f",
+   "rect": [
+    16,
+    506,
+    273,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "treeitem",
+   "text": "include",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "PRIVATE_TreeView-item prc-TreeView-TreeViewItem-Ter5f",
+   "rect": [
+    16,
+    538,
+    273,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "treeitem",
+   "text": "lexers",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "PRIVATE_TreeView-item prc-TreeView-TreeViewItem-Ter5f",
+   "rect": [
+    16,
+    570,
+    273,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "treeitem",
+   "text": "lexlib",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "PRIVATE_TreeView-item prc-TreeView-TreeViewItem-Ter5f",
+   "rect": [
+    16,
+    602,
+    273,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "treeitem",
+   "text": "scripts",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "PRIVATE_TreeView-item prc-TreeView-TreeViewItem-Ter5f",
+   "rect": [
+    16,
+    634,
+    273,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "treeitem",
+   "text": "src",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "PRIVATE_TreeView-item prc-TreeView-TreeViewItem-Ter5f",
+   "rect": [
+    16,
+    666,
+    273,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "treeitem",
+   "text": "test",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "PRIVATE_TreeView-item prc-TreeView-TreeViewItem-Ter5f",
+   "rect": [
+    16,
+    699,
+    273,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "treeitem",
+   "text": ".gitattributes",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "PRIVATE_TreeView-item prc-TreeView-TreeViewItem-Ter5f",
+   "rect": [
+    16,
+    731,
+    273,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "treeitem",
+   "text": ".gitignore",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "PRIVATE_TreeView-item prc-TreeView-TreeViewItem-Ter5f",
+   "rect": [
+    16,
+    763,
+    273,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "treeitem",
+   "text": ".travis.yml",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "PRIVATE_TreeView-item prc-TreeView-TreeViewItem-Ter5f",
+   "rect": [
+    16,
+    795,
+    273,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "treeitem",
+   "text": "CONTRIBUTING",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "PRIVATE_TreeView-item prc-TreeView-TreeViewItem-Ter5f",
+   "rect": [
+    16,
+    827,
+    273,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "treeitem",
+   "text": "License.txt",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "PRIVATE_TreeView-item prc-TreeView-TreeViewItem-Ter5f",
+   "rect": [
+    16,
+    860,
+    273,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "treeitem",
+   "text": "README",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "PRIVATE_TreeView-item prc-TreeView-TreeViewItem-Ter5f",
+   "rect": [
+    16,
+    892,
+    273,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "treeitem",
+   "text": "cppcheck.suppress",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "PRIVATE_TreeView-item prc-TreeView-TreeViewItem-Ter5f",
+   "rect": [
+    16,
+    924,
+    273,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "treeitem",
+   "text": "delbin.bat",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "PRIVATE_TreeView-item prc-TreeView-TreeViewItem-Ter5f",
+   "rect": [
+    16,
+    956,
+    273,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "treeitem",
+   "text": "tgzsrc",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "PRIVATE_TreeView-item prc-TreeView-TreeViewItem-Ter5f",
+   "rect": [
+    16,
+    988,
+    273,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "treeitem",
+   "text": "version.txt",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "PRIVATE_TreeView-item prc-TreeView-TreeViewItem-Ter5f",
+   "rect": [
+    16,
+    1021,
+    273,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "treeitem",
+   "text": "zipsrc.bat",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "PRIVATE_TreeView-item prc-TreeView-TreeViewItem-Ter5f",
+   "rect": [
+    16,
+    1053,
+    273,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "treeitem",
+   "text": "scintilla",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "PRIVATE_TreeView-item prc-TreeView-TreeViewItem-Ter5f",
+   "rect": [
+    16,
+    1085,
+    273,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "treeitem",
+   "text": ".gitignore",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "PRIVATE_TreeView-item prc-TreeView-TreeViewItem-Ter5f",
+   "rect": [
+    16,
+    1117,
+    273,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "treeitem",
+   "text": "AGENTS.md",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "PRIVATE_TreeView-item prc-TreeView-TreeViewItem-Ter5f",
+   "rect": [
+    16,
+    1149,
+    273,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "treeitem",
+   "text": "BUILD.md",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "PRIVATE_TreeView-item prc-TreeView-TreeViewItem-Ter5f",
+   "rect": [
+    16,
+    1181,
+    273,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "treeitem",
+   "text": "CONTRIBUTING.md",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "PRIVATE_TreeView-item prc-TreeView-TreeViewItem-Ter5f",
+   "rect": [
+    16,
+    1214,
+    273,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "treeitem",
+   "text": "LICENSE",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "PRIVATE_TreeView-item prc-TreeView-TreeViewItem-Ter5f",
+   "rect": [
+    16,
+    1246,
+    273,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "treeitem",
+   "text": "README.md",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "PRIVATE_TreeView-item prc-TreeView-TreeViewItem-Ter5f",
+   "rect": [
+    16,
+    1278,
+    273,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "treeitem",
+   "text": "SUPPORTED_SYSTEM.md",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "PRIVATE_TreeView-item prc-TreeView-TreeViewItem-Ter5f",
+   "rect": [
+    16,
+    1310,
+    273,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "treeitem",
+   "text": "appveyor.yml",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "PRIVATE_TreeView-item prc-TreeView-TreeViewItem-Ter5f",
+   "rect": [
+    16,
+    1342,
+    273,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "treeitem",
+   "text": "nppGpgPub.asc",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "PRIVATE_TreeView-item prc-TreeView-TreeViewItem-Ter5f",
+   "rect": [
+    16,
+    1375,
+    273,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "DIV",
+   "role": "slider",
+   "text": "",
+   "aria": "Draggable pane splitter",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "prc-PageLayout-DraggableHandle-9s6B4",
+   "rect": [
+    318,
+    100,
+    5,
+    1000
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "DIV",
+   "role": "",
+   "text": "Breadcrumbsnotepad-plus-plus/lexilla/Copy pathDirectory actionsAdd fileAdd fileMore option",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "content__cw9d2I",
+   "rect": [
+    321,
+    100,
+    1104,
+    2167
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "notepad-plus-plus",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "breadcrumbs-repo-link",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/tree/master",
+   "cls": "repoLink__Uax2bT prc-Link-Link-9ZwDx",
+   "rect": [
+    337,
+    121,
+    134,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "H1",
+   "role": "",
+   "text": "lexilla",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "filenameHeading__MTKryR lg__W8GBuN prc-Heading-Heading-MtWFE",
+   "rect": [
+    493,
+    120,
+    42,
+    24
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk ml-2 prc-Button-IconButton-fyge7",
+   "rect": [
+    565,
+    118,
+    28,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Add file",
+   "aria": "Add file",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk",
+   "rect": [
+    1277,
+    116,
+    92,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "More options",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "tree-overflow-menu-anchor",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk IconButton__0uY3Vn prc-Button-IconButton-f",
+   "rect": [
+    1377,
+    116,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "DIV",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "pc-AvatarStackBody prc-AvatarStack-AvatarStackBody-JFK4u",
+   "rect": [
+    350,
+    177,
+    29,
+    20
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "chcg",
+   "aria": "commits by chcg",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/commits?author=chcg",
+   "cls": "authorNameLink__RYkc-M prc-Link-Link-9ZwDx",
+   "rect": [
+    383,
+    177,
+    30,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "donho",
+   "aria": "commits by donho",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/commits?author=donho",
+   "cls": "authorNameLink__RYkc-M prc-Link-Link-9ZwDx",
+   "rect": [
+    444,
+    177,
+    41,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Update to Scintilla 5.6.8 & Lexilla 5.5.5",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/commit/025d4527da2fafb400283660bad69088566c3f3e",
+   "cls": "Link--secondary",
+   "rect": [
+    494,
+    178,
+    235,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "false",
+   "expanded": "false",
+   "checked": "",
+   "testid": "latest-commit-details-toggle",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk IconButton__9oMQ5T prc-Button-IconButton-f",
+   "rect": [
+    736,
+    173,
+    28,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "checks-status-badge-icon",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk ChecksStatusBadgeIconButton__O8V97i prc-Bu",
+   "rect": [
+    772,
+    173,
+    28,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "025d452",
+   "aria": "Commit 025d452",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/commit/025d4527da2fafb400283660bad69088566c3f3e",
+   "cls": "Link--secondary prc-Link-Link-9ZwDx",
+   "rect": [
+    1209,
+    178,
+    46,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "History",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/commits/master/lexilla",
+   "cls": "prc-Button-ButtonBase-9n-Xk d-none d-lg-flex linkButton__rBg5F1 flex-i",
+   "rect": [
+    1322,
+    173,
+    78,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "..",
+   "aria": "Parent directory",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "up-tree",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/tree/master",
+   "cls": "PrimerLink__2SYjfE prc-Link-Link-9ZwDx",
+   "rect": [
+    354,
+    277,
+    1038,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": ".github/workflows",
+   "aria": ".github/workflows, (Directory)",
+   "title": "This path skips through empty directories",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/tree/master/lexilla/.github/workflows",
+   "cls": "Link--primary",
+   "rect": [
+    380,
+    319,
+    111,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Update to Scintilla 5.6.1 & Lexilla 5.4.8",
+   "aria": "",
+   "title": "Update to Scintilla 5.6.1 & Lexilla 5.4.8\n\nScintilla Release 5.6.1 ( https://www.scintilla.org/scintilla561.zip )\n\n    Released 26 March 2026.\n    Add mode to draw tabs as [HT] blobs with SCI_SETTABDRAWMODE(SCTD_CONTROLCHAR).\n    Improve mouse drag behaviour when drag and drop disabled. Feature #1581.\n    Fix regression in SCI_CONVERTEOLS that may not convert whole file. Bug #2501.\n\nLexilla Release 5.4.8 ( https://www.scintilla.org/lexilla548.zip )\n\n    Released 26 March 2026.\n    Batch: Remove line length limitation and change to an object lexer. Issue #228.\n    Forth: Treat \\r\\n line ends the same as \\n. This makes testing easier. Issue #349.\n    Forth: Allow more Forth words to be symbols or begin with a symbol. Require whitespace around line comment tokens, similar to the left-hand parenthesis of stream comments. Issue #351.\n    JavaScript: in cpp lexer, add lexer.cpp.enable.preprocessor and lexer.cpp.allow.hashes properties. This allows disabling preprocessor recognition (as JavaScript doesn't have a preprocessor) and recognizing private elements that start with a #. Issue #48.\n    JSON: Fix escaped quote in SCE_JSON_URI. Issue #72.\n\nFix #17920, fix #17864, fix #13522, fix #11746, close #17901",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/commit/fa73138e58bfeb798fc95c7e9f4709e11d6a208e",
+   "cls": "Link--secondary",
+   "rect": [
+    782,
+    319,
+    235,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "access",
+   "aria": "access, (Directory)",
+   "title": "access",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/tree/master/lexilla/access",
+   "cls": "Link--primary",
+   "rect": [
+    380,
+    360,
+    39,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Update to Scintilla 5.6.5 & Lexilla 5.5.2",
+   "aria": "",
+   "title": "Update to Scintilla 5.6.5 & Lexilla 5.5.2\n\nScintilla Release 5.6.5 ( https://www.scintilla.org/scintilla565.zip )\n\n    Released 4 August 2026.\n    Add SC_UPDATE_TEXT and SC_UPDATE_LINE_COUNT flags to SCN_UPDATEUI notifications. This can help improve performance by client code switching from listening for changes with rapid SCN_MODIFIED to delayed SCN_UPDATEUI notifications.\n    On Qt, prepare for drawing asynchronously to avoid styling inside the draw handler. This may improve performance and matches other platforms.\n    On Cocoa, fix problem where styling and update UI notifications were performed inside drawing instead of before drawing which could cause drawing to be abandoned unnecessarily.\n    Increase interior width of MarkerSymbol::Plus and Minus to match stroke width setting.\n    Improve performance of fold discovery in some situations by styling progressively larger blocks of lines.\n    Don't use std::async and std::future in single threaded situations. This avoids crashes with some runtime libraries as well as minor performance costs. Geany Issue #4620.\n\nLexilla Release 5.5.2 ( https://www.scintilla.org/lexilla552.zip )\n\n    Released 4 August 2026.\n    JavaScript: in cpp, XML, and HTML lexers, only recognize regular expression literal when initial '/' is followed by another '/' on the same line.\n    Lexilla may be built without exporting any entry points by defining the preprocessor symbol LEXILLA_NO_EXPORT. This is only useful when building a static library. Issue #311.\n\nClose #18280",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/commit/e59774add26b0130d38aaf722aceb0259ccc0078",
+   "cls": "Link--secondary",
+   "rect": [
+    782,
+    360,
+    235,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "bin",
+   "aria": "bin, (Directory)",
+   "title": "bin",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/tree/master/lexilla/bin",
+   "cls": "Link--primary",
+   "rect": [
+    380,
+    401,
+    20,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Update Scintilla from v4.4.6 to v5.2.1 and add Lexilla v5.1.5",
+   "aria": "",
+   "title": "Update Scintilla from v4.4.6 to v5.2.1 and add Lexilla v5.1.5\n\nUpdate with https://www.scintilla.org/scintilla521.zip\n            https://www.scintilla.org/lexilla515.zip\n\n- fix setting to bring Scintilla::PositionCR from ScintillaStructures.h inline with Sci_Position.h Sci_PositionCR\n- add workaround to enable lexer for searchResult\ncommented out SCI_SETILEXER call on searchResult to get one result which is correctly handled by the lexer,\nadded comment about the current problem with property @MarkingsStruct which seems to disappear after call to SCI_SETILEXER or CreateLexer\n- corrected usage of ObjC lexer\n- removed unnecessary filter stuff\n- use own sections for scintilla and lexilla build targets and allow parallel builds\n- as libscilex is no longer existing, changed to libscintilla\n- adapt makefiles and cmake\n- use VS2019\n- started simple changes for createlexer adaptations, nullpointercheck missing on return of lexer name from deprecated LexerNameFromID -> undefined behaviour\n- movement from id -> lexer name, mostly done via LexerNameFromID + switching off corresponding compiler warning\n- changed to SCI_SETILEXER from SCI_SETLEXER, SCI_SETLEXERLANGUAGE needs to be corrected, see Scintilla5Migration.html\n- just commented out: SCI_LOADLEXERLIBRARY\n\nFix #10504, close #11419",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/commit/a61b03ea8887e21c6e1b7374068962f635b79b80",
+   "cls": "Link--secondary",
+   "rect": [
+    782,
+    401,
+    360,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "doc",
+   "aria": "doc, (Directory)",
+   "title": "doc",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/tree/master/lexilla/doc",
+   "cls": "Link--primary",
+   "rect": [
+    380,
+    442,
+    23,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Update to Scintilla 5.6.8 & Lexilla 5.5.5",
+   "aria": "",
+   "title": "Update to Scintilla 5.6.8 & Lexilla 5.5.5\n\nScintilla Release 5.6.8 ( https://www.scintilla.org/scintilla568.zip )\n\n    Released 31 October 2026.\n    Improve speed by avoiding line layout when determining positions at line starts. Increase maximum size of cached lexemes from 30 to 40 as many identifiers, column names, and common values are larger than 30 bytes.\n    Update case conversion and character categories to Unicode 17. Feature #1569.\n    Fix crash with change history undo caused by optimizing bulk deletion in version 5.3.8.\n    On Win32 fix crash and invisible text for invalid weight and stretch font settings with DirectWrite. Bug #2520.\n    On Win32 when building with nmake -f scintilla.mak, move PDB file to DIR_O directory so that it is removed by nmake -f scintilla.mak clean. Bug #2521.\n\nLexilla Release 5.5.5 ( https://www.scintilla.org/lexilla555.zip )\n\n    Released 31 October 2026.\n    Update character categories to Unicode 17. Feature #1569.\n    C++: Fix crash with incomplete preprocessor macro invocation. Issue #388.\n    DMIS: Fix out-of-bounds write with long word. Issue #388, Pull request #387.\n    HTML: Fix handling of HTML comments in scripts. Issue #371, Issue #338, Pull request #373.\n    HTML: Allow '$', '#' and non-ASCII characters in JavaScript identifiers. Issue #371, Pull request #373.\n    HTML: Support nested template literals in JavaScript. Issue #290, Pull request #373.\n    HTML: Style extra type-distinguishing character in JSP and ASP tags as SCE_H_ASP. These are the '!', '#', '$', and ':' in declarations, data binding, and expressions. Issue #375.\n    HTML: Do not terminate JavaScript regex literal for '/' when inside character class '[]'. Issue #377, Pull request #373.\n    HTML: Recognize more language aliases including \"java\" and \"C#\" for JSP and ASP. Issue #376.\n    JavaScript: Fix non-stable lexing of regex literals in both JavaScript and HTML files. Issue #374, Pull request #373.\n    Julia: Fix hang for unterminated character literal at file end when lexer.julia.highlight.lexerror enabled. Issue #388, Pull request #384.\n    Markdown: Recognize 'front matter' key-value metadata at file start specified in YAML, TOML or JSON. Issue #59.\n    Perl: Fix hang when NUL inside here-doc. Issue #388, Pull request #389, Pull request #379.\n    Perl: Fix out-of-bounds write with long here-doc delimiter with multi-byte character near limit. Stop SCE_PL_ERROR leaking past line end causing non-stable results. Issue #388, Pull request #383.\n    Perl: Fix inconsistent styling of CRLF line end bytes for here-docs and formats. Issue #390.\n    PHP: Style variable variable ($$variable) as SCE_HPHP_VARIABLE. Bug #2208, Pull request #373.\n    PHP: Disallow DEL character in PHP identifiers. Issue #371, Pull request #373.\n    Raku: Fix out-of-bounds write with long word. Issue #388, Pull request #381.\n    Ruby: Fix potential out-of-bounds reads at file start. Issue #388.\n    SQL: Improve performance of q-string literals. Issue #378.\n    TCMD: Fix out-of-bounds write with long word. Issue #388, Pull request #386.\n    TeX: Fix out-of-bounds write with long command. Issue #388, Pull request #382.\n    Visual Prolog: Fix crash with deep nesting. Issue #388, Pull request #380.\n    X12: Fix read into empty allocation. Issue #388, Pull request #385.\n\nClose #18588",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/commit/025d4527da2fafb400283660bad69088566c3f3e",
+   "cls": "Link--secondary",
+   "rect": [
+    782,
+    442,
+    235,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "examples",
+   "aria": "examples, (Directory)",
+   "title": "examples",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/tree/master/lexilla/examples",
+   "cls": "Link--primary",
+   "rect": [
+    380,
+    483,
+    58,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Update to Scintilla 5.6.2 & Lexilla 5.4.9",
+   "aria": "",
+   "title": "Update to Scintilla 5.6.2 & Lexilla 5.4.9\n\nScintilla Release 5.6.2 ( https://www.scintilla.org/scintilla562.zip )\n\n    Released 29 April 2026.\n    Add error status SC_STATUS_OUTSIDE_DOCUMENT that is set when operations are attempted on a position outside the document. Positions are checked earlier to prevent actions partly  succeeding. Incomplete actions could lead to features that are out of synchronization like change history referring to text that has been deleted.\n    On Win32 with DirectWrite in a GDI scaled application, draw sharper text in autocompletion lists. Bug #2505.\n    On Win32 update scaling when the application moves to another monitor. Bug #2503.\n\nLexilla Release 5.4.9 ( https://www.scintilla.org/lexilla549.zip )\n\n    Released 29 April 2026.\n    Assembler: Add SCE_ASM_STRINGBACKQUOTE for NASM `back-quoted strings`. Issue #220.\n    C++: Fold for '#pragma region' and '#pragma endregion'. Issue #324.\n    F#: Allow '!' for async keywords. Issue #352.\n    F#: Stabilize styling of long strings. Issue #353.\n    F#: Fold long strings with fold.fsharp.quotes. Issue #354.\n    LaTeX: Fix bug when \"\\\" at end of file. Issue #355, Pull request #356.\n    Pascal: New SCE_PAS_MULTILINESTRING for multi-line triple-quoted strings. Issue #321.\n    Ruby: Fix bug when \"?\\\" at end of file. Issue #355, Pull request #357.\n\nClose #18011",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/commit/bf1c233434128de6babe0295619ef44feee6916e",
+   "cls": "Link--secondary",
+   "rect": [
+    782,
+    483,
+    235,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "include",
+   "aria": "include, (Directory)",
+   "title": "include",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/tree/master/lexilla/include",
+   "cls": "Link--primary",
+   "rect": [
+    380,
+    524,
+    45,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Update to Scintilla 5.6.8 & Lexilla 5.5.5",
+   "aria": "",
+   "title": "Update to Scintilla 5.6.8 & Lexilla 5.5.5\n\nScintilla Release 5.6.8 ( https://www.scintilla.org/scintilla568.zip )\n\n    Released 31 October 2026.\n    Improve speed by avoiding line layout when determining positions at line starts. Increase maximum size of cached lexemes from 30 to 40 as many identifiers, column names, and common values are larger than 30 bytes.\n    Update case conversion and character categories to Unicode 17. Feature #1569.\n    Fix crash with change history undo caused by optimizing bulk deletion in version 5.3.8.\n    On Win32 fix crash and invisible text for invalid weight and stretch font settings with DirectWrite. Bug #2520.\n    On Win32 when building with nmake -f scintilla.mak, move PDB file to DIR_O directory so that it is removed by nmake -f scintilla.mak clean. Bug #2521.\n\nLexilla Release 5.5.5 ( https://www.scintilla.org/lexilla555.zip )\n\n    Released 31 October 2026.\n    Update character categories to Unicode 17. Feature #1569.\n    C++: Fix crash with incomplete preprocessor macro invocation. Issue #388.\n    DMIS: Fix out-of-bounds write with long word. Issue #388, Pull request #387.\n    HTML: Fix handling of HTML comments in scripts. Issue #371, Issue #338, Pull request #373.\n    HTML: Allow '$', '#' and non-ASCII characters in JavaScript identifiers. Issue #371, Pull request #373.\n    HTML: Support nested template literals in JavaScript. Issue #290, Pull request #373.\n    HTML: Style extra type-distinguishing character in JSP and ASP tags as SCE_H_ASP. These are the '!', '#', '$', and ':' in declarations, data binding, and expressions. Issue #375.\n    HTML: Do not terminate JavaScript regex literal for '/' when inside character class '[]'. Issue #377, Pull request #373.\n    HTML: Recognize more language aliases including \"java\" and \"C#\" for JSP and ASP. Issue #376.\n    JavaScript: Fix non-stable lexing of regex literals in both JavaScript and HTML files. Issue #374, Pull request #373.\n    Julia: Fix hang for unterminated character literal at file end when lexer.julia.highlight.lexerror enabled. Issue #388, Pull request #384.\n    Markdown: Recognize 'front matter' key-value metadata at file start specified in YAML, TOML or JSON. Issue #59.\n    Perl: Fix hang when NUL inside here-doc. Issue #388, Pull request #389, Pull request #379.\n    Perl: Fix out-of-bounds write with long here-doc delimiter with multi-byte character near limit. Stop SCE_PL_ERROR leaking past line end causing non-stable results. Issue #388, Pull request #383.\n    Perl: Fix inconsistent styling of CRLF line end bytes for here-docs and formats. Issue #390.\n    PHP: Style variable variable ($$variable) as SCE_HPHP_VARIABLE. Bug #2208, Pull request #373.\n    PHP: Disallow DEL character in PHP identifiers. Issue #371, Pull request #373.\n    Raku: Fix out-of-bounds write with long word. Issue #388, Pull request #381.\n    Ruby: Fix potential out-of-bounds reads at file start. Issue #388.\n    SQL: Improve performance of q-string literals. Issue #378.\n    TCMD: Fix out-of-bounds write with long word. Issue #388, Pull request #386.\n    TeX: Fix out-of-bounds write with long command. Issue #388, Pull request #382.\n    Visual Prolog: Fix crash with deep nesting. Issue #388, Pull request #380.\n    X12: Fix read into empty allocation. Issue #388, Pull request #385.\n\nClose #18588",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/commit/025d4527da2fafb400283660bad69088566c3f3e",
+   "cls": "Link--secondary",
+   "rect": [
+    782,
+    524,
+    235,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "lexers",
+   "aria": "lexers, (Directory)",
+   "title": "lexers",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/tree/master/lexilla/lexers",
+   "cls": "Link--primary",
+   "rect": [
+    380,
+    565,
+    35,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Update to Scintilla 5.6.8 & Lexilla 5.5.5",
+   "aria": "",
+   "title": "Update to Scintilla 5.6.8 & Lexilla 5.5.5\n\nScintilla Release 5.6.8 ( https://www.scintilla.org/scintilla568.zip )\n\n    Released 31 October 2026.\n    Improve speed by avoiding line layout when determining positions at line starts. Increase maximum size of cached lexemes from 30 to 40 as many identifiers, column names, and common values are larger than 30 bytes.\n    Update case conversion and character categories to Unicode 17. Feature #1569.\n    Fix crash with change history undo caused by optimizing bulk deletion in version 5.3.8.\n    On Win32 fix crash and invisible text for invalid weight and stretch font settings with DirectWrite. Bug #2520.\n    On Win32 when building with nmake -f scintilla.mak, move PDB file to DIR_O directory so that it is removed by nmake -f scintilla.mak clean. Bug #2521.\n\nLexilla Release 5.5.5 ( https://www.scintilla.org/lexilla555.zip )\n\n    Released 31 October 2026.\n    Update character categories to Unicode 17. Feature #1569.\n    C++: Fix crash with incomplete preprocessor macro invocation. Issue #388.\n    DMIS: Fix out-of-bounds write with long word. Issue #388, Pull request #387.\n    HTML: Fix handling of HTML comments in scripts. Issue #371, Issue #338, Pull request #373.\n    HTML: Allow '$', '#' and non-ASCII characters in JavaScript identifiers. Issue #371, Pull request #373.\n    HTML: Support nested template literals in JavaScript. Issue #290, Pull request #373.\n    HTML: Style extra type-distinguishing character in JSP and ASP tags as SCE_H_ASP. These are the '!', '#', '$', and ':' in declarations, data binding, and expressions. Issue #375.\n    HTML: Do not terminate JavaScript regex literal for '/' when inside character class '[]'. Issue #377, Pull request #373.\n    HTML: Recognize more language aliases including \"java\" and \"C#\" for JSP and ASP. Issue #376.\n    JavaScript: Fix non-stable lexing of regex literals in both JavaScript and HTML files. Issue #374, Pull request #373.\n    Julia: Fix hang for unterminated character literal at file end when lexer.julia.highlight.lexerror enabled. Issue #388, Pull request #384.\n    Markdown: Recognize 'front matter' key-value metadata at file start specified in YAML, TOML or JSON. Issue #59.\n    Perl: Fix hang when NUL inside here-doc. Issue #388, Pull request #389, Pull request #379.\n    Perl: Fix out-of-bounds write with long here-doc delimiter with multi-byte character near limit. Stop SCE_PL_ERROR leaking past line end causing non-stable results. Issue #388, Pull request #383.\n    Perl: Fix inconsistent styling of CRLF line end bytes for here-docs and formats. Issue #390.\n    PHP: Style variable variable ($$variable) as SCE_HPHP_VARIABLE. Bug #2208, Pull request #373.\n    PHP: Disallow DEL character in PHP identifiers. Issue #371, Pull request #373.\n    Raku: Fix out-of-bounds write with long word. Issue #388, Pull request #381.\n    Ruby: Fix potential out-of-bounds reads at file start. Issue #388.\n    SQL: Improve performance of q-string literals. Issue #378.\n    TCMD: Fix out-of-bounds write with long word. Issue #388, Pull request #386.\n    TeX: Fix out-of-bounds write with long command. Issue #388, Pull request #382.\n    Visual Prolog: Fix crash with deep nesting. Issue #388, Pull request #380.\n    X12: Fix read into empty allocation. Issue #388, Pull request #385.\n\nClose #18588",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/commit/025d4527da2fafb400283660bad69088566c3f3e",
+   "cls": "Link--secondary",
+   "rect": [
+    782,
+    565,
+    235,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "lexlib",
+   "aria": "lexlib, (Directory)",
+   "title": "lexlib",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/tree/master/lexilla/lexlib",
+   "cls": "Link--primary",
+   "rect": [
+    380,
+    606,
+    32,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Update to Scintilla 5.6.8 & Lexilla 5.5.5",
+   "aria": "",
+   "title": "Update to Scintilla 5.6.8 & Lexilla 5.5.5\n\nScintilla Release 5.6.8 ( https://www.scintilla.org/scintilla568.zip )\n\n    Released 31 October 2026.\n    Improve speed by avoiding line layout when determining positions at line starts. Increase maximum size of cached lexemes from 30 to 40 as many identifiers, column names, and common values are larger than 30 bytes.\n    Update case conversion and character categories to Unicode 17. Feature #1569.\n    Fix crash with change history undo caused by optimizing bulk deletion in version 5.3.8.\n    On Win32 fix crash and invisible text for invalid weight and stretch font settings with DirectWrite. Bug #2520.\n    On Win32 when building with nmake -f scintilla.mak, move PDB file to DIR_O directory so that it is removed by nmake -f scintilla.mak clean. Bug #2521.\n\nLexilla Release 5.5.5 ( https://www.scintilla.org/lexilla555.zip )\n\n    Released 31 October 2026.\n    Update character categories to Unicode 17. Feature #1569.\n    C++: Fix crash with incomplete preprocessor macro invocation. Issue #388.\n    DMIS: Fix out-of-bounds write with long word. Issue #388, Pull request #387.\n    HTML: Fix handling of HTML comments in scripts. Issue #371, Issue #338, Pull request #373.\n    HTML: Allow '$', '#' and non-ASCII characters in JavaScript identifiers. Issue #371, Pull request #373.\n    HTML: Support nested template literals in JavaScript. Issue #290, Pull request #373.\n    HTML: Style extra type-distinguishing character in JSP and ASP tags as SCE_H_ASP. These are the '!', '#', '$', and ':' in declarations, data binding, and expressions. Issue #375.\n    HTML: Do not terminate JavaScript regex literal for '/' when inside character class '[]'. Issue #377, Pull request #373.\n    HTML: Recognize more language aliases including \"java\" and \"C#\" for JSP and ASP. Issue #376.\n    JavaScript: Fix non-stable lexing of regex literals in both JavaScript and HTML files. Issue #374, Pull request #373.\n    Julia: Fix hang for unterminated character literal at file end when lexer.julia.highlight.lexerror enabled. Issue #388, Pull request #384.\n    Markdown: Recognize 'front matter' key-value metadata at file start specified in YAML, TOML or JSON. Issue #59.\n    Perl: Fix hang when NUL inside here-doc. Issue #388, Pull request #389, Pull request #379.\n    Perl: Fix out-of-bounds write with long here-doc delimiter with multi-byte character near limit. Stop SCE_PL_ERROR leaking past line end causing non-stable results. Issue #388, Pull request #383.\n    Perl: Fix inconsistent styling of CRLF line end bytes for here-docs and formats. Issue #390.\n    PHP: Style variable variable ($$variable) as SCE_HPHP_VARIABLE. Bug #2208, Pull request #373.\n    PHP: Disallow DEL character in PHP identifiers. Issue #371, Pull request #373.\n    Raku: Fix out-of-bounds write with long word. Issue #388, Pull request #381.\n    Ruby: Fix potential out-of-bounds reads at file start. Issue #388.\n    SQL: Improve performance of q-string literals. Issue #378.\n    TCMD: Fix out-of-bounds write with long word. Issue #388, Pull request #386.\n    TeX: Fix out-of-bounds write with long command. Issue #388, Pull request #382.\n    Visual Prolog: Fix crash with deep nesting. Issue #388, Pull request #380.\n    X12: Fix read into empty allocation. Issue #388, Pull request #385.\n\nClose #18588",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/commit/025d4527da2fafb400283660bad69088566c3f3e",
+   "cls": "Link--secondary",
+   "rect": [
+    782,
+    606,
+    235,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "scripts",
+   "aria": "scripts, (Directory)",
+   "title": "scripts",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/tree/master/lexilla/scripts",
+   "cls": "Link--primary",
+   "rect": [
+    380,
+    647,
+    40,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Update to Scintilla 5.6.3 & Lexilla 5.5.0",
+   "aria": "",
+   "title": "Update to Scintilla 5.6.3 & Lexilla 5.5.0\n\nScintilla Release 5.6.3 ( https://www.scintilla.org/scintilla563.zip )\n\n    Released 6 June 2026.\n    Restore selection and scroll position for undo and redo on additional views instead of just the view performing the undo or redo. Notepad++ Pull Request #18014.\n    Improve performance of rectangular paste when many spaces must be inserted. Bug #2302.\n    On Win32, close the clipboard before inserting pasted or dropped text so that the clipboard is not blocked while the insertion is performed. Bug #2507.\n    On Qt with Wayland, fix failures with displaying calltips and autocompletion lists.\n\nLexilla Release 5.5.0 ( https://www.scintilla.org/lexilla550.zip )\n\n    Released 6 June 2026.\n    Fortran: Fold enumeration type and select rank. Treat GFortran !GCC$ as preprocessor. Issue #363, Bug #2509.\n    LaTeX: Fix issues at end of file. Issue #355, Pull request #358.\n    LaTeX: Fix non-terminating optional argument by lexing as SCE_L_MATH. Issue #360.\n\nFix #17913, close #18109",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/commit/597276d0d3dff734af37e0fb71f9ae15aaa9728b",
+   "cls": "Link--secondary",
+   "rect": [
+    782,
+    647,
+    235,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "src",
+   "aria": "src, (Directory)",
+   "title": "src",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/tree/master/lexilla/src",
+   "cls": "Link--primary",
+   "rect": [
+    380,
+    688,
+    17,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Update to Scintilla 5.6.8 & Lexilla 5.5.5",
+   "aria": "",
+   "title": "Update to Scintilla 5.6.8 & Lexilla 5.5.5\n\nScintilla Release 5.6.8 ( https://www.scintilla.org/scintilla568.zip )\n\n    Released 31 October 2026.\n    Improve speed by avoiding line layout when determining positions at line starts. Increase maximum size of cached lexemes from 30 to 40 as many identifiers, column names, and common values are larger than 30 bytes.\n    Update case conversion and character categories to Unicode 17. Feature #1569.\n    Fix crash with change history undo caused by optimizing bulk deletion in version 5.3.8.\n    On Win32 fix crash and invisible text for invalid weight and stretch font settings with DirectWrite. Bug #2520.\n    On Win32 when building with nmake -f scintilla.mak, move PDB file to DIR_O directory so that it is removed by nmake -f scintilla.mak clean. Bug #2521.\n\nLexilla Release 5.5.5 ( https://www.scintilla.org/lexilla555.zip )\n\n    Released 31 October 2026.\n    Update character categories to Unicode 17. Feature #1569.\n    C++: Fix crash with incomplete preprocessor macro invocation. Issue #388.\n    DMIS: Fix out-of-bounds write with long word. Issue #388, Pull request #387.\n    HTML: Fix handling of HTML comments in scripts. Issue #371, Issue #338, Pull request #373.\n    HTML: Allow '$', '#' and non-ASCII characters in JavaScript identifiers. Issue #371, Pull request #373.\n    HTML: Support nested template literals in JavaScript. Issue #290, Pull request #373.\n    HTML: Style extra type-distinguishing character in JSP and ASP tags as SCE_H_ASP. These are the '!', '#', '$', and ':' in declarations, data binding, and expressions. Issue #375.\n    HTML: Do not terminate JavaScript regex literal for '/' when inside character class '[]'. Issue #377, Pull request #373.\n    HTML: Recognize more language aliases including \"java\" and \"C#\" for JSP and ASP. Issue #376.\n    JavaScript: Fix non-stable lexing of regex literals in both JavaScript and HTML files. Issue #374, Pull request #373.\n    Julia: Fix hang for unterminated character literal at file end when lexer.julia.highlight.lexerror enabled. Issue #388, Pull request #384.\n    Markdown: Recognize 'front matter' key-value metadata at file start specified in YAML, TOML or JSON. Issue #59.\n    Perl: Fix hang when NUL inside here-doc. Issue #388, Pull request #389, Pull request #379.\n    Perl: Fix out-of-bounds write with long here-doc delimiter with multi-byte character near limit. Stop SCE_PL_ERROR leaking past line end causing non-stable results. Issue #388, Pull request #383.\n    Perl: Fix inconsistent styling of CRLF line end bytes for here-docs and formats. Issue #390.\n    PHP: Style variable variable ($$variable) as SCE_HPHP_VARIABLE. Bug #2208, Pull request #373.\n    PHP: Disallow DEL character in PHP identifiers. Issue #371, Pull request #373.\n    Raku: Fix out-of-bounds write with long word. Issue #388, Pull request #381.\n    Ruby: Fix potential out-of-bounds reads at file start. Issue #388.\n    SQL: Improve performance of q-string literals. Issue #378.\n    TCMD: Fix out-of-bounds write with long word. Issue #388, Pull request #386.\n    TeX: Fix out-of-bounds write with long command. Issue #388, Pull request #382.\n    Visual Prolog: Fix crash with deep nesting. Issue #388, Pull request #380.\n    X12: Fix read into empty allocation. Issue #388, Pull request #385.\n\nClose #18588",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/commit/025d4527da2fafb400283660bad69088566c3f3e",
+   "cls": "Link--secondary",
+   "rect": [
+    782,
+    688,
+    235,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "test",
+   "aria": "test, (Directory)",
+   "title": "test",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/tree/master/lexilla/test",
+   "cls": "Link--primary",
+   "rect": [
+    380,
+    729,
+    23,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Update to Scintilla 5.6.8 & Lexilla 5.5.5",
+   "aria": "",
+   "title": "Update to Scintilla 5.6.8 & Lexilla 5.5.5\n\nScintilla Release 5.6.8 ( https://www.scintilla.org/scintilla568.zip )\n\n    Released 31 October 2026.\n    Improve speed by avoiding line layout when determining positions at line starts. Increase maximum size of cached lexemes from 30 to 40 as many identifiers, column names, and common values are larger than 30 bytes.\n    Update case conversion and character categories to Unicode 17. Feature #1569.\n    Fix crash with change history undo caused by optimizing bulk deletion in version 5.3.8.\n    On Win32 fix crash and invisible text for invalid weight and stretch font settings with DirectWrite. Bug #2520.\n    On Win32 when building with nmake -f scintilla.mak, move PDB file to DIR_O directory so that it is removed by nmake -f scintilla.mak clean. Bug #2521.\n\nLexilla Release 5.5.5 ( https://www.scintilla.org/lexilla555.zip )\n\n    Released 31 October 2026.\n    Update character categories to Unicode 17. Feature #1569.\n    C++: Fix crash with incomplete preprocessor macro invocation. Issue #388.\n    DMIS: Fix out-of-bounds write with long word. Issue #388, Pull request #387.\n    HTML: Fix handling of HTML comments in scripts. Issue #371, Issue #338, Pull request #373.\n    HTML: Allow '$', '#' and non-ASCII characters in JavaScript identifiers. Issue #371, Pull request #373.\n    HTML: Support nested template literals in JavaScript. Issue #290, Pull request #373.\n    HTML: Style extra type-distinguishing character in JSP and ASP tags as SCE_H_ASP. These are the '!', '#', '$', and ':' in declarations, data binding, and expressions. Issue #375.\n    HTML: Do not terminate JavaScript regex literal for '/' when inside character class '[]'. Issue #377, Pull request #373.\n    HTML: Recognize more language aliases including \"java\" and \"C#\" for JSP and ASP. Issue #376.\n    JavaScript: Fix non-stable lexing of regex literals in both JavaScript and HTML files. Issue #374, Pull request #373.\n    Julia: Fix hang for unterminated character literal at file end when lexer.julia.highlight.lexerror enabled. Issue #388, Pull request #384.\n    Markdown: Recognize 'front matter' key-value metadata at file start specified in YAML, TOML or JSON. Issue #59.\n    Perl: Fix hang when NUL inside here-doc. Issue #388, Pull request #389, Pull request #379.\n    Perl: Fix out-of-bounds write with long here-doc delimiter with multi-byte character near limit. Stop SCE_PL_ERROR leaking past line end causing non-stable results. Issue #388, Pull request #383.\n    Perl: Fix inconsistent styling of CRLF line end bytes for here-docs and formats. Issue #390.\n    PHP: Style variable variable ($$variable) as SCE_HPHP_VARIABLE. Bug #2208, Pull request #373.\n    PHP: Disallow DEL character in PHP identifiers. Issue #371, Pull request #373.\n    Raku: Fix out-of-bounds write with long word. Issue #388, Pull request #381.\n    Ruby: Fix potential out-of-bounds reads at file start. Issue #388.\n    SQL: Improve performance of q-string literals. Issue #378.\n    TCMD: Fix out-of-bounds write with long word. Issue #388, Pull request #386.\n    TeX: Fix out-of-bounds write with long command. Issue #388, Pull request #382.\n    Visual Prolog: Fix crash with deep nesting. Issue #388, Pull request #380.\n    X12: Fix read into empty allocation. Issue #388, Pull request #385.\n\nClose #18588",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/commit/025d4527da2fafb400283660bad69088566c3f3e",
+   "cls": "Link--secondary",
+   "rect": [
+    782,
+    729,
+    235,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": ".gitattributes",
+   "aria": ".gitattributes, (File)",
+   "title": ".gitattributes",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/blob/master/lexilla/.gitattributes",
+   "cls": "Link--primary",
+   "rect": [
+    380,
+    770,
+    78,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Update to Scintilla 5.6.8 & Lexilla 5.5.5",
+   "aria": "",
+   "title": "Update to Scintilla 5.6.8 & Lexilla 5.5.5\n\nScintilla Release 5.6.8 ( https://www.scintilla.org/scintilla568.zip )\n\n    Released 31 October 2026.\n    Improve speed by avoiding line layout when determining positions at line starts. Increase maximum size of cached lexemes from 30 to 40 as many identifiers, column names, and common values are larger than 30 bytes.\n    Update case conversion and character categories to Unicode 17. Feature #1569.\n    Fix crash with change history undo caused by optimizing bulk deletion in version 5.3.8.\n    On Win32 fix crash and invisible text for invalid weight and stretch font settings with DirectWrite. Bug #2520.\n    On Win32 when building with nmake -f scintilla.mak, move PDB file to DIR_O directory so that it is removed by nmake -f scintilla.mak clean. Bug #2521.\n\nLexilla Release 5.5.5 ( https://www.scintilla.org/lexilla555.zip )\n\n    Released 31 October 2026.\n    Update character categories to Unicode 17. Feature #1569.\n    C++: Fix crash with incomplete preprocessor macro invocation. Issue #388.\n    DMIS: Fix out-of-bounds write with long word. Issue #388, Pull request #387.\n    HTML: Fix handling of HTML comments in scripts. Issue #371, Issue #338, Pull request #373.\n    HTML: Allow '$', '#' and non-ASCII characters in JavaScript identifiers. Issue #371, Pull request #373.\n    HTML: Support nested template literals in JavaScript. Issue #290, Pull request #373.\n    HTML: Style extra type-distinguishing character in JSP and ASP tags as SCE_H_ASP. These are the '!', '#', '$', and ':' in declarations, data binding, and expressions. Issue #375.\n    HTML: Do not terminate JavaScript regex literal for '/' when inside character class '[]'. Issue #377, Pull request #373.\n    HTML: Recognize more language aliases including \"java\" and \"C#\" for JSP and ASP. Issue #376.\n    JavaScript: Fix non-stable lexing of regex literals in both JavaScript and HTML files. Issue #374, Pull request #373.\n    Julia: Fix hang for unterminated character literal at file end when lexer.julia.highlight.lexerror enabled. Issue #388, Pull request #384.\n    Markdown: Recognize 'front matter' key-value metadata at file start specified in YAML, TOML or JSON. Issue #59.\n    Perl: Fix hang when NUL inside here-doc. Issue #388, Pull request #389, Pull request #379.\n    Perl: Fix out-of-bounds write with long here-doc delimiter with multi-byte character near limit. Stop SCE_PL_ERROR leaking past line end causing non-stable results. Issue #388, Pull request #383.\n    Perl: Fix inconsistent styling of CRLF line end bytes for here-docs and formats. Issue #390.\n    PHP: Style variable variable ($$variable) as SCE_HPHP_VARIABLE. Bug #2208, Pull request #373.\n    PHP: Disallow DEL character in PHP identifiers. Issue #371, Pull request #373.\n    Raku: Fix out-of-bounds write with long word. Issue #388, Pull request #381.\n    Ruby: Fix potential out-of-bounds reads at file start. Issue #388.\n    SQL: Improve performance of q-string literals. Issue #378.\n    TCMD: Fix out-of-bounds write with long word. Issue #388, Pull request #386.\n    TeX: Fix out-of-bounds write with long command. Issue #388, Pull request #382.\n    Visual Prolog: Fix crash with deep nesting. Issue #388, Pull request #380.\n    X12: Fix read into empty allocation. Issue #388, Pull request #385.\n\nClose #18588",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/commit/025d4527da2fafb400283660bad69088566c3f3e",
+   "cls": "Link--secondary",
+   "rect": [
+    782,
+    770,
+    235,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": ".gitignore",
+   "aria": ".gitignore, (File)",
+   "title": ".gitignore",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/blob/master/lexilla/.gitignore",
+   "cls": "Link--primary",
+   "rect": [
+    380,
+    811,
+    59,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Updated to Scintilla 5.4.2 & Lexilla 5.3.1",
+   "aria": "",
+   "title": "Updated to Scintilla 5.4.2 & Lexilla 5.3.1\n\nhttps://www.scintilla.org/scintilla542.zip\nRelease 5.4.2\n\n    Released 5 March 2024.\n    Significantly reduce memory used for undo actions, often to a half or quarter of previous versions. Feature #1458.\n    Add APIs for saving and restoring undo history.\n    For GTK, when laying out text, detect runs with both left-to-right and right-to-left ranges and divide into an ASCII prefix and more complex suffix. Lay out the ASCII prefix in the standard manner but, for the suffix, measure the whole width and spread that over the suffix bytes. This produces more usable results where the caret moves over the ASCII prefix correctly and over the suffix reasonably but not accurately.\n    For ScintillaEdit on Qt, fix reference from ScintillaDocument to Document to match change in 5.4.1 using IDocumentEditable for SCI_GETDOCPOINTER and SCI_SETDOCPOINTER.\n    For Direct2D on Win32, use the multi-threaded option to avoid crashes when Scintilla instances created on different threads. There may be more problems with this scenario so it should be avoided. Bug #2420.\n    For Win32, ensure keyboard-initiated context menu appears in multi-screen situations.\n\nhttps://www.scintilla.org/lexilla531.zip\nRelease 5.3.1\n\n    Released 5 March 2024.\n    Assembler: After comments, treat \\r\\n line ends the same as \\n. This makes testing easier.\n    Bash: Fix folding when line changed to/from comment and previous line is comment. Issue #224.\n    Batch: Fix handling ':' next to keywords. Issue #222.\n    JavaScript: in cpp lexer, add lexer.cpp.backquoted.strings=2 mode to treat ` back-quoted strings as template literals which allow embedded ${expressions}. Issue #94.\n    Python: fix lexing of rb'' and rf'' strings. Issue #223, Pull request #227.\n    Ruby: fix lexing of methods on numeric literals like '3.times' so the '.' and method name do not appear in numeric style. Issue #225.",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/commit/0f3ae2e3d5c267c1dc83d2343673a35922f8a6c3",
+   "cls": "Link--secondary",
+   "rect": [
+    782,
+    811,
+    243,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": ".travis.yml",
+   "aria": ".travis.yml, (File)",
+   "title": ".travis.yml",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/blob/master/lexilla/.travis.yml",
+   "cls": "Link--primary",
+   "rect": [
+    380,
+    852,
+    61,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Update Scintilla from v4.4.6 to v5.2.1 and add Lexilla v5.1.5",
+   "aria": "",
+   "title": "Update Scintilla from v4.4.6 to v5.2.1 and add Lexilla v5.1.5\n\nUpdate with https://www.scintilla.org/scintilla521.zip\n            https://www.scintilla.org/lexilla515.zip\n\n- fix setting to bring Scintilla::PositionCR from ScintillaStructures.h inline with Sci_Position.h Sci_PositionCR\n- add workaround to enable lexer for searchResult\ncommented out SCI_SETILEXER call on searchResult to get one result which is correctly handled by the lexer,\nadded comment about the current problem with property @MarkingsStruct which seems to disappear after call to SCI_SETILEXER or CreateLexer\n- corrected usage of ObjC lexer\n- removed unnecessary filter stuff\n- use own sections for scintilla and lexilla build targets and allow parallel builds\n- as libscilex is no longer existing, changed to libscintilla\n- adapt makefiles and cmake\n- use VS2019\n- started simple changes for createlexer adaptations, nullpointercheck missing on return of lexer name from deprecated LexerNameFromID -> undefined behaviour\n- movement from id -> lexer name, mostly done via LexerNameFromID + switching off corresponding compiler warning\n- changed to SCI_SETILEXER from SCI_SETLEXER, SCI_SETLEXERLANGUAGE needs to be corrected, see Scintilla5Migration.html\n- just commented out: SCI_LOADLEXERLIBRARY\n\nFix #10504, close #11419",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/commit/a61b03ea8887e21c6e1b7374068962f635b79b80",
+   "cls": "Link--secondary",
+   "rect": [
+    782,
+    852,
+    360,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "CONTRIBUTING",
+   "aria": "CONTRIBUTING, (File)",
+   "title": "CONTRIBUTING",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/blob/master/lexilla/CONTRIBUTING",
+   "cls": "Link--primary",
+   "rect": [
+    380,
+    893,
+    98,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Update to Scintilla 5.6.1 & Lexilla 5.4.8",
+   "aria": "",
+   "title": "Update to Scintilla 5.6.1 & Lexilla 5.4.8\n\nScintilla Release 5.6.1 ( https://www.scintilla.org/scintilla561.zip )\n\n    Released 26 March 2026.\n    Add mode to draw tabs as [HT] blobs with SCI_SETTABDRAWMODE(SCTD_CONTROLCHAR).\n    Improve mouse drag behaviour when drag and drop disabled. Feature #1581.\n    Fix regression in SCI_CONVERTEOLS that may not convert whole file. Bug #2501.\n\nLexilla Release 5.4.8 ( https://www.scintilla.org/lexilla548.zip )\n\n    Released 26 March 2026.\n    Batch: Remove line length limitation and change to an object lexer. Issue #228.\n    Forth: Treat \\r\\n line ends the same as \\n. This makes testing easier. Issue #349.\n    Forth: Allow more Forth words to be symbols or begin with a symbol. Require whitespace around line comment tokens, similar to the left-hand parenthesis of stream comments. Issue #351.\n    JavaScript: in cpp lexer, add lexer.cpp.enable.preprocessor and lexer.cpp.allow.hashes properties. This allows disabling preprocessor recognition (as JavaScript doesn't have a preprocessor) and recognizing private elements that start with a #. Issue #48.\n    JSON: Fix escaped quote in SCE_JSON_URI. Issue #72.\n\nFix #17920, fix #17864, fix #13522, fix #11746, close #17901",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/commit/fa73138e58bfeb798fc95c7e9f4709e11d6a208e",
+   "cls": "Link--secondary",
+   "rect": [
+    782,
+    893,
+    235,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "License.txt",
+   "aria": "License.txt, (File)",
+   "title": "License.txt",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/blob/master/lexilla/License.txt",
+   "cls": "Link--primary",
+   "rect": [
+    380,
+    934,
+    64,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Update Scintilla from v4.4.6 to v5.2.1 and add Lexilla v5.1.5",
+   "aria": "",
+   "title": "Update Scintilla from v4.4.6 to v5.2.1 and add Lexilla v5.1.5\n\nUpdate with https://www.scintilla.org/scintilla521.zip\n            https://www.scintilla.org/lexilla515.zip\n\n- fix setting to bring Scintilla::PositionCR from ScintillaStructures.h inline with Sci_Position.h Sci_PositionCR\n- add workaround to enable lexer for searchResult\ncommented out SCI_SETILEXER call on searchResult to get one result which is correctly handled by the lexer,\nadded comment about the current problem with property @MarkingsStruct which seems to disappear after call to SCI_SETILEXER or CreateLexer\n- corrected usage of ObjC lexer\n- removed unnecessary filter stuff\n- use own sections for scintilla and lexilla build targets and allow parallel builds\n- as libscilex is no longer existing, changed to libscintilla\n- adapt makefiles and cmake\n- use VS2019\n- started simple changes for createlexer adaptations, nullpointercheck missing on return of lexer name from deprecated LexerNameFromID -> undefined behaviour\n- movement from id -> lexer name, mostly done via LexerNameFromID + switching off corresponding compiler warning\n- changed to SCI_SETILEXER from SCI_SETLEXER, SCI_SETLEXERLANGUAGE needs to be corrected, see Scintilla5Migration.html\n- just commented out: SCI_LOADLEXERLIBRARY\n\nFix #10504, close #11419",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/commit/a61b03ea8887e21c6e1b7374068962f635b79b80",
+   "cls": "Link--secondary",
+   "rect": [
+    782,
+    934,
+    360,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "README",
+   "aria": "README, (File)",
+   "title": "README",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/blob/master/lexilla/README",
+   "cls": "Link--primary",
+   "rect": [
+    380,
+    975,
+    54,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Update to scintilla 5.5.7 & Lexilla 5.4.5",
+   "aria": "",
+   "title": "Update to scintilla 5.5.7 & Lexilla 5.4.5\n\nRelease 5.5.7 (https://www.scintilla.org/scintilla557.zip)\n\nReleased 8 June 2025\n\n1. Add SCI_SCROLLVERTICAL method to restore view position and maintain it while performing line wrapping.\n2. Add SC_UNDO_SELECTION_HISTORY_SCROLL flag to SCI_SETUNDOSELECTIONHISTORY which controls whether undo and redo restore vertical scroll position.\n3. Tweak SC_MARK_BAR to be slightly wider by using next higher whole pixel instead of next lower for margin width / 3.\n4. Scale images in autocompletion lists with SCI_AUTOCSETIMAGESCALE to match high DPI screens. Initially only on GTK and Qt.\n5. Fix wrapping bug for UTF-8 where \\r\\n could wrap between the characters. Notepad++ Pull Request #16373.\n6. Fix crash during painting when scroll bars changed. Bug #2481.\n7. On GTK, reset vertical scroll bar synchronously in SCI_SETDOCPOINTER to fix bug where scroll position not restored in non-wrap mode. Bug #2416.\n8. On GTK, fix IME problem when tentative composition interfered with delete surrounding. Feature #1476.\n9. On GTK, update IME cursor position inside retrieve surrounding to better position candidate window. Feature #1488.\n\nRelease 5.4.5 (https://www.scintilla.org/lexilla545.zip)\n\nReleased 8 June 2025\n\n1. Dart: Add error state SCE_DART_STRINGEOL for unterminated string. Pull request #315.\n2. Makefile: Add a keyword list to makefile lexer to highlight GNU Make directives like 'ifdef' and 'vpath' as SCE_MAKE_PREPROCESSOR since these are similar to NMAKE directives like '!IFDEF'.\n3. Nix: Add error state SCE_NIX_STRINGEOL for unterminated string. Pull request #315.\n4. TOML: Add error state SCE_TOML_STRINGEOL for unterminated string. Pull request #315.\n5. Zig: Add error state SCE_ZIG_STRINGEOL for unterminated string. Pull request #315.\n\nClose #16649",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/commit/e85c354135e62a18407280f58ddfcb4b45984d81",
+   "cls": "Link--secondary",
+   "rect": [
+    782,
+    975,
+    233,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "cppcheck.suppress",
+   "aria": "cppcheck.suppress, (File)",
+   "title": "cppcheck.suppress",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/blob/master/lexilla/cppcheck.suppress",
+   "cls": "Link--primary",
+   "rect": [
+    380,
+    1016,
+    116,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Update to Scintilla 5.6.8 & Lexilla 5.5.5",
+   "aria": "",
+   "title": "Update to Scintilla 5.6.8 & Lexilla 5.5.5\n\nScintilla Release 5.6.8 ( https://www.scintilla.org/scintilla568.zip )\n\n    Released 31 October 2026.\n    Improve speed by avoiding line layout when determining positions at line starts. Increase maximum size of cached lexemes from 30 to 40 as many identifiers, column names, and common values are larger than 30 bytes.\n    Update case conversion and character categories to Unicode 17. Feature #1569.\n    Fix crash with change history undo caused by optimizing bulk deletion in version 5.3.8.\n    On Win32 fix crash and invisible text for invalid weight and stretch font settings with DirectWrite. Bug #2520.\n    On Win32 when building with nmake -f scintilla.mak, move PDB file to DIR_O directory so that it is removed by nmake -f scintilla.mak clean. Bug #2521.\n\nLexilla Release 5.5.5 ( https://www.scintilla.org/lexilla555.zip )\n\n    Released 31 October 2026.\n    Update character categories to Unicode 17. Feature #1569.\n    C++: Fix crash with incomplete preprocessor macro invocation. Issue #388.\n    DMIS: Fix out-of-bounds write with long word. Issue #388, Pull request #387.\n    HTML: Fix handling of HTML comments in scripts. Issue #371, Issue #338, Pull request #373.\n    HTML: Allow '$', '#' and non-ASCII characters in JavaScript identifiers. Issue #371, Pull request #373.\n    HTML: Support nested template literals in JavaScript. Issue #290, Pull request #373.\n    HTML: Style extra type-distinguishing character in JSP and ASP tags as SCE_H_ASP. These are the '!', '#', '$', and ':' in declarations, data binding, and expressions. Issue #375.\n    HTML: Do not terminate JavaScript regex literal for '/' when inside character class '[]'. Issue #377, Pull request #373.\n    HTML: Recognize more language aliases including \"java\" and \"C#\" for JSP and ASP. Issue #376.\n    JavaScript: Fix non-stable lexing of regex literals in both JavaScript and HTML files. Issue #374, Pull request #373.\n    Julia: Fix hang for unterminated character literal at file end when lexer.julia.highlight.lexerror enabled. Issue #388, Pull request #384.\n    Markdown: Recognize 'front matter' key-value metadata at file start specified in YAML, TOML or JSON. Issue #59.\n    Perl: Fix hang when NUL inside here-doc. Issue #388, Pull request #389, Pull request #379.\n    Perl: Fix out-of-bounds write with long here-doc delimiter with multi-byte character near limit. Stop SCE_PL_ERROR leaking past line end causing non-stable results. Issue #388, Pull request #383.\n    Perl: Fix inconsistent styling of CRLF line end bytes for here-docs and formats. Issue #390.\n    PHP: Style variable variable ($$variable) as SCE_HPHP_VARIABLE. Bug #2208, Pull request #373.\n    PHP: Disallow DEL character in PHP identifiers. Issue #371, Pull request #373.\n    Raku: Fix out-of-bounds write with long word. Issue #388, Pull request #381.\n    Ruby: Fix potential out-of-bounds reads at file start. Issue #388.\n    SQL: Improve performance of q-string literals. Issue #378.\n    TCMD: Fix out-of-bounds write with long word. Issue #388, Pull request #386.\n    TeX: Fix out-of-bounds write with long command. Issue #388, Pull request #382.\n    Visual Prolog: Fix crash with deep nesting. Issue #388, Pull request #380.\n    X12: Fix read into empty allocation. Issue #388, Pull request #385.\n\nClose #18588",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/commit/025d4527da2fafb400283660bad69088566c3f3e",
+   "cls": "Link--secondary",
+   "rect": [
+    782,
+    1016,
+    235,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "delbin.bat",
+   "aria": "delbin.bat, (File)",
+   "title": "delbin.bat",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/blob/master/lexilla/delbin.bat",
+   "cls": "Link--primary",
+   "rect": [
+    380,
+    1057,
+    62,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Update to Scintilla 5.3.2 and Lexilla 5.2.1",
+   "aria": "",
+   "title": "Update to Scintilla 5.3.2 and Lexilla 5.2.1\n\nupdate to https://www.scintilla.org/scintilla532.zip with:\n\n    Released 6 December 2022.\n    Add SCI_REPLACETARGETMINIMAL to change text without causing unchanged prefix and suffix to be marked as modified in change history.\n    Draw background colour for EOL annotations with standard and boxed visuals.\n    Add SCI_GETSTYLEDTEXTFULL to support 64-bit document positions on Win32 replacing SCI_GETSTYLEDTEXT which is not safe for huge documents. Feature #1455.\n    Send SCN_AUTOCCOMPLETED for SCI_AUTOCSHOW triggering insertion because of SCI_AUTOCSETCHOOSESINGLE mode. Feature #1459.\n    Change 'paragraph up' commands SCI_PARAUP and SCI_PARAUPEXTEND to go to the start position of the paragraph containing the caret. Only if the caret is already at the start of the paragraph will it go to the start of the previous paragraph. Bug #2363.\n    Change release compilation optimization option to favour speed over space. -O2 for MSVC and -O3 for gcc and clang.\n    On Win32, avoid blurry display with DirectWrite in GDI scaling mode. Bug #2344.\n    On Win32, use the top-level window to find the monitor for DirectWrite rendering parameters. Temporarily switch DPI awareness to find correct monitor in GDI scaling mode. Bug #2344.\n    On Qt, implement SCI_SETRECTANGULARSELECTIONMODIFIER for all platforms.\n    On Qt, allow string form XPM images for SCI_REGISTERIMAGE.\n\nand https://www.scintilla.org/lexilla521.zip with\n\n    Released 6 December 2022.\n    Update to Unicode 14. Feature #1461.\n    Change default compilation optimization option to favour speed over space. -O2 for MSVC and -O3 for gcc and clang.\n    Batch: Fix comments starting inside strings. Issue #115.\n    F#: Lex signed numeric literals more accurately. Issue #110, Issue #111.\n    F#: Add specifiers for 64-bit integer and floating point literals. Issue #112.\n    Markdown: Stop styling numbers at line start in PRECHAR style. Issue #117.\n    PowerShell: Recognise numeric literals more accurately. Issue #118.\n\nClose #12624",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/commit/fc61868cf2e317bfb7384502f80b6476fda6ddc8",
+   "cls": "Link--secondary",
+   "rect": [
+    782,
+    1057,
+    247,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "tgzsrc",
+   "aria": "tgzsrc, (File)",
+   "title": "tgzsrc",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/blob/master/lexilla/tgzsrc",
+   "cls": "Link--primary",
+   "rect": [
+    380,
+    1098,
+    37,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Update Scintilla from v4.4.6 to v5.2.1 and add Lexilla v5.1.5",
+   "aria": "",
+   "title": "Update Scintilla from v4.4.6 to v5.2.1 and add Lexilla v5.1.5\n\nUpdate with https://www.scintilla.org/scintilla521.zip\n            https://www.scintilla.org/lexilla515.zip\n\n- fix setting to bring Scintilla::PositionCR from ScintillaStructures.h inline with Sci_Position.h Sci_PositionCR\n- add workaround to enable lexer for searchResult\ncommented out SCI_SETILEXER call on searchResult to get one result which is correctly handled by the lexer,\nadded comment about the current problem with property @MarkingsStruct which seems to disappear after call to SCI_SETILEXER or CreateLexer\n- corrected usage of ObjC lexer\n- removed unnecessary filter stuff\n- use own sections for scintilla and lexilla build targets and allow parallel builds\n- as libscilex is no longer existing, changed to libscintilla\n- adapt makefiles and cmake\n- use VS2019\n- started simple changes for createlexer adaptations, nullpointercheck missing on return of lexer name from deprecated LexerNameFromID -> undefined behaviour\n- movement from id -> lexer name, mostly done via LexerNameFromID + switching off corresponding compiler warning\n- changed to SCI_SETILEXER from SCI_SETLEXER, SCI_SETLEXERLANGUAGE needs to be corrected, see Scintilla5Migration.html\n- just commented out: SCI_LOADLEXERLIBRARY\n\nFix #10504, close #11419",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/commit/a61b03ea8887e21c6e1b7374068962f635b79b80",
+   "cls": "Link--secondary",
+   "rect": [
+    782,
+    1098,
+    360,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "version.txt",
+   "aria": "version.txt, (File)",
+   "title": "version.txt",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/blob/master/lexilla/version.txt",
+   "cls": "Link--primary",
+   "rect": [
+    380,
+    1139,
+    63,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Update to Scintilla 5.6.8 & Lexilla 5.5.5",
+   "aria": "",
+   "title": "Update to Scintilla 5.6.8 & Lexilla 5.5.5\n\nScintilla Release 5.6.8 ( https://www.scintilla.org/scintilla568.zip )\n\n    Released 31 October 2026.\n    Improve speed by avoiding line layout when determining positions at line starts. Increase maximum size of cached lexemes from 30 to 40 as many identifiers, column names, and common values are larger than 30 bytes.\n    Update case conversion and character categories to Unicode 17. Feature #1569.\n    Fix crash with change history undo caused by optimizing bulk deletion in version 5.3.8.\n    On Win32 fix crash and invisible text for invalid weight and stretch font settings with DirectWrite. Bug #2520.\n    On Win32 when building with nmake -f scintilla.mak, move PDB file to DIR_O directory so that it is removed by nmake -f scintilla.mak clean. Bug #2521.\n\nLexilla Release 5.5.5 ( https://www.scintilla.org/lexilla555.zip )\n\n    Released 31 October 2026.\n    Update character categories to Unicode 17. Feature #1569.\n    C++: Fix crash with incomplete preprocessor macro invocation. Issue #388.\n    DMIS: Fix out-of-bounds write with long word. Issue #388, Pull request #387.\n    HTML: Fix handling of HTML comments in scripts. Issue #371, Issue #338, Pull request #373.\n    HTML: Allow '$', '#' and non-ASCII characters in JavaScript identifiers. Issue #371, Pull request #373.\n    HTML: Support nested template literals in JavaScript. Issue #290, Pull request #373.\n    HTML: Style extra type-distinguishing character in JSP and ASP tags as SCE_H_ASP. These are the '!', '#', '$', and ':' in declarations, data binding, and expressions. Issue #375.\n    HTML: Do not terminate JavaScript regex literal for '/' when inside character class '[]'. Issue #377, Pull request #373.\n    HTML: Recognize more language aliases including \"java\" and \"C#\" for JSP and ASP. Issue #376.\n    JavaScript: Fix non-stable lexing of regex literals in both JavaScript and HTML files. Issue #374, Pull request #373.\n    Julia: Fix hang for unterminated character literal at file end when lexer.julia.highlight.lexerror enabled. Issue #388, Pull request #384.\n    Markdown: Recognize 'front matter' key-value metadata at file start specified in YAML, TOML or JSON. Issue #59.\n    Perl: Fix hang when NUL inside here-doc. Issue #388, Pull request #389, Pull request #379.\n    Perl: Fix out-of-bounds write with long here-doc delimiter with multi-byte character near limit. Stop SCE_PL_ERROR leaking past line end causing non-stable results. Issue #388, Pull request #383.\n    Perl: Fix inconsistent styling of CRLF line end bytes for here-docs and formats. Issue #390.\n    PHP: Style variable variable ($$variable) as SCE_HPHP_VARIABLE. Bug #2208, Pull request #373.\n    PHP: Disallow DEL character in PHP identifiers. Issue #371, Pull request #373.\n    Raku: Fix out-of-bounds write with long word. Issue #388, Pull request #381.\n    Ruby: Fix potential out-of-bounds reads at file start. Issue #388.\n    SQL: Improve performance of q-string literals. Issue #378.\n    TCMD: Fix out-of-bounds write with long word. Issue #388, Pull request #386.\n    TeX: Fix out-of-bounds write with long command. Issue #388, Pull request #382.\n    Visual Prolog: Fix crash with deep nesting. Issue #388, Pull request #380.\n    X12: Fix read into empty allocation. Issue #388, Pull request #385.\n\nClose #18588",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/commit/025d4527da2fafb400283660bad69088566c3f3e",
+   "cls": "Link--secondary",
+   "rect": [
+    782,
+    1139,
+    235,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "zipsrc.bat",
+   "aria": "zipsrc.bat, (File)",
+   "title": "zipsrc.bat",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/blob/master/lexilla/zipsrc.bat",
+   "cls": "Link--primary",
+   "rect": [
+    380,
+    1180,
+    58,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Update to Scintilla 5.6.5 & Lexilla 5.5.2",
+   "aria": "",
+   "title": "Update to Scintilla 5.6.5 & Lexilla 5.5.2\n\nScintilla Release 5.6.5 ( https://www.scintilla.org/scintilla565.zip )\n\n    Released 4 August 2026.\n    Add SC_UPDATE_TEXT and SC_UPDATE_LINE_COUNT flags to SCN_UPDATEUI notifications. This can help improve performance by client code switching from listening for changes with rapid SCN_MODIFIED to delayed SCN_UPDATEUI notifications.\n    On Qt, prepare for drawing asynchronously to avoid styling inside the draw handler. This may improve performance and matches other platforms.\n    On Cocoa, fix problem where styling and update UI notifications were performed inside drawing instead of before drawing which could cause drawing to be abandoned unnecessarily.\n    Increase interior width of MarkerSymbol::Plus and Minus to match stroke width setting.\n    Improve performance of fold discovery in some situations by styling progressively larger blocks of lines.\n    Don't use std::async and std::future in single threaded situations. This avoids crashes with some runtime libraries as well as minor performance costs. Geany Issue #4620.\n\nLexilla Release 5.5.2 ( https://www.scintilla.org/lexilla552.zip )\n\n    Released 4 August 2026.\n    JavaScript: in cpp, XML, and HTML lexers, only recognize regular expression literal when initial '/' is followed by another '/' on the same line.\n    Lexilla may be built without exporting any entry points by defining the preprocessor symbol LEXILLA_NO_EXPORT. This is only useful when building a static library. Issue #311.\n\nClose #18280",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/commit/e59774add26b0130d38aaf722aceb0259ccc0078",
+   "cls": "Link--secondary",
+   "rect": [
+    782,
+    1180,
+    235,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "README",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "#readme",
+   "cls": "readmeLink__PTIKYB prc-Link-Link-9ZwDx",
+   "rect": [
+    350,
+    1240,
+    56,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk prc-Button-IconButton-fyge7",
+   "rect": [
+    1336,
+    1235,
+    28,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk prc-Button-IconButton-fyge7",
+   "rect": [
+    1372,
+    1235,
+    28,
+    28
+   ],
+   "disabled": false
+  }
+ ],
+ "tables": [
+  {
+   "headers": [
+    "Name",
+    "Name",
+    "Last commit message",
+    "Last commit date"
+   ],
+   "rows": [
+    [
+     "parent directory.."
+    ],
+    [
+     ".github/workflows",
+     ".github/workflows",
+     "Update to Scintilla 5.6.1 & Le",
+     "Mar 31, 2026"
+    ],
+    [
+     "access",
+     "access",
+     "Update to Scintilla 5.6.5 & Le",
+     "Aug 11, 2026"
+    ]
+   ]
+  }
+ ],
+ "same_repo_links": [
+  "/notepad-plus-plus/notepad-plus-plus",
+  "/notepad-plus-plus/notepad-plus-plus/issues",
+  "/notepad-plus-plus/notepad-plus-plus/pulls",
+  "/notepad-plus-plus/notepad-plus-plus/agents?author=wangtierui",
+  "/notepad-plus-plus/notepad-plus-plus/actions",
+  "/notepad-plus-plus/notepad-plus-plus/projects",
+  "/notepad-plus-plus/notepad-plus-plus/wiki",
+  "/notepad-plus-plus/notepad-plus-plus/security",
+  "/notepad-plus-plus/notepad-plus-plus/pulse",
+  "/notepad-plus-plus/notepad-plus-plus/new/master/lexilla",
+  "/notepad-plus-plus/notepad-plus-plus/tree/master",
+  "/notepad-plus-plus/notepad-plus-plus/commits?author=chcg",
+  "/notepad-plus-plus/notepad-plus-plus/commits?author=donho",
+  "/notepad-plus-plus/notepad-plus-plus/commit/025d4527da2fafb400283660bad69088566c3f3e",
+  "/notepad-plus-plus/notepad-plus-plus/commits/master/lexilla",
+  "/notepad-plus-plus/notepad-plus-plus/tree/master/lexilla/.github/workflows",
+  "/notepad-plus-plus/notepad-plus-plus/commit/fa73138e58bfeb798fc95c7e9f4709e11d6a208e",
+  "/notepad-plus-plus/notepad-plus-plus/tree/master/lexilla/access",
+  "/notepad-plus-plus/notepad-plus-plus/commit/e59774add26b0130d38aaf722aceb0259ccc0078",
+  "/notepad-plus-plus/notepad-plus-plus/tree/master/lexilla/bin",
+  "/notepad-plus-plus/notepad-plus-plus/commit/a61b03ea8887e21c6e1b7374068962f635b79b80",
+  "/notepad-plus-plus/notepad-plus-plus/tree/master/lexilla/doc",
+  "/notepad-plus-plus/notepad-plus-plus/tree/master/lexilla/examples",
+  "/notepad-plus-plus/notepad-plus-plus/commit/bf1c233434128de6babe0295619ef44feee6916e",
+  "/notepad-plus-plus/notepad-plus-plus/tree/master/lexilla/include",
+  "/notepad-plus-plus/notepad-plus-plus/tree/master/lexilla/lexers",
+  "/notepad-plus-plus/notepad-plus-plus/tree/master/lexilla/lexlib",
+  "/notepad-plus-plus/notepad-plus-plus/tree/master/lexilla/scripts",
+  "/notepad-plus-plus/notepad-plus-plus/commit/597276d0d3dff734af37e0fb71f9ae15aaa9728b",
+  "/notepad-plus-plus/notepad-plus-plus/tree/master/lexilla/src",
+  "/notepad-plus-plus/notepad-plus-plus/tree/master/lexilla/test",
+  "/notepad-plus-plus/notepad-plus-plus/blob/master/lexilla/.gitattributes",
+  "/notepad-plus-plus/notepad-plus-plus/blob/master/lexilla/.gitignore",
+  "/notepad-plus-plus/notepad-plus-plus/commit/0f3ae2e3d5c267c1dc83d2343673a35922f8a6c3",
+  "/notepad-plus-plus/notepad-plus-plus/blob/master/lexilla/.travis.yml",
+  "/notepad-plus-plus/notepad-plus-plus/blob/master/lexilla/CONTRIBUTING",
+  "/notepad-plus-plus/notepad-plus-plus/blob/master/lexilla/License.txt",
+  "/notepad-plus-plus/notepad-plus-plus/blob/master/lexilla/README",
+  "/notepad-plus-plus/notepad-plus-plus/commit/e85c354135e62a18407280f58ddfcb4b45984d81",
+  "/notepad-plus-plus/notepad-plus-plus/blob/master/lexilla/cppcheck.suppress",
+  "/notepad-plus-plus/notepad-plus-plus/blob/master/lexilla/delbin.bat",
+  "/notepad-plus-plus/notepad-plus-plus/commit/fc61868cf2e317bfb7384502f80b6476fda6ddc8",
+  "/notepad-plus-plus/notepad-plus-plus/blob/master/lexilla/tgzsrc",
+  "/notepad-plus-plus/notepad-plus-plus/blob/master/lexilla/version.txt",
+  "/notepad-plus-plus/notepad-plus-plus/blob/master/lexilla/zipsrc.bat"
+ ],
+ "density": null,
+ "fetched_at": "2026-11-03T20:11:57",
+ "elements_seen": 2266
+}

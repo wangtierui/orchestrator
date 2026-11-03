@@ -1,0 +1,5945 @@
+{
+ "title": "Releases · notepad-plus-plus/notepad-plus-plus",
+ "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/releases",
+ "user_login": "wangtierui",
+ "ready": "complete",
+ "counts": {
+  "els": 3774,
+  "interactive": 266,
+  "links": 61
+ },
+ "landmarks": [
+  [
+   "header",
+   0,
+   0,
+   1425,
+   100
+  ],
+  [
+   "nav",
+   100,
+   16,
+   741,
+   32
+  ],
+  [
+   "main",
+   0,
+   100,
+   1425,
+   8034
+  ],
+  [
+   "aside",
+   0,
+   100,
+   296,
+   1000
+  ],
+  [
+   "footer",
+   0,
+   8134,
+   1425,
+   58
+  ]
+ ],
+ "headings": [
+  [
+   "H2",
+   "Repository navigation"
+  ],
+  [
+   "H1",
+   "Command palette"
+  ],
+  [
+   "H3",
+   "Uh oh!"
+  ],
+  [
+   "H2",
+   "On this page"
+  ],
+  [
+   "H1",
+   "Releases"
+  ],
+  [
+   "H2",
+   "Notepad++ release 8.9.8.1"
+  ],
+  [
+   "H1",
+   "Choose a tag to compare"
+  ],
+  [
+   "H2",
+   "Sorry, something went wrong."
+  ],
+  [
+   "H2",
+   "Sorry, something went wrong."
+  ],
+  [
+   "H3",
+   "Uh oh!"
+  ],
+  [
+   "H2",
+   "No results found"
+  ],
+  [
+   "H3",
+   "Uh oh!"
+  ],
+  [
+   "H2",
+   "Notepad++ release 8.9.8"
+  ],
+  [
+   "H1",
+   "Choose a tag to compare"
+  ],
+  [
+   "H2",
+   "Sorry, something went wrong."
+  ],
+  [
+   "H2",
+   "Sorry, something went wrong."
+  ],
+  [
+   "H3",
+   "Uh oh!"
+  ],
+  [
+   "H2",
+   "No results found"
+  ],
+  [
+   "H3",
+   "Uh oh!"
+  ],
+  [
+   "H2",
+   "Notepad++ release 8.9.7"
+  ],
+  [
+   "H1",
+   "Choose a tag to compare"
+  ],
+  [
+   "H2",
+   "Sorry, something went wrong."
+  ],
+  [
+   "H2",
+   "Sorry, something went wrong."
+  ],
+  [
+   "H3",
+   "Uh oh!"
+  ],
+  [
+   "H2",
+   "No results found"
+  ],
+  [
+   "H3",
+   "Uh oh!"
+  ],
+  [
+   "H2",
+   "Notepad++ release 8.9.6.4"
+  ],
+  [
+   "H1",
+   "Choose a tag to compare"
+  ],
+  [
+   "H2",
+   "Sorry, something went wrong."
+  ],
+  [
+   "H2",
+   "Sorry, something went wrong."
+  ],
+  [
+   "H3",
+   "Uh oh!"
+  ],
+  [
+   "H2",
+   "No results found"
+  ],
+  [
+   "H3",
+   "Uh oh!"
+  ],
+  [
+   "H2",
+   "Notepad++ release 8.9.6.2"
+  ],
+  [
+   "H1",
+   "Choose a tag to compare"
+  ],
+  [
+   "H2",
+   "Sorry, something went wrong."
+  ],
+  [
+   "H2",
+   "Sorry, something went wrong."
+  ],
+  [
+   "H3",
+   "Uh oh!"
+  ],
+  [
+   "H2",
+   "No results found"
+  ],
+  [
+   "H3",
+   "Uh oh!"
+  ],
+  [
+   "H2",
+   "Notepad++ release 8.9.6.1"
+  ],
+  [
+   "H1",
+   "Choose a tag to compare"
+  ],
+  [
+   "H2",
+   "Sorry, something went wrong."
+  ],
+  [
+   "H2",
+   "Sorry, something went wrong."
+  ],
+  [
+   "H3",
+   "Uh oh!"
+  ],
+  [
+   "H2",
+   "No results found"
+  ],
+  [
+   "H3",
+   "Uh oh!"
+  ],
+  [
+   "H2",
+   "Notepad++ release 8.9.6"
+  ],
+  [
+   "H1",
+   "Choose a tag to compare"
+  ],
+  [
+   "H2",
+   "Sorry, something went wrong."
+  ],
+  [
+   "H2",
+   "Sorry, something went wrong."
+  ],
+  [
+   "H3",
+   "Uh oh!"
+  ],
+  [
+   "H2",
+   "No results found"
+  ],
+  [
+   "H3",
+   "Uh oh!"
+  ],
+  [
+   "H2",
+   "Notepad++ release 8.9.5"
+  ],
+  [
+   "H1",
+   "Choose a tag to compare"
+  ],
+  [
+   "H2",
+   "Sorry, something went wrong."
+  ],
+  [
+   "H2",
+   "Sorry, something went wrong."
+  ],
+  [
+   "H3",
+   "Uh oh!"
+  ],
+  [
+   "H2",
+   "No results found"
+  ]
+ ],
+ "interactive": [
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Skip to content",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "#start-of-content",
+   "cls": "tmp-p-3 color-bg-accent-emphasis color-fg-on-emphasis show-on-focus js",
+   "rect": [
+    0,
+    0,
+    1,
+    1
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU prc-Button-IconBut",
+   "rect": [
+    16,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "/",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderHome__5NxwyK prc-Button-IconButto",
+   "rect": [
+    60,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "notepad-plus-plus",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus",
+   "cls": "contextCrumb__Q8nET8 prc-Breadcrumbs-Item-jcraJ",
+   "rect": [
+    100,
+    16,
+    126,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "notepad-plus-plus",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus",
+   "cls": "contextCrumb__Q8nET8 contextCrumbLast__l2P28s repoPickerCrumb__56N_WW ",
+   "rect": [
+    241,
+    16,
+    125,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk contextCrumb__Q8nET8 repoPickerDropdownBut",
+   "rect": [
+    366,
+    16,
+    20,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Type / to search",
+   "aria": "Open quick search dialog, type / to search",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU searchButton__6Ru-",
+   "rect": [
+    849,
+    16,
+    191,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU js-activate-comman",
+   "rect": [
+    1039,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "/copilot",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU prc-Button-IconBut",
+   "rect": [
+    1078,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "Open Copilot…",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU CopilotMenu__oPrKz",
+   "rect": [
+    1109,
+    16,
+    26,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk actionMenuButton__QPJCOZ responsiveCreateM",
+   "rect": [
+    1159,
+    16,
+    50,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "/issues",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU prc-Button-IconBut",
+   "rect": [
+    1217,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "/pulls",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU prc-Button-IconBut",
+   "rect": [
+    1257,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "/repos",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU prc-Button-IconBut",
+   "rect": [
+    1297,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "/notifications",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU prc-Button-IconBut",
+   "rect": [
+    1337,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk anchor__zXCwGI prc-Button-IconButton-fyge7",
+   "rect": [
+    1377,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "UL",
+   "role": "list",
+   "text": "CodeIssues2.9k (2.9k)Pull requests28 (28)AgentsActionsProjectsWikiSecurity and quality40 (",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "prc-UnderlineNav-ItemsList-oj8gN prc-components-UnderlineItemList-xKlK",
+   "rect": [
+    16,
+    60,
+    1393,
+    40
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Code",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    16,
+    60,
+    73,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Issues2.9k (2.9k)",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/issues",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    97,
+    60,
+    122,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Pull requests28 (28)",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/pulls",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    227,
+    60,
+    157,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Agents",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/agents?author=wangtierui",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    392,
+    60,
+    85,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Actions",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/actions",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    484,
+    60,
+    87,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Projects",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/projects",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    580,
+    60,
+    90,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Wiki",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/wiki",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    678,
+    60,
+    68,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Security and quality40 (40)",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/security",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    754,
+    60,
+    201,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Insights",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/pulse",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    964,
+    60,
+    90,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Releases",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/releases",
+   "cls": "Row__wMUnPK Link__YUC6c2 current__3yAyXP",
+   "rect": [
+    16,
+    116,
+    263,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Tags",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/tags",
+   "cls": "Row__wMUnPK Link__YUC6c2",
+   "rect": [
+    16,
+    148,
+    263,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Notepad++ release 8.9.8.1",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "#release-v8.9.8.1",
+   "cls": "Row__wMUnPK Link__YUC6c2 current__3yAyXP textLed__t6q8JA",
+   "rect": [
+    16,
+    229,
+    263,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Notepad++ release 8.9.8",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "#release-v8.9.8",
+   "cls": "Row__wMUnPK Link__YUC6c2 textLed__t6q8JA",
+   "rect": [
+    16,
+    261,
+    263,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Notepad++ release 8.9.7",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "#release-v8.9.7",
+   "cls": "Row__wMUnPK Link__YUC6c2 textLed__t6q8JA",
+   "rect": [
+    16,
+    293,
+    263,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Notepad++ release 8.9.6.4",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "#release-v8.9.6.4",
+   "cls": "Row__wMUnPK Link__YUC6c2 textLed__t6q8JA",
+   "rect": [
+    16,
+    325,
+    263,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Notepad++ release 8.9.6.2",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "#release-v8.9.6.2",
+   "cls": "Row__wMUnPK Link__YUC6c2 textLed__t6q8JA",
+   "rect": [
+    16,
+    357,
+    263,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Notepad++ release 8.9.6.1",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "#release-v8.9.6.1",
+   "cls": "Row__wMUnPK Link__YUC6c2 textLed__t6q8JA",
+   "rect": [
+    16,
+    389,
+    263,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Notepad++ release 8.9.6",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "#release-v8.9.6",
+   "cls": "Row__wMUnPK Link__YUC6c2 textLed__t6q8JA",
+   "rect": [
+    16,
+    421,
+    263,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Notepad++ release 8.9.5",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "#release-v8.9.5",
+   "cls": "Row__wMUnPK Link__YUC6c2 textLed__t6q8JA",
+   "rect": [
+    16,
+    453,
+    263,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Notepad++ release 8.9.4",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "#release-v8.9.4",
+   "cls": "Row__wMUnPK Link__YUC6c2 textLed__t6q8JA",
+   "rect": [
+    16,
+    485,
+    263,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Notepad++ release 8.9.3",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "#release-v8.9.3",
+   "cls": "Row__wMUnPK Link__YUC6c2 textLed__t6q8JA",
+   "rect": [
+    16,
+    517,
+    263,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Collapse sidebar",
+   "aria": "Collapse sidebar",
+   "title": "",
+   "pressed": "",
+   "expanded": "true",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk CollapseButton__aNk7bt",
+   "rect": [
+    16,
+    960,
+    263,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "DIV",
+   "role": "",
+   "text": "Open Releases and tags navigationReleases",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "HeaderInner__vi8Fya",
+   "rect": [
+    296,
+    124,
+    1129,
+    33
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "INPUT",
+   "role": "",
+   "text": "",
+   "aria": "Find a release",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "search",
+   "href": "",
+   "cls": "form-control subnav-search-input width-full",
+   "rect": [
+    1196,
+    124,
+    205,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Notepad++ release 8.9.8.1",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/releases/tag/v8.9.8.1",
+   "cls": "Link--primary Link",
+   "rect": [
+    337,
+    216,
+    380,
+    43
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Latest",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/releases/latest",
+   "cls": "Link v-align-text-bottom d-none d-md-inline-block",
+   "rect": [
+    737,
+    231,
+    50,
+    24
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Compare",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "Button--secondary Button--small Button",
+   "rect": [
+    1297,
+    214,
+    87,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "donho",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/donho",
+   "cls": "text-bold color-fg-muted",
+   "rect": [
+    361,
+    279,
+    41,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "v8.9.8.1",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/tree/v8.9.8.1",
+   "cls": "Link Link--muted",
+   "rect": [
+    553,
+    280,
+    70,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Tag",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    553,
+    283,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "dd40fe4",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/commit/dd40fe45598791e9aa38f3aeb200e10fb3d6338a",
+   "cls": "Link Link--muted",
+   "rect": [
+    647,
+    280,
+    78,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Commit",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    647,
+    283,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "https://notepad-plus-plus.org/news/v8981-released/",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://notepad-plus-plus.org/news/v8981-released/",
+   "cls": "",
+   "rect": [
+    337,
+    374,
+    372,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "CLIPBOARD-COPY",
+   "role": "button",
+   "text": "",
+   "aria": "Copy code to clipboard",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "ClipboardButton btn js-clipboard-copy m-2 p-0",
+   "rect": [
+    1342,
+    461,
+    34,
+    35
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "SUMMARY",
+   "role": "button",
+   "text": "Assets 30",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "true",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "",
+   "rect": [
+    337,
+    806,
+    1047,
+    30
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "npp.8.9.8.1.checksums.sha256",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/releases/download/v8.9.8.1/npp.8.9.8.1.checksums.sha256",
+   "cls": "wb-break-all",
+   "rect": [
+    378,
+    866,
+    188,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "CLIPBOARD-COPY",
+   "role": "button",
+   "text": "",
+   "aria": "Copy to clipboard digest for npp.8.9.8.1.checksums.sha256",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "Button--invisible Button--small Button Button--invisible-noVisuals col",
+   "rect": [
+    1110,
+    861,
+    34,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "npp.8.9.8.1.checksums.sha256.sig",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/releases/download/v8.9.8.1/npp.8.9.8.1.checksums.sha256.sig",
+   "cls": "wb-break-all",
+   "rect": [
+    378,
+    910,
+    209,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "CLIPBOARD-COPY",
+   "role": "button",
+   "text": "",
+   "aria": "Copy to clipboard digest for npp.8.9.8.1.checksums.sha256.sig",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "Button--invisible Button--small Button Button--invisible-noVisuals col",
+   "rect": [
+    1110,
+    905,
+    34,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "npp.8.9.8.1.Installer.arm64.exe",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/releases/download/v8.9.8.1/npp.8.9.8.1.Installer.arm64.exe",
+   "cls": "wb-break-all",
+   "rect": [
+    378,
+    954,
+    190,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "CLIPBOARD-COPY",
+   "role": "button",
+   "text": "",
+   "aria": "Copy to clipboard digest for npp.8.9.8.1.Installer.arm64.exe",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "Button--invisible Button--small Button Button--invisible-noVisuals col",
+   "rect": [
+    1110,
+    949,
+    34,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "npp.8.9.8.1.Installer.arm64.exe.sig",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/releases/download/v8.9.8.1/npp.8.9.8.1.Installer.arm64.exe.sig",
+   "cls": "wb-break-all",
+   "rect": [
+    378,
+    998,
+    211,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "CLIPBOARD-COPY",
+   "role": "button",
+   "text": "",
+   "aria": "Copy to clipboard digest for npp.8.9.8.1.Installer.arm64.exe.sig",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "Button--invisible Button--small Button Button--invisible-noVisuals col",
+   "rect": [
+    1110,
+    993,
+    34,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "npp.8.9.8.1.Installer.exe",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/releases/download/v8.9.8.1/npp.8.9.8.1.Installer.exe",
+   "cls": "wb-break-all",
+   "rect": [
+    378,
+    1042,
+    145,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "CLIPBOARD-COPY",
+   "role": "button",
+   "text": "",
+   "aria": "Copy to clipboard digest for npp.8.9.8.1.Installer.exe",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "Button--invisible Button--small Button Button--invisible-noVisuals col",
+   "rect": [
+    1110,
+    1037,
+    34,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "npp.8.9.8.1.Installer.exe.sig",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/releases/download/v8.9.8.1/npp.8.9.8.1.Installer.exe.sig",
+   "cls": "wb-break-all",
+   "rect": [
+    378,
+    1086,
+    167,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "CLIPBOARD-COPY",
+   "role": "button",
+   "text": "",
+   "aria": "Copy to clipboard digest for npp.8.9.8.1.Installer.exe.sig",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "Button--invisible Button--small Button Button--invisible-noVisuals col",
+   "rect": [
+    1110,
+    1081,
+    34,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "npp.8.9.8.1.Installer.x64.exe",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/releases/download/v8.9.8.1/npp.8.9.8.1.Installer.x64.exe",
+   "cls": "wb-break-all",
+   "rect": [
+    378,
+    1130,
+    172,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "CLIPBOARD-COPY",
+   "role": "button",
+   "text": "",
+   "aria": "Copy to clipboard digest for npp.8.9.8.1.Installer.x64.exe",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "Button--invisible Button--small Button Button--invisible-noVisuals col",
+   "rect": [
+    1110,
+    1125,
+    34,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "npp.8.9.8.1.Installer.x64.exe.sig",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/releases/download/v8.9.8.1/npp.8.9.8.1.Installer.x64.exe.sig",
+   "cls": "wb-break-all",
+   "rect": [
+    378,
+    1174,
+    193,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "CLIPBOARD-COPY",
+   "role": "button",
+   "text": "",
+   "aria": "Copy to clipboard digest for npp.8.9.8.1.Installer.x64.exe.sig",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "Button--invisible Button--small Button Button--invisible-noVisuals col",
+   "rect": [
+    1110,
+    1169,
+    34,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "npp.8.9.8.1.Installer.x64.msi",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/releases/download/v8.9.8.1/npp.8.9.8.1.Installer.x64.msi",
+   "cls": "wb-break-all",
+   "rect": [
+    378,
+    1218,
+    172,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "CLIPBOARD-COPY",
+   "role": "button",
+   "text": "",
+   "aria": "Copy to clipboard digest for npp.8.9.8.1.Installer.x64.msi",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "Button--invisible Button--small Button Button--invisible-noVisuals col",
+   "rect": [
+    1110,
+    1213,
+    34,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "npp.8.9.8.1.Installer.x64.msi.sig",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/releases/download/v8.9.8.1/npp.8.9.8.1.Installer.x64.msi.sig",
+   "cls": "wb-break-all",
+   "rect": [
+    378,
+    1262,
+    194,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "CLIPBOARD-COPY",
+   "role": "button",
+   "text": "",
+   "aria": "Copy to clipboard digest for npp.8.9.8.1.Installer.x64.msi.sig",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "Button--invisible Button--small Button Button--invisible-noVisuals col",
+   "rect": [
+    1110,
+    1257,
+    34,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Source code (zip)",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/archive/refs/tags/v8.9.8.1.zip",
+   "cls": "wb-break-all",
+   "rect": [
+    378,
+    1301,
+    108,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Source code (tar.gz)",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/archive/refs/tags/v8.9.8.1.tar.gz",
+   "cls": "wb-break-all",
+   "rect": [
+    378,
+    1335,
+    125,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Show all 30 assets",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "js-release-asset-untruncate-btn btn-link",
+   "rect": [
+    354,
+    1368,
+    111,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "REACTIONS-MENU",
+   "role": "",
+   "text": "👍 😄 🎉 ❤️ 🚀 👀 Add or remove reactions",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "",
+   "rect": [
+    337,
+    1411,
+    30,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "SUMMARY",
+   "role": "",
+   "text": "",
+   "aria": "Add or remove reactions",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "circle reaction-dropdown-button reaction-dropdown-button--inline btn-i",
+   "rect": [
+    337,
+    1411,
+    26,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "👍 37",
+   "aria": "thumbs up (37): donho, 11:18PM on September 24",
+   "title": "",
+   "pressed": "false",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "submit",
+   "href": "",
+   "cls": "social-reaction-summary-item js-reaction-group-button tmp-mr-1 btn-lin",
+   "rect": [
+    367,
+    1411,
+    49,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "😄 2",
+   "aria": "laugh (2): donho, 11:18PM on September 24",
+   "title": "",
+   "pressed": "false",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "submit",
+   "href": "",
+   "cls": "social-reaction-summary-item js-reaction-group-button tmp-mr-1 btn-lin",
+   "rect": [
+    420,
+    1411,
+    42,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "🎉 7",
+   "aria": "hooray (7): donho, 11:18PM on September 24",
+   "title": "",
+   "pressed": "false",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "submit",
+   "href": "",
+   "cls": "social-reaction-summary-item js-reaction-group-button tmp-mr-1 btn-lin",
+   "rect": [
+    466,
+    1411,
+    42,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "❤️ 16",
+   "aria": "heart (16): donho, 11:18PM on September 24",
+   "title": "",
+   "pressed": "false",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "submit",
+   "href": "",
+   "cls": "social-reaction-summary-item js-reaction-group-button tmp-mr-1 btn-lin",
+   "rect": [
+    513,
+    1411,
+    49,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "🚀 7",
+   "aria": "rocket (7): donho, 11:18PM on September 24",
+   "title": "",
+   "pressed": "false",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "submit",
+   "href": "",
+   "cls": "social-reaction-summary-item js-reaction-group-button tmp-mr-1 btn-lin",
+   "rect": [
+    566,
+    1411,
+    42,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "👀 4",
+   "aria": "eyes (4): donho, 11:18PM on September 24",
+   "title": "",
+   "pressed": "false",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "submit",
+   "href": "",
+   "cls": "social-reaction-summary-item js-reaction-group-button tmp-mr-1 btn-lin",
+   "rect": [
+    612,
+    1411,
+    42,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Notepad++ release 8.9.8",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/releases/tag/v8.9.8",
+   "cls": "Link--primary Link",
+   "rect": [
+    337,
+    1505,
+    359,
+    43
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Compare",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "Button--secondary Button--small Button",
+   "rect": [
+    1297,
+    1503,
+    87,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "donho",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/donho",
+   "cls": "text-bold color-fg-muted",
+   "rect": [
+    361,
+    1568,
+    41,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "v8.9.8",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/tree/v8.9.8",
+   "cls": "Link Link--muted",
+   "rect": [
+    556,
+    1569,
+    59,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Tag",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    556,
+    1572,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "40f896e",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/commit/40f896e6f6c49a29b6ca3f559696dd786f40152d",
+   "cls": "Link Link--muted",
+   "rect": [
+    639,
+    1569,
+    78,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Commit",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    639,
+    1572,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "https://notepad-plus-plus.org/news/v898-released/",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://notepad-plus-plus.org/news/v898-released/",
+   "cls": "",
+   "rect": [
+    337,
+    1663,
+    363,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "CLIPBOARD-COPY",
+   "role": "button",
+   "text": "",
+   "aria": "Copy code to clipboard",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "ClipboardButton btn js-clipboard-copy m-2 p-0",
+   "rect": [
+    1342,
+    1750,
+    34,
+    35
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "SUMMARY",
+   "role": "button",
+   "text": "Assets 30",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "",
+   "rect": [
+    337,
+    2095,
+    1047,
+    30
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "REACTIONS-MENU",
+   "role": "",
+   "text": "👍 😄 🎉 ❤️ 🚀 👀 Add or remove reactions",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "",
+   "rect": [
+    337,
+    2141,
+    30,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "SUMMARY",
+   "role": "",
+   "text": "",
+   "aria": "Add or remove reactions",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "circle reaction-dropdown-button reaction-dropdown-button--inline btn-i",
+   "rect": [
+    337,
+    2141,
+    26,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "👍 42",
+   "aria": "thumbs up (42): donho, 09:54PM on August 23",
+   "title": "",
+   "pressed": "false",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "submit",
+   "href": "",
+   "cls": "social-reaction-summary-item js-reaction-group-button tmp-mr-1 btn-lin",
+   "rect": [
+    367,
+    2141,
+    49,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "😄 3",
+   "aria": "laugh (3): donho, 09:54PM on August 23",
+   "title": "",
+   "pressed": "false",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "submit",
+   "href": "",
+   "cls": "social-reaction-summary-item js-reaction-group-button tmp-mr-1 btn-lin",
+   "rect": [
+    420,
+    2141,
+    42,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "🎉 5",
+   "aria": "hooray (5): donho, 09:54PM on August 23",
+   "title": "",
+   "pressed": "false",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "submit",
+   "href": "",
+   "cls": "social-reaction-summary-item js-reaction-group-button tmp-mr-1 btn-lin",
+   "rect": [
+    466,
+    2141,
+    42,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "❤️ 9",
+   "aria": "heart (9): donho, 09:54PM on August 23",
+   "title": "",
+   "pressed": "false",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "submit",
+   "href": "",
+   "cls": "social-reaction-summary-item js-reaction-group-button tmp-mr-1 btn-lin",
+   "rect": [
+    513,
+    2141,
+    42,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "🚀 4",
+   "aria": "rocket (4): donho, 09:54PM on August 23",
+   "title": "",
+   "pressed": "false",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "submit",
+   "href": "",
+   "cls": "social-reaction-summary-item js-reaction-group-button tmp-mr-1 btn-lin",
+   "rect": [
+    559,
+    2141,
+    42,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "👀 4",
+   "aria": "eyes (4): donho, 09:54PM on August 23",
+   "title": "",
+   "pressed": "false",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "submit",
+   "href": "",
+   "cls": "social-reaction-summary-item js-reaction-group-button tmp-mr-1 btn-lin",
+   "rect": [
+    606,
+    2141,
+    42,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Notepad++ release 8.9.7",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/releases/tag/v8.9.7",
+   "cls": "Link--primary Link",
+   "rect": [
+    337,
+    2235,
+    359,
+    43
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Compare",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "Button--secondary Button--small Button",
+   "rect": [
+    1297,
+    2233,
+    87,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "donho",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/donho",
+   "cls": "text-bold color-fg-muted",
+   "rect": [
+    361,
+    2298,
+    41,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "v8.9.7",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/tree/v8.9.7",
+   "cls": "Link Link--muted",
+   "rect": [
+    547,
+    2300,
+    59,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Tag",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    547,
+    2303,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "6634650",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/commit/6634650414ff91220a4c353b7fe5ad741af0f9f9",
+   "cls": "Link Link--muted",
+   "rect": [
+    630,
+    2300,
+    78,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Commit",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    630,
+    2303,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "https://notepad-plus-plus.org/news/v897-slava-ukraini/",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://notepad-plus-plus.org/news/v897-slava-ukraini/",
+   "cls": "",
+   "rect": [
+    337,
+    2394,
+    393,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "CLIPBOARD-COPY",
+   "role": "button",
+   "text": "",
+   "aria": "Copy code to clipboard",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "ClipboardButton btn js-clipboard-copy m-2 p-0",
+   "rect": [
+    1342,
+    2481,
+    34,
+    35
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "SUMMARY",
+   "role": "button",
+   "text": "Assets 30",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "",
+   "rect": [
+    337,
+    2826,
+    1047,
+    30
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "REACTIONS-MENU",
+   "role": "",
+   "text": "👍 😄 🎉 ❤️ 🚀 👀 Add or remove reactions",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "",
+   "rect": [
+    337,
+    2872,
+    30,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "SUMMARY",
+   "role": "",
+   "text": "",
+   "aria": "Add or remove reactions",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "circle reaction-dropdown-button reaction-dropdown-button--inline btn-i",
+   "rect": [
+    337,
+    2872,
+    26,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "👍 46",
+   "aria": "thumbs up (46): donho, 08:29AM on July 14",
+   "title": "",
+   "pressed": "false",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "submit",
+   "href": "",
+   "cls": "social-reaction-summary-item js-reaction-group-button tmp-mr-1 btn-lin",
+   "rect": [
+    367,
+    2872,
+    49,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "😄 5",
+   "aria": "laugh (5): donho, 08:29AM on July 14",
+   "title": "",
+   "pressed": "false",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "submit",
+   "href": "",
+   "cls": "social-reaction-summary-item js-reaction-group-button tmp-mr-1 btn-lin",
+   "rect": [
+    420,
+    2872,
+    42,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "🎉 10",
+   "aria": "hooray (10): donho, 08:29AM on July 14",
+   "title": "",
+   "pressed": "false",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "submit",
+   "href": "",
+   "cls": "social-reaction-summary-item js-reaction-group-button tmp-mr-1 btn-lin",
+   "rect": [
+    466,
+    2872,
+    49,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "❤️ 14",
+   "aria": "heart (14): donho, 08:29AM on July 14",
+   "title": "",
+   "pressed": "false",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "submit",
+   "href": "",
+   "cls": "social-reaction-summary-item js-reaction-group-button tmp-mr-1 btn-lin",
+   "rect": [
+    519,
+    2872,
+    49,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "🚀 8",
+   "aria": "rocket (8): donho, 08:29AM on July 14",
+   "title": "",
+   "pressed": "false",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "submit",
+   "href": "",
+   "cls": "social-reaction-summary-item js-reaction-group-button tmp-mr-1 btn-lin",
+   "rect": [
+    572,
+    2872,
+    42,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "👀 4",
+   "aria": "eyes (4): donho, 08:29AM on July 14",
+   "title": "",
+   "pressed": "false",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "submit",
+   "href": "",
+   "cls": "social-reaction-summary-item js-reaction-group-button tmp-mr-1 btn-lin",
+   "rect": [
+    619,
+    2872,
+    42,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Notepad++ release 8.9.6.4",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/releases/tag/v8.9.6.4",
+   "cls": "Link--primary Link",
+   "rect": [
+    337,
+    2966,
+    385,
+    43
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Compare",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "Button--secondary Button--small Button",
+   "rect": [
+    1297,
+    2964,
+    87,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "donho",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/donho",
+   "cls": "text-bold color-fg-muted",
+   "rect": [
+    361,
+    3029,
+    41,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "v8.9.6.4",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/tree/v8.9.6.4",
+   "cls": "Link Link--muted",
+   "rect": [
+    544,
+    3030,
+    70,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Tag",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    544,
+    3033,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "6ab5c21",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/commit/6ab5c2110168b4453443663d114ffc2088caae98",
+   "cls": "Link Link--muted",
+   "rect": [
+    637,
+    3030,
+    78,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Commit",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    637,
+    3033,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "https://notepad-plus-plus.org/news/v8964-released/",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://notepad-plus-plus.org/news/v8964-released/",
+   "cls": "",
+   "rect": [
+    337,
+    3124,
+    372,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "CLIPBOARD-COPY",
+   "role": "button",
+   "text": "",
+   "aria": "Copy code to clipboard",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "ClipboardButton btn js-clipboard-copy m-2 p-0",
+   "rect": [
+    1342,
+    3211,
+    34,
+    35
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "SUMMARY",
+   "role": "button",
+   "text": "Assets 30",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "",
+   "rect": [
+    337,
+    3557,
+    1047,
+    30
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "REACTIONS-MENU",
+   "role": "",
+   "text": "👍 😄 🎉 ❤️ 🚀 👀 Add or remove reactions",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "",
+   "rect": [
+    337,
+    3603,
+    30,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "SUMMARY",
+   "role": "",
+   "text": "",
+   "aria": "Add or remove reactions",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "circle reaction-dropdown-button reaction-dropdown-button--inline btn-i",
+   "rect": [
+    337,
+    3603,
+    26,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "👍 87",
+   "aria": "thumbs up (87): donho, 06:48AM on June 04",
+   "title": "",
+   "pressed": "false",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "submit",
+   "href": "",
+   "cls": "social-reaction-summary-item js-reaction-group-button tmp-mr-1 btn-lin",
+   "rect": [
+    367,
+    3603,
+    49,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "😄 35",
+   "aria": "laugh (35): donho, 06:48AM on June 04",
+   "title": "",
+   "pressed": "false",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "submit",
+   "href": "",
+   "cls": "social-reaction-summary-item js-reaction-group-button tmp-mr-1 btn-lin",
+   "rect": [
+    420,
+    3603,
+    49,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "🎉 7",
+   "aria": "hooray (7): donho, 06:48AM on June 04",
+   "title": "",
+   "pressed": "false",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "submit",
+   "href": "",
+   "cls": "social-reaction-summary-item js-reaction-group-button tmp-mr-1 btn-lin",
+   "rect": [
+    473,
+    3603,
+    42,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "❤️ 18",
+   "aria": "heart (18): donho, 06:48AM on June 04",
+   "title": "",
+   "pressed": "false",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "submit",
+   "href": "",
+   "cls": "social-reaction-summary-item js-reaction-group-button tmp-mr-1 btn-lin",
+   "rect": [
+    519,
+    3603,
+    49,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "🚀 12",
+   "aria": "rocket (12): donho, 06:48AM on June 04",
+   "title": "",
+   "pressed": "false",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "submit",
+   "href": "",
+   "cls": "social-reaction-summary-item js-reaction-group-button tmp-mr-1 btn-lin",
+   "rect": [
+    572,
+    3603,
+    49,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "👀 8",
+   "aria": "eyes (8): donho, 06:48AM on June 04",
+   "title": "",
+   "pressed": "false",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "submit",
+   "href": "",
+   "cls": "social-reaction-summary-item js-reaction-group-button tmp-mr-1 btn-lin",
+   "rect": [
+    625,
+    3603,
+    42,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Notepad++ release 8.9.6.2",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/releases/tag/v8.9.6.2",
+   "cls": "Link--primary Link",
+   "rect": [
+    337,
+    3697,
+    385,
+    43
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Compare",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "Button--secondary Button--small Button",
+   "rect": [
+    1297,
+    3695,
+    87,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "donho",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/donho",
+   "cls": "text-bold color-fg-muted",
+   "rect": [
+    361,
+    3760,
+    41,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "v8.9.6.2",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/tree/v8.9.6.2",
+   "cls": "Link Link--muted",
+   "rect": [
+    557,
+    3761,
+    70,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Tag",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    557,
+    3764,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "9ddba5e",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/commit/9ddba5e1847a8e153104b736e831cb240adeafe2",
+   "cls": "Link Link--muted",
+   "rect": [
+    651,
+    3761,
+    78,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Commit",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    651,
+    3764,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "https://notepad-plus-plus.org/news/v8962-released/",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://notepad-plus-plus.org/news/v8962-released/",
+   "cls": "",
+   "rect": [
+    337,
+    3855,
+    372,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "CLIPBOARD-COPY",
+   "role": "button",
+   "text": "",
+   "aria": "Copy code to clipboard",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "ClipboardButton btn js-clipboard-copy m-2 p-0",
+   "rect": [
+    1342,
+    3942,
+    34,
+    35
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "SUMMARY",
+   "role": "button",
+   "text": "Assets 30",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "",
+   "rect": [
+    337,
+    4287,
+    1047,
+    30
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "REACTIONS-MENU",
+   "role": "",
+   "text": "👍 😄 🎉 ❤️ 🚀 👀 Add or remove reactions",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "",
+   "rect": [
+    337,
+    4333,
+    30,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "SUMMARY",
+   "role": "",
+   "text": "",
+   "aria": "Add or remove reactions",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "circle reaction-dropdown-button reaction-dropdown-button--inline btn-i",
+   "rect": [
+    337,
+    4333,
+    26,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "👍 33",
+   "aria": "thumbs up (33): donho, 08:46PM on May 31",
+   "title": "",
+   "pressed": "false",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "submit",
+   "href": "",
+   "cls": "social-reaction-summary-item js-reaction-group-button tmp-mr-1 btn-lin",
+   "rect": [
+    367,
+    4333,
+    49,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "😄 4",
+   "aria": "laugh (4): donho, 08:46PM on May 31",
+   "title": "",
+   "pressed": "false",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "submit",
+   "href": "",
+   "cls": "social-reaction-summary-item js-reaction-group-button tmp-mr-1 btn-lin",
+   "rect": [
+    420,
+    4333,
+    42,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "🎉 5",
+   "aria": "hooray (5): donho, 08:46PM on May 31",
+   "title": "",
+   "pressed": "false",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "submit",
+   "href": "",
+   "cls": "social-reaction-summary-item js-reaction-group-button tmp-mr-1 btn-lin",
+   "rect": [
+    466,
+    4333,
+    42,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "❤️ 6",
+   "aria": "heart (6): donho, 08:46PM on May 31",
+   "title": "",
+   "pressed": "false",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "submit",
+   "href": "",
+   "cls": "social-reaction-summary-item js-reaction-group-button tmp-mr-1 btn-lin",
+   "rect": [
+    513,
+    4333,
+    42,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "🚀 4",
+   "aria": "rocket (4): donho, 08:46PM on May 31",
+   "title": "",
+   "pressed": "false",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "submit",
+   "href": "",
+   "cls": "social-reaction-summary-item js-reaction-group-button tmp-mr-1 btn-lin",
+   "rect": [
+    559,
+    4333,
+    42,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "👀 4",
+   "aria": "eyes (4): donho, 08:46PM on May 31",
+   "title": "",
+   "pressed": "false",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "submit",
+   "href": "",
+   "cls": "social-reaction-summary-item js-reaction-group-button tmp-mr-1 btn-lin",
+   "rect": [
+    606,
+    4333,
+    42,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Notepad++ release 8.9.6.1",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/releases/tag/v8.9.6.1",
+   "cls": "Link--primary Link",
+   "rect": [
+    337,
+    4427,
+    380,
+    43
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Compare",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "Button--secondary Button--small Button",
+   "rect": [
+    1297,
+    4425,
+    87,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "donho",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/donho",
+   "cls": "text-bold color-fg-muted",
+   "rect": [
+    361,
+    4490,
+    41,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "v8.9.6.1",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/tree/v8.9.6.1",
+   "cls": "Link Link--muted",
+   "rect": [
+    557,
+    4492,
+    70,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Tag",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    557,
+    4495,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "41dd976",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/commit/41dd976310db0ba551bb8a2810b60331df3a77f5",
+   "cls": "Link Link--muted",
+   "rect": [
+    651,
+    4492,
+    78,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Commit",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    651,
+    4495,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "https://notepad-plus-plus.org/news/v8961-released/",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://notepad-plus-plus.org/news/v8961-released/",
+   "cls": "",
+   "rect": [
+    337,
+    4586,
+    372,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "CLIPBOARD-COPY",
+   "role": "button",
+   "text": "",
+   "aria": "Copy code to clipboard",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "ClipboardButton btn js-clipboard-copy m-2 p-0",
+   "rect": [
+    1342,
+    4673,
+    34,
+    35
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "SUMMARY",
+   "role": "button",
+   "text": "Assets 30",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "",
+   "rect": [
+    337,
+    5018,
+    1047,
+    30
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "REACTIONS-MENU",
+   "role": "",
+   "text": "👍 😄 🎉 ❤️ 🚀 👀 Add or remove reactions",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "",
+   "rect": [
+    337,
+    5064,
+    30,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "SUMMARY",
+   "role": "",
+   "text": "",
+   "aria": "Add or remove reactions",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "circle reaction-dropdown-button reaction-dropdown-button--inline btn-i",
+   "rect": [
+    337,
+    5064,
+    26,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "👍 34",
+   "aria": "thumbs up (34): donho, 10:55PM on May 26",
+   "title": "",
+   "pressed": "false",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "submit",
+   "href": "",
+   "cls": "social-reaction-summary-item js-reaction-group-button tmp-mr-1 btn-lin",
+   "rect": [
+    367,
+    5064,
+    49,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "😄 2",
+   "aria": "laugh (2): donho, 10:55PM on May 26",
+   "title": "",
+   "pressed": "false",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "submit",
+   "href": "",
+   "cls": "social-reaction-summary-item js-reaction-group-button tmp-mr-1 btn-lin",
+   "rect": [
+    420,
+    5064,
+    42,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "🎉 4",
+   "aria": "hooray (4): donho, 10:55PM on May 26",
+   "title": "",
+   "pressed": "false",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "submit",
+   "href": "",
+   "cls": "social-reaction-summary-item js-reaction-group-button tmp-mr-1 btn-lin",
+   "rect": [
+    466,
+    5064,
+    42,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "❤️ 6",
+   "aria": "heart (6): donho, 10:55PM on May 26",
+   "title": "",
+   "pressed": "false",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "submit",
+   "href": "",
+   "cls": "social-reaction-summary-item js-reaction-group-button tmp-mr-1 btn-lin",
+   "rect": [
+    513,
+    5064,
+    42,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "🚀 7",
+   "aria": "rocket (7): donho, 10:55PM on May 26",
+   "title": "",
+   "pressed": "false",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "submit",
+   "href": "",
+   "cls": "social-reaction-summary-item js-reaction-group-button tmp-mr-1 btn-lin",
+   "rect": [
+    559,
+    5064,
+    42,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "👀 3",
+   "aria": "eyes (3): donho, 10:55PM on May 26",
+   "title": "",
+   "pressed": "false",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "submit",
+   "href": "",
+   "cls": "social-reaction-summary-item js-reaction-group-button tmp-mr-1 btn-lin",
+   "rect": [
+    606,
+    5064,
+    42,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Notepad++ release 8.9.6",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/releases/tag/v8.9.6",
+   "cls": "Link--primary Link",
+   "rect": [
+    337,
+    5158,
+    359,
+    43
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Compare",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "Button--secondary Button--small Button",
+   "rect": [
+    1297,
+    5156,
+    87,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "donho",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/donho",
+   "cls": "text-bold color-fg-muted",
+   "rect": [
+    361,
+    5221,
+    41,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "v8.9.6",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/tree/v8.9.6",
+   "cls": "Link Link--muted",
+   "rect": [
+    557,
+    5222,
+    59,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Tag",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    557,
+    5225,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "e66cf31",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/commit/e66cf316ab5ef6c62ccc9c85e0872f6a4d2bfbad",
+   "cls": "Link Link--muted",
+   "rect": [
+    640,
+    5222,
+    78,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Commit",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    640,
+    5225,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "https://notepad-plus-plus.org/news/v896-released/",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://notepad-plus-plus.org/news/v896-released/",
+   "cls": "",
+   "rect": [
+    337,
+    5316,
+    363,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "CLIPBOARD-COPY",
+   "role": "button",
+   "text": "",
+   "aria": "Copy code to clipboard",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "ClipboardButton btn js-clipboard-copy m-2 p-0",
+   "rect": [
+    1342,
+    5403,
+    34,
+    35
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "SUMMARY",
+   "role": "button",
+   "text": "Assets 30",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "",
+   "rect": [
+    337,
+    5748,
+    1047,
+    30
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "REACTIONS-MENU",
+   "role": "",
+   "text": "👍 😄 🎉 ❤️ 🚀 👀 Add or remove reactions",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "",
+   "rect": [
+    337,
+    5794,
+    30,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "SUMMARY",
+   "role": "",
+   "text": "",
+   "aria": "Add or remove reactions",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "circle reaction-dropdown-button reaction-dropdown-button--inline btn-i",
+   "rect": [
+    337,
+    5794,
+    26,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "👍 31",
+   "aria": "thumbs up (31): donho, 07:32AM on May 21",
+   "title": "",
+   "pressed": "false",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "submit",
+   "href": "",
+   "cls": "social-reaction-summary-item js-reaction-group-button tmp-mr-1 btn-lin",
+   "rect": [
+    367,
+    5794,
+    49,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "😄 2",
+   "aria": "laugh (2): donho, 07:32AM on May 21",
+   "title": "",
+   "pressed": "false",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "submit",
+   "href": "",
+   "cls": "social-reaction-summary-item js-reaction-group-button tmp-mr-1 btn-lin",
+   "rect": [
+    420,
+    5794,
+    42,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "🎉 5",
+   "aria": "hooray (5): donho, 07:32AM on May 21",
+   "title": "",
+   "pressed": "false",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "submit",
+   "href": "",
+   "cls": "social-reaction-summary-item js-reaction-group-button tmp-mr-1 btn-lin",
+   "rect": [
+    466,
+    5794,
+    42,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "❤️ 9",
+   "aria": "heart (9): donho, 07:32AM on May 21",
+   "title": "",
+   "pressed": "false",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "submit",
+   "href": "",
+   "cls": "social-reaction-summary-item js-reaction-group-button tmp-mr-1 btn-lin",
+   "rect": [
+    513,
+    5794,
+    42,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "🚀 4",
+   "aria": "rocket (4): donho, 07:32AM on May 21",
+   "title": "",
+   "pressed": "false",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "submit",
+   "href": "",
+   "cls": "social-reaction-summary-item js-reaction-group-button tmp-mr-1 btn-lin",
+   "rect": [
+    559,
+    5794,
+    42,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "👀 3",
+   "aria": "eyes (3): donho, 07:32AM on May 21",
+   "title": "",
+   "pressed": "false",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "submit",
+   "href": "",
+   "cls": "social-reaction-summary-item js-reaction-group-button tmp-mr-1 btn-lin",
+   "rect": [
+    606,
+    5794,
+    42,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Notepad++ release 8.9.5",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/releases/tag/v8.9.5",
+   "cls": "Link--primary Link",
+   "rect": [
+    337,
+    5888,
+    359,
+    43
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Compare",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "Button--secondary Button--small Button",
+   "rect": [
+    1297,
+    5886,
+    87,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "donho",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/donho",
+   "cls": "text-bold color-fg-muted",
+   "rect": [
+    361,
+    5951,
+    41,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "v8.9.5",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/tree/v8.9.5",
+   "cls": "Link Link--muted",
+   "rect": [
+    557,
+    5953,
+    59,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Tag",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    557,
+    5956,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "e19b989",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/commit/e19b989fa54a3410dd13f176e87343dace581beb",
+   "cls": "Link Link--muted",
+   "rect": [
+    640,
+    5953,
+    78,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Commit",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    640,
+    5956,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "https://notepad-plus-plus.org/news/v895-released/",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://notepad-plus-plus.org/news/v895-released/",
+   "cls": "",
+   "rect": [
+    337,
+    6047,
+    363,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "CLIPBOARD-COPY",
+   "role": "button",
+   "text": "",
+   "aria": "Copy code to clipboard",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "ClipboardButton btn js-clipboard-copy m-2 p-0",
+   "rect": [
+    1342,
+    6134,
+    34,
+    35
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "SUMMARY",
+   "role": "button",
+   "text": "Assets 30",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "",
+   "rect": [
+    337,
+    6479,
+    1047,
+    30
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "REACTIONS-MENU",
+   "role": "",
+   "text": "👍 😄 🎉 ❤️ 🚀 👀 Add or remove reactions",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "",
+   "rect": [
+    337,
+    6525,
+    30,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "SUMMARY",
+   "role": "",
+   "text": "",
+   "aria": "Add or remove reactions",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "circle reaction-dropdown-button reaction-dropdown-button--inline btn-i",
+   "rect": [
+    337,
+    6525,
+    26,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "👍 37",
+   "aria": "thumbs up (37): donho, 07:47PM on May 11",
+   "title": "",
+   "pressed": "false",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "submit",
+   "href": "",
+   "cls": "social-reaction-summary-item js-reaction-group-button tmp-mr-1 btn-lin",
+   "rect": [
+    367,
+    6525,
+    49,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "😄 2",
+   "aria": "laugh (2): donho, 07:47PM on May 11",
+   "title": "",
+   "pressed": "false",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "submit",
+   "href": "",
+   "cls": "social-reaction-summary-item js-reaction-group-button tmp-mr-1 btn-lin",
+   "rect": [
+    420,
+    6525,
+    42,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "🎉 4",
+   "aria": "hooray (4): donho, 07:47PM on May 11",
+   "title": "",
+   "pressed": "false",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "submit",
+   "href": "",
+   "cls": "social-reaction-summary-item js-reaction-group-button tmp-mr-1 btn-lin",
+   "rect": [
+    466,
+    6525,
+    42,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "❤️ 12",
+   "aria": "heart (12): donho, 07:47PM on May 11",
+   "title": "",
+   "pressed": "false",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "submit",
+   "href": "",
+   "cls": "social-reaction-summary-item js-reaction-group-button tmp-mr-1 btn-lin",
+   "rect": [
+    513,
+    6525,
+    49,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "🚀 6",
+   "aria": "rocket (6): donho, 07:47PM on May 11",
+   "title": "",
+   "pressed": "false",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "submit",
+   "href": "",
+   "cls": "social-reaction-summary-item js-reaction-group-button tmp-mr-1 btn-lin",
+   "rect": [
+    566,
+    6525,
+    42,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "👀 3",
+   "aria": "eyes (3): donho, 07:47PM on May 11",
+   "title": "",
+   "pressed": "false",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "submit",
+   "href": "",
+   "cls": "social-reaction-summary-item js-reaction-group-button tmp-mr-1 btn-lin",
+   "rect": [
+    612,
+    6525,
+    42,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Notepad++ release 8.9.4",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/releases/tag/v8.9.4",
+   "cls": "Link--primary Link",
+   "rect": [
+    337,
+    6619,
+    360,
+    43
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Compare",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "Button--secondary Button--small Button",
+   "rect": [
+    1297,
+    6617,
+    87,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "donho",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/donho",
+   "cls": "text-bold color-fg-muted",
+   "rect": [
+    361,
+    6682,
+    41,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "v8.9.4",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/tree/v8.9.4",
+   "cls": "Link Link--muted",
+   "rect": [
+    552,
+    6684,
+    59,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Tag",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    552,
+    6687,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "b9e5673",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/commit/b9e5673e462f667cf266bf1e77a4dc641a5810a9",
+   "cls": "Link Link--muted",
+   "rect": [
+    636,
+    6684,
+    78,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Commit",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    636,
+    6687,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "https://notepad-plus-plus.org/news/v894-released/",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://notepad-plus-plus.org/news/v894-released/",
+   "cls": "",
+   "rect": [
+    337,
+    6778,
+    363,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "CLIPBOARD-COPY",
+   "role": "button",
+   "text": "",
+   "aria": "Copy code to clipboard",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "ClipboardButton btn js-clipboard-copy m-2 p-0",
+   "rect": [
+    1342,
+    6865,
+    34,
+    35
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "SUMMARY",
+   "role": "button",
+   "text": "Assets 30",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "",
+   "rect": [
+    337,
+    7210,
+    1047,
+    30
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "REACTIONS-MENU",
+   "role": "",
+   "text": "👍 😄 🎉 ❤️ 🚀 👀 Add or remove reactions",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "",
+   "rect": [
+    337,
+    7256,
+    30,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "SUMMARY",
+   "role": "",
+   "text": "",
+   "aria": "Add or remove reactions",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "circle reaction-dropdown-button reaction-dropdown-button--inline btn-i",
+   "rect": [
+    337,
+    7256,
+    26,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "👍 44",
+   "aria": "thumbs up (44): donho, 09:27PM on April 26",
+   "title": "",
+   "pressed": "false",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "submit",
+   "href": "",
+   "cls": "social-reaction-summary-item js-reaction-group-button tmp-mr-1 btn-lin",
+   "rect": [
+    367,
+    7256,
+    49,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "😄 1",
+   "aria": "laugh (1): donho, 09:27PM on April 26",
+   "title": "",
+   "pressed": "false",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "submit",
+   "href": "",
+   "cls": "social-reaction-summary-item js-reaction-group-button tmp-mr-1 btn-lin",
+   "rect": [
+    420,
+    7256,
+    42,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "🎉 7",
+   "aria": "hooray (7): donho, 09:27PM on April 26",
+   "title": "",
+   "pressed": "false",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "submit",
+   "href": "",
+   "cls": "social-reaction-summary-item js-reaction-group-button tmp-mr-1 btn-lin",
+   "rect": [
+    466,
+    7256,
+    42,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "❤️ 17",
+   "aria": "heart (17): donho, 09:27PM on April 26",
+   "title": "",
+   "pressed": "false",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "submit",
+   "href": "",
+   "cls": "social-reaction-summary-item js-reaction-group-button tmp-mr-1 btn-lin",
+   "rect": [
+    513,
+    7256,
+    49,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "🚀 6",
+   "aria": "rocket (6): donho, 09:27PM on April 26",
+   "title": "",
+   "pressed": "false",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "submit",
+   "href": "",
+   "cls": "social-reaction-summary-item js-reaction-group-button tmp-mr-1 btn-lin",
+   "rect": [
+    566,
+    7256,
+    42,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "👀 5",
+   "aria": "eyes (5): donho, 09:27PM on April 26",
+   "title": "",
+   "pressed": "false",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "submit",
+   "href": "",
+   "cls": "social-reaction-summary-item js-reaction-group-button tmp-mr-1 btn-lin",
+   "rect": [
+    612,
+    7256,
+    42,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Notepad++ release 8.9.3",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/releases/tag/v8.9.3",
+   "cls": "Link--primary Link",
+   "rect": [
+    337,
+    7350,
+    359,
+    43
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Compare",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "Button--secondary Button--small Button",
+   "rect": [
+    1297,
+    7348,
+    87,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "donho",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/donho",
+   "cls": "text-bold color-fg-muted",
+   "rect": [
+    361,
+    7413,
+    41,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "v8.9.3",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/tree/v8.9.3",
+   "cls": "Link Link--muted",
+   "rect": [
+    555,
+    7414,
+    59,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Tag",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    555,
+    7417,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "8452101",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/commit/8452101a4b349c46b19af7d7010588d3b540294f",
+   "cls": "Link Link--muted",
+   "rect": [
+    638,
+    7414,
+    78,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Commit",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    638,
+    7417,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "https://notepad-plus-plus.org/news/v893-released/",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://notepad-plus-plus.org/news/v893-released/",
+   "cls": "",
+   "rect": [
+    337,
+    7508,
+    363,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "CLIPBOARD-COPY",
+   "role": "button",
+   "text": "",
+   "aria": "Copy code to clipboard",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "ClipboardButton btn js-clipboard-copy m-2 p-0",
+   "rect": [
+    1342,
+    7595,
+    34,
+    35
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "SUMMARY",
+   "role": "button",
+   "text": "Assets 30",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "",
+   "rect": [
+    337,
+    7940,
+    1047,
+    30
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "REACTIONS-MENU",
+   "role": "",
+   "text": "👍 😄 🎉 ❤️ 🚀 👀 Add or remove reactions",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "",
+   "rect": [
+    337,
+    7986,
+    30,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "SUMMARY",
+   "role": "",
+   "text": "",
+   "aria": "Add or remove reactions",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "circle reaction-dropdown-button reaction-dropdown-button--inline btn-i",
+   "rect": [
+    337,
+    7986,
+    26,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "👍 46",
+   "aria": "thumbs up (46): donho, 05:27PM on March 24",
+   "title": "",
+   "pressed": "false",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "submit",
+   "href": "",
+   "cls": "social-reaction-summary-item js-reaction-group-button tmp-mr-1 btn-lin",
+   "rect": [
+    367,
+    7986,
+    49,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "😄 6",
+   "aria": "laugh (6): donho, 05:27PM on March 24",
+   "title": "",
+   "pressed": "false",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "submit",
+   "href": "",
+   "cls": "social-reaction-summary-item js-reaction-group-button tmp-mr-1 btn-lin",
+   "rect": [
+    420,
+    7986,
+    42,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "🎉 13",
+   "aria": "hooray (13): donho, 05:27PM on March 24",
+   "title": "",
+   "pressed": "false",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "submit",
+   "href": "",
+   "cls": "social-reaction-summary-item js-reaction-group-button tmp-mr-1 btn-lin",
+   "rect": [
+    466,
+    7986,
+    49,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "❤️ 17",
+   "aria": "heart (17): donho, 05:27PM on March 24",
+   "title": "",
+   "pressed": "false",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "submit",
+   "href": "",
+   "cls": "social-reaction-summary-item js-reaction-group-button tmp-mr-1 btn-lin",
+   "rect": [
+    519,
+    7986,
+    49,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "🚀 6",
+   "aria": "rocket (6): donho, 05:27PM on March 24",
+   "title": "",
+   "pressed": "false",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "submit",
+   "href": "",
+   "cls": "social-reaction-summary-item js-reaction-group-button tmp-mr-1 btn-lin",
+   "rect": [
+    572,
+    7986,
+    42,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "👀 8",
+   "aria": "eyes (8): donho, 05:27PM on March 24",
+   "title": "",
+   "pressed": "false",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "submit",
+   "href": "",
+   "cls": "social-reaction-summary-item js-reaction-group-button tmp-mr-1 btn-lin",
+   "rect": [
+    619,
+    7986,
+    42,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "DIV",
+   "role": "navigation",
+   "text": "Previous 1 2 3 4 5 … 14 15 Next",
+   "aria": "Pagination",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "pagination",
+   "rect": [
+    627,
+    8061,
+    466,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "SPAN",
+   "role": "link",
+   "text": "Previous",
+   "aria": "Previous page",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "previous_page disabled",
+   "rect": [
+    627,
+    8061,
+    94,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "1",
+   "aria": "Page 1",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/releases?page=1",
+   "cls": "current",
+   "rect": [
+    725,
+    8061,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "2",
+   "aria": "Page 2",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/releases?page=2",
+   "cls": "",
+   "rect": [
+    761,
+    8061,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "3",
+   "aria": "Page 3",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/releases?page=3",
+   "cls": "",
+   "rect": [
+    797,
+    8061,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "4",
+   "aria": "Page 4",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/releases?page=4",
+   "cls": "",
+   "rect": [
+    833,
+    8061,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "5",
+   "aria": "Page 5",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/releases?page=5",
+   "cls": "",
+   "rect": [
+    869,
+    8061,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "14",
+   "aria": "Page 14",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/releases?page=14",
+   "cls": "",
+   "rect": [
+    941,
+    8061,
+    37,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "15",
+   "aria": "Page 15",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/releases?page=15",
+   "cls": "",
+   "rect": [
+    982,
+    8061,
+    37,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Next",
+   "aria": "Next page",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/releases?page=2",
+   "cls": "next_page",
+   "rect": [
+    1023,
+    8061,
+    71,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "FOOTER",
+   "role": "contentinfo",
+   "text": "Footer © 2026 GitHub, Inc. Footer navigation Terms Privacy Security Status Community Docs ",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "footer f6 color-fg-muted color-border-subtle tmp-pt-7 tmp-pb-6 p-respo",
+   "rect": [
+    0,
+    8134,
+    1425,
+    58
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "GitHub Homepage",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.com",
+   "cls": "footer-octicon mr-2",
+   "rect": [
+    293,
+    8151,
+    24,
+    25
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Terms",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://docs.github.com/site-policy/github-terms/github-terms-of-service",
+   "cls": "Link--secondary Link",
+   "rect": [
+    446,
+    8156,
+    31,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Privacy",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://docs.github.com/site-policy/privacy-policies/github-privacy-statement",
+   "cls": "Link--secondary Link",
+   "rect": [
+    493,
+    8156,
+    37,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Security",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.com/security",
+   "cls": "Link--secondary Link",
+   "rect": [
+    546,
+    8156,
+    42,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Status",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://www.githubstatus.com/",
+   "cls": "Link--secondary Link",
+   "rect": [
+    604,
+    8156,
+    32,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Community",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.community/",
+   "cls": "Link--secondary Link",
+   "rect": [
+    652,
+    8156,
+    62,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Docs",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://docs.github.com/",
+   "cls": "Link--secondary Link",
+   "rect": [
+    729,
+    8156,
+    26,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Contact",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://support.github.com?tags=dotcom-footer",
+   "cls": "Link--secondary Link",
+   "rect": [
+    771,
+    8156,
+    41,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Manage cookies",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "Link--secondary underline-on-hover border-0 p-0 color-bg-transparent",
+   "rect": [
+    828,
+    8155,
+    86,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Do not share my personal information",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "Link--secondary underline-on-hover border-0 p-0 color-bg-transparent t",
+   "rect": [
+    931,
+    8155,
+    202,
+    18
+   ],
+   "disabled": false
+  }
+ ],
+ "tables": [],
+ "same_repo_links": [
+  "/notepad-plus-plus/notepad-plus-plus",
+  "/notepad-plus-plus/notepad-plus-plus/issues",
+  "/notepad-plus-plus/notepad-plus-plus/pulls",
+  "/notepad-plus-plus/notepad-plus-plus/agents?author=wangtierui",
+  "/notepad-plus-plus/notepad-plus-plus/actions",
+  "/notepad-plus-plus/notepad-plus-plus/projects",
+  "/notepad-plus-plus/notepad-plus-plus/wiki",
+  "/notepad-plus-plus/notepad-plus-plus/security",
+  "/notepad-plus-plus/notepad-plus-plus/pulse",
+  "/notepad-plus-plus/notepad-plus-plus/releases",
+  "/notepad-plus-plus/notepad-plus-plus/tags",
+  "/notepad-plus-plus/notepad-plus-plus/releases/tag/v8.9.8.1",
+  "/notepad-plus-plus/notepad-plus-plus/releases/latest",
+  "/notepad-plus-plus/notepad-plus-plus/tree/v8.9.8.1",
+  "/notepad-plus-plus/notepad-plus-plus/commit/dd40fe45598791e9aa38f3aeb200e10fb3d6338a",
+  "/notepad-plus-plus/notepad-plus-plus/releases/download/v8.9.8.1/npp.8.9.8.1.checksums.sha256",
+  "/notepad-plus-plus/notepad-plus-plus/releases/download/v8.9.8.1/npp.8.9.8.1.checksums.sha256.sig",
+  "/notepad-plus-plus/notepad-plus-plus/releases/download/v8.9.8.1/npp.8.9.8.1.Installer.arm64.exe",
+  "/notepad-plus-plus/notepad-plus-plus/releases/download/v8.9.8.1/npp.8.9.8.1.Installer.arm64.exe.sig",
+  "/notepad-plus-plus/notepad-plus-plus/releases/download/v8.9.8.1/npp.8.9.8.1.Installer.exe",
+  "/notepad-plus-plus/notepad-plus-plus/releases/download/v8.9.8.1/npp.8.9.8.1.Installer.exe.sig",
+  "/notepad-plus-plus/notepad-plus-plus/releases/download/v8.9.8.1/npp.8.9.8.1.Installer.x64.exe",
+  "/notepad-plus-plus/notepad-plus-plus/releases/download/v8.9.8.1/npp.8.9.8.1.Installer.x64.exe.sig",
+  "/notepad-plus-plus/notepad-plus-plus/releases/download/v8.9.8.1/npp.8.9.8.1.Installer.x64.msi",
+  "/notepad-plus-plus/notepad-plus-plus/releases/download/v8.9.8.1/npp.8.9.8.1.Installer.x64.msi.sig",
+  "/notepad-plus-plus/notepad-plus-plus/archive/refs/tags/v8.9.8.1.zip",
+  "/notepad-plus-plus/notepad-plus-plus/archive/refs/tags/v8.9.8.1.tar.gz",
+  "/notepad-plus-plus/notepad-plus-plus/releases/tag/v8.9.8",
+  "/notepad-plus-plus/notepad-plus-plus/tree/v8.9.8",
+  "/notepad-plus-plus/notepad-plus-plus/commit/40f896e6f6c49a29b6ca3f559696dd786f40152d",
+  "/notepad-plus-plus/notepad-plus-plus/releases/tag/v8.9.7",
+  "/notepad-plus-plus/notepad-plus-plus/tree/v8.9.7",
+  "/notepad-plus-plus/notepad-plus-plus/commit/6634650414ff91220a4c353b7fe5ad741af0f9f9",
+  "/notepad-plus-plus/notepad-plus-plus/releases/tag/v8.9.6.4",
+  "/notepad-plus-plus/notepad-plus-plus/tree/v8.9.6.4",
+  "/notepad-plus-plus/notepad-plus-plus/commit/6ab5c2110168b4453443663d114ffc2088caae98",
+  "/notepad-plus-plus/notepad-plus-plus/releases/tag/v8.9.6.2",
+  "/notepad-plus-plus/notepad-plus-plus/tree/v8.9.6.2",
+  "/notepad-plus-plus/notepad-plus-plus/commit/9ddba5e1847a8e153104b736e831cb240adeafe2",
+  "/notepad-plus-plus/notepad-plus-plus/releases/tag/v8.9.6.1",
+  "/notepad-plus-plus/notepad-plus-plus/tree/v8.9.6.1",
+  "/notepad-plus-plus/notepad-plus-plus/commit/41dd976310db0ba551bb8a2810b60331df3a77f5",
+  "/notepad-plus-plus/notepad-plus-plus/releases/tag/v8.9.6",
+  "/notepad-plus-plus/notepad-plus-plus/tree/v8.9.6",
+  "/notepad-plus-plus/notepad-plus-plus/commit/e66cf316ab5ef6c62ccc9c85e0872f6a4d2bfbad",
+  "/notepad-plus-plus/notepad-plus-plus/releases/tag/v8.9.5",
+  "/notepad-plus-plus/notepad-plus-plus/tree/v8.9.5",
+  "/notepad-plus-plus/notepad-plus-plus/commit/e19b989fa54a3410dd13f176e87343dace581beb",
+  "/notepad-plus-plus/notepad-plus-plus/releases/tag/v8.9.4",
+  "/notepad-plus-plus/notepad-plus-plus/tree/v8.9.4",
+  "/notepad-plus-plus/notepad-plus-plus/commit/b9e5673e462f667cf266bf1e77a4dc641a5810a9",
+  "/notepad-plus-plus/notepad-plus-plus/releases/tag/v8.9.3",
+  "/notepad-plus-plus/notepad-plus-plus/tree/v8.9.3",
+  "/notepad-plus-plus/notepad-plus-plus/commit/8452101a4b349c46b19af7d7010588d3b540294f",
+  "/notepad-plus-plus/notepad-plus-plus/releases?page=1",
+  "/notepad-plus-plus/notepad-plus-plus/releases?page=2",
+  "/notepad-plus-plus/notepad-plus-plus/releases?page=3",
+  "/notepad-plus-plus/notepad-plus-plus/releases?page=4",
+  "/notepad-plus-plus/notepad-plus-plus/releases?page=5",
+  "/notepad-plus-plus/notepad-plus-plus/releases?page=14",
+  "/notepad-plus-plus/notepad-plus-plus/releases?page=15"
+ ],
+ "density": null,
+ "fetched_at": "2026-11-03T20:12:08",
+ "elements_seen": 3774
+}

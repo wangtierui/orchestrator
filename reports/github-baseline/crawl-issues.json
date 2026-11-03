@@ -1,0 +1,4596 @@
+{
+ "title": "Issues · notepad-plus-plus/notepad-plus-plus",
+ "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/issues",
+ "user_login": "wangtierui",
+ "ready": "complete",
+ "counts": {
+  "els": 2194,
+  "interactive": 208,
+  "links": 25
+ },
+ "landmarks": [
+  [
+   "header",
+   0,
+   0,
+   1425,
+   100
+  ],
+  [
+   "nav",
+   100,
+   16,
+   741,
+   32
+  ],
+  [
+   "main",
+   0,
+   100,
+   1425,
+   2078
+  ],
+  [
+   "aside",
+   0,
+   100,
+   256,
+   900
+  ],
+  [
+   "footer",
+   0,
+   2178,
+   1425,
+   58
+  ]
+ ],
+ "headings": [
+  [
+   "H2",
+   "Repository navigation"
+  ],
+  [
+   "H1",
+   "Command palette"
+  ],
+  [
+   "H1",
+   "Issues"
+  ],
+  [
+   "H1",
+   "Issues"
+  ],
+  [
+   "H2",
+   "Issues"
+  ],
+  [
+   "H3",
+   "[BUG] vertical tabs and a narrow window causes tabs to be cut off"
+  ],
+  [
+   "H3",
+   "[BUG] <title>Vietnamese"
+  ],
+  [
+   "H3",
+   "[BUG] Space dots ignore display scaling: SCI_SETWHITESPACESIZE is a fixed 2 px"
+  ],
+  [
+   "H3",
+   "[BUG] <Ctrl+Alt+L> keyboard shortcut not working for Text Direction LTR"
+  ],
+  [
+   "H3",
+   "[Security] SCI_SETDOCPOINTER accepts unvalidated pointer (engine-level, affects "
+  ],
+  [
+   "H3",
+   "[BUG] Slow to Navigate Windows Folders-Slow To Return To NotePad++ After Closing"
+  ],
+  [
+   "H3",
+   "[BUG] Three memory-corruption primitives in 8.9.8.1 (arbitrary write, argument-s"
+  ],
+  [
+   "H3",
+   "[Feature request] Reload from disk silently"
+  ],
+  [
+   "H3",
+   "[BUG] Drops typing input/caret disappears after switching out from specific game"
+  ],
+  [
+   "H3",
+   "[BUG] session.xml UNC path triggers outbound NTLM authentication (credential dis"
+  ],
+  [
+   "H3",
+   "[BUG] SCI_SETDOCPOINTER accepts an arbitrary cross-process pointer and calls thr"
+  ],
+  [
+   "H3",
+   "[BUG] SCI_GETTEXT writes document data to an arbitrary cross-process address"
+  ],
+  [
+   "H3",
+   "[BUG] Validate shortcuts.xml only updates memory: HMAC is never persisted (and i"
+  ],
+  [
+   "H3",
+   "[BUG] NPPM_GETCURRENTBUFFERID returns a raw heap pointer (Buffer*) to other proc"
+  ],
+  [
+   "H3",
+   "[BUG] session.xml with unreachable UNC path hangs startup (loadSession missing t"
+  ],
+  [
+   "H3",
+   "[BUG] Large VDL=0 file + suppress2GBWarning in user-writable config.xml exhausts"
+  ],
+  [
+   "H3",
+   "[BUG] NPPM_DOOPEN dereferences a cross-process pointer and crashes Notepad++"
+  ],
+  [
+   "H3",
+   "[Feature request] Limit directory depth for Find in Files"
+  ],
+  [
+   "H3",
+   "[BUG] CustomFileDialog: hasExt() incorrectly treats dots in directory path as fi"
+  ],
+  [
+   "H3",
+   "[WEBSITE] Firefox doesn't remember darkMode on F5 Refresh"
+  ],
+  [
+   "H3",
+   "[BUG] Print as PDF - add .pdf extension"
+  ],
+  [
+   "H3",
+   "[Feature request] Clipboard History: Support dynamic pixel-based display width a"
+  ],
+  [
+   "H3",
+   "[Feature request] provide grep and ungrep functionality by search dialog"
+  ],
+  [
+   "H3",
+   "[Feature request] Add domain wildcard to serverWhiteList.xml"
+  ],
+  [
+   "H3",
+   "[Feature request] Vertical tab bar with horizontal titles"
+  ],
+  [
+   "H2",
+   "Footer"
+  ],
+  [
+   "H3",
+   "Footer navigation"
+  ]
+ ],
+ "interactive": [
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Skip to content",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "#start-of-content",
+   "cls": "tmp-p-3 color-bg-accent-emphasis color-fg-on-emphasis show-on-focus js",
+   "rect": [
+    0,
+    0,
+    1,
+    1
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU prc-Button-IconBut",
+   "rect": [
+    16,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "/",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderHome__5NxwyK prc-Button-IconButto",
+   "rect": [
+    60,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "notepad-plus-plus",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus",
+   "cls": "contextCrumb__Q8nET8 prc-Breadcrumbs-Item-jcraJ",
+   "rect": [
+    100,
+    16,
+    126,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "notepad-plus-plus",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus",
+   "cls": "contextCrumb__Q8nET8 contextCrumbLast__l2P28s repoPickerCrumb__56N_WW ",
+   "rect": [
+    241,
+    16,
+    125,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk contextCrumb__Q8nET8 repoPickerDropdownBut",
+   "rect": [
+    366,
+    16,
+    20,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Type / to search",
+   "aria": "Open quick search dialog, type / to search",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU searchButton__6Ru-",
+   "rect": [
+    849,
+    16,
+    191,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU js-activate-comman",
+   "rect": [
+    1039,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "/copilot",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU prc-Button-IconBut",
+   "rect": [
+    1078,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "Open Copilot…",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU CopilotMenu__oPrKz",
+   "rect": [
+    1109,
+    16,
+    26,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk actionMenuButton__QPJCOZ responsiveCreateM",
+   "rect": [
+    1159,
+    16,
+    50,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "/issues",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU prc-Button-IconBut",
+   "rect": [
+    1217,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "/pulls",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU prc-Button-IconBut",
+   "rect": [
+    1257,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "/repos",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU prc-Button-IconBut",
+   "rect": [
+    1297,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "/notifications",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU prc-Button-IconBut",
+   "rect": [
+    1337,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk anchor__zXCwGI prc-Button-IconButton-fyge7",
+   "rect": [
+    1377,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "UL",
+   "role": "list",
+   "text": "CodeIssues2.9k (2.9k)Pull requests28 (28)AgentsActionsProjectsWikiSecurity and quality40 (",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "prc-UnderlineNav-ItemsList-oj8gN prc-components-UnderlineItemList-xKlK",
+   "rect": [
+    16,
+    60,
+    1393,
+    40
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Code",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    16,
+    60,
+    73,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Issues2.9k (2.9k)",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/issues",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    97,
+    60,
+    122,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Pull requests28 (28)",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/pulls",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    227,
+    60,
+    157,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Agents",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/agents?author=wangtierui",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    392,
+    60,
+    85,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Actions",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/actions",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    484,
+    60,
+    87,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Projects",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/projects",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    580,
+    60,
+    90,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Wiki",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/wiki",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    678,
+    60,
+    68,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Security and quality40 (40)",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/security",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    754,
+    60,
+    201,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Insights",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/pulse",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    964,
+    60,
+    90,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Issues",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/issues?q=is%3Aissue+state%3Aopen",
+   "cls": "prc-ActionList-ActionListContent-KBb8- prc-Link-Link-9ZwDx",
+   "rect": [
+    16,
+    116,
+    223,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Assigned to me",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/issues?q=is%3Aissue+state%3Aopen+assignee%3A%40me",
+   "cls": "prc-ActionList-ActionListContent-KBb8- prc-Link-Link-9ZwDx",
+   "rect": [
+    16,
+    148,
+    223,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Created by me",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/issues?q=is%3Aissue+state%3Aopen+author%3A%40me",
+   "cls": "prc-ActionList-ActionListContent-KBb8- prc-Link-Link-9ZwDx",
+   "rect": [
+    16,
+    180,
+    223,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Mentioned",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/issues?q=is%3Aissue+state%3Aopen+mentions%3A%40me",
+   "cls": "prc-ActionList-ActionListContent-KBb8- prc-Link-Link-9ZwDx",
+   "rect": [
+    16,
+    212,
+    223,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Recent activity",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/issues?q=is%3Aissue+updated%3A%3E%40today-1w+sort%3Aupdated-desc",
+   "cls": "prc-ActionList-ActionListContent-KBb8- prc-Link-Link-9ZwDx",
+   "rect": [
+    16,
+    244,
+    223,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Views",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/issues/views",
+   "cls": "prc-ActionList-ActionListContent-KBb8- prc-Link-Link-9ZwDx",
+   "rect": [
+    16,
+    317,
+    223,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Projects",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/projects",
+   "cls": "prc-ActionList-ActionListContent-KBb8- prc-Link-Link-9ZwDx",
+   "rect": [
+    16,
+    349,
+    223,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Milestones",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/milestones",
+   "cls": "prc-ActionList-ActionListContent-KBb8- prc-Link-Link-9ZwDx",
+   "rect": [
+    16,
+    381,
+    223,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Labels",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/labels",
+   "cls": "prc-ActionList-ActionListContent-KBb8- prc-Link-Link-9ZwDx",
+   "rect": [
+    16,
+    413,
+    223,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "FeedbackPreview",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://gh.io/issues-sidebar-feedback",
+   "cls": "prc-ActionList-ActionListContent-KBb8- prc-Link-Link-9ZwDx",
+   "rect": [
+    16,
+    916,
+    223,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Collapse sidebar",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "true",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-ActionList-ActionListContent-KBb8-",
+   "rect": [
+    16,
+    952,
+    223,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "New issue",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "/notepad-plus-plus/notepad-plus-plus/issues/new/choose",
+   "cls": "prc-Button-ButtonBase-9n-Xk",
+   "rect": [
+    1311,
+    124,
+    90,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "[KNOWN/FIXED BUG] v8.9.8: Opening a file from the command line fails (scoop, junctions, 8.",
+   "aria": "View [KNOWN/FIXED BUG] v8.9.8: Opening a file from the command line fails (scoop, junctions, 8.3 paths) -- FIXED IN v8.9.8.1",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.com/notepad-plus-plus/notepad-plus-plus/issues/18314",
+   "cls": "css-truncate Link___MAuNs prc-Link-Link-9ZwDx",
+   "rect": [
+    293,
+    181,
+    539,
+    52
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Status: Closed (completed).",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    293,
+    191,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "JackyLWH",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/JackyLWH",
+   "cls": "prc-Link-Link-9ZwDx",
+   "rect": [
+    342,
+    238,
+    52,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "27 comments",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    795,
+    238,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "DIV",
+   "role": "status",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "",
+   "rect": [
+    -1,
+    -1,
+    1,
+    1
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "DIV",
+   "role": "search",
+   "text": "Search issuesis:issue state:openis:issue state:openClear filterSearch",
+   "aria": "Issues",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "",
+   "rect": [
+    280,
+    280,
+    1121,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "DIV",
+   "role": "form",
+   "text": "Search issuesis:issue state:openis:issue state:openClear filterSearch",
+   "aria": "Search issues",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "FormControl FormControl--fullWidth Box_1__QYTtv7",
+   "rect": [
+    280,
+    280,
+    1121,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "DIV",
+   "role": "",
+   "text": "is:issue state:openis:issue state:open",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "styled-input-container Box_0__HkKqOF",
+   "rect": [
+    293,
+    281,
+    1047,
+    30
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "INPUT",
+   "role": "combobox",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "Box_4__0ZM1Bz",
+   "rect": [
+    293,
+    281,
+    1047,
+    30
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk clearButton__zWB3bC prc-Button-IconButton-",
+   "rect": [
+    1340,
+    282,
+    28,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk IconButton_0__SSIi47 prc-Button-IconButton",
+   "rect": [
+    1369,
+    280,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "UL",
+   "role": "listbox",
+   "text": "",
+   "aria": "Suggestions",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "prc-ActionList-ActionList-rPFF2 ActionList_0__Ssg8Xf",
+   "rect": [
+    277,
+    316,
+    250,
+    48
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Open2,900 (2,900)",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "#",
+   "cls": "container__OP-V2v selected__fg2bAE prc-Text-Text-9mHv3",
+   "rect": [
+    289,
+    338,
+    102,
+    30
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Closed8,929 (8,929)",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "#",
+   "cls": "container__OP-V2v prc-Text-Text-9mHv3",
+   "rect": [
+    391,
+    338,
+    109,
+    30
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "DIV",
+   "role": "toolbar",
+   "text": "AuthorLabelsProjectsMilestonesAssigneesTypesNewest",
+   "aria": "Issue list controls",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "Box_0__dR0_nG",
+   "rect": [
+    501,
+    337,
+    822,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Author",
+   "aria": "Filter by author",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "authors-anchor-button",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk ListFilterButton__ccIaF1",
+   "rect": [
+    614,
+    337,
+    89,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Labels",
+   "aria": "Filter by labels",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "labels-anchor-button",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk ListFilterButton__ccIaF1",
+   "rect": [
+    707,
+    337,
+    85,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Projects",
+   "aria": "Filter by projects",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "projects-anchor-button",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk ListFilterButton__ccIaF1",
+   "rect": [
+    796,
+    337,
+    95,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Milestones",
+   "aria": "Filter by milestones",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "milestones-anchor-button",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk ListFilterButton__ccIaF1",
+   "rect": [
+    894,
+    337,
+    113,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Assignees",
+   "aria": "Filter by assignees",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "assignees-anchor-button",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk ListFilterButton__ccIaF1",
+   "rect": [
+    1011,
+    337,
+    107,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Types",
+   "aria": "Filter by issue type",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "issue-types-anchor-button",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk ListFilterButton__ccIaF1",
+   "rect": [
+    1122,
+    337,
+    81,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Newest",
+   "aria": "Sort by Newest descending",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk ListFilterButton__ccIaF1",
+   "rect": [
+    1207,
+    337,
+    116,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "true",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-SegmentedControl-Button-E48xz prc-SegmentedControl-IconButton-tlzD",
+   "rect": [
+    1327,
+    337,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "false",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-SegmentedControl-Button-E48xz prc-SegmentedControl-IconButton-tlzD",
+   "rect": [
+    1360,
+    337,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "UL",
+   "role": "list",
+   "text": "[BUG] vertical tabs and a narrow window causes tabs to be cut offnotepad-plus-plus/notepad",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "ul__5IxUHb withMetadata__klorrw",
+   "rect": [
+    281,
+    377,
+    1119,
+    1693
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "",
+   "text": "[BUG] vertical tabs and a narrow window causes tabs to be cut offnotepad-plus-plus/notepad",
+   "aria": "[BUG] vertical tabs and a narrow window causes tabs to be cut off. More information available below.",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "listItem__X41oTe",
+   "rect": [
+    281,
+    377,
+    1119,
+    65
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "[BUG] vertical tabs and a narrow window causes tabs to be cut off",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "issue-listitem-title-link",
+   "type": "",
+   "href": "https://github.com/notepad-plus-plus/notepad-plus-plus/issues/18594",
+   "cls": "anchor__PSAOdR inline__z8HXmA inlineCodeTitle__kWY7pC",
+   "rect": [
+    321,
+    386,
+    477,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Open",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    297,
+    391,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Filter by author IKatchya",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "author-filter-link",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__ywNfwR authorLink__jEE_DC Link__H3GvIl",
+   "rect": [
+    570,
+    413,
+    45,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "1 comments",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    1229,
+    401,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "",
+   "text": "[BUG] <title>Vietnamesenotepad-plus-plus/notepad-plus-plus#18590 · Filter by author seeeer",
+   "aria": "[BUG] <title>Vietnamese. More information available below.",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "listItem__X41oTe",
+   "rect": [
+    281,
+    442,
+    1119,
+    65
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "[BUG] <title>Vietnamese",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "issue-listitem-title-link",
+   "type": "",
+   "href": "https://github.com/notepad-plus-plus/notepad-plus-plus/issues/18590",
+   "cls": "anchor__PSAOdR inline__z8HXmA inlineCodeTitle__kWY7pC",
+   "rect": [
+    321,
+    451,
+    182,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Open",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    297,
+    456,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Filter by author seeeerge",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "author-filter-link",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__ywNfwR authorLink__jEE_DC Link__H3GvIl",
+   "rect": [
+    570,
+    478,
+    48,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "",
+   "text": "[BUG] Space dots ignore display scaling: SCI_SETWHITESPACESIZE is a fixed 2 pxhidpi suppor",
+   "aria": "[BUG] Space dots ignore display scaling: SCI_SETWHITESPACESIZE is a fixed 2 px. More information available below.",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "listItem__X41oTe",
+   "rect": [
+    281,
+    507,
+    1119,
+    65
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "[BUG] Space dots ignore display scaling: SCI_SETWHITESPACESIZE is a fixed 2 px",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "issue-listitem-title-link",
+   "type": "",
+   "href": "https://github.com/notepad-plus-plus/notepad-plus-plus/issues/18589",
+   "cls": "anchor__PSAOdR inline__z8HXmA inlineCodeTitle__kWY7pC",
+   "rect": [
+    321,
+    516,
+    581,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "hidpi support",
+   "aria": "Filter by label hidpi support",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__ywNfwR",
+   "rect": [
+    906,
+    516,
+    96,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Open",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    297,
+    521,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Filter by author yjlin0224",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "author-filter-link",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__ywNfwR authorLink__jEE_DC Link__H3GvIl",
+   "rect": [
+    570,
+    543,
+    47,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "1",
+   "aria": "1 linked pull request notepad-plus-plus/notepad-plus-plus#18591: fix: scale whitespace markers with DPI and zoom, Open",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.com/notepad-plus-plus/notepad-plus-plus/pull/18591",
+   "cls": "d-inline-flex flex-items-center gap-1 linkedPullRequestLink__YiBqgz pr",
+   "rect": [
+    1176,
+    530,
+    26,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "",
+   "text": "[BUG] <Ctrl+Alt+L> keyboard shortcut not working for Text Direction LTRnotepad-plus-plus/n",
+   "aria": "[BUG] <Ctrl+Alt+L> keyboard shortcut not working for Text Direction LTR. More information available below.",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "listItem__X41oTe",
+   "rect": [
+    281,
+    572,
+    1119,
+    65
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "[BUG] <Ctrl+Alt+L> keyboard shortcut not working for Text Direction LTR",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "issue-listitem-title-link",
+   "type": "",
+   "href": "https://github.com/notepad-plus-plus/notepad-plus-plus/issues/18586",
+   "cls": "anchor__PSAOdR inline__z8HXmA inlineCodeTitle__kWY7pC",
+   "rect": [
+    321,
+    581,
+    535,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Open",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    297,
+    586,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Filter by author Moatassem",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "author-filter-link",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__ywNfwR authorLink__jEE_DC Link__H3GvIl",
+   "rect": [
+    570,
+    608,
+    61,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "",
+   "text": "[Security] SCI_SETDOCPOINTER accepts unvalidated pointer (engine-level, affects all Scinti",
+   "aria": "[Security] SCI_SETDOCPOINTER accepts unvalidated pointer (engine-level, affects all Scintilla apps). More information available below.",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "listItem__X41oTe",
+   "rect": [
+    281,
+    637,
+    1119,
+    65
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "[Security] SCI_SETDOCPOINTER accepts unvalidated pointer (engine-level, affects all Scinti",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "issue-listitem-title-link",
+   "type": "",
+   "href": "https://github.com/notepad-plus-plus/notepad-plus-plus/issues/18583",
+   "cls": "anchor__PSAOdR inline__z8HXmA inlineCodeTitle__kWY7pC",
+   "rect": [
+    321,
+    646,
+    715,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Open",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    297,
+    651,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Filter by author Firefly0619sec",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "author-filter-link",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__ywNfwR authorLink__jEE_DC Link__H3GvIl",
+   "rect": [
+    570,
+    673,
+    74,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "",
+   "text": "[BUG] Slow to Navigate Windows Folders-Slow To Return To NotePad++ After Closing Windows D",
+   "aria": "[BUG] Slow to Navigate Windows Folders-Slow To Return To NotePad++ After Closing Windows Dialogue Window. More information available below.",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "listItem__X41oTe",
+   "rect": [
+    281,
+    702,
+    1119,
+    65
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "[BUG] Slow to Navigate Windows Folders-Slow To Return To NotePad++ After Closing Windows D",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "issue-listitem-title-link",
+   "type": "",
+   "href": "https://github.com/notepad-plus-plus/notepad-plus-plus/issues/18580",
+   "cls": "anchor__PSAOdR inline__z8HXmA inlineCodeTitle__kWY7pC",
+   "rect": [
+    321,
+    711,
+    830,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Open",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    297,
+    716,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Filter by author mark2090",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "author-filter-link",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__ywNfwR authorLink__jEE_DC Link__H3GvIl",
+   "rect": [
+    570,
+    738,
+    52,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "",
+   "text": "[BUG] Three memory-corruption primitives in 8.9.8.1 (arbitrary write, argument-swapping ga",
+   "aria": "[BUG] Three memory-corruption primitives in 8.9.8.1 (arbitrary write, argument-swapping gadget, memory leak) -- final heap step incomplete. More information available below.",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "listItem__X41oTe",
+   "rect": [
+    281,
+    767,
+    1119,
+    89
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "[BUG] Three memory-corruption primitives in 8.9.8.1 (arbitrary write, argument-swapping ga",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "issue-listitem-title-link",
+   "type": "",
+   "href": "https://github.com/notepad-plus-plus/notepad-plus-plus/issues/18576",
+   "cls": "anchor__PSAOdR inline__z8HXmA inlineCodeTitle__kWY7pC",
+   "rect": [
+    321,
+    776,
+    829,
+    45
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Open",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    297,
+    781,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Filter by author Firefly0619sec",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "author-filter-link",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__ywNfwR authorLink__jEE_DC Link__H3GvIl",
+   "rect": [
+    570,
+    827,
+    74,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "8 comments",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    1229,
+    803,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "",
+   "text": "[Feature request] Reload from disk silentlynotepad-plus-plus/notepad-plus-plus#18573 · Fil",
+   "aria": "[Feature request] Reload from disk silently. More information available below.",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "listItem__X41oTe",
+   "rect": [
+    281,
+    856,
+    1119,
+    65
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "[Feature request] Reload from disk silently",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "issue-listitem-title-link",
+   "type": "",
+   "href": "https://github.com/notepad-plus-plus/notepad-plus-plus/issues/18573",
+   "cls": "anchor__PSAOdR inline__z8HXmA inlineCodeTitle__kWY7pC",
+   "rect": [
+    321,
+    865,
+    306,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Open",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    297,
+    870,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Filter by author D3ute",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "author-filter-link",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__ywNfwR authorLink__jEE_DC Link__H3GvIl",
+   "rect": [
+    570,
+    892,
+    32,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "",
+   "text": "[BUG] Drops typing input/caret disappears after switching out from specific gamenotepad-pl",
+   "aria": "[BUG] Drops typing input/caret disappears after switching out from specific game. More information available below.",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "listItem__X41oTe",
+   "rect": [
+    281,
+    921,
+    1119,
+    65
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "[BUG] Drops typing input/caret disappears after switching out from specific game",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "issue-listitem-title-link",
+   "type": "",
+   "href": "https://github.com/notepad-plus-plus/notepad-plus-plus/issues/18560",
+   "cls": "anchor__PSAOdR inline__z8HXmA inlineCodeTitle__kWY7pC",
+   "rect": [
+    321,
+    930,
+    593,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Open",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    297,
+    935,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Filter by author cpguy5089",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "author-filter-link",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__ywNfwR authorLink__jEE_DC Link__H3GvIl",
+   "rect": [
+    570,
+    957,
+    58,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "2 comments",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    1229,
+    945,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "",
+   "text": "[BUG] session.xml UNC path triggers outbound NTLM authentication (credential disclosure)no",
+   "aria": "[BUG] session.xml UNC path triggers outbound NTLM authentication (credential disclosure). More information available below.",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "listItem__X41oTe",
+   "rect": [
+    281,
+    986,
+    1119,
+    65
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "[BUG] session.xml UNC path triggers outbound NTLM authentication (credential disclosure)",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "issue-listitem-title-link",
+   "type": "",
+   "href": "https://github.com/notepad-plus-plus/notepad-plus-plus/issues/18553",
+   "cls": "anchor__PSAOdR inline__z8HXmA inlineCodeTitle__kWY7pC",
+   "rect": [
+    321,
+    995,
+    664,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Open",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    297,
+    1000,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Filter by author Firefly0619sec",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "author-filter-link",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__ywNfwR authorLink__jEE_DC Link__H3GvIl",
+   "rect": [
+    570,
+    1022,
+    74,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "",
+   "text": "[BUG] SCI_SETDOCPOINTER accepts an arbitrary cross-process pointer and calls through itnot",
+   "aria": "[BUG] SCI_SETDOCPOINTER accepts an arbitrary cross-process pointer and calls through it. More information available below.",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "listItem__X41oTe",
+   "rect": [
+    281,
+    1051,
+    1119,
+    65
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "[BUG] SCI_SETDOCPOINTER accepts an arbitrary cross-process pointer and calls through it",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "issue-listitem-title-link",
+   "type": "",
+   "href": "https://github.com/notepad-plus-plus/notepad-plus-plus/issues/18552",
+   "cls": "anchor__PSAOdR inline__z8HXmA inlineCodeTitle__kWY7pC",
+   "rect": [
+    321,
+    1060,
+    654,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Open",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    297,
+    1065,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Filter by author Firefly0619sec",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "author-filter-link",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__ywNfwR authorLink__jEE_DC Link__H3GvIl",
+   "rect": [
+    570,
+    1087,
+    74,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "1 comments",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    1229,
+    1075,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "",
+   "text": "[BUG] SCI_GETTEXT writes document data to an arbitrary cross-process addresscrashscintilla",
+   "aria": "[BUG] SCI_GETTEXT writes document data to an arbitrary cross-process address. More information available below.",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "listItem__X41oTe",
+   "rect": [
+    281,
+    1116,
+    1119,
+    65
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "[BUG] SCI_GETTEXT writes document data to an arbitrary cross-process address",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "issue-listitem-title-link",
+   "type": "",
+   "href": "https://github.com/notepad-plus-plus/notepad-plus-plus/issues/18551",
+   "cls": "anchor__PSAOdR inline__z8HXmA inlineCodeTitle__kWY7pC",
+   "rect": [
+    321,
+    1125,
+    576,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "crash",
+   "aria": "Filter by label crash",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__ywNfwR",
+   "rect": [
+    901,
+    1125,
+    51,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "scintilla dependent",
+   "aria": "Filter by label scintilla dependent",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__ywNfwR",
+   "rect": [
+    951,
+    1125,
+    125,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Open",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    297,
+    1130,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Filter by author Firefly0619sec",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "author-filter-link",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__ywNfwR authorLink__jEE_DC Link__H3GvIl",
+   "rect": [
+    570,
+    1152,
+    74,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "13 comments",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    1229,
+    1140,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "",
+   "text": "[BUG] Validate shortcuts.xml only updates memory: HMAC is never persisted (and is not read",
+   "aria": "[BUG] Validate shortcuts.xml only updates memory: HMAC is never persisted (and is not read back). More information available below.",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "listItem__X41oTe",
+   "rect": [
+    281,
+    1181,
+    1119,
+    65
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "[BUG] Validate shortcuts.xml only updates memory: HMAC is never persisted (and is not read",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "issue-listitem-title-link",
+   "type": "",
+   "href": "https://github.com/notepad-plus-plus/notepad-plus-plus/issues/18550",
+   "cls": "anchor__PSAOdR inline__z8HXmA inlineCodeTitle__kWY7pC",
+   "rect": [
+    321,
+    1190,
+    718,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Open",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    297,
+    1195,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Filter by author Firefly0619sec",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "author-filter-link",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__ywNfwR authorLink__jEE_DC Link__H3GvIl",
+   "rect": [
+    570,
+    1217,
+    74,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "",
+   "text": "[BUG] NPPM_GETCURRENTBUFFERID returns a raw heap pointer (Buffer*) to other processesnotep",
+   "aria": "[BUG] NPPM_GETCURRENTBUFFERID returns a raw heap pointer (Buffer*) to other processes. More information available below.",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "listItem__X41oTe",
+   "rect": [
+    281,
+    1246,
+    1119,
+    65
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "[BUG] NPPM_GETCURRENTBUFFERID returns a raw heap pointer (Buffer*) to other processes",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "issue-listitem-title-link",
+   "type": "",
+   "href": "https://github.com/notepad-plus-plus/notepad-plus-plus/issues/18549",
+   "cls": "anchor__PSAOdR inline__z8HXmA inlineCodeTitle__kWY7pC",
+   "rect": [
+    321,
+    1255,
+    670,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Open",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    297,
+    1260,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Filter by author Firefly0619sec",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "author-filter-link",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__ywNfwR authorLink__jEE_DC Link__H3GvIl",
+   "rect": [
+    570,
+    1282,
+    74,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "",
+   "text": "[BUG] session.xml with unreachable UNC path hangs startup (loadSession missing the network",
+   "aria": "[BUG] session.xml with unreachable UNC path hangs startup (loadSession missing the network guard used by loadFileData). More information available below.",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "listItem__X41oTe",
+   "rect": [
+    281,
+    1311,
+    1119,
+    89
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "[BUG] session.xml with unreachable UNC path hangs startup (loadSession missing the network",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "issue-listitem-title-link",
+   "type": "",
+   "href": "https://github.com/notepad-plus-plus/notepad-plus-plus/issues/18548",
+   "cls": "anchor__PSAOdR inline__z8HXmA inlineCodeTitle__kWY7pC",
+   "rect": [
+    321,
+    1320,
+    793,
+    45
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Open",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    297,
+    1325,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Filter by author Firefly0619sec",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "author-filter-link",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__ywNfwR authorLink__jEE_DC Link__H3GvIl",
+   "rect": [
+    570,
+    1371,
+    74,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "",
+   "text": "[BUG] Large VDL=0 file + suppress2GBWarning in user-writable config.xml exhausts memorynot",
+   "aria": "[BUG] Large VDL=0 file + suppress2GBWarning in user-writable config.xml exhausts memory. More information available below.",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "listItem__X41oTe",
+   "rect": [
+    281,
+    1400,
+    1119,
+    65
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "[BUG] Large VDL=0 file + suppress2GBWarning in user-writable config.xml exhausts memory",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "issue-listitem-title-link",
+   "type": "",
+   "href": "https://github.com/notepad-plus-plus/notepad-plus-plus/issues/18547",
+   "cls": "anchor__PSAOdR inline__z8HXmA inlineCodeTitle__kWY7pC",
+   "rect": [
+    321,
+    1409,
+    673,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Open",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    297,
+    1414,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Filter by author Firefly0619sec",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "author-filter-link",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__ywNfwR authorLink__jEE_DC Link__H3GvIl",
+   "rect": [
+    570,
+    1436,
+    74,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "",
+   "text": "[BUG] NPPM_DOOPEN dereferences a cross-process pointer and crashes Notepad++notepad-plus-p",
+   "aria": "[BUG] NPPM_DOOPEN dereferences a cross-process pointer and crashes Notepad++. More information available below.",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "listItem__X41oTe",
+   "rect": [
+    281,
+    1465,
+    1119,
+    65
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "[BUG] NPPM_DOOPEN dereferences a cross-process pointer and crashes Notepad++",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "issue-listitem-title-link",
+   "type": "",
+   "href": "https://github.com/notepad-plus-plus/notepad-plus-plus/issues/18546",
+   "cls": "anchor__PSAOdR inline__z8HXmA inlineCodeTitle__kWY7pC",
+   "rect": [
+    321,
+    1474,
+    614,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Open",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    297,
+    1479,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Filter by author Firefly0619sec",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "author-filter-link",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__ywNfwR authorLink__jEE_DC Link__H3GvIl",
+   "rect": [
+    570,
+    1501,
+    74,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "",
+   "text": "[Feature request] Limit directory depth for Find in Filesnotepad-plus-plus/notepad-plus-pl",
+   "aria": "[Feature request] Limit directory depth for Find in Files. More information available below.",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "listItem__X41oTe",
+   "rect": [
+    281,
+    1530,
+    1119,
+    65
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "[Feature request] Limit directory depth for Find in Files",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "issue-listitem-title-link",
+   "type": "",
+   "href": "https://github.com/notepad-plus-plus/notepad-plus-plus/issues/18544",
+   "cls": "anchor__PSAOdR inline__z8HXmA inlineCodeTitle__kWY7pC",
+   "rect": [
+    321,
+    1539,
+    397,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Open",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    297,
+    1544,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Filter by author PyBales",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "author-filter-link",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__ywNfwR authorLink__jEE_DC Link__H3GvIl",
+   "rect": [
+    570,
+    1566,
+    40,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "1 comments",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    1229,
+    1554,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "",
+   "text": "[BUG] CustomFileDialog: hasExt() incorrectly treats dots in directory path as file extensi",
+   "aria": "[BUG] CustomFileDialog: hasExt() incorrectly treats dots in directory path as file extension. More information available below.",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "listItem__X41oTe",
+   "rect": [
+    281,
+    1595,
+    1119,
+    65
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "[BUG] CustomFileDialog: hasExt() incorrectly treats dots in directory path as file extensi",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "issue-listitem-title-link",
+   "type": "",
+   "href": "https://github.com/notepad-plus-plus/notepad-plus-plus/issues/18539",
+   "cls": "anchor__PSAOdR inline__z8HXmA inlineCodeTitle__kWY7pC",
+   "rect": [
+    321,
+    1604,
+    649,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "not reproducible",
+   "aria": "Filter by label not reproducible",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__ywNfwR",
+   "rect": [
+    974,
+    1604,
+    113,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Open",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    297,
+    1609,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Filter by author softmgr",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "author-filter-link",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__ywNfwR authorLink__jEE_DC Link__H3GvIl",
+   "rect": [
+    570,
+    1631,
+    42,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "1",
+   "aria": "1 linked pull request notepad-plus-plus/notepad-plus-plus#18540: Fix hasExt() falsely detecting dots in directory path as file extensions, Open",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.com/notepad-plus-plus/notepad-plus-plus/pull/18540",
+   "cls": "d-inline-flex flex-items-center gap-1 linkedPullRequestLink__YiBqgz pr",
+   "rect": [
+    1176,
+    1618,
+    26,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "4 comments",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    1229,
+    1619,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "",
+   "text": "[WEBSITE] Firefox doesn't remember darkMode on F5 Refreshdocumentationnotepad-plus-plus/no",
+   "aria": "[WEBSITE] Firefox doesn't remember darkMode on F5 Refresh. More information available below.",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "listItem__X41oTe",
+   "rect": [
+    281,
+    1660,
+    1119,
+    65
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "[WEBSITE] Firefox doesn't remember darkMode on F5 Refresh",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "issue-listitem-title-link",
+   "type": "",
+   "href": "https://github.com/notepad-plus-plus/notepad-plus-plus/issues/18534",
+   "cls": "anchor__PSAOdR inline__z8HXmA inlineCodeTitle__kWY7pC",
+   "rect": [
+    321,
+    1669,
+    447,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "documentation",
+   "aria": "Filter by label documentation",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__ywNfwR",
+   "rect": [
+    772,
+    1669,
+    105,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Open",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    297,
+    1674,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Filter by author pryrt",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "author-filter-link",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__ywNfwR authorLink__jEE_DC Link__H3GvIl",
+   "rect": [
+    570,
+    1696,
+    25,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "1 comments",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    1229,
+    1684,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "",
+   "text": "[BUG] Print as PDF - add .pdf extensionnotepad-plus-plus/notepad-plus-plus#18533 · Filter ",
+   "aria": "[BUG] Print as PDF - add .pdf extension. More information available below.",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "listItem__X41oTe",
+   "rect": [
+    281,
+    1725,
+    1119,
+    65
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "[BUG] Print as PDF - add .pdf extension",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "issue-listitem-title-link",
+   "type": "",
+   "href": "https://github.com/notepad-plus-plus/notepad-plus-plus/issues/18533",
+   "cls": "anchor__PSAOdR inline__z8HXmA inlineCodeTitle__kWY7pC",
+   "rect": [
+    321,
+    1734,
+    285,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Open",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    297,
+    1739,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Filter by author ryanwwest",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "author-filter-link",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__ywNfwR authorLink__jEE_DC Link__H3GvIl",
+   "rect": [
+    570,
+    1761,
+    56,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "4 comments",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    1229,
+    1749,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "",
+   "text": "[Feature request] Clipboard History: Support dynamic pixel-based display width and improve",
+   "aria": "[Feature request] Clipboard History: Support dynamic pixel-based display width and improve text rendering. More information available below.",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "listItem__X41oTe",
+   "rect": [
+    281,
+    1790,
+    1119,
+    86
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "[Feature request] Clipboard History: Support dynamic pixel-based display width and improve",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "issue-listitem-title-link",
+   "type": "",
+   "href": "https://github.com/notepad-plus-plus/notepad-plus-plus/issues/18521",
+   "cls": "anchor__PSAOdR inline__z8HXmA inlineCodeTitle__kWY7pC",
+   "rect": [
+    321,
+    1799,
+    781,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "enhancement",
+   "aria": "Filter by label enhancement",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__ywNfwR",
+   "rect": [
+    321,
+    1823,
+    96,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "hidpi support",
+   "aria": "Filter by label hidpi support",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__ywNfwR",
+   "rect": [
+    417,
+    1823,
+    96,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Open",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    297,
+    1804,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Filter by author softmgr",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "author-filter-link",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__ywNfwR authorLink__jEE_DC Link__H3GvIl",
+   "rect": [
+    570,
+    1847,
+    42,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "1",
+   "aria": "1 linked pull request notepad-plus-plus/notepad-plus-plus#18522: Support dynamic pixel-based display width and enhance rendering in Clipboard History, Closed",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.com/notepad-plus-plus/notepad-plus-plus/pull/18522",
+   "cls": "d-inline-flex flex-items-center gap-1 linkedPullRequestLink__YiBqgz pr",
+   "rect": [
+    1176,
+    1824,
+    26,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "",
+   "text": "[Feature request] provide grep and ungrep functionality by search dialognotepad-plus-plus/",
+   "aria": "[Feature request] provide grep and ungrep functionality by search dialog. More information available below.",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "listItem__X41oTe",
+   "rect": [
+    281,
+    1876,
+    1119,
+    65
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "[Feature request] provide grep and ungrep functionality by search dialog",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "issue-listitem-title-link",
+   "type": "",
+   "href": "https://github.com/notepad-plus-plus/notepad-plus-plus/issues/18517",
+   "cls": "anchor__PSAOdR inline__z8HXmA inlineCodeTitle__kWY7pC",
+   "rect": [
+    321,
+    1885,
+    528,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Open",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    297,
+    1890,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Filter by author meigelb",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "author-filter-link",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__ywNfwR authorLink__jEE_DC Link__H3GvIl",
+   "rect": [
+    570,
+    1912,
+    43,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "1",
+   "aria": "1 linked pull request notepad-plus-plus/notepad-plus-plus#18518: add grep and ungrep functionality to find dialog, Draft",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.com/notepad-plus-plus/notepad-plus-plus/pull/18518",
+   "cls": "d-inline-flex flex-items-center gap-1 linkedPullRequestLink__YiBqgz pr",
+   "rect": [
+    1176,
+    1899,
+    26,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "5 comments",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    1229,
+    1900,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "",
+   "text": "[Feature request] Add domain wildcard to serverWhiteList.xmlnotepad-plus-plus/notepad-plus",
+   "aria": "[Feature request] Add domain wildcard to serverWhiteList.xml. More information available below.",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "listItem__X41oTe",
+   "rect": [
+    281,
+    1941,
+    1119,
+    65
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "[Feature request] Add domain wildcard to serverWhiteList.xml",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "issue-listitem-title-link",
+   "type": "",
+   "href": "https://github.com/notepad-plus-plus/notepad-plus-plus/issues/18505",
+   "cls": "anchor__PSAOdR inline__z8HXmA inlineCodeTitle__kWY7pC",
+   "rect": [
+    321,
+    1950,
+    450,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Open",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    297,
+    1955,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Filter by author HelpMeTyTy",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "author-filter-link",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__ywNfwR authorLink__jEE_DC Link__H3GvIl",
+   "rect": [
+    570,
+    1977,
+    65,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "2 comments",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    1229,
+    1965,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "",
+   "text": "[Feature request] Vertical tab bar with horizontal titlesnotepad-plus-plus/notepad-plus-pl",
+   "aria": "[Feature request] Vertical tab bar with horizontal titles. More information available below.",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "listItem__X41oTe",
+   "rect": [
+    281,
+    2006,
+    1119,
+    64
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "[Feature request] Vertical tab bar with horizontal titles",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "issue-listitem-title-link",
+   "type": "",
+   "href": "https://github.com/notepad-plus-plus/notepad-plus-plus/issues/18496",
+   "cls": "anchor__PSAOdR inline__z8HXmA inlineCodeTitle__kWY7pC",
+   "rect": [
+    321,
+    2015,
+    392,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Open",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    297,
+    2020,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Filter by author LucaSorvillo",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "author-filter-link",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__ywNfwR authorLink__jEE_DC Link__H3GvIl",
+   "rect": [
+    570,
+    2042,
+    63,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "1",
+   "aria": "1 linked pull request notepad-plus-plus/notepad-plus-plus#18497: Add horizontal titles to the vertical tab bar, Open",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.com/notepad-plus-plus/notepad-plus-plus/pull/18497",
+   "cls": "d-inline-flex flex-items-center gap-1 linkedPullRequestLink__YiBqgz pr",
+   "rect": [
+    1176,
+    2029,
+    26,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Previous",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/issues?q=is%3Aissue+state%3Aopen",
+   "cls": "prc-Pagination-Page-Etgqf",
+   "rect": [
+    606,
+    2091,
+    82,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "1",
+   "aria": "Page 1",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/issues?q=is%3Aissue+state%3Aopen",
+   "cls": "prc-Pagination-Page-Etgqf",
+   "rect": [
+    692,
+    2091,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "2",
+   "aria": "Page 2",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/issues?q=is%3Aissue+state%3Aopen&page=2",
+   "cls": "prc-Pagination-Page-Etgqf",
+   "rect": [
+    728,
+    2091,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "3",
+   "aria": "Page 3",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/issues?q=is%3Aissue+state%3Aopen&page=3",
+   "cls": "prc-Pagination-Page-Etgqf",
+   "rect": [
+    764,
+    2091,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "4",
+   "aria": "Page 4",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/issues?q=is%3Aissue+state%3Aopen&page=4",
+   "cls": "prc-Pagination-Page-Etgqf",
+   "rect": [
+    800,
+    2091,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "5",
+   "aria": "Page 5",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/issues?q=is%3Aissue+state%3Aopen&page=5",
+   "cls": "prc-Pagination-Page-Etgqf",
+   "rect": [
+    836,
+    2091,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "6",
+   "aria": "Page 6",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/issues?q=is%3Aissue+state%3Aopen&page=6",
+   "cls": "prc-Pagination-Page-Etgqf",
+   "rect": [
+    872,
+    2091,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "7",
+   "aria": "Page 7...",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/issues?q=is%3Aissue+state%3Aopen&page=7",
+   "cls": "prc-Pagination-Page-Etgqf",
+   "rect": [
+    908,
+    2091,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "SPAN",
+   "role": "presentation",
+   "text": "…",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "prc-Pagination-Page-Etgqf",
+   "rect": [
+    944,
+    2091,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "40",
+   "aria": "Page 40",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/issues?q=is%3Aissue+state%3Aopen&page=40",
+   "cls": "prc-Pagination-Page-Etgqf",
+   "rect": [
+    980,
+    2091,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Next",
+   "aria": "Next Page",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/issues?q=is%3Aissue+state%3Aopen&page=2",
+   "cls": "prc-Pagination-Page-Etgqf",
+   "rect": [
+    1016,
+    2091,
+    59,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "FOOTER",
+   "role": "contentinfo",
+   "text": "Footer © 2026 GitHub, Inc. Footer navigation Terms Privacy Security Status Community Docs ",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "footer f6 color-fg-muted color-border-subtle tmp-pt-7 tmp-pb-6 p-respo",
+   "rect": [
+    0,
+    2178,
+    1425,
+    58
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "GitHub Homepage",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.com",
+   "cls": "footer-octicon mr-2",
+   "rect": [
+    293,
+    2195,
+    24,
+    25
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Terms",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://docs.github.com/site-policy/github-terms/github-terms-of-service",
+   "cls": "Link--secondary Link",
+   "rect": [
+    446,
+    2200,
+    31,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Privacy",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://docs.github.com/site-policy/privacy-policies/github-privacy-statement",
+   "cls": "Link--secondary Link",
+   "rect": [
+    493,
+    2200,
+    37,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Security",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.com/security",
+   "cls": "Link--secondary Link",
+   "rect": [
+    546,
+    2200,
+    42,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Status",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://www.githubstatus.com/",
+   "cls": "Link--secondary Link",
+   "rect": [
+    604,
+    2200,
+    32,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Community",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.community/",
+   "cls": "Link--secondary Link",
+   "rect": [
+    652,
+    2200,
+    62,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Docs",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://docs.github.com/",
+   "cls": "Link--secondary Link",
+   "rect": [
+    729,
+    2200,
+    26,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Contact",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://support.github.com?tags=dotcom-footer",
+   "cls": "Link--secondary Link",
+   "rect": [
+    771,
+    2200,
+    41,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Manage cookies",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "Link--secondary underline-on-hover border-0 p-0 color-bg-transparent",
+   "rect": [
+    828,
+    2199,
+    86,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Do not share my personal information",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "Link--secondary underline-on-hover border-0 p-0 color-bg-transparent t",
+   "rect": [
+    931,
+    2199,
+    202,
+    18
+   ],
+   "disabled": false
+  }
+ ],
+ "tables": [],
+ "same_repo_links": [
+  "/notepad-plus-plus/notepad-plus-plus",
+  "/notepad-plus-plus/notepad-plus-plus/issues",
+  "/notepad-plus-plus/notepad-plus-plus/pulls",
+  "/notepad-plus-plus/notepad-plus-plus/agents?author=wangtierui",
+  "/notepad-plus-plus/notepad-plus-plus/actions",
+  "/notepad-plus-plus/notepad-plus-plus/projects",
+  "/notepad-plus-plus/notepad-plus-plus/wiki",
+  "/notepad-plus-plus/notepad-plus-plus/security",
+  "/notepad-plus-plus/notepad-plus-plus/pulse",
+  "/notepad-plus-plus/notepad-plus-plus/issues?q=is%3Aissue+state%3Aopen",
+  "/notepad-plus-plus/notepad-plus-plus/issues?q=is%3Aissue+state%3Aopen+assignee%3A%40me",
+  "/notepad-plus-plus/notepad-plus-plus/issues?q=is%3Aissue+state%3Aopen+author%3A%40me",
+  "/notepad-plus-plus/notepad-plus-plus/issues?q=is%3Aissue+state%3Aopen+mentions%3A%40me",
+  "/notepad-plus-plus/notepad-plus-plus/issues?q=is%3Aissue+updated%3A%3E%40today-1w+sort%3Aupdated-desc",
+  "/notepad-plus-plus/notepad-plus-plus/issues/views",
+  "/notepad-plus-plus/notepad-plus-plus/milestones",
+  "/notepad-plus-plus/notepad-plus-plus/labels",
+  "/notepad-plus-plus/notepad-plus-plus/issues/new/choose",
+  "/notepad-plus-plus/notepad-plus-plus/issues?q=is%3Aissue+state%3Aopen&page=2",
+  "/notepad-plus-plus/notepad-plus-plus/issues?q=is%3Aissue+state%3Aopen&page=3",
+  "/notepad-plus-plus/notepad-plus-plus/issues?q=is%3Aissue+state%3Aopen&page=4",
+  "/notepad-plus-plus/notepad-plus-plus/issues?q=is%3Aissue+state%3Aopen&page=5",
+  "/notepad-plus-plus/notepad-plus-plus/issues?q=is%3Aissue+state%3Aopen&page=6",
+  "/notepad-plus-plus/notepad-plus-plus/issues?q=is%3Aissue+state%3Aopen&page=7",
+  "/notepad-plus-plus/notepad-plus-plus/issues?q=is%3Aissue+state%3Aopen&page=40"
+ ],
+ "density": {
+  "rect": [
+   1327,
+   65
+  ],
+  "items": [
+   {
+    "pressed": "true",
+    "icon": "octicon-rows",
+    "tip": "Comfortable display density"
+   },
+   {
+    "pressed": "false",
+    "icon": "octicon-three-bars",
+    "tip": "Compact display density"
+   }
+  ]
+ },
+ "fetched_at": "2026-11-03T20:10:24",
+ "elements_seen": 2194
+}
