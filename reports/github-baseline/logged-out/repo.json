@@ -1,0 +1,4617 @@
+{
+ "title": "GitHub - notepad-plus-plus/notepad-plus-plus: Notepad++ official repository · GitHub",
+ "url": "https://github.com/notepad-plus-plus/notepad-plus-plus",
+ "user_login": "",
+ "ready": "complete",
+ "counts": {
+  "els": 1812,
+  "interactive": 208,
+  "links": 49
+ },
+ "landmarks": [
+  [
+   "header",
+   0,
+   0,
+   1425,
+   68
+  ],
+  [
+   "nav",
+   64,
+   20,
+   462,
+   28
+  ],
+  [
+   "main",
+   0,
+   68,
+   1425,
+   2027
+  ],
+  [
+   "footer",
+   0,
+   2095,
+   1425,
+   113
+  ]
+ ],
+ "headings": [
+  [
+   "H2",
+   "Navigation Menu"
+  ],
+  [
+   "H2",
+   "Repository navigation"
+  ],
+  [
+   "H2",
+   "About"
+  ],
+  [
+   "H3",
+   "Topics"
+  ],
+  [
+   "H3",
+   "Resources"
+  ],
+  [
+   "H3",
+   "Contributing"
+  ],
+  [
+   "H3",
+   "Stars"
+  ],
+  [
+   "H3",
+   "Watchers"
+  ],
+  [
+   "H3",
+   "Forks"
+  ],
+  [
+   "H2",
+   "Latest commit"
+  ],
+  [
+   "H2",
+   "History"
+  ],
+  [
+   "H2",
+   "Folders and files"
+  ],
+  [
+   "H2",
+   "Repository files navigation"
+  ],
+  [
+   "H1",
+   "What is Notepad++ ?"
+  ],
+  [
+   "H2",
+   "Notepad++ GPG Release Key"
+  ],
+  [
+   "H2",
+   "Supported OS"
+  ],
+  [
+   "H2",
+   "Build Notepad++"
+  ],
+  [
+   "H2",
+   "Contribution"
+  ],
+  [
+   "H2",
+   "About"
+  ],
+  [
+   "H3",
+   "Topics"
+  ],
+  [
+   "H3",
+   "Resources"
+  ],
+  [
+   "H3",
+   "Contributing"
+  ],
+  [
+   "H3",
+   "Stars"
+  ],
+  [
+   "H3",
+   "Watchers"
+  ],
+  [
+   "H3",
+   "Forks"
+  ],
+  [
+   "H2",
+   "Releases145 (145)"
+  ],
+  [
+   "H2",
+   "Contributors419 (419)"
+  ],
+  [
+   "H2",
+   "Languages"
+  ],
+  [
+   "H2",
+   "Footer"
+  ],
+  [
+   "H3",
+   "Footer navigation"
+  ]
+ ],
+ "interactive": [
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Skip to content",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "#start-of-content",
+   "cls": "px-2 tmp-py-4 color-bg-accent-emphasis color-fg-on-emphasis show-on-fo",
+   "rect": [
+    0,
+    0,
+    1,
+    1
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "HEADER",
+   "role": "banner",
+   "text": "Navigation MenuSign inProductsPlatformGitHubRepository hosting, code review, and collabora",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "root__q6pgdo HeaderMktg header-logged-out fullWidth__R5BAbe",
+   "rect": [
+    0,
+    0,
+    1425,
+    68
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "Homepage",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/",
+   "cls": "logo__bX9RKh",
+   "rect": [
+    16,
+    18,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Products",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "Button__wfsCbG",
+   "rect": [
+    64,
+    20,
+    92,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "GitHubRepository hosting, code review, and collaboration",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.com/platform",
+   "cls": "Link__Q0qcrF Card__w-iBF7",
+   "rect": [
+    77,
+    97,
+    480,
+    174
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "CopilotAI coding agent for tasks, projects and automated work",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.com/features/copilot",
+   "cls": "Link__Q0qcrF Card__w-iBF7",
+   "rect": [
+    77,
+    279,
+    480,
+    174
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "ActionsCI/CD and automation",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.com/features/actions",
+   "cls": "Link__Q0qcrF",
+   "rect": [
+    637,
+    142,
+    295,
+    62
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Code QualityQuality analysis, fixes, and enforcement",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.com/features/code-quality",
+   "cls": "Link__Q0qcrF",
+   "rect": [
+    637,
+    212,
+    295,
+    83
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "CodespacesCloud development environments",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.com/features/codespaces",
+   "cls": "Link__Q0qcrF",
+   "rect": [
+    637,
+    303,
+    295,
+    62
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Code SecurityVulnerability detection and remediation",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.com/security/advanced-security/code-security",
+   "cls": "Link__Q0qcrF",
+   "rect": [
+    1001,
+    142,
+    295,
+    83
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Secret ProtectionSecret scanning and leak prevention",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.com/security/advanced-security/secret-protection",
+   "cls": "Link__Q0qcrF",
+   "rect": [
+    1001,
+    233,
+    295,
+    62
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "All Features",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.com/features",
+   "cls": "Link__Q0qcrF",
+   "rect": [
+    637,
+    431,
+    125,
+    36
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Developers",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "Button__wfsCbG",
+   "rect": [
+    156,
+    20,
+    108,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Documentation",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://docs.github.com/en",
+   "cls": "Link__Q0qcrF",
+   "rect": [
+    77,
+    142,
+    285,
+    36
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "(opens in a new tab)",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    205,
+    154,
+    12,
+    12
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Training",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://learn.github.com/skills",
+   "cls": "Link__Q0qcrF",
+   "rect": [
+    77,
+    186,
+    285,
+    36
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "(opens in a new tab)",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    151,
+    198,
+    12,
+    12
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Certifications",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://learn.github.com/credentials",
+   "cls": "Link__Q0qcrF",
+   "rect": [
+    77,
+    230,
+    285,
+    36
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "(opens in a new tab)",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    189,
+    242,
+    12,
+    12
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Build with Copilot",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.com/features/ai",
+   "cls": "Link__Q0qcrF",
+   "rect": [
+    413,
+    142,
+    285,
+    35
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Customize Copilot",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-copilot-overview",
+   "cls": "Link__Q0qcrF",
+   "rect": [
+    413,
+    185,
+    285,
+    36
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "(opens in a new tab)",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    561,
+    197,
+    12,
+    12
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Integrations",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.com/marketplace",
+   "cls": "Link__Q0qcrF",
+   "rect": [
+    413,
+    229,
+    285,
+    35
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Trending repos",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.com/trending",
+   "cls": "Link__Q0qcrF",
+   "rect": [
+    725,
+    142,
+    285,
+    35
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "GitHub Sponsors",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.com/open-source/sponsors",
+   "cls": "Link__Q0qcrF",
+   "rect": [
+    725,
+    185,
+    285,
+    35
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Events",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.com/resources/events",
+   "cls": "Link__Q0qcrF",
+   "rect": [
+    725,
+    228,
+    285,
+    35
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "ChangelogYour source for the latest features, improvements, and fixes across GitHub produc",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.blog/changelog/",
+   "cls": "Link__Q0qcrF Card__w-iBF7",
+   "rect": [
+    1038,
+    97,
+    264,
+    273
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "(opens in a new tab)",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    1132,
+    273,
+    12,
+    12
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Businesses",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "Button__wfsCbG",
+   "rect": [
+    264,
+    20,
+    104,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Enterprises",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.com/enterprise",
+   "cls": "Link__Q0qcrF",
+   "rect": [
+    77,
+    142,
+    285,
+    35
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Team",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.com/team",
+   "cls": "Link__Q0qcrF",
+   "rect": [
+    77,
+    185,
+    285,
+    35
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Startups",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.com/enterprise/startups",
+   "cls": "Link__Q0qcrF",
+   "rect": [
+    77,
+    228,
+    285,
+    35
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Nonprofits",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.com/solutions/industry/nonprofits",
+   "cls": "Link__Q0qcrF",
+   "rect": [
+    77,
+    272,
+    285,
+    35
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Healthcare",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.com/solutions/industry/healthcare",
+   "cls": "Link__Q0qcrF",
+   "rect": [
+    413,
+    142,
+    285,
+    35
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Financial services",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.com/solutions/industry/financial-services",
+   "cls": "Link__Q0qcrF",
+   "rect": [
+    413,
+    185,
+    285,
+    35
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Manufacturing",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.com/solutions/industry/manufacturing",
+   "cls": "Link__Q0qcrF",
+   "rect": [
+    413,
+    228,
+    285,
+    35
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Government",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.com/solutions/industry/government",
+   "cls": "Link__Q0qcrF",
+   "rect": [
+    413,
+    272,
+    285,
+    35
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "See all industries",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.com/solutions/industry",
+   "cls": "Link__Q0qcrF",
+   "rect": [
+    413,
+    315,
+    285,
+    36
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Why GitHub",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.com/why-github",
+   "cls": "Link__Q0qcrF",
+   "rect": [
+    725,
+    142,
+    285,
+    35
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Customer Stories",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.com/customer-stories",
+   "cls": "Link__Q0qcrF",
+   "rect": [
+    725,
+    185,
+    285,
+    35
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Business insights",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.com/solutions/executive-insights",
+   "cls": "Link__Q0qcrF",
+   "rect": [
+    725,
+    228,
+    285,
+    35
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Trust Center",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.com/trust-center",
+   "cls": "Link__Q0qcrF",
+   "rect": [
+    725,
+    272,
+    285,
+    35
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "GitHub Advanced SecurityEnterprise-grade code security",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.com/security/advanced-security",
+   "cls": "Link__Q0qcrF",
+   "rect": [
+    1038,
+    142,
+    295,
+    62
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Copilot for businessEnterprise-grade AI features",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.com/features/copilot/copilot-business",
+   "cls": "Link__Q0qcrF",
+   "rect": [
+    1038,
+    212,
+    295,
+    62
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Premium SupportEnterprise-grade 24/7 support",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.com/enterprise/premium-support",
+   "cls": "Link__Q0qcrF",
+   "rect": [
+    1038,
+    282,
+    295,
+    62
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Resources",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "Button__wfsCbG",
+   "rect": [
+    368,
+    20,
+    100,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Documentation",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://docs.github.com/en",
+   "cls": "Link__Q0qcrF",
+   "rect": [
+    77,
+    142,
+    285,
+    36
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "(opens in a new tab)",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    205,
+    154,
+    12,
+    12
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Resource center",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.com/resources",
+   "cls": "Link__Q0qcrF",
+   "rect": [
+    77,
+    186,
+    285,
+    35
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Blog",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.blog/",
+   "cls": "Link__Q0qcrF",
+   "rect": [
+    77,
+    229,
+    285,
+    36
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "(opens in a new tab)",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    126,
+    241,
+    12,
+    12
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Events & webinars",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.com/resources/events",
+   "cls": "Link__Q0qcrF",
+   "rect": [
+    77,
+    273,
+    285,
+    35
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Community Forum",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.com/orgs/community/discussions",
+   "cls": "Link__Q0qcrF",
+   "rect": [
+    77,
+    316,
+    285,
+    35
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Customer Stories",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.com/customer-stories",
+   "cls": "Link__Q0qcrF",
+   "rect": [
+    77,
+    360,
+    285,
+    35
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Integrations",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.com/marketplace",
+   "cls": "Link__Q0qcrF",
+   "rect": [
+    77,
+    403,
+    285,
+    35
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Customer support",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://help.github.com/",
+   "cls": "Link__Q0qcrF",
+   "rect": [
+    413,
+    142,
+    285,
+    36
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "(opens in a new tab)",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    560,
+    154,
+    12,
+    12
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Training",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://learn.github.com/skills",
+   "cls": "Link__Q0qcrF",
+   "rect": [
+    413,
+    186,
+    285,
+    36
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "(opens in a new tab)",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    487,
+    198,
+    12,
+    12
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "GitHub Status",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://www.githubstatus.com/",
+   "cls": "Link__Q0qcrF",
+   "rect": [
+    413,
+    230,
+    285,
+    36
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "(opens in a new tab)",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    529,
+    242,
+    12,
+    12
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "About",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.com/about",
+   "cls": "Link__Q0qcrF",
+   "rect": [
+    725,
+    142,
+    285,
+    35
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Partners",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.com/partners",
+   "cls": "Link__Q0qcrF",
+   "rect": [
+    725,
+    185,
+    285,
+    35
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Changelog",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.blog/changelog/",
+   "cls": "Link__Q0qcrF",
+   "rect": [
+    725,
+    228,
+    285,
+    36
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "(opens in a new tab)",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    819,
+    240,
+    12,
+    12
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "GitHub UniverseThe event for developers, by developers — talks, workshops, and what’s next",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://githubuniverse.com/",
+   "cls": "Link__Q0qcrF Card__w-iBF7",
+   "rect": [
+    1038,
+    97,
+    264,
+    273
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "(opens in a new tab)",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    1172,
+    273,
+    12,
+    12
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Pricing",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.com/pricing",
+   "cls": "NavLink__zcO0BA",
+   "rect": [
+    468,
+    20,
+    58,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Search/",
+   "aria": "Search or jump to, type / to search",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "Primer_Brand__Button-module__Button___scH9Z Primer_Brand__Button-modul",
+   "rect": [
+    1006,
+    16,
+    200,
+    36
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Sign in",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/login?return_to=https%3A%2F%2Fgithub.com%2Fnotepad-plus-plus%2Fnotepad-plus-plus",
+   "cls": "Primer_Brand__Button-module__Button___scH9Z Primer_Brand__Button-modul",
+   "rect": [
+    1214,
+    18,
+    71,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Sign up",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/signup?ref_cta=Sign+up&ref_loc=header+logged+out&ref_page=%2F%3Cuser-name%3E%2F%3Crepo-name%3E&source=header-repo&source_repo=notepad-plus-plus%2Fnotepad-plus-plus",
+   "cls": "Primer_Brand__Button-module__Button___scH9Z Primer_Brand__Button-modul",
+   "rect": [
+    1293,
+    18,
+    76,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "Primer_Brand__Button-module__Button___scH9Z Primer_Brand__Button-modul",
+   "rect": [
+    1377,
+    18,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "notepad-plus-plus",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus",
+   "cls": "contextCrumb__Q8nET8 prc-Breadcrumbs-Item-jcraJ",
+   "rect": [
+    16,
+    84,
+    126,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "notepad-plus-plus",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus",
+   "cls": "contextCrumb__Q8nET8 prc-Breadcrumbs-Item-jcraJ",
+   "rect": [
+    157,
+    84,
+    129,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "UL",
+   "role": "list",
+   "text": "CodeIssues2.9k (2.9k)Pull requests31 (31)ActionsProjectsWikiSecurity and quality40 (40)Ins",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "prc-UnderlineNav-ItemsList-oj8gN prc-components-UnderlineItemList-xKlK",
+   "rect": [
+    16,
+    128,
+    1393,
+    40
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Code",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    16,
+    128,
+    73,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Issues2.9k (2.9k)",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/issues",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    97,
+    128,
+    122,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Pull requests31 (31)",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/pulls",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    227,
+    128,
+    155,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Actions",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/actions",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    390,
+    128,
+    87,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Projects",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/projects",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    485,
+    128,
+    90,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Wiki",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/wiki",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    584,
+    128,
+    68,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Security and quality40 (40)",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/security",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    660,
+    128,
+    201,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Insights",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/pulse",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    869,
+    128,
+    90,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "DIV",
+   "role": "",
+   "text": "notepad-plus-plusPublicNotificationsYou must be signed in to change notification settingsF",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "content__cw9d2I",
+   "rect": [
+    0,
+    168,
+    1425,
+    1927
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "notepad-plus-plus",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "repo-name-link",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus",
+   "cls": "color-fg-default prc-Link-Link-9ZwDx",
+   "rect": [
+    137,
+    188,
+    167,
+    27
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Notifications",
+   "aria": "You must be signed in to change notification settings",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "notifications-sign-in-button",
+   "type": "button",
+   "href": "/login?return_to=%2Fnotepad-plus-plus%2Fnotepad-plus-plus",
+   "cls": "prc-Button-ButtonBase-9n-Xk",
+   "rect": [
+    987,
+    188,
+    108,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Fork5.4k (5.4k)",
+   "aria": "You must be signed in to fork a repository",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "fork-button",
+   "type": "button",
+   "href": "/login?return_to=%2Fnotepad-plus-plus%2Fnotepad-plus-plus",
+   "cls": "prc-Button-ButtonBase-9n-Xk",
+   "rect": [
+    1103,
+    188,
+    103,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Star29.8k (29.8k)",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "star-button",
+   "type": "button",
+   "href": "/login?return_to=%2Fnotepad-plus-plus%2Fnotepad-plus-plus",
+   "cls": "prc-Button-ButtonBase-9n-Xk IconOnlyWhenNarrow__FbBSx0",
+   "rect": [
+    1214,
+    188,
+    106,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "master",
+   "aria": "master branch",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "anchor-button",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk overview-ref-selector width-full RefSelect",
+   "rect": [
+    105,
+    261,
+    117,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "1 Branch",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "/notepad-plus-plus/notepad-plus-plus/branches",
+   "cls": "prc-Button-ButtonBase-9n-Xk Button__AyoG5z",
+   "rect": [
+    230,
+    261,
+    87,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "267 Tags",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "/notepad-plus-plus/notepad-plus-plus/tags",
+   "cls": "prc-Button-ButtonBase-9n-Xk Button__AyoG5z",
+   "rect": [
+    317,
+    261,
+    89,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "INPUT",
+   "role": "combobox",
+   "text": "",
+   "aria": "Go to file",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "text",
+   "href": "",
+   "cls": "prc-components-Input-IwWrt",
+   "rect": [
+    718,
+    262,
+    159,
+    30
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Code",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk",
+   "rect": [
+    902,
+    261,
+    107,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "avatar-icon-link",
+   "type": "",
+   "href": "/donho",
+   "cls": "prc-Link-Link-9ZwDx",
+   "rect": [
+    118,
+    325,
+    29,
+    22
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "donho",
+   "aria": "commits by donho",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/commits?author=donho",
+   "cls": "authorHoverableLink__GBl1Aq prc-Link-Link-9ZwDx",
+   "rect": [
+    147,
+    326,
+    41,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Change up/down button position to fix a visual bug & its visibility",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/commit/14e27a6caa5a2f2a3dfcbc8594d792d255c4991d",
+   "cls": "Link--secondary",
+   "rect": [
+    196,
+    327,
+    405,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "false",
+   "expanded": "false",
+   "checked": "",
+   "testid": "latest-commit-details-toggle",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk IconButton__9oMQ5T prc-Button-IconButton-f",
+   "rect": [
+    609,
+    322,
+    28,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "checks-status-badge-icon",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk ChecksStatusBadgeIconButton__O8V97i prc-Bu",
+   "rect": [
+    645,
+    322,
+    28,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "14e27a6",
+   "aria": "Commit 14e27a6",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/commit/14e27a6caa5a2f2a3dfcbc8594d792d255c4991d",
+   "cls": "Link--secondary prc-Link-Link-9ZwDx",
+   "rect": [
+    746,
+    327,
+    45,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "7,194 Commits",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/commits/master/",
+   "cls": "prc-Button-ButtonBase-9n-Xk d-none d-lg-flex linkButton__rBg5F1 flex-i",
+   "rect": [
+    878,
+    322,
+    118,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": ".github",
+   "aria": ".github, (Directory)",
+   "title": ".github",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/tree/master/.github",
+   "cls": "Link--primary",
+   "rect": [
+    148,
+    374,
+    44,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "CI script improvement",
+   "aria": "",
+   "title": "CI script improvement\n\nAdd dynamic step name instead of ARM64|x64 / Debug.\n\nClose #18537",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/commit/9923cad88efdae9a396bfd96ed1a25a7e4721a92",
+   "cls": "Link--secondary",
+   "rect": [
+    482,
+    374,
+    137,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "PowerEditor",
+   "aria": "PowerEditor, (Directory)",
+   "title": "PowerEditor",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/tree/master/PowerEditor",
+   "cls": "Link--primary",
+   "rect": [
+    148,
+    415,
+    74,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Change up/down button position to fix a visual bug & its visibility",
+   "aria": "",
+   "title": "Change up/down button position to fix a visual bug & its visibility\n\nFix https://community.notepad-plus-plus.org/topic/27697/notepad-v8.9.9-release-candidate/12",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/commit/14e27a6caa5a2f2a3dfcbc8594d792d255c4991d",
+   "cls": "Link--secondary",
+   "rect": [
+    482,
+    415,
+    405,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "boostregex",
+   "aria": "boostregex, (Directory)",
+   "title": "boostregex",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/tree/master/boostregex",
+   "cls": "Link--primary",
+   "rect": [
+    148,
+    456,
+    70,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Update to boost 1.92.0",
+   "aria": "",
+   "title": "Update to boost 1.92.0\n\nhttps://www.boost.org/releases/1.92.0/\n\nClose #18536",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/commit/164574781ddc37fe7a94b34f3ca5bb516adcb39a",
+   "cls": "Link--secondary",
+   "rect": [
+    482,
+    456,
+    141,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "lexilla",
+   "aria": "lexilla, (Directory)",
+   "title": "lexilla",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/tree/master/lexilla",
+   "cls": "Link--primary",
+   "rect": [
+    148,
+    497,
+    34,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Update to Scintilla 5.6.8 & Lexilla 5.5.5",
+   "aria": "",
+   "title": "Update to Scintilla 5.6.8 & Lexilla 5.5.5\n\nScintilla Release 5.6.8 ( https://www.scintilla.org/scintilla568.zip )\n\n    Released 31 October 2026.\n    Improve speed by avoiding line layout when determining positions at line starts. Increase maximum size of cached lexemes from 30 to 40 as many identifiers, column names, and common values are larger than 30 bytes.\n    Update case conversion and character categories to Unicode 17. Feature #1569.\n    Fix crash with change history undo caused by optimizing bulk deletion in version 5.3.8.\n    On Win32 fix crash and invisible text for invalid weight and stretch font settings with DirectWrite. Bug #2520.\n    On Win32 when building with nmake -f scintilla.mak, move PDB file to DIR_O directory so that it is removed by nmake -f scintilla.mak clean. Bug #2521.\n\nLexilla Release 5.5.5 ( https://www.scintilla.org/lexilla555.zip )\n\n    Released 31 October 2026.\n    Update character categories to Unicode 17. Feature #1569.\n    C++: Fix crash with incomplete preprocessor macro invocation. Issue #388.\n    DMIS: Fix out-of-bounds write with long word. Issue #388, Pull request #387.\n    HTML: Fix handling of HTML comments in scripts. Issue #371, Issue #338, Pull request #373.\n    HTML: Allow '$', '#' and non-ASCII characters in JavaScript identifiers. Issue #371, Pull request #373.\n    HTML: Support nested template literals in JavaScript. Issue #290, Pull request #373.\n    HTML: Style extra type-distinguishing character in JSP and ASP tags as SCE_H_ASP. These are the '!', '#', '$', and ':' in declarations, data binding, and expressions. Issue #375.\n    HTML: Do not terminate JavaScript regex literal for '/' when inside character class '[]'. Issue #377, Pull request #373.\n    HTML: Recognize more language aliases including \"java\" and \"C#\" for JSP and ASP. Issue #376.\n    JavaScript: Fix non-stable lexing of regex literals in both JavaScript and HTML files. Issue #374, Pull request #373.\n    Julia: Fix hang for unterminated character literal at file end when lexer.julia.highlight.lexerror enabled. Issue #388, Pull request #384.\n    Markdown: Recognize 'front matter' key-value metadata at file start specified in YAML, TOML or JSON. Issue #59.\n    Perl: Fix hang when NUL inside here-doc. Issue #388, Pull request #389, Pull request #379.\n    Perl: Fix out-of-bounds write with long here-doc delimiter with multi-byte character near limit. Stop SCE_PL_ERROR leaking past line end causing non-stable results. Issue #388, Pull request #383.\n    Perl: Fix inconsistent styling of CRLF line end bytes for here-docs and formats. Issue #390.\n    PHP: Style variable variable ($$variable) as SCE_HPHP_VARIABLE. Bug #2208, Pull request #373.\n    PHP: Disallow DEL character in PHP identifiers. Issue #371, Pull request #373.\n    Raku: Fix out-of-bounds write with long word. Issue #388, Pull request #381.\n    Ruby: Fix potential out-of-bounds reads at file start. Issue #388.\n    SQL: Improve performance of q-string literals. Issue #378.\n    TCMD: Fix out-of-bounds write with long word. Issue #388, Pull request #386.\n    TeX: Fix out-of-bounds write with long command. Issue #388, Pull request #382.\n    Visual Prolog: Fix crash with deep nesting. Issue #388, Pull request #380.\n    X12: Fix read into empty allocation. Issue #388, Pull request #385.\n\nClose #18588",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/commit/025d4527da2fafb400283660bad69088566c3f3e",
+   "cls": "Link--secondary",
+   "rect": [
+    482,
+    497,
+    235,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "scintilla",
+   "aria": "scintilla, (Directory)",
+   "title": "scintilla",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/tree/master/scintilla",
+   "cls": "Link--primary",
+   "rect": [
+    148,
+    538,
+    46,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Update to Scintilla 5.6.8 & Lexilla 5.5.5",
+   "aria": "",
+   "title": "Update to Scintilla 5.6.8 & Lexilla 5.5.5\n\nScintilla Release 5.6.8 ( https://www.scintilla.org/scintilla568.zip )\n\n    Released 31 October 2026.\n    Improve speed by avoiding line layout when determining positions at line starts. Increase maximum size of cached lexemes from 30 to 40 as many identifiers, column names, and common values are larger than 30 bytes.\n    Update case conversion and character categories to Unicode 17. Feature #1569.\n    Fix crash with change history undo caused by optimizing bulk deletion in version 5.3.8.\n    On Win32 fix crash and invisible text for invalid weight and stretch font settings with DirectWrite. Bug #2520.\n    On Win32 when building with nmake -f scintilla.mak, move PDB file to DIR_O directory so that it is removed by nmake -f scintilla.mak clean. Bug #2521.\n\nLexilla Release 5.5.5 ( https://www.scintilla.org/lexilla555.zip )\n\n    Released 31 October 2026.\n    Update character categories to Unicode 17. Feature #1569.\n    C++: Fix crash with incomplete preprocessor macro invocation. Issue #388.\n    DMIS: Fix out-of-bounds write with long word. Issue #388, Pull request #387.\n    HTML: Fix handling of HTML comments in scripts. Issue #371, Issue #338, Pull request #373.\n    HTML: Allow '$', '#' and non-ASCII characters in JavaScript identifiers. Issue #371, Pull request #373.\n    HTML: Support nested template literals in JavaScript. Issue #290, Pull request #373.\n    HTML: Style extra type-distinguishing character in JSP and ASP tags as SCE_H_ASP. These are the '!', '#', '$', and ':' in declarations, data binding, and expressions. Issue #375.\n    HTML: Do not terminate JavaScript regex literal for '/' when inside character class '[]'. Issue #377, Pull request #373.\n    HTML: Recognize more language aliases including \"java\" and \"C#\" for JSP and ASP. Issue #376.\n    JavaScript: Fix non-stable lexing of regex literals in both JavaScript and HTML files. Issue #374, Pull request #373.\n    Julia: Fix hang for unterminated character literal at file end when lexer.julia.highlight.lexerror enabled. Issue #388, Pull request #384.\n    Markdown: Recognize 'front matter' key-value metadata at file start specified in YAML, TOML or JSON. Issue #59.\n    Perl: Fix hang when NUL inside here-doc. Issue #388, Pull request #389, Pull request #379.\n    Perl: Fix out-of-bounds write with long here-doc delimiter with multi-byte character near limit. Stop SCE_PL_ERROR leaking past line end causing non-stable results. Issue #388, Pull request #383.\n    Perl: Fix inconsistent styling of CRLF line end bytes for here-docs and formats. Issue #390.\n    PHP: Style variable variable ($$variable) as SCE_HPHP_VARIABLE. Bug #2208, Pull request #373.\n    PHP: Disallow DEL character in PHP identifiers. Issue #371, Pull request #373.\n    Raku: Fix out-of-bounds write with long word. Issue #388, Pull request #381.\n    Ruby: Fix potential out-of-bounds reads at file start. Issue #388.\n    SQL: Improve performance of q-string literals. Issue #378.\n    TCMD: Fix out-of-bounds write with long word. Issue #388, Pull request #386.\n    TeX: Fix out-of-bounds write with long command. Issue #388, Pull request #382.\n    Visual Prolog: Fix crash with deep nesting. Issue #388, Pull request #380.\n    X12: Fix read into empty allocation. Issue #388, Pull request #385.\n\nClose #18588",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/commit/025d4527da2fafb400283660bad69088566c3f3e",
+   "cls": "Link--secondary",
+   "rect": [
+    482,
+    538,
+    235,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": ".gitignore",
+   "aria": ".gitignore, (File)",
+   "title": ".gitignore",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/blob/master/.gitignore",
+   "cls": "Link--primary",
+   "rect": [
+    148,
+    579,
+    59,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Generate default shortcuts.xml & contextMenu.xml on the fly",
+   "aria": "",
+   "title": "Generate default shortcuts.xml & contextMenu.xml on the fly\n\nAdd disableNppAutoUpdate.xml to disable auto-update while WinGUp (GUP.exe) is present.\n\nFollow https://github.com/notepad-plus-plus/notepad-plus-plus/commit/654e5312cc96c337e8d3b56d20869ad7ed614fc9\n\nFix #9755, fix #14279, fix #15120, close #17836",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/commit/71560758e2616ff7f47ddee79edb10803afbd050",
+   "cls": "Link--secondary",
+   "rect": [
+    482,
+    579,
+    376,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "BUILD.md",
+   "aria": "BUILD.md, (File)",
+   "title": "BUILD.md",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/blob/master/BUILD.md",
+   "cls": "Link--primary",
+   "rect": [
+    148,
+    620,
+    61,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Update to boost 1.92.0",
+   "aria": "",
+   "title": "Update to boost 1.92.0\n\nhttps://www.boost.org/releases/1.92.0/\n\nClose #18536",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/commit/164574781ddc37fe7a94b34f3ca5bb516adcb39a",
+   "cls": "Link--secondary",
+   "rect": [
+    482,
+    620,
+    141,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "CONTRIBUTING.md",
+   "aria": "CONTRIBUTING.md, (File)",
+   "title": "CONTRIBUTING.md",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/blob/master/CONTRIBUTING.md",
+   "cls": "Link--primary",
+   "rect": [
+    148,
+    661,
+    121,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Update CONTRIBUTING.md to remove confusion",
+   "aria": "",
+   "title": "Update CONTRIBUTING.md to remove confusion\n\nComments like the following show that there is some confusion as to the requirements for Pull Requests:\n- https://github.com/notepad-plus-plus/notepad-plus-plus/pull/18278#issuecomment-5840450059\n- https://github.com/notepad-plus-plus/notepad-plus-plus/pull/17565#issuecomment-3975561463\n\nIn general:\n- People have historically thought they needed to wait for the Issue to be `Accepted` before submitting a PR\n- People get confused as to whether or not they need an Issue to attach their PR to\n- People have historically asked to be assigned to open Issues, and never get assigned, so they never put in a PR (I know I have seen that in some of Issues I've read, but cannot immediately find an example)\n\nI have tried to reword things so that those are all more clear, and match the current practices (don't need to wait for `Accepted`; almost always need to attach to Issue or comment; don't need to ask to be assigned to Issue)\n\nClose #18469",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/commit/49b99e9235ac4ee832f06fa61780bec5761b6319",
+   "cls": "Link--secondary",
+   "rect": [
+    482,
+    661,
+    301,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "LICENSE",
+   "aria": "LICENSE, (File)",
+   "title": "LICENSE",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/blob/master/LICENSE",
+   "cls": "Link--primary",
+   "rect": [
+    148,
+    702,
+    51,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Fix LICENSE text display problem in installer",
+   "aria": "",
+   "title": "Fix LICENSE text display problem in installer\n\nUse only ASCII characters in LICENSE text.\nReplace '“' and '”' by '\"', replace '©' by '(C)'.\n\nFix #10370, close #10378",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/commit/141fef9a457859f1ce7184f0a6ff09a03b0c088f",
+   "cls": "Link--secondary",
+   "rect": [
+    482,
+    702,
+    269,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "README.md",
+   "aria": "README.md, (File)",
+   "title": "README.md",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/blob/master/README.md",
+   "cls": "Link--primary",
+   "rect": [
+    148,
+    743,
+    77,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Remove self-singed certificate signature, use only the GlobalSign one",
+   "aria": "",
+   "title": "Remove self-singed certificate signature, use only the GlobalSign one\n\nRemove Notepad++ self-singed certificate signature, use only the certificate issued by GlobalSign.\n\nFix #16806",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/commit/307bb6029726d4434a0748a3d8473508c2c5c933",
+   "cls": "Link--secondary",
+   "rect": [
+    482,
+    743,
+    427,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "SUPPORTED_SYSTEM.md",
+   "aria": "SUPPORTED_SYSTEM.md, (File)",
+   "title": "SUPPORTED_SYSTEM.md",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/blob/master/SUPPORTED_SYSTEM.md",
+   "cls": "Link--primary",
+   "rect": [
+    148,
+    784,
+    154,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Update SUPPORTED_SYSTEM.md",
+   "aria": "",
+   "title": "Update SUPPORTED_SYSTEM.md",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/commit/f431a379671936ae611b8a231ee0a43c8a7fc0f9",
+   "cls": "Link--secondary",
+   "rect": [
+    482,
+    784,
+    203,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "appveyor.yml",
+   "aria": "appveyor.yml, (File)",
+   "title": "appveyor.yml",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/blob/master/appveyor.yml",
+   "cls": "Link--primary",
+   "rect": [
+    148,
+    825,
+    83,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Generate default shortcuts.xml & contextMenu.xml on the fly",
+   "aria": "",
+   "title": "Generate default shortcuts.xml & contextMenu.xml on the fly\n\nAdd disableNppAutoUpdate.xml to disable auto-update while WinGUp (GUP.exe) is present.\n\nFollow https://github.com/notepad-plus-plus/notepad-plus-plus/commit/654e5312cc96c337e8d3b56d20869ad7ed614fc9\n\nFix #9755, fix #14279, fix #15120, close #17836",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/commit/71560758e2616ff7f47ddee79edb10803afbd050",
+   "cls": "Link--secondary",
+   "rect": [
+    482,
+    825,
+    376,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "nppGpgPub.asc",
+   "aria": "nppGpgPub.asc, (File)",
+   "title": "nppGpgPub.asc",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/blob/master/nppGpgPub.asc",
+   "cls": "Link--primary",
+   "rect": [
+    148,
+    866,
+    97,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Update nppGpgPub.asc",
+   "aria": "",
+   "title": "Update nppGpgPub.asc\n\nExtending certificate expiration to 2027",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/commit/2ac5e3a7ed23b5b8e39d84601e052eff917819ac",
+   "cls": "Link--secondary",
+   "rect": [
+    482,
+    866,
+    146,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "UL",
+   "role": "list",
+   "text": "READMEContributingLicense",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "prc-UnderlineNav-ItemsList-oj8gN prc-components-UnderlineItemList-xKlK",
+   "rect": [
+    114,
+    921,
+    844,
+    40
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "README",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "#",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    114,
+    921,
+    96,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Contributing",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "#",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    217,
+    921,
+    121,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "License",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "#",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    346,
+    921,
+    86,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "Outline",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk ActionMenu_Button__Q94vxS",
+   "rect": [
+    966,
+    921,
+    34,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "H1",
+   "role": "",
+   "text": "What is Notepad++ ?",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "heading-element",
+   "rect": [
+    138,
+    993,
+    838,
+    51
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "Permalink: What is Notepad++ ?",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "#what-is-notepad-",
+   "cls": "anchor",
+   "rect": [
+    110,
+    999,
+    28,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/releases/latest",
+   "cls": "",
+   "rect": [
+    138,
+    1063,
+    106,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.com/notepad-plus-plus/notepad-plus-plus/actions/workflows/CI_build.yml",
+   "cls": "",
+   "rect": [
+    261,
+    1063,
+    88,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://community.notepad-plus-plus.org/",
+   "cls": "",
+   "rect": [
+    371,
+    1063,
+    170,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "GPL License",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/blob/master/LICENSE",
+   "cls": "",
+   "rect": [
+    231,
+    1151,
+    83,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Notepad++ official site",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://notepad-plus-plus.org/",
+   "cls": "",
+   "rect": [
+    194,
+    1191,
+    164,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "H2",
+   "role": "",
+   "text": "Notepad++ GPG Release Key",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "heading-element",
+   "rect": [
+    138,
+    1238,
+    838,
+    38
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "Permalink: Notepad++ GPG Release Key",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "#notepad-gpg-release-key",
+   "cls": "anchor",
+   "rect": [
+    110,
+    1238,
+    28,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "don.h@free.fr",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "mailto:don.h@free.fr",
+   "cls": "",
+   "rect": [
+    223,
+    1361,
+    97,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "https://github.com/notepad-plus-plus/notepad-plus-plus/blob/master/nppGpgPub.asc",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.com/notepad-plus-plus/notepad-plus-plus/blob/master/nppGpgPub.asc",
+   "cls": "",
+   "rect": [
+    138,
+    1541,
+    615,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "H2",
+   "role": "",
+   "text": "Supported OS",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "heading-element",
+   "rect": [
+    138,
+    1588,
+    838,
+    38
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "Permalink: Supported OS",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "#supported-os",
+   "cls": "anchor",
+   "rect": [
+    110,
+    1588,
+    28,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Supported systems information",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/blob/master/SUPPORTED_SYSTEM.md",
+   "cls": "",
+   "rect": [
+    531,
+    1667,
+    221,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "H2",
+   "role": "",
+   "text": "Build Notepad++",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "heading-element",
+   "rect": [
+    138,
+    1738,
+    838,
+    38
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "Permalink: Build Notepad++",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "#build-notepad",
+   "cls": "anchor",
+   "rect": [
+    110,
+    1738,
+    28,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "build guide",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/blob/master/BUILD.md",
+   "cls": "",
+   "rect": [
+    234,
+    1793,
+    80,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "H2",
+   "role": "",
+   "text": "Contribution",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "heading-element",
+   "rect": [
+    138,
+    1840,
+    838,
+    38
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "Permalink: Contribution",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "#contribution",
+   "cls": "anchor",
+   "rect": [
+    110,
+    1840,
+    28,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Contribution Rules",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/blob/master/CONTRIBUTING.md",
+   "cls": "",
+   "rect": [
+    463,
+    1895,
+    131,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Notepad++ Contributors",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.com/notepad-plus-plus/notepad-plus-plus/graphs/contributors",
+   "cls": "",
+   "rect": [
+    138,
+    1959,
+    177,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "notepad-plus-plus.org/",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://notepad-plus-plus.org/",
+   "cls": "text-bold prc-Link-Link-9ZwDx",
+   "rect": [
+    1073,
+    334,
+    148,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "editor",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/topics/editor",
+   "cls": "prc-TopicTag-TopicTag-LS-jX",
+   "rect": [
+    1049,
+    366,
+    59,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "notepad",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/topics/notepad",
+   "cls": "prc-TopicTag-TopicTag-LS-jX",
+   "rect": [
+    1109,
+    366,
+    71,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "notepad-official",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/topics/notepad-official",
+   "cls": "prc-TopicTag-TopicTag-LS-jX",
+   "rect": [
+    1183,
+    366,
+    113,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "windows",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/topics/windows",
+   "cls": "prc-TopicTag-TopicTag-LS-jX",
+   "rect": [
+    1049,
+    400,
+    74,
+    26
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Readme",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "#readme-ov-file",
+   "cls": "prc-Link-Link-9ZwDx",
+   "rect": [
+    1049,
+    434,
+    74,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "License",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "#License-1-ov-file",
+   "cls": "prc-Link-Link-9ZwDx",
+   "rect": [
+    1049,
+    463,
+    69,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Contributing",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "#contributing-ov-file",
+   "cls": "prc-Link-Link-9ZwDx",
+   "rect": [
+    1049,
+    492,
+    102,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Activity",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/activity",
+   "cls": "prc-Link-Link-9ZwDx",
+   "rect": [
+    1049,
+    521,
+    69,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Custom properties",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/custom-properties",
+   "cls": "prc-Link-Link-9ZwDx",
+   "rect": [
+    1049,
+    550,
+    139,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "5.4k forks",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/forks",
+   "cls": "prc-Link-Link-9ZwDx",
+   "rect": [
+    1049,
+    637,
+    85,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Report repository",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/contact/report-content?content_url=https%3A%2F%2Fgithub.com%2Fnotepad-plus-plus%2Fnotepad-plus-plus&report=notepad-plus-plus+%28user%29",
+   "cls": "prc-Link-Link-9ZwDx",
+   "rect": [
+    1049,
+    666,
+    108,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Releases",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/releases",
+   "cls": "headingLink__JrGf-v prc-Link-Link-9ZwDx",
+   "rect": [
+    1049,
+    719,
+    61,
+    24
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Notepad++ release 8.9.8.1LatestSep 24, 2026",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/releases/tag/v8.9.8.1",
+   "cls": "releaseLink__UKO6BZ prc-Link-Link-9ZwDx",
+   "rect": [
+    1049,
+    755,
+    272,
+    39
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "+ 144 releases",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/releases",
+   "cls": "text-small prc-Link-Link-9ZwDx",
+   "rect": [
+    1049,
+    809,
+    76,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Contributors",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/graphs/contributors",
+   "cls": "headingLink__JrGf-v prc-Link-Link-9ZwDx",
+   "rect": [
+    1049,
+    860,
+    92,
+    24
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/donho",
+   "cls": "prc-Link-Link-9ZwDx",
+   "rect": [
+    1049,
+    901,
+    32,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/ozone10",
+   "cls": "prc-Link-Link-9ZwDx",
+   "rect": [
+    1089,
+    901,
+    32,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/xomx",
+   "cls": "prc-Link-Link-9ZwDx",
+   "rect": [
+    1129,
+    901,
+    32,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/SinghRajenM",
+   "cls": "prc-Link-Link-9ZwDx",
+   "rect": [
+    1169,
+    901,
+    32,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/chcg",
+   "cls": "prc-Link-Link-9ZwDx",
+   "rect": [
+    1209,
+    901,
+    32,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/sasumner",
+   "cls": "prc-Link-Link-9ZwDx",
+   "rect": [
+    1249,
+    901,
+    32,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/rddim",
+   "cls": "prc-Link-Link-9ZwDx",
+   "rect": [
+    1049,
+    941,
+    32,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/schnurlos",
+   "cls": "prc-Link-Link-9ZwDx",
+   "rect": [
+    1089,
+    941,
+    32,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/yasmise",
+   "cls": "prc-Link-Link-9ZwDx",
+   "rect": [
+    1129,
+    941,
+    32,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/ArkadiuszMichalski",
+   "cls": "prc-Link-Link-9ZwDx",
+   "rect": [
+    1169,
+    941,
+    32,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/GOLEM777",
+   "cls": "prc-Link-Link-9ZwDx",
+   "rect": [
+    1209,
+    941,
+    32,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/kubalav",
+   "cls": "prc-Link-Link-9ZwDx",
+   "rect": [
+    1249,
+    941,
+    32,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/dail8859",
+   "cls": "prc-Link-Link-9ZwDx",
+   "rect": [
+    1049,
+    981,
+    32,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/Patriccollu",
+   "cls": "prc-Link-Link-9ZwDx",
+   "rect": [
+    1089,
+    981,
+    32,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "+ 405 contributors",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/graphs/contributors",
+   "cls": "text-small prc-Link-Link-9ZwDx",
+   "rect": [
+    1049,
+    1023,
+    99,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "SPAN",
+   "role": "progressbar",
+   "text": "",
+   "aria": "C++: 80.3%",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "prc-ProgressBar-ProgressBarItem-mDIlB",
+   "rect": [
+    1049,
+    1110,
+    209,
+    8
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "SPAN",
+   "role": "progressbar",
+   "text": "",
+   "aria": "HTML: 10.5%",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "prc-ProgressBar-ProgressBarItem-mDIlB",
+   "rect": [
+    1259,
+    1110,
+    27,
+    8
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "SPAN",
+   "role": "progressbar",
+   "text": "",
+   "aria": "C: 3.1%",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "prc-ProgressBar-ProgressBarItem-mDIlB",
+   "rect": [
+    1289,
+    1110,
+    8,
+    8
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "SPAN",
+   "role": "progressbar",
+   "text": "",
+   "aria": "Objective-C++: 1.7%",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "prc-ProgressBar-ProgressBarItem-mDIlB",
+   "rect": [
+    1299,
+    1110,
+    4,
+    8
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "SPAN",
+   "role": "progressbar",
+   "text": "",
+   "aria": "Python: 1.6%",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "prc-ProgressBar-ProgressBarItem-mDIlB",
+   "rect": [
+    1305,
+    1110,
+    4,
+    8
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "SPAN",
+   "role": "progressbar",
+   "text": "",
+   "aria": "Makefile: 1.1%",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "prc-ProgressBar-ProgressBarItem-mDIlB",
+   "rect": [
+    1311,
+    1110,
+    3,
+    8
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "SPAN",
+   "role": "progressbar",
+   "text": "",
+   "aria": "Other: 1.7%",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "prc-ProgressBar-ProgressBarItem-mDIlB",
+   "rect": [
+    1316,
+    1110,
+    4,
+    8
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "C++80.3%",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/search?l=c%2B%2B",
+   "cls": "languageLink__V8hWIO prc-Link-Link-9ZwDx",
+   "rect": [
+    1049,
+    1129,
+    76,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "HTML10.5%",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/search?l=html",
+   "cls": "languageLink__V8hWIO prc-Link-Link-9ZwDx",
+   "rect": [
+    1136,
+    1129,
+    84,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "C3.1%",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/search?l=c",
+   "cls": "languageLink__V8hWIO prc-Link-Link-9ZwDx",
+   "rect": [
+    1233,
+    1129,
+    53,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Objective-C++1.7%",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/search?l=objective-c%2B%2B",
+   "cls": "languageLink__V8hWIO prc-Link-Link-9ZwDx",
+   "rect": [
+    1049,
+    1150,
+    126,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Python1.6%",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/search?l=python",
+   "cls": "languageLink__V8hWIO prc-Link-Link-9ZwDx",
+   "rect": [
+    1186,
+    1150,
+    84,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Makefile1.1%",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/search?l=makefile",
+   "cls": "languageLink__V8hWIO prc-Link-Link-9ZwDx",
+   "rect": [
+    1049,
+    1171,
+    92,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Other1.7%",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/search?l=Other",
+   "cls": "languageLink__V8hWIO prc-Link-Link-9ZwDx",
+   "rect": [
+    1152,
+    1171,
+    77,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "FOOTER",
+   "role": "contentinfo",
+   "text": "Footer © 2026 GitHub, Inc. Footer navigation Terms Privacy Security Status Community Docs ",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "footer f6 color-fg-muted color-border-subtle tmp-pt-7 tmp-pb-6 p-respo",
+   "rect": [
+    0,
+    2095,
+    1425,
+    113
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "GitHub Homepage",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.com",
+   "cls": "footer-octicon mr-2",
+   "rect": [
+    293,
+    2143,
+    24,
+    25
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Terms",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://docs.github.com/site-policy/github-terms/github-terms-of-service",
+   "cls": "Link--secondary Link",
+   "rect": [
+    446,
+    2148,
+    31,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Privacy",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://docs.github.com/site-policy/privacy-policies/github-privacy-statement",
+   "cls": "Link--secondary Link",
+   "rect": [
+    493,
+    2148,
+    37,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Security",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.com/security",
+   "cls": "Link--secondary Link",
+   "rect": [
+    546,
+    2148,
+    42,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Status",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://www.githubstatus.com/",
+   "cls": "Link--secondary Link",
+   "rect": [
+    604,
+    2148,
+    32,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Community",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.community/",
+   "cls": "Link--secondary Link",
+   "rect": [
+    652,
+    2148,
+    62,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Docs",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://docs.github.com/",
+   "cls": "Link--secondary Link",
+   "rect": [
+    729,
+    2148,
+    26,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Contact",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://support.github.com?tags=dotcom-footer",
+   "cls": "Link--secondary Link",
+   "rect": [
+    771,
+    2148,
+    41,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Manage cookies",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "Link--secondary underline-on-hover border-0 p-0 color-bg-transparent",
+   "rect": [
+    828,
+    2147,
+    86,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Do not share my personal information",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "Link--secondary underline-on-hover border-0 p-0 color-bg-transparent t",
+   "rect": [
+    931,
+    2147,
+    202,
+    18
+   ],
+   "disabled": false
+  }
+ ],
+ "tables": [
+  {
+   "headers": [
+    "Name",
+    "Name",
+    "Last commit message",
+    "Last commit date"
+   ],
+   "rows": [
+    [
+     ".github",
+     ".github",
+     "CI script improvement",
+     "Nov 2, 2026"
+    ],
+    [
+     "PowerEditor",
+     "PowerEditor",
+     "Change up/down button position",
+     "Nov 2, 2026"
+    ],
+    [
+     "boostregex",
+     "boostregex",
+     "Update to boost 1.92.0",
+     "Nov 2, 2026"
+    ]
+   ]
+  }
+ ],
+ "same_repo_links": [
+  "/notepad-plus-plus/notepad-plus-plus",
+  "/notepad-plus-plus/notepad-plus-plus/issues",
+  "/notepad-plus-plus/notepad-plus-plus/pulls",
+  "/notepad-plus-plus/notepad-plus-plus/actions",
+  "/notepad-plus-plus/notepad-plus-plus/projects",
+  "/notepad-plus-plus/notepad-plus-plus/wiki",
+  "/notepad-plus-plus/notepad-plus-plus/security",
+  "/notepad-plus-plus/notepad-plus-plus/pulse",
+  "/notepad-plus-plus/notepad-plus-plus/activity",
+  "/notepad-plus-plus/notepad-plus-plus/custom-properties",
+  "/notepad-plus-plus/notepad-plus-plus/forks",
+  "/notepad-plus-plus/notepad-plus-plus/branches",
+  "/notepad-plus-plus/notepad-plus-plus/tags",
+  "/notepad-plus-plus/notepad-plus-plus/commits?author=donho",
+  "/notepad-plus-plus/notepad-plus-plus/commit/14e27a6caa5a2f2a3dfcbc8594d792d255c4991d",
+  "/notepad-plus-plus/notepad-plus-plus/commits/master/",
+  "/notepad-plus-plus/notepad-plus-plus/tree/master/.github",
+  "/notepad-plus-plus/notepad-plus-plus/commit/9923cad88efdae9a396bfd96ed1a25a7e4721a92",
+  "/notepad-plus-plus/notepad-plus-plus/tree/master/PowerEditor",
+  "/notepad-plus-plus/notepad-plus-plus/tree/master/boostregex",
+  "/notepad-plus-plus/notepad-plus-plus/commit/164574781ddc37fe7a94b34f3ca5bb516adcb39a",
+  "/notepad-plus-plus/notepad-plus-plus/tree/master/lexilla",
+  "/notepad-plus-plus/notepad-plus-plus/commit/025d4527da2fafb400283660bad69088566c3f3e",
+  "/notepad-plus-plus/notepad-plus-plus/tree/master/scintilla",
+  "/notepad-plus-plus/notepad-plus-plus/blob/master/.gitignore",
+  "/notepad-plus-plus/notepad-plus-plus/commit/71560758e2616ff7f47ddee79edb10803afbd050",
+  "/notepad-plus-plus/notepad-plus-plus/blob/master/BUILD.md",
+  "/notepad-plus-plus/notepad-plus-plus/blob/master/CONTRIBUTING.md",
+  "/notepad-plus-plus/notepad-plus-plus/commit/49b99e9235ac4ee832f06fa61780bec5761b6319",
+  "/notepad-plus-plus/notepad-plus-plus/blob/master/LICENSE",
+  "/notepad-plus-plus/notepad-plus-plus/commit/141fef9a457859f1ce7184f0a6ff09a03b0c088f",
+  "/notepad-plus-plus/notepad-plus-plus/blob/master/README.md",
+  "/notepad-plus-plus/notepad-plus-plus/commit/307bb6029726d4434a0748a3d8473508c2c5c933",
+  "/notepad-plus-plus/notepad-plus-plus/blob/master/SUPPORTED_SYSTEM.md",
+  "/notepad-plus-plus/notepad-plus-plus/commit/f431a379671936ae611b8a231ee0a43c8a7fc0f9",
+  "/notepad-plus-plus/notepad-plus-plus/blob/master/appveyor.yml",
+  "/notepad-plus-plus/notepad-plus-plus/blob/master/nppGpgPub.asc",
+  "/notepad-plus-plus/notepad-plus-plus/commit/2ac5e3a7ed23b5b8e39d84601e052eff917819ac",
+  "/notepad-plus-plus/notepad-plus-plus/releases/latest",
+  "/notepad-plus-plus/notepad-plus-plus/releases",
+  "/notepad-plus-plus/notepad-plus-plus/releases/tag/v8.9.8.1",
+  "/notepad-plus-plus/notepad-plus-plus/graphs/contributors",
+  "/notepad-plus-plus/notepad-plus-plus/search?l=c%2B%2B",
+  "/notepad-plus-plus/notepad-plus-plus/search?l=html",
+  "/notepad-plus-plus/notepad-plus-plus/search?l=c",
+  "/notepad-plus-plus/notepad-plus-plus/search?l=objective-c%2B%2B",
+  "/notepad-plus-plus/notepad-plus-plus/search?l=python",
+  "/notepad-plus-plus/notepad-plus-plus/search?l=makefile",
+  "/notepad-plus-plus/notepad-plus-plus/search?l=Other"
+ ],
+ "density": null,
+ "fetched_at": "2026-11-03T16:17:28",
+ "elements_seen": 1812
+}

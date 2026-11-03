@@ -1,0 +1,1625 @@
+{
+ "title": "Security Advisories · notepad-plus-plus/notepad-plus-plus",
+ "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/security/advisories",
+ "user_login": "wangtierui",
+ "ready": "complete",
+ "counts": {
+  "els": 1165,
+  "interactive": 72,
+  "links": 26
+ },
+ "landmarks": [
+  [
+   "header",
+   0,
+   0,
+   1440,
+   100
+  ],
+  [
+   "nav",
+   100,
+   16,
+   756,
+   32
+  ],
+  [
+   "main",
+   0,
+   100,
+   1440,
+   818
+  ],
+  [
+   "footer",
+   0,
+   918,
+   1440,
+   58
+  ]
+ ],
+ "headings": [
+  [
+   "H2",
+   "Repository navigation"
+  ],
+  [
+   "H1",
+   "Command palette"
+  ],
+  [
+   "H3",
+   "Uh oh!"
+  ],
+  [
+   "H1",
+   "Security: notepad-plus-plus/notepad-plus-plus"
+  ],
+  [
+   "H2",
+   "Security and quality"
+  ],
+  [
+   "H3",
+   "Reporting"
+  ],
+  [
+   "H2",
+   "Security Advisories"
+  ],
+  [
+   "H2",
+   "Footer"
+  ],
+  [
+   "H3",
+   "Footer navigation"
+  ]
+ ],
+ "interactive": [
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Skip to content",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "#start-of-content",
+   "cls": "tmp-p-3 color-bg-accent-emphasis color-fg-on-emphasis show-on-focus js",
+   "rect": [
+    0,
+    0,
+    1,
+    1
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU prc-Button-IconBut",
+   "rect": [
+    16,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "/",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderHome__5NxwyK prc-Button-IconButto",
+   "rect": [
+    60,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "notepad-plus-plus",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus",
+   "cls": "contextCrumb__Q8nET8 prc-Breadcrumbs-Item-jcraJ",
+   "rect": [
+    100,
+    16,
+    126,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "notepad-plus-plus",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus",
+   "cls": "contextCrumb__Q8nET8 contextCrumbLast__l2P28s repoPickerCrumb__56N_WW ",
+   "rect": [
+    241,
+    16,
+    125,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk contextCrumb__Q8nET8 repoPickerDropdownBut",
+   "rect": [
+    366,
+    16,
+    20,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Type / to search",
+   "aria": "Open quick search dialog, type / to search",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU searchButton__6Ru-",
+   "rect": [
+    864,
+    16,
+    191,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU js-activate-comman",
+   "rect": [
+    1054,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "/copilot",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU prc-Button-IconBut",
+   "rect": [
+    1093,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "Open Copilot…",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU CopilotMenu__oPrKz",
+   "rect": [
+    1124,
+    16,
+    26,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk actionMenuButton__QPJCOZ responsiveCreateM",
+   "rect": [
+    1174,
+    16,
+    50,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "/issues",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU prc-Button-IconBut",
+   "rect": [
+    1232,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "/pulls",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU prc-Button-IconBut",
+   "rect": [
+    1272,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "/repos",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU prc-Button-IconBut",
+   "rect": [
+    1312,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "/notifications",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU prc-Button-IconBut",
+   "rect": [
+    1352,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk anchor__zXCwGI prc-Button-IconButton-fyge7",
+   "rect": [
+    1392,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "UL",
+   "role": "list",
+   "text": "CodeIssues2.9k (2.9k)Pull requests31 (31)AgentsActionsProjectsWikiSecurity and quality40 (",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "prc-UnderlineNav-ItemsList-oj8gN prc-components-UnderlineItemList-xKlK",
+   "rect": [
+    16,
+    60,
+    1408,
+    40
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Code",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    16,
+    60,
+    73,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Issues2.9k (2.9k)",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/issues",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    97,
+    60,
+    122,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Pull requests31 (31)",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/pulls",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    227,
+    60,
+    155,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Agents",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/agents?author=wangtierui",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    390,
+    60,
+    85,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Actions",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/actions",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    483,
+    60,
+    87,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Projects",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/projects",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    578,
+    60,
+    90,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Wiki",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/wiki",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    676,
+    60,
+    68,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Security and quality40 (40)",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/security",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    752,
+    60,
+    201,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Insights",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/pulse",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    962,
+    60,
+    90,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Overview",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/security",
+   "cls": "ActionListContent ActionListContent--visual16",
+   "rect": [
+    16,
+    170,
+    287,
+    33
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "presentation",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "ActionList-sectionDivider",
+   "rect": [
+    8,
+    210,
+    303,
+    1
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "UL",
+   "role": "list",
+   "text": "Security policy Advisories 40",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "ActionListWrap",
+   "rect": [
+    16,
+    251,
+    287,
+    66
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Security policy",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/security/policy",
+   "cls": "ActionListContent ActionListContent--visual16",
+   "rect": [
+    16,
+    251,
+    287,
+    33
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Advisories 40",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/security/advisories",
+   "cls": "ActionListContent ActionListContent--visual16",
+   "rect": [
+    16,
+    284,
+    287,
+    33
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Report a vulnerability",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/security/advisories/new",
+   "cls": "Button--primary Button--medium Button",
+   "rect": [
+    1237,
+    128,
+    163,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "FORM",
+   "role": "search",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "subnav-search flex-auto js-navigation-container ml-0 mt-0 mb-0",
+   "rect": [
+    360,
+    209,
+    1040,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "INPUT",
+   "role": "combobox",
+   "text": "",
+   "aria": "Filter advisories: severity:critical, ecosystem:npm",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "text",
+   "href": "",
+   "cls": "form-control input-block input-contrast width-full js-navigation-enabl",
+   "rect": [
+    360,
+    209,
+    1040,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Missing validation in public NPPM message handlers causes deterministic local crashes",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/security/advisories/GHSA-8wmf-7r8c-wf2w",
+   "cls": "Link--primary v-align-middle no-underline h4",
+   "rect": [
+    401,
+    266,
+    630,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "donho",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/donho",
+   "cls": "author Link--muted",
+   "rect": [
+    657,
+    290,
+    35,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Notepad++ 8.9.8 local denial of service, an unbounded wcscpy_s on the selection terminates",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/security/advisories/GHSA-3hx4-x297-6752",
+   "cls": "Link--primary v-align-middle no-underline h4",
+   "rect": [
+    401,
+    321,
+    837,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "donho",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/donho",
+   "cls": "author Link--muted",
+   "rect": [
+    653,
+    345,
+    35,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Out-of-bounds pointer store in Function List when overrideMap.xml contains an oversized la",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/security/advisories/GHSA-9rr8-6vjg-gj52",
+   "cls": "Link--primary v-align-middle no-underline h4",
+   "rect": [
+    401,
+    377,
+    704,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "donho",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/donho",
+   "cls": "author Link--muted",
+   "rect": [
+    644,
+    401,
+    35,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Incomplete fix in v8.9.8 for the UNC warning re-enables silent NTLM forced-authentication",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/security/advisories/GHSA-gr8w-74qx-pc2v",
+   "cls": "Link--primary v-align-middle no-underline h4",
+   "rect": [
+    401,
+    432,
+    658,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "donho",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/donho",
+   "cls": "author Link--muted",
+   "rect": [
+    654,
+    456,
+    35,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "#UAC-SAVE# and related CLI ops copy/move/create with no caller check; UAC Yes still requir",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/security/advisories/GHSA-phqq-x4c2-7c2q",
+   "cls": "Link--primary v-align-middle no-underline h4",
+   "rect": [
+    401,
+    488,
+    686,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "donho",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/donho",
+   "cls": "author Link--muted",
+   "rect": [
+    655,
+    512,
+    35,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Notepad++ UIPI Bypass via WM_COPYDATA Allows Low-Integrity Processes to Force Arbitrary Fi",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/security/advisories/GHSA-pg39-63h5-cx35",
+   "cls": "Link--primary v-align-middle no-underline h4",
+   "rect": [
+    401,
+    543,
+    755,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "donho",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/donho",
+   "cls": "author Link--muted",
+   "rect": [
+    650,
+    567,
+    35,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Notepad++ 8.9.7 MSI allows install-path injection into RunOnce PowerShell",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/security/advisories/GHSA-97rx-3h53-4cfj",
+   "cls": "Link--primary v-align-middle no-underline h4",
+   "rect": [
+    401,
+    599,
+    548,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "donho",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/donho",
+   "cls": "author Link--muted",
+   "rect": [
+    647,
+    623,
+    35,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "NTLM Hash Leak via FileBrowser Root UNC Path Bypass in Session Files",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/security/advisories/GHSA-fw3m-3qpq-pvr8",
+   "cls": "Link--primary v-align-middle no-underline h4",
+   "rect": [
+    401,
+    654,
+    514,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "donho",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/donho",
+   "cls": "author Link--muted",
+   "rect": [
+    660,
+    678,
+    35,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Zero-Click Local Privilege Escalation via WM_COMMAND",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/security/advisories/GHSA-grw6-cw7j-3qfg",
+   "cls": "Link--primary v-align-middle no-underline h4",
+   "rect": [
+    401,
+    710,
+    412,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "donho",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/donho",
+   "cls": "author Link--muted",
+   "rect": [
+    654,
+    734,
+    35,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Notepad++ Crafted UTF-16 File Causes Heap Buffer Overflow",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/security/advisories/GHSA-8jjh-4rq6-r2h8",
+   "cls": "Link--primary v-align-middle no-underline h4",
+   "rect": [
+    401,
+    765,
+    444,
+    21
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "donho",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/donho",
+   "cls": "author Link--muted",
+   "rect": [
+    646,
+    789,
+    35,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "DIV",
+   "role": "navigation",
+   "text": "Previous 1 2 3 4 Next",
+   "aria": "Pagination",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "pagination",
+   "rect": [
+    724,
+    830,
+    312,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "SPAN",
+   "role": "link",
+   "text": "Previous",
+   "aria": "Previous page",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "previous_page disabled",
+   "rect": [
+    724,
+    830,
+    94,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "1",
+   "aria": "Page 1",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/security/advisories?page=1",
+   "cls": "current",
+   "rect": [
+    822,
+    830,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "2",
+   "aria": "Page 2",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/security/advisories?page=2",
+   "cls": "",
+   "rect": [
+    858,
+    830,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "3",
+   "aria": "Page 3",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/security/advisories?page=3",
+   "cls": "",
+   "rect": [
+    894,
+    830,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "4",
+   "aria": "Page 4",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/security/advisories?page=4",
+   "cls": "",
+   "rect": [
+    929,
+    830,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Next",
+   "aria": "Next page",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/security/advisories?page=2",
+   "cls": "next_page",
+   "rect": [
+    965,
+    830,
+    71,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "FOOTER",
+   "role": "contentinfo",
+   "text": "Footer © 2026 GitHub, Inc. Footer navigation Terms Privacy Security Status Community Docs ",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "footer f6 color-fg-muted color-border-subtle tmp-pt-7 tmp-pb-6 p-respo",
+   "rect": [
+    0,
+    918,
+    1440,
+    58
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "GitHub Homepage",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.com",
+   "cls": "footer-octicon mr-2",
+   "rect": [
+    300,
+    935,
+    24,
+    25
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Terms",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://docs.github.com/site-policy/github-terms/github-terms-of-service",
+   "cls": "Link--secondary Link",
+   "rect": [
+    453,
+    940,
+    31,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Privacy",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://docs.github.com/site-policy/privacy-policies/github-privacy-statement",
+   "cls": "Link--secondary Link",
+   "rect": [
+    500,
+    940,
+    37,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Security",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.com/security",
+   "cls": "Link--secondary Link",
+   "rect": [
+    553,
+    940,
+    42,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Status",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://www.githubstatus.com/",
+   "cls": "Link--secondary Link",
+   "rect": [
+    611,
+    940,
+    32,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Community",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.community/",
+   "cls": "Link--secondary Link",
+   "rect": [
+    659,
+    940,
+    62,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Docs",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://docs.github.com/",
+   "cls": "Link--secondary Link",
+   "rect": [
+    737,
+    940,
+    26,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Contact",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://support.github.com?tags=dotcom-footer",
+   "cls": "Link--secondary Link",
+   "rect": [
+    779,
+    940,
+    41,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Manage cookies",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "Link--secondary underline-on-hover border-0 p-0 color-bg-transparent",
+   "rect": [
+    836,
+    939,
+    86,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Do not share my personal information",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "Link--secondary underline-on-hover border-0 p-0 color-bg-transparent t",
+   "rect": [
+    938,
+    939,
+    202,
+    18
+   ],
+   "disabled": false
+  }
+ ],
+ "tables": [],
+ "same_repo_links": [
+  "/notepad-plus-plus/notepad-plus-plus",
+  "/notepad-plus-plus/notepad-plus-plus/issues",
+  "/notepad-plus-plus/notepad-plus-plus/pulls",
+  "/notepad-plus-plus/notepad-plus-plus/agents?author=wangtierui",
+  "/notepad-plus-plus/notepad-plus-plus/actions",
+  "/notepad-plus-plus/notepad-plus-plus/projects",
+  "/notepad-plus-plus/notepad-plus-plus/wiki",
+  "/notepad-plus-plus/notepad-plus-plus/security",
+  "/notepad-plus-plus/notepad-plus-plus/pulse",
+  "/notepad-plus-plus/notepad-plus-plus/security/policy",
+  "/notepad-plus-plus/notepad-plus-plus/security/advisories",
+  "/notepad-plus-plus/notepad-plus-plus/security/advisories/new",
+  "/notepad-plus-plus/notepad-plus-plus/security/advisories/GHSA-8wmf-7r8c-wf2w",
+  "/notepad-plus-plus/notepad-plus-plus/security/advisories/GHSA-3hx4-x297-6752",
+  "/notepad-plus-plus/notepad-plus-plus/security/advisories/GHSA-9rr8-6vjg-gj52",
+  "/notepad-plus-plus/notepad-plus-plus/security/advisories/GHSA-gr8w-74qx-pc2v",
+  "/notepad-plus-plus/notepad-plus-plus/security/advisories/GHSA-phqq-x4c2-7c2q",
+  "/notepad-plus-plus/notepad-plus-plus/security/advisories/GHSA-pg39-63h5-cx35",
+  "/notepad-plus-plus/notepad-plus-plus/security/advisories/GHSA-97rx-3h53-4cfj",
+  "/notepad-plus-plus/notepad-plus-plus/security/advisories/GHSA-fw3m-3qpq-pvr8",
+  "/notepad-plus-plus/notepad-plus-plus/security/advisories/GHSA-grw6-cw7j-3qfg",
+  "/notepad-plus-plus/notepad-plus-plus/security/advisories/GHSA-8jjh-4rq6-r2h8",
+  "/notepad-plus-plus/notepad-plus-plus/security/advisories?page=1",
+  "/notepad-plus-plus/notepad-plus-plus/security/advisories?page=2",
+  "/notepad-plus-plus/notepad-plus-plus/security/advisories?page=3",
+  "/notepad-plus-plus/notepad-plus-plus/security/advisories?page=4"
+ ],
+ "density": null,
+ "fetched_at": "2026-11-03T19:27:02",
+ "elements_seen": 1165
+}

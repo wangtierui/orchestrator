@@ -1,16 +1,16 @@
 {
- "fetched_at": "2026-11-03T16:18:58",
+ "fetched_at": "2026-11-03T19:25:59",
  "density": {
   "rect": [
    1327,
-   405,
+   337,
    65,
    32
   ],
   "cls": "prc-SegmentedControl-SegmentedControl-lqIXp",
   "items": [
    {
-    "pressed": "true",
+    "pressed": "false",
     "icon": "octicon-rows",
     "tip": "Comfortable display density",
     "size": [
@@ -19,7 +19,7 @@
     ]
    },
    {
-    "pressed": "false",
+    "pressed": "true",
     "icon": "octicon-three-bars",
     "tip": "Compact display density",
     "size": [
@@ -28,14 +28,14 @@
     ]
    }
   ],
-  "html": "<ul aria-label=\"Issues display density\" class=\"prc-SegmentedControl-SegmentedControl-lqIXp\" data-variant=\"default\" data-component=\"SegmentedControl\"><li class=\"prc-SegmentedControl-Item-tSCQh\" data-selected=\"true\" data-component=\"SegmentedControl.IconButton\"><button type=\"button\" aria-pressed=\"true\" class=\"prc-SegmentedControl-Button-E48xz prc-SegmentedControl-IconButton-tlzDE\" style=\"--separator-color:transparent\" aria-labelledby=\"_R_1mn9tad85_\"><span class=\"prc-SegmentedControl-Content-1COlk segmentedControl-content\"><svg data-component=\"Octicon\" aria-hidden=\"true\" focusable=\"false\" class=\"octicon octicon-rows\" viewBox=\"0 0 16 16\" width=\"16\" height=\"16\" fill=\"currentColor\" display=\"inline-block\" overflow=\"visible\" style=\"vertical-align:text-bottom\"><path d=\"M16 10.75v2.5A1.75 1.75 0 0 1 14.25 15H1.75A1.75 1.75 0 0 1 0 13.25v-2.5C0 9.784.784 9 1.75 9h12.5c.966 0 1.75.784 1.75 1.75Zm0-8v2.5A1.75 1.75 0 0 1 14.25 7H1.75A1.75 1.75 0 0 1 0 5.25v-2.5C0 1.784.784 1 1.75 1h12.5c.966 0 1.75.784 1.75 1.75Zm-1.75-.25H1.75a.25.25 0 0 0-.25.25v2.5c0 .138.112.25.25.25h12.5a.25.25 0 0 0 .25-.25v-2.5a.25.25 0 0 0-.25-.25Zm0 8H1.75a.25.25 0 0 0-.25.25v2.5c0 .138.112.25.25.25h12.5a.25.25 0 0 0 .25-.25v-2.5a.25.25 0 0 0-.25-.25Z\"></path></svg></span></button><span class=\"prc-TooltipV2-Tooltip-tLeuB\" data-direction=\"s\" data-component=\"Tooltip\" aria-hidden=\"true\" id=\"_R_1mn9tad85_\" popover=\"auto\">Comfortable display density</span></li><li class=\"prc-SegmentedControl-Item-tSCQh\" data-component=\"SegmentedControl.IconButton\"><button type=\"button\" aria-pressed=\"false\" class=\"prc-SegmentedControl-Button-E48xz prc-SegmentedControl-IconButton-tlzDE\" style=\"--separator-color:var(--borderColor-default)\" aria-labelledby=\"_R_2mn9tad85_\"><span class=\"prc-SegmentedControl-Content-1COlk segmentedControl-content\"><svg data-component=\"Octicon\" aria-hidden=\"true\" focusable=\"false\" class=\"octicon octicon-three-bars\" viewBox=\"0 0 16 16\" width=\"16\" height=\"16\" fill=\"currentColor\" display=\"inline-block\" overflow=\"visible\" style=\"vertical-align:text-bottom\"><path d=\"M1 2.75A.75.75 0 0 1 1.75 2h12.5a.75.75 0 0 1 0 1.5H1.75A.75.75 0 0 1 1 2.75Zm0 5A.75.75 0 0 1 1.75 7h12.5a.75.75 0 0 1 0 1.5H1.75A.75.75 0 0 1 1 7.75ZM1.75 12h12.5a.75.75 0 0 1 0 1.5H1.75a.75.75 0 0 1 0-1.5Z\"></path></svg></span></button><span class=\"prc-TooltipV2-Tooltip-tLeuB\" data-direction=\"s\" data-component=\"Tooltip\" aria-hidden=\"true\" id=\"_R_2mn9tad85_\" popover=\"auto\">Compact display density</span></li></ul>"
+  "html": "<ul aria-label=\"Issues display density\" class=\"prc-SegmentedControl-SegmentedControl-lqIXp\" data-variant=\"default\" data-component=\"SegmentedControl\"><li class=\"prc-SegmentedControl-Item-tSCQh\" data-component=\"SegmentedControl.IconButton\"><button type=\"button\" aria-pressed=\"false\" class=\"prc-SegmentedControl-Button-E48xz prc-SegmentedControl-IconButton-tlzDE\" style=\"--separator-color:transparent\" aria-labelledby=\"_R_1mn9tad85_\"><span class=\"prc-SegmentedControl-Content-1COlk segmentedControl-content\"><svg data-component=\"Octicon\" aria-hidden=\"true\" focusable=\"false\" class=\"octicon octicon-rows\" viewBox=\"0 0 16 16\" width=\"16\" height=\"16\" fill=\"currentColor\" display=\"inline-block\" overflow=\"visible\" style=\"vertical-align:text-bottom\"><path d=\"M16 10.75v2.5A1.75 1.75 0 0 1 14.25 15H1.75A1.75 1.75 0 0 1 0 13.25v-2.5C0 9.784.784 9 1.75 9h12.5c.966 0 1.75.784 1.75 1.75Zm0-8v2.5A1.75 1.75 0 0 1 14.25 7H1.75A1.75 1.75 0 0 1 0 5.25v-2.5C0 1.784.784 1 1.75 1h12.5c.966 0 1.75.784 1.75 1.75Zm-1.75-.25H1.75a.25.25 0 0 0-.25.25v2.5c0 .138.112.25.25.25h12.5a.25.25 0 0 0 .25-.25v-2.5a.25.25 0 0 0-.25-.25Zm0 8H1.75a.25.25 0 0 0-.25.25v2.5c0 .138.112.25.25.25h12.5a.25.25 0 0 0 .25-.25v-2.5a.25.25 0 0 0-.25-.25Z\"></path></svg></span></button><span class=\"prc-TooltipV2-Tooltip-tLeuB\" data-direction=\"s\" data-component=\"Tooltip\" aria-hidden=\"true\" id=\"_R_1mn9tad85_\" popover=\"auto\">Comfortable display density</span></li><li class=\"prc-SegmentedControl-Item-tSCQh\" data-selected=\"true\" data-component=\"SegmentedControl.IconButton\"><button type=\"button\" aria-pressed=\"true\" class=\"prc-SegmentedControl-Button-E48xz prc-SegmentedControl-IconButton-tlzDE\" style=\"--separator-color:transparent\" aria-labelledby=\"_R_2mn9tad85_\"><span class=\"prc-SegmentedControl-Content-1COlk segmentedControl-content\"><svg data-component=\"Octicon\" aria-hidden=\"true\" focusable=\"false\" class=\"octicon octicon-three-bars\" viewBox=\"0 0 16 16\" width=\"16\" height=\"16\" fill=\"currentColor\" display=\"inline-block\" overflow=\"visible\" style=\"vertical-align:text-bottom\"><path d=\"M1 2.75A.75.75 0 0 1 1.75 2h12.5a.75.75 0 0 1 0 1.5H1.75A.75.75 0 0 1 1 2.75Zm0 5A.75.75 0 0 1 1.75 7h12.5a.75.75 0 0 1 0 1.5H1.75A.75.75 0 0 1 1 7.75ZM1.75 12h12.5a.75.75 0 0 1 0 1.5H1.75a.75.75 0 0 1 0-1.5Z\"></path></svg></span></button><span class=\"prc-TooltipV2-Tooltip-tLeuB\" data-direction=\"s\" data-component=\"Tooltip\" aria-hidden=\"true\" id=\"_R_2mn9tad85_\" popover=\"auto\">Compact display density</span></li></ul>"
  },
  "panels": {
   "author": {
    "cls": "prc-SelectPanel-Overlay-tEbxh prc-AnchoredOverlay-AnchoredOv",
    "rect": [
     614,
-    441,
+    373,
     320
    ],
    "radius": "12px",
@@ -49,7 +49,7 @@
    "optionChecked": false,
    "rows": [
     {
-     "text": "CopilotGitHubAI",
+     "text": "wangtierui",
      "checkbox": false,
      "role": "option",
      "checked": "false"
@@ -73,13 +73,13 @@
      "checked": "false"
     }
    ],
-   "html": "<div role=\"dialog\" data-component=\"AnchoredOverlay\" aria-labelledby=\"_r_3_\" data-anchor-position=\"true\" data-side=\"outside-bottom\" data-width-medium=\"\" data-height-auto=\"\" data-visibility-visible=\"\" class=\"prc-SelectPanel-Overlay-tEbxh prc-AnchoredOverlay-AnchoredOverlay-fYg9Z prc-Overlay-Overlay-jfs-T\" data-focus-trap=\"active\" data-align=\"right\" style=\"--left: 0px; position-anchor: --anchored-overlay-anchor-_r_6_; --anchored-overlay-anchor-offset-right: 0px;\"><span class=\"sentinel\" tabindex=\"0\" aria-hidden=\"true\" style=\"position: absolute; width: 1px; height: 1px; padding: 0px; margin: -1px; overflow: hidden; clip: rect(0px, 0px, 0px, 0px); white-space: nowrap; border: 0px;\"></span><div class=\"prc-SelectPanel-Wrapper-OD-e6\" data-variant=\"anchored\" data-component=\"SelectPanel\"><div class=\"prc-SelectPanel-Header-p2DSz\" data-component=\"SelectPanel.Header\"><div><h1 class=\"prc-SelectPanel-Title-4cax5 prc-Heading-Heading-MtWFE\" data-component=\"SelectPanel.Title\" id=\"_r_3_\">Filter by author</h1></div></div><div class=\"prc-SelectPanel-FilteredActionList--VY7U prc-FilteredActionList-Root-QgIk1\" data-testid=\"filtered-action-list\" data-component=\"FilteredActionList\"><div class=\"prc-FilteredActionList-Header-y6ihu\" data-component=\"FilteredActionList.Header\"><span class=\"prc-SelectPanel-TextInput--Qqkq TextInput-wrapper prc-components-TextInputWrapper-Hpdqi prc-components-TextInputBaseWrapper-wY-n0\" data-block=\"true\" data-no-trailing-action=\"true\" data-component=\"TextInput\" data-leading-visual=\"true\" data-no-trailing-visual=\"true\" aria-busy=\"false\" data-focused=\"true\" style=\"width: auto;\"><span class=\"TextInput-icon\" data-component=\"TextInput.LeadingVisual\"><div class=\"prc-components-Box-XRSqm\" id=\"_r_a_\"><div class=\"prc-components-SpinnerVisible-paqsj\"><svg data-component=\"Octicon\" aria-hidden=\"true\" focusable=\"false\" class=\"octicon octicon-search\" viewBox=\"0 0 16 16\" width=\"16\" height=\"16\" fill=\"currentColor\" display=\"inline-block\" overflow=\"visible\" style=\"vertical-align: text-bottom;\"><path d=\"M10.68 11.74a6 6 0 0 1-7.922-8.982 6 6 0 0 1 8.982 7.922l3.04 3.04a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215ZM11.5 7a4.499 4.499 0 1 0-8.997 0A4.499 4.499 0 0 0 11.5 7Z\"></path></svg></div><span class=\"prc-Spinner-Box-Y-ke-\" data-component=\"Spinner\"><svg height=\"32px\" width=\"32px\" viewBox=\"0 0 16 16\" fill=\"none\" aria-hidden=\"true\" class=\"prc-components-SpinnerHidden-mRxuj prc-components-Spinner-fIUBk prc-components-SpinnerLeading-phYLe prc-Spinner-SpinnerAnimation-tutJZ\"><circle cx=\"8\" cy=\"8\" r=\"7\" stroke=\"currentColor\" stroke-opacity=\"0.25\" stroke-width=\"2\" vector-effect=\"non-scaling-stroke\"></circle><path d=\"M15 8a7.002 7.002 0 00-7-7\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" vector-effect=\"non-scaling-stroke\"></path></svg></span></div></span><input color=\"fg.default\" placeholder=\"Filter authors\" role=\"combobox\" aria-expanded=\"true\" aria-autocomplete=\"list\" aria-controls=\"_r_8_\" aria-label=\"Filter authors\" aria-describedby=\"_r_9_ _r_a_\" data-component=\"input\" class=\"prc-components-Input-IwWrt focus-visible\" type=\"text\" value=\"\" data-focus-visible-added=\"\" aria-activedescendant=\"_r_j_\"><span class=\"TextInput-icon\" data-component=\"TextInput.TrailingVisual\"><div class=\"prc-components-Box-XRSqm\" id=\"_r_b_\"><span class=\"prc-Spinner-Box-Y-ke-\" data-component=\"Spinner\"><svg height=\"16px\" width=\"16px\" viewBox=\"0 0 16 16\" fill=\"none\" aria-hidden=\"true\" class=\"prc-components-SpinnerHidden-mRxuj prc-Spinner-SpinnerAnimation-tutJZ\"><circle cx=\"8\" cy=\"8\" r=\"7\" stroke=\"currentColor\" stroke-opacity=\"0.25\" stroke-width=\"2\" vector-effect=\"non-scaling-stroke\"></circle><path d=\"M15 8a7.002 7.002 0 00-7-7\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" vector-effect=\"non-scaling-stroke\"></path></svg></span></div></span></span></div><span class=\"prc-VisuallyHidden-VisuallyHidden-Q0qSB\" id=\"_r_9_\">Items will be filtered as you type</span><div class=\"prc-FilteredActionList-Container-647gF\"><ul class=\"prc-ActionList-ActionList-rPFF2 prc-FilteredActionList-ActionList-3-Bxb\" role=\"listbox\" data-component=\"ActionList\" data-dividers=\"true\" data-variant=\"inset\" aria-label=\"User results\" data-id=\"item-picker-root-id\" data-testid=\"item-picker-root\" aria-multiselectable=\"false\" id=\"_r_8_\" data-mixed-descriptions=\"true\" data-has-active-descendant=\"_r_j_\"><li tabindex=\"-1\" aria-labelledby=\"_r_j_--label _r_j_--trailing-visual\" aria-describedby=\"_r_j_--inline-description\" aria-selected=\"false\" role=\"option\" id=\"_r_j_\" data-id=\"BOT_kgDOC9w8XQ\" data-first-child=\"\" source=\"[object Object]\" data-component=\"ActionList.Item\" data-has-description=\"true\" class=\"prc-ActionList-ActionListItem-So4vC Item__lB63KU\" data-is-active-descendant=\"activated-indirectly\"><div class=\"prc-ActionList-ActionListContent-KBb8-\" data-size=\"medium\"><span class=\"prc-ActionList-Spacer-4tR2m\"></span><span class=\"prc-ActionList-LeadingAction-hbWbh prc-ActionList-VisualWrap-bdCsS\" data-component=\"ActionList.Selection\"><svg data-component=\"Octicon\" a"
+   "html": "<div role=\"dialog\" data-component=\"AnchoredOverlay\" aria-labelledby=\"_r_4_\" data-anchor-position=\"true\" data-side=\"outside-bottom\" data-width-medium=\"\" data-height-auto=\"\" data-visibility-visible=\"\" class=\"prc-SelectPanel-Overlay-tEbxh prc-AnchoredOverlay-AnchoredOverlay-fYg9Z prc-Overlay-Overlay-jfs-T\" data-focus-trap=\"active\" data-align=\"right\" style=\"--left: 0px; position-anchor: --anchored-overlay-anchor-_r_7_; --anchored-overlay-anchor-offset-right: 0px;\"><span class=\"sentinel\" tabindex=\"0\" aria-hidden=\"true\" style=\"position: absolute; width: 1px; height: 1px; padding: 0px; margin: -1px; overflow: hidden; clip: rect(0px, 0px, 0px, 0px); white-space: nowrap; border: 0px;\"></span><div class=\"prc-SelectPanel-Wrapper-OD-e6\" data-variant=\"anchored\" data-component=\"SelectPanel\"><div class=\"prc-SelectPanel-Header-p2DSz\" data-component=\"SelectPanel.Header\"><div><h1 class=\"prc-SelectPanel-Title-4cax5 prc-Heading-Heading-MtWFE\" data-component=\"SelectPanel.Title\" id=\"_r_4_\">Filter by author</h1></div></div><div class=\"prc-SelectPanel-FilteredActionList--VY7U prc-FilteredActionList-Root-QgIk1\" data-testid=\"filtered-action-list\" data-component=\"FilteredActionList\"><div class=\"prc-FilteredActionList-Header-y6ihu\" data-component=\"FilteredActionList.Header\"><span class=\"prc-SelectPanel-TextInput--Qqkq TextInput-wrapper prc-components-TextInputWrapper-Hpdqi prc-components-TextInputBaseWrapper-wY-n0\" data-block=\"true\" data-no-trailing-action=\"true\" data-component=\"TextInput\" data-leading-visual=\"true\" data-no-trailing-visual=\"true\" aria-busy=\"false\" style=\"width: auto;\"><span class=\"TextInput-icon\" data-component=\"TextInput.LeadingVisual\"><div class=\"prc-components-Box-XRSqm\" id=\"_r_b_\"><div class=\"prc-components-SpinnerVisible-paqsj\"><svg data-component=\"Octicon\" aria-hidden=\"true\" focusable=\"false\" class=\"octicon octicon-search\" viewBox=\"0 0 16 16\" width=\"16\" height=\"16\" fill=\"currentColor\" display=\"inline-block\" overflow=\"visible\" style=\"vertical-align: text-bottom;\"><path d=\"M10.68 11.74a6 6 0 0 1-7.922-8.982 6 6 0 0 1 8.982 7.922l3.04 3.04a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215ZM11.5 7a4.499 4.499 0 1 0-8.997 0A4.499 4.499 0 0 0 11.5 7Z\"></path></svg></div><span class=\"prc-Spinner-Box-Y-ke-\" data-component=\"Spinner\"><svg height=\"32px\" width=\"32px\" viewBox=\"0 0 16 16\" fill=\"none\" aria-hidden=\"true\" class=\"prc-components-SpinnerHidden-mRxuj prc-components-Spinner-fIUBk prc-components-SpinnerLeading-phYLe prc-Spinner-SpinnerAnimation-tutJZ\"><circle cx=\"8\" cy=\"8\" r=\"7\" stroke=\"currentColor\" stroke-opacity=\"0.25\" stroke-width=\"2\" vector-effect=\"non-scaling-stroke\"></circle><path d=\"M15 8a7.002 7.002 0 00-7-7\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" vector-effect=\"non-scaling-stroke\"></path></svg></span></div></span><input color=\"fg.default\" placeholder=\"Filter authors\" role=\"combobox\" aria-expanded=\"true\" aria-autocomplete=\"list\" aria-controls=\"_r_9_\" aria-label=\"Filter authors\" aria-describedby=\"_r_a_ _r_b_\" data-component=\"input\" class=\"prc-components-Input-IwWrt\" type=\"text\" value=\"\" aria-activedescendant=\"_r_j_\"><span class=\"TextInput-icon\" data-component=\"TextInput.TrailingVisual\"><div class=\"prc-components-Box-XRSqm\" id=\"_r_c_\"><span class=\"prc-Spinner-Box-Y-ke-\" data-component=\"Spinner\"><svg height=\"16px\" width=\"16px\" viewBox=\"0 0 16 16\" fill=\"none\" aria-hidden=\"true\" class=\"prc-components-SpinnerHidden-mRxuj prc-Spinner-SpinnerAnimation-tutJZ\"><circle cx=\"8\" cy=\"8\" r=\"7\" stroke=\"currentColor\" stroke-opacity=\"0.25\" stroke-width=\"2\" vector-effect=\"non-scaling-stroke\"></circle><path d=\"M15 8a7.002 7.002 0 00-7-7\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" vector-effect=\"non-scaling-stroke\"></path></svg></span></div></span></span></div><span class=\"prc-VisuallyHidden-VisuallyHidden-Q0qSB\" id=\"_r_a_\">Items will be filtered as you type</span><div class=\"prc-FilteredActionList-Container-647gF\"><ul class=\"prc-ActionList-ActionList-rPFF2 prc-FilteredActionList-ActionList-3-Bxb\" role=\"listbox\" data-component=\"ActionList\" data-dividers=\"true\" data-variant=\"inset\" aria-label=\"User results\" data-id=\"item-picker-root-id\" data-testid=\"item-picker-root\" aria-multiselectable=\"false\" id=\"_r_9_\" data-has-active-descendant=\"_r_j_\" data-mixed-descriptions=\"true\"><li tabindex=\"-1\" aria-labelledby=\"_r_j_--label _r_j_--trailing-visual\" aria-selected=\"false\" role=\"option\" id=\"_r_j_\" data-id=\"U_kgDOE3DT9Q\" data-first-child=\"\" source=\"[object Object]\" data-component=\"ActionList.Item\" data-has-description=\"false\" class=\"prc-ActionList-ActionListItem-So4vC Item__lB63KU\" data-is-active-descendant=\"activated-indirectly\"><div class=\"prc-ActionList-ActionListContent-KBb8-\" data-size=\"medium\"><span class=\"prc-ActionList-Spacer-4tR2m\"></span><span class=\"prc-ActionList-LeadingAction-hbWbh prc-ActionList-VisualWrap-bdCsS\" data-component=\"ActionList.Selection\"><svg data-component=\"Octicon\" aria-hidden=\"true\" focusable=\"false\" class=\"octicon octicon-check prc-ActionList-SingleSelectCheckmark-zMd8d\""
   },
   "labels": {
    "cls": "prc-SelectPanel-Overlay-tEbxh prc-AnchoredOverlay-AnchoredOv",
    "rect": [
-    383,
-    121,
+    472,
+    373,
     320
    ],
    "radius": "12px",
@@ -87,7 +87,7 @@
    "shadow": "rgba(209, 217, 224, 0.25) 0px 0px 0px 1px, rgba(37, 41, 46, 0.04) 0px 6px 12px -3px, rgba(",
    "input": {
     "ph": "Filter labels",
-    "left": 424,
+    "left": 513,
     "iconOnLeft": true
    },
    "optionChecked": true,
@@ -117,7 +117,7 @@
      "checked": "false"
     }
    ],
-   "html": "<div role=\"dialog\" data-component=\"AnchoredOverlay\" aria-labelledby=\"_r_p_\" data-anchor-position=\"true\" data-side=\"outside-bottom\" data-width-medium=\"\" data-visibility-visible=\"\" class=\"prc-SelectPanel-Overlay-tEbxh prc-AnchoredOverlay-AnchoredOverlay-fYg9Z prc-Overlay-Overlay-jfs-T\" data-focus-trap=\"active\" data-align=\"left\" data-list-overflow=\"true\" data-list-grouped=\"true\" data-height-xlarge=\"\" style=\"--left: 0px; position-anchor: --anchored-overlay-anchor-_r_s_; --anchored-overlay-anchor-offset-left: 0px;\"><span class=\"sentinel\" tabindex=\"0\" aria-hidden=\"true\" style=\"position: absolute; width: 1px; height: 1px; padding: 0px; margin: -1px; overflow: hidden; clip: rect(0px, 0px, 0px, 0px); white-space: nowrap; border: 0px;\"></span><div class=\"prc-SelectPanel-Wrapper-OD-e6\" data-variant=\"anchored\" data-component=\"SelectPanel\"><div class=\"prc-SelectPanel-Header-p2DSz\" data-component=\"SelectPanel.Header\"><div><h1 class=\"prc-SelectPanel-Title-4cax5 prc-Heading-Heading-MtWFE\" data-component=\"SelectPanel.Title\" id=\"_r_p_\">Filter by label</h1></div></div><div class=\"prc-SelectPanel-FilteredActionList--VY7U prc-FilteredActionList-Root-QgIk1\" data-testid=\"filtered-action-list\" data-component=\"FilteredActionList\"><div class=\"prc-FilteredActionList-Header-y6ihu\" data-component=\"FilteredActionList.Header\"><span class=\"prc-SelectPanel-TextInput--Qqkq TextInput-wrapper prc-components-TextInputWrapper-Hpdqi prc-components-TextInputBaseWrapper-wY-n0\" data-block=\"true\" data-no-trailing-action=\"true\" data-component=\"TextInput\" data-leading-visual=\"true\" data-no-trailing-visual=\"true\" aria-busy=\"false\" data-focused=\"true\" style=\"width: auto;\"><span class=\"TextInput-icon\" data-component=\"TextInput.LeadingVisual\"><div class=\"prc-components-Box-XRSqm\" id=\"_r_10_\"><div class=\"prc-components-SpinnerVisible-paqsj\"><svg data-component=\"Octicon\" aria-hidden=\"true\" focusable=\"false\" class=\"octicon octicon-search\" viewBox=\"0 0 16 16\" width=\"16\" height=\"16\" fill=\"currentColor\" display=\"inline-block\" overflow=\"visible\" style=\"vertical-align: text-bottom;\"><path d=\"M10.68 11.74a6 6 0 0 1-7.922-8.982 6 6 0 0 1 8.982 7.922l3.04 3.04a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215ZM11.5 7a4.499 4.499 0 1 0-8.997 0A4.499 4.499 0 0 0 11.5 7Z\"></path></svg></div><span class=\"prc-Spinner-Box-Y-ke-\" data-component=\"Spinner\"><svg height=\"32px\" width=\"32px\" viewBox=\"0 0 16 16\" fill=\"none\" aria-hidden=\"true\" class=\"prc-components-SpinnerHidden-mRxuj prc-components-Spinner-fIUBk prc-components-SpinnerLeading-phYLe prc-Spinner-SpinnerAnimation-tutJZ\"><circle cx=\"8\" cy=\"8\" r=\"7\" stroke=\"currentColor\" stroke-opacity=\"0.25\" stroke-width=\"2\" vector-effect=\"non-scaling-stroke\"></circle><path d=\"M15 8a7.002 7.002 0 00-7-7\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" vector-effect=\"non-scaling-stroke\"></path></svg></span></div></span><input color=\"fg.default\" placeholder=\"Filter labels\" role=\"combobox\" aria-expanded=\"true\" aria-autocomplete=\"list\" aria-controls=\"_r_u_\" aria-label=\"Filter labels\" aria-describedby=\"_r_v_ _r_10_\" data-component=\"input\" class=\"prc-components-Input-IwWrt focus-visible\" type=\"text\" value=\"\" data-focus-visible-added=\"\" aria-activedescendant=\"_r_1a_\"><span class=\"TextInput-icon\" data-component=\"TextInput.TrailingVisual\"><div class=\"prc-components-Box-XRSqm\" id=\"_r_11_\"><span class=\"prc-Spinner-Box-Y-ke-\" data-component=\"Spinner\"><svg height=\"16px\" width=\"16px\" viewBox=\"0 0 16 16\" fill=\"none\" aria-hidden=\"true\" class=\"prc-components-SpinnerHidden-mRxuj prc-Spinner-SpinnerAnimation-tutJZ\"><circle cx=\"8\" cy=\"8\" r=\"7\" stroke=\"currentColor\" stroke-opacity=\"0.25\" stroke-width=\"2\" vector-effect=\"non-scaling-stroke\"></circle><path d=\"M15 8a7.002 7.002 0 00-7-7\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" vector-effect=\"non-scaling-stroke\"></path></svg></span></div></span></span></div><span class=\"prc-VisuallyHidden-VisuallyHidden-Q0qSB\" id=\"_r_v_\">Items will be filtered as you type</span><div class=\"prc-FilteredActionList-Container-647gF\"><ul class=\"prc-ActionList-ActionList-rPFF2 prc-FilteredActionList-ActionList-3-Bxb\" role=\"listbox\" data-component=\"ActionList\" data-dividers=\"true\" data-variant=\"horizontal-inset\" aria-label=\"Label results\" data-id=\"item-picker-root-id\" data-testid=\"item-picker-root\" aria-multiselectable=\"true\" id=\"_r_u_\" data-mixed-descriptions=\"true\" data-has-active-descendant=\"_r_1a_\"><li class=\"prc-ActionList-Group-lMIPQ\" data-component=\"ActionList.Group\" role=\"none\"><div role=\"presentation\" aria-hidden=\"true\" data-variant=\"filled\" data-component=\"GroupHeadingWrap\" class=\"prc-ActionList-GroupHeadingWrap-laXcX\"><span class=\"prc-ActionList-GroupHeading-STzxi\" id=\"_r_19_\">Suggestions</span></div><ul aria-label=\"Suggestions\" role=\"group\" class=\"prc-ActionList-GroupList-V5B3-\"><li tabindex=\"-1\" aria-labelledby=\"_r_1a_--label _r_1a_--trailing-visual\" aria-selected=\"false\" role=\"option\" id=\"_r_1a_\" data-id=\"MDU6TGFiZWwxOTI5MzUxMTU=\" data-first-child=\"\" source=\"[object Object]\" data-comp"
+   "html": "<div role=\"dialog\" data-component=\"AnchoredOverlay\" aria-labelledby=\"_r_p_\" data-anchor-position=\"true\" data-side=\"outside-bottom\" data-width-medium=\"\" data-visibility-visible=\"\" class=\"prc-SelectPanel-Overlay-tEbxh prc-AnchoredOverlay-AnchoredOverlay-fYg9Z prc-Overlay-Overlay-jfs-T\" data-focus-trap=\"active\" data-align=\"left\" data-list-overflow=\"true\" data-list-grouped=\"true\" data-height-xlarge=\"\" style=\"--left: 0px; position-anchor: --anchored-overlay-anchor-_r_s_; --anchored-overlay-anchor-offset-left: 0px;\"><span class=\"sentinel\" tabindex=\"0\" aria-hidden=\"true\" style=\"position: absolute; width: 1px; height: 1px; padding: 0px; margin: -1px; overflow: hidden; clip: rect(0px, 0px, 0px, 0px); white-space: nowrap; border: 0px;\"></span><div class=\"prc-SelectPanel-Wrapper-OD-e6\" data-variant=\"anchored\" data-component=\"SelectPanel\"><div class=\"prc-SelectPanel-Header-p2DSz\" data-component=\"SelectPanel.Header\"><div><h1 class=\"prc-SelectPanel-Title-4cax5 prc-Heading-Heading-MtWFE\" data-component=\"SelectPanel.Title\" id=\"_r_p_\">Filter by label</h1></div></div><div class=\"prc-SelectPanel-FilteredActionList--VY7U prc-FilteredActionList-Root-QgIk1\" data-testid=\"filtered-action-list\" data-component=\"FilteredActionList\"><div class=\"prc-FilteredActionList-Header-y6ihu\" data-component=\"FilteredActionList.Header\"><span class=\"prc-SelectPanel-TextInput--Qqkq TextInput-wrapper prc-components-TextInputWrapper-Hpdqi prc-components-TextInputBaseWrapper-wY-n0\" data-block=\"true\" data-no-trailing-action=\"true\" data-component=\"TextInput\" data-leading-visual=\"true\" data-no-trailing-visual=\"true\" aria-busy=\"false\" style=\"width: auto;\"><span class=\"TextInput-icon\" data-component=\"TextInput.LeadingVisual\"><div class=\"prc-components-Box-XRSqm\" id=\"_r_10_\"><div class=\"prc-components-SpinnerVisible-paqsj\"><svg data-component=\"Octicon\" aria-hidden=\"true\" focusable=\"false\" class=\"octicon octicon-search\" viewBox=\"0 0 16 16\" width=\"16\" height=\"16\" fill=\"currentColor\" display=\"inline-block\" overflow=\"visible\" style=\"vertical-align: text-bottom;\"><path d=\"M10.68 11.74a6 6 0 0 1-7.922-8.982 6 6 0 0 1 8.982 7.922l3.04 3.04a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215ZM11.5 7a4.499 4.499 0 1 0-8.997 0A4.499 4.499 0 0 0 11.5 7Z\"></path></svg></div><span class=\"prc-Spinner-Box-Y-ke-\" data-component=\"Spinner\"><svg height=\"32px\" width=\"32px\" viewBox=\"0 0 16 16\" fill=\"none\" aria-hidden=\"true\" class=\"prc-components-SpinnerHidden-mRxuj prc-components-Spinner-fIUBk prc-components-SpinnerLeading-phYLe prc-Spinner-SpinnerAnimation-tutJZ\"><circle cx=\"8\" cy=\"8\" r=\"7\" stroke=\"currentColor\" stroke-opacity=\"0.25\" stroke-width=\"2\" vector-effect=\"non-scaling-stroke\"></circle><path d=\"M15 8a7.002 7.002 0 00-7-7\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" vector-effect=\"non-scaling-stroke\"></path></svg></span></div></span><input color=\"fg.default\" placeholder=\"Filter labels\" role=\"combobox\" aria-expanded=\"true\" aria-autocomplete=\"list\" aria-controls=\"_r_u_\" aria-label=\"Filter labels\" aria-describedby=\"_r_v_ _r_10_\" data-component=\"input\" class=\"prc-components-Input-IwWrt\" type=\"text\" value=\"\" aria-activedescendant=\"_r_1a_\"><span class=\"TextInput-icon\" data-component=\"TextInput.TrailingVisual\"><div class=\"prc-components-Box-XRSqm\" id=\"_r_11_\"><span class=\"prc-Spinner-Box-Y-ke-\" data-component=\"Spinner\"><svg height=\"16px\" width=\"16px\" viewBox=\"0 0 16 16\" fill=\"none\" aria-hidden=\"true\" class=\"prc-components-SpinnerHidden-mRxuj prc-Spinner-SpinnerAnimation-tutJZ\"><circle cx=\"8\" cy=\"8\" r=\"7\" stroke=\"currentColor\" stroke-opacity=\"0.25\" stroke-width=\"2\" vector-effect=\"non-scaling-stroke\"></circle><path d=\"M15 8a7.002 7.002 0 00-7-7\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" vector-effect=\"non-scaling-stroke\"></path></svg></span></div></span></span></div><span class=\"prc-VisuallyHidden-VisuallyHidden-Q0qSB\" id=\"_r_v_\">Items will be filtered as you type</span><div class=\"prc-FilteredActionList-Container-647gF\"><ul class=\"prc-ActionList-ActionList-rPFF2 prc-FilteredActionList-ActionList-3-Bxb\" role=\"listbox\" data-component=\"ActionList\" data-dividers=\"true\" data-variant=\"horizontal-inset\" aria-label=\"Label results\" data-id=\"item-picker-root-id\" data-testid=\"item-picker-root\" aria-multiselectable=\"true\" id=\"_r_u_\" data-mixed-descriptions=\"true\" data-has-active-descendant=\"_r_1a_\"><li class=\"prc-ActionList-Group-lMIPQ\" data-component=\"ActionList.Group\" role=\"none\"><div role=\"presentation\" aria-hidden=\"true\" data-variant=\"filled\" data-component=\"GroupHeadingWrap\" class=\"prc-ActionList-GroupHeadingWrap-laXcX\"><span class=\"prc-ActionList-GroupHeading-STzxi\" id=\"_r_19_\">Suggestions</span></div><ul aria-label=\"Suggestions\" role=\"group\" class=\"prc-ActionList-GroupList-V5B3-\"><li tabindex=\"-1\" aria-labelledby=\"_r_1a_--label _r_1a_--trailing-visual\" aria-selected=\"false\" role=\"option\" id=\"_r_1a_\" data-id=\"MDU6TGFiZWwxOTI5MzUxMTU=\" data-first-child=\"\" source=\"[object Object]\" data-component=\"ActionList.Item\" data-has-description=\"false\" class=\"pr"
   },
   "sort": {
    "missing": true
@@ -125,108 +125,19 @@
  },
  "search": {
   "rect": [
-   293,
-   1047,
-   30
+   0,
+   0,
+   0
   ],
   "box": [
-   280,
-   1370
+   0,
+   0
   ],
-  "input_bg": "rgba(0, 0, 0, 0)",
-  "box_border": "1px/rgb(209, 217, 224)",
-  "focus_outline": "2px/solid/rgb(9, 105, 218)",
+  "input_bg": "rgb(255, 255, 255)",
+  "box_border": "0px/rgb(31, 35, 40)",
+  "focus_outline": "3px/none/rgb(31, 35, 40)",
   "focus_shadow": "none",
-  "radius": "6px 0px 0px 6px",
-  "html": "<div class=\"Box_2__ubxFA4 leftRounded__zB4I6t hasSubmit__j6O00I\"><div tabindex=\"-1\" class=\"styled-input-container Box_0__HkKqOF\"><div aria-hidden=\"true\" class=\"styled-input-content Box_1__kjXarr\"><span data-type=\"filter-expression\"><span data-type=\"filter\" class=\"\">is</span><span class=\"delimiter\">:</span><span><span data-type=\"filter-value\" class=\"valid-filter-value Box_1__drLDjC\">issue</span></span></span><span class=\"delimiter space-delimiter\"> </span><span data-type=\"filter-expression\"><span data-type=\"filter\" class=\"\">state</span><span class=\"delimiter\">:</span><span><span data-type=\"filter-value\" class=\"valid-filter-value Box_1__drLDjC\">open</span></span></span></div><div class=\"Box_2__oyay5f\"><div aria-hidden=\"true\" class=\"Box_3__EZ1k1_\"><span>is:issue state:open</span><span></span><span></span></div><input id=\"issues-index-filter-input\" role=\"combobox\" aria-expanded=\"false\" aria-autocomplete=\"list\" aria-haspopup=\"listbox\" aria-controls=\"issues-index-filter-results\" aria-describedby=\"\" placeholder=\"Search issues\" autocomplete=\"off\" spellcheck=\"false\" class=\"Box_4__0ZM1Bz focus-visible\" name=\"issues-index-filter-inputname\" value=\"is:issue state:open\" data-focus-visible-added=\"\" style=\"width: 113px;\"></div></div><button data-component=\"IconButton\" type=\"button\" class=\"prc-Button-ButtonBase-9n-Xk clearButton__zWB3bC prc-Button-IconButton-fyge7\" data-loading=\"false\" data-no-visuals=\"true\" data-size=\"small\" data-variant=\"invisible\" aria-labelledby=\"_R_hjd3ad85_\"><svg data-component=\"Octicon\" aria-hidden=\"true\" focusable=\"false\" class=\"octicon octicon-x-circle-fill\" viewBox=\"0 0 16 16\" width=\"16\" height=\"16\" fill=\"currentColor\" display=\"inline-block\" overflow=\"visible\" style=\"vertical-align:text-bottom\"><path d=\"M2.343 13.657A8 8 0 1 1 13.658 2.343 8 8 0 0 1 2.343 13.657ZM6.03 4.97a.751.751 0 0 0-1.042.018.751.751 0 0 0-.018 1.042L6.94 8 4.97 9.97a.749.749 0 0 0 .326 1.275.749.749 0 0 0 .734-.215L8 9.06l1.97 1.97a.749.749 0 0 0 1.275-.326.749.749 0 0 0-.215-.734L9.06 8l1.97-1.97a.749.749 0 0 0-.326-1.275.749.749 0 0 0-.734.215L8 6.94Z\"></path></svg></button><span class=\"prc-TooltipV2-Tooltip-tLeuB\" data-direction=\"s\" data-component=\"Tooltip\" aria-hidden=\"true\" id=\"_R_hjd3ad85_\" popover=\"auto\">Clear filter</span></div>"
- },
- "pulls_panels": {
-  "Filter by author": {
-   "w": 320,
-   "radius": "12px",
-   "ph": "Filter authors",
-   "multi": false,
-   "rows": [
-    {
-     "t": "0017031fcccp",
-     "cb": false
-    },
-    {
-     "t": "0o001Mustafa Ateş UZUN",
-     "cb": false
-    },
-    {
-     "t": "0xabcdefffMaxwell",
-     "cb": false
-    },
-    {
-     "t": "0xlaySerge",
-     "cb": false
-    },
-    {
-     "t": "3fTL3fTL",
-     "cb": false
-    }
-   ]
-  },
-  "Filter by label": {
-   "w": 320,
-   "radius": "12px",
-   "ph": "Filter labels",
-   "multi": true,
-   "rows": [
-    {
-     "t": "duplicatePopular",
-     "cb": true
-    },
-    {
-     "t": "enhancementProposed enha",
-     "cb": true
-    },
-    {
-     "t": "rejectPopular",
-     "cb": true
-    },
-    {
-     "t": "hidpi supportPopular",
-     "cb": true
-    },
-    {
-     "t": "not reproducibleIssues t",
-     "cb": true
-    }
-   ]
-  },
-  "Filter by reviews": {
-   "none": true
-  },
-  "Filter by assignee": {
-   "w": 320,
-   "radius": "12px",
-   "ph": "Filter assignees",
-   "multi": false,
-   "rows": [
-    {
-     "t": "No assignees",
-     "cb": false
-    },
-    {
-     "t": "CopilotGitHubAI",
-     "cb": false
-    },
-    {
-     "t": "chcg",
-     "cb": false
-    },
-    {
-     "t": "donhoDon HO",
-     "cb": false
-    },
-    {
-     "t": "pryrtPeterCJ",
-     "cb": false
-    }
-   ]
-  }
+  "radius": "0px",
+  "html": "<command-palette-input placeholder=\"Search or jump to...\" data-action=\" command-palette-input:command-palette#onInput command-palette-select:command-palette#onSelect command-palette-descope:command-palette#onDescope command-palette-cleared:command-palette#onInputClear \" data-catalyst=\"\" class=\"d-flex flex-items-center flex-nowrap py-1 tmp-pl-3 pr-2 border-bottom\"> <div class=\"js-search-icon d-flex flex-items-center mr-2\" style=\"height: 26px\"> <svg aria-hidden=\"true\" data-component=\"Octicon\" height=\"16\" viewBox=\"0 0 16 16\" version=\"1.1\" width=\"16\" data-view-component=\"true\" class=\"octicon octicon-search color-fg-muted\"> <path d=\"M10.68 11.74a6 6 0 0 1-7.922-8.982 6 6 0 0 1 8.982 7.922l3.04 3.04a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215ZM11.5 7a4.499 4.499 0 1 0-8.997 0A4.499 4.499 0 0 0 11.5 7Z\"></path> </svg> </div> <div class=\"js-spinner d-flex flex-items-center mr-2 color-fg-muted\" hidden=\"\"> <svg aria-label=\"Loading\" class=\"anim-rotate\" viewBox=\"0 0 16 16\" fill=\"none\" width=\"16\" height=\"16\"> <circle cx=\"8\" cy=\"8\" r=\"7\" stroke=\"currentColor\" stroke-opacity=\"0.25\" stroke-width=\"2\" vector-effect=\"non-scaling-stroke\"></circle> <path d=\"M15 8a7.002 7.002 0 00-7-7\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" vector-effect=\"non-scaling-stroke\"></path> </svg> </div> <command-palette-scope data-catalyst=\"\" class=\"d-inline-flex\" data-small-display=\"\"> <div data-target=\"command-palette-scope.placeholder\" class=\"color-fg-subtle\">/&nbsp;&nbsp;<span class=\"text-semibold color-fg-default\">...</span>&nbsp;&nbsp;/&nbsp;&nbsp;</div> <command-palette-token data-text=\"notepad-plus-plus\" data-id=\"MDEyOk9yZ2FuaXphdGlvbjEyNTg5MDg0\" data-type=\"owner\" data-value=\"notepad-plus-plus\" data-targets=\"command-palette-scope.tokens\" hidden=\"\" class=\"color-fg-default text-semibold\" style=\"white-space:nowrap;line-height:20px;\" data-catalyst=\"\">notepad-plu...<span class=\"color-fg-subtle text-normal\">&nbsp;&nbsp;/&nbsp;&nbsp;</span> </command-palette-token> <command-palette-token data-text=\"notepad-plus-plus\" data-id=\"MDEwOlJlcG9zaXRvcnkzMzAxNDgxMQ==\" data-type=\"repository\" data-value=\"notepad-plus-plus\" data-targets=\"command-palette-scope.tokens\" class=\"color-fg-default text-semibold\" style=\"white-space:nowrap;line-height:20px;\" data-catalyst=\"\">notepad-plu...<span class=\"color-fg-subtle text-normal\">&nbsp;&nbsp;/&nbsp;&nbsp;</span> </command-palette-token> </command-palette-scope> <div class=\"command-palette-input-group flex-1 form-control border-0 box-shadow-none\" style=\"z-index: 0\"> <div class=\"command-palette-typeahead position-absolute d-flex flex-items-center Truncate\"> <span class=\"typeahead-segment input-mirror\" data-target=\"command-palette-input.mirror\"></span> <span class=\"Truncate-text\" data-target=\"command-palette-input.typeaheadText\"></span> <span class=\"typeahead-segment\" data-target=\"command-palette-input.typeaheadPlaceholder\"></span> </div> <input class=\"js-overlay-input typeahead-input d-none\" disabled=\"\" tabindex=\"-1\" aria-label=\"Hidde"
  }
 }

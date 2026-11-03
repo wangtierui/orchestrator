@@ -1,0 +1,2507 @@
+{
+ "title": "Your profile",
+ "url": "https://github.com/settings/profile",
+ "user_login": "wangtierui",
+ "ready": "complete",
+ "counts": {
+  "els": 2268,
+  "interactive": 113,
+  "links": 0
+ },
+ "landmarks": [
+  [
+   "header",
+   0,
+   0,
+   1425,
+   64
+  ],
+  [
+   "nav",
+   100,
+   16,
+   741,
+   32
+  ],
+  [
+   "main",
+   0,
+   64,
+   1425,
+   2268
+  ],
+  [
+   "footer",
+   0,
+   2332,
+   1425,
+   113
+  ]
+ ],
+ "headings": [
+  [
+   "H1",
+   "Command palette"
+  ],
+  [
+   "H1",
+   "wangtierui (wangtierui) settings"
+  ],
+  [
+   "H1",
+   "Settings menu"
+  ],
+  [
+   "H2",
+   "Access"
+  ],
+  [
+   "H2",
+   "Code, planning, and automation"
+  ],
+  [
+   "H2",
+   "Security"
+  ],
+  [
+   "H2",
+   "Integrations"
+  ],
+  [
+   "H2",
+   "Archives"
+  ],
+  [
+   "H2",
+   "Access"
+  ],
+  [
+   "H2",
+   "Code, planning, and automation"
+  ],
+  [
+   "H2",
+   "Security"
+  ],
+  [
+   "H2",
+   "Integrations"
+  ],
+  [
+   "H2",
+   "Archives"
+  ],
+  [
+   "H2",
+   "Public profile"
+  ],
+  [
+   "H2",
+   "Contributions & activity"
+  ],
+  [
+   "H2",
+   "Profile settings"
+  ],
+  [
+   "H2",
+   "GitHub Developer Program"
+  ],
+  [
+   "H2",
+   "Jobs profile"
+  ],
+  [
+   "H2",
+   "Trending settings"
+  ],
+  [
+   "H2",
+   "Footer"
+  ],
+  [
+   "H3",
+   "Footer navigation"
+  ]
+ ],
+ "interactive": [
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Skip to content",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "#start-of-content",
+   "cls": "tmp-p-3 color-bg-accent-emphasis color-fg-on-emphasis show-on-focus js",
+   "rect": [
+    0,
+    0,
+    1,
+    1
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU prc-Button-IconBut",
+   "rect": [
+    16,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "/",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderHome__5NxwyK prc-Button-IconButto",
+   "rect": [
+    60,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Settings",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/settings",
+   "cls": "contextCrumb__Q8nET8 prc-Breadcrumbs-Item-jcraJ",
+   "rect": [
+    100,
+    16,
+    63,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Type / to search",
+   "aria": "Open quick search dialog, type / to search",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU searchButton__6Ru-",
+   "rect": [
+    849,
+    16,
+    191,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU js-activate-comman",
+   "rect": [
+    1039,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "/copilot",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU prc-Button-IconBut",
+   "rect": [
+    1078,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "Open Copilot…",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU CopilotMenu__oPrKz",
+   "rect": [
+    1109,
+    16,
+    26,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk actionMenuButton__QPJCOZ responsiveCreateM",
+   "rect": [
+    1159,
+    16,
+    50,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "/issues",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU prc-Button-IconBut",
+   "rect": [
+    1217,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "/pulls",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU prc-Button-IconBut",
+   "rect": [
+    1257,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "/repos",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU prc-Button-IconBut",
+   "rect": [
+    1297,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "/notifications",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU prc-Button-IconBut",
+   "rect": [
+    1337,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk anchor__zXCwGI prc-Button-IconButton-fyge7",
+   "rect": [
+    1377,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "wangtierui (wangtierui)",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/wangtierui",
+   "cls": "color-fg-default",
+   "rect": [
+    153,
+    92,
+    212,
+    27
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Public profile",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/settings/profile",
+   "cls": "ActionListContent ActionListContent--visual16",
+   "rect": [
+    89,
+    164,
+    272,
+    33
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Account",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/settings/admin",
+   "cls": "ActionListContent ActionListContent--visual16",
+   "rect": [
+    89,
+    197,
+    272,
+    33
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Appearance",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/settings/appearance",
+   "cls": "ActionListContent ActionListContent--visual16",
+   "rect": [
+    89,
+    230,
+    272,
+    33
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Accessibility",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/settings/accessibility",
+   "cls": "ActionListContent ActionListContent--visual16",
+   "rect": [
+    89,
+    263,
+    272,
+    33
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Notifications",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/settings/notifications",
+   "cls": "ActionListContent ActionListContent--visual16",
+   "rect": [
+    89,
+    296,
+    272,
+    33
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "presentation",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "ActionList-sectionDivider",
+   "rect": [
+    81,
+    336,
+    288,
+    1
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "UL",
+   "role": "list",
+   "text": "Billing and licensing Overview Usage AI usage Budgets and alerts Licensing Payment informa",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "ActionListWrap",
+   "rect": [
+    89,
+    377,
+    272,
+    297
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Billing and licensing",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "ActionListContent ActionListContent--visual16",
+   "rect": [
+    89,
+    377,
+    272,
+    33
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Overview",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.com/settings/billing",
+   "cls": "ActionListContent",
+   "rect": [
+    89,
+    394,
+    272,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Usage",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.com/settings/billing/usage",
+   "cls": "ActionListContent",
+   "rect": [
+    89,
+    425,
+    272,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "AI usage",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/settings/billing/ai_usage",
+   "cls": "ActionListContent",
+   "rect": [
+    89,
+    457,
+    272,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Budgets and alerts",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.com/settings/billing/budgets",
+   "cls": "ActionListContent",
+   "rect": [
+    89,
+    488,
+    272,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Licensing",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/settings/billing/licensing",
+   "cls": "ActionListContent",
+   "rect": [
+    89,
+    520,
+    272,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Payment information",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/settings/billing/payment_information",
+   "cls": "ActionListContent",
+   "rect": [
+    89,
+    551,
+    272,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Payment history",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.com/account/billing/history",
+   "cls": "ActionListContent",
+   "rect": [
+    89,
+    583,
+    272,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Additional billing details",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/settings/billing/subscriptions",
+   "cls": "ActionListContent",
+   "rect": [
+    89,
+    614,
+    272,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Education benefits",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/settings/education/benefits",
+   "cls": "ActionListContent",
+   "rect": [
+    89,
+    646,
+    272,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Emails",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/settings/emails",
+   "cls": "ActionListContent ActionListContent--visual16",
+   "rect": [
+    89,
+    410,
+    272,
+    33
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Password and authentication",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/settings/security",
+   "cls": "ActionListContent ActionListContent--visual16",
+   "rect": [
+    89,
+    443,
+    272,
+    33
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Sessions",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/settings/sessions",
+   "cls": "ActionListContent ActionListContent--visual16",
+   "rect": [
+    89,
+    476,
+    272,
+    33
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "SSH and GPG keys",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/settings/keys",
+   "cls": "ActionListContent ActionListContent--visual16",
+   "rect": [
+    89,
+    509,
+    272,
+    33
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Credentials",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/settings/credentials",
+   "cls": "ActionListContent ActionListContent--visual16",
+   "rect": [
+    89,
+    542,
+    272,
+    33
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Organizations",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/settings/organizations",
+   "cls": "ActionListContent ActionListContent--visual16",
+   "rect": [
+    89,
+    575,
+    272,
+    33
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Enterprises",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/settings/enterprises",
+   "cls": "ActionListContent ActionListContent--visual16",
+   "rect": [
+    89,
+    608,
+    272,
+    33
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Moderation",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "ActionListContent ActionListContent--visual16",
+   "rect": [
+    89,
+    641,
+    272,
+    33
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Blocked users",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/settings/blocked_users",
+   "cls": "ActionListContent",
+   "rect": [
+    89,
+    658,
+    272,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Interaction limits",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/settings/interaction_limits",
+   "cls": "ActionListContent",
+   "rect": [
+    89,
+    689,
+    272,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Code review limits",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/settings/code_review_limits",
+   "cls": "ActionListContent",
+   "rect": [
+    89,
+    721,
+    272,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "presentation",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "ActionList-sectionDivider",
+   "rect": [
+    81,
+    681,
+    288,
+    1
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "UL",
+   "role": "list",
+   "text": "Repositories Codespaces Packages Copilot Features Cloud Pages Saved replies",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "ActionListWrap",
+   "rect": [
+    89,
+    721,
+    272,
+    198
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Repositories",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/settings/repositories",
+   "cls": "ActionListContent ActionListContent--visual16",
+   "rect": [
+    89,
+    721,
+    272,
+    33
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Codespaces",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/settings/codespaces",
+   "cls": "ActionListContent ActionListContent--visual16",
+   "rect": [
+    89,
+    754,
+    272,
+    33
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Packages",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/settings/packages",
+   "cls": "ActionListContent ActionListContent--visual16",
+   "rect": [
+    89,
+    787,
+    272,
+    33
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Copilot",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "ActionListContent ActionListContent--visual16",
+   "rect": [
+    89,
+    820,
+    272,
+    33
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Features",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/settings/copilot/features",
+   "cls": "ActionListContent",
+   "rect": [
+    89,
+    837,
+    272,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Cloud",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/settings/copilot/coding_agent",
+   "cls": "ActionListContent",
+   "rect": [
+    89,
+    869,
+    272,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Pages",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/settings/pages",
+   "cls": "ActionListContent ActionListContent--visual16",
+   "rect": [
+    89,
+    853,
+    272,
+    33
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Saved replies",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/settings/replies",
+   "cls": "ActionListContent ActionListContent--visual16",
+   "rect": [
+    89,
+    886,
+    272,
+    33
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "presentation",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "ActionList-sectionDivider",
+   "rect": [
+    81,
+    926,
+    288,
+    1
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "UL",
+   "role": "list",
+   "text": "Code security",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "ActionListWrap",
+   "rect": [
+    89,
+    967,
+    272,
+    33
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Code security",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/settings/security_analysis",
+   "cls": "ActionListContent ActionListContent--visual16",
+   "rect": [
+    89,
+    967,
+    272,
+    33
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "presentation",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "ActionList-sectionDivider",
+   "rect": [
+    81,
+    1007,
+    288,
+    1
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "UL",
+   "role": "list",
+   "text": "Applications Scheduled reminders",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "ActionListWrap",
+   "rect": [
+    89,
+    1047,
+    272,
+    66
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Applications",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/settings/installations",
+   "cls": "ActionListContent ActionListContent--visual16",
+   "rect": [
+    89,
+    1047,
+    272,
+    33
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Scheduled reminders",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/settings/reminders",
+   "cls": "ActionListContent ActionListContent--visual16",
+   "rect": [
+    89,
+    1080,
+    272,
+    33
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "presentation",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "ActionList-sectionDivider",
+   "rect": [
+    81,
+    1120,
+    288,
+    1
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "UL",
+   "role": "list",
+   "text": "Security log Sponsorship log",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "ActionListWrap",
+   "rect": [
+    89,
+    1161,
+    272,
+    66
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Security log",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/settings/security-log",
+   "cls": "ActionListContent ActionListContent--visual16",
+   "rect": [
+    89,
+    1161,
+    272,
+    33
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Sponsorship log",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/settings/sponsors-log",
+   "cls": "ActionListContent ActionListContent--visual16",
+   "rect": [
+    89,
+    1194,
+    272,
+    33
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "LI",
+   "role": "presentation",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "ActionList-sectionDivider",
+   "rect": [
+    81,
+    1234,
+    288,
+    1
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Developer settings",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/settings/apps",
+   "cls": "ActionListContent ActionListContent--visual16",
+   "rect": [
+    89,
+    1243,
+    272,
+    33
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "INPUT",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "text",
+   "href": "",
+   "cls": "form-control",
+   "rect": [
+    409,
+    251,
+    440,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "SELECT",
+   "role": "",
+   "text": "Select a verified email to display wtr_806@outlook.com",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "form-select form-select",
+   "rect": [
+    409,
+    347,
+    236,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "email settings",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/settings/emails",
+   "cls": "Link--inTextBlock Link",
+   "rect": [
+    669,
+    384,
+    73,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "TEXTAREA",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "form-control form-control user-profile-bio-field js-length-limited-inp",
+   "rect": [
+    409,
+    445,
+    440,
+    75
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "SELECT",
+   "role": "",
+   "text": "Don't specify they/them she/her he/him Custom",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "form-select js-profile-editable-pronouns-select form-select form-contr",
+   "rect": [
+    409,
+    584,
+    440,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "INPUT",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "text",
+   "href": "",
+   "cls": "form-control",
+   "rect": [
+    409,
+    658,
+    440,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Social account",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    409,
+    741,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "INPUT",
+   "role": "",
+   "text": "",
+   "aria": "Link to social profile 1",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "text",
+   "href": "",
+   "cls": "ml-2 form-control flex-auto input-sm",
+   "rect": [
+    433,
+    734,
+    579,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Social account",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    409,
+    777,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "INPUT",
+   "role": "",
+   "text": "",
+   "aria": "Link to social profile 2",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "text",
+   "href": "",
+   "cls": "ml-2 form-control flex-auto input-sm",
+   "rect": [
+    433,
+    770,
+    579,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Social account",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    409,
+    813,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "INPUT",
+   "role": "",
+   "text": "",
+   "aria": "Link to social profile 3",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "text",
+   "href": "",
+   "cls": "ml-2 form-control flex-auto input-sm",
+   "rect": [
+    433,
+    806,
+    579,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "svg",
+   "role": "img",
+   "text": "",
+   "aria": "Social account",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "[object SVGAnimatedString]",
+   "rect": [
+    409,
+    849,
+    16,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "INPUT",
+   "role": "",
+   "text": "",
+   "aria": "Link to social profile 4",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "text",
+   "href": "",
+   "cls": "ml-2 form-control flex-auto input-sm",
+   "rect": [
+    433,
+    842,
+    579,
+    28
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "INPUT",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "text",
+   "href": "",
+   "cls": "form-control",
+   "rect": [
+    409,
+    912,
+    440,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "INPUT",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "text",
+   "href": "",
+   "cls": "form-control",
+   "rect": [
+    409,
+    1024,
+    440,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "INPUT",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "checkbox",
+   "href": "",
+   "cls": "form-checkbox-details-trigger",
+   "rect": [
+    409,
+    1075,
+    13,
+    13
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "ORCID.org",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://orcid.org",
+   "cls": "Link Link--underline",
+   "rect": [
+    409,
+    1173,
+    56,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": ".st0{fill:#A6CE39;} .st1{fill:#FFFFFF;} Connect your ORCID iD",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/settings/orcid_connection/new",
+   "cls": "Button--secondary Button--medium Button mt-1 tmp-mt-1",
+   "rect": [
+    409,
+    1202,
+    198,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "privacy statement",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.com/site/privacy",
+   "cls": "Link--inTextBlock Link",
+   "rect": [
+    817,
+    1268,
+    94,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Update profile",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "submit",
+   "href": "",
+   "cls": "Button--primary Button--medium Button",
+   "rect": [
+    409,
+    1311,
+    118,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "SUMMARY",
+   "role": "button",
+   "text": "Edit",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "",
+   "rect": [
+    1049,
+    252,
+    288,
+    200
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "INPUT",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "checkbox",
+   "href": "",
+   "cls": "",
+   "rect": [
+    409,
+    1458,
+    13,
+    13
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "INPUT",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "checkbox",
+   "href": "",
+   "cls": "",
+   "rect": [
+    409,
+    1512,
+    13,
+    13
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Read more",
+   "aria": "Read more about viewing contributions on your profile",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://docs.github.com/account-and-profile/setting-up-and-managing-your-github-profile/managing-contribution-settings-on-your-profile/viewing-contributions-on-your-profile",
+   "cls": "Link--inTextBlock Link",
+   "rect": [
+    1271,
+    1530,
+    57,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Update preferences",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "submit",
+   "href": "",
+   "cls": "btn",
+   "rect": [
+    409,
+    1562,
+    158,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "INPUT",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "checkbox",
+   "href": "",
+   "cls": "",
+   "rect": [
+    409,
+    1699,
+    13,
+    13
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Update preferences",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "submit",
+   "href": "",
+   "cls": "btn",
+   "rect": [
+    409,
+    1749,
+    158,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Join the GitHub Developer Program",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/developer/register?account=wangtierui",
+   "cls": "Link--inTextBlock Link",
+   "rect": [
+    846,
+    1883,
+    220,
+    19
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "GitHub developer program",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://docs.github.com/get-started/exploring-integrations/github-developer-program",
+   "cls": "Link--inTextBlock Link",
+   "rect": [
+    426,
+    1883,
+    868,
+    40
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "INPUT",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "checkbox",
+   "href": "",
+   "cls": "",
+   "rect": [
+    409,
+    2045,
+    13,
+    13
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Save jobs profile",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "submit",
+   "href": "",
+   "cls": "btn",
+   "rect": [
+    409,
+    2073,
+    139,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "SELECT",
+   "role": "",
+   "text": "No Preference Abkhazian Afar Afrikaans Akan Albanian Amharic Arabic Aragonese Armenian Ass",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "form-select",
+   "rect": [
+    409,
+    2233,
+    251,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Explore",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/explore",
+   "cls": "Link--inTextBlock Link",
+   "rect": [
+    801,
+    2281,
+    39,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Trending Repositories",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/trending",
+   "cls": "Link--inTextBlock Link",
+   "rect": [
+    865,
+    2281,
+    114,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "INPUT",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "submit",
+   "href": "",
+   "cls": "btn",
+   "rect": [
+    409,
+    2300,
+    177,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "FOOTER",
+   "role": "contentinfo",
+   "text": "Footer © 2026 GitHub, Inc. Footer navigation Terms Privacy Security Status Community Docs ",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "footer f6 color-fg-muted color-border-subtle tmp-pt-7 tmp-pb-6 p-respo",
+   "rect": [
+    0,
+    2332,
+    1425,
+    113
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "GitHub Homepage",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.com",
+   "cls": "footer-octicon mr-2",
+   "rect": [
+    293,
+    2380,
+    24,
+    25
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Terms",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://docs.github.com/site-policy/github-terms/github-terms-of-service",
+   "cls": "Link--secondary Link",
+   "rect": [
+    446,
+    2384,
+    31,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Privacy",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://docs.github.com/site-policy/privacy-policies/github-privacy-statement",
+   "cls": "Link--secondary Link",
+   "rect": [
+    493,
+    2384,
+    37,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Security",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.com/security",
+   "cls": "Link--secondary Link",
+   "rect": [
+    546,
+    2384,
+    42,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Status",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://www.githubstatus.com/",
+   "cls": "Link--secondary Link",
+   "rect": [
+    604,
+    2384,
+    32,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Community",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://github.community/",
+   "cls": "Link--secondary Link",
+   "rect": [
+    652,
+    2384,
+    62,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Docs",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://docs.github.com/",
+   "cls": "Link--secondary Link",
+   "rect": [
+    729,
+    2384,
+    26,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Contact",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "https://support.github.com?tags=dotcom-footer",
+   "cls": "Link--secondary Link",
+   "rect": [
+    771,
+    2384,
+    41,
+    16
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Manage cookies",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "Link--secondary underline-on-hover border-0 p-0 color-bg-transparent",
+   "rect": [
+    828,
+    2383,
+    86,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Do not share my personal information",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "Link--secondary underline-on-hover border-0 p-0 color-bg-transparent t",
+   "rect": [
+    931,
+    2383,
+    202,
+    18
+   ],
+   "disabled": false
+  }
+ ],
+ "tables": [],
+ "same_repo_links": [],
+ "density": null,
+ "fetched_at": "2026-11-03T19:28:20",
+ "elements_seen": 2268
+}

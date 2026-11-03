@@ -1,12 +1,12 @@
 {
- "title": "Projects · notepad-plus-plus/notepad-plus-plus · GitHub",
+ "title": "Projects · notepad-plus-plus/notepad-plus-plus",
  "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/projects",
- "user_login": "",
+ "user_login": "wangtierui",
  "ready": "complete",
  "counts": {
-  "els": 1131,
-  "interactive": 102,
-  "links": 11
+  "els": 1301,
+  "interactive": 56,
+  "links": 18
  },
  "landmarks": [
   [
@@ -14,33 +14,33 @@
    0,
    0,
    1425,
-   68
+   100
   ],
   [
    "nav",
-   64,
-   20,
-   462,
-   28
+   100,
+   16,
+   741,
+   32
   ],
   [
    "main",
    0,
-   68,
+   100,
    1425,
    936
   ],
   [
    "aside",
    0,
-   68,
+   100,
    256,
-   932
+   900
   ],
   [
    "footer",
    0,
-   1004,
+   1036,
    1425,
    58
   ]
@@ -48,7 +48,11 @@
  "headings": [
   [
    "H2",
-   "Navigation Menu"
+   "Repository navigation"
+  ],
+  [
+   "H1",
+   "Command palette"
   ],
   [
    "H1",
@@ -84,7 +88,7 @@
    "testid": "",
    "type": "",
    "href": "#start-of-content",
-   "cls": "px-2 tmp-py-4 color-bg-accent-emphasis color-fg-on-emphasis show-on-fo",
+   "cls": "tmp-p-3 color-bg-accent-emphasis color-fg-on-emphasis show-on-focus js",
    "rect": [
     0,
     0,
@@ -94,23 +98,23 @@
    "disabled": false
   },
   {
-   "tag": "HEADER",
-   "role": "banner",
-   "text": "Navigation MenuSign inProductsPlatformGitHubRepository hosting, code review, and collabora",
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
    "aria": "",
    "title": "",
    "pressed": "",
    "expanded": "",
    "checked": "",
    "testid": "",
-   "type": "",
+   "type": "button",
    "href": "",
-   "cls": "root__q6pgdo HeaderMktg header-logged-out fullWidth__R5BAbe",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU prc-Button-IconBut",
    "rect": [
-    0,
-    0,
-    1425,
-    68
+    16,
+    16,
+    32,
+    32
    ],
    "disabled": false
   },
@@ -118,18 +122,144 @@
    "tag": "A",
    "role": "",
    "text": "",
-   "aria": "Homepage",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "/",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderHome__5NxwyK prc-Button-IconButto",
+   "rect": [
+    60,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "notepad-plus-plus",
+   "aria": "",
    "title": "",
    "pressed": "",
    "expanded": "",
    "checked": "",
    "testid": "",
    "type": "",
-   "href": "/",
-   "cls": "logo__bX9RKh",
+   "href": "/notepad-plus-plus",
+   "cls": "contextCrumb__Q8nET8 prc-Breadcrumbs-Item-jcraJ",
    "rect": [
+    100,
     16,
-    18,
+    126,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "notepad-plus-plus",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus",
+   "cls": "contextCrumb__Q8nET8 contextCrumbLast__l2P28s repoPickerCrumb__56N_WW ",
+   "rect": [
+    241,
+    16,
+    125,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk contextCrumb__Q8nET8 repoPickerDropdownBut",
+   "rect": [
+    366,
+    16,
+    20,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Type / to search",
+   "aria": "Open quick search dialog, type / to search",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU searchButton__6Ru-",
+   "rect": [
+    849,
+    16,
+    191,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU js-activate-comman",
+   "rect": [
+    1039,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "/copilot",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU prc-Button-IconBut",
+   "rect": [
+    1078,
+    16,
     32,
     32
    ],
@@ -138,8 +268,8 @@
   {
    "tag": "BUTTON",
    "role": "",
-   "text": "Products",
-   "aria": "",
+   "text": "",
+   "aria": "Open Copilot…",
    "title": "",
    "pressed": "",
    "expanded": "false",
@@ -147,1397 +277,32 @@
    "testid": "",
    "type": "button",
    "href": "",
-   "cls": "Button__wfsCbG",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU CopilotMenu__oPrKz",
    "rect": [
-    64,
-    20,
-    92,
-    28
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "GitHubRepository hosting, code review, and collaboration",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/platform",
-   "cls": "Link__Q0qcrF Card__w-iBF7",
-   "rect": [
-    77,
-    97,
-    480,
-    174
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "CopilotAI coding agent for tasks, projects and automated work",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/features/copilot",
-   "cls": "Link__Q0qcrF Card__w-iBF7",
-   "rect": [
-    77,
-    279,
-    480,
-    174
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "ActionsCI/CD and automation",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/features/actions",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    637,
-    142,
-    295,
-    62
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Code QualityQuality analysis, fixes, and enforcement",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/features/code-quality",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    637,
-    212,
-    295,
-    83
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "CodespacesCloud development environments",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/features/codespaces",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    637,
-    303,
-    295,
-    62
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Code SecurityVulnerability detection and remediation",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/security/advanced-security/code-security",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    1001,
-    142,
-    295,
-    83
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Secret ProtectionSecret scanning and leak prevention",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/security/advanced-security/secret-protection",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    1001,
-    233,
-    295,
-    62
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "All Features",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/features",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    637,
-    431,
-    125,
-    36
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "BUTTON",
-   "role": "",
-   "text": "Developers",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "false",
-   "checked": "",
-   "testid": "",
-   "type": "button",
-   "href": "",
-   "cls": "Button__wfsCbG",
-   "rect": [
-    156,
-    20,
-    108,
-    28
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Documentation",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://docs.github.com/en",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    77,
-    142,
-    285,
-    36
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "svg",
-   "role": "img",
-   "text": "",
-   "aria": "(opens in a new tab)",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "",
-   "cls": "[object SVGAnimatedString]",
-   "rect": [
-    205,
-    154,
-    12,
-    12
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Training",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://learn.github.com/skills",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    77,
-    186,
-    285,
-    36
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "svg",
-   "role": "img",
-   "text": "",
-   "aria": "(opens in a new tab)",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "",
-   "cls": "[object SVGAnimatedString]",
-   "rect": [
-    151,
-    198,
-    12,
-    12
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Certifications",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://learn.github.com/credentials",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    77,
-    230,
-    285,
-    36
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "svg",
-   "role": "img",
-   "text": "",
-   "aria": "(opens in a new tab)",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "",
-   "cls": "[object SVGAnimatedString]",
-   "rect": [
-    189,
-    242,
-    12,
-    12
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Build with Copilot",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/features/ai",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    413,
-    142,
-    285,
-    35
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Customize Copilot",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-copilot-overview",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    413,
-    185,
-    285,
-    36
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "svg",
-   "role": "img",
-   "text": "",
-   "aria": "(opens in a new tab)",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "",
-   "cls": "[object SVGAnimatedString]",
-   "rect": [
-    561,
-    197,
-    12,
-    12
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Integrations",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/marketplace",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    413,
-    229,
-    285,
-    35
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Trending repos",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/trending",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    725,
-    142,
-    285,
-    35
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "GitHub Sponsors",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/open-source/sponsors",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    725,
-    185,
-    285,
-    35
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Events",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/resources/events",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    725,
-    228,
-    285,
-    35
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "ChangelogYour source for the latest features, improvements, and fixes across GitHub produc",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.blog/changelog/",
-   "cls": "Link__Q0qcrF Card__w-iBF7",
-   "rect": [
-    1038,
-    97,
-    264,
-    273
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "svg",
-   "role": "img",
-   "text": "",
-   "aria": "(opens in a new tab)",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "",
-   "cls": "[object SVGAnimatedString]",
-   "rect": [
-    1132,
-    273,
-    12,
-    12
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "BUTTON",
-   "role": "",
-   "text": "Businesses",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "false",
-   "checked": "",
-   "testid": "",
-   "type": "button",
-   "href": "",
-   "cls": "Button__wfsCbG",
-   "rect": [
-    264,
-    20,
-    104,
-    28
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Enterprises",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/enterprise",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    77,
-    142,
-    285,
-    35
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Team",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/team",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    77,
-    185,
-    285,
-    35
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Startups",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/enterprise/startups",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    77,
-    228,
-    285,
-    35
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Nonprofits",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/solutions/industry/nonprofits",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    77,
-    272,
-    285,
-    35
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Healthcare",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/solutions/industry/healthcare",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    413,
-    142,
-    285,
-    35
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Financial services",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/solutions/industry/financial-services",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    413,
-    185,
-    285,
-    35
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Manufacturing",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/solutions/industry/manufacturing",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    413,
-    228,
-    285,
-    35
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Government",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/solutions/industry/government",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    413,
-    272,
-    285,
-    35
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "See all industries",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/solutions/industry",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    413,
-    315,
-    285,
-    36
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Why GitHub",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/why-github",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    725,
-    142,
-    285,
-    35
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Customer Stories",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/customer-stories",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    725,
-    185,
-    285,
-    35
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Business insights",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/solutions/executive-insights",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    725,
-    228,
-    285,
-    35
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Trust Center",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/trust-center",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    725,
-    272,
-    285,
-    35
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "GitHub Advanced SecurityEnterprise-grade code security",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/security/advanced-security",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    1038,
-    142,
-    295,
-    62
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Copilot for businessEnterprise-grade AI features",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/features/copilot/copilot-business",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    1038,
-    212,
-    295,
-    62
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Premium SupportEnterprise-grade 24/7 support",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/enterprise/premium-support",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    1038,
-    282,
-    295,
-    62
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "BUTTON",
-   "role": "",
-   "text": "Resources",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "false",
-   "checked": "",
-   "testid": "",
-   "type": "button",
-   "href": "",
-   "cls": "Button__wfsCbG",
-   "rect": [
-    368,
-    20,
-    100,
-    28
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Documentation",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://docs.github.com/en",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    77,
-    142,
-    285,
-    36
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "svg",
-   "role": "img",
-   "text": "",
-   "aria": "(opens in a new tab)",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "",
-   "cls": "[object SVGAnimatedString]",
-   "rect": [
-    205,
-    154,
-    12,
-    12
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Resource center",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/resources",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    77,
-    186,
-    285,
-    35
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Blog",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.blog/",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    77,
-    229,
-    285,
-    36
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "svg",
-   "role": "img",
-   "text": "",
-   "aria": "(opens in a new tab)",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "",
-   "cls": "[object SVGAnimatedString]",
-   "rect": [
-    126,
-    241,
-    12,
-    12
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Events & webinars",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/resources/events",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    77,
-    273,
-    285,
-    35
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Community Forum",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/orgs/community/discussions",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    77,
-    316,
-    285,
-    35
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Customer Stories",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/customer-stories",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    77,
-    360,
-    285,
-    35
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Integrations",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/marketplace",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    77,
-    403,
-    285,
-    35
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Customer support",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://help.github.com/",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    413,
-    142,
-    285,
-    36
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "svg",
-   "role": "img",
-   "text": "",
-   "aria": "(opens in a new tab)",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "",
-   "cls": "[object SVGAnimatedString]",
-   "rect": [
-    560,
-    154,
-    12,
-    12
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Training",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://learn.github.com/skills",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    413,
-    186,
-    285,
-    36
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "svg",
-   "role": "img",
-   "text": "",
-   "aria": "(opens in a new tab)",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "",
-   "cls": "[object SVGAnimatedString]",
-   "rect": [
-    487,
-    198,
-    12,
-    12
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "GitHub Status",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://www.githubstatus.com/",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    413,
-    230,
-    285,
-    36
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "svg",
-   "role": "img",
-   "text": "",
-   "aria": "(opens in a new tab)",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "",
-   "cls": "[object SVGAnimatedString]",
-   "rect": [
-    529,
-    242,
-    12,
-    12
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "About",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/about",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    725,
-    142,
-    285,
-    35
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Partners",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/partners",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    725,
-    185,
-    285,
-    35
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Changelog",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.blog/changelog/",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    725,
-    228,
-    285,
-    36
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "svg",
-   "role": "img",
-   "text": "",
-   "aria": "(opens in a new tab)",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "",
-   "cls": "[object SVGAnimatedString]",
-   "rect": [
-    819,
-    240,
-    12,
-    12
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "GitHub UniverseThe event for developers, by developers — talks, workshops, and what’s next",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://githubuniverse.com/",
-   "cls": "Link__Q0qcrF Card__w-iBF7",
-   "rect": [
-    1038,
-    97,
-    264,
-    273
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "svg",
-   "role": "img",
-   "text": "",
-   "aria": "(opens in a new tab)",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "",
-   "cls": "[object SVGAnimatedString]",
-   "rect": [
-    1172,
-    273,
-    12,
-    12
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Pricing",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/pricing",
-   "cls": "NavLink__zcO0BA",
-   "rect": [
-    468,
-    20,
-    58,
-    28
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "BUTTON",
-   "role": "",
-   "text": "Search/",
-   "aria": "Search or jump to, type / to search",
-   "title": "",
-   "pressed": "",
-   "expanded": "false",
-   "checked": "",
-   "testid": "",
-   "type": "button",
-   "href": "",
-   "cls": "Primer_Brand__Button-module__Button___scH9Z Primer_Brand__Button-modul",
-   "rect": [
-    1006,
+    1109,
     16,
-    200,
-    36
+    26,
+    32
    ],
    "disabled": false
   },
   {
-   "tag": "A",
+   "tag": "BUTTON",
    "role": "",
-   "text": "Sign in",
+   "text": "",
    "aria": "",
    "title": "",
    "pressed": "",
-   "expanded": "",
+   "expanded": "false",
    "checked": "",
    "testid": "",
-   "type": "",
-   "href": "/login?return_to=https%3A%2F%2Fgithub.com%2Fnotepad-plus-plus%2Fnotepad-plus-plus%2Fprojects",
-   "cls": "Primer_Brand__Button-module__Button___scH9Z Primer_Brand__Button-modul",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk actionMenuButton__QPJCOZ responsiveCreateM",
    "rect": [
-    1214,
-    18,
-    71,
+    1159,
+    16,
+    50,
     32
    ],
    "disabled": false
@@ -1545,20 +310,83 @@
   {
    "tag": "A",
    "role": "",
-   "text": "Sign up",
+   "text": "",
    "aria": "",
    "title": "",
    "pressed": "",
    "expanded": "",
    "checked": "",
    "testid": "",
-   "type": "",
-   "href": "/signup?ref_cta=Sign+up&ref_loc=header+logged+out&ref_page=%2F%3Cuser-name%3E%2F%3Crepo-name%3E%2Frepos%2Fmemexes%2Findex&source=header-repo&source_repo=notepad-plus-plus%2Fnotepad-plus-plus",
-   "cls": "Primer_Brand__Button-module__Button___scH9Z Primer_Brand__Button-modul",
+   "type": "button",
+   "href": "/issues",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU prc-Button-IconBut",
    "rect": [
-    1293,
-    18,
-    76,
+    1217,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "/pulls",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU prc-Button-IconBut",
+   "rect": [
+    1257,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "/repos",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU prc-Button-IconBut",
+   "rect": [
+    1297,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "/notifications",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU prc-Button-IconBut",
+   "rect": [
+    1337,
+    16,
+    32,
     32
    ],
    "disabled": false
@@ -1575,11 +403,221 @@
    "testid": "",
    "type": "button",
    "href": "",
-   "cls": "Primer_Brand__Button-module__Button___scH9Z Primer_Brand__Button-modul",
+   "cls": "prc-Button-ButtonBase-9n-Xk anchor__zXCwGI prc-Button-IconButton-fyge7",
    "rect": [
     1377,
-    18,
+    16,
     32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "UL",
+   "role": "list",
+   "text": "CodeIssues2.9k (2.9k)Pull requests31 (31)AgentsActionsProjectsWikiSecurity and quality40 (",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "",
+   "cls": "prc-UnderlineNav-ItemsList-oj8gN prc-components-UnderlineItemList-xKlK",
+   "rect": [
+    16,
+    60,
+    1393,
+    40
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Code",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    16,
+    60,
+    73,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Issues2.9k (2.9k)",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/issues",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    97,
+    60,
+    122,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Pull requests31 (31)",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/pulls",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    227,
+    60,
+    155,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Agents",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/agents?author=wangtierui",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    390,
+    60,
+    85,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Actions",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/actions",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    483,
+    60,
+    87,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Projects",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/projects",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    578,
+    60,
+    90,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Wiki",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/wiki",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    676,
+    60,
+    68,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Security and quality40 (40)",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/security",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    752,
+    60,
+    201,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Insights",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/pulse",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    962,
+    60,
+    90,
     32
    ],
    "disabled": false
@@ -1599,7 +637,7 @@
    "cls": "prc-ActionList-ActionListContent-KBb8- prc-Link-Link-9ZwDx",
    "rect": [
     16,
-    84,
+    116,
     223,
     32
    ],
@@ -1620,7 +658,7 @@
    "cls": "prc-ActionList-ActionListContent-KBb8- prc-Link-Link-9ZwDx",
    "rect": [
     16,
-    116,
+    148,
     223,
     32
    ],
@@ -1641,7 +679,7 @@
    "cls": "prc-ActionList-ActionListContent-KBb8- prc-Link-Link-9ZwDx",
    "rect": [
     16,
-    148,
+    180,
     223,
     32
    ],
@@ -1662,7 +700,7 @@
    "cls": "prc-ActionList-ActionListContent-KBb8- prc-Link-Link-9ZwDx",
    "rect": [
     16,
-    180,
+    212,
     223,
     32
    ],
@@ -1683,7 +721,7 @@
    "cls": "prc-ActionList-ActionListContent-KBb8- prc-Link-Link-9ZwDx",
    "rect": [
     16,
-    212,
+    244,
     223,
     32
    ],
@@ -1704,7 +742,7 @@
    "cls": "prc-ActionList-ActionListContent-KBb8- prc-Link-Link-9ZwDx",
    "rect": [
     16,
-    285,
+    317,
     223,
     32
    ],
@@ -1725,7 +763,7 @@
    "cls": "prc-ActionList-ActionListContent-KBb8- prc-Link-Link-9ZwDx",
    "rect": [
     16,
-    317,
+    349,
     223,
     32
    ],
@@ -1746,7 +784,7 @@
    "cls": "prc-ActionList-ActionListContent-KBb8- prc-Link-Link-9ZwDx",
    "rect": [
     16,
-    349,
+    381,
     223,
     32
    ],
@@ -1767,7 +805,7 @@
    "cls": "prc-ActionList-ActionListContent-KBb8- prc-Link-Link-9ZwDx",
    "rect": [
     16,
-    381,
+    413,
     223,
     32
    ],
@@ -1830,7 +868,7 @@
    "cls": "HeaderInner__vi8Fya",
    "rect": [
     256,
-    92,
+    124,
     1169,
     33
    ],
@@ -1851,7 +889,7 @@
    "cls": "prc-SegmentedControl-Button-E48xz",
    "rect": [
     1267,
-    92,
+    124,
     43,
     32
    ],
@@ -1872,7 +910,7 @@
    "cls": "prc-SegmentedControl-Button-E48xz",
    "rect": [
     1311,
-    92,
+    124,
     90,
     32
    ],
@@ -1893,7 +931,7 @@
    "cls": "prc-components-Input-IwWrt",
    "rect": [
     313,
-    142,
+    174,
     1087,
     30
    ],
@@ -1914,7 +952,7 @@
    "cls": "prc-VisuallyHidden-VisuallyHidden-Q0qSB",
    "rect": [
     280,
-    189,
+    221,
     1,
     1
    ],
@@ -1935,7 +973,7 @@
    "cls": "container__OP-V2v selected__fg2bAE prc-Text-Text-9mHv3",
    "rect": [
     289,
-    198,
+    230,
     91,
     30
    ],
@@ -1956,7 +994,7 @@
    "cls": "container__OP-V2v prc-Text-Text-9mHv3",
    "rect": [
     396,
-    198,
+    230,
     98,
     30
    ],
@@ -1977,7 +1015,7 @@
    "cls": "prc-Button-ButtonBase-9n-Xk ListFilterButton__ccIaF1",
    "rect": [
     1321,
-    197,
+    229,
     71,
     32
    ],
@@ -1998,7 +1036,7 @@
    "cls": "footer f6 color-fg-muted color-border-subtle tmp-pt-7 tmp-pb-6 p-respo",
    "rect": [
     0,
-    1004,
+    1036,
     1425,
     58
    ],
@@ -2019,7 +1057,7 @@
    "cls": "footer-octicon mr-2",
    "rect": [
     293,
-    1021,
+    1053,
     24,
     25
    ],
@@ -2040,7 +1078,7 @@
    "cls": "Link--secondary Link",
    "rect": [
     446,
-    1026,
+    1058,
     31,
     16
    ],
@@ -2061,7 +1099,7 @@
    "cls": "Link--secondary Link",
    "rect": [
     493,
-    1026,
+    1058,
     37,
     16
    ],
@@ -2082,7 +1120,7 @@
    "cls": "Link--secondary Link",
    "rect": [
     546,
-    1026,
+    1058,
     42,
     16
    ],
@@ -2103,7 +1141,7 @@
    "cls": "Link--secondary Link",
    "rect": [
     604,
-    1026,
+    1058,
     32,
     16
    ],
@@ -2124,7 +1162,7 @@
    "cls": "Link--secondary Link",
    "rect": [
     652,
-    1026,
+    1058,
     62,
     16
    ],
@@ -2145,7 +1183,7 @@
    "cls": "Link--secondary Link",
    "rect": [
     729,
-    1026,
+    1058,
     26,
     16
    ],
@@ -2166,7 +1204,7 @@
    "cls": "Link--secondary Link",
    "rect": [
     771,
-    1026,
+    1058,
     41,
     16
    ],
@@ -2187,7 +1225,7 @@
    "cls": "Link--secondary underline-on-hover border-0 p-0 color-bg-transparent",
    "rect": [
     828,
-    1025,
+    1057,
     86,
     18
    ],
@@ -2208,7 +1246,7 @@
    "cls": "Link--secondary underline-on-hover border-0 p-0 color-bg-transparent t",
    "rect": [
     931,
-    1025,
+    1057,
     202,
     18
    ],
@@ -2218,18 +1256,25 @@
  "tables": [],
  "same_repo_links": [
   "/notepad-plus-plus/notepad-plus-plus",
+  "/notepad-plus-plus/notepad-plus-plus/issues",
+  "/notepad-plus-plus/notepad-plus-plus/pulls",
+  "/notepad-plus-plus/notepad-plus-plus/agents?author=wangtierui",
+  "/notepad-plus-plus/notepad-plus-plus/actions",
+  "/notepad-plus-plus/notepad-plus-plus/projects",
+  "/notepad-plus-plus/notepad-plus-plus/wiki",
+  "/notepad-plus-plus/notepad-plus-plus/security",
+  "/notepad-plus-plus/notepad-plus-plus/pulse",
   "/notepad-plus-plus/notepad-plus-plus/issues?q=is%3Aissue+state%3Aopen",
   "/notepad-plus-plus/notepad-plus-plus/issues?q=is%3Aissue+state%3Aopen+assignee%3A%40me",
   "/notepad-plus-plus/notepad-plus-plus/issues?q=is%3Aissue+state%3Aopen+author%3A%40me",
   "/notepad-plus-plus/notepad-plus-plus/issues?q=is%3Aissue+state%3Aopen+mentions%3A%40me",
   "/notepad-plus-plus/notepad-plus-plus/issues?q=is%3Aissue+updated%3A%3E%40today-1w+sort%3Aupdated-desc",
   "/notepad-plus-plus/notepad-plus-plus/issues/views",
-  "/notepad-plus-plus/notepad-plus-plus/projects",
   "/notepad-plus-plus/notepad-plus-plus/milestones",
   "/notepad-plus-plus/notepad-plus-plus/labels",
   "/notepad-plus-plus/notepad-plus-plus/projects?state=closed"
  ],
  "density": null,
- "fetched_at": "2026-11-03T16:17:54",
- "elements_seen": 1131
+ "fetched_at": "2026-11-03T19:24:52",
+ "elements_seen": 1301
 }

@@ -1,12 +1,12 @@
 {
- "title": "Issues · notepad-plus-plus/notepad-plus-plus · GitHub",
+ "title": "Issues · notepad-plus-plus/notepad-plus-plus",
  "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/issues",
- "user_login": "",
+ "user_login": "wangtierui",
  "ready": "complete",
  "counts": {
-  "els": 2162,
-  "interactive": 265,
-  "links": 23
+  "els": 2220,
+  "interactive": 226,
+  "links": 25
  },
  "landmarks": [
   [
@@ -14,33 +14,33 @@
    0,
    0,
    1425,
-   68
+   100
   ],
   [
    "nav",
-   64,
-   20,
-   462,
-   28
+   100,
+   16,
+   741,
+   32
   ],
   [
    "main",
    0,
-   68,
+   100,
    1425,
-   2178
+   1334
   ],
   [
    "aside",
    0,
-   168,
+   100,
    256,
-   832
+   900
   ],
   [
    "footer",
    0,
-   2246,
+   1434,
    1425,
    58
   ]
@@ -48,11 +48,11 @@
  "headings": [
   [
    "H2",
-   "Navigation Menu"
+   "Repository navigation"
   ],
   [
-   "H2",
-   "Repository navigation"
+   "H1",
+   "Command palette"
   ],
   [
    "H1",
@@ -188,7 +188,7 @@
    "testid": "",
    "type": "",
    "href": "#start-of-content",
-   "cls": "px-2 tmp-py-4 color-bg-accent-emphasis color-fg-on-emphasis show-on-fo",
+   "cls": "tmp-p-3 color-bg-accent-emphasis color-fg-on-emphasis show-on-focus js",
    "rect": [
     0,
     0,
@@ -198,1491 +198,42 @@
    "disabled": false
   },
   {
-   "tag": "HEADER",
-   "role": "banner",
-   "text": "Navigation MenuSign inProductsPlatformGitHubRepository hosting, code review, and collabora",
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
    "aria": "",
    "title": "",
    "pressed": "",
    "expanded": "",
    "checked": "",
    "testid": "",
-   "type": "",
+   "type": "button",
    "href": "",
-   "cls": "root__q6pgdo HeaderMktg header-logged-out fullWidth__R5BAbe",
-   "rect": [
-    0,
-    0,
-    1425,
-    68
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "",
-   "aria": "Homepage",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "/",
-   "cls": "logo__bX9RKh",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU prc-Button-IconBut",
    "rect": [
     16,
-    18,
+    16,
     32,
     32
    ],
    "disabled": false
   },
   {
-   "tag": "BUTTON",
+   "tag": "A",
    "role": "",
-   "text": "Products",
+   "text": "",
    "aria": "",
    "title": "",
    "pressed": "",
-   "expanded": "false",
+   "expanded": "",
    "checked": "",
    "testid": "",
    "type": "button",
-   "href": "",
-   "cls": "Button__wfsCbG",
+   "href": "/",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderHome__5NxwyK prc-Button-IconButto",
    "rect": [
-    64,
-    20,
-    92,
-    28
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "GitHubRepository hosting, code review, and collaboration",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/platform",
-   "cls": "Link__Q0qcrF Card__w-iBF7",
-   "rect": [
-    77,
-    97,
-    480,
-    174
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "CopilotAI coding agent for tasks, projects and automated work",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/features/copilot",
-   "cls": "Link__Q0qcrF Card__w-iBF7",
-   "rect": [
-    77,
-    279,
-    480,
-    174
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "ActionsCI/CD and automation",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/features/actions",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    637,
-    142,
-    295,
-    62
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Code QualityQuality analysis, fixes, and enforcement",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/features/code-quality",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    637,
-    212,
-    295,
-    83
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "CodespacesCloud development environments",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/features/codespaces",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    637,
-    303,
-    295,
-    62
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Code SecurityVulnerability detection and remediation",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/security/advanced-security/code-security",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    1001,
-    142,
-    295,
-    83
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Secret ProtectionSecret scanning and leak prevention",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/security/advanced-security/secret-protection",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    1001,
-    233,
-    295,
-    62
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "All Features",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/features",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    637,
-    431,
-    125,
-    36
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "BUTTON",
-   "role": "",
-   "text": "Developers",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "false",
-   "checked": "",
-   "testid": "",
-   "type": "button",
-   "href": "",
-   "cls": "Button__wfsCbG",
-   "rect": [
-    156,
-    20,
-    108,
-    28
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Documentation",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://docs.github.com/en",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    77,
-    142,
-    285,
-    36
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "svg",
-   "role": "img",
-   "text": "",
-   "aria": "(opens in a new tab)",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "",
-   "cls": "[object SVGAnimatedString]",
-   "rect": [
-    205,
-    154,
-    12,
-    12
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Training",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://learn.github.com/skills",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    77,
-    186,
-    285,
-    36
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "svg",
-   "role": "img",
-   "text": "",
-   "aria": "(opens in a new tab)",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "",
-   "cls": "[object SVGAnimatedString]",
-   "rect": [
-    151,
-    198,
-    12,
-    12
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Certifications",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://learn.github.com/credentials",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    77,
-    230,
-    285,
-    36
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "svg",
-   "role": "img",
-   "text": "",
-   "aria": "(opens in a new tab)",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "",
-   "cls": "[object SVGAnimatedString]",
-   "rect": [
-    189,
-    242,
-    12,
-    12
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Build with Copilot",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/features/ai",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    413,
-    142,
-    285,
-    35
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Customize Copilot",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-copilot-overview",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    413,
-    185,
-    285,
-    36
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "svg",
-   "role": "img",
-   "text": "",
-   "aria": "(opens in a new tab)",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "",
-   "cls": "[object SVGAnimatedString]",
-   "rect": [
-    561,
-    197,
-    12,
-    12
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Integrations",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/marketplace",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    413,
-    229,
-    285,
-    35
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Trending repos",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/trending",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    725,
-    142,
-    285,
-    35
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "GitHub Sponsors",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/open-source/sponsors",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    725,
-    185,
-    285,
-    35
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Events",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/resources/events",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    725,
-    228,
-    285,
-    35
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "ChangelogYour source for the latest features, improvements, and fixes across GitHub produc",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.blog/changelog/",
-   "cls": "Link__Q0qcrF Card__w-iBF7",
-   "rect": [
-    1038,
-    97,
-    264,
-    273
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "svg",
-   "role": "img",
-   "text": "",
-   "aria": "(opens in a new tab)",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "",
-   "cls": "[object SVGAnimatedString]",
-   "rect": [
-    1132,
-    273,
-    12,
-    12
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "BUTTON",
-   "role": "",
-   "text": "Businesses",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "false",
-   "checked": "",
-   "testid": "",
-   "type": "button",
-   "href": "",
-   "cls": "Button__wfsCbG",
-   "rect": [
-    264,
-    20,
-    104,
-    28
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Enterprises",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/enterprise",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    77,
-    142,
-    285,
-    35
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Team",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/team",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    77,
-    185,
-    285,
-    35
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Startups",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/enterprise/startups",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    77,
-    228,
-    285,
-    35
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Nonprofits",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/solutions/industry/nonprofits",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    77,
-    272,
-    285,
-    35
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Healthcare",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/solutions/industry/healthcare",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    413,
-    142,
-    285,
-    35
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Financial services",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/solutions/industry/financial-services",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    413,
-    185,
-    285,
-    35
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Manufacturing",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/solutions/industry/manufacturing",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    413,
-    228,
-    285,
-    35
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Government",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/solutions/industry/government",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    413,
-    272,
-    285,
-    35
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "See all industries",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/solutions/industry",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    413,
-    315,
-    285,
-    36
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Why GitHub",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/why-github",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    725,
-    142,
-    285,
-    35
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Customer Stories",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/customer-stories",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    725,
-    185,
-    285,
-    35
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Business insights",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/solutions/executive-insights",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    725,
-    228,
-    285,
-    35
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Trust Center",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/trust-center",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    725,
-    272,
-    285,
-    35
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "GitHub Advanced SecurityEnterprise-grade code security",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/security/advanced-security",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    1038,
-    142,
-    295,
-    62
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Copilot for businessEnterprise-grade AI features",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/features/copilot/copilot-business",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    1038,
-    212,
-    295,
-    62
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Premium SupportEnterprise-grade 24/7 support",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/enterprise/premium-support",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    1038,
-    282,
-    295,
-    62
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "BUTTON",
-   "role": "",
-   "text": "Resources",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "false",
-   "checked": "",
-   "testid": "",
-   "type": "button",
-   "href": "",
-   "cls": "Button__wfsCbG",
-   "rect": [
-    368,
-    20,
-    100,
-    28
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Documentation",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://docs.github.com/en",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    77,
-    142,
-    285,
-    36
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "svg",
-   "role": "img",
-   "text": "",
-   "aria": "(opens in a new tab)",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "",
-   "cls": "[object SVGAnimatedString]",
-   "rect": [
-    205,
-    154,
-    12,
-    12
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Resource center",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/resources",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    77,
-    186,
-    285,
-    35
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Blog",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.blog/",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    77,
-    229,
-    285,
-    36
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "svg",
-   "role": "img",
-   "text": "",
-   "aria": "(opens in a new tab)",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "",
-   "cls": "[object SVGAnimatedString]",
-   "rect": [
-    126,
-    241,
-    12,
-    12
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Events & webinars",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/resources/events",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    77,
-    273,
-    285,
-    35
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Community Forum",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/orgs/community/discussions",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    77,
-    316,
-    285,
-    35
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Customer Stories",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/customer-stories",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    77,
-    360,
-    285,
-    35
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Integrations",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/marketplace",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    77,
-    403,
-    285,
-    35
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Customer support",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://help.github.com/",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    413,
-    142,
-    285,
-    36
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "svg",
-   "role": "img",
-   "text": "",
-   "aria": "(opens in a new tab)",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "",
-   "cls": "[object SVGAnimatedString]",
-   "rect": [
-    560,
-    154,
-    12,
-    12
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Training",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://learn.github.com/skills",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    413,
-    186,
-    285,
-    36
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "svg",
-   "role": "img",
-   "text": "",
-   "aria": "(opens in a new tab)",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "",
-   "cls": "[object SVGAnimatedString]",
-   "rect": [
-    487,
-    198,
-    12,
-    12
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "GitHub Status",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://www.githubstatus.com/",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    413,
-    230,
-    285,
-    36
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "svg",
-   "role": "img",
-   "text": "",
-   "aria": "(opens in a new tab)",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "",
-   "cls": "[object SVGAnimatedString]",
-   "rect": [
-    529,
-    242,
-    12,
-    12
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "About",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/about",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    725,
-    142,
-    285,
-    35
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Partners",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/partners",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    725,
-    185,
-    285,
-    35
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Changelog",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.blog/changelog/",
-   "cls": "Link__Q0qcrF",
-   "rect": [
-    725,
-    228,
-    285,
-    36
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "svg",
-   "role": "img",
-   "text": "",
-   "aria": "(opens in a new tab)",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "",
-   "cls": "[object SVGAnimatedString]",
-   "rect": [
-    819,
-    240,
-    12,
-    12
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "GitHub UniverseThe event for developers, by developers — talks, workshops, and what’s next",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://githubuniverse.com/",
-   "cls": "Link__Q0qcrF Card__w-iBF7",
-   "rect": [
-    1038,
-    97,
-    264,
-    273
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "svg",
-   "role": "img",
-   "text": "",
-   "aria": "(opens in a new tab)",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "",
-   "cls": "[object SVGAnimatedString]",
-   "rect": [
-    1172,
-    273,
-    12,
-    12
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Pricing",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "https://github.com/pricing",
-   "cls": "NavLink__zcO0BA",
-   "rect": [
-    468,
-    20,
-    58,
-    28
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "BUTTON",
-   "role": "",
-   "text": "Search/",
-   "aria": "Search or jump to, type / to search",
-   "title": "",
-   "pressed": "",
-   "expanded": "false",
-   "checked": "",
-   "testid": "",
-   "type": "button",
-   "href": "",
-   "cls": "Primer_Brand__Button-module__Button___scH9Z Primer_Brand__Button-modul",
-   "rect": [
-    1006,
+    60,
     16,
-    200,
-    36
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Sign in",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "/login?return_to=https%3A%2F%2Fgithub.com%2Fnotepad-plus-plus%2Fnotepad-plus-plus%2Fissues",
-   "cls": "Primer_Brand__Button-module__Button___scH9Z Primer_Brand__Button-modul",
-   "rect": [
-    1214,
-    18,
-    71,
-    32
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "A",
-   "role": "",
-   "text": "Sign up",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "",
-   "href": "/signup?ref_cta=Sign+up&ref_loc=header+logged+out&ref_page=%2F%3Cuser-name%3E%2F%3Crepo-name%3E%2Fissues%2Findex&source=header-repo&source_repo=notepad-plus-plus%2Fnotepad-plus-plus",
-   "cls": "Primer_Brand__Button-module__Button___scH9Z Primer_Brand__Button-modul",
-   "rect": [
-    1293,
-    18,
-    76,
-    32
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "BUTTON",
-   "role": "",
-   "text": "",
-   "aria": "",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "button",
-   "href": "",
-   "cls": "Primer_Brand__Button-module__Button___scH9Z Primer_Brand__Button-modul",
-   "rect": [
-    1377,
-    18,
     32,
     32
    ],
@@ -1702,8 +253,8 @@
    "href": "/notepad-plus-plus",
    "cls": "contextCrumb__Q8nET8 prc-Breadcrumbs-Item-jcraJ",
    "rect": [
+    100,
     16,
-    84,
     126,
     32
    ],
@@ -1721,11 +272,242 @@
    "testid": "",
    "type": "",
    "href": "/notepad-plus-plus/notepad-plus-plus",
-   "cls": "contextCrumb__Q8nET8 prc-Breadcrumbs-Item-jcraJ",
+   "cls": "contextCrumb__Q8nET8 contextCrumbLast__l2P28s repoPickerCrumb__56N_WW ",
    "rect": [
-    157,
-    84,
-    129,
+    241,
+    16,
+    125,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk contextCrumb__Q8nET8 repoPickerDropdownBut",
+   "rect": [
+    366,
+    16,
+    20,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Type / to search",
+   "aria": "Open quick search dialog, type / to search",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU searchButton__6Ru-",
+   "rect": [
+    849,
+    16,
+    191,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU js-activate-comman",
+   "rect": [
+    1039,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "/copilot",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU prc-Button-IconBut",
+   "rect": [
+    1078,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "Open Copilot…",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU CopilotMenu__oPrKz",
+   "rect": [
+    1109,
+    16,
+    26,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "false",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk actionMenuButton__QPJCOZ responsiveCreateM",
+   "rect": [
+    1159,
+    16,
+    50,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "/issues",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU prc-Button-IconBut",
+   "rect": [
+    1217,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "/pulls",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU prc-Button-IconBut",
+   "rect": [
+    1257,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "/repos",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU prc-Button-IconBut",
+   "rect": [
+    1297,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "/notifications",
+   "cls": "prc-Button-ButtonBase-9n-Xk appHeaderButton__sQ5HIU prc-Button-IconBut",
+   "rect": [
+    1337,
+    16,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-Button-ButtonBase-9n-Xk anchor__zXCwGI prc-Button-IconButton-fyge7",
+   "rect": [
+    1377,
+    16,
+    32,
     32
    ],
    "disabled": false
@@ -1733,7 +515,7 @@
   {
    "tag": "UL",
    "role": "list",
-   "text": "CodeIssues2.9k (2.9k)Pull requests31 (31)ActionsProjectsWikiSecurity and quality40 (40)Ins",
+   "text": "CodeIssues2.9k (2.9k)Pull requests31 (31)AgentsActionsProjectsWikiSecurity and quality40 (",
    "aria": "",
    "title": "",
    "pressed": "",
@@ -1745,7 +527,7 @@
    "cls": "prc-UnderlineNav-ItemsList-oj8gN prc-components-UnderlineItemList-xKlK",
    "rect": [
     16,
-    128,
+    60,
     1393,
     40
    ],
@@ -1766,7 +548,7 @@
    "cls": "prc-components-UnderlineItem-7fP-n",
    "rect": [
     16,
-    128,
+    60,
     73,
     32
    ],
@@ -1787,7 +569,7 @@
    "cls": "prc-components-UnderlineItem-7fP-n",
    "rect": [
     97,
-    128,
+    60,
     122,
     32
    ],
@@ -1808,8 +590,29 @@
    "cls": "prc-components-UnderlineItem-7fP-n",
    "rect": [
     227,
-    128,
+    60,
     155,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "A",
+   "role": "",
+   "text": "Agents",
+   "aria": "",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "",
+   "href": "/notepad-plus-plus/notepad-plus-plus/agents?author=wangtierui",
+   "cls": "prc-components-UnderlineItem-7fP-n",
+   "rect": [
+    390,
+    60,
+    85,
     32
    ],
    "disabled": false
@@ -1828,8 +631,8 @@
    "href": "/notepad-plus-plus/notepad-plus-plus/actions",
    "cls": "prc-components-UnderlineItem-7fP-n",
    "rect": [
-    390,
-    128,
+    483,
+    60,
     87,
     32
    ],
@@ -1849,8 +652,8 @@
    "href": "/notepad-plus-plus/notepad-plus-plus/projects",
    "cls": "prc-components-UnderlineItem-7fP-n",
    "rect": [
-    485,
-    128,
+    578,
+    60,
     90,
     32
    ],
@@ -1870,8 +673,8 @@
    "href": "/notepad-plus-plus/notepad-plus-plus/wiki",
    "cls": "prc-components-UnderlineItem-7fP-n",
    "rect": [
-    584,
-    128,
+    676,
+    60,
     68,
     32
    ],
@@ -1891,8 +694,8 @@
    "href": "/notepad-plus-plus/notepad-plus-plus/security",
    "cls": "prc-components-UnderlineItem-7fP-n",
    "rect": [
-    660,
-    128,
+    752,
+    60,
     201,
     32
    ],
@@ -1912,8 +715,8 @@
    "href": "/notepad-plus-plus/notepad-plus-plus/pulse",
    "cls": "prc-components-UnderlineItem-7fP-n",
    "rect": [
-    869,
-    128,
+    962,
+    60,
     90,
     32
    ],
@@ -1934,7 +737,7 @@
    "cls": "prc-ActionList-ActionListContent-KBb8- prc-Link-Link-9ZwDx",
    "rect": [
     16,
-    184,
+    116,
     223,
     32
    ],
@@ -1955,7 +758,7 @@
    "cls": "prc-ActionList-ActionListContent-KBb8- prc-Link-Link-9ZwDx",
    "rect": [
     16,
-    216,
+    148,
     223,
     32
    ],
@@ -1976,7 +779,7 @@
    "cls": "prc-ActionList-ActionListContent-KBb8- prc-Link-Link-9ZwDx",
    "rect": [
     16,
-    248,
+    180,
     223,
     32
    ],
@@ -1997,7 +800,7 @@
    "cls": "prc-ActionList-ActionListContent-KBb8- prc-Link-Link-9ZwDx",
    "rect": [
     16,
-    280,
+    212,
     223,
     32
    ],
@@ -2018,7 +821,7 @@
    "cls": "prc-ActionList-ActionListContent-KBb8- prc-Link-Link-9ZwDx",
    "rect": [
     16,
-    312,
+    244,
     223,
     32
    ],
@@ -2039,7 +842,7 @@
    "cls": "prc-ActionList-ActionListContent-KBb8- prc-Link-Link-9ZwDx",
    "rect": [
     16,
-    385,
+    317,
     223,
     32
    ],
@@ -2060,7 +863,7 @@
    "cls": "prc-ActionList-ActionListContent-KBb8- prc-Link-Link-9ZwDx",
    "rect": [
     16,
-    417,
+    349,
     223,
     32
    ],
@@ -2081,7 +884,7 @@
    "cls": "prc-ActionList-ActionListContent-KBb8- prc-Link-Link-9ZwDx",
    "rect": [
     16,
-    449,
+    381,
     223,
     32
    ],
@@ -2102,7 +905,7 @@
    "cls": "prc-ActionList-ActionListContent-KBb8- prc-Link-Link-9ZwDx",
    "rect": [
     16,
-    481,
+    413,
     223,
     32
    ],
@@ -2161,11 +964,11 @@
    "checked": "",
    "testid": "",
    "type": "button",
-   "href": "/login?return_to=https://github.com/notepad-plus-plus/notepad-plus-plus/issues",
+   "href": "/notepad-plus-plus/notepad-plus-plus/issues/new/choose",
    "cls": "prc-Button-ButtonBase-9n-Xk",
    "rect": [
     1311,
-    192,
+    124,
     90,
     32
    ],
@@ -2186,7 +989,7 @@
    "cls": "css-truncate Link___MAuNs prc-Link-Link-9ZwDx",
    "rect": [
     293,
-    249,
+    181,
     539,
     52
    ],
@@ -2207,7 +1010,7 @@
    "cls": "[object SVGAnimatedString]",
    "rect": [
     293,
-    259,
+    191,
     16,
     16
    ],
@@ -2228,7 +1031,7 @@
    "cls": "prc-Link-Link-9ZwDx",
    "rect": [
     342,
-    306,
+    238,
     52,
     16
    ],
@@ -2249,7 +1052,7 @@
    "cls": "[object SVGAnimatedString]",
    "rect": [
     795,
-    306,
+    238,
     16,
     16
    ],
@@ -2291,7 +1094,7 @@
    "cls": "",
    "rect": [
     280,
-    348,
+    280,
     1121,
     32
    ],
@@ -2312,7 +1115,7 @@
    "cls": "FormControl FormControl--fullWidth Box_1__QYTtv7",
    "rect": [
     280,
-    348,
+    280,
     1121,
     32
    ],
@@ -2333,7 +1136,7 @@
    "cls": "styled-input-container Box_0__HkKqOF",
    "rect": [
     293,
-    349,
+    281,
     1047,
     30
    ],
@@ -2354,7 +1157,7 @@
    "cls": "Box_4__0ZM1Bz",
    "rect": [
     293,
-    349,
+    281,
     1047,
     30
    ],
@@ -2375,7 +1178,7 @@
    "cls": "prc-Button-ButtonBase-9n-Xk clearButton__zWB3bC prc-Button-IconButton-",
    "rect": [
     1340,
-    350,
+    282,
     28,
     28
    ],
@@ -2396,7 +1199,7 @@
    "cls": "prc-Button-ButtonBase-9n-Xk IconButton_0__SSIi47 prc-Button-IconButton",
    "rect": [
     1369,
-    348,
+    280,
     32,
     32
    ],
@@ -2417,7 +1220,7 @@
    "cls": "prc-ActionList-ActionList-rPFF2 ActionList_0__Ssg8Xf",
    "rect": [
     277,
-    384,
+    316,
     250,
     48
    ],
@@ -2426,7 +1229,7 @@
   {
    "tag": "A",
    "role": "",
-   "text": "Open2,902 (2,902)",
+   "text": "Open2,901 (2,901)",
    "aria": "",
    "title": "",
    "pressed": "",
@@ -2438,8 +1241,8 @@
    "cls": "container__OP-V2v selected__fg2bAE prc-Text-Text-9mHv3",
    "rect": [
     289,
-    406,
-    102,
+    338,
+    100,
     30
    ],
    "disabled": false
@@ -2447,7 +1250,7 @@
   {
    "tag": "A",
    "role": "",
-   "text": "Closed8,927 (8,927)",
+   "text": "Closed8,928 (8,928)",
    "aria": "",
    "title": "",
    "pressed": "",
@@ -2458,8 +1261,8 @@
    "href": "#",
    "cls": "container__OP-V2v prc-Text-Text-9mHv3",
    "rect": [
-    391,
-    406,
+    389,
+    338,
     109,
     30
    ],
@@ -2479,9 +1282,9 @@
    "href": "",
    "cls": "Box_0__dR0_nG",
    "rect": [
-    500,
-    405,
-    823,
+    499,
+    337,
+    824,
     32
    ],
    "disabled": false
@@ -2501,7 +1304,7 @@
    "cls": "prc-Button-ButtonBase-9n-Xk ListFilterButton__ccIaF1",
    "rect": [
     614,
-    405,
+    337,
     89,
     32
    ],
@@ -2522,7 +1325,7 @@
    "cls": "prc-Button-ButtonBase-9n-Xk ListFilterButton__ccIaF1",
    "rect": [
     707,
-    405,
+    337,
     85,
     32
    ],
@@ -2543,7 +1346,7 @@
    "cls": "prc-Button-ButtonBase-9n-Xk ListFilterButton__ccIaF1",
    "rect": [
     796,
-    405,
+    337,
     95,
     32
    ],
@@ -2564,7 +1367,7 @@
    "cls": "prc-Button-ButtonBase-9n-Xk ListFilterButton__ccIaF1",
    "rect": [
     894,
-    405,
+    337,
     113,
     32
    ],
@@ -2585,7 +1388,7 @@
    "cls": "prc-Button-ButtonBase-9n-Xk ListFilterButton__ccIaF1",
    "rect": [
     1011,
-    405,
+    337,
     107,
     32
    ],
@@ -2606,7 +1409,7 @@
    "cls": "prc-Button-ButtonBase-9n-Xk ListFilterButton__ccIaF1",
    "rect": [
     1122,
-    405,
+    337,
     81,
     32
    ],
@@ -2627,29 +1430,8 @@
    "cls": "prc-Button-ButtonBase-9n-Xk ListFilterButton__ccIaF1",
    "rect": [
     1207,
-    405,
+    337,
     116,
-    32
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "BUTTON",
-   "role": "",
-   "text": "",
-   "aria": "",
-   "title": "",
-   "pressed": "true",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "button",
-   "href": "",
-   "cls": "prc-SegmentedControl-Button-E48xz prc-SegmentedControl-IconButton-tlzD",
-   "rect": [
-    1327,
-    405,
-    32,
     32
    ],
    "disabled": false
@@ -2668,8 +1450,29 @@
    "href": "",
    "cls": "prc-SegmentedControl-Button-E48xz prc-SegmentedControl-IconButton-tlzD",
    "rect": [
+    1327,
+    337,
+    32,
+    32
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "",
+   "aria": "",
+   "title": "",
+   "pressed": "true",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "prc-SegmentedControl-Button-E48xz prc-SegmentedControl-IconButton-tlzD",
+   "rect": [
     1360,
-    405,
+    337,
     32,
     32
    ],
@@ -2678,7 +1481,7 @@
   {
    "tag": "UL",
    "role": "list",
-   "text": "[BUG] vertical tabs and a narrow window causes tabs to be cut offUnreadnotepad-plus-plus/n",
+   "text": "[BUG] vertical tabs and a narrow window causes tabs to be cut offnotepad-plus-plus/notepad",
    "aria": "",
    "title": "",
    "pressed": "",
@@ -2690,16 +1493,16 @@
    "cls": "ul__5IxUHb withMetadata__klorrw",
    "rect": [
     281,
-    445,
+    377,
     1119,
-    1693
+    949
    ],
    "disabled": false
   },
   {
    "tag": "LI",
    "role": "",
-   "text": "[BUG] vertical tabs and a narrow window causes tabs to be cut offUnreadnotepad-plus-plus/n",
+   "text": "[BUG] vertical tabs and a narrow window causes tabs to be cut offnotepad-plus-plus/notepad",
    "aria": "[BUG] vertical tabs and a narrow window causes tabs to be cut off. More information available below.",
    "title": "",
    "pressed": "",
@@ -2708,12 +1511,12 @@
    "testid": "",
    "type": "",
    "href": "",
-   "cls": "listItem__X41oTe unreadBorder__IuApXO",
+   "cls": "listItem__X41oTe compact___mvP2J",
    "rect": [
     281,
-    445,
+    377,
     1119,
-    65
+    38
    ],
    "disabled": false
   },
@@ -2732,9 +1535,9 @@
    "cls": "anchor__PSAOdR inline__z8HXmA inlineCodeTitle__kWY7pC",
    "rect": [
     321,
-    454,
-    477,
-    21
+    386,
+    405,
+    19
    ],
    "disabled": false
   },
@@ -2753,7 +1556,7 @@
    "cls": "[object SVGAnimatedString]",
    "rect": [
     297,
-    459,
+    387,
     16,
     16
    ],
@@ -2762,19 +1565,40 @@
   {
    "tag": "BUTTON",
    "role": "",
-   "text": "Filter by author IKatchya",
-   "aria": "",
+   "text": "notepad-plus-plus/notepad-plus-plus",
+   "aria": "Filter by repository notepad-plus-plus/notepad-plus-plus",
    "title": "",
    "pressed": "",
    "expanded": "",
    "checked": "",
-   "testid": "author-filter-link",
+   "testid": "",
    "type": "button",
    "href": "",
-   "cls": "filterLink__ywNfwR authorLink__jEE_DC Link__H3GvIl",
+   "cls": "filterLink__ywNfwR",
    "rect": [
-    570,
-    481,
+    730,
+    387,
+    200,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "IKatchya",
+   "aria": "Filter by author IKatchya",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__ywNfwR Link__H3GvIl",
+   "rect": [
+    943,
+    387,
     45,
     18
    ],
@@ -2794,8 +1618,8 @@
    "href": "",
    "cls": "[object SVGAnimatedString]",
    "rect": [
-    1229,
-    469,
+    1148,
+    388,
     16,
     16
    ],
@@ -2804,7 +1628,7 @@
   {
    "tag": "LI",
    "role": "",
-   "text": "[Feature request] Add AI guidelinesUnreadnotepad-plus-plus/notepad-plus-plus#18592 · Filte",
+   "text": "[Feature request] Add AI guidelinesnotepad-plus-plus/notepad-plus-plus•ozone101———",
    "aria": "[Feature request] Add AI guidelines. More information available below.",
    "title": "",
    "pressed": "",
@@ -2813,12 +1637,12 @@
    "testid": "",
    "type": "",
    "href": "",
-   "cls": "listItem__X41oTe unreadBorder__IuApXO",
+   "cls": "listItem__X41oTe compact___mvP2J",
    "rect": [
     281,
-    510,
+    415,
     1119,
-    65
+    38
    ],
    "disabled": false
   },
@@ -2837,9 +1661,9 @@
    "cls": "anchor__PSAOdR inline__z8HXmA inlineCodeTitle__kWY7pC",
    "rect": [
     321,
-    519,
-    257,
-    21
+    424,
+    218,
+    19
    ],
    "disabled": false
   },
@@ -2858,7 +1682,7 @@
    "cls": "[object SVGAnimatedString]",
    "rect": [
     297,
-    524,
+    425,
     16,
     16
    ],
@@ -2867,19 +1691,40 @@
   {
    "tag": "BUTTON",
    "role": "",
-   "text": "Filter by author ozone10",
-   "aria": "",
+   "text": "notepad-plus-plus/notepad-plus-plus",
+   "aria": "Filter by repository notepad-plus-plus/notepad-plus-plus",
    "title": "",
    "pressed": "",
    "expanded": "",
    "checked": "",
-   "testid": "author-filter-link",
+   "testid": "",
    "type": "button",
    "href": "",
-   "cls": "filterLink__ywNfwR authorLink__jEE_DC Link__H3GvIl",
+   "cls": "filterLink__ywNfwR",
    "rect": [
-    570,
-    546,
+    543,
+    425,
+    200,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "ozone10",
+   "aria": "Filter by author ozone10",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__ywNfwR Link__H3GvIl",
+   "rect": [
+    756,
+    425,
     46,
     18
    ],
@@ -2899,8 +1744,8 @@
    "href": "https://github.com/notepad-plus-plus/notepad-plus-plus/pull/18593",
    "cls": "d-inline-flex flex-items-center gap-1 linkedPullRequestLink__YiBqgz pr",
    "rect": [
-    1176,
-    533,
+    1068,
+    425,
     26,
     18
    ],
@@ -2909,7 +1754,7 @@
   {
    "tag": "LI",
    "role": "",
-   "text": "[BUG] <title>VietnameseUnreadnotepad-plus-plus/notepad-plus-plus#18590 · Filter by author ",
+   "text": "[BUG] <title>Vietnamesenotepad-plus-plus/notepad-plus-plus•seeeerge————",
    "aria": "[BUG] <title>Vietnamese. More information available below.",
    "title": "",
    "pressed": "",
@@ -2918,12 +1763,12 @@
    "testid": "",
    "type": "",
    "href": "",
-   "cls": "listItem__X41oTe unreadBorder__IuApXO",
+   "cls": "listItem__X41oTe compact___mvP2J",
    "rect": [
     281,
-    575,
+    453,
     1119,
-    65
+    38
    ],
    "disabled": false
   },
@@ -2942,9 +1787,9 @@
    "cls": "anchor__PSAOdR inline__z8HXmA inlineCodeTitle__kWY7pC",
    "rect": [
     321,
-    584,
-    182,
-    21
+    462,
+    154,
+    19
    ],
    "disabled": false
   },
@@ -2963,7 +1808,7 @@
    "cls": "[object SVGAnimatedString]",
    "rect": [
     297,
-    589,
+    463,
     16,
     16
    ],
@@ -2972,19 +1817,40 @@
   {
    "tag": "BUTTON",
    "role": "",
-   "text": "Filter by author seeeerge",
-   "aria": "",
+   "text": "notepad-plus-plus/notepad-plus-plus",
+   "aria": "Filter by repository notepad-plus-plus/notepad-plus-plus",
    "title": "",
    "pressed": "",
    "expanded": "",
    "checked": "",
-   "testid": "author-filter-link",
+   "testid": "",
    "type": "button",
    "href": "",
-   "cls": "filterLink__ywNfwR authorLink__jEE_DC Link__H3GvIl",
+   "cls": "filterLink__ywNfwR",
    "rect": [
-    570,
-    611,
+    479,
+    463,
+    200,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "seeeerge",
+   "aria": "Filter by author seeeerge",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__ywNfwR Link__H3GvIl",
+   "rect": [
+    692,
+    463,
     48,
     18
    ],
@@ -2993,7 +1859,7 @@
   {
    "tag": "LI",
    "role": "",
-   "text": "[BUG] Space dots ignore display scaling: SCI_SETWHITESPACESIZE is a fixed 2 pxhidpi suppor",
+   "text": "[BUG] Space dots ignore display scaling: SCI_SETWHITESPACESIZE is a fixed 2 pxnotepad-plus",
    "aria": "[BUG] Space dots ignore display scaling: SCI_SETWHITESPACESIZE is a fixed 2 px. More information available below.",
    "title": "",
    "pressed": "",
@@ -3002,12 +1868,12 @@
    "testid": "",
    "type": "",
    "href": "",
-   "cls": "listItem__X41oTe unreadBorder__IuApXO",
+   "cls": "listItem__X41oTe compact___mvP2J",
    "rect": [
     281,
-    640,
+    491,
     1119,
-    65
+    38
    ],
    "disabled": false
   },
@@ -3026,30 +1892,9 @@
    "cls": "anchor__PSAOdR inline__z8HXmA inlineCodeTitle__kWY7pC",
    "rect": [
     321,
-    649,
-    581,
-    21
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "BUTTON",
-   "role": "",
-   "text": "hidpi support",
-   "aria": "Filter by label hidpi support",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "button",
-   "href": "",
-   "cls": "filterLink__ywNfwR",
-   "rect": [
-    906,
-    649,
-    96,
-    21
+    500,
+    493,
+    19
    ],
    "disabled": false
   },
@@ -3068,7 +1913,7 @@
    "cls": "[object SVGAnimatedString]",
    "rect": [
     297,
-    654,
+    501,
     16,
     16
    ],
@@ -3077,19 +1922,40 @@
   {
    "tag": "BUTTON",
    "role": "",
-   "text": "Filter by author yjlin0224",
-   "aria": "",
+   "text": "notepad-plus-plus/notepad-plus-plus",
+   "aria": "Filter by repository notepad-plus-plus/notepad-plus-plus",
    "title": "",
    "pressed": "",
    "expanded": "",
    "checked": "",
-   "testid": "author-filter-link",
+   "testid": "",
    "type": "button",
    "href": "",
-   "cls": "filterLink__ywNfwR authorLink__jEE_DC Link__H3GvIl",
+   "cls": "filterLink__ywNfwR",
    "rect": [
-    570,
-    676,
+    796,
+    501,
+    200,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "yjlin0224",
+   "aria": "Filter by author yjlin0224",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__ywNfwR Link__H3GvIl",
+   "rect": [
+    1009,
+    501,
     47,
     18
    ],
@@ -3109,8 +1975,8 @@
    "href": "https://github.com/notepad-plus-plus/notepad-plus-plus/pull/18591",
    "cls": "d-inline-flex flex-items-center gap-1 linkedPullRequestLink__YiBqgz pr",
    "rect": [
-    1176,
-    663,
+    1068,
+    501,
     26,
     18
    ],
@@ -3119,7 +1985,7 @@
   {
    "tag": "LI",
    "role": "",
-   "text": "[BUG] <Ctrl+Alt+L> keyboard shortcut not working for Text Direction LTRUnreadnotepad-plus-",
+   "text": "[BUG] <Ctrl+Alt+L> keyboard shortcut not working for Text Direction LTRnotepad-plus-plus/n",
    "aria": "[BUG] <Ctrl+Alt+L> keyboard shortcut not working for Text Direction LTR. More information available below.",
    "title": "",
    "pressed": "",
@@ -3128,12 +1994,12 @@
    "testid": "",
    "type": "",
    "href": "",
-   "cls": "listItem__X41oTe unreadBorder__IuApXO",
+   "cls": "listItem__X41oTe compact___mvP2J",
    "rect": [
     281,
-    705,
+    529,
     1119,
-    65
+    38
    ],
    "disabled": false
   },
@@ -3152,9 +2018,9 @@
    "cls": "anchor__PSAOdR inline__z8HXmA inlineCodeTitle__kWY7pC",
    "rect": [
     321,
-    714,
-    535,
-    21
+    538,
+    452,
+    19
    ],
    "disabled": false
   },
@@ -3173,7 +2039,7 @@
    "cls": "[object SVGAnimatedString]",
    "rect": [
     297,
-    719,
+    539,
     16,
     16
    ],
@@ -3182,19 +2048,40 @@
   {
    "tag": "BUTTON",
    "role": "",
-   "text": "Filter by author Moatassem",
-   "aria": "",
+   "text": "notepad-plus-plus/notepad-plus-plus",
+   "aria": "Filter by repository notepad-plus-plus/notepad-plus-plus",
    "title": "",
    "pressed": "",
    "expanded": "",
    "checked": "",
-   "testid": "author-filter-link",
+   "testid": "",
    "type": "button",
    "href": "",
-   "cls": "filterLink__ywNfwR authorLink__jEE_DC Link__H3GvIl",
+   "cls": "filterLink__ywNfwR",
    "rect": [
-    570,
-    741,
+    777,
+    539,
+    200,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Moatassem",
+   "aria": "Filter by author Moatassem",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__ywNfwR Link__H3GvIl",
+   "rect": [
+    990,
+    539,
     61,
     18
    ],
@@ -3212,12 +2099,12 @@
    "testid": "",
    "type": "",
    "href": "",
-   "cls": "listItem__X41oTe unreadBorder__IuApXO",
+   "cls": "listItem__X41oTe compact___mvP2J",
    "rect": [
     281,
-    770,
+    567,
     1119,
-    65
+    38
    ],
    "disabled": false
   },
@@ -3236,9 +2123,9 @@
    "cls": "anchor__PSAOdR inline__z8HXmA inlineCodeTitle__kWY7pC",
    "rect": [
     321,
-    779,
-    715,
-    21
+    576,
+    605,
+    19
    ],
    "disabled": false
   },
@@ -3257,7 +2144,7 @@
    "cls": "[object SVGAnimatedString]",
    "rect": [
     297,
-    784,
+    577,
     16,
     16
    ],
@@ -3266,19 +2153,40 @@
   {
    "tag": "BUTTON",
    "role": "",
-   "text": "Filter by author Firefly0619sec",
-   "aria": "",
+   "text": "notepad-plus-plus/notepad-plus-plus",
+   "aria": "Filter by repository notepad-plus-plus/notepad-plus-plus",
    "title": "",
    "pressed": "",
    "expanded": "",
    "checked": "",
-   "testid": "author-filter-link",
+   "testid": "",
    "type": "button",
    "href": "",
-   "cls": "filterLink__ywNfwR authorLink__jEE_DC Link__H3GvIl",
+   "cls": "filterLink__ywNfwR",
    "rect": [
-    570,
-    806,
+    769,
+    577,
+    200,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Firefly0619sec",
+   "aria": "Filter by author Firefly0619sec",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__ywNfwR Link__H3GvIl",
+   "rect": [
+    982,
+    577,
     74,
     18
    ],
@@ -3296,12 +2204,12 @@
    "testid": "",
    "type": "",
    "href": "",
-   "cls": "listItem__X41oTe unreadBorder__IuApXO",
+   "cls": "listItem__X41oTe compact___mvP2J",
    "rect": [
     281,
-    835,
+    605,
     1119,
-    65
+    38
    ],
    "disabled": false
   },
@@ -3320,9 +2228,9 @@
    "cls": "anchor__PSAOdR inline__z8HXmA inlineCodeTitle__kWY7pC",
    "rect": [
     321,
-    844,
-    830,
-    21
+    614,
+    704,
+    19
    ],
    "disabled": false
   },
@@ -3341,7 +2249,7 @@
    "cls": "[object SVGAnimatedString]",
    "rect": [
     297,
-    849,
+    615,
     16,
     16
    ],
@@ -3350,19 +2258,40 @@
   {
    "tag": "BUTTON",
    "role": "",
-   "text": "Filter by author mark2090",
-   "aria": "",
+   "text": "notepad-plus-plus/notepad-plus-plus",
+   "aria": "Filter by repository notepad-plus-plus/notepad-plus-plus",
    "title": "",
    "pressed": "",
    "expanded": "",
    "checked": "",
-   "testid": "author-filter-link",
+   "testid": "",
    "type": "button",
    "href": "",
-   "cls": "filterLink__ywNfwR authorLink__jEE_DC Link__H3GvIl",
+   "cls": "filterLink__ywNfwR",
    "rect": [
-    570,
-    871,
+    791,
+    615,
+    200,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "mark2090",
+   "aria": "Filter by author mark2090",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__ywNfwR Link__H3GvIl",
+   "rect": [
+    1004,
+    615,
     52,
     18
    ],
@@ -3380,12 +2309,12 @@
    "testid": "",
    "type": "",
    "href": "",
-   "cls": "listItem__X41oTe unreadBorder__IuApXO",
+   "cls": "listItem__X41oTe compact___mvP2J",
    "rect": [
     281,
-    900,
+    643,
     1119,
-    89
+    38
    ],
    "disabled": false
   },
@@ -3404,9 +2333,9 @@
    "cls": "anchor__PSAOdR inline__z8HXmA inlineCodeTitle__kWY7pC",
    "rect": [
     321,
-    909,
-    829,
-    45
+    652,
+    869,
+    19
    ],
    "disabled": false
   },
@@ -3425,7 +2354,7 @@
    "cls": "[object SVGAnimatedString]",
    "rect": [
     297,
-    914,
+    653,
     16,
     16
    ],
@@ -3434,19 +2363,40 @@
   {
    "tag": "BUTTON",
    "role": "",
-   "text": "Filter by author Firefly0619sec",
-   "aria": "",
+   "text": "notepad-plus-plus/notepad-plus-plus",
+   "aria": "Filter by repository notepad-plus-plus/notepad-plus-plus",
    "title": "",
    "pressed": "",
    "expanded": "",
    "checked": "",
-   "testid": "author-filter-link",
+   "testid": "",
    "type": "button",
    "href": "",
-   "cls": "filterLink__ywNfwR authorLink__jEE_DC Link__H3GvIl",
+   "cls": "filterLink__ywNfwR",
    "rect": [
-    570,
-    960,
+    769,
+    653,
+    200,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Firefly0619sec",
+   "aria": "Filter by author Firefly0619sec",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__ywNfwR Link__H3GvIl",
+   "rect": [
+    982,
+    653,
     74,
     18
    ],
@@ -3466,8 +2416,8 @@
    "href": "",
    "cls": "[object SVGAnimatedString]",
    "rect": [
-    1229,
-    936,
+    1148,
+    654,
     16,
     16
    ],
@@ -3476,7 +2426,7 @@
   {
    "tag": "LI",
    "role": "",
-   "text": "[Feature request] Reload from disk silentlyUnreadnotepad-plus-plus/notepad-plus-plus#18573",
+   "text": "[Feature request] Reload from disk silentlynotepad-plus-plus/notepad-plus-plus•D3ute————",
    "aria": "[Feature request] Reload from disk silently. More information available below.",
    "title": "",
    "pressed": "",
@@ -3485,12 +2435,12 @@
    "testid": "",
    "type": "",
    "href": "",
-   "cls": "listItem__X41oTe unreadBorder__IuApXO",
+   "cls": "listItem__X41oTe compact___mvP2J",
    "rect": [
     281,
-    989,
+    681,
     1119,
-    65
+    38
    ],
    "disabled": false
   },
@@ -3509,9 +2459,9 @@
    "cls": "anchor__PSAOdR inline__z8HXmA inlineCodeTitle__kWY7pC",
    "rect": [
     321,
-    998,
-    306,
-    21
+    690,
+    259,
+    19
    ],
    "disabled": false
   },
@@ -3530,7 +2480,7 @@
    "cls": "[object SVGAnimatedString]",
    "rect": [
     297,
-    1003,
+    691,
     16,
     16
    ],
@@ -3539,19 +2489,40 @@
   {
    "tag": "BUTTON",
    "role": "",
-   "text": "Filter by author D3ute",
-   "aria": "",
+   "text": "notepad-plus-plus/notepad-plus-plus",
+   "aria": "Filter by repository notepad-plus-plus/notepad-plus-plus",
    "title": "",
    "pressed": "",
    "expanded": "",
    "checked": "",
-   "testid": "author-filter-link",
+   "testid": "",
    "type": "button",
    "href": "",
-   "cls": "filterLink__ywNfwR authorLink__jEE_DC Link__H3GvIl",
+   "cls": "filterLink__ywNfwR",
    "rect": [
-    570,
-    1025,
+    584,
+    691,
+    200,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "D3ute",
+   "aria": "Filter by author D3ute",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__ywNfwR Link__H3GvIl",
+   "rect": [
+    797,
+    691,
     32,
     18
    ],
@@ -3560,7 +2531,7 @@
   {
    "tag": "LI",
    "role": "",
-   "text": "[BUG] Drops typing input/caret disappears after switching out from specific gameUnreadnote",
+   "text": "[BUG] Drops typing input/caret disappears after switching out from specific gamenotepad-pl",
    "aria": "[BUG] Drops typing input/caret disappears after switching out from specific game. More information available below.",
    "title": "",
    "pressed": "",
@@ -3569,12 +2540,12 @@
    "testid": "",
    "type": "",
    "href": "",
-   "cls": "listItem__X41oTe unreadBorder__IuApXO",
+   "cls": "listItem__X41oTe compact___mvP2J",
    "rect": [
     281,
-    1054,
+    719,
     1119,
-    65
+    38
    ],
    "disabled": false
   },
@@ -3593,9 +2564,9 @@
    "cls": "anchor__PSAOdR inline__z8HXmA inlineCodeTitle__kWY7pC",
    "rect": [
     321,
-    1063,
-    593,
-    21
+    728,
+    502,
+    19
    ],
    "disabled": false
   },
@@ -3614,7 +2585,7 @@
    "cls": "[object SVGAnimatedString]",
    "rect": [
     297,
-    1068,
+    729,
     16,
     16
    ],
@@ -3623,19 +2594,40 @@
   {
    "tag": "BUTTON",
    "role": "",
-   "text": "Filter by author cpguy5089",
-   "aria": "",
+   "text": "notepad-plus-plus/notepad-plus-plus",
+   "aria": "Filter by repository notepad-plus-plus/notepad-plus-plus",
    "title": "",
    "pressed": "",
    "expanded": "",
    "checked": "",
-   "testid": "author-filter-link",
+   "testid": "",
    "type": "button",
    "href": "",
-   "cls": "filterLink__ywNfwR authorLink__jEE_DC Link__H3GvIl",
+   "cls": "filterLink__ywNfwR",
    "rect": [
-    570,
-    1090,
+    785,
+    729,
+    200,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "cpguy5089",
+   "aria": "Filter by author cpguy5089",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__ywNfwR Link__H3GvIl",
+   "rect": [
+    998,
+    729,
     58,
     18
    ],
@@ -3655,8 +2647,8 @@
    "href": "",
    "cls": "[object SVGAnimatedString]",
    "rect": [
-    1229,
-    1078,
+    1148,
+    730,
     16,
     16
    ],
@@ -3665,7 +2657,7 @@
   {
    "tag": "LI",
    "role": "",
-   "text": "[BUG] session.xml UNC path triggers outbound NTLM authentication (credential disclosure)Un",
+   "text": "[BUG] session.xml UNC path triggers outbound NTLM authentication (credential disclosure)no",
    "aria": "[BUG] session.xml UNC path triggers outbound NTLM authentication (credential disclosure). More information available below.",
    "title": "",
    "pressed": "",
@@ -3674,12 +2666,12 @@
    "testid": "",
    "type": "",
    "href": "",
-   "cls": "listItem__X41oTe unreadBorder__IuApXO",
+   "cls": "listItem__X41oTe compact___mvP2J",
    "rect": [
     281,
+    757,
     1119,
-    1119,
-    65
+    38
    ],
    "disabled": false
   },
@@ -3698,9 +2690,9 @@
    "cls": "anchor__PSAOdR inline__z8HXmA inlineCodeTitle__kWY7pC",
    "rect": [
     321,
-    1128,
-    664,
-    21
+    766,
+    562,
+    19
    ],
    "disabled": false
   },
@@ -3719,7 +2711,7 @@
    "cls": "[object SVGAnimatedString]",
    "rect": [
     297,
-    1133,
+    767,
     16,
     16
    ],
@@ -3728,19 +2720,40 @@
   {
    "tag": "BUTTON",
    "role": "",
-   "text": "Filter by author Firefly0619sec",
-   "aria": "",
+   "text": "notepad-plus-plus/notepad-plus-plus",
+   "aria": "Filter by repository notepad-plus-plus/notepad-plus-plus",
    "title": "",
    "pressed": "",
    "expanded": "",
    "checked": "",
-   "testid": "author-filter-link",
+   "testid": "",
    "type": "button",
    "href": "",
-   "cls": "filterLink__ywNfwR authorLink__jEE_DC Link__H3GvIl",
+   "cls": "filterLink__ywNfwR",
    "rect": [
-    570,
-    1155,
+    769,
+    767,
+    200,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Firefly0619sec",
+   "aria": "Filter by author Firefly0619sec",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__ywNfwR Link__H3GvIl",
+   "rect": [
+    982,
+    767,
     74,
     18
    ],
@@ -3749,7 +2762,7 @@
   {
    "tag": "LI",
    "role": "",
-   "text": "[BUG] SCI_SETDOCPOINTER accepts an arbitrary cross-process pointer and calls through itUnr",
+   "text": "[BUG] SCI_SETDOCPOINTER accepts an arbitrary cross-process pointer and calls through itnot",
    "aria": "[BUG] SCI_SETDOCPOINTER accepts an arbitrary cross-process pointer and calls through it. More information available below.",
    "title": "",
    "pressed": "",
@@ -3758,12 +2771,12 @@
    "testid": "",
    "type": "",
    "href": "",
-   "cls": "listItem__X41oTe unreadBorder__IuApXO",
+   "cls": "listItem__X41oTe compact___mvP2J",
    "rect": [
     281,
-    1184,
+    795,
     1119,
-    65
+    38
    ],
    "disabled": false
   },
@@ -3782,9 +2795,9 @@
    "cls": "anchor__PSAOdR inline__z8HXmA inlineCodeTitle__kWY7pC",
    "rect": [
     321,
-    1193,
-    654,
-    21
+    804,
+    556,
+    19
    ],
    "disabled": false
   },
@@ -3803,7 +2816,7 @@
    "cls": "[object SVGAnimatedString]",
    "rect": [
     297,
-    1198,
+    805,
     16,
     16
    ],
@@ -3812,19 +2825,40 @@
   {
    "tag": "BUTTON",
    "role": "",
-   "text": "Filter by author Firefly0619sec",
-   "aria": "",
+   "text": "notepad-plus-plus/notepad-plus-plus",
+   "aria": "Filter by repository notepad-plus-plus/notepad-plus-plus",
    "title": "",
    "pressed": "",
    "expanded": "",
    "checked": "",
-   "testid": "author-filter-link",
+   "testid": "",
    "type": "button",
    "href": "",
-   "cls": "filterLink__ywNfwR authorLink__jEE_DC Link__H3GvIl",
+   "cls": "filterLink__ywNfwR",
    "rect": [
-    570,
-    1220,
+    769,
+    805,
+    200,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Firefly0619sec",
+   "aria": "Filter by author Firefly0619sec",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__ywNfwR Link__H3GvIl",
+   "rect": [
+    982,
+    805,
     74,
     18
    ],
@@ -3844,8 +2878,8 @@
    "href": "",
    "cls": "[object SVGAnimatedString]",
    "rect": [
-    1229,
-    1208,
+    1148,
+    806,
     16,
     16
    ],
@@ -3854,7 +2888,7 @@
   {
    "tag": "LI",
    "role": "",
-   "text": "[BUG] SCI_GETTEXT writes document data to an arbitrary cross-process addresscrashscintilla",
+   "text": "[BUG] SCI_GETTEXT writes document data to an arbitrary cross-process addressnotepad-plus-p",
    "aria": "[BUG] SCI_GETTEXT writes document data to an arbitrary cross-process address. More information available below.",
    "title": "",
    "pressed": "",
@@ -3863,12 +2897,12 @@
    "testid": "",
    "type": "",
    "href": "",
-   "cls": "listItem__X41oTe unreadBorder__IuApXO",
+   "cls": "listItem__X41oTe compact___mvP2J",
    "rect": [
     281,
-    1249,
+    833,
     1119,
-    65
+    38
    ],
    "disabled": false
   },
@@ -3887,51 +2921,9 @@
    "cls": "anchor__PSAOdR inline__z8HXmA inlineCodeTitle__kWY7pC",
    "rect": [
     321,
-    1258,
-    576,
-    21
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "BUTTON",
-   "role": "",
-   "text": "crash",
-   "aria": "Filter by label crash",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "button",
-   "href": "",
-   "cls": "filterLink__ywNfwR",
-   "rect": [
-    901,
-    1258,
-    51,
-    21
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "BUTTON",
-   "role": "",
-   "text": "scintilla dependent",
-   "aria": "Filter by label scintilla dependent",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "button",
-   "href": "",
-   "cls": "filterLink__ywNfwR",
-   "rect": [
-    951,
-    1258,
-    125,
-    21
+    842,
+    489,
+    19
    ],
    "disabled": false
   },
@@ -3950,7 +2942,7 @@
    "cls": "[object SVGAnimatedString]",
    "rect": [
     297,
-    1263,
+    843,
     16,
     16
    ],
@@ -3959,19 +2951,40 @@
   {
    "tag": "BUTTON",
    "role": "",
-   "text": "Filter by author Firefly0619sec",
-   "aria": "",
+   "text": "notepad-plus-plus/notepad-plus-plus",
+   "aria": "Filter by repository notepad-plus-plus/notepad-plus-plus",
    "title": "",
    "pressed": "",
    "expanded": "",
    "checked": "",
-   "testid": "author-filter-link",
+   "testid": "",
    "type": "button",
    "href": "",
-   "cls": "filterLink__ywNfwR authorLink__jEE_DC Link__H3GvIl",
+   "cls": "filterLink__ywNfwR",
    "rect": [
-    570,
-    1285,
+    769,
+    843,
+    200,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Firefly0619sec",
+   "aria": "Filter by author Firefly0619sec",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__ywNfwR Link__H3GvIl",
+   "rect": [
+    982,
+    843,
     74,
     18
    ],
@@ -3991,8 +3004,8 @@
    "href": "",
    "cls": "[object SVGAnimatedString]",
    "rect": [
-    1229,
-    1273,
+    1148,
+    844,
     16,
     16
    ],
@@ -4010,12 +3023,12 @@
    "testid": "",
    "type": "",
    "href": "",
-   "cls": "listItem__X41oTe unreadBorder__IuApXO",
+   "cls": "listItem__X41oTe compact___mvP2J",
    "rect": [
     281,
-    1314,
+    871,
     1119,
-    65
+    38
    ],
    "disabled": false
   },
@@ -4034,9 +3047,9 @@
    "cls": "anchor__PSAOdR inline__z8HXmA inlineCodeTitle__kWY7pC",
    "rect": [
     321,
-    1323,
-    718,
-    21
+    880,
+    608,
+    19
    ],
    "disabled": false
   },
@@ -4055,7 +3068,7 @@
    "cls": "[object SVGAnimatedString]",
    "rect": [
     297,
-    1328,
+    881,
     16,
     16
    ],
@@ -4064,19 +3077,40 @@
   {
    "tag": "BUTTON",
    "role": "",
-   "text": "Filter by author Firefly0619sec",
-   "aria": "",
+   "text": "notepad-plus-plus/notepad-plus-plus",
+   "aria": "Filter by repository notepad-plus-plus/notepad-plus-plus",
    "title": "",
    "pressed": "",
    "expanded": "",
    "checked": "",
-   "testid": "author-filter-link",
+   "testid": "",
    "type": "button",
    "href": "",
-   "cls": "filterLink__ywNfwR authorLink__jEE_DC Link__H3GvIl",
+   "cls": "filterLink__ywNfwR",
    "rect": [
-    570,
-    1350,
+    769,
+    881,
+    200,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Firefly0619sec",
+   "aria": "Filter by author Firefly0619sec",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__ywNfwR Link__H3GvIl",
+   "rect": [
+    982,
+    881,
     74,
     18
    ],
@@ -4085,7 +3119,7 @@
   {
    "tag": "LI",
    "role": "",
-   "text": "[BUG] NPPM_GETCURRENTBUFFERID returns a raw heap pointer (Buffer*) to other processesUnrea",
+   "text": "[BUG] NPPM_GETCURRENTBUFFERID returns a raw heap pointer (Buffer*) to other processesnotep",
    "aria": "[BUG] NPPM_GETCURRENTBUFFERID returns a raw heap pointer (Buffer*) to other processes. More information available below.",
    "title": "",
    "pressed": "",
@@ -4094,12 +3128,12 @@
    "testid": "",
    "type": "",
    "href": "",
-   "cls": "listItem__X41oTe unreadBorder__IuApXO",
+   "cls": "listItem__X41oTe compact___mvP2J",
    "rect": [
     281,
-    1379,
+    909,
     1119,
-    65
+    38
    ],
    "disabled": false
   },
@@ -4118,9 +3152,9 @@
    "cls": "anchor__PSAOdR inline__z8HXmA inlineCodeTitle__kWY7pC",
    "rect": [
     321,
-    1388,
-    670,
-    21
+    918,
+    568,
+    19
    ],
    "disabled": false
   },
@@ -4139,7 +3173,7 @@
    "cls": "[object SVGAnimatedString]",
    "rect": [
     297,
-    1393,
+    919,
     16,
     16
    ],
@@ -4148,19 +3182,40 @@
   {
    "tag": "BUTTON",
    "role": "",
-   "text": "Filter by author Firefly0619sec",
-   "aria": "",
+   "text": "notepad-plus-plus/notepad-plus-plus",
+   "aria": "Filter by repository notepad-plus-plus/notepad-plus-plus",
    "title": "",
    "pressed": "",
    "expanded": "",
    "checked": "",
-   "testid": "author-filter-link",
+   "testid": "",
    "type": "button",
    "href": "",
-   "cls": "filterLink__ywNfwR authorLink__jEE_DC Link__H3GvIl",
+   "cls": "filterLink__ywNfwR",
    "rect": [
-    570,
-    1415,
+    769,
+    919,
+    200,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Firefly0619sec",
+   "aria": "Filter by author Firefly0619sec",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__ywNfwR Link__H3GvIl",
+   "rect": [
+    982,
+    919,
     74,
     18
    ],
@@ -4178,12 +3233,12 @@
    "testid": "",
    "type": "",
    "href": "",
-   "cls": "listItem__X41oTe unreadBorder__IuApXO",
+   "cls": "listItem__X41oTe compact___mvP2J",
    "rect": [
     281,
-    1444,
+    947,
     1119,
-    89
+    38
    ],
    "disabled": false
   },
@@ -4202,9 +3257,9 @@
    "cls": "anchor__PSAOdR inline__z8HXmA inlineCodeTitle__kWY7pC",
    "rect": [
     321,
-    1453,
-    793,
-    45
+    956,
+    758,
+    19
    ],
    "disabled": false
   },
@@ -4223,7 +3278,7 @@
    "cls": "[object SVGAnimatedString]",
    "rect": [
     297,
-    1458,
+    957,
     16,
     16
    ],
@@ -4232,19 +3287,40 @@
   {
    "tag": "BUTTON",
    "role": "",
-   "text": "Filter by author Firefly0619sec",
-   "aria": "",
+   "text": "notepad-plus-plus/notepad-plus-plus",
+   "aria": "Filter by repository notepad-plus-plus/notepad-plus-plus",
    "title": "",
    "pressed": "",
    "expanded": "",
    "checked": "",
-   "testid": "author-filter-link",
+   "testid": "",
    "type": "button",
    "href": "",
-   "cls": "filterLink__ywNfwR authorLink__jEE_DC Link__H3GvIl",
+   "cls": "filterLink__ywNfwR",
    "rect": [
-    570,
-    1504,
+    769,
+    957,
+    200,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Firefly0619sec",
+   "aria": "Filter by author Firefly0619sec",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__ywNfwR Link__H3GvIl",
+   "rect": [
+    982,
+    957,
     74,
     18
    ],
@@ -4253,7 +3329,7 @@
   {
    "tag": "LI",
    "role": "",
-   "text": "[BUG] Large VDL=0 file + suppress2GBWarning in user-writable config.xml exhausts memoryUnr",
+   "text": "[BUG] Large VDL=0 file + suppress2GBWarning in user-writable config.xml exhausts memorynot",
    "aria": "[BUG] Large VDL=0 file + suppress2GBWarning in user-writable config.xml exhausts memory. More information available below.",
    "title": "",
    "pressed": "",
@@ -4262,12 +3338,12 @@
    "testid": "",
    "type": "",
    "href": "",
-   "cls": "listItem__X41oTe unreadBorder__IuApXO",
+   "cls": "listItem__X41oTe compact___mvP2J",
    "rect": [
     281,
-    1533,
+    985,
     1119,
-    65
+    38
    ],
    "disabled": false
   },
@@ -4286,9 +3362,9 @@
    "cls": "anchor__PSAOdR inline__z8HXmA inlineCodeTitle__kWY7pC",
    "rect": [
     321,
-    1542,
-    673,
-    21
+    994,
+    570,
+    19
    ],
    "disabled": false
   },
@@ -4307,7 +3383,7 @@
    "cls": "[object SVGAnimatedString]",
    "rect": [
     297,
-    1547,
+    995,
     16,
     16
    ],
@@ -4316,19 +3392,40 @@
   {
    "tag": "BUTTON",
    "role": "",
-   "text": "Filter by author Firefly0619sec",
-   "aria": "",
+   "text": "notepad-plus-plus/notepad-plus-plus",
+   "aria": "Filter by repository notepad-plus-plus/notepad-plus-plus",
    "title": "",
    "pressed": "",
    "expanded": "",
    "checked": "",
-   "testid": "author-filter-link",
+   "testid": "",
    "type": "button",
    "href": "",
-   "cls": "filterLink__ywNfwR authorLink__jEE_DC Link__H3GvIl",
+   "cls": "filterLink__ywNfwR",
    "rect": [
-    570,
-    1569,
+    769,
+    995,
+    200,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Firefly0619sec",
+   "aria": "Filter by author Firefly0619sec",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__ywNfwR Link__H3GvIl",
+   "rect": [
+    982,
+    995,
     74,
     18
    ],
@@ -4337,7 +3434,7 @@
   {
    "tag": "LI",
    "role": "",
-   "text": "[BUG] NPPM_DOOPEN dereferences a cross-process pointer and crashes Notepad++Unreadnotepad-",
+   "text": "[BUG] NPPM_DOOPEN dereferences a cross-process pointer and crashes Notepad++notepad-plus-p",
    "aria": "[BUG] NPPM_DOOPEN dereferences a cross-process pointer and crashes Notepad++. More information available below.",
    "title": "",
    "pressed": "",
@@ -4346,12 +3443,12 @@
    "testid": "",
    "type": "",
    "href": "",
-   "cls": "listItem__X41oTe unreadBorder__IuApXO",
+   "cls": "listItem__X41oTe compact___mvP2J",
    "rect": [
     281,
-    1598,
+    1023,
     1119,
-    65
+    38
    ],
    "disabled": false
   },
@@ -4370,9 +3467,9 @@
    "cls": "anchor__PSAOdR inline__z8HXmA inlineCodeTitle__kWY7pC",
    "rect": [
     321,
-    1607,
-    614,
-    21
+    1032,
+    525,
+    19
    ],
    "disabled": false
   },
@@ -4391,7 +3488,7 @@
    "cls": "[object SVGAnimatedString]",
    "rect": [
     297,
-    1612,
+    1033,
     16,
     16
    ],
@@ -4400,19 +3497,40 @@
   {
    "tag": "BUTTON",
    "role": "",
-   "text": "Filter by author Firefly0619sec",
-   "aria": "",
+   "text": "notepad-plus-plus/notepad-plus-plus",
+   "aria": "Filter by repository notepad-plus-plus/notepad-plus-plus",
    "title": "",
    "pressed": "",
    "expanded": "",
    "checked": "",
-   "testid": "author-filter-link",
+   "testid": "",
    "type": "button",
    "href": "",
-   "cls": "filterLink__ywNfwR authorLink__jEE_DC Link__H3GvIl",
+   "cls": "filterLink__ywNfwR",
    "rect": [
-    570,
-    1634,
+    769,
+    1033,
+    200,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "Firefly0619sec",
+   "aria": "Filter by author Firefly0619sec",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__ywNfwR Link__H3GvIl",
+   "rect": [
+    982,
+    1033,
     74,
     18
    ],
@@ -4421,7 +3539,7 @@
   {
    "tag": "LI",
    "role": "",
-   "text": "[Feature request] Limit directory depth for Find in FilesUnreadnotepad-plus-plus/notepad-p",
+   "text": "[Feature request] Limit directory depth for Find in Filesnotepad-plus-plus/notepad-plus-pl",
    "aria": "[Feature request] Limit directory depth for Find in Files. More information available below.",
    "title": "",
    "pressed": "",
@@ -4430,12 +3548,12 @@
    "testid": "",
    "type": "",
    "href": "",
-   "cls": "listItem__X41oTe unreadBorder__IuApXO",
+   "cls": "listItem__X41oTe compact___mvP2J",
    "rect": [
     281,
-    1663,
+    1061,
     1119,
-    65
+    38
    ],
    "disabled": false
   },
@@ -4454,9 +3572,9 @@
    "cls": "anchor__PSAOdR inline__z8HXmA inlineCodeTitle__kWY7pC",
    "rect": [
     321,
-    1672,
-    397,
-    21
+    1070,
+    335,
+    19
    ],
    "disabled": false
   },
@@ -4475,7 +3593,7 @@
    "cls": "[object SVGAnimatedString]",
    "rect": [
     297,
-    1677,
+    1071,
     16,
     16
    ],
@@ -4484,19 +3602,40 @@
   {
    "tag": "BUTTON",
    "role": "",
-   "text": "Filter by author PyBales",
-   "aria": "",
+   "text": "notepad-plus-plus/notepad-plus-plus",
+   "aria": "Filter by repository notepad-plus-plus/notepad-plus-plus",
    "title": "",
    "pressed": "",
    "expanded": "",
    "checked": "",
-   "testid": "author-filter-link",
+   "testid": "",
    "type": "button",
    "href": "",
-   "cls": "filterLink__ywNfwR authorLink__jEE_DC Link__H3GvIl",
+   "cls": "filterLink__ywNfwR",
    "rect": [
-    570,
-    1699,
+    660,
+    1071,
+    200,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "PyBales",
+   "aria": "Filter by author PyBales",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__ywNfwR Link__H3GvIl",
+   "rect": [
+    873,
+    1071,
     40,
     18
    ],
@@ -4516,8 +3655,8 @@
    "href": "",
    "cls": "[object SVGAnimatedString]",
    "rect": [
-    1229,
-    1687,
+    1148,
+    1072,
     16,
     16
    ],
@@ -4535,12 +3674,12 @@
    "testid": "",
    "type": "",
    "href": "",
-   "cls": "listItem__X41oTe unreadBorder__IuApXO",
+   "cls": "listItem__X41oTe compact___mvP2J",
    "rect": [
     281,
-    1728,
+    1099,
     1119,
-    65
+    38
    ],
    "disabled": false
   },
@@ -4559,30 +3698,9 @@
    "cls": "anchor__PSAOdR inline__z8HXmA inlineCodeTitle__kWY7pC",
    "rect": [
     321,
-    1737,
-    649,
-    21
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "BUTTON",
-   "role": "",
-   "text": "not reproducible",
-   "aria": "Filter by label not reproducible",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "button",
-   "href": "",
-   "cls": "filterLink__ywNfwR",
-   "rect": [
-    974,
-    1737,
-    113,
-    21
+    1108,
+    549,
+    19
    ],
    "disabled": false
   },
@@ -4601,7 +3719,7 @@
    "cls": "[object SVGAnimatedString]",
    "rect": [
     297,
-    1742,
+    1109,
     16,
     16
    ],
@@ -4610,19 +3728,40 @@
   {
    "tag": "BUTTON",
    "role": "",
-   "text": "Filter by author softmgr",
-   "aria": "",
+   "text": "notepad-plus-plus/notepad-plus-plus",
+   "aria": "Filter by repository notepad-plus-plus/notepad-plus-plus",
    "title": "",
    "pressed": "",
    "expanded": "",
    "checked": "",
-   "testid": "author-filter-link",
+   "testid": "",
    "type": "button",
    "href": "",
-   "cls": "filterLink__ywNfwR authorLink__jEE_DC Link__H3GvIl",
+   "cls": "filterLink__ywNfwR",
    "rect": [
-    570,
-    1764,
+    802,
+    1109,
+    200,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "softmgr",
+   "aria": "Filter by author softmgr",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__ywNfwR Link__H3GvIl",
+   "rect": [
+    1014,
+    1109,
     42,
     18
    ],
@@ -4642,8 +3781,8 @@
    "href": "https://github.com/notepad-plus-plus/notepad-plus-plus/pull/18540",
    "cls": "d-inline-flex flex-items-center gap-1 linkedPullRequestLink__YiBqgz pr",
    "rect": [
-    1176,
-    1751,
+    1068,
+    1109,
     26,
     18
    ],
@@ -4663,8 +3802,8 @@
    "href": "",
    "cls": "[object SVGAnimatedString]",
    "rect": [
-    1229,
-    1752,
+    1148,
+    1110,
     16,
     16
    ],
@@ -4673,7 +3812,7 @@
   {
    "tag": "LI",
    "role": "",
-   "text": "[WEBSITE] Firefox doesn't remember darkMode on F5 RefreshdocumentationUnreadnotepad-plus-p",
+   "text": "[WEBSITE] Firefox doesn't remember darkMode on F5 Refreshnotepad-plus-plus/notepad-plus-pl",
    "aria": "[WEBSITE] Firefox doesn't remember darkMode on F5 Refresh. More information available below.",
    "title": "",
    "pressed": "",
@@ -4682,12 +3821,12 @@
    "testid": "",
    "type": "",
    "href": "",
-   "cls": "listItem__X41oTe unreadBorder__IuApXO",
+   "cls": "listItem__X41oTe compact___mvP2J",
    "rect": [
     281,
-    1793,
+    1137,
     1119,
-    65
+    38
    ],
    "disabled": false
   },
@@ -4706,30 +3845,9 @@
    "cls": "anchor__PSAOdR inline__z8HXmA inlineCodeTitle__kWY7pC",
    "rect": [
     321,
-    1802,
-    447,
-    21
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "BUTTON",
-   "role": "",
-   "text": "documentation",
-   "aria": "Filter by label documentation",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "button",
-   "href": "",
-   "cls": "filterLink__ywNfwR",
-   "rect": [
-    772,
-    1802,
-    105,
-    21
+    1146,
+    380,
+    19
    ],
    "disabled": false
   },
@@ -4748,7 +3866,7 @@
    "cls": "[object SVGAnimatedString]",
    "rect": [
     297,
-    1807,
+    1147,
     16,
     16
    ],
@@ -4757,19 +3875,40 @@
   {
    "tag": "BUTTON",
    "role": "",
-   "text": "Filter by author pryrt",
-   "aria": "",
+   "text": "notepad-plus-plus/notepad-plus-plus",
+   "aria": "Filter by repository notepad-plus-plus/notepad-plus-plus",
    "title": "",
    "pressed": "",
    "expanded": "",
    "checked": "",
-   "testid": "author-filter-link",
+   "testid": "",
    "type": "button",
    "href": "",
-   "cls": "filterLink__ywNfwR authorLink__jEE_DC Link__H3GvIl",
+   "cls": "filterLink__ywNfwR",
    "rect": [
-    570,
-    1829,
+    705,
+    1147,
+    200,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "pryrt",
+   "aria": "Filter by author pryrt",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__ywNfwR Link__H3GvIl",
+   "rect": [
+    918,
+    1147,
     25,
     18
    ],
@@ -4789,8 +3928,8 @@
    "href": "",
    "cls": "[object SVGAnimatedString]",
    "rect": [
-    1229,
-    1817,
+    1148,
+    1148,
     16,
     16
    ],
@@ -4799,7 +3938,7 @@
   {
    "tag": "LI",
    "role": "",
-   "text": "[BUG] Print as PDF - add .pdf extensionUnreadnotepad-plus-plus/notepad-plus-plus#18533 · F",
+   "text": "[BUG] Print as PDF - add .pdf extensionnotepad-plus-plus/notepad-plus-plus•ryanwwest— 4——",
    "aria": "[BUG] Print as PDF - add .pdf extension. More information available below.",
    "title": "",
    "pressed": "",
@@ -4808,12 +3947,12 @@
    "testid": "",
    "type": "",
    "href": "",
-   "cls": "listItem__X41oTe unreadBorder__IuApXO",
+   "cls": "listItem__X41oTe compact___mvP2J",
    "rect": [
     281,
-    1858,
+    1175,
     1119,
-    65
+    38
    ],
    "disabled": false
   },
@@ -4832,9 +3971,9 @@
    "cls": "anchor__PSAOdR inline__z8HXmA inlineCodeTitle__kWY7pC",
    "rect": [
     321,
-    1867,
-    285,
-    21
+    1184,
+    241,
+    19
    ],
    "disabled": false
   },
@@ -4853,7 +3992,7 @@
    "cls": "[object SVGAnimatedString]",
    "rect": [
     297,
-    1872,
+    1185,
     16,
     16
    ],
@@ -4862,19 +4001,40 @@
   {
    "tag": "BUTTON",
    "role": "",
-   "text": "Filter by author ryanwwest",
-   "aria": "",
+   "text": "notepad-plus-plus/notepad-plus-plus",
+   "aria": "Filter by repository notepad-plus-plus/notepad-plus-plus",
    "title": "",
    "pressed": "",
    "expanded": "",
    "checked": "",
-   "testid": "author-filter-link",
+   "testid": "",
    "type": "button",
    "href": "",
-   "cls": "filterLink__ywNfwR authorLink__jEE_DC Link__H3GvIl",
+   "cls": "filterLink__ywNfwR",
    "rect": [
-    570,
-    1894,
+    566,
+    1185,
+    200,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "ryanwwest",
+   "aria": "Filter by author ryanwwest",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__ywNfwR Link__H3GvIl",
+   "rect": [
+    779,
+    1185,
     56,
     18
    ],
@@ -4894,8 +4054,8 @@
    "href": "",
    "cls": "[object SVGAnimatedString]",
    "rect": [
-    1229,
-    1882,
+    1148,
+    1186,
     16,
     16
    ],
@@ -4913,12 +4073,12 @@
    "testid": "",
    "type": "",
    "href": "",
-   "cls": "listItem__X41oTe unreadBorder__IuApXO",
+   "cls": "listItem__X41oTe compact___mvP2J",
    "rect": [
     281,
-    1923,
+    1213,
     1119,
-    86
+    38
    ],
    "disabled": false
   },
@@ -4937,51 +4097,9 @@
    "cls": "anchor__PSAOdR inline__z8HXmA inlineCodeTitle__kWY7pC",
    "rect": [
     321,
-    1932,
-    781,
-    21
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "BUTTON",
-   "role": "",
-   "text": "enhancement",
-   "aria": "Filter by label enhancement",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "button",
-   "href": "",
-   "cls": "filterLink__ywNfwR",
-   "rect": [
-    321,
-    1956,
-    96,
-    21
-   ],
-   "disabled": false
-  },
-  {
-   "tag": "BUTTON",
-   "role": "",
-   "text": "hidpi support",
-   "aria": "Filter by label hidpi support",
-   "title": "",
-   "pressed": "",
-   "expanded": "",
-   "checked": "",
-   "testid": "",
-   "type": "button",
-   "href": "",
-   "cls": "filterLink__ywNfwR",
-   "rect": [
-    417,
-    1956,
-    96,
-    21
+    1222,
+    662,
+    19
    ],
    "disabled": false
   },
@@ -5000,7 +4118,7 @@
    "cls": "[object SVGAnimatedString]",
    "rect": [
     297,
-    1937,
+    1223,
     16,
     16
    ],
@@ -5009,19 +4127,40 @@
   {
    "tag": "BUTTON",
    "role": "",
-   "text": "Filter by author softmgr",
-   "aria": "",
+   "text": "notepad-plus-plus/notepad-plus-plus",
+   "aria": "Filter by repository notepad-plus-plus/notepad-plus-plus",
    "title": "",
    "pressed": "",
    "expanded": "",
    "checked": "",
-   "testid": "author-filter-link",
+   "testid": "",
    "type": "button",
    "href": "",
-   "cls": "filterLink__ywNfwR authorLink__jEE_DC Link__H3GvIl",
+   "cls": "filterLink__ywNfwR",
    "rect": [
-    570,
-    1980,
+    802,
+    1223,
+    200,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "softmgr",
+   "aria": "Filter by author softmgr",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__ywNfwR Link__H3GvIl",
+   "rect": [
+    1014,
+    1223,
     42,
     18
    ],
@@ -5041,8 +4180,8 @@
    "href": "https://github.com/notepad-plus-plus/notepad-plus-plus/pull/18522",
    "cls": "d-inline-flex flex-items-center gap-1 linkedPullRequestLink__YiBqgz pr",
    "rect": [
-    1176,
-    1957,
+    1068,
+    1223,
     26,
     18
    ],
@@ -5051,7 +4190,7 @@
   {
    "tag": "LI",
    "role": "",
-   "text": "[Feature request] provide grep and ungrep functionality by search dialogUnreadnotepad-plus",
+   "text": "[Feature request] provide grep and ungrep functionality by search dialognotepad-plus-plus/",
    "aria": "[Feature request] provide grep and ungrep functionality by search dialog. More information available below.",
    "title": "",
    "pressed": "",
@@ -5060,12 +4199,12 @@
    "testid": "",
    "type": "",
    "href": "",
-   "cls": "listItem__X41oTe unreadBorder__IuApXO",
+   "cls": "listItem__X41oTe compact___mvP2J",
    "rect": [
     281,
-    2009,
+    1251,
     1119,
-    65
+    38
    ],
    "disabled": false
   },
@@ -5084,9 +4223,9 @@
    "cls": "anchor__PSAOdR inline__z8HXmA inlineCodeTitle__kWY7pC",
    "rect": [
     321,
-    2018,
-    528,
-    21
+    1260,
+    449,
+    19
    ],
    "disabled": false
   },
@@ -5105,7 +4244,7 @@
    "cls": "[object SVGAnimatedString]",
    "rect": [
     297,
-    2023,
+    1261,
     16,
     16
    ],
@@ -5114,19 +4253,40 @@
   {
    "tag": "BUTTON",
    "role": "",
-   "text": "Filter by author meigelb",
-   "aria": "",
+   "text": "notepad-plus-plus/notepad-plus-plus",
+   "aria": "Filter by repository notepad-plus-plus/notepad-plus-plus",
    "title": "",
    "pressed": "",
    "expanded": "",
    "checked": "",
-   "testid": "author-filter-link",
+   "testid": "",
    "type": "button",
    "href": "",
-   "cls": "filterLink__ywNfwR authorLink__jEE_DC Link__H3GvIl",
+   "cls": "filterLink__ywNfwR",
    "rect": [
-    570,
-    2045,
+    774,
+    1261,
+    200,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "meigelb",
+   "aria": "Filter by author meigelb",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__ywNfwR Link__H3GvIl",
+   "rect": [
+    986,
+    1261,
     43,
     18
    ],
@@ -5146,8 +4306,8 @@
    "href": "https://github.com/notepad-plus-plus/notepad-plus-plus/pull/18518",
    "cls": "d-inline-flex flex-items-center gap-1 linkedPullRequestLink__YiBqgz pr",
    "rect": [
-    1176,
-    2032,
+    1068,
+    1261,
     26,
     18
    ],
@@ -5167,8 +4327,8 @@
    "href": "",
    "cls": "[object SVGAnimatedString]",
    "rect": [
-    1229,
-    2033,
+    1148,
+    1262,
     16,
     16
    ],
@@ -5177,7 +4337,7 @@
   {
    "tag": "LI",
    "role": "",
-   "text": "[Feature request] Add domain wildcard to serverWhiteList.xmlUnreadnotepad-plus-plus/notepa",
+   "text": "[Feature request] Add domain wildcard to serverWhiteList.xmlnotepad-plus-plus/notepad-plus",
    "aria": "[Feature request] Add domain wildcard to serverWhiteList.xml. More information available below.",
    "title": "",
    "pressed": "",
@@ -5186,12 +4346,12 @@
    "testid": "",
    "type": "",
    "href": "",
-   "cls": "listItem__X41oTe unreadBorder__IuApXO",
+   "cls": "listItem__X41oTe compact___mvP2J",
    "rect": [
     281,
-    2074,
+    1289,
     1119,
-    64
+    37
    ],
    "disabled": false
   },
@@ -5210,9 +4370,9 @@
    "cls": "anchor__PSAOdR inline__z8HXmA inlineCodeTitle__kWY7pC",
    "rect": [
     321,
-    2083,
-    450,
-    21
+    1298,
+    380,
+    19
    ],
    "disabled": false
   },
@@ -5231,7 +4391,7 @@
    "cls": "[object SVGAnimatedString]",
    "rect": [
     297,
-    2088,
+    1299,
     16,
     16
    ],
@@ -5240,19 +4400,40 @@
   {
    "tag": "BUTTON",
    "role": "",
-   "text": "Filter by author HelpMeTyTy",
-   "aria": "",
+   "text": "notepad-plus-plus/notepad-plus-plus",
+   "aria": "Filter by repository notepad-plus-plus/notepad-plus-plus",
    "title": "",
    "pressed": "",
    "expanded": "",
    "checked": "",
-   "testid": "author-filter-link",
+   "testid": "",
    "type": "button",
    "href": "",
-   "cls": "filterLink__ywNfwR authorLink__jEE_DC Link__H3GvIl",
+   "cls": "filterLink__ywNfwR",
    "rect": [
-    570,
-    2110,
+    705,
+    1299,
+    200,
+    18
+   ],
+   "disabled": false
+  },
+  {
+   "tag": "BUTTON",
+   "role": "",
+   "text": "HelpMeTyTy",
+   "aria": "Filter by author HelpMeTyTy",
+   "title": "",
+   "pressed": "",
+   "expanded": "",
+   "checked": "",
+   "testid": "",
+   "type": "button",
+   "href": "",
+   "cls": "filterLink__ywNfwR Link__H3GvIl",
+   "rect": [
+    918,
+    1299,
     65,
     18
    ],
@@ -5272,8 +4453,8 @@
    "href": "",
    "cls": "[object SVGAnimatedString]",
    "rect": [
-    1229,
-    2098,
+    1148,
+    1300,
     16,
     16
    ],
@@ -5294,7 +4475,7 @@
    "cls": "prc-Pagination-Page-Etgqf",
    "rect": [
     606,
-    2159,
+    1347,
     82,
     32
    ],
@@ -5315,7 +4496,7 @@
    "cls": "prc-Pagination-Page-Etgqf",
    "rect": [
     692,
-    2159,
+    1347,
     32,
     32
    ],
@@ -5336,7 +4517,7 @@
    "cls": "prc-Pagination-Page-Etgqf",
    "rect": [
     728,
-    2159,
+    1347,
     32,
     32
    ],
@@ -5357,7 +4538,7 @@
    "cls": "prc-Pagination-Page-Etgqf",
    "rect": [
     764,
-    2159,
+    1347,
     32,
     32
    ],
@@ -5378,7 +4559,7 @@
    "cls": "prc-Pagination-Page-Etgqf",
    "rect": [
     800,
-    2159,
+    1347,
     32,
     32
    ],
@@ -5399,7 +4580,7 @@
    "cls": "prc-Pagination-Page-Etgqf",
    "rect": [
     836,
-    2159,
+    1347,
     32,
     32
    ],
@@ -5420,7 +4601,7 @@
    "cls": "prc-Pagination-Page-Etgqf",
    "rect": [
     872,
-    2159,
+    1347,
     32,
     32
    ],
@@ -5441,7 +4622,7 @@
    "cls": "prc-Pagination-Page-Etgqf",
    "rect": [
     908,
-    2159,
+    1347,
     32,
     32
    ],
@@ -5462,7 +4643,7 @@
    "cls": "prc-Pagination-Page-Etgqf",
    "rect": [
     944,
-    2159,
+    1347,
     32,
     32
    ],
@@ -5483,7 +4664,7 @@
    "cls": "prc-Pagination-Page-Etgqf",
    "rect": [
     980,
-    2159,
+    1347,
     32,
     32
    ],
@@ -5504,7 +4685,7 @@
    "cls": "prc-Pagination-Page-Etgqf",
    "rect": [
     1016,
-    2159,
+    1347,
     59,
     32
    ],
@@ -5525,7 +4706,7 @@
    "cls": "footer f6 color-fg-muted color-border-subtle tmp-pt-7 tmp-pb-6 p-respo",
    "rect": [
     0,
-    2246,
+    1434,
     1425,
     58
    ],
@@ -5546,7 +4727,7 @@
    "cls": "footer-octicon mr-2",
    "rect": [
     293,
-    2263,
+    1451,
     24,
     25
    ],
@@ -5567,7 +4748,7 @@
    "cls": "Link--secondary Link",
    "rect": [
     446,
-    2268,
+    1456,
     31,
     16
    ],
@@ -5588,7 +4769,7 @@
    "cls": "Link--secondary Link",
    "rect": [
     493,
-    2268,
+    1456,
     37,
     16
    ],
@@ -5609,7 +4790,7 @@
    "cls": "Link--secondary Link",
    "rect": [
     546,
-    2268,
+    1456,
     42,
     16
    ],
@@ -5630,7 +4811,7 @@
    "cls": "Link--secondary Link",
    "rect": [
     604,
-    2268,
+    1456,
     32,
     16
    ],
@@ -5651,7 +4832,7 @@
    "cls": "Link--secondary Link",
    "rect": [
     652,
-    2268,
+    1456,
     62,
     16
    ],
@@ -5672,7 +4853,7 @@
    "cls": "Link--secondary Link",
    "rect": [
     729,
-    2268,
+    1456,
     26,
     16
    ],
@@ -5693,7 +4874,7 @@
    "cls": "Link--secondary Link",
    "rect": [
     771,
-    2268,
+    1456,
     41,
     16
    ],
@@ -5714,7 +4895,7 @@
    "cls": "Link--secondary underline-on-hover border-0 p-0 color-bg-transparent",
    "rect": [
     828,
-    2267,
+    1455,
     86,
     18
    ],
@@ -5735,7 +4916,7 @@
    "cls": "Link--secondary underline-on-hover border-0 p-0 color-bg-transparent t",
    "rect": [
     931,
-    2267,
+    1455,
     202,
     18
    ],
@@ -5747,6 +4928,7 @@
   "/notepad-plus-plus/notepad-plus-plus",
   "/notepad-plus-plus/notepad-plus-plus/issues",
   "/notepad-plus-plus/notepad-plus-plus/pulls",
+  "/notepad-plus-plus/notepad-plus-plus/agents?author=wangtierui",
   "/notepad-plus-plus/notepad-plus-plus/actions",
   "/notepad-plus-plus/notepad-plus-plus/projects",
   "/notepad-plus-plus/notepad-plus-plus/wiki",
@@ -5760,6 +4942,7 @@
   "/notepad-plus-plus/notepad-plus-plus/issues/views",
   "/notepad-plus-plus/notepad-plus-plus/milestones",
   "/notepad-plus-plus/notepad-plus-plus/labels",
+  "/notepad-plus-plus/notepad-plus-plus/issues/new/choose",
   "/notepad-plus-plus/notepad-plus-plus/issues?q=is%3Aissue+state%3Aopen&page=2",
   "/notepad-plus-plus/notepad-plus-plus/issues?q=is%3Aissue+state%3Aopen&page=3",
   "/notepad-plus-plus/notepad-plus-plus/issues?q=is%3Aissue+state%3Aopen&page=4",
@@ -5775,17 +4958,17 @@
   ],
   "items": [
    {
-    "pressed": "true",
+    "pressed": "false",
     "icon": "octicon-rows",
     "tip": "Comfortable display density"
    },
    {
-    "pressed": "false",
+    "pressed": "true",
     "icon": "octicon-three-bars",
     "tip": "Compact display density"
    }
   ]
  },
- "fetched_at": "2026-11-03T16:17:33",
- "elements_seen": 2162
+ "fetched_at": "2026-11-03T19:24:30",
+ "elements_seen": 2220
 }

@@ -3,7 +3,7 @@
 - 采集时间：`2026-11-03T16:19:02`
 - 视口：`1440x1000`（桌面）
 - 采集器：`python -m tools.gh_ui_harvest`
-- **登录态：未登录**（`meta[user-login]` 为空）—— 登录后才有的控件待补采，见文末边界
+- **登录态：已登录**（2026-11-03 19:26 采），未登录基线另存 `logged-out/`
 - 每页产物：`<slug>.json`（交互清单）+ `<slug>.html`（渲染后整页 DOM，已 gitignore）
 
 ## 页面清单
@@ -87,6 +87,19 @@
 | `pub-community` | Community Standards · GitHub | 120 |
 | `pub-activity` | Activity · notepad-plus-plus/notepad-plus-plus · | 194 |
 | `pub-security-policy` | Security Policy · notepad-plus-plus/notepad-plus | 100 |
+
+## 登录态采集（2026-11-03 19:26）
+
+| 页面 | 交互元素 | 说明 |
+|---|---:|---|
+| `li-issues-new` | 43 | New issue 表单（**登录后才存在**） |
+| `li-actions-run` | 41 | Actions 运行详情（Push on master） |
+| `li-security-advisories` | 53 | 安全公告页 |
+| `li-compare` | 34 | Compare 页 |
+| `li-user-settings` | 113 | 用户设置（Your profile） |
+
+17 个列表页也已用登录态重采（`repo/issues/pulls/agents/actions/…`），其中 `agents`、`actions/metrics/{usage,performance}` 从 404 变为可访问。
+未登录基线保留在 `logged-out/`，差集见 `DELTA.md`（352 个控件只在登录态出现）。
 
 ## 边界（没采到什么，为什么）
 

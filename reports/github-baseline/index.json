@@ -1,227 +1,186 @@
 {
- "fetched_at": "2026-11-03T16:19:02",
+ "fetched_at": "2026-11-03T19:26:03",
  "viewport": "1440x1000",
  "pages": [
   {
    "slug": "repo",
    "url": "https://github.com/notepad-plus-plus/notepad-plus-plus",
-   "title": "GitHub - notepad-plus-plus/notepad-plus-plus: Notepad++ official repository · GitHub",
-   "elements": 1812,
-   "interactive": 208,
-   "links": 49
+   "title": "notepad-plus-plus/notepad-plus-plus: Notepad++ official repository",
+   "elements": 1941,
+   "interactive": 158,
+   "links": 52
   },
   {
    "slug": "issues",
    "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/issues",
-   "title": "Issues · notepad-plus-plus/notepad-plus-plus · GitHub",
-   "elements": 2162,
-   "interactive": 265,
-   "links": 23
+   "title": "Issues · notepad-plus-plus/notepad-plus-plus",
+   "elements": 2220,
+   "interactive": 226,
+   "links": 25
   },
   {
    "slug": "pulls",
    "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/pulls",
-   "title": "Pull requests · notepad-plus-plus/notepad-plus-plus · GitHub",
-   "elements": 2540,
-   "interactive": 289,
-   "links": 45
+   "title": "Pull requests · notepad-plus-plus/notepad-plus-plus",
+   "elements": 2478,
+   "interactive": 211,
+   "links": 35
   },
   {
    "slug": "agents",
    "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/agents",
-   "title": "Page not found · GitHub · GitHub",
-   "elements": 965,
-   "interactive": 132,
-   "links": 0
+   "title": "Agents · notepad-plus-plus/notepad-plus-plus",
+   "elements": 1166,
+   "interactive": 42,
+   "links": 10
   },
   {
    "slug": "actions",
    "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/actions",
-   "title": "All workflows · GitHub",
-   "elements": 2040,
-   "interactive": 254,
-   "links": 21
+   "title": "All workflows",
+   "elements": 2239,
+   "interactive": 211,
+   "links": 31
   },
   {
    "slug": "projects",
    "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/projects",
-   "title": "Projects · notepad-plus-plus/notepad-plus-plus · GitHub",
-   "elements": 1131,
-   "interactive": 102,
-   "links": 11
+   "title": "Projects · notepad-plus-plus/notepad-plus-plus",
+   "elements": 1301,
+   "interactive": 56,
+   "links": 18
   },
   {
    "slug": "wiki",
    "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/wiki",
-   "title": "Home · notepad-plus-plus/notepad-plus-plus Wiki · GitHub",
-   "elements": 1181,
-   "interactive": 124,
-   "links": 18
+   "title": "Home · notepad-plus-plus/notepad-plus-plus Wiki",
+   "elements": 1250,
+   "interactive": 67,
+   "links": 19
   },
   {
    "slug": "security",
    "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/security",
-   "title": "Overview · notepad-plus-plus/notepad-plus-plus · GitHub",
-   "elements": 1049,
-   "interactive": 123,
-   "links": 23
+   "title": "Overview · notepad-plus-plus/notepad-plus-plus",
+   "elements": 1122,
+   "interactive": 66,
+   "links": 24
   },
   {
    "slug": "pulse",
    "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/pulse",
-   "title": "Pulse · notepad-plus-plus/notepad-plus-plus · GitHub",
-   "elements": 1498,
-   "interactive": 199,
-   "links": 44
+   "title": "Pulse · notepad-plus-plus/notepad-plus-plus",
+   "elements": 1569,
+   "interactive": 144,
+   "links": 48
   },
   {
    "slug": "graphs-contributors",
    "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/graphs/contributors",
-   "title": "Contributors to notepad-plus-plus/notepad-plus-plus · GitHub",
-   "elements": 1735,
-   "interactive": 226,
-   "links": 21
+   "title": "Contributors to notepad-plus-plus/notepad-plus-plus",
+   "elements": 2012,
+   "interactive": 192,
+   "links": 26
   },
   {
    "slug": "graphs-commit-activity",
    "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/graphs/commit-activity",
-   "title": "Commits · notepad-plus-plus/notepad-plus-plus · GitHub",
-   "elements": 1101,
-   "interactive": 160,
-   "links": 15
+   "title": "Commits · notepad-plus-plus/notepad-plus-plus",
+   "elements": 1172,
+   "interactive": 105,
+   "links": 18
   },
   {
    "slug": "graphs-code-frequency",
    "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/graphs/code-frequency",
-   "title": "Code frequency · notepad-plus-plus/notepad-plus-plus · GitHub",
-   "elements": 1166,
-   "interactive": 268,
-   "links": 15
+   "title": "Code frequency · notepad-plus-plus/notepad-plus-plus",
+   "elements": 985,
+   "interactive": 47,
+   "links": 18
   },
   {
    "slug": "network-dependencies",
    "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/network/dependencies",
-   "title": "Dependencies · notepad-plus-plus/notepad-plus-plus · GitHub",
-   "elements": 1269,
-   "interactive": 123,
-   "links": 20
+   "title": "Dependencies · notepad-plus-plus/notepad-plus-plus",
+   "elements": 1340,
+   "interactive": 68,
+   "links": 23
   },
   {
    "slug": "network",
    "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/network",
-   "title": "Network Graph · notepad-plus-plus/notepad-plus-plus · GitHub",
-   "elements": 917,
-   "interactive": 104,
-   "links": 15
+   "title": "Network Graph · notepad-plus-plus/notepad-plus-plus",
+   "elements": 988,
+   "interactive": 49,
+   "links": 18
   },
   {
    "slug": "forks",
    "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/forks",
-   "title": "Forks · notepad-plus-plus/notepad-plus-plus · GitHub",
-   "elements": 1818,
-   "interactive": 266,
-   "links": 36
+   "title": "Forks · notepad-plus-plus/notepad-plus-plus",
+   "elements": 1899,
+   "interactive": 212,
+   "links": 40
   },
   {
    "slug": "actions-metrics-usage",
    "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/actions/metrics/usage",
-   "title": "Page not found · GitHub · GitHub",
-   "elements": 965,
-   "interactive": 132,
-   "links": 0
+   "title": "Actions usage metrics",
+   "elements": 1219,
+   "interactive": 114,
+   "links": 21
   },
   {
    "slug": "actions-metrics-performance",
    "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/actions/metrics/performance",
-   "title": "Page not found · GitHub · GitHub",
-   "elements": 965,
-   "interactive": 132,
-   "links": 0
+   "title": "Actions performance metrics",
+   "elements": 1219,
+   "interactive": 109,
+   "links": 21
   },
   {
-   "slug": "pub-releases",
-   "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/releases",
-   "title": "Releases · notepad-plus-plus/notepad-plus-plus",
-   "interactive": 304,
-   "login": ""
+   "slug": "li-actions-run",
+   "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/actions/runs/41626900867",
+   "title": "Push on master · notepad-plus-plus/notepad-plus-plus@4a8052a",
+   "interactive": 68,
+   "login": "wangtierui"
   },
   {
-   "slug": "pub-tags",
-   "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/tags",
-   "title": "Tags · notepad-plus-plus/notepad-plus-plus · GitHub",
-   "interactive": 168,
-   "login": ""
+   "slug": "li-compare",
+   "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/compare",
+   "title": "Compare · notepad-plus-plus/notepad-plus-plus",
+   "interactive": 44,
+   "login": "wangtierui"
   },
   {
-   "slug": "pub-labels",
-   "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/labels",
-   "title": "Labels · notepad-plus-plus/notepad-plus-plus · GitHub",
-   "interactive": 204,
-   "login": ""
+   "slug": "li-issues-new",
+   "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/issues/new",
+   "title": "New issue",
+   "interactive": 66,
+   "login": "wangtierui"
   },
   {
-   "slug": "pub-milestones",
-   "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/milestones",
-   "title": "Milestones · notepad-plus-plus/notepad-plus-plus · GitHub",
-   "interactive": 115,
-   "login": ""
+   "slug": "li-security-advisories",
+   "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/security/advisories",
+   "title": "Security Advisories · notepad-plus-plus/notepad-plus-plus",
+   "interactive": 72,
+   "login": "wangtierui"
   },
   {
-   "slug": "pub-commits",
-   "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/commits/master",
-   "title": "Commits · notepad-plus-plus/notepad-plus-plus · GitHub",
-   "interactive": 454,
-   "login": ""
+   "slug": "li-user-settings-nav",
+   "url": "https://github.com/settings",
+   "title": "Your profile",
+   "interactive": 113,
+   "login": "wangtierui"
   },
   {
-   "slug": "pub-issue-detail",
-   "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/issues/1",
-   "title": "Update bulgarian.xml by rddim · Pull Request #1 · notepad-plus-plus/notepad-plus-plus",
-   "interactive": 355,
-   "login": ""
-  },
-  {
-   "slug": "pub-pull-detail",
-   "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/pull/1",
-   "title": "Update bulgarian.xml by rddim · Pull Request #1 · notepad-plus-plus/notepad-plus-plus",
-   "interactive": 355,
-   "login": ""
-  },
-  {
-   "slug": "pub-wiki-page",
-   "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/wiki/Home",
-   "title": "Home · notepad-plus-plus/notepad-plus-plus Wiki · GitHub",
-   "interactive": 124,
-   "login": ""
-  },
-  {
-   "slug": "pub-stargazers",
-   "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/stargazers",
-   "title": "Page not found · GitHub · GitHub",
-   "interactive": 132,
-   "login": ""
-  },
-  {
-   "slug": "pub-community",
-   "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/community",
-   "title": "Community Standards · GitHub",
-   "interactive": 120,
-   "login": ""
-  },
-  {
-   "slug": "pub-activity",
-   "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/activity",
-   "title": "Activity · notepad-plus-plus/notepad-plus-plus · GitHub",
-   "interactive": 194,
-   "login": ""
-  },
-  {
-   "slug": "pub-security-policy",
-   "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/security/policy",
-   "title": "Security Policy · notepad-plus-plus/notepad-plus-plus · GitHub",
-   "interactive": 100,
-   "login": ""
+   "slug": "li-user-settings",
+   "url": "https://github.com/settings/profile",
+   "title": "Your profile",
+   "interactive": 113,
+   "login": "wangtierui"
   }
  ],
- "note": "登录态不可得（三次尝试均无 user_session）；本基线为未登录态 + 公开详情页。"
+ "logged_in": true,
+ "note": "登录态采集（user 已登录）。未登录基线保存在 logged-out/，两者差集见 DELTA.md；reports 里 *_settings 的仓库级 404 已剔除。"
 }
