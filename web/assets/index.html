@@ -1346,6 +1346,12 @@ body.no-rail .main-content{max-width:none;margin:0 auto}
 .wl-kinds .kv{padding:1px 0}
 .wl-kinds .k{color:var(--text-muted);font-size:12px}
 .wl-kinds .v{font-variant-numeric:tabular-nums}
+
+/* 批 168：总览 kind 排行可点（GitHub 的 sidebar 计数同样可点进列表） */
+.wl-kind{width:100%;border:0;background:none;cursor:pointer;text-align:left;
+  font:inherit;color:inherit;padding:2px 4px;border-radius:4px}
+.wl-kind:hover{background:var(--bg-subtle)}
+.wl-kind:focus-visible{outline:2px solid #0969da;outline-offset:-2px}
 </style>
 </head>
 <body>
@@ -1790,7 +1796,9 @@ function viewOverview(d, assets, publish, rel){
     .sort((a, b) => b[1] - a[1]);
   const wlKindHtml = wlKinds.length
     ? `<div class="wl-kinds">${wlKinds.map(([k, v]) =>
-        `<div class="kv"><span class="k">${esc(k)}</span><span class="v">${num(v)}</span></div>`
+        `<button class="kv wl-kind" type="button" onclick="ovKind('${esc(k)}')"
+          title="查看该 kind 的待办"><span class="k">${esc(k)}</span>${
+          `<span class="v">${num(v)}</span>`}</button>`
       ).join("")}</div>` : "";
   const wlHtml = wl.available
     ? kv("open 总数", num(wl.open_total), Number(wl.open_total)>0?"warn":"ok")
@@ -2261,6 +2269,14 @@ function cellUrl(f){
 function curBy(){
   const u = String(obj(STATE.auth).user || "").trim();
   return u || "本机";
+}
+
+/*: 总览 kind 排行 → 待办闭环按该 kind 过滤（复用同一状态键，不另造筛选）。 */
+function ovKind(k){
+  STATE._wlkind = String(k || "");
+  if (String(STATE._wlstatus || "") === "") STATE._wlstatus = "open";
+  location.hash = "worklist";
+  render();
 }
 
 function viewWorklist(d, kinds){
