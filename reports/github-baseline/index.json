@@ -137,6 +137,91 @@
    "elements": 965,
    "interactive": 132,
    "links": 0
+  },
+  {
+   "slug": "pub-releases",
+   "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/releases",
+   "title": "Releases · notepad-plus-plus/notepad-plus-plus",
+   "interactive": 304,
+   "login": ""
+  },
+  {
+   "slug": "pub-tags",
+   "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/tags",
+   "title": "Tags · notepad-plus-plus/notepad-plus-plus · GitHub",
+   "interactive": 168,
+   "login": ""
+  },
+  {
+   "slug": "pub-labels",
+   "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/labels",
+   "title": "Labels · notepad-plus-plus/notepad-plus-plus · GitHub",
+   "interactive": 204,
+   "login": ""
+  },
+  {
+   "slug": "pub-milestones",
+   "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/milestones",
+   "title": "Milestones · notepad-plus-plus/notepad-plus-plus · GitHub",
+   "interactive": 115,
+   "login": ""
+  },
+  {
+   "slug": "pub-commits",
+   "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/commits/master",
+   "title": "Commits · notepad-plus-plus/notepad-plus-plus · GitHub",
+   "interactive": 454,
+   "login": ""
+  },
+  {
+   "slug": "pub-issue-detail",
+   "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/issues/1",
+   "title": "Update bulgarian.xml by rddim · Pull Request #1 · notepad-plus-plus/notepad-plus-plus",
+   "interactive": 355,
+   "login": ""
+  },
+  {
+   "slug": "pub-pull-detail",
+   "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/pull/1",
+   "title": "Update bulgarian.xml by rddim · Pull Request #1 · notepad-plus-plus/notepad-plus-plus",
+   "interactive": 355,
+   "login": ""
+  },
+  {
+   "slug": "pub-wiki-page",
+   "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/wiki/Home",
+   "title": "Home · notepad-plus-plus/notepad-plus-plus Wiki · GitHub",
+   "interactive": 124,
+   "login": ""
+  },
+  {
+   "slug": "pub-stargazers",
+   "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/stargazers",
+   "title": "Page not found · GitHub · GitHub",
+   "interactive": 132,
+   "login": ""
+  },
+  {
+   "slug": "pub-community",
+   "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/community",
+   "title": "Community Standards · GitHub",
+   "interactive": 120,
+   "login": ""
+  },
+  {
+   "slug": "pub-activity",
+   "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/activity",
+   "title": "Activity · notepad-plus-plus/notepad-plus-plus · GitHub",
+   "interactive": 194,
+   "login": ""
+  },
+  {
+   "slug": "pub-security-policy",
+   "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/security/policy",
+   "title": "Security Policy · notepad-plus-plus/notepad-plus-plus · GitHub",
+   "interactive": 100,
+   "login": ""
   }
- ]
+ ],
+ "note": "登录态不可得（三次尝试均无 user_session）；本基线为未登录态 + 公开详情页。"
 }

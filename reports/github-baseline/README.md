@@ -71,6 +71,23 @@
 | Filter by reviews | 无搜索框 | 非 option 结构（菜单项，无勾选框） |
 | Filter by assignee | 单选 | placeholder `Filter assignees` |
 
+### 公开详情页（登录前也可达）
+
+| slug | 标题 | 交互元素 |
+|---|---|---:|
+| `pub-releases` | Releases · notepad-plus-plus/notepad-plus-plus | 304 |
+| `pub-tags` | Tags · notepad-plus-plus/notepad-plus-plus · Git | 168 |
+| `pub-labels` | Labels · notepad-plus-plus/notepad-plus-plus · G | 204 |
+| `pub-milestones` | Milestones · notepad-plus-plus/notepad-plus-plus | 115 |
+| `pub-commits` | Commits · notepad-plus-plus/notepad-plus-plus ·  | 454 |
+| `pub-issue-detail` | Update bulgarian.xml by rddim · Pull Request #1  | 355 |
+| `pub-pull-detail` | Update bulgarian.xml by rddim · Pull Request #1  | 355 |
+| `pub-wiki-page` | Home · notepad-plus-plus/notepad-plus-plus Wiki  | 124 |
+| `pub-stargazers` | Page not found · GitHub · GitHub | 132 |
+| `pub-community` | Community Standards · GitHub | 120 |
+| `pub-activity` | Activity · notepad-plus-plus/notepad-plus-plus · | 194 |
+| `pub-security-policy` | Security Policy · notepad-plus-plus/notepad-plus | 100 |
+
 ## 边界（没采到什么，为什么）
 
 1. `agents`、`actions/metrics/usage`、`actions/metrics/performance` 三个 URL 在未登录态返回 **Page not found**（可能需登录或该仓库未启用），已如实记录标题。
