@@ -55,10 +55,24 @@
     </div>
   </div>
 
+  <!-- 批量处置条：勾选后出现（只做布局，视觉全 Primer） -->
+  <div id="bulk" class="border rounded-2 mb-2 p-2 d-flex flex-items-center flex-wrap gap-2" hidden>
+    <span class="text-small">已选 <b id="bulkn">0</b> 条</span>
+    <select id="bulkstatus" class="form-select" aria-label="批量处置状态">
+      <option value="resolved">resolved（已处置）</option>
+      <option value="dismissed">dismissed（不适用）</option>
+    </select>
+    <input id="bulkwhy" class="form-control" style="flex:1 1 260px;min-width:220px"
+           placeholder="批量处置理由（必填，进审计台账）">
+    <button class="btn btn-primary" id="bulkdo" type="button">批量处置</button>
+    <button class="btn" id="bulkcancel" type="button">取消</button>
+    <div id="bulkmsg" class="text-small" style="flex:1 0 100%"></div>
+  </div>
+
   <!-- 列表：无外框，表头上下 1px，行间 1px -->
   <div class="border rounded-2 overflow-hidden">
     <div class="border-bottom py-1 px-2 bgColor-muted tbl row-1 text-small">
-      <div class="cell"><input type="checkbox" aria-label="全选"></div>
+      <div class="cell"><input type="checkbox" id="selall" aria-label="全选"></div>
       <div class="cell">kind</div>
       <div class="cell">subject</div>
       <div class="cell">suggestion</div>
@@ -106,7 +120,8 @@ async function load() {
   $("#pinfo").textContent = `${S.page} / ${pages}`;
   $("#rows").innerHTML = (d.items || []).map((it) => `
     <div class="border-bottom py-1 px-2 tbl row-1" data-id="${esc(it.item_id)}">
-      <div class="cell"><input type="checkbox" aria-label="选择 ${esc(it.item_id)}"></div>
+      <div class="cell"><input type="checkbox" class="rowsel" data-id="${esc(it.item_id)}"
+        aria-label="选择 ${esc(it.item_id)}"></div>
       <div class="cell"><span class="IssueLabel" style="background-color:var(--bgColor-accent-muted);border-color:var(--borderColor-accent-muted)">${esc(it.kind)}</span></div>
       <div class="cell" title="${esc(it.subject)}">${esc(it.subject)}</div>
       <div class="cell text-small" title="${esc(it.suggestion)}">${esc(it.suggestion)}</div>
@@ -114,6 +129,8 @@ async function load() {
       <div class="cell text-small">${esc(it.created_at)}</div>
       <div class="cell"><button class="btn btn-sm" type="button" data-act="resolve">处置</button></div>
     </div>`).join("") || '<div class="py-2 px-2 text-small">没有匹配待办</div>';
+  const box = $("#selall"); if (box) box.checked = false;
+  syncBulk();
 }
 
 let timer = null;
@@ -193,6 +210,56 @@ $("#rows").addEventListener("click", (e) => {
     else { alert("处置失败：" + ((d && (d.reason || d.error)) || "未知")); }
   }).catch((err) => alert("处置失败：" + err.message));
 });
+
+/* 批量处置：勾选 → 批量条 → 逐条 POST（接口无批量端点，旧工作台也是循环单条） */
+function selected() {
+  return [...document.querySelectorAll(".rowsel")].filter((c) => c.checked);
+}
+function syncBulk() {
+  const n = selected().length;
+  $("#bulk").hidden = n === 0;
+  $("#bulkn").textContent = String(n);
+}
+document.addEventListener("change", (e) => {
+  if (e.target.id === "selall") {
+    document.querySelectorAll(".rowsel").forEach((c) => { c.checked = e.target.checked; });
+    syncBulk();
+  } else if (e.target.classList.contains("rowsel")) {
+    const all = [...document.querySelectorAll(".rowsel")];
+    const box = $("#selall");
+    if (box) box.checked = all.length > 0 && all.every((c) => c.checked);
+    syncBulk();
+  }
+});
+$("#bulkcancel").onclick = () => {
+  document.querySelectorAll(".rowsel").forEach((c) => { c.checked = false; });
+  const box = $("#selall"); if (box) box.checked = false;
+  syncBulk();
+};
+$("#bulkdo").onclick = async () => {
+  const why = ($("#bulkwhy").value || "").trim();
+  const msg = $("#bulkmsg");
+  if (!why) { msg.textContent = "批量处置必须填理由（进审计台账）"; $("#bulkwhy").focus(); return; }
+  const ids = selected().map((c) => c.dataset.id);
+  if (!ids.length) return;
+  const st = $("#bulkstatus").value;
+  const btn = $("#bulkdo");
+  btn.disabled = true;
+  let ok = 0; const bad = [];
+  for (const id of ids) {
+    try {
+      const r = await fetch("/api/worklist/resolve", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ item_id: id, resolution: why, status: st, by: "web" }),
+      });
+      const d = await r.json();
+      if (d && (d.ok || d.available)) ok++; else bad.push(id);
+    } catch (err) { bad.push(id); }
+  }
+  btn.disabled = false;
+  msg.textContent = `成功 ${ok} 条` + (bad.length ? ` · 失败 ${bad.length} 条：${bad.slice(0, 3).join(", ")}` : "");
+  if (ok) { load(); }
+};
 
 $("#prev").onclick = () => { if (S.page > 1) { S.page--; load(); } };
 $("#next").onclick = () => { S.page++; load(); };
