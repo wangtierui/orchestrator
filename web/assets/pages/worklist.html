@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="zh-CN" data-color-mode="light" data-light-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>待办闭环 · 平行重建样板页（复杂页验证）</title>
+<link rel="stylesheet" href="../primer-primitives.css">
+<link rel="stylesheet" href="../primer.css">
+<style>
+  /* 只允许布局：grid/flex/宽高/间距/截断。颜色/边框/圆角一律走 Primer 类或令牌。 */
+  body { background: var(--bgColor-default); }
+  .page { max-width: 1200px; margin: 0 auto; padding: 16px; }
+  .qwrap { position: relative; }
+  .qico { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); pointer-events: none; }
+  .qinput { padding-right: 30px; }
+  .tbl { display: grid; grid-template-columns: 32px 170px minmax(0,1fr) 150px 96px 120px 88px;
+         align-items: center; gap: 8px; }
+  .row-1 { min-height: 32px; }
+  .cell { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .row-1:hover { background: var(--bgColor-muted); }
+  .row-1 .btn { height: 24px; padding: 0 8px; }   /* 行内动作按钮压到 24，行高才能是 32 */
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- 搜索行：整行、放大镜在右 -->
+  <div class="qwrap mb-2">
+    <input id="q" class="form-control input-block qinput" type="search"
+           placeholder="搜索待办：subject / artifact_key…" aria-label="搜索待办">
+    <svg class="octicon qico" width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+      <path d="M10.68 11.74a6 6 0 0 1-7.922-8.982 6 6 0 0 1 8.982 7.922l3.04 3.04a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215ZM11.5 7a4.499 4.499 0 1 0-8.997 0A4.499 4.499 0 0 0 11.5 7Z"></path>
+    </svg>
+  </div>
+
+  <!-- 工具条：左「状态开关 + 计数」/ 右「kind 筛选 + 密度」 -->
+  <div class="d-flex flex-items-center flex-wrap gap-2 mb-2">
+    <div class="d-flex" role="group" aria-label="状态">
+      <button class="btn btn-sm" type="button" data-status="open" aria-pressed="true">待处置</button>
+      <button class="btn btn-sm" type="button" data-status="resolved" aria-pressed="false">已处置</button>
+    </div>
+    <span id="count" class="text-small">共 0 条</span>
+    <span class="flex-auto"></span>
+    <select id="kind" class="form-select" aria-label="按 kind 筛选"></select>
+    <div class="d-flex" role="group" aria-label="Issues display density">
+      <button class="btn btn-sm" type="button" data-density="comfortable" aria-pressed="true"
+              title="Comfortable display density" aria-label="Comfortable display density">≡</button>
+      <button class="btn btn-sm" type="button" data-density="compact" aria-pressed="false"
+              title="Compact display density" aria-label="Compact display density">☰</button>
+    </div>
+  </div>
+
+  <!-- 列表：无外框，表头上下 1px，行间 1px -->
+  <div class="border rounded-2 overflow-hidden">
+    <div class="border-bottom py-1 px-2 bgColor-muted tbl row-1 text-small">
+      <div class="cell"><input type="checkbox" aria-label="全选"></div>
+      <div class="cell">kind</div>
+      <div class="cell">subject</div>
+      <div class="cell">suggestion</div>
+      <div class="cell">confidence</div>
+      <div class="cell">created_at</div>
+      <div class="cell">操作</div>
+    </div>
+    <div id="rows"></div>
+  </div>
+
+  <div class="paginate-container mt-3">
+    <div class="pagination">
+      <button class="btn btn-sm" id="prev" type="button">上一页</button>
+      <span id="pinfo" class="px-2 text-small">1 / 1</span>
+      <button class="btn btn-sm" id="next" type="button">下一页</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const S = { status: "open", kind: "", q: "", page: 1, size: 25, total: 0 };
+const $ = (s) => document.querySelector(s);
+const esc = (v) => String(v == null ? "" : v).replace(/[&<>"]/g, (c) =>
+  ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+async function loadKinds() {
+  const r = await fetch("/api/worklist?status=open&size=1", { cache: "no-store" });
+  const d = await r.json();
+  const counts = d.kind_counts || {};
+  const opts = ['<option value="">全部 kind</option>'].concat(
+    Object.keys(counts).sort((a, b) => counts[b] - counts[a]).map((k) =>
+      `<option value="${esc(k)}">${esc(k)}（${counts[k]}）</option>`));
+  $("#kind").innerHTML = opts.join("");
+}
+
+async function load() {
+  const p = new URLSearchParams({ status: S.status, size: S.size, offset: (S.page - 1) * S.size });
+  if (S.kind) p.set("kind", S.kind);
+  if (S.q) p.set("q", S.q);
+  const r = await fetch("/api/worklist?" + p.toString(), { cache: "no-store" });
+  const d = await r.json();
+  S.total = d.total || d.count || 0;
+  $("#count").textContent = `共 ${S.total} 条`;
+  const pages = Math.max(1, Math.ceil(S.total / S.size));
+  $("#pinfo").textContent = `${S.page} / ${pages}`;
+  $("#rows").innerHTML = (d.items || []).map((it) => `
+    <div class="border-bottom py-1 px-2 tbl row-1">
+      <div class="cell"><input type="checkbox" aria-label="选择 ${esc(it.item_id)}"></div>
+      <div class="cell"><span class="IssueLabel" style="background-color:var(--bgColor-accent-muted);border-color:var(--borderColor-accent-muted)">${esc(it.kind)}</span></div>
+      <div class="cell" title="${esc(it.subject)}">${esc(it.subject)}</div>
+      <div class="cell text-small" title="${esc(it.suggestion)}">${esc(it.suggestion)}</div>
+      <div class="cell text-small">${esc(it.confidence)}</div>
+      <div class="cell text-small">${esc(it.created_at)}</div>
+      <div class="cell"><button class="btn btn-sm" type="button">处置</button></div>
+    </div>`).join("") || '<div class="py-2 px-2 text-small">没有匹配待办</div>';
+}
+
+let timer = null;
+$("#q").addEventListener("input", (e) => {
+  clearTimeout(timer);
+  timer = setTimeout(() => { S.q = e.target.value.trim(); S.page = 1; load(); }, 220);
+});
+$("#kind").addEventListener("change", (e) => { S.kind = e.target.value; S.page = 1; load(); });
+document.querySelectorAll("[data-status]").forEach((b) => {
+  b.onclick = () => {
+    S.status = b.dataset.status; S.page = 1;
+    document.querySelectorAll("[data-status]").forEach((x) =>
+      x.setAttribute("aria-pressed", String(x === b)));
+    load();
+  };
+});
+document.querySelectorAll("[data-density]").forEach((b) => {
+  b.onclick = () => {
+    const v = b.dataset.density;
+    document.querySelectorAll("[data-density]").forEach((x) =>
+      x.setAttribute("aria-pressed", String(x === b)));
+    document.querySelectorAll(".row-1").forEach((r) => {
+      r.style.minHeight = v === "compact" ? "28px" : "32px";
+    });
+  };
+});
+$("#prev").onclick = () => { if (S.page > 1) { S.page--; load(); } };
+$("#next").onclick = () => { S.page++; load(); };
+loadKinds(); load();
+</script>
+</body>
+</html>

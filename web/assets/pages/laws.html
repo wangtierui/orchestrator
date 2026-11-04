@@ -49,7 +49,7 @@
 
   <!-- 列表：无外框，表头上下各 1px，行与行之间 1px（Primer Box-row 自带） -->
   <div class="border rounded-2 overflow-hidden">
-    <div class="border-bottom p-2 bgColor-muted tbl row-1 text-small">
+    <div class="border-bottom py-1 px-2 bgColor-muted tbl row-1 text-small">
       <div class="cell">标题</div><div class="cell">文号</div><div class="cell">主题</div>
       <div class="cell">时效</div><div class="cell">发文机关</div><div class="cell">发布日期</div>
     </div>
@@ -81,7 +81,7 @@ async function load() {
   $("#count").textContent = `共 ${S.total} 条`;
   $("#pinfo").textContent = `${S.page} / ${S.pages}`;
   $("#rows").innerHTML = (d.items || []).map((it) => `
-    <div class="border-bottom p-2 tbl row-1">
+    <div class="border-bottom py-1 px-2 tbl row-1">
       <div class="cell truncate"><a class="Link--primary" href="${esc(it.url || "#")}"
         target="_blank" rel="noopener">${esc(it.title)}</a></div>
       <div class="cell truncate text-small">${esc(it.document_number)}</div>
