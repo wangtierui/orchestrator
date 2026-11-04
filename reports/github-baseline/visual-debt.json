@@ -1,0 +1,434 @@
+{
+ "rules": 145,
+ "by_prop": {
+  "background": 74,
+  "color": 58,
+  "font-size": 40,
+  "border": 34,
+  "border-radius": 31,
+  "border-bottom": 18,
+  "box-shadow": 17,
+  "border-color": 13,
+  "outline": 12,
+  "font-weight": 11,
+  "outline-offset": 7,
+  "text-decoration": 6,
+  "font-variant-numeric": 3,
+  "font": 3,
+  "border-left": 3,
+  "border-top": 2,
+  "border-collapse": 1,
+  "border-spacing": 1,
+  "border-width": 1
+ },
+ "top": [
+  {
+   "sel": ".lv-chip",
+   "visual": [
+    "background",
+    "border",
+    "border-radius",
+    "color",
+    "font-size"
+   ],
+   "n": 5
+  },
+  {
+   "sel": ".lv-table th",
+   "visual": [
+    "background",
+    "border-bottom",
+    "color",
+    "font-size",
+    "font-weight"
+   ],
+   "n": 5
+  },
+  {
+   "sel": ".lv-th .sortbtn",
+   "visual": [
+    "background",
+    "border",
+    "border-radius",
+    "color",
+    "font"
+   ],
+   "n": 5
+  },
+  {
+   "sel": ".lv-th .menu",
+   "visual": [
+    "background",
+    "border",
+    "border-radius",
+    "color",
+    "font-size"
+   ],
+   "n": 5
+  },
+  {
+   "sel": ".lv-badge",
+   "visual": [
+    "background",
+    "border",
+    "border-radius",
+    "color",
+    "font-size"
+   ],
+   "n": 5
+  },
+  {
+   "sel": ".lv-slice .foot button",
+   "visual": [
+    "background",
+    "border",
+    "border-radius",
+    "color",
+    "font-size"
+   ],
+   "n": 5
+  },
+  {
+   "sel": ".lv-pop",
+   "visual": [
+    "background",
+    "border",
+    "border-radius",
+    "box-shadow",
+    "font-size"
+   ],
+   "n": 5
+  },
+  {
+   "sel": ".lv-pop button",
+   "visual": [
+    "background",
+    "border",
+    "border-radius",
+    "color",
+    "font"
+   ],
+   "n": 5
+  },
+  {
+   "sel": ".lv-batch",
+   "visual": [
+    "background",
+    "border-radius",
+    "box-shadow",
+    "color",
+    "font-size"
+   ],
+   "n": 5
+  },
+  {
+   "sel": ".lv-batch button",
+   "visual": [
+    "background",
+    "border",
+    "border-radius",
+    "color",
+    "font-size"
+   ],
+   "n": 5
+  },
+  {
+   "sel": ".lv-q",
+   "visual": [
+    "background",
+    "border",
+    "border-radius",
+    "color",
+    "font-size"
+   ],
+   "n": 5
+  },
+  {
+   "sel": ".lv-batch input",
+   "visual": [
+    "background",
+    "border",
+    "border-radius",
+    "color",
+    "font-size"
+   ],
+   "n": 5
+  },
+  {
+   "sel": ".lv-headrow th",
+   "visual": [
+    "background",
+    "border-bottom",
+    "color",
+    "font-size",
+    "font-weight"
+   ],
+   "n": 5
+  },
+  {
+   "sel": ".lv-headbar .ftab",
+   "visual": [
+    "background",
+    "border",
+    "border-radius",
+    "color",
+    "font-size"
+   ],
+   "n": 5
+  },
+  {
+   "sel": ".lv-headrow-plain th",
+   "visual": [
+    "background",
+    "border-bottom",
+    "color",
+    "font-size",
+    "font-weight"
+   ],
+   "n": 5
+  },
+  {
+   "sel": ".lv-fq",
+   "visual": [
+    "background",
+    "border",
+    "color",
+    "font-size",
+    "outline"
+   ],
+   "n": 5
+  },
+  {
+   "sel": ".lv-tok",
+   "visual": [
+    "background",
+    "border",
+    "border-radius",
+    "color",
+    "font-size"
+   ],
+   "n": 5
+  },
+  {
+   "sel": ".lv-gtable .lv-headrow",
+   "visual": [
+    "background",
+    "border-bottom",
+    "color",
+    "font-size",
+    "font-weight"
+   ],
+   "n": 5
+  },
+  {
+   "sel": ".lv-table .actbtn",
+   "visual": [
+    "background",
+    "border",
+    "border-radius",
+    "color",
+    "text-decoration"
+   ],
+   "n": 5
+  },
+  {
+   "sel": ".lv-gtable .actbtn",
+   "visual": [
+    "background",
+    "border",
+    "border-radius",
+    "color",
+    "text-decoration"
+   ],
+   "n": 5
+  },
+  {
+   "sel": ".lv-chip button",
+   "visual": [
+    "background",
+    "border",
+    "color",
+    "font-size"
+   ],
+   "n": 4
+  },
+  {
+   "sel": ".lv-title",
+   "visual": [
+    "color",
+    "font-size",
+    "font-weight",
+    "text-decoration"
+   ],
+   "n": 4
+  },
+  {
+   "sel": ".lv-slice select",
+   "visual": [
+    "background",
+    "border",
+    "border-radius",
+    "font-size"
+   ],
+   "n": 4
+  },
+  {
+   "sel": ".lv-slice .val",
+   "visual": [
+    "background",
+    "border",
+    "border-radius",
+    "font-size"
+   ],
+   "n": 4
+  },
+  {
+   "sel": ".lv-headbar .ftab.on",
+   "visual": [
+    "background",
+    "box-shadow",
+    "color",
+    "font-weight"
+   ],
+   "n": 4
+  },
+  {
+   "sel": ".lv-fbox:focus-within",
+   "visual": [
+    "border-color",
+    "box-shadow",
+    "outline",
+    "outline-offset"
+   ],
+   "n": 4
+  },
+  {
+   "sel": ".lv-fbox:focus-within",
+   "visual": [
+    "border-color",
+    "box-shadow",
+    "outline",
+    "outline-offset"
+   ],
+   "n": 4
+  },
+  {
+   "sel": ".lv-fx",
+   "visual": [
+    "background",
+    "border",
+    "border-radius",
+    "color"
+   ],
+   "n": 4
+  },
+  {
+   "sel": ".lv-bar .count",
+   "visual": [
+    "color",
+    "font-size",
+    "font-variant-numeric"
+   ],
+   "n": 3
+  },
+  {
+   "sel": ".lv-chip.slice",
+   "visual": [
+    "background",
+    "border-color",
+    "color"
+   ],
+   "n": 3
+  },
+  {
+   "sel": ".lv-scroll",
+   "visual": [
+    "background",
+    "border",
+    "border-radius"
+   ],
+   "n": 3
+  },
+  {
+   "sel": ".lv-table",
+   "visual": [
+    "border-collapse",
+    "border-spacing",
+    "font-size"
+   ],
+   "n": 3
+  },
+  {
+   "sel": ".lv-th .sortbtn:focus-visible",
+   "visual": [
+    "box-shadow",
+    "outline",
+    "outline-offset"
+   ],
+   "n": 3
+  },
+  {
+   "sel": ".lv-badge.ok",
+   "visual": [
+    "background",
+    "border-color",
+    "color"
+   ],
+   "n": 3
+  },
+  {
+   "sel": ".lv-badge.bad",
+   "visual": [
+    "background",
+    "border-color",
+    "color"
+   ],
+   "n": 3
+  },
+  {
+   "sel": ".lv-badge.warn",
+   "visual": [
+    "background",
+    "border-color",
+    "color"
+   ],
+   "n": 3
+  },
+  {
+   "sel": ".lv-ck",
+   "visual": [
+    "background",
+    "border",
+    "border-radius"
+   ],
+   "n": 3
+  },
+  {
+   "sel": ".lv-ck:focus-visible",
+   "visual": [
+    "box-shadow",
+    "outline",
+    "outline-offset"
+   ],
+   "n": 3
+  },
+  {
+   "sel": ".lv-slice h4",
+   "visual": [
+    "color",
+    "font-size",
+    "font-weight"
+   ],
+   "n": 3
+  },
+  {
+   "sel": ".lv-slice .val.on",
+   "visual": [
+    "background",
+    "color",
+    "font-weight"
+   ],
+   "n": 3
+  }
+ ]
+}
