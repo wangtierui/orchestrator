@@ -16,7 +16,8 @@
   .qinput { padding-right: 30px; }
   .tbl { display: grid; grid-template-columns: 240px 150px 96px 80px 120px 1fr; align-items: center; }
   .row-1 { min-height: 32px; }
-  .cell { min-width: 0; }
+  .cell { min-width: 0; overflow: hidden; }
+  .tbl .cell a { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
   .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 </style>
 </head>
@@ -48,7 +49,7 @@
 
   <!-- 列表：无外框，表头上下各 1px，行与行之间 1px（Primer Box-row 自带） -->
   <div class="border rounded-2 overflow-hidden">
-    <div class="border-bottom p-2 bgColor-muted tbl row-1 text-small color-fg-muted">
+    <div class="border-bottom p-2 bgColor-muted tbl row-1 text-small">
       <div class="cell">标题</div><div class="cell">文号</div><div class="cell">主题</div>
       <div class="cell">时效</div><div class="cell">发文机关</div><div class="cell">发布日期</div>
     </div>
@@ -59,7 +60,7 @@
   <div class="paginate-container mt-3">
     <div class="pagination">
       <button class="btn btn-sm" id="prev" type="button">上一页</button>
-      <span id="pinfo" class="px-2 text-small color-fg-muted">1 / 1</span>
+      <span id="pinfo" class="px-2 text-small">1 / 1</span>
       <button class="btn btn-sm" id="next" type="button">下一页</button>
     </div>
   </div>
@@ -84,11 +85,11 @@ async function load() {
       <div class="cell truncate"><a class="Link--primary" href="${esc(it.url || "#")}"
         target="_blank" rel="noopener">${esc(it.title)}</a></div>
       <div class="cell truncate text-small">${esc(it.document_number)}</div>
-      <div class="cell"><span class="IssueLabel">${esc(it.theme_label || it.theme || "—")}</span></div>
+      <div class="cell"><span class="IssueLabel" style="background-color:var(--bgColor-accent-muted);border-color:var(--borderColor-accent-muted)">${esc(it.theme_label || it.theme || "—")}</span></div>
       <div class="cell text-small">${esc(it.timeliness_status || "—")}</div>
       <div class="cell truncate text-small">${esc(it.issue_organ)}</div>
       <div class="cell text-small">${esc(it.publish_date)}</div>
-    </div>`).join("") || '<div class="Box-row color-fg-muted">没有匹配记录</div>';
+    </div>`).join("") || '<div class="Box-row">没有匹配记录</div>';
 }
 
 let timer = null;
