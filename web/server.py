@@ -110,9 +110,11 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(body)))
         for k, v in (extra_headers or []):
             self.send_header(k, v)
-        # 安全头（本地控制台也戴：禁嗅探/嵌入，防被外站嵌入点击劫持）
+        # 安全头（本地控制台也戴：禁嗅探 / 禁外站嵌入）
         self.send_header("X-Content-Type-Options", "nosniff")
-        self.send_header("X-Frame-Options", "DENY")
+        # 2026-11-04 C3：入口改为「壳 + iframe 加载 /pages/*」，同源 iframe 必须放行；
+        # 用 SAMEORIGIN 而非 ALLOWALL —— 外站仍然嵌不进来，点击劫持防护不降级。
+        self.send_header("X-Frame-Options", "SAMEORIGIN")
         self.send_header("Referrer-Policy", "no-referrer")
         self.send_header("Cache-Control", "no-store")
         if disposition:

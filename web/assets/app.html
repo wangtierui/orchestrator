@@ -21,9 +21,11 @@
   /* 主体：左 256 + 右自适应 */
   .body { flex: 1 1 auto; display: flex; min-height: 0; }
   .rail { width: 256px; flex: 0 0 256px; padding: 8px; overflow-y: auto; }
-  .rail a { display: flex; align-items: center; gap: 8px; height: 32px;
-            padding: 0 8px; margin-bottom: 2px; border-radius: 6px;
-            font-size: 14px; text-decoration: none; }
+  .rail a { display: flex; align-items: center; justify-content: space-between; gap: 8px;
+            height: 32px; padding: 0 8px; margin-bottom: 2px; border-radius: 6px;
+            font-size: 14px; text-decoration: none;
+            color: var(--fgColor-default); }   /* 令牌取值，不写死色值 */
+  .rail a:hover { background: var(--bgColor-muted); }
   .main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
   .frame { flex: 1 1 auto; width: 100%; border: 0; display: block; background: transparent; }
   .ph { padding: 24px; }

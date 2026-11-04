@@ -26,6 +26,7 @@
   .kv .v { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
   @media (max-width: 1011px) { .grid3 { grid-template-columns: repeat(2, minmax(0,1fr)); } }
   @media (max-width: 767px)  { .grid3 { grid-template-columns: 1fr; } .kpis { grid-template-columns: repeat(2,1fr); } }
+  .gap-2 { gap: 8px; }   /* Primer 22 无此工具类，按布局补 */
 </style>
 </head>
 <body>
@@ -87,6 +88,17 @@ const $ = (s) => document.querySelector(s);
 const esc = (v) => String(v == null ? "" : v).replace(/[&<>"]/g, (c) =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const kv = (k, v) => `<div class="k">${esc(k)}</div><div class="v" title="${esc(v)}">${esc(v)}</div>`;
+const ts = (v) => {
+  const n = Number(v);
+  if (!v || !isFinite(n) || n < 1e9) return String(v || "—");   /* 不是时间戳就原样 */
+  const d = new Date(n * 1000);
+  const p = (x) => String(x).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ` +
+         `${p(d.getHours())}:${p(d.getMinutes())}`;
+};
+const pct = (o) => (o && typeof o === "object")
+  ? Object.entries(o).map(([k, v]) => `${k} ${v}%`).join(" · ")
+  : String(o ?? "—");
 const bytes = (n) => {
   n = Number(n || 0);
   const u = ["B", "KB", "MB", "GB", "TB"];
@@ -138,12 +150,14 @@ async function load() {
     kv("run_id", rh.run_id || "—"),
     kv("总步数", rh.steps ?? "—"),
     kv("累计耗时", (rh.total_elapsed_s ?? "—") + " s"),
-    kv("最近运行", rh.run_at || "—"),
+    kv("最近运行", ts(rh.run_at)),
   ].join("");
 
   $("#gs").innerHTML = [
     kv("门禁通过", `${gs.passed ?? "—"} / ${gs.total ?? "—"}`),
-    kv("门禁失败", (gs.failed || []).length ? (gs.failed || []).join(", ") : "无"),
+    kv("门禁失败", (gs.failed || []).length
+      ? (gs.failed || []).map((f) => (f && (f.descr || f.gate)) || String(f)).join(" · ")
+      : "无"),
     kv("待办未处置", wl.open_total ?? "—"),
   ].join("");
 
@@ -154,7 +168,7 @@ async function load() {
 
   $("#st").innerHTML = [
     kv("总容量", bytes(st.total_bytes)),
-    kv("占用比例", st.ratio != null ? String(st.ratio) : "—"),
+    kv("占用比例", pct(st.ratio)),
   ].join("");
 
   drawChart(counts);

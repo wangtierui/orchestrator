@@ -14,11 +14,12 @@
   .qwrap { position: relative; }
   .qico { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); pointer-events: none; }
   .qinput { padding-right: 30px; }
-  .tbl { display: grid; grid-template-columns: 240px 150px 96px 80px 120px 1fr; align-items: center; }
+  .tbl { display: grid; grid-template-columns: minmax(0,2.4fr) 170px 130px 80px 150px 108px; align-items: center; }
   .row-1 { min-height: 32px; }
   .cell { min-width: 0; overflow: hidden; }
   .tbl .cell a { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
   .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .gap-2 { gap: 8px; }   /* Primer 22 无此工具类，按布局补 */
 </style>
 </head>
 <body>
