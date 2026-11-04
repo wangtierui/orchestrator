@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="zh-CN" data-color-mode="light" data-light-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>关系图谱 · 平行重建样板页</title>
+<link rel="stylesheet" href="../primer-primitives.css">
+<link rel="stylesheet" href="../primer.css">
+<style>
+  body { background: var(--bgColor-default); }
+  .page { max-width: 1200px; margin: 0 auto; padding: 16px; }
+  .card { padding: 16px; }
+  .card > h3 { margin: 0 0 12px; font-size: 14px; font-weight: 600;
+              display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+  .layout { display: grid; grid-template-columns: minmax(0,1fr) 280px; gap: 16px; }
+  .chart { width: 100%; height: 560px; }
+  .hub { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 8px;
+         height: 28px; align-items: center; font-size: 12px; }
+  .hub .n { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  @media (max-width: 1011px) { .layout { grid-template-columns: 1fr; } .chart { height: 460px; } }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="d-flex flex-items-center flex-wrap gap-2 mb-3">
+    <h2 class="h3 m-0">关系图谱</h2>
+    <span id="stamp" class="text-small"></span>
+    <span class="flex-auto"></span>
+    <div class="d-flex" role="group" aria-label="视图">
+      <button class="btn btn-sm" type="button" data-view="bipartite" aria-pressed="true">公司制度 → 监管依据</button>
+      <button class="btn btn-sm" type="button" data-view="regulatory" aria-pressed="false">监管文件之间</button>
+      <button class="btn btn-sm" type="button" data-view="internal" aria-pressed="false">公司制度之间</button>
+      <button class="btn btn-sm" type="button" data-view="theme" aria-pressed="false">按主题</button>
+    </div>
+  </div>
+
+  <div class="layout">
+    <div class="border rounded-2 card">
+      <h3><span id="vlabel">公司制度 → 监管依据</span><span id="vcount" class="text-small"></span></h3>
+      <div id="chart" class="chart" role="img" aria-label="关系图谱"></div>
+      <div id="note" class="text-small"></div>
+    </div>
+
+    <div class="border rounded-2 card">
+      <h3><span>高频节点</span></h3>
+      <div id="hubs"></div>
+    </div>
+  </div>
+</div>
+
+<script src="../vendor/echarts/echarts.min.js"></script>
+<script>
+const $ = (s) => document.querySelector(s);
+const esc = (v) => String(v == null ? "" : v).replace(/[&<>"]/g, (c) =>
+  ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+let D = null, chart = null, VIEW = "bipartite";
+
+const VIEWS = {
+  bipartite: { label: "公司制度 → 监管依据" },
+  regulatory: { label: "监管文件之间" },
+  internal: { label: "公司制度之间" },
+  theme: { label: "按主题" },
+};
+
+function palette(kind) {
+  return { internal: "#8250df", regulatory: "#0969da", external: "#bf8700", theme: "#1a7f37" }[kind] || "#6e7781";
+}
+
+function buildBipartite() {
+  const b = D.bipartite || {};
+  const nodes = [...(b.left || []), ...(b.right || [])].map((n) => ({
+    id: n.id, name: n.name, value: n.name,
+    symbolSize: n.external ? 7 : 9,
+    itemStyle: { color: palette(n.kind) },
+  }));
+  const links = (b.edges || []).map((e) => ({
+    source: e.from, target: e.to, value: e.label || e.relation,
+  }));
+  return { nodes, links, note: "边=公司制度引用监管文件；虚线节点为语料外（RFN-EXT-*）" };
+}
+
+function buildFromPair(key) {
+  const v = D[key] || {};
+  const nodes = (v.nodes || []).map((n) => ({
+    id: n.id, name: n.name, value: n.name,
+    symbolSize: Math.min(18, 7 + Math.sqrt(Number(n.degree) || 1) * 2),
+    itemStyle: { color: palette(n.kind) },
+  }));
+  const links = (v.edges || []).map((e) => ({
+    source: e.from, target: e.to, value: e.label || e.relation,
+  }));
+  return { nodes, links, note: `节点 ${nodes.length} · 边 ${links.length}（接口已按重要度抽样）` };
+}
+
+function buildTheme() {
+  const v = D.theme || {};
+  const nodes = (v.themes || []).map((t) => ({
+    id: t.code, name: t.label, value: t.policies,
+    symbolSize: Math.min(26, 8 + Math.sqrt(Number(t.policies) || 1)),
+    itemStyle: { color: palette("theme") },
+  })).concat((v.docs || []).map((d) => ({
+    id: d.id, name: d.name, value: d.name, symbolSize: 7,
+    itemStyle: { color: palette(d.kind) },
+  })));
+  const links = (v.edges || []).map((e) => ({
+    source: e.theme, target: e.ref, value: `${e.label}·${e.count}`,
+  }));
+  return { nodes, links, note: "节点=主题与文件，边=文件归入主题" };
+}
+
+function render() {
+  const g = VIEW === "bipartite" ? buildBipartite()
+    : VIEW === "theme" ? buildTheme()
+      : buildFromPair(VIEW);
+  $("#vlabel").textContent = VIEWS[VIEW].label;
+  $("#vcount").textContent = `${g.nodes.length} 节点 / ${g.links.length} 边`;
+  $("#note").textContent = g.note;
+
+  chart = chart || echarts.init($("#chart"));
+  chart.setOption({
+    tooltip: { formatter: (p) => p.dataType === "edge"
+      ? `${esc(p.data.value || "")}` : esc(p.name) },
+    series: [{
+      type: "graph", layout: "force", roam: true, draggable: true,
+      label: { show: false },
+      force: { repulsion: 120, edgeLength: [40, 110], gravity: 0.08 },
+      emphasis: { focus: "adjacency", label: { show: true, fontSize: 11 } },
+      lineStyle: { color: "source", opacity: 0.35, curveness: 0.08, width: 1 },
+      data: g.nodes, links: g.links,
+    }],
+  }, true);
+  chart.resize();
+}
+
+function renderHubs() {
+  const hubs = (D && D.hubs) || [];
+  $("#hubs").innerHTML = hubs.slice(0, 12).map((h) => `
+    <div class="hub">
+      <span class="n" title="${esc(h.name)}">${esc(h.name)}</span>
+      <span class="text-small">${esc(h.degree)}</span>
+    </div>`).join("") || '<div class="text-small">无</div>';
+}
+
+async function load() {
+  D = await (await fetch("/api/relations", { cache: "no-store" })).json();
+  $("#stamp").textContent = D.fetched_at || "";
+  renderHubs();
+  render();
+}
+
+document.querySelectorAll("[data-view]").forEach((b) => {
+  b.onclick = () => {
+    VIEW = b.dataset.view;
+    document.querySelectorAll("[data-view]").forEach((x) =>
+      x.setAttribute("aria-pressed", String(x === b)));
+    render();
+  };
+});
+window.addEventListener("resize", () => chart && chart.resize());
+load();
+</script>
+</body>
+</html>
