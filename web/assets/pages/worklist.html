@@ -18,7 +18,12 @@
   .row-1 { min-height: 32px; }
   .cell { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
   .row-1:hover { background: var(--bgColor-muted); }
-  .row-1 .btn { height: 24px; padding: 0 8px; }   /* 行内动作按钮压到 24，行高才能是 32 */
+  .row-1 .btn { height: 24px; padding: 0 8px; }
+  /* 行内处置：整行展开的块，label 在上、控件满宽（与留言表单同规范） */
+  .detail { display: block; padding: 12px; }
+  .detail .field { margin-bottom: 12px; }
+  .detail .field > label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 6px; }
+  .detail .actions { display: flex; justify-content: flex-end; gap: 8px; }   /* 行内动作按钮压到 24，行高才能是 32 */
 </style>
 </head>
 <body>
@@ -100,14 +105,14 @@ async function load() {
   const pages = Math.max(1, Math.ceil(S.total / S.size));
   $("#pinfo").textContent = `${S.page} / ${pages}`;
   $("#rows").innerHTML = (d.items || []).map((it) => `
-    <div class="border-bottom py-1 px-2 tbl row-1">
+    <div class="border-bottom py-1 px-2 tbl row-1" data-id="${esc(it.item_id)}">
       <div class="cell"><input type="checkbox" aria-label="选择 ${esc(it.item_id)}"></div>
       <div class="cell"><span class="IssueLabel" style="background-color:var(--bgColor-accent-muted);border-color:var(--borderColor-accent-muted)">${esc(it.kind)}</span></div>
       <div class="cell" title="${esc(it.subject)}">${esc(it.subject)}</div>
       <div class="cell text-small" title="${esc(it.suggestion)}">${esc(it.suggestion)}</div>
       <div class="cell text-small">${esc(it.confidence)}</div>
       <div class="cell text-small">${esc(it.created_at)}</div>
-      <div class="cell"><button class="btn btn-sm" type="button">处置</button></div>
+      <div class="cell"><button class="btn btn-sm" type="button" data-act="resolve">处置</button></div>
     </div>`).join("") || '<div class="py-2 px-2 text-small">没有匹配待办</div>';
 }
 
@@ -135,6 +140,60 @@ document.querySelectorAll("[data-density]").forEach((b) => {
     });
   };
 });
+/* 行内处置：展开一整行（与旧工作台同一交互，但视觉全走 Primer） */
+$("#rows").addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-act='resolve']");
+  if (!btn) return;
+  const row = btn.closest(".row-1");
+  const id = row && row.dataset.id;
+  const next = row.nextElementSibling;
+  if (next && next.classList.contains("detail")) { next.remove(); return; }
+  const box = document.createElement("div");
+  box.className = "border-bottom detail";
+  box.innerHTML = `
+    <div class="field">
+      <label for="dstatus">处置状态</label>
+      <select id="dstatus" class="form-select input-block">
+        <option value="resolved">resolved（已处置）</option>
+        <option value="dismissed">dismissed（不适用）</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="dwhy">处置理由</label>
+      <textarea id="dwhy" class="form-control input-block" rows="4"
+        placeholder="必填，进入审计台账"></textarea>
+    </div>
+    <div class="actions">
+      <button class="btn" type="button" data-act="cancel">取消</button>
+      <button class="btn btn-primary" type="button" data-act="submit" data-id="${esc(id)}">提交</button>
+    </div>`;
+  row.after(box);
+  box.querySelector("#dwhy").focus();
+});
+
+$("#rows").addEventListener("click", (e) => {
+  const act = e.target.getAttribute && e.target.getAttribute("data-act");
+  if (act !== "cancel" && act !== "submit") return;
+  const box = e.target.closest(".detail");
+  if (!box) return;
+  if (act === "cancel") { box.remove(); return; }
+  const why = (box.querySelector("#dwhy").value || "").trim();
+  if (!why) { box.querySelector("#dwhy").focus(); return; }
+  const payload = {
+    item_id: e.target.getAttribute("data-id"),
+    resolution: why,
+    status: box.querySelector("#dstatus").value,
+    by: "web",
+  };
+  fetch("/api/worklist/resolve", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  }).then((r) => r.json()).then((d) => {
+    if (d && (d.ok || d.available)) { box.remove(); load(); }
+    else { alert("处置失败：" + ((d && (d.reason || d.error)) || "未知")); }
+  }).catch((err) => alert("处置失败：" + err.message));
+});
+
 $("#prev").onclick = () => { if (S.page > 1) { S.page--; load(); } };
 $("#next").onclick = () => { S.page++; load(); };
 loadKinds(); load();
