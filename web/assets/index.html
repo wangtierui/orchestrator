@@ -804,7 +804,11 @@ select{padding-right:24px}
   background:var(--bg-subtle);flex-wrap:wrap;overflow:visible}
 /* 批 174：GitHub issues 实测 = 左「状态开关」/ 右「筛选+排序」。
  * 不改 DOM（各渲染器自己拼按钮），只用 order + 可伸缩 .sp 重新分组。 */
-.lv-headbar>.lv-fbar{order:1;flex:0 0 auto}
+/* 批 175：搜索框独占一行、与列表等宽（GitHub issues 的布局）。
+ * 用 flex-basis:100% + 允许换行实现，**不搬 DOM** —— 之前用 JS 搬节点会触发
+ * MutationObserver 自激，把搜索框复制成几十个，已回滚。 */
+.lv-headbar>.lv-fbar{order:0;flex:0 0 100%;width:100%;display:block;margin-bottom:2px}
+.lv-headbar>.lv-fbar .lv-fbox{width:100%}
 .lv-headbar>.ghstate,.lv-headbar>.wlstate,.lv-headbar>.fbstate{order:2;flex:0 0 auto}
 .lv-headbar>.sp{order:3;flex:1 1 auto;min-width:8px}
 .lv-headbar>.lv-fbtn{order:4;flex:0 0 auto}
