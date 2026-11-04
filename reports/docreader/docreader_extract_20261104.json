@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-11-04 02:06:53",
+ "generated_at": "2026-11-04 06:23:54",
  "root": "data/corpus",
  "limit": 20,
  "engine": "builtin",
@@ -25,7 +25,7 @@
    "docreader_blocks": 146,
    "docreader_images": 1,
    "docreader_engine": "builtin",
-   "docreader_elapsed_s": 6.9,
+   "docreader_elapsed_s": 6.19,
    "baseline_method": "",
    "baseline_chars": 6868,
    "notice": ""
@@ -38,7 +38,7 @@
    "docreader_blocks": 90,
    "docreader_images": 0,
    "docreader_engine": "builtin",
-   "docreader_elapsed_s": 5.6,
+   "docreader_elapsed_s": 5.82,
    "baseline_method": "",
    "baseline_chars": 5431,
    "notice": ""
@@ -51,7 +51,7 @@
    "docreader_blocks": 87,
    "docreader_images": 0,
    "docreader_engine": "builtin",
-   "docreader_elapsed_s": 5.65,
+   "docreader_elapsed_s": 5.23,
    "baseline_method": "",
    "baseline_chars": 3832,
    "notice": ""
@@ -64,7 +64,7 @@
    "docreader_blocks": 63,
    "docreader_images": 0,
    "docreader_engine": "builtin",
-   "docreader_elapsed_s": 5.45,
+   "docreader_elapsed_s": 5.36,
    "baseline_method": "",
    "baseline_chars": 3654,
    "notice": ""
@@ -77,7 +77,7 @@
    "docreader_blocks": 200,
    "docreader_images": 5,
    "docreader_engine": "builtin",
-   "docreader_elapsed_s": 7.33,
+   "docreader_elapsed_s": 6.59,
    "baseline_method": "",
    "baseline_chars": 42172,
    "notice": ""
@@ -90,7 +90,7 @@
    "docreader_blocks": 200,
    "docreader_images": 5,
    "docreader_engine": "builtin",
-   "docreader_elapsed_s": 7.84,
+   "docreader_elapsed_s": 6.47,
    "baseline_method": "",
    "baseline_chars": 42199,
    "notice": ""
@@ -103,7 +103,7 @@
    "docreader_blocks": 200,
    "docreader_images": 5,
    "docreader_engine": "builtin",
-   "docreader_elapsed_s": 7.12,
+   "docreader_elapsed_s": 6.68,
    "baseline_method": "",
    "baseline_chars": 42196,
    "notice": ""
@@ -116,7 +116,7 @@
    "docreader_blocks": 74,
    "docreader_images": 0,
    "docreader_engine": "builtin",
-   "docreader_elapsed_s": 5.59,
+   "docreader_elapsed_s": 5.23,
    "baseline_method": "",
    "baseline_chars": 3906,
    "notice": ""
@@ -129,7 +129,7 @@
    "docreader_blocks": 74,
    "docreader_images": 0,
    "docreader_engine": "builtin",
-   "docreader_elapsed_s": 5.64,
+   "docreader_elapsed_s": 5.2,
    "baseline_method": "",
    "baseline_chars": 3909,
    "notice": ""
@@ -142,7 +142,7 @@
    "docreader_blocks": 200,
    "docreader_images": 0,
    "docreader_engine": "builtin",
-   "docreader_elapsed_s": 6.55,
+   "docreader_elapsed_s": 5.99,
    "baseline_method": "",
    "baseline_chars": 22838,
    "notice": ""
@@ -155,7 +155,7 @@
    "docreader_blocks": 200,
    "docreader_images": 0,
    "docreader_engine": "builtin",
-   "docreader_elapsed_s": 5.94,
+   "docreader_elapsed_s": 5.12,
    "baseline_method": "",
    "baseline_chars": 8621,
    "notice": ""
@@ -168,7 +168,7 @@
    "docreader_blocks": 53,
    "docreader_images": 0,
    "docreader_engine": "builtin",
-   "docreader_elapsed_s": 5.46,
+   "docreader_elapsed_s": 5.13,
    "baseline_method": "",
    "baseline_chars": 1747,
    "notice": ""
@@ -181,7 +181,7 @@
    "docreader_blocks": 9,
    "docreader_images": 0,
    "docreader_engine": "builtin",
-   "docreader_elapsed_s": 5.41,
+   "docreader_elapsed_s": 4.99,
    "baseline_method": "",
    "baseline_chars": 276,
    "notice": ""
@@ -194,7 +194,7 @@
    "docreader_blocks": 100,
    "docreader_images": 0,
    "docreader_engine": "builtin",
-   "docreader_elapsed_s": 5.53,
+   "docreader_elapsed_s": 5.56,
    "baseline_method": "",
    "baseline_chars": 3146,
    "notice": ""
@@ -207,7 +207,7 @@
    "docreader_blocks": 9,
    "docreader_images": 0,
    "docreader_engine": "builtin",
-   "docreader_elapsed_s": 5.39,
+   "docreader_elapsed_s": 5.06,
    "baseline_method": "",
    "baseline_chars": 354,
    "notice": ""
@@ -220,7 +220,7 @@
    "docreader_blocks": 8,
    "docreader_images": 0,
    "docreader_engine": "builtin",
-   "docreader_elapsed_s": 5.62,
+   "docreader_elapsed_s": 5.07,
    "baseline_method": "",
    "baseline_chars": 334,
    "notice": ""
@@ -233,7 +233,7 @@
    "docreader_blocks": 40,
    "docreader_images": 0,
    "docreader_engine": "builtin",
-   "docreader_elapsed_s": 5.47,
+   "docreader_elapsed_s": 5.0,
    "baseline_method": "",
    "baseline_chars": 1695,
    "notice": ""
@@ -246,7 +246,7 @@
    "docreader_blocks": 45,
    "docreader_images": 0,
    "docreader_engine": "builtin",
-   "docreader_elapsed_s": 5.69,
+   "docreader_elapsed_s": 5.19,
    "baseline_method": "",
    "baseline_chars": 1915,
    "notice": ""
@@ -259,7 +259,7 @@
    "docreader_blocks": 10,
    "docreader_images": 0,
    "docreader_engine": "builtin",
-   "docreader_elapsed_s": 5.37,
+   "docreader_elapsed_s": 4.95,
    "baseline_method": "",
    "baseline_chars": 388,
    "notice": ""
@@ -272,7 +272,7 @@
    "docreader_blocks": 200,
    "docreader_images": 0,
    "docreader_engine": "builtin",
-   "docreader_elapsed_s": 6.01,
+   "docreader_elapsed_s": 5.47,
    "baseline_method": "",
    "baseline_chars": 11416,
    "notice": ""

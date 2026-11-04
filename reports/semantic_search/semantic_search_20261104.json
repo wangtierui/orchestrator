@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-11-04 02:25:05",
+ "generated_at": "2026-11-04 06:35:24",
  "out": "reports/semantic_search/semantic_search_20261104.json",
  "backend": "pgvector",
  "tables": [

@@ -1191,7 +1191,7 @@ body.rail-off .rail{transition:width .15s cubic-bezier(.65,0,.35,1),
 
 /* 批 146：网格表（div 行）—— 与列表页同一套观感，列宽由调用方用 --cols 指定 */
 .lv-gtable{border:1px solid var(--border);border-radius:6px;background:var(--bg);
-  overflow:hidden}
+  overflow:hidden;max-width:1200px;margin-left:auto;margin-right:auto}
 .lv-gtable .lv-headbar{display:flex;align-items:center;gap:8px;height:48px;
   padding:8px;background:var(--bg-subtle);border-bottom:1px solid var(--border)}
 .lv-gtable .toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;
@@ -2779,6 +2779,7 @@ function applyGridFilters(root){
 async function render(){
   await renderCore();
   try { ensureDensity($("#view")); } catch (e) { /* 注入失败不影响主渲染 */ }
+  try { ensureAutoCols($("#view")); } catch (e) { /* 列宽失败不影响主渲染 */ }
   /* 有些页（文档检索/总览）是先渲染骨架、数据回来再补表格 ⇒ 再补一次 */
   setTimeout(() => { try { ensureDensity($("#view")); } catch (e) { /* 忽略 */ } }, 400);
   /* 再兜一层：DOM 变化时补（文档检索的工具条是数据返回后才插入的）。
@@ -2790,7 +2791,10 @@ async function render(){
       let tm = null;
       new MutationObserver(() => {
         clearTimeout(tm);
-        tm = setTimeout(() => { try { ensureDensity(v2); } catch (e) { /* 忽略 */ } }, 150);
+        tm = setTimeout(() => {
+          try { ensureDensity(v2); } catch (e) { /* 忽略 */ }
+          try { ensureAutoCols(v2); } catch (e) { /* 忽略 */ }
+        }, 150);
       }).observe(v2, { childList: true, subtree: true });
     }
   } catch (e) { /* 老浏览器忽略 */ }
@@ -5585,6 +5589,194 @@ function lvQueryHints(list, facets) {
     .forEach(x => out.push(`${list === "laws" ? "时效" : "状态"}:${x.value || ""}`));
   out.push("文号:", "名称:");
   return out.map(x => `<option value="${esc(x)}"></option>`).join("");
+}
+
+
+/* ---------------- 弹性列宽（docs/table-column-width-spec.md） ----------------
+ * 规则：整表 ≤1200 且居中；短列「≤12 全角当量 且 实测≤160px」双闸，宽 clamp(need+24,64,220)；
+ * 长列按平均长度加权瓜分剩余，min 160；极端长串（无空格 ≥24 半角/≥12 全角）固定 200 且不参与权重。
+ * 实现上不碰各渲染器的 --cols：渲染后量真实单元格文本再回写，一套算法覆盖全站。
+ */
+const COLS_MAX = 1200, COLS_GAP = 8, COLS_MIN_LONG = 160;
+
+function _colsCtx(){
+  if (window.__colsCtx && window.__colsCtxFont === document.body.dataset.colsFont) return window.__colsCtx;
+  const c = document.createElement("canvas").getContext("2d");
+  c.font = "14px -apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif";
+  window.__colsCtx = c;
+  return c;
+}
+/* 全角当量：汉字/全角标点算 1，其余算 0.5 */
+function _fullLen(s){
+  let n = 0;
+  for (const ch of String(s || "")) n += /[\u2E80-\uFFFF]/.test(ch) ? 1 : 0.5;
+  return n;
+}
+/* 极端串：单个不含空格的连续串 */
+function _isExtreme(s){
+  /* 只认「无空格的纯 ASCII 长串」= hash / URL / 编码。
+   * 中文标题虽然也没有空格，但那是**语义长文本**，应按加权分配，不能固定 200。 */
+  return String(s || "").split(/\s+/).some(tok =>
+    tok && /^[\x21-\x7E]+$/.test(tok) && tok.length >= 24);
+}
+
+function autoColsFor(table){
+  const head = table.querySelector(".lv-headrow");
+  const grid = table.querySelector(".lv-grid");
+  if (!head || !grid) return;
+  const n = head.children.length;
+  if (!n || n !== grid.children[0]?.children.length) return;
+  const rows = [...grid.children].slice(0, 200);
+  if (!rows.length) return;
+
+  const ctx = _colsCtx();
+  const texts = Array.from({ length: n }, () => []);
+  const heads = [];
+  for (let i = 0; i < n; i++) heads.push((head.children[i].innerText || "").trim());
+  rows.forEach(r => [...r.children].forEach((c, i) => {
+    if (i < n) texts[i].push((c.innerText || "").trim());
+  }));
+
+  // 每列统计
+  const cols = texts.map((arr, i) => {
+    const all = [heads[i]].concat(arr).filter(Boolean);
+    let maxW = 0, avg = 0, extreme = false;
+    all.forEach(s => {
+      maxW = Math.max(maxW, ctx.measureText(s).width);
+      avg += _fullLen(s);
+      if (_isExtreme(s)) extreme = true;
+    });
+    avg = all.length ? avg / all.length : 0;
+    return { i, maxW, avg, extreme, empty: maxW < 6, full: _fullLen(heads[i] || "") };
+  });
+
+  const box = table.getBoundingClientRect().width || table.clientWidth || 980;
+  const W = Math.min(box, COLS_MAX) - COLS_GAP * (n - 1);
+  // ① 先分配固定列：空列保留原宽（勾选/图标），极端串固定 200
+  const out = new Array(n).fill(null);
+  const cur = getComputedStyle(grid).gridTemplateColumns.split(" ").map(parseFloat);
+  cols.forEach(c => {
+    if (c.empty) out[c.i] = Math.max(28, Math.min(cur[c.i] || 40, 64));
+    else if (c.extreme) out[c.i] = 200;
+  });
+  // ② 短列：双闸都过才算短（≤12 全角当量 且 ≤160px）
+  let used = out.reduce((a, v) => a + (v || 0), 0);
+  const longs = [];
+  cols.forEach(c => {
+    if (out[c.i] != null) return;
+    if (c.full <= 12 && c.maxW <= 160) {
+      const need = Math.ceil(c.maxW) + 24;
+      let w = Math.max(64, Math.min(need, 220));
+      // 剩余不够时也先记，最后再压
+      out[c.i] = w; used += w;
+    } else {
+      longs.push(c);
+    }
+  });
+  // ③ 长列按平均长度加权
+  const rest = Math.max(0, W - used);
+  const wsum = longs.reduce((a, c) => a + Math.max(1, c.avg), 0) || 1;
+  longs.forEach(c => {
+    out[c.i] = Math.max(COLS_MIN_LONG, Math.round(rest * Math.max(1, c.avg) / wsum));
+  });
+  // ④ 超宽时按比例压缩长列（保 160 底线），仍超出则压短列
+  let total = out.reduce((a, v) => a + v, 0);
+  if (total > W) {
+    const over = total - W;
+    const longSum = longs.reduce((a, c) => a + out[c.i], 0) || 1;
+    longs.forEach(c => { out[c.i] = Math.max(COLS_MIN_LONG, Math.round(out[c.i] - over * out[c.i] / longSum)); });
+    total = out.reduce((a, v) => a + v, 0);
+    if (total > W) {
+      /* 极端列（hash/URL）固定 200，不参与任何缩放；其余按比例压。 */
+      const flexIdx = out.map((_, i) => i).filter(i => !cols[i].extreme);
+      const flexSum = flexIdx.reduce((a, i) => a + out[i], 0) || 1;
+      const fixed = n - flexIdx.length ? out.reduce((a, v, i) => a + (cols[i].extreme ? v : 0), 0) : 0;
+      const k = Math.max(0.3, (W - fixed) / flexSum);
+      flexIdx.forEach(i => { out[i] = Math.max(48, Math.floor(out[i] * k)); });
+    }
+  }
+  /* 末列是操作列：保底 72（按钮宽度），差额从最宽列扣 */
+  if (n >= 2 && out[n - 1] < 72) {
+    const need = 72 - out[n - 1];
+    let wide = -1, best = -1;
+    for (let i = 1; i < n - 1; i++) if (out[i] > best) { best = out[i]; wide = i; }
+    if (wide >= 0 && best - need >= 120) { out[wide] -= need; out[n - 1] = 72; }
+  }
+  const tmpl = out.map(v => Math.round(v) + "px").join(" ");
+  head.style.setProperty("--cols", tmpl);
+  grid.style.setProperty("--cols", tmpl);
+  table.dataset.colsAuto = "1";
+}
+
+
+/*: <table class="lv-table"> 用同一套算法（表头是跨列单元格，列数取自首行）。 */
+function autoColsForTable(tb){
+  const rows = [...tb.querySelectorAll("tr.lv-row")];
+  if (!rows.length) return;
+  const n = rows[0].children.length;
+  if (!n || n > 12) return;
+  const ctx = _colsCtx();
+  const texts = Array.from({ length: n }, () => []);
+  rows.slice(0, 200).forEach(r => [...r.children].forEach((c, i) => {
+    if (i < n) texts[i].push((c.innerText || "").trim());
+  }));
+  const cols = texts.map((arr, i) => {
+    const all = arr.filter(Boolean);
+    let maxW = 0, avg = 0, extreme = false;
+    all.forEach(s => {
+      maxW = Math.max(maxW, ctx.measureText(s).width);
+      avg += _fullLen(s);
+      if (_isExtreme(s)) extreme = true;
+    });
+    return { i, maxW, avg: all.length ? avg / all.length : 0, extreme, empty: maxW < 6 };
+  });
+  const box = tb.getBoundingClientRect().width || 980;
+  const W = Math.min(box, COLS_MAX) - COLS_GAP * (n - 1);
+  const out = new Array(n).fill(null);
+  let used = 0;
+  const longs = [];
+  cols.forEach(c => {
+    if (c.empty) { out[c.i] = c.maxW < 6 ? (c.i < 2 ? Math.max(24, Math.min(48, c.i === 0 ? 32 : 24)) : 64) : 64; used += out[c.i]; }
+    else if (c.extreme) { out[c.i] = 200; used += 200; }
+    else if (c.maxW <= 160 && c.avg <= 12) { out[c.i] = Math.max(64, Math.min(Math.ceil(c.maxW) + 24, 220)); used += out[c.i]; }
+    else longs.push(c);
+  });
+  const rest = Math.max(0, W - used);
+  const wsum = longs.reduce((a, c) => a + Math.max(1, c.avg), 0) || 1;
+  longs.forEach(c => { out[c.i] = Math.max(COLS_MIN_LONG, Math.round(rest * Math.max(1, c.avg) / wsum)); });
+  /* 控制总宽 ≤ W（含列间距），从最大的非保底列里扣 */
+  let sum = out.reduce((a, v) => a + v, 0) + COLS_GAP * (n - 1);
+  if (sum > W) {
+    let over = sum - W;
+    const order = out.map((v, i) => [v, i]).filter(x => x[1] !== n - 1 && x[1] > 1)
+      .sort((a, b) => b[0] - a[0]);
+    for (const [v, i] of order) {
+      if (over <= 0) break;
+      const cut = Math.min(over, Math.max(0, v - 120));
+      out[i] = v - cut; over -= cut;
+    }
+  }
+  /* 最后一列是动作列（图标按钮组），固定保底 148，避免被权重压窄 */
+  if (n >= 2) out[n - 1] = Math.max(148, out[n - 1]);
+  const tmpl = out.map(v => Math.round(v) + "px").join(" ");
+  /* 这类表的 grid-template-columns 是写死在 CSS 里的（不走 --cols），
+   * 因此同时写内联 gridTemplateColumns，才能覆盖。 */
+  rows.forEach(r => {
+    r.style.setProperty("--cols", tmpl);
+    r.style.gridTemplateColumns = tmpl;
+  });
+  tb.dataset.colsAuto = "1";
+}
+
+/*: 全站网格表统一走弹性列宽（无 .lv-headrow 的表跳过）。 */
+function ensureAutoCols(v){
+  if (!v) return;
+  v.querySelectorAll(".lv-gtable").forEach(tb => {
+    try { autoColsFor(tb); } catch (e) { /* 单表失败不影响其他 */ }
+  });
+  v.querySelectorAll("table.lv-table").forEach(tb => {
+    try { autoColsForTable(tb); } catch (e) { /* 单表失败不影响其他 */ }
+  });
 }
 
 /* ---------------- 显示密度（写 localStorage） ---------------- */
