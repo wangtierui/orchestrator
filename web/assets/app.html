@@ -9,18 +9,17 @@
 <style>
   /* 只允许布局。颜色/边框/圆角一律取令牌或 Primer 类。 */
   html, body { height: 100%; }
-  body { margin: 0; background: var(--bgColor-default); display: flex; flex-direction: column;
-         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial,
-                      "PingFang SC", "Microsoft YaHei", sans-serif; }
+  body { margin: 0; background: var(--bgColor-default); display: flex; flex-direction: column; }
 
-  /* ── 顶栏 68px（GitHub 全局条） ── */
+  /* ── 顶栏 68px ── */
   .topbar { height: 68px; flex: 0 0 68px; display: flex; align-items: center;
             gap: 12px; padding: 0 16px; border-bottom: 1px solid var(--borderColor-default); }
   .brand { display: flex; align-items: center; gap: 8px; height: 32px; }
   .gsearch { width: 191px; height: 32px; }
   .spacer { flex: 1 1 auto; }
+  .logo-link { display: inline-flex; align-items: center; color: var(--fgColor-default); }
 
-  /* ── 页签行 40px（GitHub 仓库条 / repo nav） ── */
+  /* ── 页签行 40px（仓库条） ── */
   .repo-tabs { flex: 0 0 40px; display: flex; align-items: center; gap: 4px;
                padding: 0 16px; border-bottom: 1px solid var(--borderColor-default);
                overflow-x: auto; overflow-y: hidden; }
@@ -32,7 +31,7 @@
   .tab[aria-current="page"] { font-weight: 600;
     box-shadow: inset 0 -2px 0 var(--borderColor-accent-emphasis); border-radius: 6px 6px 0 0; }
 
-  /* ── 主体：左 256 本页导航 + 内容 ── */
+  /* ── 主体 ── */
   .shell { flex: 1 1 auto; display: flex; min-height: 0; }
   .rail { width: 256px; flex: 0 0 256px; padding: 8px;
           border-right: 1px solid var(--borderColor-default); overflow-y: auto; }
@@ -44,15 +43,12 @@
   .rail .item:hover { background: var(--bgColor-muted); }
   .rail .item.on { background: var(--bgColor-muted); font-weight: 600; }
   .rail .hint { font-size: 11px; color: var(--fgColor-muted); padding: 4px 8px; line-height: 1.5; }
-  .main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
-  .frame { flex: 1 1 auto; width: 100%; border: 0; display: block; background: transparent; }
-  .ph { padding: 24px; }
-  .logo-link { display: inline-flex; align-items: center; color: var(--fgColor-default); }
+  .main { flex: 1 1 auto; min-width: 0; overflow-y: auto; }
+  .loading { padding: 24px; font-size: 13px; color: var(--fgColor-muted); }
 </style>
 </head>
 <body>
 
-<!-- ── 顶栏 ── -->
 <div class="topbar">
   <a class="logo-link" href="#overview" title="回到总览">
     <svg class="octicon" width="28" height="28" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
@@ -69,76 +65,128 @@
   </svg>
 </div>
 
-<!-- ── 页签行（13 个模块，GitHub repo nav 同构） ── -->
 <nav class="repo-tabs" id="tabs" aria-label="模块导航"></nav>
 
-<!-- ── 主体 ── -->
 <div class="shell">
   <aside class="rail" id="rail" aria-label="本页导航"></aside>
-  <div class="main">
-    <iframe id="frame" class="frame" title="页面内容"></iframe>
-    <div id="ph" class="ph" hidden></div>
-  </div>
+  <main class="main" id="main"><div class="loading">加载中…</div></main>
 </div>
 
+<style id="page-style"></style>
+<script src="vendor/echarts/echarts.min.js"></script>
 <script>
-/* 每页带自己的「本页导航」锚点（同源可操作 iframe 内部 DOM） */
+/* ══ 单页框架（方案 B）：各页作为「片段」注入 #main，不再用 iframe ══
+ * 片段格式沿用现有 /pages/*.html：<style>…</style> + <body> 内容 + 内联<script>。
+ * 注入规则：body 级规则剔除（避免覆盖壳）、内联 script 重新执行、src=echarts 跳过（壳已加载）。 */
 const TABS = [
   { id: "overview", name: "总览", slug: "overview", anchors: [
     ["关键指标", ".grid3 > .card"], ["运行健康", "#rh"], ["链步状态分布", "#chart"],
     ["门禁与待办", "#gs"], ["数据新鲜度", "#fr"], ["存储", "#st"]] },
-  { id: "project", name: "项目结构", slug: "project", anchors: [
-    ["结构树", "#chart"], ["节点信息", "#info"]] },
-  { id: "flow", name: "数据流转", slug: "flow", anchors: [
-    ["桑基图", "#chart"], ["说明", "#note"]] },
+  { id: "project", name: "项目结构", slug: "project", anchors: [["结构树", "#chart"], ["节点信息", "#info"]] },
+  { id: "flow", name: "数据流转", slug: "flow", anchors: [["桑基图", "#chart"], ["说明", "#note"]] },
   { id: "metrics", name: "指标", slug: "metrics", anchors: [
     ["门禁通过率趋势", "#c-gate"], ["时效分布", "#c-time"], ["待办账龄", "#c-age"],
     ["关系类型", "#c-rel"], ["主题分布", "#c-theme"]] },
   { id: "worklist", name: "待办闭环", slug: "worklist", anchors: [
     ["搜索与筛选", "#q"], ["批量处置条", "#bulk"], ["列表", "#rows"]] },
-  { id: "laws", name: "政策法规", slug: "laws", anchors: [
-    ["搜索", "#q"], ["列表", "#rows"], ["分页", "#pinfo"]] },
-  { id: "rules", name: "公司制度", slug: "rules", anchors: [
-    ["搜索", "#q"], ["列表", "#rows"], ["分页", "#pinfo"]] },
-  { id: "graph", name: "关系图谱", slug: "graph", anchors: [
-    ["图谱", "#chart"], ["高频节点", "#hubs"], ["视图说明", "#note"]] },
-  { id: "regstats", name: "监管统计", slug: "regstats", anchors: [
-    ["搜索", "#q"], ["分类", "#cat"], ["分类表", "#cats"]] },
-  { id: "governance", name: "治理审计", slug: "governance", anchors: [
-    ["运行记录", "#runs"], ["审计台账", "#audit"]] },
-  { id: "search", name: "文档检索", slug: "search", anchors: [
-    ["搜索", "#q"], ["结果", "#rows"]] },
-  { id: "release", name: "发布事件", slug: "release", anchors: [
-    ["搜索", "#q"], ["提交列表", "#rows"], ["分页", "#pinfo"]] },
-  { id: "feedback", name: "留言板", slug: "feedback", anchors: [
-    ["搜索", "#q"], ["列表", "#rows"]] },
+  { id: "laws", name: "政策法规", slug: "laws", anchors: [["搜索", "#q"], ["列表", "#rows"], ["分页", "#pinfo"]] },
+  { id: "rules", name: "公司制度", slug: "rules", anchors: [["搜索", "#q"], ["列表", "#rows"], ["分页", "#pinfo"]] },
+  { id: "graph", name: "关系图谱", slug: "graph", anchors: [["图谱", "#chart"], ["高频节点", "#hubs"], ["说明", "#note"]] },
+  { id: "regstats", name: "监管统计", slug: "regstats", anchors: [["搜索", "#q"], ["分类", "#cat"], ["分类表", "#cats"]] },
+  { id: "governance", name: "治理审计", slug: "governance", anchors: [["运行记录", "#runs"], ["审计台账", "#audit"]] },
+  { id: "search", name: "文档检索", slug: "search", anchors: [["搜索", "#q"], ["结果", "#rows"]] },
+  { id: "release", name: "发布事件", slug: "release", anchors: [["搜索", "#q"], ["提交列表", "#rows"], ["分页", "#pinfo"]] },
+  { id: "feedback", name: "留言板", slug: "feedback", anchors: [["搜索", "#q"], ["列表", "#rows"]] },
 ];
 
-const $ = (s) => document.querySelector(s);
+const $ = (s, r) => (r || document).querySelector(s);
 const esc = (v) => String(v == null ? "" : v).replace(/[&<>"]/g, (c) =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
-/* ── 页签行 ── */
 $("#tabs").innerHTML = TABS.map((t) =>
   `<a class="tab" href="#${t.id}" data-id="${t.id}">${esc(t.name)}</a>`).join("");
 
-function current() {
-  const id = (location.hash || "#overview").slice(1);
-  return TABS.find((t) => t.id === id) || TABS[0];
+/* ── 页面级监听器的登记与清理（避免反复切换后叠加） ── */
+let pageListeners = [];
+const rawAddWin = window.addEventListener.bind(window);
+const rawAddDoc = document.addEventListener.bind(document);
+window.addEventListener = function (type, fn, opt) {
+  if (type === "resize") pageListeners.push(["w", type, fn, opt]);
+  return rawAddWin(type, fn, opt);
+};
+document.addEventListener = function (type, fn, opt) {
+  if (type === "change" || type === "click" || type === "keydown" || type === "input") {
+    pageListeners.push(["d", type, fn, opt]);
+  }
+  return rawAddDoc(type, fn, opt);
+};
+function clearPageListeners() {
+  pageListeners.forEach(([w, type, fn, opt]) => {
+    (w === "w" ? window : document).removeEventListener(type, fn, opt);
+  });
+  pageListeners = [];
+}
+
+/* ── 卸载旧页面：销毁图表 + 清监听 ── */
+function teardown() {
+  clearPageListeners();
+  if (window.echarts) {
+    $("#main").querySelectorAll("[id]").forEach((el) => {
+      const inst = echarts.getInstanceByDom(el);
+      if (inst) inst.dispose();
+    });
+  }
+  $("#main").innerHTML = "";
+  $("#page-style").textContent = "";
+}
+
+/* ── 注入片段 ── */
+async function mount(slug) {
+  const res = await fetch(`/pages/${slug}.html?v=${Date.now()}`, { cache: "no-store" });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const html = await res.text();
+  const doc = new DOMParser().parseFromString(html, "text/html");
+
+  /* 样式：剔除 body{} 规则（页面自带 body 背景会盖掉壳） */
+  let css = [...doc.querySelectorAll("style")].map((s) => s.textContent).join("\n");
+  css = css.replace(/(^|\})\s*body\s*\{[^}]*\}/g, "$1");
+  $("#page-style").textContent = css;
+
+  /* 结构：body 下除 script 外的元素 */
+  const frag = document.createElement("div");
+  [...doc.body.children].forEach((el) => {
+    if (el.tagName === "SCRIPT") return;
+    frag.appendChild(el.cloneNode(true));
+  });
+  $("#main").innerHTML = frag.innerHTML;
+
+  /* 脚本：重新执行（跳过 echarts 的 src 引用，壳已加载） */
+  const scripts = [...doc.querySelectorAll("script")];
+  for (const s of scripts) {
+    if (s.src && s.src.includes("echarts")) continue;
+    const code = s.textContent || "";
+    if (!code.trim()) continue;
+    /* 用 Function 包一层：各页都声明 const S/$/esc，直接注入会与壳或前一页冲突
+     * （Identifier already declared ⇒ 整段不执行，且没有任何报错提示）。 */
+    try {
+      new Function(code)();
+    } catch (err) {
+      console.error("[page script]", err);
+      throw new Error("页面脚本异常：" + (err && err.message));
+    }
+  }
+  await new Promise((r) => setTimeout(r, 260));   /* 给首屏 fetch 一点时间 */
+  $("#main").scrollTop = 0;
 }
 
 /* ── 本页导航 ── */
-function renderRail(t, frameLoaded) {
-  const items = (t.anchors || []).map(([label, sel], i) =>
-    `<div class="item" data-sel="${esc(sel)}" data-i="${i}">${esc(label)}</div>`).join("");
-  $("#rail").innerHTML =
-    `<div class="grp">本页导航</div>${items}` +
-    (t.slug ? "" : `<div class="hint">该页未迁移，请在旧版查看。</div>`);
+function renderRail(t) {
+  const items = (t.anchors || []).map(([label, sel]) =>
+    `<div class="item" data-sel="${esc(sel)}">${esc(label)}</div>`).join("");
+  $("#rail").innerHTML = `<div class="grp">本页导航</div>${items}`;
   $("#rail").querySelectorAll(".item").forEach((el) => {
     el.onclick = () => {
-      const f = $("#frame");
-      if (!f || !f.contentDocument) return;
-      const target = f.contentDocument.querySelector(el.dataset.sel);
+      const target = $("#main").querySelector(el.dataset.sel);
       if (!target) return;
       $("#rail").querySelectorAll(".item").forEach((x) => x.classList.remove("on"));
       el.classList.add("on");
@@ -147,33 +195,36 @@ function renderRail(t, frameLoaded) {
   });
 }
 
-function show(t) {
+let loading = false;
+async function show(t) {
   document.querySelectorAll(".tab").forEach((a) => {
     if (a.dataset.id === t.id) a.setAttribute("aria-current", "page");
     else a.removeAttribute("aria-current");
   });
   document.title = `${t.name} · 合规工作台`;
-
-  if (t.slug) {
-    $("#ph").hidden = true;
-    const f = $("#frame");
-    f.hidden = false;
-    const target = `/pages/${t.slug}.html`;
-    if (!f.getAttribute("src") || !f.getAttribute("src").startsWith(target)) {
-      f.src = target;
-    }
-    renderRail(t, true);
-  } else {
-    $("#frame").hidden = true;
-    $("#ph").hidden = false;
-    $("#ph").innerHTML = `
-      <div class="border rounded-2 p-4" style="max-width:640px">
+  renderRail(t);
+  if (loading) return;
+  loading = true;
+  try {
+    teardown();
+    $("#main").innerHTML = '<div class="loading">加载中…</div>';
+    if (t.slug) await mount(t.slug);
+    else $("#main").innerHTML = `
+      <div style="padding:24px"><div class="border rounded-2 p-4" style="max-width:640px">
         <h3 class="h4 mb-2">${esc(t.name)} 尚未迁移</h3>
         <p class="text-small">该页仍在旧版工作台。</p>
         <a class="btn" href="/legacy.html#${t.id}">在旧版打开 ${esc(t.name)}</a>
-      </div>`;
-    renderRail(t, false);
+      </div></div>`;
+  } catch (e) {
+    $("#main").innerHTML = `<div class="loading">加载失败：${esc(e.message)}</div>`;
+  } finally {
+    loading = false;
   }
+}
+
+function current() {
+  const id = (location.hash || "#overview").slice(1);
+  return TABS.find((t) => t.id === id) || TABS[0];
 }
 
 let timer = null;
