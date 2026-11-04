@@ -273,6 +273,20 @@
     },
     {
       "category": "tool",
+      "entry": "采集目标元素的完整计算样式（~340 条）+ 祖先链",
+      "file": "gh_ui_styles.py",
+      "independent": true,
+      "independent_why": "开发期质量度量工具，按需手动执行，不属于 STEP_ORDER 生产链"
+    },
+    {
+      "category": "tool",
+      "entry": "视觉回归：同视口截图 GitHub 与工作台，算像素差异率与差异带",
+      "file": "gh_ui_visual.py",
+      "independent": true,
+      "independent_why": "开发期质量度量工具，按需手动执行，不属于 STEP_ORDER 生产链"
+    },
+    {
+      "category": "tool",
       "entry": "原件注册进治理库（阶段 1）",
       "file": "governance_register_artifacts.py"
     },
@@ -492,6 +506,13 @@
       "file": "sync_wiki_sources.py",
       "independent": true,
       "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
+    },
+    {
+      "category": "tool",
+      "entry": "单一真源审计：统计仍在自写视觉的 .lv-* 规则",
+      "file": "ui_css_audit.py",
+      "independent": true,
+      "independent_why": "开发期质量度量工具，按需手动执行，不属于 STEP_ORDER 生产链"
     },
     {
       "category": "tool",

@@ -1,46 +1,46 @@
 {
  "w": 1440,
  "h": 900,
- "changed": 222424,
+ "changed": 221118,
  "total": 1296000,
- "ratio": 0.1716,
+ "ratio": 0.1706,
  "bands": [
   {
    "top": 0,
-   "ratio": 0.8754
+   "ratio": 0.8373
   },
   {
    "top": 240,
-   "ratio": 0.1569
+   "ratio": 0.1426
   },
   {
    "top": 720,
-   "ratio": 0.1272
-  },
-  {
-   "top": 640,
-   "ratio": 0.1132
-  },
-  {
-   "top": 160,
-   "ratio": 0.1127
-  },
-  {
-   "top": 400,
-   "ratio": 0.1117
+   "ratio": 0.131
   },
   {
    "top": 320,
-   "ratio": 0.1103
+   "ratio": 0.1239
   },
   {
    "top": 80,
-   "ratio": 0.0812
+   "ratio": 0.1222
+  },
+  {
+   "top": 160,
+   "ratio": 0.1152
+  },
+  {
+   "top": 640,
+   "ratio": 0.107
+  },
+  {
+   "top": 400,
+   "ratio": 0.1051
   }
  ],
  "gh": "https://github.com/notepad-plus-plus/notepad-plus-plus/issues",
  "target": "http://127.0.0.1:8765/#worklist",
  "width": 1440,
  "height": 900,
- "at": "2026-11-04T17:39:55"
+ "at": "2026-11-04T17:53:15"
 }

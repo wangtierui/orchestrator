@@ -1405,6 +1405,21 @@ body.no-rail .main-content{max-width:none;margin:0 auto}
 .lv-headbar.lv-bar>.sp{order:3;flex:1 1 auto;min-width:8px}
 .lv-headbar.lv-bar>.lv-fbtn{order:4;flex:0 0 auto}
 .lv-headbar.lv-bar>.density{order:5;flex:0 0 auto;margin-left:4px}
+/* ===== R0.1 顶栏（对齐 GitHub：68px 白底 + 1px 底边）=====
+ * 实测 GitHub：header 68px、bg #fff、底部 1px 边；logo 32×32；搜索 191×32（<1012 收 32）；
+ * 头像 32×32；页签行 36-40 + 底边。我们原为 52px 灰底、无底边。 */
+#appHeader{height:68px!important;background:#fff!important;
+  border-bottom:1px solid var(--border)!important}
+#appHeader .brand{height:32px}
+#appHeader #gsearchWrap{flex:0 0 191px!important;width:191px!important;height:32px}
+#appHeader #gsearchInput{height:32px}
+#appHeader #avatarBtn,#appHeader .avatar{width:32px!important;min-width:32px!important;height:32px!important}
+.tabs-inner{border-bottom:1px solid var(--border)}
+@media (max-width:1011px){
+  #appHeader #gsearchWrap{width:32px}
+  #appHeader #gsearchInput{width:0;padding:0;opacity:0}
+}
+
 /* ===== 批 181：列表边框方案（对齐 GitHub issues）=====
  * ① 整块没有外框（之前 .lv-scroll / table.lv-table / .tblwrap 各有一圈）；
  * ② 表头上下各 1px，数据行每行 1px 底边（GitHub 用行分隔，不用外框）；
