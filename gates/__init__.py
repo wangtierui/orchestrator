@@ -177,6 +177,13 @@ ALL_GATES: list[dict] = [
         "desc": "前端运行时冒烟（分页 hover/面板 320/密度 65↔38/标题省略/禁用态）",
         "require_impl": True,
     },
+    {
+        # 平行重建样板页（/pages/*.html）：令牌生效 / 数据渲染 / 图表实例
+        # 迁移验收门槛；环境缺失时 PASS + skipped。
+        "module": "gates.gate_pages_smoke",
+        "desc": "样板页运行时冒烟（9 页：令牌/行高/图表 6.1.0）",
+        "require_impl": True,
+    },
 ]
 
 
