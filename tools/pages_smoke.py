@@ -35,6 +35,7 @@ PAGES = [
     ("project", "#chart", False, True),
     ("flow", "#chart", False, True),
     ("release", ".row-1", True, False),
+    ("governance", ".row-1", True, False),
 ]
 
 PROBE = """(() => {

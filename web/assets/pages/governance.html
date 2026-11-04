@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="zh-CN" data-color-mode="light" data-light-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>治理审计 · 平行重建样板页（一页双表）</title>
+<link rel="stylesheet" href="../primer-primitives.css">
+<link rel="stylesheet" href="../primer.css">
+<style>
+  body { background: var(--bgColor-default); }
+  .page { max-width: 1200px; margin: 0 auto; padding: 16px; }
+  .qwrap { position: relative; }
+  .qico { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); pointer-events: none; }
+  .qinput { padding-right: 30px; }
+  .tbl { display: grid; gap: 8px; align-items: center; }
+  .runs  { grid-template-columns: 250px 150px 150px minmax(0,1fr); }
+  .audit { grid-template-columns: 150px 190px 150px 130px minmax(0,1fr); }
+  .row-1 { min-height: 32px; }
+  .cell { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .cat { margin-bottom: 16px; }
+  .cat-head { display: flex; align-items: baseline; gap: 8px; padding: 8px 12px; }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="qwrap mb-2">
+    <input id="q" class="form-control input-block qinput" type="search"
+           placeholder="搜索运行 / 审计：run_id、actor、action、target…" aria-label="搜索治理审计">
+    <svg class="octicon qico" width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+      <path d="M10.68 11.74a6 6 0 0 1-7.922-8.982 6 6 0 0 1 8.982 7.922l3.04 3.04a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215ZM11.5 7a4.499 4.499 0 1 0-8.997 0A4.499 4.499 0 0 0 11.5 7Z"></path>
+    </svg>
+  </div>
+
+  <div class="d-flex flex-items-center flex-wrap gap-2 mb-2">
+    <span id="count" class="text-small">—</span>
+    <span id="status" class="text-small"></span>
+    <span class="flex-auto"></span>
+    <div class="d-flex" role="group" aria-label="Issues display density">
+      <button class="btn btn-sm" type="button" data-density="comfortable" aria-pressed="true"
+              title="Comfortable display density" aria-label="Comfortable display density">≡</button>
+      <button class="btn btn-sm" type="button" data-density="compact" aria-pressed="false"
+              title="Compact display density" aria-label="Compact display density">☰</button>
+    </div>
+  </div>
+
+  <div class="cat">
+    <div class="cat-head"><span class="text-bold">运行记录</span><span id="rn" class="Counter">0</span></div>
+    <div class="border rounded-2 overflow-hidden">
+      <div class="border-bottom py-1 px-2 bgColor-muted tbl runs row-1 text-small">
+        <div class="cell">run_id</div><div class="cell">开始</div>
+        <div class="cell">结束</div><div class="cell">参数</div>
+      </div>
+      <div id="runs"></div>
+    </div>
+  </div>
+
+  <div class="cat">
+    <div class="cat-head"><span class="text-bold">审计台账</span><span id="an" class="Counter">0</span></div>
+    <div class="border rounded-2 overflow-hidden">
+      <div class="border-bottom py-1 px-2 bgColor-muted tbl audit row-1 text-small">
+        <div class="cell">时间</div><div class="cell">actor</div>
+        <div class="cell">action</div><div class="cell">target</div><div class="cell">对象</div>
+      </div>
+      <div id="audit"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const S = { q: "" };
+const $ = (s) => document.querySelector(s);
+const esc = (v) => String(v == null ? "" : v).replace(/[&<>"]/g, (c) =>
+  ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+let RUNS = [], AUDIT = [];
+
+function match(o) {
+  if (!S.q) return true;
+  return Object.values(o).join(" ").toLowerCase().includes(S.q.toLowerCase());
+}
+
+function render() {
+  const runs = RUNS.filter(match);
+  const audit = AUDIT.filter(match);
+  $("#rn").textContent = String(runs.length);
+  $("#an").textContent = String(audit.length);
+  $("#count").textContent = `运行 ${runs.length} · 审计 ${audit.length}`;
+
+  $("#runs").innerHTML = runs.map((r) => `
+    <div class="border-bottom py-1 px-2 tbl runs row-1">
+      <div class="cell mono" title="${esc(r.run_id)}">${esc(r.run_id)}</div>
+      <div class="cell text-small">${esc(r.started_at)}</div>
+      <div class="cell text-small">${esc(r.finished_at || "—")}</div>
+      <div class="cell text-small" title="${esc(r.argv)}">${esc(r.argv)}</div>
+    </div>`).join("") || '<div class="py-2 px-2 text-small">没有匹配运行</div>';
+
+  $("#audit").innerHTML = audit.map((a) => `
+    <div class="border-bottom py-1 px-2 tbl audit row-1">
+      <div class="cell text-small">${esc(a.ts)}</div>
+      <div class="cell text-small" title="${esc(a.actor)}">${esc(a.actor)}</div>
+      <div class="cell text-small">${esc(a.action)}</div>
+      <div class="cell text-small">${esc(a.target)}</div>
+      <div class="cell text-small" title="${esc(a.target_key)}">${esc(a.target_key)}</div>
+    </div>`).join("") || '<div class="py-2 px-2 text-small">没有匹配审计记录</div>';
+}
+
+async function load() {
+  const d = await (await fetch("/api/governance", { cache: "no-store" })).json();
+  RUNS = d.runs || [];
+  AUDIT = d.audit || [];
+  const st = d.status || {};
+  $("#status").textContent = st.enabled != null
+    ? `${st.db || ""} · schema ${st.schema_version || "—"}` : "";
+  render();
+}
+
+let timer = null;
+$("#q").addEventListener("input", (e) => {
+  clearTimeout(timer);
+  timer = setTimeout(() => { S.q = e.target.value.trim(); render(); }, 200);
+});
+document.querySelectorAll("[data-density]").forEach((b) => {
+  b.onclick = () => {
+    const v = b.dataset.density;
+    document.querySelectorAll("[data-density]").forEach((x) =>
+      x.setAttribute("aria-pressed", String(x === b)));
+    document.querySelectorAll(".row-1").forEach((r) => {
+      r.style.minHeight = v === "compact" ? "28px" : "32px";
+    });
+  };
+});
+load();
+</script>
+</body>
+</html>
