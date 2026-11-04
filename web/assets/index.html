@@ -1378,6 +1378,29 @@ body.no-rail .main-content{max-width:none;margin:0 auto}
   font:inherit;color:inherit;padding:2px 4px;border-radius:4px}
 .wl-kind:hover{background:var(--bg-subtle)}
 .wl-kind:focus-visible{outline:2px solid #0969da;outline-offset:-2px}
+
+</style>
+
+<style id="ui-overrides">
+/* ===== 批 177：列表头部（搜索行 + 工具条）权威规则 =====
+ * 背景：.lv-headbar 同时带 .lv-bar 类，散落各处的 .lv-bar 规则（flex-wrap:nowrap /
+ * justify-content:flex-end / padding:0 / height）互相打架，导致搜索行与工具条重叠。
+ * 这里在样式表末尾用 .lv-headbar.lv-bar 双类选择器统一收口。 */
+.lv-headbar.lv-bar{
+  display:flex; flex-wrap:wrap; align-items:center; justify-content:flex-start;
+  gap:8px; height:auto; min-height:48px; padding:8px;
+  background:var(--bg-subtle); border:0; overflow:visible;
+}
+.lv-headbar.lv-bar>.lv-fbar{
+  order:0; flex:0 0 100%; width:100%; display:block; margin:0 0 2px;
+}
+.lv-headbar.lv-bar>.lv-fbar .lv-fbox{width:100%}
+.lv-headbar.lv-bar>.ghstate,
+.lv-headbar.lv-bar>.wlstate,
+.lv-headbar.lv-bar>.fbstate{order:2;flex:0 0 auto;margin-right:2px}
+.lv-headbar.lv-bar>.sp{order:3;flex:1 1 auto;min-width:8px}
+.lv-headbar.lv-bar>.lv-fbtn{order:4;flex:0 0 auto}
+.lv-headbar.lv-bar>.density{order:5;flex:0 0 auto;margin-left:4px}
 </style>
 </head>
 <body>
@@ -5823,7 +5846,26 @@ function densityGroupHtml(){
 /*: 给没有密度控件的工具条补一个，并统一绑定。 */
 function ensureDensity(v){
   if (!v) return;
-  $$(".lv-headbar, .lv-bar, .toolbar", v).forEach(bar => {
+  /* 批 177：列表头部布局收口。
+   * 样式表里 .lv-gtable .lv-headbar{height:48px} 与 .lv-bar{flex-wrap:nowrap;
+   * justify-content:flex-end} 互相打架（同权重、分散在多个块），级联结果不可控，
+   * 这里用内联样式钉死：允许换行、高度自适应、左对齐。 */
+  $$(".lv-headbar, .lv-bar", v).forEach(bar => {
+    if (bar.dataset.barFixed) return;
+    bar.dataset.barFixed = "1";
+    bar.style.height = "auto";
+    bar.style.minHeight = "48px";
+    bar.style.flexWrap = "wrap";
+    bar.style.justifyContent = "flex-start";
+    bar.style.overflow = "visible";
+    const fb = bar.querySelector(".lv-fbar");
+    if (fb) { fb.style.flex = "0 0 100%"; fb.style.width = "100%"; fb.style.margin = "0 0 2px"; }
+  });
+  /* 页面已有 .lv-headbar 时，.toolbar 往往是「批量处置条」这类次生工具条，
+   * 再注入密度会出现两组密度按钮（工作台待办页就是这样重叠的）。 */
+  const hasHead = !!v.querySelector(".lv-headbar");
+  const barSel = hasHead ? ".lv-headbar, .lv-bar" : ".lv-headbar, .lv-bar, .toolbar";
+  $$(barSel, v).forEach(bar => {
     if (bar.querySelector("[data-lvdensity]")) return;
     const sp = bar.querySelector(".sp");
     const box = document.createElement("span");
