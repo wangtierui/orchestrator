@@ -492,7 +492,8 @@ main{padding:0;max-width:none;margin:0;min-width:0}
 .lv-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);display:inline-block}
 .lv-body{display:grid;grid-template-columns:minmax(0,1fr);align-items:start}
 .lv-body.slice{grid-template-columns:minmax(0,1fr) 280px}
-.lv-scroll{overflow:visible;max-height:none}
+.lv-scroll{overflow:hidden;max-height:none;border:1px solid var(--border);
+   border-radius:6px;background:var(--bg)}
 .lv-table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
 .lv-table th{position:static;background:transparent;
   border-bottom:1px solid var(--border);padding:0;text-align:left;white-space:nowrap;
@@ -1206,8 +1207,10 @@ body.rail-off .rail{transition:width .15s cubic-bezier(.65,0,.35,1),
 .lv-table tbody tr[aria-selected="true"]{background:var(--bg-subtle)}
 
 /* 批 146：网格表（div 行）—— 与列表页同一套观感，列宽由调用方用 --cols 指定 */
-.lv-gtable{border:1px solid var(--border);border-radius:6px;background:var(--bg);
-  overflow:hidden;max-width:1200px;margin-left:auto;margin-right:auto}
+.lv-gtable{/* 边框只包表格本体（.lv-scroll），搜索框/工具条/分页在框外，
+   与 GitHub issues 一致（搜索框不与表格同框）。 */
+   border:0;border-radius:0;background:transparent;overflow:visible;
+   max-width:1200px;margin-left:auto;margin-right:auto}
 .lv-gtable .lv-headbar{display:flex;align-items:center;gap:8px;height:48px;
   padding:8px;background:var(--bg-subtle);border-bottom:1px solid var(--border)}
 .lv-gtable .toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;
@@ -1402,6 +1405,19 @@ body.no-rail .main-content{max-width:none;margin:0 auto}
 .lv-headbar.lv-bar>.sp{order:3;flex:1 1 auto;min-width:8px}
 .lv-headbar.lv-bar>.lv-fbtn{order:4;flex:0 0 auto}
 .lv-headbar.lv-bar>.density{order:5;flex:0 0 auto;margin-left:4px}
+/* 批 180：搜索框右侧图标区（GitHub 实测：右侧 28×28、浅灰底、与输入区之间有分隔线） */
+.lv-fbox{padding:1px 1px 1px 8px}
+.lv-fbox .lv-fico{width:30px;height:30px;flex:0 0 30px;display:inline-flex;
+  align-items:center;justify-content:center;background:var(--bg-subtle);
+  border-left:1px solid var(--border);border-radius:0 5px 5px 0;color:var(--text-muted)}
+.lv-fbox:focus-within .lv-fico{background:var(--bg-subtle);border-left-color:#0969da}
+
+/* 批 180：表格大边框下移到 .lv-scroll —— 搜索框/工具条/分页留在框外（GitHub 同款）。 */
+.lv-gtable{border:0!important;border-radius:0!important;background:transparent!important;
+  overflow:visible!important}
+.lv-gtable>.lv-scroll{border:1px solid var(--border)!important;border-radius:6px!important;
+  overflow:hidden!important;background:var(--bg)}
+
 </style>
 </head>
 <body>
@@ -5690,7 +5706,7 @@ function autoColsFor(table){
   });
 
   const host = table.parentElement;
-  const box = Math.max(480, ((host && host.clientWidth) || table.clientWidth || 980) - 8);
+  const box = Math.max(480, tb.clientWidth || 980);
   const W = Math.min(box, COLS_MAX) - COLS_GAP * (n - 1);
   // ① 先分配固定列：空列保留原宽（勾选/图标），极端串固定 200
   const out = new Array(n).fill(null);
@@ -5771,7 +5787,8 @@ function autoColsForTable(tb){
     return { i, maxW, avg: all.length ? avg / all.length : 0, extreme, empty: maxW < 6 };
   });
   const host = tb.parentElement;
-  const box = Math.max(480, ((host && host.clientWidth) || tb.clientWidth || 980) - 8);
+  const _sc = tb.querySelector('.lv-scroll') || tb;
+  const box = Math.max(480, _sc.clientWidth || 980);
   const W = Math.min(box, COLS_MAX) - COLS_GAP * (n - 1);
   const out = new Array(n).fill(null);
   let used = 0;
@@ -5862,11 +5879,10 @@ function ensureDensity(v){
     const fb = bar.querySelector(".lv-fbar");
     if (fb) { fb.style.flex = "0 0 100%"; fb.style.width = "100%"; fb.style.margin = "0 0 2px"; }
   });
-  /* 页面已有 .lv-headbar 时，.toolbar 往往是「批量处置条」这类次生工具条，
-   * 再注入密度会出现两组密度按钮（工作台待办页就是这样重叠的）。 */
-  const hasHead = !!v.querySelector(".lv-headbar");
-  const barSel = hasHead ? ".lv-headbar, .lv-bar" : ".lv-headbar, .lv-bar, .toolbar";
-  $$(barSel, v).forEach(bar => {
+  /* 密度只属于「列表表头」（.lv-headbar）。
+   * 之前把 .lv-bar / .toolbar 也算进来，导致项目结构卡片、指标趋势模块、
+   * 文档检索的检索条右侧都冒出一组密度按钮 —— 那些地方没有行高可调，是无意义控件。 */
+  $$(".lv-headbar", v).forEach(bar => {
     if (bar.querySelector("[data-lvdensity]")) return;
     const sp = bar.querySelector(".sp");
     const box = document.createElement("span");
