@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="zh-CN" data-color-mode="light" data-light-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>文档检索 · 平行重建样板页</title>
+<!-- 单一真源：视觉只来自 Primer（22.3.3）+ primitives（11.10.0），本页不写任何颜色/边框/圆角 -->
+<link rel="stylesheet" href="../primer-primitives.css">
+<link rel="stylesheet" href="../primer.css">
+<style>
+  /* 本页只允许「布局」：grid/flex/宽高/间距。颜色/边框/圆角/字号一律走 Primer 类。 */
+  body { background: var(--bgColor-default, #fff); }
+  .page { max-width: 1200px; margin: 0 auto; padding: 16px; }
+  .qwrap { position: relative; }
+  .qico { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); pointer-events: none; }
+  .qinput { padding-right: 30px; }
+  .tbl { display: grid; grid-template-columns: 240px 150px 96px 80px 120px 1fr; align-items: center; }
+  .row-1 { min-height: 32px; }
+  .cell { min-width: 0; overflow: hidden; }
+  .tbl .cell a { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+  .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- 搜索行：整行、与列表等宽、放大镜在右（GitHub issues 同款） -->
+  <div class="qwrap mb-2">
+    <input id="q" class="form-control input-block qinput" type="search"
+           placeholder="输入关键词检索（≥3 字走全文，2 字内走标题/文号模糊）" aria-label="搜索文档">
+    <svg class="octicon qico" width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+      <path d="M10.68 11.74a6 6 0 0 1-7.922-8.982 6 6 0 0 1 8.982 7.922l3.04 3.04a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215ZM11.5 7a4.499 4.499 0 1 0-8.997 0A4.499 4.499 0 0 0 11.5 7Z"></path>
+    </svg>
+  </div>
+
+  <!-- 工具条：左「计数 / 状态」 右「筛选 / 密度」（GitHub 同款分组） -->
+  <div class="d-flex flex-items-center flex-wrap gap-2 mb-2">
+    <span id="count" class="color-fg-muted text-small">共 0 条</span>
+    <span class="flex-auto"></span>
+    <button class="btn btn-sm" type="button" id="fTheme">主题</button>
+    <button class="btn btn-sm" type="button" id="fOrg">发文机关</button>
+    <div class="d-flex" role="group" aria-label="Issues display density">
+      <button class="btn btn-sm" type="button" data-density="comfortable" aria-pressed="true"
+              title="Comfortable display density" aria-label="Comfortable display density">≡</button>
+      <button class="btn btn-sm" type="button" data-density="compact" aria-pressed="false"
+              title="Compact display density" aria-label="Compact display density">☰</button>
+    </div>
+  </div>
+
+  <!-- 列表：无外框，表头上下各 1px，行与行之间 1px（Primer Box-row 自带） -->
+  <div class="border rounded-2 overflow-hidden">
+    <div class="border-bottom py-1 px-2 bgColor-muted tbl row-1 text-small">
+      <div class="cell">标题</div><div class="cell">文号</div><div class="cell">主题</div>
+      <div class="cell">时效</div><div class="cell">来源</div><div class="cell">发布日期</div>
+    </div>
+    <div id="rows"></div>
+  </div>
+
+  <!-- 分页器在列表外（GitHub 同款） -->
+  <div class="paginate-container mt-3">
+    <div class="pagination">
+      <span id="pinfo" class="text-small">输入关键词开始检索</span>
+    </div>
+  </div>
+</div>
+
+<script>
+const S = { page: 1, size: 25, q: "", total: 0, pages: 1, sort: "publish_date", desc: true };
+const $ = (s) => document.querySelector(s);
+const esc = (v) => String(v == null ? "" : v).replace(/[&<>"]/g, (c) =>
+  ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+async function load() {
+  const p = new URLSearchParams({ page: S.page, size: S.size, sort: S.sort, desc: S.desc ? 1 : 0 });
+  if (S.q) p.set("q", S.q); else { $("#rows").innerHTML = '<div class="py-2 px-2 text-small">输入关键词开始检索</div>'; $("#count").textContent = "—"; return; }
+  const r = await fetch("/api/search?" + p.toString(), { cache: "no-store" });
+  const d = await r.json();
+  const items = d.results || [];
+  S.total = items.length; S.pages = 1;
+  $("#count").textContent = `共 ${S.total} 条`;
+  $("#pinfo").textContent = `${S.page} / ${S.pages}`;
+  $("#rows").innerHTML = (items).map((it) => `
+    <div class="border-bottom py-1 px-2 tbl row-1">
+      <div class="cell truncate"><a class="Link--primary" href="${esc(it.url || "#")}"
+        target="_blank" rel="noopener">${esc(it.title)}</a></div>
+      <div class="cell truncate text-small">${esc(it.document_number)}</div>
+      <div class="cell"><span class="IssueLabel" style="background-color:var(--bgColor-accent-muted);border-color:var(--borderColor-accent-muted)">${esc(it.theme_label || it.theme || "—")}</span></div>
+      <div class="cell text-small">${esc(it.timeliness_status || "—")}</div>
+      <div class="cell truncate text-small">${esc(it.source)}</div>
+      <div class="cell text-small">${esc(it.publish_date)}</div>
+    </div>`).join("") || '<div class="Box-row">没有匹配记录</div>';
+}
+
+let timer = null;
+$("#q").addEventListener("input", (e) => {
+  clearTimeout(timer);
+  timer = setTimeout(() => { S.q = e.target.value.trim(); S.page = 1; load(); }, 220);
+});
+$("#prev").onclick = () => { if (S.page > 1) { S.page--; load(); } };
+$("#next").onclick = () => { if (S.page < S.pages) { S.page++; load(); } };
+document.querySelectorAll("[data-density]").forEach((b) => {
+  b.onclick = () => {
+    const v = b.dataset.density;
+    document.querySelectorAll("[data-density]").forEach((x) =>
+      x.setAttribute("aria-pressed", String(x === b)));
+    document.querySelectorAll(".row-1").forEach((r) =>
+      r.style.minHeight = v === "compact" ? "28px" : "32px");
+  };
+});
+load();
+</script>
+</body>
+</html>
