@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="zh-CN" data-color-mode="light" data-light-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>合规工作台</title>
+<link rel="stylesheet" href="primer-primitives.css">
+<link rel="stylesheet" href="primer.css">
+<style>
+  /* 只允许布局。颜色/边框/圆角/字号一律走 Primer 类与令牌。 */
+  html, body { height: 100%; }
+  body { margin: 0; background: var(--bgColor-default); display: flex; flex-direction: column; }
+
+  /* 顶栏：68px 白底 + 1px 底边（与 GitHub 一致） */
+  .topbar { height: 68px; flex: 0 0 68px; display: flex; align-items: center;
+            gap: 12px; padding: 0 16px; }
+  .brand { display: flex; align-items: center; gap: 8px; height: 32px; }
+  .gsearch { width: 191px; height: 32px; }
+  .spacer { flex: 1 1 auto; }
+
+  /* 主体：左 256 + 右自适应 */
+  .body { flex: 1 1 auto; display: flex; min-height: 0; }
+  .rail { width: 256px; flex: 0 0 256px; padding: 8px; overflow-y: auto; }
+  .rail a { display: flex; align-items: center; gap: 8px; height: 32px;
+            padding: 0 8px; margin-bottom: 2px; border-radius: 6px;
+            font-size: 14px; text-decoration: none; }
+  .main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
+  .frame { flex: 1 1 auto; width: 100%; border: 0; display: block; background: transparent; }
+  .ph { padding: 24px; }
+
+  @media (max-width: 767px) { .rail { display: none; } }
+</style>
+</head>
+<body>
+
+<div class="topbar border-bottom">
+  <div class="brand">
+    <svg class="octicon" width="24" height="24" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+      <path d="M8 0a8 8 0 0 1 8 8 8 8 0 0 1-5.47 7.59c-.4.07-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8a8 8 0 0 1 8-8Z"></path>
+    </svg>
+    <span class="text-bold">合规工作台</span>
+  </div>
+
+  <input id="jump" class="form-control gsearch" type="search"
+         placeholder="跳转页面…" aria-label="跳转页面">
+
+  <span class="spacer"></span>
+  <a class="text-small" href="/legacy.html" title="旧版工作台（未迁移页面仍在此）">旧版</a>
+  <svg class="octicon" width="32" height="32" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" role="img" aria-label="当前用户">
+    <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm2 1H6a4 4 0 0 0-4 4v1h12v-1a4 4 0 0 0-4-4Z"></path>
+  </svg>
+</div>
+
+<div class="body">
+  <nav class="rail" id="rail" aria-label="主导航"></nav>
+  <div class="main">
+    <iframe id="frame" class="frame" title="页面内容"></iframe>
+    <div id="ph" class="ph" hidden></div>
+  </div>
+</div>
+
+<script>
+/* 13 个页签：已迁移 → /pages/<slug>.html；未迁移 → 占位并指向旧版 */
+const TABS = [
+  { id: "overview",   name: "总览",     slug: "overview" },
+  { id: "project",    name: "项目结构", slug: "project" },
+  { id: "flow",       name: "数据流转", slug: "flow" },
+  { id: "metrics",    name: "指标",     slug: null },
+  { id: "worklist",   name: "待办闭环", slug: "worklist" },
+  { id: "laws",       name: "政策法规", slug: "laws" },
+  { id: "rules",      name: "公司制度", slug: "rules" },
+  { id: "graph",      name: "关系图谱", slug: null },
+  { id: "regstats",   name: "监管统计", slug: "regstats" },
+  { id: "governance", name: "治理审计", slug: null },
+  { id: "search",     name: "文档检索", slug: "search" },
+  { id: "release",    name: "发布事件", slug: null },
+  { id: "feedback",   name: "留言板",   slug: "feedback" },
+];
+
+const $ = (s) => document.querySelector(s);
+const esc = (v) => String(v == null ? "" : v).replace(/[&<>"]/g, (c) =>
+  ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+$("#rail").innerHTML = TABS.map((t) => `
+  <a href="#${t.id}" data-id="${t.id}">
+    <span>${esc(t.name)}</span>
+    ${t.slug ? "" : '<span class="Counter">旧版</span>'}
+  </a>`).join("");
+
+function current() {
+  const id = (location.hash || "#overview").slice(1);
+  return TABS.find((t) => t.id === id) || TABS[0];
+}
+
+function show(t) {
+  document.querySelectorAll("#rail a").forEach((a) =>
+    a.classList.toggle("text-bold", a.dataset.id === t.id));
+  document.title = `${t.name} · 合规工作台`;
+  if (t.slug) {
+    $("#ph").hidden = true;
+    $("#frame").hidden = false;
+    $("#frame").src = `/pages/${t.slug}.html`;
+  } else {
+    $("#frame").hidden = true;
+    $("#ph").hidden = false;
+    $("#ph").innerHTML = `
+      <div class="border rounded-2 p-4" style="max-width:640px">
+        <h3 class="h4 mb-2">${esc(t.name)} 尚未迁移</h3>
+        <p class="text-small">该页仍在旧版工作台。迁移完成后这里会自动切换到新页面。</p>
+        <a class="btn" href="/legacy.html#${t.id}">在旧版打开 ${esc(t.name)}</a>
+      </div>`;
+  }
+}
+
+let timer = null;
+$("#jump").addEventListener("input", (e) => {
+  clearTimeout(timer);
+  timer = setTimeout(() => {
+    const q = e.target.value.trim();
+    if (!q) return;
+    const hit = TABS.find((t) => t.name.includes(q));
+    if (hit) location.hash = "#" + hit.id;
+  }, 200);
+});
+
+window.addEventListener("hashchange", () => show(current()));
+show(current());
+</script>
+</body>
+</html>

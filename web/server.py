@@ -44,7 +44,10 @@ HUB = SseHub()
 _LOOPBACK = ("127.0.0.1", "localhost", "::1")
 
 #: 单页入口（浏览器只请求这一个文件 + 三个静态资源）
-_INDEX = "index.html"
+#: 2026-11-04 C3 切换：入口换成新壳 app.html（Primer 单一真源 + /pages/*）；
+#: 旧工作台整文件保留在 index.html，经 /legacy.html 访问，切回只需把此处改回 "index.html"。
+_INDEX = "app.html"
+_LEGACY = "index.html"
 
 
 #: 认证相关路由（**免认证**：登录本身不能要求已登录）
@@ -376,6 +379,9 @@ class Handler(BaseHTTPRequestHandler):
             }, extra_headers=hdrs)
         if path in ("/", "", f"/{_INDEX}"):
             body, ctype = _asset(_INDEX)
+            return self._send(200, body, ctype)
+        if path in ("/legacy.html", "/legacy", "/legacy/"):
+            body, ctype = _asset(_LEGACY)
             return self._send(200, body, ctype)
         if path == "/api/events":
             return self._sse()

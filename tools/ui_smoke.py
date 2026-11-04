@@ -48,6 +48,7 @@ def _edge_candidates() -> list[str]:
         "/usr/bin/google-chrome",
     ]
     return out
+#: C3 切换后 / 是新壳（app.html）；旧工作台的运行时冒烟要打 /legacy.html
 DEFAULT_URL = "http://127.0.0.1:8765"
 PORT = 9341
 
@@ -254,7 +255,7 @@ def collect(url: str = DEFAULT_URL) -> dict:
 
         # ① 列表页：分页 hover / 面板 / 保存视图 / 截断
         s.viewport(1400, 900)
-        s.cmd("Page.navigate", {"url": f"{url}/?v={tag}#rules"})
+        s.cmd("Page.navigate", {"url": f"{url}/legacy.html?v={tag}#rules"})
         s.wait_for("[data-lvsavecur]")        # 列表渲染完成再取数（最多 20s）
 
         out["saveDisabled"] = s.ev(
@@ -343,7 +344,7 @@ def collect(url: str = DEFAULT_URL) -> dict:
 
         # ④ 窄视口：标题真实截断
         s.viewport(760, 900)
-        s.cmd("Page.navigate", {"url": f"{url}/?v={tag + 1}#rules"})
+        s.cmd("Page.navigate", {"url": f"{url}/legacy.html?v={tag + 1}#rules"})
         s.wait_for(".lv-row")
         out["truncate"] = s.ev(r"""(() => {
           let worst = null;
