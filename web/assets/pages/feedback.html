@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="zh-CN" data-color-mode="light" data-light-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>留言板 · 平行重建样板页</title>
+<link rel="stylesheet" href="../primer-primitives.css">
+<link rel="stylesheet" href="../primer.css">
+<style>
+  /* 只允许布局：grid/flex/宽高/间距/截断。颜色/边框/圆角一律走 Primer 类或令牌。 */
+  body { background: var(--bgColor-default); }
+  .page { max-width: 1200px; margin: 0 auto; padding: 16px; }
+  .qwrap { position: relative; }
+  .qico { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); pointer-events: none; }
+  .qinput { padding-right: 30px; }
+  .tbl { display: grid; grid-template-columns: 32px 120px minmax(0,1fr) 120px 96px 150px 88px;
+         align-items: center; gap: 8px; }
+  .row-1 { min-height: 32px; }
+  .cell { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .row-1:hover { background: var(--bgColor-muted); }
+  .row-1 .btn { height: 24px; padding: 0 8px; }
+  /* 行内处置：整行展开的块，label 在上、控件满宽（与留言表单同规范） */
+  .detail { display: block; padding: 12px; }
+  .detail .field { margin-bottom: 12px; }
+  .detail .field > label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 6px; }
+  .detail .actions { display: flex; justify-content: flex-end; gap: 8px; }   /* 行内动作按钮压到 24，行高才能是 32 */
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- 搜索行：整行、放大镜在右 -->
+  <div class="qwrap mb-2">
+    <input id="q" class="form-control input-block qinput" type="search"
+           placeholder="搜索留言：标题 / 分类 / 页面…" aria-label="搜索留言">
+    <svg class="octicon qico" width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+      <path d="M10.68 11.74a6 6 0 0 1-7.922-8.982 6 6 0 0 1 8.982 7.922l3.04 3.04a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215ZM11.5 7a4.499 4.499 0 1 0-8.997 0A4.499 4.499 0 0 0 11.5 7Z"></path>
+    </svg>
+  </div>
+
+  <!-- 工具条：左「状态开关 + 计数」/ 右「kind 筛选 + 密度」 -->
+  <div class="d-flex flex-items-center flex-wrap gap-2 mb-2">
+    <div class="d-flex" role="group" aria-label="状态">
+      <button class="btn btn-sm" type="button" data-status="open" aria-pressed="true">待处置</button>
+      <button class="btn btn-sm" type="button" data-status="resolved" aria-pressed="false">已处置</button>
+    </div>
+    <span id="count" class="text-small">共 0 条</span>
+    <span class="flex-auto"></span>
+    <select id="kind" class="form-select" aria-label="按 kind 筛选"></select>
+    <div class="d-flex" role="group" aria-label="Issues display density">
+      <button class="btn btn-sm" type="button" data-density="comfortable" aria-pressed="true"
+              title="Comfortable display density" aria-label="Comfortable display density">≡</button>
+      <button class="btn btn-sm" type="button" data-density="compact" aria-pressed="false"
+              title="Compact display density" aria-label="Compact display density">☰</button>
+    </div>
+  </div>
+
+  <!-- 列表：无外框，表头上下 1px，行间 1px -->
+  <div class="border rounded-2 overflow-hidden">
+    <div class="border-bottom py-1 px-2 bgColor-muted tbl row-1 text-small">
+      <div class="cell"><input type="checkbox" aria-label="全选"></div>
+      <div class="cell">kind</div>
+      <div class="cell">标题</div>
+      <div class="cell">记录者</div>
+      <div class="cell">严重度</div>
+      <div class="cell">时间</div>
+      <div class="cell">状态</div>
+    </div>
+    <div id="rows"></div>
+  </div>
+
+  <div class="paginate-container mt-3">
+    <div class="pagination">
+      <button class="btn btn-sm" id="prev" type="button">上一页</button>
+      <span id="pinfo" class="px-2 text-small">1 / 1</span>
+      <button class="btn btn-sm" id="next" type="button">下一页</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const S = { status: "open", kind: "", q: "", page: 1, size: 25, total: 0 };
+const $ = (s) => document.querySelector(s);
+const esc = (v) => String(v == null ? "" : v).replace(/[&<>"]/g, (c) =>
+  ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+async function loadKinds() {
+  const r = await fetch("/api/feedback?size=1", { cache: "no-store" });
+  const d = await r.json();
+  const counts = d.kind_counts || {};
+  const opts = ['<option value="">全部 kind</option>'].concat(
+    Object.keys(counts).sort((a, b) => counts[b] - counts[a]).map((k) =>
+      `<option value="${esc(k)}">${esc(k)}（${counts[k]}）</option>`));
+  $("#kind").innerHTML = opts.join("");
+}
+
+async function load() {
+  const p = new URLSearchParams({ size: S.size, offset: (S.page - 1) * S.size });
+  if (S.kind) p.set("kind", S.kind);
+  if (S.q) p.set("q", S.q);
+  const r = await fetch("/api/feedback?" + p.toString(), { cache: "no-store" });
+  const d = await r.json();
+  S.total = d.total || d.count || 0;
+  $("#count").textContent = `共 ${S.total} 条`;
+  const pages = Math.max(1, Math.ceil(S.total / S.size));
+  $("#pinfo").textContent = `${S.page} / ${pages}`;
+  $("#rows").innerHTML = (d.items || []).map((it) => `
+    <div class="border-bottom py-1 px-2 tbl row-1" data-id="${esc(it.fid)}">
+      <div class="cell"><input type="checkbox" aria-label="选择 ${esc(it.fid)}"></div>
+      <div class="cell"><span class="IssueLabel" style="background-color:var(--bgColor-accent-muted);border-color:var(--borderColor-accent-muted)">${esc(it.kind_label || it.kind)}</span></div>
+      <div class="cell" title="${esc(it.title)}">${esc(it.title)}</div>
+      <div class="cell text-small" title="${esc(it.account)}">${esc(it.account)}</div>
+      <div class="cell text-small">${esc(it.severity_label || it.severity)}</div>
+      <div class="cell text-small">${esc(it.created_at)}</div>
+      <div class="cell"><span class="text-small">${esc(it.status_label || it.status)}</span></div>
+    </div>`).join("") || '<div class="py-2 px-2 text-small">没有匹配待办</div>';
+}
+
+let timer = null;
+$("#q").addEventListener("input", (e) => {
+  clearTimeout(timer);
+  timer = setTimeout(() => { S.q = e.target.value.trim(); S.page = 1; load(); }, 220);
+});
+$("#kind").addEventListener("change", (e) => { S.kind = e.target.value; S.page = 1; load(); });
+document.querySelectorAll("[data-status]").forEach((b) => {
+  b.onclick = () => {
+    S.status = b.dataset.status; S.page = 1;
+    document.querySelectorAll("[data-status]").forEach((x) =>
+      x.setAttribute("aria-pressed", String(x === b)));
+    load();
+  };
+});
+document.querySelectorAll("[data-density]").forEach((b) => {
+  b.onclick = () => {
+    const v = b.dataset.density;
+    document.querySelectorAll("[data-density]").forEach((x) =>
+      x.setAttribute("aria-pressed", String(x === b)));
+    document.querySelectorAll(".row-1").forEach((r) => {
+      r.style.minHeight = v === "compact" ? "28px" : "32px";
+    });
+  };
+});
+/* 行内处置：展开一整行（与旧工作台同一交互，但视觉全走 Primer） */
+$("#rows").addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-act='resolve']");
+  if (!btn) return;
+  const row = btn.closest(".row-1");
+  const id = row && row.dataset.id;
+  const next = row.nextElementSibling;
+  if (next && next.classList.contains("detail")) { next.remove(); return; }
+  const box = document.createElement("div");
+  box.className = "border-bottom detail";
+  box.innerHTML = `
+    <div class="field">
+      <label for="dstatus">处置状态</label>
+      <select id="dstatus" class="form-select input-block">
+        <option value="resolved">resolved（已处置）</option>
+        <option value="dismissed">dismissed（不适用）</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="dwhy">处置理由</label>
+      <textarea id="dwhy" class="form-control input-block" rows="4"
+        placeholder="必填，进入审计台账"></textarea>
+    </div>
+    <div class="actions">
+      <button class="btn" type="button" data-act="cancel">取消</button>
+      <button class="btn btn-primary" type="button" data-act="submit" data-id="${esc(id)}">提交</button>
+    </div>`;
+  row.after(box);
+  box.querySelector("#dwhy").focus();
+});
+
+$("#rows").addEventListener("click", (e) => {
+  const act = e.target.getAttribute && e.target.getAttribute("data-act");
+  if (act !== "cancel" && act !== "submit") return;
+  const box = e.target.closest(".detail");
+  if (!box) return;
+  if (act === "cancel") { box.remove(); return; }
+  const why = (box.querySelector("#dwhy").value || "").trim();
+  if (!why) { box.querySelector("#dwhy").focus(); return; }
+  const payload = {
+    item_id: e.target.getAttribute("data-id"),
+    resolution: why,
+    status: box.querySelector("#dstatus").value,
+    by: "web",
+  };
+  fetch("/api/feedback/resolve", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  }).then((r) => r.json()).then((d) => {
+    if (d && (d.ok || d.available)) { box.remove(); load(); }
+    else { alert("处置失败：" + ((d && (d.reason || d.error)) || "未知")); }
+  }).catch((err) => alert("处置失败：" + err.message));
+});
+
+$("#prev").onclick = () => { if (S.page > 1) { S.page--; load(); } };
+$("#next").onclick = () => { S.page++; load(); };
+loadKinds(); load();
+</script>
+</body>
+</html>
