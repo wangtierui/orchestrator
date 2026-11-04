@@ -34,6 +34,7 @@ PAGES = [
     ("overview", ".grid3", False, True),
     ("project", "#chart", False, True),
     ("flow", "#chart", False, True),
+    ("metrics", ".grid3", False, True),
     ("release", ".row-1", True, False),
     ("governance", ".row-1", True, False),
 ]
@@ -45,7 +46,7 @@ PROBE = """(() => {
     .filter(r => r.querySelector(".cell"));
   const box = document.querySelector(".border.rounded-2") || document.querySelector(".border");
   const cs = box ? getComputedStyle(box) : null;
-  const canvas = document.querySelector("#chart canvas");
+  const canvas = document.querySelector("#chart canvas") || document.querySelector("canvas");
   const root = getComputedStyle(document.documentElement);
   return JSON.stringify({
     has,
