@@ -1405,6 +1405,25 @@ body.no-rail .main-content{max-width:none;margin:0 auto}
 .lv-headbar.lv-bar>.sp{order:3;flex:1 1 auto;min-width:8px}
 .lv-headbar.lv-bar>.lv-fbtn{order:4;flex:0 0 auto}
 .lv-headbar.lv-bar>.density{order:5;flex:0 0 auto;margin-left:4px}
+/* ===== 批 181：列表边框方案（对齐 GitHub issues）=====
+ * ① 整块没有外框（之前 .lv-scroll / table.lv-table / .tblwrap 各有一圈）；
+ * ② 表头上下各 1px，数据行每行 1px 底边（GitHub 用行分隔，不用外框）；
+ * ③ 搜索行白底（之前挂在 --bg-subtle 的灰底上，看着像"另一个框"）。 */
+.lv-gtable>.lv-scroll{border:0!important;border-radius:0!important;background:transparent!important}
+.lv-gtable .lv-headrow{border-top:1px solid var(--border);border-bottom:1px solid var(--border);
+  background:var(--bg)}
+.lv-gtable .lv-row{border-bottom:1px solid var(--border);background:var(--bg)}
+.lv-gtable .lv-row:last-child{border-bottom:0}
+.lv-headbar,.lv-headbar.lv-bar{background:var(--bg)!important;border:0!important}
+.lv-fbar,.lv-fqrow{background:var(--bg)}
+table.lv-table,.tblwrap>table{border:0!important;border-radius:0!important}
+.lv-table tr.lv-row,table.lv-table tr.lv-row{border-bottom:1px solid var(--border)}
+.lv-table tr.lv-headrow{border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+
+/* 批 181：行是 display:grid，会盖掉 [hidden] 的 display:none ⇒ 搜索过滤整个失效。
+   这里把 hidden 提升为 !important，恢复「输入即筛」。 */
+.lv-row[hidden],tr.lv-row[hidden],.lv-gtable .lv-row[hidden]{display:none!important}
+
 /* 批 180（第 4 条）：行内处置 + 批量处置条按 advisories/new 的字段规范 */
 .lv-row.detail .row{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:0}
 .lv-row.detail .row .btn:first-of-type{margin-left:auto}
@@ -1429,8 +1448,8 @@ body.no-rail .main-content{max-width:none;margin:0 auto}
 /* 批 180：表格大边框下移到 .lv-scroll —— 搜索框/工具条/分页留在框外（GitHub 同款）。 */
 .lv-gtable{border:0!important;border-radius:0!important;background:transparent!important;
   overflow:visible!important}
-.lv-gtable>.lv-scroll{border:1px solid var(--border)!important;border-radius:6px!important;
-  overflow:hidden!important;background:var(--bg)}
+.lv-gtable>.lv-scroll{border:0!important;border-radius:0!important;
+  overflow:hidden!important;background:transparent!important}
 
 </style>
 </head>
@@ -3596,7 +3615,19 @@ function attachListSearch(root){
       bar.innerHTML = '<span class="sp"></span>';
       g.insertBefore(bar, g.firstChild);
     }
-    if (bar.querySelector(".lv-fq")) continue;
+    if (bar.querySelector(".lv-fq")) {
+      /* 已注入过：把上一次的搜索词重新应用（筛选/翻页会重建 DOM） */
+      const keep = g.dataset && g.dataset.fq;
+      const i0 = bar.querySelector(".lv-fq");
+      if (keep && i0) {
+        i0.value = keep;
+        const q0 = keep.trim().toLowerCase();
+        g.querySelectorAll(".lv-row").forEach(r => {
+          r.hidden = !!q0 && !(r.textContent || "").toLowerCase().includes(q0);
+        });
+      }
+      continue;
+    }
     /* 批 168（第 1 条）：与 lvRender 的筛选框**同一套标记**（.lv-fbar>.lv-fbox>[ico]+input.lv-fq），
      * 不再自造 .lv-q —— 同一产品里出现两种搜索框，是这次被点出来的问题。 */
     const wrap = document.createElement("div");
@@ -3609,6 +3640,7 @@ function attachListSearch(root){
     const inp = wrap.querySelector("input");
     inp.oninput = () => {
       const q = inp.value.trim().toLowerCase();
+      if (g.dataset) g.dataset.fq = inp.value;   /* 记住，供下次渲染恢复 */
       g.querySelectorAll(".lv-row").forEach(r => {
         r.hidden = !!q && !(r.textContent || "").toLowerCase().includes(q);
       });
