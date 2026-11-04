@@ -19,16 +19,56 @@ from __future__ import annotations
 import abc
 import json
 import logging
+import os
 import random
+import threading
 import time
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from typing import Any
+from urllib.parse import urlparse
 
 import requests
 
 from .resilience import get_coordinator
 
 LOG = logging.getLogger("refactor.collectors.lib.http")
+
+# ---- 失败调用结构化日志（仅在请求失败时落盘；成功不记）----------------------
+# 统一在传输层这一唯一出口记录，覆盖所有源（nfra/pbc/gov/mof…）。
+# 路径可用环境变量 HTTP_FAILURE_LOG 覆盖；默认写到项目根 logs/http_failures.jsonl。
+_FAILURE_LOG_PATH = os.environ.get(
+    "HTTP_FAILURE_LOG",
+    os.path.join(
+        os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+        "logs", "http_failures.jsonl",
+    ),
+)
+_failure_log_lock = threading.Lock()
+
+
+def _log_failure(*, host, path, status, error_type, error, attempt, retries, will_retry):
+    """把一次失败请求追加到结构化日志（JSONL）。任何异常都吞掉，绝不影响采集。"""
+    rec = {
+        "ts": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "host": host,
+        "path": path,
+        "status": status,
+        "error_type": error_type,
+        "error": (error or "")[:500],
+        "attempt": attempt,
+        "retries": retries,
+        "will_retry": will_retry,
+    }
+    try:
+        d = os.path.dirname(_FAILURE_LOG_PATH)
+        if d:
+            os.makedirs(d, exist_ok=True)
+        with _failure_log_lock:
+            with open(_FAILURE_LOG_PATH, "a", encoding="utf-8") as f:
+                f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+    except Exception:  # noqa: BLE001  日志写失败不应阻断采集
+        pass
 
 
 class FetchError(RuntimeError):
@@ -108,9 +148,14 @@ class Transport(abc.ABC):
         ...
 
 
-def _backoff_wait(attempt: int, retry_after: str | None) -> float:
+def _backoff_wait(attempt: int, retry_after: str | None, status: int | None = None) -> float:
     if retry_after and retry_after.isdigit():
         return float(int(retry_after))
+    # 403/429 是限流/临时封锁信号：必须用“长冷却”穿越，而不是 2/4/8/16s 的短退避连发——
+    # 否则 4 连发补刀会把临时限流打成分钟级 IP 封锁（nfra 实测：单条 403 退 4 次反而把 IP 罚死）。
+    # 5xx 仍是服务器瞬时错误，保持短退避即可。
+    if status in (403, 429):
+        return min(30.0 + attempt * 10.0, 60.0) + random.uniform(0, 5)
     return min(2 ** attempt, 16) + random.uniform(0, 1)
 
 
@@ -142,8 +187,11 @@ class RequestsTransport(Transport):
         # 熔断冷却：若该源被熔断，先暂停等待（对采集器透明）
         get_coordinator().pause_if_needed()
 
+        _up = urlparse(url)
+        _host, _path = _up.netloc, _up.path
+
         last_err: str | None = None
-        for attempt in range(1, retries + 1):
+        for attempt in range(1, max(retries, 1) + 1):
             try:
                 if attempt > 1:
                     time.sleep(random.uniform(0.8, 1.6))
@@ -153,15 +201,24 @@ class RequestsTransport(Transport):
                 )
                 get_coordinator().record_request(resp.status_code)
                 if resp.status_code in no_retry_statuses:
+                    _log_failure(host=_host, path=_path, status=resp.status_code,
+                                error_type="http", error=f"HTTP {resp.status_code}",
+                                attempt=attempt, retries=retries, will_retry=False)
                     return TransportResponse(
                         resp.status_code, resp.content, headers=dict(resp.headers)
                     )
                 if resp.status_code in retry_statuses:
-                    wait = _backoff_wait(attempt, resp.headers.get("Retry-After"))
+                    wait = _backoff_wait(
+                        attempt, resp.headers.get("Retry-After"), resp.status_code
+                    )
                     LOG.warning(
                         "HTTP %s @ %s 限流/暂不可用，%ss 后重试(%d/%d)",
                         resp.status_code, url, round(wait, 1), attempt, retries,
                     )
+                    _log_failure(host=_host, path=_path, status=resp.status_code,
+                                error_type="http", error=f"HTTP {resp.status_code}",
+                                attempt=attempt, retries=retries,
+                                will_retry=attempt < retries)
                     time.sleep(wait)
                     last_err = f"HTTP {resp.status_code}"
                     continue
@@ -176,6 +233,10 @@ class RequestsTransport(Transport):
                     "网络异常 @ %s，%ss 后重试(%d/%d): %s",
                     url, round(wait, 1), attempt, retries, e,
                 )
+                _log_failure(host=_host, path=_path, status=None,
+                            error_type="network", error=last_err,
+                            attempt=attempt, retries=retries,
+                            will_retry=attempt < retries)
                 time.sleep(wait)
                 continue
         LOG.error("GET %s 重试 %d 次仍失败：%s", url, retries, last_err)
@@ -260,6 +321,8 @@ def http_get_json(
         headers["Referer"] = referer
     if extra_headers:
         headers.update(extra_headers)
+    _up = urlparse(url)
+    _host, _path = _up.netloc, _up.path
     resp = select_transport().request(
         "GET", url, params=params, headers=headers, timeout=timeout, retries=retries,
         retry_statuses=retry_statuses, no_retry_statuses=no_retry_statuses,
@@ -271,6 +334,9 @@ def http_get_json(
     try:
         return json.loads(resp.content.decode("utf-8", errors="replace"))
     except (ValueError, UnicodeDecodeError) as e:
+        _log_failure(host=_host, path=_path, status=200, error_type="json",
+                     error="JSON 解析失败: %s" % e, attempt=None, retries=None,
+                     will_retry=False)
         raise FetchError(None, "JSON 解析失败: %s" % e)
 
 

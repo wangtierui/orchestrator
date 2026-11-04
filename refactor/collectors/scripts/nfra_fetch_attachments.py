@@ -11,11 +11,7 @@ import glob
 import json
 import os
 import random
-import ssl
 import time
-import urllib.error
-import urllib.parse
-import urllib.request
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 from ..lib.paths import docs_root, source_cache_root
@@ -28,7 +24,6 @@ DETAIL_GLOB = os.path.join(CACHE, "SelectByDocId__docId_*.json")
 QUALITY_REPORT = os.path.join(ATT_DIR, "_quality_report.json")
 
 BASE = "https://www.nfra.gov.cn"
-_SSL_CTX = ssl.create_default_context()
 
 DEFAULT_HEADERS = {
     "User-Agent": (
@@ -64,24 +59,12 @@ from ..nfra.attachments_extract import (  # noqa: F401
 
 
 def http_get_bytes(url, timeout=30, max_retries=4):
-    """带超时与退避重试的二进制 GET。"""
-    last_err = None
-    for attempt in range(1, max_retries + 1):
-        req = urllib.request.Request(url, headers=DEFAULT_HEADERS, method="GET")
-        try:
-            with urllib.request.urlopen(req, timeout=timeout, context=_SSL_CTX) as resp:
-                status = resp.getcode()
-                if status != 200:
-                    raise urllib.error.HTTPError(url, status, "HTTP %d" % status, None, None)  # type: ignore[arg-type]
-                return resp.read()
-        except (TimeoutError, urllib.error.HTTPError, urllib.error.URLError, ConnectionError) as e:
-            last_err = e
-            if attempt < max_retries:
-                wait = 2 ** attempt + random.uniform(0, 1)
-                print("      [att retry %d/%d] %s，%.1fs 后重试" % (attempt, max_retries, e, wait),
-                      flush=True)
-                time.sleep(wait)
-    raise RuntimeError("附件下载失败（重试 %d 次）: %s" % (max_retries, last_err))
+    """带超时与退避重试的二进制 GET（统一走 lib/http 的 robust_get）。"""
+    from ..lib.http import robust_get
+    st, data = robust_get(url, binary=True, timeout=timeout, retries=max_retries)
+    if st == 200 and data:
+        return data
+    raise RuntimeError("附件下载失败（HTTP %s）：%s" % (st, url))
 
 def build_attachment_url(att):
     """拼接附件绝对下载 URL。"""

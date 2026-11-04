@@ -21,6 +21,7 @@ import urllib.request
 from ..base import REPO_ROOT, SourceCollector
 from ..storage import get_storage, StorageSettings, open_storage
 from ..lib.pipeline import CollectorPipeline
+from ..lib.progress import progress_of
 from ..lib.text_utils import flatten_attachment_extras, html_to_text
 
 # 附件 local_path / 下载原文 relpath 的相对基址收口到 refactor/data/raw（自包含）。
@@ -140,10 +141,16 @@ def http_get_json(url, params, timeout=25, max_retries=4):
             raise _OfflineMiss("%s ? %s" % (url, urllib.parse.urlencode(params)))
 
     # 2) 实时请求（统一传输层）
+    # ⚠️ 修复回归：必须透传站点 AJAX 接口必需的 X-Requested-With + Referer。
+    # 重构前 DEFAULT_HEADERS 随 urllib 请求发出；重构后改用统一传输层，
+    # 若不在 extra_headers 透传，请求只剩 BASE_HEADERS → SelectByDocId 详情接口
+    # 一律 403。User-Agent 除外，继续由传输层轮换 UA（与重构前行为一致）。
     data = _http_get_json(
         url, params=params, timeout=timeout, retries=max_retries,
         retry_statuses={403, 429, 500, 502, 503, 504},
         no_retry_statuses={404, 410},
+        extra_headers={k: v for k, v in DEFAULT_HEADERS.items()
+                       if k.lower() != "user-agent"},
     )
     if isinstance(data, dict) and data.get("rptCode") != 200:
         raise RuntimeError(
@@ -225,9 +232,14 @@ def get_child_items():
              "item_name": it.get("itemName"),
              "type": it.get("type")} for it in items]
 
-def get_list_for_item(item_id, delay_min, delay_max):
-    """分页遍历某栏目，返回所有 rows。"""
-    rows_all: list = []
+def get_list_for_item(item_id, delay_min, delay_max, on_page=None):
+    """分页遍历某栏目，**每页立即 yield rows**（生成器）。
+
+    与其他三源一致边翻页边产出：基类能同步处理条目、进度计数不冻结，
+    详情与列表交错也降低了请求密度；中途失败时已产出的页不会丢。
+    on_page(page, total_pages) 仅用于进度上报，不影响数据流。
+    """
+    fetched = 0
     page = 1
     while True:
         data = http_get_json(LIST_ENDPOINT,
@@ -235,12 +247,14 @@ def get_list_for_item(item_id, delay_min, delay_max):
         payload = data.get("data") or {}
         total = payload.get("total", 0)
         rows = payload.get("rows") or []
-        rows_all.extend(rows)
-        if not rows or len(rows_all) >= total:
+        fetched += len(rows)
+        if on_page:
+            on_page(page, max(1, (int(total or 0) + PAGE_SIZE - 1) // PAGE_SIZE))
+        yield rows
+        if not rows or fetched >= total:
             break
         page += 1
         sleep_between(delay_min, delay_max)
-    return rows_all
 
 def get_detail(doc_id, delay_min, delay_max):
     """获取单篇详情，返回清洗后的字段字典；失败返回 None。"""
@@ -410,33 +424,38 @@ class NfraCollector(CollectorPipeline):
         seen = set()  # 本运行跨页去重（真正的 known/new/dup 判定交给 _collect 的 tracker）
         for c in children:
             print("      >> 开始抓取栏目 %s(%s)" % (c["item_name"], c["item_id"]), flush=True)
+            progress_of(ctx).batch("栏目 " + str(c["item_name"]))
+            fetched = 0
             try:
-                rows = get_list_for_item(c["item_id"], args.delay_min, args.delay_max)
+                # 逐页产出、逐条 yield：与其他三源同一节奏，进度计数同步增长。
+                for rows in get_list_for_item(
+                        c["item_id"], args.delay_min, args.delay_max,
+                        on_page=lambda p, t: progress_of(ctx).page(p, t)):
+                    fetched += len(rows)
+                    for r in rows:
+                        did = r.get("docId")
+                        if did is None:
+                            continue
+                        if did in seen:  # 跨页重复，跳过（不计入 yield）
+                            continue
+                        seen.add(did)
+                        yield {
+                            "doc_id": did,
+                            "title": r.get("docSubtitle") or r.get("docTitle") or "",
+                            "publish_date": (r.get("publishDate") or "")[:10],
+                            "category": c["item_name"],
+                            "item_id": c["item_id"],
+                            "is_title_link": r.get("isTitleLink"),
+                            "title_link": r.get("titleLink"),
+                            "doc_file_url": (BASE + r["docFileUrl"]) if r.get("docFileUrl") else "",
+                            "pdf_file_url": (BASE + r["pdfFileUrl"]) if r.get("pdfFileUrl") else "",
+                        }
+                        yielded += 1
+                        if limit and yielded >= limit:
+                            return
             except Exception as e:  # noqa: BLE001
                 print("      [WARN] 栏目 %s 列表抓取失败: %s" % (c["item_name"], e), flush=True)
-                rows = []
-            for r in rows:
-                did = r.get("docId")
-                if did is None:
-                    continue
-                if did in seen:  # 跨页重复，跳过（不计入 yield）
-                    continue
-                seen.add(did)
-                yield {
-                    "doc_id": did,
-                    "title": r.get("docSubtitle") or r.get("docTitle") or "",
-                    "publish_date": (r.get("publishDate") or "")[:10],
-                    "category": c["item_name"],
-                    "item_id": c["item_id"],
-                    "is_title_link": r.get("isTitleLink"),
-                    "title_link": r.get("titleLink"),
-                    "doc_file_url": (BASE + r["docFileUrl"]) if r.get("docFileUrl") else "",
-                    "pdf_file_url": (BASE + r["pdfFileUrl"]) if r.get("pdfFileUrl") else "",
-                }
-                yielded += 1
-                if limit and yielded >= limit:
-                    return
-            print("      %-22s 命中 %d 篇（累计去重 %d）" % (c["item_name"], len(rows), yielded),
+            print("      %-22s 命中 %d 篇（累计去重 %d）" % (c["item_name"], fetched, yielded),
                   flush=True)
             sleep_between(args.delay_min, args.delay_max)
 
@@ -544,9 +563,11 @@ class NfraCollector(CollectorPipeline):
             offline=offline,
             delay_min=max(0.4, delay * 0.8),
             delay_max=delay * 1.6,
+            mode=mode,
+            full=(mode == "full"),
         )
         self._setup(args)
-        return self.run(out_dir)
+        return self.run(out_dir, mode=mode, full=(mode == "full"))
 
 
 def scrape(args):

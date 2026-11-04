@@ -2,7 +2,10 @@
 """通用增量 / 翻页辅助（对应抽象设计中的 G7）。
 
 抽自四源散落的重复实现，统一为一份：
-- `should_stop_paging`：原 `gov/zhengceku.should_stop_paging`（纯函数，已带单测守卫）。
+- `should_stop_paging`：四源共用的早停纯函数（原 gov/zhengceku 实现上收）。
+- `KnownTracker.note_page/should_stop`：**通用翻页闸门**，策略由
+  `CollectorPipeline.build_context` 统一注入（默认不早停）；各源翻页点只上报
+  本页新增条目数，不得再各写一份早停判据。
 - `KnownTracker`：统一 pbc `done_urls` / gov `seen_urls` / mof `prev_by_id` / nfra
   `master_map` 的"运行期已知态"逻辑。
 
@@ -19,15 +22,19 @@ from __future__ import annotations
 from typing import Callable, Hashable, Iterable, Optional
 
 
-def should_stop_paging(empty_streak: int, stop_after_empty_pages: int, backfill: bool) -> bool:
+def should_stop_paging(empty_streak: int, stop_after_empty_pages: int, scan_all: bool) -> bool:
     """连续 empty_streak 页无新条目 → 停止翻页（增量模式）。
 
-    backfill（历史存量补全）时返回 False（不早停，须扫完全部列表页）。
-    纯函数，便于单测。
+    ``stop_after_empty_pages <= 0``（默认）= **不早停**，列表页一路扫到末页。
+    早停只是「追新」优化，不能当正确性判据：列表按时间倒序时，历史回填/
+    中断续跑的已抓区间在头部、未抓区间在尾部，「第 1 页全 known」不代表
+    已经抓完。只有显式给正数阈值才启用「连续 N 页无新即停」。
+    ``scan_all``（full 模式）恒不早停。
     """
-    if backfill:
+    if scan_all:
         return False
-    return empty_streak >= max(1, int(stop_after_empty_pages or 1))
+    n = int(stop_after_empty_pages or 0)
+    return n > 0 and empty_streak >= n
 
 
 class KnownTracker:
@@ -46,11 +53,11 @@ class KnownTracker:
         self,
         key_of: Callable[[dict], Hashable],
         *,
-        backfill: bool = False,
-        stop_after_empty_pages: int = 1,
+        scan_all: bool = False,
+        stop_after_empty_pages: int = 0,   # 0=不早停（见 should_stop_paging）
     ) -> None:
         self.key_of = key_of
-        self.backfill = backfill
+        self.scan_all = scan_all
         self.stop_after_empty_pages = stop_after_empty_pages
         self.known: set = set()          # 历史已捕获（来自 storage）
         self.seen_in_run: set = set()    # 本轮已见（跨页去重）
@@ -86,12 +93,19 @@ class KnownTracker:
         self.empty_streak = 0
         return "new"
 
+    def note_page(self, new_in_page: int) -> None:
+        """四源翻页点统一入口：上报本页新增条目数，累计「连续无新页」。
+
+        策略由 :meth:`should_stop` 统一判定，各源不得再自行实现早停 if。
+        """
+        self.empty_streak = 0 if new_in_page > 0 else self.empty_streak + 1
+
     def note_empty_page(self) -> None:
-        """标记一页无新条目（用于早停判定）。"""
-        self.empty_streak += 1
+        """兼容旧调用：标记一页无新条目。"""
+        self.note_page(0)
 
     def should_stop(self) -> bool:
-        """是否停止翻页（早停优化）。"""
+        """是否停止翻页。默认阈值为 0 → 恒 False（扫完列表页）。"""
         return should_stop_paging(
-            self.empty_streak, self.stop_after_empty_pages, self.backfill
+            self.empty_streak, self.stop_after_empty_pages, self.scan_all
         )

@@ -5,7 +5,7 @@
 pbc 的特殊步骤均表达为钩子：
   - iter_list_entries：逐栏目翻页，首页带服务端限流（反爬）退避重试；
   - handle_new：html 抓详情 / 附件下载 + 格式路由解析（docx/pdf/xls/...）；
-  - handle_known：复用旧记录并标 skipped_existing（断点续跑不丢内容）；
+  - handle_known：原样复用旧记录（内容不丢，状态字段保持原值）；
   - batch_key_of：按栏目分批落盘（崩溃容错，已完成栏目不丢）；
   - known_pred：仅 fetch_status=='ok' 算已知；
   - max_items：调试上限；save：storage + 可选 CSV。
@@ -19,6 +19,7 @@ from ..base import REPO_ROOT, SourceCollector
 from ..lib.cli import add_common_args, is_full_mode, make_known_pred_full, configure_logging
 from . import net, parse
 from ..lib.pipeline import CollectorPipeline
+from ..lib.progress import progress_of
 
 # 默认落盘收口在 refactor/data/raw（自包含；完整去耦在 rollout 阶段）。
 SCRAPERS_ROOT = os.path.join(REPO_ROOT, "data", "raw")
@@ -71,16 +72,10 @@ class PbcCollector(CollectorPipeline):
 
     source_id = "pbc"
     master_filename = "pbc_laws.json"
-    # 已知→复用 判定：已抓取且"终态"的记录算已知，避免重复抓取/死循环。
-    # 覆盖全部永久失败态（ok / 附件已存 / 附件失败 / HTML 抓取失败 / 解析失败），
-    # 不再无限重抓；故意不含 attachment_skipped / title_link_only —— 那是用户主动
-    # 跳过（--no-attachments / --no-detail），后续想补抓仍可重抓。
-    known_pred = staticmethod(
-        lambda r: r.get("fetch_status") in (
-            "ok", "attachment_saved", "attachment_failed",
-            "fetch_failed", "parse_error",
-        )
-    )
+    # 已知闸门由架构层统一：
+    #   incremental → 基类默认 known_pred=None（主库已有即跳过，不做修复）；
+    #   full        → _setup 覆盖为 is_ok 闸门（仅 ok 算已知，其余重抓并覆盖修复）。
+    # 原「5 态终态集合」是源私有判据，把失败态也算已知，与单一状态语义冲突，已移除。
 
     # ----------------------------- CollectorPipeline 钩子 -----------------------------
     def key_of(self, item: dict):
@@ -108,6 +103,7 @@ class PbcCollector(CollectorPipeline):
             return
         for cat in cats:
             name = cat["name"]
+            progress_of(ctx).batch(f"栏目《{name}》")
             index_url = cat["index_url"]
             col_dir = index_url.rsplit("/index.html", 1)[0]
 
@@ -146,7 +142,9 @@ class PbcCollector(CollectorPipeline):
 
             # 2) 遍历所有分页，收集条目
             page_urls = listing_page_urls(index_url, moduleid, totalpage)
-            for pu in page_urls[1:]:  # 第 1 页已处理
+            progress_of(ctx).page(1, len(page_urls))
+            for page_no, pu in enumerate(page_urls[1:], start=2):  # 第 1 页已处理
+                progress_of(ctx).page(page_no, len(page_urls))
                 st, ptxt = self._fetcher.get(pu, referer=index_url)
                 if st == 200 and ptxt:
                     _, _, more = parse_listing(ptxt, col_dir)
@@ -162,9 +160,9 @@ class PbcCollector(CollectorPipeline):
         rec = ctx.master_by_key.get(key)
         if rec is None:
             return None
-        rec = dict(rec)
-        rec["fetch_status"] = "skipped_existing"  # 断点续跑：复用旧记录内容，标 skipped
-        return rec
+        # 复用即原样保留：fetch_status 只表达「抓取是否成功完成」，
+        # 不表达「本轮是否跳过」。改写会把 ok 记录污染成非 ok，破坏 full 闸门。
+        return dict(rec)
 
     def handle_new(self, entry, ctx):
         args = self._args
@@ -218,7 +216,6 @@ class PbcCollector(CollectorPipeline):
                     # 附件下载失败（含 404）：记为非致命元数据，记录保留（写一次），
                     # 不降级为致命 fetch_failed，后续可由"附件补抓"任务重试。
                     rec["fetch_status"] = "attachment_failed"
-                    rec["attachment_status"] = "failed"
                     rec["error"] = f"附件下载失败 status={st}"
                     rec["attachment_errors"] = [
                         {"url": url, "status": st, "reason": f"附件下载失败 status={st}"}
@@ -292,9 +289,10 @@ class PbcCollector(CollectorPipeline):
                 limit=0, no_detail=False, no_attachments=False) -> str:
         args = argparse.Namespace(
             out_dir=out_dir, category=category, max_items=limit,
-            delay=delay, no_detail=no_detail, no_attachments=no_attachments, csv=False)
+            delay=delay, no_detail=no_detail, no_attachments=no_attachments,
+            mode=mode, full=(mode == "full"), csv=False)
         self._setup(args)
-        return self.run(out_dir)
+        return self.run(out_dir, mode=mode, full=(mode == "full"))
 
 
 def main():

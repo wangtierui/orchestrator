@@ -18,7 +18,7 @@
 设计边界（重要）：
     - mof 的"变更指纹 diff（added/updated/removed/unchanged）"是源特有算法，
       不走 known→复用 的默认分支，应在 handle_new/handle_known 中自行实现。
-    - gov 的双子源 + resume + merge_with_master 由子源层自行编排；本基类提供单源骨架。
+    - gov 的双子源 + resume 由子源层自行编排；合并（旧∪新·按 key 新优先）统一由存储层 upsert 负责，本基类提供单源骨架。
     - pbc 的逐栏目增量落盘（batch_key_of）与首页反爬退避（iter_list_entries 内实现）
       均为可覆盖钩子，可继承本基类。
 """
@@ -31,6 +31,7 @@ from typing import Any, Iterator
 
 from ..storage import open_storage
 from .incremental import KnownTracker
+from .progress import NULL_PROGRESS, ProgressLogger
 from .resilience import (
     get_coordinator,
     extract_status,
@@ -41,15 +42,19 @@ from .resilience import (
 LOG = logging.getLogger("pipeline")
 
 
-def load_master_context(storage, key_of, known_pred=None):
+def load_master_context(storage, key_of, known_pred=None, *,
+                        stop_after_empty_pages=0, scan_all=False):
     """读主库并构建 ``(master, tracker, master_by_key)``。
 
     - ``tracker.known``：满足 ``known_pred`` 的主库记录键（默认全部），用于增量
       "已知→复用"判定（如 pbc 仅 ``fetch_status=='ok'``）。
     - ``master_by_key``：键 → 主库记录，供 ``handle_known`` 取回旧记录内容。
+    - ``tracker`` 同时是**通用翻页闸门**（note_page/should_stop），阈值与 full
+      标志在这里统一注入，四源不再各带一份早停配置。
     """
     master = storage.load_master()
-    tracker = KnownTracker(key_of=key_of)
+    tracker = KnownTracker(key_of=key_of, scan_all=scan_all,
+                           stop_after_empty_pages=stop_after_empty_pages)
     known_items = [r for r in master.items if known_pred is None or known_pred(r)]
     tracker.load_known(known_items)
     master_by_key = {key_of(r): r for r in master.items if key_of(r) is not None}
@@ -59,15 +64,19 @@ def load_master_context(storage, key_of, known_pred=None):
 class CollectorContext:
     """一次运行的上下文（由 ``build_context`` 构造）。"""
 
-    __slots__ = ("storage", "master", "tracker", "master_by_key", "out_dir", "opts")
+    __slots__ = ("storage", "master", "tracker", "master_by_key", "out_dir",
+                 "opts", "progress")
 
-    def __init__(self, storage, master, tracker, master_by_key, out_dir, opts):
+    def __init__(self, storage, master, tracker, master_by_key, out_dir, opts,
+                 progress=None):
         self.storage = storage
         self.master = master
         self.tracker = tracker
         self.master_by_key = master_by_key
         self.out_dir = out_dir
         self.opts = opts
+        # 单测/手写 ctx 未注入时用空实现，调用方（含各源）无需判空。
+        self.progress = progress or NULL_PROGRESS
 
 
 class CollectorPipeline(abc.ABC):
@@ -87,6 +96,9 @@ class CollectorPipeline(abc.ABC):
     # known_pred：传给 load_master_context，决定主库哪些记录算"已知可复用"。
     # None = 全部已知；pbc 仅 fetch_status=='ok' 算已知。子类可覆盖为属性或方法。
     known_pred: Any = None
+    # 通用增量翻页闸门：0=不早停（默认，列表页全扫）；正数=连续 N 页无新即停。
+    # 由总入口从 --stop-after-empty-pages 统一注入，四源共用一份策略。
+    early_stop_pages: int = 0
 
     @abc.abstractmethod
     def key_of(self, item: dict) -> Any:
@@ -144,10 +156,26 @@ class CollectorPipeline(abc.ABC):
         return ctx.storage.save_master(records, extra=self.build_extra(ctx, records))
 
     def build_context(self, out_dir: str, **opts) -> CollectorContext:
-        storage = open_storage(self.source_id, out_dir, filename=self.master_filename)
-        master, tracker, master_by_key = load_master_context(
-            storage, self.key_of, known_pred=self.known_pred)
-        return CollectorContext(storage, master, tracker, master_by_key, out_dir, opts)
+        # full 模式需要「覆盖修复」：已知闸门只放行 ok，非 ok 记录被重抓后必须能
+        # 覆盖原行；incremental 维持各源默认冲突策略（写一次 / mof 变更追踪）。
+        full = bool(opts.get("full") or opts.get("mode") == "full")
+        storage = open_storage(
+            self.source_id, out_dir, filename=self.master_filename,
+            on_conflict="update" if full else None)
+        progress = ProgressLogger(
+            self.source_id, "full" if full else "incremental", out_dir=out_dir)
+        progress.start()
+        try:
+            master, tracker, master_by_key = load_master_context(
+                storage, self.key_of, known_pred=self.known_pred,
+                stop_after_empty_pages=opts.get("stop_after_empty_pages",
+                                               self.early_stop_pages),
+                scan_all=full)
+        except Exception:
+            progress.finish()
+            raise
+        return CollectorContext(storage, master, tracker, master_by_key, out_dir,
+                                opts, progress=progress)
 
     def _collect(self, ctx: CollectorContext) -> list:
         """核心路由（与存储/锁无关，便于单测）：返回记录列表。
@@ -157,6 +185,7 @@ class CollectorPipeline(abc.ABC):
         """
         records: list = []
         tracker = ctx.tracker
+        progress = getattr(ctx, "progress", NULL_PROGRESS)
         cur_batch = None
         cap = self.max_items()
         coord = get_coordinator()
@@ -165,13 +194,19 @@ class CollectorPipeline(abc.ABC):
             entries = self.iter_list_entries(ctx)
         except Exception as e:  # 列表枚举级失败（多为站点封锁）：记录并退出本轮
             LOG.error("列表枚举失败（源=%s）：%s", source, e)
+            progress.error()
             coord.metrics.record_status(extract_status(e))
             return records
         for entry in entries:
+            key = self.key_of(entry)
+            # cur 优先显示标题/链接，比裸 key(mof 是一串数字 id) 更可读。
+            label = (entry.get("title") or entry.get("detail_url") or key
+                     if isinstance(entry, dict) else key)
+            progress.scan(label=label)
             cls = tracker.classify(entry)
+            progress.branch(cls)
             if cls == "dup":
                 continue
-            key = self.key_of(entry)
             if cls == "known":
                 rec = self.handle_known(key, entry, ctx)
             else:  # new
@@ -182,12 +217,14 @@ class CollectorPipeline(abc.ABC):
                     coord.metrics.record_ok()
                 except Exception as e:  # 抓取失败：分类后产出死信，不阻断其余条目
                     st = extract_status(e)
+                    progress.error()
                     coord.metrics.record_status(st)
                     if coord.classify(st, str(e)) != FailureKind.PERMANENT:
                         coord.enqueue_failure(source, key, entry, st, str(e)[:500])
                     rec = None
             if rec is not None:
                 records.append(rec)
+                progress.result(rec)
                 if cap and len(records) >= cap:
                     break
             # 分批落盘：批次键变化且非首批次时，把累计全量先存档（崩溃容错）
@@ -202,23 +239,30 @@ class CollectorPipeline(abc.ABC):
                 rec = self.handle_missing(key, ctx)
                 if rec is not None:
                     records.append(rec)
+                    progress.result(rec)
                     if cap and len(records) >= cap:
                         break
         return records
 
     def run(self, out_dir: str, **opts) -> str:
         ctx = self.build_context(out_dir, **opts)
-        coord = get_coordinator()
-        coord.start_run(self.source_id)
-        records = self._collect(ctx)
-        # 冷却补抓趟：重放 pending 死信（硬上限 + 零回收早停），回收成果并入当次运行
-        coord.drain(self.source_id, retry_fn=lambda e: self.handle_new(e, ctx), max_passes=3)
-        recovered = take_drain_records()
-        if recovered:
-            records.extend(recovered)
-            LOG.info("冷却补抓回收 %d 条（源=%s）", len(recovered), self.source_id)
-        summary = coord.end_run(self.source_id)
-        # 可观测：结束打印 JSON 汇总（fetch_runs 已在 end_run 落库）
-        print(json.dumps({"source": self.source_id, **summary}, ensure_ascii=False))
-        self._last_records = records
-        return self.save(records, ctx)
+        try:
+            coord = get_coordinator()
+            coord.start_run(self.source_id)
+            records = self._collect(ctx)
+            # 冷却补抓趟：重放 pending 死信（硬上限 + 零回收早停），回收成果并入当次运行
+            coord.drain(self.source_id, retry_fn=lambda e: self.handle_new(e, ctx), max_passes=3)
+            recovered = take_drain_records()
+            if recovered:
+                records.extend(recovered)
+                for rec in recovered:
+                    ctx.progress.result(rec)
+                LOG.info("冷却补抓回收 %d 条（源=%s）", len(recovered), self.source_id)
+            summary = coord.end_run(self.source_id)
+            # 可观测：结束打印 JSON 汇总（fetch_runs 已在 end_run 落库）
+            print(json.dumps({"source": self.source_id, **summary}, ensure_ascii=False))
+            self._last_records = records
+            return self.save(records, ctx)
+        finally:
+            # 无论成功/异常都收尾：停心跳线程 + 打一行最终汇总。
+            ctx.progress.finish()

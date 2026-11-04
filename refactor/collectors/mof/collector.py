@@ -28,6 +28,7 @@ from ..base import (
 )
 from ..storage import get_storage, StorageSettings, open_storage
 from ..lib.pipeline import CollectorPipeline
+from ..lib.progress import progress_of
 from ..lib.incremental import KnownTracker
 from ..lib.cli import add_common_args, is_full_mode, make_known_pred_full, configure_logging
 from . import net
@@ -237,9 +238,13 @@ class MofCollector(CollectorPipeline):
 
     def iter_list_entries(self, ctx):
         for lfgcc in self._categories:
+            progress_of(ctx).batch(self._cat_map.get(lfgcc, lfgcc))
             page = 1
+            pages_hint = None
             while True:
+                progress_of(ctx).page(page, pages_hint)
                 recs, total, pages = fetch_list_page(lfgcc, page, self._size, self._rate)
+                pages_hint = max(pages, 1)
                 if page == 1:
                     self._expected_total += total
                 for rec in recs:
@@ -311,20 +316,22 @@ class MofCollector(CollectorPipeline):
             refetch_attachments=refetch_attachments,
             max_items=limit,
             timeout=30,
+            mode=mode,
+            full=(mode == "full"),
         )
 
         os.makedirs(out_dir, exist_ok=True)
         self._setup(args)
         self._status = {
             "last_run_time": datetime.now(UTC).isoformat(),
-            "mode": "incremental",
+            "mode": mode,
             "last_success_time": None, "last_success_count": None,
             "active_count": None, "expected_count": None,
             "added": 0, "updated": 0, "removed": 0, "unchanged": 0,
             "warning": None, "last_error": None, "last_error_time": None,
         }
         try:
-            locator = self.run(out_dir)
+            locator = self.run(out_dir, mode=mode, full=(mode == "full"))
             self._governance_sidecar(locator)
         except Exception as e:  # noqa: BLE001
             self._status["last_error"] = f"{type(e).__name__}: {e}"

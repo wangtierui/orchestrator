@@ -25,8 +25,10 @@ _DEFAULT_ON_CONFLICT = {
 }
 
 
-def open_storage(source: str, out_dir: str | None = None, *, filename=None):
-    oc = _DEFAULT_ON_CONFLICT.get(source, "nothing")
+def open_storage(source: str, out_dir: str | None = None, *, filename=None,
+                 on_conflict: str | None = None):
+    # on_conflict 显式传入时优先（full 模式的覆盖修复），否则按源默认策略。
+    oc = on_conflict or _DEFAULT_ON_CONFLICT.get(source, "nothing")
     return open_store(
         source, out_dir, filename=filename, normalizer=canonicalize, on_conflict=oc
     )
