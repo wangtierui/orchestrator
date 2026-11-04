@@ -800,8 +800,15 @@ select{padding-right:24px}
  * ============================================================ */
 .lv-headrow th{height:48px;padding:0;background:var(--bg-subtle);
   border-bottom:1px solid var(--border)}
-.lv-headbar{display:flex;align-items:center;gap:8px;height:48px;padding:8px;background:var(--bg-subtle);
-  background:var(--bg-subtle);flex-wrap:nowrap;overflow:hidden}
+.lv-headbar{display:flex;align-items:center;gap:8px;min-height:48px;padding:8px;background:var(--bg-subtle);
+  background:var(--bg-subtle);flex-wrap:wrap;overflow:visible}
+/* 批 174：GitHub issues 实测 = 左「状态开关」/ 右「筛选+排序」。
+ * 不改 DOM（各渲染器自己拼按钮），只用 order + 可伸缩 .sp 重新分组。 */
+.lv-headbar>.lv-fbar{order:1;flex:0 0 auto}
+.lv-headbar>.ghstate,.lv-headbar>.wlstate,.lv-headbar>.fbstate{order:2;flex:0 0 auto}
+.lv-headbar>.sp{order:3;flex:1 1 auto;min-width:8px}
+.lv-headbar>.lv-fbtn{order:4;flex:0 0 auto}
+.lv-headbar>.density{order:5;flex:0 0 auto;margin-left:4px}
 .lv-headbar .ftabs{margin:0;border:0;display:flex;gap:2px;flex-shrink:0}
 .lv-headbar .ftab{height:32px;padding:0 10px;border:0;border-radius:6px;background:none;
   color:var(--text-muted);font-size:13px;display:inline-flex;align-items:center;gap:6px}
@@ -5654,7 +5661,8 @@ function autoColsFor(table){
     return { i, maxW, avg, extreme, empty: maxW < 6, full: _fullLen(heads[i] || "") };
   });
 
-  const box = table.getBoundingClientRect().width || table.clientWidth || 980;
+  const host = table.parentElement;
+  const box = Math.max(480, ((host && host.clientWidth) || table.clientWidth || 980) - 8);
   const W = Math.min(box, COLS_MAX) - COLS_GAP * (n - 1);
   // ① 先分配固定列：空列保留原宽（勾选/图标），极端串固定 200
   const out = new Array(n).fill(null);
@@ -5734,7 +5742,8 @@ function autoColsForTable(tb){
     });
     return { i, maxW, avg: all.length ? avg / all.length : 0, extreme, empty: maxW < 6 };
   });
-  const box = tb.getBoundingClientRect().width || 980;
+  const host = tb.parentElement;
+  const box = Math.max(480, ((host && host.clientWidth) || tb.clientWidth || 980) - 8);
   const W = Math.min(box, COLS_MAX) - COLS_GAP * (n - 1);
   const out = new Array(n).fill(null);
   let used = 0;
@@ -5748,6 +5757,8 @@ function autoColsForTable(tb){
   const rest = Math.max(0, W - used);
   const wsum = longs.reduce((a, c) => a + Math.max(1, c.avg), 0) || 1;
   longs.forEach(c => { out[c.i] = Math.max(COLS_MIN_LONG, Math.round(rest * Math.max(1, c.avg) / wsum)); });
+  /* 最后一列是动作列（图标按钮组），固定保底 148，避免被权重压窄 */
+  if (n >= 2) out[n - 1] = Math.max(148, out[n - 1]);
   /* 控制总宽 ≤ W（含列间距），从最大的非保底列里扣 */
   let sum = out.reduce((a, v) => a + v, 0) + COLS_GAP * (n - 1);
   if (sum > W) {
@@ -5760,8 +5771,6 @@ function autoColsForTable(tb){
       out[i] = v - cut; over -= cut;
     }
   }
-  /* 最后一列是动作列（图标按钮组），固定保底 148，避免被权重压窄 */
-  if (n >= 2) out[n - 1] = Math.max(148, out[n - 1]);
   const tmpl = out.map(v => Math.round(v) + "px").join(" ");
   /* 这类表的 grid-template-columns 是写死在 CSS 里的（不走 --cols），
    * 因此同时写内联 gridTemplateColumns，才能覆盖。 */
