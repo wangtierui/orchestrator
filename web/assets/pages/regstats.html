@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="zh-CN" data-color-mode="light" data-light-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>监管统计 · 平行重建样板页（一页多表）</title>
+<link rel="stylesheet" href="../primer-primitives.css">
+<link rel="stylesheet" href="../primer.css">
+<style>
+  /* 只允许布局。颜色/边框/圆角走 Primer 类与令牌。 */
+  body { background: var(--bgColor-default); }
+  .page { max-width: 1200px; margin: 0 auto; padding: 16px; }
+  .qwrap { position: relative; }
+  .qico { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); pointer-events: none; }
+  .qinput { padding-right: 30px; }
+  .tbl { display: grid; grid-template-columns: minmax(0,1fr) 190px 180px 80px 104px;
+         align-items: center; gap: 8px; }
+  .row-1 { min-height: 32px; }
+  .cell { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .cat { margin-bottom: 16px; }
+  .cat-head { display: flex; align-items: baseline; gap: 8px; padding: 8px 12px; }
+  .cat-note { font-size: 12px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="qwrap mb-2">
+    <input id="q" class="form-control input-block qinput" type="search"
+           placeholder="搜索监管统计资料：标题 / 文号 / 主题…" aria-label="搜索监管统计">
+    <svg class="octicon qico" width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+      <path d="M10.68 11.74a6 6 0 0 1-7.922-8.982 6 6 0 0 1 8.982 7.922l3.04 3.04a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215ZM11.5 7a4.499 4.499 0 1 0-8.997 0A4.499 4.499 0 0 0 11.5 7Z"></path>
+    </svg>
+  </div>
+
+  <div class="d-flex flex-items-center flex-wrap gap-2 mb-2">
+    <span id="count" class="text-small">共 0 条</span>
+    <span class="flex-auto"></span>
+    <select id="cat" class="form-select" aria-label="按分类筛选"></select>
+    <div class="d-flex" role="group" aria-label="Issues display density">
+      <button class="btn btn-sm" type="button" data-density="comfortable" aria-pressed="true"
+              title="Comfortable display density" aria-label="Comfortable display density">≡</button>
+      <button class="btn btn-sm" type="button" data-density="compact" aria-pressed="false"
+              title="Compact display density" aria-label="Compact display density">☰</button>
+    </div>
+  </div>
+
+  <div id="cats"></div>
+  <div id="note" class="text-small mt-2"></div>
+</div>
+
+<script>
+const S = { q: "", cat: "" };
+const $ = (s) => document.querySelector(s);
+const esc = (v) => String(v == null ? "" : v).replace(/[&<>"]/g, (c) =>
+  ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+let DATA = [];
+
+function render() {
+  const q = S.q.toLowerCase();
+  let shown = 0;
+  const html = DATA.filter((c) => !S.cat || c.key === S.cat).map((c) => {
+    const items = (c.items || []).filter((it) =>
+      !q || [it.title, it.document_number, it.theme_label].join(" ").toLowerCase().includes(q));
+    shown += items.length;
+    if (!items.length) return "";
+    return `
+    <div class="cat">
+      <div class="cat-head">
+        <span class="text-bold">${esc(c.label)}</span>
+        <span class="Counter">${items.length}</span>
+        <span class="cat-note">${esc(c.note || "")}</span>
+      </div>
+      <div class="border rounded-2 overflow-hidden">
+        <div class="border-bottom py-1 px-2 bgColor-muted tbl row-1 text-small">
+          <div class="cell">标题</div><div class="cell">文号</div>
+          <div class="cell">主题</div><div class="cell">时效</div><div class="cell">日期</div>
+        </div>
+        ${items.map((it) => `
+        <div class="border-bottom py-1 px-2 tbl row-1">
+          <div class="cell"><a class="Link--primary" href="${esc(it.url || "#")}" target="_blank"
+            rel="noopener" title="${esc(it.title)}">${esc(it.title)}</a></div>
+          <div class="cell text-small" title="${esc(it.document_number)}">${esc(it.document_number)}</div>
+          <div class="cell"><span class="IssueLabel" style="background-color:var(--bgColor-accent-muted);border-color:var(--borderColor-accent-muted)">${esc(it.theme_label || "—")}</span></div>
+          <div class="cell text-small">${esc(it.timeliness_status || "—")}</div>
+          <div class="cell text-small">${esc(it.publish_date)}</div>
+        </div>`).join("")}
+      </div>
+    </div>`;
+  }).join("");
+  $("#cats").innerHTML = html || '<div class="py-2 text-small">没有匹配资料</div>';
+  $("#count").textContent = `共 ${shown} 条`;
+}
+
+async function load() {
+  const r = await fetch("/api/regstats", { cache: "no-store" });
+  const d = await r.json();
+  DATA = d.categories || [];
+  $("#cat").innerHTML = ['<option value="">全部分类</option>']
+    .concat(DATA.map((c) => `<option value="${esc(c.key)}">${esc(c.label)}（${c.count}）</option>`))
+    .join("");
+  $("#note").textContent = d.note || "";
+  render();
+}
+
+let timer = null;
+$("#q").addEventListener("input", (e) => {
+  clearTimeout(timer);
+  timer = setTimeout(() => { S.q = e.target.value.trim(); render(); }, 200);
+});
+$("#cat").addEventListener("change", (e) => { S.cat = e.target.value; render(); });
+document.querySelectorAll("[data-density]").forEach((b) => {
+  b.onclick = () => {
+    const v = b.dataset.density;
+    document.querySelectorAll("[data-density]").forEach((x) =>
+      x.setAttribute("aria-pressed", String(x === b)));
+    document.querySelectorAll(".row-1").forEach((r) => {
+      r.style.minHeight = v === "compact" ? "28px" : "32px";
+    });
+  };
+});
+load();
+</script>
+</body>
+</html>
