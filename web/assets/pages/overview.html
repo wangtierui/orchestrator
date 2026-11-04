@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="zh-CN" data-color-mode="light" data-light-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>总览 · 平行重建样板页（三列卡片 + 图表）</title>
+<link rel="stylesheet" href="../primer-primitives.css">
+<link rel="stylesheet" href="../primer.css">
+<style>
+  /* 只允许布局。颜色/边框/圆角走 Primer 类与令牌。 */
+  body { background: var(--bgColor-default); }
+  .page { max-width: 1200px; margin: 0 auto; padding: 16px; }
+  /* D1/D2：三列、gap 16；卡片 border 1px + radius 6 由 Primer 的 .border/.rounded-2 提供 */
+  .grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+  .grid3 > .full { grid-column: 1 / -1; }
+  .card { padding: 16px; }
+  .card > h3 { margin: 0 0 12px; font-size: 14px; font-weight: 600;
+              display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+  .kpis { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; }
+  .kpi .n { font-size: 22px; font-weight: 600; line-height: 1.2; }
+  .kpi .l { font-size: 12px; }
+  .chart { width: 100%; height: 220px; }
+  .kv { display: grid; grid-template-columns: 110px minmax(0,1fr); gap: 8px;
+        font-size: 12px; line-height: 20px; }
+  .kv .k { min-width: 0; }
+  .kv .v { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  @media (max-width: 1011px) { .grid3 { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+  @media (max-width: 767px)  { .grid3 { grid-template-columns: 1fr; } .kpis { grid-template-columns: repeat(2,1fr); } }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="d-flex flex-items-center flex-wrap gap-2 mb-3">
+    <h2 class="h3 m-0">总览</h2>
+    <span id="stamp" class="text-small"></span>
+    <span class="flex-auto"></span>
+    <span class="text-small">数据源：/api/overview</span>
+  </div>
+
+  <div class="grid3">
+    <div class="border rounded-2 card full">
+      <h3><span>关键指标</span><span id="runid" class="text-small"></span></h3>
+      <div class="kpis">
+        <div class="kpi"><div class="n" id="k1">—</div><div class="l">门禁通过</div></div>
+        <div class="kpi"><div class="n" id="k2">—</div><div class="l">待办未处置</div></div>
+        <div class="kpi"><div class="n" id="k3">—</div><div class="l">链步成功</div></div>
+        <div class="kpi"><div class="n" id="k4">—</div><div class="l">存储占用</div></div>
+      </div>
+    </div>
+
+    <div class="border rounded-2 card">
+      <h3><span>运行健康</span></h3>
+      <div id="rh" class="kv"></div>
+    </div>
+
+    <div class="border rounded-2 card">
+      <h3><span>链步状态分布</span></h3>
+      <div id="chart" class="chart" role="img" aria-label="链步状态分布"></div>
+    </div>
+
+    <div class="border rounded-2 card">
+      <h3><span>门禁与待办</span></h3>
+      <div id="gs" class="kv"></div>
+    </div>
+
+    <div class="border rounded-2 card">
+      <h3><span>数据新鲜度</span></h3>
+      <div id="fr" class="kv"></div>
+    </div>
+
+    <div class="border rounded-2 card">
+      <h3><span>存储</span></h3>
+      <div id="st" class="kv"></div>
+    </div>
+
+    <div class="border rounded-2 card">
+      <h3><span>说明</span></h3>
+      <div class="text-small">三列布局（D1 决议，GitHub contributors 实测为 1 通栏 + 2 列，本项目有意用 3 列）；
+        卡片 gap 16 / border 1px / radius 6（D2）。</div>
+    </div>
+  </div>
+</div>
+
+<script src="../vendor/echarts/echarts.min.js"></script>
+<script>
+const $ = (s) => document.querySelector(s);
+const esc = (v) => String(v == null ? "" : v).replace(/[&<>"]/g, (c) =>
+  ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const kv = (k, v) => `<div class="k">${esc(k)}</div><div class="v" title="${esc(v)}">${esc(v)}</div>`;
+const bytes = (n) => {
+  n = Number(n || 0);
+  const u = ["B", "KB", "MB", "GB", "TB"];
+  let i = 0;
+  while (n >= 1024 && i < u.length - 1) { n /= 1024; i++; }
+  return `${n.toFixed(i ? 1 : 0)} ${u[i]}`;
+};
+
+let chart = null;
+function drawChart(counts) {
+  const el = $("#chart");
+  if (!window.echarts || !el) return;
+  chart = chart || echarts.init(el);
+  const data = Object.entries(counts || {}).map(([k, v]) => ({ name: k, value: Number(v) || 0 }));
+  chart.setOption({
+    tooltip: { trigger: "item" },
+    legend: { bottom: 0, textStyle: { fontSize: 12 } },
+    series: [{ type: "pie", radius: ["45%", "70%"], center: ["50%", "45%"],
+               avoidLabelOverlap: true, label: { show: false },
+               data }],
+  });
+  chart.resize();
+}
+
+async function load() {
+  const d = await (await fetch("/api/overview", { cache: "no-store" })).json();
+  if (!d.available) { $("#rh").innerHTML = kv("状态", d.reason || "不可用"); return; }
+  const rh = d.run_health || {}, gs = d.gate_status || {}, wl = d.worklist || {},
+        fr = d.freshness || {}, st = d.storage || {};
+  const statuses = rh.step_statuses || [];
+  /* 运行中的轮次 counts 常只有 unknown；这时用 step 的 rc 统计兜底，避免整页显示「—」 */
+  let counts = rh.counts || {};
+  if (!counts.ok && !counts.failed && statuses.length) {
+    counts = statuses.reduce((a, s) => {
+      const k = String(s.rc || s.status || "unknown").toLowerCase() === "ok" ? "ok" : "其他";
+      a[k] = (a[k] || 0) + 1;
+      return a;
+    }, {});
+  }
+
+  $("#runid").textContent = `最近运行 ${rh.run_id || "—"}`;
+  $("#stamp").textContent = d.fetched_at || "";
+  $("#k1").textContent = `${gs.passed ?? "—"} / ${gs.total ?? "—"}`;
+  $("#k2").textContent = wl.open_total ?? "—";
+  $("#k3").textContent = counts.ok ?? "—";
+  $("#k4").textContent = bytes(st.total_bytes);
+
+  $("#rh").innerHTML = [
+    kv("run_id", rh.run_id || "—"),
+    kv("总步数", rh.steps ?? "—"),
+    kv("累计耗时", (rh.total_elapsed_s ?? "—") + " s"),
+    kv("最近运行", rh.run_at || "—"),
+  ].join("");
+
+  $("#gs").innerHTML = [
+    kv("门禁通过", `${gs.passed ?? "—"} / ${gs.total ?? "—"}`),
+    kv("门禁失败", (gs.failed || []).length ? (gs.failed || []).join(", ") : "无"),
+    kv("待办未处置", wl.open_total ?? "—"),
+  ].join("");
+
+  $("#fr").innerHTML = [
+    kv("过期数", fr.stale_count ?? "—"),
+    kv("状态分布", Object.entries(fr.by_status || {}).map(([k, v]) => `${k} ${v}`).join(" · ") || "—"),
+  ].join("");
+
+  $("#st").innerHTML = [
+    kv("总容量", bytes(st.total_bytes)),
+    kv("占用比例", st.ratio != null ? String(st.ratio) : "—"),
+  ].join("");
+
+  drawChart(counts);
+}
+
+window.addEventListener("resize", () => chart && chart.resize());
+load();
+</script>
+</body>
+</html>
