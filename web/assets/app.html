@@ -7,54 +7,74 @@
 <link rel="stylesheet" href="primer-primitives.css">
 <link rel="stylesheet" href="primer.css">
 <style>
-  /* 只允许布局。颜色/边框/圆角/字号一律走 Primer 类与令牌。 */
+  /* 只允许布局。颜色/边框/圆角一律取令牌或 Primer 类。 */
   html, body { height: 100%; }
-  body { margin: 0; background: var(--bgColor-default); display: flex; flex-direction: column; }
+  body { margin: 0; background: var(--bgColor-default); display: flex; flex-direction: column;
+         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial,
+                      "PingFang SC", "Microsoft YaHei", sans-serif; }
 
-  /* 顶栏：68px 白底 + 1px 底边（与 GitHub 一致） */
+  /* ── 顶栏 68px（GitHub 全局条） ── */
   .topbar { height: 68px; flex: 0 0 68px; display: flex; align-items: center;
-            gap: 12px; padding: 0 16px; }
+            gap: 12px; padding: 0 16px; border-bottom: 1px solid var(--borderColor-default); }
   .brand { display: flex; align-items: center; gap: 8px; height: 32px; }
   .gsearch { width: 191px; height: 32px; }
   .spacer { flex: 1 1 auto; }
 
-  /* 主体：左 256 + 右自适应 */
-  .body { flex: 1 1 auto; display: flex; min-height: 0; }
-  .rail { width: 256px; flex: 0 0 256px; padding: 8px; overflow-y: auto; }
-  .rail a { display: flex; align-items: center; justify-content: space-between; gap: 8px;
-            height: 32px; padding: 0 8px; margin-bottom: 2px; border-radius: 6px;
-            font-size: 14px; text-decoration: none;
-            color: var(--fgColor-default); }   /* 令牌取值，不写死色值 */
-  .rail a:hover { background: var(--bgColor-muted); }
+  /* ── 页签行 40px（GitHub 仓库条 / repo nav） ── */
+  .repo-tabs { flex: 0 0 40px; display: flex; align-items: center; gap: 4px;
+               padding: 0 16px; border-bottom: 1px solid var(--borderColor-default);
+               overflow-x: auto; overflow-y: hidden; }
+  .repo-tabs::-webkit-scrollbar { height: 0; }
+  .tab { height: 32px; padding: 0 10px; display: inline-flex; align-items: center;
+         border-radius: 6px; font-size: 14px; white-space: nowrap; text-decoration: none;
+         color: var(--fgColor-default); }
+  .tab:hover { background: var(--bgColor-muted); }
+  .tab[aria-current="page"] { font-weight: 600;
+    box-shadow: inset 0 -2px 0 var(--borderColor-accent-emphasis); border-radius: 6px 6px 0 0; }
+
+  /* ── 主体：左 256 本页导航 + 内容 ── */
+  .shell { flex: 1 1 auto; display: flex; min-height: 0; }
+  .rail { width: 256px; flex: 0 0 256px; padding: 8px;
+          border-right: 1px solid var(--borderColor-default); overflow-y: auto; }
+  .rail .grp { font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
+               color: var(--fgColor-muted); padding: 8px 8px 4px; }
+  .rail .item { height: 32px; display: flex; align-items: center; padding: 0 8px;
+                border-radius: 6px; font-size: 13px; color: var(--fgColor-default);
+                cursor: pointer; user-select: none; }
+  .rail .item:hover { background: var(--bgColor-muted); }
+  .rail .item.on { background: var(--bgColor-muted); font-weight: 600; }
+  .rail .hint { font-size: 11px; color: var(--fgColor-muted); padding: 4px 8px; line-height: 1.5; }
   .main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
   .frame { flex: 1 1 auto; width: 100%; border: 0; display: block; background: transparent; }
   .ph { padding: 24px; }
-
-  @media (max-width: 767px) { .rail { display: none; } }
+  .logo-link { display: inline-flex; align-items: center; color: var(--fgColor-default); }
 </style>
 </head>
 <body>
 
-<div class="topbar border-bottom">
-  <div class="brand">
-    <svg class="octicon" width="24" height="24" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+<!-- ── 顶栏 ── -->
+<div class="topbar">
+  <a class="logo-link" href="#overview" title="回到总览">
+    <svg class="octicon" width="28" height="28" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
       <path d="M8 0a8 8 0 0 1 8 8 8 8 0 0 1-5.47 7.59c-.4.07-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8a8 8 0 0 1 8-8Z"></path>
     </svg>
-    <span class="text-bold">合规工作台</span>
-  </div>
-
+  </a>
+  <span class="text-bold">合规工作台</span>
   <input id="jump" class="form-control gsearch" type="search"
          placeholder="跳转页面…" aria-label="跳转页面">
-
   <span class="spacer"></span>
-  <a class="text-small" href="/legacy.html" title="旧版工作台（未迁移页面仍在此）">旧版</a>
-  <svg class="octicon" width="32" height="32" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" role="img" aria-label="当前用户">
+  <a class="text-small" href="/legacy.html" title="旧版工作台（历史保留）">旧版</a>
+  <svg class="octicon" width="32" height="32" viewBox="0 0 16 16" fill="currentColor" role="img" aria-label="当前用户">
     <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm2 1H6a4 4 0 0 0-4 4v1h12v-1a4 4 0 0 0-4-4Z"></path>
   </svg>
 </div>
 
-<div class="body">
-  <nav class="rail" id="rail" aria-label="主导航"></nav>
+<!-- ── 页签行（13 个模块，GitHub repo nav 同构） ── -->
+<nav class="repo-tabs" id="tabs" aria-label="模块导航"></nav>
+
+<!-- ── 主体 ── -->
+<div class="shell">
+  <aside class="rail" id="rail" aria-label="本页导航"></aside>
   <div class="main">
     <iframe id="frame" class="frame" title="页面内容"></iframe>
     <div id="ph" class="ph" hidden></div>
@@ -62,55 +82,97 @@
 </div>
 
 <script>
-/* 13 个页签：已迁移 → /pages/<slug>.html；未迁移 → 占位并指向旧版 */
+/* 每页带自己的「本页导航」锚点（同源可操作 iframe 内部 DOM） */
 const TABS = [
-  { id: "overview",   name: "总览",     slug: "overview" },
-  { id: "project",    name: "项目结构", slug: "project" },
-  { id: "flow",       name: "数据流转", slug: "flow" },
-  { id: "metrics",    name: "指标",     slug: "metrics" },
-  { id: "worklist",   name: "待办闭环", slug: "worklist" },
-  { id: "laws",       name: "政策法规", slug: "laws" },
-  { id: "rules",      name: "公司制度", slug: "rules" },
-  { id: "graph",      name: "关系图谱", slug: "graph" },
-  { id: "regstats",   name: "监管统计", slug: "regstats" },
-  { id: "governance", name: "治理审计", slug: "governance" },
-  { id: "search",     name: "文档检索", slug: "search" },
-  { id: "release",    name: "发布事件", slug: "release" },
-  { id: "feedback",   name: "留言板",   slug: "feedback" },
+  { id: "overview", name: "总览", slug: "overview", anchors: [
+    ["关键指标", ".grid3 > .card"], ["运行健康", "#rh"], ["链步状态分布", "#chart"],
+    ["门禁与待办", "#gs"], ["数据新鲜度", "#fr"], ["存储", "#st"]] },
+  { id: "project", name: "项目结构", slug: "project", anchors: [
+    ["结构树", "#chart"], ["节点信息", "#info"]] },
+  { id: "flow", name: "数据流转", slug: "flow", anchors: [
+    ["桑基图", "#chart"], ["说明", "#note"]] },
+  { id: "metrics", name: "指标", slug: "metrics", anchors: [
+    ["门禁通过率趋势", "#c-gate"], ["时效分布", "#c-time"], ["待办账龄", "#c-age"],
+    ["关系类型", "#c-rel"], ["主题分布", "#c-theme"]] },
+  { id: "worklist", name: "待办闭环", slug: "worklist", anchors: [
+    ["搜索与筛选", "#q"], ["批量处置条", "#bulk"], ["列表", "#rows"]] },
+  { id: "laws", name: "政策法规", slug: "laws", anchors: [
+    ["搜索", "#q"], ["列表", "#rows"], ["分页", "#pinfo"]] },
+  { id: "rules", name: "公司制度", slug: "rules", anchors: [
+    ["搜索", "#q"], ["列表", "#rows"], ["分页", "#pinfo"]] },
+  { id: "graph", name: "关系图谱", slug: "graph", anchors: [
+    ["图谱", "#chart"], ["高频节点", "#hubs"], ["视图说明", "#note"]] },
+  { id: "regstats", name: "监管统计", slug: "regstats", anchors: [
+    ["搜索", "#q"], ["分类", "#cat"], ["分类表", "#cats"]] },
+  { id: "governance", name: "治理审计", slug: "governance", anchors: [
+    ["运行记录", "#runs"], ["审计台账", "#audit"]] },
+  { id: "search", name: "文档检索", slug: "search", anchors: [
+    ["搜索", "#q"], ["结果", "#rows"]] },
+  { id: "release", name: "发布事件", slug: "release", anchors: [
+    ["搜索", "#q"], ["提交列表", "#rows"], ["分页", "#pinfo"]] },
+  { id: "feedback", name: "留言板", slug: "feedback", anchors: [
+    ["搜索", "#q"], ["列表", "#rows"]] },
 ];
 
 const $ = (s) => document.querySelector(s);
 const esc = (v) => String(v == null ? "" : v).replace(/[&<>"]/g, (c) =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
-$("#rail").innerHTML = TABS.map((t) => `
-  <a href="#${t.id}" data-id="${t.id}">
-    <span>${esc(t.name)}</span>
-    ${t.slug ? "" : '<span class="Counter">旧版</span>'}
-  </a>`).join("");
+/* ── 页签行 ── */
+$("#tabs").innerHTML = TABS.map((t) =>
+  `<a class="tab" href="#${t.id}" data-id="${t.id}">${esc(t.name)}</a>`).join("");
 
 function current() {
   const id = (location.hash || "#overview").slice(1);
   return TABS.find((t) => t.id === id) || TABS[0];
 }
 
+/* ── 本页导航 ── */
+function renderRail(t, frameLoaded) {
+  const items = (t.anchors || []).map(([label, sel], i) =>
+    `<div class="item" data-sel="${esc(sel)}" data-i="${i}">${esc(label)}</div>`).join("");
+  $("#rail").innerHTML =
+    `<div class="grp">本页导航</div>${items}` +
+    (t.slug ? "" : `<div class="hint">该页未迁移，请在旧版查看。</div>`);
+  $("#rail").querySelectorAll(".item").forEach((el) => {
+    el.onclick = () => {
+      const f = $("#frame");
+      if (!f || !f.contentDocument) return;
+      const target = f.contentDocument.querySelector(el.dataset.sel);
+      if (!target) return;
+      $("#rail").querySelectorAll(".item").forEach((x) => x.classList.remove("on"));
+      el.classList.add("on");
+      target.scrollIntoView({ behavior: "smooth", block: "start" });
+    };
+  });
+}
+
 function show(t) {
-  document.querySelectorAll("#rail a").forEach((a) =>
-    a.classList.toggle("text-bold", a.dataset.id === t.id));
+  document.querySelectorAll(".tab").forEach((a) => {
+    if (a.dataset.id === t.id) a.setAttribute("aria-current", "page");
+    else a.removeAttribute("aria-current");
+  });
   document.title = `${t.name} · 合规工作台`;
+
   if (t.slug) {
     $("#ph").hidden = true;
-    $("#frame").hidden = false;
-    $("#frame").src = `/pages/${t.slug}.html`;
+    const f = $("#frame");
+    f.hidden = false;
+    const target = `/pages/${t.slug}.html`;
+    if (!f.getAttribute("src") || !f.getAttribute("src").startsWith(target)) {
+      f.src = target;
+    }
+    renderRail(t, true);
   } else {
     $("#frame").hidden = true;
     $("#ph").hidden = false;
     $("#ph").innerHTML = `
       <div class="border rounded-2 p-4" style="max-width:640px">
         <h3 class="h4 mb-2">${esc(t.name)} 尚未迁移</h3>
-        <p class="text-small">该页仍在旧版工作台。迁移完成后这里会自动切换到新页面。</p>
+        <p class="text-small">该页仍在旧版工作台。</p>
         <a class="btn" href="/legacy.html#${t.id}">在旧版打开 ${esc(t.name)}</a>
       </div>`;
+    renderRail(t, false);
   }
 }
 
