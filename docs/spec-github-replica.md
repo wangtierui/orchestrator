@@ -17,7 +17,7 @@
 - 0. 术语与约定
 - 1. 现状与目标（含差距总量）
 - 2. 五条硬纪律
-- 3. 设计令牌（颜色 / 间距 / 圆角 / 字号 / 阴影）
+- 3. 设计令牌（颜色 / 间距 / 圆角 / 字号 / 阴影 / **§3.6 primitives 四类令牌可用性**）
 - 4. 全站骨架与断点
 - 5. 通用组件规格（10 类）
 - 6. 逐页规格（13 页 × 8 段）
@@ -150,6 +150,36 @@ GitHub: "Mona Sans VF", -apple-system, BlinkMacSystemFont, "Segoe UI", ...
 ### 3.5 阴影
 
 面板：`box-shadow: 0 0 0 1px rgba(31,35,40,.08), 0 8px 24px rgba(66,74,83,.12)`【推断，需与基线核对】。
+
+### 3.6 primitives 已提供的 spacing / motion / size / typography（**我不该自写**）
+
+官方 README（`github.com/primer/primitives`）的 "All available imports" 共 **18 条**，全是 CSS：
+
+| 分类 | 官方导入文件 | 本地是否已含 | 实测令牌样例 |
+|---|---|---|---|
+| **spacing** | `functional/spacing/space.css` | ✅ **6 个** `--space-*` | xxs .125 / xs .25 / sm .5 / md .75 / lg 1 / xl 1.5 rem |
+| **size** | `base/size/size.css` + `functional/size/{border,breakpoints,size,viewport}.css` | ✅ **33 个** `--base-size-*` + **6 个** `--breakpoint-*` | `--base-size-4/8/12/16`；`--breakpoint-medium 48rem`、`large 63.25rem` |
+| **typography** | `base/typography/typography.css` + `functional/typography/typography.css` | ✅ **41 个** `--text-*` + 4 个 `--fontStack-*` | `--text-body-size-small/medium/large` |
+| **motion** | `base/motion/motion.css` | ✅ **13 个** `--motion-*` | `--motion-duration-long`、`--motion-ease-*` |
+| color | 9 个主题文件 | ✅（已在用） | `--borderColor-default` 等 |
+
+**结论：这四类我并没有"需要自写"，而是没去用。** 实测我们仍有 **84 处**写死的
+`gap / padding / font-size / max-width`，其中至少一半可直接换令牌：
+
+| 我写的 | 应改为 | 依据 |
+|---|---|---|
+| `gap: 16px` | `gap: var(--space-lg)` | `--space-lg: 1rem` |
+| `gap: 8px`（我甚至手写过 `.gap-2{gap:8px}`） | `gap: var(--space-sm)` | `--space-sm: .5rem`，**重复造轮子** |
+| `padding: 16px` | `var(--base-size-16)` 或 `.p-3` | `--base-size-16: 1rem` |
+| `font-size: 12px / 13px` | `var(--text-body-size-small)` | 41 个排版令牌 |
+| `@media (max-width: 1011px)` | `63.1875rem`→ 应对齐 **63.25rem（=1012）** | `--breakpoint-large`，**我们差 1px** |
+| `@media (max-width: 767px)` | **48rem（=768）** | `--breakpoint-medium`，**我们差 1px** |
+| 无 | `transition: var(--motion-duration-*)` | motion 13 个令牌**一处未用** |
+
+**三条修正纪律**
+1. 数值型布局（gap / padding / margin / 字号 / 断点）**一律先查令牌**，查不到才允许写字面值，并注明原因；
+2. 断点必须与 `--breakpoint-*` **逐个对齐**（1012 / 768 / 544 / 1280），不接受 1011/767 这种差 1px 的写法；
+3. 交互动效统一走 `--motion-*`，不再出现裸 `0.15s ease`。
 
 ---
 
@@ -1253,6 +1283,7 @@ location.hash = "#" + t.id;   // 只切换模块
 | v5 | 2026-11-05 | 按四点反馈补全：① 新增 **§4.6 左侧栏重新设计**（诊断"无业务含义"、实测 GitHub 侧栏底部 **Feedback/Collapse sidebar 各 223×32**、给出 13 页各自的业务切片与规格验收）；② 新增 **§11 逐页设计图**（13 页施工级线框 + 关键尺寸）；③ 新增 **§12 施工卡**（每页 4 步：结构/控件规格/数据状态/专项验收 + 通用验收命令）；④ 目录与附录 C 同步 |
 | v6 | 2026-11-05 | 按四点反馈补全并给出盘点方法：① 新增 **§4.7 路由与浏览器历史**（诊断"后退无效"的四个成因 + 状态即 URL/pushState/popstate/节流四条规则 + 5 类边界 + 可自动化验收）；② 新增 **§7.1 参数实测**（records 默认 50 上限 200、rules 默认 title、worklist 无分页 319 条、search 固定 20 且 size 无效、governance 20+100、release 475）并推出 3 条施工约束；③ 新增 **§7.2 列名与筛选项枚举**（13 页的列名、筛选组、排序键、选项自然序，含来源/主题/时效/kind/分类/严重度的真实取值与计数）；④ 新增 **§13 功能价值审计**（每页"服务谁/要完成什么/闭环判定/关键缺口"，结论 闭环 1 · 部分 9 · 未闭环 3）与 **§14 全面盘点方案**（6 维 16 项检查 + 三份清单 + 执行顺序） |
 | v7 | 2026-11-05 | **信息架构重构（§15，最新口径）**：导航 13→**8 项**（项目总览·项目结构·数据流转·治理审计·版本管理·监管统计·文档管理·任务管理）；总览+指标合并为**项目总览 17 区块（5 组，无侧栏）**；待办闭环+留言板合并为**任务管理**（程序指令/用户反馈，状态改「待受理·已办结」，删「已受理」，新建入口仅侧栏 Feedback 弹窗）；政策法规+公司制度+文档检索+关系图谱合并为**文档管理**（含检索页重设计：命中片段/三图标/数字）；发布事件改名**版本管理**；列表行末三图标（打开原文/查看关系 N/查看条款 N，0 值禁用、>999 显示 999+）；每页侧栏选项表（含底部 Feedback/Collapse）；密度切换 pulls 实测（行 1119×67、4 图形元素）+ 缺口登记；迁移 8 批 |
+| v8 | 2026-11-05 | 按用户两点反馈修订：① 新增 **§3.6**——实测 primitives 已含 spacing(6)/size(33+6)/typography(41)/motion(13) 四类令牌且本地全部加载，指出我方仍有 84 处写死 gap/padding/font-size/max-width，给出映射（16px→--space-lg、8px→--space-sm、12px→--text-body-size-small）与三处**差 1px 的断点**（1011 应为 1012、767 应为 768），并立三条修正纪律；② §15.8 密度改用 **issues 实测**（Comfortable 行高 65/3 图标、Compact 38/4 图标、控件 65×32 两个 32×32 按钮），删除 pulls 的"未展开菜单"待办，改为"以 issues 为准"，并纠正关键判断：compact 是压内距不是缩字号 |
 
 ---
 
@@ -1504,30 +1535,42 @@ P3 最后 C/E/F 维（三态、令牌、断言）
 
 结构同 §11.12，仅改名与补变更列：日期分组 → 提交行（sha 复制 · 主题 · 作者 · 相对时间）→ 变更 `+x −y`；附加发布件状态卡与认证卡。
 
-### 15.8 密度切换（pulls 实测，含缺口）
+### 15.8 密度切换（**issues 页实测**，pulls 无此控件）
 
-**实测（comfortable）**：列表行 **1119×67**，行内 4 个图形元素：
+**为什么以 issues 为准**：pulls 工具条末尾两个 32×32 图标按钮（x=1327/1360）点开后**无菜单**
+（两次 dump 弹层均为空）；而 issues 页有明确的 `ul[aria-label="Issues display density"]`。
+两者列表结构同源（同为 issue/PR 行），故取 issues 的实测值作为口径。
 
-| 元素 | 尺寸 | 位置 |
+**实测（issues，1440×1000，同一行对比）**
+
+| 项 | Comfortable（默认） | Compact |
 |---|---|---|
-| 状态图标 | 16×16 | x=297 |
-| 分支/来源图标 | 14×14 | x=618 |
-| checks 徽标 | 38×20 | x=677 |
-| 展开图标 | 16×16 | x=677 |
+| **行高** | **65** | **38** |
+| 行宽 | 1119 | 1119 |
+| 行内图形元素 | **3** | **4** |
+| 行内 label | 0 | 0 |
+| 行文本 | 标题 + `#18600` + `· Filter by author ki…` | 同行文本，纵向压缩 |
 
-行文本：`标题 #18601 · Karlo-F opened Contributor · 1 task · 4/4`（**含 4 段元信息**）
+**密度控件实测**
 
-**切换入口实测**：pulls 工具条末尾两个 32×32 图标按钮（x=1327/1360），点击后**未展开菜单**（已 dump 弹层确认为空）；
-issues 页则是显式两枚按钮（Comfortable / Compact display density）。
+| 项 | 值 |
+|---|---|
+| 容器 | `UL[aria-label="Issues display density"]`，**65×32** @ x=1327, y=337 |
+| 内部 | **两个 32×32 按钮**，无 aria-label / title（纯图标） |
+| 切换效果 | 点击第二个 → 行高 **65 → 38**（−27），图标 3 → 4 |
 
-**规格（按 issues 口径，待 pulls 复核）**
+**规格（施工口径）**
 
 | 项 | Comfortable | Compact |
 |---|---|---|
-| 行高 | **67** | **40**（预估，待实测） |
-| 元信息 | 4 段全显 | 隐藏「1 task / 分支」等次要项，保留标题 + 编号 + 作者 |
-| 图标 | 4 个 | 3 个（去掉展开） |
-| 行内字号 | 14/21 | 13/18 |
+| 行高 | **65** | **38** |
+| 元信息 | 全显（作者、分支、checks、时间） | 保留标题 + 编号，次要项折行/隐藏 |
+| 图标 | 3 | 4（compact 下补出 1 个动作图标） |
+| 行内字号 | 14/21 | 14/21（字号不变，只压纵向内距） |
+
+> 关键判断：**compact 不是"变小字"，是"压内距 + 重排元信息"**，字号保持 14/21。
+> 我方现状是固定 32 行高、无密度差异 —— 需要引入 `data-density` 并用
+> `--space-*` 控制内距，而不是改字号。
 
 **施工口径**：密度状态写进 URL（`&density=compact`），行高与可见字段由 `data-density` 控制，**不重排 DOM**。
 
