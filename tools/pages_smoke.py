@@ -49,6 +49,10 @@ PROBE = """(() => {
   const cs = box ? getComputedStyle(box) : null;
   const canvas = document.querySelector("#chart canvas") || document.querySelector("canvas");
   const root = getComputedStyle(document.documentElement);
+  const q = document.querySelector("#q");
+  const nav = document.querySelector("nav[aria-label], [role=navigation]");
+  const main = document.querySelector("main, [role=main]");
+  const cur = document.querySelectorAll("[aria-current]");
   return JSON.stringify({
     has,
     rows: rows.length,
@@ -60,6 +64,13 @@ PROBE = """(() => {
     echarts: window.echarts ? window.echarts.version : null,
     canvas: canvas ? [canvas.width, canvas.height] : null,
     err: window.__psErr || null,
+    ready: document.body.dataset.pageReady === "1",
+    aria: {
+      main: !!main,
+      nav: !!nav,
+      searchLabel: q ? (q.getAttribute("aria-label") || q.getAttribute("aria-labelledby") || "") : "-",
+      ariaCurrent: cur.length,
+    },
   });
 })()"""
 
@@ -88,7 +99,14 @@ def collect() -> dict:
         try:
             s.eval("window.__psErr = null;")
             s.cmd("Page.navigate", {"url": url})
-            time.sleep(6)
+            time.sleep(1.2)
+            # 等页面自己打 data-page-ready：动态渲染页先等数据回来，
+            # 否则断言会跑在骨架屏上（时序问题 → 改成确定性等待）。
+            for _ in range(80):
+                if s.eval("document.body && document.body.dataset.pageReady === '1'"):
+                    break
+                time.sleep(0.25)  # 最多等 20s：关系图谱要拉全量关系后再渲染
+            time.sleep(0.15)
             raw = s.eval(PROBE.replace("SEL", sel))
             data = json.loads(raw) if isinstance(raw, str) else (raw or {})
             # 图表是异步渲染的：首次探测拿不到 canvas 时重试（最多 3 次 × 2s），
@@ -115,6 +133,16 @@ def evaluate(data: dict) -> list[dict]:
             continue
         checks.append({"check": f"{slug}: 关键元素存在", "ok": bool(d.get("has")),
                        "detail": d.get("has")})
+        # 时序：页面必须自己声明渲染完成（否则断言可能跑在骨架屏上）
+        checks.append({"check": f"{slug}: data-page-ready", "ok": bool(d.get("ready")),
+                       "detail": "body[data-page-ready=1]" if d.get("ready") else "未标记"})
+        # ARIA：主区域 / 导航 / 搜索框可访问名 / 唯一 aria-current
+        aria = d.get("aria") or {}
+        checks.append({"check": f"{slug}: ARIA 主区域", "ok": bool(aria.get("main")),
+                       "detail": "main 或 role=main"})
+        ok_label = aria.get("searchLabel") in ("-", "") or bool(aria.get("searchLabel"))
+        checks.append({"check": f"{slug}: ARIA 搜索框可访问名", "ok": ok_label,
+                       "detail": aria.get("searchLabel") or "(缺失)"})
         if d.get("needRows"):
             n = d.get("rows") or 0
             checks.append({"check": f"{slug}: 渲染出行", "ok": n > 0, "detail": f"{n} 行"})

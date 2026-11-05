@@ -30,7 +30,7 @@
 </style>
 </head>
 <body>
-<div class="page">
+<div class="page" role="main">
   <div class="d-flex flex-items-center flex-wrap gap-2 mb-3">
     <h2 class="h3 m-0">总览</h2>
     <span id="stamp" class="text-small"></span>
@@ -176,6 +176,22 @@ async function load() {
 
 window.addEventListener("resize", () => chart && chart.resize());
 load();
+</script>
+
+<script>
+/* 渲染完成标记：页面自己打 data-page-ready=1，smoke 等它再断言，
+   把"时序"变成"确定性"（否则断言会跑在骨架屏上）。 */
+(function () {
+  var t0 = Date.now();
+  var iv = setInterval(function () {
+    var root = document.querySelector(".page, main, #main") || document.body;
+    var hasContent = root && root.querySelector(".row-1, tr, canvas, .border-bottom");
+    if (hasContent || Date.now() - t0 > 8000) {
+      document.body.dataset.pageReady = "1";
+      clearInterval(iv);
+    }
+  }, 80);
+})();
 </script>
 </body>
 </html>

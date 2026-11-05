@@ -24,7 +24,7 @@
 </style>
 </head>
 <body>
-<div class="page">
+<div class="page" role="main">
 
   <div class="qwrap mb-2">
     <input id="q" class="form-control input-block qinput" type="search"
@@ -132,6 +132,22 @@ document.querySelectorAll("[data-density]").forEach((b) => {
   };
 });
 load();
+</script>
+
+<script>
+/* 渲染完成标记：页面自己打 data-page-ready=1，smoke 等它再断言，
+   把"时序"变成"确定性"（否则断言会跑在骨架屏上）。 */
+(function () {
+  var t0 = Date.now();
+  var iv = setInterval(function () {
+    var root = document.querySelector(".page, main, #main") || document.body;
+    var hasContent = root && root.querySelector(".row-1, tr, canvas, .border-bottom");
+    if (hasContent || Date.now() - t0 > 8000) {
+      document.body.dataset.pageReady = "1";
+      clearInterval(iv);
+    }
+  }, 80);
+})();
 </script>
 </body>
 </html>

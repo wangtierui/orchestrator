@@ -57,7 +57,7 @@
   </a>
   <span class="text-bold">合规工作台</span>
   <input id="jump" class="form-control gsearch" type="search"
-         placeholder="跳转页面…" aria-label="跳转页面">
+         placeholder="跳转页面…" aria-label="跳转页面" role="searchbox" aria-controls="tabs">
   <span class="spacer"></span>
   <a class="text-small" href="/legacy.html" title="旧版工作台（历史保留）">旧版</a>
   <svg class="octicon" width="32" height="32" viewBox="0 0 16 16" fill="currentColor" role="img" aria-label="当前用户">
@@ -65,10 +65,10 @@
   </svg>
 </div>
 
-<nav class="repo-tabs" id="tabs" aria-label="模块导航"></nav>
+<nav class="repo-tabs" id="tabs" role="navigation" aria-label="模块导航"></nav>
 
 <div class="shell">
-  <aside class="rail" id="rail" aria-label="本页导航"></aside>
+  <aside class="rail" id="rail" role="navigation" aria-label="侧边导航"></aside>
   <main class="main" id="main"><div class="loading">加载中…</div></main>
 </div>
 

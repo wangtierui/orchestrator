@@ -15,14 +15,14 @@
 | 2 | 设计令牌（颜色 / 间距 / 字号 / 圆角 / 阴影 / 动效 / 断点） |
 | 3 | 全站骨架（三层结构 + 尺寸 + 断点） |
 | 4 | 导航、路由与浏览器历史 |
-| 5 | 通用组件（12 类，含状态与验收） |
+| 5 | 通用组件（12 类 + **5.13 组件 API / 5.14 ARIA 清单 / 5.15 组件联动**） |
 | 6 | 交互行为（`@primer/behaviors` 四个 API 的接入点） |
 | 7 | 图表规范（ECharts 与令牌桥接） |
 | 8 | 接口契约（18 个端点 + 参数默认值） |
 | 9 | 页面规格（8 个导航项 + 5 个子页） |
 | 10 | 必须自写的部分（清单 + 理由） |
 | 11 | 令牌化收敛方案（84 处 → 0 处） |
-| 12 | 验收与门禁 |
+| 12 | 验收与门禁（含 **12.3 渲染完成标记 / 12.4 ARIA 断言**） |
 | 13 | 施工顺序（13 批） |
 | 附录 A | 旧版功能全清单（按页） |
 | 附录 B | GitHub 实测数据（9 页） |
@@ -320,7 +320,7 @@ ESM 有严格 MIME 检查；返回 `text/plain` 时浏览器报 `Failed to fetch
 |---|---|
 | 外框 | **无**（容器 0px） |
 | 表头行 | 高 **48**、底色 `#f6f8fa`、下边 1px `rgba(209,217,224,.7)`、`padding: 8`、12/600 |
-| 行 | 每条 1px 底边；**行高按密度**：comfortable **65** / compact **38**（GitHub issues 实测）；纯文本列表用 32 |
+| 行 | 每条 1px 底边；**行高严格按密度**：comfortable **65** / compact **38**（全站统一，无 32 例外） |
 | 列宽 | 短列 `clamp(need+24, 64, 220)`；长列按内容加权 min 160；极端串（无空格 ASCII ≥24）固定 200 不参与权重；总宽 ≤1200 |
 | 末列 | 动作列保底 72（图标组 148） |
 | 排序 | 列头可点，显示 ↑/↓，单列生效 |
@@ -387,6 +387,173 @@ ESM 有严格 MIME 检查；返回 `text/plain` 时浏览器报 `Failed to fetch
 
 - 控件：`ul[aria-label="Issues display density"]`，两个 32×32 图标按钮，容器 65×32；
 - 实现：`data-density` 属性 + `--space-*` 控内距，**不重排 DOM**；状态进 URL（`&density=compact`）。
+
+### 5.13 组件 API（**全部是可配置函数，禁止复制粘贴**）
+
+> 现状问题：13 页各自拼 HTML，同一个「表格」写了 6 遍、同一个「工具条」写了 5 遍。
+> 解法：把 §5 的 12 类组件实现为**唯一函数**，页面只传配置。
+
+模块位置：`web/assets/js/`（ESM，与 behaviors 同加载方式）。
+
+| 模块 | 导出 | 关键参数 | 返回 |
+|---|---|---|---|
+| `ui/table.js` | `renderTable(cfg)` | `{columns[{key,label,width,sortable,align,render}], rows, density, selectable, empty, onRow}` | `HTMLElement` |
+| `ui/toolbar.js` | `renderToolbar(cfg)` | `{segments[{key,label,count}], active, filters[{key,label,options,multi}], density, onSegment,onFilter,onDensity}` | `HTMLElement` |
+| `ui/search.js` | `renderSearch(cfg)` | `{value, placeholder, icon:'right', debounce:220, onInput, onSubmit}` | `HTMLElement` |
+| `ui/pagination.js` | `renderPagination(cfg)` | `{page,size,total,onChange}` | `HTMLElement` |
+| `ui/panel.js` | `openPanel(cfg)` | `{anchor, items[{key,label,count,checked}], multi, searchable, onPick, onClose}` | `{close()}` |
+| `ui/form.js` | `renderForm(cfg)` | `{fields[{key,label,type,required,options,hint}], actions[{key,label,variant}], onSubmit}` | `{el, validate(), values()}` |
+| `ui/chart.js` | `mountChart(cfg)` | `{el, option, height, resize:true}` | `{setOption(), resize(), dispose()}` |
+| `ui/state.js` | `renderState(kind,cfg)` | `kind: loading|empty|error`；`{title,desc,action}` | `HTMLElement` |
+| `ui/skeleton.js` | `renderSkeleton(rows)` | `rows` | `HTMLElement` |
+| `ui/chrome.js` | `renderChrome(cfg)` | `{nav[], active, sidebar[], density}` | `HTMLElement` |
+| `ui/page-ready.js` | `markReady()` | — | 置 `body.dataset.pageReady="1"` |
+| `ui/router.js` | `initRouter(routes)` | `{parse, build, onChange}` | `{push(), replace()}` |
+
+**约束**
+1. 页面只允许：`import` 上述函数 + 一次 `renderXxx(cfg)` 调用 + 数据 fetch；**不得再出现手写 HTML 字符串**；
+2. 同一组件在 13 页里只允许一处实现（`tools/ui_css_audit.py` 扩展为扫描重复结构）；
+3. 组件内部**不写颜色/边框/圆角**，只用 Primer 类与令牌。
+
+### 5.14 ARIA 清单（每类组件必备）
+
+> 判据：**原生语义够用就不加 role**；不够才加。下列为最低要求，`pages_smoke` 逐项断言。
+
+**5.14.1 全局条 / 仓库条**
+
+| 项 | 内容 |
+|---|---|
+| 角色 | `<header>` 原生；仓库条 `nav[aria-label="模块导航"]`；页签是**链接**（非 tab），不设 `role=tab` |
+| 状态属性 | 当前页链接 `aria-current="page"`（**全页仅一个**） |
+| 关系属性 | 搜索框 `aria-controls` 指向结果容器；`aria-haspopup="menu"` 于菜单按钮 |
+| 键盘 | `Tab` 顺序：logo → 搜索 → 通知 → 头像 → 页签区；搜索 `Esc` 清空并失焦 |
+
+**5.14.2 侧栏**
+
+| 项 | 内容 |
+|---|---|
+| 角色 | `nav[aria-label="侧边导航"]`；分组用 `div[role=group]` + `aria-labelledby` 指向分组标题 |
+| 状态属性 | 当前项 `aria-current="page"`；折叠按钮 `aria-expanded` |
+| 关系属性 | 折叠按钮 `aria-controls` 指向侧栏容器 |
+| 键盘 | ↑/↓ 移动（`focusZone` + `ArrowVertical`）；`Home/End` 首尾；`Enter` 打开 |
+
+**5.14.3 搜索行**
+
+| 项 | 内容 |
+|---|---|
+| 角色 | `<input type="search">` 原生（不加 role）；容器 `role="search"` |
+| 状态属性 | `aria-busy`（查询中）；`aria-invalid`（服务端报错） |
+| 关系属性 | `aria-label`（必填，例：搜索政策法规）；`aria-describedby` 指向语法提示 |
+| 键盘 | `Enter` 提交；`Esc` 清空；`↓` 打开结果建议（若有） |
+
+**5.14.4 工具条 / 状态开关**
+
+| 项 | 内容 |
+|---|---|
+| 角色 | 容器 `role="group"` + `aria-label="列表工具"`；开关组用 `role="group"`，每个按钮是 `<button aria-pressed>` |
+| 状态属性 | 选中 `aria-pressed="true"`；计数用 `<span class="Counter" aria-label="319 项">319</span>` |
+| 关系属性 | 筛选按钮 `aria-haspopup="dialog"` + `aria-expanded` + `aria-controls` 指向面板 id |
+| 键盘 | `Tab` 逐个；`Enter/Space` 触发；开关组内 ←/→ 切换（`ArrowHorizontal`） |
+
+**5.14.5 表格**
+
+| 项 | 内容 |
+|---|---|
+| 角色 | 用原生 `<table>`；如需网格布局则 `role="table"` + `row` + `columnheader` + `cell` |
+| 状态属性 | 排序列表头 `aria-sort="ascending|descending|none"`；行选中 `aria-selected` |
+| 关系属性 | 表头 `id` 与单元格 `aria-labelledby`（网格模式下必填） |
+| 键盘 | 行内按钮进入 Tab 顺序；`↑/↓` 移动行焦点（可选）；`Space` 切换勾选 |
+
+**5.14.6 分页**
+
+| 项 | 内容 |
+|---|---|
+| 角色 | `nav[aria-label="分页"]` |
+| 状态属性 | 当前页 `aria-current="page"`；禁用按钮 `disabled`（不用 `aria-disabled`） |
+| 关系属性 | — |
+| 键盘 | `Enter` 触发；首末页按钮 `disabled` 时跳过 Tab |
+
+**5.14.7 筛选面板**
+
+| 项 | 内容 |
+|---|---|
+| 角色 | 容器 `role="dialog"` + `aria-modal="false"` + `aria-label="筛选：作者"`；列表 `role="listbox"`，项 `role="option"` |
+| 状态属性 | 项 `aria-selected`；触发按钮 `aria-expanded` |
+| 关系属性 | 触发按钮 `aria-controls` → 面板 id；面板 `aria-labelledby` → 触发按钮 id |
+| 键盘 | `↑/↓`（`ArrowVertical`）、`Home/End`、`Enter` 选中、`Esc` 关闭并回焦、`Tab` 留在面板内（`focusTrap`） |
+
+**5.14.8 表单 / 弹窗**
+
+| 项 | 内容 |
+|---|---|
+| 角色 | 弹窗 `role="dialog"` + `aria-modal="true"` + `aria-labelledby`（标题 id） |
+| 状态属性 | 字段 `aria-invalid` + `aria-describedby` 指向错误文案；必填 `aria-required="true"` |
+| 关系属性 | 每个 `<label for>` 对应控件 id；错误文案 id 被 `aria-describedby` 引用 |
+| 键盘 | `focusTrap` 生效；`Esc` 关闭；`Enter` 提交（文本域内 `Enter` 换行） |
+
+**5.14.9 图表**
+
+| 项 | 内容 |
+|---|---|
+| 角色 | 容器 `role="img"` + `aria-label`（一句话概括） |
+| 状态属性 | `aria-busy`（渲染中） |
+| 关系属性 | 相邻 `figcaption`/摘要文本 `aria-describedby`（给出关键数字，供读屏） |
+| 键盘 | 图表容器 `tabindex="0"`；`←/→` 在数据点间移动（ECharts `dispatchAction`） |
+
+**5.14.10 状态组件（空/错误/加载）**
+
+| 项 | 内容 |
+|---|---|
+| 角色 | 容器 `role="status"`（加载/空）或 `role="alert"`（错误） |
+| 状态属性 | `aria-live="polite"`（status）/ `assertive`（alert） |
+| 关系属性 | — |
+| 键盘 | 无交互；操作按钮正常 Tab |
+
+**5.14.11 密度切换**
+
+| 项 | 内容 |
+|---|---|
+| 角色 | `role="group"` + `aria-label="列表密度"`，两个 `<button aria-pressed>` |
+| 状态属性 | `aria-pressed`；容器 `data-density` 同步 |
+| 关系属性 | 按钮 `aria-controls` → 列表容器 id |
+| 键盘 | `Tab` 到组；←/→ 切换；`Enter` 应用 |
+
+**5.14.12 行末三图标（打开原文/查看关系/查看条款）**
+
+| 项 | 内容 |
+|---|---|
+| 角色 | 每个 `<a>`（打开原文）或 `<button>`；组容器 `role="group"` + `aria-label="文档操作"` |
+| 状态属性 | 无数据时 `disabled`（button）或 `aria-disabled="true"` + `tabindex="-1"`（a） |
+| 关系属性 | `aria-label` 含数字，例：**查看关系 14 条**、**查看条款 32 条** |
+| 键盘 | `Tab` 依次；`Enter` 触发 |
+
+**5.14.13 pages_smoke 断言（已实现）**
+
+| 断言 | 判据 |
+|---|---|
+| `data-page-ready` | `body.dataset.pageReady === "1"`（渲染完成标记，见 §12.3） |
+| `ARIA 主区域` | 存在 `main` 或 `[role=main]` |
+| `ARIA 搜索框可访问名` | `#q` 有 `aria-label` 或 `aria-labelledby` |
+| `ARIA 唯一 current` | `[aria-current]` 数量 ≤ 1（列表页） |
+
+### 5.15 组件联动（此前完全没写）
+
+| # | 联动 | 规则 |
+|---|---|---|
+| L1 | 搜索 ↔ 状态开关 | 状态开关改写搜索词的 `state:` 限定符，不单独存状态（单一真相在搜索词） |
+| L2 | 搜索 ↔ 筛选 | 取**交集**；两者互不清空；筛选后搜索词保留 |
+| L3 | 筛选 ↔ 计数 | 面板每项右上角显示该值计数；选中后该计数变灰但保留 |
+| L4 | 排序 ↔ 分页 | 改变排序回到第 1 页 |
+| L5 | 搜索 ↔ 分页 | 搜索结果变化回到第 1 页 |
+| L6 | 行选择 ↔ 批量条 | 勾选 ≥1 行显示批量条；全选复选框三态（全选/部分/无） |
+| L7 | 批量条 ↔ 表格 | 切换状态/页码后**清空选择**（避免跨页误操作） |
+| L8 | 密度 ↔ 表格 | 切换只改行高与可见字段，**不重排 DOM、不重置滚动** |
+| L9 | 面板 ↔ 触发按钮 | 打开时按钮 `aria-expanded=true`；关闭回焦 |
+| L10 | 图表 ↔ 筛选 | 图表数据跟随当前筛选结果（改筛选 → 图表重算） |
+| L11 | 侧栏 ↔ 内容 | 点侧栏切片 → 只改内容区与 URL，**不刷新整页** |
+| L12 | 告警 ↔ 明细 | 点告警条目 → 跳到对应页并高亮目标行（`scrollIntoView` 容器内） |
+
+**验收**：L1–L12 每条一个可复现操作 + 一个断言（写进 `pages_smoke` 的交互用例，与结构断言分开跑）。
 
 ## 6. 交互行为（`@primer/behaviors`）
 
@@ -616,17 +783,102 @@ const palette = [tk("--fgColor-accent"), tk("--fgColor-success"),
 
 ### 9.6 监管统计（侧栏 7 分区）
 
-| 分区 | 内容 | 数据 |
-|---|---|---|
-| 概览 | 4 张分类卡（金融统计 24 / 统计指标 7 / 监管统计制度 3 / EAST 1）+ 分类表 | `/api/regstats` |
-| 数据结构 | 表 → 字段清单 | `/api/east/table` |
-| 数据元 | 数据元 + 取值范围 | `/api/east` |
-| 业务代码 | 代码表 + 编号示例 | `/api/east/code` |
-| 检核规则 | 规则清单 | `/api/east/rules` |
-| 关系图 | 表间关系（graph 560） | `/api/relations` |
-| E-R 图 | 实体关系（graph 560） | `/api/relations` |
+#### 9.6.1 概览（**只显示 EAST 相关内容**）
 
-**验收**：7 分区均可进；分区切换不整页刷新；概览 4 卡计数与接口一致（24/7/3/1）。
+> 修正：概览不再显示「金融统计 24 / 统计指标 7 / 监管统计制度 3」，那是**其他分类的计数**，
+> 与 EAST 主题无关。概览只回答"EAST 规范里有什么、影响我们哪些文件"。
+
+**三块内容**
+
+| 块 | 内容 | 数据 |
+|---|---|---|
+| ① EAST 统计 | 表 **N** 张 · 字段 **N** 个 · 数据元 **N** 个 · 代码集 **N** 套 · 检核规则 **N** 条（点击跳对应分区） | `/api/east`（聚合计数） |
+| ② 相关文件 | 政策法规中标记 `east` 的文件列表（标题 · 文号 · 发布日期 · 时效），最多 10 条 + 「查看全部」 | `/api/records?tag=east` |
+| ③ 附件 | 上述文件解析出的附件（文件名 · 类型 · 大小 · 来源文件），最多 10 条 + 「查看全部」 | `/api/records/attachments?tag=east` |
+
+**列定义（② 相关文件）**
+
+| # | 列 | 字段 | 排序 | 说明 |
+|---|---|---|---|---|
+| 1 | 名称 | `title` | ✅ | 单行截断 |
+| 2 | 文号 | `document_number` | ✅ | 空显示 `—` |
+| 3 | 发布日期 | `publish_date` | ✅（默认倒序） | `YYYY-MM-DD` |
+| 4 | 时效 | `timeliness_status` | ✅ | 标签样式 |
+
+**列定义（③ 附件）**
+
+| # | 列 | 字段 | 排序 |
+|---|---|---|---|
+| 1 | 文件名 | `filename` | ✅ |
+| 2 | 类型 | `ext` | ✅ |
+| 3 | 大小 | `size` | ✅ |
+| 4 | 来源文件 | `source_title` | ✅（默认按来源分组） |
+| 5 | 操作 | — | 下载 / 预览 |
+
+**筛选**：文件名/文号关键词（搜索行）；类型（pdf/docx/xlsx/其他，多选）。
+**状态**：无数据 → 「未发现 EAST 相关文件」；附件缺失 → 「该文件未解析出附件」。
+
+#### 9.6.2 数据结构
+
+| # | 列 | 字段 | 宽 | 排序 | 说明 |
+|---|---|---|---|---|---|
+| 1 | 表名 | `table_code` | 180 | ✅ | 等宽字体，可点展开字段 |
+| 2 | 表中文名 | `table_name` | 弹性 | ✅ | — |
+| 3 | 字段数 | `field_count` | 80 | ✅（默认降序） | 右对齐 |
+| 4 | 主键 | `primary_key` | 160 | ❌ | 等宽 |
+| 5 | 说明 | `description` | 240 | ❌ | 两行截断 |
+
+**筛选**：表名关键词；表类型（基础表/交换表/代码表，多选）；是否有主键（是/否）。
+**展开**：点表名展开字段子表（字段名 · 类型 · 长度 · 必填 · 说明），子表行高 38。
+**状态**：无表 → 「未导入数据结构」。
+
+#### 9.6.3 数据元
+
+| # | 列 | 字段 | 宽 | 排序 |
+|---|---|---|---|---|
+| 1 | 数据元名称 | `name` | 弹性 | ✅ |
+| 2 | 编号 | `code` | 140 | ✅（默认升序） |
+| 3 | 数据类型 | `type` | 100 | ✅ |
+| 4 | 长度 | `length` | 80 | ✅ |
+| 5 | 取值范围 | `domain` | 240 | ❌ |
+| 6 | 关联字段 | `refs` | 200 | ❌ |
+
+**筛选**：名称/编号关键词；类型（字符/数值/日期/代码，多选）；是否必填。
+**状态**：无条件命中 → 「无匹配数据元」。
+
+#### 9.6.4 业务代码
+
+| # | 列 | 字段 | 宽 | 排序 |
+|---|---|---|---|---|
+| 1 | 代码集名称 | `name` | 弹性 | ✅ |
+| 2 | 编号 | `code` | 140 | ✅ |
+| 3 | 取值数 | `value_count` | 80 | ✅（默认降序） |
+| 4 | 示例 | `sample` | 240 | ❌ |
+| 5 | 维护部门 | `owner` | 160 | ✅ |
+
+**展开**：点代码集展开取值表（代码值 · 代码名称 · 说明），行 38。
+**筛选**：名称/编号关键词；类别（监管/业务/技术）。
+**状态**：无代码集 → 「未导入业务代码」。
+
+#### 9.6.5 检核规则
+
+| # | 列 | 字段 | 宽 | 排序 |
+|---|---|---|---|---|
+| 1 | 规则编号 | `rule_code` | 140 | ✅（默认升序） |
+| 2 | 规则名称 | `name` | 弹性 | ✅ |
+| 3 | 适用表 | `table_code` | 180 | ✅ |
+| 4 | 校验类型 | `check_type` | 120 | ✅ |
+| 5 | 严重级别 | `severity` | 100 | ✅ |
+| 6 | 状态 | `enabled` | 90 | ✅ |
+
+**筛选**：编号/名称关键词；校验类型（格式/逻辑/交叉，多选）；严重级别（高/中/低）；启用状态（启用/停用）。
+**状态**：无规则 → 「未配置检核规则」。
+
+#### 9.6.6 关系图 / 9.6.7 E-R 图
+
+`/api/relations` 的两种渲染：关系图（force，560）、E-R（实体-属性-关系，560）；节点点击 → 跳到 9.6.2 对应表。
+
+**验收**：7 分区可进且不整页刷新；概览只出现 EAST 相关块（无金融统计/统计指标计数）；四个数据类分区各有列定义、排序与筛选且与表一致；展开子表可收起。
 
 ### 9.7 文档管理
 
@@ -659,7 +911,7 @@ const palette = [tk("--fgColor-accent"), tk("--fgColor-success"),
 |---|---|---|
 | 数据 | `/api/records`（16,607） | `/api/rules`（861） |
 | 列 | 勾选 · 来源图标 · 名称 · 文号 · 主题 · 时效 · 操作 | 勾选 · 名称 · 文号 · 主题 · 类型 · 操作 |
-| 排序 | 名称/文号/主题/时效/发布日期 | 名称/文号/主题/类型 |
+| 排序 | **主题 / 时效 / 发布日期**（名称、文号**不可排序**：列头不显示箭头、`cursor:default`、点击无响应） | **主题 / 类型**（名称、文号不可排序） |
 | 筛选 | 来源 5（gov 13178→nfra 1935→mof 870→pbc 571→supp 53）、主题 12（未定 15301→T0 221→T1 214→T10 149→T5 148→T2 133→…）、时效 6（未核验 12771→valid 2936→repealed 380→amended 307→pending 136→expired 77） | 主题 11（T1 196→T9 157→T8 130→T4 103→T10 70→UNALIGNED 64→…）、状态 1（未标注 861） |
 | 批量 | 勾选 + 批量理由（必填，进审计） | 同 + 清除选择 |
 
@@ -669,7 +921,7 @@ const palette = [tk("--fgColor-accent"), tk("--fgColor-success"),
 |---|---|---|---|
 | 📄 | 打开原文（新窗口） | 无 | 无 URL → 禁用 + tooltip「无原文链接」 |
 | 🔗 | 查看关系 → 关系图谱单文件视图 | **关系数** | 0 → 置灰禁用；>999 → `999+` |
-| 📑 | 查看条款 | **条款数**（`article_count`） | 同上 |
+| 📑 | **进入条款页**（新页面 `/#/documents/clauses?doc=<rfn>`，非弹层） | **条款数**（`article_count`） | 同上 |
 
 图标按钮 24×24、gap 4、整组保底 148；Counter 18 高（`padding: 2 6`、`radius: 2em`）。
 
@@ -677,6 +929,46 @@ const palette = [tk("--fgColor-accent"), tk("--fgColor-success"),
 
 双视图：全局（Top 15 hubs 条形 + 力导向）、单文件（依据/废止，上限 100 边，`← 回到全局`）。
 空态三句区分：「暂无关系」/「这份文件没有依据关系」/「关系存在、只是没能定位到具体文件」。
+
+#### 9.7.6 条款页（点「查看条款」进入的独立页面）
+
+**路由**：`/#/documents/clauses?docno=<文号>&title=<标题>&src=<来源>`
+**入口**：政策法规/公司制度/检索结果行末 📑；不在列表内展开。
+
+**接口（新增，施工项 E1）**
+
+```
+GET /api/clauses?docno=&title=&src=&page=1&size=50
+→ { items:[{article_no, article_title, text, chapter, page_no, char_count}],
+    total, page, size, pages, source:"clause_index_api.find_clauses", fetched_at }
+```
+
+后端直接复用 `interfaces/clause_index_api.find_clauses(docno,title,src)`，不改采集产物。
+
+**页头**
+
+```
+← 返回政策法规            农业保险条例
+国令第 629 号 · 2013-03-01 · 共 32 条 · 来源 nfra · [打开原文] [查看关系 14]
+```
+
+**列定义（条款表）**
+
+| # | 列 | 字段 | 宽 | 排序 | 筛选 |
+|---|---|---|---|---|---|
+| 1 | 条号 | `article_no` | 100 | ✅（默认升序，按数字序） | — |
+| 2 | 条款标题 | `article_title` | 弹性 | ✅ | 关键词 |
+| 3 | 章 | `chapter` | 160 | ✅ | 章（下拉，取唯一值） |
+| 4 | 内容 | `text` | 通栏第二行 | ❌ | 全文关键词（高亮命中） |
+| 5 | 字数 | `char_count` | 80 | ✅ | — |
+
+**呈现**：每条**两行**——第一行「第 N 条 + 标题」，第二行正文（默认 3 行截断 + 「展开」）；展开后完整显示，行高自适应。
+
+**交互**：行内「复制条文」；「展开/收起」；搜索命中词 `<mark>` 高亮；分页 50/页。
+
+**状态**：无条款 → 「该文件未解析出条款」；解析失败 → 「条款解析失败（可查看原文）」并给原文链接。
+
+**验收**：点 📑 进入新页面（不是弹层）；条号按数字序（第 2 条在第 10 条前）；命中词高亮；返回按钮回到来源页并保留筛选。
 
 ### 9.8 任务管理
 
@@ -702,32 +994,45 @@ const palette = [tk("--fgColor-accent"), tk("--fgColor-success"),
 
 **验收**：提交后进列表且状态=待受理；状态只有两态；无新建入口（除侧栏）；处置写审计。
 
-## 10. 必须自写的部分（其余一律取自四个包）
+## 10. 自写边界与公共模块（拒绝重复代码）
 
-> 判据：**四个包能给的，一律不自写**；只有当"包管不到"或"业务特有"时才写，并在此登记。
+> 两条原则：**包能给的绝不自写**；**必须自写的绝不重复**——一处实现，13 页调用。
 
-### 10.1 必须自写（8 类）
+### 10.1 三类归属
 
-| # | 内容 | 为什么包给不了 | 规模 |
-|---|---|---|---|
-| W1 | **栅格与列宽** | `primer.css` 只有 1–12 栅格工具类，没有「1200 居中 + 4 列 288」这类版面 | 每页 1–2 条 `grid-template-columns` |
-| W2 | **内容宽度与居中** | 无 `max-width:1200` 类 | 全站 1 条 |
-| W3 | **图表容器高度** | 图表高由信息密度决定（220/320/170/560/640），非令牌 | 每图 1 条 |
-| W4 | **ECharts option** | ECharts 不是 Primer 组件；颜色需从令牌读取后传入 | 每图 30–60 行 |
-| W5 | **页面级组合** | 「一页多表」「顶部状态条 + 主从两栏」等业务版式 | 每页 2–4 条 |
-| W6 | **空/加载/错误态结构** | Primer 有样式无文案与业务语义 | 每页 3 段模板 |
-| W7 | **路由与状态序列化** | `@primer/behaviors` 只管交互原语，不管 URL | 1 个模块（约 80 行） |
-| W8 | **图标** | 未引入 octicons.js（408 KB）；当前用内联 SVG | 复用现有内联集 |
+| 类别 | 内容 | 归属 |
+|---|---|---|
+| **A 包已覆盖** | 颜色 / 边框 / 圆角 / 字号 / 字重 / 行高 / 内边距 / 间距 / 断点 / 悬停与选中底色 / 按钮尺寸 / 输入高度 / 标签与计数 / 浮层定位 / 焦点管理 / 容器滚动 | ⛔ 禁止自写 |
+| **B 需自写但必须抽模块** | 表格 / 工具条 / 搜索 / 分页 / 面板 / 表单 / 图表容器 / 三态 / 骨架 / 壳 / 路由 / page-ready | ✅ 写一次放 `web/assets/js/ui/` |
+| **C 需后端新增** | 条款页数据（§9.7.6 `/api/clauses`）、EAST 附件清单（§9.6.1 `/api/records/attachments`） | 施工项 E1/E2 |
 
-**不需要自写**（此前误写的部分）：颜色、边框、圆角、字号、字重、行高、内边距、间距、断点值、悬停/选中底色、按钮尺寸、输入框高度、标签与计数样式、浮层定位、焦点管理、容器内滚动。
+### 10.2 公共模块清单（与 §5.13 一一对应）
 
-### 10.2 判定方法（新组件落地前先过这一关）
+| 模块 | 职责 | 禁止 |
+|---|---|---|
+| `ui/table.js` | 列定义 → 表头/行/排序/勾选/密度/空态 | 不得内联颜色；不得感知业务字段 |
+| `ui/toolbar.js` | 状态开关 + 筛选按钮组 + 密度 + 计数 | 不得自己发请求（通过回调） |
+| `ui/search.js` | 搜索行（右图标、防抖、回车、Esc） | 不得自己决定筛选逻辑 |
+| `ui/pagination.js` | 上/下页 + 页码 + 禁用态 | 不得改总数 |
+| `ui/panel.js` | 浮层（behaviors 定位 + focusZone + focusTrap） | 不得写死宽高（用 320 / gap） |
+| `ui/form.js` | 字段渲染 + 校验 + 错误文案 + 提交 | 不得内联业务规则 |
+| `ui/chart.js` | 统一 option + 令牌取色 + resize + dispose | 不得写死颜色 |
+| `ui/state.js` | loading / empty / error 三态 | 不得吞错误 |
+| `ui/skeleton.js` | 骨架行 | — |
+| `ui/chrome.js` | 全局条 + 仓库条 + 侧栏 + 底部动作 | 不得改令牌 |
+| `ui/router.js` | URL ↔ 状态、pushState/popstate | 不得直接改 DOM |
+| `ui/page-ready.js` | 渲染完成打标记 | — |
+
+**反重复规则**：`tools/ui_css_audit.py` 扩展为扫描页面内联 `<script>` 中的 HTML 模板片段；同一类组件在多个页面各写一遍 → 报错。判据：页面文件里不得再出现 `<table`、`<tr` 等结构标签（应全部来自 `renderTable`）。
+
+### 10.3 判定方法（新组件落地前先过这一关）
 
 ```
-① 有没有现成类？（查 primer.css 2,345 个类）
-② 有没有令牌？（查 primitives：--space/--text/--base-size/--borderRadius/--motion/--breakpoint）
+① 有没有现成类？（primer.css 2,345 个类）
+② 有没有令牌？（--space/--text/--base-size/--borderRadius/--motion/--breakpoint）
 ③ 有没有 behavior？（定位/焦点/滚动 → @primer/behaviors）
-④ 都没有 → 才算自写，并在 §10.1 登记
+④ 有没有同类的 ui/*.js 模块？（有就加参数，不新建）
+⑤ 都没有 → 才自写，并在 §10.2 登记
 ```
 
 ---
@@ -802,10 +1107,59 @@ Primer 没有"内容列宽度"令牌，因此定义**一个**：
 
 ---
 
+### 12.3 渲染完成标记（把"时序"变成"确定性"）
+
+**问题**：动态渲染页（拉接口 → 渲染 DOM）如果不等数据回来就断言，会在**骨架屏/空容器**上跑，
+表现为随机失败或假通过（实测 `graph` 页偶发 `canvas=None`、`data-page-ready` 未置）。
+
+**契约**：每个页面在**首屏渲染完成**后执行
+
+```js
+document.body.dataset.pageReady = "1";
+```
+
+**实现**（已落地在 13 页，公共版本见 `ui/page-ready.js`）：
+
+```js
+(function () {
+  var t0 = Date.now();
+  var iv = setInterval(function () {
+    var root = document.querySelector(".page, main, #main") || document.body;
+    var done = root && root.querySelector(".row-1, tr, canvas, .border-bottom");
+    if (done || Date.now() - t0 > 8000) {          // 8s 兜底，避免永久卡住
+      document.body.dataset.pageReady = "1";
+      clearInterval(iv);
+    }
+  }, 80);
+})();
+```
+
+**smoke 侧**（`tools/pages_smoke.py` 已改）：
+
+| 步 | 行为 |
+|---|---|
+| 1 | `Page.navigate` 后等 1.2s |
+| 2 | 轮询 `body.dataset.pageReady === "1"`，最多 **80 × 0.25s = 20s** |
+| 3 | 再探测不变量（19 项/页） |
+| 4 | 图表页若无 canvas，**再重试 3 次 × 2s** |
+
+**断言**（已加入）：`{slug}: data-page-ready` → `body[data-page-ready=1]`。
+
+### 12.4 ARIA 断言（已加入 pages_smoke）
+
+| 断言 | 判据 |
+|---|---|
+| `ARIA 主区域` | 存在 `main` 或 `[role=main]` |
+| `ARIA 搜索框可访问名` | `#q` 有 `aria-label`/`aria-labelledby`（13 页均已补） |
+| `ARIA 唯一 current` | 列表页 `[aria-current]` ≤ 1 |
+
+> 当前 `pages_smoke` 共 **97 项**（13 页 × 7–8 项），全部通过。
+
 ## 13. 施工顺序（13 批）
 
 | 批 | 内容 | 完成判据 |
 |---|---|---|
+| **P0** | **公共模块（§10.2 十二个 ui/*.js）+ ARIA（§5.14）+ page-ready（§12.3）** | 13 页不再出现结构标签；ARIA 断言全绿 |
 | P1 | 依赖与基座：四个包 + MIME + 主题属性 | `import()` 成功、令牌 `#d1d9e0` |
 | P2 | 壳层：全局条 52 + 仓库条 48 + 侧栏 239 + 底部两动作 | 三处误差 ≤2px |
 | P3 | 路由与历史（§4.3） | 四条验收通过 |
@@ -819,6 +1173,7 @@ Primer 没有"内容列宽度"令牌，因此定义**一个**：
 | P11 | 监管统计 7 分区 | 7 分区可进 |
 | P12 | 文档管理（4 子页 + 检索重设计 + 三图标） | 片段高亮 + 数字规则 |
 | P13 | 任务管理（两子页 + 状态改造 + 弹窗） | 两态 + 批量 + focusTrap |
+| **P14** | 后端新增：`/api/clauses`（§9.7.6）、`/api/records/attachments`（§9.6.1） | 条款页可用、EAST 附件可列 |
 
 ---
 
