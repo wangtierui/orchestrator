@@ -3,131 +3,121 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>发布事件 · 平行重建样板页</title>
-<link rel="stylesheet" href="../primer-primitives.css">
-<link rel="stylesheet" href="../primer.css">
+<title>版本管理</title>
+<link rel="stylesheet" href="/primer-primitives.css">
+<link rel="stylesheet" href="/primer.css">
 <style>
-  /* 只允许布局。颜色/边框/圆角走 Primer 类与令牌。 */
-  body { background: var(--bgColor-default); }
-  .page { max-width: 1200px; margin: 0 auto; padding: 16px; }
-  .qwrap { position: relative; }
-  .qico { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); pointer-events: none; }
-  .qinput { padding-right: 30px; }
-  .tbl { display: grid; grid-template-columns: 92px minmax(0,1fr) 110px;
-         align-items: center; gap: 8px; }
-  .row-1 { min-height: 32px; }
-  .cell { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
-  .gap-2 { gap: 8px; }   /* Primer 22 无此工具类，按布局补 */
+  /* 只写布局 */
+  .page { max-width: var(--rco-content-width, 75rem); margin-inline: auto; padding: var(--space-lg); }
+  .stack { display: flex; flex-direction: column; gap: var(--space-lg); }
+  .row { display: flex; align-items: center; gap: var(--space-sm); }
+  .grow { flex: 1 1 auto; min-width: 0; }
 </style>
 </head>
 <body>
-<div class="page" role="main">
-
-  <div class="qwrap mb-2">
-    <input id="q" class="form-control input-block qinput" type="search"
-           placeholder="搜索提交：sha / 主题…" aria-label="搜索发布事件">
-    <svg class="octicon qico" width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-      <path d="M10.68 11.74a6 6 0 0 1-7.922-8.982 6 6 0 0 1 8.982 7.922l3.04 3.04a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215ZM11.5 7a4.499 4.499 0 1 0-8.997 0A4.499 4.499 0 0 0 11.5 7Z"></path>
-    </svg>
+<div class="page stack" role="main">
+  <div class="row">
+    <h1 class="h3 m-0 grow">版本管理</h1>
+    <span class="text-small" id="stamp"></span>
   </div>
-
-  <div class="d-flex flex-items-center flex-wrap gap-2 mb-2">
-    <span id="count" class="text-small">共 0 条</span>
-    <span id="ver" class="text-small"></span>
-    <span class="flex-auto"></span>
-    <div class="d-flex" role="group" aria-label="Issues display density">
-      <button class="btn btn-sm" type="button" data-density="comfortable" aria-pressed="true"
-              title="Comfortable display density" aria-label="Comfortable display density">≡</button>
-      <button class="btn btn-sm" type="button" data-density="compact" aria-pressed="false"
-              title="Compact display density" aria-label="Compact display density">☰</button>
-    </div>
-  </div>
-
-  <div class="border rounded-2 overflow-hidden">
-    <div class="border-bottom py-1 px-2 bgColor-muted tbl row-1 text-small">
-      <div class="cell">提交</div><div class="cell">主题</div><div class="cell">日期</div>
-    </div>
-    <div id="rows"></div>
-  </div>
-
-  <div class="paginate-container mt-3">
-    <div class="pagination">
-      <button class="btn btn-sm" id="prev" type="button">上一页</button>
-      <span id="pinfo" class="px-2 text-small">1 / 1</span>
-      <button class="btn btn-sm" id="next" type="button">下一页</button>
-    </div>
-  </div>
+  <div id="cardsSlot" class="row"></div>
+  <div id="searchSlot"></div>
+  <div class="border rounded-2" id="tableSlot"></div>
 </div>
-
 <script>
-const S = { q: "", page: 1, size: 25 };
-const $ = (s) => document.querySelector(s);
-const esc = (v) => String(v == null ? "" : v).replace(/[&<>"]/g, (c) =>
-  ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-let ALL = [];
-
-function render() {
-  const q = S.q.toLowerCase();
-  const list = ALL.filter((c) =>
-    !q || [c.sha, c.subject, c.date].join(" ").toLowerCase().includes(q));
-  const pages = Math.max(1, Math.ceil(list.length / S.size));
-  if (S.page > pages) S.page = pages;
-  const slice = list.slice((S.page - 1) * S.size, S.page * S.size);
-  $("#count").textContent = `共 ${list.length} 条`;
-  $("#pinfo").textContent = `${S.page} / ${pages}`;
-  $("#rows").innerHTML = slice.map((c) => `
-    <div class="border-bottom py-1 px-2 tbl row-1">
-      <div class="cell mono" title="${esc(c.sha)}">${esc(String(c.sha).slice(0, 7))}</div>
-      <div class="cell" title="${esc(c.subject)}">${esc(c.subject)}</div>
-      <div class="cell text-small">${esc(c.date)}</div>
-    </div>`).join("") || '<div class="py-2 px-2 text-small">没有匹配提交</div>';
-}
-
-async function load() {
-  const d = await (await fetch("/api/release", { cache: "no-store" })).json();
-  ALL = d.commits || [];
-  $("#ver").textContent = d.contract_version ? `契约 ${d.contract_version}` : "";
-  render();
-}
-
-let timer = null;
-$("#q").addEventListener("input", (e) => {
-  clearTimeout(timer);
-  timer = setTimeout(() => { S.q = e.target.value.trim(); S.page = 1; render(); }, 200);
-});
-$("#prev").onclick = () => { if (S.page > 1) { S.page--; render(); } };
-$("#next").onclick = () => {
-  const pages = Math.max(1, Math.ceil(ALL.filter((c) => !S.q ||
-    [c.sha, c.subject, c.date].join(" ").toLowerCase().includes(S.q.toLowerCase())).length / S.size));
-  if (S.page < pages) { S.page++; render(); }
-};
-document.querySelectorAll("[data-density]").forEach((b) => {
-  b.onclick = () => {
-    const v = b.dataset.density;
-    document.querySelectorAll("[data-density]").forEach((x) =>
-      x.setAttribute("aria-pressed", String(x === b)));
-    document.querySelectorAll(".row-1").forEach((r) => {
-      r.style.minHeight = v === "compact" ? "28px" : "32px";
-    });
+(async () => {
+  const RCO = window.RCO || {
+    core: await import('/js/ui/core.js'),
+    table: await import('/js/ui/table.js'),
+    controls: await import('/js/ui/controls.js'),
   };
-});
-load();
-</script>
+  const { table, controls, core } = RCO;
 
-<script>
-/* 渲染完成标记：页面自己打 data-page-ready=1，smoke 等它再断言，
-   把"时序"变成"确定性"（否则断言会跑在骨架屏上）。 */
-(function () {
-  var t0 = Date.now();
-  var iv = setInterval(function () {
-    var root = document.querySelector(".page, main, #main") || document.body;
-    var hasContent = root && root.querySelector(".row-1, tr, canvas, .border-bottom");
-    if (hasContent || Date.now() - t0 > 8000) {
-      document.body.dataset.pageReady = "1";
-      clearInterval(iv);
+  let commits = [];
+  let tbl = null;
+  let q = '';
+
+  const COLUMNS = [
+    { key: 'date', label: '日期', width: '120px' },
+    { key: 'subject', label: '提交主题', width: 'minmax(0,3fr)', titleFrom: 'subject' },
+    { key: 'sha', label: 'sha', width: '110px', render: (r) => table.badge(String(r.sha || '').slice(0, 7)) },
+    { key: 'act', label: '操作', width: '90px', render: (r) => {
+      const b = document.createElement('button');
+      b.className = 'btn btn-sm'; b.type = 'button'; b.textContent = '复制';
+      b.setAttribute('aria-label', `复制 ${r.sha} 的完整 sha`);
+      b.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(r.sha);
+          b.textContent = '已复制';
+          setTimeout(() => { b.textContent = '复制'; }, 1200);
+        } catch (e) {
+          alert(`复制失败：${e.message}（非 https 环境浏览器会拒绝）`);
+        }
+      });
+      return b;
+    } },
+  ];
+
+  function card(label, value, hint) {
+    const box = document.createElement('div');
+    box.className = 'border rounded-2 p-3';
+    box.style.flex = '1 1 0';
+    box.innerHTML = `<div class="text-small">${label}</div>
+      <div class="text-bold" style="font-size:var(--text-title-size-small)">${value}</div>
+      ${hint ? `<div class="text-small">${hint}</div>` : ''}`;
+    return box;
+  }
+
+  function renderCards(d) {
+    const host = document.getElementById('cardsSlot');
+    const sbom = d.sbom || {};
+    host.replaceChildren(
+      card('提交总数', core.fmtInt(d.commit_total || commits.length), '来自 /api/release'),
+      card('发布件', sbom.available ? core.fmtInt(sbom.count || 0) : '未生成', sbom.updated_at || ''),
+      card('契约版本', d.contract_version || '—', '与条文契约自检同源'),
+    );
+  }
+
+  function rows() {
+    if (!q) return commits;
+    const k = q.toLowerCase();
+    return commits.filter((c) => `${c.sha} ${c.subject} ${c.date}`.toLowerCase().includes(k));
+  }
+
+  function render() {
+    const data = rows();
+    if (!tbl) {
+      tbl = table.renderTable({ columns: COLUMNS, rows: data, label: '提交列表',
+        density: 'compact',
+        empty: { title: '没有匹配的提交', desc: '换个关键词' } });
+      document.getElementById('tableSlot').append(tbl.el);
+    } else tbl.update(data);
+    document.getElementById('stamp').textContent = `显示 ${data.length} / ${commits.length} 条 · ${new Date().toLocaleTimeString('zh-CN')}`;
+  }
+
+  async function load() {
+    document.getElementById('tableSlot').setAttribute('aria-busy', 'true');
+    try {
+      const d = await fetch('/api/release', { cache: 'no-store' }).then((r) => r.json());
+      commits = d.commits || [];
+      renderCards(d);
+      render();
+    } catch (e) {
+      document.getElementById('tableSlot').replaceChildren(core.renderState('error', {
+        title: '加载失败', desc: String(e.message || e), action: { label: '重试', onClick: load } }));
+    } finally {
+      document.getElementById('tableSlot').removeAttribute('aria-busy');
+      core.markReady();
     }
-  }, 80);
+  }
+
+  document.getElementById('searchSlot').append(controls.renderSearch({
+    id: 'q', label: '搜索提交', placeholder: '搜 sha / 主题 / 日期…',
+    onInput: (v) => { q = v; render(); },
+    onSubmit: (v) => { q = v; render(); },
+  }).el);
+
+  load();
 })();
 </script>
 </body>

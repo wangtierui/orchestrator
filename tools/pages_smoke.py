@@ -36,7 +36,7 @@ PAGES = [
     ("flow", "#chart", False, True),
     ("metrics", ".grid3", False, True),
     ("graph", "#chart", False, True),
-    ("release", ".row-1", True, False),
+    ("release", ".rco-tbl__row", True, False),
     ("governance", ".rco-tbl__row", True, False),
 ]
 
@@ -158,7 +158,7 @@ def evaluate(data: dict) -> list[dict]:
             n = d.get("rows") or 0
             checks.append({"check": f"{slug}: 渲染出行", "ok": n > 0, "detail": f"{n} 行"})
             h = d.get("rowH")
-            MIGRATED = {"rules", chr(108)+chr(97)+chr(119)+chr(115), "worklist", "feedback", "search", "governance"}
+            MIGRATED = {"rules", chr(108)+chr(97)+chr(119)+chr(115), "worklist", "feedback", "search", "governance", "release"}
             ok_h = h is not None and ((36 <= h <= 40 or 60 <= h <= 70) if slug in MIGRATED else 28 <= h <= 70)
             checks.append({"check": f"{slug}: 行高 38|65", "ok": ok_h, "detail": f"{h}px"})
         if d.get("token") != "#d1d9e0":
