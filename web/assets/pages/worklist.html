@@ -3,283 +3,181 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>待办闭环 · 平行重建样板页（复杂页验证）</title>
-<link rel="stylesheet" href="../primer-primitives.css">
-<link rel="stylesheet" href="../primer.css">
+<title>程序指令</title>
+<link rel="stylesheet" href="/primer-primitives.css">
+<link rel="stylesheet" href="/primer.css">
 <style>
-  /* 只允许布局：grid/flex/宽高/间距/截断。颜色/边框/圆角一律走 Primer 类或令牌。 */
-  body { background: var(--bgColor-default); }
-  .page { max-width: 1200px; margin: 0 auto; padding: 16px; }
-  .qwrap { position: relative; }
-  .qico { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); pointer-events: none; }
-  .qinput { padding-right: 30px; }
-  .tbl { display: grid; grid-template-columns: 32px 170px minmax(0,1fr) 150px 96px 120px 88px;
-         align-items: center; gap: 8px; }
-  .row-1 { min-height: 32px; }
-  .cell { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-  .row-1:hover { background: var(--bgColor-muted); }
-  .row-1 .btn { height: 24px; padding: 0 8px; }
-  /* 行内处置：整行展开的块，label 在上、控件满宽（与留言表单同规范） */
-  .detail { display: block; padding: 12px; }
-  .detail .field { margin-bottom: 12px; }
-  .detail .field > label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 6px; }
-  .detail .actions { display: flex; justify-content: flex-end; gap: 8px; }   /* 行内动作按钮压到 24，行高才能是 32 */
-  .gap-2 { gap: 8px; }   /* Primer 22 无此工具类，按布局补 */
+  /* 只写布局 */
+  .page { max-width: var(--rco-content-width, 75rem); margin-inline: auto; padding: var(--space-lg); }
+  .stack { display: flex; flex-direction: column; gap: var(--space-lg); }
+  .row { display: flex; align-items: center; gap: var(--space-sm); }
+  .grow { flex: 1 1 auto; min-width: 0; }
+  .bulk { display: flex; align-items: center; gap: var(--space-sm); }
+  .detail { padding: var(--space-lg); background: var(--bgColor-muted); }
 </style>
 </head>
 <body>
-<div class="page" role="main">
-
-  <!-- 搜索行：整行、放大镜在右 -->
-  <div class="qwrap mb-2">
-    <input id="q" class="form-control input-block qinput" type="search"
-           placeholder="搜索待办：subject / artifact_key…" aria-label="搜索待办">
-    <svg class="octicon qico" width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-      <path d="M10.68 11.74a6 6 0 0 1-7.922-8.982 6 6 0 0 1 8.982 7.922l3.04 3.04a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215ZM11.5 7a4.499 4.499 0 1 0-8.997 0A4.499 4.499 0 0 0 11.5 7Z"></path>
-    </svg>
+<div class="page stack" role="main">
+  <div class="row">
+    <h1 class="h3 m-0 grow">程序指令</h1>
+    <span class="text-small" id="stamp"></span>
   </div>
-
-  <!-- 工具条：左「状态开关 + 计数」/ 右「kind 筛选 + 密度」 -->
-  <div class="d-flex flex-items-center flex-wrap gap-2 mb-2">
-    <div class="d-flex" role="group" aria-label="状态">
-      <button class="btn btn-sm" type="button" data-status="open" aria-pressed="true">待处置</button>
-      <button class="btn btn-sm" type="button" data-status="resolved" aria-pressed="false">已处置</button>
-    </div>
-    <span id="count" class="text-small">共 0 条</span>
-    <span class="flex-auto"></span>
-    <select id="kind" class="form-select" aria-label="按 kind 筛选"></select>
-    <div class="d-flex" role="group" aria-label="Issues display density">
-      <button class="btn btn-sm" type="button" data-density="comfortable" aria-pressed="true"
-              title="Comfortable display density" aria-label="Comfortable display density">≡</button>
-      <button class="btn btn-sm" type="button" data-density="compact" aria-pressed="false"
-              title="Compact display density" aria-label="Compact display density">☰</button>
-    </div>
-  </div>
-
-  <!-- 批量处置条：勾选后出现（只做布局，视觉全 Primer） -->
-  <div id="bulk" class="border rounded-2 mb-2 p-2 d-flex flex-items-center flex-wrap gap-2" hidden>
-    <span class="text-small">已选 <b id="bulkn">0</b> 条</span>
-    <select id="bulkstatus" class="form-select" aria-label="批量处置状态">
-      <option value="resolved">resolved（已处置）</option>
-      <option value="dismissed">dismissed（不适用）</option>
+  <div id="searchSlot"></div>
+  <div id="toolbarSlot"></div>
+  <div id="bulkSlot" hidden class="border rounded-2 p-2 bulk" role="region" aria-label="批量处置">
+    <span class="text-small" id="bulkCount">已选 0 条</span>
+    <span class="grow"></span>
+    <select id="bulkStatus" class="form-select" style="width:140px" aria-label="处置状态">
+      <option value="resolved">已办结</option>
+      <option value="dismissed">不适用</option>
     </select>
-    <input id="bulkwhy" class="form-control" style="flex:1 1 260px;min-width:220px"
-           placeholder="批量处置理由（必填，进审计台账）">
-    <button class="btn btn-primary" id="bulkdo" type="button">批量处置</button>
-    <button class="btn" id="bulkcancel" type="button">取消</button>
-    <div id="bulkmsg" class="text-small" style="flex:1 0 100%"></div>
+    <input id="bulkWhy" class="form-control" style="width:280px" placeholder="理由（必填，进审计台账）" aria-label="批量处置理由">
+    <button id="bulkGo" class="btn btn-primary" type="button">批量处置</button>
+    <button id="bulkCancel" class="btn" type="button">取消</button>
   </div>
-
-  <!-- 列表：无外框，表头上下 1px，行间 1px -->
-  <div class="border rounded-2 overflow-hidden">
-    <div class="border-bottom py-1 px-2 bgColor-muted tbl row-1 text-small">
-      <div class="cell"><input type="checkbox" id="selall" aria-label="全选"></div>
-      <div class="cell">kind</div>
-      <div class="cell">subject</div>
-      <div class="cell">suggestion</div>
-      <div class="cell">confidence</div>
-      <div class="cell">created_at</div>
-      <div class="cell">操作</div>
-    </div>
-    <div id="rows"></div>
-  </div>
-
-  <div class="paginate-container mt-3">
-    <div class="pagination">
-      <button class="btn btn-sm" id="prev" type="button">上一页</button>
-      <span id="pinfo" class="px-2 text-small">1 / 1</span>
-      <button class="btn btn-sm" id="next" type="button">下一页</button>
-    </div>
-  </div>
+  <div class="border rounded-2" id="tableSlot"></div>
 </div>
-
 <script>
-const S = { status: "open", kind: "", q: "", page: 1, size: 25, total: 0 };
-const $ = (s) => document.querySelector(s);
-const esc = (v) => String(v == null ? "" : v).replace(/[&<>"]/g, (c) =>
-  ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-
-async function loadKinds() {
-  const r = await fetch("/api/worklist?status=open&size=1", { cache: "no-store" });
-  const d = await r.json();
-  const counts = d.kind_counts || {};
-  const opts = ['<option value="">全部 kind</option>'].concat(
-    Object.keys(counts).sort((a, b) => counts[b] - counts[a]).map((k) =>
-      `<option value="${esc(k)}">${esc(k)}（${counts[k]}）</option>`));
-  $("#kind").innerHTML = opts.join("");
-}
-
-async function load() {
-  const p = new URLSearchParams({ status: S.status, size: S.size, offset: (S.page - 1) * S.size });
-  if (S.kind) p.set("kind", S.kind);
-  if (S.q) p.set("q", S.q);
-  const r = await fetch("/api/worklist?" + p.toString(), { cache: "no-store" });
-  const d = await r.json();
-  S.total = d.total || d.count || 0;
-  $("#count").textContent = `共 ${S.total} 条`;
-  const pages = Math.max(1, Math.ceil(S.total / S.size));
-  $("#pinfo").textContent = `${S.page} / ${pages}`;
-  $("#rows").innerHTML = (d.items || []).map((it) => `
-    <div class="border-bottom py-1 px-2 tbl row-1" data-id="${esc(it.item_id)}">
-      <div class="cell"><input type="checkbox" class="rowsel" data-id="${esc(it.item_id)}"
-        aria-label="选择 ${esc(it.item_id)}"></div>
-      <div class="cell"><span class="IssueLabel" style="background-color:var(--bgColor-accent-muted);border-color:var(--borderColor-accent-muted)">${esc(it.kind)}</span></div>
-      <div class="cell" title="${esc(it.subject)}">${esc(it.subject)}</div>
-      <div class="cell text-small" title="${esc(it.suggestion)}">${esc(it.suggestion)}</div>
-      <div class="cell text-small">${esc(it.confidence)}</div>
-      <div class="cell text-small">${esc(it.created_at)}</div>
-      <div class="cell"><button class="btn btn-sm" type="button" data-act="resolve">处置</button></div>
-    </div>`).join("") || '<div class="py-2 px-2 text-small">没有匹配待办</div>';
-  const box = $("#selall"); if (box) box.checked = false;
-  syncBulk();
-}
-
-let timer = null;
-$("#q").addEventListener("input", (e) => {
-  clearTimeout(timer);
-  timer = setTimeout(() => { S.q = e.target.value.trim(); S.page = 1; load(); }, 220);
-});
-$("#kind").addEventListener("change", (e) => { S.kind = e.target.value; S.page = 1; load(); });
-document.querySelectorAll("[data-status]").forEach((b) => {
-  b.onclick = () => {
-    S.status = b.dataset.status; S.page = 1;
-    document.querySelectorAll("[data-status]").forEach((x) =>
-      x.setAttribute("aria-pressed", String(x === b)));
-    load();
+(async () => {
+  const RCO = window.RCO || {
+    core: await import('/js/ui/core.js'),
+    table: await import('/js/ui/table.js'),
+    controls: await import('/js/ui/controls.js'),
   };
-});
-document.querySelectorAll("[data-density]").forEach((b) => {
-  b.onclick = () => {
-    const v = b.dataset.density;
-    document.querySelectorAll("[data-density]").forEach((x) =>
-      x.setAttribute("aria-pressed", String(x === b)));
-    document.querySelectorAll(".row-1").forEach((r) => {
-      r.style.minHeight = v === "compact" ? "28px" : "32px";
+  const { table, controls, core } = RCO;
+
+  const state = { status: 'open', kind: '', q: '', density: 'comfortable' };
+  let rows = [];
+  let tbl = null;
+
+  const COLUMNS = [
+    { key: 'kind', label: 'kind', width: '190px', render: (r) => table.badge(r.kind) },
+    { key: 'subject', label: '名称', width: 'minmax(0,2.2fr)', titleFrom: 'subject' },
+    { key: 'suggestion', label: '建议', width: 'minmax(0,1.6fr)', titleFrom: 'suggestion' },
+    { key: 'confidence', label: '置信度', width: '90px', align: 'right',
+      render: (r) => (r.confidence == null ? '—' : Number(r.confidence).toFixed(2)) },
+    { key: 'created_at', label: '时间', width: '150px',
+      render: (r) => (r.created_at || '').replace('T', ' ').slice(0, 16) },
+    { key: 'act', label: '操作', width: '80px', render: (r) => {
+      const b = document.createElement('button');
+      b.className = 'btn btn-sm'; b.type = 'button'; b.textContent = '处置';
+      b.addEventListener('click', (e) => { e.stopPropagation(); openInline(r); });
+      return b;
+    } },
+  ];
+
+  /* 行内处置：在目标行后插入一个详情块（规格 §9.8.1） */
+  function openInline(row) {
+    document.querySelectorAll('.detail').forEach((d) => d.remove());
+    const host = tbl.el.querySelector('.rco-tbl__body');
+    if (!host) return;
+    const form = controls.renderForm({
+      fields: [
+        { key: 'status', label: '处置状态', type: 'select', required: true,
+          options: [{ value: 'resolved', label: '已办结' }, { value: 'dismissed', label: '不适用' }] },
+        { key: 'why', label: '处置理由', type: 'textarea', required: true },
+      ],
+      actions: [{ key: 'cancel', label: '取消', onClick: () => box.remove() },
+        { key: 'submit', label: '提交', variant: 'primary' }],
+      onSubmit: async (v) => {
+        const out = await post(row.item_id, v.status, v.why);
+        if (!out.ok) { alert(out.reason || '提交失败'); return; }
+        box.remove();
+        refresh();
+      },
     });
-  };
-});
-/* 行内处置：展开一整行（与旧工作台同一交互，但视觉全走 Primer） */
-$("#rows").addEventListener("click", (e) => {
-  const btn = e.target.closest("[data-act='resolve']");
-  if (!btn) return;
-  const row = btn.closest(".row-1");
-  const id = row && row.dataset.id;
-  const next = row.nextElementSibling;
-  if (next && next.classList.contains("detail")) { next.remove(); return; }
-  const box = document.createElement("div");
-  box.className = "border-bottom detail";
-  box.innerHTML = `
-    <div class="field">
-      <label for="dstatus">处置状态</label>
-      <select id="dstatus" class="form-select input-block">
-        <option value="resolved">resolved（已处置）</option>
-        <option value="dismissed">dismissed（不适用）</option>
-      </select>
-    </div>
-    <div class="field">
-      <label for="dwhy">处置理由</label>
-      <textarea id="dwhy" class="form-control input-block" rows="4"
-        placeholder="必填，进入审计台账"></textarea>
-    </div>
-    <div class="actions">
-      <button class="btn" type="button" data-act="cancel">取消</button>
-      <button class="btn btn-primary" type="button" data-act="submit" data-id="${esc(id)}">提交</button>
-    </div>`;
-  row.after(box);
-  box.querySelector("#dwhy").focus();
-});
-
-$("#rows").addEventListener("click", (e) => {
-  const act = e.target.getAttribute && e.target.getAttribute("data-act");
-  if (act !== "cancel" && act !== "submit") return;
-  const box = e.target.closest(".detail");
-  if (!box) return;
-  if (act === "cancel") { box.remove(); return; }
-  const why = (box.querySelector("#dwhy").value || "").trim();
-  if (!why) { box.querySelector("#dwhy").focus(); return; }
-  const payload = {
-    item_id: e.target.getAttribute("data-id"),
-    resolution: why,
-    status: box.querySelector("#dstatus").value,
-    by: "web",
-  };
-  fetch("/api/worklist/resolve", {
-    method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  }).then((r) => r.json()).then((d) => {
-    if (d && (d.ok || d.available)) { box.remove(); load(); }
-    else { alert("处置失败：" + ((d && (d.reason || d.error)) || "未知")); }
-  }).catch((err) => alert("处置失败：" + err.message));
-});
-
-/* 批量处置：勾选 → 批量条 → 逐条 POST（接口无批量端点，旧工作台也是循环单条） */
-function selected() {
-  return [...document.querySelectorAll(".rowsel")].filter((c) => c.checked);
-}
-function syncBulk() {
-  const n = selected().length;
-  $("#bulk").hidden = n === 0;
-  $("#bulkn").textContent = String(n);
-}
-document.addEventListener("change", (e) => {
-  if (e.target.id === "selall") {
-    document.querySelectorAll(".rowsel").forEach((c) => { c.checked = e.target.checked; });
-    syncBulk();
-  } else if (e.target.classList.contains("rowsel")) {
-    const all = [...document.querySelectorAll(".rowsel")];
-    const box = $("#selall");
-    if (box) box.checked = all.length > 0 && all.every((c) => c.checked);
-    syncBulk();
+    const box = document.createElement('div');
+    box.className = 'detail';
+    box.append(form.el);
+    host.append(box);
+    box.querySelector('select')?.focus();
   }
-});
-$("#bulkcancel").onclick = () => {
-  document.querySelectorAll(".rowsel").forEach((c) => { c.checked = false; });
-  const box = $("#selall"); if (box) box.checked = false;
-  syncBulk();
-};
-$("#bulkdo").onclick = async () => {
-  const why = ($("#bulkwhy").value || "").trim();
-  const msg = $("#bulkmsg");
-  if (!why) { msg.textContent = "批量处置必须填理由（进审计台账）"; $("#bulkwhy").focus(); return; }
-  const ids = selected().map((c) => c.dataset.id);
-  if (!ids.length) return;
-  const st = $("#bulkstatus").value;
-  const btn = $("#bulkdo");
-  btn.disabled = true;
-  let ok = 0; const bad = [];
-  for (const id of ids) {
+
+  async function post(itemId, status, why) {
+    const res = await fetch('/api/worklist/resolve', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ item_id: itemId, status, resolution: why, by: 'web' }),
+    });
+    return res.json().catch(() => ({ ok: false, reason: `HTTP ${res.status}` }));
+  }
+
+  function bulkBar() {
+    const box = document.getElementById('bulkSlot');
+    const sel = tbl ? tbl.selection() : [];
+    box.hidden = sel.length === 0;
+    document.getElementById('bulkCount').textContent = `已选 ${sel.length} 条`;
+    return sel;
+  }
+
+  async function refresh() {
+    document.getElementById('tableSlot').setAttribute('aria-busy', 'true');
     try {
-      const r = await fetch("/api/worklist/resolve", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ item_id: id, resolution: why, status: st, by: "web" }),
+      const d = await fetch(`/api/worklist?status=${state.status}`, { cache: 'no-store' }).then((r) => r.json());
+      rows = (d.items || []).filter((x) => {
+        if (state.kind && x.kind !== state.kind) return false;
+        if (state.q) {
+          const hay = `${x.item_id} ${x.subject} ${x.kind} ${x.suggestion || ''}`.toLowerCase();
+          if (!hay.includes(state.q.toLowerCase())) return false;
+        }
+        return true;
       });
-      const d = await r.json();
-      if (d && (d.ok || d.available)) ok++; else bad.push(id);
-    } catch (err) { bad.push(id); }
-  }
-  btn.disabled = false;
-  msg.textContent = `成功 ${ok} 条` + (bad.length ? ` · 失败 ${bad.length} 条：${bad.slice(0, 3).join(", ")}` : "");
-  if (ok) { load(); }
-};
-
-$("#prev").onclick = () => { if (S.page > 1) { S.page--; load(); } };
-$("#next").onclick = () => { S.page++; load(); };
-loadKinds(); load();
-</script>
-
-<script>
-/* 渲染完成标记：页面自己打 data-page-ready=1，smoke 等它再断言，
-   把"时序"变成"确定性"（否则断言会跑在骨架屏上）。 */
-(function () {
-  var t0 = Date.now();
-  var iv = setInterval(function () {
-    var root = document.querySelector(".page, main, #main") || document.body;
-    var hasContent = root && root.querySelector(".row-1, tr, canvas, .border-bottom");
-    if (hasContent || Date.now() - t0 > 8000) {
-      document.body.dataset.pageReady = "1";
-      clearInterval(iv);
+      if (!tbl) {
+        tbl = table.renderTable({ columns: COLUMNS, rows, density: state.density, selectable: true,
+          label: '程序指令列表', onSelect: bulkBar,
+          empty: { title: '当前没有待受理项', desc: '切换状态或清除筛选' } });
+        document.getElementById('tableSlot').append(tbl.el);
+      } else tbl.update(rows, state.density);
+      document.getElementById('stamp').textContent = `共 ${core.fmtInt((d.items || []).length)} 条 · 筛选后 ${rows.length}`;
+      bulkBar();
+    } catch (e) {
+      document.getElementById('tableSlot').replaceChildren(core.renderState('error', {
+        title: '加载失败', desc: String(e.message || e), action: { label: '重试', onClick: refresh } }));
+    } finally {
+      document.getElementById('tableSlot').removeAttribute('aria-busy');
+      core.markReady();
     }
-  }, 80);
+  }
+
+  document.getElementById('searchSlot').append(controls.renderSearch({
+    id: 'q', label: '搜索程序指令', placeholder: '搜编号 / 名称 / kind…',
+    onInput: (v) => { state.q = v; refresh(); },
+    onSubmit: (v) => { state.q = v; refresh(); },
+  }).el);
+
+  document.getElementById('toolbarSlot').append(controls.renderToolbar({
+    segments: [{ key: 'open', label: '待受理' }, { key: 'resolved', label: '已办结' }],
+    active: state.status,
+    filters: [{ key: 'kind', label: 'kind' }],
+    density: state.density,
+    onSegment: (k) => { state.status = k; refresh(); },
+    onFilter: async (f, btn) => {
+      const kinds = await fetch('/api/worklist/kinds').then((r) => r.json()).catch(() => ({}));
+      const opts = (kinds.kinds || []).map((k) => ({ key: k, label: k }));
+      await controls.openPanel({ anchor: btn, label: '筛选：kind', items: opts,
+        onPick: (it) => { state.kind = it.key; refresh(); } });
+    },
+    onDensity: (d) => { state.density = d; tbl && tbl.setDensity(d); },
+  }));
+
+  document.getElementById('bulkGo').addEventListener('click', async () => {
+    const sel = tbl ? tbl.selection() : [];
+    const why = document.getElementById('bulkWhy').value.trim();
+    if (!sel.length) { alert('未选择任何条目'); return; }
+    if (!why) { alert('批量处置必须填理由（进审计台账）'); return; }
+    const status = document.getElementById('bulkStatus').value;
+    let ok = 0; let bad = 0;
+    for (const row of sel) {
+      const out = await post(row.item_id, status, why);
+      if (out.ok) ok++; else bad++;
+    }
+    alert(`成功 ${ok} 条${bad ? `，失败 ${bad} 条` : ''}`);
+    document.getElementById('bulkWhy').value = '';
+    tbl.clearSelection();
+    refresh();
+  });
+  document.getElementById('bulkCancel').addEventListener('click', () => { tbl && tbl.clearSelection(); bulkBar(); });
+
+  refresh();
 })();
 </script>
 </body>

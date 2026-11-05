@@ -106,7 +106,7 @@ const TABS = [
     ["门禁通过率趋势", "#c-gate"], ["时效分布", "#c-time"], ["待办账龄", "#c-age"],
     ["关系类型", "#c-rel"], ["主题分布", "#c-theme"]] },
   { id: "worklist", name: "待办闭环", slug: "worklist", anchors: [
-    ["搜索与筛选", "#q"], ["批量处置条", "#bulk"], ["列表", "#rows"]] },
+    ["搜索与筛选", "#searchSlot"], ["批量处置条", "#bulkSlot"], ["列表", "#tableSlot"]] },
   { id: "laws", name: "政策法规", slug: "laws", anchors: [["搜索", "#searchSlot"], ["列表", "#tableSlot"], ["分页", "#pagerSlot"]] },
   { id: "rules", name: "公司制度", slug: "rules", anchors: [["搜索", "#searchSlot"], ["列表", "#tableSlot"], ["分页", "#pagerSlot"]] },
   { id: "graph", name: "关系图谱", slug: "graph", anchors: [["图谱", "#chart"], ["高频节点", "#hubs"], ["说明", "#note"]] },
@@ -114,7 +114,7 @@ const TABS = [
   { id: "governance", name: "治理审计", slug: "governance", anchors: [["运行记录", "#runs"], ["审计台账", "#audit"]] },
   { id: "search", name: "文档检索", slug: "search", anchors: [["搜索", "#q"], ["结果", "#rows"]] },
   { id: "release", name: "发布事件", slug: "release", anchors: [["搜索", "#q"], ["提交列表", "#rows"], ["分页", "#pinfo"]] },
-  { id: "feedback", name: "留言板", slug: "feedback", anchors: [["搜索", "#q"], ["列表", "#rows"]] },
+  { id: "feedback", name: "留言板", slug: "feedback", anchors: [["状态与筛选", "#toolbarSlot"], ["列表", "#tableSlot"]] },
 ];
 
 const $ = (s, r) => (r || document).querySelector(s);
