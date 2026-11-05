@@ -37,6 +37,13 @@ function ensureStyle() {
   document.head.append(el("style", { id: STYLE_ID, text: css }));
 }
 
+/** 标签徽标：返回 DOM 节点，供列定义 render 使用（字符串会被转义成纯文本）。 */
+export function badge(text, tone = "") {
+  const span = el("span", { class: "IssueLabel" + (tone ? ` ${tone}` : "") });
+  span.textContent = text == null || text === "" ? "—" : String(text);
+  return span;
+}
+
 function colsTemplate(columns, selectable) {
   const parts = [];
   if (selectable) parts.push("var(--base-size-32)");
@@ -58,9 +65,13 @@ function colsTemplate(columns, selectable) {
 export function renderTable(cfg) {
   ensureStyle();
   const {
-    columns = [], rows = [], density = "comfortable", selectable = false,
+    columns = [], density: density0 = "comfortable", selectable = false,
     onSort, onRow, onSelect, empty = { title: "暂无数据" }, rowKey = (r, i) => i,
   } = cfg;
+  /* rows 必须可重赋（update 时替换数据）；用 const 解构会在排序后抛
+   * "Assignment to constant variable"，表现为整表变成错误态。 */
+  let rows = cfg.rows || [];
+  let density = density0;
 
   const tpl = colsTemplate(columns, selectable);
   const wrap = el("div", { class: "rco-tbl", role: "table", "aria-label": cfg.label || "数据表",
@@ -155,7 +166,7 @@ export function renderTable(cfg) {
         if (c.render) {
           const out = c.render(row, i);
           if (out instanceof Node) cell.append(out);
-          else cell.innerHTML = esc(out == null ? "" : out);
+          else cell.textContent = out == null ? "" : String(out);   // 纯文本；标记请返回节点
         } else {
           cell.textContent = row[c.key] == null || row[c.key] === "" ? "—" : row[c.key];
         }

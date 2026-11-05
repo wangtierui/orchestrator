@@ -107,8 +107,8 @@ const TABS = [
     ["关系类型", "#c-rel"], ["主题分布", "#c-theme"]] },
   { id: "worklist", name: "待办闭环", slug: "worklist", anchors: [
     ["搜索与筛选", "#q"], ["批量处置条", "#bulk"], ["列表", "#rows"]] },
-  { id: "laws", name: "政策法规", slug: "laws", anchors: [["搜索", "#q"], ["列表", "#rows"], ["分页", "#pinfo"]] },
-  { id: "rules", name: "公司制度", slug: "rules", anchors: [["搜索", "#q"], ["列表", "#rows"], ["分页", "#pinfo"]] },
+  { id: "laws", name: "政策法规", slug: "laws", anchors: [["搜索", "#searchSlot"], ["列表", "#tableSlot"], ["分页", "#pagerSlot"]] },
+  { id: "rules", name: "公司制度", slug: "rules", anchors: [["搜索", "#searchSlot"], ["列表", "#tableSlot"], ["分页", "#pagerSlot"]] },
   { id: "graph", name: "关系图谱", slug: "graph", anchors: [["图谱", "#chart"], ["高频节点", "#hubs"], ["说明", "#note"]] },
   { id: "regstats", name: "监管统计", slug: "regstats", anchors: [["搜索", "#q"], ["分类", "#cat"], ["分类表", "#cats"]] },
   { id: "governance", name: "治理审计", slug: "governance", anchors: [["运行记录", "#runs"], ["审计台账", "#audit"]] },
@@ -209,7 +209,9 @@ function renderRail(t) {
       if (!target) return;
       $("#rail").querySelectorAll(".item").forEach((x) => x.classList.remove("on"));
       el.classList.add("on");
-      target.scrollIntoView({ behavior: "smooth", block: "start" });
+      const beh = window.RCO && window.RCO.behaviors;
+      if (beh) beh.scrollIntoView(target, $("#main"), { direction: "vertical", startMargin: 8, behavior: "smooth" });
+      else target.scrollIntoView({ behavior: "smooth", block: "start" });
     };
   });
 }
@@ -221,6 +223,7 @@ async function show(t) {
     else a.removeAttribute("aria-current");
   });
   document.title = `${t.name} · 合规工作台`;
+  window.RCO_PARAMS = currentParams();   /* 页面脚本可读深链参数 */
   renderRail(t);
   if (loading) return;
   loading = true;
@@ -241,8 +244,18 @@ async function show(t) {
   }
 }
 
+/* 路由：同时支持 #laws（旧）与 #/laws?q=...&page=2（新，规格 §4.3） */
+function currentParams() {
+  const raw = (location.hash || "").replace(/^#/, "");
+  const qi = raw.indexOf("?");
+  const out = {};
+  if (qi >= 0) for (const [k, v] of new URLSearchParams(raw.slice(qi + 1))) out[k] = v;
+  return out;
+}
 function current() {
-  const id = (location.hash || "#overview").slice(1);
+  let id = (location.hash || "#overview").replace(/^#/, "");
+  if (id.startsWith("/")) id = id.slice(1);
+  id = id.split("?")[0] || "overview";
   return TABS.find((t) => t.id === id) || TABS[0];
 }
 
@@ -366,6 +379,112 @@ function layoutTabs() {
 new ResizeObserver(() => layoutTabs()).observe(tabsNav);
 addEventListener("hashchange", () => setTimeout(layoutTabs, 0));
 setTimeout(layoutTabs, 300);
+
+/* ── Feedback 弹窗（侧栏底部唯一入口，规格 §9.8.2） ── */
+const FB_KINDS = [["bug", "缺陷"], ["data", "数据质量"], ["feature", "功能缺失"], ["other", "其他"]];
+const FB_SEV = [["low", "轻微"], ["normal", "一般"], ["high", "严重"], ["blocker", "阻塞"]];
+
+function openFeedback() {
+  if (document.getElementById("fbDialog")) return;
+  const kindOpts = FB_KINDS.map(([v, l]) => `<option value="${v}">${l}</option>`).join("");
+  const sevOpts = FB_SEV.map(([v, l]) => `<option value="${v}"${v === "normal" ? " selected" : ""}>${l}</option>`).join("");
+  const cur = (window.RCO && window.RCO.router && window.RCO.router.parse().page) || "overview";
+
+  const dlg = document.createElement("div");
+  dlg.id = "fbDialog";
+  dlg.setAttribute("role", "dialog");
+  dlg.setAttribute("aria-modal", "true");
+  dlg.setAttribute("aria-labelledby", "fbTitle");
+  dlg.style.cssText = "position:fixed;inset:0;display:flex;align-items:center;justify-content:center;" +
+    "background:rgba(31,35,40,.5);z-index:100;";
+  dlg.innerHTML = `
+    <div class="bgColor-default" style="width:560px;max-width:calc(100vw - 32px);border-radius:12px;padding:var(--space-lg);">
+      <h3 class="h4 mb-2" id="fbTitle">提交反馈</h3>
+      <p class="text-small mb-3">写入任务管理 › 用户反馈，状态为「待受理」。</p>
+      <div class="form-group">
+        <div class="form-group-header"><label for="fbKind">分类 *</label></div>
+        <select id="fbKind" class="form-select">${kindOpts}</select>
+      </div>
+      <div class="form-group">
+        <div class="form-group-header"><label for="fbSev">严重度 *</label></div>
+        <select id="fbSev" class="form-select">${sevOpts}</select>
+      </div>
+      <div class="form-group">
+        <div class="form-group-header"><label for="fbPage">页面 *</label></div>
+        <input id="fbPage" class="form-control" value="${cur}">
+      </div>
+      <div class="form-group">
+        <div class="form-group-header"><label for="fbText">标题 *</label></div>
+        <input id="fbText" class="form-control" aria-describedby="fbErr">
+      </div>
+      <div class="form-group">
+        <div class="form-group-header"><label for="fbDetail">说明</label></div>
+        <textarea id="fbDetail" class="form-control" rows="4"></textarea>
+      </div>
+      <div id="fbErr" class="text-small" style="color:var(--fgColor-danger);" hidden></div>
+      <div class="d-flex" style="gap:var(--space-sm);justify-content:flex-end;margin-top:var(--space-md);">
+        <button id="fbCancel" class="btn" type="button">取消</button>
+        <button id="fbSubmit" class="btn btn-primary" type="button">提交</button>
+      </div>
+    </div>`;
+  document.body.append(dlg);
+
+  const trap = focusTrap(dlg.querySelector('[role="dialog"]') || dlg, document.getElementById("fbKind"));
+  const close = () => {
+    trap && trap.abort && trap.abort();
+    dlg.remove();
+    /* focusTrap.abort() 会先把焦点还给"打开前的元素"（这里是 body），
+     * 所以要在下一帧再夺回，否则 Esc 后焦点落到 body。 */
+    /* 已知偏差：Esc 关闭后焦点落到 body（behaviors 的焦点归还与本页显式
+     * focus 冲突，双 rAF 与 250ms 兜底实测都无效），记录在重构报告里。 */
+    requestAnimationFrame(() => document.getElementById("feedbackBtn").focus());
+  };
+  document.getElementById("fbCancel").addEventListener("click", close);
+  dlg.addEventListener("click", (e) => { if (e.target === dlg) close(); });
+  /* 捕获阶段监听：focusTrap 会拦冒泡阶段的 Esc，冒泡监听收不到（实测） */
+  document.addEventListener("keydown", function esc(e) { if (e.key === "Escape") { e.stopPropagation(); close(); document.removeEventListener("keydown", esc, true); } }, true);
+
+  document.getElementById("fbSubmit").addEventListener("click", async () => {
+    const err = document.getElementById("fbErr");
+    const title = document.getElementById("fbText").value.trim();
+    err.hidden = true;
+    if (!title) {
+      err.textContent = "标题必填";
+      err.hidden = false;
+      document.getElementById("fbText").setAttribute("aria-invalid", "true");
+      document.getElementById("fbText").focus();
+      return;
+    }
+    const body = {
+      kind: document.getElementById("fbKind").value,
+      severity: document.getElementById("fbSev").value,
+      page: document.getElementById("fbPage").value.trim(),
+      title,
+      detail: document.getElementById("fbDetail").value.trim(),
+      reporter: "",
+    };
+    try {
+      const res = await fetch("/api/feedback", {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
+      });
+      const out = await res.json();
+      if (!out.ok) throw new Error(out.reason || "提交失败");
+      close();
+      const tip = document.createElement("div");
+      tip.setAttribute("role", "status");
+      tip.className = "border rounded-2 p-2";
+      tip.style.cssText = "position:fixed;right:24px;bottom:24px;z-index:110;background:var(--bgColor-default);";
+      tip.textContent = `已提交 #${out.fid}，可在任务管理查看`;
+      document.body.append(tip);
+      setTimeout(() => tip.remove(), 4000);
+    } catch (e) {
+      err.textContent = String(e.message || e);
+      err.hidden = false;
+    }
+  });
+}
+document.getElementById("feedbackBtn")?.addEventListener("click", openFeedback);
+
 </script>
 </body>
 </html>

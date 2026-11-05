@@ -26,7 +26,7 @@ import time
 PAGES = [
     # slug, 关键选择器, 需要行高检查, 需要图表
     ("laws", ".rco-tbl__row", True, False),
-    ("rules", ".border-bottom.py-1", True, False),
+    ("rules", ".rco-tbl__row", True, False),
     ("search", "#q", False, False),
     ("worklist", ".row-1", True, False),
     ("feedback", ".row-1", True, False),
@@ -147,7 +147,7 @@ def evaluate(data: dict) -> list[dict]:
             n = d.get("rows") or 0
             checks.append({"check": f"{slug}: 渲染出行", "ok": n > 0, "detail": f"{n} 行"})
             h = d.get("rowH")
-            MIGRATED = {chr(108)+chr(97)+chr(119)+chr(115)}
+            MIGRATED = {"rules", chr(108)+chr(97)+chr(119)+chr(115)}
             ok_h = h is not None and ((36 <= h <= 40 or 60 <= h <= 70) if slug in MIGRATED else 28 <= h <= 70)
             checks.append({"check": f"{slug}: 行高 38|65", "ok": ok_h, "detail": f"{h}px"})
         if d.get("token") != "#d1d9e0":

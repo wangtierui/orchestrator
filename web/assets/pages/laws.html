@@ -44,7 +44,7 @@
     { key: 'document_number', label: '文号', width: '180px', titleFrom: 'document_number' },
     { key: 'theme_label', label: '主题', width: '150px' },
     { key: 'timeliness_status', label: '时效', width: '90px',
-      render: (r) => `<span class="IssueLabel">${r.timeliness_status || '—'}</span>` },
+      render: (r) => table.badge(r.timeliness_status) },
     { key: 'publish_date', label: '发布日期', width: '120px', sortable: true },
   ];
 
