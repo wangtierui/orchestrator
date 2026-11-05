@@ -3,127 +3,102 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>文档检索 · 平行重建样板页</title>
-<!-- 单一真源：视觉只来自 Primer（22.3.3）+ primitives（11.10.0），本页不写任何颜色/边框/圆角 -->
-<link rel="stylesheet" href="../primer-primitives.css">
-<link rel="stylesheet" href="../primer.css">
+<title>文档检索</title>
+<link rel="stylesheet" href="/primer-primitives.css">
+<link rel="stylesheet" href="/primer.css">
 <style>
-  /* 本页只允许「布局」：grid/flex/宽高/间距。颜色/边框/圆角/字号一律走 Primer 类。 */
-  body { background: var(--bgColor-default, #fff); }
-  .page { max-width: 1200px; margin: 0 auto; padding: 16px; }
-  .qwrap { position: relative; }
-  .qico { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); pointer-events: none; }
-  .qinput { padding-right: 30px; }
-  .tbl { display: grid; grid-template-columns: minmax(0,2.4fr) 170px 130px 80px 150px 108px; align-items: center; }
-  .row-1 { min-height: 32px; }
-  .cell { min-width: 0; overflow: hidden; }
-  .tbl .cell a { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
-  .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .gap-2 { gap: 8px; }   /* Primer 22 无此工具类，按布局补 */
+  /* 只写布局 */
+  .page { max-width: var(--rco-content-width, 75rem); margin-inline: auto; padding: var(--space-lg); }
+  .stack { display: flex; flex-direction: column; gap: var(--space-lg); }
+  .row { display: flex; align-items: center; gap: var(--space-sm); }
+  .grow { flex: 1 1 auto; min-width: 0; }
 </style>
 </head>
 <body>
-<div class="page" role="main">
-
-  <!-- 搜索行：整行、与列表等宽、放大镜在右（GitHub issues 同款） -->
-  <div class="qwrap mb-2">
-    <input id="q" class="form-control input-block qinput" type="search"
-           placeholder="输入关键词检索（≥3 字走全文，2 字内走标题/文号模糊）" aria-label="搜索文档">
-    <svg class="octicon qico" width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-      <path d="M10.68 11.74a6 6 0 0 1-7.922-8.982 6 6 0 0 1 8.982 7.922l3.04 3.04a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215ZM11.5 7a4.499 4.499 0 1 0-8.997 0A4.499 4.499 0 0 0 11.5 7Z"></path>
-    </svg>
+<div class="page stack" role="main">
+  <div class="row">
+    <h1 class="h3 m-0 grow">文档检索</h1>
+    <span class="text-small" id="stamp" aria-live="polite"></span>
   </div>
-
-  <!-- 工具条：左「计数 / 状态」 右「筛选 / 密度」（GitHub 同款分组） -->
-  <div class="d-flex flex-items-center flex-wrap gap-2 mb-2">
-    <span id="count" class="color-fg-muted text-small">共 0 条</span>
-    <span class="flex-auto"></span>
-    <button class="btn btn-sm" type="button" id="fTheme">主题</button>
-    <button class="btn btn-sm" type="button" id="fOrg">发文机关</button>
-    <div class="d-flex" role="group" aria-label="Issues display density">
-      <button class="btn btn-sm" type="button" data-density="comfortable" aria-pressed="true"
-              title="Comfortable display density" aria-label="Comfortable display density">≡</button>
-      <button class="btn btn-sm" type="button" data-density="compact" aria-pressed="false"
-              title="Compact display density" aria-label="Compact display density">☰</button>
+  <div id="searchSlot"></div>
+  <div class="row">
+    <div role="group" aria-label="结果类型" class="row">
+      <button class="btn btn-sm" id="tabRecord" type="button" aria-pressed="true">记录</button>
+      <button class="btn btn-sm" id="tabArticle" type="button" aria-pressed="false"
+              disabled title="条文检索需后端 /api/search?type=article（施工项 E3）">条文</button>
     </div>
+    <span class="grow"></span>
+    <span class="text-small" id="mode"></span>
   </div>
-
-  <!-- 列表：无外框，表头上下各 1px，行与行之间 1px（Primer Box-row 自带） -->
-  <div class="border rounded-2 overflow-hidden">
-    <div class="border-bottom py-1 px-2 bgColor-muted tbl row-1 text-small">
-      <div class="cell">标题</div><div class="cell">文号</div><div class="cell">主题</div>
-      <div class="cell">时效</div><div class="cell">来源</div><div class="cell">发布日期</div>
-    </div>
-    <div id="rows"></div>
-  </div>
-
-  <!-- 分页器在列表外（GitHub 同款） -->
-  <div class="paginate-container mt-3">
-    <div class="pagination">
-      <span id="pinfo" class="text-small">输入关键词开始检索</span>
-    </div>
-  </div>
+  <div class="border rounded-2" id="tableSlot"></div>
+  <p class="text-small m-0">接口固定返回 20 条（无 total/offset），因此本页不分页——要翻页需后端补 total/offset（E3）。</p>
 </div>
-
 <script>
-const S = { page: 1, size: 25, q: "", total: 0, pages: 1, sort: "publish_date", desc: true };
-const $ = (s) => document.querySelector(s);
-const esc = (v) => String(v == null ? "" : v).replace(/[&<>"]/g, (c) =>
-  ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-
-async function load() {
-  const p = new URLSearchParams({ page: S.page, size: S.size, sort: S.sort, desc: S.desc ? 1 : 0 });
-  if (S.q) p.set("q", S.q); else { $("#rows").innerHTML = '<div class="py-2 px-2 text-small">输入关键词开始检索</div>'; $("#count").textContent = "—"; return; }
-  const r = await fetch("/api/search?" + p.toString(), { cache: "no-store" });
-  const d = await r.json();
-  const items = d.results || [];
-  S.total = items.length; S.pages = 1;
-  $("#count").textContent = `共 ${S.total} 条`;
-  $("#pinfo").textContent = `${S.page} / ${S.pages}`;
-  $("#rows").innerHTML = (items).map((it) => `
-    <div class="border-bottom py-1 px-2 tbl row-1">
-      <div class="cell truncate"><a class="Link--primary" href="${esc(it.url || "#")}"
-        target="_blank" rel="noopener">${esc(it.title)}</a></div>
-      <div class="cell truncate text-small">${esc(it.document_number)}</div>
-      <div class="cell"><span class="IssueLabel" style="background-color:var(--bgColor-accent-muted);border-color:var(--borderColor-accent-muted)">${esc(it.theme_label || it.theme || "—")}</span></div>
-      <div class="cell text-small">${esc(it.timeliness_status || "—")}</div>
-      <div class="cell truncate text-small">${esc(it.source)}</div>
-      <div class="cell text-small">${esc(it.publish_date)}</div>
-    </div>`).join("") || '<div class="Box-row">没有匹配记录</div>';
-}
-
-let timer = null;
-$("#q").addEventListener("input", (e) => {
-  clearTimeout(timer);
-  timer = setTimeout(() => { S.q = e.target.value.trim(); S.page = 1; load(); }, 220);
-});
-$("#prev").onclick = () => { if (S.page > 1) { S.page--; load(); } };
-$("#next").onclick = () => { if (S.page < S.pages) { S.page++; load(); } };
-document.querySelectorAll("[data-density]").forEach((b) => {
-  b.onclick = () => {
-    const v = b.dataset.density;
-    document.querySelectorAll("[data-density]").forEach((x) =>
-      x.setAttribute("aria-pressed", String(x === b)));
-    document.querySelectorAll(".row-1").forEach((r) =>
-      r.style.minHeight = v === "compact" ? "28px" : "32px");
+(async () => {
+  const RCO = window.RCO || {
+    core: await import('/js/ui/core.js'),
+    table: await import('/js/ui/table.js'),
+    controls: await import('/js/ui/controls.js'),
   };
-});
-load();
-</script>
+  const { table, controls, core } = RCO;
 
-<script>
-/* 渲染完成标记：页面自己打 data-page-ready=1，smoke 等它再断言，
-   把"时序"变成"确定性"（否则断言会跑在骨架屏上）。 */
-(function () {
-  var t0 = Date.now();
-  var iv = setInterval(function () {
-    var root = document.querySelector(".page, main, #main") || document.body;
-    var hasContent = root && root.querySelector(".row-1, tr, canvas, .border-bottom");
-    if (hasContent || Date.now() - t0 > 8000) {
-      document.body.dataset.pageReady = "1";
-      clearInterval(iv);
+  let tbl = null;
+  let lastQ = '';
+
+  const COLUMNS = [
+    { key: 'title', label: '标题', width: 'minmax(0,2.6fr)', titleFrom: 'title' },
+    { key: 'document_number', label: '文号', width: '170px' },
+    { key: 'theme_label', label: '主题', width: '150px' },
+    { key: 'timeliness_status', label: '时效', width: '90px', render: (r) => table.badge(r.timeliness_status) },
+    { key: 'source', label: '来源', width: '80px' },
+    { key: 'publish_date', label: '日期', width: '110px' },
+    { key: 'body_len', label: '字数', width: '80px', align: 'right',
+      render: (r) => (r.body_len ? core.fmtInt(r.body_len) : '—') },
+  ];
+
+  async function run(q) {
+    lastQ = q;
+    if (!q.trim()) {
+      document.getElementById('tableSlot').replaceChildren(
+        core.renderState('empty', { title: '输入关键词开始检索', desc: '≥3 字走全文索引，2 字内为模糊匹配' }));
+      document.getElementById('stamp').textContent = '';
+      document.getElementById('mode').textContent = '';
+      core.markReady();
+      return;
     }
-  }, 80);
+    document.getElementById('tableSlot').setAttribute('aria-busy', 'true');
+    try {
+      const d = await fetch(`/api/search?q=${encodeURIComponent(q)}`, { cache: 'no-store' })
+        .then((r) => r.json());
+      const rows = d.results || [];
+      document.getElementById('stamp').textContent = `命中 ${rows.length} 条`;
+      document.getElementById('mode').textContent = `模式：${d.mode === 'fts' ? '全文索引' : '模糊匹配'}`;
+      if (!tbl) {
+        tbl = table.renderTable({ columns: COLUMNS, rows, label: '检索结果',
+          empty: { title: '无命中', desc: '换个关键词，或确认底座已发布' } });
+        document.getElementById('tableSlot').append(tbl.el);
+      } else tbl.update(rows);
+    } catch (e) {
+      document.getElementById('tableSlot').replaceChildren(core.renderState('error', {
+        title: '检索失败', desc: String(e.message || e), action: { label: '重试', onClick: () => run(lastQ) } }));
+    } finally {
+      document.getElementById('tableSlot').removeAttribute('aria-busy');
+      core.markReady();
+    }
+  }
+
+  document.getElementById('searchSlot').append(controls.renderSearch({
+    id: 'q', label: '搜索文档', placeholder: '搜索标题 / 文号 / 全文…（回车应用）',
+    onInput: (v) => { if (v.length >= 2) run(v); },
+    onSubmit: (v) => run(v),
+  }).el);
+
+  document.getElementById('tabRecord').addEventListener('click', () => {
+    document.getElementById('tabRecord').setAttribute('aria-pressed', 'true');
+    document.getElementById('tabArticle').setAttribute('aria-pressed', 'false');
+  });
+
+  run('');
 })();
 </script>
 </body>

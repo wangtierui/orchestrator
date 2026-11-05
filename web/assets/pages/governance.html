@@ -3,150 +3,164 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>治理审计 · 平行重建样板页（一页双表）</title>
-<link rel="stylesheet" href="../primer-primitives.css">
-<link rel="stylesheet" href="../primer.css">
+<title>治理审计</title>
+<link rel="stylesheet" href="/primer-primitives.css">
+<link rel="stylesheet" href="/primer.css">
 <style>
-  body { background: var(--bgColor-default); }
-  .page { max-width: 1200px; margin: 0 auto; padding: 16px; }
-  .qwrap { position: relative; }
-  .qico { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); pointer-events: none; }
-  .qinput { padding-right: 30px; }
-  .tbl { display: grid; gap: 8px; align-items: center; }
-  .runs  { grid-template-columns: 250px 150px 150px minmax(0,1fr); }
-  .audit { grid-template-columns: 150px 190px 150px 130px minmax(0,1fr); }
-  .row-1 { min-height: 32px; }
-  .cell { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-  .cat { margin-bottom: 16px; }
-  .cat-head { display: flex; align-items: baseline; gap: 8px; padding: 8px 12px; }
-  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
-  .gap-2 { gap: 8px; }   /* Primer 22 无此工具类，按布局补 */
+  /* 只写布局 */
+  .page { max-width: var(--rco-content-width, 75rem); margin-inline: auto; padding: var(--space-lg); }
+  .stack { display: flex; flex-direction: column; gap: var(--space-lg); }
+  .row { display: flex; align-items: center; gap: var(--space-sm); }
+  .grow { flex: 1 1 auto; min-width: 0; }
+  .kpi { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-lg); }
+  .kpi .n { font-size: var(--text-title-size-small); font-weight: 600; }
+  .h2 { font-size: var(--text-body-size-large); font-weight: 600; margin: 0; }
 </style>
 </head>
 <body>
-<div class="page" role="main">
-
-  <div class="qwrap mb-2">
-    <input id="q" class="form-control input-block qinput" type="search"
-           placeholder="搜索运行 / 审计：run_id、actor、action、target…" aria-label="搜索治理审计">
-    <svg class="octicon qico" width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-      <path d="M10.68 11.74a6 6 0 0 1-7.922-8.982 6 6 0 0 1 8.982 7.922l3.04 3.04a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215ZM11.5 7a4.499 4.499 0 1 0-8.997 0A4.499 4.499 0 0 0 11.5 7Z"></path>
-    </svg>
+<div class="page stack" role="main">
+  <div class="row">
+    <h1 class="h3 m-0 grow">治理审计</h1>
+    <span class="text-small" id="stamp"></span>
   </div>
 
-  <div class="d-flex flex-items-center flex-wrap gap-2 mb-2">
-    <span id="count" class="text-small">—</span>
-    <span id="status" class="text-small"></span>
-    <span class="flex-auto"></span>
-    <div class="d-flex" role="group" aria-label="Issues display density">
-      <button class="btn btn-sm" type="button" data-density="comfortable" aria-pressed="true"
-              title="Comfortable display density" aria-label="Comfortable display density">≡</button>
-      <button class="btn btn-sm" type="button" data-density="compact" aria-pressed="false"
-              title="Compact display density" aria-label="Compact display density">☰</button>
-    </div>
-  </div>
+  <div class="kpi" id="kpi"></div>
 
-  <div class="cat">
-    <div class="cat-head"><span class="text-bold">运行记录</span><span id="rn" class="Counter">0</span></div>
-    <div class="border rounded-2 overflow-hidden">
-      <div class="border-bottom py-1 px-2 bgColor-muted tbl runs row-1 text-small">
-        <div class="cell">run_id</div><div class="cell">开始</div>
-        <div class="cell">结束</div><div class="cell">参数</div>
-      </div>
-      <div id="runs"></div>
-    </div>
-  </div>
+  <div id="searchSlot"></div>
 
-  <div class="cat">
-    <div class="cat-head"><span class="text-bold">审计台账</span><span id="an" class="Counter">0</span></div>
-    <div class="border rounded-2 overflow-hidden">
-      <div class="border-bottom py-1 px-2 bgColor-muted tbl audit row-1 text-small">
-        <div class="cell">时间</div><div class="cell">actor</div>
-        <div class="cell">action</div><div class="cell">target</div><div class="cell">对象</div>
-      </div>
-      <div id="audit"></div>
-    </div>
-  </div>
+  <section class="stack">
+    <h2 class="h2">运行时间线</h2>
+    <div class="border rounded-2" id="runsSlot"></div>
+  </section>
+
+  <section class="stack">
+    <h2 class="h2">变更台账 <span class="text-small" id="auditFilter"></span></h2>
+    <div class="border rounded-2" id="auditSlot"></div>
+  </section>
 </div>
-
 <script>
-const S = { q: "" };
-const $ = (s) => document.querySelector(s);
-const esc = (v) => String(v == null ? "" : v).replace(/[&<>"]/g, (c) =>
-  ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-let RUNS = [], AUDIT = [];
-
-function match(o) {
-  if (!S.q) return true;
-  return Object.values(o).join(" ").toLowerCase().includes(S.q.toLowerCase());
-}
-
-function render() {
-  const runs = RUNS.filter(match);
-  const audit = AUDIT.filter(match);
-  $("#rn").textContent = String(runs.length);
-  $("#an").textContent = String(audit.length);
-  $("#count").textContent = `运行 ${runs.length} · 审计 ${audit.length}`;
-
-  $("#runs").innerHTML = runs.map((r) => `
-    <div class="border-bottom py-1 px-2 tbl runs row-1">
-      <div class="cell mono" title="${esc(r.run_id)}">${esc(r.run_id)}</div>
-      <div class="cell text-small">${esc(r.started_at)}</div>
-      <div class="cell text-small">${esc(r.finished_at || "—")}</div>
-      <div class="cell text-small" title="${esc(r.argv)}">${esc(r.argv)}</div>
-    </div>`).join("") || '<div class="py-2 px-2 text-small">没有匹配运行</div>';
-
-  $("#audit").innerHTML = audit.map((a) => `
-    <div class="border-bottom py-1 px-2 tbl audit row-1">
-      <div class="cell text-small">${esc(a.ts)}</div>
-      <div class="cell text-small" title="${esc(a.actor)}">${esc(a.actor)}</div>
-      <div class="cell text-small">${esc(a.action)}</div>
-      <div class="cell text-small">${esc(a.target)}</div>
-      <div class="cell text-small" title="${esc(a.target_key)}">${esc(a.target_key)}</div>
-    </div>`).join("") || '<div class="py-2 px-2 text-small">没有匹配审计记录</div>';
-}
-
-async function load() {
-  const d = await (await fetch("/api/governance", { cache: "no-store" })).json();
-  RUNS = d.runs || [];
-  AUDIT = d.audit || [];
-  const st = d.status || {};
-  $("#status").textContent = st.enabled != null
-    ? `${st.db || ""} · schema ${st.schema_version || "—"}` : "";
-  render();
-}
-
-let timer = null;
-$("#q").addEventListener("input", (e) => {
-  clearTimeout(timer);
-  timer = setTimeout(() => { S.q = e.target.value.trim(); render(); }, 200);
-});
-document.querySelectorAll("[data-density]").forEach((b) => {
-  b.onclick = () => {
-    const v = b.dataset.density;
-    document.querySelectorAll("[data-density]").forEach((x) =>
-      x.setAttribute("aria-pressed", String(x === b)));
-    document.querySelectorAll(".row-1").forEach((r) => {
-      r.style.minHeight = v === "compact" ? "28px" : "32px";
-    });
+(async () => {
+  const RCO = window.RCO || {
+    core: await import('/js/ui/core.js'),
+    table: await import('/js/ui/table.js'),
+    controls: await import('/js/ui/controls.js'),
   };
-});
-load();
-</script>
+  const { table, controls, core } = RCO;
 
-<script>
-/* 渲染完成标记：页面自己打 data-page-ready=1，smoke 等它再断言，
-   把"时序"变成"确定性"（否则断言会跑在骨架屏上）。 */
-(function () {
-  var t0 = Date.now();
-  var iv = setInterval(function () {
-    var root = document.querySelector(".page, main, #main") || document.body;
-    var hasContent = root && root.querySelector(".row-1, tr, canvas, .border-bottom");
-    if (hasContent || Date.now() - t0 > 8000) {
-      document.body.dataset.pageReady = "1";
-      clearInterval(iv);
+  let runs = [];
+  let audit = [];
+  let runsTbl = null;
+  let auditTbl = null;
+  let q = '';
+  let onlyRun = '';        /* 点运行行后台账过滤（§9.4 两表联动） */
+
+  const shortTime = (s) => (s || '').replace('T', ' ').slice(0, 16);
+  const dur = (r) => {
+    const a = Date.parse(r.started_at || '');
+    const b = Date.parse(r.finished_at || '');
+    if (!a || !b) return '—';
+    const m = Math.round((b - a) / 60000);
+    return m >= 60 ? `${Math.floor(m / 60)} 小时 ${m % 60} 分` : `${m} 分钟`;
+  };
+  const nz = (v) => (v == null || v === '' ? '—' : String(v));
+
+  const RUN_COLS = [
+    { key: 'ok', label: '', width: '24px', render: (r) => table.badge(r.finished_at ? '✓' : '…') },
+    { key: 'started_at', label: '开始', width: '150px', render: (r) => shortTime(r.started_at) },
+    { key: 'finished_at', label: '结束', width: '150px', render: (r) => shortTime(r.finished_at) },
+    { key: 'dur', label: '耗时', width: '120px', render: (r) => dur(r) },
+    { key: 'run_id', label: '运行', width: 'minmax(0,1fr)', titleFrom: 'run_id' },
+  ];
+
+  const AUDIT_COLS = [
+    { key: 'ts', label: '时间', width: '150px', render: (r) => shortTime(r.ts) },
+    { key: 'target', label: '对象', width: 'minmax(0,1.2fr)', render: (r) => `${nz(r.target)}${r.target_key ? ' · ' + r.target_key : ''}` },
+    { key: 'field', label: '字段', width: '150px' },
+    { key: 'change', label: '变更', width: 'minmax(0,1.6fr)', wrap: true, render: (r) => {
+      const box = document.createElement('span');
+      box.textContent = `${nz(r.old_value)} → ${nz(r.new_value)}`.slice(0, 160);
+      return box;
+    } },
+    { key: 'actor', label: '操作者', width: '220px', titleFrom: 'actor' },
+  ];
+
+  function computeKpi() {
+    const total = runs.length;
+    const done = runs.filter((r) => r.finished_at).length;
+    const rate = total ? Math.round((done / total) * 100) : 0;
+    const mins = runs.map((r) => {
+      const a = Date.parse(r.started_at || ''); const b = Date.parse(r.finished_at || '');
+      return a && b ? (b - a) / 60000 : null;
+    }).filter((x) => x != null).sort((x, y) => x - y);
+    const med = mins.length ? Math.round(mins[Math.floor(mins.length / 2)]) : 0;
+    const items = [
+      ['运行', String(total), '条'],
+      ['已结束', String(done), '条'],
+      ['完成率', String(rate), '%'],
+      ['耗时中位数', String(med), '分钟'],
+    ];
+    const host = document.getElementById('kpi');
+    host.replaceChildren();
+    for (const [label, value, unit] of items) {
+      const card = document.createElement('div');
+      card.className = 'border rounded-2 p-3';
+      card.innerHTML = `<div class="text-small">${label}</div><div class="n">${value}<span class="text-small"> ${unit}</span></div>`;
+      host.append(card);
     }
-  }, 80);
+  }
+
+  function filteredAudit() {
+    return audit.filter((a) => {
+      if (onlyRun && a.target_key !== onlyRun && !String(a.target_key || '').includes(onlyRun)) return false;
+      if (!q) return true;
+      const hay = `${a.ts} ${a.actor} ${a.action} ${a.target} ${a.target_key} ${a.field}`.toLowerCase();
+      return hay.includes(q.toLowerCase());
+    });
+  }
+
+  function renderAudit() {
+    const rows = filteredAudit();
+    if (!auditTbl) {
+      auditTbl = table.renderTable({ columns: AUDIT_COLS, rows, label: '变更台账',
+        empty: { title: '没有匹配的变更', desc: onlyRun ? '该运行未产生审计记录' : '清空搜索试试' } });
+      document.getElementById('auditSlot').append(auditTbl.el);
+    } else auditTbl.update(rows);
+    document.getElementById('auditFilter').textContent = onlyRun ? `（已按运行过滤：${onlyRun}）` : '';
+  }
+
+  async function load() {
+    document.getElementById('runsSlot').setAttribute('aria-busy', 'true');
+    try {
+      const d = await fetch('/api/governance', { cache: 'no-store' }).then((r) => r.json());
+      runs = d.runs || [];
+      audit = d.audit || [];
+      computeKpi();
+      if (!runsTbl) {
+        runsTbl = table.renderTable({ columns: RUN_COLS, rows: runs, label: '运行时间线',
+          density: 'compact',
+          onRow: (r) => { onlyRun = onlyRun === r.run_id ? '' : r.run_id; renderAudit(); },
+          empty: { title: '尚未运行', desc: '点此触发一次运行' } });
+        document.getElementById('runsSlot').append(runsTbl.el);
+      } else runsTbl.update(runs);
+      renderAudit();
+      document.getElementById('stamp').textContent =
+        `运行 ${runs.length} 条 · 审计 ${audit.length} 条 · ${new Date().toLocaleTimeString('zh-CN')}`;
+    } catch (e) {
+      document.getElementById('runsSlot').replaceChildren(core.renderState('error', {
+        title: '加载失败', desc: String(e.message || e), action: { label: '重试', onClick: load } }));
+    } finally {
+      document.getElementById('runsSlot').removeAttribute('aria-busy');
+      core.markReady();
+    }
+  }
+
+  document.getElementById('searchSlot').append(controls.renderSearch({
+    id: 'q', label: '搜索审计台账', placeholder: '搜索 id / 对象 / 字段 / 操作者…',
+    onInput: (v) => { q = v; renderAudit(); },
+    onSubmit: (v) => { q = v; renderAudit(); },
+  }).el);
+
+  load();
 })();
 </script>
 </body>

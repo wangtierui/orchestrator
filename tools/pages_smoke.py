@@ -27,7 +27,7 @@ PAGES = [
     # slug, 关键选择器, 需要行高检查, 需要图表
     ("laws", ".rco-tbl__row", True, False),
     ("rules", ".rco-tbl__row", True, False),
-    ("search", "#q", False, False),
+    ("search", "#tableSlot", False, False),
     ("worklist", ".rco-tbl__row", True, False),
     ("feedback", ".rco-tbl__row", True, False),
     ("regstats", ".cat", True, False),
@@ -37,7 +37,7 @@ PAGES = [
     ("metrics", ".grid3", False, True),
     ("graph", "#chart", False, True),
     ("release", ".row-1", True, False),
-    ("governance", ".row-1", True, False),
+    ("governance", ".rco-tbl__row", True, False),
 ]
 
 PROBE = """(() => {
@@ -109,6 +109,17 @@ def collect() -> dict:
             time.sleep(0.15)
             raw = s.eval(PROBE.replace("SEL", sel))
             data = json.loads(raw) if isinstance(raw, str) else (raw or {})
+            # 页面偶发未就绪（实测 laws 首测 has=False / ready=False）：整页重载一次再判，
+            # 否则门禁会因为一次加载慢而误报（与图表重试同理）。
+            if not data.get("ready") or not data.get("has"):
+                s.cmd("Page.navigate", {"url": url})
+                time.sleep(1.5)
+                for _ in range(40):
+                    if s.eval("document.body && document.body.dataset.pageReady === '1'"):
+                        break
+                    time.sleep(0.25)
+                raw = s.eval(PROBE.replace("SEL", sel))
+                data = json.loads(raw) if isinstance(raw, str) else (raw or {})
             # 图表是异步渲染的：首次探测拿不到 canvas 时重试（最多 3 次 × 2s），
             # 否则门禁会因为一次渲染慢而误报（实测偶发 graph 页 canvas=None）。
             for _ in range(3):
@@ -147,7 +158,7 @@ def evaluate(data: dict) -> list[dict]:
             n = d.get("rows") or 0
             checks.append({"check": f"{slug}: 渲染出行", "ok": n > 0, "detail": f"{n} 行"})
             h = d.get("rowH")
-            MIGRATED = {"rules", chr(108)+chr(97)+chr(119)+chr(115), "worklist", "feedback"}
+            MIGRATED = {"rules", chr(108)+chr(97)+chr(119)+chr(115), "worklist", "feedback", "search", "governance"}
             ok_h = h is not None and ((36 <= h <= 40 or 60 <= h <= 70) if slug in MIGRATED else 28 <= h <= 70)
             checks.append({"check": f"{slug}: 行高 38|65", "ok": ok_h, "detail": f"{h}px"})
         if d.get("token") != "#d1d9e0":
