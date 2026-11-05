@@ -31,7 +31,7 @@ PAGES = [
     ("worklist", ".rco-tbl__row", True, False),
     ("feedback", ".rco-tbl__row", True, False),
     ("regstats", ".cat", True, False),
-    ("overview", ".grid3", False, True),
+    ("overview", "#kpiRow", False, True),
     ("project", "#chart", False, True),
     ("flow", "#chart", False, True),
     ("metrics", ".grid3", False, True),

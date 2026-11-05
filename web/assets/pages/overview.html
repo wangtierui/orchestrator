@@ -3,194 +3,336 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>总览 · 平行重建样板页（三列卡片 + 图表）</title>
-<link rel="stylesheet" href="../primer-primitives.css">
-<link rel="stylesheet" href="../primer.css">
+<title>项目总览</title>
+<link rel="stylesheet" href="/primer-primitives.css">
+<link rel="stylesheet" href="/primer.css">
 <style>
-  /* 只允许布局。颜色/边框/圆角走 Primer 类与令牌。 */
-  body { background: var(--bgColor-default); }
-  .page { max-width: 1200px; margin: 0 auto; padding: 16px; }
-  /* D1/D2：三列、gap 16；卡片 border 1px + radius 6 由 Primer 的 .border/.rounded-2 提供 */
-  .grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
-  .grid3 > .full { grid-column: 1 / -1; }
-  .card { padding: 16px; }
-  .card > h3 { margin: 0 0 12px; font-size: 14px; font-weight: 600;
-              display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
-  .kpis { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; }
-  .kpi .n { font-size: 22px; font-weight: 600; line-height: 1.2; }
-  .kpi .l { font-size: 12px; }
-  .chart { width: 100%; height: 220px; }
-  .kv { display: grid; grid-template-columns: 110px minmax(0,1fr); gap: 8px;
-        font-size: 12px; line-height: 20px; }
-  .kv .k { min-width: 0; }
-  .kv .v { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-  @media (max-width: 1011px) { .grid3 { grid-template-columns: repeat(2, minmax(0,1fr)); } }
-  @media (max-width: 767px)  { .grid3 { grid-template-columns: 1fr; } .kpis { grid-template-columns: repeat(2,1fr); } }
-  .gap-2 { gap: 8px; }   /* Primer 22 无此工具类，按布局补 */
+  /* 只写布局：栅格、间距、图表高度 */
+  .page { max-width: var(--rco-content-width, 75rem); margin-inline: auto; padding: var(--space-lg); }
+  .stack { display: flex; flex-direction: column; gap: var(--space-lg); }
+  .row { display: flex; align-items: center; gap: var(--space-sm); }
+  .grow { flex: 1 1 auto; min-width: 0; }
+  .grid4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-lg); }
+  .grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-lg); }
+  .card { display: flex; flex-direction: column; gap: var(--space-sm); }
+  .card h3 { margin: 0; font-size: var(--text-body-size-large); font-weight: 600; }
+  .kpi { display: flex; flex-direction: column; gap: var(--space-xxs); }
+  .kpi .n { font-size: var(--text-title-size-small); font-weight: 600; }
+  .kv { display: flex; justify-content: space-between; gap: var(--space-sm); }
+  .bar { display: flex; height: var(--base-size-8); overflow: hidden; border-radius: 2em; }
+  .bar > span { display: block; height: 100%; }
+  ol.alerts { margin: 0; padding-left: var(--space-lg); }
+  ol.alerts li { margin-bottom: var(--space-xs); }
+  @media (max-width: 63.25rem) { .grid4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 48rem) {
+    .grid4, .grid2 { grid-template-columns: minmax(0, 1fr); }
+  }
 </style>
 </head>
 <body>
-<div class="page" role="main">
-  <div class="d-flex flex-items-center flex-wrap gap-2 mb-3">
-    <h2 class="h3 m-0">总览</h2>
-    <span id="stamp" class="text-small"></span>
-    <span class="flex-auto"></span>
-    <span class="text-small">数据源：/api/overview</span>
+<div class="page stack" role="main">
+  <div class="row">
+    <h1 class="h3 m-0 grow">项目总览</h1>
+    <span class="text-small" id="stamp"></span>
   </div>
 
-  <div class="grid3">
-    <div class="border rounded-2 card full">
-      <h3><span>关键指标</span><span id="runid" class="text-small"></span></h3>
-      <div class="kpis">
-        <div class="kpi"><div class="n" id="k1">—</div><div class="l">门禁通过</div></div>
-        <div class="kpi"><div class="n" id="k2">—</div><div class="l">待办未处置</div></div>
-        <div class="kpi"><div class="n" id="k3">—</div><div class="l">链步成功</div></div>
-        <div class="kpi"><div class="n" id="k4">—</div><div class="l">存储占用</div></div>
-      </div>
-    </div>
+  <div class="grid4" id="kpiRow"></div>
 
-    <div class="border rounded-2 card">
-      <h3><span>运行健康</span></h3>
-      <div id="rh" class="kv"></div>
-    </div>
+  <h2 class="h4 m-0">运行与健康</h2>
+  <div class="grid4" id="groupA"></div>
 
-    <div class="border rounded-2 card">
-      <h3><span>链步状态分布</span></h3>
-      <div id="chart" class="chart" role="img" aria-label="链步状态分布"></div>
-    </div>
+  <h2 class="h4 m-0">数据资产</h2>
+  <div class="grid4" id="groupB"></div>
 
-    <div class="border rounded-2 card">
-      <h3><span>门禁与待办</span></h3>
-      <div id="gs" class="kv"></div>
-    </div>
+  <h2 class="h4 m-0">质量指标</h2>
+  <div class="stack" id="groupC"></div>
 
-    <div class="border rounded-2 card">
-      <h3><span>数据新鲜度</span></h3>
-      <div id="fr" class="kv"></div>
-    </div>
+  <h2 class="h4 m-0">任务</h2>
+  <div class="grid2" id="groupD"></div>
 
-    <div class="border rounded-2 card">
-      <h3><span>存储</span></h3>
-      <div id="st" class="kv"></div>
-    </div>
-
-    <div class="border rounded-2 card">
-      <h3><span>说明</span></h3>
-      <div class="text-small">三列布局（D1 决议，GitHub contributors 实测为 1 通栏 + 2 列，本项目有意用 3 列）；
-        卡片 gap 16 / border 1px / radius 6（D2）。</div>
-    </div>
-  </div>
+  <h2 class="h4 m-0">发布与告警</h2>
+  <div class="grid2" id="groupE"></div>
 </div>
-
-<script src="../vendor/echarts/echarts.min.js"></script>
+<script src="/vendor/echarts/echarts.min.js"></script>
 <script>
-const $ = (s) => document.querySelector(s);
-const esc = (v) => String(v == null ? "" : v).replace(/[&<>"]/g, (c) =>
-  ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-const kv = (k, v) => `<div class="k">${esc(k)}</div><div class="v" title="${esc(v)}">${esc(v)}</div>`;
-const ts = (v) => {
-  const n = Number(v);
-  if (!v || !isFinite(n) || n < 1e9) return String(v || "—");   /* 不是时间戳就原样 */
-  const d = new Date(n * 1000);
-  const p = (x) => String(x).padStart(2, "0");
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ` +
-         `${p(d.getHours())}:${p(d.getMinutes())}`;
-};
-const pct = (o) => (o && typeof o === "object")
-  ? Object.entries(o).map(([k, v]) => `${k} ${v}%`).join(" · ")
-  : String(o ?? "—");
-const bytes = (n) => {
-  n = Number(n || 0);
-  const u = ["B", "KB", "MB", "GB", "TB"];
-  let i = 0;
-  while (n >= 1024 && i < u.length - 1) { n /= 1024; i++; }
-  return `${n.toFixed(i ? 1 : 0)} ${u[i]}`;
-};
+(async () => {
+  const RCO = window.RCO || {
+    core: await import('/js/ui/core.js'),
+    chart: await import('/js/ui/chart.js'),
+  };
+  const { core, chart } = RCO;
 
-let chart = null;
-function drawChart(counts) {
-  const el = $("#chart");
-  if (!window.echarts || !el) return;
-  chart = chart || echarts.init(el);
-  const data = Object.entries(counts || {}).map(([k, v]) => ({ name: k, value: Number(v) || 0 }));
-  chart.setOption({
-    tooltip: { trigger: "item" },
-    legend: { bottom: 0, textStyle: { fontSize: 12 } },
-    series: [{ type: "pie", radius: ["45%", "70%"], center: ["50%", "45%"],
-               avoidLabelOverlap: true, label: { show: false },
-               data }],
-  });
-  chart.resize();
-}
+  const fmtBytes = (n) => {
+    const v = Number(n) || 0;
+    if (v >= 1024 ** 4) return `${(v / 1024 ** 4).toFixed(1)} TB`;
+    if (v >= 1024 ** 3) return `${(v / 1024 ** 3).toFixed(1)} GB`;
+    if (v >= 1024 ** 2) return `${(v / 1024 ** 2).toFixed(0)} MB`;
+    return `${v} B`;
+  };
+  /* run_at 可能是 Unix 秒时间戳（实测 1793829773.85），要按数字分支处理 */
+  function t(s) {
+    if (s == null || s === '') return '';
+    const n = Number(s);
+    if (isFinite(n) && n > 1000000000) {
+      const d = new Date(n * 1000);
+      const pad = function (x) { return x < 10 ? '0' + x : String(x); };
+      return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate())
+        + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+    }
+    return String(s).replace('T', ' ').slice(0, 16);
+  }
+  const el = (tag, cls, text) => {
+    const n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = text;
+    return n;
+  };
+  const card = (title, extra) => {
+    const c = el('section', 'border rounded-2 p-3 card');
+    c.append(el('h3', '', title));
+    if (extra) c.append(el('div', 'text-small', extra));
+    return c;
+  };
+  const kv = (k, v) => {
+    const r = el('div', 'kv');
+    r.append(el('span', '', k), el('span', 'text-bold', v));
+    return r;
+  };
 
-async function load() {
-  const d = await (await fetch("/api/overview", { cache: "no-store" })).json();
-  if (!d.available) { $("#rh").innerHTML = kv("状态", d.reason || "不可用"); return; }
-  const rh = d.run_health || {}, gs = d.gate_status || {}, wl = d.worklist || {},
-        fr = d.freshness || {}, st = d.storage || {};
-  const statuses = rh.step_statuses || [];
-  /* 运行中的轮次 counts 常只有 unknown；这时用 step 的 rc 统计兜底，避免整页显示「—」 */
-  let counts = rh.counts || {};
-  if (!counts.ok && !counts.failed && statuses.length) {
-    counts = statuses.reduce((a, s) => {
-      const k = String(s.rc || s.status || "unknown").toLowerCase() === "ok" ? "ok" : "其他";
-      a[k] = (a[k] || 0) + 1;
-      return a;
-    }, {});
+  async function load() {
+    const [ov, mt, fb] = await Promise.all([
+      fetch('/api/overview', { cache: 'no-store' }).then((r) => r.json()).catch(() => ({})),
+      fetch('/api/metrics', { cache: 'no-store' }).then((r) => r.json()).catch(() => ({})),
+      fetch('/api/feedback', { cache: 'no-store' }).then((r) => r.json()).catch(() => ({})),
+    ]);
+
+    const rh = ov.run_health || {};
+    const gs = ov.gate_status || {};
+    const wl = ov.worklist || {};
+    const st = ov.storage || {};
+    const fr = ov.freshness || {};
+    const al = ov.alerts || {};
+    const trend = mt.gate_trend || [];
+    const themes = Object.entries(mt.theme_dist || {}).sort((a, b) => b[1] - a[1]);
+    const aging = mt.worklist_aging || {};
+    const fbOpen = ((fb.items || []).filter((x) => x.status === 'open')).length;
+
+    /* counts 只有 {unknown:N} 时按 step_statuses 统计：
+     * rc 取值 OK / FAIL / SKIP（字符串），实测 42 步 = OK 2 + FAIL 1 + SKIP 39。 */
+    const statuses = Array.isArray(rh.step_statuses) ? rh.step_statuses : [];
+    let ok = 0, bad = 0, skip = 0;
+    for (let i = 0; i < statuses.length; i++) {
+      const rc = String(statuses[i].rc || '').toUpperCase();
+      if (rc === 'OK' || rc === '0') ok++;
+      else if (rc === 'SKIP') skip++;
+      else if (rc) bad++;
+    }
+
+    /* ① KPI 四格 */
+    const kpi = document.getElementById('kpiRow');
+    const items = [
+      ['门禁通过', `${gs.passed ?? '—'} / ${gs.total ?? '—'}`, '#/governance'],
+      ['待办未处置', String(wl.open_total ?? '—'), '#/worklist'],
+      ['链步成功', `${ok} / ${(rh.steps ?? ok + bad) || '—'}`, '#/flow'],
+      ['存储占用', fmtBytes(st.total_bytes), '#/storage'],
+    ];
+    for (const [label, value, href] of items) {
+      const c = el('section', 'border rounded-2 p-3 kpi');
+      c.append(el('div', 'text-small', label));
+      const n = el('div', 'n');
+      const a = el('a', '', value);
+      a.href = href;
+      n.append(a);
+      c.append(n);
+      kpi.append(c);
+    }
+
+    /* ② 门禁通过（失败项可点） */
+    const g = card('门禁通过', `${gs.passed ?? '—'} / ${gs.total ?? '—'} · 运行 ${rh.run_id || '—'}`);
+    const failed = gs.failed || [];
+    if (!failed.length) {
+      g.append(el('div', 'text-small', '全部通过 ✓'));
+    } else {
+      const ul = el('ul', 'text-small');
+      ul.style.margin = '0';
+      ul.style.paddingLeft = 'var(--space-lg)';
+      failed.slice(0, 4).forEach((f) => {
+        const li = el('li');
+        const a = el('a', '', f.descr || f.id || '（无描述）');
+        a.href = '#/governance';
+        li.append(a);
+        ul.append(li);
+      });
+      g.append(ul);
+      if (failed.length > 4) g.append(el('div', 'text-small', `另有 ${failed.length - 4} 项`));
+    }
+    document.getElementById('groupA').append(g);
+
+    /* ③ 链步成功/失败 */
+    const steps = card('链步成功 / 失败', `共 ${rh.steps ?? '—'} 步`);
+    steps.append(kv('成功', String(ok)), kv('失败', String(bad)));
+    if (bad) {
+      const names = statuses
+        .filter(function (x) {
+          const rc = String(x.rc || '').toUpperCase();
+          return rc && rc !== 'OK' && rc !== '0' && rc !== 'SKIP';
+        })
+        .slice(0, 2)
+        .map(function (x) { return x.step || x.name || '?'; })
+        .join('、');
+      if (names) steps.append(el('div', 'text-small', `失败步骤：${names}`));
+    }
+    document.getElementById('groupA').append(steps);
+
+    /* ④ 链步状态分布（环形） */
+    const distCard = card('链步状态分布');
+    const distHost = el('div', '');
+    distHost.id = 'c-dist';
+    distCard.append(distHost);
+    document.getElementById('groupA').append(distCard);
+    const dist = Object.entries(rh.counts || {}).filter(([, v]) => Number(v) > 0);
+    if (dist.length) {
+      chart.mountChart({ el: distHost, height: 220, label: '链步状态分布环形图',
+        option: { tooltip: { trigger: 'item' },
+          series: [{ type: 'pie', radius: ['45%', '70%'],
+            data: dist.map(([k, v]) => ({ name: k, value: Number(v) })) }] } });
+    } else {
+      distHost.replaceChildren(core.renderState('empty', { title: '本轮无步骤记录' }));
+    }
+
+    /* ⑤ 运行信息 */
+    const info = card('运行信息', rh.run_id || '—');
+    info.append(kv('步数', String(rh.steps ?? '—')),
+      kv('累计耗时', rh.total_elapsed_s ? `${Math.round(rh.total_elapsed_s / 60)} 分钟` : '—'),
+      kv('最近运行', t(rh.run_at)),
+      kv('最近完成', t(rh.last_finished_at) || '—'));
+    document.getElementById('groupA').append(info);
+
+    /* ⑥ 覆盖文件与条文（接口未提供） */
+    const cov = card('覆盖文件与条文');
+    cov.append(core.renderState('empty', { title: '接口未提供', desc: '/api/overview 无 coverage 字段' }));
+    document.getElementById('groupB').append(cov);
+
+    /* ⑦ 存储占用（5 类占比条） */
+    const storage = card('存储占用', fmtBytes(st.total_bytes));
+    const ratio = st.ratio || {};
+    const bar = el('div', 'bar');
+    const palette = chart.palette();
+    Object.entries(st.bytes || {}).forEach(([k, v], i) => {
+      const seg = el('span', '');
+      seg.style.width = `${(ratio[k] || 0) * 100}%`;
+      seg.style.background = palette[i % palette.length];
+      seg.title = `${k} ${fmtBytes(v)}`;
+      bar.append(seg);
+    });
+    storage.append(bar);
+    const list = el('div', 'text-small');
+    list.textContent = Object.entries(st.bytes || {})
+      .map(([k, v]) => `${k} ${((ratio[k] || 0) * 100).toFixed(1)}%`).join(' · ');
+    storage.append(list);
+    document.getElementById('groupB').append(storage);
+
+    /* ⑧ 数据新鲜度 */
+    const fresh = card('数据新鲜度', `过期 ${fr.stale_count ?? 0} 条`);
+    const bys = Object.entries(fr.by_status || {});
+    if (bys.length) bys.forEach(([k, v]) => fresh.append(kv(k, String(v))));
+    else fresh.append(el('div', 'text-small', '无记录'));
+    (fr.stale || []).slice(0, 3).forEach((s) => fresh.append(el('div', 'text-small', `过期：${s.edge || s.name || JSON.stringify(s).slice(0, 30)}`)));
+    document.getElementById('groupB').append(fresh);
+
+    /* ⑨ 主题分布（rose） */
+    const themeCard = card('主题分布', `${themes.length} 个主题`);
+    const themeHost = el('div', '');
+    themeCard.append(themeHost);
+    document.getElementById('groupB').append(themeCard);
+    if (themes.length) {
+      chart.mountChart({ el: themeHost, height: 320, label: '主题分布玫瑰图',
+        option: { tooltip: { trigger: 'item' }, legend: { type: 'scroll', bottom: 0 },
+          series: [{ type: 'pie', roseType: 'radius', radius: ['16%', '72%'],
+            data: themes.slice(0, 8).map(([k, v]) => ({ name: k, value: v })) }] } });
+    } else {
+      themeHost.replaceChildren(core.renderState('empty', { title: '暂无主题数据' }));
+    }
+
+    /* ⑩ 门禁趋势（通栏 line） */
+    const trendCard = card('门禁通过率趋势');
+    const trendHost = el('div', '');
+    trendCard.append(trendHost);
+    document.getElementById('groupC').append(trendCard);
+    if (trend.length >= 2) {
+      chart.mountChart({ el: trendHost, height: 220, label: '门禁通过率趋势折线图',
+        option: { tooltip: { trigger: 'axis' },
+          xAxis: { type: 'category', data: trend.map((x) => String(x.run_id || '').slice(-6)) },
+          yAxis: { type: 'value', min: 0, max: 100 },
+          series: [{ type: 'line', data: trend.map((x) => x.rate), areaStyle: {} }] } });
+    } else {
+      trendHost.replaceChildren(core.renderState('empty', { title: '数据点不足', desc: '需 ≥2 次运行' }));
+    }
+
+    /* ⑪⑫⑬ 质量三块（接口未返回 quality） */
+    const q = mt.quality;
+    for (const [title, desc] of [['SLI / SLO 达标率', 'metrics.quality.sli'], ['DAMA 六维', 'metrics.quality.dimensions'], ['质量快照', 'metrics.quality']]) {
+      const c = card(title);
+      c.append(q ? el('div', 'text-small', JSON.stringify(q).slice(0, 80))
+        : core.renderState('empty', { title: '未接入', desc: `接口未返回 ${desc}` }));
+      document.getElementById('groupC').append(c);
+    }
+
+    /* ⑭ 任务：程序指令 / 用户反馈 */
+    const task = card('未处置任务');
+    task.append(kv('程序指令', String(wl.open_total ?? '—')), kv('用户反馈', String(fbOpen)));
+    const old = wl.oldest_open_days;
+    task.append(el('div', 'text-small', old != null ? `最老未处置 ${old} 天` : '最老未处置 —'));
+    document.getElementById('groupD').append(task);
+
+    /* ⑮ 任务账龄（bar） */
+    const ageCard = card('任务账龄');
+    const ageHost = el('div', '');
+    ageCard.append(ageHost);
+    document.getElementById('groupD').append(ageCard);
+    const ageEntries = Object.entries(aging);
+    if (ageEntries.length) {
+      chart.mountChart({ el: ageHost, height: 220, label: '任务账龄柱状图',
+        option: { tooltip: { trigger: 'axis' },
+          xAxis: { type: 'category', data: ageEntries.map(([k]) => k) },
+          yAxis: { type: 'value' },
+          series: [{ type: 'bar', data: ageEntries.map(([, v]) => v), barMaxWidth: 40 }] } });
+    } else {
+      ageHost.replaceChildren(core.renderState('empty', { title: '暂无数据' }));
+    }
+
+    /* ⑯ 发布件 + 契约自检（接口未提供） */
+    const rel = card('发布件状态 + 契约自检');
+    rel.append(core.renderState('empty', { title: '接口未提供', desc: '/api/overview 无 release / coverage 字段' }));
+    document.getElementById('groupE').append(rel);
+
+    /* ⑰ 告警 */
+    const alertCard = card('告警', `共 ${al.count ?? 0} 条`);
+    const list2 = el('ol', 'alerts text-small');
+    (al.alerts || []).slice(0, 5).forEach((a) => {
+      const li = el('li', '', `${t(a.at)} · ${a.title || a.event || ''}`);
+      list2.append(li);
+    });
+    if (!(al.alerts || []).length) alertCard.append(el('div', 'text-small', `无近期告警（${al.count ?? 0} 条记录）`));
+    else {
+      alertCard.append(list2);
+      const more = el('a', 'text-small', '查看全部');
+      more.href = '#/governance';
+      alertCard.append(more);
+    }
+    document.getElementById('groupE').append(alertCard);
+
+    document.getElementById('stamp').textContent = `最近运行 ${t(rh.run_at) || '—'} · ${new Date().toLocaleTimeString('zh-CN')}`;
   }
 
-  $("#runid").textContent = `最近运行 ${rh.run_id || "—"}`;
-  $("#stamp").textContent = d.fetched_at || "";
-  $("#k1").textContent = `${gs.passed ?? "—"} / ${gs.total ?? "—"}`;
-  $("#k2").textContent = wl.open_total ?? "—";
-  $("#k3").textContent = counts.ok ?? "—";
-  $("#k4").textContent = bytes(st.total_bytes);
-
-  $("#rh").innerHTML = [
-    kv("run_id", rh.run_id || "—"),
-    kv("总步数", rh.steps ?? "—"),
-    kv("累计耗时", (rh.total_elapsed_s ?? "—") + " s"),
-    kv("最近运行", ts(rh.run_at)),
-  ].join("");
-
-  $("#gs").innerHTML = [
-    kv("门禁通过", `${gs.passed ?? "—"} / ${gs.total ?? "—"}`),
-    kv("门禁失败", (gs.failed || []).length
-      ? (gs.failed || []).map((f) => (f && (f.descr || f.gate)) || String(f)).join(" · ")
-      : "无"),
-    kv("待办未处置", wl.open_total ?? "—"),
-  ].join("");
-
-  $("#fr").innerHTML = [
-    kv("过期数", fr.stale_count ?? "—"),
-    kv("状态分布", Object.entries(fr.by_status || {}).map(([k, v]) => `${k} ${v}`).join(" · ") || "—"),
-  ].join("");
-
-  $("#st").innerHTML = [
-    kv("总容量", bytes(st.total_bytes)),
-    kv("占用比例", pct(st.ratio)),
-  ].join("");
-
-  drawChart(counts);
-}
-
-window.addEventListener("resize", () => chart && chart.resize());
-load();
-</script>
-
-<script>
-/* 渲染完成标记：页面自己打 data-page-ready=1，smoke 等它再断言，
-   把"时序"变成"确定性"（否则断言会跑在骨架屏上）。 */
-(function () {
-  var t0 = Date.now();
-  var iv = setInterval(function () {
-    var root = document.querySelector(".page, main, #main") || document.body;
-    var hasContent = root && root.querySelector(".row-1, tr, canvas, .border-bottom");
-    if (hasContent || Date.now() - t0 > 8000) {
-      document.body.dataset.pageReady = "1";
-      clearInterval(iv);
-    }
-  }, 80);
+  try {
+    await load();
+  } catch (e) {
+    document.getElementById('kpiRow').replaceChildren(core.renderState('error', {
+      title: '加载失败', desc: String(e.message || e) }));
+  } finally {
+    core.markReady();
+  }
 })();
 </script>
 </body>
