@@ -1590,7 +1590,58 @@ P3 最后 C/E/F 维（三态、令牌、断言）
 | 任务管理 · 程序指令 | §11.5 |
 | 任务管理 · 用户反馈 | §11.13 去掉新建入口 |
 
-### 15.10 迁移映射与施工顺序
+### 15.10 交互行为（`@primer/behaviors`）缺口 —— 我之前完全没调用
+
+**四份官方文档的 API（实测读取 `primer/behaviors/docs/*`）**
+
+| 文档 | API | 解决什么 |
+|---|---|---|
+| `anchored-position.md` | `getAnchoredPosition(floating, anchor, settings)` → `{top,left}`；`side`（outside-bottom…/inside-center）、`align`（start/center/end）、`anchorOffset`(默认4)、`alignmentOffset`、**`allowOutOfBounds:false` 时自动翻转/换边** | 浮层贴边被裁、方向错 |
+| `focus-trap.md` | `focusTrap(container, initialFocus?, signal?)` → `AbortController` | 弹窗内 Tab 循环、背景不可聚焦 |
+| `focus-zone.md` | `focusZone(container, settings)` → `AbortSignal`；`bindKeys`（ArrowVertical/Horizontal/HomeAndEnd/PageUpDown/JK…）、`focusOutBehavior`（stop/wrap）、`focusInStrategy`、`activeDescendantControl` | 菜单/列表的方向键与 Home/End |
+| `scroll-into-view.md` | `scrollIntoView(child, viewingArea, options)`；`direction`、`startMargin`、`endMargin`、`behavior` | 只在容器内滚动，不带动整页 |
+
+**我方现状（实测计数，`app.html` + 13 页）**
+
+| 能力 | 我们的实现 | 计数 |
+|---|---|---|
+| 浮层定位 | `position:absolute` **8 处**手写，无翻转逻辑；`getBoundingClientRect` **0 次** | 靠边必裁 |
+| 弹窗焦点 | `focus()` 5 处（仅打点），`tabindex` **0** | Tab 会跑出弹窗 |
+| 键盘导航 | `keydown` **1 处**（Esc 关面板），`aria-activedescendant` **0** | 菜单只能用鼠标 |
+| 容器内滚动 | `target.scrollIntoView({behavior:"smooth"})` **1 处**（原生） | 会连带滚动整页 |
+
+**为什么没调用（三条，第三条是硬原因）**
+
+1. **我只装了 `@primer/css` + `@primer/primitives`，没有装/没有读 `@primer/behaviors`** —— 把"复刻"理解成了"视觉对齐"，漏掉了**交互行为**这一层。
+2. 我们的页面是 classic `<script>`，没有模块加载路径，潜意识里认为"用不了 npm 包"。
+3. **硬原因（可解）**：`@primer/behaviors@1.11.0` 是 **CJS + ESM 双格式**，**没有 UMD/IIFE/CDN 直用入口**（`browser`/`unpkg`/`jsdelivr` 字段皆无）。所以不能 `<script src>` 直接用 —— 但**可以** vendor `dist/esm/*.mjs` 并用 `<script type="module">` 引入，无需打包器。
+
+**落地方案（不改架构）**
+
+```
+web/assets/vendor/primer-behaviors/        ← 复制 npm 包 dist/esm/*.mjs（MIT）
+  ↓
+<script type="module"> import { focusTrap, focusZone, getAnchoredPosition, scrollIntoView } ...
+  ↓
+四个替换点：
+① 筛选面板/菜单定位 → getAnchoredPosition（side: outside-bottom, align: start, allowOutOfBounds: false）
+② 反馈弹窗 → focusTrap(dialog)，关闭时 controller.abort()
+③ 筛选面板选项 → focusZone(panel, {bindKeys: ArrowVertical|HomeAndEnd, focusOutBehavior:"stop"})
+④ 侧栏本页导航 → scrollIntoView(item, #main)，替代原生 scrollIntoView
+```
+
+**验收（可自动化）**
+
+| 项 | 判据 |
+|---|---|
+| 面板贴边 | 把面板触发按钮放到视口最右/最下，面板必须**翻到另一侧**且不出界 |
+| 弹窗焦点 | 打开弹窗后按 Tab 20 次，`document.activeElement` 始终在弹窗内 |
+| 面板键盘 | 打开面板后按 ↑/↓ 可移动、Home/End 到首尾、Esc 关闭且焦点回触发按钮 |
+| 容器滚动 | 点侧栏「列表」，`window.scrollY` 不变、`#main.scrollTop` 变化 |
+
+> 这一节是"复刻"漏掉的一半：前面 15 章都在对齐**样式与数据**，而 behaviors 管的是**键盘、焦点、浮层位置**——用户摸得到的部分。
+
+### 15.11 迁移映射与施工顺序
 
 | 批 | 内容 | 验收 |
 |---|---|---|

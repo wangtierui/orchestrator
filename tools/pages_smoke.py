@@ -91,6 +91,14 @@ def collect() -> dict:
             time.sleep(6)
             raw = s.eval(PROBE.replace("SEL", sel))
             data = json.loads(raw) if isinstance(raw, str) else (raw or {})
+            # 图表是异步渲染的：首次探测拿不到 canvas 时重试（最多 3 次 × 2s），
+            # 否则门禁会因为一次渲染慢而误报（实测偶发 graph 页 canvas=None）。
+            for _ in range(3):
+                if not need_chart or (data.get("canvas") or [0, 0])[0] > 100:
+                    break
+                time.sleep(2)
+                raw = s.eval(PROBE.replace("SEL", sel))
+                data = json.loads(raw) if isinstance(raw, str) else (raw or {})
         except Exception as e:  # noqa: BLE001
             data = {"error": f"{type(e).__name__}: {e}"}
         data.update({"needRows": need_rows, "needChart": need_chart})
