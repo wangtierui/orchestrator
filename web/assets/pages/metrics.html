@@ -3,148 +3,127 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>指标 · 平行重建样板页（三列图表）</title>
-<link rel="stylesheet" href="../primer-primitives.css">
-<link rel="stylesheet" href="../primer.css">
+<title>指标</title>
+<link rel="stylesheet" href="/primer-primitives.css">
+<link rel="stylesheet" href="/primer.css">
 <style>
-  body { background: var(--bgColor-default); }
-  .page { max-width: 1200px; margin: 0 auto; padding: 16px; }
-  .grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
-  .grid3 > .full { grid-column: 1 / -1; }
-  .card { padding: 16px; }
-  .card > h3 { margin: 0 0 12px; font-size: 14px; font-weight: 600;
-              display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
-  .chart { width: 100%; height: 220px; }
-  .chart.tall { height: 300px; }
-  @media (max-width: 1011px) { .grid3 { grid-template-columns: repeat(2, minmax(0,1fr)); } }
-  @media (max-width: 767px)  { .grid3 { grid-template-columns: 1fr; } }
-  .gap-2 { gap: 8px; }   /* Primer 22 无此工具类，按布局补 */
+  /* 只写布局：栅格、间距、图表高度 */
+  .page { max-width: var(--rco-content-width, 75rem); margin-inline: auto; padding: var(--space-lg); }
+  .stack { display: flex; flex-direction: column; gap: var(--space-lg); }
+  .row { display: flex; align-items: center; gap: var(--space-sm); }
+  .grow { flex: 1 1 auto; min-width: 0; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-lg); }
+  .card { display: flex; flex-direction: column; gap: var(--space-sm); }
+  .card h3 { margin: 0; font-size: var(--text-body-size-large); font-weight: 600; }
+  @media (max-width: 63.25rem) { .grid3 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 48rem) { .grid3 { grid-template-columns: minmax(0, 1fr); } }
 </style>
 </head>
 <body>
-<div class="page" role="main">
-  <div class="d-flex flex-items-center flex-wrap gap-2 mb-3">
-    <h2 class="h3 m-0">指标</h2>
-    <span id="stamp" class="text-small"></span>
-    <span class="flex-auto"></span>
-    <span class="text-small">数据源：/api/metrics</span>
+<div class="page stack" role="main">
+  <div class="row">
+    <h1 class="h3 m-0 grow">指标</h1>
+    <span class="text-small" id="stamp"></span>
   </div>
+
+  <section class="border rounded-2 p-3 card">
+    <h3>门禁通过率趋势</h3>
+    <div id="c-gate"></div>
+  </section>
 
   <div class="grid3">
-    <div class="border rounded-2 card full">
-      <h3><span>门禁通过率趋势</span><span id="g1" class="text-small"></span></h3>
-      <div id="c-gate" class="chart" role="img" aria-label="门禁通过率趋势"></div>
-    </div>
-
-    <div class="border rounded-2 card">
-      <h3><span>时效分布</span></h3>
-      <div id="c-time" class="chart" role="img" aria-label="时效分布"></div>
-    </div>
-
-    <div class="border rounded-2 card">
-      <h3><span>待办账龄</span></h3>
-      <div id="c-age" class="chart" role="img" aria-label="待办账龄"></div>
-    </div>
-
-    <div class="border rounded-2 card">
-      <h3><span>关系类型</span></h3>
-      <div id="c-rel" class="chart" role="img" aria-label="关系类型"></div>
-    </div>
-
-    <div class="border rounded-2 card full">
-      <h3><span>主题分布</span></h3>
-      <div id="c-theme" class="chart tall" role="img" aria-label="主题分布"></div>
-    </div>
+    <section class="border rounded-2 p-3 card"><h3>待办账龄</h3><div id="c-age"></div></section>
+    <section class="border rounded-2 p-3 card"><h3>时效三态</h3><div id="c-time"></div></section>
+    <section class="border rounded-2 p-3 card"><h3>关系类型</h3><div id="c-rel"></div></section>
   </div>
+
+  <section class="border rounded-2 p-3 card">
+    <h3>主题分布（Top 8）</h3>
+    <div id="c-theme"></div>
+  </section>
+
+  <p class="text-small m-0">数据来自 /api/metrics；quality（SLI/DAMA）当前接口未返回，故本页不画。</p>
 </div>
-
-<script src="../vendor/echarts/echarts.min.js"></script>
+<script src="/vendor/echarts/echarts.min.js"></script>
 <script>
-const $ = (s) => document.querySelector(s);
-const charts = {};
-const base = {
-  textStyle: { fontSize: 11 },
-  grid: { left: 8, right: 16, top: 16, bottom: 8, containLabel: true },
-};
+(async () => {
+  const RCO = window.RCO || {
+    core: await import('/js/ui/core.js'),
+    chart: await import('/js/ui/chart.js'),
+  };
+  const { core, chart } = RCO;
+  const charts = [];
 
-function init(id) {
-  if (!charts[id]) charts[id] = echarts.init(document.getElementById(id));
-  return charts[id];
-}
+  function mount(id, option, height, label) {
+    const host = document.getElementById(id);
+    if (!host) return;
+    const inst = chart.mountChart({ el: host, option, height, label });
+    charts.push(inst);
+  }
 
-function line(id, xs, ys) {
-  init(id).setOption({
-    ...base,
-    tooltip: { trigger: "axis" },
-    xAxis: { type: "category", data: xs, axisLabel: { fontSize: 10, rotate: 0 } },
-    yAxis: { type: "value", max: 100, splitLine: { lineStyle: { type: "dashed" } } },
-    series: [{ type: "line", data: ys, smooth: true, symbolSize: 5,
-               areaStyle: { opacity: 0.12 } }],
-  }, true);
-}
+  function barOf(dict, opts = {}) {
+    const entries = Object.entries(dict || {});
+    return {
+      xAxis: { type: 'category', data: entries.map(([k]) => k) },
+      yAxis: { type: 'value' },
+      series: [{ type: 'bar', data: entries.map(([, v]) => v), barMaxWidth: 40 }],
+      tooltip: { trigger: 'axis' },
+      ...opts,
+    };
+  }
 
-function pie(id, data) {
-  init(id).setOption({
-    textStyle: { fontSize: 11 },
-    tooltip: { trigger: "item" },
-    legend: { bottom: 0, textStyle: { fontSize: 11 } },
-    series: [{ type: "pie", radius: ["42%", "66%"], center: ["50%", "44%"],
-               label: { show: false }, data }],
-  }, true);
-}
+  async function load() {
+    try {
+      const d = await fetch('/api/metrics', { cache: 'no-store' }).then((r) => r.json());
 
-function bar(id, xs, ys, opts) {
-  const o = opts || {};
-  init(id).setOption({
-    ...base,
-    tooltip: { trigger: "axis" },
-    xAxis: o.horizontal ? { type: "value" } : { type: "category", data: xs, axisLabel: { fontSize: 10 } },
-    yAxis: o.horizontal ? { type: "category", data: xs, axisLabel: { fontSize: 11 } }
-                        : { type: "value" },
-    series: [{ type: "bar", data: ys, barMaxWidth: 18 }],
-  }, true);
-}
+      /* ① 趋势：折线，<2 点给空态 */
+      const trend = d.gate_trend || [];
+      if (trend.length >= 2) {
+        mount('c-gate', {
+          xAxis: { type: 'category', data: trend.map((x) => String(x.run_id || '').slice(-6)) },
+          yAxis: { type: 'value', min: 0, max: 100 },
+          series: [{ type: 'line', data: trend.map((x) => x.rate), smooth: false, areaStyle: {} }],
+          tooltip: { trigger: 'axis' },
+        }, 220, '门禁通过率趋势折线图');
+      } else {
+        document.getElementById('c-gate').replaceChildren(
+          core.renderState('empty', { title: '数据点不足', desc: '至少需要 2 次运行' }));
+      }
 
-async function load() {
-  const d = await (await fetch("/api/metrics", { cache: "no-store" })).json();
-  $("#stamp").textContent = d.fetched_at || "";
+      /* ② 待办账龄：柱 */
+      mount('c-age', barOf(d.worklist_aging), 220, '待办账龄柱状图');
 
-  const gt = d.gate_trend || [];
-  $("#g1").textContent = gt.length ? `最近 ${gt.length} 轮` : "";
-  line("c-gate", gt.map((x) => String(x.run_id || "").slice(-8)), gt.map((x) => x.rate));
+      /* ③ 时效三态：柱（规格明确不是饼） */
+      mount('c-time', barOf(d.timeliness_tri), 220, '时效三态柱状图');
 
-  const tt = d.timeliness_tri || {};
-  pie("c-time", Object.entries(tt).map(([k, v]) => ({ name: k, value: Number(v) || 0 })));
+      /* ④ 关系类型：柱（by_kind） */
+      const byKind = (d.relations && d.relations.relations && d.relations.relations.by_kind) || {};
+      mount('c-rel', barOf(byKind), 220, '关系类型柱状图');
 
-  const wa = d.worklist_aging || {};
-  bar("c-age", Object.keys(wa), Object.values(wa).map(Number));
+      /* ⑤ 主题分布：玫瑰图，半径=条数 */
+      const themes = Object.entries(d.theme_dist || {}).sort((a, b) => b[1] - a[1]).slice(0, 8);
+      mount('c-theme', {
+        tooltip: { trigger: 'item' },
+        legend: { type: 'scroll', bottom: 0 },
+        series: [{
+          type: 'pie',
+          roseType: 'radius',
+          radius: ['16%', '76%'],
+          data: themes.map(([k, v]) => ({ name: k, value: v })),
+        }],
+      }, 320, '主题分布玫瑰图');
 
-  const rel = (d.relations && d.relations.relations) || {};
-  const bk = rel.by_kind || {};
-  bar("c-rel", Object.keys(bk), Object.values(bk).map(Number));
-
-  const td = d.theme_dist || {};
-  const names = Object.keys(td).sort((a, b) => td[b] - td[a]).slice(0, 8).reverse();
-  bar("c-theme", names, names.map((n) => Number(td[n]) || 0), { horizontal: true });
-}
-
-window.addEventListener("resize", () => Object.values(charts).forEach((c) => c.resize()));
-load();
-</script>
-
-<script>
-/* 渲染完成标记：页面自己打 data-page-ready=1，smoke 等它再断言，
-   把"时序"变成"确定性"（否则断言会跑在骨架屏上）。 */
-(function () {
-  var t0 = Date.now();
-  var iv = setInterval(function () {
-    var root = document.querySelector(".page, main, #main") || document.body;
-    var hasContent = root && root.querySelector(".row-1, tr, canvas, .border-bottom");
-    if (hasContent || Date.now() - t0 > 8000) {
-      document.body.dataset.pageReady = "1";
-      clearInterval(iv);
+      document.getElementById('stamp').textContent =
+        `趋势 ${trend.length} 点 · 主题 ${Object.keys(d.theme_dist || {}).length} 个 · ${new Date().toLocaleTimeString('zh-CN')}`;
+    } catch (e) {
+      document.getElementById('c-gate').replaceChildren(core.renderState('error', {
+        title: '加载失败', desc: String(e.message || e), action: { label: '重试', onClick: load } }));
+    } finally {
+      core.markReady();
     }
-  }, 80);
+  }
+
+  load();
 })();
 </script>
 </body>
