@@ -1,0 +1,339 @@
+{
+ "generated_at": "2026-11-05T16:08:39",
+ "note": "Primer 交互行为本地副本（focus trap / focus zone / anchored position / scroll into view）；MIT；ESM 可直接用 <script type=module> 引入，无需打包器",
+ "total_bytes": 138880,
+ "packages": [
+  {
+   "pkg": "@primer/behaviors",
+   "version": "1.11.0",
+   "license": "MIT",
+   "entry_esm": "dist/esm/index.mjs",
+   "entry_cjs": "dist/cjs/index.js",
+   "tgz_sha256": "2338e225129a3f76f984a56d7f2075bca82b22a28f70aec10df240555c840868",
+   "downloaded_at": "2026-11-05T16:08:39",
+   "url": "https://registry.npmjs.org/@primer/behaviors/-/behaviors-1.11.0.tgz"
+  }
+ ],
+ "files": [
+  {
+   "file": "LICENSE",
+   "bytes": 1063,
+   "sha256": "4d3a833b22e8ef74ceaf5b267e3b079e9194a64fd6f0cc18d1e9edfa876460fc"
+  },
+  {
+   "file": "README.md",
+   "bytes": 662,
+   "sha256": "392c040f9b8a35b518e43cbb1ca280ee6d4a5e91e07b3262019bdd77910b198c"
+  },
+  {
+   "file": "package.json",
+   "bytes": 2880,
+   "sha256": "1e7b8b4c28c013d2d49deb1bea06e0e66a6188b5e330b957cde9035e7d09445f"
+  },
+  {
+   "file": "dist/cjs/anchored-position.d.ts",
+   "bytes": 735,
+   "sha256": "0f86801cbcf3aef9c4122c5fb2ecd4db4b924d02c869be980753d198b0936968"
+  },
+  {
+   "file": "dist/cjs/anchored-position.js",
+   "bytes": 12554,
+   "sha256": "4eea49cbc74e4cbb57444e74adc8d1d789afd686df670d69b87cf22ee2f3a940"
+  },
+  {
+   "file": "dist/cjs/dimensions.d.ts",
+   "bytes": 681,
+   "sha256": "549d4940c199251b32231b1862a2204a3629bccf1ff1d70bb79f0b3589cbf4f6"
+  },
+  {
+   "file": "dist/cjs/dimensions.js",
+   "bytes": 4464,
+   "sha256": "f3f0fc03c49823109ef2b969d77f2bba588a575e4385d9ba2c221af81150850a"
+  },
+  {
+   "file": "dist/cjs/focus-trap.d.ts",
+   "bytes": 143,
+   "sha256": "7c04198e128409c07c720a305edd39db89b91756fe44e4f0d48b24a2196df988"
+  },
+  {
+   "file": "dist/cjs/focus-trap.js",
+   "bytes": 6127,
+   "sha256": "be10c5a35b87dbd28115b7161c5844519caf6dc001f7429fb60b068276cf69b6"
+  },
+  {
+   "file": "dist/cjs/focus-zone.d.ts",
+   "bytes": 1836,
+   "sha256": "c205f79c758bce71f1e2b7553f91f28d35904e7f2617879a21000dda2456fec4"
+  },
+  {
+   "file": "dist/cjs/focus-zone.js",
+   "bytes": 24910,
+   "sha256": "54aee9ba79df2a09032964903cc3f48c92b771dcf880c5394de1e6db9ffede2f"
+  },
+  {
+   "file": "dist/cjs/index.d.ts",
+   "bytes": 178,
+   "sha256": "e2820fe42058fa7a81ba91cbdad68e675792ddfdfba3dc6a512562ff41b238d3"
+  },
+  {
+   "file": "dist/cjs/index.js",
+   "bytes": 1123,
+   "sha256": "a6940f92527726afa3374206fb65eaebd9e0436d249230e69e38d0ff15a5c3de"
+  },
+  {
+   "file": "dist/cjs/scroll-into-view.d.ts",
+   "bytes": 332,
+   "sha256": "ff964510c518f41b792c9f6858bdded08142ea2e899004ba45f73d1e2a192267"
+  },
+  {
+   "file": "dist/cjs/scroll-into-view.js",
+   "bytes": 1254,
+   "sha256": "5a38548219441f447eb00b29c07c746ae8cc6f4c3067f44277c1833ebfa1e80f"
+  },
+  {
+   "file": "dist/cjs/polyfills/event-listener-signal.d.ts",
+   "bytes": 137,
+   "sha256": "d5cbdaf8fe9789010698cdfed2976d584c40cc21d9392758c4f42d222b9fad1a"
+  },
+  {
+   "file": "dist/cjs/polyfills/event-listener-signal.js",
+   "bytes": 1270,
+   "sha256": "9f7ac42ec2ae5448fc66385e023d6aa3eada86f518dd1b50449964be1547ebd9"
+  },
+  {
+   "file": "dist/cjs/stories/anchored-position.stories.d.ts",
+   "bytes": 782,
+   "sha256": "52840a0db04f7790117d7a3ee6bccada0a4fe7534f927bcf7c3cbd7221ee45cc"
+  },
+  {
+   "file": "dist/cjs/stories/focus-trap.stories.d.ts",
+   "bytes": 385,
+   "sha256": "0689645faa5c31bccc1962d99619869281f75fa8f7895a1bd230a950ae386291"
+  },
+  {
+   "file": "dist/cjs/stories/focus-zone.stories.d.ts",
+   "bytes": 879,
+   "sha256": "7123490082c1657212291ee631997267ee77e0ad2343b5a32e4926387f5f76b5"
+  },
+  {
+   "file": "dist/cjs/stories/scroll-into-view.stories.d.ts",
+   "bytes": 405,
+   "sha256": "c31d4578098b339e2b304b5b84313612b42142effef798bd6ca4f47aee697e8b"
+  },
+  {
+   "file": "dist/cjs/utils/index.d.ts",
+   "bytes": 156,
+   "sha256": "3e9de06a05518ece3d650221dd04071dd9e2b2b0fa84cfb6356c63a1f890ec4d"
+  },
+  {
+   "file": "dist/cjs/utils/index.js",
+   "bytes": 656,
+   "sha256": "e0638e0d40f1badde01697ab9a8e9e61d8bf58efdb7e32d3f2b0b12c9a3fc10a"
+  },
+  {
+   "file": "dist/cjs/utils/indexed-set.d.ts",
+   "bytes": 459,
+   "sha256": "119ab6aa158f910d23b4e5353a001e2428e9267cb760fb498fa3857ec06a8f82"
+  },
+  {
+   "file": "dist/cjs/utils/indexed-set.js",
+   "bytes": 3656,
+   "sha256": "f203a795e5e1781f8c2923f236c4ef3e554f0774ae708f81189c32b5b3a0ee31"
+  },
+  {
+   "file": "dist/cjs/utils/is-editable-element.d.ts",
+   "bytes": 80,
+   "sha256": "d556578a82a4e7dd84aa3d72bab367058bd1f2b1b840f464feb30a6b04a6b074"
+  },
+  {
+   "file": "dist/cjs/utils/is-editable-element.js",
+   "bytes": 919,
+   "sha256": "15ff97f6315d5c7632e0a28f80c901c5b25a7a20285f9c328ee6590304f3d748"
+  },
+  {
+   "file": "dist/cjs/utils/iterate-focusable-elements.d.ts",
+   "bytes": 553,
+   "sha256": "44444034e684221806a288a4a2682be0ad1ead98061f8e9f57cc02d53e491049"
+  },
+  {
+   "file": "dist/cjs/utils/iterate-focusable-elements.js",
+   "bytes": 3118,
+   "sha256": "2e767cde7fe2f4f602716793d1f367a3d48800a4d8c1a5aa76e44044665747fe"
+  },
+  {
+   "file": "dist/cjs/utils/unique-id.d.ts",
+   "bytes": 44,
+   "sha256": "4d757ee7e86ddf8df38da4fa924a30e6466b7ea7c0d05fafaee91ed6e0c208cd"
+  },
+  {
+   "file": "dist/cjs/utils/unique-id.js",
+   "bytes": 127,
+   "sha256": "289716a5ba4c7a776f9904363cb9bba04cdaa207cb6048ac5b2c06aca164ad67"
+  },
+  {
+   "file": "dist/cjs/utils/user-agent.d.ts",
+   "bytes": 44,
+   "sha256": "bba563452954b858d18cc5de0aa8a343b70d58ec0369788b2ffd4c97aa8a8bd1"
+  },
+  {
+   "file": "dist/cjs/utils/user-agent.js",
+   "bytes": 201,
+   "sha256": "ded963d05bfb8ea3dbb556be4160f78ba6deb347619aa393fead371c0b724ba9"
+  },
+  {
+   "file": "dist/esm/anchored-position.d.ts",
+   "bytes": 735,
+   "sha256": "0f86801cbcf3aef9c4122c5fb2ecd4db4b924d02c869be980753d198b0936968"
+  },
+  {
+   "file": "dist/esm/anchored-position.mjs",
+   "bytes": 12520,
+   "sha256": "d1b5a768b64be8a18de76b940b9edaec5d09e0b362ac670f948d304882e10295"
+  },
+  {
+   "file": "dist/esm/dimensions.d.ts",
+   "bytes": 681,
+   "sha256": "549d4940c199251b32231b1862a2204a3629bccf1ff1d70bb79f0b3589cbf4f6"
+  },
+  {
+   "file": "dist/esm/dimensions.mjs",
+   "bytes": 4366,
+   "sha256": "e97b5b6d35564955b9f6e2024b2774beeed05aca30418a02ae1e0a0e93e6961e"
+  },
+  {
+   "file": "dist/esm/focus-trap.d.ts",
+   "bytes": 143,
+   "sha256": "7c04198e128409c07c720a305edd39db89b91756fe44e4f0d48b24a2196df988"
+  },
+  {
+   "file": "dist/esm/focus-trap.mjs",
+   "bytes": 5981,
+   "sha256": "bcfb8b70725ad9268b5827a23c47f08e4b7d200e15367edf2af9470b8a6c8ae7"
+  },
+  {
+   "file": "dist/esm/focus-zone.d.ts",
+   "bytes": 1836,
+   "sha256": "c205f79c758bce71f1e2b7553f91f28d35904e7f2617879a21000dda2456fec4"
+  },
+  {
+   "file": "dist/esm/focus-zone.mjs",
+   "bytes": 24354,
+   "sha256": "5a5b617b3452659f5236f054432a759c3cebd96eb8d619be7e566a045bdbb0d1"
+  },
+  {
+   "file": "dist/esm/index.d.ts",
+   "bytes": 178,
+   "sha256": "e2820fe42058fa7a81ba91cbdad68e675792ddfdfba3dc6a512562ff41b238d3"
+  },
+  {
+   "file": "dist/esm/index.mjs",
+   "bytes": 447,
+   "sha256": "3180b40fac60653c04873c2a3abf3d9df9806cc686dfd80fa3dda3f78a656b7f"
+  },
+  {
+   "file": "dist/esm/package.json",
+   "bytes": 17,
+   "sha256": "6dc1b06d6b093e9cccb20bee06a93836eee0420ae26803ca2ce4065d82f070d1"
+  },
+  {
+   "file": "dist/esm/scroll-into-view.d.ts",
+   "bytes": 332,
+   "sha256": "ff964510c518f41b792c9f6858bdded08142ea2e899004ba45f73d1e2a192267"
+  },
+  {
+   "file": "dist/esm/scroll-into-view.mjs",
+   "bytes": 1225,
+   "sha256": "e81dbc97e62464aaf850006dc0f5541ba5c4da20123a09b0b84697758b56c171"
+  },
+  {
+   "file": "dist/esm/polyfills/event-listener-signal.d.ts",
+   "bytes": 137,
+   "sha256": "d5cbdaf8fe9789010698cdfed2976d584c40cc21d9392758c4f42d222b9fad1a"
+  },
+  {
+   "file": "dist/esm/polyfills/event-listener-signal.mjs",
+   "bytes": 1247,
+   "sha256": "7ddc0b55aeb5e7208fd2616ae13a655c2cf056bcf74560c8570fd05747507e91"
+  },
+  {
+   "file": "dist/esm/stories/anchored-position.stories.d.ts",
+   "bytes": 782,
+   "sha256": "52840a0db04f7790117d7a3ee6bccada0a4fe7534f927bcf7c3cbd7221ee45cc"
+  },
+  {
+   "file": "dist/esm/stories/focus-trap.stories.d.ts",
+   "bytes": 385,
+   "sha256": "0689645faa5c31bccc1962d99619869281f75fa8f7895a1bd230a950ae386291"
+  },
+  {
+   "file": "dist/esm/stories/focus-zone.stories.d.ts",
+   "bytes": 879,
+   "sha256": "7123490082c1657212291ee631997267ee77e0ad2343b5a32e4926387f5f76b5"
+  },
+  {
+   "file": "dist/esm/stories/scroll-into-view.stories.d.ts",
+   "bytes": 405,
+   "sha256": "c31d4578098b339e2b304b5b84313612b42142effef798bd6ca4f47aee697e8b"
+  },
+  {
+   "file": "dist/esm/utils/index.d.ts",
+   "bytes": 156,
+   "sha256": "3e9de06a05518ece3d650221dd04071dd9e2b2b0fa84cfb6356c63a1f890ec4d"
+  },
+  {
+   "file": "dist/esm/utils/index.mjs",
+   "bytes": 272,
+   "sha256": "61357cdacee3ebb369bb7b17e7f4df0d1688c782d7351ae49d228a36fd4376ea"
+  },
+  {
+   "file": "dist/esm/utils/indexed-set.d.ts",
+   "bytes": 459,
+   "sha256": "119ab6aa158f910d23b4e5353a001e2428e9267cb760fb498fa3857ec06a8f82"
+  },
+  {
+   "file": "dist/esm/utils/indexed-set.mjs",
+   "bytes": 3631,
+   "sha256": "873b12d943cf4bb779af83057b98e2f5dfb68737caee49aba5f51dd0ff7d3dca"
+  },
+  {
+   "file": "dist/esm/utils/is-editable-element.d.ts",
+   "bytes": 80,
+   "sha256": "d556578a82a4e7dd84aa3d72bab367058bd1f2b1b840f464feb30a6b04a6b074"
+  },
+  {
+   "file": "dist/esm/utils/is-editable-element.mjs",
+   "bytes": 887,
+   "sha256": "78491311abab45f786402f896f3d1fc42b5d936732ed0f2146f64736b4fe532f"
+  },
+  {
+   "file": "dist/esm/utils/iterate-focusable-elements.d.ts",
+   "bytes": 553,
+   "sha256": "44444034e684221806a288a4a2682be0ad1ead98061f8e9f57cc02d53e491049"
+  },
+  {
+   "file": "dist/esm/utils/iterate-focusable-elements.mjs",
+   "bytes": 3008,
+   "sha256": "3df04002887a1360ed9c302022e6a12aaca76ba734f9c21bdcb6c4dc28ec9ada"
+  },
+  {
+   "file": "dist/esm/utils/unique-id.d.ts",
+   "bytes": 44,
+   "sha256": "4d757ee7e86ddf8df38da4fa924a30e6466b7ea7c0d05fafaee91ed6e0c208cd"
+  },
+  {
+   "file": "dist/esm/utils/unique-id.mjs",
+   "bytes": 104,
+   "sha256": "f820489916ab9893f41e219819bf1428ebbd31ca870331965c9a8c9321b9c99d"
+  },
+  {
+   "file": "dist/esm/utils/user-agent.d.ts",
+   "bytes": 44,
+   "sha256": "bba563452954b858d18cc5de0aa8a343b70d58ec0369788b2ffd4c97aa8a8bd1"
+  },
+  {
+   "file": "dist/esm/utils/user-agent.mjs",
+   "bytes": 179,
+   "sha256": "36f212a53eb6e0a226699b98214431e35600e92f1560f957e447b230277d1b69"
+  }
+ ]
+}

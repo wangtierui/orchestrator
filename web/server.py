@@ -70,7 +70,11 @@ def _asset(name: str) -> tuple[bytes, str]:
         raise ApiError(404, f"资源不存在 {name}")
     ctype = {".html": "text/html; charset=utf-8",
              ".js": "application/javascript; charset=utf-8",
+             # .mjs 必须给 JS MIME：ESM 有严格 MIME 检查，返回 text/plain 时
+             # 浏览器直接拒绝执行（表现为 "Failed to fetch dynamically imported module"）。
+             ".mjs": "application/javascript; charset=utf-8",
              ".css": "text/css; charset=utf-8",
+             ".json": "application/json; charset=utf-8",
              ".svg": "image/svg+xml"}.get(os.path.splitext(name)[1],
                                           "text/plain; charset=utf-8")
     with open(p, "rb") as fh:
