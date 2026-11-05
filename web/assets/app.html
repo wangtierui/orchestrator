@@ -43,6 +43,15 @@
   .rail .item:hover { background: var(--bgColor-muted); }
   .rail .item.on { background: var(--bgColor-muted); font-weight: 600; }
   .rail .hint { font-size: 11px; color: var(--fgColor-muted); padding: 4px 8px; line-height: 1.5; }
+  .rail { display: flex; flex-direction: column; }
+  .rail-items { flex: 1 1 auto; }
+  .rail-foot { flex: 0 0 auto; display: flex; flex-direction: column; gap: var(--space-sm);
+               padding-top: var(--space-sm); border-top: 1px solid var(--borderColor-default); }
+  .rail-act { height: 32px; padding: 6px 8px; text-align: left; border: 0; background: none;
+              border-radius: 6px; font-size: var(--text-body-size-medium); cursor: pointer;
+              color: var(--fgColor-default); }
+  .rail-act:hover { background: var(--bgColor-muted); }
+  body[data-sidebar="collapsed"] .rail { display: none; }
   .main { flex: 1 1 auto; min-width: 0; overflow-y: auto; }
   .loading { padding: 24px; font-size: 13px; color: var(--fgColor-muted); }
 </style>
@@ -50,6 +59,8 @@
 <body>
 
 <div class="topbar">
+  <button id="expandBtn" class="btn" type="button" hidden aria-label="展开侧边栏"
+          aria-expanded="false" aria-controls="rail" style="width:32px;height:32px;padding:0">≡</button>
   <a class="logo-link" href="#overview" title="回到总览">
     <svg class="octicon" width="28" height="28" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
       <path d="M8 0a8 8 0 0 1 8 8 8 8 0 0 1-5.47 7.59c-.4.07-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8a8 8 0 0 1 8-8Z"></path>
@@ -68,7 +79,14 @@
 <nav class="repo-tabs" id="tabs" role="navigation" aria-label="模块导航"></nav>
 
 <div class="shell">
-  <aside class="rail" id="rail" role="navigation" aria-label="侧边导航"></aside>
+  <aside class="rail" id="rail" role="navigation" aria-label="侧边导航">
+    <div id="railItems" class="rail-items"></div>
+    <div class="rail-foot">
+      <button id="feedbackBtn" class="rail-act" type="button">Feedback</button>
+      <button id="collapseBtn" class="rail-act" type="button"
+              aria-expanded="true" aria-controls="rail">Collapse sidebar</button>
+    </div>
+  </aside>
   <main class="main" id="main"><div class="loading">加载中…</div></main>
 </div>
 
@@ -183,7 +201,8 @@ async function mount(slug) {
 function renderRail(t) {
   const items = (t.anchors || []).map(([label, sel]) =>
     `<div class="item" data-sel="${esc(sel)}">${esc(label)}</div>`).join("");
-  $("#rail").innerHTML = `<div class="grp">本页导航</div>${items}`;
+  const railHost = document.getElementById("railItems") || $("#rail");
+  railHost.innerHTML = `<div class="grp">本页导航</div>${items}`;
   $("#rail").querySelectorAll(".item").forEach((el) => {
     el.onclick = () => {
       const target = $("#main").querySelector(el.dataset.sel);
@@ -240,6 +259,113 @@ $("#jump").addEventListener("input", (e) => {
 
 window.addEventListener("hashchange", () => show(current()));
 show(current());
+</script>
+<script type="module">
+import { getAnchoredPosition, focusZone, focusTrap, scrollIntoView, FocusKeys }
+  from "/vendor/primer-behaviors/dist/esm/index.mjs";
+import * as core from "/js/ui/core.js";
+import * as table from "/js/ui/table.js";
+import * as controls from "/js/ui/controls.js";
+import * as chart from "/js/ui/chart.js";
+import * as routerMod from "/js/ui/router.js";
+
+/* 页面脚本以 classic script 注入，无法 import；把模块挂到 window 供其调用。 */
+window.RCO = { core, table, controls, chart, router: routerMod,
+  behaviors: { getAnchoredPosition, focusZone, focusTrap, scrollIntoView, FocusKeys } };
+
+/* ── 侧栏折叠态（§5.2.2）：宽度归零 + localStorage 记忆 + 焦点转移 ── */
+const rail = document.getElementById("rail");
+const expandBtn = document.getElementById("expandBtn");
+const collapseBtn = document.getElementById("collapseBtn");
+
+function applySidebar(state, focus) {
+  const collapsed = state === "collapsed";
+  document.body.dataset.sidebar = collapsed ? "collapsed" : "expanded";
+  expandBtn.hidden = !collapsed;
+  expandBtn.setAttribute("aria-expanded", String(!collapsed));
+  collapseBtn.setAttribute("aria-expanded", String(!collapsed));
+  localStorage.setItem("rco.sidebar", collapsed ? "collapsed" : "expanded");
+  if (focus) (collapsed ? expandBtn : collapseBtn).focus();
+}
+expandBtn.addEventListener("click", () => applySidebar("expanded", true));
+collapseBtn.addEventListener("click", () => applySidebar("collapsed", true));
+applySidebar(localStorage.getItem("rco.sidebar") || "expanded", false);
+
+/* ── 侧栏条目滚动：只滚容器，不滚整页（§6.4） ── */
+const main = document.getElementById("main");
+document.getElementById("railItems").addEventListener("click", (ev) => {
+  const item = ev.target.closest(".rail-item");
+  if (!item) return;
+  const target = main.querySelector(item.dataset.sel || "");
+  if (target) scrollIntoView(target, main, { direction: "vertical", startMargin: 8 });
+});
+
+/* ── 仓库条溢出：More 下拉（§5.2.1） ── */
+const tabsNav = document.getElementById("tabs");
+let moreBtn = null, morePanel = null;
+
+function closeMore() {
+  if (morePanel) { morePanel.remove(); morePanel = null; }
+  if (moreBtn) { moreBtn.setAttribute("aria-expanded", "false"); moreBtn.focus(); }
+}
+function openMore(moved) {
+  morePanel = document.createElement("div");
+  morePanel.setAttribute("role", "menu");
+  morePanel.setAttribute("aria-label", "更多页签");
+  morePanel.style.cssText = "position:absolute;width:320px;border-radius:12px;padding:8px;" +
+    "background:var(--bgColor-default);box-shadow:0 0 0 1px rgba(209,217,224,.25),0 8px 24px rgba(66,74,83,.12);";
+  for (const a of moved) {
+    const item = document.createElement("a");
+    item.href = a.getAttribute("href");
+    item.setAttribute("role", "menuitem");
+    item.className = "rail-act";
+    item.textContent = a.textContent;
+    if (a.getAttribute("aria-current")) item.setAttribute("aria-current", "page");
+    morePanel.append(item);
+  }
+  document.body.append(morePanel);
+  const pos = getAnchoredPosition(morePanel, moreBtn, { side: "outside-bottom", align: "end", allowOutOfBounds: false });
+  morePanel.style.top = `${pos.top + window.scrollY}px`;
+  morePanel.style.left = `${pos.left + window.scrollX}px`;
+  moreBtn.setAttribute("aria-expanded", "true");
+  const zone = focusZone(morePanel, { bindKeys: FocusKeys.ArrowVertical | FocusKeys.HomeAndEnd });
+  const trap = focusTrap(morePanel, morePanel.querySelector('[role="menuitem"]'));
+  morePanel.addEventListener("click", () => { zone.abort && zone.abort(); trap && trap.abort && trap.abort(); closeMore(); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeMore(); }, { once: true });
+}
+
+function layoutTabs() {
+  const tabs = [...tabsNav.querySelectorAll("a.tab")];
+  tabs.forEach((a) => { a.hidden = false; });
+  if (moreBtn) { moreBtn.remove(); moreBtn = null; }
+  closeMore && closeMore();
+  const avail = tabsNav.clientWidth - 32;
+  let used = 0;
+  const moved = [];
+  for (const a of tabs) {
+    const w = a.getBoundingClientRect().width || 80;
+    if (used + w > avail) moved.push(a);
+    used += w;
+  }
+  if (!moved.length) return;
+  // 保留至少 1 项，其余进 More
+  for (const a of moved) a.hidden = true;
+  const current = moved.find((a) => a.getAttribute("aria-current"));
+  moreBtn = document.createElement("button");
+  moreBtn.type = "button";
+  moreBtn.className = "btn";
+  moreBtn.setAttribute("aria-haspopup", "menu");
+  moreBtn.setAttribute("aria-expanded", "false");
+  moreBtn.setAttribute("aria-label", current ? `更多页签（当前：${current.textContent}）` : "更多页签");
+  moreBtn.style.cssText = "width:auto;height:32px;padding:0 12px;flex:0 0 auto;";
+  moreBtn.textContent = current ? current.textContent : "More";
+  moreBtn.addEventListener("click", () => (morePanel ? closeMore() : openMore(moved)));
+  tabsNav.append(moreBtn);
+}
+
+new ResizeObserver(() => layoutTabs()).observe(tabsNav);
+addEventListener("hashchange", () => setTimeout(layoutTabs, 0));
+setTimeout(layoutTabs, 300);
 </script>
 </body>
 </html>

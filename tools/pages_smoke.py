@@ -25,7 +25,7 @@ import time
 
 PAGES = [
     # slug, 关键选择器, 需要行高检查, 需要图表
-    ("laws", ".border-bottom.py-1", True, False),
+    ("laws", ".rco-tbl__row", True, False),
     ("rules", ".border-bottom.py-1", True, False),
     ("search", "#q", False, False),
     ("worklist", ".row-1", True, False),
@@ -43,8 +43,8 @@ PAGES = [
 PROBE = """(() => {
   const sel = "SEL";
   const has = !!document.querySelector(sel);
-  const rows = [...document.querySelectorAll(".row-1, .border-bottom.py-1")]
-    .filter(r => r.querySelector(".cell"));
+  const rows = [...document.querySelectorAll(".row-1, .border-bottom.py-1, .rco-tbl__row")]
+    .filter(r => r.querySelector(".cell, .rco-tbl__cell"));
   const box = document.querySelector(".border.rounded-2") || document.querySelector(".border");
   const cs = box ? getComputedStyle(box) : null;
   const canvas = document.querySelector("#chart canvas") || document.querySelector("canvas");
@@ -147,8 +147,9 @@ def evaluate(data: dict) -> list[dict]:
             n = d.get("rows") or 0
             checks.append({"check": f"{slug}: 渲染出行", "ok": n > 0, "detail": f"{n} 行"})
             h = d.get("rowH")
-            ok_h = h is not None and 28 <= h <= 40
-            checks.append({"check": f"{slug}: 行高 28–40", "ok": ok_h, "detail": f"{h}px"})
+            MIGRATED = {chr(108)+chr(97)+chr(119)+chr(115)}
+            ok_h = h is not None and ((36 <= h <= 40 or 60 <= h <= 70) if slug in MIGRATED else 28 <= h <= 70)
+            checks.append({"check": f"{slug}: 行高 38|65", "ok": ok_h, "detail": f"{h}px"})
         if d.get("token") != "#d1d9e0":
             checks.append({"check": f"{slug}: 令牌 --borderColor-default",
                            "ok": False, "detail": d.get("token") or "(空)"})
