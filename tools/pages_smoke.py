@@ -98,6 +98,9 @@ def collect() -> dict:
         url = f"http://127.0.0.1:8765/pages/{slug}.html?v={time.time():.0f}"
         try:
             s.eval("window.__psErr = null;")
+            # 后台标签页会被浏览器节流（定时器降频到每分钟一次）⇒ 页面永远不 ready，
+            # 表现为"laws 关键元素不存在 / data-page-ready 未标记"的偶发红。每次导航前先置前。
+            s.cmd("Page.bringToFront", {})
             s.cmd("Page.navigate", {"url": url})
             time.sleep(1.2)
             # 等页面自己打 data-page-ready：动态渲染页先等数据回来，
