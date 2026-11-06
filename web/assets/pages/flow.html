@@ -3,105 +3,106 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>数据流转 · 平行重建样板页（桑基图）</title>
-<link rel="stylesheet" href="../primer-primitives.css">
-<link rel="stylesheet" href="../primer.css">
+<title>数据流转</title>
+<link rel="stylesheet" href="/primer-primitives.css">
+<link rel="stylesheet" href="/primer.css">
 <style>
-  body { background: var(--bgColor-default); }
-  .page { max-width: 1200px; margin: 0 auto; padding: 16px; }
-  .card { padding: 16px; }
-  .card > h3 { margin: 0 0 12px; font-size: 14px; font-weight: 600;
-              display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
-  .chart { width: 100%; height: 460px; }
-  .gap-2 { gap: 8px; }   /* Primer 22 无此工具类，按布局补 */
+  /* 只写布局 */
+  .page { max-width: var(--rco-content-width, 75rem); margin-inline: auto; padding: var(--space-lg); }
+  .stack { display: flex; flex-direction: column; gap: var(--space-lg); }
+  .row { display: flex; align-items: center; gap: var(--space-sm); }
+  .grow { flex: 1 1 auto; min-width: 0; }
 </style>
 </head>
 <body>
-<div class="page" role="main">
-  <div class="d-flex flex-items-center flex-wrap gap-2 mb-3">
-    <h2 class="h3 m-0">数据流转</h2>
-    <span id="meta" class="text-small"></span>
-    <span class="flex-auto"></span>
-    <span class="text-small">数据源：/api/flow</span>
+<div class="page stack" role="main">
+  <div class="row">
+    <h1 class="h3 m-0 grow">数据流转</h1>
+    <span class="text-small" id="stamp"></span>
   </div>
 
-  <div class="border rounded-2 card">
-    <h3><span>按数据源的步骤链路</span><span id="cnt" class="text-small"></span></h3>
-    <div id="chart" class="chart" role="img" aria-label="数据流转桑基图"></div>
-    <div id="note" class="text-small mt-2"></div>
-  </div>
+  <section class="border rounded-2 p-3">
+    <div id="chart"></div>
+    <div class="text-small" id="chartNote"></div>
+  </section>
+
+  <section class="stack">
+    <h2 class="h4 m-0">运行步骤</h2>
+    <div class="border rounded-2" id="tableSlot"></div>
+  </section>
 </div>
-
-<script src="../vendor/echarts/echarts.min.js"></script>
+<script src="/vendor/echarts/echarts.min.js"></script>
 <script>
-const $ = (s) => document.querySelector(s);
-let chart = null;
+(async () => {
+  const RCO = window.RCO || {
+    core: await import('/js/ui/core.js'),
+    table: await import('/js/ui/table.js'),
+    chart: await import('/js/ui/chart.js'),
+  };
+  const { core, table, chart } = RCO;
 
-/* 链路由步骤命名推导：collect:X → clean:X → relevance:X → apply:X
- * （/api/flow 只给 steps 列表与 weights，不给显式 links，这里按命名规则连边并注明） */
-function buildLinks(steps, weights) {
-  const bySource = {};
-  /* 优先用 weights 的键：形如 clean:gov 的干净 stage:source；
-   * steps 里可能带 _weekly 之类的后缀（collect:nfra_weekly），会把链路切断。 */
-  const ids = Object.keys(weights).length ? Object.keys(weights) : steps;
-  ids.forEach((id) => {
-    const [stage, src] = String(id).split(":");
-    if (!src) return;
-    (bySource[src] = bySource[src] || []).push(stage);
-  });
-  const order = ["collect", "clean", "relevance", "apply"];
-  const links = [];
-  Object.entries(bySource).forEach(([src, stages]) => {
-    for (let i = 0; i < stages.length - 1; i++) {
-      const a = `${stages[i]}:${src}`, b = `${stages[i + 1]}:${src}`;
-      if (order.indexOf(stages[i]) > order.indexOf(stages[i + 1])) continue;
-      links.push({ source: a, target: b, value: Number(weights[a]) || Number(weights[b]) || 1 });
+  const host = document.getElementById('chart');
+  const note = document.getElementById('chartNote');
+
+  try {
+    const f = await fetch('/api/flow', { cache: 'no-store' }).then((r) => r.json());
+    const steps = f.steps || [];
+    const status = f.step_status || {};
+    const weights = f.weights || {};
+
+    document.getElementById('stamp').textContent =
+      `运行 ${f.run_id || '—'} · 步骤 ${steps.length} · 权重项 ${Object.keys(weights).length}`;
+
+    /* ① 有显式 nodes/edges 才画桑基；否则画权重条形图（不伪造链路） */
+    const nodes = (f.nodes || []).map((n) => (typeof n === 'string' ? { name: n } : n));
+    const edges = (f.edges || []).map((e) => ({
+      source: e.source || e.from, target: e.target || e.to, value: e.value || e.weight || 1,
+    })).filter((e) => e.source && e.target);
+
+    if (nodes.length && edges.length) {
+      chart.mountChart({ el: host, height: 460, label: '数据流转桑基图',
+        option: {
+          tooltip: { trigger: 'item' },
+          series: [{ type: 'sankey', data: nodes, links: edges,
+            emphasis: { focus: 'adjacency' }, lineStyle: { color: 'gradient', opacity: 0.35 },
+            label: { fontSize: 11 } }],
+        } });
+      note.textContent = `桑基节点 ${nodes.length} · 边 ${edges.length}（来自接口 nodes/edges）`;
+    } else {
+      const top = Object.entries(weights).sort((a, b) => b[1] - a[1]).slice(0, 12);
+      chart.mountChart({ el: host, height: 460, label: '流转权重条形图',
+        option: {
+          tooltip: { trigger: 'axis' },
+          grid: { left: 120, right: 24, top: 16, bottom: 24, containLabel: false },
+          xAxis: { type: 'value' },
+          yAxis: { type: 'category', data: top.map(([k]) => k).reverse() },
+          series: [{ type: 'bar', data: top.map(([, v]) => v).reverse(), barMaxWidth: 18 }],
+        } });
+      note.textContent = `接口未提供显式 nodes/edges，改画权重 Top ${top.length}（不推导链路，避免把猜测当事实）`;
     }
-  });
-  return links;
-}
 
-async function load() {
-  const d = await (await fetch("/api/flow", { cache: "no-store" })).json();
-  if (!d.available) { $("#note").textContent = d.reason || "不可用"; return; }
-  const steps = d.steps || [];
-  const links = buildLinks(steps, d.weights || {});
-  const names = [...new Set([].concat(...links.map((l) => [l.source, l.target])))];
-  $("#cnt").textContent = `${names.length} 个节点 / ${links.length} 条边`;
-  $("#meta").textContent = `运行 ${d.run_id || "—"} · ${d.fetched_at || ""}`;
-  $("#note").textContent = "链路按步骤命名（collect→clean→relevance→apply）推导：/api/flow 未提供显式 links。";
-
-  chart = chart || echarts.init($("#chart"));
-  chart.setOption({
-    tooltip: { trigger: "item", triggerOn: "mousemove" },
-    series: [{
-      type: "sankey", left: 8, right: 120, top: 8, bottom: 8,
-      nodeGap: 8, nodeWidth: 12, emphasis: { focus: "adjacency" },
-      label: { fontSize: 11 },
-      data: names.map((n) => ({ name: n })),
-      links,
-    }],
-  });
-  chart.resize();
-}
-
-window.addEventListener("resize", () => chart && chart.resize());
-load();
-</script>
-
-<script>
-/* 渲染完成标记：页面自己打 data-page-ready=1，smoke 等它再断言，
-   把"时序"变成"确定性"（否则断言会跑在骨架屏上）。 */
-(function () {
-  var t0 = Date.now();
-  var iv = setInterval(function () {
-    var root = document.querySelector(".page, main, #main") || document.body;
-    var hasContent = root && root.querySelector(".row-1, tr, canvas, .border-bottom");
-    if (hasContent || Date.now() - t0 > 8000) {
-      document.body.dataset.pageReady = "1";
-      clearInterval(iv);
-    }
-  }, 80);
+    /* ② 运行步骤表（真实状态，不是"未连线任务"） */
+    const rows = steps.map((s) => {
+      const st = status[s] || {};
+      return { step: s, rc: st.rc || '—', status: st.status || '—', elapsed: st.elapsed_s };
+    });
+    const tbl = table.renderTable({
+      columns: [
+        { key: 'step', label: '步骤', width: 'minmax(0,2fr)', titleFrom: 'step' },
+        { key: 'rc', label: '返回码', width: '100px', render: (r) => table.badge(r.rc) },
+        { key: 'status', label: '状态', width: '100px' },
+        { key: 'elapsed', label: '耗时', width: '100px', align: 'right',
+          render: (r) => (r.elapsed == null ? '—' : `${Number(r.elapsed).toFixed(1)}s`) },
+      ],
+      rows, density: 'compact', label: '运行步骤',
+      empty: { title: '本轮无步骤记录' },
+    });
+    document.getElementById('tableSlot').append(tbl.el);
+  } catch (e) {
+    host.replaceChildren(core.renderState('error', { title: '流转数据加载失败', desc: String(e.message || e) }));
+  } finally {
+    core.markReady();
+  }
 })();
 </script>
 </body>

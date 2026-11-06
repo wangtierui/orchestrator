@@ -3,95 +3,91 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>项目结构 · 平行重建样板页（径向树）</title>
-<link rel="stylesheet" href="../primer-primitives.css">
-<link rel="stylesheet" href="../primer.css">
+<title>项目结构</title>
+<link rel="stylesheet" href="/primer-primitives.css">
+<link rel="stylesheet" href="/primer.css">
 <style>
-  body { background: var(--bgColor-default); }
-  .page { max-width: 1200px; margin: 0 auto; padding: 16px; }
-  .card { padding: 16px; }
-  .card > h3 { margin: 0 0 12px; font-size: 14px; font-weight: 600;
-              display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
-  .chart { width: 100%; height: 640px; }
-  #info { min-height: 40px; font-size: 12px; }
-  .gap-2 { gap: 8px; }   /* Primer 22 无此工具类，按布局补 */
+  /* 只写布局 */
+  .page { max-width: var(--rco-content-width, 75rem); margin-inline: auto; padding: var(--space-lg); }
+  .stack { display: flex; flex-direction: column; gap: var(--space-lg); }
+  .row { display: flex; align-items: center; gap: var(--space-sm); }
+  .grow { flex: 1 1 auto; min-width: 0; }
 </style>
 </head>
 <body>
-<div class="page" role="main">
-  <div class="d-flex flex-items-center flex-wrap gap-2 mb-3">
-    <h2 class="h3 m-0">项目结构</h2>
-    <span id="meta" class="text-small"></span>
-    <span class="flex-auto"></span>
-    <span class="text-small">数据源：/project-tree.json</span>
+<div class="page stack" role="main">
+  <div class="row">
+    <h1 class="h3 m-0 grow">项目结构</h1>
+    <span class="text-small" id="stamp"></span>
   </div>
-
-  <div class="border rounded-2 card">
-    <h3><span>目录与关键文件</span><span id="cnt" class="text-small"></span></h3>
-    <div id="chart" class="chart" role="img" aria-label="项目结构径向树"></div>
-    <div id="info" class="text-small"></div>
+  <div class="border rounded-2 p-3">
+    <div id="chart"></div>
+  </div>
+  <div class="border rounded-2 p-3" id="info">
+    <div class="text-small">点节点查看路径与用途</div>
   </div>
 </div>
-
-<script src="../vendor/echarts/echarts.min.js"></script>
+<script src="/vendor/echarts/echarts.min.js"></script>
 <script>
-const $ = (s) => document.querySelector(s);
-const esc = (v) => String(v == null ? "" : v).replace(/[&<>"]/g, (c) =>
-  ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-let chart = null;
+(async () => {
+  const RCO = window.RCO || {
+    core: await import('/js/ui/core.js'),
+    chart: await import('/js/ui/chart.js'),
+  };
+  const { core, chart } = RCO;
 
-const toTree = (n) => ({
-  name: n.name,
-  value: n.size || undefined,
-  children: (n.children || []).map(toTree),
-});
+  try {
+    const d = await fetch('/project-tree.json', { cache: 'no-store' }).then((r) => r.json());
+    const meta = d.meta || {};
+    const root = d.tree || { name: 'root', children: [] };
 
-async function load() {
-  const d = await (await fetch("../project-tree.json", { cache: "no-store" })).json();
-  const meta = d.meta || {};
-  const root = toTree(d.tree || {});
-  $("#meta").textContent = `${meta.root || ""} · 生成于 ${meta.generated_at || "—"}`;
-  $("#cnt").textContent = `${meta.node_count || 0} 个节点${meta.truncated ? "（已截断）" : ""}`;
-
-  chart = chart || echarts.init($("#chart"));
-  chart.setOption({
-    tooltip: { trigger: "item", formatter: (p) => esc(p.name) },
-    series: [{
-      type: "tree",
-      data: [root],
-      layout: "radial",
-      symbolSize: 6,
-      initialTreeDepth: Number(meta.max_depth) || 3,
-      label: { fontSize: 11, position: "left", verticalAlign: "middle", align: "right" },
-      leaves: { label: { position: "right", align: "left" } },
-      emphasis: { focus: "descendant" },
-      expandAndCollapse: true,
-      animationDuration: 400,
-    }],
-  });
-  chart.resize();
-  chart.on("click", (p) => {
-    $("#info").textContent = `选中：${p.name}` + (p.value ? ` · ${p.value}` : "");
-  });
-}
-
-window.addEventListener("resize", () => chart && chart.resize());
-load();
-</script>
-
-<script>
-/* 渲染完成标记：页面自己打 data-page-ready=1，smoke 等它再断言，
-   把"时序"变成"确定性"（否则断言会跑在骨架屏上）。 */
-(function () {
-  var t0 = Date.now();
-  var iv = setInterval(function () {
-    var root = document.querySelector(".page, main, #main") || document.body;
-    var hasContent = root && root.querySelector(".row-1, tr, canvas, .border-bottom");
-    if (hasContent || Date.now() - t0 > 8000) {
-      document.body.dataset.pageReady = "1";
-      clearInterval(iv);
+    document.getElementById('stamp').textContent =
+      `${meta.node_count || 0} 节点 · 深度 ${meta.max_depth || '—'}${meta.truncated ? ' · 已截断' : ''}`;
+    if (meta.truncated) {
+      const tip = document.createElement('div');
+      tip.className = 'text-small';
+      tip.textContent = '已达节点上限，树被截断（meta.truncated=true）';
+      document.getElementById('info').prepend(tip);
     }
-  }, 80);
+
+    const host = document.getElementById('chart');
+    const inst = chart.mountChart({
+      el: host, height: 640, label: '项目目录径向树',
+      option: {
+        tooltip: { trigger: 'item', formatter: (p) => (p.data && p.data.path) || p.name },
+        series: [{
+          type: 'tree',
+          data: [root],
+          layout: 'radial',
+          initialTreeDepth: 3,
+          symbolSize: 6,
+          label: { position: 'top', fontSize: 11 },
+          leaves: { label: { position: 'right' } },
+          emphasis: { focus: 'descendant' },
+        }],
+      },
+    });
+
+    inst.chart.on('click', (p) => {
+      const box = document.getElementById('info');
+      box.replaceChildren();
+      const name = document.createElement('div');
+      name.className = 'text-bold';
+      name.textContent = p.name || '—';
+      const path = document.createElement('div');
+      path.className = 'text-small';
+      path.textContent = (p.data && p.data.path) || '—';
+      const purpose = document.createElement('div');
+      purpose.className = 'text-small';
+      purpose.textContent = (p.data && p.data.purpose) || '';
+      box.append(name, path, purpose);
+    });
+  } catch (e) {
+    document.getElementById('chart').replaceChildren(core.renderState('error', {
+      title: '结构加载失败', desc: String(e.message || e) }));
+  } finally {
+    core.markReady();
+  }
 })();
 </script>
 </body>
