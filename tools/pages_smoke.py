@@ -111,7 +111,7 @@ def collect() -> dict:
             time.sleep(1.2)
             # 等页面自己打 data-page-ready：动态渲染页先等数据回来，
             # 否则断言会跑在骨架屏上（时序问题 → 改成确定性等待）。
-            for _ in range(80):
+            for _ in range(160):   # 40s：门禁内的首个页面常是冷启动（实测 laws 偶发超 20s）
                 if s.eval("document.body && document.body.dataset.pageReady === '1'"):
                     break
                 time.sleep(0.25)  # 最多等 20s：关系图谱要拉全量关系后再渲染
@@ -134,7 +134,7 @@ def collect() -> dict:
             if not data.get("ready") or not data.get("has"):
                 s.cmd("Page.navigate", {"url": url})
                 time.sleep(1.5)
-                for _ in range(40):
+                for _ in range(100):
                     if s.eval("document.body && document.body.dataset.pageReady === '1'"):
                         break
                     time.sleep(0.25)
