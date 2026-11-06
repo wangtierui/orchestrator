@@ -104,3 +104,25 @@ export function when(selector, timeoutMs = 8000) {
     tick();
   });
 }
+
+/** 读/写 hash 里的查询参数（形如 #/laws?density=compact&page=2）。 */
+export function getHashParam(key) {
+  const raw = (location.hash || "").replace(/^#/, "");
+  const qi = raw.indexOf("?");
+  if (qi < 0) return null;
+  const p = new URLSearchParams(raw.slice(qi + 1));
+  return p.get(key);
+}
+
+export function setHashParam(key, value) {
+  const raw = (location.hash || "").replace(/^#/, "");
+  const qi = raw.indexOf("?");
+  const head = qi < 0 ? raw : raw.slice(0, qi);
+  const p = new URLSearchParams(qi < 0 ? "" : raw.slice(qi + 1));
+  if (value == null || value === "") p.delete(key);
+  else p.set(key, String(value));
+  const qs = p.toString();
+  const next = `#${head}${qs ? `?${qs}` : ""}`;
+  // replaceState：切密度不该产生历史条目（规格 §4.3 R3）
+  history.replaceState(history.state, "", next);
+}

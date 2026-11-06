@@ -7,7 +7,7 @@
  *   · 勾选支持三态表头；aria-selected 同步
  */
 
-import { el, esc } from "./core.js";
+import { el, esc, getHashParam, setHashParam } from "./core.js";
 
 const STYLE_ID = "rco-table-style";
 
@@ -65,13 +65,14 @@ function colsTemplate(columns, selectable) {
 export function renderTable(cfg) {
   ensureStyle();
   const {
-    columns = [], density: density0 = "comfortable", selectable = false,
+    columns = [], selectable = false,
     onSort, onRow, onSelect, empty = { title: "暂无数据" }, rowKey = (r, i) => i,
   } = cfg;
   /* rows 必须可重赋（update 时替换数据）；用 const 解构会在排序后抛
    * "Assignment to constant variable"，表现为整表变成错误态。 */
   let rows = cfg.rows || [];
-  let density = density0;
+  /* URL 里的 density 优先于调用方默认值（刷新/深链要能还原，规格 §5.12） */
+  let density = getHashParam("density") || cfg.density || "comfortable";
 
   const tpl = colsTemplate(columns, selectable);
   const wrap = el("div", { class: "rco-tbl", role: "table", "aria-label": cfg.label || "数据表",
@@ -196,7 +197,7 @@ export function renderTable(cfg) {
       renderHead();
       renderBody();
     },
-    setDensity(d) { wrap.dataset.density = d; },
+    setDensity(d) { wrap.dataset.density = d; setHashParam("density", d); },
     selection() { return [...selected].map((i) => rows[i]); },
     clearSelection() { selected.clear(); syncSelection(); },
   };
