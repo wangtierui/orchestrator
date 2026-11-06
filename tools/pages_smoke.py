@@ -115,6 +115,17 @@ def collect() -> dict:
                 if s.eval("document.body && document.body.dataset.pageReady === '1'"):
                     break
                 time.sleep(0.25)  # 最多等 20s：关系图谱要拉全量关系后再渲染
+            # 内容沉降：ready 只代表"页面自认为完成"，行可能还没进 DOM。
+            # 连续两次行数相同才认为稳定（实测 0.5s 时 rows=0、1.0s 时 rows=50）。
+            prev = -1
+            for _ in range(24):
+                n = s.eval("document.querySelectorAll('.row-1, .border-bottom.py-1, .rco-tbl__row').length")
+                n = int(n) if isinstance(n, (int, float)) else -1
+                if n == prev and n >= 0:
+                    break
+                prev = n
+                time.sleep(0.15)
+
             time.sleep(0.15)
             raw = s.eval(PROBE.replace("SEL", sel))
             data = json.loads(raw) if isinstance(raw, str) else (raw or {})
