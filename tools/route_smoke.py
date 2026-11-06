@@ -16,12 +16,13 @@ from __future__ import annotations
 
 import argparse
 import json
-import sys
 import time
 
-sys.path.insert(0, ".")
+# 以 python -m tools.route_smoke 运行，仓库根已在 sys.path（不做 sys.path 引导）
 
 BASE = "http://127.0.0.1:8765"
+EXIT_OK = 0
+EXIT_FAIL = 1
 
 
 def _snap(s) -> dict:
@@ -98,7 +99,7 @@ def main() -> int:
         out = run(args.slug)
     except Exception as e:  # noqa: BLE001
         print(f"[SKIP] CDP 不可用：{type(e).__name__}: {e}")
-        return 1
+        return EXIT_FAIL
 
     for c in out["checks"]:
         flag = "OK  " if c["ok"] else "FAIL"
@@ -106,7 +107,7 @@ def main() -> int:
     if out["err"] not in ("null", "undefined", ""):
         print(f"  [WARN] 页面异常：{out['err']}")
     print(f"\n{out['passed']}/{out['total']} 通过（{out['slug']}）")
-    return 0 if out["passed"] == out["total"] else 1
+    return EXIT_OK if out["passed"] == out["total"] else EXIT_FAIL
 
 
 if __name__ == "__main__":
