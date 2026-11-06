@@ -65,6 +65,11 @@ PROBE = """(() => {
     canvas: canvas ? [canvas.width, canvas.height] : null,
     err: window.__psErr || null,
     ready: document.body.dataset.pageReady === "1",
+    structTags: (() => {
+      const code = [...document.scripts].filter(x => !x.src).map(x => x.textContent).join("\n");
+      const m = code.match(/<(table|tr|td|th|ul|li|div\\s+class=)/g);
+      return m ? m.length : 0;
+    })(),
     aria: {
       main: !!main,
       nav: !!nav,
@@ -154,6 +159,10 @@ def evaluate(data: dict) -> list[dict]:
         aria = d.get("aria") or {}
         checks.append({"check": f"{slug}: ARIA 主区域", "ok": bool(aria.get("main")),
                        "detail": "main 或 role=main"})
+        # 反重复：页面脚本里不得手写结构标签（结构必须来自 ui/table.js 等模块）
+        checks.append({"check": f"{slug}: 脚本无结构标签",
+                       "ok": d.get("structTags", 0) == 0,
+                       "detail": f"命中 {d.get('structTags', 0)} 处"})
         ok_label = aria.get("searchLabel") in ("-", "") or bool(aria.get("searchLabel"))
         checks.append({"check": f"{slug}: ARIA 搜索框可访问名", "ok": ok_label,
                        "detail": aria.get("searchLabel") or "(缺失)"})
