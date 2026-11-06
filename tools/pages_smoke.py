@@ -66,8 +66,9 @@ PROBE = """(() => {
     err: window.__psErr || null,
     ready: document.body.dataset.pageReady === "1",
     structTags: (() => {
-      const code = [...document.scripts].filter(x => !x.src).map(x => x.textContent).join("\n");
-      const m = code.match(/<(table|tr|td|th|ul|li|div\\s+class=)/g);
+      const code = [...document.scripts].filter(function (x) { return !x.src; })
+        .map(function (x) { return x.textContent; }).join(" ");
+      const m = code.match(/<(table|tr|td|th|ul|li)/g);
       return m ? m.length : 0;
     })(),
     aria: {
