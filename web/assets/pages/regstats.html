@@ -3,139 +3,147 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>监管统计 · 平行重建样板页（一页多表）</title>
-<link rel="stylesheet" href="../primer-primitives.css">
-<link rel="stylesheet" href="../primer.css">
+<title>监管统计（EAST）</title>
+<link rel="stylesheet" href="/primer-primitives.css">
+<link rel="stylesheet" href="/primer.css">
 <style>
-  /* 只允许布局。颜色/边框/圆角走 Primer 类与令牌。 */
-  body { background: var(--bgColor-default); }
-  .page { max-width: 1200px; margin: 0 auto; padding: 16px; }
-  .qwrap { position: relative; }
-  .qico { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); pointer-events: none; }
-  .qinput { padding-right: 30px; }
-  .tbl { display: grid; grid-template-columns: minmax(0,1fr) 190px 180px 80px 104px;
-         align-items: center; gap: 8px; }
-  .row-1 { min-height: 32px; }
-  .cell { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-  .cat { margin-bottom: 16px; }
-  .cat-head { display: flex; align-items: baseline; gap: 8px; padding: 8px 12px; }
-  .cat-note { font-size: 12px; }
-  .gap-2 { gap: 8px; }   /* Primer 22 无此工具类，按布局补 */
+  /* 只写布局 */
+  .page { max-width: var(--rco-content-width, 75rem); margin-inline: auto; padding: var(--space-lg); }
+  .stack { display: flex; flex-direction: column; gap: var(--space-lg); }
+  .row { display: flex; align-items: center; gap: var(--space-sm); }
+  .grow { flex: 1 1 auto; min-width: 0; }
+  .kpi { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-lg); }
+  .kpi .n { font-size: var(--text-title-size-small); font-weight: 600; }
+  @media (max-width: 63.25rem) { .kpi { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 48rem) { .kpi { grid-template-columns: minmax(0, 1fr); } }
 </style>
 </head>
 <body>
-<div class="page" role="main">
-
-  <div class="qwrap mb-2">
-    <input id="q" class="form-control input-block qinput" type="search"
-           placeholder="搜索监管统计资料：标题 / 文号 / 主题…" aria-label="搜索监管统计">
-    <svg class="octicon qico" width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-      <path d="M10.68 11.74a6 6 0 0 1-7.922-8.982 6 6 0 0 1 8.982 7.922l3.04 3.04a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215ZM11.5 7a4.499 4.499 0 1 0-8.997 0A4.499 4.499 0 0 0 11.5 7Z"></path>
-    </svg>
+<div class="page stack" role="main">
+  <div class="row">
+    <h1 class="h3 m-0 grow">监管统计（EAST）</h1>
+    <span class="text-small" id="stamp"></span>
   </div>
 
-  <div class="d-flex flex-items-center flex-wrap gap-2 mb-2">
-    <span id="count" class="text-small">共 0 条</span>
-    <span class="flex-auto"></span>
-    <select id="cat" class="form-select" aria-label="按分类筛选"></select>
-    <div class="d-flex" role="group" aria-label="Issues display density">
-      <button class="btn btn-sm" type="button" data-density="comfortable" aria-pressed="true"
-              title="Comfortable display density" aria-label="Comfortable display density">≡</button>
-      <button class="btn btn-sm" type="button" data-density="compact" aria-pressed="false"
-              title="Compact display density" aria-label="Compact display density">☰</button>
-    </div>
-  </div>
+  <div class="kpi" id="kpi"></div>
 
-  <div id="cats"></div>
-  <div id="note" class="text-small mt-2"></div>
+  <div id="searchSlot"></div>
+
+  <section class="stack">
+    <h2 class="h4 m-0">数据结构（全部主题域）</h2>
+    <div class="border rounded-2" id="tablesSlot"></div>
+  </section>
+
+  <section class="stack">
+    <h2 class="h4 m-0">数据元</h2>
+    <div class="border rounded-2" id="elementsSlot"></div>
+  </section>
+
+  <p class="text-small m-0">
+    本页只呈现 EAST 规范自身的内容（数据表 / 数据元 / 计数），不再列出其他分类的条目数与卡片。
+    数据按规范原样展示，**不做排序**（旧版 EAST 各表同样无排序），列筛选与分页需后端支持（E3/E5）。
+  </p>
 </div>
-
 <script>
-const S = { q: "", cat: "" };
-const $ = (s) => document.querySelector(s);
-const esc = (v) => String(v == null ? "" : v).replace(/[&<>"]/g, (c) =>
-  ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-let DATA = [];
-
-function render() {
-  const q = S.q.toLowerCase();
-  let shown = 0;
-  const html = DATA.filter((c) => !S.cat || c.key === S.cat).map((c) => {
-    const items = (c.items || []).filter((it) =>
-      !q || [it.title, it.document_number, it.theme_label].join(" ").toLowerCase().includes(q));
-    shown += items.length;
-    if (!items.length) return "";
-    return `
-    <div class="cat">
-      <div class="cat-head">
-        <span class="text-bold">${esc(c.label)}</span>
-        <span class="Counter">${items.length}</span>
-        <span class="cat-note">${esc(c.note || "")}</span>
-      </div>
-      <div class="border rounded-2 overflow-hidden">
-        <div class="border-bottom py-1 px-2 bgColor-muted tbl row-1 text-small">
-          <div class="cell">标题</div><div class="cell">文号</div>
-          <div class="cell">主题</div><div class="cell">时效</div><div class="cell">日期</div>
-        </div>
-        ${items.map((it) => `
-        <div class="border-bottom py-1 px-2 tbl row-1">
-          <div class="cell"><a class="Link--primary" href="${esc(it.url || "#")}" target="_blank"
-            rel="noopener" title="${esc(it.title)}">${esc(it.title)}</a></div>
-          <div class="cell text-small" title="${esc(it.document_number)}">${esc(it.document_number)}</div>
-          <div class="cell"><span class="IssueLabel" style="background-color:var(--bgColor-accent-muted);border-color:var(--borderColor-accent-muted)">${esc(it.theme_label || "—")}</span></div>
-          <div class="cell text-small">${esc(it.timeliness_status || "—")}</div>
-          <div class="cell text-small">${esc(it.publish_date)}</div>
-        </div>`).join("")}
-      </div>
-    </div>`;
-  }).join("");
-  $("#cats").innerHTML = html || '<div class="py-2 text-small">没有匹配资料</div>';
-  $("#count").textContent = `共 ${shown} 条`;
-}
-
-async function load() {
-  const r = await fetch("/api/regstats", { cache: "no-store" });
-  const d = await r.json();
-  DATA = d.categories || [];
-  $("#cat").innerHTML = ['<option value="">全部分类</option>']
-    .concat(DATA.map((c) => `<option value="${esc(c.key)}">${esc(c.label)}（${c.count}）</option>`))
-    .join("");
-  $("#note").textContent = d.note || "";
-  render();
-}
-
-let timer = null;
-$("#q").addEventListener("input", (e) => {
-  clearTimeout(timer);
-  timer = setTimeout(() => { S.q = e.target.value.trim(); render(); }, 200);
-});
-$("#cat").addEventListener("change", (e) => { S.cat = e.target.value; render(); });
-document.querySelectorAll("[data-density]").forEach((b) => {
-  b.onclick = () => {
-    const v = b.dataset.density;
-    document.querySelectorAll("[data-density]").forEach((x) =>
-      x.setAttribute("aria-pressed", String(x === b)));
-    document.querySelectorAll(".row-1").forEach((r) => {
-      r.style.minHeight = v === "compact" ? "28px" : "32px";
-    });
+(async () => {
+  const RCO = window.RCO || {
+    core: await import('/js/ui/core.js'),
+    table: await import('/js/ui/table.js'),
+    controls: await import('/js/ui/controls.js'),
   };
-});
-load();
-</script>
+  const { core, table, controls } = RCO;
 
-<script>
-/* 渲染完成标记：页面自己打 data-page-ready=1，smoke 等它再断言，
-   把"时序"变成"确定性"（否则断言会跑在骨架屏上）。 */
-(function () {
-  var t0 = Date.now();
-  var iv = setInterval(function () {
-    var root = document.querySelector(".page, main, #main") || document.body;
-    var hasContent = root && root.querySelector(".row-1, tr, canvas, .border-bottom");
-    if (hasContent || Date.now() - t0 > 8000) {
-      document.body.dataset.pageReady = "1";
-      clearInterval(iv);
+  let tables = [];
+  let elements = [];
+  let tTbl = null;
+  let eTbl = null;
+  let q = '';
+
+  const TABLE_COLS = [
+    { key: 'table_no', label: '表号', width: '90px' },
+    { key: 'table_code', label: '表编码', width: '120px' },
+    { key: 'table_name', label: '表中文名', width: 'minmax(0,1.6fr)', titleFrom: 'table_name' },
+    { key: 'domain', label: '主题域', width: '140px' },
+    { key: 'pk_items', label: '主键项', width: '90px', align: 'right' },
+    { key: 'items', label: '数据项', width: '90px', align: 'right' },
+  ];
+
+  const ELEM_COLS = [
+    { key: 'code', label: '数据元编码', width: '130px' },
+    { key: 'name', label: '名称', width: 'minmax(0,1.4fr)', titleFrom: 'name' },
+    { key: 'type', label: '类型', width: '90px' },
+    { key: 'format', label: '格式', width: '110px' },
+    { key: 'domain', label: '取值范围', width: 'minmax(0,1.6fr)', titleFrom: 'domain' },
+  ];
+
+  const hit = (obj) => {
+    if (!q) return true;
+    const hay = Object.values(obj).filter((v) => typeof v === 'string' || typeof v === 'number').join(' ').toLowerCase();
+    return hay.includes(q.toLowerCase());
+  };
+
+  function render() {
+    const tRows = tables.filter(hit);
+    const eRows = elements.filter(hit);
+
+    if (!tTbl) {
+      tTbl = table.renderTable({ columns: TABLE_COLS, rows: tRows, label: 'EAST 数据表清单',
+        density: 'compact', empty: { title: '没有匹配的数据表' } });
+      document.getElementById('tablesSlot').append(tTbl.el);
+    } else tTbl.update(tRows);
+
+    if (!eTbl) {
+      eTbl = table.renderTable({ columns: ELEM_COLS, rows: eRows, label: 'EAST 数据元清单',
+        density: 'compact', empty: { title: '没有匹配的数据元' } });
+      document.getElementById('elementsSlot').append(eTbl.el);
+    } else eTbl.update(eRows);
+
+    document.getElementById('stamp').textContent =
+      `数据表 ${tRows.length}/${tables.length} · 数据元 ${eRows.length}/${elements.length}`;
+  }
+
+  async function load() {
+    try {
+      const d = await fetch('/api/east', { cache: 'no-store' }).then((r) => r.json());
+      if (!d || d.available === false) {
+        document.getElementById('kpi').replaceChildren(
+          core.renderState('empty', { title: 'EAST 规范未导入', desc: d && d.reason ? String(d.reason) : '' }));
+        core.markReady();
+        return;
+      }
+      const st = d.stats || {};
+      tables = d.tables || [];
+      elements = d.elements || [];
+
+      const items = [
+        ['附件', st.attachments], ['数据表', st.tables], ['数据项', st.items],
+        ['主键项', st.pk_items], ['数据元', st.elements], ['业务代码表', st.code_tables],
+        ['代码值', st.codes], ['检核规则', st.rules],
+      ];
+      const host = document.getElementById('kpi');
+      host.replaceChildren();
+      for (const [label, value] of items) {
+        const c = document.createElement('div');
+        c.className = 'border rounded-2 p-3';
+        c.innerHTML = `<div class="text-small">${label}</div><div class="n">${core.fmtInt(value || 0)}</div>`;
+        host.append(c);
+      }
+      render();
+    } catch (e) {
+      document.getElementById('tablesSlot').replaceChildren(core.renderState('error', {
+        title: 'EAST 数据加载失败', desc: String(e.message || e) }));
+    } finally {
+      core.markReady();
     }
-  }, 80);
+  }
+
+  document.getElementById('searchSlot').append(controls.renderSearch({
+    id: 'q', label: '搜索数据表与数据元', placeholder: '搜表号 / 表名 / 数据元编码…',
+    onInput: (v) => { q = v; if (tTbl) render(); },
+    onSubmit: (v) => { q = v; if (tTbl) render(); },
+  }).el);
+
+  load();
 })();
 </script>
 </body>
