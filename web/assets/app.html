@@ -127,6 +127,18 @@ const NAV = [
 const groupOf = (pageId) => NAV.find((g) => g.pages.includes(pageId)) || NAV[0];
 
 
+/* 页面侧异常捕获（P0 基础设施）：
+ * 冒烟探针读 window.__psErr，若正则/模块/接口出错，失败详情里能直接看到原因，
+ * 而不是只有 "has=None / data-page-ready 未标记"。 */
+window.__psErr = null;
+window.addEventListener("error", (e) => {
+  if (!window.__psErr) window.__psErr = String(e.message || (e.error && e.error.message) || e.type);
+});
+window.addEventListener("unhandledrejection", (e) => {
+  const r = e.reason;
+  if (!window.__psErr) window.__psErr = "unhandled: " + String((r && r.message) || r);
+});
+
 const $ = (s, r) => (r || document).querySelector(s);
 const esc = (v) => String(v == null ? "" : v).replace(/[&<>"]/g, (c) =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
