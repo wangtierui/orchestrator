@@ -75,9 +75,8 @@
     } else {
       tbl.update(data.items, state.density);
     }
-    const pager = controls.renderPagination({ page: data.page || state.page, pages: data.pages || 1,
-      total: data.total, size: state.size, onChange: (p) => { state.page = p; refresh(); } });
-    document.getElementById('pagerSlot').replaceChildren(pager);
+    ensurePager();
+    updatePager();
     document.getElementById('stamp').textContent =
       `共 ${core.fmtInt(data.total)} 条 · ${new Date().toLocaleTimeString('zh-CN')}`;
   }
@@ -91,9 +90,34 @@
     });
     return '#/laws' + (qs.toString() ? '?' + qs.toString() : '');
   }
+  let urlMode = 'push';            /* 'replace'：输入中不堆历史（§4.3 R3） */
   function pushUrl() {
     const url = lawsUrl();
-    if (url !== location.hash) history.pushState({ page: 'laws' }, '', url);
+    if (url === location.hash) return;
+    if (urlMode === 'replace') history.replaceState({ page: 'laws' }, '', url);
+    else history.pushState({ page: 'laws' }, '', url);
+    urlMode = 'push';
+  }
+
+  /* N3：分页只创建一次。此前每次 refresh 都 replaceChildren，点击若落在重建瞬间就丢失。 */
+  let pagerEl = null;
+  function ensurePager() {
+    if (pagerEl) return;
+    pagerEl = controls.renderPagination({
+      page: state.page, pages: 1, total: 0, size: state.size,
+      onChange: (p) => { state.page = p; refresh(); },
+    });
+    document.getElementById('pagerSlot').append(pagerEl);
+  }
+  function updatePager() {
+    if (!pagerEl) return;
+    const page = data.page || state.page;
+    const pages = data.pages || 1;
+    const info = pagerEl.querySelector('.text-small');
+    if (info) info.textContent = `${page} / ${pages} · 共 ${data.total ?? 0} 条 · 每页 ${state.size}`;
+    const btns = pagerEl.querySelectorAll('button');
+    if (btns[0]) btns[0].disabled = page <= 1;
+    if (btns[1]) btns[1].disabled = page >= pages;
   }
 
   async function refresh() {
@@ -115,7 +139,7 @@
   // 搜索行
   const search = controls.renderSearch({
     id: 'q', label: '搜索政策法规', placeholder: '搜索或筛选：主题:T1、文号:金非银检函…（回车应用）',
-    onInput: (v) => { state.q = v; state.page = 1; refresh(); },
+    onInput: (v) => { state.q = v; state.page = 1; urlMode = 'replace'; refresh(); },
     onSubmit: (v) => { state.q = v; state.page = 1; refresh(); },
   });
   document.getElementById('searchSlot').append(search.el);
