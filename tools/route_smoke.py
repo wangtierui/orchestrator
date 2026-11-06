@@ -53,6 +53,13 @@ def run(slug: str = "laws") -> dict:
     def add(name: str, ok: bool, detail: str) -> None:
         checks.append({"check": name, "ok": bool(ok), "detail": detail})
 
+    # 分页可能在表格出现后稍晚渲染：等按钮稳定再取基线（此前把它当"点击无效"，误判 N6）
+    for _ in range(40):
+        if s.eval("!!document.querySelector('#pagerSlot button')"):
+            break
+        time.sleep(0.2)
+    time.sleep(0.4)
+
     p1 = _snap(s)
     add("A1 初始渲染", p1["pager"].startswith("1 /"), f"pager={p1['pager'][:12]!r}")
 

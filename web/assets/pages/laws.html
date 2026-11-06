@@ -36,7 +36,14 @@
   };
   const { table, controls, core } = RCO;
 
-  const state = { q: '', sort: 'publish_date', desc: '1', page: 1, size: 50, source: '', theme: '', timeliness: '', density: 'comfortable' };
+  /* P3：初始状态优先取 URL（深链、后退/前进、刷新都要还原），无则用默认值 */
+  const Q0 = window.RCO_PARAMS || {};
+  const state = {
+    q: Q0.q || '', sort: Q0.sort || 'publish_date', desc: Q0.desc || '1',
+    page: Number(Q0.page || 1), size: Number(Q0.size || 50),
+    source: Q0.source || '', theme: Q0.theme || '', timeliness: Q0.timeliness || '',
+    density: Q0.density || 'comfortable',
+  };
   let data = { items: [], total: 0, pages: 1 };
   let tbl = null;
 
