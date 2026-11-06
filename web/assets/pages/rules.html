@@ -36,7 +36,30 @@
   };
   const { table, controls, core } = RCO;
 
-  const state = { q: '', sort: 'title', desc: '0', page: 1, size: 50, theme: '', file_type: '', density: 'comfortable' };
+  const Q0 = window.RCO_PARAMS || {};
+  const state = {
+    q: Q0.q || '', sort: Q0.sort || 'title', desc: Q0.desc || '0',
+    page: Number(Q0.page || 1), size: Number(Q0.size || 50),
+    theme: Q0.theme || '', file_type: Q0.file_type || '',
+    density: Q0.density || 'comfortable',
+  };
+
+  /* P3：状态即 URL（#/rules?q=&sort=&desc=&page=&density=） */
+  let urlMode = 'push';
+  function rulesUrl() {
+    const qs = new URLSearchParams();
+    ['q', 'sort', 'desc', 'page', 'size', 'theme', 'file_type', 'density'].forEach((k) => {
+      if (state[k] !== '' && state[k] != null) qs.set(k, String(state[k]));
+    });
+    return '#/rules' + (qs.toString() ? '?' + qs.toString() : '');
+  }
+  function pushUrl() {
+    const url = rulesUrl();
+    if (url === location.hash) return;
+    if (urlMode === 'replace') history.replaceState({ page: 'rules' }, '', url);
+    else history.pushState({ page: 'rules' }, '', url);
+    urlMode = 'push';
+  }
   let data = { items: [], total: 0, pages: 1 };
   let tbl = null;
 
@@ -81,6 +104,7 @@
   }
 
   async function refresh() {
+    pushUrl();   /* 唯一出口：任何状态变更都回写 URL */
     document.getElementById('tableSlot').setAttribute('aria-busy', 'true');
     try {
       data = await fetchPage();
@@ -97,7 +121,7 @@
 
   document.getElementById('searchSlot').append(controls.renderSearch({
     id: 'q', label: '搜索公司制度', placeholder: '搜索或筛选：主题:T1、文号:…（回车应用）',
-    onInput: (v) => { state.q = v; state.page = 1; refresh(); },
+    onInput: (v) => { state.q = v; state.page = 1; urlMode = 'replace'; refresh(); },
     onSubmit: (v) => { state.q = v; state.page = 1; refresh(); },
   }).el);
 
