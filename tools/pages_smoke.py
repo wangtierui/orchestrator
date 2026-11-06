@@ -35,7 +35,7 @@ PAGES = [
     ("project", "#chart", False, True),
     ("flow", "#chart", False, True),
     ("metrics", ".grid3", False, True),
-    ("graph", "#chart", False, True),
+    ("graph", "#tabsSlot", False, False),
     ("release", ".rco-tbl__row", True, False),
     ("governance", ".rco-tbl__row", True, False),
 ]
