@@ -449,6 +449,13 @@
       "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
     },
     {
+      "category": "tool",
+      "entry": "路由与浏览器历史四条验收（翻页写 URL / 后退 / 前进 / 输入不堆历史）",
+      "file": "route_smoke.py",
+      "independent": true,
+      "independent_why": "验收工具，按需手动执行，不属于 STEP_ORDER 生产链"
+    },
+    {
       "category": "pipeline",
       "entry": "主链编排（25 步（原 22 步；N-46/N-52/N-53/N-63/N-73b 陆续入链））；v2 起由 cli.py run 调用（库形态）",
       "file": "run_production_refresh.py"
