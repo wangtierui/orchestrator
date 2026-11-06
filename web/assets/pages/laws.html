@@ -82,7 +82,22 @@
       `共 ${core.fmtInt(data.total)} 条 · ${new Date().toLocaleTimeString('zh-CN')}`;
   }
 
+
+  /* P3：状态即 URL（#/laws?q=&sort=&desc=&page=&density=），用 pushState 而非赋值 hash */
+  function lawsUrl() {
+    const qs = new URLSearchParams();
+    ['q', 'sort', 'desc', 'page', 'size', 'source', 'theme', 'timeliness', 'density'].forEach((k) => {
+      if (state[k] !== '' && state[k] != null) qs.set(k, String(state[k]));
+    });
+    return '#/laws' + (qs.toString() ? '?' + qs.toString() : '');
+  }
+  function pushUrl() {
+    const url = lawsUrl();
+    if (url !== location.hash) history.pushState({ page: 'laws' }, '', url);
+  }
+
   async function refresh() {
+    pushUrl();   /* 任何状态变更都回写 URL（refresh 是唯一出口） */
     document.getElementById('tableSlot').setAttribute('aria-busy', 'true');
     try {
       data = await fetchPage();
