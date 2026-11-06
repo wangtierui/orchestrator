@@ -59,5 +59,3 @@ export { openPanel } from "./panel.js";
 
 /* 工具条、面板、表单已拆到独立模块（P0）；此处保留同名导出，页面无需改动。 */
 export { renderToolbar } from "./toolbar.js";
-export { renderForm } from "./form.js";
-export { openPanel } from "./panel.js";
