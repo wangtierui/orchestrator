@@ -12,7 +12,7 @@
   body { margin: 0; background: var(--bgColor-default); display: flex; flex-direction: column; }
 
   /* ── 顶栏 68px ── */
-  .topbar { height: 68px; flex: 0 0 68px; display: flex; align-items: center;
+  .topbar { height: 52px; flex: 0 0 52px; display: flex; align-items: center;
             gap: 12px; padding: 0 16px; border-bottom: 1px solid var(--borderColor-default); }
   .brand { display: flex; align-items: center; gap: 8px; height: 32px; }
   .gsearch { width: 191px; height: 32px; }
@@ -33,11 +33,11 @@
 
   /* ── 主体 ── */
   .shell { flex: 1 1 auto; display: flex; min-height: 0; }
-  .rail { width: 256px; flex: 0 0 256px; padding: 8px;
+  .rail { width: 239px; flex: 0 0 239px; padding: 8px;
           border-right: 1px solid var(--borderColor-default); overflow-y: auto; }
   .rail .grp { font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
                color: var(--fgColor-muted); padding: 8px 8px 4px; }
-  .rail .item { height: 32px; display: flex; align-items: center; padding: 0 8px;
+  .rail .item { height: 32px; display: flex; align-items: center; padding: 6px 8px;
                 border-radius: 6px; font-size: 13px; color: var(--fgColor-default);
                 cursor: pointer; user-select: none; }
   .rail .item:hover { background: var(--bgColor-muted); }
@@ -96,33 +96,43 @@
 /* ══ 单页框架（方案 B）：各页作为「片段」注入 #main，不再用 iframe ══
  * 片段格式沿用现有 /pages/*.html：<style>…</style> + <body> 内容 + 内联<script>。
  * 注入规则：body 级规则剔除（避免覆盖壳）、内联 script 重新执行、src=echarts 跳过（壳已加载）。 */
-const TABS = [
-  { id: "overview", name: "总览", slug: "overview", anchors: [
-    ["关键指标", ".grid3 > .card"], ["运行健康", "#rh"], ["链步状态分布", "#chart"],
-    ["门禁与待办", "#gs"], ["数据新鲜度", "#fr"], ["存储", "#st"]] },
-  { id: "project", name: "项目结构", slug: "project", anchors: [["结构树", "#chart"], ["节点信息", "#info"]] },
-  { id: "flow", name: "数据流转", slug: "flow", anchors: [["桑基图", "#chart"], ["说明", "#note"]] },
-  { id: "metrics", name: "指标", slug: "metrics", anchors: [
-    ["门禁趋势", "#c-gate"], ["待办账龄", "#c-age"], ["时效三态", "#c-time"],
-    ["关系类型", "#c-rel"], ["主题分布", "#c-theme"]] },
-  { id: "worklist", name: "待办闭环", slug: "worklist", anchors: [
-    ["搜索与筛选", "#searchSlot"], ["批量处置条", "#bulkSlot"], ["列表", "#tableSlot"]] },
-  { id: "laws", name: "政策法规", slug: "laws", anchors: [["搜索", "#searchSlot"], ["列表", "#tableSlot"], ["分页", "#pagerSlot"]] },
-  { id: "rules", name: "公司制度", slug: "rules", anchors: [["搜索", "#searchSlot"], ["列表", "#tableSlot"], ["分页", "#pagerSlot"]] },
-  { id: "graph", name: "关系图谱", slug: "graph", anchors: [["图谱", "#chart"], ["高频节点", "#hubs"], ["说明", "#note"]] },
-  { id: "regstats", name: "监管统计", slug: "regstats", anchors: [["搜索", "#q"], ["分类", "#cat"], ["分类表", "#cats"]] },
-  { id: "governance", name: "治理审计", slug: "governance", anchors: [["指标", "#kpi"], ["运行时间线", "#runsSlot"], ["变更台账", "#auditSlot"]] },
-  { id: "search", name: "文档检索", slug: "search", anchors: [["搜索", "#searchSlot"], ["结果", "#tableSlot"]] },
-  { id: "release", name: "发布事件", slug: "release", anchors: [["状态卡", "#cardsSlot"], ["搜索", "#searchSlot"], ["提交列表", "#tableSlot"]] },
-  { id: "feedback", name: "留言板", slug: "feedback", anchors: [["状态与筛选", "#toolbarSlot"], ["列表", "#tableSlot"]] },
+/* 页面清单（每页仍是独立文件；NAV 是顶层 8 项，PAGES 里的多页在侧栏当切片） */
+const PAGES = {
+  overview:   { name: "项目总览", slug: "overview", anchors: [["关键指标", "#kpiRow"], ["运行与健康", "#groupA"], ["数据资产", "#groupB"], ["质量指标", "#groupC"], ["任务", "#groupD"], ["发布与告警", "#groupE"]] },
+  project:    { name: "项目结构", slug: "project", anchors: [["结构树", "#chart"], ["节点信息", "#info"]] },
+  flow:       { name: "数据流转", slug: "flow", anchors: [["流转图", "#chart"], ["运行步骤", "#tableSlot"]] },
+  governance: { name: "治理审计", slug: "governance", anchors: [["指标", "#kpi"], ["运行时间线", "#runsSlot"], ["变更台账", "#auditSlot"]] },
+  release:    { name: "版本管理", slug: "release", anchors: [["状态卡", "#cardsSlot"], ["提交列表", "#tableSlot"]] },
+  regstats:   { name: "监管统计", slug: "regstats", anchors: [["KPI", "#kpi"], ["数据结构", "#tablesSlot"], ["数据元", "#elementsSlot"]] },
+  search:     { name: "文档检索", slug: "search", anchors: [["搜索", "#searchSlot"], ["结果", "#tableSlot"]] },
+  laws:       { name: "政策法规", slug: "laws", anchors: [["搜索", "#searchSlot"], ["列表", "#tableSlot"], ["分页", "#pagerSlot"]] },
+  rules:      { name: "公司制度", slug: "rules", anchors: [["搜索", "#searchSlot"], ["列表", "#tableSlot"], ["分页", "#pagerSlot"]] },
+  graph:      { name: "关系图谱", slug: "graph", anchors: [["图谱", "#chart"], ["高频节点", "#hubs"]] },
+  worklist:   { name: "程序指令", slug: "worklist", anchors: [["搜索与筛选", "#searchSlot"], ["批量处置条", "#bulkSlot"], ["列表", "#tableSlot"]] },
+  feedback:   { name: "用户反馈", slug: "feedback", anchors: [["状态与筛选", "#toolbarSlot"], ["列表", "#tableSlot"]] },
+  metrics:    { name: "指标（已并入总览）", slug: "metrics", anchors: [["门禁趋势", "#c-gate"]] },
+};
+
+/* 顶层导航：8 项（规格 §4.1），顺序固定 */
+const NAV = [
+  { id: "overview",   name: "项目总览", pages: ["overview"] },
+  { id: "project",    name: "项目结构", pages: ["project"] },
+  { id: "flow",       name: "数据流转", pages: ["flow"] },
+  { id: "governance", name: "治理审计", pages: ["governance"] },
+  { id: "release",    name: "版本管理", pages: ["release"] },
+  { id: "regstats",   name: "监管统计", pages: ["regstats"] },
+  { id: "docs",       name: "文档管理", pages: ["search", "laws", "rules", "graph"] },
+  { id: "tasks",      name: "任务管理", pages: ["worklist", "feedback"] },
 ];
+const groupOf = (pageId) => NAV.find((g) => g.pages.includes(pageId)) || NAV[0];
+
 
 const $ = (s, r) => (r || document).querySelector(s);
 const esc = (v) => String(v == null ? "" : v).replace(/[&<>"]/g, (c) =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
-$("#tabs").innerHTML = TABS.map((t) =>
-  `<a class="tab" href="#${t.id}" data-id="${t.id}">${esc(t.name)}</a>`).join("");
+$("#tabs").innerHTML = NAV.map((g) =>
+  `<a class="tab" href="#${g.pages[0]}" data-group="${g.id}">${esc(g.name)}</a>`).join("");
 
 /* ── 页面级监听器的登记与清理（避免反复切换后叠加） ── */
 let pageListeners = [];
@@ -198,16 +208,25 @@ async function mount(slug) {
 }
 
 /* ── 本页导航 ── */
-function renderRail(t) {
-  const items = (t.anchors || []).map(([label, sel]) =>
-    `<div class="item" data-sel="${esc(sel)}">${esc(label)}</div>`).join("");
+function renderRail(pageId) {
+  const page = PAGES[pageId] || PAGES.overview;
+  const group = groupOf(pageId);
   const railHost = document.getElementById("railItems") || $("#rail");
-  railHost.innerHTML = `<div class="grp">本页导航</div>${items}`;
-  $("#rail").querySelectorAll(".item").forEach((el) => {
+  const slices = group.pages.map((id) => {
+    const on = id === pageId ? " on" : "";
+    const cur = id === pageId ? ' aria-current="page"' : "";
+    return `<a class="item${on}" href="#${id}" data-page="${id}"${cur}>${esc(PAGES[id].name)}</a>`;
+  }).join("");
+  const anchors = (page.anchors || []).map(([label, sel]) =>
+    `<div class="item item-anchor" data-sel="${esc(sel)}">${esc(label)}</div>`).join("");
+  railHost.innerHTML =
+    `<div class="grp">${esc(group.name)}</div>${slices}` +
+    `<div class="grp" style="margin-top:var(--space-sm)">本页小节</div>${anchors}`;
+  railHost.querySelectorAll(".item-anchor").forEach((el) => {
     el.onclick = () => {
       const target = $("#main").querySelector(el.dataset.sel);
       if (!target) return;
-      $("#rail").querySelectorAll(".item").forEach((x) => x.classList.remove("on"));
+      railHost.querySelectorAll(".item-anchor").forEach((x) => x.classList.remove("on"));
       el.classList.add("on");
       const beh = window.RCO && window.RCO.behaviors;
       if (beh) beh.scrollIntoView(target, $("#main"), { direction: "vertical", startMargin: 8, behavior: "smooth" });
@@ -217,26 +236,23 @@ function renderRail(t) {
 }
 
 let loading = false;
-async function show(t) {
+async function show(pageId) {
+  const page = PAGES[pageId] || PAGES.overview;
+  const group = groupOf(pageId);
   document.querySelectorAll(".tab").forEach((a) => {
-    if (a.dataset.id === t.id) a.setAttribute("aria-current", "page");
+    if (a.dataset.group === group.id) a.setAttribute("aria-current", "page");
     else a.removeAttribute("aria-current");
   });
-  document.title = `${t.name} · 合规工作台`;
-  window.RCO_PARAMS = currentParams();   /* 页面脚本可读深链参数 */
-  renderRail(t);
+  document.title = `${page.name} · 合规工作台`;
+  window.RCO_PARAMS = currentParams();
+  renderRail(pageId);
   if (loading) return;
   loading = true;
   try {
     teardown();
     $("#main").innerHTML = '<div class="loading">加载中…</div>';
-    if (t.slug) await mount(t.slug);
-    else $("#main").innerHTML = `
-      <div style="padding:24px"><div class="border rounded-2 p-4" style="max-width:640px">
-        <h3 class="h4 mb-2">${esc(t.name)} 尚未迁移</h3>
-        <p class="text-small">该页仍在旧版工作台。</p>
-        <a class="btn" href="/legacy.html#${t.id}">在旧版打开 ${esc(t.name)}</a>
-      </div></div>`;
+    if (page.slug) await mount(page.slug);
+    else $("#main").innerHTML = '<div class="loading">该页未定义</div>';
   } catch (e) {
     $("#main").innerHTML = `<div class="loading">加载失败：${esc(e.message)}</div>`;
   } finally {
@@ -244,7 +260,6 @@ async function show(t) {
   }
 }
 
-/* 路由：同时支持 #laws（旧）与 #/laws?q=...&page=2（新，规格 §4.3） */
 function currentParams() {
   const raw = (location.hash || "").replace(/^#/, "");
   const qi = raw.indexOf("?");
@@ -256,7 +271,9 @@ function current() {
   let id = (location.hash || "#overview").replace(/^#/, "");
   if (id.startsWith("/")) id = id.slice(1);
   id = id.split("?")[0] || "overview";
-  return TABS.find((t) => t.id === id) || TABS[0];
+  if (PAGES[id]) return id;                       /* #laws 这类旧链接仍然可用 */
+  const g = NAV.find((x) => x.id === id);         /* #docs 这类组链接 → 首个子页 */
+  return g ? g.pages[0] : "overview";
 }
 
 let timer = null;
@@ -265,8 +282,8 @@ $("#jump").addEventListener("input", (e) => {
   timer = setTimeout(() => {
     const q = e.target.value.trim();
     if (!q) return;
-    const hit = TABS.find((t) => t.name.includes(q));
-    if (hit) location.hash = "#" + hit.id;
+    const hit = NAV.find((g) => g.name.includes(q)) || Object.entries(PAGES).map(([id, p]) => ({ id, name: p.name })).find((p) => p.name.includes(q));
+    if (hit) location.hash = "#" + (hit.pages ? hit.pages[0] : hit.id);
   }, 200);
 });
 
