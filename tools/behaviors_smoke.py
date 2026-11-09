@@ -48,28 +48,36 @@ def _key(s, key: str, code: int) -> None:
 
 
 def b1_panel_in_viewport(s) -> dict:
+    """点「来源」筛选按钮，等面板出现（openPanel 内部 await import，不能用固定 sleep），
+    再断言面板在视口内且宽 320。"""
     _open(s)
     opened = s.eval("""(() => {
-      const btns = [...document.querySelectorAll('#toolbarSlot button')]
-        .filter(b => b.getAttribute('aria-haspopup'));
-      const b = btns[btns.length - 1] || btns[0];
+      const bs = [...document.querySelectorAll('#toolbarSlot button')];
+      const b = bs.find(x => /来源|时效/.test(x.textContent)) ||
+                bs.find(x => x.getAttribute('aria-haspopup'));
       if (!b) return false;
-      window.__trig = b.id || '';
       b.click();
       return true;
     })()""")
     if not opened:
         return {"check": "B1 浮层不出界", "ok": False, "detail": "找不到筛选触发按钮"}
-    time.sleep(0.8)
-    rect = s.eval("""(() => {
-      const p = [...document.querySelectorAll('body > div[role="dialog"]')].pop();
-      if (!p) return null;
-      const r = p.getBoundingClientRect();
-      return JSON.stringify({r: Math.round(r.right), b: Math.round(r.bottom),
-        W: innerWidth, H: innerHeight, w: Math.round(r.width)});
-    })()""")
+
+    rect = None
+    for _ in range(20):                      # 最多等 5s
+        time.sleep(0.25)
+        rect = s.eval("""(() => {
+          const p = [...document.querySelectorAll('[role="dialog"]')]
+            .filter(x => x.id && x.id.indexOf('panel-') === 0).pop();
+          if (!p) return null;
+          const r = p.getBoundingClientRect();
+          return JSON.stringify({r: Math.round(r.right), b: Math.round(r.bottom),
+            W: innerWidth, H: innerHeight, w: Math.round(r.width)});
+        })()""")
+        if rect:
+            break
+
     if not rect:
-        return {"check": "B1 浮层不出界", "ok": False, "detail": "面板未出现"}
+        return {"check": "B1 浮层不出界", "ok": False, "detail": "点击后 5s 内面板未出现"}
     d = json.loads(rect)
     ok = d["r"] <= d["W"] + 1 and d["b"] <= d["H"] + 1 and d["w"] == 320
     return {"check": "B1 浮层不出界", "ok": ok,
@@ -115,20 +123,24 @@ def b3_panel_keyboard(s) -> dict:
 
 
 def b4_scroll_container(s) -> dict:
+    """点最后一个侧栏锚点（页面底部的小节），断言 #main 滚动而 window 不动。
+
+    实测：该页 window 不可滚（scrollHeight=900=clientHeight），#main 才是滚动容器
+    （scrollHeight 3544 > clientHeight 808）；点第一个锚点不产生滚动，因为目标在顶部。
+    """
     _open(s)
-    before = s.eval("JSON.stringify({w: window.scrollY, m: (document.getElementById('main')||{}).scrollTop || 0})")
+    before = json.loads(s.eval("JSON.stringify({w: window.scrollY, m: (document.getElementById('main')||{}).scrollTop || 0})"))
     clicked = s.eval("""(() => {
-      const it = [...document.querySelectorAll('#railItems .item-anchor')][0];
+      const it = [...document.querySelectorAll('#railItems .item-anchor')].pop();
       if (!it) return false;
       it.click();
       return true;
     })()""")
-    time.sleep(1.6)
-    after = s.eval("JSON.stringify({w: window.scrollY, m: (document.getElementById('main')||{}).scrollTop || 0})")
-    a, b = json.loads(before), json.loads(after)
-    ok = clicked and b["w"] == a["w"] and b["m"] != a["m"]
+    time.sleep(2.0)
+    after = json.loads(s.eval("JSON.stringify({w: window.scrollY, m: (document.getElementById('main')||{}).scrollTop || 0})"))
+    ok = clicked and after["w"] == before["w"] and after["m"] != before["m"]
     return {"check": "B4 容器内滚动", "ok": ok,
-            "detail": f"window.scrollY {a['w']}→{b['w']} · #main.scrollTop {a['m']}→{b['m']}"}
+            "detail": f"window.scrollY {before['w']}→{after['w']} · #main.scrollTop {before['m']}→{after['m']}"}
 
 
 CHECKS = {"B1": b1_panel_in_viewport, "B2": b2_dialog_focus_trap,

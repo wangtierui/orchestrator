@@ -1,5 +1,15 @@
 import { el } from "./core.js";
 
+/* behaviors 助手：面板的定位 / 焦点圈定 / 键盘都依赖它。
+ * 注意：早前把 panel.js 从 controls.js 拆出时这段丢失，openPanel 一调用就抛
+ * "behaviors is not defined"，表现为"点筛选按钮毫无反应"。 */
+const BEH = "/vendor/primer-behaviors/dist/esm/index.mjs";
+let _beh = null;
+async function behaviors() {
+  if (!_beh) _beh = await import(BEH);
+  return _beh;
+}
+
 /* ui/panel.js —— 浮层面板（唯一实现）：定位/焦点/键盘交给 @primer/behaviors
  * 规格 §5.8 / §5.14.7 / §6.1–6.3 */
 export async function openPanel(cfg = {}) {
