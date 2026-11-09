@@ -1,4 +1,4 @@
-import { el } from "./core.js";
+import { el, counter } from "./core.js";
 
 /* behaviors 助手：面板的定位 / 焦点圈定 / 键盘都依赖它。
  * 注意：早前把 panel.js 从 controls.js 拆出时这段丢失，openPanel 一调用就抛
@@ -28,9 +28,7 @@ export async function openPanel(cfg = {}) {
       "aria-label": it.label, tabindex: "-1" }));
     li.append(el("span", { class: "flex-1", text: it.label }));
     if (it.count != null) {
-      const c = el("span", { class: "Counter", "aria-label": `${it.count} 项` });
-      c.textContent = String(it.count);
-      li.append(c);
+      li.append(counter(it.count));
     }
     li.addEventListener("click", () => { onPick && onPick(it, li); if (!multi) close(); });
     list.append(li);

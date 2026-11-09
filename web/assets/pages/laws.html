@@ -161,7 +161,7 @@
     onSegment: (k) => { state.timeliness = k === 'valid' ? 'valid' : ''; state.page = 1; refresh(); },
     onFilter: async (f, btn) => {
       const opts = (facets[f.key] || facets[f.key === 'source' ? 'sources' : 'timeliness'] || [])
-        .map((o) => ({ key: o.value, label: `${o.label} (${o.count})` }));
+        .map((o) => ({ key: o.value, label: o.label, count: o.count }));
       await controls.openPanel({
         anchor: btn, label: `筛选：${f.label}`, items: opts,
         onPick: (it) => { state[f.key] = it.key; state.page = 1; refresh(); },

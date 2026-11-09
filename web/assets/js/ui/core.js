@@ -126,3 +126,11 @@ export function setHashParam(key, value) {
   // replaceState：切密度不该产生历史条目（规格 §4.3 R3）
   history.replaceState(history.state, "", next);
 }
+
+/** Counter（§5.14.4）：高 18、padding 2 6、radius 2em；读屏读作「N 项」。 */
+export function counter(n, label) {
+  const s = el("span", { class: "Counter", "aria-label": label || `${n} 项`,
+    style: "height:18px;padding:2px 6px;border-radius:2em;line-height:14px;" });
+  s.textContent = String(n);
+  return s;
+}
