@@ -558,6 +558,13 @@
     },
     {
       "category": "tool",
+      "entry": "令牌化审计（页面与壳内联 style 的字面值 → 建议令牌）",
+      "file": "ui_tokens_audit.py",
+      "independent": true,
+      "independent_why": "静态审计工具，按需手动执行，不属于 STEP_ORDER 生产链"
+    },
+    {
+      "category": "tool",
       "entry": "把图表库（echarts + gl/wordcloud/liquidfill/modularity/stat）全量提取到 web/assets/vendor/echarts，写 MANIFEST（版本/sha256）并支持 --check 复算",
       "file": "vendor_charts.py",
       "independent": true,
