@@ -284,6 +284,19 @@
     const task = card('未处置任务');
     task.append(kv('程序指令', String(wl.open_total ?? '—')), kv('用户反馈', String(fbOpen)));
     const old = wl.oldest_open_days;
+    /* 待办按 kind 分布（§9.1 第 3 块）：取前 5，点条目跳任务管理并带 kind 过滤 */
+    const kinds = Object.entries((wl.stats && wl.stats.by_kind) || {})
+      .sort((a, b) => b[1] - a[1]).slice(0, 5);
+    if (kinds.length) {
+      const kbox = el('div', 'text-small');
+      kinds.forEach(([k, n]) => {
+        const a = el('a', '', `${k} ${n}`);
+        a.href = `#/worklist?kind=${encodeURIComponent(k)}`;
+        kbox.append(a);
+        kbox.append(document.createTextNode('  '));
+      });
+      task.append(kbox);
+    }
     task.append(el('div', 'text-small', old != null ? `最老未处置 ${old} 天` : '最老未处置 —'));
     document.getElementById('groupD').append(task);
 
