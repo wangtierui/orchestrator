@@ -104,6 +104,13 @@
       "independent_why": "刻意独立：运维/开发/一次性处置/报告生成类，按需人工执行（非 STEP_ORDER 链路节点）"
     },
     {
+      "category": "tool",
+      "entry": "组件规格验收（§5 实测尺寸：表头 48 / 行高 65↔38 / 面板 320 / 分页 32 / 搜索 30 / Counter 18 …）",
+      "file": "components_smoke.py",
+      "independent": true,
+      "independent_why": "验收工具，按需手动执行，不属于 STEP_ORDER 生产链"
+    },
+    {
       "category": "independent",
       "entry": "python -m tools.dead_code_audit [--only A|B|C|D] [--json out.json]",
       "file": "dead_code_audit.py",
