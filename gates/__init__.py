@@ -190,6 +190,12 @@ ALL_GATES: list[dict] = [
         "desc": "路由与浏览器历史（11 页 pager/url/q/view/path）",
         "require_impl": True,
     },
+    {
+        # 交互行为（§6.5）：ORCH_BEHAVIOR=1 才跑（默认跳过，单次 20–30 秒）
+        "module": "gates.gate_behaviors",
+        "desc": "交互行为（浮层不出界 / 弹窗焦点圈定 / 面板键盘 / 容器内滚动）",
+        "require_impl": True,
+    },
 ]
 
 
