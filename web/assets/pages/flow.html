@@ -2,14 +2,13 @@
 <html lang="zh-CN" data-color-mode="light" data-light-theme="light">
 <head>
 <script src="/js/ui/err.js"></script>
-
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>数据流转</title>
 <link rel="stylesheet" href="/primer-primitives.css">
 <link rel="stylesheet" href="/primer.css">
 <style>
-  /* 只写布局 */
+  /* 只写布局：栅格、间距、图表高度 */
   .page { max-width: var(--rco-content-width, 75rem); margin-inline: auto; padding: var(--space-lg); }
   .stack { display: flex; flex-direction: column; gap: var(--space-lg); }
   .row { display: flex; align-items: center; gap: var(--space-sm); }
@@ -23,14 +22,29 @@
     <span class="text-small" id="stamp"></span>
   </div>
 
-  <section class="border rounded-2 p-3">
-    <div id="chart"></div>
-    <div class="text-small" id="chartNote"></div>
+  <div class="row" id="tabsSlot" role="group" aria-label="流转视图"></div>
+
+  <section class="stack" id="viewRuns">
+    <div class="row">
+      <h2 class="h4 m-0 grow">运行列表</h2>
+      <span class="text-small" id="runsNote"></span>
+    </div>
+    <div class="border rounded-2" id="runsSlot"></div>
   </section>
 
-  <section class="stack">
-    <h2 class="h4 m-0">运行步骤</h2>
-    <div class="border rounded-2" id="tableSlot"></div>
+  <section class="stack" id="viewGraph" hidden>
+    <div class="border rounded-2 p-3">
+      <div id="chart"></div>
+      <div class="text-small" id="note"></div>
+    </div>
+  </section>
+
+  <section class="stack" id="viewOrphan" hidden>
+    <div class="row">
+      <h2 class="h4 m-0 grow">未连线任务</h2>
+      <span class="text-small" id="orphanNote"></span>
+    </div>
+    <div class="border rounded-2" id="orphanSlot"></div>
   </section>
 </div>
 <script src="/vendor/echarts/echarts.min.js"></script>
@@ -43,65 +57,127 @@
   };
   const { core, table, chart } = RCO;
 
-  const host = document.getElementById('chart');
-  const note = document.getElementById('chartNote');
+  const VIEWS = [
+    { key: 'runs', label: '运行列表' },
+    { key: 'graph', label: '数据血缘' },
+    { key: 'orphan', label: '未连线任务' },
+  ];
 
-  try {
-    const f = await fetch('/api/flow', { cache: 'no-store' }).then((r) => r.json());
-    const steps = f.steps || [];
-    const status = f.step_status || {};
-    const weights = f.weights || {};
+  let inst = null;
+  let data = null;
 
-    document.getElementById('stamp').textContent =
-      `运行 ${f.run_id || '—'} · 步骤 ${steps.length} · 权重项 ${Object.keys(weights).length}`;
+  const asArr = (x) => (Array.isArray(x) ? x : (x && typeof x === 'object' ? Object.values(x) : []));
 
-    /* ① 有显式 nodes/edges 才画桑基；否则画权重条形图（不伪造链路） */
-    const nodes = (f.nodes || []).map((n) => (typeof n === 'string' ? { name: n } : n));
-    const edges = (f.edges || []).map((e) => ({
+  function pushView(key) {
+    const url = key && key !== 'runs' ? `#/flow?view=${encodeURIComponent(key)}` : '#/flow';
+    if (url !== location.hash) history.pushState({ page: 'flow' }, '', url);
+  }
+
+  function renderTabs(active) {
+    const box = document.getElementById('tabsSlot');
+    box.replaceChildren();
+    VIEWS.forEach((v) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = v.key === active ? 'btn btn-sm btn-primary' : 'btn btn-sm';
+      b.textContent = v.label;
+      b.setAttribute('aria-pressed', String(v.key === active));
+      b.addEventListener('click', () => { renderTabs(v.key); showView(v.key); pushView(v.key); });
+      box.append(b);
+    });
+  }
+
+  function showView(key) {
+    document.getElementById('viewRuns').hidden = key !== 'runs';
+    document.getElementById('viewGraph').hidden = key !== 'graph';
+    document.getElementById('viewOrphan').hidden = key !== 'orphan';
+    if (key === 'graph') drawGraph();
+  }
+
+  function drawGraph() {
+    const host = document.getElementById('chart');
+    const nodes = asArr(data.nodes).map((n) => (typeof n === 'string' ? { name: n } : n));
+    const edges = asArr(data.edges).map((e) => ({
       source: e.source || e.from, target: e.target || e.to, value: e.value || e.weight || 1,
     })).filter((e) => e.source && e.target);
-
-    if (nodes.length && edges.length) {
-      chart.mountChart({ el: host, height: 460, label: '数据流转桑基图',
-        option: {
-          tooltip: { trigger: 'item' },
-          series: [{ type: 'sankey', data: nodes, links: edges,
-            emphasis: { focus: 'adjacency' }, lineStyle: { color: 'gradient', opacity: 0.35 },
-            label: { fontSize: 11 } }],
-        } });
-      note.textContent = `桑基节点 ${nodes.length} · 边 ${edges.length}（来自接口 nodes/edges）`;
-    } else {
-      const top = Object.entries(weights).sort((a, b) => b[1] - a[1]).slice(0, 12);
-      chart.mountChart({ el: host, height: 460, label: '流转权重条形图',
-        option: {
-          tooltip: { trigger: 'axis' },
-          grid: { left: 120, right: 24, top: 16, bottom: 24, containLabel: false },
-          xAxis: { type: 'value' },
-          yAxis: { type: 'category', data: top.map(([k]) => k).reverse() },
-          series: [{ type: 'bar', data: top.map(([, v]) => v).reverse(), barMaxWidth: 18 }],
-        } });
-      note.textContent = `接口未提供显式 nodes/edges，改画权重 Top ${top.length}（不推导链路，避免把猜测当事实）`;
+    if (!nodes.length || !edges.length) {
+      host.replaceChildren(core.renderState('empty', { title: '暂无血缘数据' }));
+      document.getElementById('note').textContent = '接口未返回 nodes/edges';
+      return;
     }
+    if (inst) inst.dispose();
+    inst = chart.mountChart({
+      el: host, height: 460, label: '数据血缘桑基图',
+      option: {
+        tooltip: { trigger: 'item' },
+        series: [{ type: 'sankey', data: nodes, links: edges,
+          emphasis: { focus: 'adjacency' }, lineStyle: { color: 'gradient', opacity: 0.35 },
+          label: { fontSize: 11 } }],
+      },
+    });
+    document.getElementById('note').textContent = `桑基节点 ${nodes.length} · 边 ${edges.length}`;
+  }
 
-    /* ② 运行步骤表（真实状态，不是"未连线任务"） */
-    const rows = steps.map((s) => {
+  function rcBadge(rc) {
+    const v = String(rc || '').toUpperCase();
+    if (v === 'OK' || v === '0') return 'success';
+    if (v === 'SKIP') return 'muted';
+    return 'danger';
+  }
+
+  function renderRuns() {
+    const status = data.step_status || {};
+    const rows = asArr(data.steps).map((s) => {
       const st = status[s] || {};
-      return { step: s, rc: st.rc || '—', status: st.status || '—', elapsed: st.elapsed_s };
+      return { step: s, rc: st.rc || '—', elapsed: st.elapsed_s };
     });
     const tbl = table.renderTable({
       columns: [
         { key: 'step', label: '步骤', width: 'minmax(0,2fr)', titleFrom: 'step' },
-        { key: 'rc', label: '返回码', width: '100px', render: (r) => table.badge(r.rc) },
-        { key: 'status', label: '状态', width: '100px' },
+        { key: 'rc', label: '返回码', width: '110px', render: (r) => table.badge(r.rc, rcBadge(r.rc)) },
         { key: 'elapsed', label: '耗时', width: '100px', align: 'right',
           render: (r) => (r.elapsed == null ? '—' : `${Number(r.elapsed).toFixed(1)}s`) },
       ],
-      rows, density: 'compact', label: '运行步骤',
+      rows, density: 'comfortable', label: '运行步骤',
       empty: { title: '本轮无步骤记录' },
     });
-    document.getElementById('tableSlot').append(tbl.el);
+    document.getElementById('runsSlot').append(tbl.el);
+    document.getElementById('runsNote').textContent =
+      `${rows.length} 步 · 运行 ${data.run_id || '—'}`;
+  }
+
+  function renderOrphan() {
+    const status = data.step_status || {};
+    const rows = asArr(data.steps)
+      .filter((s) => !status[s])
+      .map((s) => ({ step: s, expect: '应有执行记录', actual: '无记录', diff: '未连线' }));
+    const tbl = table.renderTable({
+      columns: [
+        { key: 'step', label: '步骤', width: 'minmax(0,2fr)' },
+        { key: 'expect', label: '期望', width: '160px' },
+        { key: 'actual', label: '实际', width: '120px' },
+        { key: 'diff', label: '差', width: '100px', render: (r) => table.badge(r.diff, 'attention') },
+      ],
+      rows, density: 'compact', label: '未连线任务',
+      empty: { title: '全部步骤都有执行记录' },
+    });
+    document.getElementById('orphanSlot').append(tbl.el);
+    document.getElementById('orphanNote').textContent = `${rows.length} 条未连线`;
+  }
+
+  try {
+    data = await fetch('/api/flow', { cache: 'no-store' }).then((r) => r.json());
+    const want = (window.RCO_PARAMS || {}).view || 'runs';
+    const hit = VIEWS.some((v) => v.key === want) ? want : 'runs';
+    renderTabs(hit);
+    showView(hit);
+    renderRuns();
+    renderOrphan();
+    document.getElementById('stamp').textContent =
+      `运行 ${data.run_id || '—'} · 步骤 ${asArr(data.steps).length} · 边 ${asArr(data.edges).length}`;
   } catch (e) {
-    host.replaceChildren(core.renderState('error', { title: '流转数据加载失败', desc: String(e.message || e) }));
+    document.getElementById('runsSlot').replaceChildren(core.renderState('error', {
+      title: '流转数据加载失败', desc: String(e.message || e) }));
   } finally {
     core.markReady();
   }
