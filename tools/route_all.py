@@ -134,11 +134,11 @@ def _run_view(s, slug, sel, want) -> list:
 
 
 def _run_path(s, slug, sel, want) -> list:
-    _open(s, slug, "?path=.codebuddy")
+    _open(s, slug, "?path=web")
     b = _snap(s)
     info = s.eval("document.getElementById('info').innerText.replace(/\\s+/g, ' ')")
     return [
-        {"check": "深链渲染节点", "ok": "codebuddy" in info and want in b["hash"], "detail": info[:40]},
+        {"check": "深链渲染节点", "ok": "web" in info and want in b["hash"], "detail": info[:40]},
     ]
 
 
