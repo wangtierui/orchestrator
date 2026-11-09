@@ -48,40 +48,51 @@ def _key(s, key: str, code: int) -> None:
 
 
 def b1_panel_in_viewport(s) -> dict:
-    """点「来源」筛选按钮，等面板出现（openPanel 内部 await import，不能用固定 sleep），
-    再断言面板在视口内且宽 320。"""
+    """点「来源」筛选按钮，等面板**可见且宽 320** 再断言它在视口内。
+
+    可靠性：早前版本在"元素存在"就断言，偶发拿到 visibility:hidden 的首帧，
+    导致 4/4 里偶尔掉成 3/4。改为两段轮询（触发器就绪 → 面板可见）。
+    """
     _open(s)
-    opened = s.eval("""(() => {
-      const bs = [...document.querySelectorAll('#toolbarSlot button')];
-      const b = bs.find(x => /来源|时效/.test(x.textContent)) ||
-                bs.find(x => x.getAttribute('aria-haspopup'));
-      if (!b) return false;
-      b.click();
-      return true;
+
+    ready = False
+    for _ in range(20):                      # 最多 5s 等工具栏渲染
+        ready = s.eval("""(() => [...document.querySelectorAll('#toolbarSlot button')]
+          .some(x => /来源|时效/.test(x.textContent)))()""")
+        if ready:
+            break
+        time.sleep(0.25)
+    if not ready:
+        return {"check": "B1 浮层不出界", "ok": False, "detail": "5s 内工具栏未渲染出筛选按钮"}
+
+    s.eval("""(() => {
+      const b = [...document.querySelectorAll('#toolbarSlot button')]
+        .find(x => /来源|时效/.test(x.textContent));
+      if (b) b.click();
     })()""")
-    if not opened:
-        return {"check": "B1 浮层不出界", "ok": False, "detail": "找不到筛选触发按钮"}
 
     rect = None
-    for _ in range(20):                      # 最多等 5s
+    for _ in range(24):                      # 最多 6s 等面板可见
         time.sleep(0.25)
-        rect = s.eval("""(() => {
-          const p = [...document.querySelectorAll('[role="dialog"]')]
-            .filter(x => x.id && x.id.indexOf('panel-') === 0).pop();
+        raw = s.eval("""(() => {
+          const ps = [...document.querySelectorAll('[role="dialog"]')];
+          const p = ps[ps.length - 1];
           if (!p) return null;
           const r = p.getBoundingClientRect();
+          const cs = getComputedStyle(p);
+          if (cs.visibility !== 'visible' || Math.round(r.width) !== 320) return null;
           return JSON.stringify({r: Math.round(r.right), b: Math.round(r.bottom),
             W: innerWidth, H: innerHeight, w: Math.round(r.width)});
         })()""")
-        if rect:
+        if raw:
+            rect = json.loads(raw)
             break
 
     if not rect:
-        return {"check": "B1 浮层不出界", "ok": False, "detail": "点击后 5s 内面板未出现"}
-    d = json.loads(rect)
-    ok = d["r"] <= d["W"] + 1 and d["b"] <= d["H"] + 1 and d["w"] == 320
+        return {"check": "B1 浮层不出界", "ok": False, "detail": "6s 内面板未变为可见/宽 320"}
+    ok = rect["r"] <= rect["W"] + 1 and rect["b"] <= rect["H"] + 1
     return {"check": "B1 浮层不出界", "ok": ok,
-            "detail": f"right={d['r']}/{d['W']} bottom={d['b']}/{d['H']} width={d['w']}"}
+            "detail": f"right={rect['r']}/{rect['W']} bottom={rect['b']}/{rect['H']} width={rect['w']}"}
 
 
 def b2_dialog_focus_trap(s) -> dict:

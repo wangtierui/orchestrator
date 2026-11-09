@@ -202,6 +202,12 @@ ALL_GATES: list[dict] = [
         "desc": "令牌化（未登记字面值 = 0；例外见 §11）",
         "require_impl": True,
     },
+    {
+        # 组件规格（§5）：ORCH_COMPONENTS=1 才跑（默认跳过，单次约 30 秒）
+        "module": "gates.gate_components",
+        "desc": "组件规格（表头 48 / 行高 65↔38 / 面板 320 / 分页 32 / Counter 18 …）",
+        "require_impl": True,
+    },
 ]
 
 
