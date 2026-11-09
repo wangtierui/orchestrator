@@ -61,6 +61,16 @@
   let eTbl = null;
   let q = '';
 
+  /* P3：搜索词写 URL（同时过滤数据表与数据元两张表） */
+  let urlMode = 'push';
+  function pushUrl() {
+    const url = q ? `#/regstats?q=${encodeURIComponent(q)}` : '#/regstats';
+    if (url === location.hash) return;
+    if (urlMode === 'replace') history.replaceState({ page: 'regstats' }, '', url);
+    else history.pushState({ page: 'regstats' }, '', url);
+    urlMode = 'push';
+  }
+
   const TABLE_COLS = [
     { key: 'table_no', label: '表号', width: '90px' },
     { key: 'table_code', label: '表编码', width: '120px' },
@@ -85,6 +95,7 @@
   };
 
   function render() {
+    pushUrl();   /* 唯一出口 */
     const tRows = tables.filter(hit);
     const eRows = elements.filter(hit);
 
@@ -141,10 +152,16 @@
 
   document.getElementById('searchSlot').append(controls.renderSearch({
     id: 'q', label: '搜索数据表与数据元', placeholder: '搜表号 / 表名 / 数据元编码…',
-    onInput: (v) => { q = v; if (tTbl) render(); },
+    onInput: (v) => { q = v; urlMode = 'replace'; if (tTbl) render(); },
     onSubmit: (v) => { q = v; if (tTbl) render(); },
   }).el);
 
+  const __q0 = (window.RCO_PARAMS || {}).q || '';
+  if (__q0) {
+    q = __q0;
+    const box = document.getElementById('q');
+    if (box) box.value = __q0;
+  }
   load();
 })();
 </script>
