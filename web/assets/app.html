@@ -54,6 +54,19 @@
   body[data-sidebar="collapsed"] .rail { display: none; }
   .main { flex: 1 1 auto; min-width: 0; overflow-y: auto; }
   .loading { padding: var(--space-xl); font-size: var(--text-body-size-medium); color: var(--fgColor-muted); }
+
+   /* ── N7 响应式（§3.2）：≤1011 侧栏收起为 0 宽，点 Expand 以抽屉形式展开 ──
+      偏差：规格写 768–1011 收为 56px 图标列；本仓侧栏条目无图标集，
+      做空列无意义，改为 0 宽 + 抽屉，登记在 §3.2 偏差栏。 */
+   @media (max-width: 63.25rem) {
+     .rail { width: 0; flex: 0 0 0; padding: 0; border-right: 0; overflow: hidden; }
+     /* 窄屏下 Expand 必须可见：折叠态会给它加 hidden 属性，这里用 CSS 强制显示 */
+     #expandBtn[hidden] { display: inline-flex !important; }
+     .rail.rco-narrow { position: fixed; top: 100px; left: 0; bottom: 0; width: 239px;
+       flex: 0 0 239px; padding: var(--space-sm); overflow-y: auto; z-index: 20;
+       background: var(--bgColor-default); border-right: 1px solid var(--borderColor-default);
+       box-shadow: 0 8px 24px rgba(66,74,83,.12); }
+   }
 </style>
 </head>
 <body>
@@ -248,6 +261,17 @@ $("#jump").addEventListener("input", (e) => {
 
 window.addEventListener("hashchange", () => show(current()));
 chrome.renderTabs($("#tabs"), current());
+
+/* N7：窄屏下 Expand 按钮把侧栏作为抽屉打开/关闭（宽屏由折叠逻辑接管） */
+(function () {
+  var expand = document.getElementById('expandBtn');
+  var rail = document.getElementById('rail');
+  if (!expand || !rail) return;
+  expand.addEventListener('click', function () {
+    rail.classList.toggle('rco-narrow');
+  });
+})();
+
 show(current());
 </script>
 <script type="module">
