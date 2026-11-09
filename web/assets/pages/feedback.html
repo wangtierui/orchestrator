@@ -40,6 +40,20 @@
   const ST = { open: '待受理', resolved: '已办结', closed: '已办结' };
 
   const state = { status: 'open', kind: '', severity: '', density: 'comfortable' };
+  /* P3：URL 覆盖默认状态（只覆盖，不重写 state 字面量） */
+  const __Q0 = window.RCO_PARAMS || {};
+  ['status', 'kind', 'severity', 'density'].forEach((k) => { if (__Q0[k]) state[k] = __Q0[k]; });
+
+  function fbUrl() {
+    const qs = new URLSearchParams();
+    ['status', 'kind', 'severity', 'density'].forEach((k) => { if (state[k]) qs.set(k, String(state[k])); });
+    return '#/feedback' + (qs.toString() ? '?' + qs.toString() : '');
+  }
+  function pushUrl() {
+    const url = fbUrl();
+    if (url !== location.hash) history.pushState({ page: 'feedback' }, '', url);
+  }
+
   let data = { items: [], total: 0 };
   let tbl = null;
 
@@ -91,6 +105,7 @@
   }
 
   async function refresh() {
+    pushUrl();   /* 唯一出口 */
     document.getElementById('tableSlot').setAttribute('aria-busy', 'true');
     try {
       const d = await fetch('/api/feedback', { cache: 'no-store' }).then((r) => r.json());
