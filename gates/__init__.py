@@ -196,6 +196,12 @@ ALL_GATES: list[dict] = [
         "desc": "交互行为（浮层不出界 / 弹窗焦点圈定 / 面板键盘 / 容器内滚动）",
         "require_impl": True,
     },
+    {
+        # 令牌化（§11）：内联 style 里未登记的字面值必须为 0；静态检查，默认运行
+        "module": "gates.gate_tokens",
+        "desc": "令牌化（未登记字面值 = 0；例外见 §11）",
+        "require_impl": True,
+    },
 ]
 
 
