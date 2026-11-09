@@ -13,18 +13,18 @@
 
   /* ── 顶栏 68px ── */
   .topbar { height: 52px; flex: 0 0 52px; display: flex; align-items: center;
-            gap: 12px; padding: 0 16px; border-bottom: 1px solid var(--borderColor-default); }
+            gap: var(--space-md); padding: 0 var(--space-lg); border-bottom: 1px solid var(--borderColor-default); }
   .brand { display: flex; align-items: center; gap: var(--space-sm); height: 32px; }
   .gsearch { width: 191px; height: 32px; }
   .spacer { flex: 1 1 auto; }
   .logo-link { display: inline-flex; align-items: center; color: var(--fgColor-default); }
 
   /* ── 页签行 40px（仓库条） ── */
-  .repo-tabs { flex: 0 0 40px; display: flex; align-items: center; gap: 4px;
-               padding: 0 16px; border-bottom: 1px solid var(--borderColor-default);
+  .repo-tabs { flex: 0 0 40px; display: flex; align-items: center; gap: var(--space-xs);
+               padding: 0 var(--space-lg); border-bottom: 1px solid var(--borderColor-default);
                overflow-x: auto; overflow-y: hidden; }
   .repo-tabs::-webkit-scrollbar { height: 0; }
-  .tab { height: 32px; padding: 0 10px; display: inline-flex; align-items: center;
+  .tab { height: 32px; padding: 0 var(--space-sm); display: inline-flex; align-items: center;
          border-radius: 6px; font-size: var(--text-body-size-medium); white-space: nowrap; text-decoration: none;
          color: var(--fgColor-default); }
   .tab:hover { background: var(--bgColor-muted); }
@@ -35,8 +35,8 @@
   .shell { flex: 1 1 auto; display: flex; min-height: 0; }
   .rail { width: 239px; flex: 0 0 239px; padding: var(--space-sm);
           border-right: 1px solid var(--borderColor-default); overflow-y: auto; }
-  .rail .grp { font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
-               color: var(--fgColor-muted); padding: 8px 8px 4px; }
+  .rail .grp { font-size: var(--text-caption-size); font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
+               color: var(--fgColor-muted); padding: var(--space-sm) var(--space-sm) var(--space-xs); }
   .rail .item { height: 32px; display: flex; align-items: center; padding: 6px 8px;
                 border-radius: 6px; font-size: var(--text-body-size-medium); color: var(--fgColor-default);
                 cursor: pointer; user-select: none; }
@@ -53,7 +53,7 @@
   .rail-act:hover { background: var(--bgColor-muted); }
   body[data-sidebar="collapsed"] .rail { display: none; }
   .main { flex: 1 1 auto; min-width: 0; overflow-y: auto; }
-  .loading { padding: 24px; font-size: 13px; color: var(--fgColor-muted); }
+  .loading { padding: var(--space-xl); font-size: var(--text-body-size-medium); color: var(--fgColor-muted); }
 </style>
 </head>
 <body>
@@ -302,7 +302,7 @@ function openMore(moved) {
   morePanel = document.createElement("div");
   morePanel.setAttribute("role", "menu");
   morePanel.setAttribute("aria-label", "更多页签");
-  morePanel.style.cssText = "position:absolute;width:320px;border-radius:12px;padding:8px;" +
+  morePanel.style.cssText = "position:absolute;width:320px;border-radius:12px;padding: var(--space-sm);" +
     "background:var(--bgColor-default);box-shadow:0 0 0 1px rgba(209,217,224,.25),0 8px 24px rgba(66,74,83,.12);";
   for (const a of moved) {
     const item = document.createElement("a");
