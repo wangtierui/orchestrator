@@ -43,6 +43,34 @@
     const meta = d.meta || {};
     const root = d.tree || { name: 'root', children: [] };
 
+    /* P3：节点 path → 节点对象（深链用） */
+    const byPath = new Map();
+    (function walk(n) {
+      if (n && n.path) byPath.set(n.path, n);
+      (n && n.children ? n.children : []).forEach(walk);
+    })(root);
+
+    /* 信息条与 URL 的唯一出口：任何来源（点击 / 深链）都走这里 */
+    let restoring = false;
+    function showNode(node) {
+      const box = document.getElementById('info');
+      box.replaceChildren();
+      const name = document.createElement('div');
+      name.className = 'text-bold';
+      name.textContent = (node && node.name) || '—';
+      const p = document.createElement('div');
+      p.className = 'text-small';
+      p.textContent = (node && node.path) || '—';
+      const purpose = document.createElement('div');
+      purpose.className = 'text-small';
+      purpose.textContent = (node && node.purpose) || '';
+      box.append(name, p, purpose);
+      if (!restoring && node && node.path) {
+        const url = `#/project?path=${encodeURIComponent(node.path)}`;
+        if (url !== location.hash) history.pushState({ page: 'project' }, '', url);
+      }
+    }
+
     document.getElementById('stamp').textContent =
       `${meta.node_count || 0} 节点 · 深度 ${meta.max_depth || '—'}${meta.truncated ? ' · 已截断' : ''}`;
     if (meta.truncated) {
@@ -70,20 +98,14 @@
       },
     });
 
-    inst.chart.on('click', (p) => {
-      const box = document.getElementById('info');
-      box.replaceChildren();
-      const name = document.createElement('div');
-      name.className = 'text-bold';
-      name.textContent = p.name || '—';
-      const path = document.createElement('div');
-      path.className = 'text-small';
-      path.textContent = (p.data && p.data.path) || '—';
-      const purpose = document.createElement('div');
-      purpose.className = 'text-small';
-      purpose.textContent = (p.data && p.data.purpose) || '';
-      box.append(name, path, purpose);
-    });
+    const __want = (window.RCO_PARAMS || {}).path;
+    if (__want && byPath.has(__want)) {
+      restoring = true;
+      showNode(byPath.get(__want));
+      restoring = false;
+    }
+
+    inst.chart.on('click', (p) => { showNode((p && p.data) || { name: p && p.name }); });
   } catch (e) {
     document.getElementById('chart').replaceChildren(core.renderState('error', {
       title: '结构加载失败', desc: String(e.message || e) }));
