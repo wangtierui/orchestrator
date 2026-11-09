@@ -47,6 +47,16 @@
   let tbl = null;
   let lastQ = '';
 
+  /* P3：搜索词写 URL（本页唯一状态是 q） */
+  let urlMode = 'push';
+  function pushUrl() {
+    const url = lastQ ? `#/search?q=${encodeURIComponent(lastQ)}` : '#/search';
+    if (url === location.hash) return;
+    if (urlMode === 'replace') history.replaceState({ page: 'search' }, '', url);
+    else history.pushState({ page: 'search' }, '', url);
+    urlMode = 'push';
+  }
+
   const COLUMNS = [
     { key: 'title', label: '标题', width: 'minmax(0,2.6fr)', titleFrom: 'title' },
     { key: 'document_number', label: '文号', width: '170px' },
@@ -59,6 +69,8 @@
   ];
 
   async function run(q) {
+    lastQ = q;   /* 先落地再回写：否则 pushUrl 读到上一次的 q（实测深链丢 q） */
+    pushUrl();
     lastQ = q;
     if (!q.trim()) {
       document.getElementById('tableSlot').replaceChildren(
@@ -91,7 +103,7 @@
 
   document.getElementById('searchSlot').append(controls.renderSearch({
     id: 'q', label: '搜索文档', placeholder: '搜索标题 / 文号 / 全文…（回车应用）',
-    onInput: (v) => { if (v.length >= 2) run(v); },
+    onInput: (v) => { lastQ = v; urlMode = 'replace'; if (v.length >= 2) run(v); },
     onSubmit: (v) => run(v),
   }).el);
 
@@ -100,7 +112,14 @@
     document.getElementById('tabArticle').setAttribute('aria-pressed', 'false');
   });
 
-  run('');
+  const __q0 = (window.RCO_PARAMS || {}).q || '';
+  if (__q0) {
+    const box = document.getElementById('q');
+    if (box) box.value = __q0;
+    run(__q0);
+  } else {
+    run('');
+  }
 })();
 </script>
 </body>
