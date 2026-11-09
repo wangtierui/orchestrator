@@ -28,7 +28,10 @@ def run() -> tuple[bool, dict]:
     try:
         from tools import behaviors_smoke as B
     except Exception as e:  # noqa: BLE001
-        return _skipped(f"behaviors_smoke 不可导入：{type(e).__name__}: {e}")
+        # 工具模块导入失败 = 代码/语法问题，**不是环境缺失**，必须判失败，
+        # 否则门禁会因“跳过”而变绿（实测：pages_smoke 写坏语法时门禁仍 PASS）。
+        return False, {"error": f"{type(e).__name__}: {e}",
+                        "reason": "工具模块不可导入（不是环境问题）"}
 
     try:
         out = B.run()
