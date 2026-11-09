@@ -54,6 +54,16 @@
   let runsTbl = null;
   let auditTbl = null;
   let q = '';
+
+  /* P3：搜索词写 URL */
+  let urlMode = 'push';
+  function pushUrl() {
+    const url = q ? `#/governance?q=${encodeURIComponent(q)}` : '#/governance';
+    if (url === location.hash) return;
+    if (urlMode === 'replace') history.replaceState({ page: 'governance' }, '', url);
+    else history.pushState({ page: 'governance' }, '', url);
+    urlMode = 'push';
+  }
   let onlyRun = '';        /* 点运行行后台账过滤（§9.4 两表联动） */
 
   const shortTime = (s) => (s || '').replace('T', ' ').slice(0, 16);
@@ -121,6 +131,7 @@
   }
 
   function renderAudit() {
+    pushUrl();   /* 唯一出口 */
     const rows = filteredAudit();
     if (!auditTbl) {
       auditTbl = table.renderTable({ columns: AUDIT_COLS, rows, label: '变更台账',
@@ -158,10 +169,16 @@
 
   document.getElementById('searchSlot').append(controls.renderSearch({
     id: 'q', label: '搜索审计台账', placeholder: '搜索 id / 对象 / 字段 / 操作者…',
-    onInput: (v) => { q = v; renderAudit(); },
+    onInput: (v) => { q = v; urlMode = 'replace'; renderAudit(); },
     onSubmit: (v) => { q = v; renderAudit(); },
   }).el);
 
+  const __q0 = (window.RCO_PARAMS || {}).q || '';
+  if (__q0) {
+    q = __q0;
+    const box = document.getElementById('q');
+    if (box) box.value = __q0;
+  }
   load();
 })();
 </script>
