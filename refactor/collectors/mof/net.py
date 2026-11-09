@@ -97,10 +97,11 @@ _WS_RE = re.compile(r"\s+")
 
 
 def _request(method, path, payload=None, *, rate=None, timeout=30, max_retries=4):
-    """带重试/退避/UA 轮换的请求（纯实时，HTTP 响应缓存已移除）。
+    """统一走 lib/http 的传输层完成重试/退避/按源熔断（唯一重试出口）。
 
-    统一走 lib/http（requests 底座），自动接入容错编排层（熔断/死信/指标）；
-    重试与 RateLimiter 惩罚逻辑保留（transport 仅做单次请求，重试由本循环控制）。
+    重试次数、指数退避、熔断冷却全部由 RequestsTransport 统一施加；本函数只负责
+    mof 专属请求构造（POST-JSON / Chrome UA / Referer）与"解析或抛错"的契约。
+    RateLimiter.wait() 仍在此做请求间节流（与重试是两件事）。
     """
     from ..lib.http import http_request
 
@@ -111,35 +112,23 @@ def _request(method, path, payload=None, *, rate=None, timeout=30, max_retries=4
     headers["User-Agent"] = random.choice(CC_USER_AGENTS)
     if rate is not None:
         rate.wait()
-    last_err = None
-    for attempt in range(1, max_retries + 1):
-        resp = http_request(
-            method, url, json_body=payload, headers=headers, timeout=timeout, retries=0,
-        )
-        status = resp.status
-        if status is None:  # 网络层失败
-            last_err = resp.error
-            backoff = min(2 ** attempt, 15) + random.uniform(0, 1)
-            logger.warning("网络异常 @ %s (尝试 %d/%d)：%s，%s 秒后重试",
-                           path, attempt, max_retries, last_err, round(backoff, 1))
-            time.sleep(backoff)
-            continue
-        if status in (429, 503, 502, 500):
-            backoff = min(2 ** attempt * 1.5, 30) + random.uniform(0, 1)
-            if rate is not None:
-                rate.penalize(backoff)
-            logger.warning("HTTP %s @ %s (尝试 %d/%d)，%s 秒后重试",
-                           status, path, attempt, max_retries, round(backoff, 1))
-            time.sleep(backoff)
-            continue
-        if 200 <= status < 300:
-            try:
-                return json.loads(resp.content.decode("utf-8", "replace"))
-            except (ValueError, UnicodeDecodeError):
-                raise RuntimeError(f"JSON 解析失败：{path}")
-        # 其它状态码（含 404/410）：按永久失败抛出，由 pipeline 跳过
-        raise urllib.error.HTTPError(url, status, "HTTP %d" % status, None, None)
-    raise RuntimeError(f"请求失败（已达最大重试）：{path} -> {last_err}")
+    # mof 原策略：429/5xx 重试；404/410 与 403 不可重试（直接抛错由 pipeline 跳过）。
+    resp = http_request(
+        method, url, json_body=payload, headers=headers, timeout=timeout,
+        retries=max_retries,
+        retry_statuses=frozenset({429, 500, 502, 503}),
+        no_retry_statuses=frozenset({404, 410}),
+    )
+    status = resp.status
+    if status is None:  # 网络层失败（重试耗尽）
+        raise RuntimeError("网络异常：%s -> %s" % (path, resp.error))
+    if 200 <= status < 300:
+        try:
+            return json.loads(resp.content.decode("utf-8", "replace"))
+        except (ValueError, UnicodeDecodeError):
+            raise RuntimeError("JSON 解析失败：%s" % path)
+    # 其它状态码（404/410 永久缺失、403 不重试、5xx 重试耗尽）按永久失败抛出，由 pipeline 跳过
+    raise urllib.error.HTTPError(url, status, "HTTP %d" % status, None, None)
 
 
 

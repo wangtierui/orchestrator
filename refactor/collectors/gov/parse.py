@@ -1,13 +1,11 @@
 # -*- coding: utf-8 -*-
 """gov 解析/配置/IO 工具（原 gov_parse.py 迁出，逻辑逐函数等价）。
 
-含：子源登记表 SOURCES、ScrapeConfig、build_config、文本/日期/文号解析、
-merge_with_master（旧主库 ∪ 新条目增量合并）。
+含：子源登记表 SOURCES、ScrapeConfig、build_config、文本/日期/文号解析。
 仅 import 路径改为相对导入，仓库引导与 pbc 同口径。
 """
 from __future__ import annotations
 
-import logging
 import re
 import sys
 from dataclasses import dataclass
@@ -34,7 +32,6 @@ except ImportError:  # pragma: no cover
     def fetch_gov_attachments(*a, **k):
         return [], ""
 
-LOG = logging.getLogger("gov_scraper")
 
 # --------------------------------------------------------------------------- #
 # 配置
@@ -44,7 +41,6 @@ from ..lib.http import USER_AGENTS
 # 统一文号提取器（2026-09-05 五源共享：doc_number 模块）
 from ..lib.doc_number import extract_doc_number as _unified_doc_number
 
-from ..storage import get_storage, StorageSettings, open_storage
 
 
 DEFAULT_HEADERS = {
@@ -110,10 +106,6 @@ class ScrapeConfig:
     summary_len: int = 200
     # 详情阶段断点落盘间隔（条；0=不落暂存）。
     checkpoint_every: int = 200
-    # ---- N-190（2026-10-08）**增量治理**参数（两子源共用）----
-    stop_after_empty_pages: int = 1
-    #: 历史存量补全模式：**忽略早停**、扫完全部列表页（月度作业用；不进周度增量）。
-    backfill: bool = False
     #: 详情阶段**软预算**（秒；0=不限）——到达即停止取新详情并**正常落盘退出**。
     max_seconds: float = 0.0
 
@@ -260,36 +252,11 @@ def build_config(args) -> ScrapeConfig:
         retries=args.retries,
         summary_len=args.summary_len,
         checkpoint_every=getattr(args, "checkpoint_every", 200),
-        # N-190：增量治理参数（老调用方无这些属性时退回默认，保持向后兼容）
-        stop_after_empty_pages=int(getattr(args, "stop_after_empty_pages", 1) or 1),
-        backfill=bool(getattr(args, "backfill", False)),
         max_seconds=float(getattr(args, "max_seconds", 0.0) or 0.0),
     )
 
 
-# ── 治理步骤（采集边界，非采集逻辑）：源内增量合并 ──
-def merge_with_master(new_records: list[dict[str, Any]], out_dir: str, storage=None) -> list[dict[str, Any]]:
-    """增量续抓合并：现主库旧记录 ∪ 本次新条目（detail_url 去重，新优先）。
-
-    读回走 storage（file/postgres 统一）；不写文件（由 write_outputs 落盘）。
-    """
-    if storage is None:
-        storage = open_storage("gov", out_dir)
-    try:
-        old = storage.load_master().items
-    except Exception as e:  # noqa: BLE001
-        LOG.warning("【merge】读取现主库失败，仅写本次抓取结果：%s", e)
-        return new_records
-    merged: dict[str, dict[str, Any]] = {}
-    for r in old:
-        merged[str(r.get("detail_url") or r.get("title"))] = r
-    for r in new_records:
-        merged[str(r.get("detail_url") or r.get("title"))] = r
-    LOG.info("【merge】现主库 %d 条 + 本次 %d 条 → 合并 %d 条",
-             len(old), len(new_records), len(merged))
-    return list(merged.values())
-
 
 __all__ = ["ScrapeConfig", "_is_https_scheme_upgrade", "_longest_text_block", "build_config", "clean_text",
            "decode_html", "extract_date", "extract_doc_number",
-           "extract_issue_organ", "make_summary", "merge_with_master"]
+           "extract_issue_organ", "make_summary"]

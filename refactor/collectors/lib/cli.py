@@ -3,15 +3,15 @@
 
 所有采集器共用同一套"日常 + 通用高级"参数，保证跨源同名同义（日常参数必须统一，
 不能某个源有、另一个源没有）。各采集器 ``main()`` 调用 :func:`add_common_args` 后，
-再追加源特定高级项（如 nfra 的 ``--cache-dir/--offline``、gov 的 ``--backfill``、
-internal 的 ``--in-dir/--org``）。
+再追加源特定高级项（如 nfra 的 ``--cache-dir/--offline``、internal 的 ``--in-dir/--org``）。
 
 日常（5 源统一）：``--out-dir  --category/--source  --mode  --delay``
 通用高级（偶尔用，不强制各源都有）：``--limit  --no-detail  --no-attachments  --refetch-attachments``
 
-统一语义：
-  --mode incremental（默认）：增量续抓，跳过主库已知条目。
-  --mode full：全量重抓，忽略主库已知（实现为 known_pred 返回 False）。
+统一语义（只有两个模式，判据都是唯一状态字段 raw_docs.fetch_status）：
+  --mode incremental（默认）：跳过主库已知条目，列表页全扫到末页（不停在一页全 known 处）。
+  --mode full：仅状态 ok 的记录算已知（跳过且不落盘），其余非 ok 记录重抓、
+    关闭早停翻完全部列表页、写入用 update 覆盖修复（配不降级守卫）。
   --delay：请求平均间隔(秒)，各源在代码侧自动 ±抖动抗检测，取代原先的 min/max 双参。
   --limit：最多处理 N 条（0=不限制），取代原先分散的 max-items/max-pages/limit 等。
 """
@@ -54,6 +54,10 @@ def add_common_args(
         parser.add_argument(
             "--mode", choices=["incremental", "full"], default="incremental",
             help="incremental=增量续抓(跳过已知)；full=全量重抓(忽略已知)")
+    parser.add_argument(
+        "--stop-after-empty-pages", type=int, default=0,
+        help="四源共用的增量翻页闸门：连续 N 页无新条目后停止；"
+             "0(默认)=不早停，扫完所有列表页")
     if with_delay:
         parser.add_argument(
             "--delay", type=float, default=1.5,
@@ -76,13 +80,18 @@ def add_common_args(
 
 
 def is_full_mode(args: argparse.Namespace) -> bool:
-    """是否全量重抓模式。"""
-    return getattr(args, "mode", "incremental") == "full"
+    """是否全量模式。兼容 collect() 构造的 Namespace（只带 full 布尔）。"""
+    return getattr(args, "mode", None) == "full" or bool(getattr(args, "full", False))
 
 
 def make_known_pred_full() -> callable:
-    """全量模式下让所有主库记录都不算'已知'，从而逐条重抓。"""
-    return lambda _r: False
+    """full 模式的已知闸门：**仅状态 ok 的主库记录算已知可跳过**。
+
+    其余任何状态（失败、无正文、仅标题…）都视为未完成，full 会重抓并覆盖修复。
+    判定统一走 lib/fetch_status.is_ok，不另立一套状态标准。
+    """
+    from .fetch_status import is_ok
+    return lambda r: is_ok(r.get("fetch_status"))
 
 
 def configure_logging(level: int = logging.INFO) -> None:

@@ -23,6 +23,7 @@ from urllib.parse import urljoin
 from ..base import REPO_ROOT as _ORCH  # refactor 项目根（自包含，不指向外部）
 from .parse import make_summary  # 复用 gov 主链摘要口径（消除 zhengceku 副本）
 from ..lib.text_utils import normalize_date  # 复用统一日期归一化（消除 _iso 副本）
+from ..lib.progress import progress_of
 try:
     from refactor.config import settings  # 统一配置（抓取/OCR 调优项集中管理）
 except ImportError:  # 兼容从 refactor/ 目录直接运行（collectors 上下文）
@@ -57,11 +58,7 @@ def list_page_url(index: int) -> str:
     return LIST_BASE if index == 0 else LIST_BASE.replace("home.htm", f"home_{index}.htm")
 
 
-#: 增量早停阈值缺省：连续 1 页无「新条目」即停（N-190，2026-10-08）
-DEFAULT_STOP_AFTER_EMPTY_PAGES = 1
-
-# 早停判据抽至通用模块（collectors/lib/incremental.py，G7），此处仅再导出以保持兼容。
-from ..lib.incremental import KnownTracker, should_stop_paging  # noqa: E402
+from ..lib.incremental import KnownTracker  # noqa: E402
 
 
 def total_pages(html: str) -> int:
@@ -203,6 +200,27 @@ def _meta_field(html: str, label: str, maxlen: int = 120) -> str:
     return ""
 
 
+# 仅当归一化结果确为日期时才保留；否则返回空串，避免把发文机关等文本当“日期”写入库
+# （gov 个别详情页把发文机关误置于成文日期字段，normalize_date 的保守回显会原样透传）。
+_PURE_DATE_RE = re.compile(r"^\d{4}[-/年.]\d{1,2}[-/月.]\d{1,2}([ T]\d{1,2}:\d{2}(:\d{2})?)?$")
+
+
+def _as_date(value: str) -> str:
+    """normalize_date 的严格版：非日期文本 → 空串（不污染日期字段）。"""
+    n = normalize_date(value)
+    return n if _PURE_DATE_RE.match(n) else ""
+
+
+_PUBTIME_RE = re.compile(
+    r'(?:tpublishedtime|pubdate|publishdate|article:published_time)[^>]*content=["\']([^"\']+)', re.I)
+
+
+def _published_time(html: str) -> str:
+    """从 <meta> 抽取页面发布时间（gov.cn 常用 tpublishedtime），作日期退化的兜底来源。"""
+    m = _PUBTIME_RE.search(html or "")
+    return m.group(1) if m else ""
+
+
 def pick_content_html(html: str) -> str:
     for sel in CONTENT_SELECTORS:
         cls, idv = sel[1:], sel[1:]
@@ -235,7 +253,13 @@ def parse_detail(html: str, url: str) -> dict:
                 title = t2
             break
     body = clean_html_text(pick_content_html(html))
-    pub = normalize_date(_meta_field(html, "成文日期", 40))
+    raw_pub = _meta_field(html, "成文日期", 40)
+    pub = _as_date(raw_pub)
+    if not pub:  # 个别页面把发文机关误置于成文日期字段，退化到发布日期/标题/正文/页面 publishedtime 再抽
+        pub = (_as_date(_meta_field(html, "发布日期", 40))
+               or _as_date(title)
+               or _as_date(_published_time(html))
+               or _as_date(body[:4000]))
     docno = _meta_field(html, "发文字号", 60)
     if not docno:
         docno = _extract_docno(title) or _extract_docno(body[:600])
@@ -245,7 +269,7 @@ def parse_detail(html: str, url: str) -> dict:
         "document_number": docno,
         "issuing_authority": _meta_field(html, "发文机关", 60),
         "publish_date": pub,
-        "pub_date_original": _meta_field(html, "成文日期", 40),
+        "pub_date_original": raw_pub if _as_date(raw_pub) else "",
         "content": body,
     }
 
@@ -410,27 +434,25 @@ class ZhengcekuScraper:
 
     # ---- 重构：列表生成器 iter_list + 详情 fetch_one（原 run() 全流程已移除）----
     def iter_list(self, ctx) -> "Iterator[dict]":
-        """逐页翻列表，**只 yield new 条目**；连续 N 页无新即停（增量早停，N-190）。
+        """逐页翻列表；页末向基类通用闸门上报本页新增数，是否早停由闸门统一判定。
 
-        用基类 tracker 判 known/dup 并跳过；backfill 模式不早停（扫完全部）。
-        原 partial 断点续跑由"主库 resume + 基类按页 checkpoint"自然取代，此处删除。
+        用基类 tracker 判 known/dup 并跳过；默认不早停，一路扫到末页。
         """
         cfg = self.cfg
         max_pages = getattr(cfg, "max_pages", 0) or 0
         max_items = getattr(cfg, "max_items", 0) or 0
         delay = getattr(cfg, "delay_min", 1.5)
-        stop_after = int(getattr(cfg, "stop_after_empty_pages", DEFAULT_STOP_AFTER_EMPTY_PAGES) or 1)
-        scan_all = bool(getattr(cfg, "backfill", False) or ctx.opts.get("full"))
         first = fetch(self._list_url(0))
         if not first:
             return
         n_pages = total_pages(first)
         if max_pages:
             n_pages = min(n_pages, max_pages)
+        progress_of(ctx).batch("zhengceku 部门文件")
         seen = set()  # 本地运行内去重（只读判重，不污染基类 tracker.seen_in_run）
-        empty_streak = 0
         yielded = 0
         for i in range(n_pages):
+            progress_of(ctx).page(i + 1, n_pages)
             html = first if i == 0 else fetch(self._list_url(i))
             if not html:
                 continue
@@ -449,11 +471,8 @@ class ZhengcekuScraper:
                     yielded += 1
                     if max_items and yielded >= max_items:
                         return
-            if new_in_page:
-                empty_streak = 0
-            else:
-                empty_streak += 1
-            if should_stop_paging(empty_streak, stop_after, scan_all):
+            ctx.tracker.note_page(new_in_page)
+            if ctx.tracker.should_stop():
                 break
             if delay and i + 1 < n_pages:
                 time.sleep(delay)
@@ -467,7 +486,7 @@ class ZhengcekuScraper:
         if not d["title"]:
             d["title"] = title_hint
         if not d["publish_date"]:
-            d["publish_date"] = date_hint
+            d["publish_date"] = _as_date(date_hint)
         try:
             if _ATTACH_FAST and len(d["content"]) >= _FAST_MIN_BODY:
                 atts: list = []

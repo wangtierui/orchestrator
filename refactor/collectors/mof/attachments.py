@@ -1,12 +1,9 @@
 # -*- coding: utf-8 -*-
 """mof 源：附件清单获取 / 下载 / 本地抽取（重构版；逻辑与旧 mof_attachments 等价）。"""
+import ipaddress
 import logging
 import os
-import random
-import time
-import urllib.error
 import urllib.parse
-import urllib.request
 from . import net
 
 logger = logging.getLogger("mof_scraper")
@@ -14,11 +11,11 @@ logger = logging.getLogger("mof_scraper")
 ATTACH_PATH = "/file/f/get"  # GET ?infoId=<id>&fileType=0(相关附件)/90(文字版)
 _ATTACH_KIND = {"0": "attachment", "90": "text_version"}
 
-# 附件主机 502 熔断（2026-09-10 增量策略）：连续 502/503 达阈值即熔断，剩余附件跳过。
-# 注：真身在此处（原 mof_collector.py 内曾有一份"从不读写"的死副本，重构时已删除）。
-_ATT_502_STREAK = 0
-_ATT_CIRCUIT_OPEN = False
-_MAX_ATT_502_STREAK = 8
+# 附件下载：内网/不可路由地址（如 mof 接口返回 serverIp=10.1.60.36 这类内网 IP）
+# 只尝试一次、用短超时快速失败，保留 file_url 等元信息并在附件明细的
+# extract_status 标记 unreachable_private_ip，确保"有附件但不可达"这一事实落库不丢。
+# 该诊断值属站点数据缺陷，已在 lib/fetch_status 显式豁免，不把主记录降级：
+# 有正文仍为 ok，无正文仍为 no_content；否则 full 模式会无限重抓这些坏链接。
 
 
 def fetch_attachments(law_id, rate, file_types=("0", "90"), timeout=20):
@@ -85,15 +82,49 @@ def _finalize_attachment(att, data, fname, law_id, dest):
     return att
 
 
-def download_attachment(att, law_id, outdir, rate, timeout=60, max_retries=6):
-    """下载单个附件到 attachments/<law_id>/，返回带本地相对路径与大小的元数据；失败返回 None。
+def _is_non_routable_host(url):
+    """URL 的 host 若为私有/环回/链路本地/保留等不可公网路由的 IP 则返回 True；
+    域名无法静态判定（可能解析到任意地址），一律返回 False（照常尝试下载）。"""
+    try:
+        host = urllib.parse.urlparse(url).hostname
+        if not host:
+            return False
+        ip = ipaddress.ip_address(host)
+    except ValueError:  # 非 IP（域名）无法静态判断
+        return False
+    return not ip.is_global
 
-    增量策略：幂等复用（本地已有非空副本 → 本地重抽）；502/503 仅重试 2 次即跳过，
-    连续达阈值熔断；429/500 指数退避；404 等不可恢复直接放弃。
+
+def _attachment_meta_record(att, law_id, download_status, *, error=None, unreachable=False):
+    """未成功落盘时的占位记录：保留 file_url/file_name 等全部元信息，仅标记下载状态，不丢数据。"""
+    rec = dict(att)  # file_id/file_name/file_type/kind/extension/file_url 等原样保留
+    rec.update({
+        "law_id": law_id,
+        "local_path": None,
+        "size_bytes": 0,
+        "text": "",
+        "extracted": False,
+        # 附件明细只用 extract_status 表达下载结果（原 extract_status / download_status
+        # 同值双写已清理）；主记录状态由 canonicalize 统一上卷，附件不再自带状态字段。
+        "extract_status": download_status,
+        "attachment_kind": "unknown",
+        "sha256": "",
+        "needs_ocr": False,
+        "garble_ratio": 0.0,
+        "unreachable": unreachable,
+        "download_error": error or "",
+    })
+    return rec
+
+
+def download_attachment(att, law_id, outdir, rate, timeout=60, max_retries=6):
+    """下载单个附件到 attachments/<law_id>/，始终返回一条元数据记录（成功或失败都不丢）。
+
+    重试/退避/熔断统一走 lib/http（robust_get）。对不可公网路由的内网 IP 不再预跳过，
+    而是照常发一次请求；若失败且命中该规则，标记 unreachable_private_ip 并保留 file_url
+    等元信息（交由落库层可见）；其它失败标记 download_failed。内网地址仅发一次、用较短
+    超时快速失败，避免 60s 连接超时干等。
     """
-    global _ATT_502_STREAK, _ATT_CIRCUIT_OPEN
-    if _ATT_CIRCUIT_OPEN:
-        return None
     attach_dir = os.path.join(net.ATTACHMENTS_DIR, str(law_id))
     os.makedirs(attach_dir, exist_ok=True)
     fname = net.safe_filename(att.get("file_name"), att.get("extension"),
@@ -105,68 +136,33 @@ def download_attachment(att, law_id, outdir, rate, timeout=60, max_retries=6):
                 return _finalize_attachment(att, f.read(), fname, law_id, dest)
         except OSError:
             pass
-    last_err = None
-    for attempt in range(1, max_retries + 1):
-        if rate is not None:
-            rate.wait()
-        try:
-            req = urllib.request.Request(att["file_url"], headers=net.DEFAULT_HEADERS)
-            req.add_header("User-Agent", random.choice(net.CC_USER_AGENTS))
-            with urllib.request.urlopen(req, timeout=timeout) as r:
-                data = r.read()
-            return _finalize_attachment(att, data, fname, law_id, dest)
-        except urllib.error.HTTPError as e:
-            last_err = e
-            if e.code in (502, 503):
-                _ATT_502_STREAK += 1
-                if _ATT_502_STREAK >= _MAX_ATT_502_STREAK:
-                    _ATT_CIRCUIT_OPEN = True
-                    logger.error("附件主机连续 %d 次 502/503，熔断：本次运行剩余附件跳过。",
-                                 _ATT_502_STREAK)
-                    return None
-                if attempt >= 2:
-                    logger.warning("附件下载 HTTP %s @ %s：跳过（熔断计数 %d）",
-                                   e.code, att.get("file_url"), _ATT_502_STREAK)
-                    return None
-                backoff = min(2 ** attempt * 2.0, 20) + random.uniform(0, 1)
-                if rate is not None:
-                    rate.penalize(backoff)
-                time.sleep(backoff)
-                continue
-            if e.code in (429, 500):
-                backoff = min(2 ** attempt * 2.0, 60) + random.uniform(0, 1)
-                if rate is not None:
-                    rate.penalize(backoff)
-                logger.warning(
-                    "附件下载 HTTP %s @ %s (尝试 %d/%d)，%ss 后重试",
-                    e.code, att.get("file_url"), attempt, max_retries, round(backoff, 1))
-                time.sleep(backoff)
-                continue
-            logger.warning("附件下载不可恢复 HTTP %s @ %s：%s",
-                           e.code, att.get("file_url"), e)
-            return None
-        except (urllib.error.URLError, TimeoutError, ConnectionError) as e:
-            last_err = e
-            backoff = min(2 ** attempt * 1.5, 30) + random.uniform(0, 1)
-            logger.warning(
-                "附件下载网络异常 (尝试 %d/%d)：%s，%ss 后重试",
-                attempt, max_retries, e, round(backoff, 1))
-            time.sleep(backoff)
-            continue
-    logger.warning("附件下载失败 %s：%s", att.get("file_url"), last_err)
-    return None
+    non_routable = _is_non_routable_host(att["file_url"])
+    if rate is not None:
+        rate.wait()
+    from ..lib.http import robust_get
+    # 命中内网/不可路由规则：只发一次请求、较短超时快速失败（不预跳过）；其余地址走正常重试
+    st, data = robust_get(
+        att["file_url"], binary=True,
+        timeout=min(timeout, 10) if non_routable else timeout,
+        retries=0 if non_routable else max_retries,
+    )
+    if st == 200 and data:
+        return _finalize_attachment(att, data, fname, law_id, dest)
+    # 失败：命中内网/不可路由规则 → unreachable_private_ip；否则 download_failed
+    if non_routable:
+        logger.warning("附件地址为内网/不可路由 IP，请求失败（保留元信息）：%s", att.get("file_url"))
+        return _attachment_meta_record(att, law_id, "unreachable_private_ip", unreachable=True)
+    err = "HTTP %s" % st if st is not None else "network/timeout"
+    logger.warning("附件下载失败 %s：%s", att.get("file_url"), err)
+    return _attachment_meta_record(att, law_id, "download_failed", error=err)
 
 
 def collect_attachments(law_id, rate, timeout=60):
-    """抓取并下载某条法规的全部附件，返回带本地路径的元数据列表。"""
-    if _ATT_CIRCUIT_OPEN:
-        return []
+    """抓取并下载某条法规的全部附件，返回元数据列表（含下载失败/不可达记录，均不丢弃）。"""
     meta = fetch_attachments(law_id, rate, timeout=timeout)
     if not meta:
         return []
     result = []
     for att in meta:
-        d = download_attachment(att, law_id, net.ATTACHMENTS_DIR, rate, timeout=timeout)
-        if d:
-            result.append(d)
+        result.append(download_attachment(att, law_id, net.ATTACHMENTS_DIR, rate, timeout=timeout))
     return result

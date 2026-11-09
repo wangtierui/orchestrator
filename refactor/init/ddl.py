@@ -23,43 +23,52 @@ EXTENSIONS: list[tuple[str, str]] = [
 #   );
 VECTOR_DDL = ""
 
-# ── 采集阶段抓取状态机（单一事实来源）──
-# 所有源共用同一组 fetch_status；取值须与 collectors/lib/fetch_status.py 的
-# FETCH_STATUS_VALUES 逐字一致（下方 CHECK 约束在 PG 侧强制）。
-FETCH_STATUS_VALUES = (
-    "pending", "ok", "no_content", "parse_error", "fetch_failed",
-    "download_failed", "attachment_skipped", "attachment_failed",
-    "attachment_saved", "skipped_existing", "title_link_only", "offline_missing",
-)
+# ── 采集阶段唯一状态字段 fetch_status ──
+# 取值集合的唯一事实来源是 collectors/lib/fetch_status.py；这里只 import 后生成
+# CHECK 约束，杜绝「代码侧 / DDL 侧 / schema.sql 三份字面量」漂移。
+try:
+    from refactor.collectors.lib.fetch_status import FETCH_STATUS_VALUES
+except ImportError:  # 兼容从 refactor/ 目录直接运行的 init 工具
+    from collectors.lib.fetch_status import FETCH_STATUS_VALUES
 _FETCH_STATUS_CHECK = ", ".join(f"'{v}'" for v in FETCH_STATUS_VALUES)
 
 # ── 采集阶段范式化 schema：主表公共列 + 各源副表（doc_id 关联）──
 # 取代 raw_items 的整行 JSON 方案；raw_items 暂保留以兼容存量代码，迁移完成后移除。
+# 列定义须与 collectors/storage/raw_store.py 的 RAW_DOCS/SQLAlchemy 模型逐列一致：
+#  - publish_date/effective_date 是 TEXT（模型 String(32)），canonicalize 会写空串 ''；
+#    用 DATE 会在写入时空串报错。日期合法性由采集层的 _as_date 保证，不在 DB 强转。
+#  - content_ref 是正文本地文件指针，模型里有，DDL 不能漏。
+#  - key_md5 NOT NULL、唯一约束用表内 CONSTRAINT（init_schema 会按约束名检查）。
 RAW_DOCS_DDL = """
 CREATE TABLE IF NOT EXISTS raw_docs (
     id             BIGSERIAL    PRIMARY KEY,
     run_id         INTEGER      NOT NULL REFERENCES master_runs (id),
     namespace      VARCHAR(64)  NOT NULL,
-    key_md5        VARCHAR(32)  NULL,
+    key_md5        VARCHAR(32)  NOT NULL,
     title          TEXT         NULL,
     detail_url     TEXT         NULL,
-    publish_date   DATE         NULL,
-    effective_date DATE         NULL,
+    publish_date   TEXT         NULL,
+    effective_date TEXT         NULL,
     issuing_authority TEXT       NULL,
     category       TEXT         NULL,
     document_number TEXT         NULL,
     summary        TEXT         NULL,
     fetch_status   TEXT         NOT NULL
                                 CHECK (fetch_status IN (__FS_VALUES__)),
-    captured_at    TIMESTAMPTZ  DEFAULT now()
+    captured_at    TIMESTAMPTZ  DEFAULT now(),
+    content_ref    TEXT         NULL,
+    CONSTRAINT uq_raw_docs_ns_key UNIQUE (namespace, key_md5)
 );
 CREATE INDEX IF NOT EXISTS ix_raw_docs_run_id     ON raw_docs (run_id);
 CREATE INDEX IF NOT EXISTS ix_raw_docs_namespace  ON raw_docs (namespace);
 CREATE INDEX IF NOT EXISTS ix_raw_docs_key_md5    ON raw_docs (key_md5);
-CREATE UNIQUE INDEX IF NOT EXISTS uq_raw_docs_ns_key
-    ON raw_docs (namespace, key_md5);
 """.replace("__FS_VALUES__", _FETCH_STATUS_CHECK)
 
+# 各源副表列须与 raw_store.py 的 SQLAlchemy 模型逐列一致，否则重建后写入会报错：
+#  - 正文已迁到本地文件（raw_docs.content_ref 只存指针），副表不再有 content_text 列；
+#  - 日期类字段模型是 String(32)，采集层会写空串 ''，用 DATE 会直接报类型错误；
+#  - attachments/extra 用 JSONB（SQLAlchemy generic JSON 写入 JSONB 列已实测兼容）；
+#  - raw_pbc 不再有 attachment_status：唯一记录状态字段是 raw_docs.fetch_status。
 RAW_MOF_DDL = """
 CREATE TABLE IF NOT EXISTS raw_mof (
     doc_id        BIGINT       PRIMARY KEY REFERENCES raw_docs (id),
@@ -67,13 +76,12 @@ CREATE TABLE IF NOT EXISTS raw_mof (
     category_id   TEXT,
     create_dept   TEXT,
     file_count    INTEGER,
-    expire_date   DATE,
-    abolish_date  DATE,
+    expire_date   TEXT,
+    abolish_date  TEXT,
     status        TEXT,
     change        TEXT,
     active        BOOLEAN,
     api_link      TEXT,
-    content_text  TEXT,
     attachments   JSONB,
     extra         JSONB
 );
@@ -84,7 +92,6 @@ CREATE TABLE IF NOT EXISTS raw_gov (
     doc_id           BIGINT       PRIMARY KEY REFERENCES raw_docs (id),
     page             INTEGER,
     source_sub       TEXT,
-    content_text     TEXT,
     attachment_text  TEXT,
     attachments      JSONB,
     extra            JSONB
@@ -98,9 +105,7 @@ CREATE TABLE IF NOT EXISTS raw_pbc (
     file_type          TEXT,
     local_path         TEXT,
     error              TEXT,
-    attachment_status  TEXT,
     attachment_errors  JSONB,
-    content_text       TEXT,
     attachments        JSONB,
     extra              JSONB
 );
@@ -114,7 +119,6 @@ CREATE TABLE IF NOT EXISTS raw_nfra (
     index_no       TEXT,
     doc_file_url   TEXT,
     pdf_file_url   TEXT,
-    content_text   TEXT,
     attachments    JSONB,
     extra          JSONB
 );
@@ -123,7 +127,6 @@ CREATE TABLE IF NOT EXISTS raw_nfra (
 RAW_INTERNAL_DDL = """
 CREATE TABLE IF NOT EXISTS raw_internal (
     doc_id        BIGINT       PRIMARY KEY REFERENCES raw_docs (id),
-    content_text  TEXT,
     attachments   JSONB,
     extra         JSONB
 );
@@ -230,7 +233,9 @@ CREATE TABLE IF NOT EXISTS fetch_dead_letter (
 );
 CREATE INDEX IF NOT EXISTS ix_fetch_dead_letter_source     ON fetch_dead_letter (source);
 CREATE INDEX IF NOT EXISTS ix_fetch_dead_letter_pending   ON fetch_dead_letter (status, next_attempt_after);
-CREATE UNIQUE INDEX IF NOT EXISTS uq_fetch_dead_letter_src_key
+-- 索引名与 raw_store.FETCH_DEAD_LETTER 的 UniqueConstraint 名一致，避免
+-- create_all 补建同名约束时出现两套去重定义。
+CREATE UNIQUE INDEX IF NOT EXISTS uq_dead_letter_src_key
     ON fetch_dead_letter (source, doc_key);
 """
 

@@ -5,8 +5,9 @@
 复用同一套 ``add_common_args`` 参数语义（--out-dir/--mode/--limit/--no-detail/--delay...）。
 
 各源 ``collect()`` 签名不完全一致（pbc/mof 接受 category/no_attachments，gov 接受
-source/backfill，nfra 接受 cache_dir/offline），这里用 ``inspect`` 按签名过滤传参，
+source，nfra 接受 cache_dir/offline），这里用 ``inspect`` 按签名过滤传参，
 对任意源都安全通用，以后加源只需在 SOURCES 里登记一行。
+模式只有 incremental / full 两种，统一由 ``--mode`` 传入。
 """
 from __future__ import annotations
 
@@ -54,11 +55,14 @@ def run_one(name: str, args: argparse.Namespace) -> str:
     mod_path, cls_name = SOURCES[name]
     mod = importlib.import_module(mod_path)
     collector = getattr(mod, cls_name)()
+    # 通用增量闸门：对所有源生效，无需各源 collect() 重复声明同一形参。
+    collector.early_stop_pages = getattr(args, "stop_after_empty_pages", 0)
     opts = dict(
         out_dir=args.out_dir, mode=args.mode, limit=args.limit,
         no_detail=args.no_detail, delay=args.delay,
         no_attachments=getattr(args, "no_attachments", False),
         refetch_attachments=getattr(args, "refetch_attachments", False),
+        stop_after_empty_pages=getattr(args, "stop_after_empty_pages", 0),
     )
     return _call_collect(collector, **opts)
 

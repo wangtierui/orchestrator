@@ -107,7 +107,8 @@ def fetch_gov_attachments(detail_html, entry_id, entry_title, out_dir, base_url,
                 entry_id=str(entry_id), extract_status="download_failed",
                 extracted=False)
             rec["link_text"] = text
-            rec["fetch_status"] = "download_failed"
+            # 不再给附件写 fetch_status：附件失败由 canonicalize 上卷为主记录
+            # 的 fetch_status=attachment_failed（见 lib/fetch_status.derive）。
             records.append(rec)
             continue
         kind = sniff_kind(data, url)

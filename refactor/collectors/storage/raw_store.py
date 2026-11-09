@@ -9,8 +9,12 @@
            fetch_status, captured_at)
   raw_{ns}(doc_id FK→raw_docs.id, 源特有列…, content_text, attachments JSONB, extra JSONB)
 
+**唯一记录状态字段**：raw_docs.fetch_status（取值/语义见 lib/fetch_status.py）。
+副表里的 status/change/active 等是 mof 的**法规业务态**（效力、变更类型、是否现行），
+与「这条记录抓取是否成功完成」无关，不参与 is_ok 判定。
+
 写入：canon_raw 把异构记录拆成 {common 归一字段} + {child 源私有字段}，事务内先写主表
-      取 id 再写副表；on_conflict 按源（mof=update 覆盖，其余=nothing 写一次）。
+      取 id 再写副表；on_conflict 默认按源，**full 模式统一显式传 update 覆盖修复**。
 读取：JOIN 主副表，重建为采集器期望的原始形状记录（公共字段 + 副表字段 + extra 兜底），
       保证增量 dedup / handle_known 读到与原记录一致的字段。
 """
@@ -45,7 +49,7 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from .base import StoredRecord
 from ._sanitize import sanitize_value, sanitize_surrogates
-from ..lib.fetch_status import normalize as _norm_fetch_status
+from ..lib.fetch_status import derive as derive_fetch_status, rank_case as _rank_case
 
 UTC = timezone.utc
 RAW_METADATA = MetaData()
@@ -119,7 +123,6 @@ RAW_PBC = Table(
     Column("file_type", Text),
     Column("local_path", Text),
     Column("error", Text),
-    Column("attachment_status", Text),
     Column("attachment_errors", JSON),
     Column("attachments", JSON),
     Column("extra", JSON),
@@ -145,6 +148,9 @@ RAW_INTERNAL = Table(
 )
 
 # ── 死信队列：抓取失败项持久化（可冷却补抓 / 人工旁路重试）──
+# 边界：这里的 status 是**重试队列调度态**（pending/exhausted/resolved），
+# 描述「这条失败项还要不要再试」，不是 raw_docs.fetch_status 那条记录的内容状态；
+# 两者作用域不同、不重复。last_status 是 HTTP 状态码（整数），也非状态机取值。
 # 与 raw_{ns} 解耦：跨源统一，永不删除失败记录（达上限标 exhausted+needs_review）。
 FETCH_DEAD_LETTER = Table(
     "fetch_dead_letter", RAW_METADATA,
@@ -167,6 +173,8 @@ FETCH_DEAD_LETTER = Table(
 )
 
 # ── 抓取运行指标账本（可观测：跨 run 看趋势）──
+# 边界：以下是**派生聚合计数器**（本次 run 各类结果各多少条），按 run 从
+# fetch_status 统计得出，不是记录状态字段、也不作为任何记录的判定依据。
 FETCH_RUNS = Table(
     "fetch_runs", RAW_METADATA,
     Column("id", BigInteger, primary_key=True),
@@ -197,8 +205,7 @@ CHILD_COLUMNS = {
     "mof": ["law_id", "category_id", "create_dept", "file_count", "expire_date",
             "abolish_date", "status", "change", "active", "api_link"],
     "gov": ["page", "source_sub", "attachment_text"],
-    "pbc": ["link_type", "file_type", "local_path", "error",
-            "attachment_status", "attachment_errors"],
+    "pbc": ["link_type", "file_type", "local_path", "error", "attachment_errors"],
     "nfra": ["src_doc_id", "build_date", "index_no", "doc_file_url", "pdf_file_url"],
     "internal": [],
 }
@@ -242,22 +249,8 @@ def _first(item: Dict[str, Any], *keys: str) -> Any:
     return None
 
 
-# 抓取状态优先级（数值越高内容越完整/越终态）。用于 update 不降级守卫：
-# 仅当新状态优先级 ≥ 旧状态才覆盖，避免 handle_known 的 skipped_existing 把已完成的 ok 覆盖。
-# 顺序同 sql_backend：ok(5) > attachment_saved(4) > attachment_failed(3) >
-# attachment_skipped/title_link_only(2) > 失败类(1)。
-def _rank_case(col: str) -> str:
-    return (
-        "CASE COALESCE(%s,'') "
-        "WHEN 'ok' THEN 5 "
-        "WHEN 'attachment_saved' THEN 4 "
-        "WHEN 'attachment_failed' THEN 3 "
-        "WHEN 'attachment_skipped' THEN 2 "
-        "WHEN 'title_link_only' THEN 2 "
-        "WHEN 'fetch_failed' THEN 1 "
-        "WHEN 'parse_error' THEN 1 "
-        "ELSE 0 END" % col
-    )
+# 状态优先级与「不降级守卫」的 SQL 由 lib/fetch_status.rank_case 统一生成
+# （raw_store 与 sql_backend 共用一份定义，见该模块的 RANK）。
 
 
 class RawStore:
@@ -319,9 +312,10 @@ class RawStore:
             "category": item.get("category") or "",
             "document_number": item.get("document_number") or "",
             "summary": item.get("summary") or "",
-            "fetch_status": _norm_fetch_status(
-                item.get("fetch_status")
-                or ("ok" if content else "no_content")),
+            # 与 canonicalize 同一推导口径；正常链路下 fetch_status 已由 canonicalize
+            # 定好，此处仅保证绕过 normalizer 直调 _split 时口径一致。
+            "fetch_status": derive_fetch_status(
+                content, item.get("fetch_status"), item.get("attachments")),
         }
         explicit = {
             c: item.get(CHILD_FIELD_MAP.get(ns, {}).get(c, c))
@@ -415,8 +409,9 @@ class RawStore:
                         .returning(RAW_DOCS.c.id)
                     ).scalar_one_or_none()
                     if did is None:
-                        # 不降级守卫拦截了本次覆盖（如 skipped_existing 撞上 ok）：
-                        # 取已存在行 id，副表仍按既有内容幂等 upsert。
+                        # 不降级守卫拦截了本次覆盖（新状态优先级低于旧状态，
+                        # 如重抓仍失败却想覆盖已完成的 ok）：取已存在行 id，
+                        # 主表保持原状态，副表按既有内容幂等 upsert。
                         did = conn.execute(
                             select(RAW_DOCS.c.id).where(
                                 RAW_DOCS.c.namespace == ns,

@@ -6,9 +6,10 @@
 
 通用流程（列表→known/new/dup 分流→落库）由 CollectorPipeline 承担；gov 的特殊步骤：
   - iter_list_entries：串联两子源的列表生成器，每个生成器**只 yield new 条目**
-    （用基类 tracker 判 known/dup 并跳过），并实现各自的"无新即停"早停；
+    （用基类 tracker 判 known/dup 并跳过）；页末上报本页新增数，是否早停由
+    基类通用翻页闸门 ctx.tracker.note_page/should_stop 统一判定；
   - handle_new：按 entry["source"] 分发到 xzfgk.build_record / zhengceku.fetch_one 抓详情；
-  - save：调 merge_with_master（旧主库 ∪ 新条目，新优先）后 save_master；
+  - save：直接 save_master（旧主库 ∪ 新条目按 key 新优先由存储层 upsert 统一负责，四源同套）；
   - batch_key_of：按列表页号分批落盘（每页详情抓完即 checkpoint，替代原 partial 续跑）；
   - 双子源编排 + resume（主库已知即跳）+ merge，全部落在上述钩子/编排层。
 HTML 解析（_parse_list/_parse_detail/scan_list/parse_detail/fetch_attachments）逐字保留。
@@ -24,6 +25,7 @@ import time
 from ..base import REPO_ROOT, SourceCollector
 from ..storage import open_storage
 from ..lib.text_utils import flatten_attachment_extras
+from ..lib.progress import progress_of
 from .parse import (
     SOURCES,
     ScrapeConfig,
@@ -34,7 +36,6 @@ from .parse import (
     extract_doc_number,
     extract_issue_organ,
     make_summary,
-    merge_with_master,
 )
 from .net import (
     DEFAULT_HEADERS,
@@ -162,8 +163,7 @@ class XzfgkScraper:
         budget = float(getattr(self.cfg, "max_seconds", 0.0) or 0.0)
         t0 = time.time()
         yielded = 0
-        # 全扫旗标：--mode full 或 --backfill 时不早停（扫完所有列表页，已知项跳过、未知项补抓）
-        scan_all = bool(ctx.opts.get("full") or getattr(self.cfg, "backfill", False))
+        progress_of(ctx).batch("xzfgk 行政法规库")
         while True:
             if max_pages and page > max_pages:
                 LOG.info("xzfgk 已达 max_pages=%d，停止翻页", max_pages)
@@ -171,6 +171,7 @@ class XzfgkScraper:
             if budget and (time.time() - t0) >= budget:
                 LOG.warning("xzfgk 已达 --max-seconds=%s 预算 → 停止翻页", budget)
                 break
+            progress_of(ctx).page(page)
             html = self._list_page(page)
             if not html:
                 LOG.warning("xzfgk 第 %d 页获取失败，停止", page)
@@ -198,8 +199,9 @@ class XzfgkScraper:
                     yielded += 1
                     if max_items and yielded >= max_items:
                         return
-            if not scan_all and new_in_page == 0:
-                LOG.info("xzfgk 第 %d 页无新增条目，停止翻页", page)
+            tracker.note_page(new_in_page)
+            if tracker.should_stop():
+                LOG.info("xzfgk 连续 %d 页无新增条目，停止翻页", tracker.empty_streak)
                 break
             page += 1
 
@@ -300,14 +302,15 @@ class GovCollector(CollectorPipeline):
         return int(getattr(self._args, "max_items", 0) or 0)
 
     def save(self, records, ctx):
-        merged = merge_with_master(records, ctx.out_dir, storage=ctx.storage)
+        # 增量合并（旧主库 ∪ 新批次、按 key 新优先）统一由存储层 raw_store.save 的
+        # ON CONFLICT upsert 完成（四源同一套），此处不再各自 read-back 合并。
         cat = ("行政法规+部门文件" if self._args.source == "all" else self._cfg_xz.category)
-        return ctx.storage.save_master(merged, extra={"category": cat})
+        return ctx.storage.save_master(records, extra={"category": cat})
 
     # ----------------------------- SourceCollector 协议入口 -----------------------------
     def collect(self, out_dir: str, *, source="all", mode="incremental", delay=1.5,
-                limit=0, no_detail=False, backfill=False, cache_dir="",
-                offline=False) -> str:
+                limit=0, no_detail=False, cache_dir="", offline=False,
+                stop_after_empty_pages: int = 0) -> str:
         full = (mode == "full")
         resume = (mode != "full")
         args = argparse.Namespace(
@@ -329,15 +332,15 @@ class GovCollector(CollectorPipeline):
             csv=False,
             stop_on_error=False,
             checkpoint_every=200,
-            stop_after_empty_pages=1,
-            backfill=backfill,
             max_seconds=0.0,
             override_source="",
             override_category="",
             log_file="",
+            mode=mode,
         )
         self._setup(args)
-        return self.run(out_dir, full=full)
+        return self.run(out_dir, mode=mode, full=full,
+                        stop_after_empty_pages=stop_after_empty_pages)
 
 
 def main():
@@ -346,13 +349,12 @@ def main():
         description="抓取 gov.cn 行政法规库（xzfg.moj.gov.cn）+ 国务院政策文件库·部门文件")
     add_common_args(parser, with_category=False, with_source=True, with_mode=True,
                     with_delay=True, with_limit=True, with_detail=True, with_attachments=False)
-    parser.add_argument("--backfill", action="store_true",
-                        help="（仅 zhengceku）历史存量补全")
     args = parser.parse_args()
     GovCollector().collect(
         args.out_dir, source=args.source, mode=args.mode, delay=args.delay,
-        limit=args.limit, no_detail=args.no_detail, backfill=args.backfill,
+        limit=args.limit, no_detail=args.no_detail,
         cache_dir="", offline=False,
+        stop_after_empty_pages=args.stop_after_empty_pages,
     )
 
 

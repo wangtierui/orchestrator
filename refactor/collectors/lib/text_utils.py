@@ -637,5 +637,6 @@ def build_attachment_record(
         "needs_ocr": needs_ocr,
         "garble_ratio": garble_ratio(text),
         "text": text,
-        "fetch_status": "ok",
+        # 附件明细不承载主记录状态：fetch_status 是 raw_docs 的唯一记录状态字段。
+        # 附件成败由 extract_status 表达，主记录状态在 canonicalize 统一上卷。
     }

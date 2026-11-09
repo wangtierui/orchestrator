@@ -35,6 +35,7 @@ fetch_status；它**不再**做源私有名→规范名的翻译（那一步在�
 from typing import Any, Dict
 
 from common.doc_number import normalize_doc_number
+from ..lib.fetch_status import derive_from_record
 
 # 规范字段契约（既是对采集器的接口说明书，也直接对应 raw_docs 的物理列名）。
 CANONICAL_FIELDS = (
@@ -85,9 +86,8 @@ def canonicalize(namespace: str, item: dict) -> dict:
     out["issuing_authority"] = _norm_text(item.get("issuing_authority"))
     out["content"] = _norm_text(item.get("content"))
     out["summary"] = _norm_text(item.get("summary"))
-    # fetch_status：源自带则保留；否则由正文是否存在推导
-    fs = item.get("fetch_status")
-    if fs in (None, ""):
-        fs = "ok" if out["content"] else "no_content"
-    out["fetch_status"] = fs
+    # fetch_status：唯一状态字段；推导口径与进度日志共用
+    # lib/fetch_status.derive_from_record（显式状态 > 附件拉取失败上卷 >
+    # 有正文即 ok；没有附件不影响成功），避免「入库 ok / 日志 non_ok」分叉。
+    out["fetch_status"] = derive_from_record(out)
     return out

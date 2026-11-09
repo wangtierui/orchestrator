@@ -4,7 +4,8 @@
 monkeypatch 网络层（net.Fetcher / parse_listing / parse_detail / is_attachment /
 _is_cacheable / CATEGORIES / ProcessLock），预置主库，跑通 collect()，
 断言：
-  - 主库已有(http://known，fetch_status='ok') → 复用旧记录并标 skipped_existing；
+  - 主库已有(http://known，fetch_status='ok') → 原样复用旧记录，状态保持 ok
+    （fetch_status 只表达抓取是否成功完成，不表达「本轮是否跳过」）；
   - 新条目(http://n1,n2,n3) → 抓详情（parse_detail 生效，content 填充）；
   - 逐栏目分批落盘：save_master 至少被调用 2 次（栏目边界 checkpoint + 末尾）。
 """
@@ -95,9 +96,9 @@ def test_pbc_pipeline_migration():
     assert urls == ["http://known", "http://n1", "http://n2", "http://n3"], urls
 
     by_url = {r["detail_url"]: r for r in items}
-    # known 复用主库旧记录，标 skipped_existing（内容不丢）
+    # known 原样复用主库旧记录（内容不丢，状态仍是 ok）
     known = by_url["http://known"]
-    assert known["fetch_status"] == "skipped_existing", known["fetch_status"]
+    assert known["fetch_status"] == "ok", known["fetch_status"]
     assert known["content"] == "旧正文", known["content"]
     # new 抓详情：content 填充
     for u in ("http://n1", "http://n2", "http://n3"):

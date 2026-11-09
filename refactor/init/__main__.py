@@ -100,20 +100,20 @@ def cmd_init(args) -> int:
                 print(f"  extension {label} ({ext}): {'已存在' if existed else '已创建'}")
             conn.commit()
 
-            # 2) 表 + 索引（按依赖顺序；全部 IF NOT EXISTS）
-            table_checks = [
-                ("master_runs", ddl_mod.MASTER_RUNS_DDL),
-                ("raw_items", ddl_mod.RAW_ITEMS_DDL),
-                ("cleaned_items", ddl_mod.CLEANED_ITEMS_DDL),
-                ("clauses", ddl_mod.CLAUSES_DDL),
-                ("docgraph_edges", ddl_mod.DOCGRAPH_EDGES_DDL),
+            # 2) 表 + 索引：唯一权威源 = ddl.FULL_DDL（按依赖顺序，全部 IF NOT EXISTS）。
+            #    早期只执行了 5 张阶段表，raw_docs / 各源副表 / 容错账本要靠 RawStore
+            #    的 create_all 补建，导致表结构与 ddl.py 漂移；现统一从权威 DDL 重建。
+            managed_tables = [
+                "master_runs", "raw_items", "raw_docs",
+                "raw_mof", "raw_gov", "raw_pbc", "raw_nfra", "raw_internal",
+                "cleaned_items", "clauses", "docgraph_edges",
+                "fetch_dead_letter", "fetch_runs",
             ]
-            for tname, tsql in table_checks:
-                existed = _table_exists(cur, tname)
-                _run_sql(cur, tsql)
-                print(f"  table {tname}: {'已存在' if existed else '已创建'}")
+            existed = {t for t in managed_tables if _table_exists(cur, t)}
+            _run_sql(cur, ddl_mod.FULL_DDL)
+            for tname in managed_tables:
+                print(f"  table {tname}: {'已存在' if tname in existed else '已创建'}")
             if ddl_mod.VECTOR_DDL.strip():
-                _run_sql(cur, ddl_mod.VECTOR_DDL)
                 print("  vector tables: 已创建")
             conn.commit()
     finally:
