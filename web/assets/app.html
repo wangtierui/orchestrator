@@ -14,7 +14,7 @@
   /* ── 顶栏 68px ── */
   .topbar { height: 52px; flex: 0 0 52px; display: flex; align-items: center;
             gap: 12px; padding: 0 16px; border-bottom: 1px solid var(--borderColor-default); }
-  .brand { display: flex; align-items: center; gap: 8px; height: 32px; }
+  .brand { display: flex; align-items: center; gap: var(--space-sm); height: 32px; }
   .gsearch { width: 191px; height: 32px; }
   .spacer { flex: 1 1 auto; }
   .logo-link { display: inline-flex; align-items: center; color: var(--fgColor-default); }
@@ -25,7 +25,7 @@
                overflow-x: auto; overflow-y: hidden; }
   .repo-tabs::-webkit-scrollbar { height: 0; }
   .tab { height: 32px; padding: 0 10px; display: inline-flex; align-items: center;
-         border-radius: 6px; font-size: 14px; white-space: nowrap; text-decoration: none;
+         border-radius: 6px; font-size: var(--text-body-size-medium); white-space: nowrap; text-decoration: none;
          color: var(--fgColor-default); }
   .tab:hover { background: var(--bgColor-muted); }
   .tab[aria-current="page"] { font-weight: 600;
@@ -33,16 +33,16 @@
 
   /* ── 主体 ── */
   .shell { flex: 1 1 auto; display: flex; min-height: 0; }
-  .rail { width: 239px; flex: 0 0 239px; padding: 8px;
+  .rail { width: 239px; flex: 0 0 239px; padding: var(--space-sm);
           border-right: 1px solid var(--borderColor-default); overflow-y: auto; }
   .rail .grp { font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
                color: var(--fgColor-muted); padding: 8px 8px 4px; }
   .rail .item { height: 32px; display: flex; align-items: center; padding: 6px 8px;
-                border-radius: 6px; font-size: 13px; color: var(--fgColor-default);
+                border-radius: 6px; font-size: var(--text-body-size-medium); color: var(--fgColor-default);
                 cursor: pointer; user-select: none; }
   .rail .item:hover { background: var(--bgColor-muted); }
   .rail .item.on { background: var(--bgColor-muted); font-weight: 600; }
-  .rail .hint { font-size: 11px; color: var(--fgColor-muted); padding: 4px 8px; line-height: 1.5; }
+  .rail .hint { font-size: var(--text-caption-size); color: var(--fgColor-muted); padding: var(--space-xs) var(--space-sm); line-height: 1.5; }
   .rail { display: flex; flex-direction: column; }
   .rail-items { flex: 1 1 auto; }
   .rail-foot { flex: 0 0 auto; display: flex; flex-direction: column; gap: var(--space-sm);
