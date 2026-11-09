@@ -184,6 +184,12 @@ ALL_GATES: list[dict] = [
         "desc": "样板页运行时冒烟（9 页：令牌/行高/图表 6.1.0）",
         "require_impl": True,
     },
+    {
+        # 全站路由与历史（P3 守卫）：ORCH_ROUTE_ALL=1 才跑（默认跳过，全跑约 2–3 分钟）
+        "module": "gates.gate_route_all",
+        "desc": "路由与浏览器历史（11 页 pager/url/q/view/path）",
+        "require_impl": True,
+    },
 ]
 
 
