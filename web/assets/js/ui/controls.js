@@ -40,11 +40,11 @@ export function renderSearch(cfg = {}) {
 /* ── 分页：表格容器之外 ── */
 export function renderPagination(cfg = {}) {
   const { page = 1, pages = 1, onChange, total = null, size = null } = cfg;
-  const prev = el("button", { class: "btn btn-sm", type: "button", disabled: page <= 1 });
+  const prev = el("button", { class: "btn", type: "button", disabled: page <= 1 });
   prev.textContent = "上一页";
-  const next = el("button", { class: "btn btn-sm", type: "button", disabled: page >= pages });
+  const next = el("button", { class: "btn", type: "button", disabled: page >= pages });
   next.textContent = "下一页";
-  const info = el("span", { class: "text-small", "aria-live": "polite" });
+  const info = el("span", { class: "text-small", role: "status", "aria-live": "polite" });
   info.textContent = `${page} / ${pages}${total != null ? ` · 共 ${total} 条` : ""}${size ? ` · 每页 ${size}` : ""}`;
   prev.addEventListener("click", () => onChange && onChange(page - 1));
   next.addEventListener("click", () => onChange && onChange(page + 1));

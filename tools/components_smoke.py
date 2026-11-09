@@ -110,12 +110,22 @@ def c5_search(s) -> dict:
 
 
 def c6_counter(s) -> dict:
+    """Counter 只出现在筛选面板的选项右侧（工具栏本身没有），必须先打开面板再量。"""
     _open(s)
-    r = _rect(s, ".Counter")
-    if not r:
-        return {"check": "C6 Counter 18", "ok": False, "detail": "找不到 Counter"}
-    ok = r["h"] == 18
-    return {"check": "C6 Counter 18", "ok": ok, "detail": f"h={r['h']} r={r['radius']}"}
+    s.eval("""(() => {
+      const b = [...document.querySelectorAll('#toolbarSlot button')].find(x => /来源|时效/.test(x.textContent));
+      if (b) b.click();
+    })()""")
+    rect = None
+    for _ in range(20):
+        time.sleep(0.25)
+        rect = _rect(s, '[role="dialog"] .Counter')
+        if rect:
+            break
+    if not rect:
+        return {"check": "C6 Counter 18", "ok": False, "detail": "面板内找不到 Counter"}
+    ok = rect["h"] == 18
+    return {"check": "C6 Counter 18", "ok": ok, "detail": f"h={rect['h']} r={rect['radius']}"}
 
 
 def c7_sort(s) -> dict:
