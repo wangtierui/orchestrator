@@ -153,6 +153,9 @@ function teardown() {
 
 /* ── 注入片段 ── */
 async function mount(slug) {
+  /* 诊断：记录页面挂载次数（用于判断是否重复执行页面脚本） */
+  document.body.dataset.bootCount = String((Number(document.body.dataset.bootCount) || 0) + 1);
+  document.body.dataset.bootSlug = slug;
   const res = await fetch(`/pages/${slug}.html?v=${Date.now()}`, { cache: "no-store" });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const html = await res.text();

@@ -57,12 +57,20 @@
 
   let inst = null;
 
+  /* 接口里不同视图的 nodes/edges 形状不一致（数组 / 以 id 为键的对象），
+   * 之前直接 .map 会抛 TypeError，导致点击视图后页面毫无反应（实测）。 */
+  function asArr(x) {
+    if (Array.isArray(x)) return x;
+    if (x && typeof x === 'object') return Object.values(x);
+    return [];
+  }
+
   function draw(view) {
     if (inst) inst.dispose();
-    const nodes = (view.nodes || []).map((n) => ({
+    const nodes = asArr(view.nodes).map((n) => ({
       name: n.name || n.id, value: n.value, symbolSize: 8 + Math.min(22, (n.degree || 1) * 2),
     }));
-    const edges = (view.edges || []).map((e) => ({
+    const edges = asArr(view.edges).map((e) => ({
       source: e.source || e.from, target: e.target || e.to,
     }));
     if (!nodes.length || !edges.length) {
@@ -96,7 +104,13 @@
       b.textContent = v.label || v.key;
       b.setAttribute('aria-pressed', String(v.key === active));
       if (v.key === active) b.classList.add('btn-primary');
-      b.addEventListener('click', () => { renderTabs(views, v.key); draw(v); });
+      b.addEventListener('click', () => {
+        if (v.key && `#/graph?view=${encodeURIComponent(v.key)}` !== location.hash) {
+          history.pushState({ page: 'graph' }, '', `#/graph?view=${encodeURIComponent(v.key)}`);
+        }
+        renderTabs(views, v.key);
+        draw(v);
+      });
       box.append(b);
     });
   }
@@ -123,8 +137,10 @@
       core.markReady();
       return;
     }
-    renderTabs(views, views[0].key);
-    draw(views[0]);
+    const __want = (window.RCO_PARAMS || {}).view;
+    const __hit = views.find((x) => x.key === __want) || views[0];
+    renderTabs(views, __hit.key);
+    draw(__hit);
     renderHubs(d.hubs || []);
     document.getElementById('stamp').textContent =
       `视图 ${views.length} 个 · 边合计 ${(d.counts && d.counts.total) ?? '—'}`;
