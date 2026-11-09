@@ -62,11 +62,42 @@ def _item_table(name: str) -> Table:
     )
 
 
+# cleaned_items 用 PG 硬约束列（不再塞 payload JSON）：clean 的精简 schema。
+CLEANED_COLUMNS = (
+    "source", "detail_url", "document_number", "title", "index_no",
+    "content", "attachment_content", "publish_date", "issuing_authority",
+    "category", "dedup_key",
+)
+
+
+def _cleaned_table() -> Table:
+    return Table(
+        "cleaned_items",
+        _metadata,
+        Column("id", BigInteger, primary_key=True),
+        Column("run_id", Integer, ForeignKey("master_runs.id"), nullable=False, index=True),
+        Column("namespace", String(64), nullable=False, index=True),
+        Column("key_md5", String(32), nullable=True, index=True),
+        Column("url", Text, nullable=True),
+        Column("source", String(64), nullable=True),
+        Column("detail_url", Text, nullable=True),
+        Column("document_number", Text, nullable=True),
+        Column("title", Text, nullable=True),
+        Column("index_no", Text, nullable=True),
+        Column("content", Text, nullable=True),
+        Column("attachment_content", Text, nullable=True),
+        Column("publish_date", Text, nullable=True),
+        Column("issuing_authority", Text, nullable=True),
+        Column("category", Text, nullable=True),
+        Column("dedup_key", String(64), nullable=True),
+    )
+
+
 # 阶段 → 物理表：cleaned / clauses 各有专属表；其余 namespace（各采集源
 # gov/mof/nfra/pbc/internal…）统一落 raw_items，以 namespace 列区分源。
 _ITEM_TABLES = {
     "raw_items": _item_table("raw_items"),
-    "cleaned_items": _item_table("cleaned_items"),
+    "cleaned_items": _cleaned_table(),
     "clauses": _item_table("clauses"),
 }
 
@@ -120,6 +151,15 @@ class SqlStore:
 
     def init_schema(self) -> None:
         """幂等建表 + 兼容迁移（三张阶段表各自确保 key_md5 列与唯一索引）。"""
+        insp = inspect(self.engine)
+        existing = set(insp.get_table_names())
+        # cleaned_items 已迁硬列：若仍是旧 payload 软列形态，删表重建
+        # （cleaned 为可再生的派生表，整表重建安全）。
+        if "cleaned_items" in existing and "payload" in [
+            c["name"] for c in insp.get_columns("cleaned_items")
+        ]:
+            with self.engine.begin() as conn:
+                conn.execute(text("DROP TABLE IF EXISTS cleaned_items"))
         _metadata.create_all(self.engine)
         insp = inspect(self.engine)
         with self.engine.begin() as conn:
@@ -164,14 +204,19 @@ class SqlStore:
         rows = []
         for it in items:
             key = _extract_key(it)
-            rows.append(
-                {
+            km = _key_md5(key)
+            if self.namespace == "cleaned":
+                row = {"namespace": self.namespace, "key_md5": km, "url": key}
+                for col in CLEANED_COLUMNS:
+                    row[col] = it.get(col)
+            else:
+                row = {
                     "namespace": self.namespace,
-                    "key_md5": _key_md5(key),
+                    "key_md5": km,
                     "url": key,
                     "payload": it,
                 }
-            )
+            rows.append(row)
 
         with self.engine.begin() as conn:
             run_id = conn.execute(
@@ -186,20 +231,29 @@ class SqlStore:
                     r["run_id"] = run_id
                 stmt = pg_insert(self._table).values(rows)
                 if oc == "update":
-                    stmt = stmt.on_conflict_do_update(
-                        index_elements=["namespace", "key_md5"],
-                        set_={
-                            "payload": stmt.excluded.payload,
-                            "url": stmt.excluded.url,
-                            "run_id": stmt.excluded.run_id,
-                        },
-                        # 不降级：仅当新状态优先级 ≥ 旧状态才覆盖
-                        # （如 --no-attachments 重跑不会把 ok 覆盖成 attachment_skipped）。
-                        where=text(
-                            f"{_status_rank('EXCLUDED.payload')} >= "
-                            f"{_status_rank(self._table.name + '.payload')}"
-                        ),
-                    )
+                    if self.namespace == "cleaned":
+                        set_ = {c: stmt.excluded[c] for c in CLEANED_COLUMNS}
+                        set_["url"] = stmt.excluded.url
+                        set_["run_id"] = stmt.excluded.run_id
+                        stmt = stmt.on_conflict_do_update(
+                            index_elements=["namespace", "key_md5"],
+                            set_=set_,
+                        )
+                    else:
+                        stmt = stmt.on_conflict_do_update(
+                            index_elements=["namespace", "key_md5"],
+                            set_={
+                                "payload": stmt.excluded.payload,
+                                "url": stmt.excluded.url,
+                                "run_id": stmt.excluded.run_id,
+                            },
+                            # 不降级：仅当新状态优先级 ≥ 旧状态才覆盖
+                            # （如 --no-attachments 重跑不会把 ok 覆盖成 attachment_skipped）。
+                            where=text(
+                                f"{_status_rank('EXCLUDED.payload')} >= "
+                                f"{_status_rank(self._table.name + '.payload')}"
+                            ),
+                        )
                 else:  # nothing（写一次）
                     stmt = stmt.on_conflict_do_nothing(
                         index_elements=["namespace", "key_md5"]
@@ -237,16 +291,31 @@ class SqlStore:
             )
             # 返回该 namespace 当前全量（跨 run 并集）：写一次下各 run 仅含新增，
             # 必须并集才能给出完整语料；下游 clean 依赖完整集。
-            payloads = (
-                conn.execute(
-                    select(self._table.c.payload).where(
-                        self._table.c.namespace == self.namespace
+            if self.namespace == "cleaned":
+                cols = [self._table.c[c] for c in CLEANED_COLUMNS] + [
+                    self._table.c.key_md5, self._table.c.url,
+                ]
+                recs = (
+                    conn.execute(
+                        select(*cols).where(
+                            self._table.c.namespace == self.namespace
+                        )
                     )
+                    .mappings()
+                    .all()
                 )
-                .scalars()
-                .all()
-            )
-            items = [p for p in payloads if isinstance(p, dict)]
+                items = [dict(r) for r in recs]
+            else:
+                payloads = (
+                    conn.execute(
+                        select(self._table.c.payload).where(
+                            self._table.c.namespace == self.namespace
+                        )
+                    )
+                    .scalars()
+                    .all()
+                )
+                items = [p for p in payloads if isinstance(p, dict)]
             return StoredRecord(
                 namespace=self.namespace,
                 captured_at=captured_at,

@@ -2,17 +2,14 @@
 """adapter — raw/规范记录 → clean 统一 schema 的映射入口（**源无关**）。
 
 Phase 2：消除旧版五源 ``map_*`` 的 5× 重复（每个源各写一整套 39 字段字面量）。
-现在所有源共用同一个 ``_build_record`` 装配器，源之间的差异收敛为 ``_SPECS``
-声明式方言表——绝大多数字段（body→content、detail_url…）已由采集侧 canonicalize
-在入库入口归一成统一字段，clean 直接读，不再按源分支；仅少数 canonicalize 未覆盖的
-原始字段名（issue_organ / category 的源相关别名）与真正的源相关行为
-（nfra 正文去噪、pbc 的 local_path、gov/mof 的索引号回退）留在 ``_SPECS``。
+现在所有源共用同一个 ``_build_record`` 装配器。公共字段（content / detail_url /
+issuing_authority / category / document_number …）的契约就是 ``raw_docs`` 的物理列，
+clean 按列名直读，**没有任何「源 → 字段名」映射表**；``_POLICY`` 里只剩
+真正的源相关清洗策略（索引号回退、附件路径、nfra 正文去噪等）。
 
 设计要点（保证对账零漂移）：
-  - adapter 读取的是采集侧**保留的原始字段**（规范记录 canonicalize 会保留原始字段），
-    因此无论输入是裸 raw 还是规范记录，映射结果一致；
-  - body / detail_url 读统一字段（canonicalize 产出），issue_organ / category 按源
-    方言读（canonicalize 的 unified 列表未覆盖这些原始别名，强改会丢已入库旧值）；
+  - adapter 读取的是按 ``init/ddl.py`` 表列组装的记录，字段结构不在本模块定义；
+  - 所有源一律读同一组统一字段，不按源翻译字段名；
   - 装配逻辑、字段读取顺序、dedup_key 配方与旧 ``map_*`` 逐字段等价；
   - 文号解析统一走 ``schema._resolve_doc_number``（早已源无关）。
 """
@@ -40,18 +37,10 @@ def _pick(rec: dict[str, Any], spec: Any) -> Any:
     return ""
 
 
-# 残留方言（仅两类）：
-#  - issue_organ / category 按源读：因 canonicalize 的 unified 列表未覆盖 mof 的 issue_org、
-#    mof 的 category_name、nfra 的 category_type；若强改读统一字段会让已入库旧记录丢值
-#    （不在本次回刷范围），故保留按源映射。
-#  - index_spec / body_preclean / downloaded_* / att_* / raw_fields
-#    为真正的源相关行为。
-# 其余字段（body→content、detail_url）已由 canonicalize 在入库入口归一成统一字段，clean
-# 直接读，不再按源分支——新增数据源（如内部文档）无需在 _SPECS 登记即可被 clean 处理。
-_SPECS: dict[str, dict[str, Any]] = {
+# 源相关「策略」（不是字段契约）：字段一律按 raw_docs 列名直读，这里只描述
+# 索引号回退、附件路径、正文去噪等无法从表结构推导的行为。
+_POLICY: dict[str, dict[str, Any]] = {
     "gov": {
-        "issue_organ": "issue_organ",
-        "category": "category",
         "index_spec": ("__resolve__", "bbbs"),
         "downloaded_doc_path": None,
         "downloaded_doc_url": None,
@@ -60,8 +49,6 @@ _SPECS: dict[str, dict[str, Any]] = {
         "raw_fields": ("bbbs", "pub_date_original"),
     },
     "mof": {
-        "issue_organ": "issue_org",
-        "category": "category_name",
         "index_spec": ("__resolve__", "id"),
         "downloaded_doc_path": None,
         "downloaded_doc_url": None,
@@ -71,8 +58,6 @@ _SPECS: dict[str, dict[str, Any]] = {
                        "abolish_date", "fetch_time", "active", "change"),
     },
     "nfra": {
-        "issue_organ": "issuing_authority",
-        "category": ("category", "category_type"),
         "index_spec": ("index_no", "doc_id"),
         "downloaded_doc_path": None,
         "downloaded_doc_url": ("doc_file_url", "pdf_file_url"),
@@ -82,8 +67,6 @@ _SPECS: dict[str, dict[str, Any]] = {
         "body_preclean": "nfra",
     },
     "pbc": {
-        "issue_organ": "issuing_authority",
-        "category": "category",
         "index_spec": ("__resolve__",),
         "downloaded_doc_path": "local_path",
         "downloaded_doc_url": "source_url",
@@ -93,12 +76,8 @@ _SPECS: dict[str, dict[str, Any]] = {
     },
 }
 
-# 默认方言：未知 source（如内部文档）的兜底。body / detail_url 已由 canonicalize 统一，
-# 直接读；issue_organ / category 按统一字段名读取（新增源也应产出统一字段）。新增数据源
-# 只要产出统一字段，clean 自动可处理——消除「加新源要改映射表」这个坑。
-_DEFAULT_DIALECT: dict[str, Any] = {
-    "issue_organ": "issuing_authority",
-    "category": "category",
+# 未知 source（如内部文档）的兜底策略：字段仍按统一列名读，无需登记任何映射。
+_DEFAULT_POLICY: dict[str, Any] = {
     "index_spec": ("__resolve__",),
     "downloaded_doc_path": None,
     "downloaded_doc_url": None,
@@ -142,16 +121,15 @@ def _build_record(
     src = canonical_source(rec.get("source")) or source
     raw_source = empty_str(rec.get("source"))
 
-    # body / detail_url 已由 canonicalize 在入库入口归一成统一字段，直接读。
+    # 正文：content_ref 指向的本地文件读回后落在 content_text，列名 content 兜底。
     body_raw = empty_str(rec.get("content") or rec.get("content_text"))
     body = empty_str(_body_preclean(spec.get("body_preclean", ""), body_raw))
 
     index_no = _index_no(rec, spec)
-    # issuing_authority / category 仍按源方言读（canonicalize 的 unified 列表未覆盖这些原始字段名），
-    # 输出一律规范名 issuing_authority；detail_url 已是规范名，直接输出。
-    issue_organ = empty_str(rec.get(spec["issue_organ"]))
+    # 公共字段的契约就是 raw_docs 的物理列，按列名直读，不做源别名翻译。
+    issue_organ = empty_str(rec.get("issuing_authority"))
     source_url = empty_str(rec.get("detail_url"))
-    category = empty_str(_pick(rec, spec["category"]))
+    category = empty_str(rec.get("category"))
 
     # 附件正文聚合：attachment_content 优先；gov/mof/nfra 额外回退 attachment_text 与
     # attachments[].text 聚合；pbc 不回退聚合（与旧 map_pbc 逐字段等价）。
@@ -186,40 +164,20 @@ def _build_record(
 
     m = _mk_meta(rec, source_url, src, clean_version, captured_at)
 
+    # 精简 schema（PG 硬约束）：只保留有下游消费者的字段 + attachment_content。
+    # 其余（空占位/反规范化透传/_raw_fields/attachments 数组）不再进入 clean。
     return {
         "index_no": index_no,
         "title": empty_str(rec.get("title")),
-        "doc_type": "",
-        "category": category,
-        "publish_date": empty_str(rec.get("publish_date")),
-        "effective_date": empty_str(rec.get("effective_date")),
-        "issuing_authority": issue_organ,
         "document_number": _resolve_doc_number(rec),
         "detail_url": source_url,
         "source": src,
         "content": body,
-        "summary": empty_str(rec.get("summary")),
-        "data_format": "TXT",
-        "mime_type": "text/plain",
-        "column_name": "",
-        "theme_name": "",
-        "timeliness_status": "",
-        "replacement_document": "",
-        "verification_source": "",
-        "keyword": "",
-        "attachments": rec.get("attachments") or [],
         "attachment_content": attachment_content,
-        "attachment_count": _attachment_count(rec, source),
-        "table_structured": rec.get("table_structured") or [],
-        "table_raw_text": empty_str(rec.get("table_raw_text")),
-        "table_recovery_method": empty_str(rec.get("table_recovery_method")),
-        "downloaded_doc_path": downloaded_doc_path,
-        "downloaded_doc_url": downloaded_doc_url,
+        "publish_date": empty_str(rec.get("publish_date")),
+        "issuing_authority": issue_organ,
+        "category": category,
         "dedup_key": build_dedup_key(source_url),
-        # scope：文档内/外部标记（内部文档=internal；历史外部数据缺省=external，向后兼容）
-        "scope": empty_str(rec.get("scope")) or "external",
-        "_metadata": m,
-        "_raw_fields": _raw,
     }
 
 
@@ -230,10 +188,9 @@ def to_clean(
     clean_version: str = "v1.0.0",
     captured_at: str = "",
 ) -> dict[str, Any]:
-    """把一条 raw/规范记录映射为 clean 统一 schema 记录（源无关）。"""
-    # 未知 source（如内部文档）自动走 _DEFAULT_DIALECT（统一字段 + 默认方言），
-    # 无需在 _SPECS 登记字段映射。
-    spec = _SPECS.get(source, _DEFAULT_DIALECT)
+    """把一条按 DDL 列组装的 raw 记录映射为 clean 统一 schema 记录（源无关）。"""
+    # 未知 source（如内部文档）走默认策略；字段一律按统一列名读，无需登记映射。
+    spec = _POLICY.get(source, _DEFAULT_POLICY)
     return _build_record(rec, source, spec, clean_version, captured_at)
 
 
@@ -248,18 +205,16 @@ if __name__ == "__main__":  # 离线自检（含 S-3 枚举校验）
         canonical_timeliness_status,
     )
 
-    # 该用例模拟「canonicalize 在入库入口已归一出字段」后的 mof 记录：
-    # 统一字段 content / detail_url（由 content_text / detail_link 产出），
-    # 原始字段 issue_org / category_name 保留（canonicalize 未归并这两项）。
+    # 该用例模拟按 raw_docs 列名组装后的 mof 记录（统一字段名即物理列名）。
     rec = to_clean(
         {
             "id": "1",
             "title": "测试办法",
-            "doc_no": "财会〔2024〕1号",
+            "document_number": "财会〔2024〕1号",
             "publish_date": "2024-01-01",
-            "category_name": "部门规章",
+            "category": "部门规章",
             "content": "第一条 为规范……",
-            "issue_org": "财政部",
+            "issuing_authority": "财政部",
             "detail_url": "https://fgk.mof.gov.cn/a",
             "source": "mof",
         },
@@ -272,6 +227,7 @@ if __name__ == "__main__":  # 离线自检（含 S-3 枚举校验）
     assert rec["content"] == "第一条 为规范……"
     assert rec["detail_url"] == "https://fgk.mof.gov.cn/a"
     assert rec["issuing_authority"] == "财政部"
+    assert rec["category"] == "部门规章"
     assert_enum_bindings()
     assert canonical_source("xzfgk") == "gov"
     assert canonical_source("flk") == "gov"

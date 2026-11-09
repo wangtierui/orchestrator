@@ -12,10 +12,7 @@ file 后端已移除。
 """
 from dataclasses import dataclass
 
-try:
-    from refactor.config import settings
-except ImportError:  # 兼容从 refactor/ 目录直接运行（collectors 上下文）
-    from config import settings
+from config import settings
 
 
 @dataclass

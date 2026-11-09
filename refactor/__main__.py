@@ -1,42 +1,11 @@
 # -*- coding: utf-8 -*-
-"""refactor 统一 CLI 入口（薄分发层）。
+"""历史兼容层；独立项目的统一入口是 ``python -m refactorctl``。
 
-子命令按领域分散到各包，本文件只做路由：
-  init        -> refactor.init
-  （crawl / clean / docgraph 等后续接入各自包）
-
-前置步骤本身在 refactor/init/ 目录内实现与扩展。
+以 refactor/ 为项目根时，顶层包是 collectors / clean / init / ...，而不是
+``refactor``：``python -m refactor`` 与 ``python -m __main__`` 都不成立。
+本文件只在被直接执行或显式 import 时做一次转发，不注入 sys.path。
 """
-from __future__ import annotations
-
-import sys
-from pathlib import Path
-
-# 仓库根入路径
-_ROOT = Path(__file__).resolve().parent.parent
-_ROOT_STR = str(_ROOT)
-if _ROOT_STR in sys.path:
-    sys.path.remove(_ROOT_STR)
-sys.path.insert(0, _ROOT_STR)
-
-import refactor.init as init_pkg
-
-
-def main(argv=None) -> int:
-    argv = list(argv) if argv is not None else sys.argv[1:]
-    if not argv:
-        print("用法: python -m refactor <init|rag> [...]")
-        return 1
-    cmd, rest = argv[0], argv[1:]
-    if cmd == "init":
-        # 剥掉 "init"，把剩余参数交给 init 包解析
-        return init_pkg.main(rest)
-    if cmd == "rag":
-        from refactor.rag.connector import main as rag_main
-        return rag_main(rest)
-    print(f"未知子命令: {cmd}\n用法: python -m refactor <init|rag> [...]")
-    return 1
-
+from refactorctl import main
 
 if __name__ == "__main__":
     raise SystemExit(main())

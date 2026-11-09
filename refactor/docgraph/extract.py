@@ -1,35 +1,23 @@
 # -*- coding: utf-8 -*-
-"""Refactor 原生文档引用图抽取（docgraph）：从 cleaned_items 读 clean 文档 → RelationExtractor → docgraph_edges。
+"""Refactor 原生文档引用图抽取（docgraph）：cleaned_items → docgraph_edges。
 
-与旧管线（extract_relations.py 读 legacy 文件 + legacy 索引）的区别：
-  - 源文档来自 cleaned_items（namespace 恒为 'cleaned'），不是 legacy cleaned jsonl；
-  - 实体解析索引由 cleaned_items 语料构建（归一标题 → doc_id），未命中即外部引用 name:<canonical>；
-  - 核心正则抽取逻辑 RelationExtractor 原样复用（源无关）。
+  - 源文档来自 cleaned_items（namespace 恒为 'cleaned'）；
+  - 实体解析索引由 cleaned_items 语料构建（归一标题 → doc_id），
+    未命中即外部引用 name:<canonical>；
+  - 抽取器由 docgraph/relations.py 提供（可注入，见 extract 的 extractor_factory）。
 
-落点：docgraph_edges 6 列（edge_id/src_id/src_name/dst_id/dst_name/relation），与 schema.sql 一致。
-持久化由 refactor.collectors.storage.docgraph_loader 负责（本模块只做抽取，不碰存储）。
+落点：docgraph_edges 6 列（edge_id/src_id/src_name/dst_id/dst_name/relation）。
+持久化由 collectors.storage.docgraph_loader 负责（本模块只做抽取，不碰存储）。
+
+独立项目约束：不注入 sys.path，模块解析依赖 cwd=refactor。
 """
 import argparse
 import hashlib
 import re
-import sys
-from pathlib import Path
 
-# 让仓库根的 std_lib / refactor / config 包均可导入，并确保仓库根优先于脚本所在目录
-# （否则脚本目录下的 config.py 会抢在仓库根 config 包前，导致 `from config.enums` 失败）
-_ROOT = Path(__file__).resolve().parents[2]
-_ROOT_STR = str(_ROOT)
-if _ROOT_STR in sys.path:
-    sys.path.remove(_ROOT_STR)
-sys.path.insert(0, _ROOT_STR)
-
-from std_lib.common_lib.relations import RelationExtractor  # 核心抽取逻辑（源无关）
-try:
-    from refactor.collectors.storage.docgraph_loader import load_rows
-except ImportError:  # pragma: no cover - 作为脚本直接运行时
-    from docgraph_loader import load_rows  # type: ignore
-
-from refactor.config import psycopg_dsn  # 统一 URL 归一化（消除手工 .replace）
+from collectors.storage.docgraph_loader import load_rows
+from config import psycopg_dsn  # 统一 URL 归一化（消除手工 .replace）
+from docgraph.relations import build_extractor
 
 
 def _norm(s: str) -> str:
@@ -69,10 +57,14 @@ def load_corpus(db_url: str, namespaces=("cleaned",), limit: int = 0) -> list:
         with conn.cursor() as cur:
             for ns in namespaces:
                 cur.execute(
-                    "SELECT payload FROM cleaned_items WHERE namespace = %s", (ns,)
+                    "SELECT id, index_no, title, content, source, publish_date, "
+                    "issuing_authority, category, detail_url, document_number, "
+                    "dedup_key, attachment_content, key_md5, url "
+                    "FROM cleaned_items WHERE namespace = %s", (ns,)
                 )
-                for (pl,) in cur.fetchall():
-                    p = dict(pl) if not isinstance(pl, dict) else pl
+                cols = [d[0] for d in cur.description]
+                for row in cur.fetchall():
+                    p = dict(zip(cols, row))
                     docs.append(_payload_to_doc(p))
     if limit:
         docs = docs[:limit]
@@ -96,11 +88,16 @@ def _resolve(name: str, index: dict):
     return "name:" + (k or name), "unresolved"
 
 
-def extract(db_url: str, namespaces=("cleaned",), limit: int = 0) -> list:
-    """从 cleaned_items 抽全部关系边，返回 6 列 dict 列表。"""
+def extract(db_url: str, namespaces=("cleaned",), limit: int = 0,
+            extractor_factory=None) -> list:
+    """从 cleaned_items 抽全部关系边，返回 6 列 dict 列表。
+
+    extractor_factory：可注入的抽取器工厂；独立项目未内置该算法，缺省走
+    docgraph/relations.build_extractor，缺依赖时给出可操作的错误。
+    """
     docs = load_corpus(db_url, namespaces=namespaces, limit=limit)
     index = build_index(docs)
-    ext = RelationExtractor()
+    ext = (extractor_factory or build_extractor)()
     seen = set()
     rows = []
     for d in docs:

@@ -1,14 +1,16 @@
 # -*- coding: utf-8 -*-
-"""vectorstores — 向量库适配器（当前实现 pgvector，指向 pglayers PG）。
+"""vectorstores — 向量库适配器（pgvector，指向本机 PG）。
 
-换向量库 = 在 registry 加一个后端（如 milvus/chroma），其余不动。
-embed_dim 必须和 embedder 输出维度一致，由 config 传入。
+向量维度由 ``rag/embedding.py`` 的 ``EMBED_DIM`` 固定（BGE-M3 = 1024），
+不再经 config 传递；维度不符时报错并要求显式 ``--full`` 重建，绝不静默删表。
 """
 from __future__ import annotations
 
 import psycopg
 from psycopg import errors as pg_errors
 from typing import Any, Callable, Dict, List
+
+from ..embedding import EMBED_DIM
 
 
 def _node_table_name(spec: Dict[str, Any]) -> str:
@@ -26,16 +28,17 @@ def vector_dsn(spec: Dict[str, Any]) -> str:
     )
 
 
-def ensure_compatible(spec: Dict[str, Any], embed_dim: int) -> None:
-    """维度校验：若已存在节点表的向量维度与当前 embed_dim 不一致，则删表强制重索引。
+def assert_compatible(spec: Dict[str, Any]) -> None:
+    """校验已有节点表的向量维度；不一致则报错，要求显式重建索引。
 
-    不同 embedding 模型的向量不可比，换模型必须重建索引，这里把该约束自动化。
+    不同模型的向量不可比，换模型必须重建。这里只报错、不删表 —— 重建是
+    ``python -m refactorctl rag --full`` 的显式动作，不能由一次查询悄悄触发。
     """
     tbl = _node_table_name(spec)
     try:
         conn = psycopg.connect(vector_dsn(spec))
     except Exception:
-        return
+        return  # 连不上时交给后续写入报错，此处不掩盖真实故障
     try:
         with conn.cursor() as cur:
             cur.execute(
@@ -45,9 +48,11 @@ def ensure_compatible(spec: Dict[str, Any], embed_dim: int) -> None:
                 (tbl,),
             )
             row = cur.fetchone()
-            if row and row[0] != embed_dim:
-                cur.execute(f'DROP TABLE IF EXISTS "{tbl}"')
-                conn.commit()
+            if row and row[0] != EMBED_DIM:
+                raise RuntimeError(
+                    f"向量表 {tbl} 的维度是 {row[0]}，与 BGE-M3 的 {EMBED_DIM} 不一致；"
+                    "请执行 python -m refactorctl rag --full 显式重建索引。"
+                )
     finally:
         conn.close()
 
@@ -65,7 +70,6 @@ def delete_nodes_by_id(spec: Dict[str, Any], node_ids: List[str]) -> None:
         conn.execute(f'DELETE FROM "{tbl}" WHERE node_id = ANY(%s)', (list(node_ids),))
         conn.commit()
     except pg_errors.UndefinedTable:
-        # 表刚被 reset_vector_table 删掉时，删除是空操作，忽略
         conn.rollback()
     finally:
         conn.close()
@@ -95,14 +99,13 @@ def build_pgvector(
     password: str = "5462",
     database: str = "test",
     table_name: str = "clause_chunks",
-    embed_dim: int = 1024,
     **kwargs,
 ) -> Any:
     from llama_index.vector_stores.postgres import PGVectorStore
 
     return PGVectorStore.from_params(
         host=host, port=port, user=user, password=password,
-        database=database, table_name=table_name, embed_dim=embed_dim,
+        database=database, table_name=table_name, embed_dim=EMBED_DIM,
         **kwargs,
     )
 

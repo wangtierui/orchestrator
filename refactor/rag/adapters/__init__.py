@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
-"""adapters — 四大可替换组件的工厂入口。"""
-from .embedders.registry import get_embedder
-from .vectorstores import get_vector_store
-from .llms import get_llm
-from .rerankers import get_reranker
+"""adapters — 向量库适配层（唯一与运行环境相关的可替换组件）。
 
-__all__ = ["get_embedder", "get_vector_store", "get_llm", "get_reranker"]
+embedding 模型已定死在 rag/embedding.py；本层只管向量库，
+生成答案由外部 Agent 承担。
+"""
+from .vectorstores import get_vector_store
+
+__all__ = ["get_vector_store"]

@@ -20,7 +20,7 @@ import logging
 import re
 from typing import Any
 
-from std_lib.common_lib.sentence_boundary import SENT_END_STRICT  # N-90：句读集合 SSOT（下层）
+from common.sentence_boundary import SENT_END_STRICT  # 句读集合 SSOT（refactor 内）
 
 from .cleaner import is_table_block, normalize_ws
 
@@ -36,10 +36,10 @@ _REMOVE_TAGS = re.compile(r"<[^>]+>")
 
 # ② 中文标点
 #
-# N-90（2026-09-28）：句末标点集合改取**唯一事实源** `std_lib.common_lib.sentence_boundary`
-# （原为本文件与 `common_lib/relations.py` **各自**字面量，且集合不一致 → 口径二重）。
+# N-90（2026-09-28）：句末标点集合收敛为唯一事实源；2026-11-05 按「refactor 独立项目」
+# 边界把该事实源从 std_lib 收编到 `common/sentence_boundary`，值逐字沿用，行为不变。
 # 本文件用**严格级**（`SENT_END_STRICT`：句末标点；分号/西文句点只追加空格以保段）；
-# 抽取侧（`relations.split_sentences`）用**句读级**（`SENT_END_LOOSE`）。差异**有意**，但同源。
+# 抽取侧的**句读级**（LOOSE，含分号/逗号等）与之差异**有意**，需要时在同一事实源定义。
 _SENT_END = re.compile(f"([{SENT_END_STRICT}])")
 _COMMA = re.compile(r"([，；、,:])")
 # ③ 中英文粘连（中文 与 字母/数字 之间）

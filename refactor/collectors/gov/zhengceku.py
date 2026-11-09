@@ -24,10 +24,7 @@ from ..base import REPO_ROOT as _ORCH  # refactor 项目根（自包含，不指
 from .parse import make_summary  # 复用 gov 主链摘要口径（消除 zhengceku 副本）
 from ..lib.text_utils import normalize_date  # 复用统一日期归一化（消除 _iso 副本）
 from ..lib.progress import progress_of
-try:
-    from refactor.config import settings  # 统一配置（抓取/OCR 调优项集中管理）
-except ImportError:  # 兼容从 refactor/ 目录直接运行（collectors 上下文）
-    from config import settings
+from config import settings  # 统一配置（抓取/OCR 调优项集中管理）
 # local_path 相对基址收口到 refactor/data/raw（自包含）。
 SCRAPERS_ROOT = os.path.join(_ORCH, "data", "raw")
 

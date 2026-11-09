@@ -81,9 +81,6 @@ class PbcCollector(CollectorPipeline):
     def key_of(self, item: dict):
         return item.get("detail_url")
 
-    def batch_key_of(self, entry: dict):
-        return entry.get("category")  # 按栏目分批落盘（崩溃容错）
-
     def max_items(self) -> int:
         return getattr(self._args, "max_items", 0) or 0
 

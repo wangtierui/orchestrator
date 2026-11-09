@@ -21,10 +21,14 @@ class _FakeMaster:
 
 
 class _FakeStorage:
+    def __init__(self):
+        self.save_calls = 0
+
     def load_master(self):
         return _FakeMaster([])
 
     def save_master(self, records, extra=None):
+        self.save_calls += 1
         return "locator"
 
 
@@ -139,8 +143,11 @@ def test_progress_status_matches_canonicalize():
 
 def test_pipeline_wires_progress():
     p = ProgressLogger("fake", heartbeat=False, every_items=100, interval=999)
-    records = _Pipe()._collect(_ctx(p))
-    assert len(records) == 2
+    ctx = _ctx(p)
+    pipe = _Pipe()
+    pipe._collect(ctx)
+    # 逐条落库（已删攒批）：两个 new（id=1,id=2；id=1 重复为 dup 跳过）各 save 一次
+    assert ctx.storage.save_calls == 2
     assert p._c["scan"] == 3
     assert p._c["new"] == 2 and p._c["dup"] == 1
     assert p._c["rec"] == 2 and p._c["ok"] == 2

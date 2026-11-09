@@ -3,7 +3,7 @@
 
 设计目标
 --------
-- 所有散落的配置项（数据库连接、存储后端、RAG 模型、抓取/OCR 调优开关）集中到
+- 所有散落的配置项（数据库连接、存储后端、RAG 检索参数、抓取/OCR 调优开关）集中到
   ``refactor/config.yaml`` 这一份文件，作为提交进仓库的 dev / 默认配置。
 - 同名大写环境变量可覆盖任意一项（用于不同环境 / 密钥），优先级：
   CLI 参数 > 环境变量 > config.yaml > 代码内建默认。
@@ -38,9 +38,6 @@ _ENV_MAP = {
     ("database", "url"): "REFACTOR_DB_URL",
     ("database", "storage_backend"): "REFACTOR_STORAGE",
     ("database", "raw_dir"): "REFACTOR_RAW_DIR",
-    ("rag", "embedder_name"): "RAG_EMBEDDER",
-    ("rag", "embed_dim"): "RAG_EMBED_DIM",
-    ("rag", "llm_name"): "RAG_LLM",
     ("scrape", "zc_attach_fast"): "ZC_ATTACH_FAST",
     ("scrape", "zc_fast_min_body"): "ZC_FAST_MIN_BODY",
     ("scrape", "zc_no_word_com"): "ZC_NO_WORD_COM",
@@ -62,10 +59,7 @@ class DatabaseSettings:
 
 @dataclass
 class RagSettings:
-    embedder_name: str = "bge_m3"
-    embed_dim: int = 1024
-    llm_name: str = "ollama"
-    reranker_name: str = "none"
+    # embedding 固定为 BGE-M3（rag/embedding.py），此处只配检索参数。
     top_k: int = 5
     vector_store: dict = field(default_factory=lambda: {
         "name": "pgvector",

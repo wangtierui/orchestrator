@@ -1,12 +1,9 @@
 # -*- coding: utf-8 -*-
-"""rag_query — 把现成 RAG 的「语义问答」能力做成插件。
+"""rag_query — 把 RAG 的「法规条款语义检索」能力做成 MCP 工具。
 
-验证用户判断的关键点：
-  - 它只调用 rag.query.query(question, config)，返回 {answer, citations}；
-  - 它「不关心」底层是哪家监管数据、怎么清洗——那些耦合全在「入库 connector」一侧；
-  - 将来把新的业务数据灌进 RAG（只要产出 CanonicalChunk 并 ingest），本插件零改动。
-
-运行前提：RAG 的 LLM 已配置（ollama 本地 或 openai API），否则生成那步会失败。
+只返回原始条款正文与出处（content / title / article_no / source_url / score）。
+生成自然语言答案由调用方（外部商业 Agent 自带大模型）完成，本服务不加载
+任何生成模型。
 """
 from __future__ import annotations
 
@@ -16,8 +13,8 @@ from ..registry import tool
 @tool(
     name="rag_query",
     description=(
-        "对监管法规语料做语义问答，返回自然语言答案与条款级引用"
-        "（标题+条号+来源链接+相关度）。仅依据已入库的条款作答，不编造。"
+        "按语义检索监管法规条款，返回最相关的原始条款正文与出处"
+        "（标题+条号+来源链接+相关度）。仅返回库内已有条款，不做生成或改写。"
     ),
     input_schema={
         "type": "object",
@@ -37,12 +34,9 @@ from ..registry import tool
 )
 def rag_query(args: dict) -> dict:
     from rag.config import RagConfig
-    from rag.query import query
+    from rag.query import retrieve
 
     question = args["question"]
     top_k = int(args.get("top_k", 5))
-
-    # 具体用哪个 embedding / LLM / 维度，由统一配置 refactor/config.yaml 决定（不在代码写死）
     cfg = RagConfig(top_k=top_k)
-    res = query(question, cfg)
-    return {"answer": res.get("answer"), "citations": res.get("citations", [])}
+    return retrieve(question, cfg)

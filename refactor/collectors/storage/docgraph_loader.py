@@ -27,11 +27,8 @@ try:
 except ImportError:  # pragma: no cover - 兼容 psycopg2
     from psycopg2 import connect  # type: ignore
 
-# 权威 DDL 源：refactor/init/ddl.py（与 init 工具共用，杜绝重复定义）
-try:
-    from refactor.init.ddl import DOCGRAPH_EDGES_DDL as DDL
-except ImportError:  # pragma: no cover - 作为脚本直接运行时
-    from init.ddl import DOCGRAPH_EDGES_DDL as DDL  # type: ignore
+# 权威 DDL 源：init/ddl.py（与 init 工具共用，杜绝重复定义）
+from init.ddl import DOCGRAPH_EDGES_DDL as DDL
 
 
 def project_row(r: dict) -> tuple:

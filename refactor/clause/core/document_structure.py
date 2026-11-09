@@ -71,7 +71,9 @@ import sys
 
 # 原则1：受控枚举唯一事实源收口为 refactor/common/enums.py（脱根目录依赖，refactor 自包含）。
 _HERE = os.path.dirname(os.path.abspath(__file__))
-_REFACTOR_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(_HERE)))
+# clause/core -> clause -> refactor（只两级；多退一级会插到父工程目录，
+# 造成 mcp_server 等顶层包被父工程同名包遮蔽）。
+_REFACTOR_ROOT = os.path.dirname(os.path.dirname(_HERE))
 if _REFACTOR_ROOT not in sys.path:
     sys.path.insert(0, _REFACTOR_ROOT)
 from common.enums import CLAUSE_ISSUE_SEVERITY

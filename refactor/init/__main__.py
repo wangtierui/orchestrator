@@ -8,36 +8,27 @@
   4. 导出 schema.sql 灾备文件（始终与权威 DDL 同步），落在 init/ 目录下。
 
 用法：
-  python -m refactor.init [--db-url URL] [--no-dump]
-  （亦可由顶层 `python -m refactor init` 路由到此）
+  python -m refactorctl init [--db-url URL] [--no-dump]
+  python -m init            [--db-url URL] [--no-dump]
 """
 from __future__ import annotations
 
 import argparse
 import os
-import sys
 from pathlib import Path
 
-# 仓库根入路径（与包内其他模块一致）
 _HERE = Path(__file__).resolve().parent
-_ROOT = _HERE.parent.parent
-_ROOT_STR = str(_ROOT)
-if _ROOT_STR in sys.path:
-    sys.path.remove(_ROOT_STR)
-sys.path.insert(0, _ROOT_STR)
 
 try:
     from psycopg import connect
 except ImportError:  # pragma: no cover - 兼容 psycopg2
     from psycopg2 import connect  # type: ignore
 
-from . import ddl as ddl_mod
-try:
-    from refactor.config import settings, psycopg_dsn
-except ImportError:  # 兼容从 refactor/ 目录直接运行（collectors 上下文）
-    from config import settings, psycopg_dsn
+from config import psycopg_dsn, settings
 
-# 默认库址统一取自 refactor/config.yaml（不再散落硬编码）
+from . import ddl as ddl_mod
+
+# 默认库址统一取自 config.yaml（不再散落硬编码）
 DEFAULT_DB_URL = settings.database.url
 SCHEMA_SQL_PATH = _HERE / "schema.sql"
 
@@ -69,9 +60,9 @@ def _build_schema_sql() -> str:
     header = (
         "-- ===========================================================================\n"
         "-- refactor PostgreSQL 恢复用 DDL（灾备 / 从零重建）\n"
-        "-- 本文件由 `python -m refactor.init` 自动生成，勿手工编辑；\n"
-        "-- 权威来源：refactor/init/ddl.py\n"
-        "-- 用法：psql \"$REFACTOR_DB_URL\" -f refactor/init/schema.sql\n"
+        "-- 本文件由 `python -m refactorctl init` 自动生成，勿手工编辑；\n"
+        "-- 权威来源：init/ddl.py\n"
+        "-- 用法：psql \"$REFACTOR_DB_URL\" -f init/schema.sql\n"
         "-- ===========================================================================\n\n"
     )
     parts = ["-- 安装扩展（仅一次）"]
@@ -128,7 +119,7 @@ def cmd_init(args) -> int:
 
 
 def main(argv=None) -> int:
-    ap = argparse.ArgumentParser(prog="refactor init", description="初始化项目前置（扩展+表+索引，幂等）")
+    ap = argparse.ArgumentParser(prog="refactorctl init", description="初始化项目前置（扩展+表+索引，幂等）")
     ap.add_argument("--db-url", default=None, help="REFACTOR_DB_URL 形式；缺省取环境变量或内置默认")
     ap.add_argument("--no-dump", action="store_true", help="不导出 schema.sql")
     args = ap.parse_args(argv)

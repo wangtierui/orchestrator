@@ -1,13 +1,15 @@
 # -*- coding: utf-8 -*-
 """CanonicalChunk — 内核与外界唯一契约（源无关）。
 
-上游 connector（无论来自 clause 还是任意文件/库）只需产出此结构，
-即可接入整套 RAG，无需关心内部用哪个 embedder / 向量库 / LLM。
+上游 connector（无论来自 clause 还是任意文件/库）只需产出此结构即可接入 RAG；
+内部固定使用 BGE-M3 + pgvector，上游无需关心实现细节。
 """
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Any, Dict
+
+from .embedding import EMBED_DIM, MODEL_ID
 
 
 @dataclass
@@ -26,9 +28,9 @@ class CanonicalChunk:
     #   article_no       条号（真实条号，如 "第五十五条"）
     #   source_url       原文链接（可点击溯源）
 
-    def to_document_meta(self, *, embed_model: str, embed_dim: int) -> Dict[str, Any]:
-        """转成 LlamaIndex Document 的 metadata，并打上「哪个模型生成的」标记。"""
+    def to_document_meta(self) -> Dict[str, Any]:
+        """转成 LlamaIndex Document 的 metadata，并标记生成向量的模型与维度。"""
         m = dict(self.meta)
-        m["_embed_model"] = embed_model      # 防跨模型向量混用
-        m["_embed_dim"] = embed_dim
+        m["_embed_model"] = MODEL_ID          # 防跨模型向量混用
+        m["_embed_dim"] = EMBED_DIM
         return m

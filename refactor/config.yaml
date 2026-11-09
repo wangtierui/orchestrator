@@ -17,10 +17,7 @@ database:
   raw_dir: "data/raw"          # REFACTOR_RAW_DIR（正文落盘根目录 content_root）
 
 rag:
-  embedder_name: "bge_m3"      # RAG_EMBEDDER
-  embed_dim: 1024              # RAG_EMBED_DIM（须与 embedder 输出维度一致）
-  llm_name: "ollama"           # RAG_LLM
-  reranker_name: "none"
+  # embedding 模型固定为 BGE-M3（rag/embedding.py），不在此配置。
   top_k: 5
   # 向量库连接（与 database.url 同源凭据，集中维护避免两套表示）
   vector_store:

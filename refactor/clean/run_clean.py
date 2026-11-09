@@ -20,15 +20,13 @@ from __future__ import annotations
 import json
 import logging
 import os
-import sys
 import time
 from typing import Any
 
-# 仓库根（orchestrator/）入路径
+# 项目根（refactor/）：只用于产物/日志落点，不注入 sys.path。
+# 独立项目的模块搜索路径由 cwd=refactor 提供（见 pyproject.toml 的 pythonpath=["."]）。
 _HERE = os.path.dirname(os.path.abspath(__file__))
-_ROOT = os.path.dirname(os.path.dirname(_HERE))
-if _ROOT not in sys.path:
-    sys.path.insert(0, _ROOT)
+_REFACTOR_ROOT = os.path.dirname(_HERE)
 
 from .config import CleanSettings, get_clean_settings
 from .pipeline import CleanContext, build_pipeline
@@ -52,7 +50,7 @@ def run(
         settings=settings,
         captured_at=captured_at,
         asset_dir=asset_dir,
-        log_dir=log_dir or os.path.join(_ROOT, "logs"),
+        log_dir=log_dir or os.path.join(_REFACTOR_ROOT, "logs"),
     )
     t0 = time.time()
     pipeline = build_pipeline(settings)
@@ -66,12 +64,13 @@ def run(
         "ocr_uncertain_total": ctx.metrics.get("ocr_uncertain_total", 0),
         "emit_ref": ctx.metrics.get("emit_ref"),
         "emit_count": ctx.metrics.get("emit_count", 0),
+        "pruned": ctx.metrics.get("pruned", 0),
         "elapsed_seconds": round(time.time() - t0, 2),
     }
     LOG.info(
-        "[%s] 管道完成：raw=%d → cleaned=%d（去重 %d，耗时 %.1fs）",
+        "[%s] 管道完成：raw=%d → cleaned=%d（去重 %d，删除对齐 %d，耗时 %.1fs）",
         project, summary["raw_total"], summary["cleaned_total"],
-        summary["dedup_removed"], summary["elapsed_seconds"],
+        summary["dedup_removed"], summary["pruned"], summary["elapsed_seconds"],
     )
     return summary
 

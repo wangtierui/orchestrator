@@ -600,8 +600,21 @@ def take_drain_records() -> list:
 _COORDINATOR: ResilienceCoordinator | None = None
 _COORD_LOCK = threading.Lock()
 
+# 线程级覆盖：并发采集时，每个采集线程可绑定自己的 Coordinator 实例，
+# 使熔断/指标/死信计数按源彻底隔离——一个源的高失败率不会污染或暂停其他源。
+_thread_local = threading.local()
+
+
+def set_thread_coordinator(c: ResilienceCoordinator | None) -> None:
+    """绑定（或解除：传 None）当前线程的 Coordinator 实例。"""
+    _thread_local.coordinator = c
+
 
 def get_coordinator() -> ResilienceCoordinator:
+    # 优先取当前线程绑定的实例；未绑定时回退全局单例（向后兼容）。
+    c = getattr(_thread_local, "coordinator", None)
+    if c is not None:
+        return c
     global _COORDINATOR
     if _COORDINATOR is None:
         with _COORD_LOCK:

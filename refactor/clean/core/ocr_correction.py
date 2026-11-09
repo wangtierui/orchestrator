@@ -527,26 +527,28 @@ def run_ocr_correction(
     corrected_total = 0
     uncertain_total = 0
     for rec in records:
-        body = rec.get("content") or rec.get("body_text") or ""
-        if not body:
-            continue
-        result = correct_ocr_text(
-            body,
-            confusion_map=cmap,
-            dict_checker=checker,
-            uncertain_export_dir=log_dir or None,
-        )
-        if result["uncertain"]:
-            annotate(rec, ocr_uncertain=True)
-            uncertain_total += 1
-        if result["corrected"] or result["dict_fixed"]:
-            rec["content"] = result["text"]
-            annotate(
-                rec,
-                ocr_corrected=result["corrected"],
-                ocr_dict_fixed=result["dict_fixed"],
+        # 统一文本清洗：content 与 attachment_content 走同一套 OCR 校正
+        for fld in ("content", "attachment_content"):
+            body = rec.get(fld) or ""
+            if not body:
+                continue
+            result = correct_ocr_text(
+                body,
+                confusion_map=cmap,
+                dict_checker=checker,
+                uncertain_export_dir=log_dir or None,
             )
-            corrected_total += result["corrected"] + result["dict_fixed"]
+            if result["uncertain"]:
+                annotate(rec, ocr_uncertain=True)
+                uncertain_total += 1
+            if result["corrected"] or result["dict_fixed"]:
+                rec[fld] = result["text"]
+                annotate(
+                    rec,
+                    ocr_corrected=result["corrected"],
+                    ocr_dict_fixed=result["dict_fixed"],
+                )
+                corrected_total += result["corrected"] + result["dict_fixed"]
     return records, {"corrected_total": corrected_total, "uncertain_total": uncertain_total}
 
 

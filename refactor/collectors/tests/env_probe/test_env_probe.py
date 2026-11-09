@@ -18,10 +18,7 @@ import threading
 
 import pytest
 
-try:
-    from refactor.config import settings  # 统一配置（OCR 调优项集中管理）
-except ImportError:  # 兼容从 refactor/ 目录直接运行（collectors 上下文）
-    from config import settings
+from config import settings  # 统一配置（OCR 调优项集中管理）
 
 # 自包含导入前缀：随测试被收集的包名走（collectors.* 或 refactor.collectors.*）
 _PKG = ".".join(__name__.split(".")[:-3])  # 去掉 .tests.env_probe.<module>

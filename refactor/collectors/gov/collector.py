@@ -295,9 +295,6 @@ class GovCollector(CollectorPipeline):
         return self._zc.fetch_one(
             entry["detail_url"], title_hint=entry["title"], date_hint=entry["publish_date"])
 
-    def batch_key_of(self, entry):
-        return entry.get("page")  # 按列表页分批落盘（每页详情抓完即 checkpoint）
-
     def max_items(self) -> int:
         return int(getattr(self._args, "max_items", 0) or 0)
 

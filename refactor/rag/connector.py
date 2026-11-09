@@ -3,7 +3,7 @@
 
 定位：与 clause/pipeline.build_clause_index 同属 storage-native 编排管线，是
 clean → clause → docgraph 之后的「检索接入」阶段。不是独立 client 脚本，由统一
-CLI 编排入口 `python -m refactor rag` 调用（见 refactor/__main__.py）。
+CLI 编排入口 `python -m refactorctl rag` 调用（见 refactorctl.py）。
 
 条款级粒度：每条 clause 的 articles[] 逐条展开为一个 CanonicalChunk。
 幂等键 chunk_id = clause:{key_md5}:{idx}:{hash(body)}：
@@ -32,7 +32,7 @@ import psycopg
 from psycopg import errors as pg_errors
 
 from .adapters.vectorstores import (
-    ensure_compatible,
+    assert_compatible,
     delete_nodes_by_id,
     reset_vector_table,
     _node_table_name,
@@ -41,10 +41,7 @@ from .adapters.vectorstores import (
 from .canonical import CanonicalChunk
 from .config import RagConfig
 from .ingest import ingest
-try:
-    from refactor.config import settings, psycopg_dsn
-except ImportError:  # 兼容从 refactor/ 目录直接运行（collectors 上下文）
-    from config import settings, psycopg_dsn
+from config import psycopg_dsn, settings
 
 LOG = logging.getLogger(__name__)
 _DEFAULT_BATCH = 200
@@ -106,13 +103,15 @@ def _fetch_cleaned_meta(conn, key_md5s):
         return {}
     cur = conn.cursor()
     cur.execute(
-        "SELECT key_md5, payload FROM cleaned_items WHERE key_md5 = ANY(%s)",
+        "SELECT key_md5, source, publish_date, issuing_authority, category "
+        "FROM cleaned_items WHERE key_md5 = ANY(%s)",
         (list(key_md5s),),
     )
     out: Dict[str, Dict[str, Any]] = {}
-    for key_md5, payload in cur.fetchall():
-        if isinstance(payload, dict):
-            out[key_md5] = payload
+    cols = [d[0] for d in cur.description]
+    for row in cur.fetchall():
+        rec = dict(zip(cols, row))
+        out[rec["key_md5"]] = rec
     return out
 
 
@@ -190,7 +189,7 @@ def build_rag_index(
     返回摘要 {ingested, deleted, clauses, last_run_id, mode}。
     """
     config = config or RagConfig()
-    vs_spec = {**config.vector_store, "embed_dim": config.embed_dim}
+    vs_spec = dict(config.vector_store)
     conn = psycopg.connect(_db_url())
     try:
         _ensure_state(conn)  # 始终建表，保证 --full 也能记录水位
@@ -208,8 +207,8 @@ def build_rag_index(
             to_ingest = chunks
             to_delete: List[str] = []
         else:
-            # 确保向量表存在再查已有 id
-            ensure_compatible(vs_spec, config.embed_dim)
+            # 确保向量表维度与 BGE-M3 一致再查已有 id（不一致会报错要求 --full）
+            assert_compatible(vs_spec)
             existing = _existing_node_ids(vs_spec)
             expected = {c.chunk_id for c in chunks}
             to_ingest = [c for c in chunks if c.chunk_id not in existing]
@@ -259,7 +258,7 @@ def _smoke(config: RagConfig | None = None, limit_clauses: int = 2) -> Dict[str,
         conn.close()
 
     def cclause() -> int:
-        tbl = _node_table_name({**config.vector_store, "embed_dim": config.embed_dim})
+        tbl = _node_table_name(dict(config.vector_store))
         c = psycopg.connect(_db_url())
         try:
             return c.execute(
@@ -289,7 +288,7 @@ def main(argv=None) -> int:
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
     )
     p = argparse.ArgumentParser(
-        prog="python -m refactor rag", description="clauses → RAG 增量同步 stage"
+        prog="python -m refactorctl rag", description="clauses → RAG 增量同步 stage"
     )
     p.add_argument("--full", action="store_true",
                    help="清空向量表后全量重建（换 chunk_id 格式/换模型时用）")

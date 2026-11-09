@@ -136,12 +136,13 @@ class CollectorPipeline(abc.ABC):
         """
         return False
 
-    def batch_key_of(self, entry: dict) -> Any:
-        """分批落盘键：非空时在该键变化时把累计全量先存档（pbc 逐栏目容错）。
-
-        默认 None = 不分批，仅在 run() 末尾落盘一次。
-        """
-        return None
+    def _accumulate(self, rec: dict) -> None:
+        """逐条落库时累加轻量统计（替代原先攒全量 records 列表），供治理 sidecar 使用。"""
+        ch = rec.get("change")
+        if ch in self.run_stats:
+            self.run_stats[ch] += 1
+        if rec.get("active"):
+            self.run_stats["active"] += 1
 
     def max_items(self) -> int:
         """调试上限：>0 时累计记录达到即停止（pbc 的 --max-items）。默认 0=不限。"""
@@ -177,26 +178,32 @@ class CollectorPipeline(abc.ABC):
         return CollectorContext(storage, master, tracker, master_by_key, out_dir,
                                 opts, progress=progress)
 
-    def _collect(self, ctx: CollectorContext) -> list:
-        """核心路由（与存储/锁无关，便于单测）：返回记录列表。
+    def _collect(self, ctx: CollectorContext) -> None:
+        """核心路由（与存储/锁无关，便于单测）。
 
+        每条 new/known/missing 记录处理成功后**立即落库**（逐条流式写入），
+        不再攒批——落盘不是性能瓶颈，采集慢才是；逐条落库让慢源也能实时可见、
+        且中断不丢数据。写入语义由基类统一保障，各源无需 override batch_key_of。
         对 new 态的 handle_new 做容错包装：失败按分类进死信（临时）/ 永久跳过，
         成功与失败都计入可观测指标；熔断冷却中自动暂停。
         """
-        records: list = []
         tracker = ctx.tracker
         progress = getattr(ctx, "progress", NULL_PROGRESS)
-        cur_batch = None
         cap = self.max_items()
         coord = get_coordinator()
         source = self.source_id
+        # 轻量运行统计（替代原先攒全量 records 列表），由 _accumulate 累加；
+        # 放在 _collect 开头，保证直调 _collect（如测试）也有 run_stats。
+        self.run_stats = {"added": 0, "updated": 0,
+                          "removed": 0, "unchanged": 0, "active": 0}
+        handled = 0
         try:
             entries = self.iter_list_entries(ctx)
         except Exception as e:  # 列表枚举级失败（多为站点封锁）：记录并退出本轮
             LOG.error("列表枚举失败（源=%s）：%s", source, e)
             progress.error()
             coord.metrics.record_status(extract_status(e))
-            return records
+            return
         for entry in entries:
             key = self.key_of(entry)
             # cur 优先显示标题/链接，比裸 key(mof 是一串数字 id) 更可读。
@@ -223,46 +230,40 @@ class CollectorPipeline(abc.ABC):
                         coord.enqueue_failure(source, key, entry, st, str(e)[:500])
                     rec = None
             if rec is not None:
-                records.append(rec)
                 progress.result(rec)
-                if cap and len(records) >= cap:
+                self.save([rec], ctx)      # 逐条落库
+                self._accumulate(rec)      # 轻量统计（供治理 sidecar）
+                handled += 1
+                if cap and handled >= cap:
                     break
-            # 分批落盘：批次键变化且非首批次时，把累计全量先存档（崩溃容错）
-            bk = self.batch_key_of(entry)
-            if bk is not None and cur_batch is not None and bk != cur_batch:
-                self.save(records, ctx)
-            cur_batch = bk
+        # 主库有、本次列表缺失的条目：按各源策略处理（nfra 并集保护 / mof 标 removed）
         if self.preserve_missing_master(ctx):
             for key, _prev in ctx.master_by_key.items():
                 if key in tracker.seen_in_run:
                     continue
                 rec = self.handle_missing(key, ctx)
                 if rec is not None:
-                    records.append(rec)
                     progress.result(rec)
-                    if cap and len(records) >= cap:
-                        break
-        return records
+                    self.save([rec], ctx)
+                    self._accumulate(rec)
 
     def run(self, out_dir: str, **opts) -> str:
         ctx = self.build_context(out_dir, **opts)
         try:
             coord = get_coordinator()
             coord.start_run(self.source_id)
-            records = self._collect(ctx)
-            # 冷却补抓趟：重放 pending 死信（硬上限 + 零回收早停），回收成果并入当次运行
+            self._collect(ctx)  # 内部已逐条落库
+            # 冷却补抓趟：重放 pending 死信（硬上限 + 零回收早停），回收成果逐条落库
             coord.drain(self.source_id, retry_fn=lambda e: self.handle_new(e, ctx), max_passes=3)
-            recovered = take_drain_records()
-            if recovered:
-                records.extend(recovered)
-                for rec in recovered:
-                    ctx.progress.result(rec)
-                LOG.info("冷却补抓回收 %d 条（源=%s）", len(recovered), self.source_id)
+            for rec in take_drain_records():
+                self.save([rec], ctx)
+                ctx.progress.result(rec)
+                self._accumulate(rec)
             summary = coord.end_run(self.source_id)
             # 可观测：结束打印 JSON 汇总（fetch_runs 已在 end_run 落库）
             print(json.dumps({"source": self.source_id, **summary}, ensure_ascii=False))
-            self._last_records = records
-            return self.save(records, ctx)
+            # 汇总落库一次（仅写 runs 审计记录，不产生新 raw_docs 条目），返回 locator
+            return self.save([], ctx)
         finally:
             # 无论成功/异常都收尾：停心跳线程 + 打一行最终汇总。
             ctx.progress.finish()

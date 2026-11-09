@@ -22,11 +22,13 @@ class FakeStorage:
     def __init__(self, items):
         self._items = items
         self.saved = None
+        self.save_calls = 0
 
     def load_master(self):
         return FakeMaster(self._items)
 
     def save_master(self, records, extra=None):
+        self.save_calls += 1
         self.saved = (records, extra)
         return "locator"
 
@@ -76,13 +78,9 @@ def test_pipeline_routing():
     ctx = CollectorContext(storage=st, master=FakeMaster(master_items),
                           tracker=tracker, master_by_key={3: master_items[0]},
                           out_dir="/tmp", opts={})
-    records = pipe._collect(ctx)
-    # id=1(new), id=2(new), id=3(已知→复用, 且列表缺失但 preserve)
-    assert records == [
-        {"id": 1, "status": "new"},
-        {"id": 2, "status": "new"},
-        {"id": 3, "status": "old"},
-    ], records
+    pipe._collect(ctx)
+    # 逐条落库（已删攒批）：id=1,id=2(new) 与 id=3(已知复用/preserve) 各 save 一次
+    assert st.save_calls == 3
     print("test_pipeline_routing OK")
 
 

@@ -338,18 +338,19 @@ class MofCollector(CollectorPipeline):
             self._status["last_error_time"] = datetime.now(UTC).isoformat()
             logger.exception("抓取失败：%s", e)
             write_status(out_dir, self._status)
-            sys.exit(1)
+            raise  # 让异常冒泡到 run_one 的 except，单源失败不影响其他源；
+                   # 勿用 sys.exit：子线程中的 SystemExit 无法被主线程 except Exception 捕获
         return locator
 
     def _governance_sidecar(self, locator: str) -> None:
         """采集完成后的治理副作用（采集边界，非采集逻辑）：写 status.json + 漏抓自检闸口。"""
-        records = getattr(self, "_last_records", [])
+        rs = getattr(self, "run_stats", {})
         st = self._status
-        added = sum(1 for e in records if e.get("change") == "added")
-        updated = sum(1 for e in records if e.get("change") == "updated")
-        removed = sum(1 for e in records if e.get("change") == "removed")
-        unchanged = sum(1 for e in records if e.get("change") == "unchanged")
-        active_count = sum(1 for e in records if e.get("active"))
+        added = rs.get("added", 0)
+        updated = rs.get("updated", 0)
+        removed = rs.get("removed", 0)
+        unchanged = rs.get("unchanged", 0)
+        active_count = rs.get("active", 0)
 
         st["warning"] = _audit_missing_captures(
             active_count, self._expected_total, getattr(self._args, "max_items", None))
@@ -358,7 +359,7 @@ class MofCollector(CollectorPipeline):
 
         st.update({
             "last_success_time": datetime.now(UTC).isoformat(),
-            "last_success_count": len(records),
+            "last_success_count": added + updated + removed + unchanged,
             "active_count": active_count,
             "expected_count": self._expected_total,
             "added": added, "updated": updated, "removed": removed, "unchanged": unchanged,

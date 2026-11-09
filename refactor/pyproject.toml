@@ -7,8 +7,9 @@
 #   · 数据/缓存/附件产物统一落在 refactor/data/{raw,cache,out}/ 下。
 #
 # 安装（可编辑）：  pip install -e ./refactor
-# 运行示例：        python -m collectors.pbc.collector --help
-#                   python -m collectors.nfra.fetch_lists
+# 统一入口：        python -m refactorctl --help
+#                   python -m refactorctl collect --source gov
+#                   python -m refactorctl clean --project gov
 # 测试：            pytest  （见 [tool.pytest.ini_options]）
 
 [build-system]
@@ -18,7 +19,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "regulatory-collectors-refactor"
 version = "0.1.0"
-description = "五源监管采集器（pbc/gov/nfra/mof）抽取重构版：自包含、零外部 std_lib 依赖"
+description = "五源监管采集器抽取重构版：核心链路自包含（docgraph 抽取器为可选适配）"
 requires-python = ">=3.13"
 dependencies = [
     # HTTP 客户端 + HTML 解析
@@ -47,22 +48,29 @@ db = [
     "sqlalchemy>=2.0",
     "psycopg[binary]>=3.1",
 ]
+# RAG 检索（BGE-M3 + pgvector）；生成答案由外部 Agent 承担
+rag = [
+    "llama-index>=0.11",
+    "llama-index-embeddings-huggingface>=0.3",
+    "llama-index-vector-stores-postgres>=0.1",
+    "sentence-transformers>=3.0",
+    "psycopg[binary]>=3.1",
+]
 
 [tool.setuptools.packages.find]
-include = ["collectors*"]
-exclude = ["collectors/tests*", "data*", "cache*", "out*"]
+include = [
+    "collectors*", "clean*", "common*", "init*", "rag*",
+    "docgraph*", "clause*", "storage*", "scripts*", "mcp_server*",
+]
+exclude = [
+    "collectors/tests*", "clause/tests*", "docgraph/tests*", "rag/tests*",
+    "tests*", "data*", "cache*", "out*",
+]
 
 [tool.setuptools.exclude-package-data]
 "*" = ["data/**", "cache/**", "out/**"]
 
-[tool.pytest.ini_options]
-# 仅覆盖本子项目自身测试；与根工程 tests/ 互不干扰。
-testpaths = ["collectors/tests"]
-addopts = "-q -m \"not data\""
-pythonpath = ["."]
-markers = [
-    "data: 依赖本机数据产物（cache/raw）的用例；无数据环境用 -m \"not data\" 排除",
-]
+# pytest 配置收口在 refactor/pytest.ini（固定 rootdir 到本项目，避免父工程同名包抢占）。
 
 [tool.ruff]
 line-length = 100

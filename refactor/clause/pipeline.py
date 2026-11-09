@@ -28,10 +28,7 @@ from typing import Any, Dict, List
 
 from collectors.storage import get_store
 from collectors.storage.config import StorageSettings
-try:
-    from refactor.config import settings
-except ImportError:  # 兼容从 refactor/ 目录直接运行（collectors 上下文）
-    from config import settings
+from config import settings
 from clause.core.document_structure import parse_document, validate_clauses
 
 

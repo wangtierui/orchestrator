@@ -5,31 +5,24 @@
   - 本模块是**唯一**的建表/建扩展定义处；init 工具与其生成的 schema.sql 都从这里导出，
     杜绝多处定义漂移（原 docgraph_loader.py / storage 内的重复 DDL 已收敛到此处）。
   - 所有语句均带 IF NOT EXISTS，可重复执行（幂等，不破坏已有数据）。
-  - 扩展安装也归 init 管：现在装 Apache AGE（图查询底座）；未来接入向量等能力时，
-    仅在 EXTENSIONS 追加一项、并在 VECTOR_DDL 补建表语句，init 会自动顺带创建。
+  - 扩展安装也归 init 管：现在装 Apache AGE（图查询底座）。
+  - 向量表由 rag 层的 PGVectorStore 运行时自建，维度固定见 rag/embedding.py，
+    故此处不重复定义（VECTOR_DDL 保留为空，避免两处 DDL 漂移）。
 """
 from __future__ import annotations
 
 # 初始化时必须确保安装的扩展：(显示名, CREATE EXTENSION 用的标识)
-# 新增向量数据能力时在此追加，例如 ("pgvector", "vector")，并在 VECTOR_DDL 补对应表。
 EXTENSIONS: list[tuple[str, str]] = [
     ("age", "age"),  # Apache AGE 图扩展（Cypher 多跳查询底座）
 ]
 
-# 向量库建表语句占位：待向量插件确定后填充，例如
-#   CREATE TABLE IF NOT EXISTS document_vectors (
-#       doc_id  TEXT PRIMARY KEY,
-#       embedding vector(1536)
-#   );
+# 向量表不在此定义；见上方说明。
 VECTOR_DDL = ""
 
 # ── 采集阶段唯一状态字段 fetch_status ──
 # 取值集合的唯一事实来源是 collectors/lib/fetch_status.py；这里只 import 后生成
 # CHECK 约束，杜绝「代码侧 / DDL 侧 / schema.sql 三份字面量」漂移。
-try:
-    from refactor.collectors.lib.fetch_status import FETCH_STATUS_VALUES
-except ImportError:  # 兼容从 refactor/ 目录直接运行的 init 工具
-    from collectors.lib.fetch_status import FETCH_STATUS_VALUES
+from collectors.lib.fetch_status import FETCH_STATUS_VALUES
 _FETCH_STATUS_CHECK = ", ".join(f"'{v}'" for v in FETCH_STATUS_VALUES)
 
 # ── 采集阶段范式化 schema：主表公共列 + 各源副表（doc_id 关联）──
@@ -167,12 +160,22 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_raw_items_ns_key
 
 CLEANED_ITEMS_DDL = """
 CREATE TABLE IF NOT EXISTS cleaned_items (
-    id           BIGSERIAL    PRIMARY KEY,
-    run_id       INTEGER      NOT NULL REFERENCES master_runs (id),
-    namespace    VARCHAR(64)  NOT NULL,
-    key_md5      VARCHAR(32)  NULL,
-    url          TEXT         NULL,
-    payload      JSON         NOT NULL
+    id                 BIGSERIAL    PRIMARY KEY,
+    run_id             INTEGER      NOT NULL REFERENCES master_runs (id),
+    namespace          VARCHAR(64)  NOT NULL,
+    key_md5            VARCHAR(32)  NULL,
+    url                TEXT         NULL,
+    source             VARCHAR(64)  NULL,
+    detail_url         TEXT         NULL,
+    document_number    TEXT         NULL,
+    title              TEXT         NULL,
+    index_no           TEXT         NULL,
+    content            TEXT         NULL,
+    attachment_content TEXT         NULL,
+    publish_date       TEXT         NULL,
+    issuing_authority  TEXT         NULL,
+    category           TEXT         NULL,
+    dedup_key          VARCHAR(64)  NULL
 );
 CREATE INDEX IF NOT EXISTS ix_cleaned_items_run_id     ON cleaned_items (run_id);
 CREATE INDEX IF NOT EXISTS ix_cleaned_items_namespace ON cleaned_items (namespace);

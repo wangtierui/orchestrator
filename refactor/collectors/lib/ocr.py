@@ -17,10 +17,7 @@ from typing import Any
 
 LOG = logging.getLogger("refactor.collectors.lib.ocr")
 
-try:
-    from refactor.config import settings  # 统一配置（OCR 路径集中管理）
-except ImportError:  # 兼容从 refactor/ 目录直接运行（collectors 上下文）
-    from config import settings
+from config import settings  # 统一配置（OCR 路径集中管理）
 
 _TESSDATA_DEFAULT = settings.ocr.tessdata_dir
 _TESSERACT_DEFAULT = settings.ocr.tesseract_bin
@@ -164,19 +161,22 @@ class TesseractEngine(BaseOCREngine):
     name = ENGINE_TESSERACT
 
     def __init__(self, cmd: str, tessdata: str, langs: str, config: str):
-        self._cmd = cmd
-        self._tessdata = tessdata
+        import shutil
+
+        self._cmd = cmd or ""
+        if not self._cmd or not os.path.exists(self._cmd):
+            self._cmd = shutil.which("tesseract") or self._cmd
+        self._tessdata = tessdata or ""
         self._langs = langs
         self._config = config
         self._import_error: str | None = None
 
     def available(self) -> bool:
-        if not os.path.exists(self._cmd):
+        if not self._cmd or not os.path.exists(self._cmd):
             LOG.warning("Tesseract 可执行文件不存在：%s", self._cmd)
             return False
-        if not os.path.isdir(self._tessdata):
-            LOG.warning("tessdata 目录不存在：%s", self._tessdata)
-            return False
+        if self._tessdata and not os.path.isdir(self._tessdata):
+            LOG.warning("tessdata 目录不存在：%s（将使用 Tesseract 默认路径）", self._tessdata)
         try:
             import pytesseract  # noqa: F401
             return True
@@ -211,7 +211,8 @@ class TesseractEngine(BaseOCREngine):
         from PIL import Image
 
         pytesseract.pytesseract.tesseract_cmd = self._cmd
-        os.environ.setdefault("TESSDATA_PREFIX", self._tessdata)
+        if self._tessdata and os.path.isdir(self._tessdata):
+            os.environ["TESSDATA_PREFIX"] = self._tessdata
         pil = self._normalize_to_pil(img)
         if not isinstance(pil, Image.Image):
             pil = Image.open(pil)

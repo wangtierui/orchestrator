@@ -110,12 +110,22 @@ CREATE TABLE IF NOT EXISTS raw_internal (
 );
 
 CREATE TABLE IF NOT EXISTS cleaned_items (
-    id           BIGSERIAL    PRIMARY KEY,
-    run_id       INTEGER      NOT NULL REFERENCES master_runs (id),
-    namespace    VARCHAR(64)  NOT NULL,
-    key_md5      VARCHAR(32)  NULL,
-    url          TEXT         NULL,
-    payload      JSON         NOT NULL
+    id                 BIGSERIAL    PRIMARY KEY,
+    run_id             INTEGER      NOT NULL REFERENCES master_runs (id),
+    namespace          VARCHAR(64)  NOT NULL,
+    key_md5            VARCHAR(32)  NULL,
+    url                TEXT         NULL,
+    source             VARCHAR(64)  NULL,
+    detail_url         TEXT         NULL,
+    document_number    TEXT         NULL,
+    title              TEXT         NULL,
+    index_no           TEXT         NULL,
+    content            TEXT         NULL,
+    attachment_content TEXT         NULL,
+    publish_date       TEXT         NULL,
+    issuing_authority  TEXT         NULL,
+    category           TEXT         NULL,
+    dedup_key          VARCHAR(64)  NULL
 );
 CREATE INDEX IF NOT EXISTS ix_cleaned_items_run_id     ON cleaned_items (run_id);
 CREATE INDEX IF NOT EXISTS ix_cleaned_items_namespace ON cleaned_items (namespace);

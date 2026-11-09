@@ -16,8 +16,5 @@
 （http/ocr/pipeline/incremental/paths… 仍留在 collectors/lib）。
 """
 
-# 导入即加载统一配置并回填环境变量（单一配置源：refactor/config.yaml）
-try:
-    import refactor.config  # noqa: E402,F401
-except ImportError:  # 兼容从 refactor/ 目录直接运行（collectors 上下文）
-    import config  # noqa: E402,F401
+# 导入即加载统一配置并回填环境变量（单一配置源：config.yaml）
+import config as _config  # noqa: E402,F401

@@ -16,7 +16,10 @@ import importlib
 import inspect
 import sys
 
+import concurrent.futures as cf
+
 from .lib.cli import add_common_args, DEFAULT_OUT, configure_logging
+from .lib.resilience import ResilienceCoordinator, set_thread_coordinator
 
 # 统一配置 logging：各源进度日志走 logging（如 gov 的 LOG.info），入口不配置则会
 # 被 Python 的静默兜底吞掉（pbc 用 print 所以照常显示，造成"有的源有日志有的没有"）。
@@ -57,28 +60,42 @@ def run_one(name: str, args: argparse.Namespace) -> str:
     collector = getattr(mod, cls_name)()
     # 通用增量闸门：对所有源生效，无需各源 collect() 重复声明同一形参。
     collector.early_stop_pages = getattr(args, "stop_after_empty_pages", 0)
-    opts = dict(
-        out_dir=args.out_dir, mode=args.mode, limit=args.limit,
-        no_detail=args.no_detail, delay=args.delay,
-        no_attachments=getattr(args, "no_attachments", False),
-        refetch_attachments=getattr(args, "refetch_attachments", False),
-        stop_after_empty_pages=getattr(args, "stop_after_empty_pages", 0),
-    )
-    return _call_collect(collector, **opts)
+    # 每源独立 Coordinator 实例（经线程局部注入 get_coordinator()），
+    # 隔离熔断/指标/死信计数；并发采集时一个源的限流/失败不会波及他源。
+    print(f"\n===== 采集源: {name} =====", flush=True)
+    coord = ResilienceCoordinator()
+    coord.set_source(name)
+    set_thread_coordinator(coord)
+    try:
+        opts = dict(
+            out_dir=args.out_dir, mode=args.mode, limit=args.limit,
+            no_detail=args.no_detail, delay=args.delay,
+            no_attachments=getattr(args, "no_attachments", False),
+            refetch_attachments=getattr(args, "refetch_attachments", False),
+            stop_after_empty_pages=getattr(args, "stop_after_empty_pages", 0),
+        )
+        return _call_collect(collector, **opts)
+    finally:
+        set_thread_coordinator(None)
 
 
 def main() -> int:
     args = _build_parser().parse_args()
     names = list(SOURCES) if args.source == "all" else [args.source]
     results: dict[str, str] = {}
-    for name in names:
-        print(f"\n===== 采集源: {name} =====", flush=True)
-        try:
-            loc = run_one(name, args)
-            results[name] = f"ok ({loc})" if loc else "ok"
-        except Exception as e:  # noqa: BLE001
-            results[name] = f"ERROR: {type(e).__name__}: {e}"
-            print(f"  [!] {name} 采集失败: {e}", file=sys.stderr, flush=True)
+    # 并发采集：各源独立线程 + 独立 Coordinator，单源失败/限流不影响他源。
+    with cf.ThreadPoolExecutor(
+            max_workers=len(names), thread_name_prefix="collect"
+    ) as ex:
+        futures = {ex.submit(run_one, name, args): name for name in names}
+        for fut in cf.as_completed(futures):
+            name = futures[fut]
+            try:
+                loc = fut.result()
+                results[name] = f"ok ({loc})" if loc else "ok"
+            except Exception as e:  # noqa: BLE001
+                results[name] = f"ERROR: {type(e).__name__}: {e}"
+                print(f"  [!] {name} 采集失败: {e}", file=sys.stderr, flush=True)
     print("\n===== 汇总 =====", flush=True)
     for name, st in results.items():
         print(f"  {name}: {st}", flush=True)

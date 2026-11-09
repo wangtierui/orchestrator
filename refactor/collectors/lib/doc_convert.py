@@ -6,10 +6,7 @@
 import os
 import shutil
 
-try:
-    from refactor.config import settings  # 统一配置（LO_BIN 集中管理）
-except ImportError:  # 兼容从 refactor/ 目录直接运行（collectors 上下文）
-    from config import settings
+from config import settings  # 统一配置（LO_BIN 集中管理）
 import subprocess
 import tempfile
 

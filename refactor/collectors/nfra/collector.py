@@ -407,7 +407,6 @@ class NfraCollector(CollectorPipeline):
         # 站点级准备（缓存/opener/落盘目录），在 run() 之前完成。
         _init_cache(args.cache_dir or None, args.offline)
         self._args = args
-        self._errors: list = []
         os.makedirs(args.out_dir, exist_ok=True)
         os.makedirs("logs", exist_ok=True)
 
@@ -523,9 +522,8 @@ class NfraCollector(CollectorPipeline):
                 }
                 print("      [offline] docId=%s 详情未缓存，仅列表面板" % did, flush=True)
             except Exception as e:  # noqa: BLE001
-                # 不再静默吞掉：记录到 build_extra，同时向上抛，
-                # 由 pipeline 按失败分类产出死信（临时失败可冷却补抓，不再丢失）。
-                self._errors.append({"doc_id": did, "title": entry["title"], "error": str(e)})
+                # 不再静默吞掉：向上抛，由 pipeline 按失败分类产出死信
+                # （临时失败可冷却补抓，不再丢失；失败明细见 fetch_dead_letter）。
                 print("      [ERR] docId=%s 详情失败: %s" % (did, e), flush=True)
                 raise
         if rec:
@@ -539,12 +537,7 @@ class NfraCollector(CollectorPipeline):
     def preserve_missing_master(self, ctx):
         return True
 
-        # ── 治理步骤（采集边界，非采集逻辑）：错误副产物挂主库 规范记录 ──
-    def build_extra(self, ctx, records):
-        return {"errors": self._errors}
 
-    def save(self, records, ctx):
-        return ctx.storage.save_master(records, extra=self.build_extra(ctx, records))
 
     # ----------------------------- SourceCollector 协议入口 -----------------------------
     def collect(self, out_dir: str, *, limit: int = 0, mode: str = "incremental",

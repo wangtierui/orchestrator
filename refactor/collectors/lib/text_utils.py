@@ -42,6 +42,17 @@ def sniff_kind(data: bytes, name: str = "") -> str:
         return "rar"
     if head[:8] == b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1":
         return "ole2"
+    # 内容嗅探：.doc 常被错标为 OLE2（实为 MHT/RTF/HTML/RFC822 单文件网页）
+    blob = data[:4096]
+    if head[:4] == b"{\\rt":
+        return "rtf"
+    if b"MIME-Version" in blob or b"Content-Type: multipart" in blob or b"boundary=" in blob:
+        return "mht"
+    hb = blob.lstrip()
+    if hb[:5] in (b"<html", b"<!doc", b"<?xml") or b"<html" in blob:
+        return "html"
+    if hb[:5] == b"From " or b"\nReceived:" in blob:
+        return "rfc822"
     ext = os.path.splitext(name)[1].lower()
     if ext in (".pdf",):
         return "pdf"
@@ -116,6 +127,12 @@ def extract_document_text(data: bytes, name: str = "", *, enable_ocr: bool = Fal
             return _merge(rec, _extract_xlsx(data))
         if kind == "ole2":
             return _merge(rec, _extract_ole2(data))
+        if kind in ("mht", "rfc822"):
+            return _merge(rec, _extract_mht(data))
+        if kind == "rtf":
+            return _merge(rec, _extract_rtf(data))
+        if kind == "html":
+            return _merge(rec, _extract_html(data))
     except Exception as e:  # noqa: BLE001
         rec["extract_status"] = "corrupt"
         rec["text"] = ""
@@ -265,17 +282,28 @@ def _extract_docx(data: bytes) -> dict:
         import docx
 
         d = docx.Document(__import__("io").BytesIO(data))
-        text = "\n".join(p.text for p in d.paragraphs if p.text)
-        if text.strip():
-            return {"text": text.strip(), "extracted": True, "extract_status": "ok"}
+        parts = [p.text for p in d.paragraphs if p.text]
+        for tbl in d.tables:
+            for row in tbl.rows:
+                for cell in row.cells:
+                    if cell.text and cell.text.strip():
+                        parts.append(cell.text)
+        text = "\n".join(parts).strip()
+        if text:
+            return {"text": text, "extracted": True, "extract_status": "ok"}
     except ImportError:
         pass
+    # 兜底：ElementTree 精确提取 <w:t> 文本，避免正则把 <w:tab>/<w:rPr> 等 OOXML 标签一并吞入
     try:
-        with zipfile.ZipFile(__import__("io").BytesIO(data)) as z:
-            xml = z.read("word/document.xml").decode("utf-8", "replace")
-        texts = re.findall(r"<w:t[^>]*>(.*?)</w:t>", xml, re.S)
-        text = "".join(texts)
-        if text.strip():
+        import xml.etree.ElementTree as ET
+        import zipfile as _zf
+
+        with _zf.ZipFile(__import__("io").BytesIO(data)) as z:
+            xml = z.read("word/document.xml")
+        root = ET.fromstring(xml)
+        texts = [el.text for el in root.iter() if (el.tag.endswith("}t") or el.tag == "w:t") and el.text]
+        text = "".join(texts).strip()
+        if text:
             return {"text": re.sub(r"\s+", " ", text).strip(), "extracted": True, "extract_status": "ok"}
     except Exception:  # noqa: BLE001
         pass
@@ -308,11 +336,13 @@ def _extract_xlsx(data: bytes) -> dict:
     except ImportError:
         pass
     try:
+        import xml.etree.ElementTree as ET
+
         with zipfile.ZipFile(__import__("io").BytesIO(data)) as z:
             names = z.namelist()
             if "xl/sharedStrings.xml" in names:
-                xml = z.read("xl/sharedStrings.xml").decode("utf-8", "replace")
-                strings = re.findall(r"<t[^>]*>(.*?)</t>", xml, re.S)
+                root = ET.fromstring(z.read("xl/sharedStrings.xml"))
+                strings = [el.text for el in root.iter() if (el.tag.endswith("}t") or el.tag == "t") and el.text]
                 text = "\n".join(strings)
                 if text.strip():
                     return {"text": re.sub(r"\s+", " ", text).strip(), "extracted": True, "extract_status": "ok"}
@@ -458,6 +488,54 @@ def _extract_doc_via_wps(data: bytes, timeout: float = 45.0) -> str | None:
                 pass
 
 
+def _extract_doc_via_native(data: bytes) -> str | None:
+    """老版 .doc（Word 97-2003）正文抽取：优先 macOS textutil，其次 antiword/catdoc。
+
+    朴素地把 OLE2 各 stream 当 UTF-16-LE 硬解会产生大量二进制乱码（含 \\ufffe 残片），
+    故优先用系统/第三方 Word 导入器正确解码中文。
+    """
+    import shutil
+    import subprocess
+    import tempfile
+
+    if shutil.which("textutil"):
+        def _run(p):
+            r = subprocess.run(["textutil", "-convert", "txt", "-stdout", p],
+                               capture_output=True, text=True, timeout=60)
+            return r.stdout if r.returncode == 0 else ""
+    elif shutil.which("antiword"):
+        def _run(p):
+            r = subprocess.run(["antiword", "-t", "-m", "UTF-8.txt", p],
+                               capture_output=True, text=True, timeout=60)
+            return r.stdout
+    elif shutil.which("catdoc"):
+        def _run(p):
+            r = subprocess.run(["catdoc", "-d", "utf-8", p],
+                               capture_output=True, text=True, timeout=60)
+            return r.stdout
+    else:
+        return None
+    fd, tmp = tempfile.mkstemp(suffix=".doc")
+    try:
+        with os.fdopen(fd, "wb") as f:
+            f.write(data)
+        try:
+            text = _run(tmp) or ""
+        except subprocess.TimeoutExpired:
+            return None
+    finally:
+        try:
+            os.remove(tmp)
+        except OSError:
+            pass
+    if text.strip():
+        text = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f]", "", text)
+        text = re.sub(r"\r\n?", "\n", text)
+        text = re.sub(r"[ \t]{2,}", " ", text)
+        return text.strip()
+    return None
+
+
 def _extract_ole2(data: bytes) -> dict:
     if (b"Workbook" in data[:200_000] or b"\x00B\x00o\x00o\x00k" in data[:4096] or b"Book" in data[:512]):
         try:
@@ -475,6 +553,10 @@ def _extract_ole2(data: bytes) -> dict:
             return {"text": "", "extracted": False, "extract_status": "library_missing"}
         except Exception:  # noqa: BLE001
             pass
+    # 真·老版 Word .doc：优先 textutil/antiword/catdoc（正确解码中文，避免裸 UTF-16 硬解乱码）
+    native = _extract_doc_via_native(data)
+    if native:
+        return {"text": native, "extracted": True, "extract_status": "ok"}
     wps_text = _extract_doc_via_wps(data)
     if wps_text:
         return {"text": wps_text, "extracted": True, "extract_status": "ok_wps_com"}
@@ -501,6 +583,68 @@ def _extract_ole2(data: bytes) -> dict:
         return {"text": "", "extracted": False, "extract_status": "library_missing"}
     except Exception:  # noqa: BLE001
         return {"text": "", "extracted": False, "extract_status": "corrupt"}
+
+
+def _strip_html(html_text: str) -> str:
+    """去 HTML 标签与脚本样式，保留可见文本并解码实体。"""
+    import html as _html
+
+    h = re.sub(r"<(script|style)[^>]*>.*?</\1>", "", html_text, flags=re.S | re.I)
+    h = re.sub(r"<!--.*?-->", "", h, flags=re.S)
+    h = re.sub(r"<[^>]+>", " ", h)
+    h = _html.unescape(h)
+    return re.sub(r"\s+", " ", h).strip()
+
+
+def _extract_html(data: bytes) -> dict:
+    try:
+        text = data.decode("utf-8", "ignore")
+        if not text.strip():
+            text = data.decode("gb18030", "ignore")
+    except Exception:  # noqa: BLE001
+        text = data.decode("latin1", "ignore")
+    text = _strip_html(text)
+    if text.strip():
+        return {"text": text, "extracted": True, "extract_status": "ok"}
+    return {"text": "", "extracted": False, "extract_status": "empty"}
+
+
+def _extract_mht(data: bytes) -> dict:
+    import email
+    from email import policy
+
+    try:
+        msg = email.message_from_bytes(data, policy=policy.default)
+    except Exception:  # noqa: BLE001
+        return {"text": "", "extracted": False, "extract_status": "corrupt"}
+
+    html_part = None
+    for part in msg.walk():
+        if part.get_content_type() == "text/html":
+            try:
+                html_part = part.get_content()
+            except Exception:  # noqa: BLE001
+                html_part = None
+                continue
+            if html_part:
+                break
+    if html_part:
+        text = _strip_html(html_part)
+        if text.strip():
+            return {"text": text, "extracted": True, "extract_status": "ok"}
+    return {"text": "", "extracted": False, "extract_status": "empty"}
+
+
+def _extract_rtf(data: bytes) -> dict:
+    text = data.decode("latin1", "ignore")
+    # 近似抽取：去 RTF 控制字与分组，保留可见文本（RTF 占比极小）
+    t = re.sub(r"\{\\[*]?.*?\}", " ", text, flags=re.S)
+    t = re.sub(r"\\[a-zA-Z]+\d*\s?", " ", t)
+    t = re.sub(r"[{}]", " ", t)
+    t = re.sub(r"\s+", " ", t).strip()
+    if t:
+        return {"text": t, "extracted": True, "extract_status": "ok"}
+    return {"text": "", "extracted": False, "extract_status": "empty"}
 
 
 # ---- OCR 桥接（本地 lib.ocr，去掉 config.loader / ocr_correction 外部依赖） -------
