@@ -39,6 +39,16 @@
   let tbl = null;
   let q = '';
 
+  /* P3：搜索词写 URL */
+  let urlMode = 'push';
+  function pushUrl() {
+    const url = q ? `#/release?q=${encodeURIComponent(q)}` : '#/release';
+    if (url === location.hash) return;
+    if (urlMode === 'replace') history.replaceState({ page: 'release' }, '', url);
+    else history.pushState({ page: 'release' }, '', url);
+    urlMode = 'push';
+  }
+
   const COLUMNS = [
     { key: 'date', label: '日期', width: '120px' },
     { key: 'subject', label: '提交主题', width: 'minmax(0,3fr)', titleFrom: 'subject' },
@@ -87,6 +97,7 @@
   }
 
   function render() {
+    pushUrl();   /* 唯一出口 */
     const data = rows();
     if (!tbl) {
       tbl = table.renderTable({ columns: COLUMNS, rows: data, label: '提交列表',
@@ -115,10 +126,16 @@
 
   document.getElementById('searchSlot').append(controls.renderSearch({
     id: 'q', label: '搜索提交', placeholder: '搜 sha / 主题 / 日期…',
-    onInput: (v) => { q = v; render(); },
+    onInput: (v) => { q = v; urlMode = 'replace'; render(); },
     onSubmit: (v) => { q = v; render(); },
   }).el);
 
+  const __q0 = (window.RCO_PARAMS || {}).q || '';
+  if (__q0) {
+    q = __q0;
+    const box = document.getElementById('q');
+    if (box) box.value = __q0;
+  }
   load();
 })();
 </script>
