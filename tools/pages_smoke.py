@@ -33,7 +33,7 @@ PAGES = [
     ("regstats", ".rco-tbl__row", True, False),
     ("overview", "#kpiRow", False, True),
     ("project", "#chart", False, True),
-    ("flow", "#chart", False, True),
+    ("flow", "#runsSlot", True, False),
     ("metrics", ".grid3", False, True),
     ("graph", "#tabsSlot", False, False),
     ("release", ".rco-tbl__row", True, False),
