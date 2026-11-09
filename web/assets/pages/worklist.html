@@ -49,6 +49,24 @@
   const { table, controls, core } = RCO;
 
   const state = { status: 'open', kind: '', q: '', density: 'comfortable' };
+
+  /* P3：URL 覆盖默认状态（叠加式，不改原 state 字面量） */
+  const __Q0 = window.RCO_PARAMS || {};
+  ['status', 'kind', 'q', 'density'].forEach((k) => { if (__Q0[k]) state[k] = __Q0[k]; });
+
+  function wlUrl() {
+    const qs = new URLSearchParams();
+    ['status', 'kind', 'q', 'density'].forEach((k) => { if (state[k]) qs.set(k, String(state[k])); });
+    return '#/worklist' + (qs.toString() ? '?' + qs.toString() : '');
+  }
+  let urlMode = 'push';
+  function pushUrl() {
+    const url = wlUrl();
+    if (url === location.hash) return;
+    if (urlMode === 'replace') history.replaceState({ page: 'worklist' }, '', url);
+    else history.pushState({ page: 'worklist' }, '', url);
+    urlMode = 'push';
+  }
   let rows = [];
   let tbl = null;
 
@@ -112,6 +130,7 @@
   }
 
   async function refresh() {
+    pushUrl();   /* 唯一出口 */
     document.getElementById('tableSlot').setAttribute('aria-busy', 'true');
     try {
       const d = await fetch(`/api/worklist?status=${state.status}`, { cache: 'no-store' }).then((r) => r.json());
@@ -142,7 +161,7 @@
 
   document.getElementById('searchSlot').append(controls.renderSearch({
     id: 'q', label: '搜索程序指令', placeholder: '搜编号 / 名称 / kind…',
-    onInput: (v) => { state.q = v; refresh(); },
+    onInput: (v) => { state.q = v; urlMode = 'replace'; refresh(); },
     onSubmit: (v) => { state.q = v; refresh(); },
   }).el);
 
