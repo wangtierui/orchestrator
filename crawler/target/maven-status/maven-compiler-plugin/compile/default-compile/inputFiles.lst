@@ -1,0 +1,16 @@
+/Users/lmc/code/orchestrator/crawler/src/main/java/com/orchestrator/crawler/adapter/SiteAdapter.java
+/Users/lmc/code/orchestrator/crawler/src/main/java/com/orchestrator/crawler/adapter/AdapterRegistry.java
+/Users/lmc/code/orchestrator/crawler/src/main/java/com/orchestrator/crawler/CrawlerApplication.java
+/Users/lmc/code/orchestrator/crawler/src/main/java/com/orchestrator/crawler/service/CrawlerService.java
+/Users/lmc/code/orchestrator/crawler/src/main/java/com/orchestrator/crawler/config/SiteProperties.java
+/Users/lmc/code/orchestrator/crawler/src/main/java/com/orchestrator/crawler/adapter/mof/MofApiResponse.java
+/Users/lmc/code/orchestrator/crawler/src/main/java/com/orchestrator/crawler/adapter/mof/MofSiteAdapter.java
+/Users/lmc/code/orchestrator/crawler/src/main/java/com/orchestrator/crawler/client/ApiClient.java
+/Users/lmc/code/orchestrator/crawler/src/main/java/com/orchestrator/crawler/adapter/PageResult.java
+/Users/lmc/code/orchestrator/crawler/src/main/java/com/orchestrator/crawler/controller/CrawlController.java
+/Users/lmc/code/orchestrator/crawler/src/main/java/com/orchestrator/crawler/mapper/DocumentMapper.java
+/Users/lmc/code/orchestrator/crawler/src/main/java/com/orchestrator/crawler/mapper/CheckpointMapper.java
+/Users/lmc/code/orchestrator/crawler/src/main/java/com/orchestrator/crawler/model/CrawlCheckpoint.java
+/Users/lmc/code/orchestrator/crawler/src/main/java/com/orchestrator/crawler/adapter/DocumentData.java
+/Users/lmc/code/orchestrator/crawler/src/main/java/com/orchestrator/crawler/config/HttpClientConfig.java
+/Users/lmc/code/orchestrator/crawler/src/main/java/com/orchestrator/crawler/model/Document.java

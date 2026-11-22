@@ -1,0 +1,29 @@
+spring:
+  application:
+    name: regulation-crawler
+  datasource:
+    url: jdbc:postgresql://localhost:5432/orchestrator
+    username: root
+    password: "5462"
+    driver-class-name: org.postgresql.Driver
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+server:
+  port: 8081
+
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+sites:
+  mof-fgk:
+    endpoint: http://fgk.mof.gov.cn/dev/lawFile/list
+    page-size: 20
+    max-pages: 100
+    interval-ms: 1500
+
+logging:
+  level:
+    com.orchestrator.crawler: INFO
